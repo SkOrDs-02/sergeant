@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { Meal, NutritionPrefs } from "@sergeant/nutrition-domain";
+import type { MealFormPhotoResult } from "./meal-sheet/mealFormUtils";
 import { PantryManagerSheet } from "./PantryManagerSheet";
 import { ItemEditSheet } from "./ItemEditSheet";
 import { BarcodeScanner } from "./BarcodeScanner";
@@ -130,7 +131,9 @@ export function NutritionOverlays({
           setEditingMeal(null);
         }}
         onSave={wrappedSaveMeal}
-        photoResult={log.addMealPhotoResult}
+        photoResult={
+          log.addMealPhotoResult as MealFormPhotoResult | null | undefined
+        }
         initialMeal={editingMeal}
         mealTemplates={prefs.mealTemplates || []}
         setPrefs={setPrefs}

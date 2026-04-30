@@ -100,13 +100,13 @@ describe("loadWaterLog", () => {
 describe("saveWaterLog", () => {
   it("persists normalized log and strips bad entries", () => {
     saveWaterLog({ "2026-04-18": 500, bogus: "x" });
-    const stored = JSON.parse(globalThis.localStorage.getItem(WATER_LOG_KEY));
+    const stored = JSON.parse(globalThis.localStorage.getItem(WATER_LOG_KEY)!);
     expect(stored).toEqual({ "2026-04-18": 500 });
   });
 
   it("persists empty object for nullish input", () => {
     saveWaterLog(null);
-    const stored = JSON.parse(globalThis.localStorage.getItem(WATER_LOG_KEY));
+    const stored = JSON.parse(globalThis.localStorage.getItem(WATER_LOG_KEY)!);
     expect(stored).toEqual({});
   });
 });

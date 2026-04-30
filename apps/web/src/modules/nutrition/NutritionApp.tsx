@@ -330,7 +330,7 @@ export default function NutritionApp({
   const wrappedSaveMeal = useCallback(
     async (meal: Meal) => {
       const isEdit = !!editingMeal?.id;
-      if (isEdit) {
+      if (isEdit && editingMeal && editingMeal.date) {
         log.handleEditMeal(editingMeal.date, meal);
         setEditingMeal(null);
       } else {
@@ -418,7 +418,7 @@ export default function NutritionApp({
                     <PhotoAnalyzeCard
                       busy={busy}
                       analyzePhoto={photo.analyzePhoto}
-                      fileRef={photo.fileRef}
+                      fileRef={photo.fileRef as React.Ref<HTMLInputElement>}
                       onPickPhoto={photo.onPickPhoto}
                       photoPreviewUrl={photo.photoPreviewUrl}
                       photoResult={photo.photoResult}
@@ -469,7 +469,7 @@ export default function NutritionApp({
                               onUndo: () => pantry.upsertItem(removed),
                             });
                           }
-                        } else {
+                        } else if (name) {
                           pantry.removeItem(name);
                         }
                       }}
