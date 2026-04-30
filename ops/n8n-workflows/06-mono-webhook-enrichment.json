@@ -1,87 +1,82 @@
 {
-  "name": "06 - Mono AI Enrichment (server outbox -> categorize -> budget alert)",
+  "name": "06 — Mono Webhook Enrichment (Mono → AI categorize → budget alert)",
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [{ "field": "minutes", "minutesInterval": 5 }]
+        "httpMethod": "POST",
+        "path": "mono-transaction",
+        "options": {
+          "rawBody": true
         }
       },
-      "id": "schedule",
-      "name": "Every 5 minutes",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.2,
-      "position": [180, 300]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "WITH next_jobs AS (\n  SELECT q.id, q.user_id, q.mono_tx_id, t.description, t.amount, t.mcc\n  FROM mono_ai_enrichment_queue q\n  JOIN mono_transaction t\n    ON t.user_id = q.user_id AND t.mono_tx_id = q.mono_tx_id\n  WHERE q.status IN ('pending', 'failed')\n    AND q.available_at <= NOW()\n    AND q.attempts < 5\n  ORDER BY q.available_at ASC, q.id ASC\n  LIMIT 10\n  FOR UPDATE SKIP LOCKED\n), claimed AS (\n  UPDATE mono_ai_enrichment_queue q\n  SET status = 'processing', attempts = q.attempts + 1, updated_at = NOW()\n  FROM next_jobs j\n  WHERE q.id = j.id\n  RETURNING q.id, j.user_id, j.mono_tx_id, j.description, j.amount, j.mcc\n)\nSELECT * FROM claimed;",
-        "options": {}
-      },
-      "id": "claim-jobs",
-      "name": "Claim pending enrichment jobs",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [420, 300],
-      "credentials": {
-        "postgres": { "id": "CONFIGURE_ME", "name": "Sergeant Postgres" }
-      }
+      "id": "mono-webhook",
+      "name": "Mono Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SERVER_INTERNAL_URL }}/api/internal/categorize",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.INTERNAL_API_KEY }}"
+              "name": "anthropic-version",
+              "value": "2023-06-01"
             },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"description\": \"{{ $json.description }}\",\n  \"amount\": {{ $json.amount || 0 }},\n  \"mcc\": {{ $json.mcc || 0 }}\n}",
+        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 100,\n  \"system\": \"You are a transaction categorizer for a Ukrainian personal finance app. Categorize the transaction into one of: groceries, transport, dining, entertainment, utilities, health, shopping, education, subscriptions, income, transfer, other. Respond with JSON only: {\\\"category\\\": \\\"...\\\", \\\"confidence\\\": 0.0-1.0}\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Transaction: {{ $('Mono Webhook').item.json.body.data.description }} Amount: {{ $('Mono Webhook').item.json.body.data.amount / 100 }} UAH MCC: {{ $('Mono Webhook').item.json.body.data.mcc }}\"\n    }\n  ]\n}",
         "options": {}
       },
-      "id": "categorize-internal",
-      "name": "POST /api/internal/categorize",
+      "id": "ai-categorize",
+      "name": "AI → categorize",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [660, 300],
-      "continueOnFail": true
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "UPDATE mono_transaction\nSET ai_category_slug = '{{ $json.category || \"other\" }}',\n    ai_category_confidence = {{ $json.confidence || 0 }},\n    ai_categorized_at = NOW()\nWHERE user_id = '{{ $('Claim pending enrichment jobs').item.json.user_id }}'\n  AND mono_tx_id = '{{ $('Claim pending enrichment jobs').item.json.mono_tx_id }}';\n\nUPDATE mono_ai_enrichment_queue\nSET status = 'done', processed_at = NOW(), updated_at = NOW(), last_error = NULL\nWHERE id = {{ $('Claim pending enrichment jobs').item.json.id }};",
-        "options": {}
-      },
-      "id": "mark-done",
-      "name": "Persist AI category and mark done",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [900, 220],
+      "position": [460, 300],
       "credentials": {
-        "postgres": { "id": "CONFIGURE_ME", "name": "Sergeant Postgres" }
+        "httpHeaderAuth": {
+          "id": "pr5jBxG3VFXSX5NB",
+          "name": "Anthropic (x-api-key)"
+        }
       }
     },
     {
       "parameters": {
+        "jsCode": "// Parse Anthropic response. content[0].text is supposed to be raw JSON like\n// {\"category\":\"groceries\",\"confidence\":0.9}, but Claude often wraps it in a\n// markdown fence (```json ... ```) or in prose. Strip the fence and fall back to\n// the first {...} block before parsing.\nconst raw = $input.first().json?.content?.[0]?.text ?? '';\nfunction extractJson(s) {\n  const fenced = s.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/i);\n  if (fenced) return fenced[1].trim();\n  const obj = s.match(/\\{[\\s\\S]*\\}/);\n  return obj ? obj[0] : s;\n}\nlet parsed;\ntry {\n  parsed = JSON.parse(extractJson(raw));\n} catch (e) {\n  parsed = { category: 'other', confidence: 0 };\n}\nreturn [{ json: { category: parsed.category ?? 'other', confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0 } }];"
+      },
+      "id": "parse-ai",
+      "name": "Parse AI response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
         "operation": "executeQuery",
-        "query": "UPDATE mono_ai_enrichment_queue\nSET status = 'failed',\n    last_error = LEFT('{{ JSON.stringify($json.error || $json) }}', 1000),\n    available_at = NOW() + INTERVAL '15 minutes',\n    updated_at = NOW()\nWHERE id = {{ $('Claim pending enrichment jobs').item.json.id }};",
+        "query": "SELECT COALESCE(SUM(ABS(amount) / 100.0), 0)::numeric AS monthly_spent FROM mono_transaction WHERE user_id = '{{ $('Mono Webhook').item.json.body.user_id }}' AND time >= date_trunc('month', NOW()) AND amount < 0;",
         "options": {}
       },
-      "id": "mark-failed",
-      "name": "Mark enrichment failed",
+      "id": "check-budget",
+      "name": "Check monthly budget",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [900, 420],
+      "position": [900, 300],
       "credentials": {
-        "postgres": { "id": "CONFIGURE_ME", "name": "Sergeant Postgres" }
+        "postgres": {
+          "id": "pwwVNTLBw43PJgey",
+          "name": "Sergeant Postgres (sergeant-db)"
+        }
       }
     },
     {
@@ -89,68 +84,106 @@
         "conditions": {
           "conditions": [
             {
-              "id": "request-ok",
-              "leftValue": "={{ $json.category }}",
-              "rightValue": "",
-              "operator": { "type": "string", "operation": "notEmpty" }
+              "id": "over-budget",
+              "leftValue": "={{ Number($json.monthly_spent) }}",
+              "rightValue": 15000,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
             }
           ]
         }
       },
-      "id": "categorize-ok",
-      "name": "Categorize succeeded?",
+      "id": "budget-threshold",
+      "name": "Over ₴15K threshold?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [780, 300]
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "=💸 *Budget alert*\n\nMonthly spending: ₴{{ Math.round($json.monthly_spent) }}\nThreshold: ₴15,000\n\nLatest: {{ $('Mono Webhook').item.json.body.data.description }} (₴{{ Math.abs($('Mono Webhook').item.json.body.data.amount / 100) }})\nAI category: *{{ $('Parse AI response').item.json.category }}* ({{ Math.round($('Parse AI response').item.json.confidence * 100) }}%)",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-budget",
+      "name": "Telegram → budget alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1340, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      }
     }
   ],
   "connections": {
-    "Every 5 minutes": {
+    "Mono Webhook": {
       "main": [
         [
           {
-            "node": "Claim pending enrichment jobs",
+            "node": "AI → categorize",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Claim pending enrichment jobs": {
+    "AI → categorize": {
       "main": [
         [
           {
-            "node": "POST /api/internal/categorize",
+            "node": "Parse AI response",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "POST /api/internal/categorize": {
-      "main": [
-        [{ "node": "Categorize succeeded?", "type": "main", "index": 0 }]
-      ]
-    },
-    "Categorize succeeded?": {
+    "Parse AI response": {
       "main": [
         [
           {
-            "node": "Persist AI category and mark done",
+            "node": "Check monthly budget",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check monthly budget": {
+      "main": [
+        [
+          {
+            "node": "Over ₴15K threshold?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Over ₴15K threshold?": {
+      "main": [
+        [
+          {
+            "node": "Telegram → budget alert",
             "type": "main",
             "index": 0
           }
         ],
-        [{ "node": "Mark enrichment failed", "type": "main", "index": 0 }]
+        []
       ]
     }
   },
-  "settings": { "executionOrder": "v1", "timezone": "Europe/Kyiv" },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv"
+  },
   "active": false,
-  "tags": [
-    { "name": "finyk" },
-    { "name": "mono" },
-    { "name": "ai" },
-    { "name": "outbox" }
-  ]
+  "tags": []
 }

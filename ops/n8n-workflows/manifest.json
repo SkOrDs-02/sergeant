@@ -6,47 +6,36 @@
       "owner": "ops",
       "status": "prod-ready",
       "riskTier": "P0",
-      "requiredEnv": [
-        "STRIPE_WEBHOOK_SECRET",
-        "SERVER_INTERNAL_URL",
-        "INTERNAL_API_KEY",
-        "TELEGRAM_ALERT_CHAT_ID"
+      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
+      "requiredCredentials": [
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)"
       ],
-      "requiredCredentials": ["Sergeant Postgres", "Sergeant Ops Bot"],
-      "notes": "Stripe subscription webhook. Public webhook requires raw body, HMAC verification, and idempotency."
+      "notes": "Stripe subscription webhook → update DB to Pro → Telegram notification."
     },
     "02-failed-payment-recovery.json": {
       "owner": "ops",
       "status": "prod-ready",
       "riskTier": "P0",
-      "requiredEnv": [
-        "STRIPE_WEBHOOK_SECRET",
-        "SERVER_INTERNAL_URL",
-        "INTERNAL_API_KEY",
-        "TELEGRAM_ALERT_CHAT_ID"
-      ],
+      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
       "requiredCredentials": [
-        "Sergeant Postgres",
-        "Sergeant Ops Bot",
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)",
         "Resend (Bearer)"
       ],
-      "notes": "Stripe failed-payment webhook. Public webhook requires raw body, HMAC verification, and idempotency."
+      "notes": "Stripe failed-payment webhook → Telegram + Resend email → 24h wait → downgrade if >=4 attempts."
     },
     "03-sentry-alert-routing.json": {
       "owner": "ops",
       "status": "prod-ready",
       "riskTier": "P1",
-      "requiredEnv": ["SENTRY_WEBHOOK_SECRET", "TELEGRAM_ALERT_CHAT_ID"],
-      "requiredCredentials": [
-        "Sergeant Postgres",
-        "Sergeant Ops Bot",
-        "Anthropic (x-api-key)"
-      ],
-      "notes": "Sentry webhook alert routing with signature verification and idempotency."
+      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
+      "notes": "Sentry webhook → severity filter → fatal/warning → Telegram."
     },
     "04-daily-backup-verification.json": {
       "owner": "ops",
-      "status": "experimental",
+      "status": "prod-ready",
       "riskTier": "P1",
       "requiredEnv": [
         "RAILWAY_TOKEN",
@@ -54,30 +43,30 @@
         "TELEGRAM_ALERT_CHAT_ID"
       ],
       "requiredCredentials": [
-        "Sergeant Postgres (staging)",
-        "Sergeant Ops Bot"
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)"
       ],
-      "notes": "Backup restore smoke; keep inactive until staging restore credentials are configured."
+      "notes": "Cron 03:00 UTC → Railway API latest deployments → Sanity SQL check → Telegram OK/CRITICAL."
     },
     "05-renovate-pr-auto-handler.json": {
       "owner": "devex",
-      "status": "experimental",
+      "status": "prod-ready",
       "riskTier": "P1",
-      "requiredEnv": [
-        "GITHUB_WEBHOOK_SECRET",
-        "GITHUB_TOKEN",
-        "TELEGRAM_ALERT_CHAT_ID"
-      ],
-      "requiredCredentials": ["Sergeant Postgres", "Sergeant Ops Bot"],
-      "notes": "GitHub webhook for Renovate PR handling. Mutating actions must stay constrained to patch updates."
+      "requiredEnv": ["GITHUB_TOKEN", "TELEGRAM_ALERT_CHAT_ID"],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
+      "notes": "GitHub webhook → Renovate PR → auto-approve patch / Telegram review needed."
     },
     "06-mono-webhook-enrichment.json": {
       "owner": "finyk",
-      "status": "experimental",
+      "status": "prod-ready",
       "riskTier": "P1",
-      "requiredEnv": ["SERVER_INTERNAL_URL", "INTERNAL_API_KEY"],
-      "requiredCredentials": ["Sergeant Postgres"],
-      "notes": "Cron worker over server-owned mono_ai_enrichment_queue. Must not expose a public Mono webhook."
+      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
+      "requiredCredentials": [
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)",
+        "Anthropic (x-api-key)"
+      ],
+      "notes": "Mono webhook → Claude AI categorize → monthly budget check → Telegram alert if over ₴15K."
     },
     "07-morning-briefing-push.json": {
       "owner": "product",

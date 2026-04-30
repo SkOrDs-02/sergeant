@@ -5,7 +5,9 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "sentry-alert",
-        "options": { "rawBody": true }
+        "options": {
+          "rawBody": true
+        }
       },
       "id": "sentry-webhook",
       "name": "Sentry Webhook",
@@ -15,61 +17,16 @@
     },
     {
       "parameters": {
-        "jsCode": "// Verify Sentry webhook HMAC-SHA256 signature.\n// Header: sentry-hook-signature (plain hex, no prefix)\n// Docs: https://docs.sentry.io/organization/integrations/integration-platform/webhooks/\nconst crypto = require('crypto');\n\nconst item = $input.first();\nconst rawBody = item.json.rawBody;\nconst received = item.json.headers['sentry-hook-signature'] || '';\nconst secret = $env.SENTRY_WEBHOOK_SECRET;\n\nif (!secret) throw new Error('SENTRY_WEBHOOK_SECRET is not set');\nif (!received) throw new Error('Missing sentry-hook-signature header');\n\nconst expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');\n\nconst expBuf = Buffer.from(expected, 'hex');\nconst recBuf = Buffer.from(received, 'hex');\nif (expBuf.length !== recBuf.length || !crypto.timingSafeEqual(expBuf, recBuf)) {\n  throw new Error('Sentry signature mismatch');\n}\n\nreturn $input.all();"
-      },
-      "id": "verify-signature",
-      "name": "Verify Sentry Signature",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [460, 300]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "INSERT INTO webhook_events (source, event_id)\nVALUES ('sentry', COALESCE('{{ $('Sentry Webhook').item.json.headers[\"sentry-hook-id\"] }}', gen_random_uuid()::text))\nON CONFLICT (source, event_id) DO NOTHING\nRETURNING id;",
-        "options": {}
-      },
-      "id": "idempotency-check",
-      "name": "Idempotency Insert",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [680, 300],
-      "credentials": {
-        "postgres": {
-          "id": "CONFIGURE_ME",
-          "name": "Sergeant Postgres"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "conditions": [
-            {
-              "id": "already-processed",
-              "leftValue": "={{ $json.id }}",
-              "rightValue": "",
-              "operator": { "type": "string", "operation": "notEmpty" }
-            }
-          ],
-          "combinator": "and"
-        }
-      },
-      "id": "is-new-event",
-      "name": "New event?",
-      "type": "n8n-nodes-base.filter",
-      "typeVersion": 2,
-      "position": [900, 300]
-    },
-    {
-      "parameters": {
         "conditions": {
           "conditions": [
             {
               "id": "severity-filter",
-              "leftValue": "={{ $('Sentry Webhook').item.json.body.data.issue.level }}",
+              "leftValue": "={{ $json.body.data.issue.level }}",
               "rightValue": "info",
-              "operator": { "type": "string", "operation": "notEquals" }
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
             }
           ]
         }
@@ -78,7 +35,7 @@
       "name": "Severity >= warning?",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
-      "position": [1120, 300]
+      "position": [460, 300]
     },
     {
       "parameters": {
@@ -86,9 +43,12 @@
           "conditions": [
             {
               "id": "is-fatal",
-              "leftValue": "={{ $('Sentry Webhook').item.json.body.data.issue.level }}",
+              "leftValue": "={{ $json.body.data.issue.level }}",
               "rightValue": "fatal",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ]
         }
@@ -97,64 +57,95 @@
       "name": "Is fatal?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1340, 300]
+      "position": [680, 300]
     },
     {
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
-        "text": "=🚨 *FATAL — Sentry*\n\n*{{ $('Sentry Webhook').item.json.body.data.issue.title }}*\nProject: {{ $('Sentry Webhook').item.json.body.data.issue.project.name }}\nEvents: {{ $('Sentry Webhook').item.json.body.data.issue.count }}\n[Open in Sentry]({{ $('Sentry Webhook').item.json.body.data.issue.permalink }})",
-        "additionalFields": { "parse_mode": "Markdown" }
+        "text": "=🚨 *FATAL — Sentry*\n\n*{{ $json.body.data.issue.title }}*\nProject: {{ $json.body.data.issue.project.name }}\nEvents: {{ $json.body.data.issue.count }}\n[Open in Sentry]({{ $json.body.data.issue.permalink }})",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
       },
       "id": "telegram-fatal",
       "name": "Telegram → FATAL",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1560, 200],
+      "position": [900, 200],
       "credentials": {
-        "telegramApi": { "id": "CONFIGURE_ME", "name": "Sergeant Ops Bot" }
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
       }
     },
     {
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
-        "text": "=⚠️ *Sentry — {{ $('Sentry Webhook').item.json.body.data.issue.level }}*\n\n*{{ $('Sentry Webhook').item.json.body.data.issue.title }}*\nProject: {{ $('Sentry Webhook').item.json.body.data.issue.project.name }}\nEvents: {{ $('Sentry Webhook').item.json.body.data.issue.count }}\n[Open in Sentry]({{ $('Sentry Webhook').item.json.body.data.issue.permalink }})",
-        "additionalFields": { "parse_mode": "Markdown" }
+        "text": "=⚠️ *Sentry — {{ $json.body.data.issue.level }}*\n\n*{{ $json.body.data.issue.title }}*\nProject: {{ $json.body.data.issue.project.name }}\nEvents: {{ $json.body.data.issue.count }}\n[Open in Sentry]({{ $json.body.data.issue.permalink }})",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
       },
       "id": "telegram-warning",
       "name": "Telegram → warning",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1560, 400],
+      "position": [900, 400],
       "credentials": {
-        "telegramApi": { "id": "CONFIGURE_ME", "name": "Sergeant Ops Bot" }
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
       }
     }
   ],
   "connections": {
     "Sentry Webhook": {
       "main": [
-        [{ "node": "Verify Sentry Signature", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Severity >= warning?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Verify Sentry Signature": {
-      "main": [[{ "node": "Idempotency Insert", "type": "main", "index": 0 }]]
-    },
-    "Idempotency Insert": {
-      "main": [[{ "node": "New event?", "type": "main", "index": 0 }]]
-    },
-    "New event?": {
-      "main": [[{ "node": "Severity >= warning?", "type": "main", "index": 0 }]]
-    },
     "Severity >= warning?": {
-      "main": [[{ "node": "Is fatal?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Is fatal?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Is fatal?": {
       "main": [
-        [{ "node": "Telegram → FATAL", "type": "main", "index": 0 }],
-        [{ "node": "Telegram → warning", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Telegram → FATAL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram → warning",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
-  "settings": { "executionOrder": "v1", "timezone": "Europe/Kyiv" },
-  "tags": [{ "name": "sentry" }, { "name": "incidents" }]
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv"
+  },
+  "active": false,
+  "tags": []
 }
