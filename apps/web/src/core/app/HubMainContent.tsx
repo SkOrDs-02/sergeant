@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { type User } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -16,6 +16,13 @@ interface HubSectionFallbackProps {
   resetError: () => void;
 }
 
+interface HubChromeBannerProps {
+  iconName: string;
+  title: string;
+  description?: string;
+  children: ReactNode;
+}
+
 // Дешевий inline-fallback для секцій хаба: повідомляємо про збій і
 // даємо кнопку `reset`, щоб спробувати перемонтувати секцію без
 // перезавантаження вкладки. Шапка/таби лишаються робочими, бо
@@ -31,6 +38,33 @@ function HubSectionFallback({ resetError }: HubSectionFallbackProps) {
       >
         Спробувати ще раз
       </button>
+    </div>
+  );
+}
+
+function HubChromeBanner({
+  iconName,
+  title,
+  description,
+  children,
+}: HubChromeBannerProps) {
+  return (
+    <div className="px-5 max-w-lg mx-auto w-full mb-2">
+      <Card
+        variant="default"
+        radius="lg"
+        padding="none"
+        className="px-4 py-3 flex items-center gap-3"
+      >
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+          <Icon name={iconName} size={20} className="text-primary" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-text">{title}</p>
+          {description && <p className="text-xs text-muted">{description}</p>}
+        </div>
+        {children}
+      </Card>
     </div>
   );
 }
@@ -92,90 +126,43 @@ export const HubMainContent = memo(function HubMainContent({
   return (
     <>
       {showUpdate && (
-        <div className="px-5 max-w-lg mx-auto w-full mb-2">
-          <div className="px-4 py-3 rounded-2xl bg-primary/10 border border-primary/20 flex items-center gap-3">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-primary shrink-0"
-              aria-hidden
-            >
-              <polyline points="23 4 23 10 17 10" />
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-            </svg>
-            <span className="text-sm text-text flex-1">
-              Доступна нова версія
-            </span>
-            <button
-              onClick={onApplyUpdate}
-              className="text-sm font-semibold text-primary hover:underline shrink-0"
-            >
-              Оновити
-            </button>
-          </div>
-        </div>
+        <HubChromeBanner iconName="refresh-cw" title="Доступна нова версія">
+          <Button
+            variant="secondary"
+            size="xs"
+            onClick={onApplyUpdate}
+            className="shrink-0 font-semibold"
+          >
+            Оновити
+          </Button>
+        </HubChromeBanner>
       )}
 
       {showInstall && (
-        <div className="px-5 max-w-lg mx-auto w-full mb-2">
-          <Card
-            variant="default"
-            radius="lg"
-            padding="none"
-            className="px-4 py-3 flex items-center gap-3"
+        <HubChromeBanner
+          iconName="download"
+          title="Встановити додаток"
+          description="Офлайн · пуш-нагадування · ярлик на екрані"
+        >
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={onInstall}
+            className="shrink-0 font-semibold"
           >
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-primary"
-                aria-hidden
-              >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-text">
-                Встановити додаток
-              </p>
-              <p className="text-xs text-muted">
-                Офлайн · пуш-нагадування · ярлик на ��крані
-              </p>
-            </div>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={onInstall}
-              className="shrink-0 font-semibold"
-            >
-              Так
-            </Button>
-            <Button
-              variant="ghost"
-              size="xs"
-              iconOnly
-              onClick={onDismissInstall}
-              aria-label="Закрити"
-              className="shrink-0 text-muted hover:text-text"
-            >
-              <Icon name="close" size={16} />
-            </Button>
-          </Card>
-        </div>
+            Так
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            iconOnly
+            onClick={onDismissInstall}
+            aria-label="Закрити"
+            className="shrink-0 text-muted hover:text-text"
+          >
+            <Icon name="close" size={16} />
+          </Button>
+        </HubChromeBanner>
       )}
 
       {showIos && <IOSInstallBanner onDismiss={onDismissIos} />}

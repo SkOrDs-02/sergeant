@@ -33,6 +33,9 @@ export default defineConfig(({ mode }) => {
     process.env.GITHUB_SHA ||
     process.env.BUILD_ID ||
     String(Date.now());
+  const outDir =
+    env.VITE_BUILD_OUT_DIR ||
+    (process.env.VERCEL === "1" ? "dist" : "../server/dist");
 
   return {
     define: {
@@ -132,7 +135,7 @@ export default defineConfig(({ mode }) => {
         }),
     ].filter(Boolean),
     build: {
-      outDir: "../server/dist",
+      outDir,
       emptyOutDir: true,
       rollupOptions: {
         output: {

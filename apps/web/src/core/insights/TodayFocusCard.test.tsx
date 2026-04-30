@@ -382,10 +382,7 @@ describe("TodayFocusCard", () => {
       />,
     );
 
-    const buttons = screen.getAllByRole("button");
-    const dismissBtn = buttons.find((b) => b.textContent?.trim() === "Пізніше");
-    expect(dismissBtn).toBeDefined();
-    fireEvent.click(dismissBtn!);
+    fireEvent.click(screen.getByRole("button", { name: "Закрити підказку" }));
     expect(onDismiss).toHaveBeenCalledWith("routine_evening_reminder");
   });
 

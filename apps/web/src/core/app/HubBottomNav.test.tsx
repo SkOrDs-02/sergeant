@@ -78,6 +78,20 @@ describe("HubBottomNav", () => {
     expect(dashboard).toHaveAttribute("aria-selected", "false");
   });
 
+  it("рендерить один sliding pill для активного таба", () => {
+    const { container } = renderNav({ hubView: "settings" });
+
+    const indicator = screen.getByTestId("hub-bottom-nav-active-indicator");
+    expect(
+      container.querySelectorAll(
+        '[data-testid="hub-bottom-nav-active-indicator"]',
+      ),
+    ).toHaveLength(1);
+    expect(indicator).toHaveStyle({
+      left: "calc(2 * (100% / 3) + (100% / 3 - 2.5rem) / 2)",
+    });
+  });
+
   it("виклик onChange при кліку на таб", () => {
     const { onChange } = renderNav({});
     fireEvent.click(screen.getByRole("tab", { name: /Налаштування/ }));

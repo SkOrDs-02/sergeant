@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ToastProvider } from "@shared/hooks/useToast";
 import { ModuleChecklist } from "./ModuleChecklist";
 
 vi.mock("@shared/lib/haptic", () => ({
@@ -20,7 +21,11 @@ describe("ModuleChecklist", () => {
   });
 
   it("keeps earlier checklist steps checked when another checkbox is selected", () => {
-    render(<ModuleChecklist moduleId="finyk" />);
+    render(
+      <ToastProvider>
+        <ModuleChecklist moduleId="finyk" />
+      </ToastProvider>,
+    );
 
     const addExpense = screen.getByRole("checkbox", {
       name: "Додати першу витрату",

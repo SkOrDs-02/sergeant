@@ -4,12 +4,15 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   DASHBOARD_MODULE_LABELS,
+  FIRST_REAL_ENTRY_KEY,
   HIDE_INACTIVE_MODULES_KEY,
+  MODULE_CHECKLISTS,
   STORAGE_KEYS,
   VIBE_PICKS_KEY,
   type Rec,
 } from "@sergeant/shared";
 import { getModulePrimaryAction } from "@shared/lib/moduleQuickActions";
+import { ToastProvider } from "@shared/hooks/useToast";
 import { MODULE_CONFIGS } from "./dashboard/moduleConfigs";
 
 type TestRec = Rec & { actionHash?: string };
@@ -251,11 +254,13 @@ function renderDashboard({
   onShowAuth?: () => void;
 } = {}) {
   render(
-    <HubDashboard
-      user={null}
-      onOpenModule={onOpenModule}
-      onShowAuth={onShowAuth}
-    />,
+    <ToastProvider>
+      <HubDashboard
+        user={null}
+        onOpenModule={onOpenModule}
+        onShowAuth={onShowAuth}
+      />
+    </ToastProvider>,
   );
   return { onOpenModule, onShowAuth };
 }
@@ -316,6 +321,21 @@ describe("HubDashboard", () => {
     expect(screen.getAllByText(MODULE_CONFIGS.fizruk.emptyLabel)).toHaveLength(
       2,
     );
+  });
+
+  it("keeps the pre-FTUX dashboard focused on first-entry guidance", () => {
+    localStorage.removeItem(FIRST_REAL_ENTRY_KEY);
+
+    renderDashboard();
+
+    expect(screen.getByTestId("today-focus-card")).toBeInTheDocument();
+    expect(screen.getByText(MODULE_CHECKLISTS.finyk.title)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "summary-open-routine" }),
+    ).toBeNull();
+    expect(screen.queryByTestId("assistant-advice-card")).toBeNull();
+    expect(screen.queryByTestId("hub-insights-panel")).toBeNull();
+    expect(screen.queryByTestId("weekly-digest-footer")).toBeNull();
   });
 
   it("opens module cards and keeps quick-add actions scoped to active modules with recommendation signal", () => {
