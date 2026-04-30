@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR) — реєстр рішень
 
-> **Last validated:** 2026-04-29 by @devin-ai. **Next review:** 2026-07-29.
+> **Last validated:** 2026-04-30 by @devin-ai. **Next review:** 2026-07-29.
 > **Status:** Active
 
 > Архітектурні рішення Sergeant. Кожен ADR фіксує **рішення з контекстом і альтернативами**, щоб через рік не довелось гадати «чому ми тут зробили так, а не інакше».
@@ -94,5 +94,9 @@ pnpm gen:adr
 | 0023 | Turborepo as monorepo task runner               | accepted | 2026-04-27 | `turbo@2` поверх pnpm-workspace; task-граф у `turbo.json`; remote-cache opt-in через `TURBO_TOKEN`.      |
 | 0024 | Monorepo split — `apps/*` + `packages/*`        | accepted | 2026-04-27 | Деплоюються `apps/*`, перевикористовуються `packages/*`; `packages/*` ніколи не імпортує з `apps/*`.     |
 | 0025 | OpenAPI 3.1 spec — generated from zod-схем      | accepted | 2026-04-27 | `docs/api/openapi.json` згенеровано з canonical zod-схем; freshness-скрипт ловить drift у rule #3.       |
+| 0026 | n8n — джерело істини для воркфлоу               | accepted | 2026-04-27 | Git — джерело істини для n8n; JSON у `ops/n8n-workflows/` + manifest з owner / risk / secrets.           |
+| 0027 | Політика OpenClaw, Console та MCP               | accepted | 2026-04-27 | `apps/console` як internal admin; allowlist по Telegram user-id; вивід агента — untrusted.               |
 
-> **Note on numbering 0016–0022 jump:** ADRs `0016`–`0022` — це retroactive batch, що був написаний паралельно з `0006`–`0012`. Через паралельне виконання Devin-сесій виникли колізії номерів `0003`–`0012`. Розв'язано через PR `docs(adr): resolve numbering collisions` — same-topic дублі (refund, anthropic, PII) видалено, late-comers перенумеровано в `0016`+. ADRs нумеруються **sequentially without gaps** надалі — наступний номер `0026`.
+> **Note on numbering 0016–0022 jump:** ADRs `0016`–`0022` — це retroactive batch, що був написаний паралельно з `0006`–`0012`. Через паралельне виконання Devin-сесій виникли колізії номерів `0003`–`0012`. Розв'язано через PR `docs(adr): resolve numbering collisions` — same-topic дублі (refund, anthropic, PII) видалено, late-comers перенумеровано в `0016`+. ADRs нумеруються **sequentially without gaps** надалі — наступний номер `0028`.
+
+> **Graph integrity:** Парсинг метаданих ADR (`Status:` / `Supersedes:`, з підтримкою англо- та україномовних назв полів — див. ADR-0026/0027) і перевірка індексу + бідіректіонального supersede-зв'язку автоматизовані: `node scripts/docs/check-adr-graph.mjs` (CI gate в `docs-automation.yml`).
