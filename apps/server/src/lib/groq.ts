@@ -1,4 +1,5 @@
 import { recordExternalHttp } from "./externalHttp.js";
+import { elapsedMs, isAbortError } from "./timing.js";
 
 const GROQ_TRANSCRIBE_URL =
   "https://api.groq.com/openai/v1/audio/transcriptions";
@@ -112,7 +113,7 @@ export async function transcribeAudio(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const signal = composeSignal(controller, opts.signal);
-  const startedAt = Date.now();
+  const startedAt = process.hrtime.bigint();
 
   let response: Response | null = null;
   try {
@@ -123,8 +124,8 @@ export async function transcribeAudio(
       signal,
     });
   } catch (err) {
-    const ms = Date.now() - startedAt;
-    const aborted = (err as { name?: string })?.name === "AbortError";
+    const ms = elapsedMs(startedAt);
+    const aborted = isAbortError(err);
     const outcome = aborted ? "timeout" : "error";
     recordExternalHttp("groq", outcome, ms);
     throw new GroqTranscribeError(
@@ -136,7 +137,7 @@ export async function transcribeAudio(
     clearTimeout(timer);
   }
 
-  const ms = Date.now() - startedAt;
+  const ms = elapsedMs(startedAt);
 
   if (!response.ok) {
     let detail = "";

@@ -246,7 +246,7 @@ export function snapshotHabit(
  */
 export function applyRestoreHabit(
   state: RoutineState,
-  snapshot: HabitSnapshot | null,
+  snapshot: HabitSnapshot | null | undefined,
 ): RoutineState {
   if (!snapshot || !snapshot.habit || !snapshot.habit.id) return state;
   const { habit, completions, notes, orderIndex } = snapshot;

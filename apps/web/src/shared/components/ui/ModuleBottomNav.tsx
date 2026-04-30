@@ -94,6 +94,7 @@ export function ModuleBottomNav({
 }: ModuleBottomNavProps) {
   const tokens = COLORS[module];
   const isTablist = role === "tablist";
+  const activeIndex = items.findIndex((i) => i.id === activeId);
 
   return (
     <nav
@@ -106,9 +107,24 @@ export function ModuleBottomNav({
       aria-label={ariaLabel}
     >
       <div
-        className="flex h-[60px] [@media(pointer:coarse)]:h-[64px]"
+        className="relative flex h-[60px] [@media(pointer:coarse)]:h-[64px]"
         role={isTablist ? "tablist" : undefined}
       >
+        {/* Sliding pill indicator — single element that translates to active tab */}
+        {activeIndex >= 0 && (
+          <span
+            className={cn(
+              "absolute top-0 h-1 w-10 rounded-full shadow-sm pointer-events-none",
+              "transition-[left] duration-200 ease-out",
+              tokens.pill,
+            )}
+            style={{
+              left: `calc(${activeIndex} * (100% / ${items.length}) + (100% / ${items.length} - 2.5rem) / 2)`,
+            }}
+            aria-hidden
+          />
+        )}
+
         {items.map((item) => {
           const active = activeId === item.id;
           return (
@@ -132,16 +148,6 @@ export function ModuleBottomNav({
                 active ? "text-text" : "text-muted hover:text-text/70",
               )}
             >
-              {active && (
-                <span
-                  className={cn(
-                    "absolute top-0 left-1/2 -translate-x-1/2",
-                    "w-10 h-1 rounded-full shadow-sm",
-                    tokens.pill,
-                  )}
-                  aria-hidden
-                />
-              )}
               <span
                 className={cn(
                   "relative transition-all duration-200",

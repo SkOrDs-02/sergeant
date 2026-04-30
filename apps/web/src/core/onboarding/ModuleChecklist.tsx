@@ -12,6 +12,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { AnimatedCheckbox } from "@shared/components/ui/AnimatedCheckbox";
 import { hapticTap } from "@shared/lib/haptic";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { useToast } from "@shared/hooks/useToast";
 import {
   MODULE_CHECKLISTS,
   getChecklistState,
@@ -81,6 +82,7 @@ export function ModuleChecklist({
   className,
   compact = false,
 }: ModuleChecklistProps) {
+  const toast = useToast();
   const [visible, setVisible] = useState(() =>
     isChecklistVisible(localStorageStore, moduleId),
   );
@@ -111,8 +113,12 @@ export function ModuleChecklist({
   const handleStepDone = useCallback(
     (stepId: string, action?: string) => {
       hapticTap();
+      let justCompleted = false;
       setState((previousState) => {
         const persistedState = getChecklistState(localStorageStore, moduleId);
+        const previouslyDone =
+          persistedState.completedSteps.length >= def.steps.length ||
+          previousState.completedSteps.length >= def.steps.length;
         const completedSteps = Array.from(
           new Set([
             ...persistedState.completedSteps,
@@ -126,14 +132,23 @@ export function ModuleChecklist({
           firstSeenAt: previousState.firstSeenAt ?? persistedState.firstSeenAt,
         };
         saveChecklistState(localStorageStore, moduleId, next);
+        if (!previouslyDone && completedSteps.length >= def.steps.length) {
+          justCompleted = true;
+        }
         return next;
       });
 
       if (action) {
         onAction?.(action);
       }
+
+      // Celebrate only on the transition to "all done"; auto-hide is handled
+      // by the useEffect below so we don't double-fire setTimeout here.
+      if (justCompleted) {
+        toast.success(`${def.title}: перші кроки виконано! 🎉`, 4000);
+      }
     },
-    [moduleId, onAction],
+    [moduleId, onAction, def.steps.length, def.title, toast],
   );
 
   useEffect(() => {

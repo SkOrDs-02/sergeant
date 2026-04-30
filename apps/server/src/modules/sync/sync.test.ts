@@ -276,6 +276,31 @@ describe("syncPushAll metric correctness around transaction boundary", () => {
       module: "nutrition",
     });
   });
+
+  it("missing clientUpdatedAt in push_all → 400 before transaction", async () => {
+    const res = makeRes();
+
+    await syncPushAll(
+      makeReq({
+        modules: {
+          finyk: { data: { x: 1 } },
+        },
+      }),
+      res,
+    );
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toMatchObject({ error: "Некоректні дані запиту" });
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: "modules.finyk.clientUpdatedAt" }),
+      ]),
+    );
+    expect(pool.connect).not.toHaveBeenCalled();
+    expect(syncOperationsTotal.inc.mock.calls.map(([l]) => l)).toContainEqual(
+      expect.objectContaining({ op: "push_all", outcome: "invalid" }),
+    );
+  });
 });
 
 describe("syncPullAll module filtering", () => {

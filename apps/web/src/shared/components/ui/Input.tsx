@@ -84,6 +84,12 @@ export interface InputProps extends Omit<
   helperText?: string;
   /** Input label — rendered above the field with correct `htmlFor`. */
   label?: string;
+  /**
+   * When `true` (or when `maxLength` is set and a `value` prop is present),
+   * renders a live "12/50" counter in the helper row. Color shifts to
+   * warning at ≥80 % and danger at 100 %.
+   */
+  showCharCount?: boolean;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
@@ -101,6 +107,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     type,
     spellCheck,
     inputMode,
+    showCharCount,
     ...props
   },
   ref,
@@ -110,6 +117,16 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     : success
       ? "border-brand-400 focus-visible:border-brand-500 focus-visible:ring-brand-500/25"
       : "";
+
+  const maxLen = props.maxLength;
+  const currentLen = maxLen !== undefined ? String(props.value ?? "").length : 0;
+  const renderCounter = (showCharCount || maxLen !== undefined) && maxLen !== undefined;
+  const counterColor =
+    currentLen >= maxLen!
+      ? "text-danger"
+      : currentLen / maxLen! >= 0.8
+        ? "text-warning"
+        : "text-subtle";
 
   // Type-aware defaults. The caller's explicit prop always wins — these
   // only fill in when `undefined` so existing call sites don't change.
@@ -161,16 +178,31 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           </div>
         )}
       </div>
-      {helperText && (
-        <p
-          id={id ? `${id}-helper` : undefined}
-          className={cn(
-            "text-xs leading-snug",
-            error ? "text-danger" : "text-subtle",
+      {(helperText || renderCounter) && (
+        <div className="flex items-center justify-between gap-2">
+          {helperText ? (
+            <p
+              id={id ? `${id}-helper` : undefined}
+              className={cn(
+                "text-xs leading-snug",
+                error ? "text-danger" : "text-subtle",
+              )}
+            >
+              {helperText}
+            </p>
+          ) : (
+            <span />
           )}
-        >
-          {helperText}
-        </p>
+          {renderCounter && (
+            <span
+              className={cn("text-xs tabular-nums shrink-0 transition-colors", counterColor)}
+              aria-live="polite"
+              aria-label={`${currentLen} з ${maxLen} символів`}
+            >
+              {currentLen}/{maxLen}
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

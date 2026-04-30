@@ -658,6 +658,26 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
                 );
               })}
             </div>
+            {/* When a module returns exactly 10 hits the list is saturated —
+                there may be more results. Show a link to open the module so
+                the user can browse/filter there instead of refining here. */}
+            {group.items.length >= 10 && (
+              <button
+                type="button"
+                onClick={() => {
+                  hapticTap();
+                  commitQuery(query);
+                  onOpenModule(moduleId);
+                  onClose();
+                }}
+                className="mt-1.5 w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45"
+              >
+                <span>Показано {group.items.length} — відкрити {group.label}</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            )}
           </div>
         ))}
       </div>

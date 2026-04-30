@@ -210,7 +210,7 @@ export function RoutineCalendarMonthGrid({
                   {e.habitId && (
                     <button
                       type="button"
-                      onClick={() => onToggleHabit(e.habitId, e.date)}
+                      onClick={() => onToggleHabit(e.habitId!, e.date)}
                       className={cn(
                         "w-7 h-7 rounded-lg border flex items-center justify-center text-xs font-bold transition-colors shrink-0",
                         e.completed
