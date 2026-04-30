@@ -420,59 +420,11 @@ export function HubDashboard({
         </StaggerChild>
       )}
 
-      {/* FTUX-гейт: до першого реального запису всі data-driven блоки
-       * приховуємо, бо вони порожні / сигнал «advice без даних».
-       * - TodaySummaryStrip — нулі по всіх модулях.
-       * - AssistantAdviceCard — coach працює на історії; нічого корисного.
-       * - DailyNudge — нудж за сценаріями, які ще не існують.
-       * Лишаємо: hero, checklist, module-bento (навігація), digest-fter.
-       * Після `hasRealEntry === true` блок з’являється цілісним пакетом. */}
-      {hasRealEntry && (
-        <>
-          {/* "Твій день" summary strip */}
-          <StaggerChild index={si++}>
-            <TodaySummaryStrip onOpenModule={onOpenModule} />
-          </StaggerChild>
-
-          {/* «Підказки» секція: AssistantAdvice + DailyNudge — обидві
-           * картки показували пораду на день, але рендерились як два
-           * незалежних блоки з різним візуальним chrome. Обʼєднання
-           * під одним SectionHeading знижує card-density (#1130).
-           * Collapsible so users with many modules can reduce scroll depth. */}
-          <StaggerChild index={si++}>
-            <CollapsibleSection
-              storageKey="sergeant:hub.hints.open"
-              title="Підказки"
-              collapsedIcon="lightbulb"
-              collapsedSubtitle={
-                coachLoading
-                  ? "Готую AI-пораду…"
-                  : coachError
-                    ? "Не вдалось отримати AI-пораду"
-                    : activeNudge && !reengagement.show
-                      ? "AI-порада + нагадування"
-                      : "AI-порада на день"
-              }
-            >
-              <AssistantAdviceCard
-                insight={coachInsightText}
-                loading={coachLoading}
-                error={coachError}
-                onRefresh={coachRefresh}
-              />
-              {activeNudge && !reengagement.show && (
-                <DailyNudge
-                  nudge={activeNudge}
-                  sessionDays={sessionDays}
-                  onDismiss={() => setNudgeDismissed(true)}
-                />
-              )}
-            </CollapsibleSection>
-          </StaggerChild>
-        </>
-      )}
-
-      {/* MODULE CARDS — 2×2 bento grid */}
+      {/* MODULE CARDS — 2×2 bento grid.
+       * Hoisted above the FTUX-gated Hints/Analytics block so the
+       * primary navigation surface is reachable above-the-fold on
+       * smaller viewports — secondary, data-dependent insights load
+       * underneath rather than burying the modules grid. */}
       <StaggerChild index={si++}>
         <section className="space-y-2">
           <div className="flex items-center justify-between gap-2 px-0.5">
@@ -541,6 +493,58 @@ export function HubDashboard({
           )}
         </section>
       </StaggerChild>
+
+      {/* FTUX-гейт: до першого реального запису всі data-driven блоки
+       * приховуємо, бо вони порожні / сигнал «advice без даних».
+       * - TodaySummaryStrip — нулі по всіх модулях.
+       * - AssistantAdviceCard — coach працює на історії; нічого корисного.
+       * - DailyNudge — нудж за сценаріями, які ще не існують.
+       * Лишаємо: hero, checklist, module-bento (навігація), digest-fter.
+       * Після `hasRealEntry === true` блок з’являється цілісним пакетом. */}
+      {hasRealEntry && (
+        <>
+          {/* "Твій день" summary strip */}
+          <StaggerChild index={si++}>
+            <TodaySummaryStrip onOpenModule={onOpenModule} />
+          </StaggerChild>
+
+          {/* «Підказки» секція: AssistantAdvice + DailyNudge — обидві
+           * картки показували пораду на день, але рендерились як два
+           * незалежних блоки з різним візуальним chrome. Обʼєднання
+           * під одним SectionHeading знижує card-density (#1130).
+           * Collapsible so users with many modules can reduce scroll depth. */}
+          <StaggerChild index={si++}>
+            <CollapsibleSection
+              storageKey="sergeant:hub.hints.open"
+              title="Підказки"
+              collapsedIcon="lightbulb"
+              collapsedSubtitle={
+                coachLoading
+                  ? "Готую AI-пораду…"
+                  : coachError
+                    ? "Не вдалось отримати AI-пораду"
+                    : activeNudge && !reengagement.show
+                      ? "AI-порада + нагадування"
+                      : "AI-порада на день"
+              }
+            >
+              <AssistantAdviceCard
+                insight={coachInsightText}
+                loading={coachLoading}
+                error={coachError}
+                onRefresh={coachRefresh}
+              />
+              {activeNudge && !reengagement.show && (
+                <DailyNudge
+                  nudge={activeNudge}
+                  sessionDays={sessionDays}
+                  onDismiss={() => setNudgeDismissed(true)}
+                />
+              )}
+            </CollapsibleSection>
+          </StaggerChild>
+        </>
+      )}
 
       {/* «Аналітика» секція (FTUX-гейт): insights-panel + weekly-digest —
        * обидва data-driven блоки на історії. До першого реального запису
