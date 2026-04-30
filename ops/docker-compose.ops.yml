@@ -113,6 +113,8 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/dashboards/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./grafana/dashboards/n8n-overview.json:/etc/grafana/provisioning/dashboards/n8n-overview.json:ro
     depends_on:
       - prometheus
     healthcheck:

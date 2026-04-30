@@ -10,11 +10,61 @@ groups:
           summary: "n8n metrics target is down"
           description: "Prometheus cannot scrape n8n /metrics for 5 minutes."
 
-      - alert: N8nWorkflowFailures
-        expr: increase(n8n_scaling_mode_queue_jobs_failed[15m]) > 0
+      - alert: N8nWorkflowErrors
+        expr: increase(n8n_workflow_production_error_total{job="n8n"}[15m]) > 0
         for: 0m
         labels:
           severity: ticket
         annotations:
-          summary: "n8n workflow failure observed"
-          description: "At least one n8n workflow failed in the last 15 minutes. Check workflow 98 dead-letter log."
+          summary: "n8n workflow error observed"
+          description: "At least one n8n production workflow failed in the last 15 minutes."
+
+      - alert: N8nHighErrorRate
+        expr: >
+          rate(n8n_workflow_production_error_total{job="n8n"}[30m])
+          / (rate(n8n_workflow_production_success_total{job="n8n"}[30m]) + rate(n8n_workflow_production_error_total{job="n8n"}[30m]))
+          > 0.5
+        for: 15m
+        labels:
+          severity: page
+        annotations:
+          summary: "n8n error rate above 50%"
+          description: "More than half of workflow executions are failing over the last 30 minutes."
+
+      - alert: N8nHighMemory
+        expr: process_resident_memory_bytes{job="n8n"} > 512 * 1024 * 1024
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "n8n memory usage above 512 MB"
+          description: "n8n RSS memory has been above 512 MB for 10 minutes."
+
+      - alert: N8nHighEventLoopLag
+        expr: nodejs_eventloop_lag_seconds{job="n8n"} > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "n8n event loop lag above 1s"
+          description: "Node.js event loop is lagging above 1 second for 5 minutes — n8n may be overloaded."
+
+  - name: sergeant-server
+    rules:
+      - alert: ServerDown
+        expr: up{job="sergeant-server"} == 0
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "Sergeant server metrics target is down"
+          description: "Prometheus cannot scrape sergeant-server /metrics for 5 minutes."
+
+      - alert: ServerHighMemory
+        expr: process_resident_memory_bytes{job="sergeant-server"} > 512 * 1024 * 1024
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sergeant server memory above 512 MB"
+          description: "Server RSS memory has been above 512 MB for 10 minutes."
