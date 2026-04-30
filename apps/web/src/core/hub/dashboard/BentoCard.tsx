@@ -153,14 +153,26 @@ export const BentoCard = memo(function BentoCard({
         {adaptiveReason && !inactive && (
           <span
             className={cn(
-              "mt-1 inline-flex items-center gap-1 self-start",
-              "rounded-full border border-line bg-panel/80 px-1.5 py-0.5",
+              "mt-1 inline-flex items-start gap-1 self-start",
+              "rounded-full border border-line bg-panel/80 px-2 py-0.5",
               "text-2xs font-medium text-muted",
+              // Soft entry animation so the lifted card visibly *animates*
+              // its reason chip in, instead of the previous instant-pop
+              // that made the adaptive reorder feel like layout jitter.
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 motion-safe:duration-300",
             )}
-            title={`Підняли в топ: ${adaptiveReason}`}
+            title={adaptiveReason}
           >
-            <span aria-hidden>✦</span>
-            <span className="truncate max-w-[12ch]">{adaptiveReason}</span>
+            <span aria-hidden className="leading-none mt-px">
+              ✦
+            </span>
+            {/* Render the full reason instead of a 12-char truncated tail —
+             * the reason is what makes the adaptive reorder explainable
+             * (e.g. "ранкова кава" / "вечірня вечеря"); chopping it to
+             * "ранкова кав…" gave the lift an air of mystery without
+             * actually saving meaningful horizontal space (cards already
+             * accommodate the chip on a second visual line). */}
+            <span className="leading-snug">{adaptiveReason}</span>
           </span>
         )}
 
