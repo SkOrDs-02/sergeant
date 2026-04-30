@@ -48,27 +48,31 @@ describe("getIp", () => {
     expect(getIp(req)).toBe("198.51.100.7");
   });
 
-  it("falls back to the LAST X-Forwarded-For entry when req.ip is missing", () => {
+  it("ignores raw X-Forwarded-For when req.ip is missing (spoof-safe)", () => {
+    // Regression: previously we fell back to parsing XFF directly, which
+    // turned "no trust-proxy / detached socket" into a free-tier bypass —
+    // the attacker controls the entire header on a directly-exposed server.
+    // Now the safe failure mode is "unknown" so all such requests share a
+    // single bucket rather than each minting a fresh fake IP.
     const req = asReq({
       headers: { "x-forwarded-for": "1.1.1.1, 198.51.100.7" },
     });
-    expect(getIp(req)).toBe("198.51.100.7");
+    expect(getIp(req)).toBe("unknown");
   });
 
-  it("falls back to x-real-ip when both req.ip and XFF are missing", () => {
+  it("ignores X-Real-IP when req.ip is missing (spoof-safe)", () => {
+    // X-Real-IP has no append semantic — it is whatever the last sender
+    // wrote. Trusting it without a proxy guarantee = trusting the client.
     const req = asReq({ headers: { "x-real-ip": "10.0.0.42" } });
-    expect(getIp(req)).toBe("10.0.0.42");
+    expect(getIp(req)).toBe("unknown");
   });
 
   it('returns "unknown" when nothing is available', () => {
     expect(getIp(asReq({ headers: {} }))).toBe("unknown");
   });
 
-  it("trims whitespace in all paths", () => {
+  it("trims whitespace on req.ip", () => {
     expect(getIp(asReq({ ip: "  10.0.0.1  ", headers: {} }))).toBe("10.0.0.1");
-    expect(
-      getIp(asReq({ headers: { "x-forwarded-for": "  1.1.1.1 , 9.9.9.9  " } })),
-    ).toBe("9.9.9.9");
   });
 });
 
