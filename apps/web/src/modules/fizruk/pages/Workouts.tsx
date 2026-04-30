@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/undoToast";
-import { hapticPattern } from "@shared/lib/haptic";
 import { WorkoutTemplatesSection } from "../components/WorkoutTemplatesSection";
 import { RestTimerOverlay } from "../components/workouts/RestTimerOverlay";
 import { WorkoutFinishSheets } from "../components/workouts/WorkoutFinishSheets";
@@ -15,6 +14,7 @@ import { WorkoutJournalSection } from "../components/workouts/WorkoutJournalSect
 import { WorkoutCatalogSection } from "../components/workouts/WorkoutCatalogSection";
 import { QuickStartSheet } from "../components/workouts/QuickStartSheet";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
+import { useFizrukRestSound } from "../hooks/useFizrukRestSound";
 import { useRecovery } from "../hooks/useRecovery";
 import { useWorkoutTemplates } from "../hooks/useWorkoutTemplates";
 import { useWorkouts } from "../hooks/useWorkouts";
@@ -24,64 +24,6 @@ import {
   summarizeWorkoutForFinish,
 } from "@sergeant/fizruk-domain";
 import { computeWorkoutSummary } from "@sergeant/fizruk-domain/domain";
-
-// Legacy Safari (< 14) ships `AudioContext` only as prefixed
-// `webkitAudioContext`. Not in `lib.dom.d.ts`, so we attach it to `Window`
-// via module augmentation rather than relying on a double-cast.
-declare global {
-  interface Window {
-    webkitAudioContext?: typeof AudioContext;
-  }
-}
-
-// Shared AudioContext reused across beeps. Creating/closing one per call
-// races with quick successive rest-timer completions and fights iOS' audio
-// session. Lazily created on first call (after a user gesture) and kept open
-// for the lifetime of the page; browsers GC it on unload.
-let sharedAudioCtx: AudioContext | null = null;
-function getAudioCtx(): AudioContext | null {
-  try {
-    if (sharedAudioCtx && sharedAudioCtx.state !== "closed")
-      return sharedAudioCtx;
-    const Ctor = window.AudioContext || window.webkitAudioContext;
-    if (!Ctor) return null;
-    sharedAudioCtx = new Ctor();
-    return sharedAudioCtx;
-  } catch {
-    return null;
-  }
-}
-
-function playRestCompletionSound() {
-  const ctx = getAudioCtx();
-  if (!ctx) return;
-  try {
-    // iOS can suspend the context between beeps; resume is a noop if running.
-    if (ctx.state === "suspended") void ctx.resume();
-    const playBeep = (freq: number, startTime: number, duration: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(freq, startTime);
-      gain.gain.setValueAtTime(0.18, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-      osc.start(startTime);
-      osc.stop(startTime + duration);
-    };
-    const t = ctx.currentTime;
-    playBeep(880, t, 0.15);
-    playBeep(1100, t + 0.18, 0.15);
-    playBeep(1320, t + 0.36, 0.3);
-  } catch {}
-}
-
-function vibrateRestComplete() {
-  // Haptic helper respects prefers-reduced-motion and swallows browser
-  // throttling errors that raw `navigator.vibrate` does not.
-  hapticPattern([200, 100, 200]);
-}
 
 type WorkoutsView = "home" | "catalog" | "log" | "templates";
 
@@ -224,29 +166,21 @@ export function Workouts() {
     } catch {}
   }, []);
 
-  const restCompletedNaturally = useRef(false);
-
-  useEffect(() => {
-    if (restTimer === null && restCompletedNaturally.current) {
-      restCompletedNaturally.current = false;
-      playRestCompletionSound();
-      vibrateRestComplete();
-    }
-  }, [restTimer]);
+  const { markCompletedNaturally } = useFizrukRestSound(restTimer);
 
   useEffect(() => {
     if (!restTimer || restTimer.remaining <= 0) return;
     const id = setInterval(() => {
       setRestTimer((r) => {
         if (!r || r.remaining <= 1) {
-          restCompletedNaturally.current = true;
+          markCompletedNaturally();
           return null;
         }
         return { ...r, remaining: r.remaining - 1 };
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [restTimer]);
+  }, [restTimer, markCompletedNaturally]);
 
   // Live timer tick — only when there is an active, unfinished workout
   useEffect(
