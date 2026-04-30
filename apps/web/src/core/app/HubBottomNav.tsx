@@ -106,11 +106,17 @@ export interface HubBottomNavProps {
    */
   showReports?: boolean;
   /**
-   * «Профіль» tab is only rendered when the user is signed in. Guests
-   * reach auth via the header button — a profile tab that bounces
-   * anonymous visitors to sign-in would clutter the FTUX strip.
+   * When `true`, renders a «Профіль» tab for the signed-in user.
+   * When `false` and `onShowAuth` is provided, renders an «Увійти» tab
+   * for guests so sign-in is reachable from the bottom nav (one-tap
+   * instead of hunting for the header icon).
    */
   showProfile?: boolean;
+  /**
+   * Callback to open the auth sheet. When provided and `showProfile`
+   * is `false`, the nav shows an «Увійти» tab for guests.
+   */
+  onShowAuth?: () => void;
 }
 
 export function HubBottomNav({
@@ -118,6 +124,7 @@ export function HubBottomNav({
   onChange,
   showReports = true,
   showProfile = false,
+  onShowAuth,
 }: HubBottomNavProps) {
   const toast = useToast();
   // Чи був перехід `showReports: false → true` в межах поточного маунту.
@@ -197,7 +204,7 @@ export function HubBottomNav({
           />
         )}
 
-        {showProfile && (
+        {showProfile ? (
           <HubBottomNavTab
             id="profile"
             panelId="hub-panel-profile"
@@ -206,7 +213,16 @@ export function HubBottomNav({
             iconName="user"
             label="Профіль"
           />
-        )}
+        ) : onShowAuth ? (
+          <HubBottomNavTab
+            id="auth"
+            panelId="hub-panel-profile"
+            active={false}
+            onClick={onShowAuth}
+            iconName="user"
+            label="Увійти"
+          />
+        ) : null}
 
         <HubBottomNavTab
           id="settings"
