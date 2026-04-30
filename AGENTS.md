@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last validated:** 2026-04-29 by @devin-ai. **Next review:** 2026-07-29.
+> **Last validated:** 2026-04-30 by @devin-ai-integration[bot]. **Next review:** 2026-07-29.
 > **Status:** Active
 
 ## Repo overview
@@ -468,6 +468,10 @@ Structured comments for AI-agent context. Enforced by ESLint rule `sergeant-desi
 - Malformed variants (`AI-NOTES`, `AINOTE`, `AI_NOTE`, missing colon) trigger a lint warning.
 - Do not spam markers — use only where they add genuine context for AI.
 - `AI-NOTE` vs `AI-CONTEXT`: use `AI-NOTE` for short pointer-style hints ("see rule #1", "keep order stable"). Use `AI-CONTEXT` to record the _reason_ behind a non-obvious architectural choice that an agent might otherwise "clean up" (e.g. why two systems coexist, why a value is duplicated, why a sync write is intentional). The `sergeant-design/ai-marker-syntax` ESLint rule currently validates the original four prefixes; `AI-CONTEXT` is accepted but not yet enforced — extend the plugin in a follow-up if drift becomes a problem.
+
+**`AI-LEGACY` expiry tracking:**
+
+Every `// AI-LEGACY: expires YYYY-MM-DD` marker is also tracked by `pnpm lint:ai-legacy` (script `scripts/check-ai-legacy.mjs`). The PR-time gate in `.github/workflows/ai-legacy-scan.yml` fails if any tracked marker is past its expiry, and the weekly scheduled run files an idempotent GitHub issue for each expired marker so the cleanup gets queued instead of silently rotting in the codebase. Engineers can also download a colour-coded HTML dashboard from the `ai-legacy-dashboard` workflow artifact, or build it locally with `pnpm ai-legacy:dashboard`.
 
 ## Domain invariants
 

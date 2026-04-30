@@ -1,0 +1,85 @@
+name: AI-LEGACY marker scan
+
+# Hard Rule #10 (lifecycle markers) leaves `// AI-LEGACY: expires YYYY-MM-DD`
+# comments dotted across the codebase as a forcing function for "delete this
+# code path after the migration ships". The `sergeant-design/ai-marker-syntax`
+# ESLint rule validates the *syntax* of every marker, but it does not look at
+# the date — so an expired marker rotted silently until this workflow.
+#
+# What this workflow does:
+#
+#   • On every PR, runs the scanner in `--check` mode so a PR introducing an
+#     already-expired marker is caught before merge.
+#   • Weekly (Mondays 07:00 UTC), opens an idempotent GitHub issue per
+#     expired marker (file + line + expiry encoded in a hidden HTML comment
+#     so re-runs do not duplicate). Same shape as `docs-freshness.yml`.
+#   • Always uploads an HTML dashboard artifact so engineers can see the full
+#     state in one click.
+#
+# See `scripts/check-ai-legacy.mjs` for marker grammar + classification logic.
+
+on:
+  schedule:
+    - cron: "0 7 * * 1" # Mondays 07:00 UTC
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "apps/**/*.ts"
+      - "apps/**/*.tsx"
+      - "apps/**/*.js"
+      - "apps/**/*.jsx"
+      - "apps/**/*.mjs"
+      - "packages/**/*.ts"
+      - "packages/**/*.tsx"
+      - "packages/**/*.js"
+      - "packages/**/*.mjs"
+      - "scripts/**/*.mjs"
+      - "scripts/**/*.js"
+      - "tools/**/*.mjs"
+      - ".github/workflows/ai-legacy-scan.yml"
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: ai-legacy-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+
+      - name: Check expired & malformed AI-LEGACY markers (PR gate)
+        # `--check` exits 1 on any expired/malformed marker. Runs on PRs so a
+        # regression cannot land. The scheduled run also re-checks main, in
+        # case a marker that was fresh at merge time has now expired.
+        run: node scripts/check-ai-legacy.mjs --check
+
+      - name: Open GitHub issues for expired markers
+        # Issue creation is skipped on pull_request because forks cannot write.
+        if: github.event_name != 'pull_request'
+        run: node scripts/check-ai-legacy.mjs --issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build AI-LEGACY dashboard (HTML artifact)
+        # Always produced so engineers can download a single HTML file from
+        # any run instead of grepping the codebase or open-issue list.
+        run: node scripts/check-ai-legacy.mjs --dashboard dist/ai-legacy-dashboard.html
+
+      - name: Upload AI-LEGACY dashboard
+        # actions/upload-artifact v4.4.3 (SHA-pinned for supply-chain hardening)
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: ai-legacy-dashboard
+          path: dist/ai-legacy-dashboard.html
+          retention-days: 30
