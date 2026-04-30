@@ -104,6 +104,9 @@ pnpm db:down                # зупинити й видалити Postgres-ко
 | `pnpm lint:ai-legacy`             | CI gate: exit 1 якщо є прострочений / malformed `// AI-LEGACY: expires …` маркер                                          |
 | `pnpm ai-legacy:dashboard`        | Збирає звіт `dist/ai-legacy-dashboard.html` (по всіх `AI-LEGACY` маркерах у коді)                                         |
 | `pnpm lint:hard-rules-registry`   | CI gate: валідує `docs/governance/hard-rules.json` ↔ AGENTS.md ↔ CONTRIBUTING.md                                          |
+| `pnpm hard-rules:generate`        | Регенерує `docs/governance/hard-rules-matrix.md` з `hard-rules.json`                                                      |
+| `pnpm hard-rules:check`           | CI gate: fail якщо `hard-rules-matrix.md` застарів                                                                        |
+| `pnpm hard-rules:list`            | Plain-text дамп всіх Hard Rules (для code-review / triage)                                                                |
 | `pnpm lint:codeowners`            | CI gate: fail якщо required path відсутній у `.github/CODEOWNERS`                                                         |
 | `pnpm ci:validate-pr-body`        | Валідовує `$PR_BODY` проти `.github/PULL_REQUEST_TEMPLATE.md`                                                             |
 

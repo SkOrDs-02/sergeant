@@ -34,6 +34,9 @@ pnpm docs:freshness-dashboard      # Build dist/freshness-dashboard.html
 pnpm lint:ai-legacy                # CI gate: fail on expired/malformed `// AI-LEGACY: expires …` markers
 pnpm ai-legacy:dashboard           # Build dist/ai-legacy-dashboard.html
 pnpm lint:hard-rules-registry      # CI gate: validates docs/governance/hard-rules.json ↔ AGENTS.md ↔ CONTRIBUTING.md
+pnpm hard-rules:generate           # Regenerate docs/governance/hard-rules-matrix.md from hard-rules.json
+pnpm hard-rules:check              # CI gate: fail if hard-rules-matrix.md is stale
+pnpm hard-rules:list               # Plain-text dump of every Hard Rule (for code-review / triage)
 pnpm lint:codeowners               # CI gate: fail if required path is missing from .github/CODEOWNERS
 ```
 
