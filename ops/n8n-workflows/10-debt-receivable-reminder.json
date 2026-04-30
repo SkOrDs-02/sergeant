@@ -3,7 +3,12 @@
   "nodes": [
     {
       "parameters": {
-        "interval": [{ "field": "cronExpression", "expression": "0 10 * * *" }]
+        "interval": [
+          {
+            "field": "cronExpression",
+            "expression": "0 10 * * *"
+          }
+        ]
       },
       "id": "cron-morning",
       "name": "Cron 10:00 Kyiv",
@@ -23,7 +28,10 @@
       "typeVersion": 2.5,
       "position": [460, 300],
       "credentials": {
-        "postgres": { "id": "CONFIGURE_ME", "name": "Sergeant Postgres" }
+        "postgres": {
+          "id": "pwwVNTLBw43PJgey",
+          "name": "Sergeant Postgres (sergeant-db)"
+        }
       }
     },
     {
@@ -34,7 +42,10 @@
               "id": "has-debts",
               "leftValue": "={{ $input.all().length }}",
               "rightValue": 0,
-              "operator": { "type": "number", "operation": "gt" }
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
             }
           ]
         }
@@ -52,14 +63,26 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "X-Api-Secret", "value": "={{ $env.API_SECRET }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "X-Api-Secret",
+              "value": "={{ $env.API_SECRET }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"userId\": \"{{ $json.user_id }}\",\n  \"title\": \"{{ $json.kind === 'debt' ? '💸 Борг' : '💰 Дебіторка' }}: {{ $json.debt_name }}\",\n  \"body\": \"Термін: {{ $json.due_date }} — відкрий Фінік для деталей\",\n  \"module\": \"finyk\",\n  \"tag\": \"debt-reminder\"\n}",
-        "options": { "response": { "response": { "neverError": true } } }
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "send-push",
       "name": "POST /api/push/send",
@@ -81,7 +104,9 @@
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=📅 *Нагадування по боргах*\n\n{{ $json.lines }}\n\n_{{ $json.count }} нагадувань надіслано_",
-        "additionalFields": { "parse_mode": "Markdown" }
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
       },
       "id": "telegram-notify",
       "name": "Telegram → debt summary",
@@ -89,35 +114,85 @@
       "typeVersion": 1.2,
       "position": [1120, 400],
       "credentials": {
-        "telegramApi": { "id": "CONFIGURE_ME", "name": "Sergeant Ops Bot" }
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
       }
     }
   ],
   "connections": {
     "Cron 10:00 Kyiv": {
-      "main": [[{ "node": "Query upcoming debts", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Query upcoming debts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Query upcoming debts": {
-      "main": [[{ "node": "Has upcoming debts?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Has upcoming debts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Has upcoming debts?": {
       "main": [
-        [{ "node": "POST /api/push/send", "type": "main", "index": 0 }],
+        [
+          {
+            "node": "POST /api/push/send",
+            "type": "main",
+            "index": 0
+          }
+        ],
         []
       ]
     },
     "POST /api/push/send": {
       "main": [
-        [{ "node": "Format Telegram summary", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Format Telegram summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Format Telegram summary": {
       "main": [
-        [{ "node": "Telegram → debt summary", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Telegram → debt summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
-  "settings": { "executionOrder": "v1", "timezone": "Europe/Kyiv" },
-  "tags": [{ "name": "sergeant" }, { "name": "finyk" }, { "name": "push" }],
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv"
+  },
+  "tags": [
+    {
+      "name": "sergeant"
+    },
+    {
+      "name": "finyk"
+    },
+    {
+      "name": "push"
+    }
+  ],
   "active": false
 }

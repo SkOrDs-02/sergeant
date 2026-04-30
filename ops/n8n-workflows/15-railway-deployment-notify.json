@@ -27,7 +27,9 @@
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "={{ $json.ok ? '✅' : '❌' }} *Railway Deploy {{ $json.ok ? 'Success' : 'Failed' }}*\n\n🔧 Service: `{{ $json.service }}` ({{ $json.env }})\n🌿 Branch: `{{ $json.branch }}`\n📝 `{{ $json.commitHash }}` — {{ $json.commitMsg }}\n⏱ Duration: {{ $json.duration }}\n{{ $json.url ? '🔗 ' + $json.url : '' }}",
-        "additionalFields": { "parse_mode": "Markdown" }
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
       },
       "id": "telegram-deploy",
       "name": "Telegram → #deploys",
@@ -35,21 +37,51 @@
       "typeVersion": 1.2,
       "position": [680, 300],
       "credentials": {
-        "telegramApi": { "id": "CONFIGURE_ME", "name": "Sergeant Ops Bot" }
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
       }
     }
   ],
   "connections": {
     "Railway Webhook": {
       "main": [
-        [{ "node": "Parse Railway payload", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Parse Railway payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Parse Railway payload": {
-      "main": [[{ "node": "Telegram → #deploys", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Telegram → #deploys",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "settings": { "executionOrder": "v1", "timezone": "Europe/Kyiv" },
-  "tags": [{ "name": "sergeant" }, { "name": "railway" }, { "name": "deploy" }],
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv"
+  },
+  "tags": [
+    {
+      "name": "sergeant"
+    },
+    {
+      "name": "railway"
+    },
+    {
+      "name": "deploy"
+    }
+  ],
   "active": false
 }

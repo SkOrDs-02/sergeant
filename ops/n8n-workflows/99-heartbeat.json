@@ -4,7 +4,12 @@
     {
       "parameters": {
         "rule": {
-          "interval": [{ "field": "minutes", "minutesInterval": 5 }]
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
         }
       },
       "id": "cron-5min",
@@ -28,8 +33,8 @@
       "position": [460, 300],
       "credentials": {
         "telegramApi": {
-          "id": "CONFIGURE_ME",
-          "name": "Sergeant Ops Bot"
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
         }
       },
       "continueOnFail": true
@@ -42,7 +47,10 @@
               "id": "telegram-failed",
               "leftValue": "={{ $json.error }}",
               "rightValue": "",
-              "operator": { "type": "string", "operation": "notEmpty" }
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
             }
           ]
         }
@@ -70,20 +78,45 @@
       "typeVersion": 4.2,
       "position": [900, 200],
       "credentials": {
-        "httpHeaderAuth": { "id": "CONFIGURE_ME", "name": "Resend (Bearer)" }
+        "httpHeaderAuth": {
+          "id": "E765p971FMV4eDbY",
+          "name": "Resend (Bearer)"
+        }
       }
     }
   ],
   "connections": {
     "Every 5 minutes": {
-      "main": [[{ "node": "Telegram → heartbeat", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Telegram → heartbeat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Telegram → heartbeat": {
-      "main": [[{ "node": "Telegram failed?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Telegram failed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Telegram failed?": {
       "main": [
-        [{ "node": "Resend → email fallback", "type": "main", "index": 0 }],
+        [
+          {
+            "node": "Resend → email fallback",
+            "type": "main",
+            "index": 0
+          }
+        ],
         []
       ]
     }
@@ -94,5 +127,12 @@
     "saveManualExecutions": false,
     "saveExecutionProgress": false
   },
-  "tags": [{ "name": "ops" }, { "name": "heartbeat" }]
+  "tags": [
+    {
+      "name": "ops"
+    },
+    {
+      "name": "heartbeat"
+    }
+  ]
 }

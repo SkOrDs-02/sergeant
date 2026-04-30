@@ -4,7 +4,10 @@
     {
       "parameters": {
         "interval": [
-          { "field": "cronExpression", "expression": "0 10 * * 1-5" }
+          {
+            "field": "cronExpression",
+            "expression": "0 10 * * 1-5"
+          }
         ]
       },
       "id": "cron-weekday",
@@ -24,15 +27,27 @@
               "name": "Authorization",
               "value": "=Bearer {{ $env.GITHUB_PAT }}"
             },
-            { "name": "Accept", "value": "application/vnd.github+json" },
-            { "name": "X-GitHub-Api-Version", "value": "2022-11-28" }
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
           ]
         },
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "state", "value": "open" },
-            { "name": "per_page", "value": "50" }
+            {
+              "name": "state",
+              "value": "open"
+            },
+            {
+              "name": "per_page",
+              "value": "50"
+            }
           ]
         },
         "options": {}
@@ -61,7 +76,10 @@
               "id": "has-stale",
               "leftValue": "={{ $json.hasStale }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ]
         }
@@ -76,7 +94,9 @@
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=⏰ *Stale PRs (>48h без активності)*\n\n{{ $json.text }}\n\n_{{ $json.count }} PR(и) потребують уваги_",
-        "additionalFields": { "parse_mode": "Markdown" }
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
       },
       "id": "telegram-stale",
       "name": "Telegram → stale PRs",
@@ -84,30 +104,74 @@
       "typeVersion": 1.2,
       "position": [1120, 200],
       "credentials": {
-        "telegramApi": { "id": "CONFIGURE_ME", "name": "Sergeant Ops Bot" }
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
       }
     }
   ],
   "connections": {
     "Cron 10:00 Mon–Fri": {
-      "main": [[{ "node": "GitHub → open PRs", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "GitHub → open PRs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "GitHub → open PRs": {
       "main": [
-        [{ "node": "Filter stale PRs (>48h)", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Filter stale PRs (>48h)",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Filter stale PRs (>48h)": {
-      "main": [[{ "node": "Has stale PRs?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Has stale PRs?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Has stale PRs?": {
       "main": [
-        [{ "node": "Telegram → stale PRs", "type": "main", "index": 0 }],
+        [
+          {
+            "node": "Telegram → stale PRs",
+            "type": "main",
+            "index": 0
+          }
+        ],
         []
       ]
     }
   },
-  "settings": { "executionOrder": "v1", "timezone": "Europe/Kyiv" },
-  "tags": [{ "name": "sergeant" }, { "name": "github" }, { "name": "ci" }],
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv"
+  },
+  "tags": [
+    {
+      "name": "sergeant"
+    },
+    {
+      "name": "github"
+    },
+    {
+      "name": "ci"
+    }
+  ],
   "active": false
 }

@@ -21,14 +21,19 @@
       "typeVersion": 2.5,
       "position": [420, 300],
       "credentials": {
-        "postgres": { "id": "CONFIGURE_ME", "name": "Sergeant Postgres" }
+        "postgres": {
+          "id": "pwwVNTLBw43PJgey",
+          "name": "Sergeant Postgres (sergeant-db)"
+        }
       }
     },
     {
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
-        "text": "=🚨 *n8n workflow failed*\n\nWorkflow: `{{ $json.workflow.name || 'unknown' }}`\nExecution: `{{ $json.execution.id || 'unknown' }}`\nNode: `{{ $json.execution.lastNodeExecuted || 'unknown' }}`\nError: {{ $json.error.message || 'unknown error' }}",
-        "additionalFields": { "parse_mode": "Markdown" }
+        "text": "=🚨 *n8n workflow failed*\n\nWorkflow: `{{ $('Error Trigger').first().json.workflow.name || 'unknown' }}`\nExecution: `{{ $('Error Trigger').first().json.execution.id || 'unknown' }}`\nNode: `{{ $('Error Trigger').first().json.execution.lastNodeExecuted || 'unknown' }}`\nError: {{ $('Error Trigger').first().json.execution.error.message || 'unknown error' }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
       },
       "id": "telegram-alert",
       "name": "Telegram failure alert",
@@ -36,7 +41,10 @@
       "typeVersion": 1.2,
       "position": [660, 220],
       "credentials": {
-        "telegramApi": { "id": "CONFIGURE_ME", "name": "Sergeant Ops Bot" }
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
       }
     },
     {
@@ -47,7 +55,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"from\": \"Sergeant Ops <ops@sergeant.app>\",\n  \"to\": [\"{{ $env.OPS_ALERT_EMAIL }}\"],\n  \"subject\": \"n8n workflow failed: {{ $json.workflow.name || 'unknown' }}\",\n  \"html\": \"<p>Workflow: <strong>{{ $json.workflow.name || 'unknown' }}</strong></p><p>Execution: {{ $json.execution.id || 'unknown' }}</p><p>Error: {{ $json.error.message || 'unknown error' }}</p>\"\n}",
+        "jsonBody": "={\n  \"from\": \"Sergeant Ops <ops@sergeant.app>\",\n  \"to\": [\"{{ $env.OPS_ALERT_EMAIL }}\"],\n  \"subject\": \"n8n workflow failed: {{ $('Error Trigger').first().json.workflow.name || 'unknown' }}\",\n  \"html\": \"<p>Workflow: <strong>{{ $('Error Trigger').first().json.workflow.name || 'unknown' }}</strong></p><p>Execution: {{ $('Error Trigger').first().json.execution.id || 'unknown' }}</p><p>Error: {{ $('Error Trigger').first().json.execution.error.message || 'unknown error' }}</p>\"\n}",
         "options": {}
       },
       "id": "email-fallback",
@@ -56,26 +64,53 @@
       "typeVersion": 4.2,
       "position": [660, 420],
       "credentials": {
-        "httpHeaderAuth": { "id": "CONFIGURE_ME", "name": "Resend (Bearer)" }
+        "httpHeaderAuth": {
+          "id": "E765p971FMV4eDbY",
+          "name": "Resend (Bearer)"
+        }
       }
     }
   ],
   "connections": {
     "Error Trigger": {
       "main": [
-        [{ "node": "Insert n8n failure event", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Insert n8n failure event",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Insert n8n failure event": {
       "main": [
         [
-          { "node": "Telegram failure alert", "type": "main", "index": 0 },
-          { "node": "Email failure fallback", "type": "main", "index": 0 }
+          {
+            "node": "Telegram failure alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email failure fallback",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     }
   },
-  "settings": { "executionOrder": "v1", "timezone": "Europe/Kyiv" },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv"
+  },
   "active": false,
-  "tags": [{ "name": "ops" }, { "name": "dead-letter" }]
+  "tags": [
+    {
+      "name": "ops"
+    },
+    {
+      "name": "dead-letter"
+    }
+  ]
 }

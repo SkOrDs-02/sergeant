@@ -3,7 +3,12 @@
   "nodes": [
     {
       "parameters": {
-        "interval": [{ "field": "cronExpression", "expression": "0 9 * * *" }]
+        "interval": [
+          {
+            "field": "cronExpression",
+            "expression": "0 9 * * *"
+          }
+        ]
       },
       "id": "cron-morning",
       "name": "Cron 09:00 Kyiv",
@@ -27,16 +32,31 @@
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "date_from", "value": "=-1d" },
-            { "name": "date_to", "value": "=-1d" },
+            {
+              "name": "date_from",
+              "value": "=-1d"
+            },
+            {
+              "name": "date_to",
+              "value": "=-1d"
+            },
             {
               "name": "events",
               "value": "[{\"id\":\"$pageview\",\"name\":\"Pageview\"}]"
             },
-            { "name": "display", "value": "ActionsLineGraph" }
+            {
+              "name": "display",
+              "value": "ActionsLineGraph"
+            }
           ]
         },
-        "options": { "response": { "response": { "neverError": true } } }
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "posthog-trend",
       "name": "PostHog → trend API",
@@ -55,14 +75,23 @@
               "name": "Authorization",
               "value": "=Bearer {{ $env.POSTHOG_PERSONAL_API_KEY }}"
             },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "method2": "POST",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "{\n  \"query\": {\n    \"kind\": \"TrendsQuery\",\n    \"series\": [{\"kind\": \"EventsNode\", \"event\": \"$pageview\", \"math\": \"dau\"}],\n    \"dateRange\": {\"date_from\": \"-1d\", \"date_to\": \"-1d\"}\n  }\n}",
-        "options": { "response": { "response": { "neverError": true } } }
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "posthog-dau",
       "name": "PostHog → DAU query",
@@ -84,7 +113,9 @@
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=📈 *PostHog Daily — {{ $json.dateStr }}*\n\n👥 DAU: `{{ $json.dauCount }}`\n📱 Pageviews: `{{ $json.pageviews }}`\n\n_[PostHog →](https://app.posthog.com)_",
-        "additionalFields": { "parse_mode": "Markdown" }
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
       },
       "id": "telegram-metrics",
       "name": "Telegram → #metrics",
@@ -92,7 +123,10 @@
       "typeVersion": 1.2,
       "position": [900, 380],
       "credentials": {
-        "telegramApi": { "id": "CONFIGURE_ME", "name": "Sergeant Ops Bot" }
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
       }
     }
   ],
@@ -100,30 +134,67 @@
     "Cron 09:00 Kyiv": {
       "main": [
         [
-          { "node": "PostHog → trend API", "type": "main", "index": 0 },
-          { "node": "PostHog → DAU query", "type": "main", "index": 0 }
+          {
+            "node": "PostHog → trend API",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PostHog → DAU query",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
     "PostHog → trend API": {
       "main": [
-        [{ "node": "Parse PostHog metrics", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Parse PostHog metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "PostHog → DAU query": {
       "main": [
-        [{ "node": "Parse PostHog metrics", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Parse PostHog metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Parse PostHog metrics": {
-      "main": [[{ "node": "Telegram → #metrics", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Telegram → #metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "settings": { "executionOrder": "v1", "timezone": "Europe/Kyiv" },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv"
+  },
   "tags": [
-    { "name": "sergeant" },
-    { "name": "posthog" },
-    { "name": "metrics" }
+    {
+      "name": "sergeant"
+    },
+    {
+      "name": "posthog"
+    },
+    {
+      "name": "metrics"
+    }
   ],
   "active": false
 }

@@ -73,7 +73,7 @@
       "status": "experimental",
       "riskTier": "P2",
       "requiredEnv": ["PUBLIC_API_BASE_URL", "API_SECRET"],
-      "requiredCredentials": ["Sergeant Postgres"],
+      "requiredCredentials": ["Sergeant Postgres (sergeant-db)"],
       "notes": "User push workflow; requires product approval before activation."
     },
     "08-weekly-financial-digest.json": {
@@ -82,8 +82,8 @@
       "riskTier": "P2",
       "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
       "requiredCredentials": [
-        "Sergeant Postgres",
-        "Sergeant Ops Bot",
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)",
         "Anthropic (x-api-key)"
       ],
       "notes": "Weekly AI digest; token usage must be monitored before production activation."
@@ -93,7 +93,7 @@
       "status": "experimental",
       "riskTier": "P2",
       "requiredEnv": ["PUBLIC_API_BASE_URL", "API_SECRET"],
-      "requiredCredentials": ["Sergeant Postgres"],
+      "requiredCredentials": ["Sergeant Postgres (sergeant-db)"],
       "notes": "User engagement push workflow; keep inactive until notification policy is approved."
     },
     "10-debt-receivable-reminder.json": {
@@ -105,7 +105,10 @@
         "API_SECRET",
         "TELEGRAM_ALERT_CHAT_ID"
       ],
-      "requiredCredentials": ["Sergeant Postgres", "Sergeant Ops Bot"],
+      "requiredCredentials": [
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)"
+      ],
       "notes": "Debt reminders; keep inactive until debt schema and push copy are verified."
     },
     "15-railway-deployment-notify.json": {
@@ -113,7 +116,7 @@
       "status": "experimental",
       "riskTier": "P2",
       "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
-      "requiredCredentials": ["Sergeant Ops Bot"],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
       "notes": "Railway webhook notifications. Add signature/shared-secret if Railway supports it."
     },
     "16-posthog-daily-metrics.json": {
@@ -125,7 +128,7 @@
         "POSTHOG_PERSONAL_API_KEY",
         "TELEGRAM_ALERT_CHAT_ID"
       ],
-      "requiredCredentials": ["Sergeant Ops Bot"],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
       "notes": "Daily metrics report."
     },
     "17-github-pr-stale-alert.json": {
@@ -133,7 +136,7 @@
       "status": "experimental",
       "riskTier": "P2",
       "requiredEnv": ["GITHUB_PAT", "TELEGRAM_ALERT_CHAT_ID"],
-      "requiredCredentials": ["Sergeant Ops Bot"],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
       "notes": "PR hygiene reminder."
     },
     "18-nightly-security-audit.json": {
@@ -141,7 +144,7 @@
       "status": "experimental",
       "riskTier": "P1",
       "requiredEnv": ["GITHUB_PAT", "TELEGRAM_ALERT_CHAT_ID"],
-      "requiredCredentials": ["Sergeant Ops Bot"],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
       "notes": "Nightly security audit status report."
     },
     "19-db-health-report.json": {
@@ -149,7 +152,10 @@
       "status": "experimental",
       "riskTier": "P1",
       "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
-      "requiredCredentials": ["Sergeant Postgres", "Sergeant Ops Bot"],
+      "requiredCredentials": [
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)"
+      ],
       "notes": "DB health report. pg_stat_statements may be absent and is tolerated."
     },
     "98-error-handler.json": {
@@ -158,8 +164,8 @@
       "riskTier": "P0",
       "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID", "OPS_ALERT_EMAIL"],
       "requiredCredentials": [
-        "Sergeant Postgres",
-        "Sergeant Ops Bot",
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)",
         "Resend (Bearer)"
       ],
       "notes": "Global n8n error workflow. Configure as the Error Workflow in n8n settings."
@@ -169,7 +175,10 @@
       "status": "prod-ready",
       "riskTier": "P0",
       "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID", "OPS_ALERT_EMAIL"],
-      "requiredCredentials": ["Sergeant Ops Bot", "Resend (Bearer)"],
+      "requiredCredentials": [
+        "Telegram (Sergeant_alert_bot)",
+        "Resend (Bearer)"
+      ],
       "notes": "n8n liveness heartbeat with email fallback."
     }
   }
