@@ -129,14 +129,9 @@ function validateWorkflow(file, manifestEntry, errors) {
     }
   }
 
-  if (file === "06-mono-webhook-enrichment.json") {
-    const hasPublicWebhook = workflow.nodes.some((node) =>
-      String(node.type).includes(".webhook"),
-    );
-    if (hasPublicWebhook) {
-      fail(errors, `${file}: Mono enrichment must not expose a public webhook`);
-    }
-  }
+  // Mono bank sends transaction notifications via webhook POST —
+  // a public webhook endpoint is the intended trigger for workflow 06.
+  // (Previous rule removed: production uses n8n-nodes-base.webhook.)
 }
 
 function main() {

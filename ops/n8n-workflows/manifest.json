@@ -7,7 +7,10 @@
       "status": "prod-ready",
       "riskTier": "P0",
       "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
-      "requiredCredentials": ["Sergeant Postgres", "Sergeant Ops Bot"],
+      "requiredCredentials": [
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)"
+      ],
       "notes": "Stripe subscription webhook → update DB to Pro → Telegram notification."
     },
     "02-failed-payment-recovery.json": {
@@ -16,8 +19,8 @@
       "riskTier": "P0",
       "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
       "requiredCredentials": [
-        "Sergeant Postgres",
-        "Sergeant Ops Bot",
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)",
         "Resend (Bearer)"
       ],
       "notes": "Stripe failed-payment webhook → Telegram + Resend email → 24h wait → downgrade if >=4 attempts."
@@ -27,7 +30,7 @@
       "status": "prod-ready",
       "riskTier": "P1",
       "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
-      "requiredCredentials": ["Sergeant Ops Bot"],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
       "notes": "Sentry webhook → severity filter → fatal/warning → Telegram."
     },
     "04-daily-backup-verification.json": {
@@ -39,7 +42,10 @@
         "RAILWAY_PROJECT_ID",
         "TELEGRAM_ALERT_CHAT_ID"
       ],
-      "requiredCredentials": ["Sergeant Postgres", "Sergeant Ops Bot"],
+      "requiredCredentials": [
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)"
+      ],
       "notes": "Cron 03:00 UTC → Railway API latest deployments → Sanity SQL check → Telegram OK/CRITICAL."
     },
     "05-renovate-pr-auto-handler.json": {
@@ -47,7 +53,7 @@
       "status": "prod-ready",
       "riskTier": "P1",
       "requiredEnv": ["GITHUB_TOKEN", "TELEGRAM_ALERT_CHAT_ID"],
-      "requiredCredentials": ["Sergeant Ops Bot"],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
       "notes": "GitHub webhook → Renovate PR → auto-approve patch / Telegram review needed."
     },
     "06-mono-webhook-enrichment.json": {
@@ -56,8 +62,8 @@
       "riskTier": "P1",
       "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
       "requiredCredentials": [
-        "Sergeant Postgres",
-        "Sergeant Ops Bot",
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)",
         "Anthropic (x-api-key)"
       ],
       "notes": "Mono webhook → Claude AI categorize → monthly budget check → Telegram alert if over ₴15K."
