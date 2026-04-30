@@ -219,9 +219,11 @@ export function HabitDetailSheet({
           {habit.endDate ? ` до ${habit.endDate}` : ""}
           {!habit.startDate && !habit.endDate ? "Без обмежень дат" : ""}
         </p>
-        {habit.recurrence === "weekly" && habit.weekdays?.length > 0 && (
-          <p>{habit.weekdays.map((i) => WEEKDAY_LABELS[i]).join(", ")}</p>
-        )}
+        {habit.recurrence === "weekly" &&
+          habit.weekdays &&
+          habit.weekdays.length > 0 && (
+            <p>{habit.weekdays.map((i) => WEEKDAY_LABELS[i]).join(", ")}</p>
+          )}
       </div>
 
       <section className="mb-5" aria-label="Статистика">
