@@ -25,13 +25,39 @@ interface BankProxyConfig {
   cacheMaxEntries: number;
 }
 
+// Hard floors/ceilings: a misconfigured env var (e.g. `0`, negative, or
+// absurdly large) should not silently disable retries / blow up memory.
+// Anything outside the band falls back to the compiled-in default.
+function envInt(
+  name: string,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < min || n > max) return fallback;
+  return Math.floor(n);
+}
+
 const DEFAULTS: Readonly<BankProxyConfig> = Object.freeze({
   retryDelaysMs: [0, 250, 750],
   retryJitterMs: 100,
-  timeoutMs: 15_000,
+  // `BANK_FETCH_TIMEOUT_MS` lets ops shorten the per-attempt timeout in
+  // production without a deploy. Floor 1s (anything lower is essentially
+  // a synthetic abort), ceiling 60s (Mono/Privat upstreams should never
+  // legitimately need that long; capping prevents a stuck request from
+  // pinning an event-loop slot).
+  timeoutMs: envInt("BANK_FETCH_TIMEOUT_MS", 15_000, 1_000, 60_000),
   breakerFailThreshold: 5,
   breakerOpenMs: 30_000,
-  cacheTtlMs: 60_000,
+  // `BANK_CACHE_TTL_MS` controls in-memory dedup of identical GETs. Lower
+  // means more upstream traffic (= more 429s on /personal/statement),
+  // higher means stale balances. 0 disables caching entirely (handled by
+  // the cacheable=true && expires<now path naturally — `0` ttl means the
+  // first read after writing is already expired).
+  cacheTtlMs: envInt("BANK_CACHE_TTL_MS", 60_000, 0, 600_000),
   cacheMaxEntries: 500,
 });
 

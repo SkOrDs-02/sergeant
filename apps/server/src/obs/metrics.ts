@@ -345,6 +345,50 @@ export const webVitalsCls = new client.Histogram({
   registers: [register],
 });
 
+// ───────────────────────── Build info ─────────────────────────
+// Const-`1` gauge with version/commit/release/env labels — the standard
+// Prometheus pattern for shipping immutable build metadata. Two reasons we
+// want it as a label-rich gauge instead of a plain log line at boot:
+//
+//   1. Dashboards can join `app_build_info` against any other series via
+//      `* on (instance) group_left(version, commit) <metric>` to attribute
+//      latency/error spikes to a specific deploy without re-tagging every
+//      counter.
+//   2. Alertmanager can include `{{ $labels.commit }}` in pages without
+//      having to hit Sentry / Railway. Cardinality stays at 1 series per
+//      pod (labels are constant for the process lifetime).
+//
+// Sources are read at module load (process.env is frozen for our purposes
+// after dotenv-flow). `RAILWAY_GIT_COMMIT_SHA` is injected by Railway on
+// every build; `SENTRY_RELEASE` is the canonical release tag if both
+// Sentry-cli and Railway are present (Sentry-cli takes precedence). Empty
+// strings collapse to `"unknown"` so PromQL queries never see an empty
+// label value (which Prometheus treats as label absence — breaks joins).
+export const appBuildInfo = new client.Gauge({
+  name: "app_build_info",
+  help: "Static gauge=1 with build/release metadata for join-on-labels in dashboards",
+  labelNames: ["version", "commit", "release", "env", "node_version"],
+  registers: [register],
+});
+
+appBuildInfo
+  .labels({
+    version: process.env.npm_package_version || "unknown",
+    commit: (
+      process.env.RAILWAY_GIT_COMMIT_SHA ||
+      process.env.GIT_COMMIT ||
+      process.env.VERCEL_GIT_COMMIT_SHA ||
+      "unknown"
+    ).slice(0, 12),
+    release:
+      process.env.SENTRY_RELEASE ||
+      process.env.RAILWAY_GIT_COMMIT_SHA ||
+      "unknown",
+    env: process.env.NODE_ENV || "development",
+    node_version: process.version,
+  })
+  .set(1);
+
 // ───────────────────────── Mono webhook ───────────────────────
 export const monoWebhookReceivedTotal = new client.Counter({
   name: "mono_webhook_received_total",
