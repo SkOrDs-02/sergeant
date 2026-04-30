@@ -7,12 +7,7 @@
  * Source of truth: `@sergeant/design-tokens/tokens`. This file re-exports
  * those tokens and adds shared render-side primitives (Tailwind classNames
  * + SVG attrs) so charts across modules share axes, grid lines, ticks and
- * tooltips. (Historical note: this used to import via
- * `src/modules/finyk/chartPalette/chartPalette.ts`, which transitively
- * pulled all of `src/modules/finyk/**` into the
- * `tsconfig.noimplicitany.json` typecheck graph and produced ~800 false-
- * positive errors. We now import the tokens directly so cross-module
- * strictness is decoupled from per-module strictness.)
+ * tooltips.
  *
  * Usage:
  *

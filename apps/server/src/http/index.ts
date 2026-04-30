@@ -47,5 +47,5 @@ export { safeStringEqual } from "./safeCompare.js";
 export { requireAnthropicKey } from "./requireAnthropicKey.js";
 export { requireGroqKey } from "./requireGroqKey.js";
 export { requireAiQuota } from "./requireAiQuota.js";
-export { requestTimeout, extendedTimeout } from "./timeout.js";
+export { requestTimeout } from "./timeout.js";
 export { createCompressionMiddleware } from "./compression.js";

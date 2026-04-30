@@ -11,14 +11,6 @@ export function getRedis(): Redis | null {
 }
 
 /**
- * Returns true if Redis is connected and healthy.
- * Use this to decide whether to use Redis or fallback.
- */
-export function isRedisHealthy(): boolean {
-  return _isHealthy && _client !== null;
-}
-
-/**
  * Get Redis connection stats for monitoring.
  */
 export function getRedisStats() {

@@ -79,11 +79,3 @@ export function requestTimeout(timeoutMs?: number) {
     next();
   };
 }
-
-/**
- * Extended timeout for specific routes (e.g., AI chat, file uploads).
- * Use as route-level middleware.
- */
-export function extendedTimeout(timeoutMs: number) {
-  return requestTimeout(timeoutMs);
-}

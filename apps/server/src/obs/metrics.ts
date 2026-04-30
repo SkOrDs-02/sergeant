@@ -207,35 +207,6 @@ export const rateLimitHitsTotal = new client.Counter({
   registers: [register],
 });
 
-// ───────────────────────── Redis ──────────────────────────────
-export const redisConnectionState = new client.Gauge({
-  name: "redis_connection_state",
-  help: "Redis connection state (1=connected, 0=disconnected)",
-  registers: [register],
-});
-
-export const redisReconnectsTotal = new client.Counter({
-  name: "redis_reconnects_total",
-  help: "Redis reconnection attempts",
-  labelNames: ["outcome"], // outcome=success|failed
-  registers: [register],
-});
-
-export const redisFallbackTotal = new client.Counter({
-  name: "redis_fallback_total",
-  help: "Operations falling back to in-memory store due to Redis unavailability",
-  labelNames: ["operation"], // operation=rate_limit|session|cache
-  registers: [register],
-});
-
-// ───────────────────────── Request Timeout ────────────────────
-export const requestTimeoutsTotal = new client.Counter({
-  name: "request_timeouts_total",
-  help: "Requests terminated due to timeout",
-  labelNames: ["method", "path"],
-  registers: [register],
-});
-
 // ───────────────────────── Circuit Breaker ────────────────────
 export const circuitBreakerState = new client.Gauge({
   name: "circuit_breaker_state",

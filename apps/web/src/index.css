@@ -123,7 +123,7 @@
     --c-fg-muted: var(--c-muted);
 
     /* Status semantic tokens (kept in sync with tailwind `statusColors`
-       from `src/modules/finyk/chartPalette/chartPalette.ts`). */
+       from `@sergeant/design-tokens/tokens`). */
     --c-success: 16 185 129; /* emerald-500  — statusColors.success */
     --c-warning: 245 158 11; /* amber-500    — statusColors.warning */
     --c-danger: 239 68 68; /* red-500       — statusColors.danger  */

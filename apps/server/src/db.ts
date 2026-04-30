@@ -188,19 +188,6 @@ export async function query<R extends QueryResultRow = QueryResultRow>(
 }
 
 /**
- * Health check for database connection.
- * Returns true if able to execute a simple query.
- */
-export async function pingDb(): Promise<boolean> {
-  try {
-    await pool.query("SELECT 1");
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Get database pool statistics for monitoring.
  */
 export function getPoolStats() {
