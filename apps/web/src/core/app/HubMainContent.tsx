@@ -209,7 +209,7 @@ export const HubMainContent = memo(function HubMainContent({
         {hubView === "profile" && (
           <ErrorBoundary key="profile" fallback={HubSectionFallback}>
             <div className="pt-2">
-              <ProfilePage embedded />
+              <ProfilePage />
             </div>
           </ErrorBoundary>
         )}

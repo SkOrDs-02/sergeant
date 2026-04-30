@@ -61,9 +61,6 @@ const ResetPasswordPage = lazy(() =>
 const DesignShowcase = lazy(() =>
   import("./DesignShowcase").then((m) => ({ default: m.DesignShowcase })),
 );
-const ProfilePage = lazy(() =>
-  import("./profile/ProfilePage").then((m) => ({ default: m.ProfilePage })),
-);
 const AssistantCataloguePage = lazy(() =>
   import("./AssistantCataloguePage").then((m) => ({
     default: m.AssistantCataloguePage,
@@ -168,7 +165,6 @@ function AppInner() {
   const onSignInRoute = location.pathname === SIGN_IN_PATH;
   const onWelcomeRoute = location.pathname === WELCOME_PATH;
   const onResetPasswordRoute = location.pathname === RESET_PASSWORD_PATH;
-  const onProfileRoute = location.pathname === PROFILE_PATH;
   const onAssistantRoute = location.pathname === ASSISTANT_PATH;
 
   const openAuth = useCallback(() => {
@@ -373,20 +369,19 @@ function AppInner() {
     );
   }
 
-  if (onProfileRoute) {
+  // `/profile` is a legacy deep-link target — profile actions now live
+  // behind the bottom-nav `Профіль` tab inside the hub. Redirect to
+  // the hub with the `profile` tab pre-activated so old links keep
+  // working (and so the back button still pops the entry off history
+  // instead of bouncing the user back here).
+  if (location.pathname === PROFILE_PATH) {
     if (authLoading) {
       return <PageLoader />;
     }
     if (!user) {
       return <RedirectTo to={SIGN_IN_PATH} />;
     }
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <div className="page-enter">
-          <ProfilePage />
-        </div>
-      </Suspense>
-    );
+    return <RedirectTo to="/?tab=profile" />;
   }
 
   if (location.pathname === "/design") {

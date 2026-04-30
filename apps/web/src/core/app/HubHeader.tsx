@@ -122,8 +122,8 @@ export function HubHeader({
           {/* Dark-mode toggle: surfaced as a single-tap header affordance for
               both signed-in and guest users. Previously buried inside the
               `UserMenuButton` dropdown (3-tap path); profile actions now
-              live behind the bottom-nav `Профіль` tab + `/profile` page,
-              so the dropdown was retired. */}
+              live behind the bottom-nav `Профіль` tab, so the dropdown
+              was retired. */}
           {dark !== undefined && onToggleDark && (
             <DarkModeToggle dark={dark} onToggle={onToggleDark} />
           )}
