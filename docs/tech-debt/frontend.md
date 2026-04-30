@@ -66,9 +66,10 @@ try/catch крашить на quota exceeded, corrupted storage або private b
   `modules/finyk/hooks/useStorage`, `modules/nutrition/domain/nutritionBackup`.
 - **TODO-список немігрованих файлів** — кожен файл, що ще
   читає/пише напряму, перерахований у `eslint.config.js` явно. Міграція
-  файла = видалення рядка зі списку. На 2026-04-28 TODO-список
-  містить 49 файлів (базовий рівень при введенні був 49; оновиться вниз
-  після чергових міграцій).
+  файла = видалення рядка зі списку. На 2026-04-29 TODO-список
+  містить 46 файлів після міграції PWA action/install slice
+  (`core/App.tsx`, `core/app/pwaAction.ts`, `useIosInstallBanner.ts`,
+  `usePwaInstall.ts`).
   Фактичних raw `localStorage.*` production-файлів
   (включно з wrappers) — ~78 (`rg -l "\blocalStorage\." apps/web/src` = 119
   файлів разом з тестами; ~532 рядки матчів усього, з них ~246 у
@@ -179,14 +180,18 @@ PR на кожен файл; великі data-файли (`seedFoodsUk.ts`) —
 
 ---
 
-### 6. Тестове покриття — 80 test файлів на 434 source
+### 6. Тестове покриття — 126 test файлів на 529 source
 
-~18% файлів мають тести. Критичні модулі без тестів (актуально):
+~24% файлів мають тести. Критичні модулі без тестів / з тонким покриттям
+(актуально):
 
 - `HubReports.tsx` (638 рядків, складна агрегація)
 - `TodayFocusCard.tsx` (recommendation engine інтеграція)
-- `HubDashboard.tsx` (902 рядки)
 - `ProfilePage.tsx` (1060 рядків)
+
+**Зроблено 2026-04-28:** додано focused coverage для `HubDashboard.tsx`
+(`HubDashboard.test.tsx`: module previews / empty states, inactive modules,
+quick actions, callback routing, weekly digest footer).
 
 **Fix:** пріоритетно додати тести на recommendation engine, reports
 aggregation, cloud sync flows.
@@ -396,6 +401,6 @@ explicit return type.
    мігрованих top-3).
 2. **File splitting** — Assets, ProfilePage, ActiveWorkoutPanel.
 3. **Test coverage** — recommendation engine, reports aggregation, cloud
-   sync flows.
+   sync flows; `HubDashboard` focused coverage вже додано.
 4. Опційно — `eslint-plugin-import` + `import/extensions: never`, щоб
    codemod #3 був самозабезпечений правилом.

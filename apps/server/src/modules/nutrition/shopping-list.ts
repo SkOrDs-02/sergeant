@@ -7,6 +7,7 @@ import {
   anthropicMessages,
   extractAnthropicText,
 } from "../../lib/anthropic.js";
+import { formatPantryForPrompt } from "../../lib/pantryFormat.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -71,16 +72,11 @@ export default async function handler(
   const { recipes, weekPlan, pantryItems, locale } = parsed.data;
   const loc = String(locale || "uk-UA");
 
-  const pantryArr = Array.isArray(pantryItems) ? pantryItems : [];
-  const pantryStr =
-    pantryArr.length > 0
-      ? pantryArr
-          .map((x) =>
-            typeof x === "string" ? x : x?.name ? String(x.name) : "",
-          )
-          .filter(Boolean)
-          .join(", ")
-      : "нічого";
+  const pantryStr = formatPantryForPrompt(pantryItems, {
+    itemFormat: "nameOnly",
+    joinWith: ", ",
+    fallbackWhenEmpty: "нічого",
+  });
 
   let ingredientsList = "";
 

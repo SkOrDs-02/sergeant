@@ -7,6 +7,7 @@ import {
   anthropicMessages,
   extractAnthropicText,
 } from "../../lib/anthropic.js";
+import { formatPantryForPrompt } from "../../lib/pantryFormat.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -81,17 +82,16 @@ export default async function handler(
   const parsed = validateBody(WeekPlanSchema, req, res);
   if (!parsed.ok) return;
   const { pantry: pantryIn, preferences, locale } = parsed.data;
-  const arr = Array.isArray(pantryIn) ? pantryIn : [];
 
   const prefs = preferences || {};
   const goal = String(prefs.goal || "balanced");
   const loc = String(locale || "uk-UA");
 
-  const pantry = arr
-    .map((x) => (typeof x === "string" ? x : x?.name ? String(x.name) : ""))
-    .filter(Boolean)
-    .slice(0, 50)
-    .join("\n- ");
+  const pantry = formatPantryForPrompt(pantryIn, {
+    itemFormat: "nameOnly",
+    limit: 50,
+    joinWith: "\n- ",
+  });
 
   const prompt = `Мова: ${loc}. Ціль: ${goal}.
 Продукти вдома:

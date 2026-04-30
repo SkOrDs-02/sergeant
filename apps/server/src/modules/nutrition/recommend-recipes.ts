@@ -7,6 +7,7 @@ import {
   anthropicMessages,
   extractAnthropicText,
 } from "../../lib/anthropic.js";
+import { formatPantryForPrompt } from "../../lib/pantryFormat.js";
 import { normalizeRecipes } from "../../lib/nutritionResponse.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
@@ -49,7 +50,6 @@ export default async function handler(
   const parsed = validateBody(RecommendRecipesSchema, req, res);
   if (!parsed.ok) return;
   const { pantry: pantryIn, preferences } = parsed.data;
-  const arr = Array.isArray(pantryIn) ? pantryIn : [];
 
   const prefs = preferences || {};
   const goal = String(prefs.goal || "balanced");
@@ -58,20 +58,11 @@ export default async function handler(
   const exclude = String(prefs.exclude || "");
   const locale = String(prefs.locale || "uk-UA");
 
-  const pantry = arr
-    .map((x) => {
-      if (typeof x === "string") return x;
-      const name = x?.name ? String(x.name) : "";
-      const qty = x?.qty != null && x.qty !== "" ? String(x.qty) : "";
-      const unit = x?.unit ? String(x.unit) : "";
-      const notes = x?.notes ? String(x.notes) : "";
-      return [name, qty && unit ? `${qty} ${unit}` : qty || unit, notes]
-        .filter(Boolean)
-        .join(" — ");
-    })
-    .filter(Boolean)
-    .slice(0, 60)
-    .join("\n- ");
+  const pantry = formatPantryForPrompt(pantryIn, {
+    itemFormat: "nameQuantityNotes",
+    limit: 60,
+    joinWith: "\n- ",
+  });
 
   const prompt = `Мова: ${locale}.
 Ціль: ${goal}.

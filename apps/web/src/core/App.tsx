@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@shared/lib/cn";
+import { safeWriteLS } from "@shared/lib/storage";
 import { SkipLink } from "@shared/components/ui/SkipLink";
 import ModuleErrorBoundary from "./ModuleErrorBoundary";
 import { useDarkMode } from "@shared/hooks/useDarkMode";
@@ -291,11 +292,7 @@ function AppInner() {
         ).detail || {};
       const { module, hash, action } = detail;
       if (action && validActions.has(action)) {
-        try {
-          localStorage.setItem(PWA_ACTION_KEY, action);
-        } catch {
-          /* noop */
-        }
+        safeWriteLS(PWA_ACTION_KEY, action);
         setPwaAction(action);
       }
       openModule(module, hash ? { hash } : undefined);

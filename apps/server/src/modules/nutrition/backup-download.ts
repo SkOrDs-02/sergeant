@@ -1,18 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { Request, Response } from "express";
+import { safeBackupKeyFromToken } from "../../lib/backupKey.js";
 import { NotFoundError } from "../../obs/errors.js";
-
-function safeKeyFromToken(req: Request): string {
-  const tok = req?.headers?.["x-token"];
-  const raw = tok ? String(tok) : "public";
-  let h = 2166136261;
-  for (let i = 0; i < raw.length; i++) {
-    h ^= raw.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0).toString(36);
-}
 
 /**
  * POST /api/nutrition/backup-download — відновити збережений бекап.
@@ -26,7 +16,7 @@ export default async function handler(
   res: Response,
 ): Promise<void> {
   const dir = path.join(process.cwd(), ".data");
-  const key = safeKeyFromToken(req);
+  const key = safeBackupKeyFromToken(req.headers["x-token"]);
   const file = path.join(dir, `nutrition-backup-${key}.json`);
 
   let raw: string;
