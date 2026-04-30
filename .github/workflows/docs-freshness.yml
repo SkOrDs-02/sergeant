@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
+      - "**/*.md"
       - "scripts/docs/**"
       - ".github/workflows/docs-freshness.yml"
 
@@ -29,15 +30,22 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Coverage gate — every non-excluded .md must have a freshness header
+        # Auto-discovery (PR-12.B): we no longer maintain a manual allowlist,
+        # so the gate that catches "new doc landed without a header" is this
+        # CI step. Runs on every event (PR + scheduled) so a regression is
+        # caught before merge AND in the next nightly cron after main.
+        run: node scripts/docs/check-freshness.mjs --check-coverage
+
       - name: Open GitHub issues for overdue docs
         # Issue-creation is skipped on pull_request because forks cannot write.
-        # The dry-run below still validates the allowlist on every PR.
+        # The dry-run below still validates the auto-discovered list on every PR.
         if: github.event_name != 'pull_request'
         run: node scripts/docs/check-freshness.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Dry-run freshness check (PRs — smoke-test the allowlist)
+      - name: Dry-run freshness check (PRs — smoke-test the auto-discovered list)
         if: github.event_name == 'pull_request'
         run: DRY_RUN=1 node scripts/docs/check-freshness.mjs
 

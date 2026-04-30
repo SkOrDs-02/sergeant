@@ -1,9 +1,15 @@
 #!/usr/bin/env node
 // scripts/docs/check-freshness.mjs
 //
-// Nightly CI script that scans docs from the freshness allowlist,
-// parses their "Last validated" / "Next review" header, and opens
-// a GitHub issue for every overdue document (Next review < today).
+// Nightly CI script. For every tracked markdown file with a canonical
+// `> **Last validated:**` header, parses the "Last validated" / "Next review"
+// dates and opens a GitHub issue for every overdue document.
+//
+// Tracking is **auto-discovered** by `freshness-config.mjs`: any `*.md` under
+// the repo with a freshness header is included at the default cadence; per-file
+// overrides live in `freshness-config.json`. The legacy `freshness-allowlist.json`
+// is still honoured during the migration and listed entries without a header
+// are still nagged about (so dropping the header is also visible).
 //
 // Idempotent: if an open issue with marker `<!-- doc-freshness:<path> -->`
 // already exists, the script skips that path.
@@ -11,20 +17,30 @@
 // Supports two header formats:
 //   1. Canonical:  `> **Last validated:** YYYY-MM-DD by @user. **Next review:** YYYY-MM-DD.`
 //   2. Legacy:     `> Last reviewed: YYYY-MM-DD. Reviewer: @user`
-//      (legacy has no explicit Next review — the script uses cadenceDays from the allowlist)
+//      (legacy has no explicit Next review — the script uses cadenceDays from
+//      the config / legacy allowlist)
 //
 // Usage:
 //   GITHUB_TOKEN=... node scripts/docs/check-freshness.mjs
-//   DRY_RUN=1 node scripts/docs/check-freshness.mjs   # print what would happen
+//   DRY_RUN=1 node scripts/docs/check-freshness.mjs        # print what would happen
+//   node scripts/docs/check-freshness.mjs --check-coverage # CI gate: every
+//     non-excluded `.md` must have a header (exits 1 on gaps)
 //
 // Environment:
-//   GITHUB_TOKEN          — required (unless DRY_RUN)
+//   GITHUB_TOKEN          — required (unless DRY_RUN / --check-coverage)
 //   GITHUB_REPOSITORY     — "owner/repo" (auto-set by Actions; defaults to Skords-01/Sergeant)
 //   DRY_RUN               — if truthy, skip issue creation
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import {
+  loadConfig,
+  computeCoverageGaps,
+  listTrackedMarkdown,
+  readConfigFile,
+} from "./freshness-config.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -32,7 +48,6 @@ const REPO_ROOT = resolve(__dirname, "../..");
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const ALLOWLIST_PATH = resolve(__dirname, "freshness-allowlist.json");
 const HEADER_LINE_LIMIT = 15;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const LABELS = ["documentation", "freshness-overdue"];
@@ -225,7 +240,7 @@ export async function createIssue(
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 export async function run() {
-  const allowlist = JSON.parse(readFileSync(ALLOWLIST_PATH, "utf8"));
+  const { tracked } = loadConfig({ rootDir: REPO_ROOT });
   const today = todayISO();
   const dryRun = Boolean(process.env.DRY_RUN);
   const results = [];
@@ -234,9 +249,9 @@ export async function run() {
     await ensureLabels();
   }
 
-  for (const entry of allowlist) {
+  for (const entry of tracked) {
     const filePath = entry.path;
-    const cadence = entry.cadenceDays || 90;
+    const cadence = entry.cadenceDays;
     const fullPath = resolve(REPO_ROOT, filePath);
 
     let content;
@@ -309,11 +324,45 @@ export async function run() {
   return results;
 }
 
+/**
+ * `--check-coverage` mode: exit non-zero if any non-excluded `.md` file is
+ * missing a freshness header. Used as a CI gate so freshness coverage doesn't
+ * silently drop when a new doc lands without a header.
+ */
+export function runCoverage({ rootDir = REPO_ROOT } = {}) {
+  const config = readConfigFile();
+  const candidates = listTrackedMarkdown(rootDir);
+  const readFile = (path) => {
+    const full = resolve(rootDir, path);
+    return existsSync(full) ? readFileSync(full, "utf8") : null;
+  };
+  const gaps = computeCoverageGaps({ candidates, config, readFile });
+  return gaps;
+}
+
 // Run when executed directly
 const isMain =
   process.argv[1] &&
   resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
 if (isMain) {
+  if (process.argv.includes("--check-coverage")) {
+    const gaps = runCoverage();
+    if (gaps.length > 0) {
+      console.error(
+        `\n[FAIL] ${gaps.length} markdown file(s) without a freshness header:`,
+      );
+      for (const g of gaps) console.error(`  - ${g}`);
+      console.error(
+        "\nAdd `> **Last validated:** YYYY-MM-DD by @you. **Next review:** YYYY-MM-DD.`",
+      );
+      console.error(
+        "or list the path in `scripts/docs/freshness-config.json` → `explicitExclude` if it should be opted out.",
+      );
+      process.exit(1);
+    }
+    console.log("All tracked markdown files have a freshness header.");
+    process.exit(0);
+  }
   run()
     .then((results) => {
       const overdue = results.filter((r) => r.status.startsWith("overdue"));

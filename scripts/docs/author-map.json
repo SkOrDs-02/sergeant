@@ -1,0 +1,12 @@
+{
+  "$schema": "./author-map.schema.json",
+  "_comment": "Maps git author emails (lowercase) to GitHub @handles. Used by scripts/docs/bump-last-validated.mjs to keep `Last validated: … by @handle` accurate without manual editing. Add an entry whenever someone commits docs from a new email.",
+  "emailToHandle": {
+    "buk55267@gmail.com": "Skords-01",
+    "skords01@users.noreply.github.com": "Skords-01",
+    "158243933+devin-ai-integration[bot]@users.noreply.github.com": "devin-ai",
+    "devin-ai-integration[bot]@users.noreply.github.com": "devin-ai",
+    "noreply@anthropic.com": "claude",
+    "claude@anthropic.com": "claude"
+  }
+}
