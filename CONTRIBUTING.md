@@ -103,6 +103,7 @@ pnpm db:down                # зупинити й видалити Postgres-ко
 | `pnpm docs:freshness-dashboard`   | Збирає звіт `dist/freshness-dashboard.html` (з кольорами, sortable)                                                 |
 | `pnpm lint:ai-legacy`             | CI gate: exit 1 якщо є прострочений / malformed `// AI-LEGACY: expires …` маркер                                    |
 | `pnpm ai-legacy:dashboard`        | Збирає звіт `dist/ai-legacy-dashboard.html` (по всіх `AI-LEGACY` маркерах у коді)                                   |
+| `pnpm lint:hard-rules-registry`   | CI gate: валідує `docs/governance/hard-rules.json` ↔ AGENTS.md ↔ CONTRIBUTING.md                                    |
 | `pnpm ci:validate-pr-body`        | Валідовує `$PR_BODY` проти `.github/PULL_REQUEST_TEMPLATE.md`                                                       |
 
 ### Scoped команди

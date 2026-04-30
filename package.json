@@ -31,6 +31,7 @@
     "n8n:export": "node scripts/ops/n8n-workflows.mjs export",
     "lint:tech-debt-freshness": "node scripts/check-tech-debt-freshness.mjs",
     "lint:governance-sync": "node scripts/check-governance-sync.mjs",
+    "lint:hard-rules-registry": "node scripts/check-hard-rules-registry.mjs",
     "api:generate-openapi": "node scripts/api/generate-openapi.mjs",
     "api:check-openapi": "node scripts/api/check-openapi-fresh.mjs",
     "lint:plugins": "node --test packages/eslint-plugin-sergeant-design/__tests__/*.test.mjs",
