@@ -43,6 +43,13 @@ jobs:
       - name: Check docs/playbooks/INDEX.md is up to date
         run: node scripts/docs/generate-playbook-index.mjs --check
 
+      - name: Check playbook schema (H1 + freshness + Status + Trigger)
+        # Every playbook in docs/playbooks/ (excluding INDEX.md, README.md and
+        # _TEMPLATE*) must declare an H1 title, a `Last validated` freshness
+        # header, a `Status` lifecycle marker, and a `**Trigger:**` line.
+        # See scripts/docs/check-playbook-schema.mjs for the exact schema.
+        run: node scripts/docs/check-playbook-schema.mjs
+
   adr-graph:
     name: ADR graph (statuses, supersede, README index)
     runs-on: ubuntu-latest
@@ -127,4 +134,5 @@ jobs:
             scripts/docs/__tests__/generate-freshness-dashboard.test.mjs \
             scripts/docs/__tests__/check-markdown-links.test.mjs \
             scripts/docs/__tests__/check-adr-graph.test.mjs \
+            scripts/docs/__tests__/check-playbook-schema.test.mjs \
             scripts/ci/__tests__/validate-pr-body.test.mjs

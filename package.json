@@ -58,6 +58,7 @@
     "docs:check-links": "node scripts/docs/check-markdown-links.mjs",
     "docs:gen-playbook-index": "node scripts/docs/generate-playbook-index.mjs",
     "docs:check-playbook-index": "node scripts/docs/generate-playbook-index.mjs --check",
+    "docs:check-playbook-schema": "node scripts/docs/check-playbook-schema.mjs",
     "docs:check-freshness-coverage": "node scripts/docs/check-freshness.mjs --check-coverage",
     "docs:check-adr-graph": "node scripts/docs/check-adr-graph.mjs",
     "docs:freshness-dashboard": "node scripts/docs/generate-freshness-dashboard.mjs",
