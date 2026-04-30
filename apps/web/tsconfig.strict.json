@@ -12,9 +12,11 @@
     "src/core/components/**/*",
     "src/core/hints/**/*",
     "src/core/hooks/**/*",
+    "src/core/hub/**/*",
     "src/core/observability/**/*",
     "src/core/pricing/**/*",
-    "src/core/profile/**/*"
+    "src/core/profile/**/*",
+    "src/core/settings/**/*"
   ],
   "exclude": ["node_modules", "dist"]
 }

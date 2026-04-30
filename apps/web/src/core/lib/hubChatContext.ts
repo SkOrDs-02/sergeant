@@ -417,12 +417,12 @@ function buildContext(): string {
       const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
       const withTs = w.map((x) => ({
         ...x,
-        _ts: new Date(x.startedAt).getTime(),
+        _ts: x.startedAt ? new Date(x.startedAt).getTime() : 0,
       }));
       const cnt = withTs.filter((x) => x._ts > weekAgo).length;
       const sorted = [...withTs].sort((a, b) => b._ts - a._ts);
       const last = sorted[0];
-      const dt = last
+      const dt = last?.startedAt
         ? new Date(last.startedAt).toLocaleDateString("uk-UA", {
             day: "numeric",
             month: "short",
@@ -447,8 +447,9 @@ function buildContext(): string {
         }
       } catch {}
       lines.push(`[Фізрук активне тренування] ${activeHint}`);
-      if (sorted.length > 0 && sorted[0].items?.length > 0) {
-        const exercises = sorted[0].items
+      const firstItems = sorted[0]?.items;
+      if (firstItems && firstItems.length > 0) {
+        const exercises = firstItems
           .map(
             (i: { nameUk?: string; name?: string; exercise?: string }) =>
               i.nameUk || i.name || i.exercise || "—",

@@ -6,10 +6,10 @@ import { INTERNAL_TRANSFER_ID } from "../constants";
 // Це дозволяє іншим сторінкам (Звіти, AI Digest) використовувати ту саму логіку
 // без mounted-хука useStorage.
 export function getFinykExcludedTxIdsFromStorage() {
-  const hidden = safeReadLS("finyk_hidden_txs", []);
-  const txCats = safeReadLS("finyk_tx_cats", {});
-  const recv = safeReadLS("finyk_recv", []);
-  const extra = safeReadLS("finyk_excluded_stat_txs", []);
+  const hidden = safeReadLS<string[]>("finyk_hidden_txs", []);
+  const txCats = safeReadLS<Record<string, string>>("finyk_tx_cats", {});
+  const recv = safeReadLS<Array<{ linkedTxIds?: string[] }>>("finyk_recv", []);
+  const extra = safeReadLS<string[]>("finyk_excluded_stat_txs", []);
   const transferIds = Object.entries(
     txCats && typeof txCats === "object" ? txCats : {},
   )

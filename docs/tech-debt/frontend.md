@@ -1,15 +1,16 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-04-29 by @devin-ai. **Next review:** 2026-06-28.
+> **Last validated:** 2026-04-30 by @devin-ai-integration[bot]. **Next review:** 2026-06-29.
 > **Status:** Active
 
 Аналіз кодової бази `apps/web/src` (434 source файли, 87k рядків).
 
-> **Оновлено 2026-04-29.** Розділ 11 (Strict TS rollout) промарковано Phase 2:
-> `tsconfig.strict.json` розширено з `src/shared/**` до всього `src/test`,
-> `src/core/{auth,cloudSync,components,hints,hooks,observability,pricing,profile}`
-> (10 директорій всього). Окремо виправлено cross-file SpeechRecognition
-> type-collision (`useSpeech.ts` більше не augment-ить глобальний `Window`).
+> **Оновлено 2026-04-30.** Розділ 11 (Strict TS rollout) розширено Phase 2.1:
+> `tsconfig.strict.json` тепер покриває 12 директорій (`src/shared`, `src/test`,
+> `src/core/{auth,cloudSync,components,hints,hooks,hub,observability,pricing,profile,settings}`).
+> 16 strict-null помилок у 5 транзитивно імпортованих файлах (core/lib, modules/finyk,
+> modules/routine) виправлено null-guards + explicit generics для `safeReadLS`/`readJSON`,
+> без runtime-змін.
 
 > **Як читати:** позначки в стовпчику «Статус» оновлюються в момент злиття PR.
 > Це жива сторінка — не «звіт», а контроль міграцій. Кожен запис стандартизує:
@@ -283,10 +284,33 @@ Production код чистий. Тестові `any` — фабрики фікт
   - `as string` перед `JSON.parse`).
 - Жодних змін у runtime-коді (лише типи + один тест assertion).
 
+**Phase 2.1 деталі (audit high-priority #1, крок 2 — `core/hub` + `core/settings`):**
+
+- `tsconfig.strict.json` розширено ще на 2 директорії: `src/core/hub/**`
+  і `src/core/settings/**` (разом 12 директорій).
+- Strict-null помилки в **імпортованих із цих директорій** файлах
+  виправлені in-place (16 помилок у 5 файлах):
+  - `core/lib/hubChatContext.ts` — guard на `x.startedAt` (optional) і
+    `sorted[0]?.items` перед викликом `.length`.
+  - `modules/finyk/hooks/useStorage.ts` — explicit `NetworthSnap` тип
+    для `networthSnapshotRef`, щоб перестати інферити `value: null`
+    літерально.
+  - `modules/finyk/lib/lsStats.ts` — explicit generics
+    `safeReadLS<string[]>` / `safeReadLS<Record<string,string>>` /
+    `safeReadLS<Array<{linkedTxIds?: string[]}>>` замість inference
+    від дефолта `[]`.
+  - `modules/routine/components/HabitDetailSheet.tsx` — явний
+    `habit.weekdays && habit.weekdays.length > 0` замість
+    optional-chain + `> 0`.
+  - `modules/routine/lib/finykSubscriptionCalendar.ts` — generic
+    `safeReadLS<unknown[] | null>` замість дефолта `null`.
+- Жодних `@ts-expect-error` і жодних runtime-змін — лише сигнатури
+  `safeReadLS`/`readJSON` та null-guards.
+
 **Phase 3 (наступний PR):** розширити `tsconfig.strict.json` на
-`src/modules/{routine,nutrition,finyk,fizruk}/**` (~25 strict-null помилок
-по поточному виміру) і `src/core/lib/**` (16 помилок). Можна
-паралелити як 4 під-PR-и (по одному на модуль).
+`src/modules/{routine,nutrition,finyk,fizruk}/**` і решту `src/core/lib/**`
+(залишок ~кілька strict-null помилок у транзитивних імпортах з модулів).
+Можна паралелити як 4 під-PR-и (по одному на модуль).
 
 **Phase 4:** увімкнути `strict: true` у головному `tsconfig.json`, видалити
 `allowJs`, виправити всі залишкові помилки (основний ROI — на `noImplicitAny`,
