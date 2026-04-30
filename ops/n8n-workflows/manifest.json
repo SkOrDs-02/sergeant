@@ -179,7 +179,7 @@
         "Telegram (Sergeant_alert_bot)",
         "Resend (Bearer)"
       ],
-      "notes": "n8n liveness heartbeat with email fallback."
+      "notes": "n8n liveness heartbeat (every 3 hours) with email fallback."
     }
   }
 }

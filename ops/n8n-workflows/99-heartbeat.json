@@ -1,19 +1,19 @@
 {
-  "name": "99 — Heartbeat (n8n alive check every 5 min)",
+  "name": "99 — Heartbeat (n8n alive check every 3h)",
   "nodes": [
     {
       "parameters": {
         "rule": {
           "interval": [
             {
-              "field": "minutes",
-              "minutesInterval": 5
+              "field": "hours",
+              "hoursInterval": 3
             }
           ]
         }
       },
-      "id": "cron-5min",
-      "name": "Every 5 minutes",
+      "id": "cron-3h",
+      "name": "Every 3 hours",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [240, 300]
@@ -86,7 +86,7 @@
     }
   ],
   "connections": {
-    "Every 5 minutes": {
+    "Every 3 hours": {
       "main": [
         [
           {
