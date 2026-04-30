@@ -67,7 +67,10 @@ export function CollapsibleSection({
       if (next) {
         // After CSS transition (200ms) scroll so expanded content is visible.
         setTimeout(() => {
-          sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          sectionRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+          });
         }, 210);
       }
       return next;

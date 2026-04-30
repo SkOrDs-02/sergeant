@@ -119,8 +119,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       : "";
 
   const maxLen = props.maxLength;
-  const currentLen = maxLen !== undefined ? String(props.value ?? "").length : 0;
-  const renderCounter = (showCharCount || maxLen !== undefined) && maxLen !== undefined;
+  const currentLen =
+    maxLen !== undefined ? String(props.value ?? "").length : 0;
+  const renderCounter =
+    (showCharCount || maxLen !== undefined) && maxLen !== undefined;
   const counterColor =
     currentLen >= maxLen!
       ? "text-danger"
@@ -195,7 +197,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           )}
           {renderCounter && (
             <span
-              className={cn("text-xs tabular-nums shrink-0 transition-colors", counterColor)}
+              className={cn(
+                "text-xs tabular-nums shrink-0 transition-colors",
+                counterColor,
+              )}
               aria-live="polite"
               aria-label={`${currentLen} з ${maxLen} символів`}
             >

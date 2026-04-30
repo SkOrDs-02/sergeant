@@ -17,6 +17,7 @@
     "src/core/pricing/**/*",
     "src/core/profile/**/*",
     "src/core/settings/**/*",
+    "src/core/onboarding/**/*",
     "src/modules/nutrition/**/*",
     "src/modules/routine/**/*"
   ],
