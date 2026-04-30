@@ -8,7 +8,12 @@ import {
   MonoDisconnectResponseSchema,
   MonoSyncStateSchema,
 } from "../../http/schemas.js";
-import { encryptToken, decryptToken, tokenFingerprint } from "./crypto.js";
+import {
+  encryptToken,
+  decryptToken,
+  tokenFingerprint,
+  webhookSecretHash,
+} from "./crypto.js";
 import type { EncryptedToken } from "./crypto.js";
 
 /**
@@ -133,18 +138,25 @@ export async function connectHandler(
 
   const encrypted: EncryptedToken = encryptToken(token, encKey);
   const fingerprint = tokenFingerprint(token);
+  // Plaintext secret stays in `webhook_secret` only for one release cycle
+  // (rollback safety) — see migration 017's header. The new lookup path
+  // resolves rows by `webhook_secret_hash`, so even if the plaintext
+  // column is dropped tomorrow this insert keeps working.
+  const webhookSecretHashHex = webhookSecretHash(webhookSecret);
 
   await query(
     `INSERT INTO mono_connection
        (user_id, token_ciphertext, token_iv, token_tag, token_fingerprint,
-        webhook_secret, webhook_registered_at, status, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, NOW(), 'active', NOW())
+        webhook_secret, webhook_secret_hash, webhook_registered_at,
+        status, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), 'active', NOW())
      ON CONFLICT (user_id) DO UPDATE SET
        token_ciphertext = EXCLUDED.token_ciphertext,
        token_iv = EXCLUDED.token_iv,
        token_tag = EXCLUDED.token_tag,
        token_fingerprint = EXCLUDED.token_fingerprint,
        webhook_secret = EXCLUDED.webhook_secret,
+       webhook_secret_hash = EXCLUDED.webhook_secret_hash,
        webhook_registered_at = NOW(),
        status = 'active',
        updated_at = NOW()`,
@@ -155,6 +167,7 @@ export async function connectHandler(
       encrypted.tag,
       fingerprint,
       webhookSecret,
+      webhookSecretHashHex,
     ],
     { op: "mono_connection_upsert" },
   );

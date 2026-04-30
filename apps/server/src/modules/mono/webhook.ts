@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import crypto from "node:crypto";
+import { z } from "zod";
 import { query } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import {
@@ -9,6 +9,7 @@ import {
 import { sendToUserQuietly } from "../../push/send.js";
 import type { PushPayload } from "../../push/types.js";
 import { categorizeMcc } from "./mccCategories.js";
+import { webhookSecretHash } from "./crypto.js";
 
 /**
  * POST /api/mono/webhook/:secret — public Monobank delivery endpoint.
@@ -21,39 +22,49 @@ import { categorizeMcc } from "./mccCategories.js";
  * Always returns 200 after successful write (Monobank retries on non-2xx).
  */
 
-interface StatementItem {
-  id: string;
-  time: number;
-  description: string;
-  mcc: number;
-  originalMcc?: number;
-  hold?: boolean;
-  amount: number;
-  operationAmount: number;
-  currencyCode: number;
-  commissionRate?: number;
-  cashbackAmount?: number;
-  balance?: number;
-  comment?: string;
-  receiptId?: string;
-  invoiceId?: string;
-  counterEdrpou?: string;
-  counterIban?: string;
-  counterName?: string;
-}
+/**
+ * Zod schema for the Monobank webhook payload.
+ *
+ * Mirrors the public `corporateWebHookData` shape from Monobank's OpenAPI
+ * spec (https://api.monobank.ua/docs). String fields are bounded so a
+ * malicious or buggy upstream cannot push arbitrarily-large blobs into our
+ * INSERT — the global body limit is already 32KB (see `app.ts`), but a
+ * second per-field belt is cheap insurance against a future limit bump.
+ *
+ * `Number.isFinite` guards on integer fields keep `NaN` / `Infinity` out of
+ * the BIGINT columns (Postgres would coerce them to text and pgcrypto
+ * helpers downstream would explode).
+ */
+const StatementItemSchema = z.object({
+  id: z.string().min(1).max(64),
+  time: z.number().int().nonnegative().finite(),
+  description: z.string().max(500).optional().default(""),
+  mcc: z.number().int().nonnegative().max(99_999).default(0),
+  originalMcc: z.number().int().nonnegative().max(99_999).optional(),
+  hold: z.boolean().optional(),
+  amount: z.number().int().finite(),
+  operationAmount: z.number().int().finite(),
+  currencyCode: z.number().int().nonnegative().max(9_999),
+  commissionRate: z.number().int().finite().optional(),
+  cashbackAmount: z.number().int().finite().optional(),
+  balance: z.number().int().finite().optional(),
+  comment: z.string().max(500).optional(),
+  receiptId: z.string().max(64).optional(),
+  invoiceId: z.string().max(64).optional(),
+  counterEdrpou: z.string().max(32).optional(),
+  counterIban: z.string().max(64).optional(),
+  counterName: z.string().max(200).optional(),
+});
 
-interface WebhookPayload {
-  type: string;
-  data: {
-    account: string;
-    statementItem: StatementItem;
-  };
-}
+const WebhookPayloadSchema = z.object({
+  type: z.literal("StatementItem"),
+  data: z.object({
+    account: z.string().min(1).max(64),
+    statementItem: StatementItemSchema,
+  }),
+});
 
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
-}
+type StatementItem = z.infer<typeof StatementItemSchema>;
 
 /**
  * Currency symbols for the most common ISO-4217 codes Monobank issues.
@@ -133,12 +144,17 @@ export async function webhookHandler(
     return;
   }
 
-  const connResult = await query<{
-    user_id: string;
-    webhook_secret: string;
-  }>(
-    "SELECT user_id, webhook_secret FROM mono_connection WHERE webhook_secret = $1 AND status = 'active'",
-    [secret],
+  // Look up by SHA-256 of the path secret. Pre-hashing makes the WHERE
+  // clause execute on a value the attacker has no preimage for, so the
+  // B-tree probe time can no longer leak the original secret's prefix —
+  // which the previous `WHERE webhook_secret = $1` design did despite the
+  // app-side `timingSafeEqual` (the index walk happens BEFORE the row
+  // reaches us). The unique index `mono_connection_webhook_secret_hash_idx`
+  // makes this an O(log N) point lookup.
+  const secretHash = webhookSecretHash(secret);
+  const connResult = await query<{ user_id: string }>(
+    "SELECT user_id FROM mono_connection WHERE webhook_secret_hash = $1 AND status = 'active'",
+    [secretHash],
     { op: "mono_webhook_lookup" },
   );
 
@@ -148,31 +164,30 @@ export async function webhookHandler(
     return;
   }
 
-  const conn = connResult.rows[0];
+  const userId = connResult.rows[0].user_id;
 
-  // AI-DANGER: timing-safe comparison is critical here. Do not replace with === or change the secret-lookup flow without coordinating a secret-rotation.
-  if (!timingSafeEqual(conn.webhook_secret, secret)) {
-    monoWebhookReceivedTotal.inc({ status: "invalid_secret" });
-    res.status(404).json({ error: "Not found" });
-    return;
-  }
-
-  const userId = conn.user_id;
-
-  const payload = req.body as WebhookPayload | undefined;
-  if (
-    !payload ||
-    typeof payload !== "object" ||
-    payload.type !== "StatementItem" ||
-    !payload.data?.account ||
-    !payload.data?.statementItem?.id
-  ) {
+  // Zod validation replaces hand-rolled type checks. A bad payload (missing
+  // required keys, wrong types, oversized strings, NaN/Infinity in numeric
+  // fields) becomes a 400 here, BEFORE any DB write — the inline guard
+  // accepted e.g. `mcc: "string"` or `amount: NaN` because TypeScript types
+  // were trusted at runtime. We log a coarse error path (no payload echo,
+  // since untrusted input must not land in our logs) and bump the
+  // `bad_payload` metric so spikes are observable.
+  const parsed = WebhookPayloadSchema.safeParse(req.body);
+  if (!parsed.success) {
     monoWebhookReceivedTotal.inc({ status: "bad_payload" });
+    logger.warn({
+      msg: "mono_webhook_bad_payload",
+      issues: parsed.error.issues.map((i) => ({
+        path: i.path.join("."),
+        code: i.code,
+      })),
+    });
     res.status(400).json({ error: "Invalid payload" });
     return;
   }
 
-  const { account: monoAccountId, statementItem: item } = payload.data;
+  const { account: monoAccountId, statementItem: item } = parsed.data.data;
 
   try {
     // RETURNING (xmax = 0) AS inserted is a Postgres trick: on a fresh INSERT
