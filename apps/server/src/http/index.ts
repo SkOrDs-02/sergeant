@@ -43,6 +43,7 @@ export { asyncHandler } from "./asyncHandler.js";
 export { setModule } from "./setModule.js";
 export { requireSession, requireSessionSoft } from "./requireSession.js";
 export { requireApiSecret } from "./requireApiSecret.js";
+export { safeStringEqual } from "./safeCompare.js";
 export { requireAnthropicKey } from "./requireAnthropicKey.js";
 export { requireGroqKey } from "./requireGroqKey.js";
 export { requireAiQuota } from "./requireAiQuota.js";
