@@ -1,6 +1,6 @@
 # Railway (API + PostgreSQL) + Vercel (фронт)
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-04-30 by @devin-ai-integration[bot]. **Next review:** 2026-07-30.
 > **Status:** Active
 
 ## 1. PostgreSQL на Railway
@@ -28,17 +28,24 @@
 | `ALLOWED_ORIGINS`                | URL фронту на Vercel, напр. `https://твій-проєкт.vercel.app` (через кому, якщо кілька)                                                                                                                     |
 | `RESEND_API_KEY`                 | Опційно, але для листів скидання пароля / верифікації email — ключ [Resend](https://resend.com). Без нього бекенд стартує з warn у логах. Опційно `RESEND_FROM` (відправник з верифікованого домену).      |
 | `BETTER_AUTH_CROSS_SITE_COOKIES` | Опційно: `0` — не форсити `SameSite=None` (рідко: один домен через reverse proxy). Якщо не задано, при `BETTER_AUTH_URL` на **https://** кукі налаштовуються для крос-сайтового фронта (Vercel → Railway). |
+| `SENTRY_DSN`                     | DSN бекенд-проєкту в Sentry (платформа Node.js). Без цієї змінної `apps/server/src/sentry.ts` стає no-op і помилки не їдуть у Sentry — alert routing у n8n не зрабує. Див. §7.                             |
+| `SENTRY_ENVIRONMENT`             | Опційно: `production` / `staging`. Дефолт — `NODE_ENV`.                                                                                                                                                    |
+| `SENTRY_TRACES_SAMPLE_RATE`      | Опційно: `0..1`. Дефолт `0.1`. `0` явно вимикає трейсинг.                                                                                                                                                  |
 
 4. У **Networking** увімкни **Public networking**, скопіюй домен — це і є база для `BETTER_AUTH_URL`.
-5. Задеплой. У логах після старту має бути `[db] Schema verified`.
+5. Задеплой. У логах після старту має бути `[db] Schema verified` і (якщо є `SENTRY_DSN`) `{"msg":"sentry_initialized",...}`.
 
 ## 3. Vercel (фронт)
 
-У **Project** → **Settings** → **Environment Variables** (Production / Preview):
+У **Project** → **Settings** → **Environment Variables** (Production / Preview / Development):
 
-| Змінна        | Значення                                                                        |
-| ------------- | ------------------------------------------------------------------------------- |
-| `BACKEND_URL` | Публічний URL API (Railway), напр. `https://sergeant-production.up.railway.app` |
+| Змінна                           | Значення                                                                                                                               |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `BACKEND_URL`                    | Публічний URL API (Railway), напр. `https://sergeant-production.up.railway.app`                                                        |
+| `VITE_SENTRY_DSN`                | DSN фронт-проєкту в Sentry (платформа `javascript-react`). Без нього `@sentry/react` не підвантажується — економія ~30–40 KB у бандлі. |
+| `VITE_SENTRY_ENVIRONMENT`        | Опційно: `production` / `preview`. Дефолт — `MODE`.                                                                                    |
+| `VITE_SENTRY_TRACES_SAMPLE_RATE` | Опційно: `0..1`. Дефолт `0.1`.                                                                                                         |
+| `VITE_SENTRY_REPLAY_SAMPLE_RATE` | Опційно: `0..1` для Session Replay. Дефолт `0` (вимкнено); `replaysOnErrorSampleRate` завжди `1`.                                      |
 
 > **Чому `BACKEND_URL`, а не `VITE_API_BASE_URL`?**
 >
@@ -79,3 +86,28 @@ ALLOWED_ORIGINS=http://localhost:5173
 - **Healthcheck**:\n+ - **Uptime**: `GET /livez` кожні 1–5 хв.\n+ - **Readiness (з БД)**: `GET /readyz` (або `/health`) — корисно, якщо хочеш алертити саме проблеми з Postgres.\n+ - Алерт при **не 200** або тілі не `ok`.
 - **Логи Railway**: шукай за **`X-Request-Id`** з відповіді API або з тіла помилки (`requestId`), щоб зв’язати клієнт і сервер.
 - **Структуровані рядки** `{"msg":"http",...}` — фільтруй за `status >= 500` або `path` для регресій.
+
+## 7. Sentry → n8n → Telegram
+
+Error-алерти йдуть з обох Sentry-проєктів (`sergeant-api`, `sergeant-web`) у self-hosted n8n
+(Railway) → воркфлоу `03 — Sentry Alert Routing` → Telegram (`Sergeant_alert_bot`).
+
+Як це склеєно (одноразова операція в Sentry/n8n, не в коді репо):
+
+1. **Sentry → Settings → Developer Settings → Custom Integrations → Internal Integration**
+   `n8n Alert Routing`: `Webhook URL = <n8n-public>/webhook/sentry-alert`, `Alerts = on`,
+   scopes `event:read, project:read, org:read`. Інсталюється в орг автоматично.
+2. **Per-project (`sergeant-api`, `sergeant-web`) → Settings → Legacy Integrations → WebHooks**
+   увімкнути плагін, у `Callback URLs` вставити той самий `<n8n-public>/webhook/sentry-alert`.
+   Це дає action `Send a notification via webhooks` для Issue Alert Rules.
+3. **Per-project → Alerts → Rules → Create Issue Alert** з умовою
+   `A new issue is created` та action `Send a notification via webhooks`. Існуюча дефолтна
+   рулза _Send a notification for high priority issues_ не чіпає n8n — webhook action треба
+   додати окремо.
+4. **n8n → workflow `03-sentry-alert-routing.json` (active=true)** парсить
+   `body.data.issue.{level,title,project.name,count,permalink}` і шле в `TELEGRAM_ALERT_CHAT_ID`.
+   Гілки: `level=fatal` → `🚨 FATAL`, інші не-`info` → `⚠️ <level>`.
+
+Воркфлоу/маніфест джерела істини — в [`ops/n8n-workflows/`](../../ops/n8n-workflows/);
+ADR — [`docs/adr/0026-n8n-workflow-source-of-truth.md`](../adr/0026-n8n-workflow-source-of-truth.md).
+У git `active: false` навмисно (per ADR-0026 — активація це окрема операція в середовищі).
