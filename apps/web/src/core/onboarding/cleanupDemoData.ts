@@ -7,6 +7,8 @@
 // Keeping this tiny + local rather than spreading migration logic across
 // every module — the demo flag was always a cross-cutting concern.
 
+import { safeReadLS, safeWriteLS, safeRemoveLS } from "@shared/lib/storage";
+
 const CLEANUP_DONE_KEY = "hub_demo_cleanup_v1_done";
 const LEGACY_SEEDED_FLAG_KEY = "hub_demo_seeded_v1";
 const LEGACY_BANNER_DISMISSED_KEY = "hub_demo_banner_dismissed_v1";
@@ -16,32 +18,6 @@ const FIZRUK_WORKOUTS_KEY = "fizruk_workouts_v1";
 const ROUTINE_STATE_KEY = "hub_routine_v1";
 const NUTRITION_LOG_KEY = "nutrition_log_v1";
 
-function readJSON<T>(key: string): T | null {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
-}
-
-function writeJSON(key: string, value: unknown): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* noop */
-  }
-}
-
-function removeKey(key: string): void {
-  try {
-    localStorage.removeItem(key);
-  } catch {
-    /* noop */
-  }
-}
-
 function stripDemoArray<T extends { demo?: boolean }>(
   arr: T[] | null | undefined,
 ): T[] {
@@ -50,33 +26,33 @@ function stripDemoArray<T extends { demo?: boolean }>(
 }
 
 function cleanFinyk(): void {
-  const list = readJSON<Array<{ demo?: boolean }>>(FINYK_MANUAL_EXPENSES_KEY);
+  const list = safeReadLS<Array<{ demo?: boolean }>>(FINYK_MANUAL_EXPENSES_KEY);
   if (!Array.isArray(list)) return;
   const next = stripDemoArray(list);
   if (next.length === list.length) return;
-  writeJSON(FINYK_MANUAL_EXPENSES_KEY, next);
+  safeWriteLS(FINYK_MANUAL_EXPENSES_KEY, next);
 }
 
 function cleanFizruk(): void {
-  const raw = readJSON<
+  const raw = safeReadLS<
     | Array<{ demo?: boolean }>
     | { workouts?: Array<{ demo?: boolean }>; schemaVersion?: number }
   >(FIZRUK_WORKOUTS_KEY);
   if (Array.isArray(raw)) {
     const next = stripDemoArray(raw);
-    if (next.length !== raw.length) writeJSON(FIZRUK_WORKOUTS_KEY, next);
+    if (next.length !== raw.length) safeWriteLS(FIZRUK_WORKOUTS_KEY, next);
     return;
   }
   if (raw && Array.isArray(raw.workouts)) {
     const next = stripDemoArray(raw.workouts);
     if (next.length !== raw.workouts.length) {
-      writeJSON(FIZRUK_WORKOUTS_KEY, { ...raw, workouts: next });
+      safeWriteLS(FIZRUK_WORKOUTS_KEY, { ...raw, workouts: next });
     }
   }
 }
 
 function cleanRoutine(): void {
-  const raw = readJSON<{
+  const raw = safeReadLS<{
     habits?: Array<{ id?: string; demo?: boolean }>;
     completions?: Record<string, unknown>;
     habitOrder?: string[];
@@ -93,7 +69,7 @@ function cleanRoutine(): void {
   const habitOrder = Array.isArray(raw.habitOrder)
     ? raw.habitOrder.filter((id) => !demoIds.has(id))
     : undefined;
-  writeJSON(ROUTINE_STATE_KEY, {
+  safeWriteLS(ROUTINE_STATE_KEY, {
     ...raw,
     habits,
     completions,
@@ -103,7 +79,7 @@ function cleanRoutine(): void {
 
 function cleanNutrition(): void {
   const log =
-    readJSON<Record<string, { meals?: Array<{ demo?: boolean }> }>>(
+    safeReadLS<Record<string, { meals?: Array<{ demo?: boolean }> }>>(
       NUTRITION_LOG_KEY,
     );
   if (!log || typeof log !== "object" || Array.isArray(log)) return;
@@ -119,28 +95,25 @@ function cleanNutrition(): void {
     if (meals.length > 0) next[dateKey] = { ...day, meals };
     else touched = true;
   }
-  if (touched) writeJSON(NUTRITION_LOG_KEY, next);
+  if (touched) safeWriteLS(NUTRITION_LOG_KEY, next);
 }
 
 /**
  * Run the one-time FTUX demo-data cleanup. Safe to call on every boot —
  * it exits in O(1) after the first successful run.
+ *
+ * `safeReadLS` decodes JSON, so the legacy-string-flag check needs raw
+ * comparison; we use the helper's null-fallback sentinel instead. If the
+ * flag isn't set yet, `safeReadLS` returns `null` → we proceed with the
+ * cleanup. If it's set, the parsed string `"1"` short-circuits.
  */
 export function runDemoCleanupOnce(): void {
-  try {
-    if (localStorage.getItem(CLEANUP_DONE_KEY) === "1") return;
-  } catch {
-    return;
-  }
-  try {
-    cleanFinyk();
-    cleanFizruk();
-    cleanRoutine();
-    cleanNutrition();
-    removeKey(LEGACY_SEEDED_FLAG_KEY);
-    removeKey(LEGACY_BANNER_DISMISSED_KEY);
-    localStorage.setItem(CLEANUP_DONE_KEY, "1");
-  } catch {
-    /* noop — retry next boot */
-  }
+  if (safeReadLS<unknown>(CLEANUP_DONE_KEY) === "1") return;
+  cleanFinyk();
+  cleanFizruk();
+  cleanRoutine();
+  cleanNutrition();
+  safeRemoveLS(LEGACY_SEEDED_FLAG_KEY);
+  safeRemoveLS(LEGACY_BANNER_DISMISSED_KEY);
+  safeWriteLS(CLEANUP_DONE_KEY, "1");
 }
