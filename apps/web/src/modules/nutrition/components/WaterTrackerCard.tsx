@@ -17,7 +17,7 @@ interface WaterTrackerCardProps {
 export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
   const { todayMl, add, subtract, reset } = useWaterTracker();
   const [resetPending, setResetPending] = useState(false);
-  const resetTimerRef = useRef(null);
+  const resetTimerRef = useRef<number | null>(null);
   const [customMl, setCustomMl] = useState("");
   const [lastAddedMl, setLastAddedMl] = useState(0);
 

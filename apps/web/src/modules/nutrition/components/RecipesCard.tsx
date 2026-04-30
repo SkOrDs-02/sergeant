@@ -360,7 +360,7 @@ export function RecipesCard({
         <div className="text-xs text-subtle mt-0.5">
           Рекомендації на базі продуктів зі складу. Можна вказати час, порції та
           &quot;не хочу&quot;.
-          {recipeCacheEntry?.recipes?.length > 0 && (
+          {(recipeCacheEntry?.recipes?.length ?? 0) > 0 && (
             <span className="ml-1 text-nutrition-strong dark:text-nutrition">
               (є кеш сеансу — натисни «Запропонувати» для оновлення)
             </span>
