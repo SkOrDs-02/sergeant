@@ -120,6 +120,22 @@ const MUST_BE_OWNED = [
     match: /\.(js|mjs|cjs|json)$/,
     reason: "custom lint rules enforce hard rules",
   },
+
+  // Telegram bot agents — system prompts + routing logic
+  {
+    path: "apps/console/src/agents",
+    kind: "tree",
+    match: /\.ts$/,
+    reason: "agent system prompts and router — accidental prompt changes affect all users",
+  },
+
+  // n8n automation workflows
+  {
+    path: "ops/n8n-workflows",
+    kind: "tree",
+    match: /\.json$/,
+    reason: "production automation workflows (billing, alerts, backups)",
+  },
 ];
 
 // ── CODEOWNERS parser (subset that GitHub itself implements) ─────────────────

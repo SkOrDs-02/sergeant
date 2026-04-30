@@ -30,6 +30,12 @@
 # ── Agent skills (used by Devin / Claude / Cursor) ───────────────────────
 /.agents/skills/        @Skords-01
 
+# ── Telegram bot agents (ops / marketing routing + system prompts) ─────
+/apps/console/src/agents/  @Skords-01
+
+# ── n8n automation workflows ──────────────────────────────────────────
+/ops/n8n-workflows/        @Skords-01
+
 # ── Sensitive product surfaces ───────────────────────────────────────────
 # tsconfig strict-inheritance guard — see docs/backend-tech-debt.md.
 apps/web/tsconfig.json                  @Skords-01

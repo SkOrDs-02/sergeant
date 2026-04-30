@@ -638,7 +638,7 @@ Real regressions we've shipped — do not repeat:
 ## See also
 
 - [`docs/playbooks/README.md`](docs/playbooks/README.md) — full index of procedural recipes (with triggers and 🌳 decision-tree markers)
-- [`.agents/skills/`](.agents/skills/) — `SKILL.md` files for Devin agents (better-auth, supabase, react-native, ui/ux, etc.)
+- [`.agents/skills/`](.agents/skills/) — `SKILL.md` files for AI agents: project-specific (`sergeant-design-system`, `sergeant-api-patterns`, `sergeant-hubchat-tool`, `sergeant-sql-migrations`, `sergeant-postgres`) + community (better-auth, react-native, ui/ux, etc.)
 - [`docs/security/audit-exceptions.md`](docs/security/audit-exceptions.md) — tracked vulnerabilities with no available fix (audit-exception label workflow)
 - `docs/planning/ai-coding-improvements.md` — full roadmap for AI coding infra
 - `docs/planning/dev-stack-roadmap.md` — top-15 dev-stack roadmap with progress

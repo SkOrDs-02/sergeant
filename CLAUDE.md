@@ -45,7 +45,7 @@ pnpm lint:codeowners               # CI gate: fail if required path is missing f
 > Hard Rule #15 in `AGENTS.md` applies to AI agents: complete this pre-flight before implementing.
 
 1. Read the relevant playbook in `docs/playbooks/` — pick by trigger phrase (e.g. "нова API-функціональність" → `add-api-endpoint.md`; "remove dead code" → `cleanup-dead-code.md`).
-2. Check `AGENTS.md` § Hard rules — especially bigint coercion (#1), RQ keys (#2), migration numbering (#4), lifecycle markers (#10), governance + docs discipline (#15).
+2. Check `AGENTS.md` § Hard rules — especially bigint coercion (#1), RQ keys (#2), migration numbering (#4), Tailwind opacity scale (#8), `-strong` brand fills (#9), lifecycle markers (#10), no hex in className (#11), module-accent containment (#12), focus-visible over focus (#14), governance + docs discipline (#15).
 3. Before deleting any file, run `pnpm dead-code:files` (which honours `@scaffolded` markers — Hard Rule #10). Never delete a scaffolded file just because it has zero importers.
 4. New HubChat tool? Needs **3 coordinated edits** — see `docs/playbooks/add-hubchat-tool.md`.
 5. New migration? Use `pnpm gen migration --name <desc>` — auto-numbers from last migration (`015`).
@@ -81,3 +81,16 @@ DATABASE_URL=postgresql://hub:hub@localhost:5432/hub
 ```
 
 See `.env.example` for the full list.
+
+## Skills (`.agents/skills/`)
+
+The repo ships in-repo skills that provide domain-specific guidance. Refer to these when working on the matching area:
+
+**Project-specific skills (prefer these first):**
+- `sergeant-design-system` — Tailwind tokens, brand palettes, WCAG-AA rules, module-accent containment (Hard Rules #8, #9, #11, #12, #13, #14)
+- `sergeant-api-patterns` — bigint coercion, api-client sync, RQ key factories (Hard Rules #1, #2, #3)
+- `sergeant-hubchat-tool` — adding/modifying HubChat AI assistant tools
+- `sergeant-sql-migrations` — migration numbering, two-phase DROP (Hard Rule #4)
+- `sergeant-postgres` — PostgreSQL patterns with raw `pg` driver
+
+**Community skills:** `better-auth-best-practices`, `vercel-react-best-practices` (note: Next.js/RSC sections do not apply), `vercel-react-native-skills`, `vercel-composition-patterns`, `ui-ux-pro-max`, `frontend-design`, `browser-use`, `brainstorming`, `find-skills`, `skill-creator`.

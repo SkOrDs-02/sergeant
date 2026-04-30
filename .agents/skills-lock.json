@@ -26,15 +26,35 @@
       "sourceType": "github",
       "computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
     },
+    "sergeant-api-patterns": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": ""
+    },
+    "sergeant-design-system": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": ""
+    },
+    "sergeant-hubchat-tool": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": ""
+    },
+    "sergeant-postgres": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": ""
+    },
+    "sergeant-sql-migrations": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": ""
+    },
     "skill-creator": {
       "source": "anthropics/skills",
       "sourceType": "github",
       "computedHash": "b122f4d1e91aa1d83027e050b5b37c3156203ee85458d7b1360bc48167c9e02a"
-    },
-    "supabase-postgres-best-practices": {
-      "source": "supabase/agent-skills",
-      "sourceType": "github",
-      "computedHash": "d606a1146be6d54fb9e73f718b5320b9acac5ff2ba2d7230a555df4b5a923b4a"
     },
     "ui-ux-pro-max": {
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",

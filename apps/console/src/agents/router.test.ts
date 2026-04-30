@@ -22,4 +22,26 @@ describe("console agent router", () => {
       query: "hello there",
     });
   });
+
+  it("routes /help command", () => {
+    expect(parseCommand("/help")).toEqual({
+      agent: "help",
+      query: "",
+    });
+  });
+
+  it("routes /start command as help", () => {
+    expect(parseCommand("/start")).toEqual({
+      agent: "help",
+      query: "",
+    });
+  });
+
+  it("classifies ops-related free text", () => {
+    expect(parseCommand("сервер впав, помилка 500").agent).toBe("ops");
+  });
+
+  it("classifies marketing-related free text", () => {
+    expect(parseCommand("напиши пост про реліз").agent).toBe("marketing");
+  });
 });

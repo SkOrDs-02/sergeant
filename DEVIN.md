@@ -1,6 +1,6 @@
 # Sergeant — Devin context
 
-> **Last validated:** 2026-04-29 by @devin-ai. **Next review:** 2026-07-29.
+> **Last validated:** 2026-04-30 by @devin-ai-integration[bot]. **Next review:** 2026-07-29.
 > **Status:** Active
 
 > Full agent rules, hard rules, anti-patterns, and domain invariants are in **[`AGENTS.md`](./AGENTS.md)**.
@@ -24,22 +24,58 @@ pnpm test                # Vitest all
 pnpm check               # lint + typecheck + test + build (full CI)
 pnpm db:up               # Start Postgres (Docker)
 pnpm db:migrate          # Run migrations
-pnpm gen                 # Plop generators (migration, rq-hook, hubchat-tool, endpoint)
+pnpm gen                 # Plop code generators (migration, rq-hook, hubchat-tool, endpoint, adr)
+pnpm gen:adr             # New ADR (auto-numbers from docs/adr/)
 pnpm format:check        # Prettier (CI uses this exact command)
+pnpm docs:check-links    # Scan every .md for broken [text](target) links (CI: --strict-external + docs/external-link-allowlist.json)
+pnpm docs:gen-playbook-index       # Regenerate docs/playbooks/INDEX.md
+pnpm docs:check-playbook-index     # CI: fail if INDEX.md is stale
+pnpm docs:check-playbook-schema    # CI: every playbook has H1 + freshness + Status + Trigger
+pnpm docs:freshness-dashboard      # Build dist/freshness-dashboard.html
+pnpm lint:ai-legacy                # CI gate: fail on expired/malformed `// AI-LEGACY: expires …` markers
+pnpm ai-legacy:dashboard           # Build dist/ai-legacy-dashboard.html
+pnpm lint:hard-rules-registry      # CI gate: validates docs/governance/hard-rules.json ↔ AGENTS.md ↔ CONTRIBUTING.md
+pnpm hard-rules:generate           # Regenerate docs/governance/hard-rules-matrix.md from hard-rules.json
+pnpm hard-rules:check              # CI gate: fail if hard-rules-matrix.md is stale
+pnpm hard-rules:list               # Plain-text dump of every Hard Rule (for code-review / triage)
+pnpm lint:codeowners               # CI gate: fail if required path is missing from .github/CODEOWNERS
 ```
 
 ## Before you write code
 
-1. Pick the relevant playbook in [`docs/playbooks/`](docs/playbooks/) by trigger phrase. Decision-tree playbooks are marked 🌳 — start at Q1.
-2. Check [`AGENTS.md` § Hard rules](AGENTS.md#hard-rules-do-not-break) — especially #1 (bigint→number coercion), #2 (RQ key factories), #4 (sequential migrations + two-phase DROP), #5 (commit scope enum), #8 (Tailwind opacity scale), #9 (`-strong` brand fills behind `text-white`).
-3. New HubChat tool? Three coordinated edits — see [`docs/playbooks/add-hubchat-tool.md`](docs/playbooks/add-hubchat-tool.md).
-4. New SQL migration? Use `pnpm gen migration --name <desc>` — auto-numbers from the last file under `apps/server/src/migrations/`.
+> Hard Rule #15 in `AGENTS.md` applies to AI agents: complete this pre-flight before implementing.
+
+1. Read the relevant playbook in `docs/playbooks/` — pick by trigger phrase (e.g. "нова API-функціональність" → `add-api-endpoint.md`; "remove dead code" → `cleanup-dead-code.md`). Decision-tree playbooks are marked 🌳 — start at Q1.
+2. Check [`AGENTS.md` § Hard rules](AGENTS.md#hard-rules-do-not-break) — especially #1 (bigint→number coercion), #2 (RQ key factories), #4 (sequential migrations + two-phase DROP), #5 (commit scope enum), #8 (Tailwind opacity scale), #9 (`-strong` brand fills behind `text-white`), #11 (no hex in className), #12 (module-accent containment), #14 (focus-visible over focus), #15 (read governance + update docs).
+3. Before deleting any file, run `pnpm dead-code:files` (which honours `@scaffolded` markers — Hard Rule #10). Never delete a scaffolded file just because it has zero importers.
+4. New HubChat tool? Needs **3 coordinated edits** — see [`docs/playbooks/add-hubchat-tool.md`](docs/playbooks/add-hubchat-tool.md) and the `sergeant-hubchat-tool` skill.
+5. New migration? Use `pnpm gen migration --name <desc>` — auto-numbers from last migration. See the `sergeant-sql-migrations` skill.
+6. Before opening the PR, update docs alongside code (Hard Rule #15): api-client types, design-system docs, playbooks, freshness headers — see the must-update table in `AGENTS.md` § Hard Rule #15.
 
 ## Devin-specific
 
 ### Skills (`.agents/skills/`)
 
-Use the in-repo SKILL.md library when relevant: `better-auth-best-practices`, `vercel-react-best-practices`, `vercel-react-native-skills`, `supabase-postgres-best-practices`, `ui-ux-pro-max`, `vercel-composition-patterns`, `frontend-design`, `browser-use`, `brainstorming`, `find-skills`, `skill-creator`. Skills auto-load from [`.agents/skills/`](.agents/skills/) at session start.
+Use the in-repo SKILL.md library when relevant. Skills auto-load from [`.agents/skills/`](.agents/skills/) at session start.
+
+**Project-specific skills (prefer these first):**
+- `sergeant-design-system` — Tailwind tokens, brand palettes, WCAG-AA rules, module-accent containment (Hard Rules #8, #9, #11, #12, #13, #14)
+- `sergeant-api-patterns` — bigint coercion, api-client sync, RQ key factories (Hard Rules #1, #2, #3)
+- `sergeant-hubchat-tool` — adding/modifying HubChat AI assistant tools
+- `sergeant-sql-migrations` — migration numbering, two-phase DROP (Hard Rule #4)
+- `sergeant-postgres` — PostgreSQL patterns with raw `pg` driver
+
+**Community skills:**
+- `better-auth-best-practices` — Better Auth integration guide
+- `vercel-react-best-practices` — React performance (note: Next.js/RSC sections do not apply, Sergeant uses Vite)
+- `vercel-react-native-skills` — React Native / Expo best practices
+- `vercel-composition-patterns` — React composition (note: React 19 section does not apply yet)
+- `ui-ux-pro-max` — UI/UX design intelligence (use alongside `sergeant-design-system` for project tokens)
+- `frontend-design` — distinctive frontend interfaces (use alongside `sergeant-design-system`)
+- `browser-use` — browser automation via CLI
+- `brainstorming` — design process before implementation
+- `find-skills` — discover and install new skills
+- `skill-creator` — create and improve skills
 
 ### In-repo playbooks vs Devin-webapp macros
 
