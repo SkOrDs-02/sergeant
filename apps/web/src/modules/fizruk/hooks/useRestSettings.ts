@@ -1,11 +1,12 @@
 import { useCallback, useState } from "react";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadLSValidated, safeWriteLS } from "@shared/lib/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import {
   REST_CATEGORY_LABELS,
   REST_DEFAULTS,
   getRestCategory,
 } from "@sergeant/fizruk-domain";
+import { RestSettingsSchema } from "./useRestSettings.schema";
 
 export { REST_CATEGORY_LABELS, REST_DEFAULTS, getRestCategory };
 
@@ -17,11 +18,8 @@ const KEY = STORAGE_KEYS.FIZRUK_REST_SETTINGS;
  */
 export function useRestSettings() {
   const [settings, setSettings] = useState(() => {
-    const parsed = safeReadLS(KEY, {});
-    return {
-      ...REST_DEFAULTS,
-      ...(parsed && typeof parsed === "object" ? parsed : {}),
-    };
+    const parsed = safeReadLSValidated(KEY, RestSettingsSchema, {});
+    return { ...REST_DEFAULTS, ...parsed };
   });
 
   const persist = useCallback((next) => {

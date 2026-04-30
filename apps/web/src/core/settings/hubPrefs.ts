@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadLSValidated, safeWriteLS } from "@shared/lib/storage";
+import { HubPrefsSchema, type HubPrefs } from "./hubPrefs.schema";
 
 const HUB_PREFS_KEY = STORAGE_KEYS.HUB_PREFS;
 
-type HubPrefs = Record<string, unknown>;
-
 function loadHubPrefs(): HubPrefs {
-  const parsed = safeReadLS<HubPrefs>(HUB_PREFS_KEY);
-  return parsed && typeof parsed === "object" ? parsed : {};
+  return safeReadLSValidated(HUB_PREFS_KEY, HubPrefsSchema, {});
 }
 
 function saveHubPref(key: string, value: unknown): void {
