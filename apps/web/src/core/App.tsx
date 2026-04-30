@@ -432,21 +432,20 @@ function AppInner() {
   if (!activeModule) {
     // FTUX session = the window between the splash and the user's first
     // real (non-demo) entry. During this window we intentionally
-    // suppress PWA install / iOS install / SW update banners and the
-    // "Sign in" header button so the one signal on screen is the
-    // FirstActionRow. The update banner comes back the moment a real
-    // entry is logged.
+    // suppress PWA install / iOS install / SW update banners and other
+    // noisy chrome so the one signal on screen is the FirstActionRow.
+    // The update banner comes back the moment a real entry is logged.
     // Important: after the onboarding route is finished, the hub must still
     // allow the user to sign in. Otherwise they can land on the dashboard
     // (no entries yet) with no discoverable auth entry point.
-    const inFtuxSession =
-      shouldShowOnboarding() && !user && !isFirstRealEntryDone();
+    const hasFirstRealEntry = hasAnyRealEntry();
+    const inFtuxSession = !hasFirstRealEntry && !isFirstRealEntryDone();
     return (
       <div className="h-dvh bg-bg flex flex-col overflow-hidden safe-area-pt page-enter">
         <SkipLink />
         <HintsOrchestrator
           inFtuxSession={inFtuxSession}
-          hasFirstRealEntry={hasAnyRealEntry()}
+          hasFirstRealEntry={hasFirstRealEntry}
         />
         {!online && <OfflineBanner />}
 
@@ -457,7 +456,7 @@ function AppInner() {
           onShowAuth={openAuth}
           dark={dark}
           onToggleDark={toggleDark}
-          hideAuthButton={inFtuxSession}
+          hideAuthButton={shouldShowOnboarding() && !user && inFtuxSession}
         />
 
         <HubMainContent

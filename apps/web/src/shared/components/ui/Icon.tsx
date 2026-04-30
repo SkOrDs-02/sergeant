@@ -351,6 +351,15 @@ const PATHS: Record<string, ReactNode> = {
       <line x1="9" y1="16" x2="13" y2="16" />
     </>
   ),
+  "list-checks": (
+    <>
+      <path d="m3 7 2 2 4-4" />
+      <path d="m3 17 2 2 4-4" />
+      <path d="M13 6h8" />
+      <path d="M13 12h8" />
+      <path d="M13 18h8" />
+    </>
+  ),
   copy: (
     <>
       <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />

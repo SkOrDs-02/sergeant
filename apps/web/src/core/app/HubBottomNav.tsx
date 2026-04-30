@@ -43,6 +43,10 @@ interface HubBottomNavTabProps {
   id: string;
 }
 
+interface HubBottomNavItem extends HubBottomNavTabProps {
+  key: string;
+}
+
 function HubBottomNavTab({
   active,
   onClick,
@@ -70,17 +74,6 @@ function HubBottomNavTab({
         className,
       )}
     >
-      {active && (
-        <span
-          className={cn(
-            "absolute top-0 left-1/2 -translate-x-1/2",
-            "w-10 h-1 rounded-full shadow-sm",
-            // Brand accent (hub is module-agnostic — never module-colored).
-            "bg-gradient-to-r from-brand-400 to-brand-500",
-          )}
-          aria-hidden
-        />
-      )}
       <span
         className={cn(
           "relative transition-all duration-200",
@@ -170,6 +163,65 @@ export function HubBottomNav({
     safeWriteLS(REPORTS_TAB_REVEALED_AT_KEY, String(Date.now()));
   }, [showReports, onChange, toast]);
 
+  const tabs: HubBottomNavItem[] = [
+    {
+      key: "dashboard",
+      id: "dashboard",
+      panelId: "hub-panel-dashboard",
+      active: hubView === "dashboard",
+      onClick: () => onChange("dashboard"),
+      iconName: "grid",
+      label: "Головна",
+    },
+  ];
+
+  if (showReports) {
+    tabs.push({
+      key: "reports",
+      id: "reports",
+      panelId: "hub-panel-reports",
+      active: hubView === "reports",
+      onClick: () => onChange("reports"),
+      iconName: "bar-chart",
+      label: "Звіти",
+      className: animateReveal ? "animate-bounce-in" : undefined,
+    });
+  }
+
+  if (showProfile) {
+    tabs.push({
+      key: "profile",
+      id: "profile",
+      panelId: "hub-panel-profile",
+      active: hubView === "profile",
+      onClick: () => onChange("profile"),
+      iconName: "user",
+      label: "Профіль",
+    });
+  } else if (onShowAuth) {
+    tabs.push({
+      key: "auth",
+      id: "auth",
+      panelId: "hub-panel-profile",
+      active: false,
+      onClick: onShowAuth,
+      iconName: "user",
+      label: "Увійти",
+    });
+  }
+
+  tabs.push({
+    key: "settings",
+    id: "settings",
+    panelId: "hub-panel-settings",
+    active: hubView === "settings",
+    onClick: () => onChange("settings"),
+    iconName: "settings",
+    label: "Налаштування",
+  });
+
+  const activeIndex = tabs.findIndex((tab) => tab.active);
+
   return (
     <nav
       aria-label="Розділи хабу"
@@ -181,57 +233,36 @@ export function HubBottomNav({
     >
       <div
         role="tablist"
-        className="flex h-[60px] [@media(pointer:coarse)]:h-[64px]"
+        className="relative flex h-[60px] [@media(pointer:coarse)]:h-[64px]"
       >
-        <HubBottomNavTab
-          id="dashboard"
-          panelId="hub-panel-dashboard"
-          active={hubView === "dashboard"}
-          onClick={() => onChange("dashboard")}
-          iconName="grid"
-          label="Головна"
-        />
-
-        {showReports && (
-          <HubBottomNavTab
-            id="reports"
-            panelId="hub-panel-reports"
-            active={hubView === "reports"}
-            onClick={() => onChange("reports")}
-            iconName="bar-chart"
-            label="Звіти"
-            className={animateReveal ? "animate-bounce-in" : undefined}
+        {activeIndex >= 0 && (
+          <span
+            data-testid="hub-bottom-nav-active-indicator"
+            className={cn(
+              "absolute top-0 h-1 w-10 rounded-full shadow-sm pointer-events-none",
+              "transition-[left] duration-200 ease-out",
+              // Brand accent (hub is module-agnostic — never module-colored).
+              "bg-gradient-to-r from-brand-400 to-brand-500",
+            )}
+            style={{
+              left: `calc(${activeIndex} * (100% / ${tabs.length}) + (100% / ${tabs.length} - 2.5rem) / 2)`,
+            }}
+            aria-hidden
           />
         )}
 
-        {showProfile ? (
+        {tabs.map((tab) => (
           <HubBottomNavTab
-            id="profile"
-            panelId="hub-panel-profile"
-            active={hubView === "profile"}
-            onClick={() => onChange("profile")}
-            iconName="user"
-            label="Профіль"
+            key={tab.key}
+            id={tab.id}
+            panelId={tab.panelId}
+            active={tab.active}
+            onClick={tab.onClick}
+            iconName={tab.iconName}
+            label={tab.label}
+            className={tab.className}
           />
-        ) : onShowAuth ? (
-          <HubBottomNavTab
-            id="auth"
-            panelId="hub-panel-profile"
-            active={false}
-            onClick={onShowAuth}
-            iconName="user"
-            label="Увійти"
-          />
-        ) : null}
-
-        <HubBottomNavTab
-          id="settings"
-          panelId="hub-panel-settings"
-          active={hubView === "settings"}
-          onClick={() => onChange("settings")}
-          iconName="settings"
-          label="Налаштування"
-        />
+        ))}
       </div>
     </nav>
   );

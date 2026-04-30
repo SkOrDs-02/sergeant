@@ -224,7 +224,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
                     required
                     minLength={mode === "register" ? 10 : 1}
                     placeholder={
-                      mode === "register" ? "Мінімум 10 с��мволів" : "Пароль"
+                      mode === "register" ? "Мінімум 10 символів" : "Пароль"
                     }
                     autoComplete={
                       mode === "login" ? "current-password" : "new-password"
@@ -342,7 +342,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
                 className="w-full"
               >
                 {loading
-                  ? "З��чекайте…"
+                  ? "Зачекайте…"
                   : mode === "login"
                     ? "Увійти"
                     : "Зареєструватися"}
