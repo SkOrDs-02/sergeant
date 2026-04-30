@@ -26,11 +26,11 @@ import {
   daysBetween,
   todayISO,
 } from "./check-freshness.mjs";
+import { loadConfig } from "./freshness-config.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
-const ALLOWLIST_PATH = resolve(__dirname, "freshness-allowlist.json");
 const DEFAULT_OUTPUT = resolve(REPO_ROOT, "dist/freshness-dashboard.html");
 
 const YELLOW_THRESHOLD_DAYS = 30;
@@ -69,11 +69,11 @@ export function escapeHtml(s) {
 }
 
 export function gatherEntries(
-  allowlist,
+  tracked,
   { today = todayISO(), repoRoot = REPO_ROOT } = {},
 ) {
   const results = [];
-  for (const item of allowlist) {
+  for (const item of tracked) {
     const filePath = item.path;
     const cadence = item.cadenceDays || 90;
     const fullPath = resolve(repoRoot, filePath);
@@ -101,6 +101,7 @@ export function gatherEntries(
     results.push({
       path: filePath,
       cadence,
+      source: item.source,
       status: "present",
       lastValidated: header.lastValidated,
       nextReview,
@@ -184,7 +185,7 @@ export function renderHtml(entries, { today = todayISO() } = {}) {
 </head>
 <body>
 <h1>Sergeant — Docs Freshness Dashboard</h1>
-<p class="meta">Generated <strong>${escapeHtml(today)}</strong> by <code>scripts/docs/generate-freshness-dashboard.mjs</code>. Data source: <code>scripts/docs/freshness-allowlist.json</code>.</p>
+<p class="meta">Generated <strong>${escapeHtml(today)}</strong> by <code>scripts/docs/generate-freshness-dashboard.mjs</code>. Data source: auto-discovered <code>**/*.md</code> + <code>scripts/docs/freshness-config.json</code>.</p>
 <div class="summary">
   <div class="chip fresh">Fresh: ${totals.fresh}</div>
   <div class="chip due-soon">Due soon (≤${YELLOW_THRESHOLD_DAYS}d): ${totals.dueSoon}</div>
@@ -217,8 +218,8 @@ ${rows}
 
 function main() {
   const outPath = process.env.OUTPUT || DEFAULT_OUTPUT;
-  const allowlist = JSON.parse(readFileSync(ALLOWLIST_PATH, "utf8"));
-  const entries = gatherEntries(allowlist);
+  const { tracked } = loadConfig({ rootDir: REPO_ROOT });
+  const entries = gatherEntries(tracked);
   const html = renderHtml(entries);
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, html);

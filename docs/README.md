@@ -42,5 +42,4 @@
    та оновлюй цей індекс **в одному PR** з самим документом.
 3. Для ADR використовуй [`adr/TEMPLATE.md`](./adr/TEMPLATE.md).
 4. Для playbook — [`playbooks/_TEMPLATE-decision-tree.md`](./playbooks/_TEMPLATE-decision-tree.md).
-5. Якщо документ потребує періодичного огляду, додай його у
-   [`scripts/docs/freshness-allowlist.json`](../scripts/docs/freshness-allowlist.json).
+5. Якщо документ потребує періодичного огляду — просто додай канонічний freshness-заголовок (`> **Last validated:** … **Next review:** …`); auto-discovery (`scripts/docs/freshness-config.mjs`) підтягне його у tracking автоматично. Інший cadence — через [`scripts/docs/freshness-config.json`](../scripts/docs/freshness-config.json) → `cadenceOverrides`.
