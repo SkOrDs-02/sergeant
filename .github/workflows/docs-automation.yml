@@ -43,6 +43,21 @@ jobs:
       - name: Check docs/playbooks/INDEX.md is up to date
         run: node scripts/docs/generate-playbook-index.mjs --check
 
+  adr-graph:
+    name: ADR graph (statuses, supersede, README index)
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+
+      - name: Validate docs/adr/ graph integrity
+        run: node scripts/docs/check-adr-graph.mjs
+
   markdown-links:
     name: Markdown link checker
     runs-on: ubuntu-latest
@@ -111,4 +126,5 @@ jobs:
             scripts/docs/__tests__/generate-playbook-index.test.mjs \
             scripts/docs/__tests__/generate-freshness-dashboard.test.mjs \
             scripts/docs/__tests__/check-markdown-links.test.mjs \
+            scripts/docs/__tests__/check-adr-graph.test.mjs \
             scripts/ci/__tests__/validate-pr-body.test.mjs
