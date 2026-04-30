@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
 import {
   listSessions,
@@ -69,22 +70,7 @@ export function SessionsSection({ online }: { online: boolean }) {
     <Card radius="lg" padding="none" className="overflow-hidden">
       <div className="px-4 py-3.5 flex items-center justify-between border-b border-line">
         <div className="flex items-center gap-2">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-muted"
-            aria-hidden
-          >
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-            <line x1="8" y1="21" x2="16" y2="21" />
-            <line x1="12" y1="17" x2="12" y2="21" />
-          </svg>
+          <Icon name="monitor" size={16} className="text-muted" />
           <span className="text-sm font-semibold text-text">Активні сесії</span>
         </div>
         <Button

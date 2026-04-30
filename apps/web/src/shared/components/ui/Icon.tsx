@@ -530,6 +530,27 @@ const PATHS: Record<string, ReactNode> = {
       <line x1="9" y1="9" x2="15" y2="15" />
     </>
   ),
+  // Padlock — Lucide `lock`. Used by `ChangePasswordSection` (the
+  // "Зміна пароля" eyebrow icon) and `OnboardingWizard`'s privacy
+  // step. Without this entry `Icon` renders nothing (returns `null`)
+  // so the eyebrow looked broken in /profile.
+  lock: (
+    <>
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </>
+  ),
+  // Desktop monitor — Lucide `monitor`. Used by `SessionsSection`
+  // ("Активні сесії") to mark the device row; previously hand-rolled
+  // inline SVG. Migrated to the shared icon so the bounding box and
+  // stroke width stay consistent with siblings.
+  monitor: (
+    <>
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+    </>
+  ),
 };
 
 export type IconName = keyof typeof PATHS;
