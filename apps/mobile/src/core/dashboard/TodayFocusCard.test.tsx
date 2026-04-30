@@ -18,8 +18,8 @@ function rec(partial: Partial<Rec> = {}): Rec {
 }
 
 describe("TodayFocusCard", () => {
-  it("renders empty state with 3 quick-add chips when focus is null", () => {
-    const { getByTestId, queryByTestId } = render(
+  it("renders empty state with all 4 quick-add chips when focus is null", () => {
+    const { getByTestId } = render(
       <TodayFocusCard focus={null} onAction={jest.fn()} />,
     );
 
@@ -27,8 +27,10 @@ describe("TodayFocusCard", () => {
     expect(getByTestId("today-focus-chip-finyk")).toBeTruthy();
     expect(getByTestId("today-focus-chip-routine")).toBeTruthy();
     expect(getByTestId("today-focus-chip-fizruk")).toBeTruthy();
-    // Nutrition is hidden on mobile until Phase 7.
-    expect(queryByTestId("today-focus-chip-nutrition")).toBeNull();
+    // Nutrition was promoted out of the Phase-7 gate by
+    // 2f17f9b5 ("feat(mobile): show nutrition on hub dashboard"); it
+    // now ships alongside finyk / routine / fizruk.
+    expect(getByTestId("today-focus-chip-nutrition")).toBeTruthy();
   });
 
   it("fires onQuickAdd with the correct module when a chip is tapped", () => {

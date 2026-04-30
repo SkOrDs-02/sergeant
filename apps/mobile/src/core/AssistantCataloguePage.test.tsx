@@ -26,13 +26,12 @@ import {
 import { _getMMKVInstance } from "@/lib/storage";
 import { AssistantCataloguePage } from "./AssistantCataloguePage";
 
-jest.mock("react-native-safe-area-context", () => {
-  const actual = jest.requireActual("react-native-safe-area-context");
-  return {
-    ...actual,
-    SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
-  };
-});
+// `react-native-safe-area-context` is mocked globally in `jest.setup.js`
+// (Provider becomes a Fragment, `useSafeAreaInsets` returns zeros). The
+// previous local mock used `jest.requireActual(...)` which forced the
+// real module to load and re-introduced the "No safe area value
+// available" crash because the real `useSafeAreaInsets` requires a
+// Provider context.
 
 beforeEach(() => {
   _getMMKVInstance().clearAll();
@@ -122,12 +121,15 @@ describe("AssistantCataloguePage", () => {
 
     fireEvent.press(getByTestId(`catalogue-capability-${sample!.id}`));
 
-    // The capability description renders both in the row card and in
-    // the sheet (sheet covers the row but the row stays mounted), so
-    // at least two matches indicate the sheet opened.
-    expect(getAllByText(sample!.description).length).toBeGreaterThanOrEqual(2);
-    // Example bullets are sheet-only — a single match is enough.
+    // Example bullets are sheet-only (the row card never renders the
+    // `«…»`-quoted form), so a single match is enough to prove the
+    // detail sheet opened with the capability's example commands.
     expect(getByText(`«${sample!.examples[0]}»`)).toBeTruthy();
+    // The capability's description still renders in the row card —
+    // assert it is present at least once. The exact match count is
+    // brittle (Modal portal vs. inline render varies between RN /
+    // jest-expo versions), so don't lock it down.
+    expect(getAllByText(sample!.description).length).toBeGreaterThanOrEqual(1);
   });
 });
 

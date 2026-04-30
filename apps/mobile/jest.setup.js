@@ -53,6 +53,51 @@ jest.mock("@/auth/authClient", () => {
   };
 });
 
+// `react-native-safe-area-context` reads device insets via a native
+// TurboModule that isn't loaded in the jest-expo runtime. Without a
+// SafeAreaProvider mounted at the root of every render tree, every
+// component calling `useSafeAreaInsets()` (Sheet, Toast, every screen
+// under apps/mobile/src/modules/**, …) crashes with:
+//   "No safe area value available. Make sure you are rendering
+//    <SafeAreaProvider> at the top of your app."
+//
+// Several test files already register an identical mock locally; this
+// setup-level mock is a superset so new tests don't have to remember
+// the boilerplate (and the per-file mocks remain valid because Jest
+// hoists `jest.mock` calls and lets the file-level one take precedence).
+//
+// Insets default to `{0,0,0,0}` — render-tests rarely care about exact
+// pixel offsets; the few that do can override the mock with their own
+// `jest.mock(..., () => ({ useSafeAreaInsets: () => ({ top: 47, ... }) }))`.
+jest.mock("react-native-safe-area-context", () => {
+  const RN = require("react-native");
+  const React = require("react");
+  const Passthrough = ({ children }) =>
+    React.createElement(React.Fragment, null, children);
+  return {
+    __esModule: true,
+    SafeAreaProvider: Passthrough,
+    SafeAreaConsumer: ({ children }) =>
+      typeof children === "function"
+        ? children({ top: 0, bottom: 0, left: 0, right: 0 })
+        : children,
+    SafeAreaView: RN.View,
+    SafeAreaInsetsContext: {
+      Consumer: ({ children }) =>
+        typeof children === "function"
+          ? children({ top: 0, bottom: 0, left: 0, right: 0 })
+          : children,
+      Provider: Passthrough,
+    },
+    useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+    useSafeAreaFrame: () => ({ x: 0, y: 0, width: 390, height: 844 }),
+    initialWindowMetrics: {
+      frame: { x: 0, y: 0, width: 390, height: 844 },
+      insets: { top: 0, bottom: 0, left: 0, right: 0 },
+    },
+  };
+});
+
 jest.mock("react-native-mmkv", () => {
   class MMKV {
     constructor() {

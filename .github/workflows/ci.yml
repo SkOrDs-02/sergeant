@@ -108,7 +108,6 @@ jobs:
         # scripts/check-codeowners-coverage.mjs.
         run: pnpm lint:codeowners
 
-
       - name: Format, lint, test, build
         run: pnpm check
 
