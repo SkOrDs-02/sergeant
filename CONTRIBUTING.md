@@ -84,25 +84,26 @@ pnpm db:down                # зупинити й видалити Postgres-ко
 
 ## Щоденні команди
 
-| Команда                          | Що робить                                                                           |
-| -------------------------------- | ----------------------------------------------------------------------------------- |
-| `pnpm lint`                      | ESLint (усі apps + packages) + import checker + plugin-тести                        |
-| `pnpm typecheck`                 | TypeScript type-check по всьому monorepo                                            |
-| `pnpm test`                      | Vitest для всіх packages                                                            |
-| `pnpm test:coverage`             | Vitest з per-package coverage floors                                                |
-| `pnpm format`                    | Prettier — auto-fix                                                                 |
-| `pnpm format:check`              | Prettier — лише перевірка (CI використовує саме це)                                 |
-| `pnpm build`                     | Turbo build (усі apps)                                                              |
-| `pnpm check`                     | `format:check` + `lint` + `typecheck` + `test` + `build` — повний CI-набір локально |
-| `pnpm gen`                       | Plop-генератори (`migration`, `rq-hook`, `hubchat-tool`, `endpoint`, `adr`)         |
-| `pnpm gen:adr`                   | Новий ADR — авто-нумерація з `docs/adr/NNNN-*.md`                                   |
-| `pnpm docs:check-links`          | Сканує всі `*.md` на биті `[text](target)` лінки (internal + external cache)        |
-| `pnpm docs:gen-playbook-index`   | Перегенеровує `docs/playbooks/INDEX.md` з рядка `**Trigger:**` кожного playbook     |
-| `pnpm docs:check-playbook-index` | CI mode — fail якщо `INDEX.md` застарів (локально додавайте `--check`)              |
-| `pnpm docs:freshness-dashboard`  | Збирає звіт `dist/freshness-dashboard.html` (з кольорами, sortable)                 |
-| `pnpm lint:ai-legacy`            | CI gate: exit 1 якщо є прострочений / malformed `// AI-LEGACY: expires …` маркер    |
-| `pnpm ai-legacy:dashboard`       | Збирає звіт `dist/ai-legacy-dashboard.html` (по всіх `AI-LEGACY` маркерах у коді)   |
-| `pnpm ci:validate-pr-body`       | Валідовує `$PR_BODY` проти `.github/PULL_REQUEST_TEMPLATE.md`                       |
+| Команда                           | Що робить                                                                                                           |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`                       | ESLint (усі apps + packages) + import checker + plugin-тести                                                        |
+| `pnpm typecheck`                  | TypeScript type-check по всьому monorepo                                                                            |
+| `pnpm test`                       | Vitest для всіх packages                                                                                            |
+| `pnpm test:coverage`              | Vitest з per-package coverage floors                                                                                |
+| `pnpm format`                     | Prettier — auto-fix                                                                                                 |
+| `pnpm format:check`               | Prettier — лише перевірка (CI використовує саме це)                                                                 |
+| `pnpm build`                      | Turbo build (усі apps)                                                                                              |
+| `pnpm check`                      | `format:check` + `lint` + `typecheck` + `test` + `build` — повний CI-набір локально                                 |
+| `pnpm gen`                        | Plop-генератори (`migration`, `rq-hook`, `hubchat-tool`, `endpoint`, `adr`)                                         |
+| `pnpm gen:adr`                    | Новий ADR — авто-нумерація з `docs/adr/NNNN-*.md`                                                                   |
+| `pnpm docs:check-links`           | Сканує всі `*.md` на биті `[text](target)` лінки (internal + external cache)                                        |
+| `pnpm docs:gen-playbook-index`    | Перегенеровує `docs/playbooks/INDEX.md` з рядка `**Trigger:**` кожного playbook                                     |
+| `pnpm docs:check-playbook-index`  | CI mode — fail якщо `INDEX.md` застарів (локально додавайте `--check`)                                              |
+| `pnpm docs:check-playbook-schema` | CI gate: кожен playbook у `docs/playbooks/` має H1 `# Playbook:`, freshness header, `> **Status:**`, `**Trigger:**` |
+| `pnpm docs:freshness-dashboard`   | Збирає звіт `dist/freshness-dashboard.html` (з кольорами, sortable)                                                 |
+| `pnpm lint:ai-legacy`             | CI gate: exit 1 якщо є прострочений / malformed `// AI-LEGACY: expires …` маркер                                    |
+| `pnpm ai-legacy:dashboard`        | Збирає звіт `dist/ai-legacy-dashboard.html` (по всіх `AI-LEGACY` маркерах у коді)                                   |
+| `pnpm ci:validate-pr-body`        | Валідовує `$PR_BODY` проти `.github/PULL_REQUEST_TEMPLATE.md`                                                       |
 
 ### Scoped команди
 

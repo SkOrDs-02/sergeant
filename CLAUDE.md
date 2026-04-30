@@ -29,6 +29,7 @@ pnpm gen:adr             # New ADR (auto-numbers from docs/adr/)
 pnpm docs:check-links    # Scan every .md for broken [text](target) links
 pnpm docs:gen-playbook-index       # Regenerate docs/playbooks/INDEX.md
 pnpm docs:check-playbook-index     # CI: fail if INDEX.md is stale
+pnpm docs:check-playbook-schema    # CI: every playbook has H1 + freshness + Status + Trigger
 pnpm docs:freshness-dashboard      # Build dist/freshness-dashboard.html
 pnpm lint:ai-legacy                # CI gate: fail on expired/malformed `// AI-LEGACY: expires …` markers
 pnpm ai-legacy:dashboard           # Build dist/ai-legacy-dashboard.html
