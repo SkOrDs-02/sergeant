@@ -65,7 +65,7 @@ export function ProfilePage() {
         storageKey="sergeant.profile.password.open"
         title="Пароль"
         defaultOpen={false}
-        collapsedIcon="settings"
+        collapsedIcon="lock"
         collapsedSubtitle="Зміна пароля"
       >
         <ChangePasswordSection online={online} />
@@ -75,7 +75,7 @@ export function ProfilePage() {
         storageKey="sergeant.profile.sessions.open"
         title="Активні сесії"
         defaultOpen={false}
-        collapsedIcon="clock"
+        collapsedIcon="monitor"
         collapsedSubtitle="Пристрої з доступом до акаунта"
       >
         <SessionsSection online={online} />
