@@ -9,39 +9,13 @@
  */
 
 import {
-  type KVStore,
   buildFinalPicks as sharedBuildFinalPicks,
   hasExistingData as sharedHasExistingData,
   isOnboardingDone as sharedIsOnboardingDone,
   markOnboardingDone as sharedMarkOnboardingDone,
   shouldShowOnboarding as sharedShouldShowOnboarding,
 } from "@sergeant/shared";
-
-const localStorageStore: KVStore = {
-  getString(key) {
-    try {
-      return typeof localStorage !== "undefined"
-        ? localStorage.getItem(key)
-        : null;
-    } catch {
-      return null;
-    }
-  },
-  setString(key, value) {
-    try {
-      localStorage.setItem(key, value);
-    } catch {
-      /* noop */
-    }
-  },
-  remove(key) {
-    try {
-      localStorage.removeItem(key);
-    } catch {
-      /* noop */
-    }
-  },
-};
+import { webKVStore } from "@shared/lib/storage";
 
 /**
  * True when the onboarding splash should render on this cold start.
@@ -49,19 +23,19 @@ const localStorageStore: KVStore = {
  * helper eagerly marks "done" when it finds pre-existing data).
  */
 export function shouldShowOnboarding(): boolean {
-  return sharedShouldShowOnboarding(localStorageStore);
+  return sharedShouldShowOnboarding(webKVStore);
 }
 
 export function markOnboardingDone(): void {
-  sharedMarkOnboardingDone(localStorageStore);
+  sharedMarkOnboardingDone(webKVStore);
 }
 
 export function isOnboardingDone(): boolean {
-  return sharedIsOnboardingDone(localStorageStore);
+  return sharedIsOnboardingDone(webKVStore);
 }
 
 export function hasExistingData(): boolean {
-  return sharedHasExistingData(localStorageStore);
+  return sharedHasExistingData(webKVStore);
 }
 
 export { sharedBuildFinalPicks as buildFinalPicks };

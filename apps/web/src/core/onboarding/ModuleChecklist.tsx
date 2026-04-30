@@ -16,10 +16,10 @@ import { useToast } from "@shared/hooks/useToast";
 import {
   MODULE_CHECKLISTS,
   getChecklistState,
-  markChecklistStepDone,
   markChecklistSeen,
   dismissChecklist,
   isChecklistVisible,
+  saveChecklistState,
   type DashboardModuleId,
   type KVStore,
 } from "@sergeant/shared";
@@ -113,22 +113,51 @@ export function ModuleChecklist({
   const handleStepDone = useCallback(
     (stepId: string, action?: string) => {
       hapticTap();
-      const next = markChecklistStepDone(localStorageStore, moduleId, stepId);
-      setState(next);
+      let justCompleted = false;
+      setState((previousState) => {
+        const persistedState = getChecklistState(localStorageStore, moduleId);
+        const previouslyDone =
+          persistedState.completedSteps.length >= def.steps.length ||
+          previousState.completedSteps.length >= def.steps.length;
+        const completedSteps = Array.from(
+          new Set([
+            ...persistedState.completedSteps,
+            ...previousState.completedSteps,
+            stepId,
+          ]),
+        );
+        const next = {
+          completedSteps,
+          dismissed: persistedState.dismissed || previousState.dismissed,
+          firstSeenAt: previousState.firstSeenAt ?? persistedState.firstSeenAt,
+        };
+        saveChecklistState(localStorageStore, moduleId, next);
+        if (!previouslyDone && completedSteps.length >= def.steps.length) {
+          justCompleted = true;
+        }
+        return next;
+      });
 
-      // Trigger action if provided
       if (action) {
         onAction?.(action);
       }
 
-      // Celebrate and auto-hide when all steps completed
-      if (next.completedSteps.length >= def.steps.length) {
+      // Celebrate only on the transition to "all done"; auto-hide is handled
+      // by the useEffect below so we don't double-fire setTimeout here.
+      if (justCompleted) {
         toast.success(`${def.title}: перші кроки виконано! 🎉`, 4000);
-        setTimeout(() => setVisible(false), 600);
       }
     },
-    [moduleId, def.steps.length, onAction],
+    [moduleId, onAction, def.steps.length, def.title, toast],
   );
+
+  useEffect(() => {
+    if (visible && completed >= total) {
+      const timeout = setTimeout(() => setVisible(false), 600);
+      return () => clearTimeout(timeout);
+    }
+    return undefined;
+  }, [completed, total, visible]);
 
   const handleDismiss = useCallback(() => {
     hapticTap();
@@ -230,17 +259,39 @@ export function ModuleChecklist({
           {def.steps.map((step, idx) => {
             const done = state.completedSteps.includes(step.id);
             return (
-              <button
+              <div
                 key={step.id}
-                type="button"
-                onClick={() => !done && handleStepDone(step.id, step.action)}
-                disabled={done}
+                role="button"
+                tabIndex={done ? -1 : 0}
+                aria-disabled={done}
+                onClick={(event) => {
+                  const target = event.target;
+                  if (
+                    done ||
+                    (target instanceof HTMLElement &&
+                      target.closest('[role="checkbox"]'))
+                  ) {
+                    return;
+                  }
+                  handleStepDone(step.id, step.action);
+                }}
+                onKeyDown={(event) => {
+                  if (
+                    done ||
+                    event.target !== event.currentTarget ||
+                    (event.key !== "Enter" && event.key !== " ")
+                  ) {
+                    return;
+                  }
+                  event.preventDefault();
+                  handleStepDone(step.id, step.action);
+                }}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left",
                   "transition-all duration-200",
                   done
                     ? "bg-transparent"
-                    : "bg-panel/60 hover:bg-panel border border-line/50 hover:border-line",
+                    : "bg-panel/60 hover:bg-panel border border-line/50 hover:border-line cursor-pointer",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
                   "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1",
                 )}
@@ -248,7 +299,11 @@ export function ModuleChecklist({
               >
                 <AnimatedCheckbox
                   checked={done}
-                  onChange={() => !done && handleStepDone(step.id, step.action)}
+                  onChange={(checked) =>
+                    checked && handleStepDone(step.id, step.action)
+                  }
+                  disabled={done}
+                  aria-label={step.label}
                   size="sm"
                   className={cn(done && styles.checkBg)}
                 />
@@ -267,7 +322,7 @@ export function ModuleChecklist({
                     className="text-muted shrink-0"
                   />
                 )}
-              </button>
+              </div>
             );
           })}
 

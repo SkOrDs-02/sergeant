@@ -110,7 +110,9 @@ export function ShoppingListCard({
             >
               <div>Тижневий план</div>
               <div className="text-2xs opacity-70 mt-0.5">
-                {hasWeekPlan ? `${weekPlan.days.length} днів` : "немає плану"}
+                {hasWeekPlan
+                  ? `${weekPlan?.days?.length ?? 0} днів`
+                  : "немає плану"}
               </div>
             </button>
           </div>
