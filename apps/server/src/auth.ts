@@ -4,6 +4,8 @@ import { bearer } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import type { Request } from "express";
 import pool from "./db.js";
+import { env } from "./env/env.js";
+import { createEncryptingAdapter } from "./auth/encryptingAdapter.js";
 import { queueAuthTransactionalEmail } from "./email/authTransactionalMail.js";
 import {
   authAttemptsTotal,
@@ -84,8 +86,20 @@ function getSocialProviders():
 
 const socialProviders = getSocialProviders();
 
+/**
+ * `accessToken` / `refreshToken` / `idToken` стовпці в `account` за
+ * замовчуванням `TEXT` plaintext (фікс C1). Якщо є env-ключ — заходимо
+ * в Better Auth через encrypting-adapter, який шифрує токени AES-256-GCM
+ * на запис і дешифрує на читання. Без ключа (dev/local) лишаємось на
+ * стандартному `database: pool` — `assertStartupEnv` уже заборонив
+ * такий старт у production.
+ */
+const databaseConfig = env.BETTER_AUTH_TOKEN_ENC_KEY
+  ? createEncryptingAdapter(pool, env.BETTER_AUTH_TOKEN_ENC_KEY)
+  : pool;
+
 export const auth = betterAuth({
-  database: pool,
+  database: databaseConfig,
   baseURL: getBaseURL(),
   basePath: "/api/auth",
   user: {

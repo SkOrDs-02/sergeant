@@ -45,6 +45,14 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().optional(),
   /** `"0"` — вимкнути SameSite=None cookies (для single-origin deploys). */
   BETTER_AUTH_CROSS_SITE_COOKIES: z.string().optional(),
+  /**
+   * 32-byte hex (64 hex chars) ключ для AES-256-GCM шифрування OAuth-токенів
+   * (`accessToken` / `refreshToken` / `idToken` у таблиці `account`) — фікс
+   * C1 із security-review. Без ключа адаптер записує plaintext (legacy
+   * поведінка). У production обов'язковий — `assertStartupEnv` кидає
+   * помилку, якщо не заданий разом із `DATABASE_URL`.
+   */
+  BETTER_AUTH_TOKEN_ENC_KEY: z.string().optional(),
   MIN_PASSWORD_LENGTH: coerceInt.positive().default(10),
   MAX_PASSWORD_LENGTH: coerceInt.positive().default(128),
 
@@ -242,6 +250,26 @@ export function assertStartupEnv(): void {
         "PUBLIC_API_BASE_URL is required when MONO_WEBHOOK_ENABLED=true.",
       );
     }
+  }
+
+  // C1: encrypt OAuth tokens at rest. In production we hard-fail without
+  // the key — running plaintext-tokens-in-prod is exactly the regression
+  // we shipped this code to prevent. In dev/test we only warn so existing
+  // local dev environments don't break overnight.
+  if (env.BETTER_AUTH_TOKEN_ENC_KEY) {
+    if (!/^[0-9a-f]{64}$/i.test(env.BETTER_AUTH_TOKEN_ENC_KEY)) {
+      throw new Error(
+        "BETTER_AUTH_TOKEN_ENC_KEY must be exactly 64 hex chars (32 bytes).",
+      );
+    }
+  } else if (isProduction && env.DATABASE_URL) {
+    throw new Error(
+      "BETTER_AUTH_TOKEN_ENC_KEY is required in production. Generate one with `openssl rand -hex 32`.",
+    );
+  } else if (env.DATABASE_URL) {
+    warnings.push(
+      "BETTER_AUTH_TOKEN_ENC_KEY is not set — OAuth tokens will be stored as plaintext (insecure; allowed in dev only).",
+    );
   }
 
   if (warnings.length > 0) {
