@@ -1,6 +1,6 @@
 # Sergeant — Claude Code context
 
-> **Last validated:** 2026-04-29 by @devin-ai. **Next review:** 2026-07-29.
+> **Last validated:** 2026-04-30 by @devin-ai-integration[bot]. **Next review:** 2026-07-29.
 > **Status:** Active
 
 > Full agent rules, hard rules, anti-patterns, and domain invariants are in **[`AGENTS.md`](./AGENTS.md)**.
@@ -30,6 +30,8 @@ pnpm docs:check-links    # Scan every .md for broken [text](target) links
 pnpm docs:gen-playbook-index       # Regenerate docs/playbooks/INDEX.md
 pnpm docs:check-playbook-index     # CI: fail if INDEX.md is stale
 pnpm docs:freshness-dashboard      # Build dist/freshness-dashboard.html
+pnpm lint:ai-legacy                # CI gate: fail on expired/malformed `// AI-LEGACY: expires …` markers
+pnpm ai-legacy:dashboard           # Build dist/ai-legacy-dashboard.html
 ```
 
 ## Before you write code
