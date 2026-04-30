@@ -14,9 +14,7 @@ import {
   normalizeDashboardDensity,
   STORAGE_KEYS,
   getActiveModules,
-  getHideInactiveModules,
   setActiveModules,
-  setHideInactiveModules,
   type DashboardDensity,
   type DashboardModuleId,
 } from "@sergeant/shared";
@@ -112,9 +110,6 @@ export function DashboardSection() {
   const [activeModules, setActiveModulesState] = useState<DashboardModuleId[]>(
     () => getActiveModules(webKVStore),
   );
-  const [hideInactive, setHideInactiveState] = useState(() =>
-    getHideInactiveModules(webKVStore),
-  );
   const toggleActive = useCallback(
     (id: DashboardModuleId) => {
       setActiveModulesState((prev) => {
@@ -132,10 +127,6 @@ export function DashboardSection() {
     },
     [toast],
   );
-  const toggleHideInactive = useCallback((next: boolean) => {
-    setHideInactiveState(next);
-    setHideInactiveModules(webKVStore, next);
-  }, []);
 
   const handleMove = useCallback((index: number, direction: -1 | 1) => {
     setOrder((prev) => {
@@ -229,12 +220,6 @@ export function DashboardSection() {
             );
           })}
         </ul>
-        <ToggleRow
-          label="Приховати неактивні модулі"
-          description="Повністю ховає неактивні плитки з дашборду."
-          checked={hideInactive}
-          onChange={toggleHideInactive}
-        />
         <div className="space-y-2 pt-2 border-t border-line/40">
           <p className="text-xs text-subtle leading-snug">
             Порядок модулів у списку «Сьогодні» на дашборді.
