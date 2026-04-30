@@ -52,7 +52,7 @@ Sergeant збирає **чутливі дані**. Класифікація по
 | session tokens              | PII (credential)     | PostgreSQL `session`            | TTL / при видаленні акаунту               |
 | транзакції, баланси         | Financial            | PostgreSQL `module_data` (sync) | При видаленні акаунту + 30 днів retention |
 | бюджети / ліміти            | Financial            | localStorage / MMKV (local)     | При видаленні акаунту (sync cleanup)      |
-| Monobank token              | Financial credential | PostgreSQL `mono_integrations`  | При відключенні Mono / видаленні акаунту  |
+| Monobank token              | Financial credential | PostgreSQL `mono_connection`    | При відключенні Mono / видаленні акаунту  |
 | вага, тренування, tonnage   | Health               | localStorage / MMKV → sync      | При видаленні акаунту + 30 днів retention |
 | калорії, їжа, meal log      | Health               | localStorage / MMKV → sync      | При видаленні акаунту + 30 днів retention |
 | звички, streak, heatmap     | Behavioral           | localStorage / MMKV → sync      | При видаленні акаунту + 30 днів retention |
@@ -117,9 +117,9 @@ GET  /api/me/export
   Логіка:
     1. SELECT * FROM user WHERE id = :userId
     2. SELECT * FROM module_data WHERE user_id = :userId
-    3. SELECT * FROM mono_integrations WHERE user_id = :userId
+    3. SELECT * FROM mono_connection WHERE user_id = :userId
     4. SELECT * FROM push_subscriptions WHERE user_id = :userId
-    5. SELECT * FROM ai_usage_daily WHERE user_id = :userId
+    5. SELECT * FROM ai_usage_daily WHERE subject_key = 'u:' || :userId
     6. Зібрати в JSON, опціонально ZIP
   Handler: apps/server/src/routes/me.ts → додати export handler
   Файл: apps/server/src/modules/gdpr/export.ts (новий)
@@ -130,7 +130,7 @@ DELETE /api/me
   Логіка:
     1. Cancel Stripe subscription (якщо active)
     2. Видалити push subscriptions (PostgreSQL)
-    3. Видалити mono_integrations (PostgreSQL)
+    3. Видалити mono_connection (PostgreSQL)
     4. Видалити module_data (PostgreSQL)
     5. Видалити ai_usage_daily (PostgreSQL)
     6. auth.api.deleteUser(userId) — Better Auth cascade
