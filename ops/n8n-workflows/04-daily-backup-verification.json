@@ -4,7 +4,12 @@
     {
       "parameters": {
         "rule": {
-          "interval": [{ "field": "cronExpression", "expression": "0 3 * * *" }]
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 3 * * *"
+            }
+          ]
         }
       },
       "id": "cron-3am",
@@ -24,7 +29,10 @@
               "name": "Project-Access-Token",
               "value": "={{ $env.RAILWAY_TOKEN }}"
             },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -51,8 +59,8 @@
       "position": [680, 300],
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_ME",
-          "name": "Sergeant Postgres (staging)"
+          "id": "pwwVNTLBw43PJgey",
+          "name": "Sergeant Postgres (sergeant-db)"
         }
       }
     },
@@ -64,7 +72,10 @@
               "id": "has-users",
               "leftValue": "={{ Number($json.user_count) }}",
               "rightValue": 0,
-              "operator": { "type": "number", "operation": "gt" }
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
             }
           ]
         }
@@ -79,7 +90,9 @@
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=✅ *Backup OK* ({{ new Date().toISOString().slice(0,10) }})\n\nUsers: {{ $json.user_count }}\nTransactions: {{ $json.tx_count }}",
-        "additionalFields": { "parse_mode": "Markdown" }
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
       },
       "id": "telegram-ok",
       "name": "Telegram → backup OK",
@@ -87,14 +100,19 @@
       "typeVersion": 1.2,
       "position": [1120, 200],
       "credentials": {
-        "telegramApi": { "id": "CONFIGURE_ME", "name": "Sergeant Ops Bot" }
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
       }
     },
     {
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=🚨 *BACKUP FAILED* ({{ new Date().toISOString().slice(0,10) }})\n\nSanity check returned 0 users. Investigate immediately!",
-        "additionalFields": { "parse_mode": "Markdown" }
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
       },
       "id": "telegram-fail",
       "name": "Telegram → CRITICAL",
@@ -102,7 +120,10 @@
       "typeVersion": 1.2,
       "position": [1120, 400],
       "credentials": {
-        "telegramApi": { "id": "CONFIGURE_ME", "name": "Sergeant Ops Bot" }
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
       }
     }
   ],
@@ -119,18 +140,50 @@
       ]
     },
     "Railway → latest deployments": {
-      "main": [[{ "node": "Sanity SQL check", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Sanity SQL check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Sanity SQL check": {
-      "main": [[{ "node": "Data OK?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Data OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Data OK?": {
       "main": [
-        [{ "node": "Telegram → backup OK", "type": "main", "index": 0 }],
-        [{ "node": "Telegram → CRITICAL", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Telegram → backup OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram → CRITICAL",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
-  "settings": { "executionOrder": "v1", "timezone": "Europe/Kyiv" },
-  "tags": [{ "name": "backup" }, { "name": "ops" }]
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv"
+  },
+  "active": true,
+  "tags": []
 }
