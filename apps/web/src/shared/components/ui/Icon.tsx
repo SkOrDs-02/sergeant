@@ -551,6 +551,20 @@ const PATHS: Record<string, ReactNode> = {
       <line x1="12" y1="17" x2="12" y2="21" />
     </>
   ),
+  // 4-cell grid — Lucide `layout-grid`. Used by the hub bottom-nav
+  // "Дашборд" tab; previously a hand-rolled inline SVG component
+  // (`DashboardIcon`) inside `HubBottomNav.tsx`. Migrated here so all
+  // bottom-nav tabs render through the same `<Icon />` pipeline (same
+  // stroke-width, viewBox, focus-ring/aria-hidden conventions). Same
+  // pattern as `monitor` above (#1189).
+  grid: (
+    <>
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </>
+  ),
 };
 
 export type IconName = keyof typeof PATHS;

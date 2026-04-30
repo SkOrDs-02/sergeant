@@ -33,35 +33,11 @@ import type { HubView } from "../hooks/useHubUIState";
 
 const REPORTS_TAB_REVEALED_AT_KEY = "sergeant.hub.reportsTabRevealedAt";
 
-// "dashboard" icon is bespoke (2×2 grid of squares) so we render it
-// inline here rather than adding a one-off entry to the shared Icon map.
-function DashboardIcon({ size = 20 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
-    </svg>
-  );
-}
-
 interface HubBottomNavTabProps {
   active: boolean;
   onClick: () => void;
   label: string;
-  iconName?: string;
-  iconBody?: React.ReactNode;
+  iconName: string;
   className?: string;
   panelId: string;
   id: string;
@@ -72,7 +48,6 @@ function HubBottomNavTab({
   onClick,
   label,
   iconName,
-  iconBody,
   className,
   panelId,
   id,
@@ -113,11 +88,7 @@ function HubBottomNavTab({
         )}
         aria-hidden
       >
-        {iconName ? (
-          <Icon name={iconName} size={20} strokeWidth={2} />
-        ) : (
-          iconBody
-        )}
+        <Icon name={iconName} size={20} strokeWidth={2} />
       </span>
       <span className="text-2xs font-semibold leading-none">{label}</span>
     </button>
@@ -210,7 +181,7 @@ export function HubBottomNav({
           panelId="hub-panel-dashboard"
           active={hubView === "dashboard"}
           onClick={() => onChange("dashboard")}
-          iconBody={<DashboardIcon />}
+          iconName="grid"
           label="Головна"
         />
 
