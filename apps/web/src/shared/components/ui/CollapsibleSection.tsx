@@ -1,4 +1,4 @@
-import { useState, useCallback, type ReactNode } from "react";
+import { useState, useCallback, useRef, type ReactNode } from "react";
 import { cn } from "../../lib/cn";
 import { Icon } from "./Icon";
 import { SectionHeading, type SectionHeadingSize } from "./SectionHeading";
@@ -58,17 +58,24 @@ export function CollapsibleSection({
   const [open, setOpen] = useState<boolean>(
     () => safeReadLS<boolean>(storageKey, defaultOpen) ?? defaultOpen,
   );
+  const sectionRef = useRef<HTMLElement>(null);
 
   const toggle = useCallback(() => {
     setOpen((prev) => {
       const next = !prev;
       safeWriteLS(storageKey, next);
+      if (next) {
+        // After CSS transition (200ms) scroll so expanded content is visible.
+        setTimeout(() => {
+          sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }, 210);
+      }
       return next;
     });
   }, [storageKey]);
 
   return (
-    <section className={cn("space-y-2", className)}>
+    <section ref={sectionRef} className={cn("space-y-2", className)}>
       {open ? (
         <button
           type="button"
