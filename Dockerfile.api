@@ -57,6 +57,44 @@ RUN pnpm install --prod --frozen-lockfile --ignore-scripts \
 COPY apps/server ./apps/server
 COPY --from=builder /app/apps/server/dist-server ./apps/server/dist-server
 
+# Trim vulnerabilities surfaced by Trivy on the runtime image:
+#
+#   1. `pnpm install --prod` авто-встановлює optional-peer-и (`vitest` у
+#      `better-auth`, `@tanstack/react-start` тощо) і разом із ними тягне
+#      `vite` + `@esbuild/linux-x64`. У runtime ми виконуємо лише
+#      `node dist-server/index.js`, тож ні `vite`, ні `vitest`, ні Go-binary
+#      `esbuild` не потрібні, але Trivy фейлить CRITICAL/HIGH у Go-stdlib
+#      `esbuild`-білда (CVE-2025-68121 + 8 HIGH). `--frozen-lockfile`
+#      блокує перемикання `auto-install-peers`, тому прибираємо ці модулі
+#      постфактум, тримаючи lockfile незмінним.
+#   2. `node:*-alpine` ships старий `npm` (bundles vulnerable `cross-spawn`,
+#      `glob`, `minimatch`, `tar`) і `corepack`-prepared `pnpm@9.15.1` під
+#      `/root/.local/share/pnpm` (CVE-2025-69262/69263). У runtime ми не
+#      викликаємо жоден із цих менеджерів — прибираємо їх та супутні
+#      symlink-и під `/usr/local/bin/`.
+#
+# Усе виконуємо ще під root-юзером, до зміни на `app`.
+RUN find node_modules -maxdepth 3 -type d \
+      \( -path 'node_modules/.pnpm/vite@*' \
+         -o -path 'node_modules/.pnpm/vitest@*' \
+         -o -path 'node_modules/.pnpm/vite-node@*' \
+         -o -path 'node_modules/.pnpm/@vitest+*' \
+         -o -path 'node_modules/.pnpm/esbuild@*' \
+         -o -path 'node_modules/.pnpm/@esbuild+*' \
+         -o -path 'node_modules/.pnpm/tsx@*' \
+         -o -path 'node_modules/.pnpm/rollup@*' \
+         -o -path 'node_modules/.pnpm/@rollup+*' \) \
+      -prune -exec rm -rf {} + \
+ && rm -rf /usr/local/lib/node_modules/corepack \
+           /usr/local/lib/node_modules/npm \
+           /usr/local/bin/corepack \
+           /usr/local/bin/npm \
+           /usr/local/bin/npx \
+           /usr/local/bin/yarn \
+           /usr/local/bin/yarnpkg \
+           /root/.local/share/pnpm \
+           /root/.cache
+
 # Non-root user for security (CIS Docker Benchmark, OWASP).
 RUN addgroup -S app && adduser -S app -G app
 USER app

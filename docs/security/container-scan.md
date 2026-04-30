@@ -1,6 +1,6 @@
 # Сканування container-image — Trivy
 
-> **Last validated:** 2026-04-29 by @devin-ai. **Next review:** 2026-07-29.
+> **Last validated:** 2026-04-30 by @devin-ai. **Next review:** 2026-07-30.
 > **Status:** Active
 
 ## Огляд
@@ -65,6 +65,15 @@ Workflow [`.github/workflows/container-scan.yml`](../../.github/workflows/contai
    issue. Ignore-and-revisit, не silent-suppress.
 3. Розглянь варіант оновити base image (`node:20.20.2-alpine` → новіший
    minor) у Dockerfile.api.
+4. Якщо CVE прийшла від dev-тулчейну (`vite`, `vitest`, `esbuild`, `tsx`,
+   `rollup`), яка просочилась у runtime через optional-peer-и
+   (`pnpm install --prod` авто-ставить peer-и за замовчуванням) — приберіть
+   ці модулі post-install у Dockerfile.api замість того, щоб тягти бамп
+   у lockfile (приклад: PR #1196). Подібно — bundled `npm` / `corepack`
+   у `node:*-alpine` ловлять CVE на `cross-spawn` / `glob` / `minimatch` /
+   `tar`; якщо runtime не використовує жоден із цих менеджерів,
+   видаляйте `/usr/local/lib/node_modules/{npm,corepack}` та супутні
+   symlink-и одним `RUN rm -rf` під root, до зміни на non-root юзера.
 
 ### 4. Перевір, що nightly-audit і container-scan не дублюють виняток
 
