@@ -8,10 +8,8 @@ import {
   restoreHabit,
   snapshotHabit,
 } from "../../modules/routine/lib/routineStorage";
-import { ROUTINE_THEME as C } from "../../modules/routine/lib/routineConstants";
 import { HabitDetailSheet } from "../../modules/routine/components/HabitDetailSheet";
 import { HabitQuickCreateDialog } from "../../modules/routine/components/HabitQuickCreateDialog";
-import { RoutineBackupSection } from "../../modules/routine/components/RoutineBackupSection";
 import { TagsSection } from "../../modules/routine/components/settings/TagsSection";
 import { CategoriesSection } from "../../modules/routine/components/settings/CategoriesSection";
 import { ActiveHabitsSection } from "../../modules/routine/components/settings/ActiveHabitsSection";
@@ -106,10 +104,6 @@ export function RoutineSection() {
             setCatDraft={setCatDraft}
           />
         </div>
-      </SettingsSubGroup>
-
-      <SettingsSubGroup title="Резервна копія">
-        <RoutineBackupSection theme={C} />
       </SettingsSubGroup>
 
       <HabitQuickCreateDialog
