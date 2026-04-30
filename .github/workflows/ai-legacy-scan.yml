@@ -59,25 +59,33 @@ jobs:
           node-version: "20"
 
       - name: Check expired & malformed AI-LEGACY markers (PR gate)
-        # `--check` exits 1 on any expired/malformed marker. Runs on PRs so a
-        # regression cannot land. The scheduled run also re-checks main, in
-        # case a marker that was fresh at merge time has now expired.
+        # PR gate only — `--check` exits 1 on any expired/malformed marker.
+        # We deliberately do NOT run this on schedule/dispatch because expired
+        # markers are *expected* on those runs (that's the whole reason the
+        # weekly cron exists — to file issues for them). Running --check there
+        # would make GitHub Actions skip the issue/dashboard steps below.
+        if: github.event_name == 'pull_request'
         run: node scripts/check-ai-legacy.mjs --check
 
       - name: Open GitHub issues for expired markers
         # Issue creation is skipped on pull_request because forks cannot write.
-        if: github.event_name != 'pull_request'
+        # `if: always()` so a transient failure of the upstream check step does
+        # not silently swallow the weekly issue-bot.
+        if: always() && github.event_name != 'pull_request'
         run: node scripts/check-ai-legacy.mjs --issues
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build AI-LEGACY dashboard (HTML artifact)
-        # Always produced so engineers can download a single HTML file from
-        # any run instead of grepping the codebase or open-issue list.
+        # `if: always()` so the dashboard is produced even when the PR-gate
+        # `--check` step exited 1 — reviewers need the artifact most when
+        # there *are* expired markers.
+        if: always()
         run: node scripts/check-ai-legacy.mjs --dashboard dist/ai-legacy-dashboard.html
 
       - name: Upload AI-LEGACY dashboard
         # actions/upload-artifact v4.4.3 (SHA-pinned for supply-chain hardening)
+        if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: ai-legacy-dashboard

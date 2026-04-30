@@ -1,6 +1,6 @@
 # Contributing у Sergeant
 
-> **Last validated:** 2026-04-29 by @devin-ai. **Next review:** 2026-07-29.
+> **Last validated:** 2026-04-30 by @devin-ai-integration[bot]. **Next review:** 2026-07-29.
 > **Status:** Active
 
 > **Ціль:** zero-to-running за ≤ 5 хвилин на будь-якій машині з Docker.
@@ -100,6 +100,8 @@ pnpm db:down                # зупинити й видалити Postgres-ко
 | `pnpm docs:gen-playbook-index`   | Перегенеровує `docs/playbooks/INDEX.md` з рядка `**Trigger:**` кожного playbook     |
 | `pnpm docs:check-playbook-index` | CI mode — fail якщо `INDEX.md` застарів (локально додавайте `--check`)              |
 | `pnpm docs:freshness-dashboard`  | Збирає звіт `dist/freshness-dashboard.html` (з кольорами, sortable)                 |
+| `pnpm lint:ai-legacy`            | CI gate: exit 1 якщо є прострочений / malformed `// AI-LEGACY: expires …` маркер    |
+| `pnpm ai-legacy:dashboard`       | Збирає звіт `dist/ai-legacy-dashboard.html` (по всіх `AI-LEGACY` маркерах у коді)   |
 | `pnpm ci:validate-pr-body`       | Валідовує `$PR_BODY` проти `.github/PULL_REQUEST_TEMPLATE.md`                       |
 
 ### Scoped команди
