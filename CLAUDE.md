@@ -87,6 +87,7 @@ See `.env.example` for the full list.
 The repo ships in-repo skills that provide domain-specific guidance. Refer to these when working on the matching area:
 
 **Project-specific skills (prefer these first):**
+
 - `sergeant-design-system` — Tailwind tokens, brand palettes, WCAG-AA rules, module-accent containment (Hard Rules #8, #9, #11, #12, #13, #14)
 - `sergeant-api-patterns` — bigint coercion, api-client sync, RQ key factories (Hard Rules #1, #2, #3)
 - `sergeant-hubchat-tool` — adding/modifying HubChat AI assistant tools

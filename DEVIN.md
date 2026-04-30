@@ -59,6 +59,7 @@ pnpm lint:codeowners               # CI gate: fail if required path is missing f
 Use the in-repo SKILL.md library when relevant. Skills auto-load from [`.agents/skills/`](.agents/skills/) at session start.
 
 **Project-specific skills (prefer these first):**
+
 - `sergeant-design-system` — Tailwind tokens, brand palettes, WCAG-AA rules, module-accent containment (Hard Rules #8, #9, #11, #12, #13, #14)
 - `sergeant-api-patterns` — bigint coercion, api-client sync, RQ key factories (Hard Rules #1, #2, #3)
 - `sergeant-hubchat-tool` — adding/modifying HubChat AI assistant tools
@@ -66,6 +67,7 @@ Use the in-repo SKILL.md library when relevant. Skills auto-load from [`.agents/
 - `sergeant-postgres` — PostgreSQL patterns with raw `pg` driver
 
 **Community skills:**
+
 - `better-auth-best-practices` — Better Auth integration guide
 - `vercel-react-best-practices` — React performance (note: Next.js/RSC sections do not apply, Sergeant uses Vite)
 - `vercel-react-native-skills` — React Native / Expo best practices

@@ -126,7 +126,8 @@ const MUST_BE_OWNED = [
     path: "apps/console/src/agents",
     kind: "tree",
     match: /\.ts$/,
-    reason: "agent system prompts and router — accidental prompt changes affect all users",
+    reason:
+      "agent system prompts and router — accidental prompt changes affect all users",
   },
 
   // n8n automation workflows
