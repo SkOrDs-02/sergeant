@@ -26,7 +26,7 @@ pnpm db:up               # Start Postgres (Docker)
 pnpm db:migrate          # Run migrations
 pnpm gen                 # Plop code generators (migration, rq-hook, hubchat-tool, endpoint, adr)
 pnpm gen:adr             # New ADR (auto-numbers from docs/adr/)
-pnpm docs:check-links    # Scan every .md for broken [text](target) links
+pnpm docs:check-links    # Scan every .md for broken [text](target) links (CI: --strict-external + docs/external-link-allowlist.json)
 pnpm docs:gen-playbook-index       # Regenerate docs/playbooks/INDEX.md
 pnpm docs:check-playbook-index     # CI: fail if INDEX.md is stale
 pnpm docs:check-playbook-schema    # CI: every playbook has H1 + freshness + Status + Trigger

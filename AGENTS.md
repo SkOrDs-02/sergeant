@@ -623,6 +623,8 @@ Real regressions we've shipped — do not repeat:
 | `nightly-audit.yml`              | Daily 03:00 UTC / dispatch  | No         | Full `pnpm audit` (all severities) + OSV-Scanner dependency check + optional Snyk. Fails on critical/high; creates GitHub issue on failure. See [docs/security/nightly-audit.md](docs/security/nightly-audit.md)                                                                                                                                           |
 | `posthog-release-annotation.yml` | push to `main` / dispatch   | No         | Posts a release annotation to PostHog API (`/api/projects/<id>/annotations/`) so deploys show up as vertical markers on every dashboard. Graceful no-op when `POSTHOG_PERSONAL_API_KEY` / `POSTHOG_PROJECT_ID` секрети не виставлені. See [docs/observability/frontend.md](docs/observability/frontend.md#release-annotations-github-actions--posthog-api) |
 
+> Markdown link checker (in `docs-automation.yml`) runs with `--strict-external` against `docs/external-link-allowlist.json`. New external link rot fails the PR. To allow a URL the script cannot verify (immutable ADRs, anti-bot hosts, localhost-only references), add an entry with a non-trivial `reason` to the allowlist — empty/short reasons are rejected by the loader.
+
 ## Deployment
 
 - **Frontend**: Vercel (preview deploy on each PR; free tier may rate-limit).

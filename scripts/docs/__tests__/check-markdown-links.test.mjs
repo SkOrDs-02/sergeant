@@ -17,6 +17,8 @@ import {
   walkMarkdown,
   loadCache,
   saveCache,
+  loadAllowlist,
+  isAllowlisted,
 } from "../check-markdown-links.mjs";
 
 describe("extractLinks", () => {
@@ -184,5 +186,103 @@ describe("loadCache / saveCache", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("external-link allowlist", () => {
+  it("loadAllowlist returns [] for missing file", () => {
+    const out = loadAllowlist("/no/such/path/allowlist.json");
+    assert.deepEqual(out, []);
+  });
+
+  it("loadAllowlist parses valid entries with regex + reason", () => {
+    const dir = mkdtempSync(join(tmpdir(), "mdlinks-allow-"));
+    try {
+      const file = join(dir, "allow.json");
+      writeFileSync(
+        file,
+        JSON.stringify({
+          version: 1,
+          entries: [
+            {
+              pattern: "^https?://localhost(:\\d+)?",
+              reason: "localhost is dev-only and unreachable from CI runners",
+            },
+          ],
+        }),
+      );
+      const out = loadAllowlist(file);
+      assert.equal(out.length, 1);
+      assert.ok(out[0].regex.test("http://localhost:3000/"));
+      assert.equal(
+        out[0].reason,
+        "localhost is dev-only and unreachable from CI runners",
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("loadAllowlist throws on missing pattern", () => {
+    const dir = mkdtempSync(join(tmpdir(), "mdlinks-allow-"));
+    try {
+      const file = join(dir, "allow.json");
+      writeFileSync(
+        file,
+        JSON.stringify({
+          version: 1,
+          entries: [{ reason: "some reason without a pattern field" }],
+        }),
+      );
+      assert.throws(() => loadAllowlist(file), /pattern/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("loadAllowlist throws on trivial reason (forces auditability)", () => {
+    const dir = mkdtempSync(join(tmpdir(), "mdlinks-allow-"));
+    try {
+      const file = join(dir, "allow.json");
+      writeFileSync(
+        file,
+        JSON.stringify({
+          version: 1,
+          entries: [{ pattern: "^x", reason: "nah" }],
+        }),
+      );
+      assert.throws(() => loadAllowlist(file), /reason/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("loadAllowlist throws on malformed top-level shape", () => {
+    const dir = mkdtempSync(join(tmpdir(), "mdlinks-allow-"));
+    try {
+      const file = join(dir, "allow.json");
+      writeFileSync(file, JSON.stringify({ version: 1, entries: "oops" }));
+      assert.throws(() => loadAllowlist(file), /malformed/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("isAllowlisted matches any entry", () => {
+    const allow = [
+      { pattern: "^https?://a", regex: /^https?:\/\/a/, reason: "x test 1" },
+      {
+        pattern: "^https?://b\\.example",
+        regex: /^https?:\/\/b\.example/,
+        reason: "y test 2",
+      },
+    ];
+    assert.equal(isAllowlisted("http://a/", allow), true);
+    assert.equal(isAllowlisted("https://b.example/path", allow), true);
+    assert.equal(isAllowlisted("https://c.example/", allow), false);
+  });
+
+  it("isAllowlisted with empty allowlist returns false", () => {
+    assert.equal(isAllowlisted("https://x.example/", []), false);
   });
 });

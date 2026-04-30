@@ -83,6 +83,27 @@ const SKIP_TARGET_PATTERNS = [
 
 const ALWAYS_SKIP_SCHEMES = /^(mailto:|tel:|javascript:|data:|chrome:)/i;
 
+// Default allowlist file. JSON shape:
+//   { "version": 1, "entries": [ { "pattern": "<regex>", "reason": "..." } ] }
+// Patterns are matched against the raw URL with `new RegExp(pattern)`. URLs
+// that match any pattern are treated as ok (skipped from external fetching
+// entirely). Use this for legitimate cases the checker cannot verify:
+//   - localhost / private hosts that are documented for dev only
+//   - URLs in immutable decision records (ADRs) that suffer link rot but are
+//     cited as historical references at the time of the decision
+//   - hosts that block automated user-agents (LinkedIn 999, Cloudflare-protected
+//     sites returning 403 to HEAD/GET)
+const DEFAULT_ALLOWLIST_PATH = "docs/external-link-allowlist.json";
+
+// HTTP statuses we treat as "URL exists" even though `res.ok` is false:
+//   - 429: rate-limited; the URL exists, the server just doesn't want this
+//          robot. Re-checking on the next CI run will usually succeed.
+//   - 415: server rejected the HEAD/GET method's expected content-type, but
+//          the route exists (e.g. CookieYes returns 415 to HEAD).
+//   - 999: LinkedIn's anti-bot signal (and a few other hosts copy it).
+// 4xx/5xx not in this list still fail under --strict-external.
+const STATUS_TREAT_AS_OK = new Set([429, 415, 999]);
+
 // ── Pure helpers (exported for tests) ────────────────────────────────────────
 
 /**
@@ -207,7 +228,8 @@ async function checkExternal(url, cache, { timeoutMs = 8000 } = {}) {
         headers: { "user-agent": "sergeant-markdown-link-checker/1.0" },
       });
     }
-    const result = { ok: res.ok, status: res.status, at: Date.now() };
+    const ok = res.ok || STATUS_TREAT_AS_OK.has(res.status);
+    const result = { ok, status: res.status, at: Date.now() };
     cache[url] = result;
     return result;
   } catch (err) {
@@ -227,23 +249,76 @@ async function checkExternal(url, cache, { timeoutMs = 8000 } = {}) {
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 function parseArgs(argv) {
+  const allowlistIdx = argv.indexOf("--allowlist");
   return {
     skipExternal:
       argv.includes("--skip-external") || argv.includes("--offline"),
     strictExternal: argv.includes("--strict-external"),
     rootArg:
       (argv.includes("--root") && argv[argv.indexOf("--root") + 1]) || null,
+    allowlistArg:
+      allowlistIdx >= 0 && argv[allowlistIdx + 1]
+        ? argv[allowlistIdx + 1]
+        : null,
   };
+}
+
+/**
+ * Load and compile the external-link allowlist. Returns an array of
+ * { pattern: string, regex: RegExp, reason: string }. Missing file is OK
+ * (returns []). Malformed file throws so a typo doesn't silently
+ * bypass the gate.
+ */
+export function loadAllowlist(path) {
+  if (!path || !existsSync(path)) return [];
+  const raw = JSON.parse(readFileSync(path, "utf8"));
+  if (!raw || !Array.isArray(raw.entries)) {
+    throw new Error(
+      `external-link allowlist at ${path} is malformed: expected { entries: [{pattern, reason}] }`,
+    );
+  }
+  return raw.entries.map((e, i) => {
+    if (!e || typeof e.pattern !== "string") {
+      throw new Error(
+        `external-link allowlist entry #${i} at ${path} is missing 'pattern' (string).`,
+      );
+    }
+    if (typeof e.reason !== "string" || e.reason.trim().length < 5) {
+      throw new Error(
+        `external-link allowlist entry #${i} at ${path} is missing a non-trivial 'reason'. Allowlists exist to be auditable; a one-line justification is required.`,
+      );
+    }
+    return {
+      pattern: e.pattern,
+      regex: new RegExp(e.pattern),
+      reason: e.reason,
+    };
+  });
+}
+
+export function isAllowlisted(url, allowlist) {
+  return allowlist.some((entry) => entry.regex.test(url));
 }
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const root = args.rootArg ? resolve(args.rootArg) : REPO_ROOT;
 
+  const allowlistPath = resolve(
+    REPO_ROOT,
+    args.allowlistArg || DEFAULT_ALLOWLIST_PATH,
+  );
+  const allowlist = loadAllowlist(allowlistPath);
+
   const files = walkMarkdown(root);
   console.log(
     `Scanning ${files.length} markdown files from ${relative(process.cwd(), root) || "."}…`,
   );
+  if (allowlist.length > 0) {
+    console.log(
+      `→ external-link allowlist: ${allowlist.length} pattern(s) from ${relative(REPO_ROOT, allowlistPath)}`,
+    );
+  }
 
   const internalFailures = [];
   const externalFailures = [];
@@ -273,6 +348,7 @@ async function main() {
         }
       } else if (kind === "external") {
         externalCount++;
+        if (isAllowlisted(link.target, allowlist)) continue;
         if (!args.skipExternal) {
           externalQueue.push({ file, link });
         }
