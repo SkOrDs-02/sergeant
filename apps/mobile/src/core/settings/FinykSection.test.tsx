@@ -14,7 +14,7 @@
  *    entry on confirm.
  */
 
-import { fireEvent, render, within } from "@testing-library/react-native";
+import { fireEvent, render } from "@testing-library/react-native";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance } from "@/lib/storage";
@@ -85,19 +85,13 @@ describe("FinykSection", () => {
 
     fireEvent.press(getByTestId("finyk-custom-cat-remove-c_1"));
 
-    // ConfirmDialog is open — confirm label is "Видалити". There may be
-    // two "Видалити" strings on screen (row + confirm button); scope
-    // the lookup to the rendered Modal via the dialog title.
+    // ConfirmDialog is open — confirm label is "Видалити". The
+    // dialog ships explicit testIDs (`confirm-dialog-confirm` /
+    // `-cancel`) so we can target the action button directly without
+    // relying on parent-pointer traversal (which broke once the
+    // Modal's render tree was restructured).
     expect(getByText("Видалити категорію?")).toBeTruthy();
-    const modal = getByText("Видалити категорію?").parent?.parent as
-      | Parameters<typeof within>[0]
-      | undefined;
-    if (modal) {
-      fireEvent.press(within(modal).getByText("Видалити"));
-    } else {
-      // Fallback — should not happen given the component tree.
-      fireEvent.press(getByText("Видалити"));
-    }
+    fireEvent.press(getByTestId("confirm-dialog-confirm"));
 
     expect(queryByText("📚 Книги")).toBeNull();
 

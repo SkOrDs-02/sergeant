@@ -59,7 +59,8 @@ describe("ConfirmDialog", () => {
     const { UNSAFE_getAllByType } = render(
       <ConfirmDialog open onCancel={onCancel} />,
     );
-    // Pressables in render order: [0] scrim, [1] confirm, [2] cancel.
+    // The first `Pressable` in render order is the scrim — it has the
+    // explicit `confirm-dialog-scrim` testID.
     const scrim = UNSAFE_getAllByType(Pressable)[0];
     expect(scrim.props.testID).toBe("confirm-dialog-scrim");
     fireEvent.press(scrim);
@@ -67,13 +68,14 @@ describe("ConfirmDialog", () => {
   });
 
   it("danger=false uses the non-destructive primary confirm variant", () => {
-    const { UNSAFE_getAllByType } = render(
+    const { getByTestId } = render(
       <ConfirmDialog open danger={false} confirmLabel="Зберегти" />,
     );
-    // Pressables in render order: [0] scrim, [1] confirm, [2] cancel.
-    const pressables = UNSAFE_getAllByType(Pressable);
-    expect(pressables.length).toBeGreaterThanOrEqual(3);
-    const confirm = pressables[1];
+    // Target the confirm button via its explicit `confirm-dialog-confirm`
+    // testID instead of relying on `Pressable` ordering — JSX renders
+    // the cancel button before the confirm one in `ConfirmDialog.tsx`,
+    // so positional indexing was off-by-one and brittle to JSX edits.
+    const confirm = getByTestId("confirm-dialog-confirm");
     expect(confirm.props.className).toContain("bg-brand-strong");
     expect(confirm.props.className).not.toContain("bg-danger");
   });

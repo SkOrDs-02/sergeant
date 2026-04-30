@@ -1,5 +1,5 @@
 import { fireEvent, render } from "@testing-library/react-native";
-import { AccessibilityInfo, Modal, SafeAreaView, Text } from "react-native";
+import { AccessibilityInfo, Modal, Text } from "react-native";
 
 import { Sheet } from "./Sheet";
 
@@ -108,13 +108,16 @@ describe("Sheet", () => {
   it("applies an absolute-pixel `maxHeight` derived from the window size (not a % string)", () => {
     // RN percentage `maxHeight` resolves against the parent's height,
     // not the viewport — mirroring web `max-h-[90vh]` requires an
-    // absolute pixel value.
-    const { UNSAFE_getByType } = render(
+    // absolute pixel value. Locate the panel via its `aria-modal`
+    // marker (set on the panel `<View>` in `Sheet.tsx`) and assert on
+    // its computed style. `aria-modal` is unique to the panel — the
+    // outer `<Modal>` only carries `accessibilityViewIsModal`.
+    const { UNSAFE_getAllByProps } = render(
       <Sheet open onClose={() => {}} title="Назва шита">
         <Text>Вміст шита</Text>
       </Sheet>,
     );
-    const panel = UNSAFE_getByType(SafeAreaView);
+    const [panel] = UNSAFE_getAllByProps({ "aria-modal": true });
     const style = panel.props.style as { maxHeight: number };
     expect(typeof style.maxHeight).toBe("number");
     expect(style.maxHeight).toBeGreaterThan(0);
