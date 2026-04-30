@@ -440,12 +440,12 @@ export function RoutineCalendarPanel({
                   <SwipeToAction
                     onSwipeRight={
                       e.habitId && !e.completed
-                        ? () => onToggleHabit(e.habitId, e.date)
+                        ? () => onToggleHabit(e.habitId!, e.date)
                         : undefined
                     }
                     onSwipeLeft={
                       e.habitId && e.completed
-                        ? () => onToggleHabit(e.habitId, e.date)
+                        ? () => onToggleHabit(e.habitId!, e.date)
                         : undefined
                     }
                     leftLabel="✓ Виконано"
@@ -536,7 +536,7 @@ export function RoutineCalendarPanel({
                           {e.habitId && (
                             <button
                               type="button"
-                              onClick={() => onToggleHabit(e.habitId, e.date)}
+                              onClick={() => onToggleHabit(e.habitId!, e.date)}
                               className={cn(
                                 "w-10 h-10 rounded-xl border flex items-center justify-center text-base font-bold transition-colors",
                                 e.completed

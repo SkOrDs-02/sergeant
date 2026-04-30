@@ -68,7 +68,7 @@ describe("createHabit", () => {
     createHabit(fresh(), { name: "X" });
     const raw = localStorage.getItem(ROUTINE_STORAGE_KEY);
     expect(raw).toBeTruthy();
-    expect(JSON.parse(raw).habits).toHaveLength(1);
+    expect(JSON.parse(raw!).habits).toHaveLength(1);
   });
 });
 
