@@ -89,7 +89,11 @@
       "eslint --fix --max-warnings=0",
       "prettier --write"
     ],
-    "*.{json,md,css,html,yml,yaml}": [
+    "*.md": [
+      "node scripts/docs/bump-last-validated.mjs",
+      "prettier --write"
+    ],
+    "*.{json,css,html,yml,yaml}": [
       "prettier --write"
     ]
   },
