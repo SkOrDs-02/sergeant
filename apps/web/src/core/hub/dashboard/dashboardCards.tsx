@@ -126,11 +126,7 @@ export function StreakIndicator() {
   if (streak < 2) return null;
 
   return (
-    <StreakBadge
-      streak={streak}
-      label="днів поспіль"
-      className="shadow-sm"
-    />
+    <StreakBadge streak={streak} label="днів поспіль" className="shadow-sm" />
   );
 }
 

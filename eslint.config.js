@@ -316,8 +316,6 @@ export default [
       "apps/web/src/core/onboarding/DailyNudge.tsx",
       "apps/web/src/core/onboarding/FirstActionSheet.tsx",
       "apps/web/src/core/onboarding/ReEngagementCard.tsx",
-      "apps/web/src/core/onboarding/cleanupDemoData.ts",
-      "apps/web/src/core/onboarding/firstRealEntry.ts",
       "apps/web/src/core/onboarding/presetApply.ts",
       "apps/web/src/core/insights/useCoachInsight.ts",
       "apps/web/src/core/insights/useWeeklyDigest.ts",
