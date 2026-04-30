@@ -12,6 +12,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { AnimatedCheckbox } from "@shared/components/ui/AnimatedCheckbox";
 import { hapticTap } from "@shared/lib/haptic";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { useToast } from "@shared/hooks/useToast";
 import {
   MODULE_CHECKLISTS,
   getChecklistState,
@@ -81,6 +82,7 @@ export function ModuleChecklist({
   className,
   compact = false,
 }: ModuleChecklistProps) {
+  const toast = useToast();
   const [visible, setVisible] = useState(() =>
     isChecklistVisible(localStorageStore, moduleId),
   );
@@ -119,8 +121,9 @@ export function ModuleChecklist({
         onAction?.(action);
       }
 
-      // Auto-hide when all steps completed
+      // Celebrate and auto-hide when all steps completed
       if (next.completedSteps.length >= def.steps.length) {
+        toast.success(`${def.title}: перші кроки виконано! 🎉`, 4000);
         setTimeout(() => setVisible(false), 600);
       }
     },
