@@ -181,6 +181,18 @@ export const BentoCard = memo(function BentoCard({
               </span>
             )}
           </>
+        ) : onQuickAdd && !editMode ? (
+          <span
+            className={cn(
+              "mt-1 inline-flex items-center gap-1",
+              "text-xs font-medium",
+              config.accentClass.replace("bg-", "text-"),
+              "opacity-80 group-hover:opacity-100 transition-opacity",
+            )}
+          >
+            <Icon name="plus" size={11} strokeWidth={2.5} aria-hidden />
+            {config.emptyLabel}
+          </span>
         ) : (
           <span className="text-xs text-muted mt-1">{config.emptyLabel}</span>
         )}

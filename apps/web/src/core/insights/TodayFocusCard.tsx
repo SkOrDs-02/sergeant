@@ -354,8 +354,25 @@ export function TodayFocusCard({
         aria-hidden
       />
 
-      <div className="pl-3">
-        <div className="flex items-center justify-between gap-3 mb-1">
+      {/* Dismiss X — corner button, keeps CTA row uncluttered */}
+      {onDismiss && (
+        <button
+          type="button"
+          onClick={() => onDismiss(focus.id)}
+          aria-label="Закрити підказку"
+          className={cn(
+            "absolute top-2.5 right-2.5",
+            "w-7 h-7 flex items-center justify-center rounded-lg",
+            "text-muted hover:text-text hover:bg-black/5 dark:hover:bg-white/10",
+            "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+          )}
+        >
+          <Icon name="x" size={14} strokeWidth={2.5} />
+        </button>
+      )}
+
+      <div className="pl-3 pr-6">
+        <div className="flex items-center gap-3 mb-1">
           <SectionHeading
             as="span"
             size="xs"
@@ -404,18 +421,6 @@ export function TodayFocusCard({
               )}
             >
               {secondary.label}
-            </button>
-          )}
-          {onDismiss && (
-            <button
-              type="button"
-              onClick={() => onDismiss(focus.id)}
-              className={cn(
-                "ml-auto text-xs font-medium text-muted hover:text-text",
-                "px-2.5 py-1.5 rounded-lg hover:bg-panelHi transition-colors",
-              )}
-            >
-              Пізніше
             </button>
           )}
         </div>

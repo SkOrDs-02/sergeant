@@ -82,7 +82,7 @@ describe("persistPantries", () => {
       "a",
     );
     const raw = globalThis.localStorage.getItem(NUTRITION_PANTRIES_KEY);
-    expect(JSON.parse(raw)).toHaveLength(1);
+    expect(JSON.parse(raw!)).toHaveLength(1);
     expect(globalThis.localStorage.getItem(NUTRITION_ACTIVE_PANTRY_KEY)).toBe(
       "a",
     );

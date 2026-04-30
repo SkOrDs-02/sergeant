@@ -487,11 +487,8 @@ function AppInner() {
           // потім стер дані — повертаємо його на дашборд, щоб не
           // лишався на неіснуючому табі.
           showReports={hasAnyRealEntry()}
-          // «Профіль» tab is gated on being signed in — a guest tapping
-          // it would just bounce through `/sign-in`, which clutters the
-          // FTUX strip. The header still exposes a "Sign in" button
-          // for anonymous visitors.
           showProfile={!!user}
+          onShowAuth={!user ? openAuth : undefined}
         />
 
         {/* Thumb-reach entry to the AI assistant. Always visible so the

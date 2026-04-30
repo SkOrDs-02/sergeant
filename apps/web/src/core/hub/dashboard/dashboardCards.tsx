@@ -1,6 +1,7 @@
 import { useMemo, type CSSProperties, type ReactNode } from "react";
 import { cn } from "@shared/lib/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import { StreakBadge } from "@shared/components/ui/StreakFlame";
 import { safeReadLS, safeReadStringLS } from "@shared/lib/storage";
 import { STORAGE_KEYS, countRealEntries } from "@sergeant/shared";
 import { getWeekRange } from "../../insights/useWeeklyDigest";
@@ -43,32 +44,41 @@ export function TodaySummaryStrip({
   if (!hasSomeData) return null;
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-1 px-1 no-scrollbar">
-      {pills.map((pill) => (
-        <button
-          key={pill.id}
-          type="button"
-          onClick={() => onOpenModule(pill.id)}
-          className={cn(
-            "shrink-0 flex flex-col items-center rounded-2xl",
-            "bg-panel border border-line px-3 py-2 min-w-[72px]",
-            "transition-all active:scale-[0.97]",
-            "hover:bg-panelHi hover:border-line",
-          )}
-        >
-          <span
+    <div
+      className="relative -mx-1 px-1"
+      style={{
+        maskImage: "linear-gradient(to right, black 85%, transparent 100%)",
+        WebkitMaskImage:
+          "linear-gradient(to right, black 85%, transparent 100%)",
+      }}
+    >
+      <div className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
+        {pills.map((pill) => (
+          <button
+            key={pill.id}
+            type="button"
+            onClick={() => onOpenModule(pill.id)}
             className={cn(
-              "text-base font-bold tabular-nums",
-              pill.main ? pill.accent : "text-subtle",
+              "shrink-0 flex flex-col items-center rounded-2xl",
+              "bg-panel border border-line px-3 py-2 min-w-[72px]",
+              "transition-all active:scale-[0.97]",
+              "hover:bg-panelHi hover:border-line",
             )}
           >
-            {pill.main || "\u2014"}
-          </span>
-          <span className="text-2xs text-muted font-medium mt-0.5">
-            {pill.label}
-          </span>
-        </button>
-      ))}
+            <span
+              className={cn(
+                "text-base font-bold tabular-nums",
+                pill.main ? pill.accent : "text-subtle",
+              )}
+            >
+              {pill.main || "\u2014"}
+            </span>
+            <span className="text-2xs text-muted font-medium mt-0.5">
+              {pill.label}
+            </span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -116,17 +126,7 @@ export function StreakIndicator() {
   if (streak < 2) return null;
 
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 px-2.5 py-1 rounded-full",
-        "text-xs font-semibold text-text",
-        "bg-panel border border-line shadow-sm",
-      )}
-      title="Серія днів"
-    >
-      <span aria-hidden>{"\uD83D\uDD25"}</span>
-      {streak} {"днів поспіль"}
-    </span>
+    <StreakBadge streak={streak} label="днів поспіль" className="shadow-sm" />
   );
 }
 
