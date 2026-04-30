@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/cn";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
-import { safeReadLS } from "@shared/lib/storage";
+import { safeReadLS, safeReadStringLS } from "@shared/lib/storage";
 import { generateInsights } from "../lib/insightsEngine";
 import {
   getFinykExcludedTxIdsFromStorage,
@@ -20,7 +20,7 @@ function useReportData(period: Period, offset: number): ReportData {
   return useMemo(
     () =>
       aggregateReport(period, offset, {
-        rawFizrukWorkouts: localStorage.getItem("fizruk_workouts_v1"),
+        rawFizrukWorkouts: safeReadStringLS("fizruk_workouts_v1"),
         finyk: {
           txList: (() => {
             const raw = safeReadLS("finyk_tx_cache", null) as

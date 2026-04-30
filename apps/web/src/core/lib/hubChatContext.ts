@@ -25,6 +25,7 @@ import {
   weeklyVolumeSeriesNow,
 } from "@sergeant/fizruk-domain";
 import { perfMark, perfEnd } from "@shared/lib/perf";
+import { safeReadStringLS } from "@shared/lib/storage";
 import { ls, fmt } from "./hubChatUtils";
 import { generateRecommendations } from "./recommendationEngine";
 import { generateInsights } from "./insightsEngine";
@@ -406,7 +407,7 @@ function buildContext(): string {
 
   // ── Фізрук (тренування) ─────────────────────────────────────────
   try {
-    const raw = localStorage.getItem(WORKOUTS_STORAGE_KEY);
+    const raw = safeReadStringLS(WORKOUTS_STORAGE_KEY);
     const w = parseWorkoutsFromStorage(raw) as Array<{
       id?: string;
       startedAt?: string;
@@ -439,7 +440,7 @@ function buildContext(): string {
       );
       let activeHint = "немає";
       try {
-        const aid = localStorage.getItem(ACTIVE_WORKOUT_KEY);
+        const aid = safeReadStringLS(ACTIVE_WORKOUT_KEY);
         if (aid) {
           const aw = w.find((x) => x.id === aid && !x.endedAt);
           if (aw)

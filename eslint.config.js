@@ -299,10 +299,7 @@ export default [
       // `safeReadLS` / `useLocalStorageState` / `createModuleStorage`
       // and remove the entry below.
       "apps/web/src/core/insights/AssistantAdviceCard.tsx",
-      "apps/web/src/core/hub/HubChat.tsx",
-      "apps/web/src/core/hub/HubReports.tsx",
       "apps/web/src/core/hub/HubSearch.tsx",
-      "apps/web/src/core/onboarding/OnboardingWizard.tsx",
       "apps/web/src/core/insights/TodayFocusCard.tsx",
       "apps/web/src/core/observability/analytics.ts",
 
@@ -312,7 +309,6 @@ export default [
       "apps/web/src/core/lib/chatActions/crossActions.ts",
       "apps/web/src/core/lib/chatActions/finykActions.ts",
       "apps/web/src/core/lib/dailyFinykSummary.ts",
-      "apps/web/src/core/lib/hubChatContext.ts",
       "apps/web/src/core/lib/hubChatUtils.ts",
       "apps/web/src/core/lib/insightsEngine.ts",
       "apps/web/src/core/lib/recommendationEngine.ts",
@@ -324,9 +320,7 @@ export default [
       "apps/web/src/core/onboarding/firstRealEntry.ts",
       "apps/web/src/core/onboarding/onboardingGate.ts",
       "apps/web/src/core/onboarding/presetApply.ts",
-      "apps/web/src/core/onboarding/seedDemoData.ts",
       "apps/web/src/core/onboarding/vibePicks.ts",
-      "apps/web/src/core/settings/GeneralSection.tsx",
       "apps/web/src/core/settings/hubPrefs.ts",
       "apps/web/src/core/insights/useCoachInsight.ts",
       "apps/web/src/core/insights/useWeeklyDigest.ts",

@@ -7,15 +7,15 @@ import {
   useState,
 } from "react";
 import { cn } from "@shared/lib/cn";
+import {
+  safeReadStringLS,
+  safeWriteLS,
+  safeRemoveLS,
+} from "@shared/lib/storage";
 import { Button } from "@shared/components/ui/Button";
 import { Card, type CardVariant } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { useCelebration } from "@shared/components/ui/CelebrationModal";
-import {
-  safeReadStringLS,
-  safeRemoveLS,
-  safeWriteLS,
-} from "@shared/lib/storage";
 import { BrandLogo } from "../app/BrandLogo";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import {
@@ -769,26 +769,12 @@ export function OnboardingWizard({
     // Persist goals
     saveOnboardingGoals(
       {
-        getString: (k) => {
-          try {
-            return localStorage.getItem(k);
-          } catch {
-            return null;
-          }
-        },
+        getString: (k) => safeReadStringLS(k),
         setString: (k, v) => {
-          try {
-            localStorage.setItem(k, v);
-          } catch {
-            /* noop */
-          }
+          safeWriteLS(k, v);
         },
         remove: (k) => {
-          try {
-            localStorage.removeItem(k);
-          } catch {
-            /* noop */
-          }
+          safeRemoveLS(k);
         },
       },
       {

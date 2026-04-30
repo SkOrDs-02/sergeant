@@ -16,6 +16,8 @@
 // module is tiny, synchronous and safe to call from `main.tsx` before
 // React hydrates.
 
+import { safeWriteLS, safeRemoveLS } from "@shared/lib/storage";
+
 const DEMO_FLAG_KEY = "hub_demo_seeded_social_v1";
 const DEMO_CLEANUP_DONE_KEY = "hub_demo_cleanup_v1_done";
 const ONBOARDING_DONE_KEY = "hub_onboarding_done_v1";
@@ -52,27 +54,15 @@ const NUTRITION_QUICK_STATS_KEY = "nutrition_quick_stats";
 // ──────────────────────────────────────────────────────────────────
 
 function writeJSON(key: string, value: unknown): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* noop — private mode / quota — nothing else to do on a demo path */
-  }
+  safeWriteLS(key, value);
 }
 
 function writeRaw(key: string, value: string): void {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    /* noop */
-  }
+  safeWriteLS(key, value);
 }
 
 function removeKey(key: string): void {
-  try {
-    localStorage.removeItem(key);
-  } catch {
-    /* noop */
-  }
+  safeRemoveLS(key);
 }
 
 function toISO(d: Date): string {
