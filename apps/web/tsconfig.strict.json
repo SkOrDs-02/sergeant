@@ -16,7 +16,8 @@
     "src/core/observability/**/*",
     "src/core/pricing/**/*",
     "src/core/profile/**/*",
-    "src/core/settings/**/*"
+    "src/core/settings/**/*",
+    "src/modules/routine/**/*"
   ],
   "exclude": ["node_modules", "dist"]
 }

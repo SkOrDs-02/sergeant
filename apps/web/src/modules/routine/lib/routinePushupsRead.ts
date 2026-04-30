@@ -7,7 +7,7 @@ export function buildPushupHistoryFromRoutine(days = 30) {
     state.pushupsByDate && typeof state.pushupsByDate === "object"
       ? state.pushupsByDate
       : {};
-  const result = [];
+  const result: Array<{ date: string; total: number }> = [];
   const now = new Date();
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(now);
