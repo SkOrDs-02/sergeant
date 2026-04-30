@@ -278,6 +278,11 @@ describe("HubDashboard", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-29T09:00:00+03:00"));
     localStorage.clear();
+    // Past the FTUX gate: render `TodaySummaryStrip`, `HubInsightsPanel`,
+    // and the «Аналітика» section (incl. `WeeklyDigestFooter`). Also
+    // suppresses `ModuleChecklist`, whose «Фінік: Перші кроки» heading
+    // would collide with the bento «Фінік» button under `getByRole`.
+    localStorage.setItem("hub_first_real_entry_done_v1", "1");
     mocks.dashboardFocus.focus = null;
     mocks.dashboardFocus.rest = [];
     mocks.dashboardFocus.dismiss.mockClear();
