@@ -120,7 +120,7 @@ export function HubHeader({
               aria-label="Пошук"
               className={ICON_BUTTON_CLS}
             >
-              <Icon name="search" size={20} />
+              <Icon name="search" size="lg" />
             </button>
           </Tooltip>
 
@@ -143,7 +143,7 @@ export function HubHeader({
                 aria-label="Увійти в акаунт"
                 className={ICON_BUTTON_CLS}
               >
-                <Icon name="user" size={20} />
+                <Icon name="user" size="lg" />
               </button>
             </Tooltip>
           )}

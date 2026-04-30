@@ -190,7 +190,7 @@ export const BentoCard = memo(function BentoCard({
               "opacity-80 group-hover:opacity-100 transition-opacity",
             )}
           >
-            <Icon name="plus" size={11} strokeWidth={2.5} aria-hidden />
+            <Icon name="plus" size="xs" strokeWidth={2.5} aria-hidden />
             {config.emptyLabel}
           </span>
         ) : (
@@ -231,7 +231,7 @@ export const BentoCard = memo(function BentoCard({
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1",
           )}
         >
-          <Icon name="plus" size={13} strokeWidth={2.5} />
+          <Icon name="plus" size="sm" strokeWidth={2.5} />
         </button>
       )}
 
@@ -251,7 +251,7 @@ export const BentoCard = memo(function BentoCard({
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1",
           )}
         >
-          <Icon name="grip-vertical" size={14} strokeWidth={2} />
+          <Icon name="grip-vertical" size="sm" strokeWidth={2} />
         </button>
       )}
     </div>

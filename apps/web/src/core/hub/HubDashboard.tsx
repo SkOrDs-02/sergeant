@@ -445,7 +445,7 @@ export function HubDashboard({
             >
               <Icon
                 name="grip-vertical"
-                size={12}
+                size="xs"
                 strokeWidth={2}
                 aria-hidden
               />
