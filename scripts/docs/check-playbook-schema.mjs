@@ -37,11 +37,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..", "..");
 const PLAYBOOK_DIR = resolve(REPO_ROOT, "docs", "playbooks");
 
+// Source of truth: AGENTS.md § Hard Rule #10 → "Docs: status badge under the
+// freshness marker". Keep this enum in sync with the documented status set
+// — adding a new status without amending AGENTS.md is itself a Hard Rule #15
+// violation.
 const ALLOWED_STATUSES = new Set([
   "Active",
-  "Draft",
+  "Scaffolded",
   "Deprecated",
-  "Experimental",
+  "Archived",
 ]);
 
 // ── Pure helpers (exported for tests) ────────────────────────────────────────
@@ -119,7 +123,9 @@ export function validatePlaybook(content, opts = {}) {
   const statusLine = preamble.find((l) => /^>\s*\*\*Status:\*\*/.test(l));
   if (!statusLine) {
     errors.push(
-      "missing lifecycle marker (`> **Status:** Active|Draft|Deprecated|Experimental`)",
+      "missing lifecycle marker (`> **Status:** " +
+        [...ALLOWED_STATUSES].join("|") +
+        "`)",
     );
   } else {
     const m = statusLine.match(/Status:\*\*\s+(\S+)/);

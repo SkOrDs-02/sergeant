@@ -146,6 +146,39 @@ test("validatePlaybook flags unknown Status value", () => {
   );
 });
 
+test("validatePlaybook accepts every status from AGENTS.md Hard Rule #10", () => {
+  // Source of truth: AGENTS.md § "Docs: status badge under the freshness
+  // marker" → Active | Scaffolded | Deprecated | Archived. If someone
+  // narrows the enum without updating AGENTS.md, this test fails — and if
+  // they widen AGENTS.md without updating the script, the registry-side
+  // gate (or this test) catches it too.
+  for (const status of ["Active", "Scaffolded", "Deprecated", "Archived"]) {
+    const errors = validatePlaybook(
+      validPlaybook.replace("**Status:** Active", `**Status:** ${status}`),
+      { today: TODAY },
+    );
+    assert.deepEqual(
+      errors,
+      [],
+      `status '${status}' should be allowed by AGENTS.md Hard Rule #10 but the schema rejected it: ${errors.join("; ")}`,
+    );
+  }
+});
+
+test("validatePlaybook rejects 'Draft' (which is NOT in AGENTS.md Hard Rule #10)", () => {
+  // Regression test for the bug Devin Review caught: the original
+  // ALLOWED_STATUSES contained {Active, Draft, Deprecated, Experimental},
+  // contradicting AGENTS.md. Pin the contract in code.
+  const errors = validatePlaybook(
+    validPlaybook.replace("**Status:** Active", "**Status:** Draft"),
+    { today: TODAY },
+  );
+  assert.ok(
+    errors.some((e) => /unknown status 'Draft'/.test(e)),
+    `expected 'Draft' to be rejected, got: ${errors.join("; ")}`,
+  );
+});
+
 test("validatePlaybook flags missing Trigger line", () => {
   const errors = validatePlaybook(
     validPlaybook.replace(/^\*\*Trigger:\*\*.*\n/m, ""),
