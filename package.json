@@ -65,6 +65,7 @@
     "docs:freshness-dashboard": "node scripts/docs/generate-freshness-dashboard.mjs",
     "lint:ai-legacy": "node scripts/check-ai-legacy.mjs --check",
     "ai-legacy:dashboard": "node scripts/check-ai-legacy.mjs --dashboard dist/ai-legacy-dashboard.html",
+    "lint:codeowners": "node scripts/check-codeowners-coverage.mjs",
     "ci:validate-pr-body": "node scripts/ci/validate-pr-body.mjs"
   },
   "devDependencies": {

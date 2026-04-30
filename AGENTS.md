@@ -43,6 +43,8 @@ Quick lookup before editing: which path uses which test stack and which conventi
 
 > Owner is the GitHub handle responsible for review and incident escalation (L2 on-call). All modules currently roll up to `@Skords-01`; per-module delegation will be tracked here when sub-owners are introduced.
 
+> CODEOWNERS coverage of every governance / CI / migrations / skills surface is enforced by `pnpm lint:codeowners` (`scripts/check-codeowners-coverage.mjs`). Whenever you delegate a sub-owner here, also add the matching pattern in `.github/CODEOWNERS` — the script will fail the next PR if a required path drifts uncovered.
+
 ## Hard rules (do not break)
 
 ### 1. DB types: coerce `bigint` to `number` in serializers
