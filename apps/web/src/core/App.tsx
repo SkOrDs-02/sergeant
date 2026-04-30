@@ -213,12 +213,24 @@ function AppInner() {
   const toast = useToast();
   useSyncErrorToast(sync.syncErrorDetail, toast, sync.pushAll);
 
-  // Prefetch critical module chunks on idle after initial render
+  // Prefetch critical module chunks once the main thread is free.
+  // Previously hard-coded to `setTimeout(2000)`, which over-paid on fast
+  // devices (idle by 200 ms) and under-paid on slow ones (still hydrating
+  // at 2 s). `requestIdleCallback` lets the browser fire whenever the
+  // initial-render burst is genuinely done; the 4 s `timeout` cap stops
+  // a permanently-busy main thread from starving the prefetch entirely.
+  // Safari ≤ 16 has no `requestIdleCallback`, so we keep the original
+  // 2 s fallback for it.
   useEffect(() => {
-    // Wait for initial paint, then prefetch modules
+    if ("requestIdleCallback" in window) {
+      const id = requestIdleCallback(() => prefetchCriticalModules(), {
+        timeout: 4000,
+      });
+      return () => cancelIdleCallback(id);
+    }
     const timer = setTimeout(() => {
       prefetchCriticalModules();
-    }, 2000); // 2s delay to prioritize initial render
+    }, 2000);
     return () => clearTimeout(timer);
   }, []);
 
