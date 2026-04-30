@@ -199,7 +199,7 @@ async function callAnthropicWithContinuation(
       // потрапили у success-гілку.
       if (continued && mergedTextChunks.length > 0) {
         return {
-          response: { ok: true, status: 200 } as unknown as FetchResponse,
+          response: new Response(null, { status: 200 }) as FetchResponse,
           data: {
             content: buildMergedContent(
               mergedTextChunks.join(""),

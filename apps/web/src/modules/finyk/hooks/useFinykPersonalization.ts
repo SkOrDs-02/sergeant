@@ -5,8 +5,8 @@ import {
   type ManualExpense,
 } from "@sergeant/finyk-domain/domain/personalization";
 import type {
-  Transaction,
   Category,
+  Transaction,
 } from "@sergeant/finyk-domain/domain/types";
 
 // Memo-обгортка навколо чистих селекторів персоналізації. Повертає список

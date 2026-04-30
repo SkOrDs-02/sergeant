@@ -171,10 +171,13 @@ export function fmt(n: number): string {
 export type IdleHandle = number | ReturnType<typeof setTimeout>;
 
 export function requestIdle(cb: () => void): IdleHandle {
-  if (typeof window === "undefined") return setTimeout(cb, 0);
-  if (window.requestIdleCallback)
-    return window.requestIdleCallback(cb, { timeout: 800 });
-  return setTimeout(cb, 0);
+  if (typeof window !== "undefined") {
+    if (window.requestIdleCallback)
+      return window.requestIdleCallback(cb, { timeout: 800 });
+    return window.setTimeout(cb, 0);
+  }
+  setTimeout(cb, 0);
+  return 0;
 }
 
 export function cancelIdle(id: IdleHandle): void {

@@ -335,11 +335,7 @@ export interface WebPushSendTestHooks {
 export function __webpushSendTestHooks(): WebPushSendTestHooks {
   return {
     configure(overrides) {
-      for (const [k, v] of Object.entries(overrides)) {
-        if (k in state) {
-          (state as unknown as Record<string, unknown>)[k] = v as unknown;
-        }
-      }
+      Object.assign(state, overrides);
     },
     reset() {
       state.breakers.clear();

@@ -25,6 +25,14 @@ type SpeechRecognitionLike = {
 
 type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
 
+function getSpeechRecognitionCtor(): SpeechRecognitionCtor | undefined {
+  if ("SpeechRecognition" in window)
+    return window.SpeechRecognition as SpeechRecognitionCtor;
+  if ("webkitSpeechRecognition" in window)
+    return window.webkitSpeechRecognition as SpeechRecognitionCtor;
+  return undefined;
+}
+
 export interface UseVoiceInputOptions {
   lang?: string;
   onResult?: (transcript: string) => void;
@@ -49,20 +57,12 @@ export function useVoiceInput({
   const recRef = useRef<SpeechRecognitionLike | null>(null);
 
   useEffect(() => {
-    const w = window as unknown as {
-      SpeechRecognition?: SpeechRecognitionCtor;
-      webkitSpeechRecognition?: SpeechRecognitionCtor;
-    };
-    const SpeechRecognition = w.SpeechRecognition || w.webkitSpeechRecognition;
+    const SpeechRecognition = getSpeechRecognitionCtor();
     setSupported(!!SpeechRecognition);
   }, []);
 
   const start = useCallback(() => {
-    const w = window as unknown as {
-      SpeechRecognition?: SpeechRecognitionCtor;
-      webkitSpeechRecognition?: SpeechRecognitionCtor;
-    };
-    const SpeechRecognition = w.SpeechRecognition || w.webkitSpeechRecognition;
+    const SpeechRecognition = getSpeechRecognitionCtor();
     if (!SpeechRecognition) {
       onError?.("Голосовий ввід не підтримується у цьому браузері.");
       return;

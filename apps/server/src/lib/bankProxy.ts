@@ -330,14 +330,7 @@ export interface BankProxyTestHooks {
 export function __bankProxyTestHooks(): BankProxyTestHooks {
   return {
     configure(overrides) {
-      for (const [k, v] of Object.entries(overrides)) {
-        if (k in state) {
-          // Поля BankProxyConfig мають різні типи (number vs number[]) —
-          // інтерфейс `Partial<BankProxyConfig>` уже гарантує, що ключ і
-          // тип значення сумісні, тож точкова cast-ка тут безпечна.
-          (state as unknown as Record<string, unknown>)[k] = v as unknown;
-        }
-      }
+      Object.assign(state, overrides);
     },
     reset() {
       state.breakers.clear();

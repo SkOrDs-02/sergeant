@@ -39,10 +39,11 @@ function composeSignal(
 ): AbortSignal {
   if (!external) return internalController.signal;
   try {
-    const anyAny = (AbortSignal as unknown as { any?: typeof AbortSignal.any })
-      .any;
-    if (typeof anyAny === "function") {
-      return anyAny([internalController.signal, external]);
+    if ("any" in AbortSignal) {
+      const anyFn = AbortSignal.any as (signals: AbortSignal[]) => AbortSignal;
+      if (typeof anyFn === "function") {
+        return anyFn([internalController.signal, external]);
+      }
     }
   } catch {
     /* fallthrough to listener-based fallback */
