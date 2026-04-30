@@ -6,6 +6,12 @@ import { createBillingInternalRouter } from "./billing.js";
 import { createCategorizeInternalRouter } from "./categorize.js";
 import { createAiUsageInternalRouter } from "./ai-usage.js";
 import { createPromptsInternalRouter } from "./prompts.js";
+import { createSeoInternalRouter } from "./seo.js";
+import { createGrowthInternalRouter } from "./growth.js";
+import { createMarketingInternalRouter } from "./marketing.js";
+import { createEmailInternalRouter } from "./email.js";
+import { createUsersInternalRouter } from "./users.js";
+import { createGovernanceInternalRouter } from "./governance.js";
 
 /**
  * Mounts all /api/internal/* routes behind a shared bearer-token guard.
@@ -43,6 +49,12 @@ export function createInternalRouter({ pool }: { pool: Pool }): Router {
   router.use(createCategorizeInternalRouter());
   router.use(createAiUsageInternalRouter({ pool }));
   router.use(createPromptsInternalRouter());
+  router.use(createSeoInternalRouter({ pool }));
+  router.use(createGrowthInternalRouter({ pool }));
+  router.use(createMarketingInternalRouter({ pool }));
+  router.use(createEmailInternalRouter({ pool }));
+  router.use(createUsersInternalRouter({ pool }));
+  router.use(createGovernanceInternalRouter({ pool }));
 
   return router;
 }
