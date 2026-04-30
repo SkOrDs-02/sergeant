@@ -86,13 +86,18 @@ export function HubHeader({
         "transition-all duration-300 ease-out",
         // Progressive header states
         isHidden && "-translate-y-full",
-        isShrunk ? "pt-3 pb-2" : "pt-10 pb-3",
+        isShrunk ? "pt-2 pb-2" : "pt-6 pb-2.5",
         hasBlur && "bg-bg/80 backdrop-blur-md border-b border-line/50",
       )}
       style={{
+        // Prefer the OS-reported safe-area inset on devices that have one
+        // (notched/dynamic-island phones, PWA standalone with status-bar);
+        // fall back to a tighter 1.5rem (24px) baseline on the web instead
+        // of the previous 2.5rem (40px), which ate ~16px of dashboard
+        // real estate on every cold start without serving any system chrome.
         paddingTop: isShrunk
           ? undefined
-          : "max(2.5rem, env(safe-area-inset-top))",
+          : "max(1.5rem, env(safe-area-inset-top))",
       }}
     >
       {/* ── Row 1: Mark + Wordmark + Action icons ─────────────── */}
@@ -153,7 +158,7 @@ export function HubHeader({
       {/* брендовий шум, який забирав вертикальний простір. */}
       <p
         className={cn(
-          "mt-2 ml-[3px] text-[13px] leading-snug text-muted truncate",
+          "mt-1.5 ml-[3px] text-[13px] leading-snug text-muted truncate",
           "transition-all duration-300",
           isShrunk && "opacity-0 h-0 mt-0 overflow-hidden",
         )}
