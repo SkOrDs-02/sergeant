@@ -4,6 +4,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { useLocalStorageState } from "@shared/hooks";
 import { cn } from "@shared/lib/cn";
+import { emitHubBus } from "@shared/lib/hubBus";
 import {
   ASSISTANT_CAPABILITIES,
   CAPABILITY_MODULE_META,
@@ -44,17 +45,16 @@ const isCollapsedShape = (v: unknown): v is CapabilityModule[] =>
   Array.isArray(v) && v.every(isCapabilityModule);
 
 /**
- * Send a chat message via the global `hub:openChat` event. Avoids importing
- * the chat module directly from this page (and the cycle that would create).
+ * Send a chat message via the typed `hubBus.openChat` signal. Avoids
+ * importing the chat module directly from this page (and the cycle that
+ * would create).
  *
  * - `autoSend=true` ⇒ assistant sends the message immediately;
  * - `autoSend=false` ⇒ message is prefilled into the input, waiting for the
  *   user to add details and hit enter.
  */
 function dispatchOpenChat(message: string, autoSend: boolean): void {
-  window.dispatchEvent(
-    new CustomEvent("hub:openChat", { detail: { message, autoSend } }),
-  );
+  emitHubBus("openChat", { message, autoSend });
 }
 
 export function AssistantCataloguePage({

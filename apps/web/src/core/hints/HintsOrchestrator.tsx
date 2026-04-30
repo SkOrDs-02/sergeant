@@ -10,6 +10,7 @@ import {
 } from "@sergeant/shared";
 import { useToast } from "@shared/hooks/useToast";
 import { webKVStore } from "@shared/lib/storage";
+import { emitHubBus } from "@shared/lib/hubBus";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 import { useHubPref } from "../settings/hubPrefs";
 
@@ -134,11 +135,9 @@ export function HintsOrchestrator({
               label: "Відкрити чат",
               onClick: () => {
                 try {
-                  window.dispatchEvent(
-                    new CustomEvent("hub:openChat", {
-                      detail: "Що мені важливо сьогодні?",
-                    }),
-                  );
+                  emitHubBus("openChat", {
+                    message: "Що мені важливо сьогодні?",
+                  });
                   trackEvent(ANALYTICS_EVENTS.HINT_CLICKED, { id: next });
                 } catch {
                   /* noop */
@@ -150,7 +149,7 @@ export function HintsOrchestrator({
                 label: "Пошук",
                 onClick: () => {
                   try {
-                    window.dispatchEvent(new CustomEvent("hub:openSearch"));
+                    emitHubBus("openSearch", undefined);
                     trackEvent(ANALYTICS_EVENTS.HINT_CLICKED, { id: next });
                   } catch {
                     /* noop */

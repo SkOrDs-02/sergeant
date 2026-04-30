@@ -16,6 +16,7 @@ import { ToastProvider, useToast } from "@shared/hooks/useToast";
 import { ToastContainer } from "@shared/components/ui/Toast";
 import { ScreenReaderAnnouncerProvider } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { HUB_OPEN_MODULE_EVENT } from "@shared/lib/hubNav";
+import { onHubBus } from "@shared/lib/hubBus";
 import { ApiClientProvider } from "@sergeant/api-client/react";
 import { apiClient } from "@shared/api";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
@@ -245,40 +246,32 @@ function AppInner() {
     }
   }, [openModule]);
 
-  // Global event to open chat from any page (e.g. ProfilePage memory bank,
-  // AssistantCataloguePage). Detail accepts either a plain string (legacy:
-  // prefill input) or `{message, autoSend}` (new: optional auto-send) so
-  // existing emitters keep working without modification.
+  // Global signal to open chat from any page (e.g. ProfilePage memory bank,
+  // AssistantCataloguePage, hint toasts). Routed through the typed
+  // `hubBus` rather than `window.dispatchEvent` so the payload shape is
+  // enforced at the type level (see `HubBusEvents.openChat`).
   const openChatStable = ui.openChat;
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as
-        | string
-        | null
-        | { message: string; autoSend?: boolean };
-      navigate("/", { replace: true });
-      requestAnimationFrame(() => {
-        if (detail && typeof detail === "object" && "message" in detail) {
+  useEffect(
+    () =>
+      onHubBus("openChat", (detail) => {
+        navigate("/", { replace: true });
+        requestAnimationFrame(() => {
           openChatStable(detail.message, { autoSend: detail.autoSend });
-        } else {
-          openChatStable(detail as string | null);
-        }
-      });
-    };
-    window.addEventListener("hub:openChat", handler);
-    return () => window.removeEventListener("hub:openChat", handler);
-  }, [openChatStable, navigate]);
+        });
+      }),
+    [openChatStable, navigate],
+  );
 
-  // Global event to open HubSearch from any surface (used by hint toasts).
-  // Mirrors the existing `hub:openChat` event contract.
-  useEffect(() => {
-    const handler = () => {
-      ui.setSearchOpen(true);
-    };
-    window.addEventListener("hub:openSearch", handler as EventListener);
-    return () =>
-      window.removeEventListener("hub:openSearch", handler as EventListener);
-  }, [ui]);
+  // Global signal to open HubSearch from any surface (used by hint
+  // toasts). Mirrors the typed `openChat` contract on the same bus.
+  const setSearchOpenStable = ui.setSearchOpen;
+  useEffect(
+    () =>
+      onHubBus("openSearch", () => {
+        setSearchOpenStable(true);
+      }),
+    [setSearchOpenStable],
+  );
 
   useEffect(() => {
     const onHubOpen = (ev: Event) => {

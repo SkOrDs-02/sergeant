@@ -3,6 +3,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
+import { emitHubBus } from "@shared/lib/hubBus";
 import { showUndoToast } from "@shared/lib/undoToast";
 import {
   CATEGORY_META,
@@ -57,7 +58,7 @@ export function MemoryBankSection() {
       entries.length === 0
         ? MEMORY_ONBOARDING_PROMPT
         : "Хочу додати інформацію про себе. Запитай мене що важливого я хочу щоб ти запам'ятав.";
-    window.dispatchEvent(new CustomEvent("hub:openChat", { detail: prompt }));
+    emitHubBus("openChat", { message: prompt });
   }, [entries.length]);
 
   const handleExport = useCallback(() => {
