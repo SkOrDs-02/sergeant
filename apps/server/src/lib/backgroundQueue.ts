@@ -1,4 +1,5 @@
 import { logger } from "../obs/logger.js";
+import { elapsedMs } from "./timing.js";
 
 /**
  * Simple in-memory background job queue for non-critical tasks.
@@ -42,7 +43,7 @@ interface QueueOptions {
   jobTimeoutMs?: number;
 }
 
-class BackgroundQueue {
+export class BackgroundQueue {
   private queue: Job[] = [];
   private running = 0;
   private jobIdCounter = 0;
@@ -115,37 +116,37 @@ class BackgroundQueue {
    * Run a single job with timeout and error handling.
    */
   private async runJob(job: Job): Promise<void> {
-    const startTime = Date.now();
+    const startTime = process.hrtime.bigint();
+    let timeoutTimer: NodeJS.Timeout | undefined;
 
     try {
-      // Create timeout promise
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
+        timeoutTimer = setTimeout(() => {
           reject(
             new Error(`Job ${job.name} timed out after ${this.jobTimeoutMs}ms`),
           );
         }, this.jobTimeoutMs);
+        if (typeof timeoutTimer.unref === "function") timeoutTimer.unref();
       });
 
-      // Race job against timeout
       await Promise.race([job.fn(), timeoutPromise]);
 
-      const durationMs = Date.now() - startTime;
       logger.debug({
         msg: "bg_job_completed",
         jobId: job.id,
         jobName: job.name,
-        durationMs,
+        durationMs: elapsedMs(startTime),
       });
     } catch (error) {
-      const durationMs = Date.now() - startTime;
       logger.error({
         msg: "bg_job_failed",
         jobId: job.id,
         jobName: job.name,
-        durationMs,
+        durationMs: elapsedMs(startTime),
         error: error instanceof Error ? error.message : String(error),
       });
+    } finally {
+      clearTimeout(timeoutTimer);
     }
   }
 

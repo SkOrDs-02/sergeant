@@ -4,6 +4,7 @@ import { getRedisStats, pingRedis } from "../lib/redis.js";
 import { getPoolStats } from "../db.js";
 import { backgroundQueue } from "../lib/backgroundQueue.js";
 import { anthropicCircuitBreaker } from "../lib/circuitBreaker.js";
+import { elapsedMs } from "../lib/timing.js";
 
 interface DbPool {
   query(sql: string): Promise<unknown>;
@@ -50,9 +51,9 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
 
     // Database check
     try {
-      const start = Date.now();
+      const start = process.hrtime.bigint();
       await pool.query("SELECT 1");
-      const latencyMs = Date.now() - start;
+      const latencyMs = elapsedMs(start);
       checks.database = {
         status: "healthy",
         details: { latencyMs, ...getPoolStats() },
