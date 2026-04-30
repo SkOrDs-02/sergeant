@@ -3,6 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@shared/lib/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import { getModulePrefetchProps } from "../../lib/intentPrefetch";
 import {
   MODULE_CONFIGS,
   type ModuleConfig,
@@ -313,9 +314,24 @@ export const SortableCard = memo(function SortableCard({
   // primary `<button>` — both fail axe a11y rules.
   // In edit mode the same listeners move to the visible grip handle so
   // accidental drags from the card body don't fight the explicit handle.
+  // We also fold in `getModulePrefetchProps(id)` (intent-prefetch on hover/
+  // focus) when not editing — the same primary button is the user's "I'm
+  // about to open this module" affordance, so warming its chunk on hover
+  // shaves the next dynamic-import RTT off the click handler. Suppressed
+  // in edit mode because hovers there are about reordering, not opening.
   const dndProps = useMemo(
     () => ({ ...attributes, ...listeners }),
     [attributes, listeners],
+  );
+
+  const intentProps = useMemo(
+    () => (editMode ? null : getModulePrefetchProps(id)),
+    [editMode, id],
+  );
+
+  const primaryProps = useMemo(
+    () => (editMode ? undefined : { ...dndProps, ...intentProps }),
+    [editMode, dndProps, intentProps],
   );
 
   const handleClick = useCallback(() => onOpenModule(id), [onOpenModule, id]);
@@ -330,7 +346,7 @@ export const SortableCard = memo(function SortableCard({
         onClick={handleClick}
         onQuickAdd={quickAdd}
         primaryRef={editMode ? undefined : setActivatorNodeRef}
-        primaryProps={editMode ? undefined : dndProps}
+        primaryProps={primaryProps}
         handleRef={editMode ? setActivatorNodeRef : undefined}
         handleProps={editMode ? dndProps : undefined}
         isDragging={isDragging}
