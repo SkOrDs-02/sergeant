@@ -49,8 +49,8 @@ interface ModuleDataUpsertRow {
 }
 
 interface PushAllPayloadEntry {
-  data?: unknown;
-  clientUpdatedAt?: string | number | Date;
+  data: unknown;
+  clientUpdatedAt: string | number | Date;
 }
 
 interface PushAllResult {
@@ -374,7 +374,7 @@ export async function syncPushAll(req: Request, res: Response): Promise<void> {
     await client.query("BEGIN");
     for (const [mod, payload] of Object.entries(modules)) {
       if (!VALID_MODULES.has(mod)) continue;
-      const { data, clientUpdatedAt } = payload || {};
+      const { data, clientUpdatedAt } = payload;
       if (data === undefined || data === null) continue;
       const blob = JSON.stringify(data);
       if (blob.length > MAX_BLOB_SIZE) {
@@ -384,7 +384,7 @@ export async function syncPushAll(req: Request, res: Response): Promise<void> {
       }
       // `clientUpdatedAt` — required у `SyncPushAllSchema`; fallback на
       // `new Date()` прибрано з тієї ж причини, що й у `syncPush` вище.
-      const clientTs = new Date(clientUpdatedAt ?? Date.now());
+      const clientTs = new Date(clientUpdatedAt);
       const r = await client.query<ModuleDataUpsertRow>(
         `INSERT INTO module_data (user_id, module, data, client_updated_at, version)
          VALUES ($1, $2, $3, $4, 1)
