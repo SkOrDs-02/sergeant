@@ -11,11 +11,7 @@ import {
   type NutritionPrefs,
   type Pantry,
 } from "../../modules/nutrition/lib/nutritionStorage";
-import {
-  SettingsGroup,
-  SettingsSubGroup,
-  ToggleRow,
-} from "./SettingsPrimitives";
+import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
 
 function numberOrNullToInput(v: number | null): string {
   return v == null ? "" : String(Math.round(v));
@@ -221,36 +217,6 @@ export function NutritionSection() {
             })
           }
         />
-      </SettingsSubGroup>
-
-      <SettingsSubGroup title="Нагадування про їжу">
-        <ToggleRow
-          label="Щоденне нагадування"
-          description="Пуш-сповіщення щодня у вказаний час, щоб нагадати внести прийоми їжі."
-          checked={prefs.reminderEnabled}
-          onChange={(checked) => patchPrefs({ reminderEnabled: checked })}
-        />
-        <label className="flex items-center gap-3 min-h-[44px]">
-          <span className="text-sm text-text flex-1 min-w-0">Час</span>
-          <select
-            className={cn(
-              "input-focus h-10 px-2.5 text-sm",
-              "bg-panelHi border border-line rounded-lg text-text",
-            )}
-            value={prefs.reminderHour}
-            onChange={(e) =>
-              patchPrefs({
-                reminderHour: Number(e.target.value) || 12,
-              })
-            }
-          >
-            {Array.from({ length: 24 }).map((_, h) => (
-              <option key={h} value={h}>
-                {String(h).padStart(2, "0")}:00
-              </option>
-            ))}
-          </select>
-        </label>
       </SettingsSubGroup>
 
       <SettingsSubGroup title="Підстановка з комори">
