@@ -99,9 +99,26 @@ jest.mock("react-native-safe-area-context", () => {
 });
 
 jest.mock("react-native-mmkv", () => {
+  // Module-scope cache shared across MMKV instances within a single
+  // test run. Two `new MMKV({ id })` calls with the same id must read
+  // each other's writes — that's what powers the encryption-bootstrap
+  // migration test, which opens a "legacy" plaintext instance, writes
+  // some keys, then opens a fresh handle to the same id and expects
+  // those keys to be visible. Real MMKV behaves the same way (the id
+  // identifies an on-disk file).
+  const stores = new Map();
+  function getStore(id) {
+    if (!stores.has(id)) stores.set(id, new Map());
+    return stores.get(id);
+  }
   class MMKV {
-    constructor() {
-      this._store = new Map();
+    constructor(options = {}) {
+      this._id = options.id || "default";
+      // Exposed for test assertions — the production code never reads
+      // these properties off the instance, but tests verify that
+      // `bootstrapEncryptedStorage` opens MMKV with the right key.
+      this._encryptionKey = options.encryptionKey;
+      this._store = getStore(this._id);
     }
     set(key, value) {
       this._store.set(key, String(value));
@@ -134,6 +151,10 @@ jest.mock("react-native-mmkv", () => {
       return { remove: () => {} };
     }
   }
+  // Test helper for resetting state between tests that exercise
+  // multiple MMKV ids (encryption bootstrap, migration). Not part of
+  // the real react-native-mmkv API.
+  MMKV.__resetForTests = () => stores.clear();
   return { MMKV };
 });
 
