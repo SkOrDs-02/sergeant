@@ -26,20 +26,28 @@ const __dirname = dirname(__filename);
 
 // H2 sections that MUST appear in every PR body. Matches current template
 // (`/.github/PULL_REQUEST_TEMPLATE.md`). Keep this list in lock-step with it.
+// Realigned with the template after the consolidation in commit `0318b8a6`
+// ("docs(docs): consolidate playbooks and contribution flow") which renamed
+// the historical `What changed` / `Why` / `How to test` / `Pre-flight` /
+// `Docs updated alongside code?` sections into the unified Summary +
+// Governing Skill + Playbook + Verification + Docs and Governance + Risk
+// and Rollout + Hard Rule #15 schema below.
 export const REQUIRED_SECTIONS = [
-  "What changed",
-  "Why",
-  "How to test",
-  "Pre-flight (Hard Rule #15)",
-  "Docs updated alongside code? (Hard Rule #15)",
+  "Summary",
+  "Governing Skill",
+  "Playbook",
+  "Verification",
+  "Docs and Governance",
+  "Risk and Rollout",
+  "Hard Rule #15",
 ];
 
 // Sections where at least one checkbox must be ticked. Each entry is the
 // heading text; the validator scans checkboxes until the next H2.
-export const SECTIONS_REQUIRING_TICK = [
-  "Pre-flight (Hard Rule #15)",
-  "Docs updated alongside code? (Hard Rule #15)",
-];
+// `Hard Rule #15` is the new home of the historical `Pre-flight` checkboxes;
+// `Docs and Governance` is the new home of the historical `Docs updated
+// alongside code?` checkboxes.
+export const SECTIONS_REQUIRING_TICK = ["Hard Rule #15", "Docs and Governance"];
 
 // ── Pure helpers (exported for tests) ────────────────────────────────────────
 
@@ -118,15 +126,16 @@ export function validate(body) {
   }
 
   // Sanity: body should not be an unedited copy of the template.
-  // The template has the prompt "<!-- Brief description of the changes. -->"
-  // immediately inside "What changed". If that comment still shows up AND
-  // the section body is otherwise empty, the author forgot to edit it.
-  const whatChanged = sections.find((s) => s.heading === "What changed");
-  if (whatChanged) {
-    const text = whatChanged.body.replace(/<!--[\s\S]*?-->/g, "").trim();
+  // The template has the prompt "<!-- What changed in one tight paragraph or
+  // a short flat list. -->" immediately inside `Summary`. If that comment
+  // still shows up AND the section body is otherwise empty, the author
+  // forgot to edit it.
+  const summary = sections.find((s) => s.heading === "Summary");
+  if (summary) {
+    const text = summary.body.replace(/<!--[\s\S]*?-->/g, "").trim();
     if (text.length === 0) {
       errors.push(
-        "Section `## What changed` is empty. Describe the change in prose (comments alone don't count).",
+        "Section `## Summary` is empty. Describe the change in prose (comments alone don't count).",
       );
     }
   }

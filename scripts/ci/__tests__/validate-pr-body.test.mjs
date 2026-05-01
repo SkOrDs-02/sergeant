@@ -13,30 +13,65 @@ import {
   REQUIRED_SECTIONS,
 } from "../validate-pr-body.mjs";
 
-// A minimal body that satisfies the validator.
+// A minimal body that satisfies the validator. Mirrors the post-`0318b8a6`
+// `.github/PULL_REQUEST_TEMPLATE.md` structure (Summary + Governing Skill +
+// Playbook + Verification + Docs and Governance + Risk and Rollout +
+// Hard Rule #15 + Reviewer Notes); the historical `What changed` / `Why` /
+// `How to test` / `Pre-flight` / `Docs updated alongside code?` sections
+// were renamed by the consolidation commit.
 const VALID_BODY = `
-## What changed
+## Summary
 
 Added foo to bar. See \`apps/server/src/foo.ts\`.
 
-## Why
+## Governing Skill
 
-Fixes #123 — users saw 500s on /api/foo.
+- Primary skill: \`sergeant-server-api\`
+- Secondary skill (if truly needed): n/a
 
-## How to test
+## Playbook
+
+- Primary playbook: \`docs/playbooks/add-api-endpoint.md\`
+- Why this playbook: it adds a new \`/api/foo\` route end-to-end.
+- If no playbook matched, why: n/a
+
+## Verification
 
 \`\`\`
 pnpm test --filter foo
 \`\`\`
 
-## Pre-flight (Hard Rule #15)
+Additional checks:
 
-- [x] Read AGENTS.md Hard Rules for the touched paths.
-- [ ] Checked freshness headers.
+- [x] Local smoke / manual validation completed
+- [ ] Surface-specific checks completed
 
-## Docs updated alongside code? (Hard Rule #15)
+## Docs and Governance
 
-- [x] N/A — no docs invalidated by this change.
+- [x] I updated docs that changed with the behavior, contract, workflow, or rollout.
+- [ ] I checked whether \`AGENTS.md\` needed an update.
+- [ ] I checked whether a playbook or skill needed an update.
+- [ ] I checked whether governance docs or review docs needed an update.
+
+Updated docs:
+
+- n/a
+
+## Risk and Rollout
+
+- User-visible risk: none.
+- Rollout / deploy order: standard merge.
+- Backout plan: revert.
+
+## Hard Rule #15
+
+- [x] I read \`AGENTS.md\` before coding.
+- [ ] Internal docs I touched are in Ukrainian.
+- [ ] I did not use \`--no-verify\`.
+
+## Reviewer Notes
+
+n/a
 `;
 
 describe("splitSections", () => {
@@ -89,33 +124,33 @@ describe("validate", () => {
     }
   });
 
-  it("rejects a body where Pre-flight has no ticked box", () => {
+  it("rejects a body where Hard Rule #15 has no ticked box", () => {
     const body = VALID_BODY.replace(
-      "- [x] Read AGENTS.md",
-      "- [ ] Read AGENTS.md",
+      "- [x] I read `AGENTS.md`",
+      "- [ ] I read `AGENTS.md`",
     );
     const r = validate(body);
     assert.equal(r.ok, false);
-    assert.match(r.errors.join("\n"), /Pre-flight/);
+    assert.match(r.errors.join("\n"), /Hard Rule #15/);
   });
 
-  it("rejects a body where Docs section has no ticked box", () => {
+  it("rejects a body where Docs and Governance has no ticked box", () => {
     const body = VALID_BODY.replace(
-      "- [x] N/A — no docs invalidated",
-      "- [ ] N/A — no docs invalidated",
+      "- [x] I updated docs",
+      "- [ ] I updated docs",
     );
     const r = validate(body);
     assert.equal(r.ok, false);
-    assert.match(r.errors.join("\n"), /Docs updated alongside code/);
+    assert.match(r.errors.join("\n"), /Docs and Governance/);
   });
 
-  it("rejects a body where What changed is only HTML comments", () => {
+  it("rejects a body where Summary is only HTML comments", () => {
     const body = VALID_BODY.replace(
       "Added foo to bar. See `apps/server/src/foo.ts`.",
       "<!-- TODO -->",
     );
     const r = validate(body);
     assert.equal(r.ok, false);
-    assert.match(r.errors.join("\n"), /What changed/);
+    assert.match(r.errors.join("\n"), /Summary/);
   });
 });
