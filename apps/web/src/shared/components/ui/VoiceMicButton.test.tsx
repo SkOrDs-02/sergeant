@@ -107,7 +107,12 @@ describe("VoiceMicButton", () => {
     } as unknown as RecCtor;
 
     const onResult = vi.fn();
-    const { container } = render(<VoiceMicButton onResult={onResult} />);
+    // confirmBeforeCommit=false — тест перевіряє безпосередній transport
+    // транскрипту з Web Speech у callback. Шлях з підтвердженням
+    // (3-сек preview-чип, UX-3) перевіряється окремим тестом нижче.
+    const { container } = render(
+      <VoiceMicButton onResult={onResult} confirmBeforeCommit={false} />,
+    );
     const btn = container.querySelector("button")!;
 
     act(() => {
@@ -120,5 +125,155 @@ describe("VoiceMicButton", () => {
       });
     });
     expect(onResult).toHaveBeenCalledWith("купив каву");
+  });
+
+  it("показує preview-чип і відкладає commit до підтвердження (UX-3)", () => {
+    type RecCtor = new () => {
+      lang: string;
+      interimResults: boolean;
+      maxAlternatives: number;
+      continuous: boolean;
+      onstart: (() => void) | null;
+      onend: (() => void) | null;
+      onresult:
+        | ((e: {
+            results?: ArrayLike<ArrayLike<{ transcript?: string }>>;
+          }) => void)
+        | null;
+      onerror: ((e: { error: string }) => void) | null;
+      start: () => void;
+      stop: () => void;
+      abort: () => void;
+    };
+    let lastInstance: InstanceType<RecCtor> | null = null;
+    type W = typeof window & { webkitSpeechRecognition?: RecCtor };
+    (window as W).webkitSpeechRecognition = class {
+      lang = "";
+      interimResults = false;
+      maxAlternatives = 1;
+      continuous = false;
+      onstart: (() => void) | null = null;
+      onend: (() => void) | null = null;
+      onresult:
+        | ((e: {
+            results?: ArrayLike<ArrayLike<{ transcript?: string }>>;
+          }) => void)
+        | null = null;
+      onerror: ((e: { error: string }) => void) | null = null;
+      constructor() {
+        lastInstance = this as unknown as InstanceType<RecCtor>;
+      }
+      start() {
+        this.onstart?.();
+      }
+      stop() {
+        this.onend?.();
+      }
+      abort() {}
+    } as unknown as RecCtor;
+
+    const onResult = vi.fn();
+    const { container } = render(<VoiceMicButton onResult={onResult} />);
+    const btn = container.querySelector("button")!;
+
+    act(() => {
+      btn.click();
+    });
+    act(() => {
+      lastInstance!.onresult?.({
+        results: [[{ transcript: "тренування з гирею" }]],
+      });
+    });
+
+    // Поки чип висить — onResult мовчить.
+    expect(onResult).not.toHaveBeenCalled();
+
+    // Чип рендериться у portal на document.body, тому шукаємо там, а не
+    // в container, який тримає лише саму кнопку.
+    const chip = document.body.querySelector('[role="dialog"]');
+    expect(chip).not.toBeNull();
+    expect(chip!.textContent).toContain("тренування з гирею");
+
+    // Тап по тексту = "зберегти зараз".
+    const confirmBtn = chip!.querySelector(
+      'button[title="Зберегти зараз"]',
+    ) as HTMLButtonElement | null;
+    expect(confirmBtn).not.toBeNull();
+    act(() => {
+      confirmBtn!.click();
+    });
+    expect(onResult).toHaveBeenCalledWith("тренування з гирею");
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it("скасовує preview без commit при натисканні ✕ (UX-3)", () => {
+    type RecCtor = new () => {
+      lang: string;
+      interimResults: boolean;
+      maxAlternatives: number;
+      continuous: boolean;
+      onstart: (() => void) | null;
+      onend: (() => void) | null;
+      onresult:
+        | ((e: {
+            results?: ArrayLike<ArrayLike<{ transcript?: string }>>;
+          }) => void)
+        | null;
+      onerror: ((e: { error: string }) => void) | null;
+      start: () => void;
+      stop: () => void;
+      abort: () => void;
+    };
+    let lastInstance: InstanceType<RecCtor> | null = null;
+    type W = typeof window & { webkitSpeechRecognition?: RecCtor };
+    (window as W).webkitSpeechRecognition = class {
+      lang = "";
+      interimResults = false;
+      maxAlternatives = 1;
+      continuous = false;
+      onstart: (() => void) | null = null;
+      onend: (() => void) | null = null;
+      onresult:
+        | ((e: {
+            results?: ArrayLike<ArrayLike<{ transcript?: string }>>;
+          }) => void)
+        | null = null;
+      onerror: ((e: { error: string }) => void) | null = null;
+      constructor() {
+        lastInstance = this as unknown as InstanceType<RecCtor>;
+      }
+      start() {
+        this.onstart?.();
+      }
+      stop() {
+        this.onend?.();
+      }
+      abort() {}
+    } as unknown as RecCtor;
+
+    const onResult = vi.fn();
+    const { container } = render(<VoiceMicButton onResult={onResult} />);
+    const btn = container.querySelector("button")!;
+
+    act(() => {
+      btn.click();
+    });
+    act(() => {
+      lastInstance!.onresult?.({
+        results: [[{ transcript: "купив 10 яйок" }]],
+      });
+    });
+
+    const chip = document.body.querySelector('[role="dialog"]');
+    expect(chip).not.toBeNull();
+    const cancelBtn = chip!.querySelector(
+      'button[aria-label="Скасувати"]',
+    ) as HTMLButtonElement | null;
+    expect(cancelBtn).not.toBeNull();
+    act(() => {
+      cancelBtn!.click();
+    });
+    expect(onResult).not.toHaveBeenCalled();
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
   });
 });
