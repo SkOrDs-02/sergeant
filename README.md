@@ -6,7 +6,7 @@
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Last validated:** 2026-04-29 by @devin-ai. **Next review:** 2026-07-29.
+> **Last validated:** 2026-05-01 by @devin-ai. **Next review:** 2026-07-30.
 > **Status:** Active
 
 Персональна платформа-хаб із модулями: **ФІНІК** (фінанси), **ФІЗРУК** (спорт), **Рутина** (календар, звички, план) та **Харчування** (лог їжі, AI-аналіз фото, рецепти). PWA — встановлюється на телефон, працює офлайн. Акаунти та хмарна синхронізація між пристроями через Better Auth + PostgreSQL.
@@ -63,7 +63,7 @@ apps/
 │   ├── src/config.ts            # Конфіг рантайм-режиму (порт, SPA-static, trust proxy)
 │   ├── src/auth.ts              # Better Auth (спільний pg pool з db.ts)
 │   ├── src/db.ts                # PostgreSQL pool, ensureSchema(), SQL-міграції з migrations/
-│   ├── src/migrations/          # 001_noop.sql … 015_n8n_failure_events.sql (sequential, no gaps)
+│   ├── src/migrations/          # 001_noop.sql … 021_governance_audit.sql (sequential, no gaps)
 │   ├── src/routes/              # Express-роутери: auth, me, sync, chat, coach, push, banks, barcode,
 │   │                            #   nutrition, weekly-digest, food-search, web-vitals, transcribe, waitlist,
 │   │                            #   mono-webhook, health, frontend
@@ -166,7 +166,7 @@ pnpm dev:server # тільки Express API (apps/server/src/index.ts, порт 3
 pnpm dev:web    # тільки Vite dev server (фронт, порт 5173)
 ```
 
-`pnpm start` — продакшн-режим API (потребує `pnpm build` спочатку): `pnpm --filter @sergeant/server start` запускає скомпільований `apps/server/dist-server/index.js`.
+`pnpm start` — продакшн-режим API (потребує `pnpm build` спочатку): `pnpm --filter @sergeant/server start` запускає скомпільований entry-файл в `apps/server/dist-server/` (білд-артефакт, gitignored).
 
 На Replit: `pnpm start:replit` — єдиний unified-процес (фронт + API, порт 5000) через `SERVER_MODE=replit`.
 

@@ -87,20 +87,21 @@ packages:
   - "packages/*"
 ```
 
-### `apps/*` (4)
+### `apps/*` (5)
 
-| App                 | Deployable target                       | Bundle-ID / domain   |
-| ------------------- | --------------------------------------- | -------------------- |
-| `apps/web`          | Vite SPA → Vercel + Capacitor + Replit  | `app.sergeant.local` |
-| `apps/server`       | Express API → Railway (Docker)          | `*.up.railway.app`   |
-| `apps/mobile`       | Expo SDK 52 (RN 0.76) → APNs/FCM        | `com.sergeant.app`   |
-| `apps/mobile-shell` | Capacitor 7 WebView shell of `apps/web` | `com.sergeant.shell` |
+| App                 | Deployable target                                          | Bundle-ID / domain   |
+| ------------------- | ---------------------------------------------------------- | -------------------- |
+| `apps/web`          | Vite SPA → Vercel + Capacitor + Replit                     | `app.sergeant.local` |
+| `apps/server`       | Express API → Railway (Docker)                             | `*.up.railway.app`   |
+| `apps/mobile`       | Expo SDK 52 (RN 0.76) → APNs/FCM                           | `com.sergeant.app`   |
+| `apps/mobile-shell` | Capacitor 7 WebView shell of `apps/web`                    | `com.sergeant.shell` |
+| `apps/console`      | Telegram bot (grammy + Anthropic) — internal ops/marketing | n/a                  |
 
 ### `packages/*` (10)
 
 | Package                         | Що містить                                                                                                        | Споживачі                 |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| `@sergeant/shared`              | Zod-схеми, типи, common business logic (kcal math, date helpers, локаль-string-и). Pure TS, no React, no Express. | All 4 apps + домен-пакети |
+| `@sergeant/shared`              | Zod-схеми, типи, common business logic (kcal math, date helpers, локаль-string-и). Pure TS, no React, no Express. | All 5 apps + домен-пакети |
 | `@sergeant/api-client`          | HTTP-клієнт для `apps/server`, типи responses 1:1 з server-handlers (rule #3).                                    | `apps/web`, `apps/mobile` |
 | `@sergeant/config`              | Базова `tsconfig.base.json`, eslint-base, prettier-base.                                                          | All apps + packages       |
 | `@sergeant/design-tokens`       | Tailwind preset, кольори, opacity-allowlist (rule #8), брендова палітра.                                          | `apps/web`, `apps/mobile` |
@@ -134,7 +135,7 @@ infra — у `Dockerfile.api` + `vercel.json` + `railway.toml`.
 
 **Чому `packages/*` плоский, а не вкладений (`packages/domain/finyk`):**
 pnpm + turbo ці глоби однаково підтримують, але плоский список простіше
-читати в `pnpm-workspace.yaml` і в `pnpm install` output. На 9 packages
+читати в `pnpm-workspace.yaml` і в `pnpm install` output. На 10 packages
 ще не той рівень, де hierarchy дає вигоду.
 
 **Чому домен-пакети розділені, а не один `@sergeant/domain`:** modularity
@@ -152,8 +153,8 @@ ESLint resolver шукає `eslint-plugin-*` за naming convention.
 Перейменувати — означає писати ручний resolver. Не варте.
 
 **Audit-quote:** [2026-04-26 audit](../audits/2026-04-26-sergeant-audit-devin.md),
-пункт 1: "4 apps + 9 `@sergeant/*` packages (+ `eslint-plugin-sergeant-design`), `pnpm-workspace.yaml` чітко як `apps/*` +
-`packages/*`. … Domain packages — справжня доменна ізоляція, не fake."
+пункт 1: "5 apps + 9 `@sergeant/*` packages (+ `eslint-plugin-sergeant-design` = 10 total), `pnpm-workspace.yaml` чітко як `apps/*` +
+`packages/*`. … Domain packages — справжня доменна ізоляція, не fake." (`apps/console` додано після audit-у — Telegram-bot для ops/marketing.)
 
 ## Consequences
 
@@ -168,7 +169,7 @@ ESLint resolver шукає `eslint-plugin-*` за naming convention.
   блокують на pnpm-резолвер-рівні).
 - **Server-client contract enforcement.** `@sergeant/api-client` як
   окремий артефакт робить rule #3 (api-contract triple-edit з AGENTS.md)
-  природним: змінив `apps/server/src/modules/X/handler.ts` —
+  природним: змінив `apps/server/src/modules/<X>/handler.ts` —
   `@sergeant/api-client/src/endpoints/X.ts` мусить bumpнутися в тому ж PR.
 - **Independent test stacks.** Кожен package може мати свій test-runner
   (Vitest для більшості, `node --test` для ESLint-plugin) — без global

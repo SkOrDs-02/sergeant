@@ -55,7 +55,7 @@ A `down.sql` companion (e.g. `008_mono_integration.down.sql`) is for local rollb
 
 ## Numbering
 
-Files use pattern `NNN_description.sql`. Currently 001–015+. No gaps allowed. The generator handles this automatically.
+Files use pattern `NNN_description.sql`. Currently 001–021+. No gaps allowed. The generator handles this automatically.
 
 ## Build Pipeline
 

@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-06-26.
+> **Last validated:** 2026-05-01 by @devin-ai. **Next review:** 2026-07-30.
 > **Status:** Active
 
 Інструкції "що робити, коли спрацював алерт" для правил з
@@ -9,7 +9,7 @@
 
 Загальне:
 
-- Прод entry point — `apps/server/src/index.ts` (компілюється у `apps/server/dist-server/index.js`; режим вибирається `SERVER_MODE` або авто з `REPLIT_DOMAINS`; для Railway — `SERVER_MODE=railway` / автодефолт). Хостинг — Railway.
+- Прод entry point — `apps/server/src/index.ts` (компілюється у `apps/server/dist-server/` build-артефакти; режим вибирається `SERVER_MODE` або авто з `REPLIT_DOMAINS`; для Railway — `SERVER_MODE=railway` / автодефолт). Хостинг — Railway.
 - Метрики за bearer-токен: `GET /metrics` з `Authorization: Bearer $METRICS_TOKEN`.
 - Логи — Pino JSON у stdout, з ALS-контекстом `{requestId, userId, module}`.
 - Sentry ловить fatal/error (включно з `err.cause` чейном).

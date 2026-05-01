@@ -199,7 +199,7 @@ bar — це no-op, але створює fail-fast для exotic-даних (м
 **Статус:** `proposed`, бо зараз serializer-и use просто `Number(...)`. Треба
 окремий PR, щоб:
 
-1. Додати helper у `apps/server/src/lib/numbers.ts`.
+1. Додати helper у `apps/server/src/lib/<numbers>.ts` (планований/proposed шлях; на момент написання ADR файлу ще немає).
 2. Мігрувати existing serializer-и.
 3. Додати ESLint rule (optional) проти голого `Number(r.xxx)` у `apps/server/src/modules/`.
 

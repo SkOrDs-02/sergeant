@@ -1,6 +1,6 @@
 # Sergeant API — OpenAPI-специфікація
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-01 by @devin-ai. **Next review:** 2026-07-30.
 > **Status:** Active
 
 [`openapi.json`](./openapi.json) — згенерований OpenAPI 3.1 specification. Single source of truth — zod-схеми у [`packages/shared/src/schemas/api.ts`](../../packages/shared/src/schemas/api.ts) + route-каталог у [`packages/shared/src/openapi/routes.ts`](../../packages/shared/src/openapi/routes.ts).
@@ -41,10 +41,10 @@ npx @redocly/cli preview-docs docs/api/openapi.json
 
 ## Що зараз покрито
 
-Phase 1 (PR-4.D): 36 endpoint-ів + 26 named-компонентів.
+Поточний знімок (auto-перевірено через `node -e` над `openapi.json`): **45 операцій / 42 path-и + 36 named-схем**. Базова Phase 1 (PR-4.D) починалася з 36 endpoint-ів + 26 schemas; з того часу додано mono-webhook, growth/marketing tables, governance audit, n8n failure events і додаткові response-схеми. Реальні цифри живуть у [`docs/api/openapi.json`](./openapi.json) — оновлюються через `pnpm api:generate-openapi` (CI-гейт `pnpm api:check-openapi`).
 
-- **Request-схеми** — повне покриття для всіх endpoint-ів з `validateBody(...)` (22 endpoint-и).
-- **Response-схеми** — точно описано: `MeResponse`, `PushSendSummary`, `PushTestResponse`. Решта endpoint-ів задокументована як generic `application/json` (Phase 2 додасть точні response-схеми).
+- **Request-схеми** — повне покриття для всіх endpoint-ів з `validateBody(...)`.
+- **Response-схеми** — точно описано: `MeResponse`, `PushSendSummary`, `PushTestResponse`, mono-webhook events, growth/marketing payloads. Решта endpoint-ів задокументована як generic `application/json` (Phase 2 додасть точні response-схеми для всіх).
 - **Auth**: `cookieAuth` (web — better-auth session cookie), `bearerAuth` (mobile — Expo bearer token).
 
 ## Що НЕ покрито (Phase 2+, окремі PR-и)

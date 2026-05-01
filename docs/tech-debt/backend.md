@@ -1,6 +1,6 @@
 # Backend Tech Debt Inventory
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-01 by @devin-ai. **Next review:** 2026-07-30.
 > **Status:** Active
 
 > Scope: **`apps/server/src/`** (Node.js 20 ESM, Express 4, PostgreSQL, Better Auth, Anthropic, Monobank/Privat, web-push, Pino, Prometheus, Sentry). У тексті нижче історично згадувався tree `server/*.js` — той самий продукт після переносу в monorepo; нові PR мають посилатися лише на `apps/server/src/**/*.ts`.
@@ -192,7 +192,7 @@
 - `elapsedMs(start)` → винести в спільний util (зараз повторюється в 4+ файлах `apps/server/src`).
 - ~~`pantry items → prompt string`~~ → **DONE 2026-04-28**:
   `apps/server/src/lib/pantryFormat.ts` + `pantryFormat.test.ts`.
-- OFF/USDA normalizers → уніфікувати між `modules/nutrition/barcode.ts` і `modules/nutrition/food-search.ts` (shared `apps/server/src/lib/foodNormalize.ts`).
+- OFF/USDA normalizers → уніфікувати між `modules/nutrition/barcode.ts` і `modules/nutrition/food-search.ts` (shared shapes у `apps/server/src/lib/normalizers/{off,usda,upcitemdb}.ts` з `index.ts` re-export-ами).
 - ~~`FNV-1a safeKeyFromToken`~~ → **DONE 2026-04-28**:
   `apps/server/src/lib/backupKey.ts` + `backupKey.test.ts`.
 
@@ -277,7 +277,7 @@ Webhook-based server-side integration added in PR2. Key components:
 
 ### Міграції (`apps/server/src/migrations/`)
 
-На момент оновлення інвентарю — **8** файлів міграцій (lex order): `001_noop.sql`, `002_ai_usage_daily.sql`, `003_baseline_schema.sql`, `004_ai_usage_daily_tool_bucket.sql`, `005_backend_hardening.sql`, `006_push_devices.sql` (+ `.down.sql`), `007_module_data_user_fk.sql`. Перші три — як у попередньому аудиті; `004+` — tool-bucket для AI-квот, hardening, push_devices, FK на `module_data`.
+На момент оновлення інвентарю — **21** файл міграцій (lex order, без `.down.sql`-компаньйонів): `001_noop.sql`, `002_ai_usage_daily.sql`, `003_baseline_schema.sql`, `004_ai_usage_daily_tool_bucket.sql`, `005_backend_hardening.sql`, `006_push_devices.sql`, `007_module_data_user_fk.sql`, `008_mono_integration.sql`, `009_waitlist.sql`, `010_mono_mcc_categorization.sql`, `011_webhook_events.sql`, `012_ai_usage_token_counters.sql`, `013_mono_ai_enrichment_queue.sql`, `014_mono_ai_category_fields.sql`, `015_n8n_failure_events.sql`, `016_constraints_and_query_plan_notes.sql`, `017_mono_webhook_secret_hash.sql`, `018_seo_tables.sql`, `019_growth_tables.sql`, `020_marketing_tables.sql`, `021_governance_audit.sql`. Більшість має `.down.sql` companion для local rollback (production runner у `apps/server/migrate.mjs` ніколи не виконує down-міграції).
 
 ### Індекси — по реальних query-патернах
 
@@ -406,7 +406,7 @@ Webhook-based server-side integration added in PR2. Key components:
 | **Inventory** (цей) | Документ `docs/tech-debt/backend.md`                                                              | 1 новий файл                                                                                                                                                                                                      | —          | Ні                                                 |
 | **PR A** ✅         | Уніфікація zod-валідації + central errorHandler wiring                                            | `apps/server/src/http/schemas.ts`, nutrition modules, `modules/sync/sync.ts`, `modules/mono/mono.ts`, `modules/mono/privat.ts`, `modules/digest/weekly-digest.ts`, `modules/push/push.ts`, `modules/chat/chat.ts` | Inventory  | Ні (вивід — той самий `{error, code, requestId}`). |
 | **PR B** ✅         | Банки: timeout + retry + jitter + circuit breaker + 60s cache                                     | `apps/server/src/lib/bankProxy.ts`, `modules/mono/mono.ts`, `modules/mono/privat.ts`, `modules/mono/bankProxy.test.ts`                                                                                            | —          | Ні (семантика GET лишається).                      |
-| **PR C** ✅         | AI quota: atomic upsert + per-tool cost                                                           | `apps/server/src/aiQuota.ts`, `apps/server/src/http/requireAiQuota.ts`, `apps/server/src/modules/chat/chat.ts`, `apps/server/src/aiQuota.test.ts`                                                                 | —          | Ні (external contract той самий).                  |
+| **PR C** ✅         | AI quota: atomic upsert + per-tool cost                                                           | `apps/server/src/modules/chat/aiQuota.ts`, `apps/server/src/http/requireAiQuota.ts`, `apps/server/src/modules/chat/chat.ts`, `apps/server/src/modules/chat/aiQuota.test.ts`                                       | —          | Ні (external contract той самий).                  |
 | **PR #335** ✅      | Web-push hardening: timeout + retry + per-origin circuit breaker                                  | `apps/server/src/lib/webpushSend.ts` + тести, `modules/push/push.ts`                                                                                                                                              | —          | Ні (зовнішній API push-ендпоінтів незмінний).      |
 | **PR #336** ✅      | Supertest-smoke на 8 ендпоінтів через `createApp()` factory                                       | `apps/server/src/smoke.test.ts`, devDep `supertest` + `@types/supertest`                                                                                                                                          | —          | Ні (лише тести).                                   |
 | **PR D**            | Міграції: коментарі EXPLAIN ANALYZE, CHECK-constraints, можливий `idx_push_subscriptions_user_id` | `apps/server/src/migrations/*.sql`, оновлення `docs/tech-debt/backend.md`                                                                                                                                         | —          | Ні (всі зміни — additive).                         |
