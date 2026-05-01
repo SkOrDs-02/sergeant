@@ -244,7 +244,10 @@ export const HabitCheckbox = memo(function HabitCheckbox({
       <AnimatedCheckbox
         checked={checked}
         aria-label={label}
-        showConfetti={!!streak && streak > 0}
+        showConfetti={
+          !!streak &&
+          (streak === 7 || streak === 30 || streak === 100 || streak === 365)
+        }
         {...props}
       />
       <div className="flex-1 min-w-0">

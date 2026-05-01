@@ -429,6 +429,18 @@ const preset = {
       // ═══════════════════════════════════════════════════════════════════
       // ANIMATIONS — Smooth, delightful, Duolingo-inspired
       // ═══════════════════════════════════════════════════════════════════
+      //
+      // ANIMATION BUDGET — 3 tiers, max 2 concurrent on-screen:
+      //
+      //   AMBIENT   — background, looped: shimmer, pulse-soft, wiggle
+      //               → Always gated by motion-safe:, reduced to opacity-only in prefers-reduced-motion
+      //   RESPONSE  — user-initiated, one-shot: fade-in, slide-up, scale-in, press-scale, hover-lift
+      //               → 150–300ms, ease-out. Fires once per interaction.
+      //   CELEBRATE — milestone, rare: check-pop, bounce-in, success-pulse, confetti
+      //               → Only for: first entry, streak ≥7, weekly goal hit. NOT every checkbox.
+      //
+      // RULE: A screen should never run more than 1 AMBIENT + 1 RESPONSE simultaneously.
+      // Stagger animations count as 1 RESPONSE regardless of child count.
       animation: {
         // Entry animations
         "fade-in": "fadeIn 0.2s ease-out",
