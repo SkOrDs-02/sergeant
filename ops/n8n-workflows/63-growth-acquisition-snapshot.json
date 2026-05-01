@@ -21,13 +21,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://app.posthog.com/api/projects/{{ $env.POSTHOG_PROJECT_ID }}/query/",
+        "url": "={{ $env.POSTHOG_HOST || 'https://eu.i.posthog.com' }}/api/projects/{{ $env.POSTHOG_PROJECT_ID }}/query/",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $env.POSTHOG_PERSONAL_API_KEY }}"
+              "value": "=Bearer {{ $env.POSTHOG_API_KEY }}"
             },
             {
               "name": "Content-Type",
@@ -54,7 +54,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parse PostHog HogQL response into acquisition rows for /api/internal/growth/acquisition.\n// Expected response shape: { results: [[source, medium, campaign, signups], ...], columns: [...] }\nconst response = $input.first().json;\nconst raw = Array.isArray(response?.results) ? response.results : [];\n\nconst fmt = new Intl.DateTimeFormat('en-CA', {\n  timeZone: 'Europe/Kyiv',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit',\n});\nconst yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);\nconst snapshotDate = fmt.format(yesterday);\n\nconst rows = raw.map((row) => ({\n  source: String(row?.[0] ?? 'direct') || 'direct',\n  medium: String(row?.[1] ?? ''),\n  campaign: String(row?.[2] ?? ''),\n  signups: Number(row?.[3]) || 0,\n  spendCents: 0,\n  cacCents: null,\n}));\n\nconst total = rows.reduce((acc, r) => acc + r.signups, 0);\nconst top = rows\n  .slice()\n  .sort((a, b) => b.signups - a.signups)\n  .slice(0, 5)\n  .map((r) => `${r.source}/${r.medium || '—'}: ${r.signups}`)\n  .join('\\n');\n\nreturn [\n  {\n    json: {\n      snapshotDate,\n      rows,\n      summary: { total, top, channelCount: rows.length },\n    },\n  },\n];"
+        "jsCode": "// Parse PostHog HogQL response into acquisition rows for /api/internal/growth/acquisition.\n// Expected response shape: { results: [[source, medium, campaign, signups], ...], columns: [...] }\n// On auth/config errors fall back gracefully so we still get a Telegram alert.\nconst body = $input.first()?.json ?? {};\nlet errorMsg = '';\nlet raw = [];\n\nif (Array.isArray(body?.results)) {\n  raw = body.results;\n} else if (body?.detail || body?.code || body?.type) {\n  errorMsg = `${body.code || body.type || 'error'}: ${body.detail || 'unknown'}`;\n}\n\nconst fmt = new Intl.DateTimeFormat('en-CA', {\n  timeZone: 'Europe/Kyiv',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit',\n});\nconst yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);\nconst snapshotDate = fmt.format(yesterday);\n\nconst rows = raw.map((row) => ({\n  source: String(row?.[0] ?? 'direct') || 'direct',\n  medium: String(row?.[1] ?? ''),\n  campaign: String(row?.[2] ?? ''),\n  signups: Number(row?.[3]) || 0,\n  spendCents: 0,\n  cacCents: null,\n}));\n\nconst total = rows.reduce((acc, r) => acc + r.signups, 0);\nconst top = rows\n  .slice()\n  .sort((a, b) => b.signups - a.signups)\n  .slice(0, 5)\n  .map((r) => `${r.source}/${r.medium || '—'}: ${r.signups}`)\n  .join('\\n');\n\nreturn [\n  {\n    json: {\n      snapshotDate,\n      rows,\n      summary: { total, top, channelCount: rows.length },\n      errorMsg,\n    },\n  },\n];"
       },
       "id": "build-acq",
       "name": "Build acquisition rows",
@@ -65,7 +65,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.PUBLIC_API_BASE_URL }}/api/internal/growth/acquisition",
+        "url": "={{ $env.PUBLIC_API_BASE_URL || 'https://api.invalid.local' }}/api/internal/growth/acquisition",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -85,7 +85,8 @@
         "options": {
           "response": {
             "response": {
-              "neverError": true
+              "neverError": true,
+              "fullResponse": true
             }
           }
         }
@@ -94,12 +95,13 @@
       "name": "POST /api/internal/growth/acquisition",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [900, 300]
+      "position": [900, 300],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
-        "text": "=📥 *Acquisition — {{ $('Build acquisition rows').item.json.snapshotDate }}*\n\nTotal signups: `{{ $('Build acquisition rows').item.json.summary.total }}` із `{{ $('Build acquisition rows').item.json.summary.channelCount }}` каналів\n\nTop:\n```\n{{ $('Build acquisition rows').item.json.summary.top }}\n```",
+        "text": "={{ $('Build acquisition rows').item.json.errorMsg ? `⚠️ *Acquisition — ${$('Build acquisition rows').item.json.snapshotDate}*\n\n_PostHog API error:_ \\`${$('Build acquisition rows').item.json.errorMsg}\\`\n\nПеревірте \\`POSTHOG_API_KEY\\` / \\`POSTHOG_PROJECT_ID\\` / \\`POSTHOG_HOST\\` на n8n Railway.` : `📥 *Acquisition — ${$('Build acquisition rows').item.json.snapshotDate}*\n\nTotal signups: \\`${$('Build acquisition rows').item.json.summary.total}\\` із \\`${$('Build acquisition rows').item.json.summary.channelCount}\\` каналів\n\nTop:\n\\`\\`\\`\n${$('Build acquisition rows').item.json.summary.top}\n\\`\\`\\`` }}",
         "additionalFields": {
           "parse_mode": "Markdown"
         }
@@ -179,5 +181,5 @@
       "name": "growth"
     }
   ],
-  "active": false
+  "active": true
 }

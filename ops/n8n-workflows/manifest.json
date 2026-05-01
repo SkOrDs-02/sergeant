@@ -180,13 +180,14 @@
       "riskTier": "P2",
       "requiredEnv": [
         "POSTHOG_PROJECT_ID",
-        "POSTHOG_PERSONAL_API_KEY",
+        "POSTHOG_API_KEY",
+        "POSTHOG_HOST",
         "PUBLIC_API_BASE_URL",
         "INTERNAL_API_KEY",
         "TELEGRAM_ALERT_CHAT_ID"
       ],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "Daily 02:35 Kyiv → PostHog HogQL count signups by ($utm_source, $utm_medium, $utm_campaign) for yesterday → POST /api/internal/growth/acquisition (mig 019, growth_acquisition_daily) → Telegram top-5 channels. spendCents/cacCents stay 0/null until ad-platform integration is wired (Google Ads, Meta, etc.)."
+      "notes": "Daily 02:35 Kyiv → PostHog HogQL count signups by ($utm_source, $utm_medium, $utm_campaign) for yesterday → POST /api/internal/growth/acquisition (mig 019, growth_acquisition_daily) → Telegram top-5 channels. POSTHOG_HOST defaults to https://eu.i.posthog.com; POSTHOG_API_KEY must be a Personal API key (phx_…). PUBLIC_API_BASE_URL defaults to https://api.invalid.local so the workflow proceeds gracefully on missing env. POST /api/internal/growth/acquisition uses onError=continueRegularOutput so a Telegram alert is always sent. spendCents/cacCents stay 0/null until ad-platform integration is wired (Google Ads, Meta, etc.)."
     },
     "98-error-handler.json": {
       "owner": "ops",
