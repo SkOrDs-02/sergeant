@@ -1,5 +1,6 @@
 import { formatMoney, formatMoneyFromKopecks } from "@sergeant/shared";
 import { tokenize } from "../hubSearchEngine";
+import { searchActions, searchAiHandoff } from "./searchActions";
 import {
   parseFizrukCustomExercises,
   parseFizrukWorkouts,
@@ -237,17 +238,23 @@ function searchNutrition(tokens: string[]): Hit[] {
 
 export function performSearch(query: string): Hit[] {
   const tokens = tokenize(query);
-  if (tokens.length === 0) return [];
+  // Empty query: launcher landing — only the four quick-add Actions so the
+  // palette doubles as a Spotlight-style command bar (no FAB lookup needed).
+  if (tokens.length === 0) return searchActions(tokens);
   // Order matters for the rendered groups (see `flat`/`grouped` below).
-  // Module hits surface first because the user is far more likely to be
-  // chasing concrete data; settings + AI capabilities follow as the
-  // "what can I do?" surface.
+  // Actions surface first so command-style queries («витрата», «trening»)
+  // land on a do-it row before stale data; module hits follow because the
+  // user may be chasing concrete records; settings + AI capabilities are
+  // the «what can I do?» tail; AI handoff sits at the very end as the
+  // graceful-degradation fallback when nothing structured matched.
   return [
+    ...searchActions(tokens),
     ...searchFinyk(tokens),
     ...searchFizruk(tokens),
     ...searchRoutine(tokens),
     ...searchNutrition(tokens),
     ...searchSettings(tokens),
     ...searchAssistantTools(tokens),
+    ...searchAiHandoff(query),
   ];
 }

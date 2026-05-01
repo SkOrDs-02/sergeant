@@ -2,6 +2,7 @@ import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { emitHubBus } from "@shared/lib/hubBus";
 import { hapticTap } from "@shared/lib/haptic";
+import { openHubModuleWithAction } from "@shared/lib/hubNav";
 import {
   clearRecentQueries,
   getRecentQueries,
@@ -62,8 +63,11 @@ export function useSearchEngine({
   }, []);
 
   useEffect(() => {
+    // Empty/short query — skip the timer + localStorage scan and surface
+    // the launcher landing (just the four quick-add Actions) synchronously
+    // so the palette feels instant when first opened.
     if (query.trim().length < 2) {
-      setResults([]);
+      setResults(performSearch(""));
       setActiveIdx(0);
       return;
     }
@@ -82,16 +86,20 @@ export function useSearchEngine({
   }, [query]);
 
   // Готуємо плоский список для keyboard-nav (↑/↓/Enter працюють по
-  // порядку рендеру, а не по groups-first). Settings + Assistant pseudo-
-  // groups render last so the hot-path module hits stay at the top.
+  // порядку рендеру, а не по groups-first). Actions go first so the
+  // command bar feels Spotlight-y; settings + assistant + AI handoff
+  // pseudo-groups render last so the hot-path module hits stay at the
+  // top.
   const flat = useMemo(() => {
     const order = [
+      "actions",
       "finyk",
       "fizruk",
       "routine",
       "nutrition",
       "settings",
       "assistant",
+      "ai",
     ];
     return order.map((m) => results.filter((r) => r.module === m)).flat();
   }, [results]);
@@ -141,6 +149,25 @@ export function useSearchEngine({
         } else {
           navigate("/assistant");
         }
+        break;
+      }
+      case "action": {
+        // Cross-module quick-add launcher — dispatches the same PWA-intent
+        // the bento NextCard / FAB use. The destination module reads the
+        // intent on mount via `useHubModuleAction` and opens its own
+        // create-modal.
+        openHubModuleWithAction(hit.target.moduleId, hit.target.action);
+        break;
+      }
+      case "ai-handoff": {
+        // Graceful degradation — nothing structured matched, so hand the
+        // raw query off to the assistant. `autoSend: false` keeps the
+        // user in control: the chat opens with the prompt prefilled, ready
+        // to edit before sending.
+        emitHubBus("openChat", {
+          message: hit.target.query,
+          autoSend: false,
+        });
         break;
       }
     }

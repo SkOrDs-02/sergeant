@@ -10,7 +10,8 @@ import type { Hit } from "./searchTypes";
 //
 // Settings + Assistant pseudo-modules share the neutral panel-tinted
 // swatch so they read as "system" surfaces rather than competing for
-// attention with module-coloured data.
+// attention with module-coloured data. Actions + AI inherit the brand
+// swatch (they are the launcher commands, not stored data).
 export const MODULE_COLORS: Record<string, string> = {
   finyk: "bg-finyk-soft text-finyk-strong dark:text-finyk",
   fizruk: "bg-fizruk-soft text-fizruk-strong dark:text-fizruk",
@@ -18,6 +19,8 @@ export const MODULE_COLORS: Record<string, string> = {
   nutrition: "bg-nutrition-soft text-nutrition-strong dark:text-nutrition",
   settings: "bg-panelHi text-muted",
   assistant: "bg-brand-500/10 text-brand-strong dark:text-brand",
+  actions: "bg-brand-500/10 text-brand-strong dark:text-brand",
+  ai: "bg-brand-500/10 text-brand-strong dark:text-brand",
 };
 
 export interface SearchResultItemProps {
