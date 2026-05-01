@@ -1,6 +1,6 @@
 # Railway (API + PostgreSQL) + Vercel (фронт)
 
-> **Last validated:** 2026-05-01 by @devin-ai-integration[bot]. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-01 by @Skords-01. **Next review:** 2026-07-30.
 > **Status:** Active
 
 ## 1. PostgreSQL на Railway

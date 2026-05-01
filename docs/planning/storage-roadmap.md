@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-01 by @devin-ai-integration[bot]. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-01 by @Skords-01. **Next review:** 2026-07-30.
 > **Status:** Active
 
 > Зріз: 2026-05-01. Базується на storage-аудиті + поточний стек:

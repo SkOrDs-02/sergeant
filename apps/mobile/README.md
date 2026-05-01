@@ -255,7 +255,7 @@ pnpm --filter @sergeant/mobile start --dev-client
 
 ## Монорепо-правила
 
-- Нативні залежності (expo, react-native, expo-_) живуть **тільки** тут,
+- Нативні залежності (expo, react-native, expo-\_) живуть **тільки** тут,
   не в корені й не в інших пакетах — інакше Metro знайде два React-и.
   Див. `.agents/skills/sergeant-mobile-expo/SKILL.md`.
 - Версії спільних пакетів (react, zod, @tanstack/react-query) мусять

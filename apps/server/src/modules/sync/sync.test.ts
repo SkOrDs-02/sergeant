@@ -135,6 +135,7 @@ describe("syncPushAll metric correctness around transaction boundary", () => {
       release: vi.fn(),
     };
     client.query
+      .mockResolvedValueOnce({ rows: [] }) // pre-fetch existing module_data
       .mockResolvedValueOnce({}) // BEGIN
       // finyk — ok
       .mockResolvedValueOnce({
@@ -180,6 +181,7 @@ describe("syncPushAll metric correctness around transaction boundary", () => {
       release: vi.fn(),
     };
     client.query
+      .mockResolvedValueOnce({ rows: [] }) // pre-fetch existing module_data
       .mockResolvedValueOnce({}) // BEGIN
       // finyk — «успішний» INSERT у межах транзакції
       .mockResolvedValueOnce({
@@ -233,12 +235,21 @@ describe("syncPushAll metric correctness around transaction boundary", () => {
       release: vi.fn(),
     };
     client.query
-      .mockResolvedValueOnce({}) // BEGIN
-      // nutrition — conflict (INSERT returns 0 rows → SELECT existing)
-      .mockResolvedValueOnce({ rows: [] })
+      // pre-fetch повертає існуючий рядок для nutrition → конфлікт-гілка
+      // нижче читає version/server_updated_at саме звідси (а не з
+      // окремого SELECT всередині циклу — той запит прибрали).
       .mockResolvedValueOnce({
-        rows: [{ server_updated_at: "2026-01-01T00:00:00Z", version: 7 }],
+        rows: [
+          {
+            module: "nutrition",
+            server_updated_at: "2026-01-01T00:00:00Z",
+            version: 7,
+          },
+        ],
       })
+      .mockResolvedValueOnce({}) // BEGIN
+      // nutrition — conflict (INSERT returns 0 rows)
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({}); // COMMIT
     pool.connect.mockResolvedValue(client);
 
@@ -331,6 +342,7 @@ describe("sync_event structured log", () => {
   it("емітить sync_event на кожен recordSync — level по outcome", async () => {
     const client = { query: vi.fn(), release: vi.fn() };
     client.query
+      .mockResolvedValueOnce({ rows: [] }) // pre-fetch existing module_data
       .mockResolvedValueOnce({}) // BEGIN
       .mockResolvedValueOnce({
         rows: [{ server_updated_at: "2026-01-01T00:00:00Z", version: 2 }],
@@ -372,6 +384,7 @@ describe("sync_event structured log", () => {
   it("error outcome пише через logger.error (ROLLBACK path reclassifies pending)", async () => {
     const client = { query: vi.fn(), release: vi.fn() };
     client.query
+      .mockResolvedValueOnce({ rows: [] }) // pre-fetch existing module_data
       .mockResolvedValueOnce({}) // BEGIN
       .mockResolvedValueOnce({
         rows: [{ server_updated_at: "2026-01-01T00:00:00Z", version: 2 }],

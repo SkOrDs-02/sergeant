@@ -23,6 +23,7 @@ describe("withRequestContext", () => {
       requestId: "req-1",
       userId: "u-42",
       module: "nutrition",
+      traceId: null,
     });
   });
 

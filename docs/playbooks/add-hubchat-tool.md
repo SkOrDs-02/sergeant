@@ -1,6 +1,6 @@
 # Playbook: Add HubChat Tool
 
-> **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-01 by @Skords-01. **Next review:** 2026-07-30.
 > **Status:** Active
 
 **Trigger:** "Дай асистенту нову дію" / "Додай tool в HubChat" / зміна server tool definition, client executor або action card для HubChat orchestration.
