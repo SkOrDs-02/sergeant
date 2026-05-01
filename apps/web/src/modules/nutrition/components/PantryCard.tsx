@@ -74,7 +74,7 @@ function ItemRow({
         type="button"
         onClick={() => removeItemAtOrByName(idx, item?.name)}
         disabled={busy}
-        className="w-6 h-6 rounded-lg flex items-center justify-center text-subtle/60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 hover:text-danger hover:bg-danger/10 transition-[color,background-color,opacity] text-sm leading-none shrink-0"
+        className="w-6 h-6 rounded-xl flex items-center justify-center text-subtle/60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 hover:text-danger hover:bg-danger/10 transition-[color,background-color,opacity] text-sm leading-none shrink-0"
         aria-label={`Прибрати ${item?.name || "продукт"}`}
         title="Прибрати"
       >
@@ -279,7 +279,7 @@ export function PantryCard({
                   type="button"
                   onClick={() => setMode(m.id)}
                   className={cn(
-                    "px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                    "px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors",
                     mode === m.id
                       ? "bg-nutrition-strong text-white shadow-sm"
                       : "text-subtle hover:text-text",

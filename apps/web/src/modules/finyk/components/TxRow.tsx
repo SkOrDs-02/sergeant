@@ -185,32 +185,32 @@ function TxRowImpl({
         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
           <span className="text-xs text-subtle">{catName}</span>
           {cat.id === INTERNAL_TRANSFER_ID && (
-            <span className="text-3xs bg-muted/15 text-muted px-1.5 py-0.5 rounded-full font-semibold">
+            <span className="text-2xs bg-muted/15 text-muted px-1.5 py-0.5 rounded-full font-semibold">
               не в статистиці
             </span>
           )}
           {overrideCatId && cat.id !== INTERNAL_TRANSFER_ID && (
-            <span className="text-3xs bg-text/8 text-muted px-1.5 py-0.5 rounded-full font-semibold">
+            <span className="text-2xs bg-text/8 text-muted px-1.5 py-0.5 rounded-full font-semibold">
               змін.
             </span>
           )}
           {existingSplits.length > 0 && (
-            <span className="text-3xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold">
+            <span className="text-2xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold">
               ⅔ спліт
             </span>
           )}
           {isCreditCard && (
-            <span className="text-3xs bg-danger/8 text-danger px-1.5 py-0.5 rounded-full font-semibold">
+            <span className="text-2xs bg-danger/8 text-danger px-1.5 py-0.5 rounded-full font-semibold">
               💳 {accountName}
             </span>
           )}
           {!isCreditCard && account && (
-            <span className="text-3xs bg-panelHi text-muted border border-line px-1.5 py-0.5 rounded-full font-medium">
+            <span className="text-2xs bg-panelHi text-muted border border-line px-1.5 py-0.5 rounded-full font-medium">
               {accountName}
             </span>
           )}
           {tx._source === "privatbank" && (
-            <span className="text-3xs bg-success/10 text-success-strong dark:text-success px-1.5 py-0.5 rounded-full font-semibold shrink-0">
+            <span className="text-2xs bg-success/10 text-success-strong dark:text-success px-1.5 py-0.5 rounded-full font-semibold shrink-0">
               П24
             </span>
           )}

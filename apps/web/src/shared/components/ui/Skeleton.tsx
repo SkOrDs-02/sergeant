@@ -49,7 +49,7 @@ export function SkeletonText({
   return (
     <div
       className={cn(
-        "bg-panelHi rounded-lg h-3",
+        "bg-panelHi rounded-xl h-3",
         shimmer ? "relative overflow-hidden" : "motion-safe:animate-pulse",
         className,
       )}
@@ -195,7 +195,7 @@ export function SkeletonHabitRow({
       <Skeleton
         shimmer={shimmer}
         className={cn(
-          "w-7 h-7 rounded-lg shrink-0",
+          "w-7 h-7 rounded-xl shrink-0",
           module ? MODULE_ACCENT_TINT[module] : "bg-panelHi",
         )}
       />
@@ -230,13 +230,13 @@ export function SkeletonWorkoutSet({
       <Skeleton
         shimmer={shimmer}
         className={cn(
-          "w-7 h-7 rounded-lg shrink-0",
+          "w-7 h-7 rounded-xl shrink-0",
           module ? MODULE_ACCENT_TINT[module] : "bg-panelHi",
         )}
       />
-      <Skeleton shimmer={shimmer} className="flex-1 h-7 rounded-lg" />
-      <Skeleton shimmer={shimmer} className="flex-1 h-7 rounded-lg" />
-      <Skeleton shimmer={shimmer} className="flex-1 h-7 rounded-lg" />
+      <Skeleton shimmer={shimmer} className="flex-1 h-7 rounded-xl" />
+      <Skeleton shimmer={shimmer} className="flex-1 h-7 rounded-xl" />
+      <Skeleton shimmer={shimmer} className="flex-1 h-7 rounded-xl" />
     </div>
   );
 }

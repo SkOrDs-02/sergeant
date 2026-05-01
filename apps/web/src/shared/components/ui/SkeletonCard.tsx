@@ -29,7 +29,7 @@ export function SkeletonCard({
       )}
       aria-hidden="true"
     >
-      {header && <Skeleton className="h-5 w-2/5 rounded-lg" />}
+      {header && <Skeleton className="h-5 w-2/5 rounded-xl" />}
       <div className="space-y-2.5">
         {Array.from({ length: lines }, (_, i) => (
           <SkeletonText

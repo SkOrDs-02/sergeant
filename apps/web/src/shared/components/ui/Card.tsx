@@ -21,16 +21,18 @@ import { cn } from "../../lib/cn";
  *
  * Padding: none | sm | md (default) | lg | xl.
  *
- * Radius hierarchy (canonical):
- *   - md  → rounded-xl  (16px) — inline / list cards & chips
- *   - lg  → rounded-2xl (24px) — section/panel cards (DEFAULT for content
- *                                blocks inside a page)
- *   - xl  → rounded-3xl (32px) — hero & module-branded cards (the four
- *                                module variants bake this in already)
+ * Radius hierarchy — maps to the 3 semantic tiers in `tailwind-preset.js`:
+ *   - md  → rounded-xl  (12px, CONTROL) — inline / list cards & chips
+ *   - lg  → rounded-2xl (16px, CARD)    — section/panel cards (DEFAULT for
+ *                                         content blocks inside a page)
+ *   - xl  → rounded-3xl (24px, HERO)    — hero & module-branded cards
+ *                                         (the four module variants bake
+ *                                         this in already)
  *
- * The default `radius="xl"` matches the largest hero treatment so that
- * branded cards and `<Card variant="default" radius="xl">` wrappers feel
- * consistent. Use `radius="lg"` for the typical settings/list panel.
+ * The default is `radius="lg"` (CARD, 16px) — the everyday settings/list
+ * panel surface. Reach for `radius="xl"` only on hero / module-branded
+ * surfaces; the previous `radius="xl"` default made plain content cards
+ * read as hero treatment and competed with the actual hero cards.
  */
 
 export type CardVariant =

@@ -243,6 +243,26 @@
         }
       ],
       "links": [{ "type": "agents", "ref": "#15" }]
+    },
+    {
+      "id": 16,
+      "title": "Typography scale — semantic styles + 12px floor",
+      "scope": ["apps/web/src/**", "packages/design-tokens/**"],
+      "severity": "blocker",
+      "enforced_by": [
+        {
+          "kind": "convention",
+          "ref": "packages/design-tokens/tailwind-preset.js → plugins.semanticTypography (.text-style-* utilities are the canonical type slots)"
+        },
+        {
+          "kind": "doc",
+          "ref": "docs/design/design-system.md § Типографічна шкала"
+        }
+      ],
+      "links": [
+        { "type": "doc", "ref": "docs/audits/typography-2026-04-audit.md" },
+        { "type": "agents", "ref": "#16" }
+      ]
     }
   ]
 }

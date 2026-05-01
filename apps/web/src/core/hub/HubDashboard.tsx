@@ -39,6 +39,7 @@ import { CelebrationModal } from "../onboarding/CelebrationModal";
 import { DailyNudge } from "../onboarding/DailyNudge";
 import { ReEngagementCard } from "../onboarding/ReEngagementCard";
 import { ModuleChecklist } from "../onboarding/ModuleChecklist";
+import { OnboardingProgress } from "../onboarding/OnboardingProgress";
 import {
   DndContext,
   PointerSensor,
@@ -70,7 +71,6 @@ import {
   MotivationalFooter,
   StaggerChild,
   StreakIndicator,
-  TodaySummaryStrip,
   WeeklyDigestFooter,
 } from "./dashboard/dashboardCards";
 import { useMondayAutoDigest } from "./dashboard/useMondayAutoDigest";
@@ -340,14 +340,18 @@ export function HubDashboard({
   const isMondayOrTuesday = now.getDay() === 1 || now.getDay() === 2;
   const showDigestFooter = digestFresh || isMondayOrTuesday;
 
-  // Show checklist for first active module (only if user has no real entry yet)
+  // Show checklist for first active module (only if user has no real entry yet).
+  // Suppressed while `FirstActionHeroCard` is the hero — both surfaces enumerate
+  // module-specific next steps, so stacking them split user attention 1:1 and
+  // the FTUX hero already covers the same ground with a single primary CTA.
   const primaryModule = activeModules[0] as
     | "finyk"
     | "fizruk"
     | "routine"
     | "nutrition"
     | undefined;
-  const showChecklist = primaryModule && !hasRealEntry && sessionDays <= 7;
+  const showChecklist =
+    primaryModule && !hasRealEntry && !firstActionVisible && sessionDays <= 7;
 
   // ONE-HERO RULE
   let hero: React.ReactNode;
@@ -373,9 +377,6 @@ export function HubDashboard({
     );
   }
 
-  // Stagger index counter
-  let si = 0;
-
   // ONE-HERO + ONE-SECONDARY RULE:
   // • Returning user (7+ days inactive) → ReEngagementCard acts as the
   //   hero, suppressing the regular TodayFocus / FirstAction / SoftAuth
@@ -385,47 +386,67 @@ export function HubDashboard({
   //   snooze via `snoozeNudge()` on top of permanent dismiss.
   const reengagementIsHero = reengagement.show;
 
+  // Insights block defaults to collapsed for the first week so new users
+  // are not greeted by a wall of empty advice / analytics panels. After
+  // 7+ session days the section opens by default; per-user toggles still
+  // win because `CollapsibleSection` persists state via `storageKey`.
+  const insightsDefaultOpen = sessionDays >= 7;
+
+  // STAGGER GROUPS — three fixed delays (0 / 80ms / 160ms) instead of
+  // a per-element ramp. The hub composes ~8 cards once all FTUX gates
+  // open; staggering each one individually produced a long staircase
+  // of fades on slower devices and shifted whenever a section toggled.
+  // Stable group indices keep the reveal under ~250ms and predictable.
   return (
     <div className="space-y-4">
-      {reengagementIsHero && (
-        <StaggerChild index={si++}>
-          <ReEngagementCard
-            daysInactive={reengagement.daysInactive}
-            onContinue={() => setReengagement({ show: false, daysInactive: 0 })}
-            onDismiss={() => setReengagement({ show: false, daysInactive: 0 })}
-          />
-        </StaggerChild>
-      )}
-
-      {/* Streak indicator */}
-      <StaggerChild index={si++}>
-        <StreakIndicator />
+      {/* GROUP 0 — Hero block (re-engagement OR streak + hero + checklist) */}
+      <StaggerChild index={0}>
+        <div className="space-y-4">
+          {reengagementIsHero ? (
+            <ReEngagementCard
+              daysInactive={reengagement.daysInactive}
+              onContinue={() =>
+                setReengagement({ show: false, daysInactive: 0 })
+              }
+              onDismiss={() =>
+                setReengagement({ show: false, daysInactive: 0 })
+              }
+            />
+          ) : (
+            <>
+              <StreakIndicator />
+              {hero}
+              {showChecklist && primaryModule && (
+                <ModuleChecklist
+                  moduleId={primaryModule}
+                  onAction={(action) => {
+                    openHubModuleWithAction(
+                      primaryModule as Parameters<
+                        typeof openHubModuleWithAction
+                      >[0],
+                      action as Parameters<typeof openHubModuleWithAction>[1],
+                    );
+                  }}
+                />
+              )}
+              {/* Activation progress — visible only before the first real
+               * entry. Once the user crosses the FTUX gate the bar would
+               * read 100% indefinitely, so we drop it instead of pinning
+               * a perpetual «4/4 модулів» chrome above the bento grid. */}
+              {!hasRealEntry && (
+                <OnboardingProgress activeModules={activeModules} />
+              )}
+            </>
+          )}
+        </div>
       </StaggerChild>
 
-      {/* Hero card — suppressed while re-engagement takes the hero slot */}
-      {!reengagementIsHero && <StaggerChild index={si++}>{hero}</StaggerChild>}
-
-      {/* Module onboarding checklist */}
-      {showChecklist && primaryModule && (
-        <StaggerChild index={si++}>
-          <ModuleChecklist
-            moduleId={primaryModule}
-            onAction={(action) => {
-              openHubModuleWithAction(
-                primaryModule as Parameters<typeof openHubModuleWithAction>[0],
-                action as Parameters<typeof openHubModuleWithAction>[1],
-              );
-            }}
-          />
-        </StaggerChild>
-      )}
-
-      {/* MODULE CARDS — 2×2 bento grid.
+      {/* GROUP 1 — Module bento grid.
        * Hoisted above the FTUX-gated Hints/Analytics block so the
        * primary navigation surface is reachable above-the-fold on
        * smaller viewports — secondary, data-dependent insights load
        * underneath rather than burying the modules grid. */}
-      <StaggerChild index={si++}>
+      <StaggerChild index={1}>
         <section className="space-y-2">
           <div className="flex items-center justify-between gap-2 px-0.5">
             <SectionHeading as="h2" size="xs" className="!px-0">
@@ -436,7 +457,7 @@ export function HubDashboard({
               onClick={toggleEditMode}
               aria-pressed={editMode}
               className={cn(
-                "inline-flex items-center gap-1.5 text-2xs font-medium rounded-lg px-2 py-1 transition-colors",
+                "inline-flex items-center gap-1.5 text-2xs font-medium rounded-xl px-2 py-1 transition-colors",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                 editMode
                   ? "bg-primary text-bg"
@@ -494,28 +515,23 @@ export function HubDashboard({
         </section>
       </StaggerChild>
 
-      {/* FTUX-гейт: до першого реального запису всі data-driven блоки
-       * приховуємо, бо вони порожні / сигнал «advice без даних».
-       * - TodaySummaryStrip — нулі по всіх модулях.
+      {/* GROUP 2 — Insights (FTUX-gated): Підказки + Аналітика.
+       * До першого реального запису всі data-driven блоки приховуємо,
+       * бо вони порожні / сигнал «advice без даних»:
        * - AssistantAdviceCard — coach працює на історії; нічого корисного.
        * - DailyNudge — нудж за сценаріями, які ще не існують.
-       * Лишаємо: hero, checklist, module-bento (навігація), digest-fter.
-       * Після `hasRealEntry === true` блок з’являється цілісним пакетом. */}
+       * - HubInsightsPanel / WeeklyDigest — порожня історія.
+       * Після `hasRealEntry === true` обидві секції зʼявляються разом. */}
       {hasRealEntry && (
-        <>
-          {/* "Твій день" summary strip */}
-          <StaggerChild index={si++}>
-            <TodaySummaryStrip onOpenModule={onOpenModule} />
-          </StaggerChild>
-
-          {/* «Підказки» секція: AssistantAdvice + DailyNudge — обидві
-           * картки показували пораду на день, але рендерились як два
-           * незалежних блоки з різним візуальним chrome. Обʼєднання
-           * під одним SectionHeading знижує card-density (#1130).
-           * Collapsible so users with many modules can reduce scroll depth. */}
-          <StaggerChild index={si++}>
+        <StaggerChild index={2}>
+          <div className="space-y-4">
+            {/* «Підказки» секція: AssistantAdvice + DailyNudge — обидві
+             * картки показували пораду на день, але рендерились як два
+             * незалежних блоки з різним візуальним chrome. Обʼєднання
+             * під одним SectionHeading знижує card-density (#1130). */}
             <CollapsibleSection
               storageKey="sergeant:hub.hints.open"
+              defaultOpen={insightsDefaultOpen}
               title="Підказки"
               collapsedIcon="lightbulb"
               collapsedSubtitle={
@@ -542,48 +558,44 @@ export function HubDashboard({
                 />
               )}
             </CollapsibleSection>
-          </StaggerChild>
-        </>
-      )}
 
-      {/* «Аналітика» секція (FTUX-гейт): insights-panel + weekly-digest —
-       * обидва data-driven блоки на історії. До першого реального запису
-       * insights пусті, а digest промовляє «нічого не було за тиждень».
-       * Гейтимо за hasRealEntry. Collapsible per UX audit — users who
-       * check analytics weekly can collapse the section to cut scroll depth. */}
-      {hasRealEntry && (
-        <StaggerChild index={si++}>
-          <CollapsibleSection
-            storageKey="sergeant:hub.analytics.open"
-            title="Аналітика"
-            collapsedIcon="bar-chart"
-            collapsedSubtitle={
-              rest.length > 0
-                ? `${rest.length} ${pluralize(rest.length, "інсайт", "інсайти", "інсайтів")}${
-                    digestFresh ? " · свіжий дайджест" : ""
-                  }`
-                : digestFresh
-                  ? "Свіжий щотижневий дайджест"
-                  : showDigestFooter
-                    ? "Щотижневий дайджест"
-                    : "Без нових інсайтів"
-            }
-          >
-            <HubInsightsPanel
-              items={rest}
-              onOpenModule={openInsightTarget}
-              onDismiss={dismiss}
-            />
-
-            {digestExpanded ? (
-              <WeeklyDigestCard onCollapse={() => setDigestExpanded(false)} />
-            ) : showDigestFooter ? (
-              <WeeklyDigestFooter
-                fresh={digestFresh}
-                onExpand={() => setDigestExpanded(true)}
+            {/* «Аналітика» секція: insights-panel + weekly-digest —
+             * data-driven блоки на історії. Collapsible per UX audit —
+             * users who check analytics weekly can collapse the section
+             * to cut scroll depth. */}
+            <CollapsibleSection
+              storageKey="sergeant:hub.analytics.open"
+              defaultOpen={insightsDefaultOpen}
+              title="Аналітика"
+              collapsedIcon="bar-chart"
+              collapsedSubtitle={
+                rest.length > 0
+                  ? `${rest.length} ${pluralize(rest.length, "інсайт", "інсайти", "інсайтів")}${
+                      digestFresh ? " · свіжий дайджест" : ""
+                    }`
+                  : digestFresh
+                    ? "Свіжий щотижневий дайджест"
+                    : showDigestFooter
+                      ? "Щотижневий дайджест"
+                      : "Без нових інсайтів"
+              }
+            >
+              <HubInsightsPanel
+                items={rest}
+                onOpenModule={openInsightTarget}
+                onDismiss={dismiss}
               />
-            ) : null}
-          </CollapsibleSection>
+
+              {digestExpanded ? (
+                <WeeklyDigestCard onCollapse={() => setDigestExpanded(false)} />
+              ) : showDigestFooter ? (
+                <WeeklyDigestFooter
+                  fresh={digestFresh}
+                  onExpand={() => setDigestExpanded(true)}
+                />
+              ) : null}
+            </CollapsibleSection>
+          </div>
         </StaggerChild>
       )}
 

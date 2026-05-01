@@ -213,7 +213,7 @@ function JournalEntryCard({
         <button
           type="button"
           onClick={() => onDelete(entry.id)}
-          className="shrink-0 w-8 h-8 m-1 flex items-center justify-center rounded-lg text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+          className="shrink-0 w-8 h-8 m-1 flex items-center justify-center rounded-xl text-muted hover:text-danger hover:bg-danger/10 transition-colors"
           aria-label="Видалити запис"
         >
           <svg
@@ -387,7 +387,7 @@ function ScoreButton({ value, selected, onClick, label }) {
       <span className="text-base leading-none">{value}</span>
       <span
         className={cn(
-          "text-3xs leading-none truncate max-w-full px-1",
+          "text-2xs leading-none truncate max-w-full px-1",
           selected ? "text-white/80" : "text-muted",
         )}
       >

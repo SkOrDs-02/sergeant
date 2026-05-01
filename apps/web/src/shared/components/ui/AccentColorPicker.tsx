@@ -193,7 +193,7 @@ export function AccentColorPickerCard({ className }: { className?: string }) {
         </div>
         {/* Preview */}
         <div
-          className="w-8 h-8 rounded-lg shadow-sm"
+          className="w-8 h-8 rounded-xl shadow-sm"
           style={{ backgroundColor: accent.preview }}
         />
       </div>
@@ -212,7 +212,7 @@ export function AccentColorPickerCard({ className }: { className?: string }) {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
+            className="px-3 py-1.5 text-sm font-medium rounded-xl transition-colors"
             style={{
               backgroundColor: accent.preview,
               color: "white",

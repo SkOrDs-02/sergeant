@@ -92,8 +92,8 @@ function PeekBackdrop() {
       >
         <div className="space-y-3 opacity-40">
           <div>
-            <div className="h-6 w-32 rounded-md bg-panelHi" />
-            <div className="h-3 w-24 rounded-md bg-panelHi mt-2" />
+            <div className="h-6 w-32 rounded-xl bg-panelHi" />
+            <div className="h-3 w-24 rounded-xl bg-panelHi mt-2" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             {PEEK_CARDS.map((card, idx) => (
@@ -108,7 +108,7 @@ function PeekBackdrop() {
               >
                 <div
                   className={cn(
-                    "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mb-2",
+                    "w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mb-2",
                     card.iconClass,
                   )}
                 >

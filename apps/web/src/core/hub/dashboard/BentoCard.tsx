@@ -195,17 +195,33 @@ export const BentoCard = memo(function BentoCard({
             )}
           </>
         ) : onQuickAdd && !editMode ? (
-          <span
-            className={cn(
-              "mt-1 inline-flex items-center gap-1",
-              "text-xs font-medium",
-              config.accentClass.replace("bg-", "text-"),
-              "opacity-80 group-hover:opacity-100 transition-opacity",
-            )}
-          >
-            <Icon name="plus" size="xs" strokeWidth={2.5} aria-hidden />
-            {config.emptyLabel}
-          </span>
+          // Empty-state CTA — promoted from a single inline pill (icon + label
+          // glyph) to a two-row layout with a tinted leading icon-box and an
+          // explicit «Натисни, щоб почати» helper. The richer treatment makes
+          // the card read as an *invitation* (clear affordance + verb) instead
+          // of a generic «+ Почни тут →» eyebrow that the eye skipped past.
+          <div className="mt-1.5 flex flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              <span
+                className={cn(
+                  "w-5 h-5 rounded-xl flex items-center justify-center",
+                  config.iconClass,
+                  "opacity-60",
+                )}
+              >
+                <Icon name="plus" size="xs" strokeWidth={2.5} aria-hidden />
+              </span>
+              <span
+                className={cn(
+                  "text-xs font-semibold",
+                  config.accentClass.replace("bg-", "text-"),
+                )}
+              >
+                {config.emptyLabel}
+              </span>
+            </div>
+            <span className="text-2xs text-subtle">Натисни, щоб почати</span>
+          </div>
         ) : (
           <span className="text-xs text-muted mt-1">{config.emptyLabel}</span>
         )}
@@ -243,7 +259,10 @@ export const BentoCard = memo(function BentoCard({
             // the visible icon size to 44 (which would crowd the card
             // header against the module label).
             "w-7 h-7 touch-target",
-            "rounded-lg flex items-center justify-center",
+            // CONTROL tier (12 px) per the 3-tier radius system in
+            // `tailwind-preset.js` — `rounded-xl` matches Button
+            // iconSizes.xs/sm and supersedes the legacy `rounded-lg` (8 px).
+            "rounded-xl flex items-center justify-center",
             "text-text bg-panel/80 hover:bg-primary hover:text-bg",
             "transition-colors active:scale-95",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1",
@@ -265,7 +284,8 @@ export const BentoCard = memo(function BentoCard({
             // Match the quick-add affordance: visible 28 px glyph,
             // 44×44 hit area on coarse pointers via `touch-target`.
             "w-7 h-7 touch-target",
-            "rounded-lg flex items-center justify-center",
+            // CONTROL tier (12 px) — see quick-add button above.
+            "rounded-xl flex items-center justify-center",
             "text-muted bg-panel/90 hover:text-text hover:bg-panelHi",
             "transition-colors cursor-grab active:cursor-grabbing touch-none",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1",

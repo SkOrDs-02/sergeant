@@ -477,6 +477,31 @@ Inside any of those English surfaces it's still fine to mix Ukrainian prose wher
 
 If a reviewer sees a new prose paragraph or table cell in English in a doc that's not on the exception list above, that's a request-changes signal — switch to Ukrainian and keep the technical terms (token names, flags, function/class identifiers) verbatim.
 
+### 16. Typography scale — semantic styles + 12px floor
+
+> Why a hard rule? Drift on the type scale is invisible until it isn't. Two PRs landed `text-3xs` (9px) on touch targets despite Hard Rule #4-style review (`docs/audits/typography-2026-04-audit.md`). Codifying the floor and the named-style contract closes the gap.
+
+**Use one of the semantic `.text-style-*` utilities whenever a slot has a documented role.** The utilities live in `packages/design-tokens/tailwind-preset.js → plugins.semanticTypography` and bundle font-size, line-height, weight, letter-spacing, and casing so layouts can't drift on any single axis (e.g. shipping the hero size with the wrong weight).
+
+| Utility                | Contract                       | Slot                              |
+| ---------------------- | ------------------------------ | --------------------------------- |
+| `.text-style-hero`     | 26 / 32 / 700 / -0.02em        | Page H1, hero stat number         |
+| `.text-style-title`    | 20 / 28 / 600 / -0.01em        | Section heading, card title       |
+| `.text-style-body`     | 16 / 24 / 400                  | Main body copy                    |
+| `.text-style-label`    | 14 / 20 / 500                  | Form label, button text           |
+| `.text-style-caption`  | 12 / 16 / 400                  | Helper text, metadata, timestamps |
+| `.text-style-overline` | 12 / 16 / 600 / 0.06em / UPPER | Section kicker / eyebrow          |
+
+**Floor: 12px (`text-style-caption` / `text-xs`).** `text-3xs` (9px) is removed from the scale; `text-2xs` (10px) is reserved for chart axis ticks and decorative metadata badges (timestamps, badge counts) — never primary content. Anything a user has to read to take an action MUST clear 12px.
+
+**What this rule blocks:**
+
+- New `text-3xs` classes (the token no longer resolves and Tailwind silently drops the class).
+- `text-2xs` on primary body copy or button labels — bump to `text-xs` / `.text-style-caption`.
+- Bespoke `text-* font-* tracking-* uppercase` combos that re-implement an existing `.text-style-*` utility. Reach for the named utility instead so future retunes propagate from one place.
+
+The `.text-style-overline` utility is the canonical way to render kickers; module-headers that need `text-brand-700` may keep the hand-rolled span (with the existing `// eslint-disable-next-line sergeant-design/no-eyebrow-drift` justification) until SectionHeading exposes a brand-tinted variant.
+
 ## Touch targets
 
 All interactive elements must clear **WCAG 2.5.5** / Apple HIG **≥44×44px** on touch devices (`@media (pointer: coarse)`). Three layers cooperate:
@@ -498,7 +523,7 @@ All interactive elements must clear **WCAG 2.5.5** / Apple HIG **≥44×44px** o
 
 The `Button` component handles the common case automatically; reach for `touch-target` only when you cannot use `Button` (e.g. absolutely-positioned siblings, drag activators, custom-styled toggles). Refer to `BentoCard` for the canonical "small visible glyph + 44 px hit area" pattern.
 
-### 16. Animation budget — max 2 concurrent, 3 tiers
+### 17. Animation budget — max 2 concurrent, 3 tiers
 
 > Why a hard rule? Unconstrained animations create visual noise and harm users with vestibular disorders. Past audits found confetti firing on every checkbox tick and stagger delays compounding to 350 ms+, both violating the WCAG 2.3 (Animation from Interactions) guideline.
 
@@ -507,7 +532,7 @@ Three animation tiers — every animation in the codebase belongs to exactly one
 | Tier          | Examples                                                       | Constraint                                                                                            |
 | ------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | **AMBIENT**   | `shimmer`, `pulse-soft`, `wiggle`                              | Looped; always behind `motion-safe:`; `prefers-reduced-motion` collapses to opacity-only              |
-| **RESPONSE**  | `fade-in`, `slide-up`, `scale-in`, `press-scale`, `hover-lift` | One-shot, 150–300 ms, `ease-out`; fires once per user action                                          |
+| **RESPONSE** | `fade-in`, `slide-up`, `scale-in`, `press-scale`, `hover-lift` | One-shot, 150–300 ms, `ease-out`; fires once per user action                                          |
 | **CELEBRATE** | `check-pop`, `bounce-in`, `success-pulse`, confetti burst      | Milestones only: first entry, streak 7/30/100/365, weekly goal hit. **Not** every checkbox completion |
 
 Rules:

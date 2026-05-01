@@ -109,10 +109,10 @@ function MacroRatioBar({ prefs }: { prefs: NutritionPrefs }) {
       <SectionHeading as="div" size="xs">
         Відсоткове співвідношення макро
       </SectionHeading>
-      <div className="flex rounded-lg overflow-hidden h-5">
+      <div className="flex rounded-xl overflow-hidden h-5">
         {pctP > 0 && (
           <div
-            className="bg-blue-500 flex items-center justify-center text-3xs font-bold text-white"
+            className="bg-blue-500 flex items-center justify-center text-2xs font-bold text-white"
             style={{ width: `${pctP}%` }}
           >
             {pctP}%
@@ -120,7 +120,7 @@ function MacroRatioBar({ prefs }: { prefs: NutritionPrefs }) {
         )}
         {pctF > 0 && (
           <div
-            className="bg-yellow-500 flex items-center justify-center text-3xs font-bold text-white"
+            className="bg-yellow-500 flex items-center justify-center text-2xs font-bold text-white"
             style={{ width: `${pctF}%` }}
           >
             {pctF}%
@@ -128,7 +128,7 @@ function MacroRatioBar({ prefs }: { prefs: NutritionPrefs }) {
         )}
         {pctC > 0 && (
           <div
-            className="bg-green-500 flex items-center justify-center text-3xs font-bold text-white"
+            className="bg-green-500 flex items-center justify-center text-2xs font-bold text-white"
             style={{ width: `${pctC}%` }}
           >
             {pctC}%
@@ -170,7 +170,7 @@ function MacroBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 text-xs rounded-lg px-2 py-0.5",
+        "inline-flex items-center gap-1 text-xs rounded-xl px-2 py-0.5",
         color || "bg-bg border border-line text-subtle",
       )}
     >
@@ -472,22 +472,22 @@ export function DailyPlanCard({
           {hasTargets && (
             <div className="mt-2 flex flex-wrap gap-1 items-center">
               {prefs.dailyTargetKcal != null && (
-                <span className="text-xs bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/20 rounded-lg px-2 py-0.5">
+                <span className="text-xs bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/20 rounded-xl px-2 py-0.5">
                   {prefs.dailyTargetKcal} ккал
                 </span>
               )}
               {prefs.dailyTargetProtein_g != null && (
-                <span className="text-xs bg-bg border border-line rounded-lg px-2 py-0.5 text-subtle">
+                <span className="text-xs bg-bg border border-line rounded-xl px-2 py-0.5 text-subtle">
                   Б: {prefs.dailyTargetProtein_g}г
                 </span>
               )}
               {prefs.dailyTargetFat_g != null && (
-                <span className="text-xs bg-bg border border-line rounded-lg px-2 py-0.5 text-subtle">
+                <span className="text-xs bg-bg border border-line rounded-xl px-2 py-0.5 text-subtle">
                   Ж: {prefs.dailyTargetFat_g}г
                 </span>
               )}
               {prefs.dailyTargetCarbs_g != null && (
-                <span className="text-xs bg-bg border border-line rounded-lg px-2 py-0.5 text-subtle">
+                <span className="text-xs bg-bg border border-line rounded-xl px-2 py-0.5 text-subtle">
                   В: {prefs.dailyTargetCarbs_g}г
                 </span>
               )}

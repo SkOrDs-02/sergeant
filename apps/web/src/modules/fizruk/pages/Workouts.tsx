@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { safeReadStringLS, safeWriteLS, safeRemoveLS } from "@shared/lib/storage";
+import {
+  safeReadStringLS,
+  safeWriteLS,
+  safeRemoveLS,
+} from "@shared/lib/storage";
 import { Button } from "@shared/components/ui/Button";
-import { Card } from "@shared/components/ui/Card";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { useToast } from "@shared/hooks/useToast";
@@ -24,10 +27,7 @@ import {
   ACTIVE_WORKOUT_KEY,
   summarizeWorkoutForFinish,
 } from "@sergeant/fizruk-domain";
-import {
-  WorkoutsHome,
-  RecentWorkoutSummary,
-} from "../components/workouts/WorkoutsHome";
+import { WorkoutsHome } from "../components/workouts/WorkoutsHome";
 
 type WorkoutsView = "home" | "catalog" | "log" | "templates";
 
@@ -391,7 +391,7 @@ export function Workouts() {
           {view !== "home" ? (
             <button
               type="button"
-              className="w-9 h-9 -ml-1 rounded-lg flex items-center justify-center text-text/80 hover:bg-surface-2"
+              className="w-9 h-9 -ml-1 rounded-xl flex items-center justify-center text-text/80 hover:bg-surface-2"
               onClick={() => setView("home")}
               aria-label="Повернутись до тренувань"
             >
@@ -653,4 +653,3 @@ export function Workouts() {
     </div>
   );
 }
-

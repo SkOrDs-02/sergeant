@@ -110,7 +110,7 @@ function DebtCardComponent({
       {onLink && (
         <button
           onClick={onLink}
-          className="mt-3 w-full text-xs text-muted border border-dashed border-line rounded-lg py-2 hover:border-primary hover:text-primary transition-colors"
+          className="mt-3 w-full text-xs text-muted border border-dashed border-line rounded-xl py-2 hover:border-primary hover:text-primary transition-colors"
         >
           🔗 Прив&apos;язати транзакції ({linkedCount || 0})
         </button>

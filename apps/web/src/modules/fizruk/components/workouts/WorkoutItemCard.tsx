@@ -83,7 +83,7 @@ export function WorkoutItemCard({
             {groupSelectMode && (
               <button
                 type="button"
-                className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? "bg-success-strong border-success-strong text-white" : "border-line bg-bg"}`}
+                className={`w-5 h-5 rounded-xl border flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? "bg-success-strong border-success-strong text-white" : "border-line bg-bg"}`}
                 onClick={() => onToggleGroupSelect(it.id)}
               >
                 {isSelected && (
@@ -318,7 +318,7 @@ export function WorkoutItemCard({
                 <SectionHeading as="span" size="xs">
                   Таймер відпочинку
                 </SectionHeading>
-                <span className="text-3xs text-muted">
+                <span className="text-2xs text-muted">
                   {catLabel} · реком. {defSec}с
                 </span>
               </div>
@@ -409,10 +409,10 @@ export function WorkoutItemCard({
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-xl border border-line bg-bg px-3 py-2 text-center">
                 {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-                    Cardio metric caption at text-3xs (smaller than
+                    Cardio metric caption at text-2xs (smaller than
                     SectionHeading xs's text-2xs) inside a compact stat
                     tile; intentional microtype. */}
-                <div className="text-3xs font-bold text-subtle uppercase tracking-widest">
+                <div className="text-2xs font-bold text-subtle uppercase tracking-widest">
                   Темп
                 </div>
                 <div className="text-sm font-bold text-text tabular-nums">
@@ -422,7 +422,7 @@ export function WorkoutItemCard({
               <div className="rounded-xl border border-line bg-bg px-3 py-2 text-center">
                 {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
                     Matching caption on the speed tile; see sibling above. */}
-                <div className="text-3xs font-bold text-subtle uppercase tracking-widest">
+                <div className="text-2xs font-bold text-subtle uppercase tracking-widest">
                   Швидкість
                 </div>
                 <div className="text-sm font-bold text-text tabular-nums">

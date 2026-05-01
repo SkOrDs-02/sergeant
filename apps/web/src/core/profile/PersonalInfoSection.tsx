@@ -206,12 +206,12 @@ export function PersonalInfoSection({
           <div className="flex items-center justify-center gap-1.5 mt-0.5 flex-wrap">
             <p className="text-body-sm text-muted truncate">{user.email}</p>
             {user.emailVerified ? (
-              <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-brand-500/10 text-brand-strong dark:text-brand text-2xs font-medium">
+              <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-xl bg-brand-500/10 text-brand-strong dark:text-brand text-2xs font-medium">
                 <Icon name="check" size={10} strokeWidth={3} />
                 Підтверджено
               </span>
             ) : (
-              <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-warning/10 text-warning text-2xs font-medium">
+              <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-xl bg-warning/10 text-warning text-2xs font-medium">
                 <Icon name="alert" size={10} strokeWidth={2.5} />
                 Не підтверджено
               </span>

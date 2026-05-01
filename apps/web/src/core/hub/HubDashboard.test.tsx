@@ -151,15 +151,6 @@ vi.mock("../insights/WeeklyDigestCard", () => ({
 vi.mock("./dashboard/dashboardCards", () => ({
   StaggerChild: ({ children }: { children: ReactNode }) => <>{children}</>,
   StreakIndicator: () => null,
-  TodaySummaryStrip: ({
-    onOpenModule,
-  }: {
-    onOpenModule: (module: string) => void;
-  }) => (
-    <button type="button" onClick={() => onOpenModule("routine")}>
-      summary-open-routine
-    </button>
-  ),
   AssistantAdviceCard: () => null,
   MotivationalFooter: () => <p data-testid="motivational-footer" />,
   WeeklyDigestFooter: ({
@@ -283,10 +274,10 @@ describe("HubDashboard", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-29T09:00:00+03:00"));
     localStorage.clear();
-    // Past the FTUX gate: render `TodaySummaryStrip`, `HubInsightsPanel`,
-    // and the «Аналітика» section (incl. `WeeklyDigestFooter`). Also
-    // suppresses `ModuleChecklist`, whose «Фінік: Перші кроки» heading
-    // would collide with the bento «Фінік» button under `getByRole`.
+    // Past the FTUX gate: render `HubInsightsPanel` and the «Аналітика»
+    // section (incl. `WeeklyDigestFooter`). Also suppresses
+    // `ModuleChecklist`, whose «Фінік: Перші кроки» heading would
+    // collide with the bento «Фінік» button under `getByRole`.
     localStorage.setItem("hub_first_real_entry_done_v1", "1");
     mocks.dashboardFocus.focus = null;
     mocks.dashboardFocus.rest = [];
@@ -330,9 +321,6 @@ describe("HubDashboard", () => {
 
     expect(screen.getByTestId("today-focus-card")).toBeInTheDocument();
     expect(screen.getByText(MODULE_CHECKLISTS.finyk.title)).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "summary-open-routine" }),
-    ).toBeNull();
     expect(screen.queryByTestId("assistant-advice-card")).toBeNull();
     expect(screen.queryByTestId("hub-insights-panel")).toBeNull();
     expect(screen.queryByTestId("weekly-digest-footer")).toBeNull();
@@ -406,7 +394,7 @@ describe("HubDashboard", () => {
     ).toBeNull();
   });
 
-  it("routes hero, summary strip, and insight callbacks to the correct dashboard actions", () => {
+  it("routes hero and insight callbacks to the correct dashboard actions", () => {
     const onOpenModule = vi.fn();
     mocks.dashboardFocus.focus = rec({
       id: "focus",
@@ -433,15 +421,11 @@ describe("HubDashboard", () => {
     expect(screen.getByTestId("insight-count")).toHaveTextContent("2");
 
     fireEvent.click(screen.getByRole("button", { name: "focus-action" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: "summary-open-routine" }),
-    );
     fireEvent.click(screen.getByRole("button", { name: "open-hashed" }));
     fireEvent.click(screen.getByRole("button", { name: "open-plain" }));
     fireEvent.click(screen.getByRole("button", { name: "dismiss-hashed" }));
 
     expect(onOpenModule).toHaveBeenCalledWith("nutrition");
-    expect(onOpenModule).toHaveBeenCalledWith("routine");
     expect(mocks.openHubModule).toHaveBeenCalledWith("finyk", "#budgets");
     expect(onOpenModule).toHaveBeenCalledWith("fizruk");
     expect(mocks.dashboardFocus.dismiss).toHaveBeenCalledWith("hashed");

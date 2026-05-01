@@ -298,7 +298,7 @@ function StatChip({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-1 rounded-xl border border-line bg-panel px-3 py-2">
       <Text
-        className="text-3xs font-bold uppercase text-ink-500"
+        className="text-2xs font-bold uppercase text-ink-500"
         numberOfLines={1}
       >
         {label}
@@ -396,7 +396,7 @@ function GroupedEventList({
     <View className="gap-3" testID={testID}>
       {grouped.map(([head, rows]) => (
         <View key={head} className="gap-2">
-          <Text className="text-3xs font-bold uppercase text-ink-500">
+          <Text className="text-2xs font-bold uppercase text-ink-500">
             {head}
           </Text>
           <View className="gap-2">
@@ -560,7 +560,7 @@ export function Calendar({ testID }: CalendarProps = {}) {
     >
       <View className="gap-1">
         {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- Module hero kicker mirroring apps/web/src/modules/routine/RoutineApp.tsx */}
-        <Text className="text-3xs font-bold uppercase tracking-widest text-ink-500">
+        <Text className="text-2xs font-bold uppercase tracking-widest text-ink-500">
           Hub календар
         </Text>
         <Text className="text-xl font-extrabold text-ink-900 capitalize">

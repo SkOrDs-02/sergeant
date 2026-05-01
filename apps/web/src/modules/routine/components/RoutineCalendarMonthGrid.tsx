@@ -129,7 +129,7 @@ export function RoutineCalendarMonthGrid({
                   <span className="flex items-center gap-0.5" aria-hidden>
                     <span className={cn("w-1.5 h-1.5 rounded-full", C.dot)} />
                     {n > 1 && (
-                      <span className="text-3xs text-subtle tabular-nums">
+                      <span className="text-2xs text-subtle tabular-nums">
                         {n}
                       </span>
                     )}
@@ -212,7 +212,7 @@ export function RoutineCalendarMonthGrid({
                       type="button"
                       onClick={() => onToggleHabit(e.habitId!, e.date)}
                       className={cn(
-                        "w-7 h-7 rounded-lg border flex items-center justify-center text-xs font-bold transition-colors shrink-0",
+                        "w-7 h-7 rounded-xl border flex items-center justify-center text-xs font-bold transition-colors shrink-0",
                         e.completed
                           ? C.done
                           : "border-line hover:bg-panelHi text-muted",

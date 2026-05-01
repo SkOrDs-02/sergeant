@@ -103,7 +103,7 @@ export function AssistantAdviceCard({
               disabled={loading}
               aria-label="Оновити пораду"
               className={cn(
-                "mt-2 p-1 rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors",
+                "mt-2 p-1 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors",
                 loading &&
                   "opacity-40 cursor-not-allowed motion-safe:animate-spin",
               )}

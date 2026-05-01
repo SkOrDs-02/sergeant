@@ -362,7 +362,7 @@ export function TodayFocusCard({
           aria-label="Закрити підказку"
           className={cn(
             "absolute top-2.5 right-2.5",
-            "w-7 h-7 flex items-center justify-center rounded-lg",
+            "w-7 h-7 flex items-center justify-center rounded-xl",
             "text-muted hover:text-text hover:bg-black/5 dark:hover:bg-white/10",
             "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
           )}
@@ -403,7 +403,7 @@ export function TodayFocusCard({
             type="button"
             onClick={primary.run}
             className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg",
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl",
               "bg-primary text-bg text-xs font-semibold",
               "hover:brightness-110 active:scale-[0.98] transition-[filter,opacity,transform]",
             )}
@@ -417,7 +417,7 @@ export function TodayFocusCard({
               onClick={secondary.run}
               className={cn(
                 "text-xs font-medium text-muted hover:text-text",
-                "px-2.5 py-1.5 rounded-lg hover:bg-panelHi transition-colors",
+                "px-2.5 py-1.5 rounded-xl hover:bg-panelHi transition-colors",
               )}
             >
               {secondary.label}

@@ -170,7 +170,7 @@ export const HubMainContent = memo(function HubMainContent({
       <main
         id="main"
         tabIndex={-1}
-        className="flex-1 px-5 pb-28 max-w-lg mx-auto w-full overflow-y-auto rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-inset"
+        className="flex-1 px-5 pb-28 max-w-lg mx-auto w-full overflow-y-auto rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-inset"
       >
         {hubView === "dashboard" && (
           <ErrorBoundary key="dashboard" fallback={HubSectionFallback}>

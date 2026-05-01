@@ -92,8 +92,8 @@ const outlineVariants: Record<BadgeVariant, string> = {
 };
 
 const sizes: Record<BadgeSize, string> = {
-  xs: "h-5 px-1.5 text-2xs gap-1 rounded-md",
-  sm: "h-6 px-2 text-xs gap-1 rounded-lg",
+  xs: "h-5 px-1.5 text-2xs gap-1 rounded-xl",
+  sm: "h-6 px-2 text-xs gap-1 rounded-xl",
   md: "h-7 px-2.5 text-xs gap-1.5 rounded-xl",
 };
 

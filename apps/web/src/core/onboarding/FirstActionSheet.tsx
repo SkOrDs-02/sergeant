@@ -263,7 +263,7 @@ export function FirstActionHeroCard({ onDismiss }) {
               className={cn(
                 "w-full text-xs font-medium text-muted hover:text-text",
                 "flex items-center justify-center gap-1 py-1",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded-md",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded-xl",
               )}
             >
               <span>{expanded ? "Сховати" : "Інший модуль"}</span>

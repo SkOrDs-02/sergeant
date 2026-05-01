@@ -100,7 +100,7 @@ function MealThumb({ mealId }: { mealId: string }) {
       decoding="async"
       width="40"
       height="40"
-      className="w-10 h-10 rounded-lg object-cover shrink-0 border border-line"
+      className="w-10 h-10 rounded-xl object-cover shrink-0 border border-line"
     />
   );
 }
@@ -267,7 +267,7 @@ export function LogCard({
                     </button>
                     <button
                       type="button"
-                      className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-nutrition/10 text-nutrition-strong dark:text-nutrition hover:bg-nutrition/20 transition-colors"
+                      className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-nutrition/10 text-nutrition-strong dark:text-nutrition hover:bg-nutrition/20 transition-colors"
                       onClick={() => {
                         onAddMealFromSearch?.({
                           id: `meal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
@@ -377,7 +377,7 @@ export function LogCard({
                   type="button"
                   onClick={() => setStatsRange(d)}
                   className={cn(
-                    "px-2 py-1 rounded-lg text-xs font-semibold border",
+                    "px-2 py-1 rounded-xl text-xs font-semibold border",
                     statsRange === d
                       ? "border-nutrition/60 text-nutrition-strong dark:text-nutrition bg-nutrition/10"
                       : "border-line text-subtle bg-panelHi",

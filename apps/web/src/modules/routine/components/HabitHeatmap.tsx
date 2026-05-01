@@ -222,7 +222,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
           </span>
         </div>
       ) : (
-        <div className="mt-3 flex items-center gap-2 text-3xs text-subtle/70 select-none">
+        <div className="mt-3 flex items-center gap-2 text-2xs text-subtle/70 select-none">
           <span>менше</span>
           {HEATMAP.levels.map((c, i) => (
             <span

@@ -78,14 +78,14 @@ export function DailyNudge({
             <button
               type="button"
               onClick={handleDismiss}
-              className="text-xs text-muted hover:text-text px-2 py-1 rounded-lg transition-colors"
+              className="text-xs text-muted hover:text-text px-2 py-1 rounded-xl transition-colors"
             >
               Зрозуміло
             </button>
             <button
               type="button"
               onClick={handleSnooze}
-              className="text-xs text-muted hover:text-text px-2 py-1 rounded-lg transition-colors inline-flex items-center gap-1"
+              className="text-xs text-muted hover:text-text px-2 py-1 rounded-xl transition-colors inline-flex items-center gap-1"
               aria-label={`Нагадати через ${SNOOZE_DAYS} днів`}
             >
               <Icon name="clock" size={12} aria-hidden />
@@ -96,7 +96,7 @@ export function DailyNudge({
         <button
           type="button"
           onClick={handleSnooze}
-          className="shrink-0 -mt-1 -mr-1 w-6 h-6 rounded-md flex items-center justify-center text-muted hover:text-text transition-colors"
+          className="shrink-0 -mt-1 -mr-1 w-6 h-6 rounded-xl flex items-center justify-center text-muted hover:text-text transition-colors"
           aria-label={`Сховати на ${SNOOZE_DAYS} днів`}
         >
           <Icon name="x" size={14} />

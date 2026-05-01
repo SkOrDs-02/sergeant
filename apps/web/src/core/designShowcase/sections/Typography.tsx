@@ -46,9 +46,42 @@ export function TypographySection() {
             <span className="text-2xs font-semibold text-text">text-2xs</span>
             <span className="text-2xs text-subtle">10px / 14px</span>
           </div>
+        </div>
+      </Group>
+
+      <Group label="Семантичні текстові стилі">
+        <div className="space-y-2">
           <div className="flex items-baseline gap-4">
-            <span className="text-3xs font-semibold text-text">text-3xs</span>
-            <span className="text-2xs text-subtle">9px / 12px</span>
+            <span className="text-style-hero text-text">text-style-hero</span>
+            <span className="text-2xs text-subtle">
+              26 / 32 / 700 / -0.02em
+            </span>
+          </div>
+          <div className="flex items-baseline gap-4">
+            <span className="text-style-title text-text">text-style-title</span>
+            <span className="text-2xs text-subtle">
+              20 / 28 / 600 / -0.01em
+            </span>
+          </div>
+          <div className="flex items-baseline gap-4">
+            <span className="text-style-body text-text">text-style-body</span>
+            <span className="text-2xs text-subtle">16 / 24 / 400</span>
+          </div>
+          <div className="flex items-baseline gap-4">
+            <span className="text-style-label text-text">text-style-label</span>
+            <span className="text-2xs text-subtle">14 / 20 / 500</span>
+          </div>
+          <div className="flex items-baseline gap-4">
+            <span className="text-style-caption text-text">
+              text-style-caption
+            </span>
+            <span className="text-2xs text-subtle">12 / 16 / 400</span>
+          </div>
+          <div className="flex items-baseline gap-4">
+            <span className="text-style-overline text-text">
+              text-style-overline
+            </span>
+            <span className="text-2xs text-subtle">12 / 16 / 600 / 0.06em</span>
           </div>
         </div>
       </Group>

@@ -49,7 +49,7 @@ export function SettingsGroup({
       >
         <div className="flex items-center gap-3 min-w-0">
           {emoji && (
-            <span className="text-lg w-7 h-7 flex items-center justify-center rounded-lg bg-bg">
+            <span className="text-lg w-7 h-7 flex items-center justify-center rounded-xl bg-bg">
               {emoji}
             </span>
           )}

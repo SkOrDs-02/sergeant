@@ -66,7 +66,7 @@ function SyncStatusBadgeComponent({
           type="button"
           onClick={onRetry}
           disabled={isLoading}
-          className="ml-1 px-2 py-1 rounded-lg bg-panel border border-line text-xs font-semibold text-text hover:bg-panelHi transition-colors disabled:opacity-50"
+          className="ml-1 px-2 py-1 rounded-xl bg-panel border border-line text-xs font-semibold text-text hover:bg-panelHi transition-colors disabled:opacity-50"
         >
           Повторити
         </button>

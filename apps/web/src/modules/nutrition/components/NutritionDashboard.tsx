@@ -141,7 +141,7 @@ function MiniBar({
             </div>
             <span
               className={cn(
-                "text-3xs leading-none",
+                "text-2xs leading-none",
                 isToday ? "text-text font-bold" : "text-muted",
               )}
             >
@@ -238,7 +238,7 @@ export function NutritionDashboard({
                     {m.label}
                   </div>
                   {target > 0 && (
-                    <div className="text-3xs text-muted leading-none">
+                    <div className="text-2xs text-muted leading-none">
                       / {target}
                       {m.unit}
                     </div>
