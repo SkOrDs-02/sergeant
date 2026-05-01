@@ -134,7 +134,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
           </div>
         )}
 
-        {!showRecents && query.trim().length < 2 && (
+        {!showRecents && query.trim().length < 2 && results.length === 0 && (
           <EmptyState
             icon={<Icon name="search" size={22} strokeWidth={1.6} />}
             title="Глобальний пошук"

@@ -1,14 +1,21 @@
 import type { ModuleAccent } from "@sergeant/design-tokens";
 import type { AssistantCapability } from "@sergeant/shared";
+import type { HubModuleAction, HubModuleId } from "@shared/lib/hubNav";
 import { scoreMatch } from "../hubSearchEngine";
 
 /**
  * `module` is the visual grouping/colour key. Real modules use the
- * `ModuleAccent` palette; the two pseudo-modules ("settings" and
- * "assistant") render with their own neutral swatches and route to
- * different navigation targets (`?tab=settings` / `/assistant`).
+ * `ModuleAccent` palette; the four pseudo-modules ("settings",
+ * "assistant", "actions", "ai") render with their own neutral swatches
+ * and route to different navigation targets (`?tab=settings` /
+ * `/assistant` / cross-module quick-add / open-chat handoff).
  */
-export type SearchSurface = ModuleAccent | "settings" | "assistant";
+export type SearchSurface =
+  | ModuleAccent
+  | "settings"
+  | "assistant"
+  | "actions"
+  | "ai";
 
 export type Hit = {
   id: string;
@@ -21,7 +28,13 @@ export type Hit = {
   target:
     | { kind: "module"; moduleId: string }
     | { kind: "settings"; sectionId?: string }
-    | { kind: "assistant"; capability?: AssistantCapability };
+    | { kind: "assistant"; capability?: AssistantCapability }
+    | {
+        kind: "action";
+        moduleId: HubModuleId;
+        action: HubModuleAction;
+      }
+    | { kind: "ai-handoff"; query: string };
   _score: number;
 };
 
