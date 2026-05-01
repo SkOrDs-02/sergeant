@@ -10,6 +10,11 @@ export * from "./types";
 // Shared, DOM-free constants (storage keys, etc.)
 export * from "./lib/storageKeys";
 
+// Sensitive query-key policy for the React Query persisters
+// (web → IDB, mobile → MMKV). See PR #004 in
+// `docs/planning/storage-roadmap.md`.
+export * from "./lib/sensitiveQueryKeys";
+
 // Hub dashboard module ordering (pure helpers; storage I/O is per-platform).
 export * from "./lib/dashboard";
 

@@ -52,7 +52,14 @@
  *     знов валідна;
  *   - non-`success` queries (`fetchStatus === "fetching"` без
  *     `dataUpdateCount > 0`) — query, що ще не отримав успішну
- *     відповідь, не має сенсу зберігати.
+ *     відповідь, не має сенсу зберігати;
+ *   - sensitive queries (auth / me / coach / sync / *balance*) —
+ *     персонально-чутливі дані не повинні лежати на диску після
+ *     logout (persister keyed by build-id, not by user-id) і
+ *     не мають витікати у IDB-снепшот, що читається з devtools
+ *     будь-яким XSS. Список наций — у `@sergeant/shared`
+ *     `isSensitiveQueryKey` (PR #004 у `docs/planning/storage-roadmap.md`).
+ *     Дзеркалиться у мобільному `mmkvPersister.ts`.
  *
  * ## Capacitor
  *
@@ -70,7 +77,7 @@ import {
   del as idbDel,
 } from "idb-keyval";
 import type { Query } from "@tanstack/react-query";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { STORAGE_KEYS, isSensitiveQueryKey } from "@sergeant/shared";
 
 declare const __APP_BUILD_ID__: string;
 
@@ -165,6 +172,16 @@ export function shouldDehydrateQueryForPersist(query: Query): boolean {
   // snapshot потрапляють query-плейсхолдери без даних, які лише
   // марнують місце.
   if (query.state.dataUpdateCount === 0) return false;
+
+  // Не зберігаємо чутливі query-keys — auth / me / coach / sync /
+  // *balance*. Ці фіди мають персональні дані (email, balance,
+  // personalised advice strings, module_data JSONB), які не повинні
+  // лежати на диску після logout (persister keyed by build-id, не
+  // user-id) і не мають витікати у IDB-снепшот, що читається з
+  // devtools будь-яким XSS. Список ведеться у `@sergeant/shared`
+  // `isSensitiveQueryKey` і дзеркалиться мобільним
+  // `mmkvPersister.ts`.
+  if (isSensitiveQueryKey(query.queryKey)) return false;
 
   return true;
 }
