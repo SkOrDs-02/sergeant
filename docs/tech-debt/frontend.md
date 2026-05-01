@@ -291,7 +291,7 @@ filter-предикатів:
 | ----- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------- |
 | 1     | `strictNullChecks`                          | `src/shared/**`                                                                                               | ✅ Виконано |
 | 2     | `strictNullChecks`                          | + `src/test/**`, `src/core/{auth,cloudSync,components,hints,hooks,observability,pricing,profile}/**` (10 дир) | ✅ Виконано |
-| 3     | `strictNullChecks`                          | + `src/modules/{routine,nutrition,finyk,fizruk}/**`, `src/core/{app,hub,insights,onboarding,settings,lib}/**` | TODO        |
+| 3     | `strictNullChecks`                          | + `src/modules/{routine,nutrition,finyk,fizruk}/**`, `src/core/{app,hub,insights,onboarding,settings,lib}/**` | ✅ Виконано |
 | 4     | повний `strict: true` + видалення `allowJs` | всі файли                                                                                                     | TODO        |
 
 **Phase 1 деталі (PR-6.A):**
@@ -343,10 +343,21 @@ filter-предикатів:
 - Жодних `@ts-expect-error` і жодних runtime-змін — лише сигнатури
   `safeReadLS`/`readJSON` та null-guards.
 
-**Phase 3 (наступний PR):** розширити `tsconfig.strict.json` на
-`src/modules/{routine,nutrition,finyk,fizruk}/**` і решту `src/core/lib/**`
-(залишок ~кілька strict-null помилок у транзитивних імпортах з модулів).
-Можна паралелити як 4 під-PR-и (по одному на модуль).
+**Phase 3 деталі (strict-null rollout — routine + nutrition + fizruk + finyk + core/lib):**
+
+- `tsconfig.strict.json` розширено на всі 4 модулі та решту `src/core/`:
+  `src/modules/{routine,nutrition,finyk,fizruk}/**`,
+  `src/core/{app,hub,insights,onboarding,settings,lib}/**`.
+- `src/modules/routine/**` та `src/modules/nutrition/**` — 0 strict-null
+  помилок; модулі вже були clean завдяки null-guards доданим у Phase 2.1.
+- `src/modules/fizruk/hooks/useRestSettings.ts` — `MergedSettings` тип
+  змінено з `typeof REST_DEFAULTS` (literal `as const` types) на
+  `Record<keyof typeof REST_DEFAULTS, number>`, оскільки user overrides
+  повертають `number`, а не літеральні `90 | 60 | 30`.
+- `src/core/lib/` тест-файли (4 файли, 8 помилок) — додано explicit
+  array type annotations для `never[]` inference (`const txs: Array<...> = []`)
+  та non-null assertions (`!`) після `expect(...).toBeDefined()` guards.
+- Жодних `@ts-expect-error`, `as any`, або runtime-змін не додано.
 
 **Phase 4:** увімкнути `strict: true` у головному `tsconfig.json`, видалити
 `allowJs`, виправити всі залишкові помилки (основний ROI — на `noImplicitAny`,
