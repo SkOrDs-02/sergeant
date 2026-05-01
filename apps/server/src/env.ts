@@ -132,6 +132,32 @@ export const env = {
 
   /** Slow query threshold in ms */
   SLOW_QUERY_THRESHOLD_MS: parseIntEnv("SLOW_QUERY_THRESHOLD_MS", 100),
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Mono AI enrichment worker
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Запускати polling-консьюмера `mono_ai_enrichment_queue` у тому ж процесі,
+   * що API. Default: false, щоб локальний dev / тести не виконували реальні
+   * Anthropic-запити в фоні. У production вмикається через Railway env var.
+   */
+  MONO_ENRICHMENT_WORKER_ENABLED: parseBoolEnv(
+    "MONO_ENRICHMENT_WORKER_ENABLED",
+    false,
+  ),
+
+  /** Скільки row-ів забирати за один tick. */
+  MONO_ENRICHMENT_BATCH_SIZE: parseIntEnv("MONO_ENRICHMENT_BATCH_SIZE", 5),
+
+  /** Інтервал між тиками polling-loop (мс). */
+  MONO_ENRICHMENT_INTERVAL_MS: parseIntEnv(
+    "MONO_ENRICHMENT_INTERVAL_MS",
+    5_000,
+  ),
+
+  /** Максимум спроб на tx до того, як queue.row.status='failed'. */
+  MONO_ENRICHMENT_MAX_ATTEMPTS: parseIntEnv("MONO_ENRICHMENT_MAX_ATTEMPTS", 5),
 } as const;
 
 export type Env = typeof env;

@@ -26,7 +26,12 @@ import type { Server } from "http";
 import { createApp } from "./app.js";
 import { config } from "./config.js";
 import { pool } from "./db.js";
+import { env } from "./env.js";
 import { connectRedis, disconnectRedis } from "./lib/redis.js";
+import {
+  startMonoEnrichmentWorker,
+  type StartedWorker,
+} from "./modules/mono/enrichmentWorker.js";
 import { logger, serializeError } from "./obs/logger.js";
 import {
   startPoolSampler,
@@ -43,6 +48,27 @@ const app = createApp({
 
 startPoolSampler(pool);
 connectRedis();
+
+// Mono AI enrichment worker — polling-консьюмер `mono_ai_enrichment_queue`.
+// Стартує у тому ж процесі, що API (in-process worker). Це свідомий вибір:
+// при поточному об'ємі трафіку (десятки tx/min) виносити окремий worker-сервіс
+// — оверкіл, а multi-replica-safety гарантує `FOR UPDATE SKIP LOCKED` у
+// `runEnrichmentTick`. Якщо ANTHROPIC_API_KEY не заданий — worker не стартує
+// (інакше кожен tick впаде на upstream-call). Default state: off; вмикається
+// через Railway env var, щоб локальний dev випадково не палив квоту.
+let enrichmentWorker: StartedWorker | null = null;
+if (env.MONO_ENRICHMENT_WORKER_ENABLED && env.ANTHROPIC_API_KEY) {
+  enrichmentWorker = startMonoEnrichmentWorker(pool, {
+    batchSize: env.MONO_ENRICHMENT_BATCH_SIZE,
+    intervalMs: env.MONO_ENRICHMENT_INTERVAL_MS,
+    maxAttempts: env.MONO_ENRICHMENT_MAX_ATTEMPTS,
+  });
+} else if (env.MONO_ENRICHMENT_WORKER_ENABLED) {
+  logger.warn({
+    msg: "mono_enrichment_worker_disabled_no_api_key",
+    reason: "ANTHROPIC_API_KEY is not configured",
+  });
+}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Graceful shutdown
@@ -122,6 +148,20 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
           resolve();
         });
       });
+    }
+
+    if (enrichmentWorker) {
+      try {
+        // Чекаємо, поки in-flight enrichment-tick завершиться, ПЕРЕД
+        // `pool.end()`. Інакше pg-клієнт у середині tick-а отримає
+        // ECONNRESET і queue.row залишиться у `processing` без cleanup-у.
+        await enrichmentWorker.stop();
+      } catch (err) {
+        logger.warn({
+          msg: "mono_enrichment_worker_stop_error",
+          err: serializeError(err, { includeStack: false }),
+        });
+      }
     }
 
     try {

@@ -395,6 +395,36 @@ export const monoWebhookDurationMs = new client.Histogram({
   registers: [register],
 });
 
+// ───────────────────────── Mono enrichment worker ─────────────
+// Polling-worker для `mono_ai_enrichment_queue`. Раніше outbox-таблиця
+// існувала (міграція 013), але жоден консьюмер її не читав — n8n flow
+// `06-mono-webhook-enrichment.json` слухав окремий webhook, не БД.
+// Метрики мінімальні (4 серії), щоб мати зір на:
+//   * затримку enrichment-у (pending count = depth черги),
+//   * пропускну здатність (processed_total{outcome=ok|failed}),
+//   * latency на одну транзакцію.
+export const monoEnrichmentQueueDepth = new client.Gauge({
+  name: "mono_enrichment_queue_depth",
+  help: "mono_ai_enrichment_queue rows by status",
+  labelNames: ["status"], // pending|processing|done|failed
+  registers: [register],
+});
+
+export const monoEnrichmentProcessedTotal = new client.Counter({
+  name: "mono_enrichment_processed_total",
+  help: "Mono AI enrichment outcomes",
+  labelNames: ["outcome"], // ok|failed|skipped|missing_tx
+  registers: [register],
+});
+
+export const monoEnrichmentDurationMs = new client.Histogram({
+  name: "mono_enrichment_duration_ms",
+  help: "Per-transaction enrichment duration (ms): DB → Anthropic → write-back",
+  labelNames: ["outcome"], // ok|failed
+  buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000],
+  registers: [register],
+});
+
 // ───────────────────────── Helpers ────────────────────────────
 export type StatusClass = "5xx" | "4xx" | "3xx" | "2xx" | "other";
 
