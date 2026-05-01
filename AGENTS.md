@@ -30,7 +30,7 @@ Quick lookup before editing: which path uses which test stack and which conventi
 | `apps/web/src/shared/**`                              | `@Skords-01` | Vitest                                  | factories defined here                | Pure utils. No React.                                                                                                                                           |
 | `apps/server/src/modules/**`                          | `@Skords-01` | Vitest + Testcontainers (real Postgres) | n/a                                   | Always coerce bigint→number in serializers (rule #1). Update `api-client` types.                                                                                |
 | `apps/server/src/modules/chat/**`                     | `@Skords-01` | Vitest                                  | n/a                                   | Anthropic tool defs split per domain in `toolDefs/`. See Architecture section.                                                                                  |
-| `apps/server/src/migrations/**`                       | `@Skords-01` | n/a                                     | n/a                                   | Sequential `NNN_*.sql` (currently 001–015). No gaps. Two-phase for DROP — see rule #4.                                                                          |
+| `apps/server/src/migrations/**`                       | `@Skords-01` | n/a                                     | n/a                                   | Sequential `NNN_*.sql` (currently 001–021). No gaps. Two-phase for DROP — see rule #4.                                                                          |
 | `apps/mobile/src/core/**`                             | `@Skords-01` | Jest                                    | (mobile RQ uses module-local keys)    | NativeWind (not Tailwind). MMKV (not localStorage). No DOM.                                                                                                     |
 | `apps/mobile/app/**`                                  | `@Skords-01` | Jest                                    | n/a                                   | Expo Router routes. Each `_layout.tsx` is a navigator.                                                                                                          |
 | `apps/mobile-shell/**`                                | `@Skords-01` | none                                    | n/a                                   | Capacitor wrapper around `apps/web`. No app code lives here, only build glue.                                                                                   |
@@ -122,7 +122,7 @@ If you change only one — CI will pass but consumers break. Always do all three
 
 ### 4. SQL migrations: sequential, no gaps, two-phase for DROP
 
-Files in `apps/server/src/migrations/` use the pattern `NNN_description.sql` (currently 001–015). Pre-deploy: `pnpm db:migrate` (Railway). The build step copies them via `apps/server/build.mjs` (fixed in [#704](https://github.com/Skords-01/Sergeant/issues/704)).
+Files in `apps/server/src/migrations/` use the pattern `NNN_description.sql` (currently 001–021). Pre-deploy: `pnpm db:migrate` (Railway, runs `apps/server/migrate.mjs`). The build step copies them via `apps/server/build.mjs` (fixed in [#704](https://github.com/Skords-01/Sergeant/issues/704)).
 
 - **Adding a column:** single file `NNN_add_foo.sql`. Make it `NULL`-able or `DEFAULT`-ed so old code keeps working.
 - **Renaming/removing a column:** **two phases**, deployed **separately**:
@@ -395,7 +395,7 @@ What the rule **never** flags (these stay):
 
 Enforced by `sergeant-design/prefer-focus-visible` (`error`), scoped to `apps/web/**/*.{ts,tsx,js,jsx}` — React Native (`apps/mobile`, NativeWind) doesn't expose a `:focus-visible` pseudo-class equivalent; mobile uses `onFocus` handlers and the ring concept is web-only. Promoted from absent → `error` in PR [#1158](https://github.com/Skords-01/Sergeant/pull/1158) once the existing 14 paired `focus:` colour utilities (in `Input`, `Select`, `SkipLink`, `InputDialog`, `AssistantCataloguePage`) were migrated to `focus-visible:`.
 
-### 15. Read governance before coding; update docs alongside code
+### 15. Read governance before coding; update docs alongside code; internal docs in Ukrainian
 
 > Why a hard rule? Because rules are useless if no one reads them, and docs are dangerous if they describe behaviour the code no longer has. Both failure modes have shipped here ([#1143](https://github.com/Skords-01/Sergeant/pull/1143) deleted scaffolded code partly because the AI agent skipped the playbook; multiple Tailwind-opacity bugs survived because the design-system doc still listed deprecated tokens). This rule closes both gaps.
 
@@ -450,7 +450,31 @@ If you genuinely change nothing in the doc but its claims still hold, leave the 
 
 #### Verification
 
-The PR template includes the relevant boxes (`AGENTS.md updated?`, "Docs updated alongside code?"). CI doesn't fail on missing doc updates today (it's hard to detect mechanically), so this is reviewer- and self-discipline-enforced. If a reviewer spots an unchecked-but-required doc update, that's a request-changes signal — not a "follow-up issue".
+The PR template includes the relevant boxes (`AGENTS.md updated?`, "Docs updated alongside code?"). CI catches the cases that are mechanically detectable:
+
+- `pnpm lint:governance-sync` — fails (error, not warning) on **concrete** dangling `apps/.../*.ts` / `packages/.../*.ts` / `scripts/...` refs in non-aspirational docs (anything outside `docs/launch/`, `docs/planning/`, `docs/integrations/*-roadmap.md`, `docs/audits/*-implementation-roadmap.md`, ADRs with `Status: proposed`). Refs containing glob/placeholder syntax (`*`, `?`, `<>`, `[]`, `{}`) are skipped — those are templates, not concrete claims.
+- `pnpm docs:check-freshness`, `pnpm docs:check-playbook-index`, `pnpm docs:check-playbook-schema`, `pnpm hard-rules:check`, `pnpm api:check-openapi` — supplementary gates per category.
+
+The remaining categories (api-client type drift, CHANGELOG entries, design-system updates) are still reviewer- and self-discipline-enforced. If a reviewer spots an unchecked-but-required doc update, that's a request-changes signal — not a "follow-up issue". And if `lint:governance-sync` shows a path you renamed/moved, **do not** silence it by adding `<>` placeholders unless the file truly is aspirational — fix the doc to reference the real new path.
+
+#### Doc-source-of-truth language
+
+> Promoted from soft → hard 2026-04-30: agents kept emitting English-only ADR/playbook prose, leaving the repo bilingual-by-accident.
+
+All **prose** in internal docs (ADRs, playbooks, audits, RFCs, architecture docs, governance docs, tech-debt notes, runbooks, design specs) is written in **Ukrainian**. The **only** English-by-default surfaces are:
+
+- `README.md` (public-facing, GitHub default-rendered).
+- ADR titles and Status badges (canonical English keywords: `proposed`, `accepted`, `superseded`, `shipped`).
+- The first H1 of `AGENTS.md`, `CONTRIBUTING.md`, `CLAUDE.md`, `DEVIN.md` (shared-tooling convention).
+- OpenAPI / `docs/api/*` schema & description fields (consumed by tooling).
+- Commit messages (Conventional Commits English vocabulary — Hard Rule #5).
+- PR titles & descriptions (English so reviewers across timezones / Devin / Codex can scan).
+- Code identifiers, command names, log lines, env-var names, error codes (always English).
+- Verbatim quotes from English-language sources (RFCs, vendor docs, Stripe error names, etc.).
+
+Inside any of those English surfaces it's still fine to mix Ukrainian prose where it clarifies (e.g. `> _Update 2026-04-30_:` blocks); the rule is about the **default** language for new prose, not a ban.
+
+If a reviewer sees a new prose paragraph or table cell in English in a doc that's not on the exception list above, that's a request-changes signal — switch to Ukrainian and keep the technical terms (token names, flags, function/class identifiers) verbatim.
 
 ## AI markers
 
@@ -602,7 +626,7 @@ Real regressions we've shipped — do not repeat:
 - Use path aliases (`@shared/*`, `@finyk/*`, etc.) instead of relative `../../../`.
 - Dependency bumps — separate PRs (don't mix with features).
 - When deleting a file — first `grep` its imports across the entire monorepo.
-- Documentation language: write new/updated prose docs in Ukrainian where practical. Keep code identifiers, commands, API names, commit scopes, stack terms, and external quotes in their original language when that is clearer.
+- ~~Documentation language: write new/updated prose docs in Ukrainian where practical.~~ **Promoted to Hard Rule #15 → "Doc-source-of-truth language" 2026-04-30.** Keep code identifiers, commands, API names, commit scopes, stack terms, and external quotes in their original language when that is clearer (still applies inside the hard rule's scope).
 
 ## Verification before PR
 

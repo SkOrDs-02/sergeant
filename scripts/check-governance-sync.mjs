@@ -9,9 +9,16 @@
 // 2. Status badge coverage: every doc with a "Last validated:" freshness
 //    header must also have a "> **Status:** ..." line (Hard Rule #10).
 //
-// 3. Dangling source refs: inline code refs like `apps/.../*.ts` or
-//    `packages/.../*.ts` in docs are checked against the filesystem.
+// 3. Dangling source refs: inline code refs like `apps/.../foo.ts` or
+//    `packages/.../foo.ts` in docs are checked against the filesystem.
+//    Glob/placeholder refs (containing `*`, `?`, `<`, `>`, `[`, `]`, `{`, `}`)
+//    are skipped — those are templates, not concrete file refs.
+//    Aspirational doc trees (docs/launch/, docs/planning/, docs/integrations/
+//    *-roadmap.md, docs/audits/*-implementation-roadmap.md) describe future
+//    state — their dangling refs are reported as WARNINGS only.
 //    Files in ADRs with Status: proposed are exempt (future refs OK).
+//    All other dangling refs are reported as ERRORS (Hard Rule #15 — docs
+//    that describe current behaviour must move with code).
 //
 // Usage:
 //   node scripts/check-governance-sync.mjs
@@ -170,9 +177,35 @@ function checkDanglingRefs() {
   const refRe =
     /`((?:apps|packages|scripts)\/[^`\s]+\.(?:ts|tsx|js|jsx|mjs|cjs|sql|json))`/g;
 
+  // Skip refs containing glob/placeholder chars — those are templates,
+  // not concrete file refs. Examples: `apps/web/src/**/*.tsx`,
+  // `apps/server/src/modules/<module>/types.ts`,
+  // `packages/{shared,api-client}/**/*.ts`,
+  // `apps/server/src/migrations/NNN_*.sql`.
+  const PLACEHOLDER_CHARS = /[*?<>[\]{}]/;
+
+  // Aspirational/roadmap doc trees: dangling refs describe planned/future
+  // implementation, not current code. Report as warnings, not errors.
+  function isAspirational(relPath) {
+    if (relPath.startsWith("docs/launch/")) return true;
+    if (relPath.startsWith("docs/planning/")) return true;
+    if (
+      relPath.startsWith("docs/integrations/") &&
+      relPath.endsWith("-roadmap.md")
+    )
+      return true;
+    if (
+      relPath.startsWith("docs/audits/") &&
+      relPath.endsWith("-implementation-roadmap.md")
+    )
+      return true;
+    return false;
+  }
+
   let totalRefs = 0;
-  let danglingRefs = 0;
-  const danglingByFile = new Map();
+  let danglingErrors = 0;
+  let danglingWarns = 0;
+  const danglingByFile = new Map(); // relPath -> { aspirational: bool, refs: [] }
 
   for (const file of docsFiles) {
     const relPath = relative(ROOT, file);
@@ -189,30 +222,44 @@ function checkDanglingRefs() {
     // Check if this is the RN migration tracker (target-state refs are OK)
     if (relPath.includes("react-native-migration")) continue;
 
+    const aspirational = isAspirational(relPath);
+
     let refMatch;
     while ((refMatch = refRe.exec(content)) !== null) {
-      totalRefs++;
       const refPath = refMatch[1];
+      if (PLACEHOLDER_CHARS.test(refPath)) continue;
+      totalRefs++;
       const absRef = resolve(ROOT, refPath);
       if (!existsSync(absRef)) {
-        danglingRefs++;
+        if (aspirational) danglingWarns++;
+        else danglingErrors++;
         if (!danglingByFile.has(relPath)) {
-          danglingByFile.set(relPath, []);
+          danglingByFile.set(relPath, { aspirational, refs: [] });
         }
-        danglingByFile.get(relPath).push(refPath);
+        danglingByFile.get(relPath).refs.push(refPath);
       }
     }
   }
 
-  if (danglingRefs === 0) {
-    ok(`All ${totalRefs} source refs in docs resolve to existing files.`);
-  } else {
-    warn(
-      `${danglingRefs} of ${totalRefs} source refs in docs point to non-existent files:`,
+  if (danglingErrors === 0 && danglingWarns === 0) {
+    ok(
+      `All ${totalRefs} concrete source refs in docs resolve to existing files.`,
     );
-    for (const [doc, refs] of danglingByFile) {
+  } else {
+    if (danglingErrors > 0) {
+      error(
+        `${danglingErrors} of ${totalRefs} concrete source refs in non-aspirational docs point to non-existent files (Hard Rule #15 — update docs alongside code):`,
+      );
+    }
+    if (danglingWarns > 0) {
+      warn(
+        `${danglingWarns} of ${totalRefs} concrete source refs in aspirational docs (launch/planning/roadmap) point to non-existent files — these are planned, not current:`,
+      );
+    }
+    for (const [doc, { aspirational, refs }] of danglingByFile) {
       for (const ref of refs) {
-        warn(`  ${doc} → ${ref}`);
+        if (aspirational) warn(`  ${doc} → ${ref}`);
+        else error(`  ${doc} → ${ref}`);
       }
     }
   }

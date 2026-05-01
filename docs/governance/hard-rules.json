@@ -224,11 +224,14 @@
     },
     {
       "id": 15,
-      "title": "Read governance before coding; update docs alongside code",
+      "title": "Read governance before coding; update docs alongside code; internal docs in Ukrainian",
       "scope": ["**/*"],
       "severity": "blocker",
       "enforced_by": [
-        { "kind": "ci", "ref": "pnpm lint:governance-sync" },
+        {
+          "kind": "ci",
+          "ref": "pnpm lint:governance-sync (errors on dangling apps/packages/scripts refs in non-aspirational docs)"
+        },
         { "kind": "ci", "ref": "pnpm docs:check-freshness-coverage" },
         {
           "kind": "ci",

@@ -351,8 +351,9 @@ accepted.
 - **2FA / TOTP / passkeys.** Phase 4 при появі high-value Pro-юзерів. Better
   Auth `twoFactor` / `passkey` plugins готові.
 - **Magic-link sign-in.** Не на MVP. Email-deliverability через Resend
-  (`packages/api-client/src/endpoints/auth.ts`) дає повільний flow для
-  юзерів, які забули пароль.
+  (auth-endpoint-и Better Auth викликаються напряму через Better Auth client; на момент написання
+  окремого `packages/api-client/src/endpoints/<auth>.ts` wrapper-а немає — `/api/auth/*` оминає api-client)
+  дає повільний flow для юзерів, які забули пароль.
 - **Organization / team membership.** Sergeant — single-user product. Phase 8+
   для shared family-budget use-case.
 - **Audit log авторизаційних подій.** Better Auth не зберігає `auth_event`

@@ -1,6 +1,6 @@
 # Playbook: Add SQL Migration
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-01 by @devin-ai. **Next review:** 2026-07-30.
 > **Status:** Active
 
 **Trigger:** "Додати нове поле / таблицю в БД" / зміна схеми PostgreSQL / нова колонка для існуючої таблиці.
@@ -13,8 +13,8 @@
 
 ```bash
 ls apps/server/src/migrations/
-# Наприклад: 001_init.sql, 002_..., ..., 008_mono_integration.sql
-# Наступний файл — 009_*.sql
+# Наприклад: 001_noop.sql, 002_ai_usage_daily.sql, ..., 021_governance_audit.sql
+# Наступний файл — 022_*.sql
 ```
 
 Номер має бути **sequential, без gaps** (AGENTS.md rule #4).

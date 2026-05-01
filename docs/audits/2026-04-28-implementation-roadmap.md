@@ -1,6 +1,6 @@
 # Sergeant - Детальний План Реалізації Покращень
 
-> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Last validated:** 2026-05-01 by @devin-ai. **Next review:** 2026-07-30.
 > **Status:** Active
 
 > **Дата створення:** 2026-04-28
@@ -233,7 +233,7 @@ jest.mock("react-native", () => ({
 
 #### Завдання 1.4: розбити ProfilePage.tsx
 
-**Scope:** `apps/web/src/core/ProfilePage.tsx` (1060 LOC)
+**Scope:** `apps/web/src/core/profile/ProfilePage.tsx` (1060 LOC) — файл уже переїхав у підпапку `profile/`
 
 **Запропонована структура:**
 

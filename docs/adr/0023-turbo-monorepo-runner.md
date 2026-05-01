@@ -15,7 +15,7 @@
 
 ## 0. TL;DR
 
-Sergeant — pnpm-workspace монорепо з 4 apps і 9 packages. Як **task-runner**
+Sergeant — pnpm-workspace монорепо з 5 apps і 10 packages. Як **task-runner**
 поверх workspace ми використовуємо **Turborepo** (`turbo@^2.3.3`). Усі
 кросс-пакетні команди (`build`, `typecheck`, `test`, `test:coverage`, `dev`)
 проходять через `turbo run …`; локальні пакетні скрипти (`lint`, `format`)
@@ -34,7 +34,7 @@ Sergeant — pnpm-workspace монорепо з 4 apps і 9 packages. Як **tas
 
 ## Context and Problem Statement
 
-Workspace із 4 apps + 9 packages дає кросс-пакетні залежності, які pnpm
+Workspace із 5 apps + 10 packages дає кросс-пакетні залежності, які pnpm
 сам по собі **не оркеструє**: коли `apps/web` залежить від `@sergeant/api-client`
 і `@sergeant/shared`, `pnpm --filter @sergeant/web build` не білдить
 залежності — він покладається на те, що ти попередньо зробив `pnpm -r build`

@@ -274,8 +274,10 @@ accepted.
 **Негативні:**
 
 - Shell JS повинен знати, в якому контексті живе (WebView vs browser) — через
-  guard `isCapacitor()` у `apps/web/src/shared/lib/platform.ts`. Мусимо
-  пам'ятати на code-review.
+  guard `isCapacitor()` у `packages/shared/src/lib/platform.ts` (ре-експорт
+  через `@sergeant/shared`; раніше жив у `apps/web/src/shared/lib/<platform>.ts`
+  і був винесений у shared разом з ADR-0024 монорепо split-ом — `<…>` на
+  старому шляху, бо файлу там вже немає). Мусимо пам'ятати на code-review.
 - Revoke-flow: cookie на web expire-ить сам, а bearer треба явно видалити зі
   SecureStore/Preferences + інвалідувати на сервері. Реалізовано у
   `sign-out` handler-і, але з trust-but-verify нотаткою у тесті.

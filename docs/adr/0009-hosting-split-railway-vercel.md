@@ -144,9 +144,11 @@ accepted.
    [`docs/observability/SLO.md`](../observability/SLO.md#5-ai-anthropic-slo-970-)).
 3. **Postgres** — міграції, pool `pg.Pool`, `NOTIFY`-тригери для plan-cache
    invalidation (ADR-0001 §1.3), `Testcontainers` для тестів.
-4. **Background-friendly** — cron для Monobank-backfill
-   (`apps/server/src/modules/finyk/monoBackfillCron.ts`), хоча naші крони поки
-   in-process scheduled tasks, не external cron-service.
+4. **Background-friendly** — cron для Monobank-backfill (планується як
+   `apps/server/src/modules/mono/<backfillCron>.ts` — placeholder/proposed
+   шлях; на момент написання ADR реалізації ще немає, це описує майбутню
+   потребу). Наразі крони — in-process scheduled tasks (див.
+   `apps/server/src/lib/cron/`), не external cron-service.
 5. **Dockerfile-based deploy** — [`Dockerfile.api`](../../Dockerfile.api) уже є,
    pre-deploy команда для міграцій передбачена.
 
