@@ -204,7 +204,8 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "timezone": "Europe/Kyiv"
+    "timezone": "Europe/Kyiv",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
   },
   "active": false,
   "tags": []

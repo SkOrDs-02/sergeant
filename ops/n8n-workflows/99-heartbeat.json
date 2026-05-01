@@ -125,7 +125,8 @@
     "executionOrder": "v1",
     "timezone": "Europe/Kyiv",
     "saveManualExecutions": false,
-    "saveExecutionProgress": false
+    "saveExecutionProgress": false,
+    "errorWorkflow": "iC82EFJzqBny9kxI"
   },
   "tags": [
     {
