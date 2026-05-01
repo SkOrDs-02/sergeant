@@ -131,6 +131,17 @@ interface StreamEvent {
   type: string;
   delta?: { type?: string; text?: string; stop_reason?: string };
   message?: { usage?: StreamUsage };
+  /**
+   * Anthropic надсилає `output_tokens` НЕ у `message_start` (там лише
+   * `input_tokens` + cache-токени), а у фінальному `message_delta` подію
+   * як top-level `usage.output_tokens`. Без цього merge cost-метрика
+   * систематично занижує `output`-вартість (для Sonnet — ~70-80% бюджету,
+   * бо output $15/Mtok vs input $3/Mtok).
+   *
+   * Доку з SSE-схемою: https://docs.anthropic.com/en/api/messages-streaming
+   * (секція "Event types" → message_delta).
+   */
+  usage?: StreamUsage;
 }
 
 /**
@@ -537,8 +548,17 @@ async function streamOneIterationToSse(
           if (!res.writableEnded) {
             res.write(`data: ${JSON.stringify({ t: ev.delta.text })}\n\n`);
           }
-        } else if (ev.type === "message_delta" && ev.delta?.stop_reason) {
-          stopReason = ev.delta.stop_reason;
+        } else if (ev.type === "message_delta") {
+          if (ev.delta?.stop_reason) {
+            stopReason = ev.delta.stop_reason;
+          }
+          // Top-level `usage.output_tokens` приходить ЛИШЕ тут (див.
+          // коментар біля `StreamEvent.usage`). Merge у `usage`, що ми
+          // зібрали з `message_start`, інакше кост рахується тільки на
+          // input + cache, і `kind=completion` лічильник лишається порожнім.
+          if (ev.usage?.output_tokens != null) {
+            usage = { ...(usage ?? {}), output_tokens: ev.usage.output_tokens };
+          }
         } else if (ev.type === "message_start" && ev.message?.usage) {
           usage = ev.message.usage;
         }

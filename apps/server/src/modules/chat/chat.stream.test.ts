@@ -724,6 +724,46 @@ describe("chat handler — SSE prompt-cache metric", () => {
     expect(call[2]).toMatchObject({ cache_read_input_tokens: 0 });
   });
 
+  it("output_tokens із message_delta мерджаться з input_tokens із message_start", async () => {
+    // Anthropic надсилає `output_tokens` ЛИШЕ у фінальному `message_delta`
+    // (як top-level `usage.output_tokens`), а `input_tokens` + cache-токени —
+    // у `message_start`. Без merge `kind=completion` лічильник лишається
+    // порожнім і `ai_cost_estimate_usd_total` систематично занижує вартість
+    // (для Sonnet output = $15/Mtok vs input = $3/Mtok).
+    anthropicMessagesStream.mockResolvedValueOnce({
+      response: makeUpstreamSse([
+        {
+          type: "message_start",
+          message: {
+            usage: { input_tokens: 1000, cache_read_input_tokens: 4096 },
+          },
+        },
+        {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: "ok" },
+        },
+        {
+          type: "message_delta",
+          delta: { stop_reason: "end_turn" },
+          usage: { output_tokens: 250 },
+        },
+      ]),
+      recordStreamEnd: vi.fn(),
+    });
+
+    const req = makeReq(makeStreamReqBody());
+    const res = makeSseRes();
+    await handler(req, res);
+
+    expect(recordAnthropicUsageMock).toHaveBeenCalledTimes(1);
+    const call = recordAnthropicUsageMock.mock.calls[0];
+    expect(call[2]).toMatchObject({
+      input_tokens: 1000,
+      cache_read_input_tokens: 4096,
+      output_tokens: 250,
+    });
+  });
+
   it("без message_start usage → recordAnthropicUsage не викликається", async () => {
     anthropicMessagesStream.mockResolvedValueOnce({
       response: makeUpstreamSse([
