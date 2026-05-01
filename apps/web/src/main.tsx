@@ -2,12 +2,13 @@
 import { lazy, Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Analytics } from "@vercel/analytics/react";
 import App from "./core/App";
 import "./index.css";
 import { storageManager } from "@shared/lib/storageManager.js";
 import { createAppQueryClient } from "@shared/lib/queryClient.js";
+import { createWebPersistOptions } from "@shared/lib/queryClientPersister.js";
 // Registers the web `navigator.vibrate`-based adapter on the shared
 // haptic contract (`@sergeant/shared`). Import for side effects only.
 import "@shared/lib/haptic";
@@ -31,6 +32,13 @@ import { runDemoSeedFromUrl } from "./core/onboarding/seedDemoData.js";
 import { isCapacitor } from "@sergeant/shared";
 
 const queryClient = createAppQueryClient();
+// Persistent IDB-backed snapshot для warm-start: на холодному старті
+// PWA / Capacitor-shell `PersistQueryClientProvider` гідрирує
+// `QueryCache` з диску до того, як React зможе монтувати `useQuery`,
+// тому last-known networth / digest / транзакції видно одразу, а
+// background revalidate підтягує свіжі дані. Деталі — у
+// `queryClientPersister.ts`.
+const persistOptions = createWebPersistOptions();
 
 // react-query devtools are only useful in development. Lazy-importing keeps
 // them out of the production bundle entirely — the tree-shaker can drop the
@@ -86,7 +94,10 @@ function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <ErrorBoundary fallback={ErrorFallback}>
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={persistOptions}
+    >
       <BrowserRouter>
         <App />
       </BrowserRouter>
@@ -99,7 +110,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           />
         </Suspense>
       ) : null}
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   </ErrorBoundary>,
 );
 

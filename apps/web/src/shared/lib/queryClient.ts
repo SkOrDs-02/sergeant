@@ -5,9 +5,14 @@
  *  - retry only for transient network errors (not for 4xx);
  *  - `staleTime` 60s — агресивне повторне використання кешу для вкладок,
  *    що часто ре-маунтяться (модалки, переходи між Hub і модулями);
- *  - `gcTime` 5хв — тримаємо дані в пам'яті після того, як
- *    останній observer відписався, але не надовго, щоб не тримати
- *    застарілі дані після логауту.
+ *  - `gcTime` 24h — горизонт, у якому persister (`queryClientPersister.ts`)
+ *    встигає зробити warm-start після холодного старту PWA.
+ *    `PersistQueryClientProvider` персистить лише queries, які досі
+ *    живі в `QueryCache` (`gcTime` ще не сплив); якщо тримати тут 5хв,
+ *    то після виходу з вкладки на ніч кеш у пам'яті вже зник, і на
+ *    наступному cold-start hydrate знаходить порожній snapshot. 24h
+ *    — той самий горизонт, що використовує `apps/mobile`
+ *    (`QueryProvider.tsx`), щоб контракт warm-start був симетричним.
  *  - `networkMode: "offlineFirst"` для запитів — PWA повинен малювати
  *    з кешу, коли мережі немає, а не падати в помилку одразу.
  *    Для мутацій залишаємо дефолт `"online"`, щоб важкі AI-виклики
@@ -88,7 +93,7 @@ export function createAppQueryClient(): QueryClient {
           return isRetriableError(error);
         },
         staleTime: 60_000,
-        gcTime: 5 * 60_000,
+        gcTime: 24 * 60 * 60 * 1_000,
         refetchOnWindowFocus: false,
         networkMode: "offlineFirst",
       },

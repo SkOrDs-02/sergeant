@@ -45,6 +45,13 @@ export default defineConfig(({ mode }) => {
         isCapacitorBuild ? "capacitor" : "web",
       ),
       __SW_BUILD_ID__: JSON.stringify(buildId),
+      // Той самий buildId, доступний у головному бандлі (а не лише у
+      // SW). Persister React Query (`queryClientPersister.ts`)
+      // використовує його як `buster`, щоб новий деплой автоматично
+      // інвалідовував старий IDB-snapshot — інакше при changed
+      // response-shape (Hard Rule #3) кеш на диску ламає UI до
+      // наступного revalidate.
+      __APP_BUILD_ID__: JSON.stringify(buildId),
     },
     plugins: [
       react(),
