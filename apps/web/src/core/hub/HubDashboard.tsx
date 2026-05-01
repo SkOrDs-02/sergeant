@@ -414,7 +414,13 @@ export function HubDashboard({
             />
           ) : (
             <>
-              <StreakIndicator />
+              {/* Single-hero rule: streak chip is suppressed while a
+               * dedicated hero (FirstAction / SoftAuth) is taking over
+               * the top of the dashboard. Two competing eyebrows above
+               * the hero card produced the «card avalanche» the IA pass
+               * is fixing — streak still re-appears once the hero falls
+               * back to TodayFocus or the default state. */}
+              {!firstActionVisible && !showSoftAuth && <StreakIndicator />}
               {hero}
               {showChecklist && primaryModule && (
                 <ModuleChecklist
@@ -452,25 +458,35 @@ export function HubDashboard({
             <SectionHeading as="h2" size="xs" className="!px-0">
               Модулі
             </SectionHeading>
+            {/* Edit affordance — icon-only when idle so it stops competing
+             * with the H2 «Moduli» for the user's eye. Switches to a clear
+             * «Gotovo» pill while edit mode is active so the exit path stays
+             * obvious. */}
             <button
               type="button"
               onClick={toggleEditMode}
               aria-pressed={editMode}
+              aria-label={
+                editMode
+                  ? "Завершити налаштування порядку модулів"
+                  : "Налаштувати порядок модулів"
+              }
+              title={editMode ? "Готово" : "Налаштувати"}
               className={cn(
-                "inline-flex items-center gap-1.5 text-2xs font-medium rounded-xl px-2 py-1 transition-colors",
+                "inline-flex items-center justify-center gap-1.5 text-2xs font-medium rounded-xl transition-colors",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                 editMode
-                  ? "bg-primary text-bg"
-                  : "text-muted hover:text-text hover:bg-panelHi",
+                  ? "bg-primary text-bg px-2.5 py-1"
+                  : "text-muted hover:text-text hover:bg-panelHi w-7 h-7",
               )}
             >
               <Icon
-                name="grip-vertical"
+                name={editMode ? "check" : "grip-vertical"}
                 size="xs"
                 strokeWidth={2}
                 aria-hidden
               />
-              {editMode ? "Готово" : "Налаштувати"}
+              {editMode ? <span>Готово</span> : null}
             </button>
           </div>
 
@@ -515,87 +531,70 @@ export function HubDashboard({
         </section>
       </StaggerChild>
 
-      {/* GROUP 2 — Insights (FTUX-gated): Підказки + Аналітика.
-       * До першого реального запису всі data-driven блоки приховуємо,
-       * бо вони порожні / сигнал «advice без даних»:
-       * - AssistantAdviceCard — coach працює на історії; нічого корисного.
-       * - DailyNudge — нудж за сценаріями, які ще не існують.
-       * - HubInsightsPanel / WeeklyDigest — порожня історія.
-       * Після `hasRealEntry === true` обидві секції зʼявляються разом. */}
+      {/* GROUP 2 — «Інсайти» (FTUX-gated): merged Підказки + Аналітика.
+       *
+       * Previously these rendered as TWO separate `CollapsibleSection`s
+       * stacked vertically (each with its own pill chrome, icon, and
+       * subtitle), so the user paid an extra collapsed-card tax for
+       * essentially the same kind of content — «AI dragging insights
+       * out of recent activity». Merging them under one outer
+       * «Інсайти» wrapper keeps both subsections discoverable while
+       * cutting the heading count in half (per UX audit «Dashboard
+       * card avalanche»).
+       *
+       * До першого реального запису весь блок прихований — всі data-driven
+       * всередині (AssistantAdvice / HubInsightsPanel / WeeklyDigest)
+       * все одно порожні без історії. */}
       {hasRealEntry && (
         <StaggerChild index={2}>
-          <div className="space-y-4">
-            {/* «Підказки» секція: AssistantAdvice + DailyNudge — обидві
-             * картки показували пораду на день, але рендерились як два
-             * незалежних блоки з різним візуальним chrome. Обʼєднання
-             * під одним SectionHeading знижує card-density (#1130). */}
-            <CollapsibleSection
-              storageKey="sergeant:hub.hints.open"
-              defaultOpen={insightsDefaultOpen}
-              title="Підказки"
-              collapsedIcon="lightbulb"
-              collapsedSubtitle={
-                coachLoading
-                  ? "Готую AI-пораду…"
-                  : coachError
-                    ? "Не вдалось отримати AI-пораду"
-                    : activeNudge && !reengagement.show
-                      ? "AI-порада + нагадування"
-                      : "AI-порада на день"
-              }
-            >
-              <AssistantAdviceCard
-                insight={coachInsightText}
-                loading={coachLoading}
-                error={coachError}
-                onRefresh={coachRefresh}
+          <CollapsibleSection
+            storageKey="sergeant:hub.insights.open"
+            defaultOpen={insightsDefaultOpen}
+            title="Інсайти"
+            collapsedIcon="sparkles"
+            collapsedSubtitle={
+              coachLoading
+                ? "Готую AI-пораду…"
+                : coachError
+                  ? "Не вдалось отримати AI-пораду"
+                  : rest.length > 0
+                    ? `AI-порада · ${rest.length} ${pluralize(rest.length, "інсайт", "інсайти", "інсайтів")}${
+                        digestFresh ? " · свіжий дайджест" : ""
+                      }`
+                    : digestFresh
+                      ? "AI-порада + свіжий дайджест"
+                      : activeNudge && !reengagement.show
+                        ? "AI-порада + нагадування"
+                        : "AI-порада на день"
+            }
+          >
+            <AssistantAdviceCard
+              insight={coachInsightText}
+              loading={coachLoading}
+              error={coachError}
+              onRefresh={coachRefresh}
+            />
+            {activeNudge && !reengagement.show && (
+              <DailyNudge
+                nudge={activeNudge}
+                sessionDays={sessionDays}
+                onDismiss={() => setNudgeDismissed(true)}
               />
-              {activeNudge && !reengagement.show && (
-                <DailyNudge
-                  nudge={activeNudge}
-                  sessionDays={sessionDays}
-                  onDismiss={() => setNudgeDismissed(true)}
-                />
-              )}
-            </CollapsibleSection>
-
-            {/* «Аналітика» секція: insights-panel + weekly-digest —
-             * data-driven блоки на історії. Collapsible per UX audit —
-             * users who check analytics weekly can collapse the section
-             * to cut scroll depth. */}
-            <CollapsibleSection
-              storageKey="sergeant:hub.analytics.open"
-              defaultOpen={insightsDefaultOpen}
-              title="Аналітика"
-              collapsedIcon="bar-chart"
-              collapsedSubtitle={
-                rest.length > 0
-                  ? `${rest.length} ${pluralize(rest.length, "інсайт", "інсайти", "інсайтів")}${
-                      digestFresh ? " · свіжий дайджест" : ""
-                    }`
-                  : digestFresh
-                    ? "Свіжий щотижневий дайджест"
-                    : showDigestFooter
-                      ? "Щотижневий дайджест"
-                      : "Без нових інсайтів"
-              }
-            >
-              <HubInsightsPanel
-                items={rest}
-                onOpenModule={openInsightTarget}
-                onDismiss={dismiss}
+            )}
+            <HubInsightsPanel
+              items={rest}
+              onOpenModule={openInsightTarget}
+              onDismiss={dismiss}
+            />
+            {digestExpanded ? (
+              <WeeklyDigestCard onCollapse={() => setDigestExpanded(false)} />
+            ) : showDigestFooter ? (
+              <WeeklyDigestFooter
+                fresh={digestFresh}
+                onExpand={() => setDigestExpanded(true)}
               />
-
-              {digestExpanded ? (
-                <WeeklyDigestCard onCollapse={() => setDigestExpanded(false)} />
-              ) : showDigestFooter ? (
-                <WeeklyDigestFooter
-                  fresh={digestFresh}
-                  onExpand={() => setDigestExpanded(true)}
-                />
-              ) : null}
-            </CollapsibleSection>
-          </div>
+            ) : null}
+          </CollapsibleSection>
         </StaggerChild>
       )}
 
