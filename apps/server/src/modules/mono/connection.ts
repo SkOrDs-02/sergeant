@@ -25,6 +25,9 @@ import type { EncryptedToken } from "./crypto.js";
  * Gated behind `MONO_WEBHOOK_ENABLED`.
  */
 
+/** Timeout for outbound Monobank API calls (client-info, webhook register). */
+const MONO_API_TIMEOUT_MS = 15_000;
+
 interface AuthedRequest extends Request {
   user?: { id: string };
 }
@@ -85,10 +88,26 @@ export async function connectHandler(
     return;
   }
 
-  const clientInfoRes = await fetch(
-    "https://api.monobank.ua/personal/client-info",
-    { headers: { "X-Token": token } },
-  );
+  let clientInfoRes: globalThis.Response;
+  try {
+    clientInfoRes = await fetch(
+      "https://api.monobank.ua/personal/client-info",
+      {
+        headers: { "X-Token": token },
+        signal: AbortSignal.timeout(MONO_API_TIMEOUT_MS),
+      },
+    );
+  } catch (err) {
+    logger.warn({
+      msg: "mono_connect_client_info_timeout",
+      fingerprint: tokenFingerprint(token),
+      err: err instanceof Error ? err.message : String(err),
+    });
+    res
+      .status(504)
+      .json({ error: "Monobank API не відповідає. Спробуйте пізніше." });
+    return;
+  }
   if (!clientInfoRes.ok) {
     const body = await clientInfoRes.text();
     logger.warn({
@@ -113,14 +132,28 @@ export async function connectHandler(
   const webhookSecret = crypto.randomBytes(32).toString("hex");
   const webhookUrl = `${env.PUBLIC_API_BASE_URL}/api/mono/webhook/${webhookSecret}`;
 
-  const registerRes = await fetch("https://api.monobank.ua/personal/webhook", {
-    method: "POST",
-    headers: {
-      "X-Token": token,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ webHookUrl: webhookUrl }),
-  });
+  let registerRes: globalThis.Response;
+  try {
+    registerRes = await fetch("https://api.monobank.ua/personal/webhook", {
+      method: "POST",
+      headers: {
+        "X-Token": token,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ webHookUrl: webhookUrl }),
+      signal: AbortSignal.timeout(MONO_API_TIMEOUT_MS),
+    });
+  } catch (err) {
+    logger.warn({
+      msg: "mono_webhook_register_timeout",
+      fingerprint: tokenFingerprint(token),
+      err: err instanceof Error ? err.message : String(err),
+    });
+    res
+      .status(504)
+      .json({ error: "Monobank API не відповідає. Спробуйте пізніше." });
+    return;
+  }
 
   if (!registerRes.ok) {
     const body = await registerRes.text();
@@ -259,6 +292,7 @@ export async function disconnectHandler(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ webHookUrl: "" }),
+        signal: AbortSignal.timeout(MONO_API_TIMEOUT_MS),
       });
     } catch (err) {
       logger.warn({ msg: "mono_webhook_unregister_failed", err });

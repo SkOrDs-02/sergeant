@@ -312,10 +312,13 @@ export function createHttpClient(config: HttpClientConfig = {}): HttpClient {
         cause && typeof (cause as { name?: unknown }).name === "string"
           ? (cause as { name: string }).name
           : "";
-      if (name === "AbortError") {
+      if (name === "AbortError" || name === "TimeoutError") {
         throw new ApiError({
           kind: "aborted",
-          message: "Запит скасовано",
+          message:
+            name === "TimeoutError"
+              ? "Час очікування вичерпано"
+              : "Запит скасовано",
           url,
           cause,
         });

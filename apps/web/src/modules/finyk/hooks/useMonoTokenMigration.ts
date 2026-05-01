@@ -73,7 +73,9 @@ export function useMonoTokenMigration(isLoggedIn: boolean): void {
 
     (async () => {
       try {
-        await monoWebhookApi.connect(legacyToken.trim());
+        await monoWebhookApi.connect(legacyToken.trim(), {
+          signal: AbortSignal.timeout(30_000),
+        });
         removeLegacyTokenKeys();
         safeWriteLS(MIGRATION_DONE_KEY, "1");
 

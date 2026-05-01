@@ -90,7 +90,10 @@ describe("useMonoTokenMigration", () => {
     });
 
     await waitFor(() => {
-      expect(mockedConnect).toHaveBeenCalledWith("my-legacy-token");
+      expect(mockedConnect).toHaveBeenCalledWith(
+        "my-legacy-token",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
     });
 
     // Legacy token keys should be removed
@@ -116,7 +119,10 @@ describe("useMonoTokenMigration", () => {
     });
 
     await waitFor(() => {
-      expect(mockedConnect).toHaveBeenCalledWith("remembered-token");
+      expect(mockedConnect).toHaveBeenCalledWith(
+        "remembered-token",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
     });
 
     expect(localStorage.getItem("finyk_token_remembered")).toBeNull();

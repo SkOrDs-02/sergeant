@@ -154,7 +154,9 @@ export function FinykSection() {
     setWebhookConnecting(true);
     setWebhookError("");
     try {
-      await monoWebhookApi.connect(clean);
+      await monoWebhookApi.connect(clean, {
+        signal: AbortSignal.timeout(30_000),
+      });
       setWebhookTokenInput("");
       await queryClient.invalidateQueries({
         queryKey: finykKeys.monoSyncState,
@@ -169,6 +171,8 @@ export function FinykSection() {
           e.serverMessage ||
             "Токен Monobank недійсний або закінчився. Оновіть токен.",
         );
+      } else if (isApiError(e) && e.kind === "aborted") {
+        setWebhookError("Monobank API не відповідає. Спробуйте пізніше.");
       } else {
         setWebhookError(
           e instanceof Error && e.message ? e.message : "Помилка підключення",

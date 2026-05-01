@@ -200,6 +200,33 @@ describe("connectHandler", () => {
     expect(res.statusCode).toBe(502);
     expect(res.body.error).toMatch(/register webhook/i);
   });
+
+  it("returns 504 when client-info fetch times out", async () => {
+    mockFetch.mockRejectedValueOnce(
+      new DOMException("signal timed out", "TimeoutError"),
+    );
+
+    const res = makeRes();
+    await connectHandler(makeReq({ token: "valid_personal_token_12345" }), res);
+    expect(res.statusCode).toBe(504);
+    expect(res.body.error).toMatch(/не відповідає/i);
+  });
+
+  it("returns 504 when webhook registration fetch times out", async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ accounts: [] }),
+      })
+      .mockRejectedValueOnce(
+        new DOMException("signal timed out", "TimeoutError"),
+      );
+
+    const res = makeRes();
+    await connectHandler(makeReq({ token: "valid_personal_token_12345" }), res);
+    expect(res.statusCode).toBe(504);
+    expect(res.body.error).toMatch(/не відповідає/i);
+  });
 });
 
 describe("disconnectHandler", () => {

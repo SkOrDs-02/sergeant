@@ -177,7 +177,10 @@ describe("useMonobankWebhook", () => {
       await result.current.connect("test-token-123");
     });
 
-    expect(mockedConnect).toHaveBeenCalledWith("test-token-123");
+    expect(mockedConnect).toHaveBeenCalledWith(
+      "test-token-123",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
     // Token should NOT be in localStorage or sessionStorage
     expect(localStorage.getItem("finyk_token")).toBeNull();
     expect(localStorage.getItem("finyk_token_remembered")).toBeNull();

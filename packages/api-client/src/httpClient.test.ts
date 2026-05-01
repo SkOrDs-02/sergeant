@@ -167,6 +167,15 @@ describe("httpClient — помилки", () => {
     expect((err as ApiError).kind).toBe("aborted");
   });
 
+  it("timeout-помилка: ApiError.kind='aborted' для TimeoutError", async () => {
+    const timeoutErr = new DOMException("signal timed out", "TimeoutError");
+    mockFetchOnce(timeoutErr);
+    const err = await http.get("/api/x").catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).kind).toBe("aborted");
+    expect((err as ApiError).message).toBe("Час очікування вичерпано");
+  });
+
   it("HTML замість JSON на 2xx → ApiError.kind='parse', bodyText збережено", async () => {
     mockFetchOnce(textResponse("<!doctype html><html></html>"));
     const err = await http.get("/api/x").catch((e: unknown) => e);

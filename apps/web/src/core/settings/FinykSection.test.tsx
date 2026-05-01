@@ -136,7 +136,10 @@ describe("FinykSection", () => {
     fireEvent.click(btn);
 
     await waitFor(() => {
-      expect(mockedConnect).toHaveBeenCalledWith("my-webhook-token");
+      expect(mockedConnect).toHaveBeenCalledWith(
+        "my-webhook-token",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
     });
 
     // Token must NOT be stored in browser — server-side only post roadmap-A.
