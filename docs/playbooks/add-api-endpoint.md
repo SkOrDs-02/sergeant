@@ -1,113 +1,79 @@
 # Playbook: Add API Endpoint
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-30.
 > **Status:** Active
 
-**Trigger:** "Додати новий endpoint в apps/server" / нова API-функціональність / розширення REST API.
+**Trigger:** "Додати новий endpoint в `apps/server`" / нова API-функціональність / зміна REST surface, яку будуть споживати web, mobile або console surfaces.
 
----
+## Owner surface
+
+- Primary surface: `apps/server`
+- Coupled surface: `packages/api-client`
+- Governing skill: `sergeant-server-api`
+
+## Required context
+
+- Почни з `sergeant-start-here`, потім відкрий `sergeant-server-api`.
+- Якщо endpoint потребує schema change, спочатку виконай [`add-sql-migration.md`](./add-sql-migration.md).
+- Звір hard rules #1 і #3 в [AGENTS.md](../../AGENTS.md).
 
 ## Steps
 
-### 1. Створити handler
+### 1. Визнач контракт до коду
 
-Створити або оновити handler у `apps/server/src/modules/<module>/`:
+- Який route, method, auth mode і response shape потрібні.
+- Який модуль володіє endpoint.
+- Які клієнти споживатимуть endpoint.
 
-```ts
-// apps/server/src/modules/<module>/http/<endpoint>.ts
-import { z } from "zod";
-import type { Request, Response } from "express";
+Якщо endpoint змінює product behavior, занотуй короткий spec у `docs/superpowers/specs/` або в PR description.
 
-const QuerySchema = z.object({
-  // валідація query params
-});
+### 2. Додай або онови server handler
 
-export async function myEndpointHandler(req: Request, res: Response) {
-  const query = QuerySchema.parse(req.query);
-  // бізнес-логіка
-  res.json({ data: result });
-}
-```
+- Розмісти route в правильному module subtree.
+- Валідовуй `params`, `query` і `body` через `zod`.
+- Тримай business logic в module layer, а не прямо в router glue.
+- У serializer завжди роби `bigint -> number`.
 
-Правила:
+### 3. Зареєструй route і auth semantics
 
-- Використовувати **zod** для валідації (не ручний `req.body.X`).
-- Error handling через `asyncHandler` + typed errors (`ExternalServiceError`, `ValidationError`).
-- Bigint→number coercion у response serializer (AGENTS.md rule #1).
+- Додай route в правильний router.
+- Якщо endpoint потребує session, підключи відповідний auth middleware.
+- Якщо endpoint public, явно перевір rate limit і abuse surface.
 
-### 2. Додати zod-schema
+### 4. Синхронізуй client contract
 
-Якщо endpoint приймає body або query params — створити або оновити schema в `http/schemas.ts`:
+- Онови `packages/api-client/src/endpoints/*`.
+- Збери triplet: server response shape, `api-client` type, test.
+- Якщо web/mobile використовує React Query, далі зміни мають іти через відповідний hook/playbook, а не ad-hoc fetch.
 
-```ts
-export const MyEndpointBodySchema = z.object({
-  field: z.string(),
-  count: z.number().int().positive(),
-});
-```
+### 5. Додай або онови тести
 
-### 3. Зареєструвати route
+- Unit/integration тести на happy path.
+- Негативний тест на invalid input або auth failure.
+- Regression check на shape, особливо для числових полів і дат.
 
-Додати route у відповідний router файл:
+### 6. Онови docs, якщо endpoint став канонічним surface
 
-```ts
-router.get("/api/<module>/<endpoint>", asyncHandler(myEndpointHandler));
-```
-
-### 4. Оновити типи в `packages/api-client`
-
-Додати endpoint у `packages/api-client/src/endpoints/<module>.ts` (AGENTS.md rule #3):
-
-```ts
-export async function myEndpoint(params: MyParams): Promise<MyResponse> {
-  return httpClient.get("/api/<module>/<endpoint>", { params });
-}
-```
-
-Типи request і response мають збігатися з серверним handler-ом.
-
-### 5. Тести
-
-```bash
-# Unit-тест для handler-а
-pnpm --filter @sergeant/server exec vitest run apps/server/src/modules/<module>/
-
-# Перевірити що zod відхиляє невалідний input
-# Перевірити bigint coercion у snapshot-тесті (якщо є DB)
-```
-
-### 6. Prometheus label (якщо потрібно)
-
-Якщо endpoint потребує окремого моніторингу — перевірити що `path` label коректно групується в `http_requests_total` метриці.
-
-### 7. Створити PR
-
-- Branch: `devin/<unix-ts>-feat-<module>-<endpoint>`
-- Commit: `feat(server): add <method> /api/<module>/<endpoint>`
-- PR description: що робить endpoint, request/response shape, які клієнти його використовують.
-
----
+- API doc / architecture note / playbook лише якщо це новий повторюваний спосіб роботи або новий contract boundary.
 
 ## Verification
 
-- [ ] `pnpm lint` — green
-- [ ] `pnpm typecheck` — green
-- [ ] Server тести — green
-- [ ] Zod-schema відхиляє невалідний payload
-- [ ] Bigint→number coercion у serializer (rule #1)
-- [ ] Типи в `packages/api-client` оновлені (rule #3)
-- [ ] Endpoint доступний через `curl` або Playwright E2E
+- [ ] `pnpm lint`
+- [ ] `pnpm typecheck`
+- [ ] `pnpm test`
+- [ ] `pnpm api:check-openapi`
+- [ ] `packages/api-client` синхронізовано з сервером
+- [ ] `bigint` не витікає у відповіді як `string`
 
-## Notes
+## When not to use this playbook
 
-- Express 4 з `asyncHandler` wrapper для async route handlers.
-- Structured logging через Pino — кожен request має `requestId` в ALS context.
-- Якщо endpoint потребує нової DB-таблиці — спочатку [add-sql-migration.md](add-sql-migration.md).
-- Auth через Better Auth — перевірити middleware якщо endpoint потребує авторизації.
+- Зміна лише в UI-споживанні існуючого endpoint.
+- Потрібна тільки DB migration без нового HTTP surface.
+- Працюєш з HubChat tool або internal console agent, а не public/app API.
 
-## See also
+## Related playbooks and skills
 
-- [add-sql-migration.md](add-sql-migration.md) — якщо потрібна міграція БД
-- [backend-tech-debt.md](../tech-debt/backend.md) — конвенції серверного коду
-- [AGENTS.md](../../AGENTS.md) — rule #1 (bigint), rule #3 (API contract)
-- [api-v1.md](../architecture/api-v1.md) — документація API
+- [add-sql-migration.md](./add-sql-migration.md)
+- [fix-failing-ci.md](./fix-failing-ci.md)
+- Skill: `sergeant-server-api`
+- Skill: `sergeant-data-and-migrations`

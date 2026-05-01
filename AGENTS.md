@@ -5,6 +5,16 @@
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/superpowers/agent-skills-catalog.md`.
 
+## Agent operating system
+
+- Start here: `.agents/skills/sergeant-start-here/SKILL.md`
+- Skill routing catalog: `docs/superpowers/agent-skills-catalog.md`
+- Workflow decision trees: `docs/superpowers/agent-workflows.md`
+- Execution recipes: `docs/playbooks/README.md`
+- Playbook lookup: `docs/playbooks/playbook-catalog.md`
+
+Repo policy lives here in `AGENTS.md`. Platform-specific wrappers such as `CLAUDE.md` and `DEVIN.md` only add runtime/tool notes and must not become parallel sources of truth.
+
 ## Repo overview
 
 - **pnpm 9** + **Turborepo** monorepo, **Node 20**, **TypeScript 6**.
@@ -534,7 +544,7 @@ Three animation tiers — every animation in the codebase belongs to exactly one
 | Tier          | Examples                                                       | Constraint                                                                                            |
 | ------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | **AMBIENT**   | `shimmer`, `pulse-soft`, `wiggle`                              | Looped; always behind `motion-safe:`; `prefers-reduced-motion` collapses to opacity-only              |
-| **RESPONSE** | `fade-in`, `slide-up`, `scale-in`, `press-scale`, `hover-lift` | One-shot, 150–300 ms, `ease-out`; fires once per user action                                          |
+| **RESPONSE**  | `fade-in`, `slide-up`, `scale-in`, `press-scale`, `hover-lift` | One-shot, 150–300 ms, `ease-out`; fires once per user action                                          |
 | **CELEBRATE** | `check-pop`, `bounce-in`, `success-pulse`, confetti burst      | Milestones only: first entry, streak 7/30/100/365, weekly goal hit. **Not** every checkbox completion |
 
 Rules:

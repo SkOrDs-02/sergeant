@@ -1,229 +1,71 @@
 # Playbook: Add HubChat Tool
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-30.
 > **Status:** Active
 
-**Trigger:** «Дай асистенту нову дію X» / «Додай tool в HubChat» / новий tool-call для Anthropic-асистента (наприклад `log_water`, `log_set`, `mark_habit_done`).
+**Trigger:** "Дай асистенту нову дію" / "Додай tool в HubChat" / зміна server tool definition, client executor або action card для HubChat orchestration.
 
----
+## Owner surface
 
-## Контекст
+- Primary surfaces: `apps/server/src/modules/chat/**`, `apps/web/src/core/lib/chatActions/**`
+- Governing skill: `sergeant-hubchat`
 
-HubChat tools визначаються **на сервері** (`apps/server/src/modules/chat/toolDefs/<domain>.ts`), але виконуються **на клієнті** (`apps/web/src/core/lib/chatActions/<domain>Actions.ts`). Сервер — тонкий пас-зрізу до Anthropic API. Тому новий tool — це 3-4 синхронні правки в різних файлах. Дивись «Architecture: AI tool execution path» в `AGENTS.md`.
+## Required context
 
----
+- Почни з `sergeant-start-here`, потім відкрий `sergeant-hubchat`.
+- Якщо tool торкає auth/session/account lifecycle, додатково звір `better-auth-best-practices`.
+- Якщо tool робить persistence або API call, звір відповідний surface skill.
 
 ## Steps
 
-### 1. Tool definition (server)
+### 1. Визнач tool contract
 
-Додати запис у `apps/server/src/modules/chat/toolDefs/<domain>.ts`. Доступні домени: `finyk`, `fizruk`, `nutrition`, `routine`, `crossModule`, `utility`, `memory`. Якщо tool належить до конкретного модуля — клади у цей файл; крос-модульні (`morning_briefing`, `weekly_summary`) — у `crossModule.ts`.
+- `name`, `description`, input schema, expected side effect, short success result.
+- Виріши, чи це safe tool, risky tool або purely informational tool.
+- Переконайся, що tool description допомагає моделі викликати його правильно, а не рекламно описує можливість.
 
-```ts
-// apps/server/src/modules/chat/toolDefs/nutrition.ts
-{
-  name: "log_water",
-  description:
-    "Залогувати випиту воду. Викликай коли користувач каже скільки води випив.",
-  input_schema: {
-    type: "object",
-    properties: {
-      amount_ml: {
-        type: "number",
-        description: "Кількість мілілітрів",
-      },
-      time: {
-        type: "string",
-        description: "Час прийому ISO 8601 (опціонально, default — зараз)",
-      },
-    },
-    required: ["amount_ml"],
-  },
-}
-```
+### 2. Додай server-side definition
 
-Description пишемо **українською** і **імперативно** (Anthropic вибирає tool за descriptions). Не «Tool that logs water», а «Залогувати випиту воду. Викликай коли...».
+- Розмісти tool у правильному `toolDefs/<domain>.ts`.
+- Зберігай domain ownership: cross-module tools не клади у випадковий module.
+- Перевір prompt-cache implications, якщо міняється великий shared tool list.
 
-### 2. Action type (client)
+### 3. Додай client executor path
 
-Додати typed action у `apps/web/src/core/lib/chatActions/types.ts`:
+- Додай typed action.
+- Реалізуй executor або local action handler.
+- Не роби raw `localStorage`; використовуй Sergeant wrappers.
+- Не ховай server-side side effects у client orchestration без явного контролю.
 
-```ts
-export interface LogWaterAction {
-  name: "log_water";
-  input: { amount_ml: number; time?: string };
-}
+### 4. Додай user-facing card або feedback
 
-export type ChatAction =
-  | ...
-  | LogWaterAction;
-```
+- Якщо tool user-visible, онови action card/title mapping.
+- Для risky tools додай proper labeling.
+- Success і failure states мають відрізнятись текстом і тоном.
 
-`name` має точно збігатися з `name` з tool definition.
+### 5. Додай tests і regression coverage
 
-### 3. Action handler (client)
-
-Додати case у відповідний `chatActions/<domain>Actions.ts`:
-
-```ts
-// apps/web/src/core/lib/chatActions/nutritionActions.ts
-case "log_water": {
-  const { amount_ml, time } = (action as LogWaterAction).input;
-  const log = ls<WaterEntry[]>("nutrition_water_log_v1", []);
-  log.push({
-    id: crypto.randomUUID(),
-    amount_ml,
-    ts: time ? Date.parse(time) : Date.now(),
-  });
-  lsSet("nutrition_water_log_v1", log);
-  return `Залоговано ${amount_ml} мл води`;
-}
-```
-
-Правила handler-а:
-
-- **Повертає рядок** — це `tool_result`, який модель побачить наступним кроком. Має бути коротким і інформативним.
-- При помилці — викидай `Error`; `executeAction` обгортає в `Помилка виконання: ...`.
-- Запис у `localStorage` через `ls`/`lsSet` helper-и (НЕ `localStorage.setItem` напряму).
-- Якщо tool пише в API — використовуй `@sergeant/api-client`, не `fetch`.
-
-### 4. Action card (опціонально, але майже завжди)
-
-Якщо tool — user-visible action (тобто не `morning_briefing`-style summary), додай мапер у `apps/web/src/core/lib/hubChatActionCards.ts`:
-
-```ts
-case "log_water": {
-  const amount = typeof input.amount_ml === "number" ? input.amount_ml : 0;
-  return {
-    icon: "droplet",
-    title: titleFor(name, status), // → "Воду залоговано"
-    summary: `${amount} мл`,
-  };
-}
-```
-
-І додай case у `titleFor`:
-
-```ts
-case "log_water":
-  return `Воду залоговано${failedSuffix}`;
-```
-
-**Обов'язково** додавай `${failedSuffix}` — це гарантує, що при `failed`-статусі заголовок матиме `— не вийшло` замість success-tone тексту (див. fix у [#754](https://github.com/Skords-01/Sergeant/pull/754)).
-
-### 5. Risky tool (якщо застосовно)
-
-Якщо tool **деструктивний** (видалення, забути факт, масовий імпорт) — додай у `RISKY_TOOLS` в `hubChatActionCards.ts`:
-
-```ts
-const RISKY_TOOLS: ReadonlySet<string> = new Set([
-  "delete_transaction",
-  "hide_transaction",
-  "forget",
-  "archive_habit",
-  "import_monobank_range",
-  // "your_destructive_tool",
-]);
-```
-
-Це автоматично додає лейбл «Критична дія» в action card і warning-стиль.
-
-### 6. Quick action chip (опціонально)
-
-Якщо tool корисно мати під одне натискання — додай у registry `apps/web/src/shared/lib/moduleQuickActions.ts` (або відповідний UI у `apps/web/src/core/components/ChatQuickActions.tsx`):
-
-```ts
-{
-  id: "log-water",
-  module: "nutrition",
-  label: "Залогувати воду",
-  shortLabel: "Вода",
-  icon: "droplet",
-  prompt: "Залогуй: ", // закінчується на ": " → prefill flow
-  description: "Швидкий запис склянки води.",
-  priority: 30,
-  requiresOnline: true,
-  keywords: ["вода", "пиття"],
-}
-```
-
-Якщо `prompt` закінчується на `: ` — натискання вставляє текст у input замість одразу відправляти (для випадків, де треба число).
-
-### 7. Тести
-
-Як мінімум:
-
-- **Tool def**: можна не тестувати окремо — Anthropic перевіряє при call.
-- **Handler**: unit-test у `chatActions/<domain>Actions.test.ts` — щоб успіх зберігав у localStorage і повертав очікуваний рядок.
-- **Action card** (якщо додав): додай у `hubChatActionCards.test.ts` — перевір title + status + summary, зокрема `failed` → `— не вийшло`.
-- **Quick action** (якщо додав): додай у `ChatQuickActions.test.tsx` — перевір що input у `pickTopQuickActions` для відповідного modul-у повертає його.
-
-```bash
-pnpm --filter @sergeant/web exec vitest run src/core/lib/chatActions
-pnpm --filter @sergeant/web exec vitest run src/core/lib/hubChatActionCards
-pnpm --filter @sergeant/web exec vitest run src/core/components/ChatQuickActions
-```
-
-### 8. Quota tuning (необов'язково, але рекомендовано)
-
-Кожен tool-use виклик списує з денної AI-квоти користувача. За замовчуванням — 3 очки (константа `DEFAULT_TOOL_COST` у `aiQuota.ts`). Щоб виставити per-tool ліміт або кастомну вартість, постав env vars на сервері:
-
-| Змінна                        | Опис                                                                                                                               | Приклад                                               |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `AI_QUOTA_TOOL_LIMITS`        | JSON-об'єкт `{"tool_name": maxPerDay}`. Якщо tool-а немає — застосовується `AI_QUOTA_TOOL_DEFAULT_LIMIT`.                          | `{"import_monobank_range": 5, "morning_briefing": 2}` |
-| `AI_QUOTA_TOOL_DEFAULT_LIMIT` | Денний ліміт для tool-ів, яких немає у `AI_QUOTA_TOOL_LIMITS`. Якщо не задано — ліміт для tool-ів не відокремлений від загального. | `20`                                                  |
-| `AI_QUOTA_TOOL_COST`          | Вартість одного tool-use в одиницях квоти (default 3).                                                                             | `5`                                                   |
-| `AI_QUOTA_DISABLED`           | `"1"` відключає квоту повністю (dev/CI).                                                                                           | `1`                                                   |
-
-**Коли налаштовувати:**
-
-- Новий tool дорогий (великий контекст, багато DB-запитів) → підвищ `AI_QUOTA_TOOL_COST` або виставь малий ліміт у `AI_QUOTA_TOOL_LIMITS`.
-- Tool неймовірно дешевий і часто використовується → не обмежуй (виключи з JSON або поклади `null`).
-- Деструктивний tool (`import_monobank_range`, `forget`) → виставити явний низький ліміт у `AI_QUOTA_TOOL_LIMITS`.
-
-Реалізація: `apps/server/src/modules/chat/aiQuota.ts` — функція `consumeToolQuota`.
-
-### 9. PR
-
-Branch: `devin/<unix-ts>-feat-chat-<tool-name>`. Conventional commit:
-
-```
-feat(web): add HubChat tool log_water
-
-- toolDef in chat/toolDefs/nutrition.ts
-- handler in chatActions/nutritionActions.ts
-- action card mapper + titleFor case
-- quick action chip (prefill flow)
-- 4 unit tests
-```
-
----
+- Happy path.
+- Error path.
+- Risky labeling або tool registry shape, якщо це є частиною поведінки.
 
 ## Verification
 
-- [ ] Tool def додано у відповідний `toolDefs/<domain>.ts`.
-- [ ] Action type у `chatActions/types.ts`.
-- [ ] Handler у `chatActions/<domain>Actions.ts`, повертає informative string.
-- [ ] Якщо user-visible — action card у `hubChatActionCards.ts` з `${failedSuffix}` в title.
-- [ ] Якщо destructive — додано у `RISKY_TOOLS`.
-- [ ] Якщо часта — quick action chip у `moduleQuickActions.ts` / `ChatQuickActions.tsx`.
-- [ ] Unit tests для handler + (опційно) action card + quick action.
-- [ ] Quota tuning: якщо tool дорогий або деструктивний — додано запис у `AI_QUOTA_TOOL_LIMITS`.
-- [ ] `pnpm lint` + `pnpm typecheck` — green.
-- [ ] Smoke-перевірка: відкрити HubChat у dev → попросити модель зробити дію → побачити action card.
+- [ ] `pnpm lint`
+- [ ] `pnpm typecheck`
+- [ ] `pnpm test`
+- [ ] Tool definition, executor і card path узгоджені
+- [ ] Risky tool позначено правильно, якщо застосовно
+- [ ] Немає raw browser storage або несинхронізованих side effects
 
-## Notes
+## When not to use this playbook
 
-- **DB writes ніколи у `chat.ts`**. Tool handler пише або у localStorage, або через `@sergeant/api-client` → серверні endpoint-и (звичайні Express routes), які пишуть у БД.
-- Якщо tool потребує **серверної логіки** (наприклад агрегація з БД) — спочатку зроби API endpoint через `add-api-endpoint.md`, потім handler tool-а викликає його через `api-client`.
-- System prompt (контекст модулі, instruction tone) — НЕ міняй у цьому playbook. Для цього є окремий `tune-system-prompt.md`.
-- Tool name — **snake_case** (Anthropic convention), action type — `PascalCaseAction`.
+- Потрібно лише підкрутити wording system prompt без нового tool surface.
+- Потрібно змінити internal Telegram console agent, а не HubChat.
 
-## See also
+## Related playbooks and skills
 
-- [`docs/adr/0002-tool-lifecycle.md`](../adr/0002-tool-lifecycle.md) — обов'язковий 4-фазний lifecycle (Proposal → Safety → Rollout → KPIs) перед merge нового tool-у.
-- [tune-system-prompt.md](tune-system-prompt.md) — як міняти системний промпт без поломки tool-calling
-- [add-api-endpoint.md](add-api-endpoint.md) — якщо tool пише у БД
-- [AGENTS.md](../../AGENTS.md) — секція «Architecture: AI tool execution path»
-- `apps/web/src/shared/lib/moduleQuickActions.ts` — registry з прикладами
-- `docs/superpowers/specs/2026-04-24-assistant-quick-actions-v1-design.md` — дизайн quick actions v1
+- [modify-console-agent.md](./modify-console-agent.md)
+- Skill: `sergeant-hubchat`
+- Skill: `sergeant-web-ui`
+- Skill: `sergeant-server-api`

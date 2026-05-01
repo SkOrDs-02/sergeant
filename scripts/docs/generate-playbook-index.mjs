@@ -29,6 +29,7 @@ const INDEX_PATH = join(PLAYBOOKS_DIR, "INDEX.md");
 const SKIP_FILES = new Set([
   "README.md",
   "INDEX.md",
+  "playbook-catalog.md",
   "_TEMPLATE-decision-tree.md",
 ]);
 
