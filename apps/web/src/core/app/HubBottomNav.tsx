@@ -76,8 +76,8 @@ function HubBottomNavTab({
     >
       <span
         className={cn(
-          "relative transition-all duration-200",
-          active && "text-brand-strong",
+          "relative transition-all duration-200 w-10 h-7 flex items-center justify-center rounded-xl",
+          active ? "text-brand-strong bg-brand-500/10" : "",
         )}
         aria-hidden
       >
