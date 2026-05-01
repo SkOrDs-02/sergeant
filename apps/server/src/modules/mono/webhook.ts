@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
+import type { QueryResult } from "pg";
 import { z } from "zod";
-import { query } from "../../db.js";
+import { pool, query } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import {
   monoWebhookReceivedTotal,
@@ -189,75 +190,92 @@ export async function webhookHandler(
 
   const { account: monoAccountId, statementItem: item } = parsed.data.data;
 
+  // RETURNING (xmax = 0) AS inserted is a Postgres trick: on a fresh INSERT
+  // `xmax` is 0, on the UPDATE branch of ON CONFLICT it is the txid of the
+  // updating transaction (non-zero). We use this to fire push notifications
+  // only on first delivery and stay silent on retries — Monobank can re-send
+  // the same statement item if our 200 response is lost. See AI-DANGER below.
+  // Server-side MCC → category resolution. Returns NULL for MCC 0 / null /
+  // unknown — caller stays NULL and the user can override via UI.
+  // ON CONFLICT branch refreshes `category_slug` only when the user has not
+  // manually overridden it (`category_overridden = FALSE`); otherwise
+  // Monobank's refund-with-different-MCC events would silently undo a
+  // user's correction.
+  const categorySlug = categorizeMcc(item.mcc);
+
+  const txUpsertSql = `INSERT INTO mono_transaction
+       (user_id, mono_account_id, mono_tx_id, time, amount, operation_amount,
+        currency_code, mcc, original_mcc, hold, description, comment,
+        cashback_amount, commission_rate, balance, receipt_id, invoice_id,
+        counter_edrpou, counter_iban, counter_name, raw, source,
+        category_slug)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+             $15, $16, $17, $18, $19, $20, $21, 'webhook',
+             $22)
+     ON CONFLICT (user_id, mono_tx_id) DO UPDATE SET
+       amount = EXCLUDED.amount,
+       operation_amount = EXCLUDED.operation_amount,
+       hold = EXCLUDED.hold,
+       balance = EXCLUDED.balance,
+       description = EXCLUDED.description,
+       comment = EXCLUDED.comment,
+       raw = EXCLUDED.raw,
+       category_slug = CASE
+         WHEN mono_transaction.category_overridden THEN mono_transaction.category_slug
+         ELSE EXCLUDED.category_slug
+       END,
+       received_at = NOW()
+     RETURNING (xmax = 0) AS inserted`;
+  const txUpsertParams = [
+    userId,
+    monoAccountId,
+    item.id,
+    new Date(item.time * 1000).toISOString(),
+    item.amount,
+    item.operationAmount,
+    item.currencyCode,
+    item.mcc ?? null,
+    item.originalMcc ?? null,
+    item.hold ?? null,
+    item.description ?? null,
+    item.comment ?? null,
+    item.cashbackAmount ?? null,
+    item.commissionRate ?? null,
+    item.balance ?? null,
+    item.receiptId ?? null,
+    item.invoiceId ?? null,
+    item.counterEdrpou ?? null,
+    item.counterIban ?? null,
+    item.counterName ?? null,
+    JSON.stringify(item),
+    categorySlug,
+  ];
+
+  // Усі мутації під одним `BEGIN…COMMIT` через виділеного клієнта. Раніше
+  // це були 4–5 послідовних `pool.query` без транзакції — partial failure
+  // (SIGTERM між upsert-ом і UPDATE balance, OOM під час enrichment-INSERT)
+  // лишав баланс/`last_event_at`/outbox у неузгодженому стані. Idempotency
+  // на `(user_id, mono_tx_id)` рятує retry, але не rollback. Pattern
+  // дзеркалить `modules/sync/sync.ts::syncPushAll`. Метрики `ok`/`error`/
+  // `account_autocreated` емітяться ЛИШЕ після успішного COMMIT.
+  const client = await pool.connect();
+  let inserted = false;
+  let autocreated = false;
   try {
-    // RETURNING (xmax = 0) AS inserted is a Postgres trick: on a fresh INSERT
-    // `xmax` is 0, on the UPDATE branch of ON CONFLICT it is the txid of the
-    // updating transaction (non-zero). We use this to fire push notifications
-    // only on first delivery and stay silent on retries — Monobank can re-send
-    // the same statement item if our 200 response is lost. See AI-DANGER below.
-    // Server-side MCC → category resolution. Returns NULL for MCC 0 / null /
-    // unknown — caller stays NULL and the user can override via UI.
-    // ON CONFLICT branch refreshes `category_slug` only when the user has not
-    // manually overridden it (`category_overridden = FALSE`); otherwise
-    // Monobank's refund-with-different-MCC events would silently undo a
-    // user's correction.
-    const categorySlug = categorizeMcc(item.mcc);
+    await client.query("BEGIN");
 
-    const txUpsertSql = `INSERT INTO mono_transaction
-         (user_id, mono_account_id, mono_tx_id, time, amount, operation_amount,
-          currency_code, mcc, original_mcc, hold, description, comment,
-          cashback_amount, commission_rate, balance, receipt_id, invoice_id,
-          counter_edrpou, counter_iban, counter_name, raw, source,
-          category_slug)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-               $15, $16, $17, $18, $19, $20, $21, 'webhook',
-               $22)
-       ON CONFLICT (user_id, mono_tx_id) DO UPDATE SET
-         amount = EXCLUDED.amount,
-         operation_amount = EXCLUDED.operation_amount,
-         hold = EXCLUDED.hold,
-         balance = EXCLUDED.balance,
-         description = EXCLUDED.description,
-         comment = EXCLUDED.comment,
-         raw = EXCLUDED.raw,
-         category_slug = CASE
-           WHEN mono_transaction.category_overridden THEN mono_transaction.category_slug
-           ELSE EXCLUDED.category_slug
-         END,
-         received_at = NOW()
-       RETURNING (xmax = 0) AS inserted`;
-    const txUpsertParams = [
-      userId,
-      monoAccountId,
-      item.id,
-      new Date(item.time * 1000).toISOString(),
-      item.amount,
-      item.operationAmount,
-      item.currencyCode,
-      item.mcc ?? null,
-      item.originalMcc ?? null,
-      item.hold ?? null,
-      item.description ?? null,
-      item.comment ?? null,
-      item.cashbackAmount ?? null,
-      item.commissionRate ?? null,
-      item.balance ?? null,
-      item.receiptId ?? null,
-      item.invoiceId ?? null,
-      item.counterEdrpou ?? null,
-      item.counterIban ?? null,
-      item.counterName ?? null,
-      JSON.stringify(item),
-      categorySlug,
-    ];
-
-    let upsertResult: { rows: Array<{ inserted: boolean }> };
+    // SAVEPOINT навколо upsert-у: на 23503 (FK на `mono_account`) ми робимо
+    // ROLLBACK TO SAVEPOINT і ретраїмо upsert після autocreate-у. Без
+    // savepoint Postgres абортить усю транзакцію при першій помилці і
+    // подальші client.query() кидають "current transaction is aborted".
+    await client.query("SAVEPOINT mono_tx_upsert_attempt");
+    let upsertResult: QueryResult<{ inserted: boolean }>;
     try {
-      upsertResult = await query<{ inserted: boolean }>(
+      upsertResult = await client.query<{ inserted: boolean }>(
         txUpsertSql,
         txUpsertParams,
-        { op: "mono_tx_upsert" },
       );
+      await client.query("RELEASE SAVEPOINT mono_tx_upsert_attempt");
     } catch (err) {
       // Postgres SQLSTATE 23503 = foreign_key_violation. На цьому FK тільки
       // один зовнішній ключ — `(user_id, mono_account_id)` → `mono_account`.
@@ -274,6 +292,7 @@ export async function webhookHandler(
           ? (err as { code?: unknown }).code
           : undefined;
       if (code !== "23503") throw err;
+      await client.query("ROLLBACK TO SAVEPOINT mono_tx_upsert_attempt");
       logger.warn({
         msg: "mono_webhook_account_autocreate",
         userId,
@@ -281,83 +300,87 @@ export async function webhookHandler(
         currencyCode: item.currencyCode,
         monoTxId: item.id,
       });
-      await query(
+      await client.query(
         `INSERT INTO mono_account
            (user_id, mono_account_id, currency_code, balance, last_seen_at)
          VALUES ($1, $2, $3, $4, NOW())
          ON CONFLICT (user_id, mono_account_id) DO NOTHING`,
         [userId, monoAccountId, item.currencyCode, item.balance ?? null],
-        { op: "mono_account_autocreate" },
       );
-      monoWebhookReceivedTotal.inc({ status: "account_autocreated" });
-      upsertResult = await query<{ inserted: boolean }>(
+      upsertResult = await client.query<{ inserted: boolean }>(
         txUpsertSql,
         txUpsertParams,
-        { op: "mono_tx_upsert" },
       );
+      autocreated = true;
     }
 
     if (item.balance != null) {
-      await query(
+      await client.query(
         `UPDATE mono_account
          SET balance = $1, last_seen_at = NOW()
          WHERE user_id = $2 AND mono_account_id = $3`,
         [item.balance, userId, monoAccountId],
-        { op: "mono_account_balance" },
       );
     }
 
-    await query(
+    await client.query(
       `UPDATE mono_connection
        SET last_event_at = NOW(), updated_at = NOW()
        WHERE user_id = $1`,
       [userId],
-      { op: "mono_connection_event" },
     );
 
-    const inserted = upsertResult.rows[0]?.inserted === true;
+    inserted = upsertResult.rows[0]?.inserted === true;
 
     if (inserted) {
-      await query(
+      await client.query(
         `INSERT INTO mono_ai_enrichment_queue (user_id, mono_tx_id)
          VALUES ($1, $2)
          ON CONFLICT (user_id, mono_tx_id) DO NOTHING`,
         [userId, item.id],
-        { op: "mono_ai_enrichment_enqueue" },
       );
     }
 
-    const ms = Number(process.hrtime.bigint() - start) / 1e6;
-    monoWebhookReceivedTotal.inc({ status: "ok" });
-    monoWebhookDurationMs.observe({ status: "ok" }, ms);
-
-    logger.info({
-      msg: "mono_webhook_processed",
-      monoAccountId,
-      monoTxId: item.id,
-      inserted,
-    });
-
-    res.status(200).json({ ok: true });
-
-    // Fan-out push notification AFTER the 200 response — sendToUserQuietly
-    // never throws (logs internally on failure), but we still defer until
-    // after `res.json()` so a slow APNs/FCM round-trip can't extend the
-    // webhook latency window. Skip on duplicate deliveries (`inserted` is
-    // false on the UPDATE branch of ON CONFLICT) so Monobank's retries
-    // don't spam the user.
-    if (inserted) {
-      void sendToUserQuietly(
-        userId,
-        buildMonoPushPayload(item, monoAccountId),
-        { module: "mono" },
-      );
-    }
+    await client.query("COMMIT");
   } catch (err) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      /* ignore secondary rollback failure — original error matters more */
+    }
     const ms = Number(process.hrtime.bigint() - start) / 1e6;
     monoWebhookReceivedTotal.inc({ status: "error" });
     monoWebhookDurationMs.observe({ status: "error" }, ms);
     logger.error({ msg: "mono_webhook_error", err });
     throw err;
+  } finally {
+    client.release();
+  }
+
+  const ms = Number(process.hrtime.bigint() - start) / 1e6;
+  if (autocreated)
+    monoWebhookReceivedTotal.inc({ status: "account_autocreated" });
+  monoWebhookReceivedTotal.inc({ status: "ok" });
+  monoWebhookDurationMs.observe({ status: "ok" }, ms);
+
+  logger.info({
+    msg: "mono_webhook_processed",
+    monoAccountId,
+    monoTxId: item.id,
+    inserted,
+  });
+
+  res.status(200).json({ ok: true });
+
+  // Fan-out push notification AFTER the 200 response — sendToUserQuietly
+  // never throws (logs internally on failure), but we still defer until
+  // after `res.json()` so a slow APNs/FCM round-trip can't extend the
+  // webhook latency window. Skip on duplicate deliveries (`inserted` is
+  // false on the UPDATE branch of ON CONFLICT) so Monobank's retries
+  // don't spam the user.
+  if (inserted) {
+    void sendToUserQuietly(userId, buildMonoPushPayload(item, monoAccountId), {
+      module: "mono",
+    });
   }
 }
