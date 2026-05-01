@@ -96,14 +96,12 @@ function pluralize(n: number, one: string, few: string, many: string): string {
 
 interface HubDashboardProps {
   onOpenModule: (module: string) => void;
-  onOpenChat?: () => void;
   user: User | null;
   onShowAuth: () => void;
 }
 
 export function HubDashboard({
   onOpenModule,
-  onOpenChat: _onOpenChat,
   user,
   onShowAuth,
 }: HubDashboardProps) {

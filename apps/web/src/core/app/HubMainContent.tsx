@@ -82,7 +82,6 @@ export interface HubMainContentProps {
   iosVisible: boolean;
   onDismissIos: () => void;
   hubView: HubView;
-  onOpenChat: () => void;
   syncing: boolean;
   onSync: () => void;
   onPull: () => void;
@@ -101,7 +100,6 @@ export const HubMainContent = memo(function HubMainContent({
   iosVisible,
   onDismissIos,
   hubView,
-  onOpenChat,
   syncing,
   onSync,
   onPull,
@@ -182,7 +180,6 @@ export const HubMainContent = memo(function HubMainContent({
             >
               <HubDashboard
                 onOpenModule={onOpenModule}
-                onOpenChat={onOpenChat}
                 user={user}
                 onShowAuth={onShowAuth}
               />

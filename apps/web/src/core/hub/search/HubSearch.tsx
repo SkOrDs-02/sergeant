@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router-dom";
+import { AnswerRail } from "./AnswerRail";
 import { SearchInput } from "./SearchInput";
 import { SearchResults } from "./SearchResults";
 import { useSearchEngine } from "./useSearchEngine";
@@ -19,8 +21,15 @@ export interface HubSearchProps {
  */
 export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
   const engine = useSearchEngine({ onClose, onOpenModule });
+  const navigate = useNavigate();
 
   const activeHit = engine.flat[engine.activeIdx];
+
+  const handleAskAssistant = (query: string) => {
+    engine.commitQuery(query);
+    onClose();
+    navigate(`/chat?q=${encodeURIComponent(query)}`);
+  };
 
   return (
     <div
@@ -54,6 +63,8 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
         onOpenModule={onOpenModule}
         onClose={onClose}
       />
+
+      <AnswerRail query={engine.query} onAskAssistant={handleAskAssistant} />
     </div>
   );
 }

@@ -15,17 +15,16 @@ export interface HubChatHeaderProps {
   sessionInfo: { historyCount: number; chars: number };
   sessionsCount: number;
   onOpenHistory: () => void;
-  onMinimize?: () => void;
   onClearChat: () => void;
   onClose: () => void;
 }
 
 /**
  * Single-row, ChatGPT-style chat header: avatar + "Асистент ▾"
- * trigger (popover with status, "Усі бесіди", "Згорнути в FAB",
- * privacy line) | "+ Нова" pill | ✕. All secondary affordances
- * (info, history list, minimize, module subtitle, Mono warning)
- * collapse into the "Деталі" popover behind the title.
+ * trigger (popover with status, "Усі бесіди", privacy line) |
+ * "+ Нова" pill | ✕. All secondary affordances (info, history
+ * list, module subtitle, Mono warning) collapse into the "Деталі"
+ * popover behind the title.
  */
 export function HubChatHeader({
   detailsOpen,
@@ -35,7 +34,6 @@ export function HubChatHeader({
   sessionInfo,
   sessionsCount,
   onOpenHistory,
-  onMinimize,
   onClearChat,
   onClose,
 }: HubChatHeaderProps) {
@@ -143,17 +141,6 @@ export function HubChatHeader({
         >
           Усі бесіди ({sessionsCount})
         </PopoverItem>
-        {onMinimize && (
-          <PopoverItem
-            icon={<Icon name="minus" size={14} />}
-            onClick={() => {
-              onDetailsOpenChange(false);
-              onMinimize();
-            }}
-          >
-            Згорнути в FAB
-          </PopoverItem>
-        )}
       </Popover>
       <div className="flex items-center gap-1 shrink-0">
         <Tooltip content="Почати нову бесіду" placement="bottom-center">

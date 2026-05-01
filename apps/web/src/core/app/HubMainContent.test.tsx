@@ -38,7 +38,6 @@ function props(
     iosVisible: false,
     onDismissIos: vi.fn(),
     hubView: "dashboard",
-    onOpenChat: vi.fn(),
     syncing: false,
     onSync: vi.fn(),
     onPull: vi.fn(),

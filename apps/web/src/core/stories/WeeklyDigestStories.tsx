@@ -86,7 +86,7 @@ export function WeeklyDigestStories({
   // `transform: translateY(0)` via `animation-fill-mode: both`) and the
   // `overflow-hidden` + shadow wrapper on `WeeklyDigestCard` both promote
   // themselves to independent stacking contexts — and the primary FAB
-  // (`HubFloatingActions`, z-40) ends up painted above this overlay
+  // (story chrome, z-40) ends up painted above this overlay
   // (z-[600]) because the 600 is scoped to a context whose parent
   // z-index is lower than the FAB's. Rendering into `document.body`
   // short-circuits all of that and makes z-index globally meaningful again.

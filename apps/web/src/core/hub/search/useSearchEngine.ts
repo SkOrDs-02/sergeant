@@ -1,6 +1,5 @@
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { emitHubBus } from "@shared/lib/hubBus";
 import { hapticTap } from "@shared/lib/haptic";
 import { openHubModuleWithAction } from "@shared/lib/hubNav";
 import {
@@ -145,7 +144,7 @@ export function useSearchEngine({
         if (example) {
           // Match AssistantCataloguePage's "Try in chat" CTA: prefill
           // without auto-sending so the user keeps full control.
-          emitHubBus("openChat", { message: example, autoSend: false });
+          navigate(`/chat?q=${encodeURIComponent(example)}`);
         } else {
           navigate("/assistant");
         }
@@ -161,13 +160,10 @@ export function useSearchEngine({
       }
       case "ai-handoff": {
         // Graceful degradation — nothing structured matched, so hand the
-        // raw query off to the assistant. `autoSend: false` keeps the
-        // user in control: the chat opens with the prompt prefilled, ready
-        // to edit before sending.
-        emitHubBus("openChat", {
-          message: hit.target.query,
-          autoSend: false,
-        });
+        // raw query off to the assistant via the dedicated `/chat`
+        // route. The chat opens with the prompt prefilled, ready to
+        // edit before sending (matches AnswerRail).
+        navigate(`/chat?q=${encodeURIComponent(hit.target.query)}`);
         break;
       }
     }

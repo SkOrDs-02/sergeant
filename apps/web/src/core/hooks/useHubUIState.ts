@@ -20,54 +20,19 @@ function readViewFromSearch(search: string): HubView {
   return "dashboard";
 }
 
-/** Options for `openChat`. */
-export interface OpenChatOptions {
-  /**
-   * If true, the assistant immediately sends `message` instead of
-   * prefilling it into the input. Used by the catalogue page when the
-   * user taps a `requiresInput=false` capability.
-   */
-  autoSend?: boolean;
-}
-
 // Onboarding is now a URL-addressable route (`/welcome`) owned by
-// `AppInner`; it no longer lives in hub UI state. The router handles
-// gating and redirects, so this hook only tracks chat/search/hub-view.
+// `AppInner`; it no longer lives in hub UI state. The chat panel was
+// also lifted out to its own route (`/chat`) — see `HubChatPage` — so
+// this hook tracks only search/hub-view.
 export interface HubUIState {
-  chatOpen: boolean;
-  /**
-   * When `true`, the chat dialog is mounted but visually collapsed to a
-   * floating "minimize FAB" — the conversation, draft input, and active
-   * request are preserved so the user can consult other modules without
-   * losing context. Independent of `chatOpen` so the chat can be fully
-   * dismissed (`closeChat`) without going through a minimized state.
-   */
-  chatMinimized: boolean;
-  /** Number of assistant replies that arrived while minimized; surfaces as a
-   *  badge on the FAB. Reset to 0 when the chat is restored. */
-  chatUnseenCount: number;
-  chatInitialMessage: string | null;
-  chatAutoSend: boolean;
   searchOpen: boolean;
   hubView: HubView;
   setHubView: (view: HubView) => void;
   setSearchOpen: (value: boolean) => void;
-  openChat: (message?: string | null, options?: OpenChatOptions) => void;
-  closeChat: () => void;
-  minimizeChat: () => void;
-  restoreChat: () => void;
-  setChatUnseenCount: (count: number) => void;
   closeSearch: () => void;
 }
 
 export function useHubUIState(): HubUIState {
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatMinimized, setChatMinimized] = useState(false);
-  const [chatUnseenCount, setChatUnseenCount] = useState(0);
-  const [chatInitialMessage, setChatInitialMessage] = useState<string | null>(
-    null,
-  );
-  const [chatAutoSend, setChatAutoSend] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
   const [hubView, setHubViewRaw] = useState<HubView>(() =>
@@ -103,51 +68,13 @@ export function useHubUIState(): HubUIState {
     setHubViewRaw(readViewFromSearch(location.search));
   }, [location.search]);
 
-  const openChat = useCallback(
-    (message: string | null = null, options: OpenChatOptions = {}) => {
-      setChatInitialMessage(message || null);
-      setChatAutoSend(Boolean(options.autoSend && message));
-      setChatOpen(true);
-      setChatMinimized(false);
-      setChatUnseenCount(0);
-    },
-    [],
-  );
-
-  const closeChat = useCallback(() => {
-    setChatOpen(false);
-    setChatMinimized(false);
-    setChatUnseenCount(0);
-    setChatInitialMessage(null);
-    setChatAutoSend(false);
-  }, []);
-
-  const minimizeChat = useCallback(() => {
-    setChatMinimized(true);
-  }, []);
-
-  const restoreChat = useCallback(() => {
-    setChatMinimized(false);
-    setChatUnseenCount(0);
-  }, []);
-
   const closeSearch = useCallback(() => setSearchOpen(false), []);
 
   return {
-    chatOpen,
-    chatMinimized,
-    chatUnseenCount,
-    chatInitialMessage,
-    chatAutoSend,
     searchOpen,
     hubView,
     setHubView,
     setSearchOpen,
-    openChat,
-    closeChat,
-    minimizeChat,
-    restoreChat,
-    setChatUnseenCount,
     closeSearch,
   };
 }

@@ -22,7 +22,7 @@ import type { HubView } from "../hooks/useHubUIState";
  *
  * Layout contract:
  * - Rendered at the bottom of the hub `<div h-dvh flex-col>` shell, so
- *   FABs (`HubFloatingActions`) and `ActiveWorkoutBanner` must offset
+ *   `ActiveWorkoutBanner` and other floating chrome must offset
  *   their `bottom:` by 76 px + safe-area-inset-bottom to sit above it.
  *
  * The reports-tab reveal behavior (animate + one-time toast) is
