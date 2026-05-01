@@ -3,36 +3,36 @@
 > **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-30.
 > **Status:** Active
 
-Playbooks - канонічний execution layer для repeatable tasks у Sergeant. Skills вирішують, який surface і які repo rules застосовуються; playbooks кажуть, у якому порядку виконувати роботу.
+Playbooks are the canonical execution layer for repeatable tasks in Sergeant. Skills decide the governing surface and repo rules; playbooks define the execution order.
 
 ## Taxonomy
 
-- `delivery` - нові фічі, API, HubChat tools, product surfaces
+- `delivery` - new features, API work, HubChat tools, product surfaces
 - `bugfix/debugging` - CI red, regressions, alerts, flaky tests
-- `data/migrations` - schema changes, rollout safety, DB hygiene
+- `data/migrations` - schema changes, rollout safety, DB hygiene, restore drills
 - `AI/HubChat` - tools, prompts, console agents
-- `mobile` - Expo, RN porting, migration progress
-- `deploy/ops` - prod hotfixes, secrets, runtime safety, n8n workflows
-- `governance/docs` - hard rules, review, docs upkeep
+- `mobile` - Expo, RN porting, migration progress, mobile releases
+- `deploy/ops` - releases, prod hotfixes, incidents, secrets, runtime safety, n8n workflows
+- `governance/docs` - hard rules, review, docs upkeep, operating-system hygiene
 
-## Стандарт для кожного playbook
+## Standard for every playbook
 
-Кожен playbook має містити:
+Each playbook must include:
 
 - `**Trigger:**`
 - owner surface
-- required prerequisite docs/skills
+- required prerequisite docs or skills
 - ordered steps
 - verification section
 - when not to use this playbook
 - related playbooks / related skills
 
-## Як користуватися
+## How to use
 
-1. Визнач primary scenario.
-2. Відкрий [playbook-catalog.md](./playbook-catalog.md).
-3. Якщо є прямий match, використовуй рівно один primary playbook.
-4. Якщо задача переходить у інший class проблеми, явно переключись на інший playbook і зафіксуй це в PR.
+1. Identify the primary scenario.
+2. Open [playbook-catalog.md](./playbook-catalog.md).
+3. Use exactly one primary playbook unless the scenario explicitly crosses into another operating class.
+4. If the task changes class mid-stream, switch playbooks intentionally and capture that in the PR or incident note.
 
 ## Routing
 
@@ -48,6 +48,9 @@ Playbooks - канонічний execution layer для repeatable tasks у Serg
 - [fix-failing-ci.md](./fix-failing-ci.md)
 - [hotfix-prod-regression.md](./hotfix-prod-regression.md)
 - [investigate-alert.md](./investigate-alert.md)
+- [release-web-and-api.md](./release-web-and-api.md)
+- [declare-incident.md](./declare-incident.md)
+- [restore-from-backup.md](./restore-from-backup.md)
 - [port-web-screen-to-mobile.md](./port-web-screen-to-mobile.md)
 - [modify-console-agent.md](./modify-console-agent.md)
 - [modify-n8n-workflow.md](./modify-n8n-workflow.md)

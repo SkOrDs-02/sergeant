@@ -8,11 +8,15 @@
 /CONTRIBUTING.md           @Skords-01
 /README.md                 @Skords-01
 
-/docs/governance/          @Skords-01
-/docs/playbooks/           @Skords-01
-/docs/superpowers/         @Skords-01
+/docs/*.md                 @Skords-01
 /docs/adr/                 @Skords-01
+/docs/architecture/        @Skords-01
+/docs/governance/          @Skords-01
+/docs/observability/       @Skords-01
+/docs/playbooks/           @Skords-01
+/docs/postmortems/         @Skords-01
 /docs/security/            @Skords-01
+/docs/superpowers/         @Skords-01
 
 /.github/CODEOWNERS        @Skords-01
 /.github/workflows/        @Skords-01
@@ -32,5 +36,5 @@ packages/config/tsconfig.node.json      @Skords-01
 packages/config/tsconfig.react.json     @Skords-01
 scripts/check-tsconfig-strict.mjs       @Skords-01
 
-/apps/server/src/migrations/            @Skords-01
+/apps/server/src/migrations/             @Skords-01
 /packages/eslint-plugin-sergeant-design/ @Skords-01

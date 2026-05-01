@@ -9,18 +9,18 @@
 > **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-30.
 > **Status:** Active
 
-Sergeant - персональна платформа-хаб для фінансів, звичок, спорту, харчування та AI-асистованих повсякденних сценаріїв. Продукт живе в одному `pnpm` + `Turborepo` monorepo і розгортається як web/PWA, mobile та internal ops surfaces.
+Sergeant is a personal hub platform for finance, habits, sport, nutrition, and AI-assisted day-to-day workflows. The product lives in one `pnpm` + `Turborepo` monorepo and ships across web/PWA, mobile, and internal ops surfaces.
 
-## Що в репо
+## What is in the repo
 
-- `apps/web` - основний продукт: Vite + React 18 PWA.
+- `apps/web` - primary product surface built with Vite + React 18.
 - `apps/server` - Express + PostgreSQL + Better Auth API.
-- `apps/mobile` - Expo + React Native клієнт.
-- `apps/mobile-shell` - Capacitor shell навколо web surface.
-- `apps/console` - internal Telegram bot для ops/marketing сценаріїв.
-- `packages/*` - shared contracts, domain logic, design tokens, config і tooling.
+- `apps/mobile` - Expo + React Native client.
+- `apps/mobile-shell` - Capacitor shell around the web surface.
+- `apps/console` - internal Telegram bot for ops and marketing workflows.
+- `packages/*` - shared contracts, domain logic, design tokens, config, and tooling.
 
-Швидкий архітектурний огляд дивись у [docs/architecture/README.md](./docs/architecture/README.md), а повний doc index - у [docs/README.md](./docs/README.md).
+Architecture overview lives in [docs/architecture/README.md](./docs/architecture/README.md); the full doc index lives in [docs/README.md](./docs/README.md).
 
 ## Quickstart
 
@@ -34,12 +34,12 @@ pnpm dev:server
 pnpm dev:web
 ```
 
-Основні локальні URL:
+Local URLs:
 
 - Web: `http://localhost:5173`
 - API: `http://localhost:3000`
 
-## Основні команди
+## Core commands
 
 ```bash
 pnpm dev:web
@@ -50,11 +50,12 @@ pnpm typecheck
 pnpm test
 ```
 
-Розгорнутий contributor workflow, verification matrix і commit/PR conventions живуть у [CONTRIBUTING.md](./CONTRIBUTING.md).
+Detailed contributor workflow, verification matrix, and commit/PR conventions live in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## For Contributors and Agents
 
-- Людям: починай з [CONTRIBUTING.md](./CONTRIBUTING.md).
-- Агентам: починай з [AGENTS.md](./AGENTS.md) і каталогу skills [docs/superpowers/agent-skills-catalog.md](./docs/superpowers/agent-skills-catalog.md).
+- Humans: start with [CONTRIBUTING.md](./CONTRIBUTING.md).
+- Agents: start with [AGENTS.md](./AGENTS.md) and [docs/superpowers/agent-skills-catalog.md](./docs/superpowers/agent-skills-catalog.md).
 - Repeatable execution recipes: [docs/playbooks/README.md](./docs/playbooks/README.md).
-- Governance та hard rules matrix: [docs/governance/README.md](./docs/governance/README.md).
+- Governance and hard rules matrix: [docs/governance/README.md](./docs/governance/README.md).
+- Runtime inventory, release, incident, and recovery surfaces: [docs/architecture/service-catalog.md](./docs/architecture/service-catalog.md), [docs/security/disaster-recovery.md](./docs/security/disaster-recovery.md).

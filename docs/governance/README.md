@@ -3,17 +3,19 @@
 > **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-30.
 > **Status:** Active
 
-Governance у Sergeant навмисно розділено на human-readable і machine-readable sources of truth.
+Governance in Sergeant is intentionally split between human-readable policy and machine-readable enforcement.
 
-## Джерела істини
+## Sources of truth
 
-- [AGENTS.md](../../AGENTS.md) - human-readable repo contract, hard rules, invariants, budgets і anti-patterns.
-- [hard-rules.json](./hard-rules.json) - machine-readable registry для CI та tooling.
-- [hard-rules-matrix.md](./hard-rules-matrix.md) - generated enforcement matrix; не редагується вручну.
+- [AGENTS.md](../../AGENTS.md) - human-readable repo contract, hard rules, invariants, budgets, anti-patterns.
+- [hard-rules.json](./hard-rules.json) - machine-readable registry for CI and tooling.
+- [hard-rules-matrix.md](./hard-rules-matrix.md) - generated enforcement matrix; do not edit manually.
 - [review-checklist.md](./review-checklist.md) - reviewer operating checklist.
-- [policy-review.md](./policy-review.md) і [doc-freshness.md](./doc-freshness.md) - cadence та process policy.
+- [release-policy.md](./release-policy.md) - release classes, blockers, ordering, note-taking expectations.
+- [incident-severity-policy.md](./incident-severity-policy.md) - severity model and postmortem threshold.
+- [policy-review.md](./policy-review.md) and [doc-freshness.md](./doc-freshness.md) - cadence and review process.
 
-## Що перевіряє CI
+## CI gates
 
 - `pnpm lint:governance-sync --strict`
 - `pnpm lint:hard-rules-registry`
@@ -21,9 +23,9 @@ Governance у Sergeant навмисно розділено на human-readable �
 - `pnpm docs:check-freshness-coverage`
 - `pnpm lint:codeowners`
 
-## Коли оновлювати governance docs
+## Update governance docs when
 
-- Змінився hard rule або enforcement mechanism.
-- Додано новий playbook, який став canonical recipe.
-- Змінився review/merge process.
-- З'явився новий sensitive path, що потребує CODEOWNERS coverage.
+- a hard rule or enforcement mechanism changes
+- a new playbook becomes canonical for a risky workflow
+- release or incident response process changes
+- a sensitive path needs CODEOWNERS coverage
