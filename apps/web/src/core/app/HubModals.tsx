@@ -4,7 +4,7 @@ import type { OpenModuleOptions } from "../hooks/useHubNavigation";
 import { HubChatFab } from "../hub/HubChatFab";
 
 const HubSearch = lazy(() =>
-  import("../hub/HubSearch").then((m) => ({ default: m.HubSearch })),
+  import("../hub/search").then((m) => ({ default: m.HubSearch })),
 );
 const HubChat = lazy(() => import("../hub/HubChat"));
 

@@ -24,6 +24,7 @@ import { useCloudSync } from "./cloudSync/useCloudSync";
 import { useSyncErrorToast } from "./cloudSync/hook/useSyncErrorToast";
 import { PageLoader } from "./app/PageLoader";
 import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
+import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { OfflineBanner } from "./app/OfflineBanner";
 import { MigrationPrompt } from "./app/MigrationPrompt";
 import { usePwaInstall } from "./app/usePwaInstall";
@@ -544,7 +545,7 @@ function AppInner() {
           requirement: switching modules mid-set must not bury the
           workout. */}
       {activeModule !== "fizruk" && <ActiveWorkoutBanner />}
-      <Suspense
+      <SuspenseWithMinDelay
         fallback={
           <ModulePageLoader
             module={
@@ -608,7 +609,7 @@ function AppInner() {
             </Tag>
           );
         })()}
-      </Suspense>
+      </SuspenseWithMinDelay>
       {/* Assistant FAB — available in all module views so the user can
           reach the AI chat without navigating back to the hub first.
           Compact mode uses a small icon-only button to minimize overlap. */}

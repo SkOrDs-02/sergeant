@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last validated:** 2026-05-01 by @claude. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-01 by @devin-ai-integration[bot]. **Next review:** 2026-07-30.
 > **Status:** Active
 
 ## Repo overview
@@ -476,6 +476,27 @@ All **prose** in internal docs (ADRs, playbooks, audits, RFCs, architecture docs
 Inside any of those English surfaces it's still fine to mix Ukrainian prose where it clarifies (e.g. `> _Update 2026-04-30_:` blocks); the rule is about the **default** language for new prose, not a ban.
 
 If a reviewer sees a new prose paragraph or table cell in English in a doc that's not on the exception list above, that's a request-changes signal — switch to Ukrainian and keep the technical terms (token names, flags, function/class identifiers) verbatim.
+
+## Touch targets
+
+All interactive elements must clear **WCAG 2.5.5** / Apple HIG **≥44×44px** on touch devices (`@media (pointer: coarse)`). Three layers cooperate:
+
+1. **`Button` component** auto-applies `min-h-[44px] min-w-[44px]` on coarse pointers for `xs` / `sm` / `iconOnly` sizes — zero work at the call-site (see `packages/design-tokens/tailwind-preset.js` and `apps/web/src/shared/components/ui/Button.tsx`).
+2. **`touch-target` / `touch-target-48` Tailwind utilities** raise the floor to 44 / 48 px on coarse pointers without touching the desktop sizing. Use these for bespoke interactive elements that are visually smaller than 44 px on desktop (icon-only chips on cards, drag handles on bento tiles, dense toggles).
+3. **Global safety net** in `apps/web/src/index.css` enforces ≥44×44 on every `<button>`, `a[role="button"]`, and `[role="tab"]` on coarse pointers. Opt out with `data-compact` for elements that are intentionally smaller (heatmap cells, dense data grids, inline chips).
+
+```tsx
+// ❌ BAD — 28×28 hit target on touch fails WCAG.
+<button className="w-7 h-7 rounded-lg" onClick={onAdd}>+</button>
+
+// ✅ GOOD — visible 28×28 glyph, 44×44 hit area on touch.
+<button className="w-7 h-7 touch-target rounded-lg" onClick={onAdd}>+</button>
+
+// ✅ GOOD — intentionally compact (heatmap cell), 44×44 floor opted out.
+<button data-compact className="w-3 h-3 rounded-sm" />
+```
+
+The `Button` component handles the common case automatically; reach for `touch-target` only when you cannot use `Button` (e.g. absolutely-positioned siblings, drag activators, custom-styled toggles). Refer to `BentoCard` for the canonical "small visible glyph + 44 px hit area" pattern.
 
 ### 16. Animation budget — max 2 concurrent, 3 tiers
 

@@ -1,5 +1,5 @@
 import { Sheet } from "@shared/components/ui/Sheet";
-import { mergeExpenseCategoryDefinitions } from "../constants";
+import { mergeExpenseCategoryDefinitions } from "../../constants";
 
 export interface TransactionsBatchToolbarProps {
   selectMode: boolean;

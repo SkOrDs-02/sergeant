@@ -237,7 +237,12 @@ export const BentoCard = memo(function BentoCard({
           title={onQuickAdd.label}
           className={cn(
             "absolute top-3.5 right-3.5 [@media(pointer:coarse)]:top-4 [@media(pointer:coarse)]:right-4",
-            "w-7 h-7 [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9",
+            // WCAG 2.5.5 / HIG: ≥44×44 on coarse pointers. The visual
+            // glyph stays at 28 px on desktop; a `touch-target` floor
+            // expands the hit area to 44×44 on touch without bumping
+            // the visible icon size to 44 (which would crowd the card
+            // header against the module label).
+            "w-7 h-7 touch-target",
             "rounded-lg flex items-center justify-center",
             "text-text bg-panel/80 hover:bg-primary hover:text-bg",
             "transition-colors active:scale-95",
@@ -257,7 +262,9 @@ export const BentoCard = memo(function BentoCard({
           title="Перетягнути для зміни порядку"
           className={cn(
             "absolute top-3.5 right-3.5 [@media(pointer:coarse)]:top-4 [@media(pointer:coarse)]:right-4",
-            "w-7 h-7 [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:h-9",
+            // Match the quick-add affordance: visible 28 px glyph,
+            // 44×44 hit area on coarse pointers via `touch-target`.
+            "w-7 h-7 touch-target",
             "rounded-lg flex items-center justify-center",
             "text-muted bg-panel/90 hover:text-text hover:bg-panelHi",
             "transition-colors cursor-grab active:cursor-grabbing touch-none",

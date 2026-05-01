@@ -981,18 +981,28 @@
    Touch-friendly spacing, improved readability, and responsive helpers.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* Touch target helper — ensures minimum 44x44px on touch devices */
-.touch-target {
-  @apply relative;
-}
-.touch-target::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  min-width: 44px;
-  min-height: 44px;
+/* ═══════════════════════════════════════════════════════════════════════
+   TOUCH TARGETS — WCAG 2.5.5 / Apple HIG safety net.
+
+   The `.touch-target` / `.touch-target-48` Tailwind utilities (declared in
+   `packages/design-tokens/tailwind-preset.js`) are the canonical way to
+   set a 44×44 / 48×48 floor on coarse pointers. The CSS rule below is a
+   defence-in-depth guarantee for any interactive element that was added
+   without a min-size — it raises the floor to 44×44 on touch devices for
+   every `<button>`, anchor with `role="button"`, and `role="tab"` element
+   that is not explicitly opted out via the `data-compact` attribute.
+
+   Use `data-compact` on heatmap cells, dense data grid handles, inline
+   chips inside paragraphs, and any element where 44×44 would crowd the
+   surrounding layout. The opt-out is intentional and per-element.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (pointer: coarse) {
+  button:not([data-compact]):not(:disabled),
+  a[role="button"]:not([data-compact]),
+  [role="tab"]:not([data-compact]) {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 
 /* Mobile-optimized list items with larger touch targets */

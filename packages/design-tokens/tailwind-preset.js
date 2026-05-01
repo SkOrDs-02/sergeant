@@ -597,7 +597,41 @@ const preset = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // ═══════════════════════════════════════════════════════════════════════
+    // TOUCH TARGETS — WCAG 2.5.5 / Apple HIG ≥44×44px on coarse pointers
+    //
+    // `.touch-target`     — 44×44 floor on `(pointer: coarse)` (default).
+    // `.touch-target-48`  — 48×48 floor for primary nav / FAB-class targets.
+    //
+    // Both are no-ops on `(pointer: fine)` — desktop keeps its compact
+    // sizing. Use as a min sizing utility on interactive elements that
+    // are visually smaller than 44px on touch (icon buttons, chips,
+    // small toggles). The `Button` component already enforces the floor
+    // for `xs` / `sm` / `iconOnly`, so prefer `touch-target` only for
+    // bespoke interactive elements outside the `Button` shell.
+    //
+    // To intentionally render a smaller target (e.g. heatmap cells, dense
+    // data grids), opt out by setting `data-compact` on the element —
+    // see the safety-net rule in `apps/web/src/index.css`.
+    // ═══════════════════════════════════════════════════════════════════════
+    function ({ addUtilities }) {
+      addUtilities({
+        ".touch-target": {
+          "@media (pointer: coarse)": {
+            minHeight: "44px",
+            minWidth: "44px",
+          },
+        },
+        ".touch-target-48": {
+          "@media (pointer: coarse)": {
+            minHeight: "48px",
+            minWidth: "48px",
+          },
+        },
+      });
+    },
+  ],
 };
 
 export default preset;

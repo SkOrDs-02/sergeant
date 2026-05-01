@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { useSwipeNavigation } from "@shared/hooks/useSwipeNavigation";
 import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
 import { useStorage } from "./hooks/useStorage";
@@ -16,8 +17,8 @@ import { useToast } from "@shared/hooks/useToast";
 import { tryShowCrossModulePrompt } from "@shared/lib/crossModulePrompt";
 import { openHubModuleWithAction } from "@shared/lib/hubNav";
 import { Overview } from "./pages/Overview";
-import { Transactions } from "./pages/Transactions";
-import { Budgets } from "./pages/Budgets";
+import { Transactions } from "./pages/transactions";
+import { Budgets } from "./pages/budgets";
 import { Assets } from "./pages/Assets";
 import { Analytics } from "./pages/Analytics";
 import { ManualExpenseSheet } from "./components/ManualExpenseSheet";
@@ -167,111 +168,24 @@ export default function App({
               pill: "bg-success/10  text-success border-success/20",
             };
 
-  // Свайп між вкладками (без pull-to-refresh: скрол живе всередині сторінок, зовнішній scrollTop завжди 0)
-  const touchStartX = useRef(null);
-  const touchStartY = useRef(null);
-  // Live drag offset for visual feedback. While the user is dragging
-  // we translate the page wrapper horizontally (clamped to ±SWIPE_DRAG_LIMIT)
-  // and surface a thin progress bar at the bottom — without this,
-  // the only feedback was the abrupt page swap on release, which
-  // many users interpreted as a missed gesture.
+  // Свайп між вкладками (без pull-to-refresh: скрол живе всередині сторінок, зовнішній scrollTop завжди 0).
+  // Logic shared with other module shells via useSwipeNavigation.
   const SWIPE_THRESHOLD_PX = 60;
-  const SWIPE_DRAG_LIMIT_PX = 120;
-  const [swipeDx, setSwipeDx] = useState(0);
-  const swipeActiveRef = useRef(false);
-
-  // Ascend from the touch target and bail out if any ancestor is marked as
-  // a horizontal scroller (e.g. the category filter strip on Operations) or
-  // is itself horizontally scrollable — otherwise scrolling such a list
-  // would also be interpreted as a tab swipe.
-  //
-  // Fast-path: `closest('[data-finyk-no-swipe]')` short-circuits the whole
-  // traversal for explicitly-tagged scrollers without invoking the layout
-  // engine. Only when the target lacks that marker do we fall back to the
-  // generic overflow walk, and even then we pre-filter by the cheap
-  // `scrollWidth > clientWidth` check before asking `getComputedStyle` —
-  // most DOM nodes the touch traverses are neither scrollable nor
-  // overflowing, so we skip the expensive style resolution entirely for
-  // them. Previous implementation called `getComputedStyle` on every
-  // ancestor unconditionally, which showed up as 5–15 ms per `touchstart`
-  // on deep trees.
-  const isInsideHorizontalScroller = (target) => {
-    const el = target instanceof HTMLElement ? target : null;
-    if (!el) return false;
-    if (el.closest("[data-finyk-no-swipe]")) return true;
-    let node: HTMLElement | null = el;
-    while (node && node !== document.body) {
-      if (node.scrollWidth > node.clientWidth) {
-        const overflowX = window.getComputedStyle(node).overflowX;
-        if (overflowX === "auto" || overflowX === "scroll") return true;
-      }
-      node = node.parentElement;
-    }
-    return false;
-  };
-
-  const handleTouchStart = (e) => {
-    if (isInsideHorizontalScroller(e.target)) {
-      touchStartX.current = null;
-      touchStartY.current = null;
-      return;
-    }
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-    swipeActiveRef.current = false;
-    setSwipeDx(0);
-  };
-  const handleTouchMove = (e) => {
-    if (touchStartX.current === null || touchStartY.current === null) return;
-    const rawDx = e.touches[0].clientX - touchStartX.current; // sign: +right, -left
-    const rawDy = e.touches[0].clientY - touchStartY.current;
-    // Stay quiet until the gesture is unambiguously horizontal. We
-    // need the same dominance check as touchEnd (|dx| ≥ 1.5·|dy|) so
-    // vertical scrolls inside nested lists never start tugging the
-    // page sideways.
-    if (Math.abs(rawDx) < 12) return;
-    if (Math.abs(rawDx) < Math.abs(rawDy) * 1.5) return;
-    swipeActiveRef.current = true;
-    const curIdx = NAV_IDS.indexOf(page);
-    // Cancel feedback at the ends of the tab list so the user doesn't
-    // get a "fake" drag that goes nowhere when they're already on
-    // overview / analytics.
-    if (curIdx === 0 && rawDx > 0) {
-      setSwipeDx(0);
-      return;
-    }
-    if (curIdx === NAV_IDS.length - 1 && rawDx < 0) {
-      setSwipeDx(0);
-      return;
-    }
-    const clamped = Math.max(
-      -SWIPE_DRAG_LIMIT_PX,
-      Math.min(SWIPE_DRAG_LIMIT_PX, rawDx),
-    );
-    setSwipeDx(clamped);
-  };
-  const handleTouchEnd = (e) => {
-    if (touchStartX.current === null || touchStartY.current === null) {
-      setSwipeDx(0);
-      return;
-    }
-    const dx = touchStartX.current - e.changedTouches[0].clientX;
-    const dy = touchStartY.current - e.changedTouches[0].clientY;
-    touchStartX.current = null;
-    touchStartY.current = null;
-    swipeActiveRef.current = false;
-    setSwipeDx(0);
-
-    // Require a clearly horizontal swipe so vertical scrolls in nested lists
-    // (transactions, budgets) never trigger tab switches: |dx| must exceed
-    // both a comfortable threshold (60px) AND ~1.5× the vertical travel.
-    if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) < Math.abs(dy) * 1.5)
-      return;
-    const curIdx = NAV_IDS.indexOf(page);
-    if (curIdx === -1) return;
-    const next = curIdx + (dx > 0 ? 1 : -1);
-    if (next >= 0 && next < NAV_IDS.length) navigate(NAV_IDS[next]);
-  };
+  const curPageIdx = NAV_IDS.indexOf(page);
+  const swipe = useSwipeNavigation({
+    onSwipeLeft: () => {
+      const next = curPageIdx + 1;
+      if (next >= 0 && next < NAV_IDS.length) navigate(NAV_IDS[next]);
+    },
+    onSwipeRight: () => {
+      const next = curPageIdx - 1;
+      if (next >= 0 && next < NAV_IDS.length) navigate(NAV_IDS[next]);
+    },
+    threshold: SWIPE_THRESHOLD_PX,
+    atStart: curPageIdx === 0,
+    atEnd: curPageIdx === NAV_IDS.length - 1,
+  });
+  const swipeDx = swipe.dragDx;
 
   // ── Login screen ──────────────────────────────────────────────────────
   if (!clientInfo && !manualOnly) {
@@ -391,9 +305,9 @@ export default function App({
       {/* Page content */}
       <div
         className="flex-1 overflow-hidden flex flex-col min-h-0 touch-pan-y relative"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        onTouchStart={swipe.onTouchStart}
+        onTouchMove={swipe.onTouchMove}
+        onTouchEnd={swipe.onTouchEnd}
       >
         {/*
           Swipe progress bar — surfaces an in-progress tab swipe so
