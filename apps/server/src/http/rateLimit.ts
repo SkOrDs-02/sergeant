@@ -229,8 +229,16 @@ export function rateLimitExpress({
         /* ignore */
       }
       const requestId = (req as Request & { requestId?: string }).requestId;
+      const message = "Забагато запитів. Спробуй пізніше.";
+      // `error` — стара форма для прямих `fetch`-колерів. `message` — те
+      // саме поле, яке читає better-fetch (а отже — Better Auth client) при
+      // десеріалізації не-2xx body. Без цього 429 на `/api/auth/sign-in`
+      // потрапляв у фронт як `result.error.message === undefined` і юзер
+      // бачив generic «Помилка входу» замість осмисленого rate-limit
+      // повідомлення.
       res.status(429).json({
-        error: "Забагато запитів. Спробуй пізніше.",
+        error: message,
+        message,
         code: "RATE_LIMIT",
         ...(requestId ? { requestId } : {}),
       });

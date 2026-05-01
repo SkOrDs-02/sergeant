@@ -335,4 +335,42 @@ describe("rateLimitExpress — Redis path", () => {
     expect(redisEvalMock).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalledOnce();
   });
+
+  it("returns 429 body with both `error` and `message` fields when blocked", async () => {
+    // Контракт із Better Auth client / better-fetch: вони читають саме
+    // `message` при десеріалізації не-2xx body. Якщо віддавати тільки
+    // `error`, юзер на /sign-in бачить generic «Помилка входу» замість
+    // реального rate-limit повідомлення. Тому тримаємо обидва поля
+    // синхронізованими.
+    vi.mocked(getRedis).mockReturnValue(null);
+    const key = `mw:body_${Math.random().toString(36).slice(2)}`;
+    const middleware = rateLimitExpress({ key, limit: 1, windowMs: 60_000 });
+    const req = makeReq("10.0.0.99");
+    const allowedRes = {
+      setHeader: vi.fn(),
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    } as never;
+    await middleware(req, allowedRes, vi.fn());
+
+    const blockedJson = vi.fn();
+    const blockedRes = {
+      setHeader: vi.fn(),
+      status: vi.fn().mockReturnThis(),
+      json: blockedJson,
+    } as never;
+    const next = vi.fn();
+    await middleware(req, blockedRes, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(blockedJson).toHaveBeenCalledTimes(1);
+    const body = blockedJson.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(body).toEqual(
+      expect.objectContaining({
+        error: "Забагато запитів. Спробуй пізніше.",
+        message: "Забагато запитів. Спробуй пізніше.",
+        code: "RATE_LIMIT",
+      }),
+    );
+  });
 });
