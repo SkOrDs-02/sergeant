@@ -74,9 +74,15 @@ describe("no-raw-tracked-storage", () => {
   });
 
   it("flags template-literal keys with no expressions", () => {
+    // `finyk_budgets` is a tracked key (in `SYNC_MODULES.finyk.keys`).
+    // The earlier fixture used `finyk_token`, which was retired from
+    // tracked storage in PR #002 (Stage 0): the Monobank PAT lives only
+    // server-side now and has its own dedicated rule
+    // (`no-finyk-token-in-storage`). The AST matcher under test —
+    // template-literal-with-no-expressions — is the same.
     const messages = lint(
       `import { useLocalStorage } from "@/lib/storage";
-       useLocalStorage(\`finyk_token\`, null);`,
+       useLocalStorage(\`finyk_budgets\`, null);`,
     );
     assert.equal(messages.length, 1);
     assert.equal(messages[0].ruleId, RULE_ID);

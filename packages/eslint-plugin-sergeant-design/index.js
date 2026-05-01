@@ -188,7 +188,9 @@ const TRACKED_STORAGE_KEY_NAMES = new Set([
   "FINYK_INFO_CACHE",
   "FINYK_TX_CACHE_LAST_GOOD",
   "FINYK_SHOW_BALANCE",
-  "FINYK_TOKEN",
+  // FINYK_TOKEN intentionally NOT tracked: the Monobank PAT is server-only
+  // (`mono_connection.token_ciphertext`) and writing it client-side is
+  // banned by the dedicated `no-finyk-token-in-storage` rule.
   "FINYK_MANUAL_EXPENSES",
   "FINYK_TX_FILTERS",
   // fizruk
@@ -232,7 +234,8 @@ const TRACKED_STORAGE_KEY_VALUES = new Set([
   "finyk_info_cache",
   "finyk_tx_cache_last_good",
   "finyk_show_balance_v1",
-  "finyk_token",
+  // "finyk_token" intentionally NOT tracked: server-only PAT, see
+  // `no-finyk-token-in-storage` rule.
   "finyk_manual_expenses_v1",
   "finyk_tx_filters_v1",
   // fizruk
@@ -2018,12 +2021,138 @@ const preferFocusVisible = {
   },
 };
 
+// ─── no-finyk-token-in-storage ─────────────────────────────────────────
+//
+// Monobank PAT must live exclusively in the server-side
+// `mono_connection.token_ciphertext` (AES-GCM, see
+// `apps/server/src/modules/mono/`). Persisting it on the client —
+// `localStorage`, `sessionStorage`, MMKV, IDB, cloud-sync `module_data`,
+// etc. — is a security regression: cleartext PAT can be exfiltrated by
+// any XSS, leaks into devtools, and survives logout.
+//
+// The migration hook `useMonoTokenMigration` reads the legacy
+// `finyk_token` / `finyk_token_remembered` keys once on cold-boot, POSTs
+// the value to `/api/mono/connect`, and removes the local copy. After
+// this rule lands, no new code path is allowed to write the token back
+// — only reads (for one-shot migration) and removals are permitted.
+//
+// Detected forms:
+//   - `localStorage.setItem("finyk_token", …)`
+//   - `localStorage.setItem(STORAGE_KEYS.FINYK_TOKEN, …)`
+//   - `sessionStorage.setItem(...)` with the same keys
+//   - `safeWriteLS(...)` / `safeWriteJSONLS(...)` / generic `setItem(...)`
+//     calls with the same keys
+//   - `useLocalStorage(...)` / `useSyncedStorage(...)` /
+//     `createModuleStorage(...)` initialised with the same key
+//
+// Test files (`*.test.ts(x)`, `*.spec.ts(x)`, paths under `__tests__/`)
+// are exempt — fixtures often need to seed `localStorage` with a legacy
+// token to verify the migration path.
+
+const FINYK_TOKEN_KEY_VALUES = new Set([
+  "finyk_token",
+  "finyk_token_remembered",
+]);
+const FINYK_TOKEN_KEY_NAMES = new Set(["FINYK_TOKEN"]);
+
+const FINYK_TOKEN_WRITE_FUNCTIONS = new Set([
+  "setItem",
+  "safeWriteLS",
+  "safeWriteJSONLS",
+  "useLocalStorage",
+  "useSyncedStorage",
+  "useLocalStorageState",
+  "useSyncedStorageState",
+  "createModuleStorage",
+  "lsSet",
+  "writeLS",
+]);
+
+const FINYK_TOKEN_MESSAGE =
+  "Monobank PAT (`finyk_token`) must not be persisted client-side. The token lives in `mono_connection.token_ciphertext` server-side; legacy LS/sessionStorage values are migrated by `useMonoTokenMigration` and then removed. Only reads (for migration) and removals are allowed.";
+
+function isFinykTokenKeyArgument(arg) {
+  if (!arg) return false;
+  if (arg.type === "Literal" && typeof arg.value === "string") {
+    return FINYK_TOKEN_KEY_VALUES.has(arg.value);
+  }
+  if (
+    arg.type === "TemplateLiteral" &&
+    arg.expressions.length === 0 &&
+    arg.quasis.length === 1
+  ) {
+    const cooked = arg.quasis[0].value && arg.quasis[0].value.cooked;
+    if (typeof cooked === "string") {
+      return FINYK_TOKEN_KEY_VALUES.has(cooked);
+    }
+  }
+  if (
+    arg.type === "MemberExpression" &&
+    !arg.computed &&
+    arg.object.type === "Identifier" &&
+    arg.object.name === "STORAGE_KEYS" &&
+    arg.property.type === "Identifier"
+  ) {
+    return FINYK_TOKEN_KEY_NAMES.has(arg.property.name);
+  }
+  if (
+    arg.type === "MemberExpression" &&
+    arg.computed &&
+    arg.object.type === "Identifier" &&
+    arg.object.name === "STORAGE_KEYS" &&
+    arg.property.type === "Literal" &&
+    typeof arg.property.value === "string"
+  ) {
+    return FINYK_TOKEN_KEY_NAMES.has(arg.property.value);
+  }
+  return false;
+}
+
+function getCalleeName(callee) {
+  if (!callee) return null;
+  if (callee.type === "Identifier") return callee.name;
+  if (
+    callee.type === "MemberExpression" &&
+    !callee.computed &&
+    callee.property.type === "Identifier"
+  ) {
+    return callee.property.name;
+  }
+  return null;
+}
+
+const noFinykTokenInStorage = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid persisting the Monobank PAT (`finyk_token`) on the client. The token must live only in `mono_connection.token_ciphertext` server-side.",
+    },
+    schema: [],
+    messages: { write: FINYK_TOKEN_MESSAGE },
+  },
+  create(context) {
+    return {
+      CallExpression(node) {
+        const calleeName = getCalleeName(node.callee);
+        if (!calleeName) return;
+        if (!FINYK_TOKEN_WRITE_FUNCTIONS.has(calleeName)) return;
+        if (!node.arguments || node.arguments.length === 0) return;
+        if (isFinykTokenKeyArgument(node.arguments[0])) {
+          context.report({ node, messageId: "write" });
+        }
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
     "no-ellipsis-dots": noEllipsisDots,
     "no-raw-tracked-storage": noRawTrackedStorage,
     "no-raw-local-storage": noRawLocalStorage,
+    "no-finyk-token-in-storage": noFinykTokenInStorage,
     "ai-marker-syntax": aiMarkerSyntax,
     "valid-tailwind-opacity": validTailwindOpacity,
     "no-hex-in-classname": noHexInClassname,

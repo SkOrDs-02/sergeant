@@ -469,7 +469,6 @@
 - [istanbul-lib-instrument@5.2.1](https://istanbul.js.org/) - BSD-3-Clause
 - [jackspeak@3.4.3](https://github.com/isaacs/jackspeak#readme) - BlueOak-1.0.0
 - [jimp-compact@0.16.1](https://github.com/nuxt-community/jimp-compact#readme) - MIT
-- [jiti@1.21.7](https://github.com/unjs/jiti#readme) - MIT
 - [jiti@2.6.1](https://github.com/unjs/jiti#readme) - MIT
 - [join-component@1.1.0](undefined) - MIT
 - [jose@6.2.2](https://github.com/panva/jose) - MIT

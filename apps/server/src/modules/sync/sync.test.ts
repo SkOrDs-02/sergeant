@@ -310,8 +310,14 @@ describe("syncPullAll module filtering", () => {
     const res = makeRes();
     await syncPullAll(makeReq({}), res);
 
-    expect(pool.query).toHaveBeenCalledTimes(1);
-    const [sql, params] = pool.query.mock.calls[0];
+    // `module_data` має сканитись рівно одним запитом; додаткові виклики
+    // `pool.query` після нього (зокрема fire-and-forget INSERT у
+    // `sync_audit_log`) — не вважаємо за порушення контракту pull_all.
+    const moduleDataCalls = pool.query.mock.calls.filter(([sql]) =>
+      /module_data/.test(String(sql)),
+    );
+    expect(moduleDataCalls).toHaveLength(1);
+    const [sql, params] = moduleDataCalls[0];
     expect(sql).toMatch(/module = ANY\(\$2::text\[\]\)/);
     expect(params[0]).toBe("user_1");
     // Параметр $2 має бути рівно множиною VALID_MODULES (без coach).
@@ -439,8 +445,14 @@ describe("syncPush (singular) — contract tests", () => {
       version: 3,
     });
     // INSERT … ON CONFLICT … RETURNING (без supplementary SELECT).
-    expect(pool.query).toHaveBeenCalledTimes(1);
-    const [sql, params] = pool.query.mock.calls[0];
+    // Фільтруємо `module_data` запити: fire-and-forget audit-вставка
+    // після успіху теж використовує `pool.query`, але вона не належить
+    // до контракту push.
+    const moduleDataCalls = pool.query.mock.calls.filter(([sql]) =>
+      /module_data/.test(String(sql)),
+    );
+    expect(moduleDataCalls).toHaveLength(1);
+    const [sql, params] = moduleDataCalls[0];
     expect(sql).toMatch(/INSERT INTO module_data/);
     expect(params[0]).toBe("user_1");
     expect(params[1]).toBe("finyk");

@@ -10,6 +10,7 @@
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { getTxStatAmount } from "../../modules/finyk/utils";
+import { safeReadLS, safeReadStringLS } from "@shared/lib/storage";
 
 export interface Insight {
   id: string;
@@ -49,12 +50,7 @@ interface NutritionDay {
 type NutritionLog = Record<string, NutritionDay | undefined>;
 
 function safeLS<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
+  return safeReadLS<T>(key, fallback) ?? fallback;
 }
 
 function localDateKey(d: Date = new Date()): string {
@@ -62,7 +58,7 @@ function localDateKey(d: Date = new Date()): string {
 }
 
 function parseFizrukWorkouts(): Workout[] {
-  const raw = localStorage.getItem(STORAGE_KEYS.FIZRUK_WORKOUTS);
+  const raw = safeReadStringLS(STORAGE_KEYS.FIZRUK_WORKOUTS);
   if (!raw) return [];
   try {
     const p = JSON.parse(raw) as Workout[] | { workouts?: Workout[] } | null;

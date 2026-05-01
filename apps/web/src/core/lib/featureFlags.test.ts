@@ -31,7 +31,7 @@ describe("featureFlags", () => {
     const sub = FLAG_REGISTRY.find(
       (f) => f.id === "finyk_subscriptions_category",
     );
-    expect(getFlag("finyk_subscriptions_category")).toBe(sub.defaultValue);
+    expect(getFlag("finyk_subscriptions_category")).toBe(sub!.defaultValue);
   });
 
   it("setFlag зберігає boolean і getFlag його повертає", async () => {

@@ -60,8 +60,8 @@ describe("computeDailyFinykSummary", () => {
     expect(r.todaySpent).toBe(400);
     expect(r.txCount).toBe(2);
     expect(r.topCategory).toBeDefined();
-    expect(r.topCategory.amount).toBe(250);
-    expect(r.topCategory.pct).toBe(63);
+    expect(r.topCategory!.amount).toBe(250);
+    expect(r.topCategory!.pct).toBe(63);
   });
 
   it("рахує також ручні витрати (finyk_manual_expenses_v1)", () => {
@@ -75,7 +75,7 @@ describe("computeDailyFinykSummary", () => {
     const r = computeDailyFinykSummary({ now });
     expect(r.status).toBe("has_expenses");
     expect(r.todaySpent).toBe(150);
-    expect(r.topCategory.id).toBe("food");
+    expect(r.topCategory!.id).toBe("food");
   });
 
   it("ігнорує внутрішні перекази (internal_transfer)", () => {
@@ -128,7 +128,12 @@ describe("computeDailyFinykSummary", () => {
   it("повертає `reminder_no_expenses` увечері якщо користувач регулярний", () => {
     const now = makeNow();
     // 4 дні з витратами за останні 7 днів
-    const txs = [];
+    const txs: Array<{
+      id: string;
+      amount: number;
+      time: number;
+      mcc: number;
+    }> = [];
     for (let i = 1; i <= 4; i++) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
@@ -143,7 +148,12 @@ describe("computeDailyFinykSummary", () => {
   it("повертає `quiet` зранку навіть для регулярних (щоб не набридати)", () => {
     const morning = new Date();
     morning.setHours(9, 0, 0, 0);
-    const txs = [];
+    const txs: Array<{
+      id: string;
+      amount: number;
+      time: number;
+      mcc: number;
+    }> = [];
     for (let i = 1; i <= 4; i++) {
       const d = new Date(morning);
       d.setDate(d.getDate() - i);

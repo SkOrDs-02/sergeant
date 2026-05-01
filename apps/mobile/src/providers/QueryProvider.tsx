@@ -17,7 +17,10 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import type { PropsWithChildren } from "react";
 import { useMemo } from "react";
 
-import { createMMKVPersister } from "@/sync/persister/mmkvPersister";
+import {
+  createMMKVPersister,
+  shouldDehydrateQueryForPersistMobile,
+} from "@/sync/persister/mmkvPersister";
 
 // 7 days — long enough that a user who returns after a week still sees
 // their last-seen data on launch, short enough that we don't keep
@@ -48,7 +51,20 @@ export function QueryProvider({ children }: PropsWithChildren) {
   return (
     <PersistQueryClientProvider
       client={client}
-      persistOptions={{ persister, maxAge: PERSIST_MAX_AGE_MS }}
+      persistOptions={{
+        persister,
+        maxAge: PERSIST_MAX_AGE_MS,
+        // Don't persist auth/me/coach/sync/balance feeds — they
+        // contain personally-identifying data that must not survive
+        // logout / device hand-off (the persister is keyed by
+        // build-id, not user-id). Mirrors the web persister; the
+        // shared block-list lives in `@sergeant/shared`
+        // `isSensitiveQueryKey`. See PR #004 in
+        // `docs/planning/storage-roadmap.md`.
+        dehydrateOptions: {
+          shouldDehydrateQuery: shouldDehydrateQueryForPersistMobile,
+        },
+      }}
     >
       {children}
     </PersistQueryClientProvider>

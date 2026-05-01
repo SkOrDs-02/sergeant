@@ -312,16 +312,6 @@ export default [
       "apps/web/src/core/hints/HintsOrchestrator.tsx",
       "apps/web/src/core/hub/hubBackup.ts",
       "apps/web/src/core/hub/hubSearchEngine.ts",
-      "apps/web/src/core/lib/chatActions/crossActions.ts",
-      "apps/web/src/core/lib/chatActions/finykActions.ts",
-      "apps/web/src/core/lib/dailyFinykSummary.ts",
-      "apps/web/src/core/lib/hubChatUtils.ts",
-      "apps/web/src/core/lib/insightsEngine.ts",
-      "apps/web/src/core/lib/recommendationEngine.ts",
-      "apps/web/src/core/lib/recommendations/financeContext.ts",
-      "apps/web/src/core/onboarding/DailyNudge.tsx",
-      "apps/web/src/core/onboarding/FirstActionSheet.tsx",
-      "apps/web/src/core/onboarding/ReEngagementCard.tsx",
       "apps/web/src/core/onboarding/presetApply.ts",
       "apps/web/src/core/insights/useCoachInsight.ts",
       "apps/web/src/core/insights/useWeeklyDigest.ts",
@@ -360,6 +350,33 @@ export default [
     ],
     rules: {
       "sergeant-design/no-raw-local-storage": "error",
+    },
+  },
+  // Monobank PAT client-storage guardrail — Stage 0 / PR #002 from
+  // `docs/planning/storage-roadmap.md`. The PAT lives only on the
+  // server (`mono_connection.token_ciphertext`); persisting it
+  // anywhere on the client (LS / sessionStorage / MMKV / IDB / cloud-sync
+  // `module_data`) is a security regression. Reads (the migration
+  // hook `useMonoTokenMigration`) and removals (`removeItem`,
+  // `safeRemoveLS`) are intentionally NOT flagged. Test files are
+  // exempt — fixtures need to seed/inspect the legacy LS entries.
+  {
+    files: [
+      "apps/web/src/**/*.{js,jsx,ts,tsx}",
+      "apps/mobile/src/**/*.{js,jsx,ts,tsx}",
+      "apps/server/src/**/*.{js,ts}",
+    ],
+    ignores: [
+      "apps/web/src/**/*.test.{js,jsx,ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+      "apps/web/src/**/*.spec.{ts,tsx}",
+      "apps/mobile/src/**/*.test.{js,jsx,ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/server/src/**/*.test.{js,ts}",
+      "apps/server/src/**/__tests__/**",
+    ],
+    rules: {
+      "sergeant-design/no-finyk-token-in-storage": "error",
     },
   },
   // AuthContext migration (Session 4B, PR after #390): "who am I" is

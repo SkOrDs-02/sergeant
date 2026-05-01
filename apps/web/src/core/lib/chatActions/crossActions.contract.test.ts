@@ -200,7 +200,12 @@ describe("detect_anomalies", () => {
 
   it("happy: detects anomaly when large outlier exists", () => {
     const now = Math.floor(Date.now() / 1000);
-    const txs = [];
+    const txs: Array<{
+      id: string;
+      amount: number;
+      time: number;
+      description: string;
+    }> = [];
     for (let i = 0; i < 10; i++) {
       txs.push({
         id: `t${i}`,

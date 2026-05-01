@@ -15,7 +15,7 @@ export { REST_CATEGORY_LABELS, REST_DEFAULTS, getRestCategory };
 
 const KEY = STORAGE_KEYS.FIZRUK_REST_SETTINGS;
 
-type MergedSettings = typeof REST_DEFAULTS;
+type MergedSettings = Record<keyof typeof REST_DEFAULTS, number>;
 
 /**
  * Hook that provides user-configurable default rest durations per exercise type.
