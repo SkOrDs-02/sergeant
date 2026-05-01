@@ -1,0 +1,82 @@
+/**
+ * Smoke-тести Prometheus-реєстру: переконуємось, що ключові метрики
+ * зареєстровані у спільному `register`-і й експортуються через
+ * `register.metrics()` у форматі, який Prometheus може відфетчити.
+ *
+ * Не вимірюємо самі значення (collectDefaultMetrics + business counters
+ * — це стани процесу, які тестувати в unit-форматі дорого і крихко).
+ * Покриваємо саме контракт: ім'я метрики, тип, набір лейблів, видимість
+ * у експорт-payload-і. Це той контракт, на який зав'язані Grafana-дашборди
+ * (e.g. `* on (instance) group_left(version, commit) http_request_duration_ms`)
+ * — тут ми ловимо drift, який інакше з'явився б тільки під alert-evaluator-ом.
+ */
+import { describe, it, expect } from "vitest";
+import {
+  register,
+  appBuildInfo,
+  aiRequestDurationMs,
+  aiRequestsTotal,
+} from "./metrics.js";
+
+describe("metrics registry — `app_build_info` gauge", () => {
+  it("реєструється у спільному `register`-і з ім'ям `app_build_info`", () => {
+    const metric = register.getSingleMetric("app_build_info");
+    expect(metric).toBe(appBuildInfo);
+    expect(metric).toBeDefined();
+  });
+
+  it("експортує єдиний sample зі значенням 1 і повним набором лейблів", async () => {
+    const text = await register.metrics();
+    // `app_build_info{version="…", commit="…", release="…", env="…", node_version="…"} 1`
+    // — точна форма, яку Prometheus зчитує. Якщо хтось забуде один з
+    // лейблів (наприклад, прибере `env` для "стиснення"), всі дашборди,
+    // що роблять `group_left(commit, release)`, мовчки втратять точку
+    // join-а — тому лейбли явно фіксуємо у тесті.
+    expect(text).toMatch(/^app_build_info\{.*?\} 1$/m);
+    expect(text).toMatch(/version="[^"]+"/);
+    expect(text).toMatch(/commit="[^"]+"/);
+    expect(text).toMatch(/release="[^"]+"/);
+    expect(text).toMatch(/env="[^"]+"/);
+    expect(text).toMatch(/node_version="[^"]+"/);
+  });
+
+  it("`commit` обрізається до 12 символів (slice ув'язується з prom-cardinality bound-ом)", async () => {
+    const text = await register.metrics();
+    const match = /commit="([^"]+)"/.exec(text);
+    expect(match).not.toBeNull();
+    // 12 символів = стандартний short-SHA, який Railway/GitHub вставляють
+    // у release-таги. Більше — невиправдана cardinality, менше — ризик
+    // колізій SHA-prefix-у в великих репах.
+    if (match) expect(match[1].length).toBeLessThanOrEqual(12);
+  });
+});
+
+describe("metrics registry — AI per-endpoint duration histogram", () => {
+  it("`ai_request_duration_ms` зареєстрований і має лейбли provider/model/endpoint/outcome", () => {
+    // SLO/dashboards зав'язані саме на цей набір лейблів. Дзеркалить
+    // labelNames у `aiRequestsTotal` — щоб p95-латентність помилкових
+    // запитів можна було виокремити з `outcome="error"`.
+    const metric = register.getSingleMetric("ai_request_duration_ms");
+    expect(metric).toBe(aiRequestDurationMs);
+
+    const counter = register.getSingleMetric("ai_requests_total");
+    expect(counter).toBe(aiRequestsTotal);
+  });
+
+  it("експорт містить `# TYPE ai_request_duration_ms histogram` і lable-set", async () => {
+    aiRequestDurationMs.observe(
+      {
+        provider: "anthropic",
+        model: "claude-sonnet-4-6",
+        endpoint: "chat",
+        outcome: "ok",
+      },
+      123,
+    );
+    const text = await register.metrics();
+    expect(text).toContain("# TYPE ai_request_duration_ms histogram");
+    expect(text).toMatch(
+      /ai_request_duration_ms_bucket\{.*?endpoint="chat".*?outcome="ok".*?\}/,
+    );
+  });
+});

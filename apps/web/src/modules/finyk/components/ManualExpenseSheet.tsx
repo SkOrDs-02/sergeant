@@ -10,7 +10,11 @@ import {
   useVisualKeyboardInset,
 } from "@sergeant/shared";
 import { hapticSuccess } from "@shared/lib/haptic";
-import { CANONICAL_TO_MANUAL_LABEL } from "@sergeant/finyk-domain/domain/personalization";
+import {
+  CANONICAL_TO_MANUAL_LABEL,
+  type FrequentCategory,
+  type FrequentMerchant,
+} from "@sergeant/finyk-domain/domain/personalization";
 
 // Manual-expense categories. Labels map to the MCC canonical ids used
 // across the rest of Finyk (see `MANUAL_CATEGORY_ID_MAP`), so manual
@@ -75,8 +79,10 @@ function stripEmoji(label) {
 const DEFAULT_AMOUNTS = [50, 100, 200, 500];
 const MAX_AMOUNT_CHIPS = 6;
 
-function buildAmountSuggestions(frequentMerchants) {
-  const frequentRaw = [];
+function buildAmountSuggestions(
+  frequentMerchants: FrequentMerchant[] | undefined,
+) {
+  const frequentRaw: number[] = [];
   for (const m of frequentMerchants || []) {
     if (!m || typeof m.total !== "number" || !m.count) continue;
     const avg = Math.round(m.total / m.count);
@@ -92,7 +98,9 @@ function buildAmountSuggestions(frequentMerchants) {
 
 // Сортує доступні підписи категорій за персональною частотою, зберігаючи
 // стабільний порядок для категорій без статистики.
-function sortCategoriesByFrequency(frequentCategories = []) {
+function sortCategoriesByFrequency(
+  frequentCategories: FrequentCategory[] = [],
+) {
   if (!frequentCategories.length) return CATEGORIES;
   // Перетворюємо частотну статистику на індекс manual-label → rank.
   // Для canonical id беремо відповідний manual-label; для custom / невідомих —
@@ -119,6 +127,29 @@ function sortCategoriesByFrequency(frequentCategories = []) {
   return withRank.map((x) => x.label);
 }
 
+interface ManualExpenseSheetProps {
+  open: boolean;
+  onClose: () => void;
+  onSave?: (expense: {
+    id?: string;
+    description: string;
+    amount: number;
+    category: string;
+    date: string;
+  }) => void;
+  initialExpense?: {
+    id?: string;
+    description?: string;
+    amount?: number;
+    category?: string;
+    date?: string;
+  } | null;
+  frequentCategories?: FrequentCategory[];
+  frequentMerchants?: FrequentMerchant[];
+  initialCategory?: string | null;
+  initialDescription?: string | null;
+}
+
 export function ManualExpenseSheet({
   open,
   onClose,
@@ -128,7 +159,7 @@ export function ManualExpenseSheet({
   frequentMerchants = [],
   initialCategory,
   initialDescription,
-}) {
+}: ManualExpenseSheetProps) {
   const formId = useId();
   const descId = `${formId}-desc`;
   const amountId = `${formId}-amount`;

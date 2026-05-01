@@ -56,14 +56,19 @@ export function useFinykPersonalization({
     if (!rawExcludedTxIds || rawExcludedTxIds.size === 0) return "";
     return Array.from(rawExcludedTxIds).sort().join("|");
   }, [rawExcludedTxIds]);
-  const excludedTxIds = useMemo(
-    () => rawExcludedTxIds || null,
+  const excludedTxIds = useMemo<Set<string> | undefined>(
+    () => rawExcludedTxIds || undefined,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [excludedTxIdsKey],
   );
 
   const opts = useMemo(
-    () => ({ customCategories, excludedTxIds, txCategories, now }),
+    () => ({
+      customCategories,
+      excludedTxIds,
+      txCategories,
+      ...(now ? { now } : {}),
+    }),
     [customCategories, excludedTxIds, txCategories, now],
   );
 

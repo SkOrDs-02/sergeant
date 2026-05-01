@@ -225,11 +225,17 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
           setMonthCache((prev) => ({ ...prev, [key]: txs }));
         })
         .catch(() => {
-          setMonthCache((prev) => ({ ...prev, [key]: [] }));
+          // Don't poison the cache with an empty array — a transient or
+          // disconnected fetch should remain refetchable on the next
+          // navigation. Leaving the key absent keeps `comparison`/UI in
+          // a "no data yet" state instead of a misleading "0 ₴" state.
         })
         .finally(() => {
           fetchingRef.current.delete(key);
-          setLoading(false);
+          // Keep the loading indicator on while any other month fetch is
+          // still in flight; flipping to `false` unconditionally would
+          // hide loading whenever the first parallel fetch resolves.
+          setLoading(fetchingRef.current.size > 0);
         });
     },
     [mono, monthCache],

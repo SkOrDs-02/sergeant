@@ -180,7 +180,7 @@ function SubCardComponent({
             Привʼязано до транзакції · оновлює суму та дату
           </div>
         )}
-        {lastTx && (
+        {lastTx && lastTx.time != null && (
           <div className="text-xs text-subtle mt-0.5">
             Останнє: {fmtDate(lastTx.time)}
           </div>

@@ -1,4 +1,5 @@
 import { memo, useCallback, useMemo, useState } from "react";
+import { formatMoney } from "@sergeant/shared";
 import { getCategory, getIncomeCategory, fmtAmt, fmtDate } from "../utils";
 import {
   MCC_CATEGORIES,
@@ -213,7 +214,7 @@ function TxRowImpl({
               П24
             </span>
           )}
-          <span className="text-xs text-subtle">· {fmtDate(tx.time)}</span>
+          <span className="text-xs text-subtle">· {fmtDate(tx.time ?? 0)}</span>
         </div>
       </div>
     </>
@@ -360,9 +361,7 @@ function TxRowImpl({
       {splitEditor && onSplitChange && (
         <div className="pb-3 px-2 space-y-2">
           <div className="text-xs text-subtle font-medium">
-            Розподіл ·{" "}
-            {totalAmt.toLocaleString("uk-UA", { minimumFractionDigits: 2 })} ₴
-            всього
+            Розподіл · {formatMoney(totalAmt, { minFractionDigits: 2 })} всього
           </div>
           {draftSplits.map((sp, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -418,7 +417,7 @@ function TxRowImpl({
           >
             {Math.abs(remaining) < 0.01
               ? "✓ Суми збігаються"
-              : `Залишок: ${remaining.toLocaleString("uk-UA", { minimumFractionDigits: 2 })} ₴`}
+              : `Залишок: ${formatMoney(remaining, { minFractionDigits: 2 })}`}
           </div>
           <button
             onClick={() =>

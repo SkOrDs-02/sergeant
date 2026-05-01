@@ -55,6 +55,12 @@ export * from "./lib/dashboardFocus";
 // Hub dashboard quick-stats preview selector (pure; callers own storage I/O).
 export * from "./lib/quickStats";
 
+// Centralized hryvnia / currency formatter — single source of truth for ₴
+// amounts across the web app and shared package. See `formatMoney.ts`
+// for conventions; `fmtAmt` (in `@sergeant/finyk-domain`) remains the
+// transaction-row formatter and is intentionally separate.
+export * from "./lib/formatMoney";
+
 // Hub weekly-digest helpers — week key / storage key / digest freshness.
 export * from "./lib/weeklyDigest";
 

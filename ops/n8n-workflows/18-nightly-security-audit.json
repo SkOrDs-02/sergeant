@@ -3,12 +3,14 @@
   "nodes": [
     {
       "parameters": {
-        "interval": [
-          {
-            "field": "cronExpression",
-            "expression": "0 4 * * *"
-          }
-        ]
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 4 * * *"
+            }
+          ]
+        }
       },
       "id": "cron-4am-utc",
       "name": "Cron 04:00 UTC",
@@ -160,7 +162,8 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "timezone": "UTC"
+    "timezone": "UTC",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
   },
   "tags": [
     {

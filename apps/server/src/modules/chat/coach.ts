@@ -11,6 +11,7 @@ import {
   CoachInsightSchema,
   CoachMemoryPostSchema,
 } from "../../http/schemas.js";
+import { ExternalServiceError } from "../../obs/errors.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -365,10 +366,9 @@ ${snapshotText}
 
   if (!aiRes?.ok) {
     const errData = aiData as AnthropicErrorPayload | null | undefined;
-    res
-      .status(aiRes?.status || 500)
-      .json({ error: errData?.error?.message || "AI error" });
-    return;
+    throw new ExternalServiceError(errData?.error?.message || "AI error", {
+      status: aiRes?.status || 502,
+    });
   }
 
   const text = extractAnthropicText(aiData);

@@ -47,6 +47,7 @@ import {
   recordAnthropicUsage as _recordAnthropicUsage,
 } from "../../lib/anthropic.js";
 import handler from "./chat.js";
+import { ExternalServiceError } from "../../obs/errors.js";
 
 const anthropicMessagesStream = _anthropicMessagesStream as unknown as Mock;
 const recordAnthropicUsageMock = _recordAnthropicUsage as unknown as Mock;
@@ -510,7 +511,12 @@ describe("chat handler — SSE graceful degradation на continuation-помил
 });
 
 describe("chat handler — SSE first-call upstream errors", () => {
-  it("перший upstream !ok → JSON-помилка зі статусом, БЕЗ SSE-заголовків і БЕЗ data-подій", async () => {
+  it("перший upstream !ok → кидає ExternalServiceError, БЕЗ SSE-заголовків і БЕЗ data-подій", async () => {
+    // Pre-SSE upstream-помилка: SSE-заголовки ще не виставлені, тому
+    // нормалізуємо у `ExternalServiceError`. `asyncHandler` довеже до
+    // `errorHandler`, який віддасть JSON `{ error, code: EXTERNAL_SERVICE,
+    // requestId }` зі статусом 429. Перевіряємо контракт на рівні throw —
+    // обгортка `errorHandler` тестується окремо в `errorHandler.test.ts`.
     anthropicMessagesStream.mockResolvedValueOnce({
       response: new Response(
         JSON.stringify({ error: { message: "rate limited" } }),
@@ -521,15 +527,24 @@ describe("chat handler — SSE first-call upstream errors", () => {
 
     const req = makeReq(makeStreamReqBody());
     const res = makeSseRes();
-    await handler(req, res);
-
-    expect(res.statusCode).toBe(429);
-    expect(res.body).toEqual({ error: "rate limited" });
+    let caught: unknown = null;
+    try {
+      await handler(req, res);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(ExternalServiceError);
+    expect(caught).toMatchObject({
+      status: 429,
+      code: "EXTERNAL_SERVICE",
+      message: "rate limited",
+    });
+    // Жодного запису у SSE-стрім (заголовки і body не задіяні).
     expect(res.writes).toHaveLength(0);
     expect(res.headers["Content-Type"]).toBeUndefined();
   });
 
-  it("перший upstream !ok з не-JSON боді → fallback на raw text() через clone()", async () => {
+  it("перший upstream !ok з не-JSON боді → fallback на raw text() через clone(), кидає ExternalServiceError", async () => {
     // `firstResponse.json()` консьюмить body-стрім. Щоб після failed-`.json()`
     // мати можливість прочитати raw-text, у chat.ts тримаємо `clone()` ДО
     // першої спроби — інакше `.text()` поверне нічого і ми втратимо edge-case
@@ -544,12 +559,58 @@ describe("chat handler — SSE first-call upstream errors", () => {
 
     const req = makeReq(makeStreamReqBody());
     const res = makeSseRes();
+    let caught: unknown = null;
+    try {
+      await handler(req, res);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(ExternalServiceError);
+    expect(caught).toMatchObject({
+      status: 503,
+      code: "EXTERNAL_SERVICE",
+      message: "Service Unavailable",
+    });
+    // SSE-заголовки НЕ виставлені (помилкова гілка йде через errorHandler, а не event-stream).
+    expect(res.headers["Content-Type"]).toBeUndefined();
+  });
+
+  it("getReader() === null edge-case → SSE 'err'-подія перед [DONE], стрім коректно закривається", async () => {
+    // Anthropic повернув 200 OK без body (Cloudflare/edge-проксі іноді
+    // стрипають body). SSE-заголовки вже виставлені на цьому етапі —
+    // ми НЕ кидаємо у JSON, а пишемо явну err-подію в стрім, інакше
+    // клієнт побачив би лише тиху [DONE]-закриватку без причини.
+    const responseWithoutBody = new Response(null, {
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+    });
+    // Деякі рантайми не повертають `getReader`-сумісне body для пустого
+    // Response — якщо платформа все ж повернула body, явно нулюємо.
+    Object.defineProperty(responseWithoutBody, "body", {
+      value: null,
+      configurable: true,
+    });
+
+    anthropicMessagesStream.mockResolvedValueOnce({
+      response: responseWithoutBody,
+      recordStreamEnd: vi.fn(),
+    });
+
+    const req = makeReq(makeStreamReqBody());
+    const res = makeSseRes();
     await handler(req, res);
 
-    expect(res.statusCode).toBe(503);
-    expect((res.body as { error: string }).error).toBe("Service Unavailable");
-    // SSE-заголовки НЕ виставлені (помилкова гілка віддає JSON, а не event-stream).
-    expect(res.headers["Content-Type"]).toBeUndefined();
+    const payloads = dataPayloads(res.writes);
+    // Очікуємо рівно одну err-подію (саме від edge-case-у), потім [DONE].
+    expect(payloads).toContain(
+      JSON.stringify({ err: "AI upstream returned empty body" }),
+    );
+    expect(payloads[payloads.length - 1]).toBe("[DONE]");
+    expect(res.writableEnded).toBe(true);
+    // SSE-заголовки виставлені (стрім ВЖЕ почато на момент edge-case-у).
+    expect(res.headers["Content-Type"]).toBe(
+      "text/event-stream; charset=utf-8",
+    );
   });
 });
 

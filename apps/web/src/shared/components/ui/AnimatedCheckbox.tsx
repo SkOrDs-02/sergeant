@@ -46,13 +46,21 @@ const sizeStyles: Record<CheckboxSize, { box: string; icon: number }> = {
 
 export interface AnimatedCheckboxProps {
   checked: boolean;
-  onChange: (checked: boolean) => void;
+  onChange?: (checked: boolean) => void;
   variant?: CheckboxVariant;
   size?: CheckboxSize;
   disabled?: boolean;
   showConfetti?: boolean;
   className?: string;
   "aria-label"?: string;
+  /**
+   * When `true`, renders a non-interactive visual indicator (no role,
+   * no focus, `aria-hidden`). Use when the checkbox is wrapped by an
+   * outer interactive element so axe's `nested-interactive` rule
+   * stays clean. Animation is then driven from the `checked` prop
+   * transitioning `false → true` instead of an internal click handler.
+   */
+  decorative?: boolean;
 }
 
 export const AnimatedCheckbox = memo(function AnimatedCheckbox({
@@ -64,12 +72,14 @@ export const AnimatedCheckbox = memo(function AnimatedCheckbox({
   showConfetti = false,
   className,
   "aria-label": ariaLabel,
+  decorative = false,
 }: AnimatedCheckboxProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [confettiParticles, setConfettiParticles] = useState<
     Array<{ id: number; x: number; y: number; color: string; delay: number }>
   >([]);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const prevCheckedRef = useRef(checked);
 
   const prefersReducedMotion =
     typeof window !== "undefined" &&
@@ -79,7 +89,7 @@ export const AnimatedCheckbox = memo(function AnimatedCheckbox({
     if (disabled) return;
 
     const newValue = !checked;
-    onChange(newValue);
+    onChange?.(newValue);
 
     if (newValue) {
       hapticSuccess();
@@ -105,6 +115,20 @@ export const AnimatedCheckbox = memo(function AnimatedCheckbox({
     }
   }, [checked, onChange, disabled, showConfetti, prefersReducedMotion]);
 
+  // In decorative mode the parent owns the click — drive the bounce
+  // animation from the `checked` prop transitioning false → true.
+  useEffect(() => {
+    if (!decorative) {
+      prevCheckedRef.current = checked;
+      return;
+    }
+    if (!prevCheckedRef.current && checked && !prefersReducedMotion) {
+      setIsAnimating(true);
+      timeoutRef.current = setTimeout(() => setIsAnimating(false), 400);
+    }
+    prevCheckedRef.current = checked;
+  }, [checked, decorative, prefersReducedMotion]);
+
   useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -114,41 +138,54 @@ export const AnimatedCheckbox = memo(function AnimatedCheckbox({
   const styles = variantStyles[variant];
   const sizes = sizeStyles[size];
 
+  const indicator = (
+    <Icon
+      name="check"
+      size={sizes.icon}
+      strokeWidth={3}
+      className={cn(
+        "text-white",
+        !prefersReducedMotion && "motion-safe:animate-check-draw",
+      )}
+    />
+  );
+
+  const visualClass = cn(
+    "relative inline-flex items-center justify-center rounded-lg",
+    "border-2 transition-all duration-200",
+    sizes.box,
+    checked ? cn(styles.fill, "border-transparent") : "border-line bg-panel",
+    isAnimating && "motion-safe:animate-check-bounce",
+    disabled && "opacity-50",
+  );
+
   return (
-    <span className={cn("relative inline-flex", className)}>
-      <button
-        type="button"
-        role="checkbox"
-        aria-checked={checked}
-        aria-label={ariaLabel}
-        disabled={disabled}
-        onClick={handleToggle}
-        className={cn(
-          "relative inline-flex items-center justify-center rounded-lg",
-          "border-2 transition-all duration-200",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-          styles.ring,
-          sizes.box,
-          checked
-            ? cn(styles.fill, "border-transparent")
-            : "border-line bg-panel hover:border-muted",
-          isAnimating && "motion-safe:animate-check-bounce",
-          disabled && "opacity-50 cursor-not-allowed",
-          !disabled && "cursor-pointer",
-        )}
-      >
-        {checked && (
-          <Icon
-            name="check"
-            size={sizes.icon}
-            strokeWidth={3}
-            className={cn(
-              "text-white",
-              !prefersReducedMotion && "motion-safe:animate-check-draw",
-            )}
-          />
-        )}
-      </button>
+    <span
+      className={cn("relative inline-flex", className)}
+      aria-hidden={decorative ? true : undefined}
+    >
+      {decorative ? (
+        <span className={visualClass}>{checked && indicator}</span>
+      ) : (
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={checked}
+          aria-label={ariaLabel}
+          disabled={disabled}
+          onClick={handleToggle}
+          className={cn(
+            visualClass,
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+            styles.ring,
+            !checked && "hover:border-muted",
+            disabled && "cursor-not-allowed",
+            !disabled && "cursor-pointer",
+          )}
+        >
+          {checked && indicator}
+        </button>
+      )}
 
       {/* Confetti burst */}
       {confettiParticles.length > 0 && (

@@ -17,6 +17,7 @@ import { TOOLS, SYSTEM_PREFIX, SYSTEM_PROMPT_VERSION } from "./tools.js";
 import { recordToolProposals, recordToolExecutions } from "./toolMetrics.js";
 import { truncateToolResults } from "./toolResultTruncation.js";
 import { als } from "../../obs/requestContext.js";
+import { ExternalServiceError } from "../../obs/errors.js";
 
 type WithAnthropicKey = Request & { anthropicKey?: string };
 
@@ -392,10 +393,9 @@ export default async function handler(
 
     if (!response?.ok) {
       await refundQuotaOnUpstreamFailure(req);
-      res
-        .status(response?.status || 500)
-        .json({ error: data?.error?.message || "AI error" });
-      return;
+      throw new ExternalServiceError(data?.error?.message || "AI error", {
+        status: response?.status || 502,
+      });
     }
 
     const text = extractAnthropicText(data);
@@ -440,10 +440,9 @@ export default async function handler(
 
   if (!response?.ok) {
     await refundQuotaOnUpstreamFailure(req);
-    res
-      .status(response?.status || 500)
-      .json({ error: data?.error?.message || "AI error" });
-    return;
+    throw new ExternalServiceError(data?.error?.message || "AI error", {
+      status: response?.status || 502,
+    });
   }
 
   const content: AnthropicContentBlock[] = data?.content || [];
@@ -505,6 +504,17 @@ async function streamOneIterationToSse(
 ): Promise<StreamIterationResult> {
   const reader = upstream.body?.getReader();
   if (!reader) {
+    // Edge-case: 200 OK без `body`/`getReader()` — Anthropic не повинен
+    // такого віддавати, але Cloudflare/edge-проксі іноді стрипають body.
+    // SSE-заголовки тут ВЖЕ виставлені (caller — `streamAnthropicToSse`
+    // ставить їх до першого виклику цієї функції), тому ми НЕ можемо
+    // упасти у JSON через `errorHandler`. Натомість пишемо явну err-подію,
+    // щоб клієнт побачив помилку, а не тиху [DONE]-закриватку.
+    if (!res.writableEnded) {
+      res.write(
+        `data: ${JSON.stringify({ err: "AI upstream returned empty body" })}\n\n`,
+      );
+    }
     return {
       outcome: "error",
       stopReason: null,
@@ -630,8 +640,15 @@ async function streamAnthropicToSse(
         /* ignore */
       }
     }
-    res.status(firstResponse.status).json({ error: errMsg });
-    return;
+    // Pre-SSE Anthropic upstream-помилка: жодних SSE-заголовків ще не
+    // виставлено, тож кидаємо через `ExternalServiceError`, щоб
+    // `errorHandler` уніфіковано додав `code: EXTERNAL_SERVICE`,
+    // `requestId`, інкрементнув `app_errors_total{kind=operational}` і
+    // (для 5xx, де `isOperationalError(err)` — це 502 за замовчуванням)
+    // не дав Sentry повторити подію.
+    throw new ExternalServiceError(errMsg, {
+      status: firstResponse.status || 502,
+    });
   }
 
   res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
