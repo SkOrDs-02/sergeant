@@ -1,6 +1,6 @@
 # 03. Сервіси та тулстек
 
-> **Last validated:** 2026-04-30 by @Skords-01. **Next review:** 2026-07-29.
+> **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-30.
 > **Status:** Active
 
 > Повний аудит зовнішніх сервісів, інфраструктури, dev-інструментів: що є, що додати, що змінити.
@@ -98,12 +98,12 @@
 
 ### 2.3 Моніторинг / observability
 
-| Сервіс                         | Сайт                                       | Free tier                                                               | Paid tier                                                    | Date checked | Why this / Why not                                                                                                                                                  | Status |
-| ------------------------------ | ------------------------------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| **Sentry**                     | [sentry.io](https://sentry.io)             | Developer: 1 user, 5K errors/mo, 5M spans, 50 replays, 30-day retention | Team: $26/mo, 50K errors, 90-day retention. Business: $80/mo | 2026-04      | Error tracking web + server. SDK вже інтегровано (`@sentry/react`, `@sentry/node`). Free tier достатній для раннього етапу.                                         | in use |
-| **Prometheus** + `prom-client` | [prometheus.io](https://prometheus.io)     | Self-hosted, $0                                                         | N/A (open-source)                                            | 2026-04      | HTTP RED metrics, DB, AI quota. `/metrics` ендпоінт вже є.                                                                                                          | in use |
-| **Grafana Cloud**              | [grafana.com](https://grafana.com)         | Forever free: 10K metrics, 50 GB logs, 50 GB traces                     | Pro: $29/mo + usage                                          | 2026-04      | Дашборди для Prometheus. Безкоштовний tier покриває потреби до ~10K MAU.                                                                                            | to add |
-| **UptimeRobot**                | [uptimerobot.com](https://uptimerobot.com) | 50 monitors, 5-min interval                                             | Pro: $7/mo, 1-min interval                                   | 2026-04      | Зовнішній uptime моніторинг + status page. Деталі конфігурації алертів — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-1--product). | to add |
+| Сервіс                         | Сайт                                       | Free tier                                                               | Paid tier                                                    | Date checked | Why this / Why not                                                                                                                                                  | Status      |
+| ------------------------------ | ------------------------------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| **Sentry**                     | [sentry.io](https://sentry.io)             | Developer: 1 user, 5K errors/mo, 5M spans, 50 replays, 30-day retention | Team: $26/mo, 50K errors, 90-day retention. Business: $80/mo | 2026-04      | Error tracking web + server. SDK вже інтегровано (`@sentry/react`, `@sentry/node`). Free tier достатній для раннього етапу.                                         | in use      |
+| **Prometheus** + `prom-client` | [prometheus.io](https://prometheus.io)     | Self-hosted, $0                                                         | N/A (open-source)                                            | 2026-04      | HTTP RED metrics, DB, AI quota. `/metrics` ендпоінт вже є.                                                                                                          | in use      |
+| **Grafana Cloud**              | [grafana.com](https://grafana.com)         | Forever free: 10K metrics, 50 GB logs, 50 GB traces                     | Pro: $29/mo + usage                                          | 2026-05      | Дашборди для Prometheus. Безкоштовний tier покриває потреби до ~10K MAU. Конфіг скрейпера — `ops/grafana-alloy/` (Phase 2 trigger).                                 | setup-ready |
+| **UptimeRobot**                | [uptimerobot.com](https://uptimerobot.com) | 50 monitors, 5-min interval                                             | Pro: $7/mo, 1-min interval                                   | 2026-04      | Зовнішній uptime моніторинг + status page. Деталі конфігурації алертів — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-1--product). | to add      |
 
 ### 2.4 Платежі
 
