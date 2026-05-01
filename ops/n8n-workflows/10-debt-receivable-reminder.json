@@ -3,12 +3,14 @@
   "nodes": [
     {
       "parameters": {
-        "interval": [
-          {
-            "field": "cronExpression",
-            "expression": "0 10 * * *"
-          }
-        ]
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * *"
+            }
+          ]
+        }
       },
       "id": "cron-morning",
       "name": "Cron 10:00 Kyiv",
@@ -59,7 +61,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.PUBLIC_API_BASE_URL }}/api/push/send",
+        "url": "={{ $env.PUBLIC_API_BASE_URL || 'https://api.invalid.local' }}/api/push/send",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -88,7 +90,8 @@
       "name": "POST /api/push/send",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [900, 200]
+      "position": [900, 200],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -195,5 +198,5 @@
       "name": "push"
     }
   ],
-  "active": false
+  "active": true
 }
