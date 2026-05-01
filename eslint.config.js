@@ -352,6 +352,33 @@ export default [
       "sergeant-design/no-raw-local-storage": "error",
     },
   },
+  // Monobank PAT client-storage guardrail — Stage 0 / PR #002 from
+  // `docs/planning/storage-roadmap.md`. The PAT lives only on the
+  // server (`mono_connection.token_ciphertext`); persisting it
+  // anywhere on the client (LS / sessionStorage / MMKV / IDB / cloud-sync
+  // `module_data`) is a security regression. Reads (the migration
+  // hook `useMonoTokenMigration`) and removals (`removeItem`,
+  // `safeRemoveLS`) are intentionally NOT flagged. Test files are
+  // exempt — fixtures need to seed/inspect the legacy LS entries.
+  {
+    files: [
+      "apps/web/src/**/*.{js,jsx,ts,tsx}",
+      "apps/mobile/src/**/*.{js,jsx,ts,tsx}",
+      "apps/server/src/**/*.{js,ts}",
+    ],
+    ignores: [
+      "apps/web/src/**/*.test.{js,jsx,ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+      "apps/web/src/**/*.spec.{ts,tsx}",
+      "apps/mobile/src/**/*.test.{js,jsx,ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/server/src/**/*.test.{js,ts}",
+      "apps/server/src/**/__tests__/**",
+    ],
+    rules: {
+      "sergeant-design/no-finyk-token-in-storage": "error",
+    },
+  },
   // AuthContext migration (Session 4B, PR after #390): "who am I" is
   // single-sourced via `useUser()` from `@sergeant/api-client/react` → GET
   // `/api/v1/me`. Better Auth stays only as the actions layer. Block

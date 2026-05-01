@@ -26,7 +26,10 @@ export const SYNC_MODULES = {
       STORAGE_KEYS.FINYK_INFO_CACHE,
       STORAGE_KEYS.FINYK_TX_CACHE_LAST_GOOD,
       STORAGE_KEYS.FINYK_SHOW_BALANCE,
-      STORAGE_KEYS.FINYK_TOKEN,
+      // Monobank PAT lives only on the server (`mono_connection.token_ciphertext`,
+      // see `useMonoTokenMigration` for the legacy LS/sessionStorage cleanup).
+      // Intentionally NOT in this list: dehydrating it through cloud-sync would
+      // leak the cleartext token into `module_data.finyk` JSONB on every push.
     ],
   },
   fizruk: {
