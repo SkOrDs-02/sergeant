@@ -174,6 +174,90 @@ export const env = {
    * incident-response, а не self-service feature.
    */
   SYNC_AUDIT_ADMIN_USER_IDS: process.env.SYNC_AUDIT_ADMIN_USER_IDS || "",
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // AI memory (pgvector + Voyage embeddings, ADR-0028)
+  // ─────────────────────────────────────────────────────────────────────────
+  //
+  // Foundation layer без ingestion / retrieval (foundation-PR — лише storage
+  // + клієнт). Ingestion / retrieval приходять окремими PR-ами і вмикаються
+  // прапором `AI_MEMORY_ENABLED`. До цього прапора нічого не пишеться у
+  // `ai_memories` і нічого не читається у retrieval-pipeline (тобто existing
+  // chat-flow не зачіпається).
+
+  /**
+   * Майстер-вимикач AI memory pipeline. False у foundation-PR — embedд'инг
+   * клієнт може існувати, але service-методи `remember()` / `recall()`
+   * лишаються no-op-ами (повертають порожні результати без виклику
+   * провайдера). Вмикається разом з PR-ом ingestion-у.
+   */
+  AI_MEMORY_ENABLED: parseBoolEnv("AI_MEMORY_ENABLED", false),
+
+  /**
+   * Voyage AI API key. Якщо не задано — `createVoyageEmbeddings()` кидає
+   * `MissingVoyageApiKeyError` при будь-якому виклику. PR2 буде ставити
+   * memory-write задачі у queue зі статусом `failed` без повторних
+   * спроб у такому разі (щоб не валити Voyage квоту з кожним tick-ом).
+   */
+  VOYAGE_API_KEY: process.env.VOYAGE_API_KEY || "",
+
+  /**
+   * Voyage embedding model. `voyage-3-lite` — multilingual, дешевий
+   * (~$0.02/1M токенів), 1024-вимірний sweet-spot quality/розмір.
+   * Зміна моделі вимагає re-embedд'ингу всіх існуючих row-ів (vector
+   * spaces різних моделей не сумісні).
+   */
+  VOYAGE_EMBEDDING_MODEL: process.env.VOYAGE_EMBEDDING_MODEL || "voyage-3-lite",
+
+  /**
+   * Розмірність embedding-вектора. Має співпадати з `HALFVEC(N)` у
+   * SQL-міграції `025_ai_memories_pgvector.sql`. Voyage `voyage-3-lite`
+   * вертає 1024 за замовчуванням.
+   */
+  VOYAGE_EMBEDDING_DIM: parseIntEnv("VOYAGE_EMBEDDING_DIM", 1024),
+
+  /**
+   * Internal semver embedding-схеми (наприклад, '1' → '2' при зміні
+   * prompt-template для embedд'ингу). Окремо від `VOYAGE_EMBEDDING_MODEL`
+   * — модель може лишатися та сама, але якщо ми додаємо метаданий префікс
+   * у текст перед embedд'ингом — поточні row-и потрібно re-embed-ити.
+   */
+  AI_MEMORY_EMBEDDING_VERSION: process.env.AI_MEMORY_EMBEDDING_VERSION || "1",
+
+  /**
+   * Voyage HTTP timeout (мс). Embedд'инг — fast (зазвичай <1s), тому
+   * default менше за Anthropic (`AI_TIMEOUT_MS=180s`): не хочемо тримати
+   * Express handler 3 хвилини, якщо Voyage завис.
+   */
+  VOYAGE_TIMEOUT_MS: parseIntEnv("VOYAGE_TIMEOUT_MS", 15_000),
+
+  /**
+   * Voyage max retries on transient errors. 5xx/timeout/abort.
+   * Не ретраїмо 4xx (auth/quota) — ці потребують manual fix.
+   */
+  VOYAGE_MAX_RETRIES: parseIntEnv("VOYAGE_MAX_RETRIES", 2),
+
+  /**
+   * Voyage batch size — кількість текстів у одному запиті. Voyage API
+   * приймає до 128, але великий batch ≠ швидше: при rate-limit-і весь
+   * batch фейлиться. 32 — sweet-spot.
+   */
+  VOYAGE_BATCH_SIZE: parseIntEnv("VOYAGE_BATCH_SIZE", 32),
+
+  /**
+   * HNSW search-time `ef_search` — кандидатів обходити при ANN-запиті.
+   * Більше → краще recall, але повільніше. 40 — pgvector default;
+   * Voyage benchmark показує recall@10 ≥ 0.95 на цьому значенні для
+   * 1024-вимірних embedд'ингів.
+   */
+  AI_MEMORY_HNSW_EF_SEARCH: parseIntEnv("AI_MEMORY_HNSW_EF_SEARCH", 40),
+
+  /**
+   * Default top-K для retrieval. Можна override на per-query basis.
+   * 8 — баланс між контекстом для моделі та token-cost-ом
+   * (8 memory × ~80 токенів/memory ≈ 640 токенів input).
+   */
+  AI_MEMORY_TOP_K: parseIntEnv("AI_MEMORY_TOP_K", 8),
 } as const;
 
 export type Env = typeof env;
