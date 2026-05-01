@@ -158,6 +158,22 @@ export const env = {
 
   /** Максимум спроб на tx до того, як queue.row.status='failed'. */
   MONO_ENRICHMENT_MAX_ATTEMPTS: parseIntEnv("MONO_ENRICHMENT_MAX_ATTEMPTS", 5),
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Sync audit log (PR #005 / Stage 0 — `docs/planning/storage-roadmap.md`)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Comma-separated allow-list of `user.id` значень, яким дозволено
+   * викликати `GET /api/sync/audit?user_id=<X>` для чужих юзерів. Без
+   * env-var-а endpoint доступний лише для запитів про власні логи
+   * (`req.user.id === query.user_id` або без `user_id`-параметра).
+   *
+   * Whitespace навколо коми трімиться. Порожні значення фільтруються.
+   * Інтенціонально без UI-toggle: це operational backdoor для
+   * incident-response, а не self-service feature.
+   */
+  SYNC_AUDIT_ADMIN_USER_IDS: process.env.SYNC_AUDIT_ADMIN_USER_IDS || "",
 } as const;
 
 export type Env = typeof env;
