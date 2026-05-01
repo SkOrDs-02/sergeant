@@ -31,7 +31,7 @@ export function Spinner({ className, size = "sm", ...props }: SpinnerProps) {
   // Wrap the <svg> in a <div> that carries `animate-spin`: CSS animations on
   // SVG elements are often not hardware-accelerated in Chromium/WebKit, so
   // animating the wrapper keeps the transform on the compositor thread.
-  // See `.agents/skills/vercel-react-best-practices/AGENTS.md` §6.1.
+  // See `.agents/skills/sergeant-web-ui/SKILL.md`.
   return (
     <div
       aria-hidden="true"

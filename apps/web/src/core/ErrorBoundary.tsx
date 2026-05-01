@@ -21,8 +21,8 @@ interface ErrorBoundaryState {
  *
  * Навмисно не використовує `Sentry.ErrorBoundary` з `@sentry/react`, бо той
  * статично підтягує весь SDK (~30–40 KB gzip) у initial chunk — див. правило
- * 2.3 у `.agents/skills/vercel-react-best-practices/AGENTS.md`
- * («Defer Non-Critical Third-Party Libraries»).
+ * у `.agents/skills/sergeant-web-ui/SKILL.md`
+ * (defer non-critical third-party libraries).
  *
  * `captureException` з `./sentry.js` — no-op, поки Sentry не завантажений
  * динамічним імпортом. Коли SDK буде готовий (див. `initSentry`), виклики

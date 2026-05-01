@@ -3,6 +3,8 @@
 > **Last validated:** 2026-05-01 by @devin-ai-integration[bot]. **Next review:** 2026-07-30.
 > **Status:** Active
 
+> **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/superpowers/agent-skills-catalog.md`.
+
 ## Repo overview
 
 - **pnpm 9** + **Turborepo** monorepo, **Node 20**, **TypeScript 6**.
@@ -729,7 +731,8 @@ Real regressions we've shipped — do not repeat:
 ## See also
 
 - [`docs/playbooks/README.md`](docs/playbooks/README.md) — full index of procedural recipes (with triggers and 🌳 decision-tree markers)
-- [`.agents/skills/`](.agents/skills/) — `SKILL.md` files for AI agents: project-specific (`sergeant-design-system`, `sergeant-api-patterns`, `sergeant-hubchat-tool`, `sergeant-sql-migrations`, `sergeant-postgres`) + community (better-auth, react-native, ui/ux, etc.)
+- [`docs/superpowers/agent-skills-catalog.md`](docs/superpowers/agent-skills-catalog.md) — canonical routing table for repo-owned Sergeant skills
+- [`.agents/skills/`](.agents/skills/) — current `SKILL.md` files for AI agents; start with `sergeant-start-here`
 - [`docs/security/audit-exceptions.md`](docs/security/audit-exceptions.md) — tracked vulnerabilities with no available fix (audit-exception label workflow)
 - `docs/planning/ai-coding-improvements.md` — full roadmap for AI coding infra
 - `docs/planning/dev-stack-roadmap.md` — top-15 dev-stack roadmap with progress

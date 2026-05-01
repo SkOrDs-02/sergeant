@@ -16,8 +16,7 @@ function parseRate(val: unknown, fallback: number): number {
  *
  * Навмисно через динамічний `import()`, щоб SDK (~30–40 KB gzip) не
  * потрапляв у головний бандл — аналітика/error tracking не повинні
- * блокувати hydration (див. правило 2.3 у
- * `.agents/skills/vercel-react-best-practices/AGENTS.md`).
+ * блокувати hydration (див. `.agents/skills/sergeant-web-ui/SKILL.md`).
  *
  * Без `VITE_SENTRY_DSN` — no-op і жодного чанку не підтягується.
  */
