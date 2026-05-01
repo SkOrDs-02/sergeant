@@ -21,6 +21,7 @@ const SCOPES = [
   "config",
   "eslint-plugins",
   "migrations",
+  "agents",
   "deps",
   "docs",
   "ci",

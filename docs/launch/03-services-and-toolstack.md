@@ -1,6 +1,6 @@
 # 03. Сервіси та тулстек
 
-> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Last validated:** 2026-04-30 by @Skords-01. **Next review:** 2026-07-29.
 > **Status:** Active
 
 > Повний аудит зовнішніх сервісів, інфраструктури, dev-інструментів: що є, що додати, що змінити.
@@ -114,7 +114,7 @@
 **Що створити для Stripe:**
 
 - Stripe Account + Product + Price (monthly ₴99 + yearly ₴799)
-- `apps/server/src/modules/billing.ts` — checkout, portal, plan endpoints
+- `apps/server/src/routes/internal/billing.ts` — checkout, portal, plan endpoints
 - `apps/server/src/routes/stripe-webhook.ts` — webhook handler з `stripe.webhooks.constructEvent()`
 - Env: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_PRO_MONTHLY`, `STRIPE_PRICE_ID_PRO_YEARLY`
 - Деталі edge cases (chargeback, webhook miss) — див. [04-launch-readiness.md](./04-launch-readiness.md#21-billing-edge-cases)

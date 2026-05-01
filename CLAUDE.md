@@ -1,6 +1,6 @@
 # Sergeant — Claude Code context
 
-> **Last validated:** 2026-04-30 by @devin-ai-integration[bot]. **Next review:** 2026-07-29.
+> **Last validated:** 2026-04-30 by @Skords-01. **Next review:** 2026-07-29.
 > **Status:** Active
 
 > Full agent rules, hard rules, anti-patterns, and domain invariants are in **[`AGENTS.md`](./AGENTS.md)**.
@@ -38,6 +38,11 @@ pnpm hard-rules:generate           # Regenerate docs/governance/hard-rules-matri
 pnpm hard-rules:check              # CI gate: fail if hard-rules-matrix.md is stale
 pnpm hard-rules:list               # Plain-text dump of every Hard Rule (for code-review / triage)
 pnpm lint:codeowners               # CI gate: fail if required path is missing from .github/CODEOWNERS
+pnpm n8n:export                    # Export n8n workflows from live instance to ops/n8n-workflows/
+pnpm n8n:import                    # Import ops/n8n-workflows/ into live n8n instance
+pnpm ops:n8n:validate              # CI gate: validates n8n workflow JSON + manifest consistency
+pnpm lint:governance-sync          # CI: Hard Rules sync, Status badge coverage, dangling source refs
+pnpm lint:governance-sync --strict # Treat dangling refs as errors (for new PRs — no new broken refs)
 ```
 
 ## Before you write code
@@ -51,19 +56,39 @@ pnpm lint:codeowners               # CI gate: fail if required path is missing f
 5. New migration? Use `pnpm gen migration --name <desc>` — auto-numbers from last migration (`021`).
 6. Before opening the PR, update docs alongside code (Hard Rule #15): api-client types, design-system docs, playbooks, freshness headers — see the must-update table in `AGENTS.md` § Hard Rule #15.
 
+## Testing HubChat without UI
+
+`apps/server` exposes `/api/chat`. To test a tool-call end-to-end without opening the web app:
+
+```bash
+curl -sS -X POST http://localhost:3000/api/chat \
+  -H "Content-Type: application/json" \
+  -H "Cookie: <session-cookie>" \
+  -d '{"messages":[{"role":"user","content":"<prompt>"}]}'
+```
+
+See [`CONTRIBUTING.md` § Working with HubChat locally](CONTRIBUTING.md) for the full curl recipe and how to inspect `tool_use` blocks in the response.
+
+## Test users
+
+Primary test user (staging dev DB): `I3BUW5atld8oOHM7lpFEJBIInpW1hzv7` — 6 Monobank accounts, ~2 246 ₴ on UAH cards. Do not destructively mutate this user's data.
+
 ## Verification before PR
 
 ```bash
-pnpm format:check   # Prettier
-pnpm lint           # ESLint
-pnpm typecheck      # TypeScript
-pnpm --filter <package> exec vitest run <path>   # affected tests
+pnpm format:check                                   # Prettier
+pnpm lint                                           # ESLint
+pnpm typecheck                                      # TypeScript
+pnpm --filter <package> exec vitest run <path>      # affected tests
+pnpm --filter @sergeant/web exec size-limit         # bundle budget (when touching apps/web)
+pnpm licenses:check                                 # when bumping deps
 ```
 
 ## Branch & commit
 
 - Feature branches: `devin/<unix-ts>-<area>-<desc>` or `claude/<desc>`.
-- Commits: Conventional Commits with explicit scope — `feat(web):`, `fix(server):`, `ci(web):`, etc. Full scope list in `AGENTS.md` § Hard rules #5.
+- Commits: Conventional Commits with explicit scope from [`AGENTS.md` rule #5](AGENTS.md#5-conventional-commits-explicit-scope-enum). **Do not invent** scopes (e.g. `mobile/core`, `app`, `monorepo` — commitlint rejects).
+- Never `--no-verify`, never `--amend`, never force-push shared branches (`AGENTS.md` rules #6, #7).
 
 ## Deployment
 

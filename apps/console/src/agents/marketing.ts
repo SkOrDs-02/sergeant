@@ -1,4 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
+import type Anthropic from "@anthropic-ai/sdk";
+import { runAgentLoop } from "./run-agent-loop.js";
 
 const MODEL = "claude-sonnet-4-6";
 const MAX_TOKENS = 2048;
@@ -18,8 +19,6 @@ Then add "Recommendation:" with your preferred pick and why.
 Keep X/Threads posts under 280 chars unless the user asks for a thread.`;
 
 type Tool = Anthropic.Tool;
-type MessageParam = Anthropic.MessageParam;
-type ToolResultBlockParam = Anthropic.ToolResultBlockParam;
 
 const tools: Tool[] = [
   {
@@ -111,47 +110,11 @@ export async function runMarketingAgent(
   client: Anthropic,
   userMessage: string,
 ): Promise<string> {
-  const messages: MessageParam[] = [{ role: "user", content: userMessage }];
-
-  for (let i = 0; i < 5; i++) {
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
-      tools,
-      messages,
-    });
-
-    if (response.stop_reason === "end_turn") {
-      const text = response.content
-        .filter((b) => b.type === "text")
-        .map((b) => (b as Anthropic.TextBlock).text)
-        .join("");
-      return text || "(empty response)";
-    }
-
-    if (response.stop_reason === "tool_use") {
-      messages.push({ role: "assistant", content: response.content });
-
-      const toolResults: ToolResultBlockParam[] = [];
-      for (const block of response.content) {
-        if (block.type !== "tool_use") continue;
-        const result = await executeTool(
-          block.name,
-          block.input as Record<string, unknown>,
-        );
-        toolResults.push({
-          type: "tool_result",
-          tool_use_id: block.id,
-          content: result,
-        });
-      }
-      messages.push({ role: "user", content: toolResults });
-      continue;
-    }
-
-    break;
-  }
-
-  return "Agent did not produce a response after 5 iterations.";
+  return runAgentLoop(client, userMessage, {
+    model: MODEL,
+    maxTokens: MAX_TOKENS,
+    systemPrompt: SYSTEM_PROMPT,
+    tools,
+    executeTool,
+  });
 }

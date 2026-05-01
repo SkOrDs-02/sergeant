@@ -199,7 +199,7 @@ export function renderMatrixRaw(registry, { now = new Date() } = {}) {
   lines.push("# Hard rules — enforcement matrix");
   lines.push("");
   lines.push(
-    `> **Last validated:** ${today} by @devin-ai-integration[bot]. **Next review:** ${nextReviewISO}.`,
+    `> **Last validated:** ${today} by @Skords-01. **Next review:** ${nextReviewISO}.`,
   );
   lines.push(`> **Status:** Active`);
   lines.push("");

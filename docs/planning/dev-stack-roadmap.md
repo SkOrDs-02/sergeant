@@ -1,6 +1,6 @@
 # Dev stack roadmap — інструменти і поради по всьому ЖЦ розробки
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-04-30 by @Skords-01. **Next review:** 2026-07-29.
 > **Status:** Active
 
 **Статус:** in progress. Створено 2026-04-25. Останнє оновлення: 2026-04-27 (13 з топ-15 закриті — PostHog інтегрований у web + server, Strict TS розщеплений на server/web; Sentry DSN-gated; деталі у колонці Статус нижче).
@@ -677,7 +677,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 **Bonus discoveries (поза планом):**
 
-- `pnpm test` на main був повністю зламаний з commit `dab67bdc` через `ERR_UNKNOWN_FILE_EXTENSION` для `packages/config/vitest.base.ts`. Native Node ESM loader не вміє резолвити `.ts` через package exports. Fixed у [#720](https://github.com/Skords-01/Sergeant/pull/720): конвертація у `.js` з JSDoc-типами. Без цього #721 (і всі наступні PR) теж не пройшли б CI.
+- `pnpm test` на main був повністю зламаний з commit `dab67bdc` через `ERR_UNKNOWN_FILE_EXTENSION` для `packages/config/vitest.base.js`. Native Node ESM loader не вміє резолвити `.ts` через package exports. Fixed у [#720](https://github.com/Skords-01/Sergeant/pull/720): конвертація у `.js` з JSDoc-типами. Без цього #721 (і всі наступні PR) теж не пройшли б CI.
 - AGENTS.md з [#714](https://github.com/Skords-01/Sergeant/pull/714) був закомічений без `prettier --write`; виправлено у [#719](https://github.com/Skords-01/Sergeant/pull/719) разом з doc-апдейтами.
 
 **Що НЕ робили і чому:**

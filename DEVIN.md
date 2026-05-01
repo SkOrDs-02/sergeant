@@ -1,6 +1,6 @@
 # Sergeant — Devin context
 
-> **Last validated:** 2026-04-30 by @devin-ai-integration[bot]. **Next review:** 2026-07-29.
+> **Last validated:** 2026-04-30 by @Skords-01. **Next review:** 2026-07-29.
 > **Status:** Active
 
 > Full agent rules, hard rules, anti-patterns, and domain invariants are in **[`AGENTS.md`](./AGENTS.md)**.
@@ -39,6 +39,11 @@ pnpm hard-rules:generate           # Regenerate docs/governance/hard-rules-matri
 pnpm hard-rules:check              # CI gate: fail if hard-rules-matrix.md is stale
 pnpm hard-rules:list               # Plain-text dump of every Hard Rule (for code-review / triage)
 pnpm lint:codeowners               # CI gate: fail if required path is missing from .github/CODEOWNERS
+pnpm n8n:export                    # Export n8n workflows from live instance to ops/n8n-workflows/
+pnpm n8n:import                    # Import ops/n8n-workflows/ into live n8n instance
+pnpm ops:n8n:validate              # CI gate: validates n8n workflow JSON + manifest consistency
+pnpm lint:governance-sync          # CI: Hard Rules sync, Status badge coverage, dangling source refs
+pnpm lint:governance-sync --strict # Treat dangling refs as errors (for new PRs — no new broken refs)
 ```
 
 ## Before you write code
