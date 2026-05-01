@@ -254,6 +254,13 @@ export function useMonobankWebhook({
           .map(webhookTxToNormalized)
           .sort((a, b) => (b.time ?? 0) - (a.time ?? 0));
         setHistoryTx(normalized);
+
+        // Persist per-month cache so Analytics (reads via
+        // `finyk_tx_cache_${year}_${month}`) sees the fetched data.
+        writeJSON(`finyk_tx_cache_${year}_${month}`, {
+          txs: normalized,
+          timestamp: Date.now(),
+        });
       } catch {
         // Partial failure — keep existing historyTx
       } finally {
