@@ -32,8 +32,15 @@ function makeQuery(client: QueryClient, key: readonly unknown[]): Query {
 describe("shouldDehydrateQueryForPersist", () => {
   it("персистить query з успішними даними", () => {
     const client = new QueryClient();
-    const query = makeQuery(client, ["finyk", "balance"]);
-    query.setData({ balance: 42 });
+    // Деталі finyk-транзакцій не sensitive: PAT живе тільки на сервері
+    // (PR #002), а самі транзакції — це звичайні budgets/categories.
+    // Раніше тут стояло ["finyk", "balance"], але після PR #004
+    // (`docs/planning/storage-roadmap.md`) `balance` як сегмент query-key
+    // потрапляє у `SENSITIVE_QUERY_KEY_FRAGMENTS` і свідомо
+    // виключається з персиста — тому для тесту "вдалі дані
+    // персистяться" треба key, що не натикається на той блок-list.
+    const query = makeQuery(client, ["finyk", "transactions"]);
+    query.setData({ ids: [1, 2, 3] });
 
     expect(shouldDehydrateQueryForPersist(query)).toBe(true);
   });
@@ -41,7 +48,13 @@ describe("shouldDehydrateQueryForPersist", () => {
   it("НЕ персистить query у статусі error (401/500 не повинні переживати cold-start)", () => {
     const cache = new QueryCache();
     const client = new QueryClient({ queryCache: cache });
-    const query = makeQuery(client, ["coach", "advice"]);
+    // Будь-який не-sensitive key годиться — тут перевіряємо саме
+    // фільтр статусу `error`, а не sensitive-list. До PR #004 тут
+    // стояв ["coach", "advice"], але `coach` тепер у
+    // `SENSITIVE_QUERY_KEY_NAMESPACES` і його exclusion завжди
+    // повертає false ще до перевірки error-статусу — тест втрачав
+    // сенс.
+    const query = makeQuery(client, ["digest", "weekly"]);
     // Симуляція HTTP-помилки: setState переводить query у error-status,
     // не зачіпаючи мережу.
     query.setState({

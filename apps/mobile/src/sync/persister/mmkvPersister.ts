@@ -8,13 +8,20 @@
  * `await` on every query rehydrate) and avoids the serialization
  * costs of the AsyncStorage-backed persister.
  *
- * We expose two entry points:
+ * We expose three entry points:
  *   - `createMMKVPersister()` — ready-to-pass `persister` option for
  *     `PersistQueryClientProvider`.
- *   - `mmkvSyncStorage`       — raw storage adapter, re-usable for
- *     other persisted stores in the future (e.g. a Jotai store).
+ *   - `mmkvSyncStorage` — raw storage adapter, re-usable for other
+ *     persisted stores in the future (e.g. a Jotai store).
+ *   - `shouldDehydrateQueryForPersistMobile` — selector for
+ *     `dehydrateOptions.shouldDehydrateQuery`, mirrors the web
+ *     persister's filter (no errors, no pre-success queries, and no
+ *     sensitive auth/me/coach/sync/balance feeds — see PR #004 in
+ *     `docs/planning/storage-roadmap.md`).
  */
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
+import type { Query } from "@tanstack/react-query";
+import { isSensitiveQueryKey } from "@sergeant/shared";
 
 import {
   _getMMKVInstance,
@@ -42,6 +49,30 @@ export function createMMKVPersister() {
     // MMKV. 1s matches TanStack's own default.
     throttleTime: 1000,
   });
+}
+
+/**
+ * Mirror of `apps/web/src/shared/lib/queryClientPersister.ts ->
+ * shouldDehydrateQueryForPersist`. Filters out:
+ *
+ *   - errored queries (a stale 401/500 would warm-start the next
+ *     launch with a "red" UI before the network can correct it);
+ *   - queries that haven't received a successful response yet
+ *     (`dataUpdateCount === 0`) — saving a placeholder is just disk
+ *     waste;
+ *   - sensitive query-keys (auth / me / coach / sync / *balance*) —
+ *     personally-identifying data must not survive on disk after
+ *     logout. The persister is keyed by build-id, not user-id, so a
+ *     handover of the same device to another user would warm-start
+ *     the new session with the previous user's coach advice / mono
+ *     balance / `module_data` JSONB. The shared block-list is in
+ *     `@sergeant/shared` `isSensitiveQueryKey`.
+ */
+export function shouldDehydrateQueryForPersistMobile(query: Query): boolean {
+  if (query.state.status === "error") return false;
+  if (query.state.dataUpdateCount === 0) return false;
+  if (isSensitiveQueryKey(query.queryKey)) return false;
+  return true;
 }
 
 // Re-export to make it easy for tests / debug screens to poke at the
