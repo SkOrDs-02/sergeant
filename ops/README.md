@@ -218,19 +218,37 @@ docker compose -f ops/docker-compose.ops.yml logs n8n
 
 Prometheus і Grafana включені в той самий compose-файл.
 
-| Сервіс     | URL                   | Логін             |
-| ---------- | --------------------- | ----------------- |
-| Prometheus | http://localhost:9090 | —                 |
-| Grafana    | http://localhost:3001 | `admin` / `admin` |
+| Сервіс     | URL                   | Логін                                               |
+| ---------- | --------------------- | --------------------------------------------------- |
+| Prometheus | http://localhost:9090 | —                                                   |
+| Grafana    | http://localhost:3001 | `admin` / `${GF_ADMIN_PASSWORD}` (default: `admin`) |
 
-Grafana автоматично підключає Prometheus як datasource та імпортує dashboard "Sergeant Ops Overview".
+Grafana автоматично підключає Prometheus як datasource та провіжнить
+дашборди з двох локацій:
 
-### Що показує dashboard
+- `ops/grafana/dashboards/n8n-overview.json` — n8n + Sergeant server health
+- `docs/observability/dashboards/*.json` — `http-red`, `db-use`, `slo-burn-rate`, `sync`, `auth`, `ai-cost`, `hubchat`, `frontend-cwv`
+
+Усі дашборди потрапляють у папку **Sergeant Ops** у Grafana UI. Дашборди з
+`docs/observability/dashboards/` — сирі JSON-файли з `__inputs`-секцією; під
+час провіженінгу Grafana 11 підставляє єдину Prometheus datasource у
+`DS_PROMETHEUS`-змінну автоматично.
+
+### Що показує `n8n-overview` dashboard
 
 - **n8n Instance Health** — UP/DOWN, uptime, RAM, event loop lag
 - **Workflow Executions** — success/error counters, rate, success rate over time
 - **n8n Process Resources** — CPU, memory, heap, GC, event loop
 - **Sergeant Server** — UP/DOWN, CPU, memory
+
+### Server-side дашборди
+
+Покладаються на recording rules з
+[`docs/observability/prometheus/recording_rules.yml`](../docs/observability/prometheus/recording_rules.yml)
+(особливо `slo-burn-rate.json`). Локально вони ще не вантажаться у Prometheus
+— потрібно або руками скопіювати правила у `ops/prometheus/rules/`, або
+дочекатись Phase 2 (Grafana Cloud — див. нижче), де `mimirtool rules sync`
+це робить безболісно.
 
 ### Alert rules (Prometheus)
 
@@ -271,6 +289,34 @@ http://localhost:9090/targets
 2. Перевір збіг `METRICS_TOKEN` у `.env.ops` і `.env`
 3. `curl -H "Authorization: Bearer <token>" http://localhost:3000/metrics`
 4. Для n8n: `curl http://localhost:5678/metrics` (без auth)
+
+### Phase 2 — Grafana Cloud + Alloy (production scrape)
+
+Як тільки доходимо до публічного лаунчу
+([`docs/architecture/hosting-evolution.md`](../docs/architecture/hosting-evolution.md)
+§Фаза 2) — локальний `prometheus`/`grafana` лишається для дев-дебагу, а
+production-метрики йдуть у Grafana Cloud free tier через лёгкого
+[Grafana Alloy](https://grafana.com/docs/alloy/latest/) агента.
+
+Конфіг агента, Dockerfile і повна інструкція деплою на Railway —
+[`ops/grafana-alloy/README.md`](./grafana-alloy/README.md).
+
+TL;DR:
+
+```bash
+# 1. Створи безкоштовний Grafana Cloud stack: https://grafana.com/auth/sign-up
+# 2. Заповни у ops/.env.ops:
+#    GRAFANA_CLOUD_PROMETHEUS_URL, GRAFANA_CLOUD_PROMETHEUS_USERNAME,
+#    GRAFANA_CLOUD_PROMETHEUS_API_KEY (scope metrics:write)
+# 3. Локальна перевірка конфіга:
+docker compose -f ops/docker-compose.ops.yml --env-file ops/.env.ops --profile cloud up -d grafana-alloy
+# 4. Production: задеплой ops/grafana-alloy/ як окремий Railway сервіс
+```
+
+Після того як `up{project="sergeant"} == 1` для обох targets — імпортуй
+дашборди з `docs/observability/dashboards/` через Grafana Cloud UI та
+завантаж recording + alert rules через `mimirtool rules sync`. Деталі — у
+[`ops/grafana-alloy/README.md`](./grafana-alloy/README.md#імпорт-дашбордів-у-grafana-cloud).
 
 ## Додавання нового workflow-у
 
