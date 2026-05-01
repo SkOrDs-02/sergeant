@@ -1,6 +1,6 @@
 # Superpowers
 
-> **Last validated:** 2026-05-01 by @codex. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-01 by @devin-ai-integration[bot]. **Next review:** 2026-07-30.
 > **Status:** Active
 
 Операційний розділ для AI-агентів у Sergeant. Тут лежить не лише історія design specs, а й канонічна навігація по repo-owned skills.
@@ -14,11 +14,11 @@
 
 ## Підрозділи
 
-| Підрозділ | Призначення |
-| --- | --- |
-| [`agent-skills-catalog.md`](./agent-skills-catalog.md) | Scenario -> skill -> what it enforces. |
-| [`agent-workflows.md`](./agent-workflows.md) | Decision trees для feature, bugfix, review, migration, release. |
-| [`specs/`](./specs) | Design specs для нетривіальних змін, які потребують явного проектного рішення. |
+| Підрозділ                                              | Призначення                                                                    |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| [`agent-skills-catalog.md`](./agent-skills-catalog.md) | Scenario -> skill -> what it enforces.                                         |
+| [`agent-workflows.md`](./agent-workflows.md)           | Decision trees для feature, bugfix, review, migration, release.                |
+| [`specs/`](./specs)                                    | Design specs для нетривіальних змін, які потребують явного проектного рішення. |
 
 ## Політика skill system
 

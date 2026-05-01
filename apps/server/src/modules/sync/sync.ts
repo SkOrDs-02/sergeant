@@ -102,7 +102,11 @@ function auditSync(
   op: SyncOp,
   module: string,
   outcome: SyncOutcome,
-  { ms, bytes, conflict }: { ms?: number; bytes?: number; conflict?: boolean } = {},
+  {
+    ms,
+    bytes,
+    conflict,
+  }: { ms?: number; bytes?: number; conflict?: boolean } = {},
 ): void {
   if (!userId) return;
   // `invalid` / `unauthorized` / `too_large` — це валідаційні відмови

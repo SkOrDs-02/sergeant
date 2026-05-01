@@ -93,20 +93,23 @@ beforeEach(() => {
   vi.resetAllMocks();
   // Reset env between tests — Object.assign because `env` is `as const`
   // at compile-time but a regular object at runtime.
-  (env as unknown as { SYNC_AUDIT_ADMIN_USER_IDS: string }).SYNC_AUDIT_ADMIN_USER_IDS =
-    "";
+  (
+    env as unknown as { SYNC_AUDIT_ADMIN_USER_IDS: string }
+  ).SYNC_AUDIT_ADMIN_USER_IDS = "";
 });
 
 describe("isSyncAuditAdmin", () => {
   it("повертає false коли env-var порожній", () => {
-    (env as unknown as { SYNC_AUDIT_ADMIN_USER_IDS: string }).SYNC_AUDIT_ADMIN_USER_IDS =
-      "";
+    (
+      env as unknown as { SYNC_AUDIT_ADMIN_USER_IDS: string }
+    ).SYNC_AUDIT_ADMIN_USER_IDS = "";
     expect(isSyncAuditAdmin("user_anyone")).toBe(false);
   });
 
   it("парсить comma-separated allow-list і трімить пробіли", () => {
-    (env as unknown as { SYNC_AUDIT_ADMIN_USER_IDS: string }).SYNC_AUDIT_ADMIN_USER_IDS =
-      " admin_a , admin_b ,, admin_c ";
+    (
+      env as unknown as { SYNC_AUDIT_ADMIN_USER_IDS: string }
+    ).SYNC_AUDIT_ADMIN_USER_IDS = " admin_a , admin_b ,, admin_c ";
     expect(isSyncAuditAdmin("admin_a")).toBe(true);
     expect(isSyncAuditAdmin("admin_b")).toBe(true);
     expect(isSyncAuditAdmin("admin_c")).toBe(true);
@@ -165,10 +168,7 @@ describe("listSyncAudit — RLS gating", () => {
 
   it("non-admin запитує чужий user_id → 403 без подробиць", async () => {
     const res = makeRes();
-    await listSyncAudit(
-      makeReq({ user_id: "user_other" }, "user_self"),
-      res,
-    );
+    await listSyncAudit(makeReq({ user_id: "user_other" }, "user_self"), res);
 
     expect(res.statusCode).toBe(403);
     expect(res.body.error).toBe("Forbidden");
@@ -184,8 +184,9 @@ describe("listSyncAudit — RLS gating", () => {
   });
 
   it("admin запитує чужий user_id → 200 + isAdminView=true", async () => {
-    (env as unknown as { SYNC_AUDIT_ADMIN_USER_IDS: string }).SYNC_AUDIT_ADMIN_USER_IDS =
-      "user_admin";
+    (
+      env as unknown as { SYNC_AUDIT_ADMIN_USER_IDS: string }
+    ).SYNC_AUDIT_ADMIN_USER_IDS = "user_admin";
     pool.query.mockResolvedValueOnce({
       rows: [
         {
@@ -203,10 +204,7 @@ describe("listSyncAudit — RLS gating", () => {
     });
 
     const res = makeRes();
-    await listSyncAudit(
-      makeReq({ user_id: "user_other" }, "user_admin"),
-      res,
-    );
+    await listSyncAudit(makeReq({ user_id: "user_other" }, "user_admin"), res);
 
     expect(res.statusCode).toBe(200);
     expect(res.body.userId).toBe("user_other");
