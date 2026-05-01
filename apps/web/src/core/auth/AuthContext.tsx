@@ -28,15 +28,113 @@ import { buildIdentifyTraits } from "../observability/identifyTraits";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
-/** Translate Better Auth server errors to Ukrainian. */
-function translateAuthError(raw: string): string {
-  if (/user already exists/i.test(raw))
+/**
+ * Translate auth errors to Ukrainian. Приймає або рядок (для catch-гілок,
+ * де ми вже маємо тільки `err.message`), або частковий error-об'єкт
+ * (`{ code, message, error?, status? }`) — тоді мапимо насамперед за
+ * Better Auth `code`, бо це стабільний контракт, на відміну від
+ * англійських `message`, які регулярно ламали мапер (наприклад,
+ * `/invalid email/i` фальш-метчив `"Invalid email or password"`, і юзер
+ * з неправильним паролем бачив «Невірний формат email.»). Поле `error`
+ * читаємо як fallback — наш серверний error-handler і rate-limiter
+ * пишуть саме його, а не `message`, тож без цієї гілки 429/5xx
+ * приходили б у фронт як `undefined` і ловилися зовнішнім fallback-ом.
+ */
+export type AuthErrorLike = {
+  code?: string | null;
+  message?: string | null;
+  error?: string | null;
+  status?: number | null;
+  statusText?: string | null;
+};
+
+export function translateAuthError(
+  raw: AuthErrorLike | string | null | undefined,
+  fallback: string,
+): string {
+  if (!raw) return fallback;
+  if (typeof raw === "string") return translateByMessage(raw, fallback);
+
+  const code = typeof raw.code === "string" ? raw.code : "";
+  const status = typeof raw.status === "number" ? raw.status : 0;
+  const message =
+    (typeof raw.message === "string" && raw.message) ||
+    (typeof raw.error === "string" && raw.error) ||
+    "";
+
+  // Status / serverний код мають пріоритет над англійським `message` —
+  // 429 від нашого rate-limiter-а й 5xx від errorHandler-а не несуть
+  // Better Auth-ового коду, тільки `code: "RATE_LIMIT" | "INTERNAL"`.
+  if (status === 429 || code === "RATE_LIMIT")
+    return "Забагато спроб. Зачекай хвилину і спробуй ще раз.";
+  if (status >= 500 || code === "INTERNAL")
+    return "Сервер тимчасово недоступний. Спробуй пізніше.";
+
+  // Better Auth canonical error-codes — стабільніше за parsing message.
+  switch (code) {
+    case "INVALID_EMAIL_OR_PASSWORD":
+    case "USER_NOT_FOUND":
+    case "CREDENTIAL_ACCOUNT_NOT_FOUND":
+      return "Невірний email або пароль.";
+    case "USER_ALREADY_EXISTS":
+    case "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL":
+      return "Цей email вже зареєстровано. Спробуй увійти.";
+    case "INVALID_EMAIL":
+      return "Невірний формат email.";
+    case "INVALID_PASSWORD":
+      return "Невірний пароль.";
+    case "PASSWORD_TOO_SHORT":
+      return "Пароль занадто короткий.";
+    case "PASSWORD_TOO_LONG":
+      return "Пароль занадто довгий.";
+    case "EMAIL_NOT_VERIFIED":
+      return "Email ще не підтверджено. Перевір пошту.";
+    case "PROVIDER_NOT_FOUND":
+      return "Цей провайдер входу не налаштовано.";
+    case "FAILED_TO_CREATE_SESSION":
+    case "FAILED_TO_CREATE_USER":
+      return "Не вдалося завершити вхід. Спробуй ще раз.";
+  }
+
+  return translateByMessage(message, fallback);
+}
+
+function translateByMessage(message: string, fallback: string): string {
+  if (!message) return fallback;
+  // Перевіряти specific-перед-generic: `"Invalid email or password"`
+  // містить підрядок `"Invalid email"`, тож загальна гілка
+  // `/invalid email/i` фальш-метчила wrong-password як «Невірний формат
+  // email.». Тримаємо composite-патерн вище і використовуємо межу слова
+  // у вузькій гілці.
+  if (/user already exists/i.test(message))
     return "Цей email вже зареєстровано. Спробуй увійти.";
-  if (/password too short/i.test(raw)) return "Пароль занадто короткий.";
-  if (/password too long/i.test(raw)) return "Пароль занадто довгий.";
-  if (/invalid email/i.test(raw)) return "Невірний формат email.";
-  if (/invalid password/i.test(raw)) return "Невірний пароль.";
-  return raw;
+  if (/invalid email or password/i.test(message))
+    return "Невірний email або пароль.";
+  if (/password too short/i.test(message)) return "Пароль занадто короткий.";
+  if (/password too long/i.test(message)) return "Пароль занадто довгий.";
+  if (/^invalid email\b/i.test(message)) return "Невірний формат email.";
+  if (/invalid password/i.test(message)) return "Невірний пароль.";
+  return message || fallback;
+}
+
+/**
+ * Витягує `{message, status, ...}` з невідомого `err` із catch-блоку, не
+ * втрачаючи додаткових полів (`status`/`code`/`error`), які могли потрапити
+ * до Error-обʼєкта (наприклад, з `BetterFetchError`). Повертає `null`
+ * замість `{}`, щоб `translateAuthError` повернув свій fallback.
+ */
+function asAuthErrorLike(err: unknown): AuthErrorLike | null {
+  if (err == null) return null;
+  if (typeof err === "string") return { message: err };
+  if (typeof err !== "object") return null;
+  const e = err as Record<string, unknown>;
+  return {
+    message: typeof e.message === "string" ? e.message : null,
+    error: typeof e.error === "string" ? e.error : null,
+    code: typeof e.code === "string" ? e.code : null,
+    status: typeof e.status === "number" ? e.status : null,
+    statusText: typeof e.statusText === "string" ? e.statusText : null,
+  };
 }
 
 interface AuthContextValue {
@@ -94,16 +192,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const result = await signIn.email({ email, password });
         if (result?.error) {
-          setAuthError(
-            translateAuthError(result.error.message || "Помилка входу"),
-          );
+          setAuthError(translateAuthError(result.error, "Помилка входу"));
           return false;
         }
         await invalidateMe();
         return true;
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Помилка входу";
-        setAuthError(message);
+        setAuthError(translateAuthError(asAuthErrorLike(err), "Помилка входу"));
         return false;
       }
     },
@@ -126,17 +221,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
       if (result?.error) {
         setAuthError(
-          translateAuthError(
-            result.error.message || "Не вдалося увійти через Google",
-          ),
+          translateAuthError(result.error, "Не вдалося увійти через Google"),
         );
         return false;
       }
       return true;
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Не вдалося увійти через Google";
-      setAuthError(message);
+      setAuthError(
+        translateAuthError(
+          asAuthErrorLike(err),
+          "Не вдалося увійти через Google",
+        ),
+      );
       return false;
     }
   }, []);
@@ -147,17 +243,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const result = await signUp.email({ email, password, name });
         if (result?.error) {
-          setAuthError(
-            translateAuthError(result.error.message || "Помилка реєстрації"),
-          );
+          setAuthError(translateAuthError(result.error, "Помилка реєстрації"));
           return false;
         }
         await invalidateMe();
         return true;
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Помилка реєстрації";
-        setAuthError(message);
+        setAuthError(
+          translateAuthError(asAuthErrorLike(err), "Помилка реєстрації"),
+        );
         return false;
       }
     },
@@ -220,17 +314,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const result = await forgetPassword({ email, redirectTo });
       if (result?.error) {
         setAuthError(
-          result.error.message || "Не вдалося надіслати лист для скидання.",
+          translateAuthError(
+            result.error,
+            "Не вдалося надіслати лист для скидання.",
+          ),
         );
         return false;
       }
       return true;
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Не вдалося надіслати лист для скидання.";
-      setAuthError(message);
+      setAuthError(
+        translateAuthError(
+          asAuthErrorLike(err),
+          "Не вдалося надіслати лист для скидання.",
+        ),
+      );
       return false;
     }
   }, []);

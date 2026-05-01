@@ -1,6 +1,6 @@
 # Changelog
 
-> **Last validated:** 2026-04-29 by @devin-ai. **Next review:** 2026-07-29.
+> **Last validated:** 2026-05-01 by @Skords-01. **Next review:** 2026-07-30.
 > **Status:** Active
 
 Усі помітні зміни проєкту документуються тут.
@@ -13,6 +13,25 @@
 > (наприклад, `changesets` або `conventional-changelog-cli`).
 
 ## [Unreleased]
+
+### Fixed
+
+- **Auth: «Помилка входу» без деталей при rate-limit / 5xx.** На сторінці
+  входу після кількох невдалих спроб (або 500-серверної помилки) юзер
+  бачив generic рядок `Помилка входу` замість осмисленого повідомлення.
+  Корінь — два бекенд-респонси (`apps/server/src/http/errorHandler.ts`
+  і `apps/server/src/http/rateLimit.ts`) повертали тільки поле `error`,
+  тоді як Better Auth client (`better-fetch`) читає `message` при
+  десеріалізації не-2xx body, тож на фронт приходило
+  `result.error.message === undefined`. Тепер обидва респонси дублюють
+  значення в полях `error` **та** `message` (back-compat). Паралельно
+  переписав `translateAuthError` у `apps/web/src/core/auth/AuthContext.tsx`
+  — тепер мапимо за стабільним Better Auth `error.code`
+  (`INVALID_EMAIL_OR_PASSWORD`, `USER_ALREADY_EXISTS`, `RATE_LIMIT`,
+  `INTERNAL`, …), а не парсимо англійський `message` regex-ами. Це
+  заодно виправило фальш-збіг `/invalid email/i` усередині
+  `"Invalid email or password"`, через який юзер з неправильним
+  паролем бачив «Невірний формат email.».
 
 ### Added
 

@@ -68,7 +68,7 @@ vi.mock("@sergeant/api-client/react", async () => {
   };
 });
 
-import { AuthProvider, useAuth } from "./AuthContext";
+import { AuthProvider, useAuth, translateAuthError } from "./AuthContext";
 import { apiQueryKeys } from "@sergeant/api-client/react";
 
 interface UseUserState {
@@ -347,5 +347,106 @@ describe("AuthContext", () => {
     await waitFor(() =>
       expect(getByTestId("probe").textContent).toBe("authenticated:u-2:Two"),
     );
+  });
+});
+
+describe("translateAuthError", () => {
+  it("повертає fallback для null/undefined/порожнього вхідного значення", () => {
+    expect(translateAuthError(null, "Помилка входу")).toBe("Помилка входу");
+    expect(translateAuthError(undefined, "Помилка входу")).toBe(
+      "Помилка входу",
+    );
+    expect(translateAuthError("", "Помилка входу")).toBe("Помилка входу");
+  });
+
+  it("мапить Better Auth INVALID_EMAIL_OR_PASSWORD у одне повідомлення про невірні credentials", () => {
+    // Регресія: до фіксу `/invalid email/i` фальш-метчив підрядок
+    // `"Invalid email"` усередині `"Invalid email or password"` → юзер з
+    // неправильним паролем бачив «Невірний формат email.» (хоча email був
+    // OK). Тепер мапимо за `code`, тож точне повідомлення стабільне.
+    expect(
+      translateAuthError(
+        {
+          code: "INVALID_EMAIL_OR_PASSWORD",
+          message: "Invalid email or password",
+          status: 401,
+        },
+        "Помилка входу",
+      ),
+    ).toBe("Невірний email або пароль.");
+  });
+
+  it("мапить рядок `Invalid email or password` без коду через message-fallback", () => {
+    // Старі/інші auth-сервери, що не передають `code`, мають коректно
+    // лягати у composite-патерн `/invalid email or password/i` ДО
+    // вузької гілки `/^invalid email\\b/i`.
+    expect(
+      translateAuthError("Invalid email or password", "Помилка входу"),
+    ).toBe("Невірний email або пароль.");
+  });
+
+  it("мапить 429 (status або code=RATE_LIMIT) у людське повідомлення", () => {
+    // Це root cause скріна `Помилка входу` — наш rate-limiter і
+    // errorHandler не пишуть `message`, лише `error`, тож Better Auth
+    // client раніше ловив `result.error.message === undefined`.
+    expect(
+      translateAuthError(
+        { status: 429, error: "Забагато запитів." },
+        "Помилка входу",
+      ),
+    ).toMatch(/^Забагато спроб/);
+    expect(
+      translateAuthError(
+        { code: "RATE_LIMIT", error: "Too many requests" },
+        "Помилка входу",
+      ),
+    ).toMatch(/^Забагато спроб/);
+  });
+
+  it("мапить 5xx у generic «Сервер тимчасово недоступний»", () => {
+    expect(
+      translateAuthError(
+        { status: 500, error: "Server error" },
+        "Помилка входу",
+      ),
+    ).toMatch(/^Сервер тимчасово недоступний/);
+    expect(translateAuthError({ code: "INTERNAL" }, "Помилка входу")).toMatch(
+      /^Сервер тимчасово недоступний/,
+    );
+  });
+
+  it("читає `error`-поле, коли `message` відсутній (наш серверний contract)", () => {
+    // Express errorHandler і rate-limiter історично пишуть `error`. Без
+    // цієї гілки 4xx-AppError-и без коду фолбекали б у дефолтний рядок.
+    expect(
+      translateAuthError(
+        { error: "Custom backend message", status: 400 },
+        "Помилка входу",
+      ),
+    ).toBe("Custom backend message");
+  });
+
+  it("мапить USER_ALREADY_EXISTS у дружнє повідомлення про існуючий акаунт", () => {
+    expect(
+      translateAuthError(
+        { code: "USER_ALREADY_EXISTS", message: "User already exists." },
+        "Помилка реєстрації",
+      ),
+    ).toMatch(/вже зареєстровано/);
+  });
+
+  it("мапить EMAIL_NOT_VERIFIED і PASSWORD_TOO_SHORT за кодом", () => {
+    expect(
+      translateAuthError({ code: "EMAIL_NOT_VERIFIED" }, "Помилка входу"),
+    ).toMatch(/Email ще не підтверджено/);
+    expect(
+      translateAuthError({ code: "PASSWORD_TOO_SHORT" }, "Помилка реєстрації"),
+    ).toBe("Пароль занадто короткий.");
+  });
+
+  it("повертає невідомий `message` як є (щоб не приховувати майбутні коди)", () => {
+    expect(
+      translateAuthError({ message: "Some new server error" }, "Помилка входу"),
+    ).toBe("Some new server error");
   });
 });
