@@ -133,11 +133,11 @@
     },
     "17-github-pr-stale-alert.json": {
       "owner": "devex",
-      "status": "experimental",
+      "status": "prod-ready",
       "riskTier": "P2",
       "requiredEnv": ["GITHUB_PAT", "TELEGRAM_ALERT_CHAT_ID"],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "PR hygiene reminder."
+      "notes": "PR hygiene reminder. Active; cron fires Mon–Fri 10:00 Kyiv against skords-01/sergeant open PRs > 48h."
     },
     "18-nightly-security-audit.json": {
       "owner": "security",

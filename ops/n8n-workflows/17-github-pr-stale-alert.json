@@ -3,12 +3,14 @@
   "nodes": [
     {
       "parameters": {
-        "interval": [
-          {
-            "field": "cronExpression",
-            "expression": "0 10 * * 1-5"
-          }
-        ]
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * 1-5"
+            }
+          ]
+        }
       },
       "id": "cron-weekday",
       "name": "Cron 10:00 Mon–Fri",
@@ -160,7 +162,8 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "timezone": "Europe/Kyiv"
+    "timezone": "Europe/Kyiv",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
   },
   "tags": [
     {
