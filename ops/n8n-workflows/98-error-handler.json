@@ -20,6 +20,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [420, 300],
+      "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
           "id": "pwwVNTLBw43PJgey",
@@ -39,56 +40,11 @@
       "name": "Telegram failure alert",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [660, 220],
+      "position": [660, 300],
       "credentials": {
         "telegramApi": {
           "id": "ggxeCc1ALZKLuMPV",
           "name": "Telegram (Sergeant_alert_bot)"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "conditions": [
-            {
-              "id": "has-email-env",
-              "leftValue": "={{ ($env.OPS_ALERT_EMAIL || '').trim() }}",
-              "rightValue": "",
-              "operator": {
-                "type": "string",
-                "operation": "notEquals"
-              }
-            }
-          ]
-        }
-      },
-      "id": "has-email-env",
-      "name": "OPS_ALERT_EMAIL set?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [440, 420]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.resend.com/emails",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"from\": \"Sergeant Ops <ops@sergeant.app>\",\n  \"to\": [\"{{ $env.OPS_ALERT_EMAIL }}\"],\n  \"subject\": \"n8n workflow failed: {{ $('Error Trigger').first().json.workflow.name || 'unknown' }}\",\n  \"html\": \"<p>Workflow: <strong>{{ $('Error Trigger').first().json.workflow.name || 'unknown' }}</strong></p><p>Execution: {{ $('Error Trigger').first().json.execution.id || 'unknown' }}</p><p>Error: {{ $('Error Trigger').first().json.execution.error.message || 'unknown error' }}</p>\"\n}",
-        "options": {}
-      },
-      "id": "email-fallback",
-      "name": "Email failure fallback",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [660, 420],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "E765p971FMV4eDbY",
-          "name": "Resend (Bearer)"
         }
       }
     }
@@ -112,25 +68,8 @@
             "node": "Telegram failure alert",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "OPS_ALERT_EMAIL set?",
-            "type": "main",
-            "index": 0
           }
         ]
-      ]
-    },
-    "OPS_ALERT_EMAIL set?": {
-      "main": [
-        [
-          {
-            "node": "Email failure fallback",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        []
       ]
     }
   },
