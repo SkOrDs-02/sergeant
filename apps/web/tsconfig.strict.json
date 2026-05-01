@@ -18,6 +18,8 @@
     "src/core/profile/**/*",
     "src/core/settings/**/*",
     "src/core/onboarding/**/*",
+    "src/core/insights/**/*",
+    "src/core/app/**/*",
     "src/modules/nutrition/**/*",
     "src/modules/routine/**/*"
   ],
