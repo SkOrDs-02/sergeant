@@ -88,7 +88,11 @@ export async function transactionsHandler(
 
   const { from, to, accountId, limit, cursor } = parsed.data;
 
-  const conditions: string[] = ["t.user_id = $1"];
+  // `t.deleted_at IS NULL` — soft-delete фільтр (міграція 024). Активні
+  // рядки лежать у partial-індексі `mono_transaction_active_idx`, тому
+  // умова не додає cost — план одразу йде по активному хвосту без
+  // перегляду soft-deleted сторінок.
+  const conditions: string[] = ["t.user_id = $1", "t.deleted_at IS NULL"];
   const params: unknown[] = [userId];
   let paramIdx = 2;
 

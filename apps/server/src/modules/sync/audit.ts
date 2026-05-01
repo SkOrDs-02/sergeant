@@ -148,8 +148,12 @@ export async function listSyncAudit(
   // Динамічний WHERE зібраний руками, бо у нас опціональні фільтри
   // різного типу і `pg` не підтримує іменовані параметри. Параметри
   // йдуть позиційно, тому збираємо у масив.
+  // `deleted_at IS NULL` — soft-delete фільтр (міграція 024). Audit-лог
+  // не purge-ається у нормальному флоу, але retention-job може soft-
+  // видаляти рядки старші за SLA — admin-view не має їх показувати без
+  // явного запиту.
   const params: unknown[] = [targetUserId];
-  let where = `user_id = $1`;
+  let where = `user_id = $1 AND deleted_at IS NULL`;
   let idx = 2;
   if (before_id != null) {
     where += ` AND id < $${idx++}`;
