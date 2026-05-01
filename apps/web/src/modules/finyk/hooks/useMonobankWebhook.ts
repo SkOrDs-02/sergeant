@@ -234,8 +234,8 @@ export function useMonobankWebhook({
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   const fetchMonth = useCallback(
-    async (year: number, month: number) => {
-      if (!isConnected) return;
+    async (year: number, month: number): Promise<Transaction[]> => {
+      if (!isConnected) return [];
       setLoadingHistory(true);
       try {
         const from = new Date(year, month, 1).toISOString();
@@ -254,15 +254,10 @@ export function useMonobankWebhook({
           .map(webhookTxToNormalized)
           .sort((a, b) => (b.time ?? 0) - (a.time ?? 0));
         setHistoryTx(normalized);
-
-        // Persist per-month cache so Analytics (reads via
-        // `finyk_tx_cache_${year}_${month}`) sees the fetched data.
-        writeJSON(`finyk_tx_cache_${year}_${month}`, {
-          txs: normalized,
-          timestamp: Date.now(),
-        });
+        return normalized;
       } catch {
         // Partial failure — keep existing historyTx
+        return [];
       } finally {
         setLoadingHistory(false);
       }
