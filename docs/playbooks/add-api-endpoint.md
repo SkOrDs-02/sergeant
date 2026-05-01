@@ -1,6 +1,6 @@
 # Playbook: Add API Endpoint
 
-> **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-01 by @devin-ai-integration[bot]. **Next review:** 2026-07-30.
 > **Status:** Active
 
 **Trigger:** "Додати новий endpoint в `apps/server`" / нова API-функціональність / зміна REST surface, яку будуть споживати web, mobile або console surfaces.
