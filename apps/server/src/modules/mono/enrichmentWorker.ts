@@ -96,7 +96,8 @@ RETURNING q.id, q.user_id, q.mono_tx_id, q.attempts;
 const FETCH_TX_SQL = `
 SELECT description, amount, mcc
   FROM mono_transaction
- WHERE user_id = $1 AND mono_tx_id = $2;
+ WHERE user_id = $1 AND mono_tx_id = $2
+   AND deleted_at IS NULL;
 `;
 
 const WRITE_BACK_SQL = `
