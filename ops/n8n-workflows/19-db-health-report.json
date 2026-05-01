@@ -3,12 +3,14 @@
   "nodes": [
     {
       "parameters": {
-        "interval": [
-          {
-            "field": "cronExpression",
-            "expression": "0 7 * * 1"
-          }
-        ]
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * 1"
+            }
+          ]
+        }
       },
       "id": "cron-monday",
       "name": "Cron Mon 07:00 Kyiv",
@@ -45,6 +47,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [460, 380],
+      "executeOnce": true,
       "credentials": {
         "postgres": {
           "id": "pwwVNTLBw43PJgey",
@@ -65,6 +68,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [460, 560],
+      "executeOnce": true,
+      "continueOnFail": true,
       "credentials": {
         "postgres": {
           "id": "pwwVNTLBw43PJgey",
@@ -80,7 +85,8 @@
       "name": "Format DB report",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [680, 380]
+      "position": [680, 380],
+      "executeOnce": true
     },
     {
       "parameters": {
@@ -111,16 +117,6 @@
             "node": "DB size & counts",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "Top 5 tables by size",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Slow queries (pg_stat_statements)",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -129,7 +125,7 @@
       "main": [
         [
           {
-            "node": "Format DB report",
+            "node": "Top 5 tables by size",
             "type": "main",
             "index": 0
           }
@@ -140,7 +136,7 @@
       "main": [
         [
           {
-            "node": "Format DB report",
+            "node": "Slow queries (pg_stat_statements)",
             "type": "main",
             "index": 0
           }
@@ -172,7 +168,8 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "timezone": "Europe/Kyiv"
+    "timezone": "Europe/Kyiv",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
   },
   "tags": [
     {
