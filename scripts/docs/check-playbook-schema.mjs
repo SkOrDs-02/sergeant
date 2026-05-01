@@ -52,7 +52,13 @@ const ALLOWED_STATUSES = new Set([
 
 /** Files in docs/playbooks/ that are NOT playbooks and must be skipped. */
 export function isSkippableFile(name) {
-  if (name === "INDEX.md" || name === "README.md") return true;
+  if (
+    name === "INDEX.md" ||
+    name === "README.md" ||
+    name === "playbook-catalog.md"
+  ) {
+    return true;
+  }
   if (name.startsWith("_TEMPLATE")) return true;
   if (name.startsWith("_")) return true; // any leading underscore = scaffold
   return false;

@@ -37,6 +37,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT = resolve(__dirname, "..");
 
+function toRepoPath(p) {
+  return p.replace(/\\/g, "/");
+}
+
 // Required coverage. Each entry is either:
 //   - { path: "AGENTS.md", kind: "file" }       — exact file must be owned.
 //   - { path: "docs/playbooks", kind: "tree" }  — directory + every tracked
@@ -282,7 +286,7 @@ function main() {
     }
 
     if (req.kind === "file") {
-      const rel = relative(ROOT, abs);
+      const rel = toRepoPath(relative(ROOT, abs));
       const m = findOwnersFor(rel, entries);
       if (m) {
         checked.push({
@@ -313,7 +317,7 @@ function main() {
     }
     const uncovered = [];
     for (const f of files) {
-      const rel = relative(ROOT, f);
+      const rel = toRepoPath(relative(ROOT, f));
       const m = findOwnersFor(rel, entries);
       if (!m) uncovered.push(rel);
     }

@@ -1,52 +1,55 @@
-## What changed
+## Summary
 
-<!-- Brief description of the changes. -->
+<!-- What changed in one tight paragraph or a short flat list. -->
 
-## Why
+## Governing Skill
 
-<!-- Motivation, linked issue, or context. -->
+- Primary skill:
+- Secondary skill (if truly needed):
 
-## How to test
+## Playbook
 
-<!-- Steps for a reviewer to verify correctness. -->
+- Primary playbook:
+- Why this playbook:
+- If no playbook matched, why:
 
----
+## Verification
 
-## Pre-flight (Hard Rule #15)
+<!-- Paste the exact commands you ran and the key result. -->
 
-<!--
-Before opening this PR you should have read the relevant governance.
-Tick what applies; if a box is N/A, write "n/a" inline.
--->
+```bash
+pnpm lint
+pnpm typecheck
+```
 
-- [ ] Read the `AGENTS.md` Hard Rules that apply to the touched paths.
-- [ ] Read the matching playbook in `docs/playbooks/` (or noted that none exists).
-- [ ] Checked freshness headers of docs cited in the change.
+Additional checks:
 
-## Docs updated alongside code? (Hard Rule #15)
+- [ ] Local smoke / manual validation completed
+- [ ] Surface-specific checks completed
 
-<!--
-Documentation is part of the change set, not a follow-up. Tick what applies.
--->
+## Docs and Governance
 
-- [ ] API contract change — `packages/api-client/**` types + contract test updated (Hard Rule #3).
-- [ ] New / removed npm script — `CONTRIBUTING.md § Everyday Commands` and `CLAUDE.md § Quick commands` updated.
-- [ ] New design token / component / palette — `docs/design/design-system.md` (and `BRANDBOOK.md` if branded) updated.
-- [ ] Deprecation — `@deprecated` JSDoc with `@removeBy` added; consuming docs marked `> **Status:** Deprecated`.
-- [ ] Freshness header bumped on docs whose claims changed (`> Last validated: YYYY-MM-DD by @owner`).
-- [ ] N/A — no docs invalidated by this change.
+- [ ] I updated docs that changed with the behavior, contract, workflow, or rollout.
+- [ ] I checked whether `AGENTS.md` needed an update.
+- [ ] I checked whether a playbook or skill needed an update.
+- [ ] I checked whether governance docs or review docs needed an update.
 
-## How AI-tested this PR
+Updated docs:
 
-<!-- If this PR was created by an AI agent, describe what was verified. -->
+- n/a
 
-- [ ] Manual smoke (which flow?): ...
-- [ ] Vitest passes: ...
-- [ ] No new `AI-DANGER` markers added without justification.
-- [ ] Docs prose uses Ukrainian where practical, per `AGENTS.md`.
-- [ ] `pnpm dead-code:files` clean (or new files marked `@scaffolded`).
+## Risk and Rollout
 
-## AGENTS.md updated?
+- User-visible risk:
+- Rollout / deploy order:
+- Backout plan:
 
-- [ ] Yes — link to changed line(s)
-- [ ] No — no new permanent rules
+## Hard Rule #15
+
+- [ ] I read `AGENTS.md` before coding.
+- [ ] Internal docs I touched are in Ukrainian.
+- [ ] I did not use `--no-verify`.
+
+## Reviewer Notes
+
+<!-- Flag migrations, env changes, HubChat tools, auth, or anything else that deserves extra reviewer attention. -->

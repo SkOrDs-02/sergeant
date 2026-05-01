@@ -1,108 +1,65 @@
 # Playbook: Modify or Add an n8n Workflow
 
-> **Last validated:** 2026-05-01 by @Skords-01. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-30.
 > **Status:** Active
 
-**Trigger:** «Додай новий n8n воркфлоу» / «Зміни логіку воркфлоу X» / зміна в `ops/n8n-workflows/` / оновлення manifest.json.
+**Trigger:** "Додай новий n8n workflow" / "Зміни логіку workflow X" / зміна в `ops/n8n-workflows/` або `manifest.json`.
 
----
+## Owner surface
 
-## Передумови
+- Primary surface: `ops/n8n-workflows`
+- Governing skill: `sergeant-deploy-and-observability`
 
-- Git — джерело істини для n8n-воркфлоу ([ADR-0026](../adr/0026-n8n-workflow-source-of-truth.md)).
-- JSON воркфлоу живе в `ops/n8n-workflows/`.
-- `manifest.json` фіксує owner, status, riskTier, requiredEnv, requiredCredentials.
-- CI валідує через `pnpm ops:n8n:validate`.
+## Required context
 
-## Кроки
+- Почни з `sergeant-start-here`, потім відкрий `sergeant-deploy-and-observability`.
+- Якщо workflow викликає AI/tooling behavior або console agent surface, звір пов'язаний specialist skill.
+- Пам'ятай: Git є source of truth для n8n workflow artifacts.
 
-### 1. Визначити, що саме змінюється
+## Steps
 
-- **Новий воркфлоу** → перейди до §2
-- **Зміна існуючого** → перейди до §3
-- **Тільки manifest metadata** → перейди до §4
+### 1. Визнач клас workflow
 
-### 2. Створення нового воркфлоу
+- business/product automation
+- devops/CI
+- security/health
+- growth/marketing
+- infra plumbing
 
-1. Обери наступний вільний номер у `ops/n8n-workflows/` (формат `NN-<slug>.json`). Діапазони:
-   - `01–14` — бізнес-логіка (billing, finyk, product)
-   - `15–17` — devops / CI інтеграції
-   - `18–19` — security / health
-   - `50–59` — SEO snapshots (GSC / ranks / pagespeed / backlinks)
-   - `60–69` — growth & revenue snapshots (funnel / cohorts / revenue / acquisition / feature adoption)
-   - `70–79` — marketing / mentions / social / app-store reviews
-   - `80–89` — email кампанії / events
-   - `98–99` — інфраструктурні (error-handler, heartbeat)
-2. Створи JSON файл. Якщо маєш доступ до n8n UI — побудуй там і експортуй:
-   ```bash
-   pnpm n8n:export
-   ```
-3. Додай запис у `manifest.json`:
+### 2. Онови workflow artifact і metadata разом
 
-   ```json
-   "NN-my-workflow.json": {
-     "owner": "<team>",
-     "status": "experimental",
-     "riskTier": "P2",
-     "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
-     "requiredCredentials": ["Sergeant Ops Bot"],
-     "notes": "Короткий опис що робить воркфлоу."
-   }
-   ```
+- JSON workflow
+- `manifest.json`
+- owner, status, risk tier, required env, required credentials
 
-   - `owner`: `ops` | `finyk` | `product` | `devex` | `growth` | `security`
-   - `status`: `experimental` (дефолт для нових) | `prod-ready`
-   - `riskTier`: `P0` (revenue/data) | `P1` (alert/security) | `P2` (growth/info)
+### 3. Перевір safe import path
 
-4. Валідуй:
-   ```bash
-   pnpm ops:n8n:validate
-   ```
+- Dry-run або export/import consistency
+- Немає зашитих secrets
+- Credential references лишаються reference-only
 
-### 3. Зміна існуючого воркфлоу
+### 4. Зафіксуй operational impact
 
-1. Якщо зміна зроблена в n8n UI — експортуй:
-   ```bash
-   pnpm n8n:export
-   ```
-2. Якщо зміна в JSON напряму — переконайся, що структура валідна.
-3. Оновити `manifest.json` якщо змінились:
-   - `requiredEnv` / `requiredCredentials` (додано чи прибрано)
-   - `status` (experimental → prod-ready або навпаки)
-   - `notes`
-4. Валідуй:
-   ```bash
-   pnpm ops:n8n:validate
-   ```
-5. Перед імпортом у живий n8n — dry-run:
-   ```bash
-   pnpm n8n:import -- --dry-run
-   ```
+- Що запускає workflow
+- Які env/credentials потрібні
+- Який blast radius при помилці
+- Чи потребує окремого review від owner
 
-### 4. Зміна тільки manifest metadata
+## Verification
 
-1. Відредагуй `ops/n8n-workflows/manifest.json`.
-2. Валідуй: `pnpm ops:n8n:validate`.
+- [ ] `pnpm ops:n8n:validate`
+- [ ] `pnpm lint:governance-sync --strict`
+- [ ] `pnpm format:check`
+- [ ] `manifest.json` синхронізований із workflow artifact
+- [ ] Secrets не закомічені
 
-### 5. Перевірки перед PR
+## When not to use this playbook
 
-```bash
-pnpm ops:n8n:validate              # manifest + JSON consistency
-pnpm lint:governance-sync          # dangling refs check
-pnpm format:check                  # Prettier
-```
+- Потрібно змінити лише application code без workflow artifacts.
+- Працюєш із console agent або HubChat orchestration, а не з n8n.
 
-### 6. Commit
+## Related playbooks and skills
 
-Scope: `agents` (для n8n workflow змін).
-
-```bash
-git add ops/n8n-workflows/
-git commit -m "feat(agents): add workflow NN — <short description>"
-```
-
-## Безпека
-
-- Не комітити секрети, API ключі чи токени в JSON воркфлоу.
-- Credentials мають бути reference-only (ім'я credential-а в n8n, не значення).
-- P0 воркфлоу (billing, payment recovery, error handler) — змінювати лише з рев'ю від `@Skords-01`.
+- [modify-console-agent.md](./modify-console-agent.md)
+- [investigate-alert.md](./investigate-alert.md)
+- Skill: `sergeant-deploy-and-observability`
