@@ -259,38 +259,22 @@ export function ModuleChecklist({
           {def.steps.map((step, idx) => {
             const done = state.completedSteps.includes(step.id);
             return (
-              <div
+              <button
                 key={step.id}
-                role="button"
-                tabIndex={done ? -1 : 0}
-                aria-disabled={done}
-                onClick={(event) => {
-                  const target = event.target;
-                  if (
-                    done ||
-                    (target instanceof HTMLElement &&
-                      target.closest('[role="checkbox"]'))
-                  ) {
-                    return;
-                  }
-                  handleStepDone(step.id, step.action);
-                }}
-                onKeyDown={(event) => {
-                  if (
-                    done ||
-                    event.target !== event.currentTarget ||
-                    (event.key !== "Enter" && event.key !== " ")
-                  ) {
-                    return;
-                  }
-                  event.preventDefault();
+                type="button"
+                role="checkbox"
+                aria-checked={done}
+                aria-label={step.label}
+                disabled={done}
+                onClick={() => {
+                  if (done) return;
                   handleStepDone(step.id, step.action);
                 }}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left",
                   "transition-all duration-200",
                   done
-                    ? "bg-transparent"
+                    ? "bg-transparent cursor-default"
                     : "bg-panel/60 hover:bg-panel border border-line/50 hover:border-line cursor-pointer",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
                   "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1",
@@ -298,12 +282,8 @@ export function ModuleChecklist({
                 style={{ animationDelay: `${idx * 50}ms` }}
               >
                 <AnimatedCheckbox
+                  decorative
                   checked={done}
-                  onChange={(checked) =>
-                    checked && handleStepDone(step.id, step.action)
-                  }
-                  disabled={done}
-                  aria-label={step.label}
                   size="sm"
                   className={cn(done && styles.checkBg)}
                 />
@@ -320,9 +300,10 @@ export function ModuleChecklist({
                     name="chevron-right"
                     size={14}
                     className="text-muted shrink-0"
+                    aria-hidden
                   />
                 )}
-              </div>
+              </button>
             );
           })}
 
