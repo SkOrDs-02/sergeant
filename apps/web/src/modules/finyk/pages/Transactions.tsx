@@ -280,7 +280,11 @@ export function Transactions({
           y++;
         }
         if (!(y === now.getFullYear() && m === now.getMonth()))
-          fetchMonth(y, m);
+          // Fire-and-forget: `fetchMonth` may reject (e.g. when monobank
+          // is disconnected). The page degrades gracefully to its empty
+          // state, so we just swallow the rejection here to keep the
+          // unhandled-rejection logs clean.
+          fetchMonth(y, m).catch(() => {});
         return { year: y, month: m };
       });
     },
