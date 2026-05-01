@@ -8,7 +8,7 @@
 > **Оновлено 2026-05-01.** Sync з реальним станом коду після кількох wave-ів decomposition:
 > Розділ 2 (localStorage burndown) — TODO-allowlist у `eslint.config.js` скорочено з 41 до **17 файлів**
 > (нові хвилі міграцій у `routine`/`finyk`/`onboarding`/`chatActions`/`insights`/`recommendations`).
-> Розділ 4 (великі файли) — у `apps/web/src` залишилось **22 файли >600 LOC** (раніше 24);
+> Розділ 4 (великі файли) — у `apps/web/src` залишилось **21 файл >600 LOC** (раніше 24);
 > декомпозовано `Transactions.tsx`, `HubSearch.tsx`, `Budgets.tsx`, `Overview.tsx`.
 > Розділ 9 (`any` типи) — переоцінено: production тепер містить **7 файлів** із `: any`
 > (всі у двох finyk sub-pages після decomposition `Transactions`/`Budgets`); тестові — без змін.
@@ -121,7 +121,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 
 ---
 
-### 4. Великі файли (>600 рядків) — 22 файли (тільки `apps/web/src`)
+### 4. Великі файли (>600 рядків) — 21 файл (тільки `apps/web/src`)
 
 > `finyk/pages/Assets.tsx` (раніше 1147 рядків) декомпозовано на
 > `useAssetsState.ts` (259), `AssetsForm.tsx` (376), `AssetsTable.tsx` (511),
@@ -138,6 +138,13 @@ Codemod ідемпотентний: повторний запуск дасть `
 > `useProactiveAdvice`), `Overview.tsx` (split на `HeroCard`, `FlowRow`,
 > `MonthPulseCard`, etc.). Загалом count для `apps/web/src` 24 → 22.
 >
+> `core/ProfilePage.tsx` (раніше 1060 рядків) декомпозовано на
+> `core/profile/ProfilePage.tsx` (96), `PersonalInfoSection.tsx` (383),
+> `MemoryBankSection.tsx` (242), `SessionsSection.tsx` (134),
+> `ChangePasswordSection.tsx` (122), `DeleteAccountDialog.tsx` (104),
+> `DangerZoneSection.tsx` (97) + barrel re-export `index.ts`.
+> Усі < 600 LOC. Count 22 → 21.
+>
 > **Скоуп таблиці нижче** — лише `apps/web/src`. Mobile (`apps/mobile/src/modules/finyk/pages/Transactions/TransactionsPage.tsx` 1215),
 > packages (`packages/shared/src/lib/assistantCatalogue.ts` 1133, `schemas/api.ts` 986,
 > `openapi/routes.ts` 837), server (`modules/chat/chat.ts` 783) — трекаються окремо
@@ -147,7 +154,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 | -------- | --------------------------------------------------- |
 | ~~1614~~ | ~~`nutrition/lib/foodDb/seedFoodsUk.ts`~~           |
 | 1064     | `core/DesignShowcase.tsx`                           |
-| 1060     | `core/ProfilePage.tsx`                              |
+| ~~1060~~ | ~~`core/ProfilePage.tsx`~~                          |
 | 949      | `fizruk/components/workouts/ActiveWorkoutPanel.tsx` |
 | 907      | `core/onboarding/seedDemoData.ts`                   |
 | 902      | `core/hub/HubDashboard.tsx`                         |
@@ -200,7 +207,7 @@ PR на кожен файл; великі data-файли (`seedFoodsUk.ts`) —
 
 - `HubReports.tsx` (638 рядків, складна агрегація)
 - `TodayFocusCard.tsx` (recommendation engine інтеграція)
-- `ProfilePage.tsx` (1060 рядків)
+- ~~`ProfilePage.tsx` (1060 рядків)~~ — декомпозовано на `core/profile/` (max 383 LOC)
 
 **Зроблено 2026-04-28:** додано focused coverage для `HubDashboard.tsx`
 (`HubDashboard.test.tsx`: module previews / empty states, inactive modules,

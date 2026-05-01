@@ -7,7 +7,7 @@ import { ErrorBoundary } from "../ErrorBoundary";
 import { HubDashboard } from "../hub/HubDashboard";
 import { HubReports } from "../hub/HubReports";
 import { HubSettingsPage } from "../hub/HubSettingsPage";
-import { ProfilePage } from "../profile/ProfilePage";
+import { ProfilePage } from "../profile";
 import type { OpenModuleOptions } from "../hooks/useHubNavigation";
 import type { HubView } from "../hooks/useHubUIState";
 import { IOSInstallBanner } from "./IOSInstallBanner";
