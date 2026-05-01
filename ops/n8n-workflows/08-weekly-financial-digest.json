@@ -3,12 +3,14 @@
   "nodes": [
     {
       "parameters": {
-        "interval": [
-          {
-            "field": "cronExpression",
-            "expression": "0 20 * * 0"
-          }
-        ]
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 20 * * 0"
+            }
+          ]
+        }
       },
       "id": "cron-sunday",
       "name": "Cron Sun 20:00 Kyiv",
@@ -36,7 +38,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const rows = $input.all();\nif (!rows.length) return [{ json: { rows: [], empty: true } }];\nconst lines = rows.map(r =>\n  `  ${r.json.category}: ₴${r.json.total_uah} (${r.json.tx_count} tx)`\n).join('\\n');\nconst total = rows.reduce((s, r) => s + parseFloat(r.json.total_uah), 0);\nreturn [{ json: { lines, total: total.toFixed(2), rowCount: rows.length, empty: false } }];"
+        "jsCode": "const rows = $input.all();\nif (!rows.length) {\n  return [{ json: { lines: '— немає витрат за останні 7 днів', total: '0.00', rowCount: 0, empty: true } }];\n}\nconst lines = rows.map(r =>\n  `  ${r.json.category}: ₴${r.json.total_uah} (${r.json.tx_count} tx)`\n).join('\\n');\nconst total = rows.reduce((s, r) => s + parseFloat(r.json.total_uah), 0);\nreturn [{ json: { lines, total: total.toFixed(2), rowCount: rows.length, empty: false } }];"
       },
       "id": "format-data",
       "name": "Format spending data",
@@ -65,8 +67,14 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 300,\n  \"system\": \"Ти фінансовий асистент. Отримай дані про витрати за тиждень і склади короткий, живий Telegram-дайджест українською. Використовуй emoji. Без зайвих слів — максимум 5-6 рядків.\",\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"Витрати за тиждень:\\n{{ $json.lines }}\\n\\nЗагалом: ₴{{ $json.total }}. Склади дайджест.\"\n  }]\n}",
-        "options": {}
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 300, system: 'Ти фінансовий асистент. Отримай дані про витрати за тиждень і склади короткий, живий Telegram-дайджест українською. Використовуй emoji. Без зайвих слів — максимум 5-6 рядків.', messages: [{ role: 'user', content: `Витрати за тиждень:\n${$json.lines}\n\nЗагалом: ₴${$json.total}. Склади дайджест.` }] }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "ai-digest",
       "name": "AI → format digest",
@@ -78,11 +86,12 @@
           "id": "pr5jBxG3VFXSX5NB",
           "name": "Anthropic (x-api-key)"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "const raw = $input.first().json?.content?.[0]?.text ?? 'Немає даних';\nreturn [{ json: { text: raw } }];"
+        "jsCode": "// Parse Anthropic response. Fall back to raw spending lines if AI errors.\nconst body = $input.first()?.json ?? {};\nconst spending = $('Format spending data').first()?.json ?? {};\nconst aiText = body?.content?.[0]?.text;\nif (aiText) {\n  return [{ json: { text: aiText, errorMsg: '' } }];\n}\nconst errorMsg = body?.error?.message || body?.error?.type || body?.type || '';\nconst fallback = spending.empty\n  ? '— немає витрат за останні 7 днів'\n  : `Витрати за тиждень (₴${spending.total}):\\n${spending.lines}`;\nreturn [{ json: { text: fallback, errorMsg } }];"
       },
       "id": "parse-ai",
       "name": "Parse AI response",
@@ -93,7 +102,7 @@
     {
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
-        "text": "=📊 *Тижневий фінансовий дайджест*\n\n{{ $json.text }}\n\n_Sergeant · {{ new Date().toLocaleDateString('uk-UA') }}_",
+        "text": "={{ $json.errorMsg ? `⚠️ *Тижневий фінансовий дайджест — fallback*\n\n_AI недоступний:_ \\`${$json.errorMsg}\\`\n\n${$json.text}\n\n_Sergeant · ${new Date().toLocaleDateString('uk-UA')}_` : `📊 *Тижневий фінансовий дайджест*\n\n${$json.text}\n\n_Sergeant · ${new Date().toLocaleDateString('uk-UA')}_` }}",
         "additionalFields": {
           "parse_mode": "Markdown"
         }
@@ -187,5 +196,5 @@
       "name": "digest"
     }
   ],
-  "active": false
+  "active": true
 }
