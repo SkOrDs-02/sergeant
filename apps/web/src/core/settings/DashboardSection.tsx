@@ -58,7 +58,7 @@ function ModuleReorderList({ order, onMove }: ModuleReorderListProps) {
               disabled={isFirst}
               aria-label={`Підняти ${DASHBOARD_MODULE_LABELS[id]} вище`}
               className={cn(
-                "w-8 h-8 rounded-lg flex items-center justify-center",
+                "w-8 h-8 rounded-xl flex items-center justify-center",
                 "text-muted hover:text-text hover:bg-panelHi transition-colors",
                 "disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed",
               )}
@@ -71,7 +71,7 @@ function ModuleReorderList({ order, onMove }: ModuleReorderListProps) {
               disabled={isLast}
               aria-label={`Опустити ${DASHBOARD_MODULE_LABELS[id]} нижче`}
               className={cn(
-                "w-8 h-8 rounded-lg flex items-center justify-center",
+                "w-8 h-8 rounded-xl flex items-center justify-center",
                 "text-muted hover:text-text hover:bg-panelHi transition-colors",
                 "disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed",
               )}

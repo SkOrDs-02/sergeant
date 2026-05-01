@@ -281,21 +281,30 @@ const preset = {
       },
 
       // ═══════════════════════════════════════════════════════════════════
-      // BORDER RADIUS — size-driven rhythm (see docs/design/RADIUS-RHYTHM.md)
+      // BORDER RADIUS — 3 semantic tiers (see docs/design/RADIUS-RHYTHM.md)
       //
-      // The active scale is intentionally short:
-      //   sm   →  2 px   swatch  (heatmap cells, chart legend dots)
-      //   md   →  6 px   marker  (checkbox squares, badge chips, <kbd>)
-      //   xl   → 12 px   control sm (Button xs/sm, icon-buttons ≤ 40 px)
-      //   2xl  → 16 px   control md / card (Button md/lg, Card default)
-      //   3xl  → 24 px   hero / sheet (Button xl, Card xl, Modal, sheets)
-      //   full →  ∞       pill (FAB, avatars, status dots)
+      //   CONTROL  (12 px, rounded-xl)   — buttons, inputs, badges, chips,
+      //                                    icon-buttons, segmented controls
+      //   CARD     (16 px, rounded-2xl)  — cards, panels, list items,
+      //                                    dropdowns, sticky banners
+      //   HERO     (24 px, rounded-3xl)  — modals, sheets, hero cards,
+      //                                    module bento tiles
+      //
+      //   PILL     (9999 px, rounded-full) — FAB, avatars, status dots, tags
+      //   SWATCH   (2 px, rounded-sm)      — heatmap cells, chart legend dots
       //
       // 4xl / 5xl exist for one-off illustration surfaces (onboarding
       // hero blob); they are NOT part of the regular rhythm.
       //
-      // Avoid `rounded-lg` (8 px) in new code — it sits between marker
-      // and control with no clear semantic role.
+      // Forbidden in new code:
+      //   `rounded-lg` (8 px)  — sits between CONTROL and CARD with no role
+      //   `rounded-md` (6 px)  — folded into CONTROL; reach for `rounded-xl`
+      //   `rounded` / `rounded-DEFAULT` (4 px) — no semantic slot at all
+      //
+      // Lint: see `eslint-plugin-sergeant-design`. The design-system audit
+      // sweeps remaining call sites incrementally — when touching a file
+      // you usually want `rounded-xl` for ≤ 40 px controls and `rounded-2xl`
+      // for surfaces ≥ 48 px tall.
       // ═══════════════════════════════════════════════════════════════════
       borderRadius: {
         "2xl": "16px",
@@ -398,8 +407,15 @@ const preset = {
       // ═══════════════════════════════════════════════════════════════════
       // TYPOGRAPHY — Readable, friendly, clear hierarchy
       // ═══════════════════════════════════════════════════════════════════
+      // ─── Type-size scale ────────────────────────────────────────────────
+      // Floor: `text-2xs` (10px). `text-3xs` (9px) was retired — it
+      // never met readable-body contrast and we had no auditable use
+      // case for sub-10px outside chart axis ticks. Use one of the
+      // semantic `.text-style-*` utilities (defined in `plugins`)
+      // whenever a slot has a documented role (hero, title, body,
+      // label, caption, overline) — fall back to the raw scale only
+      // for one-off measurements.
       fontSize: {
-        "3xs": ["9px", { lineHeight: "12px" }],
         "2xs": ["10px", { lineHeight: "14px" }],
         xs: ["12px", { lineHeight: "16px" }],
         sm: ["14px", { lineHeight: "20px" }],
@@ -597,7 +613,73 @@ const preset = {
       },
     },
   },
+  // ═══════════════════════════════════════════════════════════════════════
+  // PLUGINS
+  //   1. Semantic typography utilities (`.text-style-*`).
+  //   2. Touch-target floors (`.touch-target`, `.touch-target-48`).
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  // The `.text-style-*` utilities below are the canonical way to apply
+  // a typographic role. They bundle font-size, line-height, weight,
+  // letter-spacing, and casing into a single class so layouts can't
+  // drift on any one axis (e.g. shipping the hero size with the wrong
+  // weight). Prefer these over re-deriving the values from the raw
+  // `text-xs / text-sm / …` scale whenever a slot has a documented
+  // role:
+  //
+  //   .text-style-hero      — page H1s and hero stat numbers
+  //   .text-style-title     — section headings, card titles
+  //   .text-style-body      — main body copy
+  //   .text-style-label     — form labels, button text
+  //   .text-style-caption   — metadata, timestamps, helper text
+  //   .text-style-overline  — uppercase section kickers / eyebrows
+  //
+  // Minimum text size in the design system is 12px (`text-style-caption`);
+  // `text-2xs` (10px) is reserved for chart ticks and decorative
+  // metadata badges.
+  //
+  // The `.touch-target*` plugin enforces WCAG 2.5.5 / Apple HIG ≥44×44px
+  // on `(pointer: coarse)` — see the inline comment on the plugin for the
+  // opt-out / sibling utilities.
   plugins: [
+    function semanticTypography({ addUtilities }) {
+      addUtilities({
+        ".text-style-hero": {
+          fontSize: "26px",
+          lineHeight: "32px",
+          fontWeight: "700",
+          letterSpacing: "-0.02em",
+        },
+        ".text-style-title": {
+          fontSize: "20px",
+          lineHeight: "28px",
+          fontWeight: "600",
+          letterSpacing: "-0.01em",
+        },
+        ".text-style-body": {
+          fontSize: "16px",
+          lineHeight: "24px",
+          fontWeight: "400",
+        },
+        ".text-style-label": {
+          fontSize: "14px",
+          lineHeight: "20px",
+          fontWeight: "500",
+        },
+        ".text-style-caption": {
+          fontSize: "12px",
+          lineHeight: "16px",
+          fontWeight: "400",
+        },
+        ".text-style-overline": {
+          fontSize: "12px",
+          lineHeight: "16px",
+          fontWeight: "600",
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+        },
+      });
+    },
     // ═══════════════════════════════════════════════════════════════════════
     // TOUCH TARGETS — WCAG 2.5.5 / Apple HIG ≥44×44px on coarse pointers
     //
@@ -615,7 +697,7 @@ const preset = {
     // data grids), opt out by setting `data-compact` on the element —
     // see the safety-net rule in `apps/web/src/index.css`.
     // ═══════════════════════════════════════════════════════════════════════
-    function ({ addUtilities }) {
+    function touchTargets({ addUtilities }) {
       addUtilities({
         ".touch-target": {
           "@media (pointer: coarse)": {

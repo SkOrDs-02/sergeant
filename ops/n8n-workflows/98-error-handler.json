@@ -49,6 +49,28 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "has-email-env",
+              "leftValue": "={{ ($env.OPS_ALERT_EMAIL || '').trim() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ]
+        }
+      },
+      "id": "has-email-env",
+      "name": "OPS_ALERT_EMAIL set?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 420]
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://api.resend.com/emails",
         "authentication": "genericCredentialType",
@@ -92,11 +114,23 @@
             "index": 0
           },
           {
-            "node": "Email failure fallback",
+            "node": "OPS_ALERT_EMAIL set?",
             "type": "main",
             "index": 0
           }
         ]
+      ]
+    },
+    "OPS_ALERT_EMAIL set?": {
+      "main": [
+        [
+          {
+            "node": "Email failure fallback",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
       ]
     }
   },

@@ -94,7 +94,7 @@ const FizrukLoader = memo(function FizrukLoader() {
             key={i}
             className="rounded-2xl border border-line bg-fizruk-soft/20 dark:bg-fizruk-surface-dark/10 p-4 space-y-2"
           >
-            <Skeleton shimmer className="w-8 h-8 rounded-lg" />
+            <Skeleton shimmer className="w-8 h-8 rounded-xl" />
             <Skeleton shimmer className="h-6 w-12" />
             <SkeletonText shimmer className="w-full" />
           </div>
@@ -104,7 +104,7 @@ const FizrukLoader = memo(function FizrukLoader() {
       {/* Section header */}
       <div className="flex items-center justify-between pt-4">
         <SkeletonText shimmer className="w-32" />
-        <Skeleton shimmer className="w-8 h-8 rounded-lg" />
+        <Skeleton shimmer className="w-8 h-8 rounded-xl" />
       </div>
 
       {/* Workout cards */}
@@ -167,7 +167,7 @@ const RoutineLoader = memo(function RoutineLoader() {
             style={{ animationDelay: `${i * 50}ms` }}
           >
             <div className="flex items-center gap-2">
-              <Skeleton shimmer className="w-8 h-8 rounded-lg shrink-0" />
+              <Skeleton shimmer className="w-8 h-8 rounded-xl shrink-0" />
               <SkeletonText shimmer className="flex-1" />
             </div>
             <Skeleton shimmer className="h-2 w-full rounded-full" />
@@ -208,7 +208,7 @@ const NutritionLoader = memo(function NutritionLoader() {
       {/* Meals section header */}
       <div className="flex items-center justify-between pt-2">
         <SkeletonText shimmer className="w-20" />
-        <Skeleton shimmer className="w-8 h-8 rounded-lg" />
+        <Skeleton shimmer className="w-8 h-8 rounded-xl" />
       </div>
 
       {/* Meal cards */}

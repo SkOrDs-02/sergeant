@@ -120,7 +120,7 @@ export function OptimizedImage({
     return (
       <div
         className={cn(
-          "flex items-center justify-center bg-panelHi text-muted rounded-lg",
+          "flex items-center justify-center bg-panelHi text-muted rounded-xl",
           wrapperClassName,
         )}
         style={aspectRatio ? { aspectRatio } : undefined}

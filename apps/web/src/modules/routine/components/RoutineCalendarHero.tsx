@@ -83,7 +83,7 @@ export function RoutineCalendarHero({
             <p className="text-2xl font-black text-text tabular-nums mt-0.5">
               {Math.round(completionRate.rate * 100)}%
             </p>
-            <p className="text-3xs text-subtle tabular-nums">
+            <p className="text-2xs text-subtle tabular-nums">
               {completionRate.completed}/{completionRate.scheduled}
             </p>
           </div>

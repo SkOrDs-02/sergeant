@@ -88,7 +88,7 @@ function AddBudgetFormComponent({
                 key={e}
                 onClick={() => onChangeNewB((b) => ({ ...b, emoji: e }))}
                 className={cn(
-                  "text-xl p-1.5 rounded-lg border transition-colors",
+                  "text-xl p-1.5 rounded-xl border transition-colors",
                   newB.emoji === e
                     ? "border-primary bg-primary/10"
                     : "border-transparent",

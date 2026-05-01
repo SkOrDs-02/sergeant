@@ -207,7 +207,7 @@ export function CelebrationModal({
             Що далі
           </p>
           <div className="flex items-start gap-2.5">
-            <div className="w-6 h-6 rounded-lg bg-brand-500/10 flex items-center justify-center shrink-0 mt-0.5">
+            <div className="w-6 h-6 rounded-xl bg-brand-500/10 flex items-center justify-center shrink-0 mt-0.5">
               <Icon name="sparkles" size={12} className="text-brand-500" />
             </div>
             <p className="text-xs text-muted leading-relaxed">

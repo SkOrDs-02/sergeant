@@ -1,6 +1,6 @@
 # Sergeant Design System
 
-> **Last validated:** 2026-04-30 by @devin-ai. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-01 by @devin-ai-integration[bot]. **Next review:** 2026-07-30.
 > **Status:** Active
 
 Єдина візуальна мова для хаба з 4 модулями: **ФІНІК**, **ФІЗРУК**, **Рутина**,
@@ -111,21 +111,40 @@ Back-compat: старі токени `panel` / `panelHi` / `line` продовж
 
 ## 3. Типографічна шкала
 
-Всі розміри — в `tailwind.config.js` під `fontSize`:
+Всі розміри — в `tailwind.config.js` під `fontSize`. Мінімальний
+розмір — **10px (`text-2xs`)**. `text-3xs` (9px) було видалено зі
+шкали — його контраст не проходив читабельність на мобільних, а
+бібліотека чартів вже використовує власні axis-ticks.
 
-| Клас        | Size / line-height | Використання                 |
-| ----------- | ------------------ | ---------------------------- |
-| `text-3xs`  | 9 / 12             | Підписи під мітрами          |
-| `text-2xs`  | 10 / 14            | Eyebrow-лейбли, tag-и        |
-| `text-xs`   | 12 / 16            | Метадата, timestamp          |
-| `text-sm`   | 14 / 20            | Вторинний текст, кнопки `sm` |
-| `text-base` | 16 / 24            | Базовий body                 |
-| `text-lg`   | 18 / 28            | Заголовок картки             |
-| `text-xl`   | 20 / 28            | Section heading `md`         |
-| `text-2xl`  | 24 / 32            | Page heading mobile          |
-| `text-3xl`  | 30 / 36            | Hero heading                 |
-| `text-4xl`  | 36 / 40            | Landing hero                 |
-| `text-5xl`  | 48 / 1             | Рідкісні великі промо-цифри  |
+| Клас        | Size / line-height | Використання                              |
+| ----------- | ------------------ | ----------------------------------------- |
+| `text-2xs`  | 10 / 14            | Декоративні мета-бейджі, chart axis ticks |
+| `text-xs`   | 12 / 16            | Метадата, timestamp, secondary captions   |
+| `text-sm`   | 14 / 20            | Вторинний текст, кнопки `sm`              |
+| `text-base` | 16 / 24            | Базовий body                              |
+| `text-lg`   | 18 / 28            | Заголовок картки                          |
+| `text-xl`   | 20 / 28            | Section heading `md`                      |
+| `text-2xl`  | 24 / 32            | Page heading mobile                       |
+| `text-hero` | 26 / 32            | Hero stat numbers                         |
+| `text-3xl`  | 30 / 36            | Hero heading                              |
+| `text-4xl`  | 36 / 40            | Landing hero                              |
+| `text-5xl`  | 48 / 1             | Рідкісні великі промо-цифри               |
+
+### Семантичні `.text-style-*` ютиліті
+
+Кожна виконує одну роль і одночасно зашиває font-size, line-height,
+weight, letter-spacing і casing. Перевага — над "ручним" комбо
+`text-* font-* tracking-*`, бо неможливо змішати hero-розмір з
+неправильною вагою:
+
+| Утиліта                | Контракт                       | Використання                      |
+| ---------------------- | ------------------------------ | --------------------------------- |
+| `.text-style-hero`     | 26 / 32 / 700 / -0.02em        | Page H1, hero stat number         |
+| `.text-style-title`    | 20 / 28 / 600 / -0.01em        | Section heading, card title       |
+| `.text-style-body`     | 16 / 24 / 400                  | Основний body                     |
+| `.text-style-label`    | 14 / 20 / 500                  | Form label, button text           |
+| `.text-style-caption`  | 12 / 16 / 400                  | Helper text, metadata, timestamps |
+| `.text-style-overline` | 12 / 16 / 600 / 0.06em / UPPER | Section kicker / eyebrow          |
 
 Вага:
 

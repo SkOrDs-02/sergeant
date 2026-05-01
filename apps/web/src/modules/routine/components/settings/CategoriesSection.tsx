@@ -131,7 +131,7 @@ export function CategoriesSection({
                   <div className="flex gap-1 shrink-0">
                     <button
                       type="button"
-                      className="text-subtle hover:text-text min-w-[32px] min-h-[32px] flex items-center justify-center rounded-lg text-xs"
+                      className="text-subtle hover:text-text min-w-[32px] min-h-[32px] flex items-center justify-center rounded-xl text-xs"
                       onClick={() => {
                         setEditingCatId(c.id);
                         setCatDraft({ name: c.name, emoji: c.emoji || "" });
@@ -142,7 +142,7 @@ export function CategoriesSection({
                     </button>
                     <button
                       type="button"
-                      className="text-subtle hover:text-danger min-w-[32px] min-h-[32px] flex items-center justify-center rounded-lg text-xs"
+                      className="text-subtle hover:text-danger min-w-[32px] min-h-[32px] flex items-center justify-center rounded-xl text-xs"
                       onClick={() => {
                         // Soft-delete with undo: snapshot the full
                         // routine state, apply the deletion, then offer

@@ -82,7 +82,7 @@ function ModuleBlock({ moduleKey, data }) {
       >
         <div
           className={cn(
-            "w-6 h-6 rounded-lg flex items-center justify-center text-xs shrink-0",
+            "w-6 h-6 rounded-xl flex items-center justify-center text-xs shrink-0",
             cfg.bgClass,
           )}
         >
@@ -416,7 +416,7 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
               onClick={() => setShowHistory((v) => !v)}
               title="Попередні тижні"
               className={cn(
-                "w-7 h-7 flex items-center justify-center rounded-lg transition-colors",
+                "w-7 h-7 flex items-center justify-center rounded-xl transition-colors",
                 showHistory
                   ? "bg-primary/15 text-primary"
                   : "text-muted hover:text-text hover:bg-panelHi",
@@ -446,7 +446,7 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
                 type="button"
                 onClick={onCollapse}
                 aria-label="Згорнути звіт тижня"
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
               >
                 <Icon name="chevron-up" size={15} strokeWidth={2.5} />
               </button>
@@ -467,7 +467,7 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
                   setShowHistory(false);
                 }}
                 className={cn(
-                  "px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors",
+                  "px-2.5 py-1 rounded-xl text-xs font-semibold transition-colors",
                   selectedWeekKey === h.weekKey
                     ? "bg-primary/15 text-primary"
                     : "bg-panelHi text-muted hover:text-text",
@@ -475,7 +475,7 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
               >
                 {h.weekRange}
                 {h.weekKey === currentWeekKey && (
-                  <span className="ml-1 text-3xs opacity-70">поточний</span>
+                  <span className="ml-1 text-2xs opacity-70">поточний</span>
                 )}
               </button>
             ))}

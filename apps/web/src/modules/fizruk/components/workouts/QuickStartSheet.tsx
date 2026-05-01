@@ -122,7 +122,8 @@ export function QuickStartSheet({
 
   const handleConfirm = () => {
     if (selectedCount === 0) return;
-    const picks = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const picks: any[] = [];
     for (const id of selectedIds) {
       const ex = byId.get(id);
       if (ex) picks.push(ex);

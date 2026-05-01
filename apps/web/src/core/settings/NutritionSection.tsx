@@ -65,7 +65,7 @@ function NumberField({
           placeholder={placeholder}
           className={cn(
             "input-focus h-10 w-24 px-2.5 text-right text-sm",
-            "bg-panelHi border border-line rounded-lg text-text",
+            "bg-panelHi border border-line rounded-xl text-text",
             "placeholder:text-muted",
           )}
           value={draft}
@@ -231,7 +231,7 @@ export function NutritionSection() {
           <select
             className={cn(
               "input-focus h-10 px-2.5 text-sm min-w-[140px]",
-              "bg-panelHi border border-line rounded-lg text-text",
+              "bg-panelHi border border-line rounded-xl text-text",
             )}
             value={activePantry?.id || ""}
             onChange={(e) => handleSetActivePantry(e.target.value)}

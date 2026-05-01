@@ -42,8 +42,11 @@ export function Dashboard({
   const { entries: measurements } = useMeasurements();
 
   const [planConfirmOpen, setPlanConfirmOpen] = useState(false);
-  const [pendingPicks, setPendingPicks] = useState(null);
-  const [pendingTemplateId, setPendingTemplateId] = useState(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [pendingPicks, setPendingPicks] = useState<any[] | null>(null);
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(
+    null,
+  );
 
   const closePlanConfirm = () => {
     setPlanConfirmOpen(false);
@@ -92,7 +95,11 @@ export function Dashboard({
   const tryStartPlan = (picks: unknown[], templateId?: string | null) => {
     if (!picks?.length) return;
     const risky = picks.some(
-      (ex) => recoveryConflictsForExercise(ex, rec.by).hasWarning,
+      (ex) =>
+        recoveryConflictsForExercise(
+          ex as { muscles?: { primary?: string[]; secondary?: string[] } },
+          rec.by,
+        ).hasWarning,
     );
     if (risky) {
       setPendingPicks(picks);

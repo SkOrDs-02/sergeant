@@ -98,7 +98,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
                 }, 2500);
               }
             }}
-            className="text-xs text-subtle hover:text-danger transition-colors px-2 py-1 rounded-lg"
+            className="text-xs text-subtle hover:text-danger transition-colors px-2 py-1 rounded-xl"
             aria-label={
               resetPending
                 ? "Підтвердити скидання води за сьогодні"

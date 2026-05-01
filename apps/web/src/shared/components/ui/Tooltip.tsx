@@ -160,7 +160,7 @@ export function Tooltip({
           id={id}
           role="tooltip"
           className={cn(
-            "absolute z-50 whitespace-nowrap rounded-lg bg-fg px-2 py-1 text-xs font-medium text-surface shadow-float",
+            "absolute z-50 whitespace-nowrap rounded-xl bg-fg px-2 py-1 text-xs font-medium text-surface shadow-float",
             "motion-safe:animate-fade-in",
             placementClasses[placement],
             className,

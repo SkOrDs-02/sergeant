@@ -99,7 +99,9 @@ describe("boundary / error propagation", () => {
     set.mockRejectedValue(new Error("quota exceeded"));
     const { setBearerToken } = await import("./auth-storage.js");
 
-    await expect(setBearerToken("some-token")).rejects.toThrow("quota exceeded");
+    await expect(setBearerToken("some-token")).rejects.toThrow(
+      "quota exceeded",
+    );
   });
 
   it("clearBearerToken — пробрасує виняток від Preferences.remove", async () => {

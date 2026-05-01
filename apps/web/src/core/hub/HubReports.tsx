@@ -239,7 +239,7 @@ function StatCard({
         onClick={() => setCollapsed((c) => !c)}
         aria-expanded={!collapsed}
         className={cn(
-          "w-full flex items-center gap-2 text-left rounded-lg",
+          "w-full flex items-center gap-2 text-left rounded-xl",
           "-m-1 p-1 hover:bg-panelHi transition-colors",
         )}
       >

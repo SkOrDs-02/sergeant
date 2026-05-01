@@ -157,7 +157,7 @@ export function WeeklyVolumeChart({
               x={x}
               y={h - 6}
               textAnchor="middle"
-              className="fill-muted text-3xs font-semibold"
+              className="fill-muted text-2xs font-semibold"
             >
               {lab}
             </text>

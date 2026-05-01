@@ -92,7 +92,7 @@ export function TagsSection({
                 {t.name}
                 <button
                   type="button"
-                  className="text-subtle hover:text-text min-w-[28px] min-h-[28px] flex items-center justify-center rounded-lg"
+                  className="text-subtle hover:text-text min-w-[28px] min-h-[28px] flex items-center justify-center rounded-xl"
                   onClick={() => {
                     tagSavedRef.current = false;
                     setEditingTagId(t.id);
@@ -104,7 +104,7 @@ export function TagsSection({
                 </button>
                 <button
                   type="button"
-                  className="text-subtle hover:text-danger min-w-[28px] min-h-[28px] flex items-center justify-center rounded-lg"
+                  className="text-subtle hover:text-danger min-w-[28px] min-h-[28px] flex items-center justify-center rounded-xl"
                   onClick={() => {
                     // Soft-delete with undo (see docs/design/UNDO-PATTERN.md):
                     // snapshot the routine before applying the delete, then

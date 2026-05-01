@@ -22,8 +22,8 @@
     "src/core/app/**/*",
     "src/modules/nutrition/**/*",
     "src/modules/routine/**/*",
-    "src/modules/finyk/**/*",
     "src/modules/fizruk/**/*",
+    "src/modules/finyk/**/*",
     "src/core/lib/**/*"
   ],
   "exclude": ["node_modules", "dist"]

@@ -46,7 +46,7 @@ export function TodayPlanCard({
     const picked = tpl
       ? tpl.exerciseIds
           .map((id) => exercises.find((e) => e.id === id))
-          .filter(Boolean)
+          .filter((e): e is NonNullable<typeof e> => Boolean(e))
       : [];
     return { picked, templateName: tpl?.name || "" };
   }, [effectiveTemplateId, templates, exercises]);
@@ -84,7 +84,11 @@ export function TodayPlanCard({
   const tryStartPlan = (picks: unknown[], templateId?: string | null) => {
     if (!picks?.length) return;
     const risky = picks.some(
-      (ex) => recoveryConflictsForExercise(ex, rec.by).hasWarning,
+      (ex) =>
+        recoveryConflictsForExercise(
+          ex as { muscles?: { primary?: string[]; secondary?: string[] } },
+          rec.by,
+        ).hasWarning,
     );
     if (risky) {
       setPendingPicks(picks);

@@ -58,9 +58,9 @@ export function WeekDayStrip({
               )}
             >
               {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-                  Day-of-week caption at text-3xs inside a compact day-picker
+                  Day-of-week caption at text-2xs inside a compact day-picker
                   tile — smaller than SectionHeading xs's text-2xs. */}
-              <span className="text-3xs uppercase tracking-wide text-subtle">
+              <span className="text-2xs uppercase tracking-wide text-subtle">
                 {short[i]}
               </span>
               <span className="tabular-nums text-sm text-text">{dom}</span>

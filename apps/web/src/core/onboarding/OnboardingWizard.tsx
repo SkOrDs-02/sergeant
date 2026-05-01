@@ -625,7 +625,7 @@ function GoalsStep({
                 <div className="flex items-center gap-2">
                   <span
                     className={cn(
-                      "shrink-0 w-7 h-7 rounded-lg flex items-center justify-center",
+                      "shrink-0 w-7 h-7 rounded-xl flex items-center justify-center",
                       style?.iconBg ?? "bg-panelHi",
                       style?.iconColor ?? "text-muted",
                     )}
@@ -895,7 +895,7 @@ export function OnboardingWizard({
           <button
             type="button"
             onClick={handleSkip}
-            className="text-xs font-medium text-muted hover:text-text underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-md px-1.5 py-0.5"
+            className="text-xs font-medium text-muted hover:text-text underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-xl px-1.5 py-0.5"
           >
             Пропустити
           </button>

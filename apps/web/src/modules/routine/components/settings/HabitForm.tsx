@@ -209,7 +209,7 @@ export function HabitForm({
                       setShowEmojiPicker(false);
                     }}
                     className={cn(
-                      "w-9 h-9 rounded-lg text-lg",
+                      "w-9 h-9 rounded-xl text-lg",
                       "hover:bg-panelHi transition-colors",
                       habitDraft.emoji === e && "bg-panelHi ring-1 ring-line",
                     )}
@@ -278,7 +278,7 @@ export function HabitForm({
                 role="radio"
                 aria-checked={active}
                 className={cn(
-                  "text-xs px-2.5 py-1.5 rounded-lg border font-medium transition-colors min-h-[32px]",
+                  "text-xs px-2.5 py-1.5 rounded-xl border font-medium transition-colors min-h-[32px]",
                   active ? C.chipOn : C.chipOff,
                 )}
                 onClick={() =>

@@ -108,7 +108,14 @@ export default function FizrukApp({
         deactivateProgram={deactivateProgram}
         todaySession={todaySession}
         onNavigate={(target) => navigate(target)}
-        onStartProgramWorkout={(session) => handleStartProgramWorkout(session)}
+        onStartProgramWorkout={(session) =>
+          handleStartProgramWorkout(
+            session as {
+              exerciseIds?: string[];
+              progressionKg?: number;
+            } | null,
+          )
+        }
         onOpenModule={onOpenModule}
       />
     </ModuleShell>

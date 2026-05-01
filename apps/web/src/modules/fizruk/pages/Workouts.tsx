@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { safeReadStringLS, safeWriteLS, safeRemoveLS } from "@shared/lib/storage";
+import {
+  safeReadStringLS,
+  safeWriteLS,
+  safeRemoveLS,
+} from "@shared/lib/storage";
 import { Button } from "@shared/components/ui/Button";
-import { Card } from "@shared/components/ui/Card";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { useToast } from "@shared/hooks/useToast";
@@ -15,19 +18,20 @@ import { WorkoutJournalSection } from "../components/workouts/WorkoutJournalSect
 import { WorkoutCatalogSection } from "../components/workouts/WorkoutCatalogSection";
 import { QuickStartSheet } from "../components/workouts/QuickStartSheet";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
-import { useFizrukRestSound } from "../hooks/useFizrukRestSound";
+import {
+  useFizrukRestSound,
+  type RestTimerState,
+} from "../hooks/useFizrukRestSound";
 import { useRecovery } from "../hooks/useRecovery";
 import { useWorkoutTemplates } from "../hooks/useWorkoutTemplates";
 import { useWorkouts } from "../hooks/useWorkouts";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
+import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
 import {
   ACTIVE_WORKOUT_KEY,
   summarizeWorkoutForFinish,
 } from "@sergeant/fizruk-domain";
-import {
-  WorkoutsHome,
-  RecentWorkoutSummary,
-} from "../components/workouts/WorkoutsHome";
+import { WorkoutsHome } from "../components/workouts/WorkoutsHome";
 
 type WorkoutsView = "home" | "catalog" | "log" | "templates";
 
@@ -83,7 +87,7 @@ export function Workouts() {
   const templateApi = useWorkoutTemplates();
   const [q, setQ] = useState("");
   const [equipmentFilter, setEquipmentFilter] = useState<string[]>([]);
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState<RawExerciseDef | null>(null);
   const [open, setOpen] = useState(() => ({}));
   const [addOpen, setAddOpen] = useState(false);
   // `view` drives the page chrome:
@@ -99,7 +103,7 @@ export function Workouts() {
   // "catalog" vs "log" (exercise-in-list click handler, `ExerciseDetailSheet`,
   // `WorkoutCatalogSection`). Kept in sync with `view` for those subviews.
   const mode = view === "templates" || view === "home" ? "catalog" : view;
-  const [restTimer, setRestTimer] = useState(null);
+  const [restTimer, setRestTimer] = useState<RestTimerState | null>(null);
   const [activeWorkoutId, setActiveWorkoutId] = useState(() =>
     safeReadStringLS(ACTIVE_WORKOUT_KEY),
   );
@@ -391,7 +395,7 @@ export function Workouts() {
           {view !== "home" ? (
             <button
               type="button"
-              className="w-9 h-9 -ml-1 rounded-lg flex items-center justify-center text-text/80 hover:bg-surface-2"
+              className="w-9 h-9 -ml-1 rounded-xl flex items-center justify-center text-text/80 hover:bg-surface-2"
               onClick={() => setView("home")}
               aria-label="Повернутись до тренувань"
             >
@@ -653,4 +657,3 @@ export function Workouts() {
     </div>
   );
 }
-

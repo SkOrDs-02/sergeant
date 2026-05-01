@@ -33,7 +33,7 @@ export function DesignShowcase() {
               <a
                 key={s.id}
                 href={`#${s.id}`}
-                className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
+                className="shrink-0 px-2.5 py-1 rounded-xl text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
               >
                 {s.label}
               </a>

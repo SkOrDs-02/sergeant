@@ -66,7 +66,7 @@ function KeyBadge({ children }: { children: string }) {
       className={cn(
         "inline-flex items-center justify-center min-w-[24px] h-6 px-1.5",
         "text-xs font-medium text-text",
-        "bg-surface border border-line rounded-md shadow-sm",
+        "bg-surface border border-line rounded-xl shadow-sm",
       )}
     >
       {children}
@@ -130,7 +130,7 @@ export function KeyboardShortcutsModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-lg text-muted hover:text-text hover:bg-surface transition-colors"
+            className="p-2 rounded-xl text-muted hover:text-text hover:bg-surface transition-colors"
             aria-label="Закрити"
           >
             <Icon name="x" size={20} />
@@ -148,7 +148,7 @@ export function KeyboardShortcutsModal({
                 {items.map((shortcut, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-surface/50 transition-colors"
+                    className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-surface/50 transition-colors"
                   >
                     <span className="text-sm text-text">
                       {shortcut.description}

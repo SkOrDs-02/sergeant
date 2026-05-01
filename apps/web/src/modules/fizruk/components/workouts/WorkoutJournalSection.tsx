@@ -256,7 +256,7 @@ export function WorkoutJournalSection({
                 onClick={() => setRetroOpen(false)}
                 aria-label="Закрити"
                 title="Закрити"
-                className="h-8 w-8 rounded-lg text-xs text-subtle hover:text-text"
+                className="h-8 w-8 rounded-xl text-xs text-subtle hover:text-text"
               >
                 ×
               </Button>

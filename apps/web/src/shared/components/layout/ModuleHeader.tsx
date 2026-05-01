@@ -110,8 +110,8 @@ export function ModuleHeader({
           {titleSlot ?? (
             <>
               {eyebrow ? (
-                // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- Module hero kicker renders at text-3xs with text-brand-700 tint (WCAG AA ≥4.5:1 on panel); SectionHeading xs is text-2xs and does not expose a brand-700 tone.
-                <span className="text-3xs text-brand-700 dark:text-brand/70 font-bold tracking-widest uppercase block leading-none mb-0.5">
+                // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- Module hero kicker uses text-brand-700 tint (WCAG AA ≥4.5:1 on panel); SectionHeading xs does not expose a brand-700 tone, so we render the eyebrow inline rather than via SectionHeading.
+                <span className="text-2xs text-brand-700 dark:text-brand/70 font-bold tracking-widest uppercase block leading-none mb-0.5">
                   {eyebrow}
                 </span>
               ) : null}

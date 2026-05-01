@@ -10,11 +10,16 @@ import { localStorageStore } from "./dashboardStore";
 
 const PILL_MODULES: ModuleId[] = ["finyk", "routine", "nutrition", "fizruk"];
 
+// AI-CONTEXT: Pill numbers render as bold text on the cream `bg-panel`
+// surface. The saturated `text-{module}` shades only clear ~2.4–3.1:1
+// against cream; switch to the `-strong` companion in light mode and
+// keep the saturated tone in dark mode where it clears AA on the
+// charcoal panel. See docs/design/BRANDBOOK.md → "WCAG-AA `-strong` Tier".
 const PILL_ACCENT: Record<ModuleId, string> = {
-  finyk: "text-finyk",
-  fizruk: "text-fizruk",
-  routine: "text-routine",
-  nutrition: "text-nutrition",
+  finyk: "text-finyk-strong dark:text-finyk",
+  fizruk: "text-fizruk-strong dark:text-fizruk",
+  routine: "text-routine-strong dark:text-routine",
+  nutrition: "text-nutrition-strong dark:text-nutrition",
 };
 
 /**
@@ -131,9 +136,12 @@ export function StreakIndicator() {
 }
 
 /**
- * Wraps each row of the dashboard in a fade-up animation with an
- * incremental delay so the layout reveals itself top-down on mount
- * rather than snapping into existence.
+ * Wraps a dashboard *group* in a fade-up animation. The hub uses three
+ * stable groups — Hero / Modules / Insights — and each `index` maps to
+ * a fixed delay (`index * 80ms`) instead of the per-element ramp we used
+ * before. Grouping keeps the reveal under ~250ms so users don't see a
+ * long staircase of fades on slower devices, and prevents the index
+ * counter from drifting whenever a section toggles in or out.
  */
 export function StaggerChild({
   index,
@@ -143,6 +151,10 @@ export function StaggerChild({
   children: ReactNode;
 }) {
   const style: CSSProperties = {
+    // Hard Rule #17 (Animation budget): stagger ≤ 30 ms between children,
+    // total delay cap ≤ 150 ms. Three fixed groups (Hero / Modules /
+    // Insights) map to indices 0–2, so the cap rarely bites — but keep the
+    // `Math.min` so any future fourth group still respects the rule.
     animationDelay: `${Math.min(index * 30, 150)}ms`,
   };
   return (

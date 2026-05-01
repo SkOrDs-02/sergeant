@@ -6,7 +6,10 @@ import {
   REST_DEFAULTS,
   getRestCategory,
 } from "@sergeant/fizruk-domain";
-import { RestSettingsSchema, type RestSettings } from "./useRestSettings.schema";
+import {
+  RestSettingsSchema,
+  type RestSettings,
+} from "./useRestSettings.schema";
 
 export { REST_CATEGORY_LABELS, REST_DEFAULTS, getRestCategory };
 
@@ -20,7 +23,11 @@ type MergedSettings = typeof REST_DEFAULTS;
  */
 export function useRestSettings() {
   const [settings, setSettings] = useState<MergedSettings>(() => {
-    const parsed = safeReadLSValidated(KEY, RestSettingsSchema, {} as RestSettings);
+    const parsed = safeReadLSValidated(
+      KEY,
+      RestSettingsSchema,
+      {} as RestSettings,
+    );
     return { ...REST_DEFAULTS, ...parsed };
   });
 

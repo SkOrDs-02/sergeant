@@ -50,7 +50,7 @@ export function MealTemplatesRow({
               }));
               onSelected?.();
             }}
-            className="px-2 py-1 rounded-lg text-xs border border-line bg-panelHi hover:border-nutrition/50"
+            className="px-2 py-1 rounded-xl text-xs border border-line bg-panelHi hover:border-nutrition/50"
           >
             {t.name}
           </button>

@@ -189,7 +189,7 @@ export function MemoryBankSection() {
                         <button
                           type="button"
                           onClick={() => handleDelete(entry.id)}
-                          className="shrink-0 w-8 h-8 rounded-md flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+                          className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition-colors"
                           aria-label={`Видалити: ${entry.fact}`}
                         >
                           <Icon name="close" size={14} />

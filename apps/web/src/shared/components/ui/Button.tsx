@@ -80,21 +80,28 @@ const variants: Record<ButtonVariant, string> = {
     "bg-nutrition-soft text-nutrition-strong dark:bg-nutrition/15 dark:text-nutrition border border-nutrition-ring/50 dark:border-nutrition/30 hover:bg-lime-100 dark:hover:bg-nutrition/25 active:scale-[0.98]",
 };
 
+// RADIUS — every Button size lives in the CONTROL tier (12 px, rounded-xl)
+// per the 3-tier system documented in `tailwind-preset.js`. The previous
+// scale climbed through CARD (md/lg → 16 px) and HERO (xl → 24 px), which
+// made tall CTAs read as panels rather than controls and broke the
+// "all buttons are CONTROL" mental model. The xl button — at h-14 the
+// only one that actually feels card-sized — bumps to CARD radius (16 px)
+// so it does not compress to a near-pill on a 56 px square (icon-only xl).
 const sizes: Record<ButtonSize, string> = {
   xs: "h-8 px-3 text-xs font-medium rounded-xl gap-1.5",
   sm: "h-9 px-3.5 text-sm font-medium rounded-xl gap-1.5",
-  md: "h-11 px-5 text-sm font-semibold rounded-2xl gap-2",
-  lg: "h-12 px-6 text-base font-semibold rounded-2xl gap-2",
-  xl: "h-14 px-8 text-base font-bold rounded-3xl gap-2.5",
+  md: "h-11 px-5 text-sm font-semibold rounded-xl gap-2",
+  lg: "h-12 px-6 text-base font-semibold rounded-xl gap-2",
+  xl: "h-14 px-8 text-base font-bold rounded-2xl gap-2.5",
 };
 
 // Icon-only button sizes
 const iconSizes: Record<ButtonSize, string> = {
   xs: "h-8 w-8 rounded-xl",
   sm: "h-9 w-9 rounded-xl",
-  md: "h-11 w-11 rounded-2xl",
-  lg: "h-12 w-12 rounded-2xl",
-  xl: "h-14 w-14 rounded-3xl",
+  md: "h-11 w-11 rounded-xl",
+  lg: "h-12 w-12 rounded-xl",
+  xl: "h-14 w-14 rounded-2xl",
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

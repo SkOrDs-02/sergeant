@@ -10,6 +10,9 @@ import { Tooltip } from "@shared/components/ui/Tooltip";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/undoToast";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Group = any;
+
 function uid(prefix = "g") {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -26,13 +29,13 @@ export function WorkoutTemplatesSection({
 }) {
   const toast = useToast();
   const [q, setQ] = useState("");
-  const [editingId, setEditingId] = useState(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
-  const [orderIds, setOrderIds] = useState([]);
-  const [groups, setGroups] = useState([]);
+  const [orderIds, setOrderIds] = useState<string[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [groupSelectMode, setGroupSelectMode] = useState(false);
-  const [groupSelected, setGroupSelected] = useState(new Set());
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [groupSelected, setGroupSelected] = useState<Set<string>>(new Set());
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const pickList = useMemo(() => search(q).slice(0, 40), [search, q]);
 
@@ -202,7 +205,7 @@ export function WorkoutTemplatesSection({
               {orderIds.length >= 2 && !groupSelectMode && (
                 <button
                   type="button"
-                  className="text-xs px-2 py-1 rounded-lg border border-line text-subtle hover:text-text hover:bg-panelHi transition-colors"
+                  className="text-xs px-2 py-1 rounded-xl border border-line text-subtle hover:text-text hover:bg-panelHi transition-colors"
                   onClick={() => {
                     setGroupSelectMode(true);
                     setGroupSelected(new Set());
@@ -215,7 +218,7 @@ export function WorkoutTemplatesSection({
                 <div className="flex gap-1">
                   <button
                     type="button"
-                    className="text-xs px-2 py-1 rounded-lg border border-success/40 text-success disabled:opacity-40"
+                    className="text-xs px-2 py-1 rounded-xl border border-success/40 text-success disabled:opacity-40"
                     disabled={groupSelected.size < 2 || groupSelected.size > 3}
                     onClick={() => handleCreateGroup("superset")}
                     title="Обери 2-3 вправи"
@@ -224,7 +227,7 @@ export function WorkoutTemplatesSection({
                   </button>
                   <button
                     type="button"
-                    className="text-xs px-2 py-1 rounded-lg border border-fizruk/40 text-fizruk disabled:opacity-40"
+                    className="text-xs px-2 py-1 rounded-xl border border-fizruk/40 text-fizruk disabled:opacity-40"
                     disabled={groupSelected.size < 2 || groupSelected.size > 3}
                     onClick={() => handleCreateGroup("circuit")}
                     title="Обери 2-3 вправи"
@@ -233,7 +236,7 @@ export function WorkoutTemplatesSection({
                   </button>
                   <button
                     type="button"
-                    className="text-xs px-2 py-1 rounded-lg border border-line text-subtle"
+                    className="text-xs px-2 py-1 rounded-xl border border-line text-subtle"
                     onClick={() => {
                       setGroupSelectMode(false);
                       setGroupSelected(new Set());
@@ -262,7 +265,7 @@ export function WorkoutTemplatesSection({
                       {groupSelectMode && (
                         <button
                           type="button"
-                          className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? "bg-success-strong border-success-strong text-white" : "border-line bg-bg"}`}
+                          className={`w-5 h-5 rounded-xl border flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? "bg-success-strong border-success-strong text-white" : "border-line bg-bg"}`}
                           onClick={() => handleToggleGroupSelect(id)}
                         >
                           {isSelected && (
@@ -291,8 +294,8 @@ export function WorkoutTemplatesSection({
                       </span>
                       {group && (
                         <span
-                          // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- Inline superset/circuit pill at text-3xs with dynamic module tint; defer Badge migration.
-                          className={`text-3xs font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${group.type === "circuit" ? "bg-fizruk/15 text-fizruk border border-fizruk/30" : "bg-success/15 text-success border border-success/30"}`}
+                          // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- Inline superset/circuit pill at text-2xs with dynamic module tint; defer Badge migration.
+                          className={`text-2xs font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${group.type === "circuit" ? "bg-fizruk/15 text-fizruk border border-fizruk/30" : "bg-success/15 text-success border border-success/30"}`}
                         >
                           {group.type === "circuit" ? "Коло" : "СС"}
                         </span>
