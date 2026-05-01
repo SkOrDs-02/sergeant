@@ -180,6 +180,7 @@ function searchFinyk(tokens: string[]): Hit[] {
           title: tx.description || tx.comment || "Транзакція",
           subtitle: `${sign}${Math.abs(amount).toLocaleString("uk-UA", { maximumFractionDigits: 2 })} ₴ · ${time > 1e10 ? localDateKey(new Date(time)) : localDateKey(new Date(time * 1000))}`,
           icon: "💳",
+          target: { kind: "module", moduleId: "finyk" },
         },
         tokens,
         20,
@@ -203,6 +204,7 @@ function searchFinyk(tokens: string[]): Hit[] {
           title: s.name || "Підписка",
           subtitle: `Підписка · ${amt ? (amt / 100).toFixed(0) + " ₴" : ""}`,
           icon: "🔄",
+          target: { kind: "module", moduleId: "finyk" },
         },
         tokens,
         25,
@@ -247,6 +249,7 @@ function searchFizruk(tokens: string[]): Hit[] {
             ? ` · ${itemsRaw.length} вправ · ${fullTokensText}`
             : ""),
         icon: "🏋️",
+        target: { kind: "module", moduleId: "fizruk" },
       },
       tokens,
       10,
@@ -270,6 +273,7 @@ function searchFizruk(tokens: string[]): Hit[] {
           (Array.isArray(e.muscles) ? e.muscles : []).join(", ") ||
           "Власна вправа",
         icon: "💪",
+        target: { kind: "module", moduleId: "fizruk" },
       },
       tokens,
       15,
@@ -310,6 +314,7 @@ function searchRoutine(tokens: string[]): Hit[] {
         title,
         subtitle: h.archived ? "Архівовано" : h.recurrence || "daily",
         icon: "✅",
+        target: { kind: "module", moduleId: "routine" },
       },
       tokens,
       10,
@@ -370,8 +375,7 @@ const SETTINGS_INDEX: ReadonlyArray<{
     id: "notifications",
     title: "Нагадування",
     description: "Push-нагадування і щоденні сповіщення",
-    keywords:
-      "сповіщення нагадування пуш push notifications reminders щоденні",
+    keywords: "сповіщення нагадування пуш push notifications reminders щоденні",
     icon: "bell",
   },
   {
@@ -541,6 +545,7 @@ function searchNutrition(tokens: string[]): Hit[] {
           title: m.name || "Прийом їжі",
           subtitle: `${date} · ${m.macros?.kcal ?? 0} ккал`,
           icon: "🥗",
+          target: { kind: "module", moduleId: "nutrition" },
         },
         tokens,
         10,
@@ -921,34 +926,34 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
             {group.items.length >= 10 &&
               moduleId !== "settings" &&
               moduleId !== "assistant" && (
-              <button
-                type="button"
-                onClick={() => {
-                  hapticTap();
-                  commitQuery(query);
-                  onOpenModule(moduleId);
-                  onClose();
-                }}
-                className="mt-1.5 w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45"
-              >
-                <span>
-                  Показано {group.items.length} — відкрити {group.label}
-                </span>
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
+                <button
+                  type="button"
+                  onClick={() => {
+                    hapticTap();
+                    commitQuery(query);
+                    onOpenModule(moduleId);
+                    onClose();
+                  }}
+                  className="mt-1.5 w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45"
                 >
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </button>
-            )}
+                  <span>
+                    Показано {group.items.length} — відкрити {group.label}
+                  </span>
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
+              )}
           </div>
         ))}
       </div>

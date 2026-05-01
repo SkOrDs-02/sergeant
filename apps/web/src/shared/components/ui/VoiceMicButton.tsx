@@ -598,6 +598,7 @@ function PendingVoiceChip({
         className="flex-1 min-w-0 text-left text-xs leading-tight text-text hover:text-brand-strong line-clamp-2"
         title="Зберегти зараз"
       >
+        {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift */}
         <span className="block text-[10px] uppercase tracking-wide text-subtle">
           Голос
         </span>
@@ -692,12 +693,7 @@ export function VoiceMicButton({
         // Fallback — кнопка ще не змонтована (теоретично неможливо тут,
         // бо event прилетіти може лише після click). На всякий випадок —
         // центр в'юпорта.
-        new DOMRect(
-          window.innerWidth / 2,
-          window.innerHeight / 2,
-          0,
-          0,
-        );
+        new DOMRect(window.innerWidth / 2, window.innerHeight / 2, 0, 0);
       setPending({ text: trimmed, anchorRect: rect });
     },
     [confirmBeforeCommit],

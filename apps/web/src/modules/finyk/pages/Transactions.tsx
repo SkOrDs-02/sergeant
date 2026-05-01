@@ -106,7 +106,7 @@ export function Transactions({
   const [showHidden, setShowHidden] = useState(false);
   // Batch selection
   const [selectMode, setSelectMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchCatPicker, setBatchCatPicker] = useState(false);
 
   // useCallback — `toggleSelect` передається у кожен рядок вибору.
