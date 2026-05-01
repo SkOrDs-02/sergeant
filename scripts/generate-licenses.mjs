@@ -171,6 +171,8 @@ const ALLOWED_LICENSES = new Set([
   "CC-BY-4.0", // attribution-only (caniuse-lite data file, used by
   // browserslist). Attribution requirement is satisfied by listing the
   // package in THIRD_PARTY_LICENSES.md, which is this file.
+  "OFL-1.1", // SIL Open Font License (fontsource self-hosted fonts);
+  // permissive, attribution-only for font redistribution.
 ]);
 
 function isDev(name) {

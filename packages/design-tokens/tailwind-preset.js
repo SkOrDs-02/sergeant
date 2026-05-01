@@ -25,6 +25,7 @@ const preset = {
     extend: {
       fontFamily: {
         sans: [
+          '"DM Sans Variable"',
           '"DM Sans"',
           "system-ui",
           "-apple-system",
@@ -32,6 +33,7 @@ const preset = {
           "sans-serif",
         ],
         display: [
+          '"DM Sans Variable"',
           '"DM Sans"',
           "system-ui",
           "-apple-system",

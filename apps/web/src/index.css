@@ -2,6 +2,7 @@
    PARTIALS — Animations & module surfaces extracted for maintainability.
    @import statements MUST precede all other rules (CSS spec requirement).
    ═══════════════════════════════════════════════════════════════════════ */
+@import "@fontsource-variable/dm-sans";
 @import "./styles/animations.css";
 @import "./styles/module-surfaces.css";
 
