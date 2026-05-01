@@ -28,7 +28,10 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_THRESHOLD_DAYS = 60;
-const DEFAULT_FILES = ["docs/tech-debt/frontend.md"];
+const DEFAULT_FILES = [
+  "docs/tech-debt/frontend.md",
+  "docs/tech-debt/mobile.md",
+];
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 // ── Marker grammar ──────────────────────────────────────────────────────────
