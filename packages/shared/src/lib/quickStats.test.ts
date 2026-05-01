@@ -41,13 +41,17 @@ describe("parseQuickStatsJson", () => {
 });
 
 describe("selectModulePreview — finyk", () => {
-  it("formats todaySpent as UAH and budgetLeft as plain number", () => {
+  it("formats todaySpent and budgetLeft via the centralized money formatter", () => {
     const raw = JSON.stringify({ todaySpent: 1250, budgetLeft: 7300 });
     const preview = selectModulePreview("finyk", raw);
-    expect(preview.main).toMatch(/грн$/);
+    // `formatMoney` emits "<number> ₴" — we assert the suffix and digits
+    // separately so the test stays robust against whichever NBSP-flavoured
+    // thousand separator the active Intl runtime picks for `uk-UA`.
+    expect(preview.main).toMatch(/₴$/);
     expect(preview.main).toContain("1");
     expect(preview.main).toContain("250");
     expect(preview.sub).toMatch(/Залишок:/);
+    expect(preview.sub).toMatch(/₴$/);
     expect(preview.sub).toContain("7");
     expect(preview.sub).toContain("300");
     expect(preview.progress).toBeUndefined();

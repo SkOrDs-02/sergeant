@@ -22,6 +22,8 @@
  * can render a dash without guarding every case inline.
  */
 
+import { formatMoney } from "./formatMoney";
+
 export const QUICK_STATS_MODULE_IDS = [
   "finyk",
   "fizruk",
@@ -73,18 +75,6 @@ function asFiniteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function formatAmount(value: number): string {
-  // Using uk-UA keeps the dashboard visual identity consistent with
-  // the web, which relies on browser `toLocaleString()` for thousand
-  // separators. Hermes on RN 0.76 ships Intl so this works on mobile
-  // too (verified via jest-expo snapshot of the number output).
-  try {
-    return value.toLocaleString("uk-UA");
-  } catch {
-    return String(value);
-  }
-}
-
 /**
  * Select the preview shape for a given module from a raw JSON
  * payload. Implements the web truthiness rules 1:1 so no row on
@@ -114,8 +104,8 @@ export function selectModulePreview(
       const todaySpent = asFiniteNumber(stats.todaySpent);
       const budgetLeft = asFiniteNumber(stats.budgetLeft);
       return {
-        main: todaySpent ? `${formatAmount(todaySpent)} грн` : null,
-        sub: budgetLeft ? `Залишок: ${formatAmount(budgetLeft)}` : null,
+        main: todaySpent ? formatMoney(todaySpent) : null,
+        sub: budgetLeft ? `Залишок: ${formatMoney(budgetLeft)}` : null,
       };
     }
     case "fizruk": {
