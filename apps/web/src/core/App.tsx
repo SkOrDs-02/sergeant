@@ -38,6 +38,7 @@ import { HubModals } from "./app/HubModals";
 import { ActiveWorkoutBanner } from "./app/ActiveWorkoutBanner";
 import { WelcomeScreen } from "./app/WelcomeScreen";
 import { shouldShowOnboarding } from "./onboarding/OnboardingWizard";
+import { ModuleFirstRunGoalSheet } from "./onboarding/ModuleFirstRunGoalSheet";
 import { isFirstRealEntryDone } from "./onboarding/vibePicks";
 import { hasAnyRealEntry } from "./onboarding/firstRealEntry";
 import { useHubNavigation } from "./hooks/useHubNavigation";
@@ -616,6 +617,7 @@ function AppInner() {
         open={keyboardShortcuts.open}
         onClose={keyboardShortcuts.onClose}
       />
+      <ModuleFirstRunGoalSheet moduleId={activeModule} />
     </div>
   );
 }
