@@ -82,14 +82,14 @@ async function main() {
       }
     } catch (err) {
       console.error("Agent error:", err);
-      await ctx.reply(
-        `❌ Помилка агента: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      await ctx.reply("❌ Сталася помилка. Спробуй ще раз.");
     }
   });
 
   bot.catch((err) => {
-    console.error("Bot error:", err.message);
+    console.error("Bot error:", err.error, {
+      updateId: err.ctx?.update?.update_id,
+    });
   });
 
   console.log("Sergeant Console starting…");

@@ -194,7 +194,10 @@ function getTrustedOrigins(): string[] {
 
 interface SessionUser {
   id: string;
-  [key: string]: unknown;
+  email?: string;
+  name?: string;
+  image?: string;
+  emailVerified?: boolean;
 }
 
 export async function getSessionUser(

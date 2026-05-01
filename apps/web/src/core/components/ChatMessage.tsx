@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { cn } from "@shared/lib/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { AssistantMessageBody } from "./AssistantMessageBody";
@@ -154,7 +154,7 @@ function ConfirmCard({ card }: { card: ChatActionCard }) {
   );
 }
 
-export function ChatMessage({ message, onSpeak }: ChatMessageProps) {
+function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
   const { role, text, cards } = message;
   const isAssistant = role === "assistant";
 
@@ -238,9 +238,15 @@ export function ChatMessage({ message, onSpeak }: ChatMessageProps) {
   );
 }
 
+export const ChatMessage = memo(ChatMessageImpl);
+
 export function TypingIndicator() {
   return (
-    <div className="flex items-end gap-2">
+    <div
+      className="flex items-end gap-2"
+      role="status"
+      aria-label="Асистент набирає відповідь"
+    >
       <span
         className="shrink-0 mb-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-brand-500/10 text-brand-500"
         aria-hidden
@@ -260,7 +266,10 @@ export function TypingIndicator() {
           <circle cx="12" cy="5" r="1" />
         </svg>
       </span>
-      <div className="bg-panel border border-line rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5 items-center">
+      <div
+        aria-hidden
+        className="bg-panel border border-line rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5 items-center"
+      >
         {[0, 0.15, 0.3].map((d, i) => (
           <span
             key={i}

@@ -38,11 +38,28 @@ export class FixedWindowRateLimiter {
     { count: number; resetAt: number }
   >();
 
+  private readonly prunerInterval: ReturnType<typeof setInterval>;
+
   constructor(
     private readonly limit: number,
     private readonly windowMs = 60_000,
     private readonly now = () => Date.now(),
-  ) {}
+  ) {
+    // Prune stale buckets periodically to prevent unbounded memory growth.
+    this.prunerInterval = setInterval(() => {
+      const current = this.now();
+      for (const [key, bucket] of this.buckets) {
+        if (bucket.resetAt <= current) this.buckets.delete(key);
+      }
+    }, windowMs);
+    // Allow Node to exit even if this limiter is still alive.
+    if (typeof this.prunerInterval === "object") this.prunerInterval.unref();
+  }
+
+  /** Stop the background pruner. Call when the limiter is no longer needed. */
+  dispose(): void {
+    clearInterval(this.prunerInterval);
+  }
 
   allow(key: string): boolean {
     const current = this.now();
