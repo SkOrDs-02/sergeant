@@ -338,6 +338,30 @@ export default [
       "sergeant-design/no-raw-local-storage": "error",
     },
   },
+  // Mobile localStorage guardrail — same rule, applied to `apps/mobile/src`
+  // and `apps/mobile/app` so the RN/Expo codebase stays MMKV-only.
+  // Mobile uses `react-native-mmkv` via `apps/mobile/src/lib/storage.ts`
+  // (the `safeRead*LS`/`safeWriteLS`/`safeRemoveLS` adapters) — there is
+  // no `localStorage` global in React Native at all, so any direct
+  // `localStorage.*` reference would be a runtime crash on device.
+  // No allowlist needed: at the time of introduction every mention of
+  // the symbol on mobile lives inside JSDoc comments documenting the
+  // web→mobile port (which the rule's AST traversal ignores).
+  {
+    files: [
+      "apps/mobile/src/**/*.{js,jsx,ts,tsx}",
+      "apps/mobile/app/**/*.{js,jsx,ts,tsx}",
+    ],
+    ignores: [
+      "apps/mobile/src/**/*.test.{js,jsx,ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/app/**/*.test.{js,jsx,ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+    ],
+    rules: {
+      "sergeant-design/no-raw-local-storage": "error",
+    },
+  },
   // AuthContext migration (Session 4B, PR after #390): "who am I" is
   // single-sourced via `useUser()` from `@sergeant/api-client/react` → GET
   // `/api/v1/me`. Better Auth stays only as the actions layer. Block
@@ -443,6 +467,42 @@ export default [
       "apps/server/src/lib/anthropic.ts",
       "apps/server/src/lib/bankProxy.ts",
       "apps/server/src/lib/webpushSend.ts",
+    ],
+    rules: {
+      "sergeant-design/no-strict-bypass": "error",
+    },
+  },
+  // Mobile counterpart of `no-strict-bypass`. Extends the same rule to
+  // `apps/mobile/src/**` + `apps/mobile/app/**` so type-safety bypasses
+  // can no longer accumulate on the React Native side unnoticed.
+  //
+  // Allowlist below names every existing `as unknown as X` call-site
+  // on mobile as of rule extension (2026-05-01). Migrate a file → drop
+  // it from the list. See `docs/tech-debt/mobile.md` §no-strict-bypass
+  // (registry tracked separately in PR 3).
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
+    ignores: [
+      // Tests can use type bypasses freely as fixtures.
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/app/**/*.test.{ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+      // ── Existing `as unknown as` call-sites (do not add new ones) ──
+      // Domain-shape adapters: web ↔ mobile share `@sergeant/{finyk,fizruk,
+      // routine,nutrition}-domain` shapes that mobile RN partial views /
+      // chart palettes don't yet match precisely. Migrate by aligning the
+      // local view-model type to the domain shape.
+      "apps/mobile/src/modules/finyk/pages/Overview/CategoryChartSection.tsx",
+      "apps/mobile/src/modules/finyk/pages/Transactions/TransactionsPage.tsx",
+      "apps/mobile/src/modules/fizruk/components/workouts/WorkoutJournalSection.tsx",
+      "apps/mobile/src/modules/fizruk/hooks/useCustomExercises.ts",
+      "apps/mobile/src/modules/fizruk/hooks/useRecovery.ts",
+      "apps/mobile/src/modules/fizruk/pages/Exercise.tsx",
+      // Notifications API — Expo trigger union widened in SDK 52, mobile
+      // codebase hasn't caught up yet. Drop after `expo-notifications`
+      // type alignment.
+      "apps/mobile/src/modules/routine/hooks/useRoutineReminders.ts",
     ],
     rules: {
       "sergeant-design/no-strict-bypass": "error",
