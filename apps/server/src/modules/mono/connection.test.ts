@@ -355,4 +355,29 @@ describe("syncStateHandler", () => {
     expect(res.body.lastEventAt).toBe("2026-04-25T12:00:00Z");
     expect(res.body.accountsCount).toBe(3);
   });
+
+  it("coerces pg Date objects to ISO strings (TIMESTAMPTZ columns)", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [
+        {
+          status: "active",
+          webhook_registered_at: new Date("2026-04-25T10:00:00Z"),
+          last_event_at: new Date("2026-04-25T12:00:00Z"),
+          last_backfill_at: new Date("2026-04-26T08:30:00Z"),
+        },
+      ],
+    });
+    dbQuery.mockResolvedValueOnce({ rows: [{ count: "5" }] });
+
+    const req = { method: "GET", user: { id: "user_1" } } as unknown as Request;
+    const res = makeRes();
+    await syncStateHandler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.status).toBe("active");
+    expect(res.body.webhookActive).toBe(true);
+    expect(res.body.lastEventAt).toBe("2026-04-25T12:00:00.000Z");
+    expect(res.body.lastBackfillAt).toBe("2026-04-26T08:30:00.000Z");
+    expect(res.body.accountsCount).toBe(5);
+  });
 });
