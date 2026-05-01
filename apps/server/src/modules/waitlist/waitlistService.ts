@@ -1,5 +1,8 @@
 import type { Pool } from "pg";
+import { sql } from "drizzle-orm";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { WaitlistSource, WaitlistTier } from "@sergeant/shared";
+import { waitlistEntries } from "@sergeant/db-schema/pg";
 
 /**
  * Phase 0 monetization rails: простий waitlist для майбутнього Pro-тіру.
@@ -82,6 +85,33 @@ export async function countWaitlistByTier(
   // coerce у Number() в серіалізаторі. Тут aggregate ніколи не вийде за
   // межі Number.MAX_SAFE_INTEGER (>2^53 entries — нереалістично).
   return result.rows.map((r) => ({
+    tier_interest: r.tier_interest,
+    total: Number(r.total),
+  }));
+}
+
+/**
+ * Drizzle-powered version of `countWaitlistByTier`. Produces the same result
+ * as the raw-SQL variant above but uses the Drizzle query builder as a
+ * smoke-test proving that Drizzle works with the existing pg pool.
+ *
+ * Once the migration from raw SQL to Drizzle is complete, the raw version
+ * above can be removed and this becomes the canonical implementation.
+ */
+export async function countWaitlistByTierDrizzle(
+  drizzleDb: NodePgDatabase,
+): Promise<WaitlistTierCount[]> {
+  const rows = await drizzleDb
+    .select({
+      tier_interest: waitlistEntries.tierInterest,
+      total: sql<number>`cast(count(*) as integer)`,
+    })
+    .from(waitlistEntries)
+    .groupBy(waitlistEntries.tierInterest)
+    .orderBy(waitlistEntries.tierInterest);
+
+  // Rule #1: coerce bigint to number in serializers.
+  return rows.map((r) => ({
     tier_interest: r.tier_interest,
     total: Number(r.total),
   }));

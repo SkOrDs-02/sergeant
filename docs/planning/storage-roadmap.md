@@ -260,15 +260,17 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 
 ### Stage 2 — Foundation для SQLite
 
-#### **PR #014 — `feat: add Drizzle ORM as cross-platform schema source of truth`**
+#### **PR #014 — `feat: add Drizzle ORM as cross-platform schema source of truth`** ✅ IN PROGRESS
 
 - **Scope.**
   - `packages/db-schema/` — новий package, експортує Drizzle table definitions.
   - Обидва диалекти: `drizzle-orm/pg-core` для server, `drizzle-orm/sqlite-core`
-    для clients. Спільні enum-и через `@sergeant/shared`.
+    для clients. Спільні enum-и через `packages/db-schema/src/shared/`.
   - `drizzle-kit` як devDep, npm-script для генерації міграцій.
   - Server: переписати першу таблицю (наприклад `waitlist_entries`) на
     Drizzle як smoke-test.
+  - Tables covered: `waitlist_entries`, `module_data`, `sync_audit_log`,
+    `push_subscriptions` — both PG and SQLite dialects.
 - **Risk.** Drizzle на clients не активно тестований — варіант B: на
   clients використати Drizzle тільки для типів + raw queries через
   Kysely-style builder.
