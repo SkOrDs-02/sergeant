@@ -4,12 +4,15 @@ import type { ModuleAccent } from "@sergeant/design-tokens";
 import {
   ASSISTANT_CAPABILITIES,
   CAPABILITY_MODULE_META,
+  formatMoney,
+  formatMoneyFromKopecks,
   type AssistantCapability,
 } from "@sergeant/shared";
 import { cn } from "@shared/lib/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { emitHubBus } from "@shared/lib/hubBus";
 import { hapticTap } from "@shared/lib/haptic";
 import {
   scoreMatch,
@@ -169,7 +172,6 @@ function searchFinyk(tokens: string[]): Hit[] {
       if (!tx || typeof tx !== "object") continue;
       const amtRaw = Number(tx.amount);
       const amount = (Number.isFinite(amtRaw) ? amtRaw : 0) / 100;
-      const sign = amount < 0 ? "−" : "+";
       const time = tx.time ?? 0;
       const stop = pushScored(
         results,
@@ -178,7 +180,7 @@ function searchFinyk(tokens: string[]): Hit[] {
           module: "finyk",
           moduleLabel: "Фінік",
           title: tx.description || tx.comment || "Транзакція",
-          subtitle: `${sign}${Math.abs(amount).toLocaleString("uk-UA", { maximumFractionDigits: 2 })} ₴ · ${time > 1e10 ? localDateKey(new Date(time)) : localDateKey(new Date(time * 1000))}`,
+          subtitle: `${formatMoney(amount, { signed: true, maxFractionDigits: 2 })} · ${time > 1e10 ? localDateKey(new Date(time)) : localDateKey(new Date(time * 1000))}`,
           icon: "💳",
           target: { kind: "module", moduleId: "finyk" },
         },
@@ -202,7 +204,7 @@ function searchFinyk(tokens: string[]): Hit[] {
           module: "finyk",
           moduleLabel: "Фінік",
           title: s.name || "Підписка",
-          subtitle: `Підписка · ${amt ? (amt / 100).toFixed(0) + " ₴" : ""}`,
+          subtitle: `Підписка · ${amt ? formatMoneyFromKopecks(amt) : ""}`,
           icon: "🔄",
           target: { kind: "module", moduleId: "finyk" },
         },
@@ -666,10 +668,11 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
     //                    `?tab=settings` via useHubUIState); section deep-
     //                    linking can be wired in a follow-up once the
     //                    settings page exposes a section anchor API
-    //   - assistant hit→ the full /assistant catalogue route. We don't
-    //                    auto-fire the chat here (capability.requiresInput
-    //                    handling lives in the catalogue page) so the user
-    //                    keeps a chance to read the description first.
+    //   - assistant hit→ if the hit carries a capability, open the chat
+    //                    with its first example prefilled (the chat input
+    //                    receives focus so the user can edit before
+    //                    sending). Without a capability we fall back to
+    //                    the full /assistant catalogue route.
     switch (hit.target.kind) {
       case "module":
         onOpenModule(hit.target.moduleId);
@@ -683,9 +686,18 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
         });
         break;
       }
-      case "assistant":
-        navigate("/assistant");
+      case "assistant": {
+        const cap = hit.target.capability;
+        const example = cap?.examples?.[0];
+        if (example) {
+          // Match AssistantCataloguePage's "Try in chat" CTA: prefill
+          // without auto-sending so the user keeps full control.
+          emitHubBus("openChat", { message: example, autoSend: false });
+        } else {
+          navigate("/assistant");
+        }
         break;
+      }
     }
   };
 
