@@ -10,12 +10,12 @@ import {
   anthropicMessages,
   anthropicMessagesStream,
   extractAnthropicText,
+  recordAnthropicUsage,
 } from "../../lib/anthropic.js";
 import type { WithAiQuotaRefund } from "./aiQuota.js";
 import { TOOLS, SYSTEM_PREFIX, SYSTEM_PROMPT_VERSION } from "./tools.js";
 import { recordToolProposals, recordToolExecutions } from "./toolMetrics.js";
 import { truncateToolResults } from "./toolResultTruncation.js";
-import { anthropicPromptCacheHitTotal } from "../../obs/metrics.js";
 import { als } from "../../obs/requestContext.js";
 
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -637,16 +637,26 @@ async function streamAnthropicToSse(
       currentRecordEnd(iter.outcome);
       if (iter.accumulatedText) accumulatedAllText += iter.accumulatedText;
 
-      if (promptVersion && iter.usage) {
-        const cacheRead = iter.usage.cache_read_input_tokens ?? 0;
-        try {
-          anthropicPromptCacheHitTotal.inc({
-            version: promptVersion,
-            outcome: cacheRead > 0 ? "hit" : "miss",
-          });
-        } catch {
-          /* metrics must never break a request */
-        }
+      // Streaming path раніше пропускав tokens/cost-метрики (єдина точка
+      // лічильника була в non-streaming `recordUsage`). Тепер витягнутий з
+      // SSE `message_start` usage прокидаємо у спільний emit-helper —
+      // `aiTokensTotal{kind=prompt|completion|cache_*}`, `cache-hit` лічильник
+      // та `ai_cost_estimate_usd_total` тепер заповнюються і для chat-стріму.
+      // Якщо upstream не повернув `message_start.usage` взагалі (стрім впав
+      // ще до першої події) — лишаємо контракт як був: жодних метрик не
+      // інкрементимо, щоб не давати fake-сигналу.
+      if (iter.usage) {
+        const iterModel = (payload.model as string) || "unknown";
+        const iterEndpoint =
+          continuationsLeft === MAX_TEXT_CONTINUATIONS
+            ? endpoint
+            : `${endpoint}-cont`;
+        recordAnthropicUsage(
+          iterModel,
+          iterEndpoint,
+          iter.usage,
+          promptVersion,
+        );
       }
 
       if (

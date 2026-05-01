@@ -29,6 +29,7 @@ vi.mock("../../lib/anthropic.js", () => ({
   anthropicMessages: vi.fn(),
   anthropicMessagesStream: vi.fn(),
   extractAnthropicText: vi.fn(),
+  recordAnthropicUsage: vi.fn(),
 }));
 
 vi.mock("../../obs/metrics.js", () => ({
@@ -41,12 +42,14 @@ vi.mock("../../obs/metrics.js", () => ({
   externalHttpRequestsTotal: { inc: vi.fn() },
 }));
 
-import { anthropicMessagesStream as _anthropicMessagesStream } from "../../lib/anthropic.js";
-import { anthropicPromptCacheHitTotal as _cacheMetric } from "../../obs/metrics.js";
+import {
+  anthropicMessagesStream as _anthropicMessagesStream,
+  recordAnthropicUsage as _recordAnthropicUsage,
+} from "../../lib/anthropic.js";
 import handler from "./chat.js";
 
 const anthropicMessagesStream = _anthropicMessagesStream as unknown as Mock;
-const cacheMetricInc = (_cacheMetric as unknown as { inc: Mock }).inc;
+const recordAnthropicUsageMock = _recordAnthropicUsage as unknown as Mock;
 
 interface SseEvent {
   type: string;
@@ -202,7 +205,7 @@ function dataPayloads(writes: string[]): string[] {
 beforeEach(() => {
   vi.clearAllMocks();
   anthropicMessagesStream.mockReset();
-  cacheMetricInc.mockReset();
+  recordAnthropicUsageMock.mockReset();
 });
 
 describe("chat handler — SSE streaming (basic forwarding)", () => {
@@ -665,7 +668,7 @@ describe("chat handler — SSE protocol robustness", () => {
 });
 
 describe("chat handler — SSE prompt-cache metric", () => {
-  it("cache_read_input_tokens > 0 → outcome=hit, інакше miss", async () => {
+  it("usage із message_start прокидається у recordAnthropicUsage (включно з cache_read>0)", async () => {
     anthropicMessagesStream.mockResolvedValueOnce({
       response: makeUpstreamSse([
         {
@@ -685,12 +688,18 @@ describe("chat handler — SSE prompt-cache metric", () => {
     const res = makeSseRes();
     await handler(req, res);
 
-    expect(cacheMetricInc).toHaveBeenCalledWith(
-      expect.objectContaining({ outcome: "hit" }),
-    );
+    // Tokens/cost/cache-hit метрики тепер емітяться через спільний helper.
+    // Тест мокає `recordAnthropicUsage` цілком і перевіряє лише, що chat.ts
+    // викликав його з правильно витягнутим usage-payload-ом.
+    expect(recordAnthropicUsageMock).toHaveBeenCalledTimes(1);
+    const call = recordAnthropicUsageMock.mock.calls[0];
+    // signature: (model, endpoint, usage, promptVersion?)
+    expect(typeof call[1]).toBe("string");
+    expect(call[1].length).toBeGreaterThan(0);
+    expect(call[2]).toMatchObject({ cache_read_input_tokens: 4096 });
   });
 
-  it("cache_read_input_tokens=0 → outcome=miss", async () => {
+  it("usage із cache_read=0 теж форвардиться у helper (helper сам класифікує hit/miss)", async () => {
     anthropicMessagesStream.mockResolvedValueOnce({
       response: makeUpstreamSse([
         {
@@ -710,12 +719,12 @@ describe("chat handler — SSE prompt-cache metric", () => {
     const res = makeSseRes();
     await handler(req, res);
 
-    expect(cacheMetricInc).toHaveBeenCalledWith(
-      expect.objectContaining({ outcome: "miss" }),
-    );
+    expect(recordAnthropicUsageMock).toHaveBeenCalledTimes(1);
+    const call = recordAnthropicUsageMock.mock.calls[0];
+    expect(call[2]).toMatchObject({ cache_read_input_tokens: 0 });
   });
 
-  it("без message_start usage → метрика не інкрементиться", async () => {
+  it("без message_start usage → recordAnthropicUsage не викликається", async () => {
     anthropicMessagesStream.mockResolvedValueOnce({
       response: makeUpstreamSse([
         {
@@ -731,6 +740,6 @@ describe("chat handler — SSE prompt-cache metric", () => {
     const res = makeSseRes();
     await handler(req, res);
 
-    expect(cacheMetricInc).not.toHaveBeenCalled();
+    expect(recordAnthropicUsageMock).not.toHaveBeenCalled();
   });
 });

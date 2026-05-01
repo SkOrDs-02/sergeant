@@ -1,4 +1,5 @@
 import {
+  aiCostEstimateUsd,
   aiRequestDurationMs,
   aiRequestsTotal,
   aiTokensTotal,
@@ -92,6 +93,7 @@ function recordOutcome(outcome: string, meta: RecordOutcomeMeta): void {
           provider: "anthropic",
           model: model || "unknown",
           endpoint: endpoint || "unknown",
+          outcome,
         },
         ms,
       );
@@ -120,23 +122,132 @@ interface AnthropicResponseData {
   [key: string]: unknown;
 }
 
+/**
+ * Anthropic per-million-token pricing (USD). Sources:
+ * https://www.anthropic.com/pricing — як на 2025-Q1.
+ *
+ * Ключі — model-prefix, що матчить `pickPricing()` через `startsWith`. Це
+ * стійкіше за повну назву моделі: Anthropic регулярно випускає subversions
+ * (`-20240620`, `-20241022` …) з тим самим прайсингом, тому match-имо по
+ * сімейству. Невідома модель → cost-counter не інкрементується (краще
+ * "невідомо" ніж "0$ — все ок"). Cache prices: write = 1.25× input, read =
+ * 0.10× input — це політика Anthropic prompt-caching.
+ */
+interface ModelPricing {
+  /** USD per 1M input tokens */
+  input: number;
+  /** USD per 1M output tokens */
+  output: number;
+  /** USD per 1M cache-write tokens */
+  cacheWrite: number;
+  /** USD per 1M cache-read tokens */
+  cacheRead: number;
+}
+
+const ANTHROPIC_PRICING_USD_PER_MTOK: Record<string, ModelPricing> = {
+  // Sonnet (3, 3.5, 3.7, 4.x): $3 / $15
+  "claude-sonnet-4": {
+    input: 3.0,
+    output: 15.0,
+    cacheWrite: 3.75,
+    cacheRead: 0.3,
+  },
+  "claude-3-7-sonnet": {
+    input: 3.0,
+    output: 15.0,
+    cacheWrite: 3.75,
+    cacheRead: 0.3,
+  },
+  "claude-3-5-sonnet": {
+    input: 3.0,
+    output: 15.0,
+    cacheWrite: 3.75,
+    cacheRead: 0.3,
+  },
+  "claude-3-sonnet": {
+    input: 3.0,
+    output: 15.0,
+    cacheWrite: 3.75,
+    cacheRead: 0.3,
+  },
+  // Haiku 3.5: $0.80 / $4
+  "claude-3-5-haiku": {
+    input: 0.8,
+    output: 4.0,
+    cacheWrite: 1.0,
+    cacheRead: 0.08,
+  },
+  // Haiku 3: $0.25 / $1.25
+  "claude-3-haiku": {
+    input: 0.25,
+    output: 1.25,
+    cacheWrite: 0.3,
+    cacheRead: 0.03,
+  },
+  // Opus 3 / 4: $15 / $75
+  "claude-opus-4": {
+    input: 15.0,
+    output: 75.0,
+    cacheWrite: 18.75,
+    cacheRead: 1.5,
+  },
+  "claude-3-opus": {
+    input: 15.0,
+    output: 75.0,
+    cacheWrite: 18.75,
+    cacheRead: 1.5,
+  },
+};
+
+function pickPricing(model: string): ModelPricing | null {
+  if (!model || model === "unknown") return null;
+  for (const [prefix, price] of Object.entries(
+    ANTHROPIC_PRICING_USD_PER_MTOK,
+  )) {
+    if (model.startsWith(prefix)) return price;
+  }
+  return null;
+}
+
+/**
+ * Public helper для streaming-шляху: chat.ts витягує `usage` з SSE
+ * `message_start` події і викликає це безпосередньо. Дублює логіку internal
+ * `recordUsage`, але без `data` wrapper-а — той `recordUsage` залишається для
+ * non-streaming `anthropicMessages()`-callsites, де usage сидить у JSON-боді.
+ */
+export function recordAnthropicUsage(
+  model: string,
+  endpoint: string,
+  usage: AnthropicUsage | null | undefined,
+  promptVersion?: string,
+): void {
+  if (!usage) return;
+  recordUsage(model, endpoint, { usage }, promptVersion);
+}
+
 function recordUsage(
   model: string,
+  endpoint: string,
   data: AnthropicResponseData | null,
   promptVersion?: string,
 ): void {
   try {
     const usage = data?.usage;
     if (!usage) return;
+    const ep = endpoint || "unknown";
+
+    // Tokens-counter тепер несе `endpoint` — раніше всі `prompt`-токени всіх
+    // endpoint-ів зливались в одну series, тому "котрий endpoint спалив
+    // 10M токенів за день" доводилось реконструювати з логів.
     if (Number.isFinite(usage.input_tokens)) {
       aiTokensTotal.inc(
-        { provider: "anthropic", model, kind: "prompt" },
+        { provider: "anthropic", model, endpoint: ep, kind: "prompt" },
         usage.input_tokens,
       );
     }
     if (Number.isFinite(usage.output_tokens)) {
       aiTokensTotal.inc(
-        { provider: "anthropic", model, kind: "completion" },
+        { provider: "anthropic", model, endpoint: ep, kind: "completion" },
         usage.output_tokens,
       );
     }
@@ -146,13 +257,13 @@ function recordUsage(
     // `cache_read` — при кожному наступному хіті.
     if (Number.isFinite(usage.cache_creation_input_tokens)) {
       aiTokensTotal.inc(
-        { provider: "anthropic", model, kind: "cache_write" },
+        { provider: "anthropic", model, endpoint: ep, kind: "cache_write" },
         usage.cache_creation_input_tokens,
       );
     }
     if (Number.isFinite(usage.cache_read_input_tokens)) {
       aiTokensTotal.inc(
-        { provider: "anthropic", model, kind: "cache_read" },
+        { provider: "anthropic", model, endpoint: ep, kind: "cache_read" },
         usage.cache_read_input_tokens,
       );
     }
@@ -163,6 +274,36 @@ function recordUsage(
         version: promptVersion,
         outcome: cacheRead > 0 ? "hit" : "miss",
       });
+    }
+    // Cost estimate per request (USD). Безпечно інкрементує counter навіть
+    // дробовими значеннями (prom-client це підтримує). Невідома модель →
+    // нічого не інкрементуємо.
+    const price = pickPricing(model);
+    if (price) {
+      const inTok = Number.isFinite(usage.input_tokens)
+        ? usage.input_tokens!
+        : 0;
+      const outTok = Number.isFinite(usage.output_tokens)
+        ? usage.output_tokens!
+        : 0;
+      const cwTok = Number.isFinite(usage.cache_creation_input_tokens)
+        ? usage.cache_creation_input_tokens!
+        : 0;
+      const crTok = Number.isFinite(usage.cache_read_input_tokens)
+        ? usage.cache_read_input_tokens!
+        : 0;
+      const usd =
+        (inTok * price.input +
+          outTok * price.output +
+          cwTok * price.cacheWrite +
+          crTok * price.cacheRead) /
+        1_000_000;
+      if (usd > 0) {
+        aiCostEstimateUsd.inc(
+          { provider: "anthropic", model, endpoint: ep },
+          usd,
+        );
+      }
     }
   } catch {
     /* ignore */
@@ -226,7 +367,7 @@ export async function anthropicMessages(
       const ms = Number(process.hrtime.bigint() - overallStart) / 1e6;
       if (response.ok) {
         recordOutcome("ok", { model, endpoint, ms });
-        recordUsage(model, data, promptVersion);
+        recordUsage(model, endpoint, data, promptVersion);
       } else {
         recordOutcome(response.status === 429 ? "rate_limited" : "error", {
           model,
