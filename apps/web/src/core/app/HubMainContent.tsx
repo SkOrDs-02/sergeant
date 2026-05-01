@@ -174,7 +174,12 @@ export const HubMainContent = memo(function HubMainContent({
       >
         {hubView === "dashboard" && (
           <ErrorBoundary key="dashboard" fallback={HubSectionFallback}>
-            <div className="flex flex-col gap-5 pt-2">
+            <div
+              id="hub-panel-dashboard"
+              role="tabpanel"
+              aria-labelledby="hub-tab-dashboard"
+              className="flex flex-col gap-5 pt-2"
+            >
               <HubDashboard
                 onOpenModule={onOpenModule}
                 onOpenChat={onOpenChat}
@@ -187,7 +192,12 @@ export const HubMainContent = memo(function HubMainContent({
 
         {hubView === "reports" && (
           <ErrorBoundary key="reports" fallback={HubSectionFallback}>
-            <div className="pt-2">
+            <div
+              id="hub-panel-reports"
+              role="tabpanel"
+              aria-labelledby="hub-tab-reports"
+              className="pt-2"
+            >
               <HubReports />
             </div>
           </ErrorBoundary>
@@ -195,7 +205,12 @@ export const HubMainContent = memo(function HubMainContent({
 
         {hubView === "profile" && (
           <ErrorBoundary key="profile" fallback={HubSectionFallback}>
-            <div className="pt-2">
+            <div
+              id="hub-panel-profile"
+              role="tabpanel"
+              aria-labelledby="hub-tab-profile"
+              className="pt-2"
+            >
               <ProfilePage />
             </div>
           </ErrorBoundary>
@@ -203,12 +218,18 @@ export const HubMainContent = memo(function HubMainContent({
 
         {hubView === "settings" && (
           <ErrorBoundary key="settings" fallback={HubSectionFallback}>
-            <HubSettingsPage
-              syncing={syncing}
-              onSync={onSync}
-              onPull={onPull}
-              user={user}
-            />
+            <div
+              id="hub-panel-settings"
+              role="tabpanel"
+              aria-labelledby="hub-tab-settings"
+            >
+              <HubSettingsPage
+                syncing={syncing}
+                onSync={onSync}
+                onPull={onPull}
+                user={user}
+              />
+            </div>
           </ErrorBoundary>
         )}
       </main>
