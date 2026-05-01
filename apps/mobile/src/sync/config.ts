@@ -34,7 +34,10 @@ export const SYNC_MODULES = {
       STORAGE_KEYS.FINYK_INFO_CACHE,
       STORAGE_KEYS.FINYK_TX_CACHE_LAST_GOOD,
       STORAGE_KEYS.FINYK_SHOW_BALANCE,
-      STORAGE_KEYS.FINYK_TOKEN,
+      // Monobank PAT lives only on the server (`mono_connection.token_ciphertext`).
+      // Intentionally NOT mirrored into MMKV/cloud-sync: pushing it through
+      // `module_data.finyk` would leak cleartext PAT (mobile mirror of the
+      // web-side comment in `apps/web/src/core/cloudSync/config.ts`).
       STORAGE_KEYS.FINYK_MANUAL_EXPENSES,
       STORAGE_KEYS.FINYK_TX_FILTERS,
     ],
