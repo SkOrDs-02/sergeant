@@ -1,16 +1,20 @@
 import { useEffect, useRef } from "react";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage";
 
 const LAST_KEY = "fizruk_last_reminder_notif_day";
 
 function readLastFiredDay(): string | null {
-  try {
-    return localStorage.getItem(LAST_KEY);
-  } catch {
-    return null;
-  }
+  return safeReadStringLS(LAST_KEY);
 }
 
-export function sendFizrukStateToSW(state) {
+interface FizrukReminderState {
+  reminderEnabled: boolean;
+  reminderHour: number;
+  reminderMinute: number;
+  days: Record<string, unknown>;
+}
+
+export function sendFizrukStateToSW(state: FizrukReminderState): void {
   try {
     if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller)
       return;
@@ -31,6 +35,12 @@ export function useFizrukWorkoutReminder({
   reminderMinute,
   reminderEnabled,
   days,
+}: {
+  enabled: boolean;
+  reminderHour: number;
+  reminderMinute: number;
+  reminderEnabled: boolean;
+  days: Record<string, unknown>;
 }) {
   // Seed from localStorage so that remount within the same day (e.g. after
   // HMR, route change, or the user navigating away and back) does not
@@ -65,11 +75,7 @@ export function useFizrukWorkoutReminder({
       if (Notification.permission !== "granted") return;
 
       firedRef.current = dayStr;
-      try {
-        localStorage.setItem(LAST_KEY, dayStr);
-      } catch {
-        /* ignore */
-      }
+      safeWriteLS(LAST_KEY, dayStr);
 
       try {
         if ("serviceWorker" in navigator) {

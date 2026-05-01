@@ -72,6 +72,7 @@ const pinoOptions: LoggerOptions = {
     if (!ctx) return {};
     const out: Record<string, string> = {};
     if (ctx.requestId) out.requestId = ctx.requestId;
+    if (ctx.traceId) out.traceId = ctx.traceId;
     if (ctx.userId) out.userId = ctx.userId;
     if (ctx.module) out.module = ctx.module;
     return out;

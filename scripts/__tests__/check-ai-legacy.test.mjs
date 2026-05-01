@@ -13,6 +13,7 @@ import assert from "node:assert/strict";
 import {
   classifyExpiry,
   daysBetween,
+  extractIssueRef,
   extractMalformed,
   extractMarkers,
   legacyIssueBody,
@@ -190,6 +191,34 @@ describe("legacyIssueMarker / legacyIssueTitle / legacyIssueBody", () => {
     const body = legacyIssueBody("apps/web/src/foo.ts", 1, "2026-04-29", "", 1);
     assert.match(body, /1 day ago/);
     assert.doesNotMatch(body, /1 days ago/);
+  });
+});
+
+// ── extractIssueRef ──────────────────────────────────────────────────────────
+
+describe("extractIssueRef", () => {
+  it("returns bare issue number (#123)", () => {
+    assert.equal(extractIssueRef("migrate bearer token #456"), "#456");
+  });
+
+  it("returns GH-NNN shorthand", () => {
+    assert.equal(extractIssueRef("tracked in GH-789"), "GH-789");
+  });
+
+  it("returns issues/NNN path fragment (from full GitHub URL)", () => {
+    assert.equal(
+      extractIssueRef("https://github.com/Skords-01/Sergeant/issues/123"),
+      "issues/123",
+    );
+  });
+
+  it("returns null for empty note", () => {
+    assert.equal(extractIssueRef(""), null);
+    assert.equal(extractIssueRef(null), null);
+  });
+
+  it("returns null when no issue reference present", () => {
+    assert.equal(extractIssueRef("migrate after v2 rollout"), null);
   });
 });
 

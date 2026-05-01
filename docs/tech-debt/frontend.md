@@ -5,12 +5,12 @@
 
 Аналіз кодової бази `apps/web/src` (434 source файли, 87k рядків).
 
-> **Оновлено 2026-04-30.** Розділ 11 (Strict TS rollout) розширено Phase 2.1:
-> `tsconfig.strict.json` тепер покриває 12 директорій (`src/shared`, `src/test`,
-> `src/core/{auth,cloudSync,components,hints,hooks,hub,observability,pricing,profile,settings}`).
-> 16 strict-null помилок у 5 транзитивно імпортованих файлах (core/lib, modules/finyk,
-> modules/routine) виправлено null-guards + explicit generics для `safeReadLS`/`readJSON`,
-> без runtime-змін.
+> **Оновлено 2026-05-01.** Розділ 11 (Strict TS rollout) розширено Phase 2.2:
+> `tsconfig.strict.json` тепер покриває 14 директорій — додано `src/modules/fizruk/**/*` та
+> `src/core/lib/**/*`. Типи параметрів функцій у `useFizrukWorkoutReminder.ts`,
+> `useTrainingProgram.ts`, `useRestSettings.ts` — explicit (видалено implicit `any`).
+> Розділ 2 (localStorage burndown): 9 fizruk-файлів мігровано на `safeReadLS`/`safeWriteLS`/`safeRemoveLS`,
+> ESLint allowlist скорочено з 49 до 41 файлів.
 
 > **Як читати:** позначки в стовпчику «Статус» оновлюються в момент злиття PR.
 > Це жива сторінка — не «звіт», а контроль міграцій. Кожен запис стандартизує:
@@ -352,6 +352,15 @@ Ref: PR-6.F (sergeant-audit-devin.md).
   - `core/settings/FinykSection.tsx` — 20 raw calls → `safeReadStringLS`/`safeWriteLS`/`safeRemoveLS`
   - `core/lib/chatActions/fizrukActions.ts` — 7 raw calls → `safeReadLS` + `readWorkouts()` helper
   - `core/hub/HubDashboard.tsx` — вже використовував `localStorageStore` (KVStore adapter), прибрано з allowlist
+- ✅ `no-raw-local-storage` fizruk burndown (49 → 41 файлів, Phase 2.2):
+  - `useTrainingProgram.ts` — `safeReadStringLS`/`safeWriteLS`/`safeRemoveLS`
+  - `useFizrukWorkoutReminder.ts` — `safeReadStringLS`/`safeWriteLS` + typed params
+  - `useMonthlyPlan.ts` — `safeReadLS<Partial<MonthlyPlanState>>`/`safeWriteLS`
+  - `useExerciseCatalog.ts` — `safeReadStringLS`/`safeWriteLS`
+  - `useFizrukProgramStart.ts` — `safeWriteLS`
+  - `TodayPlanCard.tsx`, `Body.tsx`, `Dashboard.tsx`, `Progress.tsx`, `Workouts.tsx` — safe helpers
+  - `useWorkouts.ts` залишився в allowlist (використовує CustomEvent для quota UX)
+- ✅ Mobile APM: `tracesSampleRate` підвищено з 0 до 0.05 в продакшн Sentry RN
 - ✅ `no-raw-local-storage` PWA + Finyk-hub burndown (52 → 49 файлів):
   - `core/app/pwaAction.ts` — `localStorage.getItem`/`removeItem` → `safeReadStringLS` + `safeRemoveLS`
   - `core/hooks/usePwaActions.ts` — `localStorage.setItem` у `useState` lazy-initializer → `safeWriteLS`

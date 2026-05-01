@@ -147,19 +147,17 @@ export function normalizeStoredMessages(raw: unknown): ChatMessage[] {
   }));
 }
 
+// Thin adapters over the canonical safe-storage helpers.
+// Callers import `ls`/`lsSet` for backward-compat; new code should prefer
+// `safeReadLS`/`safeWriteLS` from `@shared/lib/storage` directly.
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+
 export function ls<T>(key: string, fallback: T): T {
-  try {
-    const v = localStorage.getItem(key);
-    return v ? (JSON.parse(v) as T) : fallback;
-  } catch {
-    return fallback;
-  }
+  return (safeReadLS<T>(key) as T | null) ?? fallback;
 }
 
 export function lsSet(key: string, value: unknown): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
+  safeWriteLS(key, value);
 }
 
 export function fmt(n: number): string {

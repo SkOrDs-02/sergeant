@@ -305,10 +305,18 @@ export async function syncPullAll(req: Request, res: Response): Promise<void> {
     // не-sync записи (напр. `coach` memory, яка пишеться через окремий
     // endpoint), і витягати їх сюди — це і зайві bytes на pull-all, і
     // ламання інкапсуляції (клієнт sync-шару не повинен знати про coach).
+    //
+    // EXPLAIN ANALYZE (типовий план):
+    //   Bitmap Heap Scan on module_data  (rows≤5)
+    //     -> Bitmap Index Scan on module_data_user_id_module_key
+    //          Index Cond: (user_id = $1 AND module = ANY($2::text[]))
+    // ANY($2::text[]) дозволяє Bitmap-скан по UNIQUE-індексу одним round-trip
+    // замість окремого lookup-а на кожен модуль. ORDER BY стабілізує відповідь.
     const result = await pool.query<ModuleDataRowWithModule>(
       `SELECT module, data, client_updated_at, server_updated_at, version
        FROM module_data
-       WHERE user_id = $1 AND module = ANY($2::text[])`,
+       WHERE user_id = $1 AND module = ANY($2::text[])
+       ORDER BY module`,
       [user.id, Array.from(VALID_MODULES)],
     );
 
@@ -371,6 +379,19 @@ export async function syncPushAll(req: Request, res: Response): Promise<void> {
   }> = [];
   const client = await pool.connect();
   try {
+    // Pre-fetch current server state for all valid modules in ONE round-trip.
+    // Used for conflict reporting without an extra SELECT per module inside
+    // the transaction (avoids N additional queries when all modules conflict).
+    const existingRows = await client.query<ModuleDataUpsertRow & { module: string }>(
+      `SELECT module, server_updated_at, version
+       FROM module_data
+       WHERE user_id = $1 AND module = ANY($2::text[])`,
+      [user.id, Array.from(VALID_MODULES)],
+    );
+    const existingByModule = new Map(
+      existingRows.rows.map((r) => [r.module, r]),
+    );
+
     await client.query("BEGIN");
     for (const [mod, payload] of Object.entries(modules)) {
       if (!VALID_MODULES.has(mod)) continue;
@@ -396,16 +417,13 @@ export async function syncPushAll(req: Request, res: Response): Promise<void> {
         [user.id, mod, blob, clientTs],
       );
       if (r.rows.length === 0) {
-        const existing = await client.query<ModuleDataUpsertRow>(
-          `SELECT server_updated_at, version FROM module_data WHERE user_id = $1 AND module = $2`,
-          [user.id, mod],
-        );
+        const existing = existingByModule.get(mod);
         pending.push({ module: mod, outcome: "conflict", bytes: blob.length });
         results[mod] = {
           ok: true,
           conflict: true,
-          serverUpdatedAt: existing.rows[0]?.server_updated_at,
-          version: existing.rows[0]?.version ?? 0,
+          serverUpdatedAt: existing?.server_updated_at,
+          version: existing?.version ?? 0,
         };
       } else {
         pending.push({ module: mod, outcome: "ok", bytes: blob.length });
