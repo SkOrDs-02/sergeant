@@ -127,7 +127,7 @@ export const BentoCard = memo(function BentoCard({
         <div className="flex items-center justify-between mb-2">
           <div
             className={cn(
-              "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
+              "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
               inactive ? "bg-line/40 text-muted" : config.iconClass,
             )}
           >
@@ -212,7 +212,7 @@ export const BentoCard = memo(function BentoCard({
 
         {showProgress && (
           <div
-            className="w-full h-1 rounded-full bg-line/40 dark:bg-white/10 overflow-hidden mt-2"
+            className="w-full h-1.5 rounded-full bg-line/60 dark:bg-white/10 overflow-hidden mt-2"
             aria-hidden
           >
             <div
