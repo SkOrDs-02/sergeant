@@ -1,25 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BUILTIN_PROGRAMS, getTodaySession } from "@sergeant/fizruk-domain";
+import {
+  safeReadStringLS,
+  safeWriteLS,
+  safeRemoveLS,
+} from "@shared/lib/storage";
 
 const ACTIVE_PROGRAM_KEY = "fizruk_active_program_id_v1";
 
 export function useTrainingProgram() {
-  const [activeProgramId, setActiveProgramId] = useState(() => {
-    try {
-      return localStorage.getItem(ACTIVE_PROGRAM_KEY) || null;
-    } catch {
-      return null;
-    }
-  });
+  const [activeProgramId, setActiveProgramId] = useState(() =>
+    safeReadStringLS(ACTIVE_PROGRAM_KEY),
+  );
 
   useEffect(() => {
-    try {
-      if (activeProgramId) {
-        localStorage.setItem(ACTIVE_PROGRAM_KEY, activeProgramId);
-      } else {
-        localStorage.removeItem(ACTIVE_PROGRAM_KEY);
-      }
-    } catch {}
+    if (activeProgramId) {
+      safeWriteLS(ACTIVE_PROGRAM_KEY, activeProgramId);
+    } else {
+      safeRemoveLS(ACTIVE_PROGRAM_KEY);
+    }
   }, [activeProgramId]);
 
   const activeProgram = useMemo(
@@ -27,7 +26,7 @@ export function useTrainingProgram() {
     [activeProgramId],
   );
 
-  const activateProgram = useCallback((id) => {
+  const activateProgram = useCallback((id: string | null) => {
     setActiveProgramId(id || null);
   }, []);
 

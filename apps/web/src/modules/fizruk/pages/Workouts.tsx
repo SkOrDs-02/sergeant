@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { safeReadStringLS, safeWriteLS, safeRemoveLS } from "@shared/lib/storage";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
@@ -23,7 +24,10 @@ import {
   ACTIVE_WORKOUT_KEY,
   summarizeWorkoutForFinish,
 } from "@sergeant/fizruk-domain";
-import { computeWorkoutSummary } from "@sergeant/fizruk-domain/domain";
+import {
+  WorkoutsHome,
+  RecentWorkoutSummary,
+} from "../components/workouts/WorkoutsHome";
 
 type WorkoutsView = "home" | "catalog" | "log" | "templates";
 
@@ -96,13 +100,9 @@ export function Workouts() {
   // `WorkoutCatalogSection`). Kept in sync with `view` for those subviews.
   const mode = view === "templates" || view === "home" ? "catalog" : view;
   const [restTimer, setRestTimer] = useState(null);
-  const [activeWorkoutId, setActiveWorkoutId] = useState(() => {
-    try {
-      return localStorage.getItem(ACTIVE_WORKOUT_KEY) || null;
-    } catch {
-      return null;
-    }
-  });
+  const [activeWorkoutId, setActiveWorkoutId] = useState(() =>
+    safeReadStringLS(ACTIVE_WORKOUT_KEY),
+  );
   const [finishFlash, setFinishFlash] = useState(null);
   const [deleteExerciseConfirm, setDeleteExerciseConfirm] = useState(false);
   const [riskyTemplateConfirm, setRiskyTemplateConfirm] = useState(null); // stores template when risky
@@ -138,10 +138,8 @@ export function Workouts() {
   }, [activeWorkout?.startedAt, activeWorkout?.endedAt, now]);
 
   useEffect(() => {
-    try {
-      if (!activeWorkoutId) localStorage.removeItem(ACTIVE_WORKOUT_KEY);
-      else localStorage.setItem(ACTIVE_WORKOUT_KEY, activeWorkoutId);
-    } catch {}
+    if (!activeWorkoutId) safeRemoveLS(ACTIVE_WORKOUT_KEY);
+    else safeWriteLS(ACTIVE_WORKOUT_KEY, activeWorkoutId);
   }, [activeWorkoutId]);
 
   // Clear a stale activeWorkoutId that no longer matches any workout
@@ -656,227 +654,3 @@ export function Workouts() {
   );
 }
 
-/**
- * Landing view for the Workouts page.
- *
- * Shows one dominant path ("Почати тренування" → active session) plus two
- * supporting shortcuts (recent sessions preview and quick-link tiles to
- * the catalog / templates / full journal).
- */
-interface WorkoutsHomeProps {
-  activeWorkout: {
-    id: string;
-    startedAt: string;
-    endedAt?: string | null;
-    items?: ReadonlyArray<unknown>;
-  } | null;
-  activeDuration: string | null;
-  recentWorkouts: ReadonlyArray<{
-    id: string;
-    startedAt: string;
-    endedAt?: string | null;
-    items?: ReadonlyArray<unknown>;
-  }>;
-  onOpenSession: () => void;
-  onOpenCatalog: () => void;
-  onOpenTemplates: () => void;
-  onOpenJournal: () => void;
-  /**
-   * Opens the start chooser (`QuickStartSheet`) instead of immediately
-   * spinning up an empty session — the chooser itself is responsible
-   * for creating the workout once the user picked a template or a set
-   * of exercises.
-   */
-  onRequestStart: () => void;
-  onOpenRetro: () => void;
-}
-
-function WorkoutsHome({
-  activeWorkout,
-  activeDuration,
-  recentWorkouts,
-  onOpenSession,
-  onOpenCatalog,
-  onOpenTemplates,
-  onOpenJournal,
-  onRequestStart,
-  onOpenRetro,
-}: WorkoutsHomeProps) {
-  const hasActive = !!activeWorkout && !activeWorkout.endedAt;
-
-  return (
-    <div className="space-y-4">
-      {hasActive ? (
-        <div className="rounded-xl border border-teal-500/40 bg-teal-500/10 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-xs font-semibold text-teal-700">
-                Активне тренування
-              </div>
-              <div className="mt-1 text-sm text-text">
-                <span className="font-bold">{activeDuration ?? "00:00"}</span>
-                {" · "}
-                {(activeWorkout?.items || []).length} вправ
-              </div>
-            </div>
-            <Button className="h-11 px-4" onClick={onOpenSession}>
-              Відкрити →
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-xl border border-border bg-surface p-4 text-center">
-          <div className="text-sm font-semibold text-text">
-            Немає активного тренування
-          </div>
-          <div className="text-xs text-subtle mt-1">
-            Почни нове — обереш шаблон або підбереш вправи перед стартом.
-          </div>
-          <div className="mt-3 grid grid-cols-1 gap-2">
-            <Button className="h-12 text-base" onClick={onRequestStart}>
-              ▶︎ Почати тренування
-            </Button>
-            <Button
-              variant="ghost"
-              className="h-12 text-base"
-              onClick={onOpenRetro}
-            >
-              ✏️ Внести проведене заняття
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <Card as="section" radius="lg" aria-label="Останні тренування">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-text">
-            Останні тренування
-          </h2>
-          {recentWorkouts.length > 0 ? (
-            <button
-              type="button"
-              className="text-xs font-semibold text-fizruk-strong hover:underline active:opacity-70"
-              onClick={onOpenJournal}
-            >
-              Всі →
-            </button>
-          ) : null}
-        </div>
-        {recentWorkouts.length > 0 ? (
-          <ul className="flex flex-col gap-2">
-            {recentWorkouts.map((w) => (
-              <li key={w.id}>
-                <button
-                  type="button"
-                  className="w-full text-left rounded-xl border border-line bg-bg px-3 py-3 flex items-center justify-between hover:bg-panelHi transition-colors"
-                  onClick={onOpenJournal}
-                >
-                  <RecentWorkoutSummary workout={w} />
-                  <span className="text-subtle" aria-hidden>
-                    ›
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="rounded-2xl border border-dashed border-line p-4 text-xs text-subtle text-center">
-            Після першого завершеного тренування тут з&apos;являться останні
-            сесії.
-          </div>
-        )}
-      </Card>
-
-      <Card as="section" radius="lg" aria-label="Довідники">
-        <h2 className="text-sm font-semibold text-text mb-3">Довідники</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <button
-            type="button"
-            className="rounded-2xl border border-line bg-bg p-4 text-left hover:bg-panelHi transition-colors"
-            onClick={onOpenCatalog}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl" aria-hidden>
-                📚
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-text">
-                  Каталог вправ
-                </div>
-                <div className="text-xs text-subtle mt-0.5">
-                  Пошук · групи м&apos;язів · своя вправа
-                </div>
-              </div>
-              <span className="text-subtle" aria-hidden>
-                ›
-              </span>
-            </div>
-          </button>
-          <button
-            type="button"
-            className="rounded-2xl border border-line bg-bg p-4 text-left hover:bg-panelHi transition-colors"
-            onClick={onOpenTemplates}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl" aria-hidden>
-                📋
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-text">Шаблони</div>
-                <div className="text-xs text-subtle mt-0.5">
-                  Збережені набори вправ на швидкий старт
-                </div>
-              </div>
-              <span className="text-subtle" aria-hidden>
-                ›
-              </span>
-            </div>
-          </button>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-interface RecentWorkoutSummaryProps {
-  workout: {
-    id: string;
-    startedAt: string;
-    endedAt?: string | null;
-    items?: ReadonlyArray<unknown>;
-  };
-}
-
-function RecentWorkoutSummary({ workout }: RecentWorkoutSummaryProps) {
-  const summary = useMemo(
-    () => computeWorkoutSummary(workout as never),
-    [workout],
-  );
-  const started = new Date(workout.startedAt);
-  const dateLabel = started.toLocaleDateString("uk-UA", {
-    day: "numeric",
-    month: "short",
-  });
-  const parts: string[] = [];
-  if (summary.itemCount > 0) parts.push(`${summary.itemCount} вправ`);
-  if (summary.setCount > 0) parts.push(`${summary.setCount} сетів`);
-  const durMin = summary.durationSec
-    ? Math.max(1, Math.round(summary.durationSec / 60))
-    : null;
-  if (durMin !== null) parts.push(`${durMin} хв`);
-  const subtitle = parts.length ? parts.join(" · ") : "порожнє тренування";
-
-  return (
-    <div className="flex-1 pr-2">
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-text">{dateLabel}</span>
-        {!summary.isFinished ? (
-          <span className="text-[10px] uppercase font-bold text-amber-700 bg-amber-500/15 px-2 py-0.5 rounded-full">
-            Чернетка
-          </span>
-        ) : null}
-      </div>
-      <div className="text-xs text-subtle mt-0.5 truncate">{subtitle}</div>
-    </div>
-  );
-}

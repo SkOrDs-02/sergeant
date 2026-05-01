@@ -22,7 +22,9 @@
     "src/core/app/**/*",
     "src/modules/nutrition/**/*",
     "src/modules/routine/**/*",
-    "src/modules/finyk/**/*"
+    "src/modules/finyk/**/*",
+    "src/modules/fizruk/**/*",
+    "src/core/lib/**/*"
   ],
   "exclude": ["node_modules", "dist"]
 }

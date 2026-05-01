@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { safeRemoveLS } from "@shared/lib/storage";
 import { downloadJson } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
@@ -227,9 +228,7 @@ export function Progress() {
 
   const resetAll = () => {
     for (const k of FIZRUK_RESET_KEYS) {
-      try {
-        localStorage.removeItem(k);
-      } catch {}
+      safeRemoveLS(k);
     }
     window.location.reload();
   };

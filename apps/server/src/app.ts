@@ -16,6 +16,7 @@ import {
   requestIdMiddleware,
   requestLogMiddleware,
   requestTimeout,
+  traceMiddleware,
   withRequestContext,
 } from "./http/index.js";
 import { httpLogger } from "./obs/logger.js";
@@ -100,6 +101,7 @@ export function createApp({
 
   app.use(requestIdMiddleware);
   app.use(withRequestContext);
+  app.use(traceMiddleware);
   // Global request timeout - prevents zombie requests from consuming resources
   app.use(requestTimeout());
   // Response compression (gzip/br) - must be early in the chain

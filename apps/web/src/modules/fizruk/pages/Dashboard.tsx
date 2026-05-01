@@ -1,3 +1,4 @@
+import { safeWriteLS } from "@shared/lib/storage";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -81,9 +82,7 @@ export function Dashboard({
       });
     }
     if (templateId) markTemplateUsed(templateId);
-    try {
-      localStorage.setItem(ACTIVE_WORKOUT_KEY, w.id);
-    } catch {}
+    safeWriteLS(ACTIVE_WORKOUT_KEY, w.id);
     try {
       sessionStorage.setItem("fizruk_workouts_mode", "log");
     } catch {}

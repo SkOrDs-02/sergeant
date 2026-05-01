@@ -49,3 +49,4 @@ export { requireGroqKey } from "./requireGroqKey.js";
 export { requireAiQuota } from "./requireAiQuota.js";
 export { requestTimeout } from "./timeout.js";
 export { createCompressionMiddleware } from "./compression.js";
+export { traceMiddleware } from "./traceContext.js";

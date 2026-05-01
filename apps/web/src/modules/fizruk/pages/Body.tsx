@@ -9,6 +9,7 @@ import { Card } from "@shared/components/ui/Card";
 import { MiniLineChart } from "../components/MiniLineChart";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/undoToast";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage";
 
 /**
  * Trend cards on this page used to be always-expanded, which meant four
@@ -45,33 +46,18 @@ type JournalEntry = {
 };
 
 function readTrendOpen(key: string): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    return window.localStorage.getItem(TREND_STORAGE_PREFIX + key) === "1";
-  } catch {
-    return false;
-  }
+  return safeReadStringLS(TREND_STORAGE_PREFIX + key) === "1";
 }
 
 function readPersistedOpen(storageKey: string, fallback: boolean): boolean {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const v = window.localStorage.getItem(storageKey);
-    if (v === "1") return true;
-    if (v === "0") return false;
-    return fallback;
-  } catch {
-    return fallback;
-  }
+  const v = safeReadStringLS(storageKey);
+  if (v === "1") return true;
+  if (v === "0") return false;
+  return fallback;
 }
 
 function writePersistedOpen(storageKey: string, open: boolean): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(storageKey, open ? "1" : "0");
-  } catch {
-    /* ignore quota / disabled storage */
-  }
+  safeWriteLS(storageKey, open ? "1" : "0");
 }
 
 function CollapsibleTrendCard({
@@ -97,16 +83,7 @@ function CollapsibleTrendCard({
   const toggle = useCallback(() => {
     setOpen((prev) => {
       const next = !prev;
-      if (typeof window !== "undefined") {
-        try {
-          window.localStorage.setItem(
-            TREND_STORAGE_PREFIX + storageKey,
-            next ? "1" : "0",
-          );
-        } catch {
-          /* ignore quota / disabled storage */
-        }
-      }
+      safeWriteLS(TREND_STORAGE_PREFIX + storageKey, next ? "1" : "0");
       return next;
     });
   }, [storageKey]);

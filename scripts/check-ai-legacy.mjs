@@ -31,10 +31,11 @@
 // `malformed` (separate from `expired`) so the author can fix the syntax.
 //
 // Usage:
-//   node scripts/check-ai-legacy.mjs                       # human summary
-//   node scripts/check-ai-legacy.mjs --check               # CI gate (exit 1 on expired)
-//   node scripts/check-ai-legacy.mjs --json                # machine-readable
-//   node scripts/check-ai-legacy.mjs --dashboard out.html  # HTML report
+//   node scripts/check-ai-legacy.mjs                                        # human summary
+//   node scripts/check-ai-legacy.mjs --check                                # CI gate (exit 1 on expired/malformed)
+//   node scripts/check-ai-legacy.mjs --check --require-issue                # also fail on missing issue refs
+//   node scripts/check-ai-legacy.mjs --json                                 # machine-readable
+//   node scripts/check-ai-legacy.mjs --dashboard out.html                   # HTML report
 //   GITHUB_TOKEN=... node scripts/check-ai-legacy.mjs --issues
 //
 // Environment:
@@ -286,6 +287,7 @@ export function gatherMarkers({
         line: m.line,
         expires: m.expires,
         note: m.note,
+        issueRef: extractIssueRef(m.note),
         status,
         daysUntilExpiry: daysBetween(today, m.expires),
       });
@@ -476,6 +478,29 @@ async function createIssue(finding, daysExpired) {
   });
 }
 
+// ── Issue-reference validation ───────────────────────────────────────────────
+
+// Recognises any of:
+//   #123              bare issue number
+//   GH-123            GitHub shorthand
+//   issues/123        path fragment (full URL also matches)
+const RX_ISSUE_REF = /#\d+|GH-\d+|issues\/\d+/i;
+
+/**
+ * Returns the issue reference found in the marker's rationale note, or
+ * `null` if none is present.
+ *
+ * Hard Rule #10 requires every `AI-LEGACY` marker to include a tracking
+ * issue so the work is never invisible. Example:
+ *
+ *     // AI-LEGACY: expires 2026-09-01 #1234 migrate to new SDK
+ */
+export function extractIssueRef(note) {
+  if (!note) return null;
+  const m = RX_ISSUE_REF.exec(note);
+  return m ? m[0] : null;
+}
+
 // ── CLI ──────────────────────────────────────────────────────────────────────
 
 function parseArgs(argv) {
@@ -484,12 +509,14 @@ function parseArgs(argv) {
     json: false,
     issues: false,
     dashboard: null,
+    requireIssue: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--check") args.check = true;
     else if (a === "--json") args.json = true;
     else if (a === "--issues") args.issues = true;
+    else if (a === "--require-issue") args.requireIssue = true;
     else if (a === "--dashboard") args.dashboard = argv[++i];
     else if (a.startsWith("--dashboard=")) args.dashboard = a.split("=", 2)[1];
   }
@@ -499,10 +526,13 @@ function parseArgs(argv) {
 function printHumanSummary(findings) {
   const totals = { expired: 0, malformed: 0, "due-soon": 0, fresh: 0 };
   for (const f of findings) totals[f.status]++;
+  const noIssue = findings.filter(
+    (f) => f.status !== "malformed" && !f.issueRef,
+  );
 
   console.log(`AI-LEGACY scan — ${findings.length} marker(s) found`);
   console.log(
-    `  expired: ${totals.expired}    due-soon: ${totals["due-soon"]}    fresh: ${totals.fresh}    malformed: ${totals.malformed}`,
+    `  expired: ${totals.expired}    due-soon: ${totals["due-soon"]}    fresh: ${totals.fresh}    malformed: ${totals.malformed}    no-issue-ref: ${noIssue.length}`,
   );
   console.log("");
 
@@ -518,6 +548,14 @@ function printHumanSummary(findings) {
     console.log("Malformed (missing `expires YYYY-MM-DD`):");
     for (const f of findings.filter((x) => x.status === "malformed")) {
       console.log(`  ⚠  ${f.file}:${f.line}  ${f.note}`);
+    }
+  }
+  if (noIssue.length) {
+    console.log("No issue reference (add `#NNN` to the marker rationale):");
+    for (const f of noIssue) {
+      console.log(
+        `  ⚠  ${f.file}:${f.line}  expires=${f.expires}${f.note ? ` — ${f.note}` : ""}`,
+      );
     }
   }
   if (totals["due-soon"]) {
@@ -587,10 +625,15 @@ async function main() {
   if (args.check) {
     const expired = findings.filter((f) => f.status === "expired").length;
     const malformed = findings.filter((f) => f.status === "malformed").length;
-    if (expired || malformed) {
-      console.error(
-        `\n❌ ${expired} expired + ${malformed} malformed AI-LEGACY marker(s) — see above.`,
-      );
+    const noIssue = args.requireIssue
+      ? findings.filter((f) => f.status !== "malformed" && !f.issueRef).length
+      : 0;
+    if (expired || malformed || noIssue) {
+      const parts = [];
+      if (expired) parts.push(`${expired} expired`);
+      if (malformed) parts.push(`${malformed} malformed`);
+      if (noIssue) parts.push(`${noIssue} without issue ref (--require-issue)`);
+      console.error(`\n❌ AI-LEGACY violations: ${parts.join(", ")} — see above.`);
       process.exit(1);
     }
     console.log("\n✅ All AI-LEGACY markers are within their expiry window.");

@@ -5,6 +5,7 @@ import {
   parseCustomExercisesFromStorage,
   serializeCustomExercisesToStorage,
 } from "@sergeant/fizruk-domain";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
 
@@ -27,21 +28,14 @@ export function useExerciseCatalog() {
   const musclesByPrimaryGroup = FizrukData.MUSCLES_BY_PRIMARY_GROUP;
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(CUSTOM_EXERCISES_KEY);
-      const parsed = parseCustomExercisesFromStorage(raw);
-      if (Array.isArray(parsed)) setCustomExercises(parsed as RawExerciseDef[]);
-    } catch {}
+    const raw = safeReadStringLS(CUSTOM_EXERCISES_KEY);
+    const parsed = parseCustomExercisesFromStorage(raw);
+    if (Array.isArray(parsed)) setCustomExercises(parsed as RawExerciseDef[]);
   }, []);
 
   const persistCustom = useCallback((next: RawExerciseDef[]) => {
     setCustomExercises(next);
-    try {
-      localStorage.setItem(
-        CUSTOM_EXERCISES_KEY,
-        serializeCustomExercisesToStorage(next),
-      );
-    } catch {}
+    safeWriteLS(CUSTOM_EXERCISES_KEY, serializeCustomExercisesToStorage(next));
   }, []);
 
   const exercises = useMemo(
