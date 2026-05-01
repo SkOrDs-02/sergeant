@@ -260,7 +260,7 @@
         }
       ],
       "links": [
-        { "type": "doc", "ref": "docs/audits/typography-2026-04-audit.md" },
+        { "type": "doc", "ref": "docs/audits/UX-UI-AUDIT-2026.md" },
         { "type": "agents", "ref": "#16" }
       ]
     }

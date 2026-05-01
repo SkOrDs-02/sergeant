@@ -491,7 +491,7 @@ If a reviewer sees a new prose paragraph or table cell in English in a doc that'
 
 ### 16. Typography scale — semantic styles + 12px floor
 
-> Why a hard rule? Drift on the type scale is invisible until it isn't. Two PRs landed `text-3xs` (9px) on touch targets despite Hard Rule #4-style review (`docs/audits/typography-2026-04-audit.md`). Codifying the floor and the named-style contract closes the gap.
+> Why a hard rule? Drift on the type scale is invisible until it isn't. Two PRs landed `text-3xs` (9px) on touch targets despite Hard Rule #4-style review (`docs/audits/UX-UI-AUDIT-2026.md` § Typography utilities неконсистентні). Codifying the floor and the named-style contract closes the gap.
 
 **Use one of the semantic `.text-style-*` utilities whenever a slot has a documented role.** The utilities live in `packages/design-tokens/tailwind-preset.js → plugins.semanticTypography` and bundle font-size, line-height, weight, letter-spacing, and casing so layouts can't drift on any single axis (e.g. shipping the hero size with the wrong weight).
 
