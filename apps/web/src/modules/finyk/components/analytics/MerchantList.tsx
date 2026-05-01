@@ -1,9 +1,23 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/cn";
 
+interface MerchantStat {
+  name: string;
+  total: number;
+  count: number;
+}
+
+interface MerchantListProps {
+  merchants?: MerchantStat[];
+  className?: string;
+}
+
 // Презентаційний список топ-мерчантів. `memo` уникає перерендеру,
 // поки масив `merchants` не змінився.
-function MerchantListComponent({ merchants = [], className }) {
+function MerchantListComponent({
+  merchants = [],
+  className,
+}: MerchantListProps) {
   if (!merchants || merchants.length === 0) return null;
 
   const maxTotal = merchants[0]?.total || 1;

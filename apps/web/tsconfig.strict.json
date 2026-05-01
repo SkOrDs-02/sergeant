@@ -21,7 +21,8 @@
     "src/core/insights/**/*",
     "src/core/app/**/*",
     "src/modules/nutrition/**/*",
-    "src/modules/routine/**/*"
+    "src/modules/routine/**/*",
+    "src/modules/finyk/**/*"
   ],
   "exclude": ["node_modules", "dist"]
 }

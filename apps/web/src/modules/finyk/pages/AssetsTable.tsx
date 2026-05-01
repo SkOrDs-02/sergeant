@@ -481,7 +481,7 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
         </button>
       )}
       {monoDebtAccounts.map((a, i) => {
-        const linkedIds = monoDebtLinkedTxIds[a.id] || [];
+        const linkedIds = (a.id ? monoDebtLinkedTxIds[a.id] : []) || [];
         const paidFromLinked = transactions
           .filter((t) => linkedIds.includes(t.id))
           .reduce((s, t) => s + Math.abs(t.amount / 100), 0);
@@ -497,7 +497,7 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
             paid={paidFromLinked}
             total={volatileTotal}
             showBalance={showBalance}
-            onLink={() => setTxPicker({ id: a.id, type: "monoDebt" })}
+            onLink={() => setTxPicker({ id: a.id ?? "", type: "monoDebt" })}
             linkedCount={linkedIds.length}
           />
         );

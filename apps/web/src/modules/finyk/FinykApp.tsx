@@ -59,18 +59,22 @@ export default function App({
   const focusLimitCategoryId = useHashQueryParam("cat");
   const [tokenInput, setTokenInput] = useState("");
   const [showToken, setShowToken] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [showBalance, setShowBalance] = useState(
     () => readRaw("finyk_show_balance_v1", "1") !== "0",
   );
   const [showExpenseSheet, setShowExpenseSheet] = useState(false);
-  const [editingManualExpenseId, setEditingManualExpenseId] = useState(null);
+  const [editingManualExpenseId, setEditingManualExpenseId] = useState<
+    string | null
+  >(null);
   // Для prefill категорії при кліку на quick-add картку з Overview.
-  const [quickAddCategory, setQuickAddCategory] = useState(null);
+  const [quickAddCategory, setQuickAddCategory] = useState<string | null>(null);
   // Prefill опису з FTUX preset sheet («Кава», «Таксі», «Обід»). Окрема
   // стейт-клітинка, бо quick-add з Overview задає лише категорію —
   // description лишається порожнім і поповнюється користувачем.
-  const [quickAddDescription, setQuickAddDescription] = useState(null);
+  const [quickAddDescription, setQuickAddDescription] = useState<string | null>(
+    null,
+  );
   // "Manual only" bypass: user completed onboarding without Monobank or
   // pressed «Далі без банку» on the login screen. When set, we render the
   // normal Finyk UI populated from manual expenses even if `clientInfo` is

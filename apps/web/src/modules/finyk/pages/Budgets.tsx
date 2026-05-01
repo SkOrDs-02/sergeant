@@ -105,12 +105,33 @@ async function fetchProactiveAdvice({
   return text;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LooseBag = any;
+
+interface BudgetsProps {
+  mono: LooseBag;
+  storage: LooseBag;
+  showBalance?: boolean;
+  focusLimitCategoryId?: string | null;
+}
+
+interface ProactiveItem {
+  categoryId: string;
+  monthKey: string;
+  catLabel: string;
+  spent: number;
+  limit: number;
+  remaining: number;
+  pct: number;
+  daysRemaining: number;
+}
+
 export function Budgets({
   mono,
   storage,
   showBalance = true,
   focusLimitCategoryId = null,
-}) {
+}: BudgetsProps) {
   const toast = useToast();
   const { realTx, loadingTx, transactions } = mono;
   const {
@@ -135,7 +156,7 @@ export function Budgets({
     [realTx, excludedTxIds, txSplits],
   );
   const factIncome = monthlySummary.income;
-  const [editIdx, setEditIdx] = useState(null);
+  const [editIdx, setEditIdx] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formType, setFormType] = useState("limit");
   const [newB, setNewB] = useState({
@@ -274,7 +295,7 @@ export function Budgets({
     const { daysLeft: daysRemaining, monthStart: ms } =
       getCurrentMonthContext(now);
     const monthKey = `${ms.getFullYear()}-${String(ms.getMonth() + 1).padStart(2, "0")}`;
-    const items = [];
+    const items: ProactiveItem[] = [];
     for (const b of limitBudgets) {
       const spent = calcSpent(b);
       const pctRaw = b.limit > 0 ? (spent / b.limit) * 100 : 0;
@@ -326,8 +347,8 @@ export function Budgets({
     })),
   });
 
-  const proactiveAdvice = {};
-  const proactiveLoading = {};
+  const proactiveAdvice: Record<string, string | null> = {};
+  const proactiveLoading: Record<string, boolean> = {};
   proactiveItems.forEach((item, i) => {
     const q = proactiveQueries[i];
     proactiveAdvice[item.categoryId] = q?.data ?? null;

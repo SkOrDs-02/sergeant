@@ -213,7 +213,7 @@ function TxRowImpl({
               П24
             </span>
           )}
-          <span className="text-xs text-subtle">· {fmtDate(tx.time)}</span>
+          <span className="text-xs text-subtle">· {fmtDate(tx.time ?? 0)}</span>
         </div>
       </div>
     </>

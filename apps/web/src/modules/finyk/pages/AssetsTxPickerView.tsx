@@ -269,7 +269,7 @@ export function AssetsTxPickerView({
             const role = isLinked ? getTxRole(t) : null;
             return (
               <div key={i}>
-                {isLinked && (
+                {isLinked && role && (
                   <div
                     className="text-xs font-bold px-1 py-1"
                     style={{ color: role.color }}

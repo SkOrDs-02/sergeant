@@ -74,7 +74,7 @@ export function Transactions({
     removeManualExpense,
   } = storage;
   const [filter, setFilter] = useState("all");
-  const [scrollParent, setScrollParent] = useState(null);
+  const [scrollParent, setScrollParent] = useState<HTMLDivElement | null>(null);
 
   // Stable refs for handlers used by memoized row — avoids re-rendering all
   // visible rows whenever any unrelated parent state changes.
@@ -380,7 +380,8 @@ export function Transactions({
 
   const groupedByDate = useMemo(() => {
     const m = perfMark("finyk:tx:groupByDate");
-    const groups = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const groups: { key: string; items: any[] }[] = [];
     for (const t of filtered) {
       const k = dayKeyFromTx(t.time);
       const last = groups[groups.length - 1];
@@ -443,7 +444,7 @@ export function Transactions({
   // лічильник під датою показує кількість саме *відфільтрованих*
   // транзакцій — нічого не зникає, все одно тап розгортає.
   const collapsedKeys = useMemo(() => {
-    const s = new Set();
+    const s = new Set<string>();
     for (const g of groupedByDate) {
       if (!isDayExpanded(dayOverrides, g.key, todayDayKey)) s.add(g.key);
     }
@@ -647,7 +648,7 @@ export function Transactions({
         {filtered.length > 0 && (
           <div className="rounded-2xl border border-line/40 overflow-hidden -mx-px">
             <GroupedVirtuoso
-              customScrollParent={scrollParent}
+              customScrollParent={scrollParent ?? undefined}
               groupCounts={groupCounts}
               increaseViewportBy={{ top: 400, bottom: 400 }}
               groupContent={(groupIndex) => {

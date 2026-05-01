@@ -64,7 +64,10 @@ interface AnalyticsProps {
 // Сторінка оперує 1-based (1..12), тож тут нормалізуємо.
 function readTxCache(year: number, month1Based: number) {
   const m0 = month1Based - 1;
-  const cache = readJSON(`finyk_tx_cache_${year}_${m0}`, null);
+  const cache = readJSON<{ txs?: unknown } | null>(
+    `finyk_tx_cache_${year}_${m0}`,
+    null,
+  );
   if (!cache || typeof cache !== "object") return null;
   return Array.isArray(cache.txs) ? cache.txs : null;
 }
