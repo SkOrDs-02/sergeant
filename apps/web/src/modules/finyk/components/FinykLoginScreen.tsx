@@ -208,6 +208,24 @@ export function FinykLoginScreen({
               "transition-[background-color,box-shadow,opacity,transform] duration-200",
               "active:scale-[0.98]",
             )}
+            onClick={onConnect}
+            disabled={connecting || !tokenInput.trim()}
+          >
+            {connecting ? "Підключення…" : "Підключити Monobank"}
+          </Button>
+
+          {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
+              "або" divider row — structurally a delimiter
+              between two bg-line spans, not a heading. */}
+          <div className="my-4 flex items-center gap-3 text-xs text-muted uppercase tracking-wider">
+            <span className="flex-1 h-px bg-line" />
+            або
+            <span className="flex-1 h-px bg-line" />
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full min-h-[48px]"
             onClick={onContinueWithoutBank}
           >
             Почати без банку
@@ -216,24 +234,6 @@ export function FinykLoginScreen({
             Ручні витрати, бюджети та аналітика — без API-токена. Monobank можна
             підключити пізніше.
           </p>
-
-          {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-              "або через API" divider row — structurally a delimiter
-              between two bg-line spans, not a heading. */}
-          <div className="my-4 flex items-center gap-3 text-xs text-muted uppercase tracking-wider">
-            <span className="flex-1 h-px bg-line" />
-            або через API
-            <span className="flex-1 h-px bg-line" />
-          </div>
-          <Button
-            type="button"
-            variant="secondary"
-            className="w-full min-h-[48px]"
-            onClick={onConnect}
-            disabled={connecting || !tokenInput.trim()}
-          >
-            {connecting ? "Підключення…" : "Підключити Monobank"}
-          </Button>
           {typeof onBackToHub === "function" && (
             <Button
               type="button"
