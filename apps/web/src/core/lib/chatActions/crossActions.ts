@@ -6,6 +6,7 @@ import {
   upsertMemoryFact,
   writeMemoryEntries,
 } from "../../profile/memoryBank";
+import { safeReadLS, safeReadStringLS } from "@shared/lib/storage";
 import {
   calcCategorySpent,
   getTxStatAmount,
@@ -131,14 +132,14 @@ export function handleCrossAction(
         );
         parts.push(`Звички: ${done.length}/${activeHabits.length} виконано`);
       }
-      const wRaw = localStorage.getItem("fizruk_workouts_v1");
+      const wParsed = safeReadLS<Workout[] | { workouts?: Workout[] } | null>(
+        "fizruk_workouts_v1",
+        null,
+      );
       let workouts: Workout[] = [];
-      try {
-        const parsed = wRaw ? JSON.parse(wRaw) : null;
-        if (Array.isArray(parsed)) workouts = parsed as Workout[];
-        else if (parsed && Array.isArray(parsed.workouts))
-          workouts = parsed.workouts as Workout[];
-      } catch {}
+      if (Array.isArray(wParsed)) workouts = wParsed;
+      else if (wParsed && Array.isArray(wParsed.workouts))
+        workouts = wParsed.workouts;
       const todayWorkouts = workouts.filter(
         (w) => w.startedAt.startsWith(todayKey) && w.planned && !w.endedAt,
       );
@@ -164,14 +165,14 @@ export function handleCrossAction(
       const weekAgo = new Date(now);
       weekAgo.setDate(weekAgo.getDate() - 7);
       const parts: string[] = ["Тижневий підсумок:"];
-      const wRaw = localStorage.getItem("fizruk_workouts_v1");
+      const wParsed = safeReadLS<Workout[] | { workouts?: Workout[] } | null>(
+        "fizruk_workouts_v1",
+        null,
+      );
       let workouts: Workout[] = [];
-      try {
-        const parsed = wRaw ? JSON.parse(wRaw) : null;
-        if (Array.isArray(parsed)) workouts = parsed as Workout[];
-        else if (parsed && Array.isArray(parsed.workouts))
-          workouts = parsed.workouts as Workout[];
-      } catch {}
+      if (Array.isArray(wParsed)) workouts = wParsed;
+      else if (wParsed && Array.isArray(wParsed.workouts))
+        workouts = wParsed.workouts;
       const weekWorkouts = workouts.filter(
         (w) => w.endedAt && new Date(w.startedAt).getTime() > weekAgo.getTime(),
       );
@@ -637,7 +638,7 @@ export function handleCrossAction(
       const mod = (module || "").toLowerCase().trim();
       const fmt = (format || "text").toLowerCase().trim();
       const exportData = (key: string, label: string) => {
-        const raw = localStorage.getItem(key);
+        const raw = safeReadStringLS(key);
         if (!raw) return `${label}: немає даних.`;
         if (fmt === "json")
           return `${label} (JSON):\n${raw.slice(0, 3000)}${raw.length > 3000 ? "\n\u2026(обрізано)" : ""}`;

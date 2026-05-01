@@ -12,6 +12,7 @@ import { getCategorySpendList } from "@sergeant/finyk-domain/domain/categories";
 import type { TxSplitsLike } from "@sergeant/finyk-domain/lib/transactions";
 import { manualCategoryToCanonicalId } from "@sergeant/finyk-domain/domain/personalization";
 import { Recommendations } from "@sergeant/insights";
+import { safeReadLS } from "@shared/lib/storage";
 
 type FinanceContext = Recommendations.FinanceContext;
 type Transaction = Recommendations.Transaction;
@@ -25,14 +26,7 @@ export type { FinanceContext };
 export const txTimestamp = Recommendations.txTimestamp;
 
 function safeLS<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw == null) return fallback;
-    const parsed = JSON.parse(raw);
-    return parsed == null ? fallback : (parsed as T);
-  } catch {
-    return fallback;
-  }
+  return safeReadLS<T>(key, fallback) ?? fallback;
 }
 
 function startOfCurrentMonth(): Date {

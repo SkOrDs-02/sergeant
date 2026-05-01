@@ -3,6 +3,7 @@ import {
   resolveExpenseCategoryMeta,
   getTxStatAmount,
 } from "../../../modules/finyk/utils";
+import { safeRemoveLS } from "@shared/lib/storage";
 import type {
   BatchCategorizeAction,
   ChangeCategoryAction,
@@ -627,7 +628,7 @@ export function handleFinykAction(
         const y = cur.getFullYear();
         const m0 = cur.getMonth();
         try {
-          localStorage.removeItem(`finyk_tx_cache_${y}_${m0}`);
+          safeRemoveLS(`finyk_tx_cache_${y}_${m0}`);
         } catch {}
         clearedMonths.push(`${y}-${String(m0 + 1).padStart(2, "0")}`);
         cur.setMonth(cur.getMonth() + 1);

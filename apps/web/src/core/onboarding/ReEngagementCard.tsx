@@ -2,31 +2,8 @@ import { useCallback, useEffect } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
-import { markReengagementShown, type KVStore } from "@sergeant/shared";
-
-const localStorageStore: KVStore = {
-  getString: (k) => {
-    try {
-      return localStorage.getItem(k);
-    } catch {
-      return null;
-    }
-  },
-  setString: (k, v) => {
-    try {
-      localStorage.setItem(k, v);
-    } catch {
-      /* noop */
-    }
-  },
-  remove: (k) => {
-    try {
-      localStorage.removeItem(k);
-    } catch {
-      /* noop */
-    }
-  },
-};
+import { markReengagementShown } from "@sergeant/shared";
+import { webKVStore } from "@shared/lib/storage";
 
 export function ReEngagementCard({
   daysInactive,
@@ -38,7 +15,7 @@ export function ReEngagementCard({
   onDismiss: () => void;
 }) {
   useEffect(() => {
-    markReengagementShown(localStorageStore);
+    markReengagementShown(webKVStore);
     trackEvent(ANALYTICS_EVENTS.REENGAGEMENT_SHOWN, { daysInactive });
   }, [daysInactive]);
 

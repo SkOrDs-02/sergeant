@@ -6,8 +6,8 @@
 Аналіз кодової бази `apps/web/src` (434 source файли, 87k рядків).
 
 > **Оновлено 2026-05-01.** Sync з реальним станом коду після кількох wave-ів decomposition:
-> Розділ 2 (localStorage burndown) — TODO-allowlist у `eslint.config.js` скорочено з 41 до **27 файлів**
-> (нова хвиля міграцій у `routine`/`finyk`/`onboarding`).
+> Розділ 2 (localStorage burndown) — TODO-allowlist у `eslint.config.js` скорочено з 41 до **17 файлів**
+> (нові хвилі міграцій у `routine`/`finyk`/`onboarding`/`chatActions`/`insights`/`recommendations`).
 > Розділ 4 (великі файли) — у `apps/web/src` залишилось **22 файли >600 LOC** (раніше 24);
 > декомпозовано `Transactions.tsx`, `HubSearch.tsx`, `Budgets.tsx`, `Overview.tsx`.
 > Розділ 9 (`any` типи) — переоцінено: production тепер містить **7 файлів** із `: any`
@@ -70,10 +70,10 @@ try/catch крашить на quota exceeded, corrupted storage або private b
 - **TODO-список немігрованих файлів** — кожен файл, що ще
   читає/пише напряму, перерахований у `eslint.config.js` явно. Міграція
   файла = видалення рядка зі списку. **На 2026-05-01 TODO-список
-  містить 27 файлів** (попередня хвиля: 46 → 41 → 27 після міграції
-  routine/finyk/onboarding-сайтів).
+  містить 17 файлів** (попередня хвиля: 46 → 41 → 27 → 17 після міграції
+  routine/finyk/onboarding/chatActions/insights/recommendations-сайтів).
   Фактичних production-файлів у `apps/web/src` з прямим `localStorage.*` —
-  **45** (з них ~18 — легітимні wrappers/primitives, 27 — у TODO-списку).
+  **35** (з них ~18 — легітимні wrappers/primitives, 17 — у TODO-списку).
   Тести (`*.test.*`, `__tests__/`) повний opt-out і не лічаться.
 
 **Що це дає:** новий код / нові файли НЕ зможуть додати прямий
