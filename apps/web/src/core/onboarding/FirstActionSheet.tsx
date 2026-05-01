@@ -7,30 +7,7 @@ import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { clearFirstActionPending, getVibePicks } from "./vibePicks";
 import { PresetSheet, getPresetModule } from "./PresetSheet";
 import { getOnboardingGoals } from "@sergeant/shared";
-
-const localStorageStore = {
-  getString: (k: string) => {
-    try {
-      return localStorage.getItem(k);
-    } catch {
-      return null;
-    }
-  },
-  setString: (k: string, v: string) => {
-    try {
-      localStorage.setItem(k, v);
-    } catch {
-      /* noop */
-    }
-  },
-  remove: (k: string) => {
-    try {
-      localStorage.removeItem(k);
-    } catch {
-      /* noop */
-    }
-  },
-};
+import { webKVStore } from "@shared/lib/storage";
 
 /**
  * Per-module "one tap to your first real entry" copy. Tapping a row
@@ -101,7 +78,7 @@ function pickPrimary(picks) {
  * more personal than the generic static copy.
  */
 function getGoalAwareDesc(moduleId: string, fallback: string): string {
-  const goals = getOnboardingGoals(localStorageStore);
+  const goals = getOnboardingGoals(webKVStore);
   if (moduleId === "finyk" && goals.finykBudget) {
     return `Встанови бюджет ${goals.finykBudget.toLocaleString("uk-UA")}₴ — додай першу витрату.`;
   }
