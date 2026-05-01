@@ -1,6 +1,6 @@
 # Railway (API + PostgreSQL) + Vercel (фронт)
 
-> **Last validated:** 2026-04-30 by @Skords-01. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-01 by @devin-ai-integration[bot]. **Next review:** 2026-07-30.
 > **Status:** Active
 
 ## 1. PostgreSQL на Railway
@@ -111,3 +111,91 @@ Error-алерти йдуть з обох Sentry-проєктів (`sergeant-api
 Воркфлоу/маніфест джерела істини — в [`ops/n8n-workflows/`](../../ops/n8n-workflows/);
 ADR — [`docs/adr/0026-n8n-workflow-source-of-truth.md`](../adr/0026-n8n-workflow-source-of-truth.md).
 У git `active: false` навмисно (per ADR-0026 — активація це окрема операція в середовищі).
+
+## 8. Railway → n8n → Telegram (deploy notify)
+
+Railway шле webhook-події про деплої у self-hosted n8n (Railway) → воркфлоу
+`15 — Railway Deployment Notify` → Telegram (`Sergeant_alert_bot`).
+
+Як це склеєно (одноразова операція в Railway UI, не в коді репо):
+
+1. **Railway → відкрий проєкт** (`humorous-eagerness` для `sergeant-api`,
+   `grateful-nurturing` для n8n) → **Settings** → **Webhooks**.
+2. Натисни **Add Webhook**, встав URL:
+   `https://n8n-production-09ac.up.railway.app/webhook/railway-deploy`.
+3. Опційно вибери події (за замовчуванням Railway шле всі deploy-події).
+4. Save → з'явиться рядок з кнопкою **Test Webhook** — натисни, щоб переконатись,
+   що n8n приймає payload. Має прийти exec на 15 з тестовим Telegram-повідомленням.
+5. Повтори те саме для другого проєкту.
+
+Workflow `15` парсить payload Railway формату:
+
+```json
+{
+  "type": "Deployment.deployed",
+  "details": {
+    "status": "SUCCESS",
+    "branch": "...",
+    "commitMessage": "...",
+    "commitHash": "..."
+  },
+  "resource": {
+    "service": { "name": "..." },
+    "environment": { "name": "..." }
+  },
+  "severity": "INFO",
+  "timestamp": "..."
+}
+```
+
+Гілки: `status` ∈ `SUCCESS|DEPLOYED|ACTIVE` → ✅ success, інакше → ❌ failed.
+Telegram-повідомлення містить: service, env, branch, commit hash + msg, duration.
+
+### Як це бачиться в Railway GraphQL API (для довідки)
+
+Railway-вебхуки (Project Settings → Webhooks) у GraphQL — це насправді
+`notificationRule` ресурс з channel-config `{ "type": "WEBHOOK", "url": "<your-url>" }`.
+Перелік правил воркспейсу:
+
+```graphql
+query {
+  notificationRules(workspaceId: "<workspace-id>") {
+    id
+    eventTypes
+    severities
+    projectId
+    channels {
+      id
+      config
+    }
+  }
+}
+```
+
+**Важливе обмеження**: для **створення** правил workspace-level PAT (`Account
+Settings → Tokens → New Token` зі scope = workspace) має достатньо прав, але
+**`notificationRuleDelete`/`notificationRuleUpdate`** з того самого PAT повертають
+`Not Authorized` — Railway навмисно гейтить mutate-операції на dashboard UI.
+
+**Канонічні `eventTypes`** (lowercase, `<object>.<action>`, виявлені через
+`events(projectId: ...)`):
+
+| eventType               | severity   | значення                           |
+| ----------------------- | ---------- | ---------------------------------- |
+| `Deployment.created`    | `INFO`     | створено deploy                    |
+| `Deployment.building`   | `INFO`     | почалась збірка                    |
+| `Deployment.snapshoted` | `INFO`     | snapshoted                         |
+| `Deployment.deploying`  | `INFO`     | деплоїться (контейнер стартує)     |
+| `Deployment.deployed`   | `INFO`     | успішний деплой (status=`SUCCESS`) |
+| `Deployment.failed`     | `WARNING`  | build/deploy впав                  |
+| `Deployment.crashed`    | `CRITICAL` | контейнер впав після старту        |
+| `Deployment.removed`    | `INFO`     | старий деплой знятий               |
+
+`DEPLOY_*` (uppercase, як в legacy webhook payload) — **не** валідні в API.
+
+### Cleanup застарілих правил
+
+Якщо у воркспейсі лишились правила з невірними event-name (`DEPLOY_SUCCEEDED`,
+`DEPLOY_FAILED` тощо), вичистити їх можна **тільки через Railway UI**:
+**Project → Settings → Webhooks → знайти рядок з URL n8n → ⋮ → Delete**.
+Робити це для кожного зайвого webhook-рядка (по проєктах окремо).

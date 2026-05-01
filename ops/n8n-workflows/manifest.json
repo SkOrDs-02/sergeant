@@ -117,7 +117,7 @@
       "riskTier": "P2",
       "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "Railway webhook notifications. Active; webhook path /webhook/railway-deploy. Configure Railway project webhook to POST deploy events here. Add signature/shared-secret if Railway supports it."
+      "notes": "Railway webhook notifications. Active; webhook path /webhook/railway-deploy. Railway-side wiring is per-project: Project Settings → Webhooks → Add URL https://n8n-production-09ac.up.railway.app/webhook/railway-deploy → Save → Test Webhook. Required on humorous-eagerness (sergeant-api) and grateful-nurturing (n8n). See docs/integrations/railway-vercel.md §8 for full procedure incl. event-type reference and cleanup of stale rules."
     },
     "16-posthog-daily-metrics.json": {
       "owner": "growth",
