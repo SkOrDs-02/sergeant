@@ -1,6 +1,6 @@
 # Playbook: Modify or Add an n8n Workflow
 
-> **Last validated:** 2026-04-30 by @Skords-01. **Next review:** 2026-07-29.
+> **Last validated:** 2026-05-01 by @devin-ai-integration[bot]. **Next review:** 2026-07-30.
 > **Status:** Active
 
 **Trigger:** «Додай новий n8n воркфлоу» / «Зміни логіку воркфлоу X» / зміна в `ops/n8n-workflows/` / оновлення manifest.json.
@@ -28,6 +28,10 @@
    - `01–14` — бізнес-логіка (billing, finyk, product)
    - `15–17` — devops / CI інтеграції
    - `18–19` — security / health
+   - `50–59` — SEO snapshots (GSC / ranks / pagespeed / backlinks)
+   - `60–69` — growth & revenue snapshots (funnel / cohorts / revenue / acquisition / feature adoption)
+   - `70–79` — marketing / mentions / social / app-store reviews
+   - `80–89` — email кампанії / events
    - `98–99` — інфраструктурні (error-handler, heartbeat)
 2. Створи JSON файл. Якщо маєш доступ до n8n UI — побудуй там і експортуй:
    ```bash
