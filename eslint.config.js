@@ -442,9 +442,11 @@ export default [
   // These patterns erode type safety and make refactoring dangerous.
   // Test files are exempt (they legitimately need type-level tricks).
   //
-  // The `ignores` list below names every existing call-site as of the
-  // rule's introduction (see `docs/tech-debt/frontend.md` §no-strict-bypass).
-  // Migrate a file → drop it from the list.
+  // Allowlist below now contains only test-file globs — every initial
+  // production call-site listed at rule introduction (see
+  // `docs/tech-debt/frontend.md` §no-strict-bypass) has been migrated.
+  // The rule is fully enforced in production: any new bypass on
+  // `apps/server/src/**` or `apps/web/src/**` will fail CI.
   {
     files: ["apps/server/src/**/*.{js,ts}", "apps/web/src/**/*.{ts,tsx}"],
     ignores: [
@@ -455,18 +457,6 @@ export default [
       "apps/web/src/**/__tests__/**",
       "apps/web/src/**/test/**",
       "apps/web/src/**/*.spec.{ts,tsx}",
-      // ── Existing `as unknown as` call-sites (do not add new ones) ──
-      // Web app
-      "apps/web/src/shared/components/ui/VoiceMicButton.tsx",
-      "apps/web/src/modules/nutrition/hooks/useNutritionRemoteActions.ts",
-      "apps/web/src/modules/finyk/hooks/useFinykPersonalization.ts",
-      "apps/web/src/core/lib/hubChatUtils.ts",
-      "apps/web/src/core/App.tsx",
-      // Server
-      "apps/server/src/modules/chat/chat.ts",
-      "apps/server/src/lib/anthropic.ts",
-      "apps/server/src/lib/bankProxy.ts",
-      "apps/server/src/lib/webpushSend.ts",
     ],
     rules: {
       "sergeant-design/no-strict-bypass": "error",
