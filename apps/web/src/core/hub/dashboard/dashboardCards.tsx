@@ -143,7 +143,7 @@ export function StaggerChild({
   children: ReactNode;
 }) {
   const style: CSSProperties = {
-    animationDelay: `${index * 50}ms`,
+    animationDelay: `${Math.min(index * 30, 150)}ms`,
   };
   return (
     <div className="motion-safe:animate-stagger-in" style={style}>
