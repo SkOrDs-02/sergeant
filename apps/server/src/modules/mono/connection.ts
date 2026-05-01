@@ -317,9 +317,9 @@ export async function syncStateHandler(
 
   const connResult = await query<{
     status: string;
-    webhook_registered_at: string | null;
-    last_event_at: string | null;
-    last_backfill_at: string | null;
+    webhook_registered_at: Date | string | null;
+    last_event_at: Date | string | null;
+    last_backfill_at: Date | string | null;
   }>(
     `SELECT status, webhook_registered_at, last_event_at, last_backfill_at
      FROM mono_connection WHERE user_id = $1`,
@@ -353,8 +353,14 @@ export async function syncStateHandler(
       status: conn.status,
       webhookActive:
         conn.status === "active" && conn.webhook_registered_at != null,
-      lastEventAt: conn.last_event_at,
-      lastBackfillAt: conn.last_backfill_at,
+      lastEventAt:
+        conn.last_event_at instanceof Date
+          ? conn.last_event_at.toISOString()
+          : conn.last_event_at,
+      lastBackfillAt:
+        conn.last_backfill_at instanceof Date
+          ? conn.last_backfill_at.toISOString()
+          : conn.last_backfill_at,
       accountsCount: Number(countResult.rows[0]?.count ?? 0),
     }),
   );
