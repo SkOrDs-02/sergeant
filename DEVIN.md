@@ -53,8 +53,8 @@ pnpm lint:governance-sync --strict # Treat dangling refs as errors (for new PRs 
 1. Read the relevant playbook in `docs/playbooks/` — pick by trigger phrase (e.g. "нова API-функціональність" → `add-api-endpoint.md`; "remove dead code" → `cleanup-dead-code.md`). Decision-tree playbooks are marked 🌳 — start at Q1.
 2. Check [`AGENTS.md` § Hard rules](AGENTS.md#hard-rules-do-not-break) — especially #1 (bigint→number coercion), #2 (RQ key factories), #4 (sequential migrations + two-phase DROP), #5 (commit scope enum), #8 (Tailwind opacity scale), #9 (`-strong` brand fills behind `text-white`), #11 (no hex in className), #12 (module-accent containment), #14 (focus-visible over focus), #15 (read governance + update docs).
 3. Before deleting any file, run `pnpm dead-code:files` (which honours `@scaffolded` markers — Hard Rule #10). Never delete a scaffolded file just because it has zero importers.
-4. New HubChat tool? Needs **3 coordinated edits** — see [`docs/playbooks/add-hubchat-tool.md`](docs/playbooks/add-hubchat-tool.md) and the `sergeant-hubchat-tool` skill.
-5. New migration? Use `pnpm gen migration --name <desc>` — auto-numbers from last migration. See the `sergeant-sql-migrations` skill.
+4. New HubChat tool? Needs **3 coordinated edits** — see [`docs/playbooks/add-hubchat-tool.md`](docs/playbooks/add-hubchat-tool.md) and the `sergeant-hubchat` skill.
+5. New migration? Use `pnpm gen migration --name <desc>` — auto-numbers from last migration. See `sergeant-data-and-migrations`.
 6. Before opening the PR, update docs alongside code (Hard Rule #15): api-client types, design-system docs, playbooks, freshness headers — see the must-update table in `AGENTS.md` § Hard Rule #15.
 
 ## Devin-specific
@@ -63,26 +63,21 @@ pnpm lint:governance-sync --strict # Treat dangling refs as errors (for new PRs 
 
 Use the in-repo SKILL.md library when relevant. Skills auto-load from [`.agents/skills/`](.agents/skills/) at session start.
 
-**Project-specific skills (prefer these first):**
+Start with `sergeant-start-here`, then load one matching specialist skill from [`docs/superpowers/agent-skills-catalog.md`](docs/superpowers/agent-skills-catalog.md).
 
-- `sergeant-design-system` — Tailwind tokens, brand palettes, WCAG-AA rules, module-accent containment (Hard Rules #8, #9, #11, #12, #13, #14)
-- `sergeant-api-patterns` — bigint coercion, api-client sync, RQ key factories (Hard Rules #1, #2, #3)
-- `sergeant-hubchat-tool` — adding/modifying HubChat AI assistant tools
-- `sergeant-sql-migrations` — migration numbering, two-phase DROP (Hard Rule #4)
-- `sergeant-postgres` — PostgreSQL patterns with raw `pg` driver
+**Primary Sergeant skills:**
 
-**Community skills:**
-
-- `better-auth-best-practices` — Better Auth integration guide
-- `vercel-react-best-practices` — React performance (note: Next.js/RSC sections do not apply, Sergeant uses Vite)
-- `vercel-react-native-skills` — React Native / Expo best practices
-- `vercel-composition-patterns` — React composition (note: React 19 section does not apply yet)
-- `ui-ux-pro-max` — UI/UX design intelligence (use alongside `sergeant-design-system` for project tokens)
-- `frontend-design` — distinctive frontend interfaces (use alongside `sergeant-design-system`)
-- `browser-use` — browser automation via CLI
-- `brainstorming` — design process before implementation
-- `find-skills` — discover and install new skills
-- `skill-creator` — create and improve skills
+- `sergeant-feature-delivery`
+- `sergeant-bugfix-and-regression`
+- `sergeant-review-and-merge`
+- `sergeant-web-ui`
+- `sergeant-server-api`
+- `sergeant-data-and-migrations`
+- `sergeant-mobile-expo`
+- `sergeant-hubchat`
+- `sergeant-monorepo-boundaries`
+- `sergeant-deploy-and-observability`
+- `better-auth-best-practices`
 
 ### In-repo playbooks vs Devin-webapp macros
 

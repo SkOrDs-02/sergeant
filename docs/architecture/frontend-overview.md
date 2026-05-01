@@ -57,7 +57,7 @@
 - ESLint + jsx-a11y; кастомний `packages/eslint-plugin-sergeant-design`
 - Веб: Vitest + Playwright (у т.ч. a11y)
 
-## Примітки для редизайну / frontend-design
+## Примітки для редизайну / UI work
 
 Це **не Next.js**, а **Vite SPA + PWA** з модульним Hub і **окремий Expo** клієнт. Візуальна ідентичність зав’язана на **design-tokens + Tailwind** (utility-first). Найбільший ефект від змін токенів/preset і ключових Hub- та модульних layout-компонентів на обох платформах.
 

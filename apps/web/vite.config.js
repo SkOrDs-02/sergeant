@@ -186,7 +186,7 @@ export default defineConfig(({ mode }) => {
               // Ізольований chunk для Sentry, щоб SDK (~30–40 KB gzip) не
               // потрапляв у загальний `vendor`, який шериться між eager-
               // імпортами main bundle. Див. правило 2.3 у
-              // `.agents/skills/vercel-react-best-practices/AGENTS.md`.
+              // `.agents/skills/sergeant-web-ui/SKILL.md`.
               if (id.includes("@sentry")) return "vendor-sentry";
               // Те саме міркування для `web-vitals` — пакет малий (~1 KB
               // gzip), але імпортується через dynamic `import()` після
