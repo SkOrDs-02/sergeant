@@ -27,12 +27,20 @@ import { createApp } from "./app.js";
 import { config } from "./config.js";
 import { pool } from "./db.js";
 import { env } from "./env.js";
+import {
+  startAuthMailWorker,
+  type StartedAuthMailWorker,
+} from "./lib/jobs/authMail.js";
 import { connectRedis, disconnectRedis } from "./lib/redis.js";
 import {
   startMonoEnrichmentWorker,
   type StartedWorker,
 } from "./modules/mono/enrichmentWorker.js";
 import { logger, serializeError } from "./obs/logger.js";
+// Імпорт ініціалізує `registerAuthMailDispatcher` як side-effect, тож worker
+// має кому делегувати job-и. Винесено вище за `startAuthMailWorker`, щоб
+// інакше lazy-import з Better-Auth-callback-у міг race-нути з першим job-ом.
+import "./email/authTransactionalMail.js";
 import {
   startPoolSampler,
   uncaughtExceptionsTotal,
@@ -69,6 +77,11 @@ if (env.MONO_ENRICHMENT_WORKER_ENABLED && env.ANTHROPIC_API_KEY) {
     reason: "ANTHROPIC_API_KEY is not configured",
   });
 }
+
+// BullMQ-worker для durable auth-mail jobs. Якщо `REDIS_URL` не заданий —
+// `startAuthMailWorker()` повертає null, і `enqueueAuthMail()` падає у
+// in-process fallback (як було до цього PR-а). Це збережено для CI / dev.
+const authMailWorker: StartedAuthMailWorker | null = startAuthMailWorker();
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Graceful shutdown
@@ -148,6 +161,22 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
           resolve();
         });
       });
+    }
+
+    // Auth-mail BullMQ worker завершує inflight job-и ДО того, як ми
+    // закриваємо pg-pool — bullmq-worker сам не пише у pg, але якщо у нас
+    // у майбутньому з'являться pg-залежні processor-и, цей порядок
+    // (workers → pool) запобіжить ECONNRESET у середині процесінгу.
+    if (authMailWorker) {
+      try {
+        await authMailWorker.close();
+        logger.info({ msg: "auth_mail_worker_closed" });
+      } catch (err) {
+        logger.warn({
+          msg: "auth_mail_worker_close_error",
+          err: serializeError(err, { includeStack: false }),
+        });
+      }
     }
 
     if (enrichmentWorker) {

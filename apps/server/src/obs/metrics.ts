@@ -425,6 +425,36 @@ export const monoEnrichmentDurationMs = new client.Histogram({
   registers: [register],
 });
 
+// ───────────────────────── Auth-mail jobs (BullMQ) ────────────
+export const authMailJobsEnqueuedTotal = new client.Counter({
+  name: "auth_mail_jobs_enqueued_total",
+  help: "Auth transactional mail enqueue attempts by mode",
+  labelNames: ["mode"], // queued|fallback|enqueue_error
+  registers: [register],
+});
+
+export const authMailJobsProcessedTotal = new client.Counter({
+  name: "auth_mail_jobs_processed_total",
+  help: "Auth transactional mail processor outcomes",
+  labelNames: ["outcome"], // ok|retry|permanent_fail
+  registers: [register],
+});
+
+export const authMailJobDurationMs = new client.Histogram({
+  name: "auth_mail_job_duration_ms",
+  help: "Auth transactional mail per-job duration (ms)",
+  labelNames: ["outcome"], // ok|retry|permanent_fail
+  buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000],
+  registers: [register],
+});
+
+export const authMailQueueDepth = new client.Gauge({
+  name: "auth_mail_queue_depth",
+  help: "BullMQ auth-mail queue depth by status",
+  labelNames: ["status"], // waiting|active|delayed|failed
+  registers: [register],
+});
+
 // ───────────────────────── Helpers ────────────────────────────
 export type StatusClass = "5xx" | "4xx" | "3xx" | "2xx" | "other";
 
