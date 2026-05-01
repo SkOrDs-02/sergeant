@@ -3,12 +3,14 @@
   "nodes": [
     {
       "parameters": {
-        "interval": [
-          {
-            "field": "cronExpression",
-            "expression": "0 9 * * *"
-          }
-        ]
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
       },
       "id": "cron-morning",
       "name": "Cron 09:00 Kyiv",
@@ -18,62 +20,14 @@
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "=https://app.posthog.com/api/projects/{{ $env.POSTHOG_PROJECT_ID }}/insights/trend/",
+        "method": "POST",
+        "url": "={{ $env.POSTHOG_HOST || 'https://eu.i.posthog.com' }}/api/projects/{{ $env.POSTHOG_PROJECT_ID }}/query/",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $env.POSTHOG_PERSONAL_API_KEY }}"
-            }
-          ]
-        },
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "date_from",
-              "value": "=-1d"
-            },
-            {
-              "name": "date_to",
-              "value": "=-1d"
-            },
-            {
-              "name": "events",
-              "value": "[{\"id\":\"$pageview\",\"name\":\"Pageview\"}]"
-            },
-            {
-              "name": "display",
-              "value": "ActionsLineGraph"
-            }
-          ]
-        },
-        "options": {
-          "response": {
-            "response": {
-              "neverError": true
-            }
-          }
-        }
-      },
-      "id": "posthog-trend",
-      "name": "PostHog → trend API",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [460, 300]
-    },
-    {
-      "parameters": {
-        "method": "GET",
-        "url": "=https://app.posthog.com/api/projects/{{ $env.POSTHOG_PROJECT_ID }}/query/",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.POSTHOG_PERSONAL_API_KEY }}"
+              "value": "=Bearer {{ $env.POSTHOG_API_KEY }}"
             },
             {
               "name": "Content-Type",
@@ -81,10 +35,9 @@
             }
           ]
         },
-        "method2": "POST",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "{\n  \"query\": {\n    \"kind\": \"TrendsQuery\",\n    \"series\": [{\"kind\": \"EventsNode\", \"event\": \"$pageview\", \"math\": \"dau\"}],\n    \"dateRange\": {\"date_from\": \"-1d\", \"date_to\": \"-1d\"}\n  }\n}",
+        "jsonBody": "={\n  \"query\": {\n    \"kind\": \"HogQLQuery\",\n    \"query\": \"SELECT count() AS pageviews, uniq(distinct_id) AS dau FROM events WHERE event = '$pageview' AND toDate(timestamp) = today() - 1\"\n  }\n}",
         "options": {
           "response": {
             "response": {
@@ -93,26 +46,26 @@
           }
         }
       },
-      "id": "posthog-dau",
-      "name": "PostHog → DAU query",
+      "id": "posthog-query",
+      "name": "PostHog → HogQL daily",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [460, 460]
+      "position": [460, 300]
     },
     {
       "parameters": {
-        "jsCode": "// Parse both PostHog API responses\nconst trend = $('PostHog → trend API').first()?.json;\nconst dau = $('PostHog → DAU query').first()?.json;\n\n// Extract pageviews from trend\nlet pageviews = 0;\ntry {\n  const result = trend?.result?.[0];\n  pageviews = result?.data?.[result.data.length - 1] ?? trend?.result?.[0]?.count ?? 0;\n} catch {}\n\n// Extract DAU\nlet dauCount = 0;\ntry {\n  dauCount = dau?.results?.[0]?.data?.[0] ?? dau?.result?.[0]?.data?.[0] ?? 0;\n} catch {}\n\nconst yesterday = new Date();\nyesterday.setDate(yesterday.getDate() - 1);\nconst dateStr = yesterday.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' });\n\nreturn [{ json: { pageviews, dauCount, dateStr } }];"
+        "jsCode": "// Parse PostHog HogQL response: { results: [[pageviews, dau]], columns: [...], ... }\n// On auth/config errors fall back gracefully so we still get a Telegram alert.\nconst body = $input.first()?.json ?? {};\n\nlet pageviews = 0;\nlet dau = 0;\nlet errorMsg = '';\n\nconst row = body?.results?.[0];\nif (Array.isArray(row) && row.length >= 2) {\n  pageviews = Number(row[0] ?? 0);\n  dau = Number(row[1] ?? 0);\n} else if (body?.detail || body?.code || body?.type) {\n  errorMsg = `${body.code || body.type || 'error'}: ${body.detail || 'unknown'}`;\n}\n\nconst yesterday = new Date();\nyesterday.setDate(yesterday.getDate() - 1);\nconst dateStr = yesterday.toLocaleDateString('uk-UA', {\n  day: 'numeric',\n  month: 'long',\n  timeZone: 'Europe/Kyiv',\n});\n\nreturn [{ json: { pageviews, dau, dateStr, errorMsg } }];"
       },
       "id": "parse-metrics",
       "name": "Parse PostHog metrics",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [680, 380]
+      "position": [680, 300]
     },
     {
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
-        "text": "=📈 *PostHog Daily — {{ $json.dateStr }}*\n\n👥 DAU: `{{ $json.dauCount }}`\n📱 Pageviews: `{{ $json.pageviews }}`\n\n_[PostHog →](https://app.posthog.com)_",
+        "text": "={{ $json.errorMsg ? `⚠️ *PostHog Daily — ${$json.dateStr}*\n\n_PostHog API error:_ \\`${$json.errorMsg}\\`\n\nПеревірте \\`POSTHOG_API_KEY\\` / \\`POSTHOG_PROJECT_ID\\` / \\`POSTHOG_HOST\\` на n8n Railway.` : `📈 *PostHog Daily — ${$json.dateStr}*\n\n👥 DAU: \\`${$json.dau}\\`\n📱 Pageviews: \\`${$json.pageviews}\\`\n\n_[PostHog →](${$env.POSTHOG_HOST || 'https://eu.i.posthog.com'})_` }}",
         "additionalFields": {
           "parse_mode": "Markdown"
         }
@@ -121,7 +74,7 @@
       "name": "Telegram → #metrics",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [900, 380],
+      "position": [900, 300],
       "credentials": {
         "telegramApi": {
           "id": "ggxeCc1ALZKLuMPV",
@@ -135,30 +88,14 @@
       "main": [
         [
           {
-            "node": "PostHog → trend API",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "PostHog → DAU query",
+            "node": "PostHog → HogQL daily",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "PostHog → trend API": {
-      "main": [
-        [
-          {
-            "node": "Parse PostHog metrics",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "PostHog → DAU query": {
+    "PostHog → HogQL daily": {
       "main": [
         [
           {

@@ -125,11 +125,12 @@
       "riskTier": "P2",
       "requiredEnv": [
         "POSTHOG_PROJECT_ID",
-        "POSTHOG_PERSONAL_API_KEY",
+        "POSTHOG_API_KEY",
+        "POSTHOG_HOST",
         "TELEGRAM_ALERT_CHAT_ID"
       ],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "Daily metrics report."
+      "notes": "Daily 09:00 Kyiv → PostHog HogQL (count pageviews + uniq distinct_id) for yesterday → Telegram. POSTHOG_HOST defaults to https://eu.i.posthog.com when unset; POSTHOG_API_KEY must be a Personal API key (phx_…) with project read access. Until env vars are set on n8n Railway the workflow sends a graceful Telegram alert pointing at the missing config."
     },
     "17-github-pr-stale-alert.json": {
       "owner": "devex",
