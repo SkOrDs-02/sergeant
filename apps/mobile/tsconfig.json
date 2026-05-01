@@ -21,6 +21,8 @@
       "@sergeant/fizruk-domain/*": ["../../packages/fizruk-domain/src/*"],
       "@sergeant/finyk-domain": ["../../packages/finyk-domain/src/index.ts"],
       "@sergeant/finyk-domain/*": ["../../packages/finyk-domain/src/*"],
+      "@sergeant/db-schema": ["../../packages/db-schema/src/index.ts"],
+      "@sergeant/db-schema/*": ["../../packages/db-schema/src/*/index.ts"],
       "@sergeant/design-tokens": ["../../packages/design-tokens/index.d.ts"],
       "@sergeant/design-tokens/*": ["../../packages/design-tokens/*"]
     }
