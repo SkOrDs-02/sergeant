@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@shared/lib/cn";
 import { hapticTap } from "@shared/lib/haptic";
 import { transcribeApi } from "@shared/api";
@@ -432,6 +433,206 @@ export interface VoiceMicButtonProps {
    * у Web Speech-fallback.
    */
   promptHint?: string;
+  /**
+   * Якщо `true` (за замовчуванням), після успішного розпізнавання
+   * показуємо preview-чипі з 3-секундним таймером авто-підтвердження
+   * (à la Gmail Undo Send). Користувач може:
+   *   - тапнути по тексту → застосувати миттєво,
+   *   - натиснути ✕ → скасувати без застосування,
+   *   - не робити нічого → авто-застосувати через 3 секунди.
+   * Це рятує від «голос почув не те» — найгірший сценарій, коли
+   * розпізнаний текст одразу зберігається у форму без шансу на правку.
+   *
+   * Передавайте `false` тільки коли upstream сам показує миттєвий
+   * preview (наприклад, чат, де voice-повідомлення спершу попадає у
+   * draft, а юзер бачить його і може правити).
+   */
+  confirmBeforeCommit?: boolean;
+}
+
+/* -------------------------------------------------------------------------- *
+ *  Confirm chip — 3-сек preview/undo після успішного STT.
+ * -------------------------------------------------------------------------- */
+
+const VOICE_CONFIRM_MS = 3000;
+const CHIP_WIDTH = 288;
+const CHIP_VIEWPORT_MARGIN = 8;
+// Висота чипа динамічна (1–2 рядки тексту), але для розрахунку «вгору vs
+// вниз» нам достатньо консервативної оцінки: один рядок ≈ 56px,
+// два рядки ≈ 72px. Беремо більшу — краще трохи зайнятого простору
+// зверху, ніж чип, який вилазить за нижній край в'юпорта.
+const CHIP_HEIGHT_ESTIMATE = 72;
+
+interface PendingVoiceChipProps {
+  text: string;
+  anchorRect: DOMRect;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+function PendingVoiceChip({
+  text,
+  anchorRect,
+  onConfirm,
+  onCancel,
+}: PendingVoiceChipProps) {
+  const [progress, setProgress] = useState(1);
+  const startedAtRef = useRef<number>(Date.now());
+  const onConfirmRef = useRef(onConfirm);
+  onConfirmRef.current = onConfirm;
+
+  useEffect(() => {
+    startedAtRef.current = Date.now();
+    let raf = 0;
+    const tick = () => {
+      const elapsed = Date.now() - startedAtRef.current;
+      const remaining = Math.max(0, VOICE_CONFIRM_MS - elapsed);
+      setProgress(remaining / VOICE_CONFIRM_MS);
+      if (remaining <= 0) {
+        onConfirmRef.current();
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  // Escape — швидкий вихід без збереження. Особливо важливо на десктопі,
+  // де керування з клавіатури дешевше за тач-цілі.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  // Позиціонування фіксоване відносно в'юпорта: пробуємо знизу від
+  // кнопки; якщо не вліз — піднімаємо вгору. Горизонтально центруємо
+  // по кнопці, але клампимо у в'юпорт.
+  const vw = typeof window !== "undefined" ? window.innerWidth : 0;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 0;
+  const spaceBelow = vh - anchorRect.bottom;
+  const placeAbove = spaceBelow < CHIP_HEIGHT_ESTIMATE + CHIP_VIEWPORT_MARGIN;
+  const top = placeAbove
+    ? Math.max(
+        CHIP_VIEWPORT_MARGIN,
+        anchorRect.top - CHIP_HEIGHT_ESTIMATE - CHIP_VIEWPORT_MARGIN,
+      )
+    : Math.min(
+        vh - CHIP_HEIGHT_ESTIMATE - CHIP_VIEWPORT_MARGIN,
+        anchorRect.bottom + CHIP_VIEWPORT_MARGIN,
+      );
+  const rawLeft = anchorRect.left + anchorRect.width / 2 - CHIP_WIDTH / 2;
+  const left = Math.max(
+    CHIP_VIEWPORT_MARGIN,
+    Math.min(vw - CHIP_WIDTH - CHIP_VIEWPORT_MARGIN, rawLeft),
+  );
+
+  const radius = 10;
+  const circumference = 2 * Math.PI * radius;
+  const secondsLeft = Math.ceil(progress * (VOICE_CONFIRM_MS / 1000));
+
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div
+      role="dialog"
+      aria-live="polite"
+      aria-label="Підтвердження голосового вводу"
+      style={{
+        position: "fixed",
+        top,
+        left,
+        width: CHIP_WIDTH,
+        zIndex: 9999,
+      }}
+      className="rounded-2xl bg-panel/95 backdrop-blur-sm border border-line shadow-xl px-3 py-2 flex items-center gap-2 motion-safe:animate-fade-in"
+    >
+      {/* Countdown ring + remaining seconds.  Ring fills counter-clockwise
+          so the visual "drains" toward zero. */}
+      <div className="relative w-7 h-7 shrink-0" aria-hidden>
+        <svg viewBox="0 0 24 24" className="w-7 h-7 -rotate-90">
+          <circle
+            cx="12"
+            cy="12"
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="text-line"
+          />
+          <circle
+            cx="12"
+            cy="12"
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            className="text-brand"
+            style={{
+              strokeDasharray: circumference,
+              strokeDashoffset: circumference * (1 - progress),
+              transition: "stroke-dashoffset 80ms linear",
+            }}
+          />
+        </svg>
+        <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-text tabular-nums">
+          {secondsLeft}
+        </span>
+      </div>
+
+      {/* Tapping the transcript = "save now". The button is the largest
+          touch target in the chip on purpose — the most likely action is
+          "looks right, just commit it without waiting". */}
+      <button
+        type="button"
+        onClick={() => {
+          hapticTap();
+          onConfirm();
+        }}
+        className="flex-1 min-w-0 text-left text-xs leading-tight text-text hover:text-brand-strong line-clamp-2"
+        title="Зберегти зараз"
+      >
+        {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift */}
+        <span className="block text-[10px] uppercase tracking-wide text-subtle">
+          Голос
+        </span>
+        <span className="block">{text}</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => {
+          hapticTap();
+          onCancel();
+        }}
+        className="shrink-0 w-7 h-7 rounded-full bg-line/30 text-muted hover:text-error hover:bg-error/15 flex items-center justify-center [@media(pointer:coarse)]:min-h-[44px] [@media(pointer:coarse)]:min-w-[44px]"
+        aria-label="Скасувати"
+        title="Скасувати"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>,
+    document.body,
+  );
 }
 
 type Provider = "auto" | "groq" | "webspeech";
@@ -456,20 +657,60 @@ export function VoiceMicButton({
   label,
   disabled = false,
   promptHint,
+  confirmBeforeCommit = true,
 }: VoiceMicButtonProps) {
   // Sticky-fallback на Web Speech, якщо `/api/transcribe` повернув 503.
   // Тримаємо у state, щоб не спамити upstream і не плутати юзера між
   // двома провайдерами в межах однієї сесії.
   const [forceFallback, setForceFallback] = useState(false);
 
+  // `pending` — це останній transcript, що чекає на підтвердження.
+  // Anchor-rect знімаємо разом з ним, бо чип позиціонується ВІДНОСНО
+  // кнопки, але рендериться у portal (фіксоване розташування у в'юпорті
+  // живе своїм життям незалежно від overflow:hidden обгорток форм).
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [pending, setPending] = useState<{
+    text: string;
+    anchorRect: DOMRect;
+  } | null>(null);
+  const onResultRef = useRef(onResult);
+  onResultRef.current = onResult;
+
+  // Інтерсептор: замість миттєвого commit показуємо preview-чипі.
+  // Якщо `confirmBeforeCommit=false` — поведінка стара (миттєвий
+  // commit, як до UX-3), щоб чат і подібні call-сайти лишались
+  // незмінні.
+  const handleTranscript = useCallback(
+    (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      if (!confirmBeforeCommit) {
+        onResultRef.current?.(trimmed);
+        return;
+      }
+      const rect =
+        buttonRef.current?.getBoundingClientRect() ??
+        // Fallback — кнопка ще не змонтована (теоретично неможливо тут,
+        // бо event прилетіти може лише після click). На всякий випадок —
+        // центр в'юпорта.
+        new DOMRect(window.innerWidth / 2, window.innerHeight / 2, 0, 0);
+      setPending({ text: trimmed, anchorRect: rect });
+    },
+    [confirmBeforeCommit],
+  );
+
   const groq = useGroqVoiceInput({
     lang,
     promptHint,
-    onResult,
+    onResult: handleTranscript,
     onError,
     onProviderUnavailable: () => setForceFallback(true),
   });
-  const webspeech = useVoiceInput({ lang, onResult, onError });
+  const webspeech = useVoiceInput({
+    lang,
+    onResult: handleTranscript,
+    onError,
+  });
 
   const configured = resolveConfiguredProvider();
   // Якщо явно вибрано webspeech — ігноруємо Groq повністю.
@@ -481,6 +722,26 @@ export function VoiceMicButton({
     groq.supported;
 
   const active = useGroq ? groq : webspeech;
+
+  const confirmPending = useCallback(() => {
+    setPending((curr) => {
+      if (curr) onResultRef.current?.(curr.text);
+      return null;
+    });
+  }, []);
+  const cancelPending = useCallback(() => {
+    setPending(null);
+  }, []);
+
+  // Якщо компонент анмаунтається з активним pending — мовчки скидаємо
+  // (НЕ комітимо). Інше було б сюрпризом: user закрив форму, а текст
+  // "доставився" по таймеру.
+  useEffect(() => {
+    return () => {
+      setPending(null);
+    };
+  }, []);
+
   if (!active.supported) return null;
 
   const isUploading = useGroq ? groq.uploading : false;
@@ -497,6 +758,13 @@ export function VoiceMicButton({
 
   const handleClick = () => {
     hapticTap();
+    // Натиснули кнопку, поки висить pending — це явний сигнал
+    // "перезапиши". Скасуємо чип і одразу почнемо новий цикл, бо інакше
+    // буде гонитва: timer auto-commit-не старий рядок а рекордер
+    // одночасно почне новий запис.
+    if (pending) {
+      setPending(null);
+    }
     active.toggle();
   };
 
@@ -507,67 +775,78 @@ export function VoiceMicButton({
       : label || "Голосовий ввід";
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={disabled || isUploading}
-      aria-label={ariaLabel}
-      title={ariaLabel}
-      className={cn(
-        "relative flex items-center justify-center rounded-2xl shrink-0 touch-manipulation",
-        "motion-safe:transition-all motion-reduce:transition-none",
-        sizeMap[size] || sizeMap.md,
-        busy
-          ? "bg-error/15 text-error border border-error/30 motion-safe:animate-pulse"
-          : "bg-panelHi text-muted hover:text-text hover:bg-line/40 border border-line",
-        (disabled || isUploading) && "opacity-40 pointer-events-none",
-        className,
+    <>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={handleClick}
+        disabled={disabled || isUploading}
+        aria-label={ariaLabel}
+        title={ariaLabel}
+        className={cn(
+          "relative flex items-center justify-center rounded-2xl shrink-0 touch-manipulation",
+          "motion-safe:transition-all motion-reduce:transition-none",
+          sizeMap[size] || sizeMap.md,
+          busy
+            ? "bg-error/15 text-error border border-error/30 motion-safe:animate-pulse"
+            : "bg-panelHi text-muted hover:text-text hover:bg-line/40 border border-line",
+          (disabled || isUploading) && "opacity-40 pointer-events-none",
+          className,
+        )}
+      >
+        {listening ? (
+          <svg
+            width={iconSize}
+            height={iconSize}
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden
+          >
+            <rect x="6" y="4" width="4" height="16" rx="1" />
+            <rect x="14" y="4" width="4" height="16" rx="1" />
+          </svg>
+        ) : isUploading ? (
+          <svg
+            width={iconSize}
+            height={iconSize}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+            className="motion-safe:animate-spin"
+          >
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+          </svg>
+        ) : (
+          <svg
+            width={iconSize}
+            height={iconSize}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
+          </svg>
+        )}
+      </button>
+      {pending && (
+        <PendingVoiceChip
+          text={pending.text}
+          anchorRect={pending.anchorRect}
+          onConfirm={confirmPending}
+          onCancel={cancelPending}
+        />
       )}
-    >
-      {listening ? (
-        <svg
-          width={iconSize}
-          height={iconSize}
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          aria-hidden
-        >
-          <rect x="6" y="4" width="4" height="16" rx="1" />
-          <rect x="14" y="4" width="4" height="16" rx="1" />
-        </svg>
-      ) : isUploading ? (
-        <svg
-          width={iconSize}
-          height={iconSize}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-          className="motion-safe:animate-spin"
-        >
-          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-        </svg>
-      ) : (
-        <svg
-          width={iconSize}
-          height={iconSize}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-        >
-          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-          <line x1="12" y1="19" x2="12" y2="23" />
-          <line x1="8" y1="23" x2="16" y2="23" />
-        </svg>
-      )}
-    </button>
+    </>
   );
 }

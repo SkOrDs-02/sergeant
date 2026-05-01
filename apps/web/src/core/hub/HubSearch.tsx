@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef, useMemo, startTransition } from "react";
+import { useNavigate } from "react-router-dom";
 import type { ModuleAccent } from "@sergeant/design-tokens";
+import {
+  ASSISTANT_CAPABILITIES,
+  CAPABILITY_MODULE_META,
+  type AssistantCapability,
+} from "@sergeant/shared";
 import { cn } from "@shared/lib/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { EmptyState } from "@shared/components/ui/EmptyState";
@@ -105,13 +111,26 @@ function localDateKey(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/**
+ * `module` is the visual grouping/colour key. Real modules use the
+ * `ModuleAccent` palette; the two pseudo-modules ("settings" and
+ * "assistant") render with their own neutral swatches and route to a
+ * different navigation target (`?tab=settings` / `/assistant`).
+ */
+type SearchSurface = ModuleAccent | "settings" | "assistant";
+
 type Hit = {
   id: string;
-  module: ModuleAccent;
+  module: SearchSurface;
   moduleLabel: string;
   title: string;
   subtitle: string;
   icon: string;
+  /** Where the hit dispatches when activated. */
+  target:
+    | { kind: "module"; moduleId: string }
+    | { kind: "settings"; sectionId?: string }
+    | { kind: "assistant"; capability?: AssistantCapability };
   _score: number;
 };
 
@@ -161,6 +180,7 @@ function searchFinyk(tokens: string[]): Hit[] {
           title: tx.description || tx.comment || "Транзакція",
           subtitle: `${sign}${Math.abs(amount).toLocaleString("uk-UA", { maximumFractionDigits: 2 })} ₴ · ${time > 1e10 ? localDateKey(new Date(time)) : localDateKey(new Date(time * 1000))}`,
           icon: "💳",
+          target: { kind: "module", moduleId: "finyk" },
         },
         tokens,
         20,
@@ -184,6 +204,7 @@ function searchFinyk(tokens: string[]): Hit[] {
           title: s.name || "Підписка",
           subtitle: `Підписка · ${amt ? (amt / 100).toFixed(0) + " ₴" : ""}`,
           icon: "🔄",
+          target: { kind: "module", moduleId: "finyk" },
         },
         tokens,
         25,
@@ -228,6 +249,7 @@ function searchFizruk(tokens: string[]): Hit[] {
             ? ` · ${itemsRaw.length} вправ · ${fullTokensText}`
             : ""),
         icon: "🏋️",
+        target: { kind: "module", moduleId: "fizruk" },
       },
       tokens,
       10,
@@ -251,6 +273,7 @@ function searchFizruk(tokens: string[]): Hit[] {
           (Array.isArray(e.muscles) ? e.muscles : []).join(", ") ||
           "Власна вправа",
         icon: "💪",
+        target: { kind: "module", moduleId: "fizruk" },
       },
       tokens,
       15,
@@ -291,6 +314,7 @@ function searchRoutine(tokens: string[]): Hit[] {
         title,
         subtitle: h.archived ? "Архівовано" : h.recurrence || "daily",
         icon: "✅",
+        target: { kind: "module", moduleId: "routine" },
       },
       tokens,
       10,
@@ -315,6 +339,189 @@ interface NutritionDayLog {
 
 type NutritionLog = Record<string, NutritionDayLog>;
 
+// Settings sections — mirrors the catalogue declared in HubSettingsPage.tsx
+// so a query like "експорт" surfaces "Експорт/імпорт JSON" directly from
+// the global ⌘K palette, instead of forcing the user to first open
+// Settings and then re-query inside its own search field.
+//
+// Keep `keywords` in sync with HubSettingsPage's `sections` table whenever
+// new sections are added there. We deliberately don't import that array —
+// it carries `render: () => <Section/>` closures that would drag a much
+// larger render-time graph into the search modal's chunk.
+const SETTINGS_INDEX: ReadonlyArray<{
+  id: string;
+  title: string;
+  description: string;
+  keywords: string;
+  icon: string;
+}> = [
+  {
+    id: "dashboard",
+    title: "Дашборд",
+    description: "Підказки, щільність, активні модулі",
+    keywords:
+      "дашборд dashboard підказки щільність density вигляд активні модулі порядок упорядкувати reorder hide inactive приховати",
+    icon: "layout-grid",
+  },
+  {
+    id: "general",
+    title: "Загальні",
+    description: "Онбординг, акаунт, синхронізація",
+    keywords:
+      "загальні онбординг onboarding welcome синхронізація акаунт sync cloud",
+    icon: "settings",
+  },
+  {
+    id: "notifications",
+    title: "Нагадування",
+    description: "Push-нагадування і щоденні сповіщення",
+    keywords: "сповіщення нагадування пуш push notifications reminders щоденні",
+    icon: "bell",
+  },
+  {
+    id: "ai",
+    title: "AI-дайджести",
+    description: "Тижневий тренер, insights",
+    keywords:
+      "ai штучний інтелект дайджест digest тижневий тренер coach insights",
+    icon: "sparkles",
+  },
+  {
+    id: "assistant",
+    title: "Можливості асистента",
+    description: "Каталог інструментів, які може запустити AI",
+    keywords:
+      "асистент команди chat help допомога інструменти каталог можливості tools",
+    icon: "sparkles",
+  },
+  {
+    id: "routine",
+    title: "Рутина",
+    description: "Звички, цілі, reset",
+    keywords: "звички рутина habits streak ціль reset",
+    icon: "check-circle",
+  },
+  {
+    id: "fizruk",
+    title: "Фізрук",
+    description: "Тренування, кардіо, вага",
+    keywords: "фізрук тренування кардіо вага workouts gym fitness",
+    icon: "dumbbell",
+  },
+  {
+    id: "finyk",
+    title: "Фінік",
+    description: "Інтеграції банків, бюджет",
+    keywords:
+      "фінанси фінік finyk monobank privatbank token api transactions budget",
+    icon: "wallet",
+  },
+  {
+    id: "nutrition",
+    title: "Харчування",
+    description: "Калорії, макроси, комора",
+    keywords:
+      "харчування їжа nutrition meals food kбжу калорії kcal білки жири вуглеводи вода комора pantry скан штрихкод barcode",
+    icon: "utensils",
+  },
+  {
+    id: "pwa",
+    title: "PWA та офлайн",
+    description: "Service worker, кеш, діагностика",
+    keywords:
+      "pwa офлайн offline service worker sw кеш cache діагностика скинути reset",
+    icon: "wifi-off",
+  },
+  {
+    id: "dataExport",
+    title: "Експорт/імпорт JSON",
+    description: "Резервна копія Hub, перенос даних",
+    keywords:
+      "експорт імпорт export import json резервна копія backup hub дані data перенос",
+    icon: "download",
+  },
+  {
+    id: "experimental",
+    title: "Експериментальні",
+    description: "Lab, beta, debug",
+    keywords: "experimental lab beta debug розробка розробник developer",
+    icon: "flask-conical",
+  },
+];
+
+function searchSettings(tokens: string[]): Hit[] {
+  const results: Hit[] = [];
+  for (const section of SETTINGS_INDEX) {
+    pushScored(
+      results,
+      {
+        id: `settings_${section.id}`,
+        module: "settings",
+        moduleLabel: "Налаштування",
+        title: section.title,
+        // Включаємо keywords у subtitle, щоб scoreMatch могла "побачити"
+        // токен на кшталт `monobank` всередині Finyk-секції без появи
+        // самого слова в видимому описі.
+        subtitle: `${section.description} · ${section.keywords}`,
+        icon: section.icon,
+        target: { kind: "settings", sectionId: section.id },
+      },
+      tokens,
+      8,
+    );
+  }
+  // Прибираємо keywords з видимого subtitle після scoring — інакше
+  // картка перетворюється на заплутану мішанину тегів.
+  return results
+    .map((r) => ({
+      ...r,
+      subtitle:
+        SETTINGS_INDEX.find((s) => `settings_${s.id}` === r.id)?.description ||
+        r.subtitle,
+    }))
+    .sort((a, b) => b._score - a._score)
+    .slice(0, 5);
+}
+
+function searchAssistantTools(tokens: string[]): Hit[] {
+  const results: Hit[] = [];
+  for (const cap of ASSISTANT_CAPABILITIES) {
+    const moduleLabel = CAPABILITY_MODULE_META[cap.module]?.title ?? cap.module;
+    pushScored(
+      results,
+      {
+        id: `assistant_${cap.id}`,
+        module: "assistant",
+        moduleLabel: "AI-можливості",
+        title: cap.label,
+        // Subtitle містить опис + keywords + назву модуля — токени з
+        // `keywords` беруть участь у scoring, але після сортування ми
+        // показуємо тільки опис.
+        subtitle: `${cap.description} · ${moduleLabel} · ${(cap.keywords ?? []).join(" ")} ${cap.examples.join(" ")}`,
+        icon: cap.icon,
+        target: { kind: "assistant", capability: cap },
+      },
+      tokens,
+      8,
+    );
+  }
+  return results
+    .map((r) => {
+      const cap = ASSISTANT_CAPABILITIES.find(
+        (c) => `assistant_${c.id}` === r.id,
+      );
+      const moduleLabel = cap
+        ? (CAPABILITY_MODULE_META[cap.module]?.title ?? cap.module)
+        : "";
+      return {
+        ...r,
+        subtitle: cap ? `${cap.description} · ${moduleLabel}` : r.subtitle,
+      };
+    })
+    .sort((a, b) => b._score - a._score)
+    .slice(0, 5);
+}
+
 function searchNutrition(tokens: string[]): Hit[] {
   const results: Hit[] = [];
   const seen = new Set<string>();
@@ -338,6 +545,7 @@ function searchNutrition(tokens: string[]): Hit[] {
           title: m.name || "Прийом їжі",
           subtitle: `${date} · ${m.macros?.kcal ?? 0} ккал`,
           icon: "🥗",
+          target: { kind: "module", moduleId: "nutrition" },
         },
         tokens,
         10,
@@ -352,11 +560,17 @@ function searchNutrition(tokens: string[]): Hit[] {
 function performSearch(query: string): Hit[] {
   const tokens = tokenize(query);
   if (tokens.length === 0) return [];
+  // Order matters for the rendered groups (see `flat`/`grouped` below).
+  // Module hits surface first because the user is far more likely to be
+  // chasing concrete data; settings + AI capabilities follow as the
+  // "what can I do?" surface.
   return [
     ...searchFinyk(tokens),
     ...searchFizruk(tokens),
     ...searchRoutine(tokens),
     ...searchNutrition(tokens),
+    ...searchSettings(tokens),
+    ...searchAssistantTools(tokens),
   ];
 }
 
@@ -366,11 +580,17 @@ function performSearch(query: string): Hit[] {
 // is the WCAG-AA companion at body sizes; `dark:text-{m}` falls back
 // to the saturated DEFAULT step on dark panels). Equivalent to the
 // Wave 1b token-swap recipe in `docs/design/DARK-MODE-AUDIT.md`.
+//
+// Settings + Assistant pseudo-modules share the neutral panel-tinted
+// swatch so they read as "system" surfaces rather than competing for
+// attention with module-coloured data.
 const MODULE_COLORS: Record<string, string> = {
   finyk: "bg-finyk-soft text-finyk-strong dark:text-finyk",
   fizruk: "bg-fizruk-soft text-fizruk-strong dark:text-fizruk",
   routine: "bg-routine-soft text-routine-strong dark:text-routine",
   nutrition: "bg-nutrition-soft text-nutrition-strong dark:text-nutrition",
+  settings: "bg-panelHi text-muted",
+  assistant: "bg-brand-500/10 text-brand-strong dark:text-brand",
 };
 
 interface HubSearchProps {
@@ -385,6 +605,10 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
   const [recents, setRecents] = useState<string[]>(() => getRecentQueries());
   const inputRef = useRef<HTMLInputElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
+  // HubSearch is rendered inside the BrowserRouter (via HubModals → AppInner),
+  // so it can navigate to the URL-addressable Settings tab and the Assistant
+  // catalogue without plumbing extra callbacks through the modal stack.
+  const navigate = useNavigate();
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -411,9 +635,17 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
   }, [query]);
 
   // Готуємо плоский список для keyboard-nav (↑/↓/Enter працюють по
-  // порядку рендеру, а не по groups-first).
+  // порядку рендеру, а не по groups-first). Settings + Assistant pseudo-
+  // groups render last so the hot-path module hits stay at the top.
   const flat = useMemo(() => {
-    const order = ["finyk", "fizruk", "routine", "nutrition"];
+    const order = [
+      "finyk",
+      "fizruk",
+      "routine",
+      "nutrition",
+      "settings",
+      "assistant",
+    ];
     return order.map((m) => results.filter((r) => r.module === m)).flat();
   }, [results]);
 
@@ -426,8 +658,35 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
   const openHit = (hit: Hit) => {
     hapticTap();
     commitQuery(query);
-    onOpenModule(hit.module);
     onClose();
+    // `target` carries the navigation intent so we don't have to re-derive
+    // it from `hit.module` (which is the visual grouping, not the route):
+    //   - module hits  → existing onOpenModule plumbing
+    //   - settings hit → URL-addressable settings tab (Settings page reads
+    //                    `?tab=settings` via useHubUIState); section deep-
+    //                    linking can be wired in a follow-up once the
+    //                    settings page exposes a section anchor API
+    //   - assistant hit→ the full /assistant catalogue route. We don't
+    //                    auto-fire the chat here (capability.requiresInput
+    //                    handling lives in the catalogue page) so the user
+    //                    keeps a chance to read the description first.
+    switch (hit.target.kind) {
+      case "module":
+        onOpenModule(hit.target.moduleId);
+        break;
+      case "settings": {
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", "settings");
+        navigate({
+          pathname: url.pathname || "/",
+          search: url.search,
+        });
+        break;
+      }
+      case "assistant":
+        navigate("/assistant");
+        break;
+    }
   };
 
   useEffect(() => {
@@ -660,36 +919,41 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
             </div>
             {/* When a module returns exactly 10 hits the list is saturated —
                 there may be more results. Show a link to open the module so
-                the user can browse/filter there instead of refining here. */}
-            {group.items.length >= 10 && (
-              <button
-                type="button"
-                onClick={() => {
-                  hapticTap();
-                  commitQuery(query);
-                  onOpenModule(moduleId);
-                  onClose();
-                }}
-                className="mt-1.5 w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45"
-              >
-                <span>
-                  Показано {group.items.length} — відкрити {group.label}
-                </span>
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
+                the user can browse/filter there instead of refining here.
+                Settings + Assistant pseudo-modules cap at 5 hits and don't
+                expose a "browse all" entry point from this list, so we
+                only render the saturation footer for real modules. */}
+            {group.items.length >= 10 &&
+              moduleId !== "settings" &&
+              moduleId !== "assistant" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    hapticTap();
+                    commitQuery(query);
+                    onOpenModule(moduleId);
+                    onClose();
+                  }}
+                  className="mt-1.5 w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45"
                 >
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </button>
-            )}
+                  <span>
+                    Показано {group.items.length} — відкрити {group.label}
+                  </span>
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
+              )}
           </div>
         ))}
       </div>

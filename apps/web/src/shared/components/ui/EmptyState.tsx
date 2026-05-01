@@ -3,9 +3,19 @@ import type { ModuleAccent } from "@sergeant/design-tokens";
 import { cn } from "@shared/lib/cn";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
+import { ModuleEmptyIllustration } from "./EmptyStateIllustrations";
 
 export interface EmptyStateProps {
   icon?: ReactNode;
+  /**
+   * Larger module-shaped SVG illustration rendered above the title in place
+   * of the small icon-in-rounded-square container. When both `illustration`
+   * and `icon` are provided, `illustration` wins and the icon is dropped —
+   * the two leading visuals serve the same role and stacking them looks
+   * cluttered. Use `icon` for tiny, dense surfaces (compact, inline) and
+   * `illustration` for full-bleed empty states.
+   */
+  illustration?: ReactNode;
   title?: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
@@ -47,6 +57,7 @@ const MODULE_ICON_TINT: Record<
 
 export function EmptyState({
   icon,
+  illustration,
   title,
   description,
   action,
@@ -69,19 +80,31 @@ export function EmptyState({
         className,
       )}
     >
-      {icon && (
+      {illustration ? (
         <div
           className={cn(
-            "flex items-center justify-center rounded-2xl border",
-            accent ? accent.container : "bg-panelHi border-line text-subtle",
-            compact ? "w-10 h-10" : "w-14 h-14",
-            // Staggered icon animation
+            "flex items-center justify-center",
             !disableAnimation &&
               "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-300 motion-safe:delay-75",
           )}
         >
-          {icon}
+          {illustration}
         </div>
+      ) : (
+        icon && (
+          <div
+            className={cn(
+              "flex items-center justify-center rounded-2xl border",
+              accent ? accent.container : "bg-panelHi border-line text-subtle",
+              compact ? "w-10 h-10" : "w-14 h-14",
+              // Staggered icon animation
+              !disableAnimation &&
+                "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-300 motion-safe:delay-75",
+            )}
+          >
+            {icon}
+          </div>
+        )
       )}
       <p
         className={cn(
@@ -248,12 +271,28 @@ export function ModuleEmptyState({
 
   return (
     <EmptyState
+      // Compact variant keeps the small icon-in-rounded-square so it fits
+      // dense surfaces (in-list placeholders, sidebar panels). The default
+      // (full-bleed) variant promotes to a module-shaped SVG illustration
+      // which carries far more personality and recognisability than the
+      // generic lucide glyph the empty state used to render.
       icon={
-        <Icon
-          name={config.icon}
-          size={compact ? 20 : 24}
-          className={config.accent.split(" ")[0]}
-        />
+        compact ? (
+          <Icon
+            name={config.icon}
+            size="lg"
+            className={config.accent.split(" ")[0]}
+          />
+        ) : undefined
+      }
+      illustration={
+        compact ? undefined : (
+          <ModuleEmptyIllustration
+            module={module}
+            size={120}
+            className="text-text"
+          />
+        )
       }
       title={config.title}
       description={config.description}
@@ -261,6 +300,7 @@ export function ModuleEmptyState({
       examplePreview={!compact ? examplePreview : undefined}
       compact={compact}
       className={className}
+      module={module}
       action={
         onAction && (
           <Button

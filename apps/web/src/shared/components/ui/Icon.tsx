@@ -578,12 +578,38 @@ const PATHS: Record<string, ReactNode> = {
 
 export type IconName = keyof typeof PATHS;
 
+/**
+ * Tight 5-step scale (matches the Tailwind text-xs/sm/base/lg/xl ramp so an
+ * icon and its adjacent label visually align without ad-hoc numeric tweaks).
+ * Numeric `size` is still accepted for one-off cases (e.g. dense lists)
+ * and existing callers, but new code should prefer the tokens.
+ */
+export const ICON_SIZES = {
+  xs: 12,
+  sm: 14,
+  md: 16,
+  lg: 20,
+  xl: 24,
+} as const;
+
+export type IconSizeToken = keyof typeof ICON_SIZES;
+export type IconSize = IconSizeToken | number;
+
+function resolveIconSize(size: IconSize): number {
+  return typeof size === "number" ? size : ICON_SIZES[size];
+}
+
 export interface IconProps extends Omit<
   SVGAttributes<SVGSVGElement>,
   "name" | "title"
 > {
   name: IconName | (string & {});
-  size?: number;
+  /**
+   * Pixel size — accepts a numeric value (e.g. `18`) or a scale token
+   * (`xs`/`sm`/`md`/`lg`/`xl`). Defaults to `lg` (20px), which preserves
+   * the previous numeric default of `20`.
+   */
+  size?: IconSize;
   strokeWidth?: number;
   title?: string;
 }
@@ -594,7 +620,7 @@ export interface IconProps extends Omit<
  */
 export function Icon({
   name,
-  size = 20,
+  size = "lg",
   strokeWidth = 2,
   className,
   title,
@@ -607,13 +633,14 @@ export function Icon({
     }
     return null;
   }
+  const px = resolveIconSize(size);
   const labelProps: SVGAttributes<SVGSVGElement> = title
     ? { role: "img", "aria-label": title }
     : { "aria-hidden": true };
   return (
     <svg
-      width={size}
-      height={size}
+      width={px}
+      height={px}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

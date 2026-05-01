@@ -420,6 +420,80 @@ export function HubDashboard({
         </StaggerChild>
       )}
 
+      {/* MODULE CARDS — 2×2 bento grid.
+       * Hoisted above the FTUX-gated Hints/Analytics block so the
+       * primary navigation surface is reachable above-the-fold on
+       * smaller viewports — secondary, data-dependent insights load
+       * underneath rather than burying the modules grid. */}
+      <StaggerChild index={si++}>
+        <section className="space-y-2">
+          <div className="flex items-center justify-between gap-2 px-0.5">
+            <SectionHeading as="h2" size="xs" className="!px-0">
+              Модулі
+            </SectionHeading>
+            <button
+              type="button"
+              onClick={toggleEditMode}
+              aria-pressed={editMode}
+              className={cn(
+                "inline-flex items-center gap-1.5 text-2xs font-medium rounded-lg px-2 py-1 transition-colors",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+                editMode
+                  ? "bg-primary text-bg"
+                  : "text-muted hover:text-text hover:bg-panelHi",
+              )}
+            >
+              <Icon
+                name="grip-vertical"
+                size="xs"
+                strokeWidth={2}
+                aria-hidden
+              />
+              {editMode ? "Готово" : "Налаштувати"}
+            </button>
+          </div>
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={displayOrder}
+              strategy={rectSortingStrategy}
+            >
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {displayOrder.map((id) => (
+                  <SortableCard
+                    key={id}
+                    id={id as ModuleId}
+                    onOpenModule={onOpenModule}
+                    quickAdd={quickAddByModule[id] || null}
+                    inactive={!isActiveModule(activeModules, id)}
+                    editMode={editMode}
+                    adaptiveReason={
+                      id === adaptive.liftedId ? adaptive.reason : null
+                    }
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+
+          {hasInactive && (
+            <button
+              type="button"
+              onClick={toggleHideInactive}
+              className="mx-auto mt-2 block text-2xs text-muted underline-offset-2 hover:text-text hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            >
+              {hideInactive
+                ? "Показати неактивні модулі"
+                : "Приховати неактивні модулі"}
+            </button>
+          )}
+        </section>
+      </StaggerChild>
+
       {/* FTUX-гейт: до першого реального запису всі data-driven блоки
        * приховуємо, бо вони порожні / сигнал «advice без даних».
        * - TodaySummaryStrip — нулі по всіх модулях.
@@ -471,76 +545,6 @@ export function HubDashboard({
           </StaggerChild>
         </>
       )}
-
-      {/* MODULE CARDS — 2×2 bento grid */}
-      <StaggerChild index={si++}>
-        <section className="space-y-2">
-          <div className="flex items-center justify-between gap-2 px-0.5">
-            <SectionHeading as="h2" size="xs" className="!px-0">
-              Модулі
-            </SectionHeading>
-            <button
-              type="button"
-              onClick={toggleEditMode}
-              aria-pressed={editMode}
-              className={cn(
-                "inline-flex items-center gap-1.5 text-2xs font-medium rounded-lg px-2 py-1 transition-colors",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-                editMode
-                  ? "bg-primary text-bg"
-                  : "text-muted hover:text-text hover:bg-panelHi",
-              )}
-            >
-              <Icon
-                name="grip-vertical"
-                size={12}
-                strokeWidth={2}
-                aria-hidden
-              />
-              {editMode ? "Готово" : "Налаштувати"}
-            </button>
-          </div>
-
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={displayOrder}
-              strategy={rectSortingStrategy}
-            >
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {displayOrder.map((id) => (
-                  <SortableCard
-                    key={id}
-                    id={id as ModuleId}
-                    onOpenModule={onOpenModule}
-                    quickAdd={quickAddByModule[id] || null}
-                    inactive={!isActiveModule(activeModules, id)}
-                    editMode={editMode}
-                    adaptiveReason={
-                      id === adaptive.liftedId ? adaptive.reason : null
-                    }
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
-
-          {hasInactive && (
-            <button
-              type="button"
-              onClick={toggleHideInactive}
-              className="mx-auto mt-2 block text-2xs text-muted underline-offset-2 hover:text-text hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-            >
-              {hideInactive
-                ? "Показати неактивні модулі"
-                : "Приховати неактивні модулі"}
-            </button>
-          )}
-        </section>
-      </StaggerChild>
 
       {/* «Аналітика» секція (FTUX-гейт): insights-panel + weekly-digest —
        * обидва data-driven блоки на історії. До першого реального запису

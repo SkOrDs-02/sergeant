@@ -26,6 +26,18 @@ import { TransactionsBatchToolbar } from "./TransactionsBatchToolbar";
 
 const now = new Date();
 
+// Ukrainian 1 / 2-4 / 5+ noun plural for "операція" (operation/transaction).
+// Inline because the only consumers are the batch-undo toasts below — if a
+// third caller appears, promote to `@shared/lib/pluralize`.
+function pluralizeOps(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return "операції";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20))
+    return "операцій";
+  return "операцій";
+}
+
 export function Transactions({
   mono,
   storage,
@@ -94,7 +106,7 @@ export function Transactions({
   const [showHidden, setShowHidden] = useState(false);
   // Batch selection
   const [selectMode, setSelectMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchCatPicker, setBatchCatPicker] = useState(false);
 
   // useCallback — `toggleSelect` передається у кожен рядок вибору.
@@ -156,25 +168,77 @@ export function Transactions({
   // дозволяє безпечно мемоїзувати toolbar у майбутньому.
   const applyBatchCategory = useCallback(
     (catId) => {
-      for (const id of selectedIds) overrideCategory(id, catId);
+      // Snapshot the previous override (or `null` for "default category")
+      // for every selected id so the undo can restore each row to whatever
+      // category it had before the batch — including rows that previously
+      // had no override.
+      const prev: Array<[string, string | null]> = [];
+      for (const id of selectedIds) {
+        prev.push([id, txCategories?.[id] ?? null]);
+      }
+      for (const [id] of prev) overrideCategory(id, catId);
       exitSelectMode();
+      if (prev.length > 0) {
+        showUndoToast(toast, {
+          msg: `Категорію змінено для ${prev.length} ${pluralizeOps(prev.length)}`,
+          onUndo: () => {
+            for (const [id, prevCat] of prev) overrideCategory(id, prevCat);
+          },
+        });
+      }
     },
-    [selectedIds, overrideCategory, exitSelectMode],
+    [selectedIds, overrideCategory, exitSelectMode, txCategories, toast],
   );
 
   const applyBatchHide = useCallback(() => {
+    // Capture which ids were *newly* hidden so the undo doesn't accidentally
+    // un-hide rows the user had already hidden manually before entering
+    // select-mode. `hideTx` is a toggle, so calling it again on the same id
+    // restores visibility.
+    const hiddenNow: string[] = [];
     for (const id of selectedIds) {
-      if (!hiddenTxIds.includes(id)) hideTx(id);
+      if (!hiddenTxIds.includes(id)) {
+        hideTx(id);
+        hiddenNow.push(id);
+      }
     }
     exitSelectMode();
-  }, [selectedIds, hiddenTxIds, hideTx, exitSelectMode]);
+    if (hiddenNow.length > 0) {
+      showUndoToast(toast, {
+        msg: `Приховано ${hiddenNow.length} ${pluralizeOps(hiddenNow.length)}`,
+        onUndo: () => {
+          for (const id of hiddenNow) hideTx(id);
+        },
+      });
+    }
+  }, [selectedIds, hiddenTxIds, hideTx, exitSelectMode, toast]);
 
   const applyBatchExclude = useCallback(() => {
+    // Same toggle/snapshot pattern as applyBatchHide — capture the ids that
+    // were newly excluded and call `toggleExcludeFromStats` again on undo.
+    const excludedNow: string[] = [];
     for (const id of selectedIds) {
-      if (!(excludedStatTxIds || []).includes(id)) toggleExcludeFromStats(id);
+      if (!(excludedStatTxIds || []).includes(id)) {
+        toggleExcludeFromStats(id);
+        excludedNow.push(id);
+      }
     }
     exitSelectMode();
-  }, [selectedIds, excludedStatTxIds, toggleExcludeFromStats, exitSelectMode]);
+    if (excludedNow.length > 0) {
+      showUndoToast(toast, {
+        msg: `Виключено зі статистики: ${excludedNow.length} ${pluralizeOps(excludedNow.length)}`,
+        onUndo: () => {
+          for (const id of excludedNow) toggleExcludeFromStats(id);
+        },
+      });
+    }
+  }, [
+    selectedIds,
+    excludedStatTxIds,
+    toggleExcludeFromStats,
+    exitSelectMode,
+    toast,
+  ]);
   const [selMonth, setSelMonth] = useState(() => ({
     year: now.getFullYear(),
     month: now.getMonth(),
