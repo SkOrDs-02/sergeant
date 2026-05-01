@@ -1,0 +1,5 @@
+# Per-service Railway config for the grafana-alloy scraper.
+# Overrides the repo-root `railway.toml` (which targets apps/server).
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
