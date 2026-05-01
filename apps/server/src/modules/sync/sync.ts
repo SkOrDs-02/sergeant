@@ -382,7 +382,9 @@ export async function syncPushAll(req: Request, res: Response): Promise<void> {
     // Pre-fetch current server state for all valid modules in ONE round-trip.
     // Used for conflict reporting without an extra SELECT per module inside
     // the transaction (avoids N additional queries when all modules conflict).
-    const existingRows = await client.query<ModuleDataUpsertRow & { module: string }>(
+    const existingRows = await client.query<
+      ModuleDataUpsertRow & { module: string }
+    >(
       `SELECT module, server_updated_at, version
        FROM module_data
        WHERE user_id = $1 AND module = ANY($2::text[])`,

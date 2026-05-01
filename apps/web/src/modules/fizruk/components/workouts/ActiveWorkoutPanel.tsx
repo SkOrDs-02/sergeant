@@ -169,8 +169,8 @@ export function ActiveWorkoutPanel({
       );
     }
 
-    const rendered = [];
-    const visitedGroups = new Set();
+    const rendered: React.ReactNode[] = [];
+    const visitedGroups = new Set<string>();
 
     for (const it of items) {
       const group = itemIdToGroup.get(it.id);

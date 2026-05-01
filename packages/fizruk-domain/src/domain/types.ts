@@ -30,6 +30,12 @@ export interface ChecklistItem {
 export interface WorkoutSet {
   weightKg: number;
   reps: number;
+  // Persisted payloads carry extra ad-hoc fields (e.g. `_at` annotations
+  // attached when computing PR/last-top sets). Mirrors the loose shape of
+  // `WorkoutItem`/`Workout` so consumers can structurally narrow without
+  // running into `Index signature for type 'string' is missing` errors
+  // when matching the local `StatsSet` interface in `lib/workoutStats`.
+  [key: string]: unknown;
 }
 
 /** Kind of exercise entry. */
@@ -56,6 +62,13 @@ export interface WorkoutGroup {
   itemIds: string[];
 }
 
+/** Optional self-reported wellbeing snapshot attached to a workout. */
+export interface WorkoutWellbeing {
+  energy?: number | null;
+  mood?: number | null;
+  [key: string]: unknown;
+}
+
 /** A complete workout session. */
 export interface Workout {
   id: string;
@@ -66,6 +79,7 @@ export interface Workout {
   warmup: ChecklistItem[] | null;
   cooldown: ChecklistItem[] | null;
   note: string;
+  wellbeing?: WorkoutWellbeing | null;
   [key: string]: unknown;
 }
 

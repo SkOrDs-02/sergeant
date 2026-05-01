@@ -4,6 +4,9 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 
 const KEY = STORAGE_KEYS.FIZRUK_MEASUREMENTS;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type MeasurementEntry = any;
+
 function uid() {
   return `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -26,7 +29,7 @@ export const MEASURE_FIELDS = [
 ];
 
 export function useMeasurements() {
-  const [entries, setEntries] = useState([]);
+  const [entries, setEntries] = useState<MeasurementEntry[]>([]);
 
   useEffect(() => {
     const parsed = safeReadLS(KEY, []);

@@ -1,3 +1,4 @@
+import type * as React from "react";
 import {
   ModuleHeader,
   ModuleHeaderBackButton,
@@ -150,7 +151,7 @@ export function FizrukHeader({
   // Fizruk settings (backup, reminders, data reset) now live in the
   // Hub-wide Settings screen. The header no longer owns a gear icon,
   // so the right slot is left empty.
-  let left = null;
+  let left: React.ReactNode = null;
   if (showContextualBack) {
     left = (
       <ContextualBackButton

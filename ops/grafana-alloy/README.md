@@ -1,6 +1,6 @@
 # Grafana Alloy — Phase 2 metrics scraper
 
-> **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-01 by @devin-ai-integration[bot]. **Next review:** 2026-08-01.
 > **Status:** Active
 
 Лёгкий scrape-only агент, який ходить по `/metrics` n8n + apps/server і пушить

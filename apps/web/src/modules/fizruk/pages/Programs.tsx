@@ -15,7 +15,7 @@ export function Programs({
   deactivateProgram,
 }) {
   const { exercises } = useExerciseCatalog();
-  const [expandedProgram, setExpandedProgram] = useState(null);
+  const [expandedProgram, setExpandedProgram] = useState<string | null>(null);
 
   const todayDayIndex = (new Date().getDay() + 6) % 7;
 

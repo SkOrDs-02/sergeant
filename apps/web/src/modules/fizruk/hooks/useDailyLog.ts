@@ -4,6 +4,9 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 
 const KEY = STORAGE_KEYS.FIZRUK_DAILY_LOG;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type DailyLogEntry = any;
+
 function uid() {
   return `dl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -21,7 +24,7 @@ function uid() {
  * }
  */
 export function useDailyLog() {
-  const [entries, setEntries] = useState([]);
+  const [entries, setEntries] = useState<DailyLogEntry[]>([]);
 
   useEffect(() => {
     const loaded = safeReadLS(KEY, []);

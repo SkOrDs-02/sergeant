@@ -633,7 +633,9 @@ async function main() {
       if (expired) parts.push(`${expired} expired`);
       if (malformed) parts.push(`${malformed} malformed`);
       if (noIssue) parts.push(`${noIssue} without issue ref (--require-issue)`);
-      console.error(`\n❌ AI-LEGACY violations: ${parts.join(", ")} — see above.`);
+      console.error(
+        `\n❌ AI-LEGACY violations: ${parts.join(", ")} — see above.`,
+      );
       process.exit(1);
     }
     console.log("\n✅ All AI-LEGACY markers are within their expiry window.");

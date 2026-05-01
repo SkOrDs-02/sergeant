@@ -10,6 +10,9 @@ import { Tooltip } from "@shared/components/ui/Tooltip";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/undoToast";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Group = any;
+
 function uid(prefix = "g") {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -26,13 +29,13 @@ export function WorkoutTemplatesSection({
 }) {
   const toast = useToast();
   const [q, setQ] = useState("");
-  const [editingId, setEditingId] = useState(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
-  const [orderIds, setOrderIds] = useState([]);
-  const [groups, setGroups] = useState([]);
+  const [orderIds, setOrderIds] = useState<string[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [groupSelectMode, setGroupSelectMode] = useState(false);
-  const [groupSelected, setGroupSelected] = useState(new Set());
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [groupSelected, setGroupSelected] = useState<Set<string>>(new Set());
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const pickList = useMemo(() => search(q).slice(0, 40), [search, q]);
 
