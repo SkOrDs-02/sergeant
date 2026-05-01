@@ -21,13 +21,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://app.posthog.com/api/projects/{{ $env.POSTHOG_PROJECT_ID }}/query/",
+        "url": "={{ $env.POSTHOG_HOST || 'https://eu.i.posthog.com' }}/api/projects/{{ $env.POSTHOG_PROJECT_ID }}/query/",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $env.POSTHOG_PERSONAL_API_KEY }}"
+              "value": "=Bearer {{ $env.POSTHOG_API_KEY }}"
             },
             {
               "name": "Content-Type",
@@ -54,7 +54,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parse PostHog HogQL response and build funnel rows for /api/internal/growth/funnel.\n// Expected response shape: { results: [[visit, signup, onboard, first_action, paid]], columns: [...] }\nconst response = $input.first().json;\nconst raw = Array.isArray(response?.results) ? response.results[0] ?? [] : [];\nconst [visit, signup, onboard, firstAction, paid] = [0, 1, 2, 3, 4].map(\n  (i) => Number(raw[i]) || 0,\n);\n\n// snapshotDate = вчора у Kyiv-tz (стабільно навколо опівночі).\nconst fmt = new Intl.DateTimeFormat('en-CA', {\n  timeZone: 'Europe/Kyiv',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit',\n});\nconst yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);\nconst snapshotDate = fmt.format(yesterday);\n\nfunction conv(numerator, denominator) {\n  if (!denominator || denominator <= 0) return null;\n  return Math.round((numerator / denominator) * 10000) / 10000;\n}\n\nconst rows = [\n  { step: 'visit', stepOrder: 1, segment: 'all', count: visit, conversionRate: null },\n  { step: 'signup', stepOrder: 2, segment: 'all', count: signup, conversionRate: conv(signup, visit) },\n  { step: 'onboard', stepOrder: 3, segment: 'all', count: onboard, conversionRate: conv(onboard, signup) },\n  { step: 'first_action', stepOrder: 4, segment: 'all', count: firstAction, conversionRate: conv(firstAction, onboard) },\n  { step: 'paid', stepOrder: 5, segment: 'all', count: paid, conversionRate: conv(paid, firstAction) },\n];\n\nreturn [\n  {\n    json: {\n      snapshotDate,\n      rows,\n      summary: { visit, signup, onboard, firstAction, paid },\n    },\n  },\n];"
+        "jsCode": "// Parse PostHog HogQL response and build funnel rows for /api/internal/growth/funnel.\n// Expected response shape: { results: [[visit, signup, onboard, first_action, paid]], columns: [...] }\n// On auth/config errors fall back gracefully so we still get a Telegram alert.\nconst body = $input.first()?.json ?? {};\nlet errorMsg = '';\nlet visit = 0;\nlet signup = 0;\nlet onboard = 0;\nlet firstAction = 0;\nlet paid = 0;\n\nconst row = body?.results?.[0];\nif (Array.isArray(row) && row.length >= 5) {\n  [visit, signup, onboard, firstAction, paid] = [0, 1, 2, 3, 4].map(\n    (i) => Number(row[i]) || 0,\n  );\n} else if (body?.detail || body?.code || body?.type) {\n  errorMsg = `${body.code || body.type || 'error'}: ${body.detail || 'unknown'}`;\n}\n\n// snapshotDate = вчора у Kyiv-tz (стабільно навколо опівночі).\nconst fmt = new Intl.DateTimeFormat('en-CA', {\n  timeZone: 'Europe/Kyiv',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit',\n});\nconst yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);\nconst snapshotDate = fmt.format(yesterday);\n\nfunction conv(numerator, denominator) {\n  if (!denominator || denominator <= 0) return null;\n  return Math.round((numerator / denominator) * 10000) / 10000;\n}\n\nconst rows = [\n  { step: 'visit', stepOrder: 1, segment: 'all', count: visit, conversionRate: null },\n  { step: 'signup', stepOrder: 2, segment: 'all', count: signup, conversionRate: conv(signup, visit) },\n  { step: 'onboard', stepOrder: 3, segment: 'all', count: onboard, conversionRate: conv(onboard, signup) },\n  { step: 'first_action', stepOrder: 4, segment: 'all', count: firstAction, conversionRate: conv(firstAction, onboard) },\n  { step: 'paid', stepOrder: 5, segment: 'all', count: paid, conversionRate: conv(paid, firstAction) },\n];\n\nreturn [\n  {\n    json: {\n      snapshotDate,\n      rows,\n      summary: { visit, signup, onboard, firstAction, paid },\n      errorMsg,\n    },\n  },\n];"
       },
       "id": "build-funnel",
       "name": "Build funnel rows",
@@ -65,7 +65,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.PUBLIC_API_BASE_URL }}/api/internal/growth/funnel",
+        "url": "={{ $env.PUBLIC_API_BASE_URL || 'https://api.invalid.local' }}/api/internal/growth/funnel",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -85,7 +85,8 @@
         "options": {
           "response": {
             "response": {
-              "neverError": true
+              "neverError": true,
+              "fullResponse": true
             }
           }
         }
@@ -94,12 +95,13 @@
       "name": "POST /api/internal/growth/funnel",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [900, 300]
+      "position": [900, 300],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
-        "text": "=📊 *Growth funnel — {{ $('Build funnel rows').item.json.snapshotDate }}*\n\n👀 visit: `{{ $('Build funnel rows').item.json.summary.visit }}`\n📝 signup: `{{ $('Build funnel rows').item.json.summary.signup }}`\n🚀 onboard: `{{ $('Build funnel rows').item.json.summary.onboard }}`\n🎯 first_action: `{{ $('Build funnel rows').item.json.summary.firstAction }}`\n💳 paid: `{{ $('Build funnel rows').item.json.summary.paid }}`",
+        "text": "={{ $('Build funnel rows').item.json.errorMsg ? `⚠️ *Growth funnel — ${$('Build funnel rows').item.json.snapshotDate}*\n\n_PostHog API error:_ \\`${$('Build funnel rows').item.json.errorMsg}\\`\n\nПеревірте \\`POSTHOG_API_KEY\\` / \\`POSTHOG_PROJECT_ID\\` / \\`POSTHOG_HOST\\` на n8n Railway.` : `📊 *Growth funnel — ${$('Build funnel rows').item.json.snapshotDate}*\n\n👀 visit: \\`${$('Build funnel rows').item.json.summary.visit}\\`\n📝 signup: \\`${$('Build funnel rows').item.json.summary.signup}\\`\n🚀 onboard: \\`${$('Build funnel rows').item.json.summary.onboard}\\`\n🎯 first_action: \\`${$('Build funnel rows').item.json.summary.firstAction}\\`\n💳 paid: \\`${$('Build funnel rows').item.json.summary.paid}\\`` }}",
         "additionalFields": {
           "parse_mode": "Markdown"
         }
@@ -179,5 +181,5 @@
       "name": "growth"
     }
   ],
-  "active": false
+  "active": true
 }

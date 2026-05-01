@@ -165,13 +165,14 @@
       "riskTier": "P2",
       "requiredEnv": [
         "POSTHOG_PROJECT_ID",
-        "POSTHOG_PERSONAL_API_KEY",
+        "POSTHOG_API_KEY",
+        "POSTHOG_HOST",
         "PUBLIC_API_BASE_URL",
         "INTERNAL_API_KEY",
         "TELEGRAM_ALERT_CHAT_ID"
       ],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "Daily 02:30 Kyiv → PostHog HogQL count distinct users per funnel step (visit/signup/onboard/first_action/paid) for yesterday → POST /api/internal/growth/funnel (mig 019, growth_funnel_daily) → Telegram summary. Required PostHog events: $pageview, signup_completed, onboarding_completed, first_action_completed, subscription_started — until instrumented, non-visit steps will read 0."
+      "notes": "Daily 02:30 Kyiv → PostHog HogQL count distinct users per funnel step (visit/signup/onboard/first_action/paid) for yesterday → POST /api/internal/growth/funnel (mig 019, growth_funnel_daily) → Telegram summary. POSTHOG_HOST defaults to https://eu.i.posthog.com; POSTHOG_API_KEY must be a Personal API key (phx_…). PUBLIC_API_BASE_URL defaults to https://api.invalid.local so the workflow proceeds gracefully on missing env. POST /api/internal/growth/funnel uses onError=continueRegularOutput so a Telegram alert is always sent. Required PostHog events: $pageview, signup_completed, onboarding_completed, first_action_completed, subscription_started — until instrumented, non-visit steps will read 0."
     },
     "63-growth-acquisition-snapshot.json": {
       "owner": "growth",
