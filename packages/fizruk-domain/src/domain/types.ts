@@ -60,6 +60,17 @@ export interface WorkoutItem {
 export interface WorkoutGroup {
   id: string;
   itemIds: string[];
+  /**
+   * Group flavour — superset (parallel) or circuit (sequential). Optional
+   * because legacy persisted groups may omit it; the UI defaults to
+   * "superset" rendering when absent.
+   */
+  type?: "circuit" | "superset";
+  /**
+   * Shared rest duration (seconds) between rounds of the group. Optional
+   * because legacy persisted groups may omit it; the UI falls back to 60s.
+   */
+  restSec?: number;
 }
 
 /** Optional self-reported wellbeing snapshot attached to a workout. */

@@ -1,7 +1,14 @@
 import { useCallback, useId, useMemo, useState } from "react";
+import type {
+  ChecklistItem,
+  Workout,
+  WorkoutGroup,
+  WorkoutItem,
+} from "@sergeant/fizruk-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { useRestSettings } from "../../hooks/useRestSettings";
+import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import {
   makeDefaultWarmup,
   makeDefaultCooldown,
@@ -16,6 +23,47 @@ import { WarmupCooldownChecklist } from "./WarmupCooldownChecklist";
 import { SupersetBadge } from "./SupersetBadge";
 import { WorkoutItemCard } from "./WorkoutItemCard";
 
+/**
+ * Group flavour for `handleCreateSuperset`. Mirrors the union used by
+ * `WorkoutGroup.type` and `SupersetBadge`.
+ */
+type WorkoutGroupType = "circuit" | "superset";
+
+/** Warm-up vs cool-down checklist key on `Workout`. */
+type WarmupField = "warmup" | "cooldown";
+
+export interface ActiveWorkoutPanelProps {
+  /** Currently focused workout (already started, may be ended). */
+  activeWorkout: Workout | null;
+  /** Pre-formatted duration string (e.g. "42 хв") for the header. */
+  activeDuration: string | null;
+  /**
+   * Map of exerciseId → previous-session snapshot used by `WorkoutItemCard`
+   * to render the "last time" hint. Loosely typed to match the persisted
+   * shape from `useWorkouts`.
+   */
+  lastByExerciseId: Record<string, unknown>;
+  /** Map of muscle id → Ukrainian label for recovery hints. */
+  musclesUk: Record<string, string>;
+  /**
+   * Recovery state by muscle id. Loosely typed because the consumer
+   * (`WorkoutItemCard`) only narrows on `status` / `daysSince` ad-hoc.
+   */
+  recBy: Record<string, unknown>;
+  removeItem: (workoutId: string, itemId: string) => void;
+  updateItem: (
+    workoutId: string,
+    itemId: string,
+    patch: Partial<WorkoutItem>,
+  ) => void;
+  updateWorkout: (id: string, patch: Partial<Workout>) => void;
+  setRestTimer: (state: RestTimerState | null) => void;
+  onFinishClick: () => void;
+  onDeleteWorkout: () => void;
+  /** When the workout is already ended, hide the panel. */
+  onCollapse?: () => void;
+}
+
 export function ActiveWorkoutPanel({
   activeWorkout,
   activeDuration,
@@ -29,32 +77,34 @@ export function ActiveWorkoutPanel({
   onFinishClick,
   onDeleteWorkout,
   onCollapse,
-}) {
+}: ActiveWorkoutPanelProps) {
   const dtFieldsId = useId();
   const workoutStartId = `${dtFieldsId}-started`;
   const workoutEndId = `${dtFieldsId}-ended`;
   const { getDefaultForGroup } = useRestSettings();
   const [groupSelectMode, setGroupSelectMode] = useState(false);
-  const [groupSelected, setGroupSelected] = useState(new Set());
+  const [groupSelected, setGroupSelected] = useState<Set<string>>(
+    () => new Set<string>(),
+  );
   const isReadOnly = Boolean(activeWorkout?.endedAt);
 
-  const groups = useMemo(
+  const groups = useMemo<WorkoutGroup[]>(
     () => activeWorkout?.groups || [],
     [activeWorkout?.groups],
   );
-  const items = useMemo(
+  const items = useMemo<WorkoutItem[]>(
     () => activeWorkout?.items || [],
     [activeWorkout?.items],
   );
   const itemIdToGroup = useMemo(() => {
-    const m = new Map();
+    const m = new Map<string, WorkoutGroup>();
     for (const g of groups) {
       for (const id of g.itemIds || []) m.set(id, g);
     }
     return m;
   }, [groups]);
 
-  const handleToggleGroupSelect = useCallback((itemId) => {
+  const handleToggleGroupSelect = useCallback((itemId: string) => {
     setGroupSelected((prev) => {
       const next = new Set(prev);
       if (next.has(itemId)) next.delete(itemId);
@@ -64,24 +114,31 @@ export function ActiveWorkoutPanel({
   }, []);
 
   const handleCreateSuperset = useCallback(
-    (type) => {
+    (type: WorkoutGroupType) => {
       if (!activeWorkout) return;
       if (groupSelected.size < 2 || groupSelected.size > 3) return;
       const itemIds = [...groupSelected];
-      const newGroup = { id: uid("g"), type, itemIds, restSec: 60 };
-      const newGroups = [
-        ...groups.filter((g) => !g.itemIds.some((id) => groupSelected.has(id))),
+      const newGroup: WorkoutGroup = {
+        id: uid("g"),
+        type,
+        itemIds,
+        restSec: 60,
+      };
+      const newGroups: WorkoutGroup[] = [
+        ...groups.filter(
+          (g) => !g.itemIds.some((id: string) => groupSelected.has(id)),
+        ),
         newGroup,
       ];
       updateWorkout(activeWorkout.id, { groups: newGroups });
-      setGroupSelected(new Set());
+      setGroupSelected(new Set<string>());
       setGroupSelectMode(false);
     },
     [activeWorkout, groupSelected, groups, updateWorkout],
   );
 
   const handleRemoveGroup = useCallback(
-    (groupId) => {
+    (groupId: string) => {
       if (!activeWorkout) return;
       updateWorkout(activeWorkout.id, {
         groups: groups.filter((g) => g.id !== groupId),
@@ -91,7 +148,7 @@ export function ActiveWorkoutPanel({
   );
 
   const handleGroupRestSec = useCallback(
-    (groupId, sec) => {
+    (groupId: string, sec: number) => {
       if (!activeWorkout) return;
       updateWorkout(activeWorkout.id, {
         groups: groups.map((g) =>
@@ -103,10 +160,10 @@ export function ActiveWorkoutPanel({
   );
 
   const handleWarmupToggle = useCallback(
-    (field, itemId) => {
+    (field: WarmupField, itemId: string) => {
       if (!activeWorkout) return;
-      const arr = (activeWorkout[field] || []).map((x) =>
-        x.id === itemId ? { ...x, done: !x.done } : x,
+      const arr: ChecklistItem[] = (activeWorkout[field] || []).map(
+        (x: ChecklistItem) => (x.id === itemId ? { ...x, done: !x.done } : x),
       );
       updateWorkout(activeWorkout.id, { [field]: arr });
     },
@@ -124,7 +181,7 @@ export function ActiveWorkoutPanel({
   }, [activeWorkout, updateWorkout]);
 
   const renderItem = useCallback(
-    (it) => (
+    (it: WorkoutItem) => (
       <WorkoutItemCard
         key={it.id}
         it={it}
@@ -181,10 +238,12 @@ export function ActiveWorkoutPanel({
       if (visitedGroups.has(group.id)) continue;
       visitedGroups.add(group.id);
 
-      const groupItems = items.filter((x) =>
+      const groupItems = items.filter((x: WorkoutItem) =>
         (group.itemIds || []).includes(x.id),
       );
-      const qOpts = [60, 90, 120, 180].filter((s) => s !== group.restSec);
+      const qOpts = [60, 90, 120, 180].filter(
+        (s: number) => s !== group.restSec,
+      );
 
       rendered.push(
         <div
@@ -192,7 +251,7 @@ export function ActiveWorkoutPanel({
           className="rounded-2xl border-2 border-success/40 bg-success/5 p-2 space-y-2"
         >
           <div className="flex items-center justify-between gap-2 px-1">
-            <SupersetBadge type={group.type} />
+            <SupersetBadge type={group.type ?? "superset"} />
             <div className="flex items-center gap-1.5">
               <span className="text-2xs text-subtle">
                 {groupItems.length} вправи разом
@@ -207,7 +266,7 @@ export function ActiveWorkoutPanel({
               </button>
             </div>
           </div>
-          {groupItems.map((gIt) => renderItem(gIt))}
+          {groupItems.map((gIt: WorkoutItem) => renderItem(gIt))}
           {!activeWorkout?.endedAt && (
             <div className="flex flex-wrap items-center gap-2 px-1 pt-1 border-t border-success/20">
               <SectionHeading as="span" size="xs" className="w-full">
@@ -215,7 +274,7 @@ export function ActiveWorkoutPanel({
               </SectionHeading>
               <button
                 type="button"
-                className="min-h-[40px] px-3 rounded-xl border-2 border-success bg-success/10 text-sm font-semibold text-success hover:bg-success/20 transition-colors"
+                className="min-h-[40px] px-3 rounded-xl border-2 border-success bg-success/10 text-style-label text-success hover:bg-success/20 transition-colors"
                 onClick={() =>
                   setRestTimer({
                     remaining: group.restSec || 60,
@@ -362,7 +421,7 @@ export function ActiveWorkoutPanel({
         <WarmupCooldownChecklist
           title="Розминка"
           items={activeWorkout.warmup}
-          onToggle={(id) => handleWarmupToggle("warmup", id)}
+          onToggle={(id: string) => handleWarmupToggle("warmup", id)}
           onInit={handleInitWarmup}
           color={{ border: "border-orange-400/40", text: "text-orange-500" }}
         />
@@ -423,7 +482,7 @@ export function ActiveWorkoutPanel({
         <WarmupCooldownChecklist
           title="Заминка / розтяжка"
           items={activeWorkout.cooldown}
-          onToggle={(id) => handleWarmupToggle("cooldown", id)}
+          onToggle={(id: string) => handleWarmupToggle("cooldown", id)}
           onInit={handleInitCooldown}
           color={{ border: "border-blue-400/40", text: "text-blue-500" }}
         />
