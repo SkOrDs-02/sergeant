@@ -29,7 +29,104 @@ const FIZRUK_WORKOUTS_KEY = "fizruk_workouts_v1";
 const NUTRITION_LOG_KEY = "nutrition_log_v1";
 const NUTRITION_LOG_EVENT = "nutrition-log-storage";
 
-function dispatch(eventName) {
+export type FinykPreset = {
+  description: string;
+  amount: number;
+  category: string;
+};
+
+export type RoutinePreset = {
+  name: string;
+  emoji?: string;
+};
+
+export type FizrukPreset = {
+  name: string;
+  durationMin: number;
+};
+
+export type NutritionPreset = {
+  name: string;
+  kcal: number;
+  mealType?: string;
+};
+
+type RoutineHabit = {
+  id: string;
+  demo: boolean;
+  name: string;
+  emoji: string;
+  tagIds: string[];
+  categoryId: string | null;
+  createdAt: string;
+  archived: boolean;
+  recurrence: string;
+  startDate: string;
+  endDate: string | null;
+  timeOfDay: string;
+  reminderTimes: string[];
+  weekdays: number[];
+};
+
+type RoutinePrefs = {
+  showFizrukInCalendar: boolean;
+  showFinykSubscriptionsInCalendar: boolean;
+  routineRemindersEnabled: boolean;
+};
+
+type RoutineState = {
+  schemaVersion?: number;
+  prefs?: RoutinePrefs;
+  tags?: unknown[];
+  categories?: unknown[];
+  habits?: RoutineHabit[];
+  completions?: Record<string, unknown>;
+  pushupsByDate?: Record<string, unknown>;
+  habitOrder?: string[];
+  completionNotes?: Record<string, unknown>;
+};
+
+type FizrukWorkout = {
+  id: string;
+  demo: boolean;
+  name: string;
+  startedAt: string;
+  finishedAt: string;
+  durationSec: number;
+  exercises: unknown[];
+};
+
+type FizrukWorkoutsState = {
+  schemaVersion?: number;
+  workouts?: FizrukWorkout[];
+};
+
+type NutritionMeal = {
+  id: string;
+  demo: boolean;
+  name: string;
+  time: string;
+  mealType: string;
+  label: string;
+  macros: {
+    kcal: number;
+    protein_g: number;
+    fat_g: number;
+    carbs_g: number;
+  };
+  source: string;
+  macroSource: string;
+  amount_g: number | null;
+  foodId: string | null;
+};
+
+type NutritionDay = {
+  meals?: NutritionMeal[];
+};
+
+type NutritionLogState = Record<string, NutritionDay>;
+
+function dispatch(eventName: string) {
   try {
     window.dispatchEvent(new CustomEvent(eventName));
   } catch {
@@ -37,7 +134,7 @@ function dispatch(eventName) {
   }
 }
 
-function uid(prefix) {
+function uid(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
@@ -50,7 +147,7 @@ function toLocalISODate(d = new Date()) {
 
 // ─── Finyk ───────────────────────────────────────────────────────────────
 
-function applyFinykPreset(preset) {
+function applyFinykPreset(preset: FinykPreset) {
   const existing = safeReadLS(FINYK_MANUAL_EXPENSES_KEY, []);
   const list = Array.isArray(existing) ? existing : [];
   const entry = {
@@ -71,10 +168,10 @@ function applyFinykPreset(preset) {
 
 // ─── Routine ─────────────────────────────────────────────────────────────
 
-function applyRoutinePreset(preset) {
-  const state = safeReadLS(ROUTINE_STATE_KEY, null);
+function applyRoutinePreset(preset: RoutinePreset) {
+  const state = safeReadLS<RoutineState>(ROUTINE_STATE_KEY, null);
   const today = toLocalISODate();
-  const habit = {
+  const habit: RoutineHabit = {
     id: uid("hab"),
     // Explicit false — `hasNonDemoItem` flags anything without `demo:true`
     // as real, but being explicit keeps `routineBackup` round-trips safe.
@@ -93,7 +190,7 @@ function applyRoutinePreset(preset) {
     weekdays: [0, 1, 2, 3, 4, 5, 6],
   };
 
-  const base =
+  const base: RoutineState =
     state && typeof state === "object" && !Array.isArray(state) ? state : {};
   const nextHabits = Array.isArray(base.habits)
     ? [...base.habits, habit]
@@ -122,16 +219,19 @@ function applyRoutinePreset(preset) {
 
 // ─── Fizruk ──────────────────────────────────────────────────────────────
 
-function applyFizrukPreset(preset) {
-  const existing = safeReadLS(FIZRUK_WORKOUTS_KEY, null);
-  const existingList = Array.isArray(existing)
+function applyFizrukPreset(preset: FizrukPreset) {
+  const existing = safeReadLS<FizrukWorkoutsState | FizrukWorkout[]>(
+    FIZRUK_WORKOUTS_KEY,
+    null,
+  );
+  const existingList: FizrukWorkout[] = Array.isArray(existing)
     ? existing
     : existing && Array.isArray(existing.workouts)
       ? existing.workouts
       : [];
   const now = new Date();
   const startedAt = new Date(now.getTime() - preset.durationMin * 60000);
-  const workout = {
+  const workout: FizrukWorkout = {
     id: uid("wo"),
     demo: false,
     name: preset.name,
@@ -148,18 +248,18 @@ function applyFizrukPreset(preset) {
 
 // ─── Nutrition ───────────────────────────────────────────────────────────
 
-function applyNutritionPreset(preset) {
-  const existing = safeReadLS(NUTRITION_LOG_KEY, null);
-  const base =
+function applyNutritionPreset(preset: NutritionPreset) {
+  const existing = safeReadLS<NutritionLogState>(NUTRITION_LOG_KEY, null);
+  const base: NutritionLogState =
     existing && typeof existing === "object" && !Array.isArray(existing)
       ? { ...existing }
       : {};
   const today = toLocalISODate();
-  const day =
+  const day: NutritionDay =
     base[today] && typeof base[today] === "object"
       ? { ...base[today] }
       : { meals: [] };
-  const meals = Array.isArray(day.meals) ? [...day.meals] : [];
+  const meals: NutritionMeal[] = Array.isArray(day.meals) ? [...day.meals] : [];
   const kcal = preset.kcal;
   meals.push({
     id: uid("meal"),
@@ -185,27 +285,32 @@ function applyNutritionPreset(preset) {
   dispatch(NUTRITION_LOG_EVENT);
 }
 
+export type ModuleId = "routine" | "finyk" | "nutrition" | "fizruk";
+
+export type ModulePreset =
+  | RoutinePreset
+  | FinykPreset
+  | NutritionPreset
+  | FizrukPreset;
+
 /**
  * Apply a preset to the matching module storage. The module id decides
  * which writer runs — the caller passes only preset fields relevant to
  * its module.
- *
- * @param {"routine" | "finyk" | "nutrition" | "fizruk"} moduleId
- * @param {object} preset
  */
-export function applyPreset(moduleId, preset) {
+export function applyPreset(moduleId: ModuleId, preset: ModulePreset) {
   switch (moduleId) {
     case "routine":
-      applyRoutinePreset(preset);
+      applyRoutinePreset(preset as RoutinePreset);
       return;
     case "finyk":
-      applyFinykPreset(preset);
+      applyFinykPreset(preset as FinykPreset);
       return;
     case "nutrition":
-      applyNutritionPreset(preset);
+      applyNutritionPreset(preset as NutritionPreset);
       return;
     case "fizruk":
-      applyFizrukPreset(preset);
+      applyFizrukPreset(preset as FizrukPreset);
       return;
     default:
       /* noop */
