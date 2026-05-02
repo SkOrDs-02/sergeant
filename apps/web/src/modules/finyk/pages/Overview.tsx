@@ -20,6 +20,7 @@ import {
 } from "@sergeant/finyk-domain/domain/budget";
 import { filterStatTransactions } from "@sergeant/finyk-domain/domain/transactions";
 import { Skeleton } from "@shared/components/ui/Skeleton";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage";
 import { THEME_HEX } from "@shared/lib/themeHex";
 import { SyncStatusBadge } from "../components/SyncStatusBadge";
 
@@ -154,13 +155,9 @@ export function Overview({ mono, storage, onNavigate, showBalance = true }) {
   // sees the Overview with any real data (manual expense or bank tx).
   // Dismissing it (✕ or CTA) sets the flag so we never show it again.
   const hasAnyData = manualExpenses.length > 0 || realTx.length > 0;
-  const [showFirstInsight, setShowFirstInsight] = useState(() => {
-    try {
-      return !localStorage.getItem("finyk_first_insight_seen_v1");
-    } catch {
-      return false;
-    }
-  });
+  const [showFirstInsight, setShowFirstInsight] = useState(
+    () => safeReadStringLS("finyk_first_insight_seen_v1", null) === null,
+  );
   // Ref guard — `manualExpenses.length` is in the dep array (to satisfy
   // exhaustive-deps and to initially trigger once data lands), but we only
   // ever want to fire the event on the *first* time the banner becomes
@@ -171,11 +168,10 @@ export function Overview({ mono, storage, onNavigate, showBalance = true }) {
     if (insightFiredRef.current) return;
     if (!showFirstInsight || !hasAnyData) return;
     insightFiredRef.current = true;
-    try {
-      localStorage.setItem("finyk_first_insight_seen_v1", "1");
-    } catch {
-      /* noop */
-    }
+    // `safeWriteLS` keeps raw strings as-is (no JSON.stringify), so the
+    // stored byte-for-byte value matches the legacy
+    // `localStorage.setItem(_, "1")` call that other read-sites compare.
+    safeWriteLS("finyk_first_insight_seen_v1", "1");
     trackEvent(ANALYTICS_EVENTS.FIRST_INSIGHT_SEEN, {
       source: manualExpenses.length > 0 ? "manual" : "bank",
     });

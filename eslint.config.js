@@ -342,14 +342,10 @@ export default [
       "apps/web/src/core/hub/hubSearchEngine.ts",
       "apps/web/src/core/onboarding/presetApply.ts",
       "apps/web/src/core/insights/useWeeklyDigest.ts",
-      "apps/web/src/modules/finyk/pages/Overview.tsx",
       // useWorkouts.ts: intentional direct-storage access — dispatches
       // FIZRUK_WORKOUTS_STORAGE_ERROR custom event on quota failure so the
       // UI can show a banner. safeWriteLS swallows the error silently.
       "apps/web/src/modules/fizruk/hooks/useWorkouts.ts",
-      "apps/web/src/modules/nutrition/hooks/useNutritionReminders.ts",
-      "apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx",
-      "apps/web/src/modules/routine/hooks/useRoutineReminders.ts",
     ],
     rules: {
       "sergeant-design/no-raw-local-storage": "error",

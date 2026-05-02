@@ -105,6 +105,29 @@ export function safeRemoveLS(key: string): boolean {
 }
 
 /**
+ * Enumerate every key currently in localStorage.
+ *
+ * Returns an empty array on missing/unavailable storage (private-mode
+ * Safari, disabled storage, throwing access). Callers that need to walk
+ * keys to expire stale entries (e.g. day-bucketed notification flags)
+ * should use this instead of touching `localStorage.length` /
+ * `localStorage.key(i)` directly — both throw the same way `getItem`
+ * does, and both trip `sergeant-design/no-raw-local-storage`.
+ */
+export function safeListLSKeys(): string[] {
+  try {
+    const out: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k !== null) out.push(k);
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+/**
  * KVStore adapter for @sergeant/shared functions.
  * Allows shared pure functions to work with web localStorage.
  */
