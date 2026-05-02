@@ -1,3 +1,5 @@
+import { safeReadStringLS } from "@shared/lib/storage";
+
 // Module-level cache for parsed localStorage payloads. HubSearch runs
 // `performSearch` on every debounced keystroke (2+ chars), which means
 // without caching we would call `JSON.parse` on the entire Finyk tx
@@ -35,12 +37,7 @@ export function cachedParse<T>(
 }
 
 export function safeParseLS<T>(key: string, fallback: T): T {
-  let raw: string | null = null;
-  try {
-    raw = localStorage.getItem(key);
-  } catch {
-    return fallback;
-  }
+  const raw = safeReadStringLS(key, null);
   return cachedParse<T>(
     key,
     "json",

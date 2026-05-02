@@ -325,6 +325,11 @@ export default [
       // Files that haven't been migrated yet — TODO: convert each to
       // `safeReadLS` / `useLocalStorageState` / `createModuleStorage`
       // and remove the entry below.
+      "apps/web/src/core/insights/AssistantAdviceCard.tsx",
+      "apps/web/src/core/insights/TodayFocusCard.tsx",
+      "apps/web/src/core/observability/analytics.ts",
+
+      "apps/web/src/core/hints/HintsOrchestrator.tsx",
       // HubSearch was split into apps/web/src/core/hub/search/* — the
       // localStorage parsers (`safeParseLS` + the Fizruk parsers) live
       // in `searchCache.ts` and are called from `searchSources.ts`.

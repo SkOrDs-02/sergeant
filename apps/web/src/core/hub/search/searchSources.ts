@@ -1,4 +1,5 @@
 import { formatMoney, formatMoneyFromKopecks } from "@sergeant/shared";
+import { safeReadStringLS } from "@shared/lib/storage";
 import { tokenize } from "../hubSearchEngine";
 import { searchActions, searchAiHandoff } from "./searchActions";
 import {
@@ -81,7 +82,7 @@ function searchFizruk(tokens: string[]): Hit[] {
   const results: Hit[] = [];
 
   const workouts = parseFizrukWorkouts(
-    localStorage.getItem("fizruk_workouts_v1"),
+    safeReadStringLS("fizruk_workouts_v1", null),
   );
   for (const w of workouts) {
     if (!w || typeof w !== "object") continue;
@@ -120,7 +121,7 @@ function searchFizruk(tokens: string[]): Hit[] {
   }
 
   const exercises = parseFizrukCustomExercises(
-    localStorage.getItem("fizruk_custom_exercises_v1"),
+    safeReadStringLS("fizruk_custom_exercises_v1", null),
   );
   for (const e of exercises) {
     if (!e || typeof e !== "object") continue;
