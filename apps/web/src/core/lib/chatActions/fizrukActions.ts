@@ -1,4 +1,4 @@
-import { safeReadLS } from "@shared/lib/storage";
+import { safeReadLS, safeReadStringLS } from "@shared/lib/storage";
 import { ls, lsSet } from "../hubChatUtils";
 import type {
   PlanWorkoutAction,
@@ -122,7 +122,7 @@ export function handleFizrukAction(
 
       let workouts = readWorkouts();
 
-      const activeId = ls<string | null>("fizruk_active_workout_id_v1", null);
+      const activeId = safeReadStringLS("fizruk_active_workout_id_v1", null);
       const exerciseNameLower = exName.toLowerCase();
 
       let targetIdx = -1;
@@ -211,7 +211,7 @@ export function handleFizrukAction(
           ? String(time).trim().padStart(5, "0")
           : `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
       const startedAt = new Date(`${targetDate}T${timeStr}:00`).toISOString();
-      const existingActiveId = ls<string | null>(
+      const existingActiveId = safeReadStringLS(
         "fizruk_active_workout_id_v1",
         null,
       );
@@ -243,7 +243,7 @@ export function handleFizrukAction(
     }
     case "finish_workout": {
       const { workout_id } = (action as FinishWorkoutAction).input || {};
-      const activeId = ls<string | null>("fizruk_active_workout_id_v1", null);
+      const activeId = safeReadStringLS("fizruk_active_workout_id_v1", null);
       const workouts = readWorkouts();
       const targetId =
         (workout_id && String(workout_id).trim()) ||
