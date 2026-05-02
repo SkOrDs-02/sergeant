@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { FizrukData } from "@sergeant/fizruk-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
@@ -9,11 +10,36 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/undoToast";
+import type { WorkoutTemplate } from "../hooks/useWorkoutTemplates";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Group = any;
+type GroupType = "superset" | "circuit";
 
-function uid(prefix = "g") {
+type Group = {
+  id: string;
+  type: GroupType;
+  exerciseIds: string[];
+  restSec?: number;
+};
+
+type WorkoutTemplatesSectionProps = {
+  exercises: FizrukData.RawExerciseDef[];
+  search: (query: string) => FizrukData.RawExerciseDef[];
+  templates: WorkoutTemplate[];
+  addTemplate: (
+    name: string,
+    exerciseIds: string[],
+    opts?: { groups?: unknown[] },
+  ) => WorkoutTemplate;
+  updateTemplate: (id: string, patch: Partial<WorkoutTemplate>) => void;
+  removeTemplate: (id: string) => void;
+  restoreTemplate?: (
+    template: WorkoutTemplate | null | undefined,
+    atIndex?: number,
+  ) => void;
+  onStartTemplate?: (template: WorkoutTemplate) => void;
+};
+
+function uid(prefix = "g"): string {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
@@ -26,7 +52,7 @@ export function WorkoutTemplatesSection({
   removeTemplate,
   restoreTemplate,
   onStartTemplate,
-}) {
+}: WorkoutTemplatesSectionProps) {
   const toast = useToast();
   const [q, setQ] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -67,11 +93,11 @@ export function WorkoutTemplatesSection({
     setGroupSelected(new Set());
   };
 
-  const startEdit = (t) => {
+  const startEdit = (t: WorkoutTemplate) => {
     setEditingId(t.id);
     setName(t.name || "");
     setOrderIds([...(t.exerciseIds || [])]);
-    setGroups([...(t.groups || [])]);
+    setGroups([...((t.groups as Group[] | undefined) || [])]);
     setQ("");
     setGroupSelectMode(false);
     setGroupSelected(new Set());
@@ -91,13 +117,13 @@ export function WorkoutTemplatesSection({
     setGroups([]);
   };
 
-  const addEx = (ex) => {
+  const addEx = (ex: FizrukData.RawExerciseDef | null | undefined) => {
     if (!ex?.id) return;
     if (orderIds.includes(ex.id)) return;
     setOrderIds((o) => [...o, ex.id]);
   };
 
-  const move = (idx, dir) => {
+  const move = (idx: number, dir: number) => {
     setOrderIds((o) => {
       const j = idx + dir;
       if (j < 0 || j >= o.length) return o;
@@ -107,7 +133,7 @@ export function WorkoutTemplatesSection({
     });
   };
 
-  const removeAt = (idx) => {
+  const removeAt = (idx: number) => {
     const removedId = orderIds[idx];
     setOrderIds((o) => o.filter((_, i) => i !== idx));
     setGroups((gs) =>
@@ -120,7 +146,7 @@ export function WorkoutTemplatesSection({
     );
   };
 
-  const handleToggleGroupSelect = (exId) => {
+  const handleToggleGroupSelect = (exId: string) => {
     setGroupSelected((prev) => {
       const next = new Set(prev);
       if (next.has(exId)) next.delete(exId);
@@ -129,7 +155,7 @@ export function WorkoutTemplatesSection({
     });
   };
 
-  const handleCreateGroup = (type) => {
+  const handleCreateGroup = (type: GroupType) => {
     if (groupSelected.size < 2 || groupSelected.size > 3) return;
     const exerciseIds = [...groupSelected];
     const newGroup = { id: uid("g"), type, exerciseIds, restSec: 60 };
@@ -141,7 +167,7 @@ export function WorkoutTemplatesSection({
     setGroupSelectMode(false);
   };
 
-  const handleRemoveGroup = (groupId) => {
+  const handleRemoveGroup = (groupId: string) => {
     setGroups((gs) => gs.filter((g) => g.id !== groupId));
   };
 
@@ -395,7 +421,7 @@ export function WorkoutTemplatesSection({
               className="px-4 py-3 border-b border-line last:border-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
             >
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold text-text truncate">
+                <div className="text-style-label text-text truncate">
                   {t.name}
                 </div>
                 <div className="text-xs text-subtle">

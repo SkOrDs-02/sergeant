@@ -1,7 +1,33 @@
+import type {
+  FizrukData,
+  recoveryConflictsForExercise as recoveryConflictsForExerciseFn,
+  Workout,
+} from "@sergeant/fizruk-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/cn";
+
+type RecExerciseFn = typeof recoveryConflictsForExerciseFn;
+type RecoveryByMap = Parameters<RecExerciseFn>[1];
+
+type ToastApi = {
+  warning?: (msg: string) => void;
+};
+
+type ExerciseDetailSheetProps = {
+  selected: FizrukData.RawExerciseDef | null | undefined;
+  onClose: () => void;
+  mode: "log" | "catalog";
+  musclesUk: Record<string, string>;
+  rec: { by: RecoveryByMap } | null | undefined;
+  recoveryConflictsForExercise: RecExerciseFn;
+  activeWorkoutId: string | null | undefined;
+  activeWorkout: Workout | null | undefined;
+  addExerciseToActive: (ex: FizrukData.RawExerciseDef) => void;
+  onDeleteRequest: () => void;
+  toast?: ToastApi;
+};
 
 export function ExerciseDetailSheet({
   selected,
@@ -15,14 +41,30 @@ export function ExerciseDetailSheet({
   addExerciseToActive,
   onDeleteRequest,
   toast,
-}) {
+}: ExerciseDetailSheetProps) {
   if (!selected) return null;
 
   const cf = recoveryConflictsForExercise(selected, rec?.by);
   const isCustom =
-    selected._custom ||
+    Boolean(selected._custom) ||
     selected.source === "manual" ||
     String(selected.id || "").startsWith("custom_");
+
+  // Loosely-typed/legacy fields surfaced via the catalog's `[key: string]:
+  // unknown` index signature. Narrow them once at the top so the JSX below
+  // stays clean.
+  const level = typeof selected.level === "string" ? selected.level : null;
+  const images = Array.isArray(selected.images)
+    ? (selected.images as string[]).filter((s) => typeof s === "string")
+    : [];
+  const equipmentLabels: string[] = Array.isArray(selected.equipmentUk)
+    ? (selected.equipmentUk as string[]).filter((eq) => typeof eq === "string")
+    : Array.isArray(selected.equipment)
+      ? selected.equipment.filter((eq): eq is string => typeof eq === "string")
+      : [];
+  const tips: string[] = Array.isArray(selected.tips)
+    ? (selected.tips as string[]).filter((t) => typeof t === "string")
+    : [];
 
   const description = (
     <>
@@ -30,11 +72,10 @@ export function ExerciseDetailSheet({
       <span className="font-semibold text-muted">
         {selected.primaryGroupUk || selected.primaryGroup}
       </span>
-      {selected.level ? (
+      {level ? (
         <>
           {" "}
-          · рівень:{" "}
-          <span className="font-semibold text-muted">{selected.level}</span>
+          · рівень: <span className="font-semibold text-muted">{level}</span>
         </>
       ) : null}
     </>
@@ -66,10 +107,10 @@ export function ExerciseDetailSheet({
         </div>
       )}
 
-      {(selected.images || []).filter(Boolean).length > 0 && (
+      {images.length > 0 && (
         <div className="mb-4 -mx-5 px-5 overflow-x-auto no-scrollbar">
           <div className="flex gap-3">
-            {selected.images.slice(0, 8).map((src) => (
+            {images.slice(0, 8).map((src) => (
               <img
                 key={src}
                 src={src}
@@ -120,7 +161,7 @@ export function ExerciseDetailSheet({
           Обладнання
         </SectionHeading>
         <div className="flex flex-wrap gap-1.5">
-          {(selected.equipmentUk || selected.equipment || []).map((eq) => (
+          {equipmentLabels.map((eq) => (
             <span
               key={eq}
               className="text-xs px-3 py-1.5 rounded-full border border-line bg-bg text-muted font-semibold"
@@ -131,13 +172,13 @@ export function ExerciseDetailSheet({
         </div>
       </div>
 
-      {selected.tips?.length ? (
+      {tips.length ? (
         <div className="mt-4">
           <SectionHeading as="div" size="sm" className="mb-2">
             Підказки
           </SectionHeading>
           <ul className="space-y-1.5">
-            {selected.tips.map((t, i) => (
+            {tips.map((t, i) => (
               <li key={i} className="text-sm text-text leading-relaxed">
                 <span className="text-muted font-bold mr-2">•</span>
                 {t}
@@ -165,11 +206,11 @@ export function ExerciseDetailSheet({
           className="w-full h-12 mt-5 bg-fizruk-strong text-white border-fizruk-strong hover:bg-fizruk-strong/90"
           onClick={() => {
             if (!activeWorkoutId) {
-              toast?.warning("Спочатку натисни «+ Нове» у блоці вище.");
+              toast?.warning?.("Спочатку натисни «+ Нове» у блоці вище.");
               return;
             }
             if (activeWorkout?.endedAt) {
-              toast?.warning(
+              toast?.warning?.(
                 "Це тренування вже завершено. Обери чернетку або створи нове.",
               );
               return;

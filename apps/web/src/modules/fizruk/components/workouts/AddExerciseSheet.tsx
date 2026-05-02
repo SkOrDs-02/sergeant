@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, type Dispatch, type SetStateAction } from "react";
+import type { FizrukData } from "@sergeant/fizruk-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
@@ -18,7 +19,27 @@ const EQUIPMENT_OPTIONS = [
   { id: "other", label: "Інше" },
 ];
 
-function slugify(s) {
+export type AddExerciseForm = {
+  nameUk: string;
+  primaryGroup: string;
+  musclesPrimary: string[];
+  musclesSecondary: string[];
+  equipment: string[];
+  description: string;
+};
+
+type AddExerciseSheetProps = {
+  open: boolean;
+  onClose: () => void;
+  form: AddExerciseForm;
+  setForm: Dispatch<SetStateAction<AddExerciseForm>>;
+  primaryGroupsUk: Record<string, string>;
+  musclesUk: Record<string, string>;
+  musclesByPrimaryGroup: Record<string, string[]>;
+  addExercise: (ex: FizrukData.RawExerciseDef) => void;
+};
+
+function slugify(s: string | null | undefined): string {
   return (s || "")
     .toString()
     .trim()
@@ -28,7 +49,7 @@ function slugify(s) {
     .replace(/^_+|_+$/g, "");
 }
 
-function toggleArr(arr, value) {
+function toggleArr(arr: string[] | undefined, value: string): string[] {
   const a = Array.isArray(arr) ? arr : [];
   return a.includes(value) ? a.filter((x) => x !== value) : [...a, value];
 }
@@ -42,7 +63,7 @@ export function AddExerciseSheet({
   musclesUk,
   musclesByPrimaryGroup,
   addExercise,
-}) {
+}: AddExerciseSheetProps) {
   const kbInsetPx = useVisualKeyboardInset(open);
 
   const suggestedMuscles = useMemo(() => {
@@ -208,7 +229,6 @@ export function AddExerciseSheet({
               muscles: {
                 primary: form.musclesPrimary || [],
                 secondary: form.musclesSecondary || [],
-                stabilizers: [],
               },
               equipment: form.equipment || [],
               equipmentUk: (form.equipment || []).map(

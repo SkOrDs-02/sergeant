@@ -1,10 +1,42 @@
+import type { Dispatch, SetStateAction } from "react";
+import type {
+  FizrukData,
+  recoveryConflictsForExercise as recoveryConflictsForExerciseFn,
+} from "@sergeant/fizruk-domain";
 import { Input } from "@shared/components/ui/Input";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { FizrukEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { cn } from "@shared/lib/cn";
 import { Card } from "@shared/components/ui/Card";
 
-function toggleArr(arr, value) {
+type RecExerciseFn = typeof recoveryConflictsForExerciseFn;
+type RecoveryByMap = Parameters<RecExerciseFn>[1];
+
+export type CatalogGroup = {
+  id: string;
+  label: string;
+  items: FizrukData.RawExerciseDef[];
+  total: number;
+};
+
+type WorkoutCatalogSectionProps = {
+  mode: "log" | "catalog";
+  q: string;
+  setQ: Dispatch<SetStateAction<string>>;
+  equipmentFilter: string[];
+  setEquipmentFilter: Dispatch<SetStateAction<string[]>>;
+  equipmentUk: Record<string, string>;
+  grouped: CatalogGroup[];
+  open: Record<string, boolean>;
+  setOpen: Dispatch<SetStateAction<Record<string, boolean>>>;
+  handleExerciseInListClick: (ex: FizrukData.RawExerciseDef) => void;
+  setSelected: (ex: FizrukData.RawExerciseDef) => void;
+  recoveryConflictsForExercise: RecExerciseFn;
+  rec: { by: RecoveryByMap };
+  musclesUk: Record<string, string>;
+};
+
+function toggleArr(arr: string[] | null | undefined, value: string): string[] {
   const a = Array.isArray(arr) ? arr : [];
   return a.includes(value) ? a.filter((x) => x !== value) : [...a, value];
 }
@@ -24,7 +56,7 @@ export function WorkoutCatalogSection({
   recoveryConflictsForExercise,
   rec,
   musclesUk,
-}) {
+}: WorkoutCatalogSectionProps) {
   return (
     <>
       <div className="relative mb-3">
@@ -156,7 +188,9 @@ export function WorkoutCatalogSection({
                                 </div>
                               </div>
                               <div className="shrink-0 text-xs text-muted tabular-nums">
-                                {ex.rating ? ex.rating.toFixed(1) : ""}
+                                {typeof ex.rating === "number"
+                                  ? ex.rating.toFixed(1)
+                                  : ""}
                               </div>
                             </div>
                           </button>

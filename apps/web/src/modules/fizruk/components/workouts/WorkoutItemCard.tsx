@@ -1,14 +1,44 @@
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
-import { recoveryConflictsForWorkoutItem } from "@sergeant/fizruk-domain";
+import {
+  recoveryConflictsForWorkoutItem,
+  type Workout,
+  type WorkoutGroup,
+  type WorkoutItem,
+  type WorkoutSet,
+} from "@sergeant/fizruk-domain";
 import {
   getRestCategory,
   REST_CATEGORY_LABELS,
 } from "../../hooks/useRestSettings";
+import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseWorkoutSetSpeech } from "@sergeant/shared";
 import { calcCardioMetrics } from "./activeWorkoutLib";
 import { SupersetBadge } from "./SupersetBadge";
+
+type LastByExerciseEntry = WorkoutItem & { _startedAt?: string };
+
+export type WorkoutItemCardProps = {
+  it: WorkoutItem;
+  activeWorkout: Workout;
+  group: WorkoutGroup | null | undefined;
+  groupSelectMode: boolean;
+  isSelected: boolean;
+  isReadOnly: boolean;
+  lastByExerciseId: Record<string, unknown>;
+  musclesUk: Record<string, string>;
+  recBy: Record<string, unknown>;
+  onToggleGroupSelect: (id: string) => void;
+  removeItem: (workoutId: string, itemId: string) => void;
+  updateItem: (
+    workoutId: string,
+    itemId: string,
+    patch: Partial<WorkoutItem>,
+  ) => void;
+  setRestTimer: (state: RestTimerState | null) => void;
+  getDefaultForGroup: (primaryGroup: string) => number;
+};
 
 /**
  * Single editable workout-item tile rendered inside `ActiveWorkoutPanel`.
@@ -39,7 +69,10 @@ export function WorkoutItemCard({
   updateItem,
   setRestTimer,
   getDefaultForGroup,
-}) {
+}: WorkoutItemCardProps) {
+  const last = it.exerciseId
+    ? (lastByExerciseId[it.exerciseId] as LastByExerciseEntry | undefined)
+    : undefined;
   const cardioMetrics =
     it.type === "distance"
       ? calcCardioMetrics(it.distanceM, it.durationSec)
@@ -54,27 +87,26 @@ export function WorkoutItemCard({
     <div
       className={`border rounded-2xl p-3 bg-bg transition-colors ${groupSelectMode && isSelected ? "border-success bg-success/5" : "border-line"}`}
     >
-      {it.exerciseId && lastByExerciseId[it.exerciseId] && (
+      {last && (
         <div className="text-xs text-subtle/70 mb-1">
           Минулого разу{" "}
-          {lastByExerciseId[it.exerciseId]._startedAt
-            ? `(${new Date(lastByExerciseId[it.exerciseId]._startedAt).toLocaleDateString("uk-UA", { month: "short", day: "numeric" })})`
+          {last._startedAt
+            ? `(${new Date(last._startedAt).toLocaleDateString("uk-UA", { month: "short", day: "numeric" })})`
             : ""}
           :{" "}
-          {lastByExerciseId[it.exerciseId].type === "strength"
-            ? (lastByExerciseId[it.exerciseId].sets || [])
-                .map((s) => `${s.weightKg ?? 0}×${s.reps ?? 0}`)
+          {last.type === "strength"
+            ? (last.sets || [])
+                .map((s: WorkoutSet) => `${s.weightKg ?? 0}×${s.reps ?? 0}`)
                 .slice(0, 3)
                 .join(", ")
-            : lastByExerciseId[it.exerciseId].type === "distance"
+            : last.type === "distance"
               ? (() => {
-                  const prev = lastByExerciseId[it.exerciseId];
-                  const m = calcCardioMetrics(prev.distanceM, prev.durationSec);
+                  const m = calcCardioMetrics(last.distanceM, last.durationSec);
                   return m
-                    ? `${prev.distanceM ?? 0}м · ${m.pace}`
-                    : `${prev.distanceM ?? 0}м за ${prev.durationSec ?? 0}с`;
+                    ? `${last.distanceM ?? 0}м · ${m.pace}`
+                    : `${last.distanceM ?? 0}м за ${last.durationSec ?? 0}с`;
                 })()
-              : `${lastByExerciseId[it.exerciseId].durationSec ?? 0}с`}
+              : `${last.durationSec ?? 0}с`}
         </div>
       )}
       <div className="flex items-start justify-between gap-3">
@@ -101,7 +133,7 @@ export function WorkoutItemCard({
             )}
             <button
               type="button"
-              className="text-sm font-semibold text-text truncate text-left hover:underline"
+              className="text-style-label text-text truncate text-left hover:underline"
               onClick={() => {
                 if (it.exerciseId)
                   window.location.hash = `#exercise/${it.exerciseId}`;
@@ -109,7 +141,9 @@ export function WorkoutItemCard({
             >
               {it.nameUk}
             </button>
-            {group && !groupSelectMode && <SupersetBadge type={group.type} />}
+            {group && !groupSelectMode && (
+              <SupersetBadge type={group.type ?? "superset"} />
+            )}
           </div>
           <div className="text-xs text-subtle mt-0.5">
             М{"'"}язи:{" "}
@@ -120,7 +154,10 @@ export function WorkoutItemCard({
             </span>
           </div>
           {(() => {
-            const cf = recoveryConflictsForWorkoutItem(it, recBy);
+            const cf = recoveryConflictsForWorkoutItem(
+              it,
+              recBy as Parameters<typeof recoveryConflictsForWorkoutItem>[1],
+            );
             if (!cf.hasWarning) return null;
             const redL = cf.red.map((x) => x.label).join(", ");
             const yelL = cf.yellow.map((x) => x.label).join(", ");
@@ -324,7 +361,7 @@ export function WorkoutItemCard({
               </div>
               <button
                 type="button"
-                className="min-h-[44px] px-4 rounded-xl border-2 border-success bg-success/10 text-sm font-semibold text-success hover:bg-success/20 transition-colors"
+                className="min-h-[44px] px-4 rounded-xl border-2 border-success bg-success/10 text-style-label text-success hover:bg-success/20 transition-colors"
                 onClick={() =>
                   setRestTimer({ remaining: defSec, total: defSec })
                 }
