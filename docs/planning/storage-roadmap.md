@@ -260,7 +260,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 
 ### Stage 2 — Foundation для SQLite
 
-#### **PR #014 — `feat: add Drizzle ORM as cross-platform schema source of truth`** ✅ IN PROGRESS
+#### **PR #014 — `feat: add Drizzle ORM as cross-platform schema source of truth`** ✅ LANDED — [#1290](https://github.com/Skords-01/Sergeant/pull/1290)
 
 - **Scope.**
   - `packages/db-schema/` — новий package, експортує Drizzle table definitions.
@@ -278,7 +278,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   що Drizzle generates same SQL для існуючої схеми.
 - **Dep.** None.
 
-#### **PR #015 — `feat(web): integrate sqlite-wasm with OPFS-VFS, lazy-loaded`**
+#### **PR #015 — `feat(web): integrate sqlite-wasm with OPFS-VFS, lazy-loaded`** ✅ LANDED — [#1310](https://github.com/Skords-01/Sergeant/pull/1310)
 
 - **Scope.**
   - Додати `@sqlite.org/sqlite-wasm` як dep.
@@ -316,7 +316,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   правил — test заздалегідь.
 - **Dep.** PR #017.
 
-#### **PR #017 — `chore(web): self-host Google Fonts via fontsource`**
+#### **PR #017 — `chore(web): self-host Google Fonts via fontsource`** ✅ LANDED — [#1297](https://github.com/Skords-01/Sergeant/pull/1297)
 
 - **Scope.** Перейти з Google Fonts CDN на `@fontsource/{family}`.
   Service Worker `CacheFirst` правило для шрифтів стає простіше (same-origin).
@@ -324,7 +324,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   Playwright тестом.
 - **Dep.** None.
 
-#### **PR #018 — `feat(mobile): integrate expo-sqlite v15 with Drizzle adapter`**
+#### **PR #018 — `feat(mobile): integrate expo-sqlite v15 with Drizzle adapter`** ✅ LANDED — [#1307](https://github.com/Skords-01/Sergeant/pull/1307)
 
 - **Scope.**
   - Додати `expo-sqlite` (SDK 52 first-class). Drizzle через
@@ -337,7 +337,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 - **AC.** Detox e2e: insert/select/migrate.
 - **Dep.** PR #014.
 
-#### **PR #019 — `feat: schema migration runner (cross-platform)`** ✅ IN PROGRESS
+#### **PR #019 — `feat: schema migration runner (cross-platform)`** ✅ LANDED — [#1333](https://github.com/Skords-01/Sergeant/pull/1333)
 
 - **Scope.** `packages/db-schema/migrate.ts` — runner що читає
   `*.sql` з `migrations/` і застосовує послідовно з трекінгом у
@@ -347,7 +347,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   rollback на середині міграції залишає БД у consistent state.
 - **Dep.** PR #014.
 
-#### **PR #020 — `feat(server): create normalized routine_* tables (target shape)`** ✅ IN PROGRESS — [#1332](https://github.com/Skords-01/Sergeant/pull/1332)
+#### **PR #020 — `feat(server): create normalized routine_* tables (target shape)`** ✅ LANDED — [#1332](https://github.com/Skords-01/Sergeant/pull/1332)
 
 - **Scope.** `026_routine_tables.{sql,down.sql}`:
   - `routine_entries (id UUID, user_id, name, completed_at, created_at, updated_at, deleted_at)`
