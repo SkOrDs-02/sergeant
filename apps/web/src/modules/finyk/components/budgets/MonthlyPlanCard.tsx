@@ -209,7 +209,7 @@ function MonthlyPlanCardComponent({
               type="button"
               onClick={() => setEditing((v) => !v)}
               aria-expanded={editing}
-              className="text-xs text-muted hover:text-text inline-flex items-center gap-1 px-2 py-1 rounded-md hover:bg-panelHi transition-colors"
+              className="text-xs text-muted hover:text-text inline-flex items-center gap-1 px-2 py-1 rounded-xl hover:bg-panelHi transition-colors"
             >
               <Icon name="edit" size={12} />
               {editing ? "Згорнути" : hasPlan ? "Редагувати" : "Задати план"}

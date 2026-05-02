@@ -1,4 +1,7 @@
-# Apps & Packages Status Matrix
+# Status-матриця apps і packages
+
+> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Status:** Active
 
 > **Last revalidated: 2026-04-27.** Наступна ревалідація — 2026-07-27 (квартал).
 > Закриває audit PR-1.B. Перегляд при кожному додаванні / видаленні apps або
@@ -27,6 +30,7 @@
 | `@sergeant/server`       | `apps/server`       | `active`    | Node 20 / TypeScript / Express `/api/v1/*`, Better Auth, Postgres, Anthropic tool-use.                                                        | [`docs/architecture/api-v1.md`](api-v1.md), [`docs/tech-debt/backend.md`](../tech-debt/backend.md), [`AGENTS.md`](../../AGENTS.md)                                                      |
 | `@sergeant/mobile`       | `apps/mobile`       | `active`    | Expo SDK 52 + Expo Router. Usе 4 модулі, native push (APNs/FCM), MMKV-офлайн. Internal dev-client.                                            | [`docs/mobile/overview.md`](../mobile/overview.md), [`docs/mobile/react-native-migration.md`](../mobile/react-native-migration.md), [`docs/architecture/platforms.md` §2](platforms.md) |
 | `@sergeant/mobile-shell` | `apps/mobile-shell` | `stabilize` | Capacitor 7 wrapper навколо `@sergeant/web` для Android / iOS. MVP-release флоу. Далі — лише maintenance, нові фічі уже в `@sergeant/mobile`. | [`docs/mobile/shell.md`](../mobile/shell.md), [`docs/mobile/capacitor-deep-links.md`](../mobile/capacitor-deep-links.md), [`docs/architecture/platforms.md` §3](platforms.md)           |
+| `@sergeant/console`      | `apps/console`      | `active`    | Telegram-бот (grammy + Anthropic) — внутрішня ops/marketing консоль. Multi-agent AI.                                                          | [`apps/console/README.md`](../../apps/console/README.md)                                                                                                                                |
 
 ## Domain packages
 

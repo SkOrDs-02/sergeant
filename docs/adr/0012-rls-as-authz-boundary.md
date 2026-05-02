@@ -269,11 +269,11 @@ accepted.
 
 - **Column-level security** (mask PII у SELECT-ах). Не потрібно для нашої
   моделі — юзер бачить тільки свої дані, PII-mask в self-view не має сенсу.
-- **Attribute-based access control** (family plans, shared accounts). ADR-0004
+- **Attribute-based access control** (family plans, shared accounts). TBD ADR
   (TBD) окремо — family-plans потребують shared state і multi-user read
   semantics, які виходять за рамки "own rows only".
 - **Audit-logging DB actions.** Окремий ADR — audit-log для dispute/support
-  flow (ADR-0003 TBD).
+  flow (ADR-0003).
 - **Schema-level isolation** (tenant-per-schema). Ми single-tenant personal app,
   не SaaS.
 

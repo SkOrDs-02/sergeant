@@ -1,42 +1,41 @@
 # Sergeant Documentation
 
-> **Last reviewed:** 2026-04-27 by @Skords-01.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Status:** Active
 
-Документація Sergeant згрупована за призначенням. Цей індекс — точка входу для
-нових учасників і швидкої навігації.
+Main documentation index for Sergeant.
 
-## Структура
+## Quick start
 
-| Розділ                                | Призначення                                                                   |
-| ------------------------------------- | ----------------------------------------------------------------------------- |
-| [`adr/`](./adr/README.md)             | Architecture Decision Records — `чому` обрано конкретні архітектурні рішення. |
-| [`architecture/`](./architecture)     | Огляд системи: статус-матриця, фронтенд-overview, API-контракт, платформи.    |
-| [`audits/`](./audits)                 | Періодичні аудити коду / архітектури.                                         |
-| [`design/`](./design)                 | Брендбук, дизайн-токени, UX-аудит, palette / WCAG.                            |
-| [`governance/`](./governance)         | Cadence policies (freshness, policy review).                                  |
-| [`integrations/`](./integrations)     | Сторонні сервіси: Railway+Vercel, Renovate, Monobank.                         |
-| [`launch/`](./launch/README.md)       | Запуск продукту: монетизація, GTM, операції.                                  |
-| [`mobile/`](./mobile)                 | Мобільні додатки: Expo overview, Capacitor shell, deep-links, RN-міграція.    |
-| [`observability/`](./observability)   | SLO, runbook, dashboards, prometheus rules, on-call.                          |
-| [`planning/`](./planning)             | Roadmap-и: dev-stack, AI-coding, structure-refactor.                          |
-| [`playbooks/`](./playbooks/README.md) | Покрокові how-to для типових змін у репо.                                     |
-| [`postmortems/`](./postmortems)       | Постмортеми інцидентів.                                                       |
-| [`security/`](./security)             | Аудит-винятки, vulnerability SLA, нічний скан.                                |
-| [`superpowers/`](./superpowers)       | Specs та hotfix-нотатки для Devin Superpowers.                                |
-| [`tech-debt/`](./tech-debt)           | Frontend / Backend tech-debt registries.                                      |
+- Repo overview: [README.md](../README.md)
+- Contributor manual: [CONTRIBUTING.md](../CONTRIBUTING.md)
+- Repo contract and hard rules: [AGENTS.md](../AGENTS.md)
+- Agent skills catalog: [superpowers/agent-skills-catalog.md](./superpowers/agent-skills-catalog.md)
+- Playbook catalog: [playbooks/playbook-catalog.md](./playbooks/playbook-catalog.md)
+- Service catalog: [architecture/service-catalog.md](./architecture/service-catalog.md)
+- Feature flag registry: [feature-flags.md](./feature-flags.md)
 
-## Швидкі лінки
+## Sections
 
-- [`AGENTS.md`](../AGENTS.md) — головний контракт для розробників та AI-агентів.
-- [`README.md`](../README.md) — overview репо.
-- [`CONTRIBUTING.md`](../CONTRIBUTING.md) — як комітити, конвенції commit-ів, PR-флоу.
+| Section                                       | Purpose                                             |
+| --------------------------------------------- | --------------------------------------------------- |
+| [`adr/`](./adr/README.md)                     | Architectural decisions and tradeoffs               |
+| [`api/`](./api/README.md)                     | OpenAPI, API contracts, generated artifacts         |
+| [`architecture/`](./architecture/README.md)   | Repo map, runtime surfaces, platform architecture   |
+| [`governance/`](./governance/README.md)       | Hard rules registry, review checklists, policy docs |
+| [`mobile/`](./mobile/README.md)               | Expo/mobile strategy and migration docs             |
+| [`observability/`](./observability/README.md) | Alerts, SLOs, logs, engineering metrics             |
+| [`planning/`](./planning/README.md)           | Roadmaps, infra plans, staged improvements          |
+| [`playbooks/`](./playbooks/README.md)         | Canonical execution recipes for repeatable tasks    |
+| [`postmortems/`](./postmortems/README.md)     | Incident reviews and follow-up memory               |
+| [`security/`](./security/README.md)           | Security policy, recovery, and audit docs           |
+| [`superpowers/`](./superpowers/README.md)     | Agent operating system, routing catalog, workflows  |
+| [`tech-debt/`](./tech-debt/README.md)         | Active debt registries and cleanup plans            |
 
-## Як додати документ
+## Adding new docs
 
-1. Обери розділ за призначенням з таблиці вище.
-2. Якщо документ не вписується у жоден з розділів — додай новий підкаталог
-   та оновлюй цей індекс **в одному PR** з самим документом.
-3. Для ADR використовуй [`adr/TEMPLATE.md`](./adr/TEMPLATE.md).
-4. Для playbook — [`playbooks/_TEMPLATE-decision-tree.md`](./playbooks/_TEMPLATE-decision-tree.md).
-5. Якщо документ потребує періодичного огляду, додай його у
-   [`scripts/docs/freshness-allowlist.json`](../scripts/docs/freshness-allowlist.json).
+1. Put the document in the correct section.
+2. If it is an execution recipe, use `docs/playbooks/`.
+3. If it is policy or machine-readable governance, use `docs/governance/`.
+4. If it changes routing for agents, sync `docs/superpowers/*` and `AGENTS.md`.
+5. For docs with review cadence, include `Last validated` and `Status`.

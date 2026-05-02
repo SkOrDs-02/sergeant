@@ -29,7 +29,9 @@ describe("SignInScreen", () => {
   it("renders the sign-in form", () => {
     const { getByText, getByPlaceholderText } = render(<SignInScreen />);
 
-    expect(getByText("З поверненням 👋")).toBeTruthy();
+    // Heading text was de-coupled from the 👋 emoji in #1046 (Sparkles icon
+    // sibling now lives next to the same heading).
+    expect(getByText("З поверненням")).toBeTruthy();
     expect(getByPlaceholderText("ваш@email.com")).toBeTruthy();
     expect(getByPlaceholderText("••••••••••")).toBeTruthy();
     expect(getByText("Увійти")).toBeTruthy();

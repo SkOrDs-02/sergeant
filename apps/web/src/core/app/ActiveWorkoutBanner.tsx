@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { openHubModule } from "@shared/lib/hubNav";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
@@ -22,8 +23,31 @@ import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
 export function ActiveWorkoutBanner({ hidden = false }: { hidden?: boolean }) {
   const activeId = useActiveFizrukWorkout();
 
+  // Track elapsed minutes since the banner first appeared (approximate).
+  // We use mount time as a proxy for workout start — good enough to give
+  // users a "how long have I been away?" signal without needing the exact
+  // workout start timestamp from Fizruk's domain.
+  const startRef = useRef(Date.now());
+  const [elapsedMin, setElapsedMin] = useState(0);
+
+  useEffect(() => {
+    if (!activeId) return;
+    // Reset clock each time a new active workout appears.
+    startRef.current = Date.now();
+    setElapsedMin(0);
+    const id = setInterval(() => {
+      setElapsedMin(Math.floor((Date.now() - startRef.current) / 60_000));
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [activeId]);
+
   if (hidden) return null;
   if (!activeId) return null;
+
+  const label =
+    elapsedMin > 0
+      ? `${elapsedMin} хв · Тренування триває`
+      : "Тренування триває";
 
   return (
     <div
@@ -44,9 +68,7 @@ export function ActiveWorkoutBanner({ hidden = false }: { hidden?: boolean }) {
           <Icon name="dumbbell" size={16} strokeWidth={2.25} />
           <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success ring-2 ring-fizruk-strong motion-safe:animate-pulse" />
         </span>
-        <span className="text-sm font-semibold whitespace-nowrap">
-          Тренування триває
-        </span>
+        <span className="text-sm font-semibold whitespace-nowrap">{label}</span>
       </button>
     </div>
   );

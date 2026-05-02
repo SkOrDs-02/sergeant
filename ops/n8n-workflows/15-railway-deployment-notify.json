@@ -1,0 +1,88 @@
+{
+  "name": "15 — Railway Deployment Notify (webhook → Telegram #deploys)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "railway-deploy",
+        "options": {}
+      },
+      "id": "railway-webhook",
+      "name": "Railway Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const root = $input.first().json;\nconst body = root.body ?? root;\nconst details = body.details ?? {};\nconst resource = body.resource ?? {};\nconst status = (details.status ?? body.status ?? body.type ?? 'UNKNOWN').toString();\nconst service = resource.service?.name ?? body.service?.name ?? body.serviceName ?? '—';\nconst env = resource.environment?.name ?? body.environment?.name ?? body.environmentName ?? '—';\nconst branch = details.branch ?? body.deployment?.meta?.branch ?? body.branch ?? '—';\nconst commitMsg = (details.commitMessage ?? body.deployment?.meta?.commitMessage ?? body.commitMessage ?? '—').split('\\n')[0];\nconst commitHash = (details.commitHash ?? body.deployment?.meta?.commitHash ?? body.commitHash ?? '').slice(0, 7);\nconst url = body.deployment?.url ?? body.deploymentUrl ?? '';\nconst duration = body.buildDuration ? `${Math.round(body.buildDuration / 1000)}s` : '—';\nconst ok = ['SUCCESS', 'DEPLOYED', 'ACTIVE'].includes(status.toUpperCase());\nreturn [{ json: { status, service, env, branch, commitMsg, commitHash, url, duration, ok, type: body.type ?? null } }];"
+      },
+      "id": "parse-payload",
+      "name": "Parse Railway payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "={{ $json.ok ? '✅' : '❌' }} *Railway Deploy {{ $json.ok ? 'Success' : 'Failed' }}*\n\n🔧 Service: `{{ $json.service }}` ({{ $json.env }})\n🌿 Branch: `{{ $json.branch }}`\n📝 `{{ $json.commitHash }}` — {{ $json.commitMsg }}\n⏱ Duration: {{ $json.duration }}\n{{ $json.url ? '🔗 ' + $json.url : '' }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-deploy",
+      "name": "Telegram → #deploys",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [680, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Railway Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Railway payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Railway payload": {
+      "main": [
+        [
+          {
+            "node": "Telegram → #deploys",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
+  },
+  "tags": [
+    {
+      "name": "sergeant"
+    },
+    {
+      "name": "railway"
+    },
+    {
+      "name": "deploy"
+    }
+  ],
+  "active": false
+}

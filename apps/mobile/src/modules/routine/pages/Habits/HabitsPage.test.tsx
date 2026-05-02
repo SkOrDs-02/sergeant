@@ -18,8 +18,17 @@ import { AccessibilityInfo } from "react-native";
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
 
 import { _getMMKVInstance } from "@/lib/storage";
+import { ToastProvider } from "@/components/ui/Toast";
 
 import { HabitsPage } from "./HabitsPage";
+
+function renderPage() {
+  return render(
+    <ToastProvider>
+      <HabitsPage testID="habits-page" />
+    </ToastProvider>,
+  );
+}
 
 beforeEach(() => {
   _getMMKVInstance().clearAll();
@@ -37,7 +46,7 @@ afterEach(() => {
 
 describe("HabitsPage", () => {
   it("renders the empty state when no active habits exist", () => {
-    render(<HabitsPage testID="habits-page" />);
+    renderPage();
 
     expect(screen.getByText("Активні звички")).toBeTruthy();
     expect(screen.getByText("Поки порожньо")).toBeTruthy();
@@ -46,7 +55,7 @@ describe("HabitsPage", () => {
   });
 
   it("opens the HabitForm sheet when the FAB is pressed", () => {
-    render(<HabitsPage testID="habits-page" />);
+    renderPage();
 
     // Before the press, no form headline is mounted.
     expect(screen.queryByText("Нова звичка")).toBeNull();
@@ -59,7 +68,7 @@ describe("HabitsPage", () => {
   });
 
   it("creates a habit via the form and renders it in the active list", () => {
-    render(<HabitsPage testID="habits-page" />);
+    renderPage();
 
     fireEvent.press(screen.getByTestId("habits-page-add"));
 

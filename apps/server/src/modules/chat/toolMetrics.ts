@@ -22,13 +22,6 @@ import { TOOLS } from "./tools.js";
 /** Whitelist дозволених імен (з реєстру `TOOLS`). */
 const KNOWN_TOOL_NAMES: ReadonlySet<string> = new Set(TOOLS.map((t) => t.name));
 
-/** Те, що Anthropic повертає як content-block. */
-export interface ToolUseBlock {
-  type: "tool_use";
-  id: string;
-  name: string;
-}
-
 export interface ToolResultLike {
   tool_use_id: string;
 }

@@ -97,6 +97,42 @@
   );
 }
 
+/* ── Routine heatmap cells ───────────────────────────────────────────────
+   Wave 2b: chart-side palette tokens for the routine activity heatmap.
+   The CSS layer owns the per-theme (light, dark) pair so consumers in
+   `apps/web/src/shared/charts/chartTheme.ts` reference one class per
+   level and the JS module stops carrying `dark:` overrides.
+
+   Level scale (0 → 3):
+     0 → no activity (uses semantic `bg-panelHi dark:bg-line/25` directly)
+     1 → coral-200 light, coral-900 dark
+     2 → coral-400 light, coral-600 dark
+     3 → coral-500 light, coral-500 dark
+
+   Opacity is baked into each declaration (light/dark differ slightly so
+   the heatmap reads as warm in both themes without hand-tuning at the
+   call-site). */
+.bg-routine-heat-l1 {
+  background-color: rgb(255 212 203 / 0.8); /* coral-200 @ 80% */
+}
+.dark .bg-routine-heat-l1 {
+  background-color: rgb(134 46 46 / 0.55); /* coral-900 @ 55% */
+}
+
+.bg-routine-heat-l2 {
+  background-color: rgb(255 140 120 / 0.75); /* coral-400 @ 75% */
+}
+.dark .bg-routine-heat-l2 {
+  background-color: rgb(230 77 77 / 0.7); /* coral-600 @ 70% */
+}
+
+.bg-routine-heat-l3 {
+  background-color: rgb(249 112 102 / 0.9); /* coral-500 @ 90% */
+}
+.dark .bg-routine-heat-l3 {
+  background-color: rgb(249 112 102 / 0.8); /* coral-500 @ 80% */
+}
+
 /* ── Nutrition (lime) ────────────────────────────────────────────────── */
 
 .module-card-nutrition {

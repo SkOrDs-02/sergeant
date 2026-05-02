@@ -1,3 +1,24 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   PARTIALS — Animations & module surfaces extracted for maintainability.
+   @import statements MUST precede all other rules (CSS spec requirement).
+   ═══════════════════════════════════════════════════════════════════════ */
+@import "@fontsource-variable/dm-sans";
+@import "./styles/animations.css";
+@import "./styles/module-surfaces.css";
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FONT FALLBACK — Prevent layout shift (FOUT) during font loading.
+   Size-adjusted system font stack matches DM Sans metrics closely.
+   ═══════════════════════════════════════════════════════════════════════ */
+@font-face {
+  font-family: "DM Sans Fallback";
+  src: local("Arial");
+  ascent-override: 94%;
+  descent-override: 26%;
+  line-gap-override: 0%;
+  size-adjust: 104%;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -103,7 +124,7 @@
     --c-fg-muted: var(--c-muted);
 
     /* Status semantic tokens (kept in sync with tailwind `statusColors`
-       from `src/modules/finyk/chartPalette/chartPalette.ts`). */
+       from `@sergeant/design-tokens/tokens`). */
     --c-success: 16 185 129; /* emerald-500  — statusColors.success */
     --c-warning: 245 158 11; /* amber-500    — statusColors.warning */
     --c-danger: 239 68 68; /* red-500       — statusColors.danger  */
@@ -122,6 +143,80 @@
     --c-danger-soft: 254 226 226; /* red-100 */
     --c-info-soft: 224 242 254; /* sky-100 */
 
+    /* ───────────────────────────────────────────────────────────────────
+       SOFT BRAND & MODULE TINTS — Wave 1b
+       Same contract as `--c-success-soft`: the `-soft` token is the
+       surface wash, `-soft-border` is the paired hairline, `-soft-hover`
+       is the subtle hover tint. All three resolve automatically between
+       light and dark themes so call-sites never need
+       `dark:bg-{family}-500/15` gymnastics. Used by `Segmented`, `Tabs`,
+       `Button[variant=soft]`, `Badge`, `Banner`, `Card[variant=tint]`,
+       `WeeklyDigestCard`, `AssistantAdviceCard`, etc.
+       See docs/design/DARK-MODE-AUDIT.md for the migration targets.
+       ─────────────────────────────────────────────────────────────────── */
+    --c-brand-soft: 236 253 245; /* emerald-50 — matches legacy `bg-brand-50` */
+    --c-brand-soft-border: 167 243 208; /* emerald-200 — matches legacy ring */
+    --c-brand-soft-hover: 209 250 229; /* emerald-100 — one step deeper for hover */
+
+    --c-finyk-soft: 236 253 245; /* emerald-50 — parity with `brandColors.emerald[50]` */
+    --c-finyk-soft-border: 167 243 208; /* emerald-200 */
+    --c-finyk-soft-hover: 209 250 229; /* emerald-100 */
+
+    --c-fizruk-soft: 240 253 250; /* teal-50 — parity with `brandColors.teal[50]` */
+    --c-fizruk-soft-border: 153 246 228; /* teal-200 */
+    --c-fizruk-soft-hover: 204 251 241; /* teal-100 */
+
+    /* `tile` + `tile-border` — subtle stat-tile wash on the fizruk hero
+       gradient (`bg-hero-teal`). Used by `<WorkoutStatTile>` and the
+       fizruk summary-sheet close button. Light=teal-800 (so a 10% wash
+       reads as a slightly darker tile on the bright teal gradient);
+       dark=white (10% wash on dark panel reads as a subtle bright tile). */
+    --c-fizruk-tile: 17 94 89; /* teal-800 */
+    --c-fizruk-tile-border: 17 94 89; /* teal-800 */
+
+    --c-routine-soft: 255 245 243; /* coral-50 — parity with `brandColors.coral[50]` */
+    --c-routine-soft-border: 255 210 200; /* coral-200 */
+    --c-routine-soft-hover: 255 232 227; /* coral-100 */
+
+    --c-nutrition-soft: 248 254 231; /* lime-50 — parity with `brandColors.lime[50]` */
+    --c-nutrition-soft-border: 217 249 157; /* lime-200 */
+    --c-nutrition-soft-hover: 239 252 203; /* lime-100 */
+
+    /* Celebration / gamification tokens */
+    --c-celebration: 251 191 36; /* amber-400 — confetti, stars, rewards */
+    --c-streak-glow: 249 112 102; /* coral-500 — streak flame glow */
+    --c-xp: 139 92 246; /* violet-500 — XP / level-up accent */
+
+    /* Module hero card gradients — delicate accent washes for top-of-page
+       hero cards. Semi-transparent so they layer over `bg-panel` or
+       module surfaces. */
+    --gradient-finyk: linear-gradient(
+      135deg,
+      rgba(16, 185, 129, 0.08) 0%,
+      rgba(20, 184, 166, 0.06) 100%
+    );
+    --gradient-fizruk: linear-gradient(
+      135deg,
+      rgba(20, 184, 166, 0.08) 0%,
+      rgba(200, 242, 100, 0.05) 100%
+    );
+    --gradient-routine: linear-gradient(
+      135deg,
+      rgba(249, 112, 102, 0.08) 0%,
+      rgba(255, 140, 120, 0.05) 100%
+    );
+    --gradient-nutrition: linear-gradient(
+      135deg,
+      rgba(146, 204, 23, 0.08) 0%,
+      rgba(176, 230, 54, 0.05) 100%
+    );
+
+    /* Enhanced focus ring — thicker, warmer, with offset for visibility.
+       Used via `focus-visible:ring` utilities that read the custom property. */
+    --focus-ring-width: 3px;
+    --focus-ring-offset: 2px;
+    --focus-ring-color: rgba(16, 185, 129, 0.4);
+
     /* Motion tokens — single source of truth for duration/easing. */
     --motion-duration-fast: 150ms;
     --motion-duration: 200ms;
@@ -130,6 +225,11 @@
     --motion-ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
     --motion-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
     --motion-ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    /* Easing presets from the UX plan (Dodatok B) */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
@@ -177,6 +277,38 @@
     --c-warning-soft: 146 64 14; /* slightly brighter amber-900 */
     --c-danger-soft: 153 27 27; /* red-800 — brighter than red-900 */
     --c-info-soft: 7 89 133; /* sky-800 — brighter than sky-900 */
+
+    /* Dark-theme overrides for the soft brand/module tints (Wave 1b).
+       Values are deliberately deep (`-900` family) so tinted surfaces
+       like `bg-brand-soft` read as *accent* rather than bright fill on
+       the dark panel background. `-soft-border` matches the
+       corresponding `-800`; `-soft-hover` is one step brighter than
+       `-soft` for a visible but subtle hover lift. */
+    --c-brand-soft: 6 78 59; /* emerald-900 */
+    --c-brand-soft-border: 6 95 70; /* emerald-800 */
+    --c-brand-soft-hover: 6 95 70; /* emerald-800 */
+
+    --c-finyk-soft: 6 78 59; /* emerald-900 */
+    --c-finyk-soft-border: 6 95 70; /* emerald-800 */
+    --c-finyk-soft-hover: 6 95 70; /* emerald-800 */
+
+    --c-fizruk-soft: 19 78 74; /* teal-900 */
+    --c-fizruk-soft-border: 17 94 89; /* teal-800 */
+    --c-fizruk-soft-hover: 17 94 89; /* teal-800 */
+
+    /* Dark-mode flip of the stat-tile token: white wash reads as a
+       subtle bright tile on dark panel (matches the legacy
+       `dark:bg-white/10 dark:border-white/15` hand-rolling). */
+    --c-fizruk-tile: 255 255 255; /* white */
+    --c-fizruk-tile-border: 255 255 255; /* white */
+
+    --c-routine-soft: 159 36 30; /* coral-900 (≈ red-900 tuned) */
+    --c-routine-soft-border: 185 54 48; /* coral-800 */
+    --c-routine-soft-hover: 185 54 48; /* coral-800 */
+
+    --c-nutrition-soft: 54 83 20; /* lime-900 */
+    --c-nutrition-soft-border: 63 98 18; /* lime-800 */
+    --c-nutrition-soft-hover: 63 98 18; /* lime-800 */
 
     /* ───────────────────────────────────────────────────────────────────
        MODULE DARK SURFACES & BORDERS
@@ -264,8 +396,23 @@
      token so light & dark themes stay in sync automatically.
      ═══════════════════════════════════════════════════════════════════════ */
   .focus-ring {
-    @apply outline-none focus-visible:ring-2 focus-visible:ring-accent/60
-           focus-visible:ring-offset-2 focus-visible:ring-offset-surface;
+    @apply outline-none focus-visible:ring-accent/60
+           focus-visible:ring-offset-surface;
+    --tw-ring-offset-width: var(--focus-ring-offset, 2px);
+  }
+  .focus-ring:focus-visible {
+    --tw-ring-shadow: 0 0 0 var(--focus-ring-width, 3px)
+      var(--focus-ring-color, rgba(16, 185, 129, 0.4));
+  }
+
+  /* Enhanced focus ring — thicker, with animation on keyboard focus.
+     Applies to all interactive elements that don't define their own ring. */
+  .focus-ring-enhanced {
+    @apply outline-none;
+    transition: box-shadow 0.15s ease-out;
+  }
+  .focus-ring-enhanced:focus-visible {
+    box-shadow: var(--shadow-focus-ring, 0 0 0 3px rgba(16, 185, 129, 0.4));
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
@@ -302,6 +449,118 @@
     @apply outline-none transition-colors
            focus-visible:border-routine/60
            focus-visible:ring-2 focus-visible:ring-routine/25;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     TYPOGRAPHY HIERARCHY — Consistent heading scale across the app.
+     Usage: apply `.text-h1` / `.text-h2` etc. to heading elements.
+     Letter-spacing and font-weight are baked in; colour inherits from
+     the surrounding context so dark-mode works automatically.
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  /* Display — hero numbers, large stat values (e.g. ₴ 12 400) */
+  .text-display {
+    @apply text-[2.25rem] leading-none font-bold tracking-tight tabular-nums;
+  }
+
+  /* H1 — page / screen title */
+  .text-h1 {
+    @apply text-[1.5rem] leading-tight font-bold tracking-tight;
+  }
+
+  /* H2 — section heading */
+  .text-h2 {
+    @apply text-[1.125rem] leading-snug font-semibold tracking-[-0.01em];
+  }
+
+  /* H3 — card title, subsection label */
+  .text-h3 {
+    @apply text-[0.9375rem] leading-snug font-semibold;
+  }
+
+  /* Body — default prose */
+  .text-body {
+    @apply text-[0.9375rem] leading-relaxed font-normal;
+  }
+
+  /* Body Small — secondary text, descriptions */
+  .text-body-sm {
+    @apply text-[0.8125rem] leading-relaxed font-normal;
+  }
+
+  /* Caption — labels, timestamps, meta copy */
+  .text-caption {
+    @apply text-[0.75rem] leading-snug font-normal tracking-[0.01em];
+  }
+
+  /* Eyebrow — overline / section prefix ("ФІНІК", "СЬОГОДНІ") */
+  .text-eyebrow {
+    @apply text-[0.6875rem] leading-none font-semibold tracking-[0.08em] uppercase;
+  }
+
+  /* Meta — compact lowercase labels (KPI hints, badges, "Monobank", "USD",
+     histogram axis ticks). 11px/medium with optional `tabular-nums` for
+     numeric companions. NOT uppercase — that is `text-eyebrow`'s job. */
+  .text-meta {
+    @apply text-[0.6875rem] leading-snug font-medium;
+  }
+
+  /* Micro — 10px aux glyph labels: icon-overlay numbers (mic levels, push-up
+     reps, progress-ring hints). Floor is 10px; nothing below ships in
+     prose. Use only inside controls where surrounding affordance carries
+     the meaning, never for running text. */
+  .text-micro {
+    @apply text-[0.625rem] leading-tight font-medium;
+  }
+
+  /* Display Stat — the single most prominent number on a screen:
+     Finyk HeroCard amount, AssetsTable asset value. 40px / bold /
+     tabular-nums / leading-tight so multi-line wraps don't push other
+     hero rows. */
+  .text-display-stat {
+    @apply text-[2.5rem] leading-tight font-bold tracking-tight tabular-nums;
+  }
+
+  /* Display Hero — full-screen "celebration" stat (story slides, weekly
+     digest take-aways). 44px / black / tabular-nums / leading-none for
+     the largest single-line number. */
+  .text-display-hero {
+    @apply text-[2.75rem] leading-none font-black tracking-tight tabular-nums;
+  }
+
+  /* ── Semantic text-style utilities (design-system.md § Typography) ──────
+     Owned shorthand classes: each bundles size + weight (+ optional
+     tracking) so design-token changes propagate automatically.
+     Referenced by the `prefer-text-style` ESLint rule.              ─── */
+  .text-style-hero {
+    @apply text-2xl font-bold tracking-tight;
+  }
+  .text-style-title {
+    @apply text-xl font-semibold leading-snug;
+  }
+  .text-style-body {
+    @apply text-base font-normal leading-relaxed;
+  }
+  .text-style-label {
+    @apply text-sm font-medium leading-snug;
+  }
+  .text-style-caption {
+    @apply text-xs font-medium leading-snug;
+  }
+  .text-style-overline {
+    @apply text-[0.6875rem] font-semibold tracking-[0.08em] uppercase;
+  }
+
+  /* Celebration — achievement moments: XP gains, streaks, confetti title */
+  .text-celebration {
+    @apply text-[1.25rem] leading-tight font-bold tracking-[0.02em];
+    color: rgb(var(--c-celebration));
+  }
+
+  /* XP / level chip */
+  .text-xp {
+    @apply text-[0.8125rem] leading-none font-bold tracking-[0.02em] tabular-nums;
+    color: rgb(var(--c-xp));
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
@@ -350,12 +609,12 @@
      TOUCH INPUTS — iOS zoom prevention (min 16px)
      ═══════════════════════════════════════════════════════════════════════ */
   .routine-touch-field {
-    @apply min-h-[44px] text-[16px] leading-normal md:text-sm;
+    @apply min-h-[44px] text-base leading-normal md:text-sm;
   }
 
   .routine-touch-select {
     @apply min-h-[44px] w-full rounded-2xl border border-line bg-panelHi px-3 outline-none
-           text-[16px] leading-normal md:text-sm
+           text-base leading-normal md:text-sm
            transition-colors duration-150
            focus-visible:border-routine/60 focus-visible:ring-2 focus-visible:ring-routine/20;
   }
@@ -534,12 +793,6 @@
     @apply bg-gradient-to-r from-coral-500 to-coral-600 bg-clip-text text-transparent;
   }
 }
-
-/* ═══════════════════════════════════════════════════════════════════════
-   PARTIALS — Animations & module surfaces extracted for maintainability.
-   ═══════════════════════════════════════════════════════════════════════ */
-@import "./styles/animations.css";
-@import "./styles/module-surfaces.css";
 
 /* ═══════════════════════════════════════════════════════════════════════
    iOS INPUT ZOOM FIX — Keep 16px minimum on touch devices only.
@@ -775,4 +1028,133 @@
   @apply opacity-100;
   visibility: visible;
   transform: translateY(0);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE OPTIMIZATION UTILITIES
+   Touch-friendly spacing, improved readability, and responsive helpers.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TOUCH TARGETS — WCAG 2.5.5 / Apple HIG safety net.
+
+   The `.touch-target` / `.touch-target-48` Tailwind utilities (declared in
+   `packages/design-tokens/tailwind-preset.js`) are the canonical way to
+   set a 44×44 / 48×48 floor on coarse pointers. The CSS rule below is a
+   defence-in-depth guarantee for any interactive element that was added
+   without a min-size — it raises the floor to 44×44 on touch devices for
+   every `<button>`, anchor with `role="button"`, and `role="tab"` element
+   that is not explicitly opted out via the `data-compact` attribute.
+
+   Use `data-compact` on heatmap cells, dense data grid handles, inline
+   chips inside paragraphs, and any element where 44×44 would crowd the
+   surrounding layout. The opt-out is intentional and per-element.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (pointer: coarse) {
+  button:not([data-compact]):not(:disabled),
+  a[role="button"]:not([data-compact]),
+  [role="tab"]:not([data-compact]) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Mobile-optimized list items with larger touch targets */
+.mobile-list-item {
+  @apply min-h-[56px] flex items-center px-4 py-3
+         active:bg-panelHi transition-colors;
+}
+
+@media (pointer: coarse) {
+  .mobile-list-item {
+    @apply min-h-[60px] py-4;
+  }
+}
+
+/* Swipeable container for mobile gestures */
+.swipeable {
+  @apply overflow-x-auto snap-x snap-mandatory scroll-smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.swipeable::-webkit-scrollbar {
+  display: none;
+}
+.swipeable > * {
+  @apply snap-center;
+}
+
+/* Mobile-first card grid — 1 column on mobile, 2 on tablet+ */
+.card-grid-mobile {
+  @apply grid grid-cols-1 gap-3;
+}
+@media (min-width: 480px) {
+  .card-grid-mobile {
+    @apply grid-cols-2;
+  }
+}
+
+/* Improved text readability on small screens */
+.mobile-readable {
+  @apply text-base leading-relaxed;
+  /* Slightly larger text on mobile for better readability */
+}
+@media (min-width: 640px) {
+  .mobile-readable {
+    @apply text-sm leading-normal;
+  }
+}
+
+/* Bottom sheet safe area padding */
+.sheet-safe-bottom {
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Sticky header with safe area */
+.sticky-header-safe {
+  @apply sticky top-0 z-40 bg-bg/95 backdrop-blur-sm;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Hide on touch devices */
+@media (pointer: coarse) {
+  .hide-touch {
+    display: none !important;
+  }
+}
+
+/* Show only on touch devices */
+@media (pointer: fine) {
+  .show-touch-only {
+    display: none !important;
+  }
+}
+
+/* Optimized button spacing for mobile */
+.mobile-button-group {
+  @apply flex flex-col gap-3;
+}
+@media (min-width: 480px) {
+  .mobile-button-group {
+    @apply flex-row gap-2;
+  }
+}
+
+/* Loading placeholder with reduced motion support */
+.loading-placeholder {
+  @apply bg-line/30 rounded-lg;
+  animation: pulseSoft 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-placeholder {
+    animation: none;
+    @apply bg-line/50;
+  }
+}
+
+/* Improved focus visibility for mobile */
+@media (pointer: coarse) {
+  :focus-visible {
+    outline-offset: 4px;
+  }
 }

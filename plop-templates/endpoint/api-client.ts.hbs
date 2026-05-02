@@ -1,0 +1,24 @@
+import { apiClient } from "@/core/lib/apiClient";
+
+// TODO: define request/response types (or import from @shared/api)
+interface {{pascalCase name}}Request {
+  // TODO: fill in
+}
+
+interface {{pascalCase name}}Response {
+  ok: boolean;
+  // TODO: fill in
+}
+
+export async function {{name}}(
+  params: {{pascalCase name}}Request,
+  options?: { signal?: AbortSignal },
+): Promise<{{pascalCase name}}Response> {
+  // TODO: replace path and method
+  const response = await apiClient.{{lowerCase method}}<{{pascalCase name}}Response>(
+    "/{{module}}/{{kebabCase name}}",
+    { ...params },
+    { signal: options?.signal },
+  );
+  return response.data;
+}

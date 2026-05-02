@@ -14,28 +14,31 @@ function recordRateLimit(key: string, outcome: Outcome): void {
 }
 
 /**
- * Resolves the client's originating IP. Prefer Express's `req.ip`, which
- * respects `app.set('trust proxy', …)` and correctly peels off hops from
- * X-Forwarded-For — taking the first entry of a raw X-Forwarded-For is a
- * trivial rate-limit / quota bypass (a client can prepend any value and the
- * proxy only appends the real IP after it).
+ * Resolves the client's originating IP through Express's `req.ip` only —
+ * which respects `app.set('trust proxy', …)` and correctly peels exactly the
+ * configured number of trusted hops off `X-Forwarded-For`. Anything else
+ * (raw header parsing, `X-Real-IP`) is user-controlled when the server is
+ * exposed without a proxy and turns rate-limit / anonymous AI-quota into
+ * a free-tier bypass: the attacker prepends a fresh fake IP per request and
+ * the bucket key changes each time.
  *
- * We only fall back to parsing headers directly when Express did not surface
- * an IP (no trust-proxy configured AND no socket.remoteAddress), and even
- * then we pick the LAST entry — that's the one closest to our infra.
+ * Trust-proxy is configured in `createApp` (`apps/server/src/app.ts`) and
+ * defaults to `1` (single reverse proxy in front of us — Railway / Replit
+ * topology). If no trust-proxy is configured, `req.ip` falls back to the
+ * raw socket peer, which is the proxy itself — also spoof-safe but means
+ * every client behind that proxy shares a bucket. Better to under-distribute
+ * than to let a forged header win.
+ *
+ * Returns `"unknown"` when Express could not surface an IP (e.g. test stubs
+ * with no `socket`). All such requests then share a single bucket — that's
+ * a deliberately conservative failure mode: the abuser cannot escape the
+ * limiter by stripping headers.
  */
 export function getIp(req: Request): string {
   const fromExpress = req?.ip;
   if (typeof fromExpress === "string" && fromExpress.trim()) {
     return fromExpress.trim();
   }
-  const xf = req?.headers?.["x-forwarded-for"];
-  if (typeof xf === "string" && xf.trim()) {
-    const parts = xf.split(",");
-    return parts[parts.length - 1].trim();
-  }
-  const real = req?.headers?.["x-real-ip"];
-  if (typeof real === "string" && real.trim()) return real.trim();
   return "unknown";
 }
 
@@ -226,8 +229,16 @@ export function rateLimitExpress({
         /* ignore */
       }
       const requestId = (req as Request & { requestId?: string }).requestId;
+      const message = "Забагато запитів. Спробуй пізніше.";
+      // `error` — стара форма для прямих `fetch`-колерів. `message` — те
+      // саме поле, яке читає better-fetch (а отже — Better Auth client) при
+      // десеріалізації не-2xx body. Без цього 429 на `/api/auth/sign-in`
+      // потрапляв у фронт як `result.error.message === undefined` і юзер
+      // бачив generic «Помилка входу» замість осмисленого rate-limit
+      // повідомлення.
       res.status(429).json({
-        error: "Забагато запитів. Спробуй пізніше.",
+        error: message,
+        message,
         code: "RATE_LIMIT",
         ...(requestId ? { requestId } : {}),
       });

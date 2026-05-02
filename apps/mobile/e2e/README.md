@@ -1,73 +1,49 @@
 # `@sergeant/mobile` — Detox E2E
 
-Detox E2E harness for the mobile app (Phase 4 of
-`docs/mobile/react-native-migration.md`, §8 + §13 Q8).
+Detox-E2E-харнес для мобільного застосунку (Phase 4 з `docs/mobile/react-native-migration.md`, §8 + §13 Q8).
 
-## Suites
+## Сьюти
 
-| Suite                         | Scope                                                                      |
-| ----------------------------- | -------------------------------------------------------------------------- |
-| `finyk-manual-expense.e2e.ts` | Фінік Overview → Transactions → add manual expense → row visible.          |
-| `finyk-transactions.e2e.ts`   | Фінік Transactions period filter (prev-month / next-month chevrons).       |
-| `routine-smoke.e2e.ts`        | Рутина → Settings → add daily habit → Calendar → toggle today → ✓ visible. |
+| Сьют                          | Скоуп                                                                       |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| `finyk-manual-expense.e2e.ts` | Фінік Overview → Transactions → додати manual expense → row видно.          |
+| `finyk-transactions.e2e.ts`   | Фінік Transactions, period filter (prev-month / next-month chevrons).       |
+| `hub-ux-smoke.e2e.ts`         | Hub → Settings → theme toggle + стабільні top-level tab testIDs.            |
+| `routine-smoke.e2e.ts`        | Рутина → Settings → додати daily habit → Calendar → toggle today → ✓ видно. |
 
-All three rely on the shared `helpers.ts` primitives
-(`tapWhenVisible`, `waitForVisibleById`, `byId`) and the same
-`EXPO_PUBLIC_E2E=1` auth-bypass launch flag. Suites run sequentially
-with `maxWorkers: 1` so MMKV state is deterministic across `it()`
-blocks — each suite seeds its own row rather than relying on another
-suite's leftovers.
+Усі три спираються на спільні примітиви з `helpers.ts` (`tapWhenVisible`, `waitForVisibleById`, `byId`) і той самий launch-flag `EXPO_PUBLIC_E2E=1`, який обходить auth. Сьюти крутяться послідовно з `maxWorkers: 1`, щоб MMKV-стан був детермінованим між блоками `it()` — кожен сьют засіває власний row, не покладаючись на залишки від іншого сьюта.
 
-## Running locally
+## Локальний запуск
 
 ```bash
-# One-off: prebuild the native projects. Detox drives binaries produced
-# by the Expo development profile, so the same output is shared with
+# Раз: prebuild нативних проєктів. Detox драйвить бінарі, які генерує
+# Expo development-профіль, тож той самий output використовується для
 # `expo run:ios` / `expo run:android`.
 pnpm --filter @sergeant/mobile exec expo prebuild --clean
 
-# iOS (macOS only)
+# iOS (тільки macOS)
 pnpm --filter @sergeant/mobile e2e:build:ios
 pnpm --filter @sergeant/mobile e2e:test:ios
 
-# Android (macOS / Linux, AVD booted beforehand)
+# Android (macOS / Linux, AVD має бути запущений заздалегідь)
 pnpm --filter @sergeant/mobile e2e:build:android
 pnpm --filter @sergeant/mobile e2e:test:android
 ```
 
-The launcher sets `EXPO_PUBLIC_E2E=1` (see `.detoxrc.js` +
-`apps/mobile/app/(tabs)/_layout.tsx`) which bypasses the Better Auth
-gate so the tab layout renders without a live session. The flag has **no
-effect** in release binaries — Metro only inlines `EXPO_PUBLIC_*` values
-when they are present at bundle time, and the production EAS profile
-does not set them.
+Лаунчер виставляє `EXPO_PUBLIC_E2E=1` (див. `.detoxrc.js` + `apps/mobile/app/(tabs)/_layout.tsx`), що обходить Better Auth-гейт, тож tab-layout рендериться без живої сесії. У release-бінарях цей прапор **не діє** — Metro інлайнить значення `EXPO_PUBLIC_*` тільки якщо вони присутні під час бандла, а продакшн-EAS-профіль їх не виставляє.
 
-## Adding a test
+## Як додати тест
 
-1. Create a new `*.e2e.ts` under `apps/mobile/e2e/` — `jest.config.js`
-   picks it up automatically.
-2. Reuse `helpers.ts` for the common `tapWhenVisible` / `waitForVisibleById`
-   patterns so failure messages stay actionable.
-3. Prefer matching by `testID` (or `accessibilityLabel` for rows that
-   are naturally unique by label). Do **not** rely on amount / date
-   text — localisation varies per device locale and flakes CI.
-4. If a new DOM surface needs a test hook, add the `testID` in the
-   component file; don't mutate rendered DOM inside the suite.
+1. Створіть новий `*.e2e.ts` у `apps/mobile/e2e/` — `jest.config.js` підхопить його автоматично.
+2. Перевикористовуйте `helpers.ts` для типових патернів `tapWhenVisible` / `waitForVisibleById`, щоб повідомлення про падіння залишались actionable.
+3. Матчіть за `testID` (або `accessibilityLabel` для рядків, які природно унікальні за label-ом). Не покладайтесь на текст amount / date — локалізація змінюється per-device і флакає CI.
+4. Якщо нова DOM-поверхня потребує тестового хука — додайте `testID` у файлі компонента; не мутуйте рендер DOM усередині сьюта.
 
 ## CI
 
-Two parallel workflows share the same suite set:
+Два паралельні workflow-и шарять один і той самий набір сьютів:
 
-- **iOS** — `.github/workflows/detox-ios.yml`, `macos-14` runner,
-  iPhone 15 simulator. Runs on `pull_request` + `push` to `main` when
-  mobile-scoped paths change; `workflow_dispatch` also supported.
-- **Android** — `.github/workflows/detox-android.yml`, `ubuntu-latest`
-  with KVM acceleration and the `reactivecircus/android-emulator-runner`
-  action driving a Pixel_5_API_34 AVD (matches the `emulator` device
-  in `.detoxrc.js`). Caches the pnpm store, Gradle dependency graph,
-  and AVD snapshot to keep cold-start time under control.
+- **iOS** — `.github/workflows/detox-ios.yml`, runner `macos-14`, симулятор iPhone 15. Запускається на `pull_request` + `push` до `main`, коли змінюються mobile-scoped path-и; `workflow_dispatch` також підтримується.
+- **Android** — `.github/workflows/detox-android.yml`, `ubuntu-latest` з KVM-акселерацією і action-ом `reactivecircus/android-emulator-runner`, що драйвить AVD `Pixel_5_API_34` (відповідає девайсу `emulator` у `.detoxrc.js`). Кешує pnpm-store, Gradle dependency graph і AVD-снапшот, щоб тримати cold-start під контролем.
 
-Both workflows upload `apps/mobile/.detox-artifacts` on failure (logs
-
-- screenshots, enabled in `.detoxrc.js > artifacts`) so the run can be
-  diagnosed without retrying.
+Обидва workflow-и аплоудять `apps/mobile/.detox-artifacts` на падінні (логи + скріншоти, увімкнено в `.detoxrc.js > artifacts`), щоб ран можна було діагностувати без ретраю.

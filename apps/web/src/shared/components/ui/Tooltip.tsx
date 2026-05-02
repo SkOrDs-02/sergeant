@@ -49,12 +49,20 @@ import { cn } from "../../lib/cn";
  */
 
 export type TooltipPlacement =
+  | "top"
+  | "bottom"
+  | "left"
+  | "right"
   | "top-center"
   | "bottom-center"
   | "left-center"
   | "right-center";
 
 const placementClasses: Record<TooltipPlacement, string> = {
+  top: "bottom-full left-1/2 -translate-x-1/2 mb-2",
+  bottom: "top-full left-1/2 -translate-x-1/2 mt-2",
+  left: "right-full top-1/2 -translate-y-1/2 mr-2",
+  right: "left-full top-1/2 -translate-y-1/2 ml-2",
   "top-center": "bottom-full left-1/2 -translate-x-1/2 mb-2",
   "bottom-center": "top-full left-1/2 -translate-x-1/2 mt-2",
   "left-center": "right-full top-1/2 -translate-y-1/2 mr-2",
@@ -152,7 +160,7 @@ export function Tooltip({
           id={id}
           role="tooltip"
           className={cn(
-            "absolute z-50 whitespace-nowrap rounded-lg bg-fg px-2 py-1 text-xs font-medium text-surface shadow-float",
+            "absolute z-50 whitespace-nowrap rounded-xl bg-fg px-2 py-1 text-xs font-medium text-surface shadow-float",
             "motion-safe:animate-fade-in",
             placementClasses[placement],
             className,

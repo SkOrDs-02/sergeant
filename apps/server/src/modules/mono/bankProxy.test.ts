@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Request, Response } from "express";
-import monoHandler from "./mono.js";
 import privatHandler from "./privat.js";
 import { bankProxyFetch, __bankProxyTestHooks } from "../../lib/bankProxy.js";
 
@@ -80,112 +79,6 @@ function mockFetchResponse({
     },
   };
 }
-
-describe("mono proxy path validation", () => {
-  const origFetch = global.fetch;
-
-  beforeEach(() => {
-    __bankProxyTestHooks().reset();
-    global.fetch = vi.fn();
-  });
-
-  afterEach(() => {
-    global.fetch = origFetch;
-    vi.restoreAllMocks();
-  });
-
-  it("rejects path with CRLF or special characters", async () => {
-    const req = {
-      method: "GET",
-      headers: { "x-token": "tok", origin: "http://localhost:5173" },
-      query: { path: "/personal/client-info\r\nX-Evil: yes" },
-    };
-    const res = mockRes();
-    await monoHandler(asReq(req), res);
-    expect(res.statusCode).toBe(400);
-    expect(global.fetch).not.toHaveBeenCalled();
-  });
-
-  it("rejects path with '..'", async () => {
-    const req = {
-      method: "GET",
-      headers: { "x-token": "tok", origin: "http://localhost:5173" },
-      query: { path: "/personal/../admin" },
-    };
-    const res = mockRes();
-    await monoHandler(asReq(req), res);
-    expect(res.statusCode).toBe(400);
-    expect(global.fetch).not.toHaveBeenCalled();
-  });
-
-  it("rejects prefix-bypass like /personal/client-info-extra", async () => {
-    const req = {
-      method: "GET",
-      headers: { "x-token": "tok", origin: "http://localhost:5173" },
-      query: { path: "/personal/client-info-extra" },
-    };
-    const res = mockRes();
-    await monoHandler(asReq(req), res);
-    expect(res.statusCode).toBe(400);
-    expect(global.fetch).not.toHaveBeenCalled();
-  });
-
-  it("allows exact /personal/client-info", async () => {
-    global.fetch = vi
-      .fn()
-      .mockResolvedValue(mockFetchResponse({ body: { ok: true } }));
-    const req = {
-      method: "GET",
-      headers: { "x-token": "tok-1", origin: "http://localhost:5173" },
-      query: { path: "/personal/client-info" },
-    };
-    const res = mockRes();
-    await monoHandler(asReq(req), res);
-    expect(res.statusCode).toBe(200);
-    expect(global.fetch).toHaveBeenCalledOnce();
-  });
-
-  it("allows /personal/statement/<id>", async () => {
-    global.fetch = vi
-      .fn()
-      .mockResolvedValue(mockFetchResponse({ body: { ok: true } }));
-    const req = {
-      method: "GET",
-      headers: { "x-token": "tok-2", origin: "http://localhost:5173" },
-      query: { path: "/personal/statement/abc123" },
-    };
-    const res = mockRes();
-    await monoHandler(asReq(req), res);
-    expect(res.statusCode).toBe(200);
-    expect(global.fetch).toHaveBeenCalledOnce();
-  });
-
-  it("propagates Retry-After header on 429 for Monobank rate-limit", async () => {
-    // Регресія: handler відкидав upstream-хедер Retry-After, тому pagination
-    // loop у клієнті (api-client/mono.ts) бачив `ApiError.retryAfterMs =
-    // undefined` і падав замість taргeted retry через 60 s.
-    // Тут задаємо `timeoutMs: 0` на bank-proxy retry-delays, щоб не чекати
-    // реальні мс.
-    __bankProxyTestHooks().configure({ retryDelaysMs: [0] });
-    global.fetch = vi.fn().mockResolvedValue(
-      mockFetchResponse({
-        status: 429,
-        body: { error: "Too many" },
-        headers: { "retry-after": "60" },
-      }),
-    );
-    const req = {
-      method: "GET",
-      headers: { "x-token": "tok-3", origin: "http://localhost:5173" },
-      query: { path: "/personal/statement/acc/1/2" },
-    };
-    const res = mockRes();
-    await monoHandler(asReq(req), res);
-    expect(res.statusCode).toBe(429);
-    expect(res.headers["Retry-After"]).toBe("60");
-    expect(res.body).toMatchObject({ error: "Занадто багато запитів" });
-  });
-});
 
 describe("privat proxy path validation", () => {
   const origFetch = global.fetch;

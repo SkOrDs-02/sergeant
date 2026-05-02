@@ -1,0 +1,116 @@
+{
+  "name": "09 — Habit Streak At-Risk Alert (21:00 Kyiv → push)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 21 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-evening",
+      "name": "Cron 21:00 Kyiv",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT DISTINCT ps.user_id\nFROM push_subscriptions ps\nWHERE ps.deleted_at IS NULL\nORDER BY ps.user_id",
+        "options": {}
+      },
+      "id": "get-subscribers",
+      "name": "Get push subscribers",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [460, 300],
+      "credentials": {
+        "postgres": {
+          "id": "pwwVNTLBw43PJgey",
+          "name": "Sergeant Postgres (sergeant-db)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PUBLIC_API_BASE_URL || 'https://api.invalid.local' }}/api/push/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Secret",
+              "value": "={{ $env.API_SECRET }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"userId\": \"{{ $json.user_id }}\",\n  \"title\": \"🔥 Не забудь звички!\",\n  \"body\": \"Відмич сьогоднішні звички у Рутині, поки день не закінчився\",\n  \"module\": \"routine\",\n  \"tag\": \"habit-streak-alert\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "send-push",
+      "name": "POST /api/push/send",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Cron 21:00 Kyiv": {
+      "main": [
+        [
+          {
+            "node": "Get push subscribers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get push subscribers": {
+      "main": [
+        [
+          {
+            "node": "POST /api/push/send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
+  },
+  "tags": [
+    {
+      "name": "sergeant"
+    },
+    {
+      "name": "routine"
+    },
+    {
+      "name": "push"
+    }
+  ],
+  "active": false
+}

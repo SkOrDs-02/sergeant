@@ -10,14 +10,20 @@ export type BannerVariant = StatusColor;
 // readable foregrounds — the previous `text-emerald-100` / `text-amber-200`
 // declarations were applied in *both* modes, which collapsed contrast to
 // ~1.05:1 on the light-theme rendering.
+// Wave 1b: status variants collapse onto preset-owned `{status}-soft` /
+// `{status}-strong` pairs; the `--c-{status}-soft` CSS variables carry
+// the light/dark swap so `dark:` palette patches are no longer needed.
+// `dark:text-{palette}-100` retained because the `-strong` companion is
+// tuned for cream/white backgrounds and reads too dim on the dark soft
+// surface — the lighter `-100` shade keeps body copy legible there.
 const variants: Record<BannerVariant, string> = {
   info: "border-line bg-panelHi/60 text-text",
   success:
-    "border-emerald-200/70 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100",
+    "border-success/30 bg-success-soft text-success-strong dark:text-emerald-100",
   warning:
-    "border-amber-200/70 bg-amber-50 text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-100",
+    "border-warning/30 bg-warning-soft text-warning-strong dark:text-amber-100",
   danger:
-    "border-red-200/70 bg-red-50 text-red-800 dark:border-danger/30 dark:bg-danger/10 dark:text-red-100",
+    "border-danger/30 bg-danger-soft text-danger-strong dark:text-red-100",
 };
 
 export interface BannerProps extends HTMLAttributes<HTMLDivElement> {

@@ -22,8 +22,17 @@ import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance, safeWriteLS } from "@/lib/storage";
+import { ToastProvider } from "@/components/ui/Toast";
 
 import { Measurements } from "./Measurements";
+
+function renderPage() {
+  return render(
+    <ToastProvider>
+      <Measurements />
+    </ToastProvider>,
+  );
+}
 
 jest.mock("react-native-safe-area-context", () => {
   const RN = jest.requireActual("react-native");
@@ -71,7 +80,7 @@ afterEach(() => {
 
 describe("Fizruk Measurements page (mobile)", () => {
   it("renders the empty-state card when MMKV has no entries", () => {
-    render(<Measurements />);
+    renderPage();
 
     expect(screen.getByText("Вимірювання")).toBeTruthy();
     expect(screen.getByTestId("fizruk-measurements-list-empty")).toBeTruthy();
@@ -87,7 +96,7 @@ describe("Fizruk Measurements page (mobile)", () => {
       { id: "c", at: "2026-04-15T00:00:00Z", weightKg: 82 },
     ]);
 
-    render(<Measurements />);
+    renderPage();
 
     expect(screen.queryByTestId("fizruk-measurements-list-empty")).toBeNull();
 
@@ -103,7 +112,7 @@ describe("Fizruk Measurements page (mobile)", () => {
   });
 
   it("opens the form sheet when the FAB is pressed", () => {
-    render(<Measurements />);
+    renderPage();
 
     // Before press, sheet body isn't mounted.
     expect(screen.queryByText("Новий замір")).toBeNull();
@@ -115,7 +124,7 @@ describe("Fizruk Measurements page (mobile)", () => {
   });
 
   it("creates an entry via the form and shows it in the list", () => {
-    render(<Measurements />);
+    renderPage();
 
     fireEvent.press(screen.getByTestId("fizruk-measurements-add"));
     fireEvent.changeText(screen.getByLabelText("Вага"), "80.5");
@@ -140,7 +149,7 @@ describe("Fizruk Measurements page (mobile)", () => {
   it("opens the edit sheet pre-populated when a row is tapped", () => {
     seedEntries([{ id: "a", at: "2026-04-10T00:00:00Z", weightKg: 80 }]);
 
-    render(<Measurements />);
+    renderPage();
 
     fireEvent.press(screen.getByTestId("fizruk-measurements-row-a-edit"));
 
@@ -149,25 +158,19 @@ describe("Fizruk Measurements page (mobile)", () => {
     expect(screen.getByLabelText("Вага").props.value).toBe("80");
   });
 
-  it("removes a row via the two-tap delete flow", () => {
+  it("removes a row in a single tap (with undo-toast)", () => {
     seedEntries([
       { id: "a", at: "2026-04-10T00:00:00Z", weightKg: 80 },
       { id: "b", at: "2026-04-20T00:00:00Z", weightKg: 81 },
     ]);
 
-    render(<Measurements />);
+    renderPage();
 
     const deleteBtn = screen.getByTestId("fizruk-measurements-row-a-delete");
 
-    // First tap flips to the confirmation label.
+    // Single-tap delete (parity з web — undo-toast відіграє роль скасування).
     act(() => {
       fireEvent.press(deleteBtn);
-    });
-    expect(screen.getByTestId("fizruk-measurements-row-a-delete")).toBeTruthy();
-
-    // Second tap commits the delete.
-    act(() => {
-      fireEvent.press(screen.getByTestId("fizruk-measurements-row-a-delete"));
     });
 
     expect(screen.queryByTestId("fizruk-measurements-row-a")).toBeNull();

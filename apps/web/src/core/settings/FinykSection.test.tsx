@@ -9,12 +9,6 @@ import {
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-const flagState = { value: false };
-
-vi.mock("../lib/featureFlags", () => ({
-  useFlag: () => flagState.value,
-}));
-
 vi.mock("@shared/api", async () => {
   const actual =
     await vi.importActual<typeof import("@shared/api")>("@shared/api");
@@ -75,7 +69,6 @@ describe("FinykSection", () => {
     vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
-    flagState.value = false;
   });
 
   afterEach(() => {
@@ -84,29 +77,7 @@ describe("FinykSection", () => {
     sessionStorage.clear();
   });
 
-  it("renders legacy monobank section when flag is off and info cache exists", () => {
-    localStorage.setItem(
-      "finyk_info_cache",
-      JSON.stringify({
-        info: {
-          name: "Тест Юзер",
-          accounts: [
-            { id: "acc1", currencyCode: 980, balance: 50000, creditLimit: 0 },
-          ],
-        },
-      }),
-    );
-    localStorage.setItem("finyk_token", "test-token");
-    flagState.value = false;
-
-    renderWithProviders();
-
-    expect(screen.getByText("Тест Юзер")).toBeTruthy();
-    expect(screen.getByText(/UAH рахунків/)).toBeTruthy();
-  });
-
-  it("renders webhook connect form when flag is on and disconnected", async () => {
-    flagState.value = true;
+  it("renders webhook connect form when disconnected", async () => {
     mockedSyncState.mockResolvedValue({
       status: "disconnected",
       webhookActive: false,
@@ -124,8 +95,7 @@ describe("FinykSection", () => {
     expect(screen.getByText("Підключити Monobank")).toBeTruthy();
   });
 
-  it("renders webhook status when flag is on and connected", async () => {
-    flagState.value = true;
+  it("renders webhook status when connected", async () => {
     mockedSyncState.mockResolvedValue({
       status: "active",
       webhookActive: true,
@@ -143,8 +113,7 @@ describe("FinykSection", () => {
     expect(screen.getByText("Re-sync (backfill)")).toBeTruthy();
   });
 
-  it("calls monoWebhookApi.connect when submit in webhook mode", async () => {
-    flagState.value = true;
+  it("calls monoWebhookApi.connect on submit", async () => {
     mockedSyncState.mockResolvedValue({
       status: "disconnected",
       webhookActive: false,
@@ -167,15 +136,18 @@ describe("FinykSection", () => {
     fireEvent.click(btn);
 
     await waitFor(() => {
-      expect(mockedConnect).toHaveBeenCalledWith("my-webhook-token");
+      expect(mockedConnect).toHaveBeenCalledWith(
+        "my-webhook-token",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
     });
 
-    // Token must NOT be stored in browser
+    // Token must NOT be stored in browser — server-side only post roadmap-A.
     expect(localStorage.getItem("finyk_token")).toBeNull();
     expect(sessionStorage.getItem("finyk_token")).toBeNull();
   });
 
-  it("hides legacy token display when webhook flag is on", async () => {
+  it("does not surface legacy info-cache name (webhook-only mode)", async () => {
     localStorage.setItem(
       "finyk_info_cache",
       JSON.stringify({
@@ -183,7 +155,6 @@ describe("FinykSection", () => {
       }),
     );
     localStorage.setItem("finyk_token", "secret-token-abc");
-    flagState.value = true;
     mockedSyncState.mockResolvedValue({
       status: "disconnected",
       webhookActive: false,
@@ -194,14 +165,13 @@ describe("FinykSection", () => {
 
     renderWithProviders();
 
-    // Wait for webhook section to render
     await waitFor(() => {
       expect(screen.getByText(/Токен відправляється на сервер/)).toBeTruthy();
     });
 
-    // Legacy Monobank section should not render the client name
+    // Legacy info-cache should never reach the UI in webhook-only mode.
     expect(screen.queryByText("Тест Юзер")).toBeNull();
-    // Legacy token section should not be visible
+    // Legacy token section should not be visible.
     expect(screen.queryByText(/secret-token/)).toBeNull();
   });
 });

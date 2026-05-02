@@ -50,7 +50,7 @@ export function FinykApp() {
   return (
     <SafeAreaView
       edges={["top"]}
-      className="flex-1 bg-cream-50"
+      className="flex-1 bg-bg dark:bg-bg"
       testID="finyk-app-root"
     >
       <Overview onNavigate={handleNavigate} />

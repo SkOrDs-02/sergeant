@@ -17,6 +17,7 @@ import type {
   WorkoutItem,
   Workout,
   ChatAction,
+  ChatActionResult,
 } from "./types";
 
 function readWorkouts(): Workout[] {
@@ -33,7 +34,9 @@ function readWorkouts(): Workout[] {
   return [];
 }
 
-export function handleFizrukAction(action: ChatAction): string | undefined {
+export function handleFizrukAction(
+  action: ChatAction,
+): ChatActionResult | undefined {
   switch (action.name) {
     case "plan_workout": {
       const { date, time, note, exercises } =
@@ -391,7 +394,18 @@ export function handleFizrukAction(action: ChatAction): string | undefined {
         [],
       );
       lsSet("fizruk_daily_log_v1", [entry, ...existing]);
-      return `Самопочуття записано${parts.length ? ": " + parts.join(", ") : ""}.`;
+      const entryId = entry.id as string;
+      return {
+        result: `Самопочуття записано${parts.length ? ": " + parts.join(", ") : ""}.`,
+        undo: () => {
+          const cur = ls<Array<Record<string, unknown>>>(
+            "fizruk_daily_log_v1",
+            [],
+          );
+          const next = cur.filter((e) => e.id !== entryId);
+          if (next.length !== cur.length) lsSet("fizruk_daily_log_v1", next);
+        },
+      };
     }
     case "suggest_workout": {
       const { focus } = (action as SuggestWorkoutAction).input || {};

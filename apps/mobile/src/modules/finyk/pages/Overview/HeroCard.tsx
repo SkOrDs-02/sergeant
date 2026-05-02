@@ -1,18 +1,14 @@
 /**
- * HeroCard — top gradient-like hero with networth, this-month balance and
+ * HeroCard — top gradient hero with networth, this-month balance and
  * cards/debt breakdown. Mobile port of
  * `apps/web/src/modules/finyk/pages/overview/HeroCard.tsx`.
  *
- * Parity notes:
- * - Uses a flat emerald surface instead of a CSS gradient (RN has no
- *   `bg-gradient-to-br` support out of the box). The gradient is
- *   approximated by stacking a `bg-emerald-700` container on top of a
- *   `bg-emerald-900` border — visually close, zero native deps.
- * - Balance masking (`showBalance=false`) replaces the amount with
- *   bullet characters just like on web.
+ * Uses expo-linear-gradient for premium gradient effect matching web.
  */
 import { memo } from "react";
 import { Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { TrendingUp } from "lucide-react-native";
 
 import { cn } from "./cn";
 
@@ -24,6 +20,8 @@ export interface HeroCardProps {
   firstName: string;
   dateLabel: string;
   showBalance?: boolean;
+  /** Optional daily budget for progress indicator */
+  dayBudget?: { spent: number; limit: number };
 }
 
 function format(value: number): string {
@@ -38,10 +36,18 @@ const HeroCardImpl = function HeroCard({
   firstName,
   dateLabel,
   showBalance = true,
+  dayBudget,
 }: HeroCardProps) {
+  const dayProgress = dayBudget
+    ? Math.min(100, (dayBudget.spent / dayBudget.limit) * 100)
+    : null;
+
   return (
-    <View
-      className="rounded-3xl bg-emerald-700 border border-emerald-900 p-5"
+    <LinearGradient
+      colors={["#10b981", "#059669"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      className="rounded-3xl p-5"
       testID="finyk-overview-hero"
     >
       <View className="flex-row items-start justify-between">
@@ -51,7 +57,11 @@ const HeroCardImpl = function HeroCard({
             {firstName} · {dateLabel}
           </Text>
         </View>
+        <View className="w-8 h-8 rounded-full bg-white/15 items-center justify-center">
+          <TrendingUp size={18} color="#fff" strokeWidth={2} />
+        </View>
       </View>
+
       <Text
         className={cn(
           "text-white font-bold mt-2",
@@ -60,6 +70,28 @@ const HeroCardImpl = function HeroCard({
       >
         {showBalance ? `${format(networth)} ₴` : "••••••"}
       </Text>
+
+      {dayBudget && dayProgress !== null && (
+        <View className="mt-3">
+          <View className="flex-row justify-between mb-1">
+            <Text className="text-emerald-100 text-xs">Денний бюджет</Text>
+            <Text className="text-emerald-100 text-xs">
+              {showBalance
+                ? `${format(dayBudget.spent)} / ${format(dayBudget.limit)} ₴`
+                : "•••• / •••• ₴"}
+            </Text>
+          </View>
+          <View className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+            <View
+              className={cn(
+                "h-full rounded-full",
+                dayProgress > 90 ? "bg-rose-300" : "bg-white/80",
+              )}
+              style={{ width: `${dayProgress}%` }}
+            />
+          </View>
+        </View>
+      )}
 
       <View className="mt-4 pt-4 border-t border-emerald-900/40 flex-row justify-between">
         <View>
@@ -88,7 +120,7 @@ const HeroCardImpl = function HeroCard({
           </Text>
         </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 };
 

@@ -44,6 +44,8 @@ function tx(
     counterEdrpou: null,
     counterIban: null,
     counterName: null,
+    categorySlug: null,
+    categoryOverridden: false,
     source: "webhook",
     receivedAt: "2025-01-15T12:00:01Z",
     ...overrides,

@@ -1,13 +1,31 @@
-import { Dashboard } from "../pages/Dashboard";
-import { Atlas } from "../pages/Atlas";
-import { Exercise } from "../pages/Exercise";
-import { Workouts } from "../pages/Workouts";
-import { Progress } from "../pages/Progress";
-import { Measurements } from "../pages/Measurements";
-import { Body } from "../pages/Body";
-import { Programs } from "../pages/Programs";
-import { PlanCalendar } from "../pages/PlanCalendar";
+import { Suspense } from "react";
+import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
+import { lazyImport } from "../../../core/lib/lazyImport";
 import type { FizrukPage } from "./fizrukRoute";
+
+// Per-page lazy chunks. Previously this file eager-imported all nine
+// Fizruk pages, which forced the whole module subtree (Atlas exercise
+// catalogue, Body composition, full Workouts editor, Programs, …) into a
+// single chunk on first navigation into Fizruk. Splitting per page lets
+// each route load only the code it actually renders; the four
+// `prefetchModule("fizruk")` paths in `useRoutePrefetch.ts` continue to
+// warm the parent `FizrukApp` chunk, so subsequent page loads see warm
+// cache for whichever page the user is most likely to hit next.
+const Dashboard = lazyImport(() => import("../pages/Dashboard"), "Dashboard");
+const Atlas = lazyImport(() => import("../pages/Atlas"), "Atlas");
+const Exercise = lazyImport(() => import("../pages/Exercise"), "Exercise");
+const Workouts = lazyImport(() => import("../pages/Workouts"), "Workouts");
+const Progress = lazyImport(() => import("../pages/Progress"), "Progress");
+const Measurements = lazyImport(
+  () => import("../pages/Measurements"),
+  "Measurements",
+);
+const Body = lazyImport(() => import("../pages/Body"), "Body");
+const Programs = lazyImport(() => import("../pages/Programs"), "Programs");
+const PlanCalendar = lazyImport(
+  () => import("../pages/PlanCalendar"),
+  "PlanCalendar",
+);
 
 export interface FizrukRouterProps {
   page: FizrukPage;
@@ -22,23 +40,19 @@ export interface FizrukRouterProps {
   onOpenModule?: (moduleId: string, opts?: { hash?: string }) => void;
 }
 
-/**
- * Thin page switch for Fizruk. Kept here (instead of inlining in
- * FizrukApp) so adding/removing pages touches one small file and the
- * top-level App stays focused on orchestration.
- */
-export function FizrukRouter({
-  page,
-  exerciseId,
-  activeProgramId,
-  activeProgram,
-  activateProgram,
-  deactivateProgram,
-  todaySession,
-  onNavigate,
-  onStartProgramWorkout,
-  onOpenModule,
-}: FizrukRouterProps) {
+function renderPage(props: FizrukRouterProps) {
+  const {
+    page,
+    exerciseId,
+    activeProgramId,
+    activeProgram,
+    activateProgram,
+    deactivateProgram,
+    todaySession,
+    onNavigate,
+    onStartProgramWorkout,
+    onOpenModule,
+  } = props;
   switch (page) {
     case "dashboard":
       return (
@@ -53,7 +67,9 @@ export function FizrukRouter({
       return (
         <PlanCalendar
           onOpenRoutine={
-            onOpenModule ? () => onOpenModule("routine") : undefined
+            onOpenModule
+              ? () => onOpenModule("routine", { hash: "calendar" })
+              : undefined
           }
         />
       );
@@ -82,4 +98,19 @@ export function FizrukRouter({
     default:
       return null;
   }
+}
+
+/**
+ * Thin page switch for Fizruk. Kept here (instead of inlining in
+ * FizrukApp) so adding/removing pages touches one small file and the
+ * top-level App stays focused on orchestration. Each page is a `lazy()`
+ * chunk wrapped in a single `<Suspense>` boundary with the
+ * fizruk-themed `ModulePageLoader` skeleton.
+ */
+export function FizrukRouter(props: FizrukRouterProps) {
+  return (
+    <Suspense fallback={<ModulePageLoader module="fizruk" />}>
+      {renderPage(props)}
+    </Suspense>
+  );
 }

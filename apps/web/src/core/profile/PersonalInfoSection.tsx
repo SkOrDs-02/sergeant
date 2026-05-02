@@ -147,113 +147,123 @@ export function PersonalInfoSection({
 
   return (
     <Card radius="lg" padding="none" className="overflow-hidden">
-      <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
-        <Icon name="user" size={18} className="text-muted" />
-        <span className="text-sm font-semibold text-text">
-          Персональні дані
-        </span>
-      </div>
-
-      <div className="p-4 space-y-5">
-        <div className="flex items-center gap-4">
+      {/* ── Hero ──────────────────────────────────────────────────────── */}
+      <div className="px-6 pt-6 pb-5 flex flex-col items-center gap-3 border-b border-line/60">
+        {/* Avatar */}
+        <div className="relative group">
           <button
             type="button"
-            className="relative group shrink-0"
             disabled={!online || uploadingAvatar}
             onClick={() => fileRef.current?.click()}
             aria-label="Змінити аватар"
+            className={cn(
+              "relative w-20 h-20 rounded-[22px] overflow-hidden",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+            )}
           >
             {user.image ? (
               <img
                 src={user.image}
                 alt=""
-                className="w-16 h-16 rounded-2xl object-cover"
+                className="w-full h-full object-cover"
               />
             ) : (
-              <div
-                className={cn(
-                  "w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-bold",
-                  "bg-brand-500/15 text-brand-600 dark:text-brand-400",
-                )}
-              >
+              <div className="w-full h-full flex items-center justify-center text-2xl font-bold bg-brand-500/15 text-brand-strong dark:text-brand">
                 {initial}
               </div>
             )}
+            {/* Hover overlay */}
             <div
               className={cn(
-                "absolute inset-0 rounded-2xl flex items-center justify-center",
-                "bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity",
+                "absolute inset-0 flex items-center justify-center bg-black/40",
+                "opacity-0 group-hover:opacity-100 transition-opacity duration-150",
                 uploadingAvatar && "opacity-100",
               )}
             >
               {uploadingAvatar ? (
-                <span className="inline-block motion-safe:animate-spin">
-                  <Icon name="refresh-cw" size={18} className="text-white" />
+                <span className="motion-safe:animate-spin">
+                  <Icon name="refresh-cw" size={20} className="text-white" />
                 </span>
               ) : (
                 <Icon name="upload" size={18} className="text-white" />
               )}
             </div>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarChange}
-            />
           </button>
-          <div className="min-w-0 flex-1">
-            <p className="text-base font-semibold text-text truncate">
-              {user.name || "Без імені"}
-            </p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <p className="text-sm text-muted truncate">{user.email}</p>
-              {user.emailVerified && (
-                <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-brand-500/10 text-brand-600 dark:text-brand-400 text-2xs font-medium">
-                  <Icon name="check" size={10} strokeWidth={3} />
-                  Підтверджено
-                </span>
-              )}
-            </div>
-            {user.image && !confirmRemoveAvatar && (
-              <button
-                type="button"
-                className="text-xs text-muted hover:text-danger transition-colors mt-1"
-                disabled={!online || uploadingAvatar}
-                onClick={() => setConfirmRemoveAvatar(true)}
-              >
-                Видалити фото
-              </button>
-            )}
-            {user.image && confirmRemoveAvatar && (
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs text-danger font-medium">
-                  Видалити?
-                </span>
-                <button
-                  type="button"
-                  className="text-xs font-semibold text-danger hover:text-danger/80 transition-colors"
-                  onClick={handleRemoveAvatar}
-                >
-                  Так
-                </button>
-                <button
-                  type="button"
-                  className="text-xs text-muted hover:text-text transition-colors"
-                  onClick={() => setConfirmRemoveAvatar(false)}
-                >
-                  Ні
-                </button>
-              </div>
-            )}
-          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarChange}
+          />
         </div>
 
+        {/* Name + email + badges */}
+        <div className="text-center min-w-0 w-full">
+          <p className="text-h2 text-text truncate">
+            {user.name || "Без імені"}
+          </p>
+          <div className="flex items-center justify-center gap-1.5 mt-0.5 flex-wrap">
+            <p className="text-body-sm text-muted truncate">{user.email}</p>
+            {user.emailVerified ? (
+              <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-xl bg-brand-500/10 text-brand-strong dark:text-brand text-2xs font-medium">
+                <Icon name="check" size={10} strokeWidth={3} />
+                Підтверджено
+              </span>
+            ) : (
+              <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-xl bg-warning/10 text-warning text-2xs font-medium">
+                <Icon name="alert" size={10} strokeWidth={2.5} />
+                Не підтверджено
+              </span>
+            )}
+          </div>
+
+          {/* Avatar remove */}
+          {user.image && (
+            <div className="mt-2 flex items-center justify-center gap-2">
+              {!confirmRemoveAvatar ? (
+                <button
+                  type="button"
+                  className="text-xs text-muted hover:text-danger transition-colors"
+                  disabled={!online || uploadingAvatar}
+                  onClick={() => setConfirmRemoveAvatar(true)}
+                >
+                  Видалити фото
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-danger font-medium">
+                    Видалити фото?
+                  </span>
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-danger hover:text-danger/80 transition-colors"
+                    onClick={handleRemoveAvatar}
+                  >
+                    Так
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-muted hover:text-text transition-colors"
+                    onClick={() => setConfirmRemoveAvatar(false)}
+                  >
+                    Ні
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Fields ────────────────────────────────────────────────────── */}
+      <div className="divide-y divide-line/60">
+        {/* Unverified email banner */}
         {!user.emailVerified && user.email && (
-          <div className="flex items-center gap-2 rounded-xl bg-warning/10 border border-warning/30 px-3 py-2.5">
-            <Icon name="alert" size={14} className="text-warning shrink-0" />
+          <div className="px-4 py-3 flex items-center gap-3 bg-warning/5">
+            <Icon name="alert" size={15} className="text-warning shrink-0" />
             <p className="text-xs text-warning font-medium flex-1">
-              Email не підтверджено
+              Email не підтверджено — перевірте вашу поштову скриньку
             </p>
             <Button
               variant="ghost"
@@ -262,17 +272,18 @@ export function PersonalInfoSection({
               loading={sendingVerification}
               onClick={handleSendVerification}
             >
-              Надіслати лист
+              Надіслати
             </Button>
           </div>
         )}
 
-        <div className="space-y-2">
+        {/* Name row */}
+        <div className="px-4 py-4 space-y-2">
           <label
             htmlFor="profile-name"
             className="block text-xs font-medium text-muted"
           >
-            Ім{"'"}я
+            Ім&apos;я
           </label>
           <div className="flex gap-2">
             <Input
@@ -280,7 +291,11 @@ export function PersonalInfoSection({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ваше ім'я"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && dirty && !saving && online)
+                  handleSave();
+              }}
+              placeholder="Твоє ім'я"
               autoComplete="name"
               className="flex-1"
             />
@@ -296,7 +311,8 @@ export function PersonalInfoSection({
           </div>
         </div>
 
-        <div className="space-y-2">
+        {/* Email row */}
+        <div className="px-4 py-4 space-y-2">
           <label
             htmlFor="profile-email"
             className="block text-xs font-medium text-muted"
@@ -319,40 +335,45 @@ export function PersonalInfoSection({
               </Button>
             </div>
           ) : (
-            <div className="flex gap-2">
-              <Input
-                id="profile-email"
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="Новий email"
-                autoComplete="email"
-                className="flex-1"
-              />
-              <Button
-                variant="primary"
-                size="sm"
-                disabled={
-                  !newEmail.trim() ||
-                  newEmail.trim() === user.email ||
-                  savingEmail ||
-                  !online
-                }
-                loading={savingEmail}
-                onClick={handleChangeEmail}
-              >
-                Зберегти
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setEditingEmail(false);
-                  setNewEmail("");
-                }}
-              >
-                Скасувати
-              </Button>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  id="profile-email"
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="Новий email"
+                  autoComplete="email"
+                  className="flex-1"
+                />
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={
+                    !newEmail.trim() ||
+                    newEmail.trim() === user.email ||
+                    savingEmail ||
+                    !online
+                  }
+                  loading={savingEmail}
+                  onClick={handleChangeEmail}
+                >
+                  Зберегти
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditingEmail(false);
+                    setNewEmail("");
+                  }}
+                >
+                  Скасувати
+                </Button>
+              </div>
+              <p className="text-xs text-muted">
+                На новий email надійде лист для підтвердження.
+              </p>
             </div>
           )}
         </div>

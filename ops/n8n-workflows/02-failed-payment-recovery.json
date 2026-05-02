@@ -1,0 +1,212 @@
+{
+  "name": "02 — Failed Payment Recovery (Stripe → Telegram + Resend)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "stripe-payment-failed",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "stripe-webhook",
+      "name": "Stripe Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "verify-event",
+              "leftValue": "={{ $json.body.type }}",
+              "rightValue": "invoice.payment_failed",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "filter-event",
+      "name": "Is payment_failed?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "=⚠️ *Failed payment*\n\nCustomer: {{ $json.body.data.object.customer_email || 'N/A' }}\nAmount: ₴{{ Math.round($json.body.data.object.amount_due / 100) }}\nAttempt: {{ $json.body.data.object.attempt_count }}/4",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-alert",
+      "name": "Telegram → #incidents",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [680, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from\": \"Sergeant <support@sergeant.app>\",\n  \"to\": [\"{{ $('Stripe Webhook').item.json.body.data.object.customer_email }}\"],\n  \"subject\": \"Sergeant: оновіть платіжну картку\",\n  \"html\": \"<h2>Оплата не пройшла</h2><p>Ваша картка не спрацювала. Будь ласка, оновіть платіжні дані у <a href=\\\"https://sergeant.app/settings/billing\\\">налаштуваннях</a>.</p><p>Якщо потрібна допомога — напишіть нам у чат.</p>\"\n}",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Resend → update card email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "E765p971FMV4eDbY",
+          "name": "Resend (Bearer)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "wait-24h",
+      "name": "Wait 24h",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "check-attempt",
+              "leftValue": "={{ $('Stripe Webhook').item.json.body.data.object.attempt_count }}",
+              "rightValue": 4,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ]
+        }
+      },
+      "id": "max-retries",
+      "name": "Attempts >= 4?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE users SET plan = 'free', plan_updated_at = NOW() WHERE stripe_customer_id = '{{ $('Stripe Webhook').item.json.body.data.object.customer }}';",
+        "options": {}
+      },
+      "id": "downgrade-to-free",
+      "name": "Downgrade → Free",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1340, 300],
+      "credentials": {
+        "postgres": {
+          "id": "pwwVNTLBw43PJgey",
+          "name": "Sergeant Postgres (sergeant-db)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Stripe Webhook": {
+      "main": [
+        [
+          {
+            "node": "Is payment_failed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is payment_failed?": {
+      "main": [
+        [
+          {
+            "node": "Telegram → #incidents",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Resend → update card email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resend → update card email": {
+      "main": [
+        [
+          {
+            "node": "Wait 24h",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 24h": {
+      "main": [
+        [
+          {
+            "node": "Attempts >= 4?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attempts >= 4?": {
+      "main": [
+        [
+          {
+            "node": "Downgrade → Free",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
+  },
+  "active": false,
+  "tags": []
+}

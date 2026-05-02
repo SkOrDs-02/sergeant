@@ -196,24 +196,24 @@ accepted.
 
 Sentry має два основні сервіси:
 
-1. **Error Tracking** — ловить unhandled exceptions, групує у "issues",
+1. **Error tracking** — ловить unhandled exceptions, групує у «issues»,
    breadcrumbs, release tracking.
-2. **Performance Monitoring** — transactions, spans, auto-instrumentation.
+2. **Performance monitoring** — transactions, spans, auto-instrumentation.
 
 Performance у Sentry — привабливо (auto-capture), але:
 
-- Платний per-transaction model (кожен request = транзакція).
+- Платна per-transaction модель (кожен запит = транзакція).
 - Sampling-політика складна (head-sampling vs tail, для наших error-budget-ів
   не підходить).
-- Semantic mismatch: Sentry "transaction" ≠ наш logical op (sync push, AI call).
+- Семантичний mismatch: Sentry-«transaction» ≠ наш логічний op (sync push, AI call).
 
 ### Decision
 
 - **Server Sentry** ([`apps/server/src/sentry.ts`](../../apps/server/src/sentry.ts))
-  — тільки error capture (`captureException` з `err.cause` chain).
+  — тільки error capture (`captureException` з `err.cause`-ланцюжком).
 - **Client Sentry** ([`apps/web/src/core/observability/sentry.ts`](../../apps/web/src/core/observability/sentry.ts))
   — error capture + navigation breadcrumbs. `tracesSampleRate = 0` (performance
-  off).
+  вимкнено).
 - **Performance = Prometheus** (server) + **Web Vitals beacons** (client, окрема
   секція).
 
@@ -221,9 +221,9 @@ Performance у Sentry — привабливо (auto-capture), але:
 
 **Позитивні:**
 
-- Sentry-ціна = low tier (errors тільки).
+- Sentry-ціна = low tier (лише errors).
 - Чіткий поділ: error → Sentry; performance → Prometheus; logs → Pino.
-- Release tracking — корисний для розрізнення "error introduced in vX.Y".
+- Release tracking — корисний для розрізнення «error з'явився у vX.Y».
 
 **Негативні:**
 

@@ -13,7 +13,12 @@ import { LogCard } from "./components/LogCard";
 import { NutritionPantrySelector } from "./components/NutritionPantrySelector";
 import { NutritionOverlays } from "./components/NutritionOverlays";
 import { Banner } from "@shared/components/ui/Banner";
+import { ModuleAccentProvider } from "@shared/components/layout";
 import { Icon } from "@shared/components/ui/Icon";
+import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
+import { requestCloudPull } from "@shared/lib/cloudPullRequest";
+import { useQueryClient } from "@tanstack/react-query";
+import { nutritionKeys } from "@shared/lib/queryKeys";
 import {
   loadNutritionPrefs,
   persistNutritionPrefs,
@@ -24,6 +29,11 @@ import { usePhotoAnalysis } from "./hooks/usePhotoAnalysis";
 import { useShoppingList } from "./hooks/useShoppingList";
 import { useNutritionUiState } from "./hooks/useNutritionUiState";
 import { useNutritionHashRoute } from "./hooks/useNutritionHashRoute";
+import type {
+  NutritionPage,
+  PantrySubTab,
+  MenuSubTab,
+} from "./lib/nutritionRouter";
 import { useNutritionReminders } from "./hooks/useNutritionReminders";
 import { usePantryBarcodeScan } from "./hooks/usePantryBarcodeScan";
 import { useNutritionCloudBackup } from "./hooks/useNutritionCloudBackup";
@@ -51,13 +61,14 @@ export default function NutritionApp({
   const [err, setErr] = useState("");
   const [statusText, setStatusText] = useState("");
 
-  const { activePage, setActivePageAndHash } = useNutritionHashRoute();
-
-  // Sub-tab state for merged pages (pantry = Склад + Покупки,
-  // menu = План + Рецепти). Lives in component state because deep-linking
-  // into sub-tabs wasn't part of the old router either.
-  const [pantrySubTab, setPantrySubTab] = useState("items");
-  const [menuSubTab, setMenuSubTab] = useState("plan");
+  const {
+    activePage,
+    setActivePageAndHash,
+    pantrySubTab,
+    menuSubTab,
+    setPantrySubTab,
+    setMenuSubTab,
+  } = useNutritionHashRoute();
 
   const pantry = useNutritionPantries({ setBusy, setErr, setStatusText });
   const log = useNutritionLog();
@@ -323,7 +334,7 @@ export default function NutritionApp({
   const wrappedSaveMeal = useCallback(
     async (meal: Meal) => {
       const isEdit = !!editingMeal?.id;
-      if (isEdit) {
+      if (isEdit && editingMeal && editingMeal.date) {
         log.handleEditMeal(editingMeal.date, meal);
         setEditingMeal(null);
       } else {
@@ -350,11 +361,23 @@ export default function NutritionApp({
     .filter(Boolean)
     .join(" ");
 
+  // PTR refresh both invalidates nutrition RQ keys (so meal log / OFF
+  // cache refetch on next read) and asks the App-level cloud-sync engine
+  // for a pull. Both are awaited with `Promise.allSettled` so a slow
+  // cloud-pull doesn't keep the spinner pinned past the refetch.
+  const queryClient = useQueryClient();
+  const handlePullRefresh = useCallback(async () => {
+    await Promise.allSettled([
+      queryClient.invalidateQueries({ queryKey: nutritionKeys.all }),
+      requestCloudPull(2500),
+    ]);
+  }, [queryClient]);
+
   return (
-    <div className="h-dvh flex flex-col bg-bg text-text overflow-hidden">
+    <ModuleAccentProvider module="nutrition" asShellRoot>
       <NutritionHeader busy={busy} onBackToHub={onBackToHub} />
 
-      <div className="flex-1 overflow-y-auto">
+      <PullToRefresh onRefresh={handlePullRefresh} variant="nutrition">
         <div className="max-w-2xl mx-auto px-4 pt-4 pb-6 w-full">
           <NutritionPantrySelector pantry={pantry} busy={busy} />
 
@@ -378,7 +401,6 @@ export default function NutritionApp({
                   prefs={prefs}
                   onGoToLog={() => setActivePageAndHash("log")}
                   onGoToDailyPlan={() => {
-                    setMenuSubTab("plan");
                     setActivePageAndHash("menu");
                   }}
                   onFetchDayHint={fetchDayHint}
@@ -400,7 +422,7 @@ export default function NutritionApp({
                     if (!e.currentTarget.open) setPhotoCardForceOpen(false);
                   }}
                 >
-                  <summary className="flex items-center gap-2 cursor-pointer select-none py-2 px-1 text-sm font-semibold text-text">
+                  <summary className="flex items-center gap-2 cursor-pointer select-none py-2 px-1 text-style-label text-text">
                     <Icon
                       name="chevron-right"
                       size={16}
@@ -412,7 +434,7 @@ export default function NutritionApp({
                     <PhotoAnalyzeCard
                       busy={busy}
                       analyzePhoto={photo.analyzePhoto}
-                      fileRef={photo.fileRef}
+                      fileRef={photo.fileRef as React.Ref<HTMLInputElement>}
                       onPickPhoto={photo.onPickPhoto}
                       photoPreviewUrl={photo.photoPreviewUrl}
                       photoResult={photo.photoResult}
@@ -435,7 +457,7 @@ export default function NutritionApp({
               <>
                 <SubTabs
                   value={pantrySubTab}
-                  onChange={setPantrySubTab}
+                  onChange={(id) => setPantrySubTab(id as PantrySubTab)}
                   tabs={[
                     { id: "items", label: "Склад" },
                     { id: "shopping", label: "Покупки" },
@@ -453,11 +475,20 @@ export default function NutritionApp({
                       setPantryText={pantry.setPantryText}
                       effectiveItems={pantry.effectiveItems}
                       editItemAt={pantry.editItemAt}
-                      removeItemAtOrByName={(idx, name) =>
-                        pantry.pantryItems.length > 0
-                          ? pantry.removeItemAt(idx)
-                          : pantry.removeItem(name)
-                      }
+                      removeItemAtOrByName={(idx, name) => {
+                        if (pantry.pantryItems.length > 0) {
+                          const removed = pantry.pantryItems[idx];
+                          pantry.removeItemAt(idx);
+                          if (removed) {
+                            showUndoToast(toast, {
+                              msg: `Прибрано «${removed.name}» з комори`,
+                              onUndo: () => pantry.upsertItem(removed),
+                            });
+                          }
+                        } else if (name) {
+                          pantry.removeItem(name);
+                        }
+                      }}
                       pantryItemsLength={pantry.pantryItems.length}
                       pantrySummary={pantry.pantrySummary}
                       onScanBarcode={() => {
@@ -524,7 +555,7 @@ export default function NutritionApp({
               <>
                 <SubTabs
                   value={menuSubTab}
-                  onChange={setMenuSubTab}
+                  onChange={(id) => setMenuSubTab(id as MenuSubTab)}
                   tabs={[
                     { id: "plan", label: "План на день" },
                     { id: "recipes", label: "Рецепти" },
@@ -567,11 +598,11 @@ export default function NutritionApp({
             )}
           </div>
         </div>
-      </div>
+      </PullToRefresh>
 
       <NutritionBottomNav
         activePage={activePage}
-        setActivePage={setActivePageAndHash}
+        setActivePage={(id) => setActivePageAndHash(id as NutritionPage)}
       />
 
       <NutritionOverlays
@@ -594,6 +625,6 @@ export default function NutritionApp({
         applyRestorePayload={applyRestorePayload}
         onRequestMealPhoto={handleRequestMealPhoto}
       />
-    </div>
+    </ModuleAccentProvider>
   );
 }

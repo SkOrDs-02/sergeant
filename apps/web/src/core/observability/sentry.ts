@@ -1,9 +1,11 @@
 import { getPlatform, isCapacitor } from "@sergeant/shared";
 
-let initialized = false;
-let sentryModule = null;
+type SentryModule = typeof import("@sentry/react");
 
-function parseRate(val, fallback) {
+let initialized = false;
+let sentryModule: SentryModule | null = null;
+
+function parseRate(val: unknown, fallback: number): number {
   if (val == null || val === "") return fallback;
   const n = Number(val);
   return Number.isFinite(n) ? n : fallback;
@@ -14,8 +16,7 @@ function parseRate(val, fallback) {
  *
  * Навмисно через динамічний `import()`, щоб SDK (~30–40 KB gzip) не
  * потрапляв у головний бандл — аналітика/error tracking не повинні
- * блокувати hydration (див. правило 2.3 у
- * `.agents/skills/vercel-react-best-practices/AGENTS.md`).
+ * блокувати hydration (див. `.agents/skills/sergeant-web-ui/SKILL.md`).
  *
  * Без `VITE_SENTRY_DSN` — no-op і жодного чанку не підтягується.
  */
@@ -69,10 +70,30 @@ export async function initSentry() {
  * делегує у реальний `Sentry.captureException`. Використовується
  * локальним `ErrorBoundary`, щоб не змушувати його залежати від SDK.
  */
-export function captureException(error, hint) {
+export function captureException(
+  error: unknown,
+  hint?: Parameters<SentryModule["captureException"]>[1],
+): void {
   if (!sentryModule) return;
   try {
     sentryModule.captureException(error, hint);
+  } catch {
+    /* noop */
+  }
+}
+
+/**
+ * Lazy-forward `Sentry.addBreadcrumb`. No-op when the SDK is not yet
+ * loaded so callers can leave breadcrumbs unconditionally without
+ * forcing the Sentry chunk to ship eagerly. Used by `core/db/sqlite.ts`
+ * to record VFS-fallback / COOP-COEP triage data.
+ */
+export function addSentryBreadcrumb(
+  breadcrumb: Parameters<SentryModule["addBreadcrumb"]>[0],
+): void {
+  if (!sentryModule) return;
+  try {
+    sentryModule.addBreadcrumb(breadcrumb);
   } catch {
     /* noop */
   }

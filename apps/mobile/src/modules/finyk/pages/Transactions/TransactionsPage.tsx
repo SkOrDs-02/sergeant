@@ -57,6 +57,8 @@ import {
 import { TxRow } from "@/modules/finyk/components/TxRow";
 import { SwipeToAction } from "@/components/ui/SwipeToAction";
 import { Sheet } from "@/components/ui/Sheet";
+import { useToast } from "@/components/ui/Toast";
+import { showUndoToast } from "@/lib/showUndoToast";
 import {
   ManualExpenseSheet,
   type ManualExpensePayload,
@@ -198,6 +200,27 @@ export function TransactionsPage({
     overrideCategory,
     refresh,
   } = store;
+  const toast = useToast();
+
+  // Single-tap delete + undo-toast (parity з web). Снимаємо запис
+  // до виклику `removeManualExpense`, бо після нього його вже немає.
+  const handleDeleteManualExpense = useCallback(
+    (id: string) => {
+      const snapshot = manualExpenses.find((e) => e.id === id);
+      if (!snapshot) return;
+      removeManualExpense(id);
+      showUndoToast(toast, {
+        msg: `Транзакцію видалено`,
+        onUndo: () => {
+          // ManualExpenseRecord використовує `string` для category, але
+          // payload очікує літеральний union — за допомогою snapshot це
+          // безпечно, бо значення вже валідне (записано раніше).
+          addManualExpense(snapshot as unknown as ManualExpensePayload);
+        },
+      });
+    },
+    [addManualExpense, manualExpenses, removeManualExpense, toast],
+  );
 
   const { filters, setFilter, setAccountIds, setRange, clearAll } =
     useFinykTxFilters(filtersSeed);
@@ -940,7 +963,7 @@ export function TransactionsPage({
         open={sheetState.open}
         onClose={closeSheet}
         onSave={handleSave}
-        onDelete={removeManualExpense}
+        onDelete={handleDeleteManualExpense}
         initialExpense={
           sheetState.open && sheetState.editing ? sheetState.editing : null
         }

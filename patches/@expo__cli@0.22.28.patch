@@ -1,0 +1,25 @@
+diff --git a/build/src/utils/npm.js b/build/src/utils/npm.js
+index b861322e982f936bd3267c507a56f48213cc3d16..4108216c0bb437800cdca5ad20a8cbf7c648f5be 100644
+--- a/build/src/utils/npm.js
++++ b/build/src/utils/npm.js
+@@ -60,7 +60,19 @@ function _stream() {
+     return data;
+ }
+ function _tar() {
+-    const data = /*#__PURE__*/ _interopRequireDefault(require("tar"));
++    // Patched: tar v7 ships ESM-style named exports with __esModule=true and
++    // no `default`, which makes Babel's `_interopRequireDefault` return the
++    // module unchanged → `_tar().default.extract` resolves to undefined and
++    // `expo prebuild` crashes with «Cannot read properties of undefined
++    // (reading 'extract')». Wrap the require result so `.default` always
++    // points back at the module namespace, restoring the v6 behaviour for
++    // the single call site in `extractNpmTarballAsync` below. See
++    // chatwoot/chatwoot-mobile-app#1045.
++    const tarModule = require("tar");
++    const data = {
++        default: tarModule,
++        ...tarModule
++    };
+     _tar = function() {
+         return data;
+     };

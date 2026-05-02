@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 import { Virtuoso } from "react-virtuoso";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
@@ -9,6 +9,8 @@ import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary
 import { Card } from "@shared/components/ui/Card";
 import { useToast } from "@shared/hooks/useToast";
 import { hapticSuccess } from "@shared/lib/haptic";
+import { showUndoToast } from "@shared/lib/undoToast";
+import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 
 function WorkoutRow({ w, activeWorkoutId, setActiveWorkoutId }) {
   // An ended workout is always "Завершене" — even if it happens to be the
@@ -85,13 +87,26 @@ export function WorkoutJournalSection({
   removeItem,
   setFinishFlash,
   endWorkout,
-  setDeleteWorkoutConfirm,
   summarizeWorkoutForFinish,
   submitRetroWorkout,
   deleteWorkout,
+  restoreWorkout,
 }) {
   const toast = useToast();
+  const { announce } = useAnnounce();
   const workoutList = workouts || [];
+  const handleSwipeDelete = useCallback(
+    (id) => {
+      const snapshot = (workouts || []).find((w) => w.id === id);
+      if (!snapshot) return;
+      deleteWorkout(id);
+      showUndoToast(toast, {
+        msg: "Тренування видалено",
+        onUndo: () => restoreWorkout?.(snapshot),
+      });
+    },
+    [workouts, deleteWorkout, restoreWorkout, toast],
+  );
   const listHeight = Math.min(
     workoutList.length * JOURNAL_ITEM_HEIGHT,
     MAX_JOURNAL_HEIGHT,
@@ -168,6 +183,11 @@ export function WorkoutJournalSection({
               // Nutrition (meal save).
               hapticSuccess();
               toast.success("Тренування збережено.");
+              // Mirror the visible toast for screen-reader users — the
+              // toast queue uses an `aria-live` region too but only for
+              // the toast text region, which AT may filter as cosmetic.
+              // A polite announce() here is short and high-signal.
+              announce("Тренування завершено та збережено.");
               // Collapse the expanded active workout panel immediately —
               // a finished session should live on in the history list as a
               // "Завершене" entry, not keep occupying the "Активне" slot.
@@ -195,7 +215,22 @@ export function WorkoutJournalSection({
                 finishingRef.current = false;
               }, 0);
             }}
-            onDeleteWorkout={() => setDeleteWorkoutConfirm(true)}
+            onDeleteWorkout={() => {
+              // Unified undo: snapshot the active workout, run the
+              // soft-delete immediately, then surface a 5 s undo toast
+              // that re-inserts via `restoreWorkout`. Replaces the old
+              // `ConfirmDialog` step — the toast is the only safety
+              // net. Per the unified undo policy, `ConfirmDialog` is
+              // reserved for non-reversible actions.
+              if (!activeWorkout) return;
+              const snapshot = activeWorkout;
+              deleteWorkout(snapshot.id);
+              setActiveWorkoutId?.(null);
+              showUndoToast(toast, {
+                msg: "Тренування видалено",
+                onUndo: () => restoreWorkout(snapshot),
+              });
+            }}
             onCollapse={() => setActiveWorkoutId(null)}
           />
         </SectionErrorBoundary>
@@ -221,7 +256,7 @@ export function WorkoutJournalSection({
                 onClick={() => setRetroOpen(false)}
                 aria-label="Закрити"
                 title="Закрити"
-                className="h-8 w-8 rounded-lg text-xs text-subtle hover:text-text"
+                className="h-8 w-8 rounded-xl text-xs text-subtle hover:text-text"
               >
                 ×
               </Button>
@@ -295,7 +330,7 @@ export function WorkoutJournalSection({
                 key={w.id}
                 onSwipeLeft={
                   deleteWorkout && w.id !== activeWorkoutId
-                    ? () => deleteWorkout(w.id)
+                    ? () => handleSwipeDelete(w.id)
                     : undefined
                 }
                 rightLabel="🗑 Видалити"

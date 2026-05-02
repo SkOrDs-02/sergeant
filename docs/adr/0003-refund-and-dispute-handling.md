@@ -231,7 +231,7 @@ emailAndPassword: {
   defaults). Достатньо, щоб шахрайські cohort-и розпались.
 - `fraud_blocklist` як окрема таблиця (не флаг на `user`) дозволяє
   retention-policy: cron видаляє рядки з `expires_at < NOW()` без
-  торкання основного `user`-простору. Сумісно з ADR-0006 (PII
+  торкання основного `user`-простору. Сумісно з ADR-0016 (PII
   retention).
 
 **Негативні:**
@@ -241,7 +241,7 @@ emailAndPassword: {
 - IP-fingerprint = (`/16` IPv4 prefix + UA hash) — груба евристика;
   спільна Wi-Fi мережа теоретично може блокнути сусіда. Acceptable на
   MVP при low-volume.
-- `fraud_blocklist` зберігає `email` plain-text — це PII. ADR-0006
+- `fraud_blocklist` зберігає `email` plain-text — це PII. ADR-0016
   retention-policy має це покрити (delete-after-90-days вже є в `expires_at`).
 
 ### Alternatives considered

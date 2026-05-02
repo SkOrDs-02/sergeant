@@ -4,17 +4,14 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
-import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
+import { useToast } from "@shared/hooks/useToast";
+import { showUndoToast } from "@shared/lib/undoToast";
 import {
   createCategory,
   updateCategory,
   deleteCategory,
 } from "../../lib/routineStorage";
-import type {
-  CategoryDraft,
-  PendingCategoryDeletion,
-  RoutineState,
-} from "../../lib/types";
+import type { CategoryDraft, RoutineState } from "../../lib/types";
 
 export interface CategoriesSectionProps {
   routine: RoutineState;
@@ -30,8 +27,7 @@ export function CategoriesSection({
   setCatDraft,
 }: CategoriesSectionProps) {
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
-  const [deleteCatPending, setDeleteCatPending] =
-    useState<PendingCategoryDeletion | null>(null);
+  const toast = useToast();
 
   return (
     <>
@@ -135,7 +131,7 @@ export function CategoriesSection({
                   <div className="flex gap-1 shrink-0">
                     <button
                       type="button"
-                      className="text-subtle hover:text-text min-w-[32px] min-h-[32px] flex items-center justify-center rounded-lg text-xs"
+                      className="text-subtle hover:text-text min-w-[32px] min-h-[32px] flex items-center justify-center rounded-xl text-xs"
                       onClick={() => {
                         setEditingCatId(c.id);
                         setCatDraft({ name: c.name, emoji: c.emoji || "" });
@@ -146,14 +142,30 @@ export function CategoriesSection({
                     </button>
                     <button
                       type="button"
-                      className="text-subtle hover:text-danger min-w-[32px] min-h-[32px] flex items-center justify-center rounded-lg text-xs"
-                      onClick={() =>
-                        setDeleteCatPending({
-                          id: c.id,
-                          name: c.name,
-                          habitCount,
-                        })
-                      }
+                      className="text-subtle hover:text-danger min-w-[32px] min-h-[32px] flex items-center justify-center rounded-xl text-xs"
+                      onClick={() => {
+                        // Soft-delete with undo: snapshot the full
+                        // routine state, apply the deletion, then offer
+                        // a 5 s undo toast that restores the snapshot.
+                        // No `ConfirmDialog` — per the unified undo
+                        // policy (`AGENTS.md`) confirmation dialogs are
+                        // reserved for non-reversible flows.
+                        const snapshot = routine;
+                        const wasEditing = editingCatId === c.id;
+                        setRoutine((s) => deleteCategory(s, c.id));
+                        if (wasEditing) {
+                          setEditingCatId(null);
+                          setCatDraft({ name: "", emoji: "" });
+                        }
+                        const detail =
+                          habitCount > 0
+                            ? ` (${habitCount} ${habitCount === 1 ? "звичка" : "звичок"} без категорії)`
+                            : "";
+                        showUndoToast(toast, {
+                          msg: `Видалено категорію «${c.name}»${detail}`,
+                          onUndo: () => setRoutine(snapshot),
+                        });
+                      }}
                       aria-label={`Видалити ${c.name}`}
                     >
                       ×
@@ -165,28 +177,6 @@ export function CategoriesSection({
           </ul>
         )}
       </Card>
-
-      <ConfirmDialog
-        open={!!deleteCatPending}
-        title={`Видалити категорію «${deleteCatPending?.name}»?`}
-        description={
-          deleteCatPending?.habitCount > 0
-            ? `${deleteCatPending.habitCount} ${deleteCatPending.habitCount === 1 ? "звичка втратить" : "звичок втратять"} прив'язку до цієї категорії.`
-            : "Категорія буде видалена."
-        }
-        confirmLabel="Видалити"
-        onConfirm={() => {
-          if (deleteCatPending) {
-            setRoutine((s) => deleteCategory(s, deleteCatPending.id));
-            if (editingCatId === deleteCatPending.id) {
-              setEditingCatId(null);
-              setCatDraft({ name: "", emoji: "" });
-            }
-          }
-          setDeleteCatPending(null);
-        }}
-        onCancel={() => setDeleteCatPending(null)}
-      />
     </>
   );
 }

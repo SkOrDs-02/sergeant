@@ -169,8 +169,8 @@ export function ActiveWorkoutPanel({
       );
     }
 
-    const rendered = [];
-    const visitedGroups = new Set();
+    const rendered: React.ReactNode[] = [];
+    const visitedGroups = new Set<string>();
 
     for (const it of items) {
       const group = itemIdToGroup.get(it.id);
@@ -374,7 +374,7 @@ export function ActiveWorkoutPanel({
             {!groupSelectMode ? (
               <button
                 type="button"
-                className="text-xs px-3 py-1.5 rounded-lg border border-line text-subtle hover:text-text hover:bg-panelHi transition-colors"
+                className="text-xs px-3 py-1.5 rounded-xl border border-line text-subtle hover:text-text hover:bg-panelHi transition-colors"
                 onClick={() => {
                   setGroupSelectMode(true);
                   setGroupSelected(new Set());
@@ -386,25 +386,25 @@ export function ActiveWorkoutPanel({
               <>
                 <button
                   type="button"
-                  className="text-xs px-3 py-1.5 rounded-lg border border-success/40 text-success bg-success/10 hover:bg-success/20 transition-colors disabled:opacity-40"
+                  className="text-xs px-3 py-1.5 rounded-xl border border-success/40 text-success bg-success/10 hover:bg-success/20 transition-colors disabled:opacity-40"
                   disabled={groupSelected.size < 2 || groupSelected.size > 3}
                   onClick={() => handleCreateSuperset("superset")}
-                  title="Виберіть 2-3 вправи"
+                  title="Обери 2-3 вправи"
                 >
                   Суперсет ({groupSelected.size}/3)
                 </button>
                 <button
                   type="button"
-                  className="text-xs px-3 py-1.5 rounded-lg border border-fizruk/40 text-fizruk bg-fizruk/10 hover:bg-fizruk/20 transition-colors disabled:opacity-40"
+                  className="text-xs px-3 py-1.5 rounded-xl border border-fizruk/40 text-fizruk bg-fizruk/10 hover:bg-fizruk/20 transition-colors disabled:opacity-40"
                   disabled={groupSelected.size < 2 || groupSelected.size > 3}
                   onClick={() => handleCreateSuperset("circuit")}
-                  title="Виберіть 2-3 вправи"
+                  title="Обери 2-3 вправи"
                 >
                   Коло ({groupSelected.size}/3)
                 </button>
                 <button
                   type="button"
-                  className="text-xs px-3 py-1.5 rounded-lg border border-line text-subtle hover:text-text transition-colors"
+                  className="text-xs px-3 py-1.5 rounded-xl border border-line text-subtle hover:text-text transition-colors"
                   onClick={() => {
                     setGroupSelectMode(false);
                     setGroupSelected(new Set());

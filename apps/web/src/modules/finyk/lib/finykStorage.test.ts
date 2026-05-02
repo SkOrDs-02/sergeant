@@ -77,7 +77,7 @@ describe("writeJSONDebounced", () => {
     vi.advanceTimersByTime(199);
     expect(localStorage.getItem("k")).toBeNull();
     vi.advanceTimersByTime(2);
-    expect(JSON.parse(localStorage.getItem("k"))).toEqual({ a: 1 });
+    expect(JSON.parse(localStorage.getItem("k")!)).toEqual({ a: 1 });
 
     // Той самий payload — debounce не повинен нічого планувати повторно.
     const spy = vi.spyOn(Storage.prototype, "setItem");
@@ -93,7 +93,7 @@ describe("writeJSONDebounced", () => {
     writeJSONDebounced("q", 2, 300);
     writeJSONDebounced("q", 3, 300);
     vi.advanceTimersByTime(301);
-    expect(JSON.parse(localStorage.getItem("q"))).toBe(3);
+    expect(JSON.parse(localStorage.getItem("q")!)).toBe(3);
   });
 });
 
@@ -103,7 +103,7 @@ describe("flushPendingWrites", () => {
     writeJSONDebounced("pending", "value", 500);
     expect(localStorage.getItem("pending")).toBeNull();
     flushPendingWrites();
-    expect(JSON.parse(localStorage.getItem("pending"))).toBe("value");
+    expect(JSON.parse(localStorage.getItem("pending")!)).toBe("value");
   });
 });
 
@@ -114,7 +114,7 @@ describe("Domain API", () => {
     flushPendingWrites();
     expect(getTransactions()).toEqual([{ id: "1" }]);
     expect(
-      JSON.parse(localStorage.getItem(FINYK_STORAGE_KEYS.transactions)),
+      JSON.parse(localStorage.getItem(FINYK_STORAGE_KEYS.transactions)!),
     ).toEqual([{ id: "1" }]);
   });
 

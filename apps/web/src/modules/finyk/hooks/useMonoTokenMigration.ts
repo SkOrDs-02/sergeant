@@ -7,7 +7,6 @@ import {
   safeWriteLS,
   safeRemoveLS,
 } from "@shared/lib/storage";
-import { useFlag } from "../../../core/lib/featureFlags";
 import {
   trackEvent,
   ANALYTICS_EVENTS,
@@ -46,19 +45,23 @@ function removeLegacyTokenKeys(): void {
 
 /**
  * One-time migration: if the user has a legacy Monobank token stored in
- * localStorage/sessionStorage and the webhook feature flag is on, POST
- * the token to `/api/mono/connect`, then remove the browser-stored keys.
+ * localStorage/sessionStorage, POST it to `/api/mono/connect`, then remove
+ * the browser-stored keys. Runs once per session (guarded by ref +
+ * localStorage flag).
  *
- * Runs once per session (guarded by ref + localStorage flag).
+ * The `mono_webhook` feature flag was removed when the legacy polling code
+ * was deleted — webhook is now the only mode, so this migration always runs
+ * for any logged-in user with a legacy token. Keep the hook around for at
+ * least one more release cycle so older browsers without `MIGRATION_DONE_KEY`
+ * still get cleaned up.
  */
 export function useMonoTokenMigration(isLoggedIn: boolean): void {
-  const webhookEnabled = useFlag("mono_webhook");
   const queryClient = useQueryClient();
   const toast = useToast();
   const migratedRef = useRef(false);
 
   useEffect(() => {
-    if (!webhookEnabled || !isLoggedIn || migratedRef.current) return;
+    if (!isLoggedIn || migratedRef.current) return;
 
     // Already migrated in a previous session
     if (safeReadStringLS(MIGRATION_DONE_KEY) === "1") return;
@@ -70,7 +73,9 @@ export function useMonoTokenMigration(isLoggedIn: boolean): void {
 
     (async () => {
       try {
-        await monoWebhookApi.connect(legacyToken.trim());
+        await monoWebhookApi.connect(legacyToken.trim(), {
+          signal: AbortSignal.timeout(30_000),
+        });
         removeLegacyTokenKeys();
         safeWriteLS(MIGRATION_DONE_KEY, "1");
 
@@ -91,5 +96,5 @@ export function useMonoTokenMigration(isLoggedIn: boolean): void {
         migratedRef.current = false;
       }
     })();
-  }, [webhookEnabled, isLoggedIn, queryClient, toast]);
+  }, [isLoggedIn, queryClient, toast]);
 }

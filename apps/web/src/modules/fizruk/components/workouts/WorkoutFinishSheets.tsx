@@ -4,7 +4,12 @@ import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/cn";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { openHubModule } from "@shared/lib/hubNav";
+import {
+  isCrossModulePromptSuppressed,
+  recordCrossModulePromptAccepted,
+} from "@shared/lib/crossModulePrompt";
 import { formatDurShort } from "@sergeant/fizruk-domain";
+import { WorkoutStatTile } from "./WorkoutStatTile";
 
 export function WorkoutFinishSheets({
   finishFlash,
@@ -167,7 +172,7 @@ export function WorkoutFinishSheets({
                 </div>
                 <button
                   type="button"
-                  className="w-9 h-9 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-teal-800/10 dark:bg-white/10 text-teal-700 dark:text-white/70 hover:text-teal-900 dark:hover:text-white text-lg"
+                  className="w-9 h-9 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-fizruk-tile/10 text-teal-700 dark:text-white/70 hover:text-teal-900 dark:hover:text-white text-lg"
                   aria-label="Закрити"
                   onClick={() => setFinishFlash(null)}
                 >
@@ -175,39 +180,23 @@ export function WorkoutFinishSheets({
                 </button>
               </div>
               <div className="grid grid-cols-3 gap-2 mt-3">
-                <div className="rounded-xl bg-teal-800/10 dark:bg-white/10 border border-teal-800/15 dark:border-white/15 p-2.5 text-center">
-                  {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-                      Summary-sheet stat caption on hero background —
-                      `text-white/60` isn't expressed by SectionHeading tones. */}
-                  <div className="text-2xs uppercase tracking-wide text-teal-600 dark:text-white/60">
-                    Час
-                  </div>
-                  <div className="text-sm font-black text-teal-900 dark:text-white tabular-nums mt-0.5">
-                    {formatDurShort(finishFlash.durationSec)}
-                  </div>
-                </div>
-                <div className="rounded-xl bg-teal-800/10 dark:bg-white/10 border border-teal-800/15 dark:border-white/15 p-2.5 text-center">
-                  {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-                      Sibling caption; same rationale as above. */}
-                  <div className="text-2xs uppercase tracking-wide text-teal-600 dark:text-white/60">
-                    Вправ
-                  </div>
-                  <div className="text-lg font-black text-teal-900 dark:text-white tabular-nums">
-                    {finishFlash.items}
-                  </div>
-                </div>
-                <div className="rounded-xl bg-teal-800/10 dark:bg-white/10 border border-teal-800/15 dark:border-white/15 p-2.5 text-center">
-                  {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-                      Sibling caption; same rationale as above. */}
-                  <div className="text-2xs uppercase tracking-wide text-teal-600 dark:text-white/60">
-                    Обʼєм
-                  </div>
-                  <div className="text-sm font-black text-teal-900 dark:text-white tabular-nums mt-0.5">
-                    {finishFlash.tonnageKg > 0
+                <WorkoutStatTile
+                  label="Час"
+                  value={formatDurShort(finishFlash.durationSec)}
+                />
+                <WorkoutStatTile
+                  label="Вправ"
+                  value={finishFlash.items}
+                  size="lg"
+                />
+                <WorkoutStatTile
+                  label="Обʼєм"
+                  value={
+                    finishFlash.tonnageKg > 0
                       ? `${Math.round(finishFlash.tonnageKg)} кг`
-                      : "—"}
-                  </div>
-                </div>
+                      : "—"
+                  }
+                />
               </div>
             </div>
             {finishFlash.savedWellbeing &&
@@ -223,18 +212,27 @@ export function WorkoutFinishSheets({
                 </div>
               )}
             <div className="flex flex-col gap-2 p-3 bg-panel">
-              <button
-                type="button"
-                className="w-full text-xs text-muted hover:text-text transition-colors py-1.5 flex items-center justify-center gap-1.5"
-                onClick={() => {
-                  setFinishFlash(null);
-                  openHubModule("nutrition", "log");
-                }}
-              >
-                <span aria-hidden>🥩</span>
-                <span>Додати білок після тренування</span>
-                <span aria-hidden>→</span>
-              </button>
+              {/* Cross-module nudge → Nutrition. Inline (not a toast)
+                  because the finish-sheet itself is the natural moment
+                  to suggest. Snoozed for 12 h after acceptance so a
+                  user who logged a post-workout meal once today doesn't
+                  see this on a second workout the same evening. See
+                  docs/design/CROSS-MODULE-PROMPTS.md. */}
+              {!isCrossModulePromptSuppressed("fizruk-finish-to-meal") && (
+                <button
+                  type="button"
+                  className="w-full text-xs text-muted hover:text-text transition-colors py-1.5 flex items-center justify-center gap-1.5"
+                  onClick={() => {
+                    recordCrossModulePromptAccepted("fizruk-finish-to-meal");
+                    setFinishFlash(null);
+                    openHubModule("nutrition", "log");
+                  }}
+                >
+                  <span aria-hidden>🥩</span>
+                  <span>Додати білок після тренування</span>
+                  <span aria-hidden>→</span>
+                </button>
+              )}
               <div className="flex gap-2">
                 <Button
                   variant="ghost"

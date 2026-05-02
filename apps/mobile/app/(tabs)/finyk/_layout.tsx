@@ -39,9 +39,14 @@ export default function FinykStackLayout() {
           headerTitleStyle: { color: colors.text },
           headerTintColor: colors.accent,
           contentStyle: { backgroundColor: colors.bg },
+          animation: "slide_from_right",
+          animationDuration: 250,
         }}
       >
-        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="index"
+          options={{ headerShown: false, animation: "fade" }}
+        />
         <Stack.Screen name="transactions" options={{ title: "Операції" }} />
         <Stack.Screen name="budgets" options={{ title: "Планування" }} />
         <Stack.Screen name="analytics" options={{ title: "Аналітика" }} />

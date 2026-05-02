@@ -52,8 +52,13 @@ vi.mock("@shared/hooks/useOnlineStatus", () => ({
 
 const toastSuccessMock = vi.fn();
 const toastErrorMock = vi.fn();
+const toastShowMock = vi.fn();
 vi.mock("@shared/hooks/useToast", () => ({
-  useToast: () => ({ success: toastSuccessMock, error: toastErrorMock }),
+  useToast: () => ({
+    success: toastSuccessMock,
+    error: toastErrorMock,
+    show: toastShowMock,
+  }),
 }));
 
 const mockUser = {
@@ -62,6 +67,7 @@ const mockUser = {
   name: "Тест",
   image: null as string | null,
   emailVerified: true,
+  createdAt: "2026-01-15T08:30:00.000Z" as string | null,
 };
 const refreshMock = vi.fn(async () => undefined);
 const logoutMock = vi.fn(async () => undefined);
@@ -157,16 +163,19 @@ describe("ProfilePage", () => {
     it("shows email verification banner when emailVerified is false", () => {
       mockUser.emailVerified = false;
       renderPage();
-      expect(screen.getByText("Email не підтверджено")).toBeInTheDocument();
+      // Banner copy was extended in #1067 to include the suffix
+      // "— перевірте вашу поштову скриньку"; the action button was renamed
+      // from "Надіслати лист" to "Надіслати". Match the prefix via regex.
+      expect(screen.getByText(/Email не підтверджено/)).toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: "Надіслати лист" }),
+        screen.getByRole("button", { name: "Надіслати" }),
       ).toBeInTheDocument();
     });
 
     it("hides email verification banner when emailVerified is true", () => {
       renderPage();
       expect(
-        screen.queryByText("Email не підтверджено"),
+        screen.queryByText(/Email не підтверджено/),
       ).not.toBeInTheDocument();
     });
 
@@ -175,7 +184,9 @@ describe("ProfilePage", () => {
       renderPage();
       const links = screen.getAllByText("Видалити фото");
       fireEvent.click(links[0]);
-      expect(screen.getByText("Видалити?")).toBeInTheDocument();
+      // Confirm prompt copy changed in #1067 from "Видалити?" to
+      // "Видалити фото?".
+      expect(screen.getByText("Видалити фото?")).toBeInTheDocument();
     });
 
     it("shows change email button", () => {
@@ -243,7 +254,7 @@ describe("ProfilePage", () => {
       useOnlineStatusMock.mockReturnValue(false);
       mockUser.emailVerified = false;
       renderPage();
-      const btn = screen.getByRole("button", { name: "Надіслати лист" });
+      const btn = screen.getByRole("button", { name: "Надіслати" });
       expect(btn).toBeDisabled();
     });
 

@@ -1,4 +1,7 @@
-# 05. Operations & Automation: як контролювати, відстежувати, організовувати
+# 05. Operations і автоматизація: як контролювати, відстежувати, організовувати
+
+> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Status:** Active
 
 > Як адмініструвати весь стек, не вигорівши: 6 операційних зон, правило «3 вкладки», daily/weekly ритуал, автоматизація через n8n + OpenClaw.
 > Pre-MVP draft. Цифри (вартість self-host, LLM, час на task) — оцінкові.
@@ -440,8 +443,8 @@ help - Список всіх команд
 
 #### 1. Billing pipeline
 
-⏱ **Estimated setup time:** ~45 хв
-🔗 **n8n template:** [n8n.io/workflows → "Stripe to Telegram"](https://n8n.io/workflows/?q=stripe+telegram)
+⏱ **Орієнтовний час налаштування:** ~45 хв
+🔗 **n8n-шаблон:** [n8n.io/workflows → "Stripe to Telegram"](https://n8n.io/workflows/?q=stripe+telegram)
 
 ```
 Stripe webhook (subscription.created)
@@ -454,8 +457,8 @@ Stripe webhook (subscription.created)
 
 #### 2. Failed payment recovery
 
-⏱ **Estimated setup time:** ~1 год
-🔗 **n8n template:** [n8n.io/workflows → "Stripe failed payment"](https://n8n.io/workflows/?q=stripe+failed+payment)
+⏱ **Орієнтовний час налаштування:** ~1 год
+🔗 **n8n-шаблон:** [n8n.io/workflows → "Stripe failed payment"](https://n8n.io/workflows/?q=stripe+failed+payment)
 
 ```
 Stripe webhook (invoice.payment_failed)
@@ -467,8 +470,8 @@ Stripe webhook (invoice.payment_failed)
 
 #### 3. Sentry alert routing
 
-⏱ **Estimated setup time:** ~30 хв
-🔗 **n8n template:** [n8n.io/workflows → "Sentry to Telegram"](https://n8n.io/workflows/?q=sentry+telegram)
+⏱ **Орієнтовний час налаштування:** ~30 хв
+🔗 **n8n-шаблон:** [n8n.io/workflows → "Sentry to Telegram"](https://n8n.io/workflows/?q=sentry+telegram)
 
 ```
 Sentry webhook (new issue OR spike)
@@ -480,8 +483,8 @@ Sentry webhook (new issue OR spike)
 
 #### 4. Daily backup verification
 
-⏱ **Estimated setup time:** ~1.5 год
-🔗 **n8n template:** [n8n.io/workflows → "database backup"](https://n8n.io/workflows/?q=database+backup+verify)
+⏱ **Орієнтовний час налаштування:** ~1.5 год
+🔗 **n8n-шаблон:** [n8n.io/workflows → "database backup"](https://n8n.io/workflows/?q=database+backup+verify)
 
 ```
 Cron 03:00 UTC
@@ -495,8 +498,8 @@ Cron 03:00 UTC
 
 #### 5. Renovate PR auto-handler
 
-⏱ **Estimated setup time:** ~1 год
-🔗 **n8n template:** [n8n.io/workflows → "GitHub PR auto merge"](https://n8n.io/workflows/?q=github+pull+request+auto+merge)
+⏱ **Орієнтовний час налаштування:** ~1 год
+🔗 **n8n-шаблон:** [n8n.io/workflows → "GitHub PR auto merge"](https://n8n.io/workflows/?q=github+pull+request+auto+merge)
 
 ```
 GitHub webhook (pull_request opened, author=renovate[bot])
@@ -508,8 +511,8 @@ GitHub webhook (pull_request opened, author=renovate[bot])
 
 #### 6. Mono webhook → enrichment
 
-⏱ **Estimated setup time:** ~2 год
-🔗 **n8n template:** [n8n.io/workflows → "webhook enrichment AI"](https://n8n.io/workflows/?q=webhook+ai+enrichment)
+⏱ **Орієнтовний час налаштування:** ~2 год
+🔗 **n8n-шаблон:** [n8n.io/workflows → "webhook enrichment AI"](https://n8n.io/workflows/?q=webhook+ai+enrichment)
 
 ```
 Mono webhook (нова transaction)
@@ -1135,7 +1138,7 @@ OpenClaw weekly report → GitHub Issue (label: weekly-action-items)
 
 ---
 
-## 11. Вартість operations stack
+## 11. Вартість operations-стеку
 
 ### Базовий сценарій (solo founder)
 
@@ -1168,7 +1171,7 @@ OpenClaw weekly report → GitHub Issue (label: weekly-action-items)
 
 ---
 
-## Pointers
+## Пов'язані документи
 
 - Каталог сервісів і фази впровадження → [03-services-and-toolstack.md](./03-services-and-toolstack.md).
 - Метрики, алерти, incident response → [04-launch-readiness.md §3](./04-launch-readiness.md#3-operations-support-monitoring-incidents).

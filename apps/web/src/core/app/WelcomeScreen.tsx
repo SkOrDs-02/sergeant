@@ -60,31 +60,55 @@ function PeekBackdrop() {
           "bg-gradient-to-b from-brand-500/5 via-transparent to-transparent",
         )}
       />
+      {/* Animated floating shapes for visual interest */}
+      <div className="absolute inset-0">
+        <div
+          className="absolute top-[15%] left-[10%] w-24 h-24 rounded-full bg-brand-500/5 blur-2xl motion-safe:animate-float-slow"
+          style={{ animationDelay: "0s" }}
+        />
+        <div
+          className="absolute top-[30%] right-[15%] w-32 h-32 rounded-full bg-finyk/5 blur-2xl motion-safe:animate-float-slow"
+          style={{ animationDelay: "1s" }}
+        />
+        <div
+          className="absolute bottom-[25%] left-[20%] w-20 h-20 rounded-full bg-fizruk/5 blur-2xl motion-safe:animate-float-slow"
+          style={{ animationDelay: "2s" }}
+        />
+      </div>
       {/* Faux hub rendered under a blur so the user perceives the shape
           and accent colors of their about-to-be-populated dashboard, but
           can't read individual numbers well enough to be distracted from
           the splash copy. Uses a 2×2 bento grid matching the real dashboard. */}
       <div
-        className="absolute inset-x-0 top-0 pt-[max(2.5rem,env(safe-area-inset-top))] px-5 max-w-lg mx-auto w-full opacity-40 blur-[6px]"
-        style={{ filter: "blur(6px) saturate(0.85)" }}
+        className={cn(
+          "absolute inset-x-0 top-0 pt-[max(2.5rem,env(safe-area-inset-top))] px-5 max-w-lg mx-auto w-full",
+          "opacity-0 motion-safe:animate-fade-in-slow",
+        )}
+        style={{
+          filter: "blur(6px) saturate(0.85)",
+          animationDelay: "0.3s",
+          animationFillMode: "forwards",
+        }}
       >
-        <div className="space-y-3">
+        <div className="space-y-3 opacity-40">
           <div>
-            <div className="h-6 w-32 rounded-md bg-panelHi" />
-            <div className="h-3 w-24 rounded-md bg-panelHi mt-2" />
+            <div className="h-6 w-32 rounded-xl bg-panelHi" />
+            <div className="h-3 w-24 rounded-xl bg-panelHi mt-2" />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            {PEEK_CARDS.map((card) => (
+            {PEEK_CARDS.map((card, idx) => (
               <div
                 key={card.id}
                 className={cn(
                   "flex flex-col rounded-3xl border border-line p-3.5 shadow-card",
                   card.cardBg,
+                  "motion-safe:animate-card-enter",
                 )}
+                style={{ animationDelay: `${0.4 + idx * 0.1}s` }}
               >
                 <div
                   className={cn(
-                    "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mb-2",
+                    "w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mb-2",
                     card.iconClass,
                   )}
                 >
@@ -111,17 +135,22 @@ function PeekBackdrop() {
   );
 }
 
+interface WelcomeScreenProps {
+  /** Called when onboarding completes. Receives the selected start module and optional wizard options. */
+  onDone: (
+    startModuleId: string | null,
+    opts?: { intent: string; picks: string[] },
+  ) => void;
+  /** Navigate to the sign-in route for users who already have an account. */
+  onOpenAuth: () => void;
+}
+
 /**
  * Full-page cold-start at `/welcome`. Owns the page chrome + peek
  * backdrop and delegates the splash card to `OnboardingWizard` in
  * `fullPage` mode.
- *
- * @param {object} props
- * @param {(startModuleId: string | null, opts?: { intent: string, picks: string[] }) => void} props.onDone
- * @param {() => void} props.onOpenAuth - Navigate to the sign-in route for
- *   users who already have an account.
  */
-export function WelcomeScreen({ onDone, onOpenAuth }) {
+export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
   return (
     <div className="relative min-h-dvh bg-bg text-text overflow-hidden page-enter">
       <PeekBackdrop />

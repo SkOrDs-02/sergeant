@@ -35,12 +35,6 @@ export const apiQueryKeys = {
     all: ["barcode"] as const,
     lookup: (barcode: string) => ["barcode", barcode] as const,
   },
-  mono: {
-    all: ["mono"] as const,
-    clientInfo: (token: string) => ["mono", "client-info", token] as const,
-    statement: (token: string, accId: string, from: number, to: number) =>
-      ["mono", "statement", token, accId, from, to] as const,
-  },
   privat: {
     all: ["privat"] as const,
     balanceFinal: (merchantId: string) =>

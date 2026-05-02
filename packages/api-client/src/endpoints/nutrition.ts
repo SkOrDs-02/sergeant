@@ -1,7 +1,5 @@
 import type { HttpClient } from "../httpClient";
 
-const NUTRITION_TOKEN_HEADER = "X-Token";
-
 // ---------------------------------------------------------------------------
 // Response shapes returned by `apps/server/src/modules/nutrition/*`.
 // These match the server normalizers in
@@ -149,21 +147,6 @@ export interface NutritionBackupDownloadResponse {
   blob: unknown;
 }
 
-export type NutritionTokenProvider = () =>
-  | string
-  | null
-  | undefined
-  | Promise<string | null | undefined>;
-
-export interface NutritionEndpointsConfig {
-  /**
-   * Повертає токен, що прокидується у заголовок `X-Token` для всіх
-   * `/api/nutrition/*` запитів. Якщо повертає порожній рядок — заголовок
-   * не додається (сервер у такому разі скоріше за все відхилить запит).
-   */
-  getToken?: NutritionTokenProvider;
-}
-
 export interface NutritionEndpoints {
   postJson: <T = unknown>(url: string, body: unknown) => Promise<T>;
   analyzePhoto: (body: unknown) => Promise<NutritionPhotoResponse>;
@@ -180,26 +163,9 @@ export interface NutritionEndpoints {
   backupDownload: () => Promise<NutritionBackupDownloadResponse>;
 }
 
-export function createNutritionEndpoints(
-  http: HttpClient,
-  config: NutritionEndpointsConfig = {},
-): NutritionEndpoints {
-  const { getToken } = config;
-
-  async function nutritionHeaders(): Promise<Record<string, string>> {
-    if (!getToken) return {};
-    try {
-      const rawToken = await getToken();
-      if (rawToken) return { [NUTRITION_TOKEN_HEADER]: String(rawToken) };
-    } catch {
-      // ignore
-    }
-    return {};
-  }
-
-  async function postNutrition<T>(path: string, body: unknown): Promise<T> {
-    const headers = await nutritionHeaders();
-    return http.post<T>(path, body ?? {}, { headers });
+export function createNutritionEndpoints(http: HttpClient): NutritionEndpoints {
+  function postNutrition<T>(path: string, body: unknown): Promise<T> {
+    return http.post<T>(path, body ?? {});
   }
 
   return {

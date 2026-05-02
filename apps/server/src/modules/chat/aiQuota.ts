@@ -90,6 +90,14 @@ export function isAiQuotaDisabled(): boolean {
   return process.env.AI_QUOTA_DISABLED === "1";
 }
 
+// Runs once at module import — warns ops if quotas are bypassed in production.
+if (
+  process.env.AI_QUOTA_DISABLED === "1" &&
+  process.env.NODE_ENV === "production"
+) {
+  logger.warn({ msg: "ai_quota_disabled_in_production" });
+}
+
 function effectiveLimits(): EffectiveLimits {
   if (isAiQuotaDisabled()) return { user: null, anon: null };
   return {

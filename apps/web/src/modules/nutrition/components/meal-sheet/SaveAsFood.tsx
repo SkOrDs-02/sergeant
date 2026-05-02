@@ -34,7 +34,7 @@ export function SaveAsFood({
           if (!name) {
             setForm((s) => ({
               ...s,
-              err: "Введіть назву, щоб зберегти продукт.",
+              err: "Введи назву, щоб зберегти продукт.",
             }));
             return;
           }

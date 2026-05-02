@@ -15,7 +15,7 @@ export function Programs({
   deactivateProgram,
 }) {
   const { exercises } = useExerciseCatalog();
-  const [expandedProgram, setExpandedProgram] = useState(null);
+  const [expandedProgram, setExpandedProgram] = useState<string | null>(null);
 
   const todayDayIndex = (new Date().getDay() + 6) % 7;
 
@@ -91,7 +91,7 @@ export function Programs({
                         <div
                           key={i}
                           className={cn(
-                            "flex-1 text-center rounded py-1 text-3xs font-bold transition-colors",
+                            "flex-1 text-center rounded py-1 text-2xs font-bold transition-colors",
                             hasSession
                               ? isToday && isActive
                                 ? "bg-success-strong text-white"

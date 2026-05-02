@@ -10,6 +10,11 @@ export * from "./types";
 // Shared, DOM-free constants (storage keys, etc.)
 export * from "./lib/storageKeys";
 
+// Sensitive query-key policy for the React Query persisters
+// (web → IDB, mobile → MMKV). See PR #004 in
+// `docs/planning/storage-roadmap.md`.
+export * from "./lib/sensitiveQueryKeys";
+
 // Hub dashboard module ordering (pure helpers; storage I/O is per-platform).
 export * from "./lib/dashboard";
 
@@ -23,6 +28,13 @@ export * from "./lib/kvStore";
 
 // Onboarding "vibe picks" state + FTUX time-to-value helpers.
 export * from "./lib/vibePicks";
+
+// Active-modules helpers (derived from vibe picks) + hide-inactive toggle.
+export * from "./lib/activeModules";
+
+// Defaults shared by web/mobile undo-toast helpers.
+export * from "./lib/undoToast";
+export * from "./lib/undoTombstone";
 
 // Onboarding gate helpers (first-launch detection, done flag, splash taxonomy).
 export * from "./lib/onboarding";
@@ -48,6 +60,12 @@ export * from "./lib/dashboardFocus";
 // Hub dashboard quick-stats preview selector (pure; callers own storage I/O).
 export * from "./lib/quickStats";
 
+// Centralized hryvnia / currency formatter — single source of truth for ₴
+// amounts across the web app and shared package. See `formatMoney.ts`
+// for conventions; `fmtAmt` (in `@sergeant/finyk-domain`) remains the
+// transaction-row formatter and is intentionally separate.
+export * from "./lib/formatMoney";
+
 // Hub weekly-digest helpers — week key / storage key / digest freshness.
 export * from "./lib/weeklyDigest";
 
@@ -65,6 +83,9 @@ export * from "./lib/analyticsEvents";
 
 // DOM-free haptic contract (platform adapters register at app bootstrap).
 export * from "./lib/haptic";
+
+// Shared animation presets — timing, easing, spring configs, stagger helpers.
+export * from "./lib/animations";
 
 // Platform feature-detect (Capacitor WebView vs browser). DOM-free; reads
 // the `Capacitor` global injected by the native runtime, so `@sergeant/web`

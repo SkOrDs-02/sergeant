@@ -174,7 +174,7 @@ export function FizrukDayPlanSheet({
                         className={cn(
                           "text-sm font-medium truncate",
                           isActive
-                            ? "text-sky-600 dark:text-sky-400"
+                            ? "text-info-strong dark:text-info"
                             : "text-text",
                         )}
                       >

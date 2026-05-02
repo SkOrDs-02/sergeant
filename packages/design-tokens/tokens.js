@@ -124,6 +124,31 @@ export const moduleColors = {
   },
 };
 
+/**
+ * Module-accent RGB triplets for the `--module-accent-rgb` and
+ * `--module-accent-strong-rgb` CSS variables exposed by
+ * `ModuleAccentProvider`. Kept here (not in the React component) so
+ * the triplets stay in lockstep with `moduleColors.primary` and
+ * `brandColors.{emerald,teal,coral,lime}[700|800]` — the single source
+ * of truth for Sergeant module branding.
+ *
+ * Shape: "R G B" (space-separated, no commas) so the value is directly
+ * usable inside `rgb(…)` + Tailwind arbitrary values:
+ *
+ *   className="bg-[rgb(var(--module-accent-rgb)/0.1)]"
+ *   className="bg-[rgb(var(--module-accent-strong-rgb))] text-white"
+ *
+ * The `strong` triplet is the WCAG-AA companion shade (`-700` for most
+ * modules; `-800` for nutrition/lime where `-700` still regresses on
+ * white). It matches the `bg-{module}-strong` Tailwind utility.
+ */
+export const moduleAccentRgb = {
+  finyk: { default: "16 185 129", strong: "4 120 87" }, // emerald-500 / -700
+  fizruk: { default: "20 184 166", strong: "15 118 110" }, // teal-500 / -700
+  routine: { default: "249 112 102", strong: "194 58 58" }, // coral-500 / -700
+  nutrition: { default: "146 204 23", strong: "70 98 18" }, // lime-500 / -800
+};
+
 /** Status/semantic colors — consistent across app. */
 export const statusColors = {
   success: "#10b981", // emerald-500

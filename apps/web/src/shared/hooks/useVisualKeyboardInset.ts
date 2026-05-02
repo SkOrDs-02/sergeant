@@ -11,7 +11,7 @@
  *
  * Importing this module has the side-effect of registering the web
  * adapter on the shared contract, so the side-effect import in
- * `apps/web/src/main.jsx` is all the app shell needs. Existing call
+ * `apps/web/src/main.tsx` is all the app shell needs. Existing call
  * sites import the hook from `@sergeant/shared` — not from this file
  * — to stay platform-agnostic.
  */

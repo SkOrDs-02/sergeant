@@ -1,0 +1,138 @@
+{
+  "name": "16 — PostHog Daily Metrics (09:00 Kyiv → Telegram #metrics)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-morning",
+      "name": "Cron 09:00 Kyiv",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.POSTHOG_HOST || 'https://eu.i.posthog.com' }}/api/projects/{{ $env.POSTHOG_PROJECT_ID }}/query/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.POSTHOG_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": {\n    \"kind\": \"HogQLQuery\",\n    \"query\": \"SELECT count() AS pageviews, uniq(distinct_id) AS dau FROM events WHERE event = '$pageview' AND toDate(timestamp) = today() - 1\"\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "posthog-query",
+      "name": "PostHog → HogQL daily",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse PostHog HogQL response: { results: [[pageviews, dau]], columns: [...], ... }\n// On auth/config errors fall back gracefully so we still get a Telegram alert.\nconst body = $input.first()?.json ?? {};\n\nlet pageviews = 0;\nlet dau = 0;\nlet errorMsg = '';\n\nconst row = body?.results?.[0];\nif (Array.isArray(row) && row.length >= 2) {\n  pageviews = Number(row[0] ?? 0);\n  dau = Number(row[1] ?? 0);\n} else if (body?.detail || body?.code || body?.type) {\n  errorMsg = `${body.code || body.type || 'error'}: ${body.detail || 'unknown'}`;\n}\n\nconst yesterday = new Date();\nyesterday.setDate(yesterday.getDate() - 1);\nconst dateStr = yesterday.toLocaleDateString('uk-UA', {\n  day: 'numeric',\n  month: 'long',\n  timeZone: 'Europe/Kyiv',\n});\n\nreturn [{ json: { pageviews, dau, dateStr, errorMsg } }];"
+      },
+      "id": "parse-metrics",
+      "name": "Parse PostHog metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "={{ $json.errorMsg ? `⚠️ *PostHog Daily — ${$json.dateStr}*\n\n_PostHog API error:_ \\`${$json.errorMsg}\\`\n\nПеревірте \\`POSTHOG_API_KEY\\` / \\`POSTHOG_PROJECT_ID\\` / \\`POSTHOG_HOST\\` на n8n Railway.` : `📈 *PostHog Daily — ${$json.dateStr}*\n\n👥 DAU: \\`${$json.dau}\\`\n📱 Pageviews: \\`${$json.pageviews}\\`\n\n_[PostHog →](${$env.POSTHOG_HOST || 'https://eu.i.posthog.com'})_` }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-metrics",
+      "name": "Telegram → #metrics",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [900, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cron 09:00 Kyiv": {
+      "main": [
+        [
+          {
+            "node": "PostHog → HogQL daily",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostHog → HogQL daily": {
+      "main": [
+        [
+          {
+            "node": "Parse PostHog metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse PostHog metrics": {
+      "main": [
+        [
+          {
+            "node": "Telegram → #metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
+  },
+  "tags": [
+    {
+      "name": "sergeant"
+    },
+    {
+      "name": "posthog"
+    },
+    {
+      "name": "metrics"
+    }
+  ],
+  "active": false
+}

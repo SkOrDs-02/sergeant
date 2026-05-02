@@ -57,7 +57,24 @@ const TOP_N = 5;
 // derived from props + local expand/collapse state, so `memo` skips
 // redundant re-renders when the parent Analytics page re-renders for
 // unrelated reasons.
-function CategoryPieChartComponent({ data = [], size = 160, className }) {
+interface CategorySlice {
+  categoryId: string;
+  label: string;
+  spent: number;
+  color: string;
+}
+
+interface CategoryPieChartProps {
+  data?: CategorySlice[];
+  size?: number;
+  className?: string;
+}
+
+function CategoryPieChartComponent({
+  data = [],
+  size = 160,
+  className,
+}: CategoryPieChartProps) {
   const [showAll, setShowAll] = useState(false);
   const hasOverflow = (data?.length ?? 0) > TOP_N;
 

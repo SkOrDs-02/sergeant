@@ -1,0 +1,152 @@
+{
+  "name": "03 — Sentry Alert Routing (Sentry → Telegram)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sentry-alert",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "sentry-webhook",
+      "name": "Sentry Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "severity-filter",
+              "leftValue": "={{ $json.body.data.issue.level }}",
+              "rightValue": "info",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ]
+        }
+      },
+      "id": "filter-severity",
+      "name": "Severity >= warning?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "is-fatal",
+              "leftValue": "={{ $json.body.data.issue.level }}",
+              "rightValue": "fatal",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "id": "is-fatal",
+      "name": "Is fatal?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "=🚨 *FATAL — Sentry*\n\n*{{ $json.body.data.issue.title }}*\nProject: {{ $json.body.data.issue.project.name }}\nEvents: {{ $json.body.data.issue.count }}\n[Open in Sentry]({{ $json.body.data.issue.permalink }})",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-fatal",
+      "name": "Telegram → FATAL",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [900, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "=⚠️ *Sentry — {{ $json.body.data.issue.level }}*\n\n*{{ $json.body.data.issue.title }}*\nProject: {{ $json.body.data.issue.project.name }}\nEvents: {{ $json.body.data.issue.count }}\n[Open in Sentry]({{ $json.body.data.issue.permalink }})",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-warning",
+      "name": "Telegram → warning",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [900, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Sentry Webhook": {
+      "main": [
+        [
+          {
+            "node": "Severity >= warning?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Severity >= warning?": {
+      "main": [
+        [
+          {
+            "node": "Is fatal?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is fatal?": {
+      "main": [
+        [
+          {
+            "node": "Telegram → FATAL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram → warning",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
+  },
+  "active": false,
+  "tags": []
+}

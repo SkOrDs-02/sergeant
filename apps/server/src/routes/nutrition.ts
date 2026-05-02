@@ -4,7 +4,7 @@ import {
   rateLimitExpress,
   requireAiQuota,
   requireAnthropicKey,
-  requireNutritionToken,
+  requireSession,
   setModule,
 } from "../http/index.js";
 import analyzePhoto from "../modules/nutrition/analyze-photo.js";
@@ -22,7 +22,7 @@ import shoppingList from "../modules/nutrition/shopping-list.js";
  * Усі `/api/nutrition/*` endpoint-и мають спільний set guard-ів:
  *   - `setModule("nutrition")` — для логера/метрик
  *   - broad rate-limit ("api:nutrition") — гасить shotgun-атаки
- *   - `requireNutritionToken()` — якщо NUTRITION_API_TOKEN сконфігурований
+ *   - `requireSession()` — лише авторизовані користувачі (cookie або Bearer)
  *
  * Per-endpoint rate-limit + AI-guards навішуємо нижче: backup-endpoint-и не
  * ходять у Anthropic і не мають тратити квоту, тому `requireAnthropicKey` /
@@ -35,7 +35,7 @@ export function createNutritionRouter(): Router {
     "/api/nutrition",
     rateLimitExpress({ key: "api:nutrition", limit: 120, windowMs: 60_000 }),
   );
-  r.use("/api/nutrition", requireNutritionToken());
+  r.use("/api/nutrition", requireSession());
 
   const ai = [requireAnthropicKey(), requireAiQuota()];
 

@@ -16,6 +16,7 @@ export const STORAGE_KEYS = {
   DASHBOARD_ORDER: "hub_dashboard_order_v1",
   HUB_PREFS: "hub_prefs_v1",
   USER_PROFILE: "hub_user_profile_v1",
+  DASHBOARD_DENSITY: "hub_dashboard_density_v1",
 
   // Hub quick-stats previews rendered on the dashboard
   FINYK_QUICK_STATS: "finyk_quick_stats",
@@ -108,6 +109,15 @@ export const STORAGE_KEYS = {
   MOBILE_SYNC_OFFLINE_QUEUE: "mobile:sync_offline_queue",
   MOBILE_SYNC_MIGRATION_DONE: "mobile:sync_migrated_users",
   MOBILE_QUERY_CACHE: "mobile:query_cache_v1",
+
+  // ─── Web: React Query persisted cache ────────────────────────────────
+  // IndexedDB-backed persister key for `apps/web` (see
+  // `apps/web/src/shared/lib/queryClientPersister.ts`). Mirrors mobile's
+  // `MOBILE_QUERY_CACHE` so the warm-start contract is symmetrical
+  // across platforms. The `web:` prefix guarantees we never collide with
+  // any pre-existing `localStorage` keys — IDB has its own keyspace, but
+  // having the prefix in source keeps grep / audits unambiguous.
+  WEB_QUERY_CACHE: "web:query_cache_v1",
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

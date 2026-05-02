@@ -117,7 +117,13 @@ export function useAssetsState({
     billingDay: "",
     currency: "UAH",
   });
-  const [txPicker, setTxPicker] = useState(null);
+  type TxPicker =
+    | { type: "sub"; subId: string }
+    | { type: "recv"; id: string }
+    | { type: "debt"; id: string }
+    | { type: "monoDebt"; id: string }
+    | null;
+  const [txPicker, setTxPicker] = useState<TxPicker>(null);
   const [open, setOpen] = useState<SectionOpenState>({
     subscriptions: false,
     assets: false,

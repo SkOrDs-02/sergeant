@@ -17,7 +17,7 @@ interface WaterTrackerCardProps {
 export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
   const { todayMl, add, subtract, reset } = useWaterTracker();
   const [resetPending, setResetPending] = useState(false);
-  const resetTimerRef = useRef(null);
+  const resetTimerRef = useRef<number | null>(null);
   const [customMl, setCustomMl] = useState("");
   const [lastAddedMl, setLastAddedMl] = useState(0);
 
@@ -98,7 +98,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
                 }, 2500);
               }
             }}
-            className="text-xs text-subtle hover:text-danger transition-colors px-2 py-1 rounded-lg"
+            className="text-xs text-subtle hover:text-danger transition-colors px-2 py-1 rounded-xl"
             aria-label={
               resetPending
                 ? "Підтвердити скидання води за сьогодні"
@@ -132,8 +132,8 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
             onClick={() => handleAdd(ml)}
             className={cn(
               "h-9 rounded-xl text-xs font-semibold transition-colors",
-              "bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20",
-              "hover:bg-sky-500/20 active:scale-95",
+              "bg-info-soft text-info-strong dark:text-info border border-info/20",
+              "hover:bg-info/20 active:scale-95",
             )}
           >
             +{ml < 1000 ? ml : `${ml / 1000}л`}
@@ -163,8 +163,8 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
           disabled={!customMl || Number(customMl) <= 0}
           className={cn(
             "h-9 px-3 rounded-xl text-xs font-semibold transition-colors",
-            "bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20",
-            "hover:bg-sky-500/20 disabled:opacity-50 active:scale-95",
+            "bg-info-soft text-info-strong dark:text-info border border-info/20",
+            "hover:bg-info/20 disabled:opacity-50 active:scale-95",
           )}
         >
           + Додати

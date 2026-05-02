@@ -141,6 +141,8 @@ describe("normalizeMonoTransaction", () => {
     counterEdrpou: null,
     counterIban: null,
     counterName: null,
+    categorySlug: "food" as string | null,
+    categoryOverridden: false,
     source: "webhook",
     receivedAt: new Date("2026-04-26T10:00:01Z"),
   };
@@ -196,5 +198,24 @@ describe("normalizeMonoTransaction", () => {
     expect(result.mcc).toBe(5411);
     expect(result.description).toBe("Сільпо");
     expect(result.source).toBe("webhook");
+  });
+
+  it("проносить categorySlug і categoryOverridden as-is", () => {
+    expect(normalizeMonoTransaction(baseRow).categorySlug).toBe("food");
+    expect(normalizeMonoTransaction(baseRow).categoryOverridden).toBe(false);
+
+    const overridden = normalizeMonoTransaction({
+      ...baseRow,
+      categorySlug: "transport",
+      categoryOverridden: true,
+    });
+    expect(overridden.categorySlug).toBe("transport");
+    expect(overridden.categoryOverridden).toBe(true);
+
+    const uncategorized = normalizeMonoTransaction({
+      ...baseRow,
+      categorySlug: null,
+    });
+    expect(uncategorized.categorySlug).toBeNull();
   });
 });

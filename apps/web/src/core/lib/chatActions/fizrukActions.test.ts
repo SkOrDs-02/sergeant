@@ -15,10 +15,10 @@ afterEach(() => {
 
 function call(action: ChatAction): string {
   const out = handleFizrukAction(action);
-  if (typeof out !== "string") {
-    throw new Error(`handler returned ${typeof out}, expected string`);
+  if (out == null) {
+    throw new Error(`handler returned ${typeof out}, expected string|object`);
   }
-  return out;
+  return typeof out === "string" ? out : out.result;
 }
 
 // ---------------------------------------------------------------------------
@@ -521,5 +521,30 @@ describe("calculate_1rm", () => {
     expect(typeof out).toBe("string");
     expect(out).toContain("120");
     expect(out).toContain("максимум");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// log_wellbeing · undo
+// ---------------------------------------------------------------------------
+describe("log_wellbeing · undo", () => {
+  it("повертає {undo} який видаляє щойно додану entry за id", () => {
+    const out = handleFizrukAction({
+      name: "log_wellbeing",
+      input: { weight_kg: 75, sleep_hours: 7, energy_level: 4, mood_score: 4 },
+    });
+    if (typeof out === "string" || out == null)
+      throw new Error("expected object");
+
+    const before = JSON.parse(
+      localStorage.getItem("fizruk_daily_log_v1") || "[]",
+    );
+    expect(before).toHaveLength(1);
+
+    out.undo();
+    const after = JSON.parse(
+      localStorage.getItem("fizruk_daily_log_v1") || "[]",
+    );
+    expect(after).toHaveLength(0);
   });
 });

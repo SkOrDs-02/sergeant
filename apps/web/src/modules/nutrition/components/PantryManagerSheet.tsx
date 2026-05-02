@@ -6,8 +6,18 @@ import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/cn";
 import type { Pantry } from "@sergeant/nutrition-domain";
 
+/**
+ * Modes a pantry form can be in:
+ * - `create`: input is the name of a brand-new склад to add.
+ * - `rename`: input is the new name for the active склад.
+ *
+ * Defined as an explicit union so call-sites and state shapes stay aligned
+ * (`PantryManagerSheet`, `useNutritionPantries`, `NutritionOverlays`).
+ */
+export type PantryFormMode = "create" | "rename";
+
 export interface PantryForm {
-  mode: string;
+  mode: PantryFormMode;
   name: string;
   err: string;
 }
@@ -21,7 +31,7 @@ interface PantryManagerSheetProps {
   pantryForm: PantryForm;
   setPantryForm: Dispatch<SetStateAction<PantryForm>>;
   busy?: boolean;
-  onSavePantryForm: (name: string, mode: string) => void;
+  onSavePantryForm: (name: string, mode: PantryFormMode) => void;
   onBeginCreate: () => void;
   onBeginRename: () => void;
   onBeginDelete: () => void;

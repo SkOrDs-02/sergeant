@@ -1,32 +1,18 @@
 import { useEffect, useState } from "react";
 import { STORAGE_KEYS } from "@sergeant/shared";
+import { safeReadLSValidated, safeWriteLS } from "@shared/lib/storage";
+import { HubPrefsSchema, type HubPrefs } from "./hubPrefs.schema";
 
 const HUB_PREFS_KEY = STORAGE_KEYS.HUB_PREFS;
 
-type HubPrefs = Record<string, unknown>;
-
 function loadHubPrefs(): HubPrefs {
-  try {
-    const raw = localStorage.getItem(HUB_PREFS_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? (parsed as HubPrefs) : {};
-  } catch {
-    return {};
-  }
+  return safeReadLSValidated(HUB_PREFS_KEY, HubPrefsSchema, {});
 }
 
 function saveHubPref(key: string, value: unknown): void {
-  try {
-    const prefs = loadHubPrefs();
-    localStorage.setItem(
-      HUB_PREFS_KEY,
-      JSON.stringify({ ...prefs, [key]: value }),
-    );
-    window.dispatchEvent(new StorageEvent("storage", { key: HUB_PREFS_KEY }));
-  } catch {
-    /* quota or serialization — safe to ignore */
-  }
+  const prefs = loadHubPrefs();
+  safeWriteLS(HUB_PREFS_KEY, { ...prefs, [key]: value });
+  window.dispatchEvent(new StorageEvent("storage", { key: HUB_PREFS_KEY }));
 }
 
 /**

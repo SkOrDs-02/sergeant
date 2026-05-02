@@ -1,0 +1,185 @@
+{
+  "name": "63 — Growth Acquisition Snapshot (02:35 Kyiv → POST /api/internal/growth/acquisition)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "35 2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-acq",
+      "name": "Cron 02:35 Kyiv",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.POSTHOG_HOST || 'https://eu.i.posthog.com' }}/api/projects/{{ $env.POSTHOG_PROJECT_ID }}/query/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.POSTHOG_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": {\n    \"kind\": \"HogQLQuery\",\n    \"query\": \"SELECT coalesce(properties.$utm_source, 'direct') AS source, coalesce(properties.$utm_medium, '') AS medium, coalesce(properties.$utm_campaign, '') AS campaign, count(DISTINCT distinct_id) AS signups FROM events WHERE event = 'signup_completed' AND timestamp >= toStartOfDay(now() - INTERVAL 1 DAY) AND timestamp < toStartOfDay(now()) GROUP BY source, medium, campaign ORDER BY signups DESC LIMIT 50\"\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "posthog-acq",
+      "name": "PostHog → acquisition HogQL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse PostHog HogQL response into acquisition rows for /api/internal/growth/acquisition.\n// Expected response shape: { results: [[source, medium, campaign, signups], ...], columns: [...] }\n// On auth/config errors fall back gracefully so we still get a Telegram alert.\nconst body = $input.first()?.json ?? {};\nlet errorMsg = '';\nlet raw = [];\n\nif (Array.isArray(body?.results)) {\n  raw = body.results;\n} else if (body?.detail || body?.code || body?.type) {\n  errorMsg = `${body.code || body.type || 'error'}: ${body.detail || 'unknown'}`;\n}\n\nconst fmt = new Intl.DateTimeFormat('en-CA', {\n  timeZone: 'Europe/Kyiv',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit',\n});\nconst yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);\nconst snapshotDate = fmt.format(yesterday);\n\nconst rows = raw.map((row) => ({\n  source: String(row?.[0] ?? 'direct') || 'direct',\n  medium: String(row?.[1] ?? ''),\n  campaign: String(row?.[2] ?? ''),\n  signups: Number(row?.[3]) || 0,\n  spendCents: 0,\n  cacCents: null,\n}));\n\nconst total = rows.reduce((acc, r) => acc + r.signups, 0);\nconst top = rows\n  .slice()\n  .sort((a, b) => b.signups - a.signups)\n  .slice(0, 5)\n  .map((r) => `${r.source}/${r.medium || '—'}: ${r.signups}`)\n  .join('\\n');\n\nreturn [\n  {\n    json: {\n      snapshotDate,\n      rows,\n      summary: { total, top, channelCount: rows.length },\n      errorMsg,\n    },\n  },\n];"
+      },
+      "id": "build-acq",
+      "name": "Build acquisition rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PUBLIC_API_BASE_URL || 'https://api.invalid.local' }}/api/internal/growth/acquisition",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.INTERNAL_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"snapshotDate\": \"{{ $json.snapshotDate }}\",\n  \"rows\": {{ JSON.stringify($json.rows) }}\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "post-acq",
+      "name": "POST /api/internal/growth/acquisition",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "={{ $('Build acquisition rows').item.json.errorMsg ? `⚠️ *Acquisition — ${$('Build acquisition rows').item.json.snapshotDate}*\n\n_PostHog API error:_ \\`${$('Build acquisition rows').item.json.errorMsg}\\`\n\nПеревірте \\`POSTHOG_API_KEY\\` / \\`POSTHOG_PROJECT_ID\\` / \\`POSTHOG_HOST\\` на n8n Railway.` : `📥 *Acquisition — ${$('Build acquisition rows').item.json.snapshotDate}*\n\nTotal signups: \\`${$('Build acquisition rows').item.json.summary.total}\\` із \\`${$('Build acquisition rows').item.json.summary.channelCount}\\` каналів\n\nTop:\n\\`\\`\\`\n${$('Build acquisition rows').item.json.summary.top}\n\\`\\`\\`` }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-acq",
+      "name": "Telegram → growth acquisition",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1120, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cron 02:35 Kyiv": {
+      "main": [
+        [
+          {
+            "node": "PostHog → acquisition HogQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostHog → acquisition HogQL": {
+      "main": [
+        [
+          {
+            "node": "Build acquisition rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build acquisition rows": {
+      "main": [
+        [
+          {
+            "node": "POST /api/internal/growth/acquisition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /api/internal/growth/acquisition": {
+      "main": [
+        [
+          {
+            "node": "Telegram → growth acquisition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
+  },
+  "tags": [
+    {
+      "name": "sergeant"
+    },
+    {
+      "name": "posthog"
+    },
+    {
+      "name": "growth"
+    }
+  ],
+  "active": false
+}

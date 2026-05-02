@@ -13,6 +13,15 @@
  * future `@sergeant/finyk-domain` package if we ever lift the registry
  * out of the mobile app.
  */
+import {
+  Home,
+  CreditCard,
+  Target,
+  BarChart3,
+  Briefcase,
+  type LucideIcon,
+} from "lucide-react-native";
+
 export type FinykPageId =
   | "overview"
   | "transactions"
@@ -26,8 +35,8 @@ export interface FinykPageDef {
   label: string;
   /** Short sub-title for nav-grid cards. */
   description: string;
-  /** Emoji glyph used as a placeholder icon until we ship an icon set. */
-  emoji: string;
+  /** Lucide icon component for the nav grid. */
+  Icon: LucideIcon;
   /** expo-router path relative to the Finyk tab root. */
   href: string;
 }
@@ -37,35 +46,35 @@ export const FINYK_PAGES: readonly FinykPageDef[] = [
     id: "overview",
     label: "Огляд",
     description: "Баланс, витрати місяця, тренди",
-    emoji: "🏠",
+    Icon: Home,
     href: "/finyk",
   },
   {
     id: "transactions",
     label: "Операції",
     description: "Всі транзакції з пошуком та фільтрами",
-    emoji: "💳",
+    Icon: CreditCard,
     href: "/finyk/transactions",
   },
   {
     id: "budgets",
     label: "Планування",
     description: "Бюджети, ліміти, цілі",
-    emoji: "🎯",
+    Icon: Target,
     href: "/finyk/budgets",
   },
   {
     id: "analytics",
     label: "Аналітика",
     description: "Розбивка за категоріями та мерчантами",
-    emoji: "📊",
+    Icon: BarChart3,
     href: "/finyk/analytics",
   },
   {
     id: "assets",
     label: "Активи",
     description: "Рахунки, підписки, борги",
-    emoji: "💼",
+    Icon: Briefcase,
     href: "/finyk/assets",
   },
 ] as const;

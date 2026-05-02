@@ -47,4 +47,33 @@ export const MEMORY_TOOLS: AnthropicTool[] = [
       },
     },
   },
+  {
+    name: "recall_memory",
+    description:
+      "Знайти в семантичній памʼяті схожі записи (chat / nutrition / fizruk / journal / routine / finyk / digest) за запитом. " +
+      "Викликай коли користувач просить нагадати або порадити щось схоже на минулий досвід (наприклад: 'що я їв коли худнув', " +
+      "'мої тренування на 5к', 'покажи витрати на каву'). Повертає список записів з оригінальним текстом і score близькості.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description:
+            "Текстовий запит для семантичного пошуку (наприклад, 'тренування на витривалість').",
+        },
+        top_k: {
+          type: "number",
+          description:
+            "Скільки результатів повернути (1..50). За замовчуванням — серверний AI_MEMORY_TOP_K (8).",
+        },
+        sources: {
+          type: "array",
+          description:
+            "Опційний фільтр по джерелах: chat, finyk, fizruk, nutrition, routine, journal, digest.",
+          items: { type: "string" },
+        },
+      },
+      required: ["query"],
+    },
+  },
 ];

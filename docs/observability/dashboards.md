@@ -1,6 +1,7 @@
-# Мінімальні Grafana dashboards (Prometheus)
+# Мінімальні Grafana-дашборди (Prometheus)
 
 > **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Status:** Active
 
 Це "starter pack" панелей, яких достатньо, щоб швидко зрозуміти: **що саме горить**
 (HTTP / DB / Auth / Sync / AI / upstream), **де** і **чому**.
@@ -16,65 +17,65 @@
   - `sum by (path) (rate(http_requests_total{status=~"5.."}[5m]))`
 - **p95 latency по route**:
   - `histogram_quantile(0.95, sum by (le, path) (rate(http_request_duration_ms_bucket[5m])))`
-- **in-flight**:
+- **in-flight (запити в обробці)**:
   - `sum(http_in_flight)`
 
-## Postgres pool / slow queries
+## Postgres pool / slow-запити
 
-- **pool waiting (контеншн)**:
+- **очікування пулу (контеншн)**:
   - `max(db_pool_waiting)`
-- **p95 query duration по op**:
+- **p95 тривалості запиту по op**:
   - `histogram_quantile(0.95, sum by (le, op) (rate(db_query_duration_ms_bucket[5m])))`
-- **slow query counter**:
+- **лічильник slow-запитів**:
   - `sum by (op) (rate(db_slow_queries_total[5m]))`
 
 ## Auth
 
-- **auth outcomes**:
+- **результати автентифікації**:
   - `sum by (op, outcome) (rate(auth_attempts_total[5m]))`
-- **p95 session lookup**:
+- **p95 session-lookup**:
   - `histogram_quantile(0.95, sum by (le, outcome) (rate(auth_session_lookup_duration_ms_bucket[5m])))`
 
 ## Sync
 
-- **sync outcomes**:
+- **результати синхронізації**:
   - `sum by (op, module, outcome) (rate(sync_operations_total[5m]))`
-- **p95 sync duration**:
+- **p95 тривалості sync**:
   - `histogram_quantile(0.95, sum by (le, op, module) (rate(sync_duration_ms_bucket[5m])))`
-- **payload size p95**:
+- **p95 розміру payload**:
   - `histogram_quantile(0.95, sum by (le, op, module) (rate(sync_payload_bytes_bucket[5m])))`
 
-## AI / External upstream
+## AI / зовнішні upstream-сервіси
 
-- **external upstream outcomes**:
+- **результати зовнішніх upstream**:
   - `sum by (upstream, outcome) (rate(external_http_requests_total[5m]))`
-- **external upstream p95**:
+- **p95 зовнішнього upstream**:
   - `histogram_quantile(0.95, sum by (le, upstream, outcome) (rate(external_http_duration_ms_bucket[5m])))`
-- **AI quota blocks**:
+- **блокування AI-квоти**:
   - `sum by (reason) (rate(ai_quota_blocks_total[5m]))`
 - **AI quota fail-open (критично для білінгу)**:
   - `sum by (reason) (rate(ai_quota_fail_open_total[5m]))`
 
 ## Rate limiting
 
-- **blocked/allowed**:
+- **заблоковано/пропущено**:
   - `sum by (key, outcome) (rate(rate_limit_hits_total[5m]))`
 
 ---
 
-## Importable Grafana dashboard JSONs
+## Готові до імпорту Grafana-dashboard JSON-и
 
-Ready-to-import JSON dashboards live in [`dashboards/`](./dashboards/). See [`dashboards/README.md`](./dashboards/README.md) for details on datasource variables and expected labels.
+Готові до імпорту JSON-dashboard-и лежать у [`dashboards/`](./dashboards/). Деталі про datasource-variable-и й очікувані label-и див. у [`dashboards/README.md`](./dashboards/README.md).
 
-| File                                                    | Scope                                                                                            |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| [`http-red.json`](./dashboards/http-red.json)           | HTTP RED (rate, errors, duration p50/p95/p99) with module/path filter                            |
-| [`db-use.json`](./dashboards/db-use.json)               | Postgres pool USE, query duration, slow queries, DB errors                                       |
-| [`slo-burn-rate.json`](./dashboards/slo-burn-rate.json) | Multi-window multi-burn-rate SLO overview (all domains)                                          |
-| [`sync.json`](./dashboards/sync.json)                   | Sync outcomes by op/module/outcome, p95 duration, payload p95, conflict ratio, SLO burn-rate     |
-| [`auth.json`](./dashboards/auth.json)                   | Auth outcomes, session lookup p95, rate-limit hits, sign-in success rate                         |
-| [`ai-cost.json`](./dashboards/ai-cost.json)             | AI token rate by model, daily spend, cache-hit ratio, quota blocks/fail-open, outcomes & latency |
-| [`hubchat.json`](./dashboards/hubchat.json)             | HubChat tool invocation leaderboard, executed/proposed ratio, unknown_tool, truncations          |
-| [`frontend-cwv.json`](./dashboards/frontend-cwv.json)   | Core Web Vitals — LCP/INP/FCP/TTFB/CLS good/needs-improvement/poor ratio + p75 (baseline mode)   |
+| Файл                                                    | Скоуп                                                                                               |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| [`http-red.json`](./dashboards/http-red.json)           | HTTP RED (rate, errors, duration p50/p95/p99) з фільтром по module/path                             |
+| [`db-use.json`](./dashboards/db-use.json)               | Postgres pool USE, тривалість запитів, slow-запити, DB-помилки                                      |
+| [`slo-burn-rate.json`](./dashboards/slo-burn-rate.json) | Multi-window multi-burn-rate SLO-огляд (усі домени)                                                 |
+| [`sync.json`](./dashboards/sync.json)                   | Результати sync по op/module/outcome, p95 тривалості, p95 payload, conflict ratio, SLO burn-rate    |
+| [`auth.json`](./dashboards/auth.json)                   | Результати auth, p95 session-lookup, rate-limit-hit-и, sign-in success-rate                         |
+| [`ai-cost.json`](./dashboards/ai-cost.json)             | AI token-rate по моделі, daily spend, cache-hit ratio, quota blocks/fail-open, результати й latency |
+| [`hubchat.json`](./dashboards/hubchat.json)             | HubChat tool-invocation leaderboard, executed/proposed-співвідношення, unknown_tool, truncation-и   |
+| [`frontend-cwv.json`](./dashboards/frontend-cwv.json)   | Core Web Vitals — LCP/INP/FCP/TTFB/CLS good/needs-improvement/poor-ratio + p75 (baseline-режим)     |
 
-Import via Grafana UI: **Dashboards → Import → Upload JSON**.
+Імпорт через Grafana UI: **Dashboards → Import → Upload JSON**.

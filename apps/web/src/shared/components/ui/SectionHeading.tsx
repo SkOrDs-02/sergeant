@@ -154,6 +154,3 @@ export function SectionHeading({
  * component — prefer `SectionHeader` in new code.
  */
 export const SectionHeader = SectionHeading;
-export type SectionHeaderProps = SectionHeadingProps;
-export type SectionHeaderSize = SectionHeadingSize;
-export type SectionHeaderVariant = SectionHeadingVariant;

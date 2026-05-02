@@ -194,8 +194,23 @@ export function FirstActionHeroCard({
     onDismiss?.();
   };
 
+  const gradientClass =
+    primaryId === "finyk"
+      ? "hero-gradient-finyk"
+      : primaryId === "fizruk"
+        ? "hero-gradient-fizruk"
+        : primaryId === "routine"
+          ? "hero-gradient-routine"
+          : "hero-gradient-brand";
+
   return (
-    <Card variant="default" padding="md" radius="lg" testID="first-action-hero">
+    <Card
+      variant="default"
+      padding="md"
+      radius="lg"
+      testID="first-action-hero"
+      className={gradientClass}
+    >
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
           {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- intentional FTUX eyebrow, mirrors web FirstActionHeroCard */}

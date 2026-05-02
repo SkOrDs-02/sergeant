@@ -4,6 +4,9 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 
 const KEY = STORAGE_KEYS.FIZRUK_DAILY_LOG;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type DailyLogEntry = any;
+
 function uid() {
   return `dl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -21,7 +24,7 @@ function uid() {
  * }
  */
 export function useDailyLog() {
-  const [entries, setEntries] = useState([]);
+  const [entries, setEntries] = useState<DailyLogEntry[]>([]);
 
   useEffect(() => {
     const loaded = safeReadLS(KEY, []);
@@ -58,6 +61,20 @@ export function useDailyLog() {
     [entries, persist],
   );
 
+  /**
+   * Re-insert a previously deleted entry, preserving the original `id`,
+   * `at` timestamp and field values. Used by undo flows after `deleteEntry`.
+   */
+  const restoreEntry = useCallback(
+    (entry) => {
+      if (!entry || !entry.id) return;
+      persist(
+        entries.some((e) => e.id === entry.id) ? entries : [entry, ...entries],
+      );
+    },
+    [entries, persist],
+  );
+
   const sorted = useMemo(
     () => [...entries].sort((a, b) => (b.at || "").localeCompare(a.at || "")),
     [entries],
@@ -76,5 +93,12 @@ export function useDailyLog() {
   /** Latest single entry. */
   const latest = sorted[0] || null;
 
-  return { entries: sorted, latest, addEntry, deleteEntry, recentWith };
+  return {
+    entries: sorted,
+    latest,
+    addEntry,
+    deleteEntry,
+    restoreEntry,
+    recentWith,
+  };
 }

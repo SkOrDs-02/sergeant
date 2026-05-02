@@ -1,6 +1,7 @@
 import { useState, useEffect, useId, useMemo } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
+import { useFormValidation } from "@shared/hooks/useFormValidation";
 import { Label } from "@shared/components/ui/FormField";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
@@ -10,7 +11,11 @@ import {
   useVisualKeyboardInset,
 } from "@sergeant/shared";
 import { hapticSuccess } from "@shared/lib/haptic";
-import { CANONICAL_TO_MANUAL_LABEL } from "@sergeant/finyk-domain/domain/personalization";
+import {
+  CANONICAL_TO_MANUAL_LABEL,
+  type FrequentCategory,
+  type FrequentMerchant,
+} from "@sergeant/finyk-domain/domain/personalization";
 
 // Manual-expense categories. Labels map to the MCC canonical ids used
 // across the rest of Finyk (see `MANUAL_CATEGORY_ID_MAP`), so manual
@@ -75,8 +80,10 @@ function stripEmoji(label) {
 const DEFAULT_AMOUNTS = [50, 100, 200, 500];
 const MAX_AMOUNT_CHIPS = 6;
 
-function buildAmountSuggestions(frequentMerchants) {
-  const frequentRaw = [];
+function buildAmountSuggestions(
+  frequentMerchants: FrequentMerchant[] | undefined,
+) {
+  const frequentRaw: number[] = [];
   for (const m of frequentMerchants || []) {
     if (!m || typeof m.total !== "number" || !m.count) continue;
     const avg = Math.round(m.total / m.count);
@@ -92,7 +99,9 @@ function buildAmountSuggestions(frequentMerchants) {
 
 // Сортує доступні підписи категорій за персональною частотою, зберігаючи
 // стабільний порядок для категорій без статистики.
-function sortCategoriesByFrequency(frequentCategories = []) {
+function sortCategoriesByFrequency(
+  frequentCategories: FrequentCategory[] = [],
+) {
   if (!frequentCategories.length) return CATEGORIES;
   // Перетворюємо частотну статистику на індекс manual-label → rank.
   // Для canonical id беремо відповідний manual-label; для custom / невідомих —
@@ -119,6 +128,29 @@ function sortCategoriesByFrequency(frequentCategories = []) {
   return withRank.map((x) => x.label);
 }
 
+interface ManualExpenseSheetProps {
+  open: boolean;
+  onClose: () => void;
+  onSave?: (expense: {
+    id?: string;
+    description: string;
+    amount: number;
+    category: string;
+    date: string;
+  }) => void;
+  initialExpense?: {
+    id?: string;
+    description?: string;
+    amount?: number;
+    category?: string;
+    date?: string;
+  } | null;
+  frequentCategories?: FrequentCategory[];
+  frequentMerchants?: FrequentMerchant[];
+  initialCategory?: string | null;
+  initialDescription?: string | null;
+}
+
 export function ManualExpenseSheet({
   open,
   onClose,
@@ -128,7 +160,7 @@ export function ManualExpenseSheet({
   frequentMerchants = [],
   initialCategory,
   initialDescription,
-}) {
+}: ManualExpenseSheetProps) {
   const formId = useId();
   const descId = `${formId}-desc`;
   const amountId = `${formId}-amount`;
@@ -148,7 +180,17 @@ export function ManualExpenseSheet({
     category: DEFAULT_CATEGORY,
     date: toLocalISODate(),
   });
-  const [error, setError] = useState("");
+  const amountValidation = useFormValidation({
+    amount: {
+      rules: [
+        {
+          validate: (v: string) =>
+            Boolean(v) && !isNaN(parseFloat(v)) && parseFloat(v) > 0,
+          message: "Вкажи суму більше 0",
+        },
+      ],
+    },
+  });
 
   useEffect(() => {
     if (open) {
@@ -190,7 +232,7 @@ export function ManualExpenseSheet({
           date: toLocalISODate(),
         });
       }
-      setError("");
+      amountValidation.reset();
       // UI-only state (категорії розгорнуті / фокус у полі Назва) зберігається
       // між відкриттями, бо компонент змонтований постійно (FinykApp тримає
       // його як always-rendered). Скидаємо до дефолтів, щоб новий «Додати
@@ -252,11 +294,7 @@ export function ManualExpenseSheet({
   if (!open) return null;
 
   const handleSubmit = () => {
-    const amt = parseFloat(form.amount);
-    if (!form.amount || isNaN(amt) || amt <= 0) {
-      setError("Вкажіть суму більше 0");
-      return;
-    }
+    if (!amountValidation.validateAll({ amount: form.amount })) return;
     // Description is now optional: if empty we fall back to the category
     // label (without the emoji prefix) so the ledger still has a
     // human-readable line. Keeps the 5-second-add promise while staying
@@ -267,7 +305,7 @@ export function ManualExpenseSheet({
     onSave?.({
       ...(initialExpense?.id ? { id: String(initialExpense.id) } : {}),
       description,
-      amount: amt,
+      amount: parseFloat(form.amount),
       category: form.category,
       // "YYYY-MM-DD" як local date може з’їхати при toISOString() в UTC.
       // Ставимо полудень, щоб стабільно зберігати правильний день.
@@ -322,8 +360,8 @@ export function ManualExpenseSheet({
                     }
                     className={
                       personal
-                        ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/15 transition-colors tabular-nums"
-                        : "px-2.5 py-1 rounded-full text-xs font-medium bg-panelHi text-muted border border-line hover:border-muted/50 transition-colors tabular-nums"
+                        ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-style-caption bg-success/10 text-success-strong dark:text-success border border-success/30 hover:bg-success/15 transition-colors tabular-nums"
+                        : "px-2.5 py-1 rounded-full text-style-caption bg-panelHi text-muted border border-line hover:border-muted/50 transition-colors tabular-nums"
                     }
                     aria-label={
                       personal
@@ -353,6 +391,8 @@ export function ManualExpenseSheet({
               onChange={(e) =>
                 setForm((f) => ({ ...f, amount: e.target.value }))
               }
+              helperText={amountValidation.fields.amount.error ?? undefined}
+              {...amountValidation.getFieldProps("amount")}
             />
           </div>
           {/* Mic-only icon was indistinguishable from the rest of the form
@@ -367,6 +407,7 @@ export function ManualExpenseSheet({
             <VoiceMicButton
               size="md"
               label="Сказати голосом"
+              promptHint="Витрата у гривнях: кава 60 гривень, продукти 350 грн, таксі 200, обід 150."
               onResult={(transcript) => {
                 const parsed = parseExpenseSpeech(transcript);
                 if (!parsed) return;
@@ -430,7 +471,7 @@ export function ManualExpenseSheet({
                       return next;
                     })
                   }
-                  className="px-2.5 py-1 rounded-full text-xs font-medium bg-panelHi text-muted border border-line hover:border-muted/50 transition-colors"
+                  className="px-2.5 py-1 rounded-full text-style-caption bg-panelHi text-muted border border-line hover:border-muted/50 transition-colors"
                   title={`${m.count} разів · ${m.total.toLocaleString("uk-UA")} ₴`}
                 >
                   {m.name}
@@ -483,7 +524,7 @@ export function ManualExpenseSheet({
                 key={cat}
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, category: cat }))}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-[background-color,border-color,color,opacity,transform] duration-150 ease-smooth active:scale-95 ${
+                className={`px-3 py-1.5 rounded-full text-style-caption border transition-[background-color,border-color,color,opacity,transform] duration-150 ease-smooth active:scale-95 ${
                   form.category === cat
                     ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
                     : "bg-panelHi text-muted border-line hover:border-muted/50 hover:bg-panelHi/80"
@@ -497,15 +538,13 @@ export function ManualExpenseSheet({
                 type="button"
                 onClick={() => setCategoriesExpanded((v) => !v)}
                 aria-expanded={categoriesExpanded}
-                className="px-3 py-1.5 rounded-full text-xs font-medium border border-line bg-panel text-muted hover:text-text hover:border-muted/50 hover:bg-panelHi transition-[background-color,border-color,color,opacity,transform] duration-150 ease-smooth active:scale-95"
+                className="px-3 py-1.5 rounded-full text-style-caption border border-line bg-panel text-muted hover:text-text hover:border-muted/50 hover:bg-panelHi transition-[background-color,border-color,color,opacity,transform] duration-150 ease-smooth active:scale-95"
               >
                 {categoriesExpanded ? "Менше ▴" : "Більше ▾"}
               </button>
             )}
           </div>
         </div>
-
-        {error && <p className="text-xs text-danger">{error}</p>}
       </div>
     </Sheet>
   );

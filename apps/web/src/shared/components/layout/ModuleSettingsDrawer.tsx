@@ -1,6 +1,7 @@
-import { useId, useRef, type ReactNode } from "react";
+import { useId, useRef, type CSSProperties, type ReactNode } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useSwipeToDismiss } from "@shared/hooks/useSwipeToDismiss";
 import { cn } from "@shared/lib/cn";
 
 /**
@@ -32,7 +33,27 @@ export function ModuleSettingsDrawer({
 
   useDialogFocusTrap(open, panelRef, { onEscape: onClose });
 
+  // Right-side drawers dismiss with a rightward swipe — opposite of
+  // bottom sheets but the same useSwipeToDismiss primitive. We bind
+  // the gesture on the header bar (not the body) so vertical scroll
+  // and form input drags inside the drawer are not hijacked.
+  const swipe = useSwipeToDismiss({
+    enabled: open,
+    direction: "right",
+    onDismiss: onClose,
+  });
+
   if (!open) return null;
+
+  const panelStyle: CSSProperties = swipe.dragging
+    ? {
+        transform: `translate3d(${swipe.dragOffset}px, 0, 0)`,
+        transition: "none",
+      }
+    : {
+        transform: "translate3d(0, 0, 0)",
+        transition: "transform 200ms cubic-bezier(0.32, 0.72, 0, 1)",
+      };
 
   return (
     <div className="fixed inset-0 z-[80] flex justify-end" role="presentation">
@@ -47,19 +68,23 @@ export function ModuleSettingsDrawer({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        style={panelStyle}
         className={cn(
           "relative w-full max-w-sm h-full bg-panel border-l border-line shadow-2xl flex flex-col safe-area-pt-pb",
           className,
         )}
       >
-        <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b border-line">
+        <div
+          className="shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b border-line touch-pan-x"
+          {...swipe.bind}
+        >
           <h2 id={titleId} className="text-base font-semibold text-text">
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
+            className="focus-ring w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
             aria-label="Закрити"
           >
             <Icon name="close" size={22} />

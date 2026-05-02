@@ -1,3 +1,4 @@
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage";
 import {
   normalizeFinykBackup,
   readFinykBackupFromStorage,
@@ -49,13 +50,11 @@ export function buildHubBackupPayload(
     finyk = {};
   }
   const hub: Record<string, string> = {};
-  if (typeof localStorage !== "undefined") {
-    const m = localStorage.getItem(HUB_MODULE_KEY);
-    if (m) hub.lastModule = m;
-    if (includeChat) {
-      const chat = localStorage.getItem(HUB_CHAT_KEY);
-      if (chat) hub.chatHistory = chat;
-    }
+  const m = safeReadStringLS(HUB_MODULE_KEY);
+  if (m) hub.lastModule = m;
+  if (includeChat) {
+    const chat = safeReadStringLS(HUB_CHAT_KEY);
+    if (chat) hub.chatHistory = chat;
   }
   return {
     kind: HUB_BACKUP_KIND,
@@ -109,10 +108,10 @@ export function applyHubBackupPayload(parsed: unknown): void {
   if (parsed.hub && typeof parsed.hub === "object") {
     const h = parsed.hub;
     if (h.lastModule && VALID_MODULES.has(h.lastModule)) {
-      localStorage.setItem(HUB_MODULE_KEY, h.lastModule);
+      safeWriteLS(HUB_MODULE_KEY, h.lastModule);
     }
     if (typeof h.chatHistory === "string") {
-      localStorage.setItem(HUB_CHAT_KEY, h.chatHistory);
+      safeWriteLS(HUB_CHAT_KEY, h.chatHistory);
     }
   }
 }

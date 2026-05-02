@@ -1,5 +1,8 @@
 # Capacitor deep links — App Links (Android) + Universal Links (iOS)
 
+> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Status:** Active
+
 Цей документ описує HTTPS-варіант deep-лінків для Capacitor-shell-а
 (`apps/mobile-shell`), що доповнює custom scheme
 `com.sergeant.shell://<path>`. HTTPS-посилання з email-ів / push / SMS

@@ -7,6 +7,8 @@ import {
 } from "react";
 import { cn } from "../../lib/cn";
 import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
+import { useSwipeToDismiss } from "../../hooks/useSwipeToDismiss";
+import { useAnnounce } from "./ScreenReaderAnnouncer";
 
 /**
  * Sergeant Design System — Sheet (bottom sheet / modal)
@@ -79,6 +81,15 @@ export function Sheet({
   const titleId = useId();
   useDialogFocusTrap(open, panelRef, { onEscape: onClose });
 
+  // Swipe-to-dismiss — drag the panel down ≥ 80 px to close. Mirrors
+  // the iOS Maps / Apple Pay sheet feel; the drag handle pill at the
+  // top now actually does something. We disable the gesture once the
+  // sheet starts closing so the panel doesn't snap back mid-exit.
+  const swipe = useSwipeToDismiss({
+    enabled: open,
+    onDismiss: onClose,
+  });
+
   // Lock body scroll while sheet is open. Matches the ad-hoc patterns
   // several existing sheets already implemented inconsistently.
   useEffect(() => {
@@ -90,6 +101,19 @@ export function Sheet({
     };
   }, [open]);
 
+  // Announce the sheet title to assistive tech when it opens. The
+  // `aria-labelledby` wiring already exposes the title to screen
+  // readers, but only if the AT user pulls focus into the dialog —
+  // many SR users on iOS / Android receive a polite live-region
+  // announcement faster.
+  const { announce } = useAnnounce();
+  useEffect(() => {
+    if (!open) return;
+    if (typeof title !== "string") return;
+    if (!title.trim()) return;
+    announce(title);
+  }, [open, title, announce]);
+
   if (!open) return null;
 
   // Lift the panel above the module bottom nav (set via the
@@ -97,13 +121,25 @@ export function Sheet({
   // home-indicator inset. `kbInsetPx` overrides the offset entirely
   // when the soft keyboard is visible — we want the sheet to hug the
   // keyboard, not float above where the nav would be.
-  const panelStyle: CSSProperties =
+  const baseStyle: CSSProperties =
     kbInsetPx && kbInsetPx > 0
       ? { marginBottom: kbInsetPx }
       : {
           marginBottom:
             "calc(var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px))",
         };
+  const panelStyle: CSSProperties = swipe.dragging
+    ? {
+        ...baseStyle,
+        transform: `translate3d(0, ${swipe.dragOffset}px, 0)`,
+        transition: "none",
+        touchAction: "none",
+      }
+    : {
+        ...baseStyle,
+        transform: "translate3d(0, 0, 0)",
+        transition: "transform 200ms cubic-bezier(0.32, 0.72, 0, 1)",
+      };
 
   return (
     <div
@@ -131,12 +167,26 @@ export function Sheet({
           panelClassName,
         )}
       >
+        {/*
+          Swipe-to-dismiss handle. We bind the gesture to the handle
+          row + header (not the full panel) so vertical scrolling
+          inside the body and text input drags don't get hijacked. The
+          handle is the iOS-conventional grab target and now actually
+          functional.
+        */}
         {!hideHandle && (
-          <div className="flex justify-center pt-3 pb-1 shrink-0">
+          <div
+            className="flex justify-center pt-3 pb-1 shrink-0 cursor-grab active:cursor-grabbing touch-none"
+            {...swipe.bind}
+            role="presentation"
+          >
             <div className="w-12 h-[5px] bg-line/70 rounded-full" aria-hidden />
           </div>
         )}
-        <div className="flex items-start justify-between gap-3 px-5 pt-1 pb-3 shrink-0">
+        <div
+          className="flex items-start justify-between gap-3 px-5 pt-1 pb-3 shrink-0 touch-pan-y"
+          {...swipe.bind}
+        >
           <div className="min-w-0 flex-1">
             <div
               id={titleId}

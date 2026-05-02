@@ -2,6 +2,8 @@
   "extends": "@sergeant/config/tsconfig.react.json",
   "compilerOptions": {
     "strict": false,
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true,
     "allowJs": true,
     "checkJs": false,
     "types": ["vite/client"],

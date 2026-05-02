@@ -1,6 +1,9 @@
 # Dev stack roadmap — інструменти і поради по всьому ЖЦ розробки
 
-**Статус:** in progress. Створено 2026-04-25. Останнє оновлення: 2026-04-26 (12 з топ-15 закриті — Sentry уже інтегрований у web/server/mobile як DSN-gated no-op; деталі у колонці Статус нижче).
+> **Last validated:** 2026-04-30 by @Skords-01. **Next review:** 2026-07-29.
+> **Status:** Active
+
+**Статус:** in progress. Створено 2026-04-25. Останнє оновлення: 2026-04-27 (13 з топ-15 закриті — PostHog інтегрований у web + server, Strict TS розщеплений на server/web; Sentry DSN-gated; деталі у колонці Статус нижче).
 
 **Скоуп:** інструменти, інтеграції, практики для покращення розробки, тестування, CI/CD, проду, безпеки, performance і команди. Specifically для стеку Sergeant: pnpm + Turborepo + Vite/React + Express + Postgres + Railway + Vercel + Expo.
 **Принцип:** не «впровадити все одразу», а **поетапно** — від найдешевших і найважливіших до інвестиційних. Кожен пункт — самостійний tool / practice з ціною, effort-ом, ROI і dep-ами.
@@ -11,37 +14,37 @@
 
 Якщо є тиждень — зроби лише це:
 
-| #   | Інструмент / практика                             | Effort    | Cost             | ROI    | Статус                                                                                                  |
-| --- | ------------------------------------------------- | --------- | ---------------- | ------ | ------------------------------------------------------------------------------------------------------- |
-| 1   | **Sentry** для error tracking                     | 2 год     | $26/міс          | 🔥🔥🔥 | ✅ done (DSN-gated; потребує `SENTRY_DSN` / `VITE_SENTRY_DSN` / `EXPO_PUBLIC_SENTRY_DSN` для активації) |
-| 2   | **Knip + depcheck** — clean dead code             | 1 год     | $0               | 🔥🔥   | ✅ done [#716](https://github.com/Skords-01/Sergeant/pull/716)                                          |
-| 3   | **Strict TypeScript (incremental)**               | 1-2 тижні | $0               | 🔥🔥🔥 | ⏳ pending                                                                                              |
-| 4   | **Testcontainers** для server tests               | 4 год     | $0               | 🔥🔥🔥 | ✅ done [#728](https://github.com/Skords-01/Sergeant/pull/728)                                          |
-| 5   | **Vercel Pro plan** (рятує preview deploy)        | 5 хв      | $20/міс          | 🔥🔥   | 🟡 not started (потребує credit card мейнтейнера)                                                       |
-| 6   | **Turbo remote cache**                            | 1 год     | $0 (Vercel free) | 🔥🔥   | ✅ done (CI wiring merged; needs secrets — see §1.1)                                                    |
-| 7   | **Renovate** замість Dependabot                   | 1 год     | $0               | 🔥🔥   | ✅ done [#721](https://github.com/Skords-01/Sergeant/pull/721)                                          |
-| 8   | **AGENTS.md** (з #711)                            | 1 год     | $0               | 🔥🔥🔥 | ✅ done [#714](https://github.com/Skords-01/Sergeant/pull/714)                                          |
-| 9   | **MSW** для frontend tests                        | 4 год     | $0               | 🔥     | ✅ done [#729](https://github.com/Skords-01/Sergeant/pull/729)                                          |
-| 10  | **Snapshot tests на server serializers** (з #711) | 4 год     | $0               | 🔥🔥🔥 | ✅ done [#718](https://github.com/Skords-01/Sergeant/pull/718)                                          |
-| 11  | **Pino structured logging**                       | 4 год     | $0               | 🔥🔥   | ✅ done [#738](https://github.com/Skords-01/Sergeant/pull/738)                                          |
-| 12  | **Activate Playwright E2E на PR**                 | 2 год     | $0               | 🔥🔥   | ✅ done [#717](https://github.com/Skords-01/Sergeant/pull/717)                                          |
-| 13  | **PostHog** для product analytics                 | 4 год     | $0 (free tier)   | 🔥     | ⏳ pending                                                                                              |
-| 14  | **size-limit** + bundle-analyzer                  | 2 год     | $0               | 🔥     | ✅ done [#740](https://github.com/Skords-01/Sergeant/pull/740)                                          |
-| 15  | **CONTRIBUTING.md + 5-min quickstart**            | 2 год     | $0               | 🔥🔥   | ✅ done [#726](https://github.com/Skords-01/Sergeant/pull/726)                                          |
+| #   | Інструмент / практика                             | Effort    | Cost             | ROI    | Статус                                                                                                                                                    |
+| --- | ------------------------------------------------- | --------- | ---------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Sentry** для error tracking                     | 2 год     | $26/міс          | 🔥🔥🔥 | ✅ done (DSN-gated; потребує `SENTRY_DSN` / `VITE_SENTRY_DSN` / `EXPO_PUBLIC_SENTRY_DSN` для активації)                                                   |
+| 2   | **Knip + depcheck** — clean dead code             | 1 год     | $0               | 🔥🔥   | ✅ done [#716](https://github.com/Skords-01/Sergeant/pull/716)                                                                                            |
+| 3a  | **Strict TS — server**                            | —         | $0               | 🔥🔥🔥 | ✅ done (`apps/server/tsconfig.json` має `strict: true`)                                                                                                  |
+| 3b  | **Strict TS — web (incremental)**                 | 1-2 тижні | $0               | 🔥🔥🔥 | 🟡 in progress (Phase 1: `apps/web/tsconfig.strict.json` вмикає `strictNullChecks` для `src/shared/**`; Phase 2/3 — TODO; див. tech-debt/frontend.md §11) |
+| 4   | **Testcontainers** для server tests               | 4 год     | $0               | 🔥🔥🔥 | ✅ done [#728](https://github.com/Skords-01/Sergeant/pull/728)                                                                                            |
+| 5   | **Vercel Pro plan** (рятує preview deploy)        | 5 хв      | $20/міс          | 🔥🔥   | 🟡 not started (потребує credit card мейнтейнера)                                                                                                         |
+| 6   | **Turbo remote cache**                            | 1 год     | $0 (Vercel free) | 🔥🔥   | ✅ done (CI wiring merged; needs secrets — see §1.1)                                                                                                      |
+| 7   | **Renovate** замість Dependabot                   | 1 год     | $0               | 🔥🔥   | ✅ done [#721](https://github.com/Skords-01/Sergeant/pull/721)                                                                                            |
+| 8   | **AGENTS.md** (з #711)                            | 1 год     | $0               | 🔥🔥🔥 | ✅ done [#714](https://github.com/Skords-01/Sergeant/pull/714)                                                                                            |
+| 9   | **MSW** для frontend tests                        | 4 год     | $0               | 🔥     | ✅ done [#729](https://github.com/Skords-01/Sergeant/pull/729)                                                                                            |
+| 10  | **Snapshot tests на server serializers** (з #711) | 4 год     | $0               | 🔥🔥🔥 | ✅ done [#718](https://github.com/Skords-01/Sergeant/pull/718)                                                                                            |
+| 11  | **Pino structured logging**                       | 4 год     | $0               | 🔥🔥   | ✅ done [#738](https://github.com/Skords-01/Sergeant/pull/738)                                                                                            |
+| 12  | **Activate Playwright E2E на PR**                 | 2 год     | $0               | 🔥🔥   | ✅ done [#717](https://github.com/Skords-01/Sergeant/pull/717)                                                                                            |
+| 13  | **PostHog** для product analytics                 | 4 год     | $0 (free tier)   | 🔥     | ✅ done (web: `apps/web/src/core/observability/posthog.ts`; server: `apps/server/src/lib/posthog.ts`; gated на `VITE_POSTHOG_KEY` / `POSTHOG_KEY`)        |
+| 14  | **size-limit** + bundle-analyzer                  | 2 год     | $0               | 🔥     | ✅ done [#740](https://github.com/Skords-01/Sergeant/pull/740)                                                                                            |
+| 15  | **CONTRIBUTING.md + 5-min quickstart**            | 2 год     | $0               | 🔥🔥   | ✅ done [#726](https://github.com/Skords-01/Sergeant/pull/726)                                                                                            |
 
 **Сумарно:** ~3-5 робочих днів + ~$50/міс. Це 80% wins за 20% effort-у.
 
-**Прогрес (2026-04-26):** 12 / 15 закрито — #1 Sentry (DSN-gated, `apps/web/src/core/observability/sentry.ts`, `apps/server/src/sentry.ts`, `apps/mobile/src/lib/observability.ts`), #2 Knip+depcheck, #4 Testcontainers (#728), #6 Turbo remote cache, #7 Renovate, #8 AGENTS.md, #9 MSW (#729), #10 Snapshot tests, #11 Pino logging (#738), #12 Playwright E2E, #14 size-limit + bundle-analyzer (#740), #15 CONTRIBUTING.md (#726). Наступні кроки (без платних credentials): #3 (Strict TS incremental), #13 (PostHog free tier). #5 (Vercel Pro) чекає credentials мейнтейнера. Sentry-init вже на місці (no-op без DSN), тож активація = тільки доставити `SENTRY_DSN` / `VITE_SENTRY_DSN` / `EXPO_PUBLIC_SENTRY_DSN` у відповідні env-и.
+**Прогрес (2026-04-27):** 13 / 15 закрито (з урахуванням розщеплення #3 на 3a/3b: 3a closed, 3b in progress). Закриті: #1 Sentry (DSN-gated, `apps/web/src/core/observability/sentry.ts`, `apps/server/src/sentry.ts`, `apps/mobile/src/lib/observability.ts`), #2 Knip+depcheck, #3a Strict TS server, #4 Testcontainers (#728), #6 Turbo remote cache, #7 Renovate, #8 AGENTS.md, #9 MSW (#729), #10 Snapshot tests, #11 Pino logging (#738), #12 Playwright E2E, #13 PostHog (web + server SDK, env-gated), #14 size-limit + bundle-analyzer (#740), #15 CONTRIBUTING.md (#726). Залишається: #3b (Strict TS web — Phase 2/3), #5 (Vercel Pro — credentials/credit card мейнтейнера). Sentry/PostHog активація = тільки доставити відповідні env-и (`SENTRY_DSN`, `POSTHOG_KEY`, `VITE_POSTHOG_KEY`).
 
 ---
 
 ## 1. Розробка (DX, день-у-день)
 
-### 1.1. Local dev environment
+### 1.1. Локальне dev-середовище
 
 | Tool                       | What                               | Cost | Effort | Tier |
 | -------------------------- | ---------------------------------- | ---- | ------ | ---- |
-| **Docker Compose**         | Local Postgres + Redis для dev     | $0   | 2 год  | must |
 | **Devcontainer** (VS Code) | Full env-as-code, `code .` → ready | $0   | 4 год  | nice |
 | **Nix flake**              | Reproducible deterministic env     | $0   | 1 день | nice |
 | **mise / proto / volta**   | Pin Node + pnpm versions           | $0   | 30 хв  | must |
@@ -49,7 +52,7 @@
 | **Lefthook**               | Faster pre-commit (Go)             | $0   | 1 год  | nice |
 | **Turbo remote cache**     | CI build cache (5 → 1 хв)          | $0   | 1 год  | must |
 
-#### Turbo remote cache — setup guide
+#### Turbo remote cache — інструкція з налаштування
 
 CI already passes `TURBO_TOKEN` / `TURBO_TEAM` env vars to every turbo
 invocation. When the secrets are absent turbo silently falls back to
@@ -82,10 +85,10 @@ read & write the shared cache.
 
 **Sergeant-specific:**
 
-- В `apps/server` зараз неясно як локально стартувати Postgres. Один `docker-compose.yml` з seed-script + `pnpm dev:db` команда — зекономить новачкам години.
+- Локальний Postgres вже піднімається через кореневий `docker-compose.yml` (`postgres:16-alpine`, `docker compose up -d` → `DATABASE_URL=postgresql://hub:hub@localhost:5432/hub`). Залишковий win — `pnpm dev:db` shortcut + seed-script, але інфраструктура вже на місці; пропозицію «додати docker-compose» прибрано як виконану.
 - Volta або mise треба, бо `package.json` зараз має `engines.node` але без enforcement.
 
-### 1.2. CLI quality of life
+### 1.2. CLI quality-of-life
 
 | Tool                                                                 | What                                | Cost |
 | -------------------------------------------------------------------- | ----------------------------------- | ---- |
@@ -102,7 +105,7 @@ read & write the shared cache.
 
 ## 2. Створення коду (генератори, codegen)
 
-### 2.1. Code generators
+### 2.1. Генератори коду
 
 | Tool          | Use case                                         | Effort to setup |
 | ------------- | ------------------------------------------------ | --------------- |
@@ -117,7 +120,7 @@ read & write the shared cache.
 - `plop endpoint <method> <path>` — Express handler + zod schema + test
 - `plop migration <name>` — `apps/server/src/migrations/<NNN>_<name>.sql`
 
-### 2.2. Type-safe API contract
+### 2.2. Type-safe API-контракт
 
 Це **найбільша зміна архітектури**, але вирішує клас регресій типу #708 (bigint as string).
 
@@ -130,7 +133,7 @@ read & write the shared cache.
 
 **Рекомендую zod-to-openapi** — мінімальна інвазивна зміна, найбільший win.
 
-### 2.3. UI scaffolding
+### 2.3. UI-scaffolding
 
 | Tool                               | What                                |
 | ---------------------------------- | ----------------------------------- |
@@ -143,7 +146,7 @@ read & write the shared cache.
 
 ---
 
-## 3. Якість коду (static analysis)
+## 3. Якість коду (static-аналіз)
 
 ### 3.1. Must-have
 
@@ -197,7 +200,7 @@ pnpm --filter @sergeant/web build:analyze
 | **ts-prune**           | Find dead exports (overlap with Knip)          | $0           |
 | **madge**              | Find circular dependencies                     | $0           |
 
-### 3.3. Custom ESLint rules
+### 3.3. Кастомні ESLint-rule-и
 
 У вас вже `packages/eslint-plugin-sergeant-design/`. Кандидати на нові правила:
 
@@ -212,7 +215,7 @@ pnpm --filter @sergeant/web build:analyze
 
 Окрема секція в `docs/planning/ai-coding-improvements.md` (#711) містить деталі по Vitest, Playwright, Argos, Storybook, snapshot tests. Тут — додаткові тулзи.
 
-### 4.1. Test infrastructure
+### 4.1. Тестова інфраструктура
 
 | Tool                          | What                                     | Effort | Tier | Статус                                                         |
 | ----------------------------- | ---------------------------------------- | ------ | ---- | -------------------------------------------------------------- |
@@ -226,7 +229,7 @@ pnpm --filter @sergeant/web build:analyze
 
 **Sergeant-priority:** Testcontainers. Зараз у server tests `queryMock.mockResolvedValueOnce(...)` — це не ловить SQL-помилки. Реальний PG ловить.
 
-### 4.2. E2E і visual
+### 4.2. E2E та visual-тести
 
 | Tool           | What                                                                         | Cost                  |
 | -------------- | ---------------------------------------------------------------------------- | --------------------- |
@@ -237,7 +240,7 @@ pnpm --filter @sergeant/web build:analyze
 | **Chromatic**  | Storybook-integrated visual testing                                          | $149/міс              |
 | **Lost Pixel** | Self-hosted visual testing                                                   | $0                    |
 
-### 4.3. Performance і load
+### 4.3. Performance та load-тести
 
 | Tool              | What                     | Cost         |
 | ----------------- | ------------------------ | ------------ |
@@ -247,7 +250,7 @@ pnpm --filter @sergeant/web build:analyze
 | **WebPageTest**   | Real-device RUM          | Free quota   |
 | **Stryker**       | Mutation testing         | $0           |
 
-### 4.4. Coverage
+### 4.4. Покриття тестами
 
 | Tool              | What                            |
 | ----------------- | ------------------------------- |
@@ -261,7 +264,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ## 5. CI/CD
 
-### 5.1. Pipeline optimization
+### 5.1. Оптимізація pipeline-у
 
 | Practice                     | What                                                              | Effort           |
 | ---------------------------- | ----------------------------------------------------------------- | ---------------- |
@@ -272,7 +275,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 | **Cached pnpm store**        | Окремо від node_modules                                           | 30 хв            |
 | **Required checks rules**    | Branch protection: lint + typecheck + test required               | 30 хв            |
 
-### 5.2. Tools
+### 5.2. Інструменти
 
 | Tool                        | What                                           | Cost      |
 | --------------------------- | ---------------------------------------------- | --------- |
@@ -285,7 +288,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 **Sergeant-priority:** Renovate (Dependabot тут не справляється з pnpm workspace правильно).
 
-### 5.3. Preview environments
+### 5.3. Preview-середовища
 
 | Service                         | Pros               | Cons               | Cost        |
 | ------------------------------- | ------------------ | ------------------ | ----------- |
@@ -296,7 +299,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 **Sergeant-priority:** Vercel Pro (без preview AI-валідація сильно слабша).
 
-### 5.4. Bots і AI review
+### 5.4. Боти і AI-review
 
 | Tool                | What                          | Cost     |
 | ------------------- | ----------------------------- | -------- |
@@ -307,9 +310,9 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ---
 
-## 6. Production / Observability
+## 6. Production / observability
 
-### 6.1. Error tracking
+### 6.1. Error-tracking
 
 | Tool                       | What                                           | Cost            |
 | -------------------------- | ---------------------------------------------- | --------------- |
@@ -332,7 +335,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 | **OpenTelemetry SDK** | Vendor-agnostic instrumentation      | $0 (just SDK)   |
 | **Honeycomb**         | Best-in-class for distributed traces | $0 starter      |
 
-### 6.3. Logs
+### 6.3. Логи
 
 | Tool                       | What                                 |
 | -------------------------- | ------------------------------------ |
@@ -344,7 +347,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 **Sergeant:** ✅ done у [#738](https://github.com/Skords-01/Sergeant/pull/738). `apps/server/src/obs/logger.ts` тепер на pino + `pino-http` middleware, JSON-формат у проді (Railway), pretty-print у dev. Sentry/PostHog stream підключаться без зміни коду.
 
-### 6.4. Uptime і health
+### 6.4. Uptime і health-checkи
 
 | Tool                    | What                        | Cost         |
 | ----------------------- | --------------------------- | ------------ |
@@ -355,7 +358,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 **Sergeant priority:** UptimeRobot на `/health` — настройти за 5 хв.
 
-### 6.5. Product analytics
+### 6.5. Продуктова аналітика
 
 | Tool          | What                                             | Cost         |
 | ------------- | ------------------------------------------------ | ------------ |
@@ -378,9 +381,9 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ---
 
-## 7. Database
+## 7. База даних
 
-### 7.1. Postgres tools
+### 7.1. Postgres-інструменти
 
 | Tool                   | What                            | Cost           |
 | ---------------------- | ------------------------------- | -------------- |
@@ -400,7 +403,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 - **pg_stat_statements** на проді — знайти повільні queries (за 1 день логів зазвичай 5+ кандидатів).
 - **Drizzle** як step-up з raw SQL — поетапно, не одразу.
 
-### 7.2. Backups і recovery
+### 7.2. Бекапи і recovery
 
 | Practice                        | What                                                    |
 | ------------------------------- | ------------------------------------------------------- |
@@ -409,7 +412,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 | **wal-e / wal-g**               | Continuous archiving (для self-hosted)                  |
 | **pgBackRest**                  | Same                                                    |
 
-### 7.3. Migrations safety patterns
+### 7.3. Безпечні патерни міграцій
 
 - **Backwards-compatible deploys**: спочатку додай column nullable, потім backfill, потім зроби NOT NULL у наступному релізі.
 - **Locks-aware migrations**: ніколи `ALTER TABLE ADD COLUMN NOT NULL` на великих таблицях без default.
@@ -446,7 +449,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 | **Doppler**       | Centralized secrets             | $0 / $7/user/міс |
 | **Infisical**     | Open-source Doppler alternative | $0 / $9/user/міс |
 
-### 8.3. Audits
+### 8.3. Аудити
 
 - Раз на півроку — security audit (manual review або external).
 - Раз на квартал — `pnpm audit` review + critical CVE patches.
@@ -479,7 +482,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 | **node --prof** | Native CPU profiling         |
 | **0x**          | Flamegraph generator         |
 
-### 9.3. Network
+### 9.3. Мережа
 
 | Tool                   | What                                         |
 | ---------------------- | -------------------------------------------- |
@@ -490,9 +493,9 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ---
 
-## 10. Documentation
+## 10. Документація
 
-### 10.1. Repo docs
+### 10.1. Репо-доки
 
 | Practice                                | Tool                |
 | --------------------------------------- | ------------------- |
@@ -502,7 +505,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 | **ADR** (Architecture Decision Records) | adr-tools / madr    |
 | **Postmortems folder**                  | `docs/postmortems/` |
 
-### 10.2. Generated docs
+### 10.2. Генеровані доки
 
 | Tool                | What                    |
 | ------------------- | ----------------------- |
@@ -515,7 +518,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 **Sergeant priority:** README quickstart перш за все. Зараз новий розробник буде довго стикатись.
 
-### 10.3. Diagrams
+### 10.3. Діаграми
 
 | Tool                   | What                            |
 | ---------------------- | ------------------------------- |
@@ -528,7 +531,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ## 11. Команда / процеси
 
-### 11.1. Tooling
+### 11.1. Інструменти
 
 | Tool                            | What                     | Cost           |
 | ------------------------------- | ------------------------ | -------------- |
@@ -538,7 +541,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 | **GitHub Projects**             | Free якщо вже на GitHub  | $0             |
 | **Slack** + GitHub integrations | Comms                    | $7/user/міс    |
 
-### 11.2. Practices
+### 11.2. Практики
 
 - **Async stand-ups** замість дзвінків (Slack thread + PR-ди).
 - **PR template** з блоком "How tested" (з #711).
@@ -547,7 +550,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 - **Postmortems на all production incidents** — folder `docs/postmortems/YYYY-MM-DD-*.md`.
 - **Onboarding doc** для нових — крок за кроком 1-й тиждень.
 
-### 11.3. Knowledge sharing
+### 11.3. Обмін знаннями
 
 - **Tech-talks 1 раз/міс** — 30 хв, slack-recording.
 - **Brown-bag sessions** — обід + презентація (для офлайн).
@@ -556,7 +559,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ---
 
-## 12. Cost optimization
+## 12. Оптимізація витрат
 
 | Practice                                | Saves                 |
 | --------------------------------------- | --------------------- |
@@ -570,7 +573,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ---
 
-## Implementation order (по тижнях)
+## Порядок впровадження (по тижнях)
 
 ### Тиждень 1 — швидкі wins ($46/міс новий cost)
 
@@ -585,7 +588,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ### Тиждень 2 — type safety
 
-- [ ] Strict TypeScript step 1: `strictNullChecks` для одного package
+- [x] Strict TypeScript step 1: `strictNullChecks` для одного package — done у `apps/web/tsconfig.strict.json` (`src/shared/**`)
 - [ ] Snapshot tests на server serializers (з #711)
 - [ ] Custom ESLint rule `no-bigint-string`
 - [ ] zod-to-openapi proof-of-concept
@@ -609,10 +612,10 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 - [ ] Argos visual regression
 - [ ] Storybook setup для shared components
 - [ ] Strict TypeScript повне покриття
-- [ ] Devcontainer / docker-compose для local dev
+- [ ] Devcontainer для local dev (docker-compose вже на місці — кореневий `docker-compose.yml`)
 - [ ] Drizzle migration POC (один модуль)
 
-### Maintenance (continuous)
+### Підтримка (неперервно)
 
 - [ ] Quarterly security audit
 - [ ] Quarterly recovery drill (DB backup restore)
@@ -655,7 +658,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ---
 
-## Session log
+## Журнал сесій
 
 ### 2026-04-25 — інфра-спринт
 
@@ -674,7 +677,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 **Bonus discoveries (поза планом):**
 
-- `pnpm test` на main був повністю зламаний з commit `dab67bdc` через `ERR_UNKNOWN_FILE_EXTENSION` для `packages/config/vitest.base.ts`. Native Node ESM loader не вміє резолвити `.ts` через package exports. Fixed у [#720](https://github.com/Skords-01/Sergeant/pull/720): конвертація у `.js` з JSDoc-типами. Без цього #721 (і всі наступні PR) теж не пройшли б CI.
+- `pnpm test` на main був повністю зламаний з commit `dab67bdc` через `ERR_UNKNOWN_FILE_EXTENSION` для `packages/config/vitest.base.js`. Native Node ESM loader не вміє резолвити `.ts` через package exports. Fixed у [#720](https://github.com/Skords-01/Sergeant/pull/720): конвертація у `.js` з JSDoc-типами. Без цього #721 (і всі наступні PR) теж не пройшли б CI.
 - AGENTS.md з [#714](https://github.com/Skords-01/Sergeant/pull/714) був закомічений без `prettier --write`; виправлено у [#719](https://github.com/Skords-01/Sergeant/pull/719) разом з doc-апдейтами.
 
 **Що НЕ робили і чому:**

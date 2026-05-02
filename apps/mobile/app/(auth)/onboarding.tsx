@@ -1,29 +1,44 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { colors, spacing, radius } from "@/theme";
+import {
+  Wallet,
+  Dumbbell,
+  UtensilsCrossed,
+  ArrowRight,
+} from "lucide-react-native";
+import type { LucideIcon } from "lucide-react-native";
 
-const SLIDES = [
+import { colors, radius } from "@/theme";
+
+interface Slide {
+  Icon: LucideIcon;
+  color: string;
+  title: string;
+  desc: string;
+}
+
+const SLIDES: Slide[] = [
   {
-    icon: "💰",
+    Icon: Wallet,
     color: "#7c6af7",
     title: "Фінанси під контролем",
     desc: "Відстежуй витрати, будуй бюджети та розумій, куди йдуть гроші — все в одному місці.",
   },
   {
-    icon: "🏋️",
+    Icon: Dumbbell,
     color: "#0d9488",
     title: "Тренування без зупинок",
     desc: "Програми, логи тренувань та прогрес — для тих, хто хоче результату.",
   },
   {
-    icon: "🥗",
+    Icon: UtensilsCrossed,
     color: "#84cc16",
     title: "Харчування по-людськи",
     desc: "Логуй їжу, відстежуй КБЖУ та будуй здорові звички без зайвого стресу.",
   },
-] as const;
+];
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -37,105 +52,59 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]}>
+    <SafeAreaView className="flex-1 bg-bg px-6">
       <Pressable
-        style={s.skip}
+        className="self-end pt-4 pb-6 active:opacity-70"
         onPress={() => router.replace("/(auth)/sign-up")}
       >
-        <Text style={s.skipText}>Пропустити</Text>
+        <Text className="text-muted text-sm">Пропустити</Text>
       </Pressable>
 
-      <View style={s.center}>
+      <View className="flex-1 items-center justify-center gap-6">
         <View
-          style={[
-            s.iconWrap,
-            {
-              backgroundColor: slide.color + "22",
-              borderColor: slide.color + "44",
-            },
-          ]}
+          className="w-28 h-28 rounded-3xl items-center justify-center"
+          style={{
+            backgroundColor: slide.color + "22",
+            borderWidth: 1.5,
+            borderColor: slide.color + "44",
+          }}
         >
-          <Text style={s.icon}>{slide.icon}</Text>
+          <slide.Icon size={48} color={slide.color} strokeWidth={1.5} />
         </View>
-        <Text style={s.title}>{slide.title}</Text>
-        <Text style={s.desc}>{slide.desc}</Text>
+        <Text className="text-text text-2xl font-extrabold text-center">
+          {slide.title}
+        </Text>
+        <Text className="text-muted text-base text-center leading-6">
+          {slide.desc}
+        </Text>
       </View>
 
-      <View style={s.dots}>
+      <View className="flex-row justify-center gap-2 mb-4">
         {SLIDES.map((_, i) => (
           <Pressable key={i} onPress={() => setStep(i)}>
             <View
-              style={[
-                s.dot,
-                {
-                  width: i === step ? 24 : 8,
-                  backgroundColor: i === step ? slide.color : colors.textMuted,
-                },
-              ]}
+              className="h-2 rounded"
+              style={{
+                width: i === step ? 24 : 8,
+                backgroundColor: i === step ? slide.color : colors.textMuted,
+              }}
             />
           </Pressable>
         ))}
       </View>
 
-      <View style={s.actions}>
+      <View className="pb-6">
         <Pressable
-          style={[s.nextBtn, { backgroundColor: slide.color }]}
+          className="flex-row items-center justify-center gap-2 py-4 active:opacity-80"
+          style={{ backgroundColor: slide.color, borderRadius: radius.md }}
           onPress={goNext}
         >
-          <Text style={s.nextBtnText}>{isLast ? "Розпочати →" : "Далі"}</Text>
+          <Text className="text-white text-base font-bold">
+            {isLast ? "Розпочати" : "Далі"}
+          </Text>
+          <ArrowRight size={18} color="#fff" strokeWidth={2.5} />
         </Pressable>
       </View>
     </SafeAreaView>
   );
 }
-
-const s = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: spacing.xl },
-  skip: {
-    alignSelf: "flex-end",
-    paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
-  },
-  skipText: { color: colors.textMuted, fontSize: 14 },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.xl,
-  },
-  iconWrap: {
-    width: 120,
-    height: 120,
-    borderRadius: 36,
-    borderWidth: 1.5,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  icon: { fontSize: 52 },
-  title: {
-    color: colors.text,
-    fontSize: 26,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  desc: {
-    color: colors.textMuted,
-    fontSize: 15,
-    textAlign: "center",
-    lineHeight: 22,
-  },
-  dots: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 8,
-    marginBottom: spacing.lg,
-  },
-  dot: { height: 8, borderRadius: 4 },
-  actions: { paddingBottom: spacing.xl },
-  nextBtn: {
-    borderRadius: radius.md,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  nextBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
-});

@@ -24,9 +24,9 @@
  *   dropped — RN has no hover state and press feedback is applied via
  *   `Pressable`'s `pressed` callback. Callers that need press feedback
  *   should wrap the Card in their own `Pressable` (or swap to `Button`).
- * - Dark-mode `dark:` modifiers on branded module variants are still
- *   dropped — module-branded surfaces render the light variant only
- *   (same caveat as Button.tsx). Core variants and sub-components
+ * - Dark-mode `dark:` modifiers on branded module variants use the
+ *   `--c-<module>-surface-dark` CSS variable tokens defined in
+ *   `apps/mobile/global.css` for consistent tinting. Core variants and sub-components
  *   (`CardTitle`, `CardDescription`, `CardFooter`) now resolve via
  *   the shared semantic `fg` / `fg-muted` / `line` CSS-variable
  *   tokens from `@sergeant/design-tokens`, so they re-tint with the
@@ -35,8 +35,10 @@
  *   the same semantic token (no more hardcoded `cream-300`).
  */
 
-import { forwardRef, type ReactNode } from "react";
+import { forwardRef, useRef, type ReactNode } from "react";
 import {
+  Animated,
+  Pressable,
   Text,
   type TextProps,
   View,
@@ -79,18 +81,25 @@ const variantContainer: Record<CardVariant, string> = {
   elevated: "bg-panel border border-line shadow-md",
   ghost: "bg-transparent border border-transparent",
 
-  // Module hero cards — branded surface. Mobile strips the `dark:` modifiers
-  // (no dark-mode plumbing yet) but keeps the branded border + solid token.
-  finyk: "rounded-3xl border border-brand-200/50 bg-finyk-soft",
-  fizruk: "rounded-3xl border border-teal-200/50 bg-fizruk-soft",
-  routine: "rounded-3xl border border-coral-200/50 bg-routine-surface",
-  nutrition: "rounded-3xl border border-lime-200/50 bg-nutrition-soft",
+  // Module hero cards — branded surface with full dark-mode support.
+  finyk:
+    "rounded-3xl border border-brand-200/50 bg-finyk-soft dark:bg-finyk-surface-dark/10 dark:border-finyk-border-dark/20",
+  fizruk:
+    "rounded-3xl border border-teal-200/50 bg-fizruk-soft dark:bg-fizruk-surface-dark/10 dark:border-fizruk-border-dark/20",
+  routine:
+    "rounded-3xl border border-coral-200/50 bg-routine-surface dark:bg-routine-surface-dark/10 dark:border-routine-border-dark/20",
+  nutrition:
+    "rounded-3xl border border-lime-200/50 bg-nutrition-soft dark:bg-nutrition-surface-dark/10 dark:border-nutrition-border-dark/20",
 
-  // Soft module cards — less prominent tinted surface.
-  "finyk-soft": "rounded-2xl border border-brand-100 bg-brand-50/50",
-  "fizruk-soft": "rounded-2xl border border-teal-100 bg-teal-50/50",
-  "routine-soft": "rounded-2xl border border-coral-100 bg-coral-50/50",
-  "nutrition-soft": "rounded-2xl border border-lime-100 bg-lime-50/50",
+  // Soft module cards — less prominent tinted surface with dark mode.
+  "finyk-soft":
+    "rounded-2xl border border-brand-100 bg-brand-50/50 dark:bg-finyk-surface-dark/8 dark:border-finyk-border-dark/15",
+  "fizruk-soft":
+    "rounded-2xl border border-teal-100 bg-teal-50/50 dark:bg-fizruk-surface-dark/8 dark:border-fizruk-border-dark/15",
+  "routine-soft":
+    "rounded-2xl border border-coral-100 bg-coral-50/50 dark:bg-routine-surface-dark/8 dark:border-routine-border-dark/15",
+  "nutrition-soft":
+    "rounded-2xl border border-lime-100 bg-lime-50/50 dark:bg-nutrition-surface-dark/8 dark:border-nutrition-border-dark/15",
 };
 
 const paddings: Record<CardPadding, string> = {
@@ -119,6 +128,63 @@ export interface CardProps extends Omit<ViewProps, "style"> {
   radius?: CardRadius;
   className?: string;
   children?: ReactNode;
+  /** For interactive variant: callback when card is pressed */
+  onPress?: () => void;
+  /** Disable press interactions */
+  disabled?: boolean;
+}
+
+/**
+ * Animated wrapper for interactive cards with scale feedback.
+ */
+function AnimatedPressable({
+  children,
+  onPress,
+  disabled,
+  className,
+  style,
+}: {
+  children: ReactNode;
+  onPress?: () => void;
+  disabled?: boolean;
+  className?: string;
+  style?: ViewProps["style"];
+}) {
+  const scaleValue = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleValue, {
+      toValue: 0.98,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleValue, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 50,
+      bounciness: 4,
+    }).start();
+  };
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      disabled={disabled}
+    >
+      <Animated.View
+        className={className}
+        style={[style, { transform: [{ scale: scaleValue }] }]}
+      >
+        {children}
+      </Animated.View>
+    </Pressable>
+  );
 }
 
 export const Card = forwardRef<RNView, CardProps>(function Card(
@@ -128,6 +194,8 @@ export const Card = forwardRef<RNView, CardProps>(function Card(
     radius = "xl",
     className,
     children,
+    onPress,
+    disabled,
     ...props
   },
   ref,
@@ -135,17 +203,28 @@ export const Card = forwardRef<RNView, CardProps>(function Card(
   // Module (branded) variants bake their own radius — match web behaviour.
   const radiusClass = CORE_VARIANTS.has(variant) ? radii[radius] : "";
 
+  const cardClassName = cx(
+    variantContainer[variant],
+    radiusClass,
+    paddings[padding],
+    className,
+  );
+
+  // Use animated pressable wrapper for interactive variant with onPress
+  if (variant === "interactive" && onPress) {
+    return (
+      <AnimatedPressable
+        onPress={onPress}
+        disabled={disabled}
+        className={cardClassName}
+      >
+        {children}
+      </AnimatedPressable>
+    );
+  }
+
   return (
-    <View
-      ref={ref}
-      className={cx(
-        variantContainer[variant],
-        radiusClass,
-        paddings[padding],
-        className,
-      )}
-      {...props}
-    >
+    <View ref={ref} className={cardClassName} {...props}>
       {children}
     </View>
   );

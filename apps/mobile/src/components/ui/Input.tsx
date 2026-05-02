@@ -37,7 +37,16 @@
  */
 
 import { forwardRef, useState, type ReactNode } from "react";
-import { TextInput, type TextInputProps, View } from "react-native";
+import {
+  Pressable,
+  Text,
+  TextInput,
+  type TextInputProps,
+  View,
+} from "react-native";
+import { AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react-native";
+
+import { colors } from "@/theme";
 
 export type InputSize = "sm" | "md" | "lg";
 export type InputVariant = "default" | "filled" | "ghost";
@@ -142,6 +151,16 @@ export interface InputProps extends Omit<
   className?: string;
   /** Extra classes applied to the wrapper `View` (slot container). */
   containerClassName?: string;
+  /** Helper text shown below the input. Turns red on `error`. */
+  helperText?: string;
+  /** Label rendered above the input field. */
+  label?: string;
+  /** Show icon in helper text for error/success states. Defaults to false. */
+  showHelperIcon?: boolean;
+  /** Show character count when maxLength is set. Defaults to true when maxLength is provided. */
+  showCharacterCount?: boolean;
+  /** Show password visibility toggle for password fields. Defaults to true for type="password". */
+  showPasswordToggle?: boolean;
   /**
    * Explicit RN overrides — the caller's value always wins over the
    * `type`-derived defaults.
@@ -162,6 +181,11 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
     suffix,
     className,
     containerClassName,
+    helperText,
+    label,
+    showHelperIcon = false,
+    showCharacterCount,
+    showPasswordToggle,
     keyboardType,
     autoCapitalize,
     autoComplete,
@@ -169,12 +193,27 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
     spellCheck,
     onFocus,
     onBlur,
+    onChangeText,
     editable = true,
+    maxLength,
+    value,
+    defaultValue,
     ...props
   },
   ref,
 ) {
   const [focused, setFocused] = useState(false);
+  const [charCount, setCharCount] = useState(
+    () => (value ?? defaultValue ?? "").length,
+  );
+  const [passwordVisible, setPasswordVisible] = useState(false);
+
+  // Show character count when maxLength is set, unless explicitly disabled
+  const shouldShowCharCount = showCharacterCount ?? maxLength !== undefined;
+  // Show password toggle for password type unless explicitly disabled
+  const shouldShowPasswordToggle = showPasswordToggle ?? type === "password";
+  const isNearLimit = maxLength !== undefined && charCount >= maxLength * 0.9;
+  const isAtLimit = maxLength !== undefined && charCount >= maxLength;
 
   // Type-aware defaults — explicit caller props always win.
   const resolvedKeyboard =
@@ -183,8 +222,9 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
     autoComplete ?? (type ? DEFAULT_AUTOCOMPLETE[type] : undefined);
   const resolvedAutoCapitalize =
     autoCapitalize ?? (type ? DEFAULT_AUTOCAPITALIZE[type] : undefined);
+  // For password fields with toggle, use internal visibility state
   const resolvedSecure =
-    secureTextEntry ?? (type === "password" ? true : undefined);
+    secureTextEntry ?? (type === "password" ? !passwordVisible : undefined);
   const resolvedSpellCheck =
     spellCheck ?? (type && NON_PROSE_TYPES.has(type) ? false : undefined);
 
@@ -197,44 +237,115 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
         : "";
 
   return (
-    <View
-      className={cx(
-        "flex-row items-center",
-        sizes[size],
-        variantBase[variant],
-        stateClass,
-        "border",
-        focused && !error && !success ? "ring-2 ring-brand-400/40" : "",
-        !editable && "opacity-50",
-        containerClassName,
-      )}
-    >
-      {icon ? <View className="mr-2">{icon}</View> : null}
-      <TextInput
-        ref={ref}
-        editable={editable}
-        keyboardType={resolvedKeyboard}
-        autoComplete={resolvedAutoComplete}
-        autoCapitalize={resolvedAutoCapitalize}
-        secureTextEntry={resolvedSecure}
-        spellCheck={resolvedSpellCheck}
-        placeholderTextColor="#a8a29e"
-        accessibilityState={
-          error ? { disabled: !editable, busy: false } : undefined
-        }
-        aria-invalid={error ? true : undefined}
-        onFocus={(event) => {
-          setFocused(true);
-          onFocus?.(event);
-        }}
-        onBlur={(event) => {
-          setFocused(false);
-          onBlur?.(event);
-        }}
-        className={cx("flex-1 text-base text-fg", className)}
-        {...props}
-      />
-      {suffix ? <View className="ml-2">{suffix}</View> : null}
+    <View className="gap-1">
+      {label ? (
+        <Text className="text-sm font-medium text-fg leading-snug">
+          {label}
+        </Text>
+      ) : null}
+      <View
+        className={cx(
+          "flex-row items-center",
+          sizes[size],
+          variantBase[variant],
+          stateClass,
+          "border",
+          focused && !error && !success ? "ring-2 ring-brand-400/40" : "",
+          !editable && "opacity-50",
+          containerClassName,
+        )}
+      >
+        {icon ? <View className="mr-2">{icon}</View> : null}
+        <TextInput
+          ref={ref}
+          editable={editable}
+          keyboardType={resolvedKeyboard}
+          autoComplete={resolvedAutoComplete}
+          autoCapitalize={resolvedAutoCapitalize}
+          secureTextEntry={resolvedSecure}
+          spellCheck={resolvedSpellCheck}
+          placeholderTextColor="#a8a29e"
+          accessibilityState={{
+            disabled: !editable,
+          }}
+          aria-invalid={error ? true : undefined}
+          onFocus={(event) => {
+            setFocused(true);
+            onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            setFocused(false);
+            onBlur?.(event);
+          }}
+          onChangeText={(text) => {
+            setCharCount(text.length);
+            onChangeText?.(text);
+          }}
+          value={value}
+          maxLength={maxLength}
+          className={cx("flex-1 text-base text-fg", className)}
+          {...props}
+        />
+        {shouldShowPasswordToggle && type === "password" ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              passwordVisible ? "Приховати пароль" : "Показати пароль"
+            }
+            onPress={() => setPasswordVisible((v) => !v)}
+            className="ml-2 w-8 h-8 items-center justify-center rounded-lg active:bg-cream-200/50"
+          >
+            {passwordVisible ? (
+              <EyeOff size={18} color={colors.textMuted} strokeWidth={2} />
+            ) : (
+              <Eye size={18} color={colors.textMuted} strokeWidth={2} />
+            )}
+          </Pressable>
+        ) : suffix ? (
+          <View className="ml-2">{suffix}</View>
+        ) : null}
+      </View>
+      <View className="flex-row items-center gap-1.5 mt-0.5">
+        {helperText ? (
+          <>
+            {showHelperIcon && error && (
+              <AlertCircle size={14} color={colors.danger} strokeWidth={2} />
+            )}
+            {showHelperIcon && success && !error && (
+              <CheckCircle size={14} color={colors.success} strokeWidth={2} />
+            )}
+            <Text
+              className={cx(
+                "text-xs leading-snug flex-1",
+                error
+                  ? "text-danger"
+                  : success
+                    ? "text-success"
+                    : "text-fg-muted",
+              )}
+            >
+              {helperText}
+            </Text>
+          </>
+        ) : (
+          <View className="flex-1" />
+        )}
+        {shouldShowCharCount && maxLength !== undefined ? (
+          <Text
+            className={cx(
+              "text-xs tabular-nums",
+              isAtLimit
+                ? "text-danger"
+                : isNearLimit
+                  ? "text-warning"
+                  : "text-fg-subtle",
+            )}
+            accessibilityLabel={`${charCount} з ${maxLength} символів`}
+          >
+            {charCount}/{maxLength}
+          </Text>
+        ) : null}
+      </View>
     </View>
   );
 });
@@ -249,6 +360,10 @@ export interface TextareaProps extends Omit<
   rows?: number;
   className?: string;
   containerClassName?: string;
+  /** Helper text shown below the textarea. Turns red on `error`. */
+  helperText?: string;
+  /** Label rendered above the textarea. */
+  label?: string;
 }
 
 /**
@@ -262,6 +377,8 @@ export const Textarea = forwardRef<TextInput, TextareaProps>(function Textarea(
     rows = 3,
     className,
     containerClassName,
+    helperText,
+    label,
     onFocus,
     onBlur,
     editable = true,
@@ -278,35 +395,52 @@ export const Textarea = forwardRef<TextInput, TextareaProps>(function Textarea(
       : "";
 
   return (
-    <View
-      className={cx(
-        "px-4 py-3 rounded-2xl",
-        variantBase[variant],
-        stateClass,
-        !editable && "opacity-50",
-        containerClassName,
-      )}
-    >
-      <TextInput
-        ref={ref}
-        multiline
-        numberOfLines={rows}
-        editable={editable}
-        textAlignVertical="top"
-        placeholderTextColor="#a8a29e"
-        aria-invalid={error ? true : undefined}
-        onFocus={(event) => {
-          setFocused(true);
-          onFocus?.(event);
-        }}
-        onBlur={(event) => {
-          setFocused(false);
-          onBlur?.(event);
-        }}
-        className={cx("text-base text-fg", className)}
-        style={{ minHeight: rows * 20 }}
-        {...props}
-      />
+    <View className="gap-1">
+      {label ? (
+        <Text className="text-sm font-medium text-fg leading-snug">
+          {label}
+        </Text>
+      ) : null}
+      <View
+        className={cx(
+          "px-4 py-3 rounded-2xl",
+          variantBase[variant],
+          stateClass,
+          !editable && "opacity-50",
+          containerClassName,
+        )}
+      >
+        <TextInput
+          ref={ref}
+          multiline
+          numberOfLines={rows}
+          editable={editable}
+          textAlignVertical="top"
+          placeholderTextColor="#a8a29e"
+          aria-invalid={error ? true : undefined}
+          onFocus={(event) => {
+            setFocused(true);
+            onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            setFocused(false);
+            onBlur?.(event);
+          }}
+          className={cx("text-base text-fg", className)}
+          style={{ minHeight: rows * 20 }}
+          {...props}
+        />
+      </View>
+      {helperText ? (
+        <Text
+          className={cx(
+            "text-xs leading-snug",
+            error ? "text-danger" : "text-fg-muted",
+          )}
+        >
+          {helperText}
+        </Text>
+      ) : null}
     </View>
   );
 });

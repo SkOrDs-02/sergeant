@@ -14,6 +14,7 @@ import { readJSON, writeJSON, type KVStore } from "./kvStore";
 // ---------------------------------------------------------------------------
 
 const NUDGE_DISMISSED_KEY = "hub_nudge_dismissed_v1";
+const NUDGE_SNOOZE_KEY = "hub_nudge_snooze_v1";
 const LAST_ACTIVE_DATE_KEY = "hub_last_active_date_v1";
 const REENGAGEMENT_SHOWN_KEY = "hub_reengagement_shown_v1";
 
@@ -74,6 +75,40 @@ export function dismissNudge(store: KVStore, nudgeId: string): void {
   writeJSON(store, NUDGE_DISMISSED_KEY, map);
 }
 
+interface NudgeSnoozeMap {
+  /** Epoch ms after which the nudge becomes eligible again. */
+  [nudgeId: string]: number;
+}
+
+function getSnoozeMap(store: KVStore): NudgeSnoozeMap {
+  return readJSON<NudgeSnoozeMap>(store, NUDGE_SNOOZE_KEY) ?? {};
+}
+
+/**
+ * Hide a nudge for `days` days. Unlike `dismissNudge`, the nudge becomes
+ * eligible again after the snooze window. Used to give users a "remind
+ * me later" escape hatch from the daily nudge stream without losing the
+ * tip permanently.
+ */
+export function snoozeNudge(
+  store: KVStore,
+  nudgeId: string,
+  days: number,
+  now?: Date,
+): void {
+  const map = getSnoozeMap(store);
+  const ts = (now ?? new Date()).getTime() + days * 24 * 60 * 60 * 1000;
+  map[nudgeId] = ts;
+  writeJSON(store, NUDGE_SNOOZE_KEY, map);
+}
+
+function isSnoozed(map: NudgeSnoozeMap, nudgeId: string, now?: Date): boolean {
+  const expiresAt = map[nudgeId];
+  if (typeof expiresAt !== "number") return false;
+  const nowMs = (now ?? new Date()).getTime();
+  return expiresAt > nowMs;
+}
+
 /**
  * Pick the single nudge to show today (max 1 per day).
  * Returns null if no nudge is applicable or all have been dismissed.
@@ -91,10 +126,12 @@ export function getActiveNudge(
   if (sessionDays < 2 || sessionDays > 7) return null;
 
   const dismissed = getDismissedMap(store);
+  const snoozed = getSnoozeMap(store);
 
   for (const nudge of NUDGE_CATALOG) {
     if (nudge.day > sessionDays) continue;
     if (dismissed[nudge.id]) continue;
+    if (isSnoozed(snoozed, nudge.id)) continue;
 
     if (nudge.conditionModule) {
       const picks = opts?.picks;

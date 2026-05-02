@@ -1,6 +1,7 @@
 # Логування (Pino JSON + ALS + Sentry / Loki)
 
-> Last reviewed: 2026-04-27.
+> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Status:** Active
 
 Цей документ описує **як** і **чому** бекенд Sergeant логує саме так, як
 працює кореляція між Pino-логами, Sentry та Grafana Loki, і які антипатерни
@@ -85,7 +86,7 @@ coupling, простіше тестувати.
 
 ---
 
-## 3. Redaction policy
+## 3. Redaction-політика
 
 Pino маскує значення на `[redacted]` для шляхів, визначених у
 [`redactPaths`](../../apps/server/src/obs/logger.ts#L24) (22 елементи).
@@ -100,7 +101,7 @@ Pino маскує значення на `[redacted]` для шляхів, виз
 | `req.headers["x-api-key"]`  | API-ключ зовнішніх інтеграцій |
 | `req.headers["x-token"]`    | Legacy-токен Monobank webhook |
 
-### Secrets / tokens
+### Secret-и / token-и
 
 | Шлях              | Чому                                           |
 | ----------------- | ---------------------------------------------- |
@@ -142,7 +143,7 @@ auth-стеку (Better Auth email+password, session cookie, Monobank webhook з
 
 ---
 
-## 4. Error serialization
+## 4. Серіалізація помилок
 
 [`serializeError()`](../../apps/server/src/obs/logger.ts#L130) перетворює
 `Error` у plain-об'єкт, безпечний для JSON. Головна фіча — рекурсивне
@@ -178,7 +179,7 @@ auth-стеку (Better Auth email+password, session cookie, Monobank webhook з
 
 ---
 
-## 5. AppError classification
+## 5. Класифікація AppError
 
 [`errors.ts`](../../apps/server/src/obs/errors.ts) визначає ієрархію помилок:
 
@@ -193,7 +194,7 @@ auth-стеку (Better Auth email+password, session cookie, Monobank webhook з
 | `ExternalServiceError` | 502    | `EXTERNAL_SERVICE` | `operational` |
 | _(все інше)_           | 500    | `INTERNAL`         | `programmer`  |
 
-### Operational vs Programmer
+### Operational vs programmer
 
 - **`operational`** — очікуваний сценарій (невалідний input, rate-limit,
   зовнішній сервіс недоступний). Логується на `warn`. **Не** надсилається в
@@ -247,7 +248,7 @@ app_errors_total{kind="operational|programmer", status="4xx|5xx", code="...", mo
 
 ---
 
-## 6. Sentry ↔ Pino ↔ Loki correlation
+## 6. Кореляція Sentry ↔ Pino ↔ Loki
 
 Ключ кореляції — **`requestId`**. Він присутній у:
 
@@ -317,7 +318,7 @@ Request → requestIdMiddleware (UUID)
 
 ---
 
-## 7. Log levels у продакшні
+## 7. Log-level-и у продакшні
 
 | Level   | Коли                                                    | Приклади                                                         |
 | ------- | ------------------------------------------------------- | ---------------------------------------------------------------- |
@@ -339,7 +340,7 @@ JSON-рядок на відповідь. Фільтрує `/health`, `/livez`, `
 
 ---
 
-## 8. Dev mode tips
+## 8. Dev-mode-поради
 
 | Змінна       | Значення | Ефект                                                |
 | ------------ | -------- | ---------------------------------------------------- |

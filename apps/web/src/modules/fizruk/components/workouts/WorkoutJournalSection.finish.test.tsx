@@ -95,6 +95,7 @@ function baseProps(
     })),
     submitRetroWorkout: vi.fn(),
     deleteWorkout: vi.fn(),
+    restoreWorkout: vi.fn(),
     ...overrides,
   };
 }

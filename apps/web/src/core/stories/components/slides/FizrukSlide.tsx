@@ -12,7 +12,7 @@ export function FizrukSlide({ slide }: { slide: FizrukSlideData }) {
 
   return (
     <StoryShell slide={slide}>
-      <p className="text-[12px] uppercase tracking-[0.3em] text-white/70 font-bold mb-2">
+      <p className="text-xs uppercase tracking-[0.3em] text-white/70 font-bold mb-2">
         Тренування · ФІЗРУК
       </p>
 
@@ -21,7 +21,7 @@ export function FizrukSlide({ slide }: { slide: FizrukSlideData }) {
           <div className="text-xs uppercase tracking-wider text-white/75 font-bold">
             Тренувань
           </div>
-          <div className="text-[36px] leading-none font-black tabular-nums mt-1">
+          <div className="text-4xl leading-none font-black tabular-nums mt-1">
             {agg?.workoutsCount ?? 0}
           </div>
         </div>
@@ -29,7 +29,7 @@ export function FizrukSlide({ slide }: { slide: FizrukSlideData }) {
           <div className="text-xs uppercase tracking-wider text-white/75 font-bold">
             Обсяг, кг
           </div>
-          <div className="text-[36px] leading-none font-black tabular-nums mt-1">
+          <div className="text-4xl leading-none font-black tabular-nums mt-1">
             {fmtNum(agg?.totalVolume)}
           </div>
         </div>
@@ -53,16 +53,16 @@ export function FizrukSlide({ slide }: { slide: FizrukSlideData }) {
       )}
 
       {agg?.recoveryLabel && (
-        <div className="mt-2 inline-flex self-start px-3 py-1.5 rounded-full bg-white/15 border border-white/20 text-[12px] font-semibold">
+        <div className="mt-2 inline-flex self-start px-3 py-1.5 rounded-full bg-white/15 border border-white/20 text-xs font-semibold">
           {agg.recoveryLabel}
         </div>
       )}
 
       {ai?.summary && (
         <div className="mt-auto rounded-2xl bg-white/15 backdrop-blur-sm px-4 py-3 border border-white/20">
-          <p className="text-[14px] font-semibold leading-snug">{ai.summary}</p>
+          <p className="text-style-label leading-snug">{ai.summary}</p>
           {ai.comment && (
-            <p className="text-[12.5px] text-white/85 mt-2 leading-relaxed">
+            <p className="text-xs text-white/85 mt-2 leading-relaxed">
               {ai.comment}
             </p>
           )}

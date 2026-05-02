@@ -152,7 +152,7 @@ describe("useNutritionRemoteActions", () => {
       });
 
       await waitFor(() => expect(spies.setRecipes).toHaveBeenCalled());
-      const pushed = spies.setRecipes.mock.calls.at(-1)[0];
+      const pushed = spies.setRecipes.mock.calls.at(-1)![0];
       expect(pushed).toHaveLength(2);
       expect(pushed[0].id).toBe("r1");
       expect(pushed[1].id).toBeTruthy(); // derived id
@@ -274,7 +274,7 @@ describe("useNutritionRemoteActions", () => {
 
       // Functional setState — call the updater with null prev to see the
       // "plain replace" branch.
-      const updater = spies.setDayPlan.mock.calls.at(-1)[0];
+      const updater = spies.setDayPlan.mock.calls.at(-1)![0];
       expect(typeof updater).toBe("function");
       expect(updater(null)).toEqual(plan);
     });
@@ -356,7 +356,7 @@ describe("useNutritionRemoteActions", () => {
       });
       await waitFor(() => expect(spies.setDayPlan).toHaveBeenCalled());
 
-      const updater = spies.setDayPlan.mock.calls.at(-1)[0];
+      const updater = spies.setDayPlan.mock.calls.at(-1)![0];
       expect(typeof updater).toBe("function");
 
       // Simulate "latest committed state" — stale closure would have missed
@@ -422,7 +422,7 @@ describe("useNutritionRemoteActions", () => {
       });
       await waitFor(() => expect(spies.setDayPlan).toHaveBeenCalled());
 
-      const updater = spies.setDayPlan.mock.calls.at(-1)[0];
+      const updater = spies.setDayPlan.mock.calls.at(-1)![0];
       expect(updater({ meals: [] })).toEqual(plan);
       expect(updater(null)).toEqual(plan);
     });

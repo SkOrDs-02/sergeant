@@ -2,7 +2,11 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 
-export function IOSInstallBanner({ onDismiss }) {
+interface IOSInstallBannerProps {
+  onDismiss: () => void;
+}
+
+export function IOSInstallBanner({ onDismiss }: IOSInstallBannerProps) {
   return (
     <div className="px-5 max-w-lg mx-auto w-full mb-2">
       <Card

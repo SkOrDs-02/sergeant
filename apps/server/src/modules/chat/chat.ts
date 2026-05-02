@@ -10,13 +10,16 @@ import {
   anthropicMessages,
   anthropicMessagesStream,
   extractAnthropicText,
+  recordAnthropicUsage,
 } from "../../lib/anthropic.js";
 import type { WithAiQuotaRefund } from "./aiQuota.js";
 import { TOOLS, SYSTEM_PREFIX, SYSTEM_PROMPT_VERSION } from "./tools.js";
 import { recordToolProposals, recordToolExecutions } from "./toolMetrics.js";
 import { truncateToolResults } from "./toolResultTruncation.js";
-import { anthropicPromptCacheHitTotal } from "../../obs/metrics.js";
 import { als } from "../../obs/requestContext.js";
+import { ExternalServiceError } from "../../obs/errors.js";
+import { getSessionUser } from "../../auth.js";
+import { buildRagContext } from "../ai-memory/ragContext.js";
 
 type WithAnthropicKey = Request & { anthropicKey?: string };
 
@@ -131,6 +134,17 @@ interface StreamEvent {
   type: string;
   delta?: { type?: string; text?: string; stop_reason?: string };
   message?: { usage?: StreamUsage };
+  /**
+   * Anthropic надсилає `output_tokens` НЕ у `message_start` (там лише
+   * `input_tokens` + cache-токени), а у фінальному `message_delta` подію
+   * як top-level `usage.output_tokens`. Без цього merge cost-метрика
+   * систематично занижує `output`-вартість (для Sonnet — ~70-80% бюджету,
+   * бо output $15/Mtok vs input $3/Mtok).
+   *
+   * Доку з SSE-схемою: https://docs.anthropic.com/en/api/messages-streaming
+   * (секція "Event types" → message_delta).
+   */
+  usage?: StreamUsage;
 }
 
 /**
@@ -199,7 +213,7 @@ async function callAnthropicWithContinuation(
       // потрапили у success-гілку.
       if (continued && mergedTextChunks.length > 0) {
         return {
-          response: { ok: true, status: 200 } as unknown as FetchResponse,
+          response: new Response(null, { status: 200 }) as FetchResponse,
           data: {
             content: buildMergedContent(
               mergedTextChunks.join(""),
@@ -381,10 +395,9 @@ export default async function handler(
 
     if (!response?.ok) {
       await refundQuotaOnUpstreamFailure(req);
-      res
-        .status(response?.status || 500)
-        .json({ error: data?.error?.message || "AI error" });
-      return;
+      throw new ExternalServiceError(data?.error?.message || "AI error", {
+        status: response?.status || 502,
+      });
     }
 
     const text = extractAnthropicText(data);
@@ -399,6 +412,17 @@ export default async function handler(
     return;
   }
 
+  // RAG-injection: підмішуємо top-K схожих ai_memories у system context
+  // **тільки на першому турі** (тут), не на tool-result-турі вище. Sync
+  // за дизайном: блокуємо handler на ≤RAG_TIMEOUT_MS перш ніж дзвонити
+  // Anthropic. Failure-mode → no-op (повертає baseContext).
+  const sessionUserForRag = await getSessionUser(req).catch(() => null);
+  const augmentedContext = await buildRagContext({
+    userId: sessionUserForRag?.id ?? null,
+    baseContext: context,
+    messages: cleaned,
+  });
+
   let response, data;
   try {
     ({ response, data } = await callAnthropicWithContinuation(
@@ -411,7 +435,7 @@ export default async function handler(
       {
         model: "claude-sonnet-4-6",
         max_tokens: 1500,
-        system: buildSystem(context),
+        system: buildSystem(augmentedContext),
         tools: TOOLS_WITH_CACHE,
         messages: cleaned,
       },
@@ -429,10 +453,9 @@ export default async function handler(
 
   if (!response?.ok) {
     await refundQuotaOnUpstreamFailure(req);
-    res
-      .status(response?.status || 500)
-      .json({ error: data?.error?.message || "AI error" });
-    return;
+    throw new ExternalServiceError(data?.error?.message || "AI error", {
+      status: response?.status || 502,
+    });
   }
 
   const content: AnthropicContentBlock[] = data?.content || [];
@@ -494,6 +517,17 @@ async function streamOneIterationToSse(
 ): Promise<StreamIterationResult> {
   const reader = upstream.body?.getReader();
   if (!reader) {
+    // Edge-case: 200 OK без `body`/`getReader()` — Anthropic не повинен
+    // такого віддавати, але Cloudflare/edge-проксі іноді стрипають body.
+    // SSE-заголовки тут ВЖЕ виставлені (caller — `streamAnthropicToSse`
+    // ставить їх до першого виклику цієї функції), тому ми НЕ можемо
+    // упасти у JSON через `errorHandler`. Натомість пишемо явну err-подію,
+    // щоб клієнт побачив помилку, а не тиху [DONE]-закриватку.
+    if (!res.writableEnded) {
+      res.write(
+        `data: ${JSON.stringify({ err: "AI upstream returned empty body" })}\n\n`,
+      );
+    }
     return {
       outcome: "error",
       stopReason: null,
@@ -537,8 +571,17 @@ async function streamOneIterationToSse(
           if (!res.writableEnded) {
             res.write(`data: ${JSON.stringify({ t: ev.delta.text })}\n\n`);
           }
-        } else if (ev.type === "message_delta" && ev.delta?.stop_reason) {
-          stopReason = ev.delta.stop_reason;
+        } else if (ev.type === "message_delta") {
+          if (ev.delta?.stop_reason) {
+            stopReason = ev.delta.stop_reason;
+          }
+          // Top-level `usage.output_tokens` приходить ЛИШЕ тут (див.
+          // коментар біля `StreamEvent.usage`). Merge у `usage`, що ми
+          // зібрали з `message_start`, інакше кост рахується тільки на
+          // input + cache, і `kind=completion` лічильник лишається порожнім.
+          if (ev.usage?.output_tokens != null) {
+            usage = { ...(usage ?? {}), output_tokens: ev.usage.output_tokens };
+          }
         } else if (ev.type === "message_start" && ev.message?.usage) {
           usage = ev.message.usage;
         }
@@ -610,8 +653,15 @@ async function streamAnthropicToSse(
         /* ignore */
       }
     }
-    res.status(firstResponse.status).json({ error: errMsg });
-    return;
+    // Pre-SSE Anthropic upstream-помилка: жодних SSE-заголовків ще не
+    // виставлено, тож кидаємо через `ExternalServiceError`, щоб
+    // `errorHandler` уніфіковано додав `code: EXTERNAL_SERVICE`,
+    // `requestId`, інкрементнув `app_errors_total{kind=operational}` і
+    // (для 5xx, де `isOperationalError(err)` — це 502 за замовчуванням)
+    // не дав Sentry повторити подію.
+    throw new ExternalServiceError(errMsg, {
+      status: firstResponse.status || 502,
+    });
   }
 
   res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
@@ -637,16 +687,26 @@ async function streamAnthropicToSse(
       currentRecordEnd(iter.outcome);
       if (iter.accumulatedText) accumulatedAllText += iter.accumulatedText;
 
-      if (promptVersion && iter.usage) {
-        const cacheRead = iter.usage.cache_read_input_tokens ?? 0;
-        try {
-          anthropicPromptCacheHitTotal.inc({
-            version: promptVersion,
-            outcome: cacheRead > 0 ? "hit" : "miss",
-          });
-        } catch {
-          /* metrics must never break a request */
-        }
+      // Streaming path раніше пропускав tokens/cost-метрики (єдина точка
+      // лічильника була в non-streaming `recordUsage`). Тепер витягнутий з
+      // SSE `message_start` usage прокидаємо у спільний emit-helper —
+      // `aiTokensTotal{kind=prompt|completion|cache_*}`, `cache-hit` лічильник
+      // та `ai_cost_estimate_usd_total` тепер заповнюються і для chat-стріму.
+      // Якщо upstream не повернув `message_start.usage` взагалі (стрім впав
+      // ще до першої події) — лишаємо контракт як був: жодних метрик не
+      // інкрементимо, щоб не давати fake-сигналу.
+      if (iter.usage) {
+        const iterModel = (payload.model as string) || "unknown";
+        const iterEndpoint =
+          continuationsLeft === MAX_TEXT_CONTINUATIONS
+            ? endpoint
+            : `${endpoint}-cont`;
+        recordAnthropicUsage(
+          iterModel,
+          iterEndpoint,
+          iter.usage,
+          promptVersion,
+        );
       }
 
       if (

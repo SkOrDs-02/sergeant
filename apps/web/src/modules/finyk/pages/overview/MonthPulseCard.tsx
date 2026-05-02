@@ -1,61 +1,71 @@
 import { memo } from "react";
 import { Card } from "@shared/components/ui/Card";
+import { Tooltip } from "@shared/components/ui/Tooltip";
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/cn";
-import { computePulseStyle } from "./pulseStyle";
 
 /**
- * Картка «Місяць» — дохід/витрати/прогрес, блок факт+прогнозу, фінпульс.
- * Це найбільша картка на Overview, тому винесена окремо; pulse-стилі
- * рахуються чистою функцією computePulseStyle.
+ * Картка «Місяць» — пара Витрати/Дохід + опційно один progress-bar
+ * (плану або прогнозу) + примітка про планові потоки. Денний бюджет і
+ * статус виконання плану живуть у HeroCard, тут не дублюються.
  */
 const MonthPulseCardImpl = function MonthPulseCard({
   dateLabel,
-  daysInMonth,
   daysPassed,
   spent,
   income,
   showBalance,
   showMonthForecast,
   projectedSpend,
-  spendPct,
-  spendBarPct,
-  expenseFromIncomeBarClass,
+  hasExpensePlan,
+  spendPlanRatio,
+  planExpense,
   forecastTrendPct,
   forecastBarClass,
-  dayBudget,
-  monthBalance,
-  spendPlanRatio,
-  hasExpensePlan,
   recurringOutThisMonth,
   recurringInThisMonth,
   unknownOutCount,
 }) {
-  const { accentLeft, bg, color, statusText } = computePulseStyle({
-    hasExpensePlan,
-    spendPlanRatio,
-    dayBudget,
-  });
+  const planPct = Math.min(100, Math.max(0, Math.round(spendPlanRatio * 100)));
+  const planBarClass =
+    spendPlanRatio > 0.75
+      ? "bg-danger"
+      : spendPlanRatio > 0.5
+        ? "bg-warning"
+        : "bg-success";
+
+  const showPlanBar = hasExpensePlan && showBalance;
+  const showForecastBlock =
+    showMonthForecast && !hasExpensePlan && projectedSpend > 0;
 
   return (
-    <Card
-      variant="default"
-      radius="lg"
-      padding="lg"
-      className={cn("border-l-[4px]", accentLeft, bg)}
-    >
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div>
-          <div className="text-xs font-medium text-subtle">Місяць</div>
-          <p className="text-xs text-muted mt-0.5 capitalize">{dateLabel}</p>
+    <Card variant="default" radius="lg" padding="lg">
+      <div className="flex items-baseline justify-between gap-3 mb-4">
+        <div className="flex items-baseline gap-2 min-w-0">
+          <span className="text-xs font-medium text-subtle">Місяць</span>
+          <span className="text-xs text-muted capitalize truncate">
+            {dateLabel}
+          </span>
         </div>
-        <span className="text-xs text-muted shrink-0 text-right tabular-nums">
-          {Math.max(0, daysInMonth - daysPassed)} дн. залишилось
-        </span>
       </div>
 
       <div className="flex justify-between items-start gap-4">
         <div>
-          <div className="text-xs text-subtle font-medium">Витрати</div>
+          <div className="flex items-center gap-1 text-xs text-subtle font-medium">
+            <span>Витрати</span>
+            <Tooltip
+              content="Огляд, категорії та бюджети — у гривні (UAH). Інші валюти рахунків у загальному балансі не конвертуються автоматично."
+              placement="bottom-center"
+            >
+              <button
+                type="button"
+                aria-label="Про валюту в підрахунках"
+                className="inline-flex items-center justify-center text-subtle hover:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk/60 rounded-full"
+              >
+                <Icon name="info" size={14} />
+              </button>
+            </Tooltip>
+          </div>
           <div className="text-hero font-bold tabular-nums mt-1 leading-tight">
             {showBalance
               ? spent.toLocaleString("uk-UA", { maximumFractionDigits: 0 })
@@ -85,41 +95,42 @@ const MonthPulseCardImpl = function MonthPulseCard({
         </div>
       </div>
 
-      <div className="mt-4 space-y-1.5">
-        <div className="flex justify-between text-xs text-muted">
-          <span>Витрати від доходу</span>
-          <span>{showBalance ? `${Math.round(spendPct)}%` : "—"}</span>
-        </div>
-        <div className="h-1.5 bg-bg rounded-full overflow-hidden">
-          <div
-            className={cn(
-              "h-full rounded-full transition-[width,background-color] duration-700",
-              expenseFromIncomeBarClass,
+      {showPlanBar && (
+        <div className="mt-4 space-y-1.5">
+          <div className="flex justify-between text-xs text-muted">
+            <span>
+              {planPct}% з плану{" "}
+              <span className="tabular-nums">
+                {planExpense.toLocaleString("uk-UA", {
+                  maximumFractionDigits: 0,
+                })}{" "}
+                ₴
+              </span>
+            </span>
+            {showMonthForecast && projectedSpend > 0 && (
+              <span className="tabular-nums">
+                прогноз{" "}
+                {Math.round(projectedSpend).toLocaleString("uk-UA", {
+                  maximumFractionDigits: 0,
+                })}{" "}
+                ₴
+              </span>
             )}
-            style={{ width: showBalance ? `${spendBarPct}%` : "0%" }}
-          />
-        </div>
-        <div className="flex justify-between text-xs text-muted">
-          <span>
-            {showBalance
-              ? `Залишок: ${monthBalance >= 0 ? "+" : "−"}${Math.abs(monthBalance).toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴`
-              : "—"}
-          </span>
-          <span>
-            {showBalance && !showMonthForecast && projectedSpend > 0
-              ? `Прогноз витрат ${projectedSpend.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴`
-              : showBalance && showMonthForecast
-                ? null
-                : "—"}
-          </span>
-        </div>
-      </div>
-
-      {showMonthForecast && (
-        <div className="mt-4 pt-4 border-t border-line space-y-2">
-          <div className="text-xs font-medium text-subtle">
-            Факт і прогноз витрат
           </div>
+          <div className="h-1.5 bg-bg rounded-full overflow-hidden">
+            <div
+              className={cn(
+                "h-full rounded-full transition-[width,background-color] duration-700",
+                planBarClass,
+              )}
+              style={{ width: `${planPct}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {showForecastBlock && (
+        <div className="mt-4 space-y-2">
           <p className="text-xs text-muted leading-snug">
             За {daysPassed}{" "}
             {daysPassed === 1 ? "день" : daysPassed < 5 ? "дні" : "дн."} · факт{" "}
@@ -134,7 +145,7 @@ const MonthPulseCardImpl = function MonthPulseCard({
               ₴
             </span>
           </p>
-          <div className="h-2.5 bg-bg rounded-full overflow-hidden">
+          <div className="h-1.5 bg-bg rounded-full overflow-hidden">
             <div
               className={cn(
                 "h-full rounded-full transition-[width,background-color] duration-500",
@@ -143,53 +154,23 @@ const MonthPulseCardImpl = function MonthPulseCard({
               style={{ width: `${forecastTrendPct}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs text-muted">
-            <span>{forecastTrendPct}% від прогнозу за темпом</span>
-          </div>
         </div>
       )}
 
-      <div className="mt-4 pt-4 border-t border-line">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-medium text-subtle">Фінпульс</span>
-          <span className="text-xs text-muted">цільова витрата на день</span>
-        </div>
-        <div
-          className={cn(
-            "text-[30px] sm:text-[34px] font-bold leading-tight tabular-nums mt-2",
-            color,
-            !showBalance && "tracking-widest",
-          )}
-        >
-          {showBalance ? (
-            <>
-              {Math.abs(dayBudget).toLocaleString("uk-UA", {
-                maximumFractionDigits: 0,
-              })}
-              <span className="text-base font-medium text-subtle ml-1">
-                ₴/день
-              </span>
-            </>
-          ) : (
-            "••••"
-          )}
-        </div>
-        <div className={cn("text-sm mt-0.5", color)}>{statusText}</div>
-        {(recurringOutThisMonth > 0 || recurringInThisMonth > 0) &&
-          showBalance && (
-            <div className="text-xs text-muted mt-2 leading-relaxed">
-              Враховано планових: −
-              {recurringOutThisMonth.toLocaleString("uk-UA", {
-                maximumFractionDigits: 0,
-              })}{" "}
-              / +
-              {recurringInThisMonth.toLocaleString("uk-UA", {
-                maximumFractionDigits: 0,
-              })}{" "}
-              ₴{unknownOutCount > 0 && ` + ${unknownOutCount} без суми`}
-            </div>
-          )}
-      </div>
+      {(recurringOutThisMonth > 0 || recurringInThisMonth > 0) &&
+        showBalance && (
+          <p className="text-xs text-muted mt-3 leading-relaxed">
+            Враховано планових: −
+            {recurringOutThisMonth.toLocaleString("uk-UA", {
+              maximumFractionDigits: 0,
+            })}{" "}
+            / +
+            {recurringInThisMonth.toLocaleString("uk-UA", {
+              maximumFractionDigits: 0,
+            })}{" "}
+            ₴{unknownOutCount > 0 && ` + ${unknownOutCount} без суми`}
+          </p>
+        )}
     </Card>
   );
 };

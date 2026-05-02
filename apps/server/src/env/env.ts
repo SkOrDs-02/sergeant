@@ -45,6 +45,14 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().optional(),
   /** `"0"` — вимкнути SameSite=None cookies (для single-origin deploys). */
   BETTER_AUTH_CROSS_SITE_COOKIES: z.string().optional(),
+  /**
+   * 32-byte hex (64 hex chars) ключ для AES-256-GCM шифрування OAuth-токенів
+   * (`accessToken` / `refreshToken` / `idToken` у таблиці `account`) — фікс
+   * C1 із security-review. Без ключа адаптер записує plaintext (legacy
+   * поведінка). У production обов'язковий — `assertStartupEnv` кидає
+   * помилку, якщо не заданий разом із `DATABASE_URL`.
+   */
+  BETTER_AUTH_TOKEN_ENC_KEY: z.string().optional(),
   MIN_PASSWORD_LENGTH: coerceInt.positive().default(10),
   MAX_PASSWORD_LENGTH: coerceInt.positive().default(128),
 
@@ -66,6 +74,18 @@ const envSchema = z.object({
   // ── AI (Anthropic) ─────────────────────────────────────────────────
   /** API-ключ для Anthropic Claude. Без нього /api/chat повертає 500. */
   ANTHROPIC_API_KEY: z.string().optional(),
+  /**
+   * API-ключ Groq для голосової транскрипції (`/api/transcribe`).
+   * Без нього endpoint повертає 503; фронт автоматично відкочується
+   * на Web Speech API (бачить це з `GET /api/transcribe/health`).
+   */
+  GROQ_API_KEY: z.string().optional(),
+  /**
+   * Whisper-модель Groq для транскрипції. За замовчуванням
+   * `whisper-large-v3-turbo` — найдешевший варіант з адекватною
+   * якістю українською. Альтернатива: `whisper-large-v3`.
+   */
+  GROQ_TRANSCRIBE_MODEL: z.string().default("whisper-large-v3-turbo"),
   /** `"1"` — повністю вимкнути AI-квоту (fail-open без перевірки). */
   AI_QUOTA_DISABLED: z.string().optional(),
   /** Денний ліміт AI-запитів для автентифікованого юзера. */
@@ -114,15 +134,27 @@ const envSchema = z.object({
   LOG_PRETTY: z.string().optional(),
   /** Bearer token для захисту `GET /metrics`. */
   METRICS_TOKEN: z.string().optional(),
+  /**
+   * Personal API key для server-side PostHog cleanup (ADR-0016 ADR-6.3).
+   * Має project-level scope із write-доступом до `persons`. БЕЗ нього
+   * `deletePostHogPerson()` повертає `outcome: "skipped"` — GDPR worker
+   * markує row як completed (no-op).
+   */
+  POSTHOG_API_KEY: z.string().optional(),
+  /** Числовий ID PostHog-проєкту (Settings → Project → ID). */
+  POSTHOG_PROJECT_ID: z.string().optional(),
+  /**
+   * Server-side host для PostHog API. EU Cloud: `https://eu.i.posthog.com`
+   * (default), US: `https://us.i.posthog.com`, self-hosted: власна URL.
+   * Парний до клієнтського `VITE_POSTHOG_HOST`.
+   */
+  POSTHOG_HOST: z.string().optional(),
 
   // ── Security ───────────────────────────────────────────────────────
   /** `"1"` — вимкнути Content-Security-Policy (Replit dev). */
   CSP_DISABLE: z.string().optional(),
   /** `"1"` — CSP у report-only mode. */
   CSP_REPORT_ONLY: z.string().optional(),
-  /** Bearer token для захисту nutrition API endpoints. */
-  NUTRITION_API_TOKEN: z.string().optional(),
-
   // ── Monobank webhook ─────────────────────────────────────────────────
   /** Feature flag: увімкнути webhook-based Monobank інтеграцію. */
   MONO_WEBHOOK_ENABLED: z
@@ -218,6 +250,26 @@ export function assertStartupEnv(): void {
         "PUBLIC_API_BASE_URL is required when MONO_WEBHOOK_ENABLED=true.",
       );
     }
+  }
+
+  // C1: encrypt OAuth tokens at rest. In production we hard-fail without
+  // the key — running plaintext-tokens-in-prod is exactly the regression
+  // we shipped this code to prevent. In dev/test we only warn so existing
+  // local dev environments don't break overnight.
+  if (env.BETTER_AUTH_TOKEN_ENC_KEY) {
+    if (!/^[0-9a-f]{64}$/i.test(env.BETTER_AUTH_TOKEN_ENC_KEY)) {
+      throw new Error(
+        "BETTER_AUTH_TOKEN_ENC_KEY must be exactly 64 hex chars (32 bytes).",
+      );
+    }
+  } else if (isProduction && env.DATABASE_URL) {
+    throw new Error(
+      "BETTER_AUTH_TOKEN_ENC_KEY is required in production. Generate one with `openssl rand -hex 32`.",
+    );
+  } else if (env.DATABASE_URL) {
+    warnings.push(
+      "BETTER_AUTH_TOKEN_ENC_KEY is not set — OAuth tokens will be stored as plaintext (insecure; allowed in dev only).",
+    );
   }
 
   if (warnings.length > 0) {

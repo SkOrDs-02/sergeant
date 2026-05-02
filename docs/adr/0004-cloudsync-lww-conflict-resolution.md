@@ -463,4 +463,4 @@ accepted.
 server_updated_at < NOW())` як tie-breaker.
 3. **Vacuum-policy для `module_data`.** При delete-account `ON DELETE
 CASCADE` чистить рядки автоматично. Окрема policy для inactive-юзерів
-   (90+ днів без login) — TBD у ADR-0006.
+   (90+ днів без login) — TBD у ADR-0016.

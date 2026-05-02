@@ -1,6 +1,7 @@
-# Service Level Objectives & Burn-Rate Alerts
+# Service Level Objectives й Burn-rate-алерти
 
 > **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Status:** Active
 
 > Автор: obs-team. Огляд щокварталу, або коли міняється архітектура.
 
@@ -145,7 +146,7 @@ sum(rate(external_http_requests_total{upstream="X"}[w]))
 
 ---
 
-## Burn-rate математика (коротко)
+## Burn-rate-математика (коротко)
 
 Для SLO з бюджетом `B = 1 - SLO` (напр. B=0.01 для 99 %):
 
@@ -163,7 +164,7 @@ ratio пульсує.
 
 ---
 
-## 8. Frontend Core Web Vitals (baseline збір)
+## 8. Frontend Core Web Vitals (baseline-збір)
 
 **SLI** (per-metric): частка "good"-вимірів по CWV порогах Google.
 
@@ -181,7 +182,7 @@ sum(rate(web_vitals_duration_ms_count{metric="LCP"}[w]))
 `rating="good"` або кращому) — повернемось до формалізації алертів коли
 набереться дата.
 
-**Джерело**: `web-vitals` npm пакет на клієнті (див. `src/core/observability/webVitals.js`),
+**Джерело**: `web-vitals` npm пакет на клієнті (див. `apps/web/src/core/observability/webVitals.ts`),
 батч через `navigator.sendBeacon` на `visibilitychange=hidden` / `pagehide`,
 бекенд-ендпоінт `POST /api/metrics/web-vitals` (rate-limited 60 req/min/IP),
 запис у `web_vitals_duration_ms{metric,rating}` і `web_vitals_cls{rating}`.

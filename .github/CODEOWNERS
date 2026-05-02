@@ -1,5 +1,40 @@
-# tsconfig strict guard — require review for files that affect TypeScript
-# strictness inheritance. See docs/playbooks/tsconfig-strict-guard.md.
-apps/*/tsconfig.json               @Skords-01
-packages/config/**                 @Skords-01
-tools/tsconfig-guard/**            @Skords-01
+# CODEOWNERS - required reviewers for sensitive paths.
+#
+# Coverage of this file is enforced by `pnpm lint:codeowners`.
+
+/AGENTS.md                 @Skords-01
+/CLAUDE.md                 @Skords-01
+/DEVIN.md                  @Skords-01
+/CONTRIBUTING.md           @Skords-01
+/README.md                 @Skords-01
+
+/docs/*.md                 @Skords-01
+/docs/adr/                 @Skords-01
+/docs/architecture/        @Skords-01
+/docs/governance/          @Skords-01
+/docs/observability/       @Skords-01
+/docs/playbooks/           @Skords-01
+/docs/postmortems/         @Skords-01
+/docs/security/            @Skords-01
+/docs/superpowers/         @Skords-01
+
+/.github/CODEOWNERS        @Skords-01
+/.github/workflows/        @Skords-01
+/.github/PULL_REQUEST_TEMPLATE.md @Skords-01
+/scripts/                  @Skords-01
+
+/.agents/skills/           @Skords-01
+/.agents/skills-lock.json  @Skords-01
+
+/apps/console/src/agents/  @Skords-01
+/ops/n8n-workflows/        @Skords-01
+
+apps/web/tsconfig.json                  @Skords-01
+apps/server/tsconfig.json               @Skords-01
+packages/config/tsconfig.base.json      @Skords-01
+packages/config/tsconfig.node.json      @Skords-01
+packages/config/tsconfig.react.json     @Skords-01
+scripts/check-tsconfig-strict.mjs       @Skords-01
+
+/apps/server/src/migrations/             @Skords-01
+/packages/eslint-plugin-sergeant-design/ @Skords-01

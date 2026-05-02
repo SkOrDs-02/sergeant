@@ -58,7 +58,7 @@ export function DeleteAccountDialog({
           Видалити акаунт назавжди?
         </h2>
         <p id={descriptionId} className="text-sm text-muted mt-2">
-          Введіть пароль для підтвердження. Цю дію неможливо скасувати.
+          Введи пароль для підтвердження. Цю дію неможливо скасувати.
         </p>
         <div className="mt-4 space-y-2">
           <label

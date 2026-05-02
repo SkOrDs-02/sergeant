@@ -3,7 +3,6 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { useToast } from "@shared/hooks/useToast";
 import { changePassword } from "../auth/authClient";
 
@@ -44,15 +43,12 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
   return (
     <Card radius="lg" padding="none" className="overflow-hidden">
       <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
-        <Icon name="settings" size={18} className="text-muted" />
-        <span className="text-sm font-semibold text-text">Безпека</span>
+        <Icon name="lock" size={16} className="text-muted" />
+        <span className="text-sm font-semibold text-text">Пароль</span>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-4 space-y-4">
-        <SectionHeading size="sm" variant="muted" as="p">
-          Зміна паролю
-        </SectionHeading>
-        <div className="space-y-2">
+      <form onSubmit={handleSubmit} className="px-4 py-4 space-y-3">
+        <div className="space-y-1.5">
           <label
             htmlFor="profile-current-pw"
             className="block text-xs font-medium text-muted"
@@ -67,12 +63,12 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
             autoComplete="current-password"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <label
             htmlFor="profile-new-pw"
             className="block text-xs font-medium text-muted"
           >
-            Новий пароль (мінімум 10 символів)
+            Новий пароль
           </label>
           <Input
             id="profile-new-pw"
@@ -82,14 +78,19 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
             minLength={10}
             autoComplete="new-password"
             error={next.length > 0 && next.length < 10}
+            helperText={
+              next.length > 0 && next.length < 10
+                ? "Мінімум 10 символів"
+                : undefined
+            }
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <label
             htmlFor="profile-confirm-pw"
             className="block text-xs font-medium text-muted"
           >
-            Підтвердити новий пароль
+            Підтвердити пароль
           </label>
           <Input
             id="profile-confirm-pw"
@@ -98,16 +99,18 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
             onChange={(e) => setConfirm(e.target.value)}
             autoComplete="new-password"
             error={confirm.length > 0 && confirm !== next}
+            helperText={
+              confirm.length > 0 && confirm !== next
+                ? "Паролі не збігаються"
+                : undefined
+            }
           />
-          {confirm.length > 0 && confirm !== next && (
-            <p className="text-xs text-danger">Паролі не збігаються</p>
-          )}
         </div>
         <Button
           type="submit"
           variant="primary"
           size="sm"
-          className="w-full"
+          className="w-full mt-1"
           disabled={!valid || saving}
           loading={saving}
         >

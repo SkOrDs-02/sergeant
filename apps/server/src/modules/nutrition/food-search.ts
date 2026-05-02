@@ -1,4 +1,8 @@
 import type { Request, Response } from "express";
+import {
+  FoodSearchSuccessSchema,
+  type FoodSearchProduct,
+} from "@sergeant/shared/schemas";
 import { FoodSearchQuerySchema } from "../../http/schemas.js";
 import { validateQuery } from "../../http/validate.js";
 import {
@@ -31,19 +35,13 @@ export function stableId(
   return `${prefix}_${(hash >>> 0).toString(36)}`;
 }
 
-interface NormalizedSearchProduct {
-  id: string;
-  name: string;
-  brand: string | null;
-  source: "off" | "usda";
-  per100: {
-    kcal: number;
-    protein_g: number;
-    fat_g: number;
-    carbs_g: number;
-  };
-  defaultGrams: number;
-}
+// SSOT for the `/api/food-search` response shape lives in
+// `@sergeant/shared/schemas/nutrition` (AGENTS.md Hard Rule #3).
+// Server derives its normalised row type via `z.infer<>` and asserts
+// the outgoing payload against `FoodSearchSuccessSchema` before
+// `res.json(...)` so drift from the api-client types surfaces at
+// test time.
+type NormalizedSearchProduct = FoodSearchProduct;
 
 function hasErrorName(e: unknown, name: string): boolean {
   return !!e && typeof e === "object" && (e as { name?: string }).name === name;
@@ -272,7 +270,7 @@ export default async function handler(
       })
       .slice(0, limit);
 
-    res.status(200).json({ products });
+    res.status(200).json(FoodSearchSuccessSchema.parse({ products }));
   } catch (e: unknown) {
     if (hasErrorName(e, "TimeoutError") || hasErrorName(e, "AbortError")) {
       res

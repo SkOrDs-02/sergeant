@@ -24,7 +24,7 @@ export function ExperimentalSection() {
             label={flag.label}
             description={flag.description}
             checked={Boolean(flags[flag.id])}
-            onChange={(e) => setFlag(flag.id, e.target.checked)}
+            onChange={(checked) => setFlag(flag.id, checked)}
           />
         ))}
       </div>

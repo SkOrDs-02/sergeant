@@ -33,7 +33,13 @@ describe("ModuleErrorBoundary", () => {
         <Thrower boom />
       </ModuleErrorBoundary>,
     );
-    expect(getByText("Помилка в модулі")).toBeTruthy();
+    // Generic fallback headline (see `ModuleErrorBoundary.tsx` — the
+    // `title` is `Щось пішло не так` when no moduleName is provided).
+    expect(getByText("Щось пішло не так")).toBeTruthy();
+    // The raw error message is hidden behind the collapsible
+    // `Показати деталі` toggle — expand it first, then assert the
+    // message is surfaced.
+    fireEvent.press(getByText("Показати деталі"));
     expect(getByText("module-kaboom")).toBeTruthy();
   });
 
@@ -43,7 +49,9 @@ describe("ModuleErrorBoundary", () => {
         <Thrower boom />
       </ModuleErrorBoundary>,
     );
-    expect(getByText("Модуль Фінік не вдалося завантажити")).toBeTruthy();
+    // The component wraps the moduleName in straight double quotes
+    // when interpolating into the headline.
+    expect(getByText('Модуль "Фінік" не вдалося завантажити')).toBeTruthy();
   });
 
   it("retry resets local state and remounts the sub-tree without bubbling to the parent boundary", () => {
@@ -78,28 +86,28 @@ describe("ModuleErrorBoundary", () => {
     const { getByText, queryByText, rerender } = render(<TestRoot />);
 
     // Module-level fallback, NOT the parent fallback.
-    expect(getByText("Помилка в модулі")).toBeTruthy();
+    expect(getByText("Щось пішло не так")).toBeTruthy();
     expect(queryByText("parent-fallback")).toBeNull();
     expect(parentOnError).not.toHaveBeenCalled();
 
     // Stop throwing and hit retry.
     shouldThrow = false;
-    fireEvent.press(getByText("Спробувати ще"));
+    fireEvent.press(getByText("Спробувати ще раз"));
     rerender(<TestRoot />);
 
-    expect(queryByText("Помилка в модулі")).toBeNull();
+    expect(queryByText("Щось пішло не так")).toBeNull();
     expect(getByText("module-recovered")).toBeTruthy();
     expect(parentOnError).not.toHaveBeenCalled();
   });
 
-  it("'До вибору модуля' button calls onBackToHub", () => {
+  it("'На головну' button calls onBackToHub", () => {
     const onBackToHub = jest.fn();
     const { getByText } = render(
       <ModuleErrorBoundary onBackToHub={onBackToHub}>
         <Thrower boom />
       </ModuleErrorBoundary>,
     );
-    fireEvent.press(getByText("До вибору модуля"));
+    fireEvent.press(getByText("На головну"));
     expect(onBackToHub).toHaveBeenCalledTimes(1);
   });
 });

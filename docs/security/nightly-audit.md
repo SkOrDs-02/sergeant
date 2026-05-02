@@ -1,12 +1,13 @@
-# Nightly Audit — Triage Flow
+# Nightly-audit — потік triage
 
-> **Last reviewed:** 2026-04-27 | **Reviewer:** @Skords-01
+> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Status:** Active
 
 ## Огляд
 
 Workflow `.github/workflows/nightly-audit.yml` запускається щоночі о 03:00 UTC (+ ручний `workflow_dispatch`). Він **не блокує PR-flow** — це окремий trend-signal для глибшого аналізу залежностей.
 
-### Jobs
+### Job-и
 
 | Job                       | Що робить                                                                                                 | Коли fail                         |
 | ------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -61,7 +62,7 @@ Workflow автоматично створює/оновлює issue з title "Ni
 | **SARIF**            | Ні                                       | Так (code-scanning)                                 |
 | **Escape hatch**     | `audit-exception` label                  | Документація в audit-exceptions.md                  |
 
-## Cross-references
+## Перехресні посилання
 
 - [docs/security/audit-exceptions.md](./audit-exceptions.md) — винятки з аудиту.
 - [docs/security/vulnerability-sla.md](./vulnerability-sla.md) — SLA-матриця.

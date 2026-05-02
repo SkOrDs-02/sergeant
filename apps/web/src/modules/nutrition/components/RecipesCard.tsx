@@ -6,6 +6,8 @@ import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/cn";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
+import { useToast } from "@shared/hooks/useToast";
+import { showUndoToast } from "@shared/lib/undoToast";
 import { toLocalISODate } from "@sergeant/shared";
 import type {
   Meal,
@@ -89,6 +91,7 @@ export function RecipesCard({
   addMealToLog,
   selectedDate,
 }: RecipesCardProps) {
+  const toast = useToast();
   const [saved, setSaved] = useState<SavedRecipe[]>([]);
   const [savedBusy, setSavedBusy] = useState(false);
   const [portionById, setPortionById] = useState<Record<string, string>>({});
@@ -357,7 +360,7 @@ export function RecipesCard({
         <div className="text-xs text-subtle mt-0.5">
           Рекомендації на базі продуктів зі складу. Можна вказати час, порції та
           &quot;не хочу&quot;.
-          {recipeCacheEntry?.recipes?.length > 0 && (
+          {(recipeCacheEntry?.recipes?.length ?? 0) > 0 && (
             <span className="ml-1 text-nutrition-strong dark:text-nutrition">
               (є кеш сеансу — натисни «Запропонувати» для оновлення)
             </span>
@@ -554,9 +557,19 @@ export function RecipesCard({
         confirmLabel="Видалити"
         danger
         onConfirm={async () => {
-          if (deleteRecipeConfirm?.id) {
-            await deleteSavedRecipe(deleteRecipeConfirm.id);
+          const removed = deleteRecipeConfirm;
+          if (removed?.id) {
+            await deleteSavedRecipe(removed.id);
             await refreshSaved();
+            showUndoToast(toast, {
+              msg: `Видалено рецепт «${removed.title}»`,
+              onUndo: () => {
+                void (async () => {
+                  await saveRecipeToBook(removed);
+                  await refreshSaved();
+                })();
+              },
+            });
           }
           setDeleteRecipeConfirm(null);
         }}

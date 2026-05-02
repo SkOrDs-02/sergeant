@@ -48,17 +48,22 @@ const solidVariants: Record<BadgeVariant, string> = {
   nutrition: "bg-nutrition-strong text-white border-transparent",
 };
 
+// Wave 1b: the soft-wash variants collapse onto preset-owned tokens
+// (`-soft`, `-soft-border`, `-strong`) — no more hand-rolled `dark:`
+// palette patches. `text-amber-700 dark:text-amber-300` retained for
+// warning/info because the `-strong` companion is tuned for cream/white
+// backgrounds and the dark-mode text remains palette-driven.
 const softVariants: Record<BadgeVariant, string> = {
   neutral: "bg-surface-muted text-fg-muted border-line",
   accent:
-    "bg-brand-50 text-brand-700 border-brand-200/60 dark:bg-brand/15 dark:text-brand dark:border-brand/30",
+    "bg-brand-soft text-brand-strong border-brand-soft-border/60 dark:text-brand",
   success:
-    "bg-brand-50 text-brand-700 border-brand-200/60 dark:bg-brand/15 dark:text-brand dark:border-brand/30",
+    "bg-brand-soft text-brand-strong border-brand-soft-border/60 dark:text-brand",
   warning:
-    "bg-amber-50 text-amber-700 border-amber-200/70 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30",
+    "bg-warning-soft text-warning-strong border-warning/30 dark:text-amber-300",
   danger:
-    "bg-danger-soft text-danger-strong border-danger/30 dark:bg-danger/15 dark:text-red-200 dark:border-danger/30",
-  info: "bg-blue-50 text-blue-700 border-blue-200/70 dark:bg-info/15 dark:text-blue-300 dark:border-info/30",
+    "bg-danger-soft text-danger-strong border-danger/30 dark:text-red-200",
+  info: "bg-info-soft text-info-strong border-info/30 dark:text-blue-300",
   finyk:
     "bg-finyk-soft text-finyk-strong border-finyk-ring/50 dark:bg-finyk-surface-dark/15 dark:text-finyk dark:border-finyk-border-dark/30",
   fizruk:
@@ -87,8 +92,8 @@ const outlineVariants: Record<BadgeVariant, string> = {
 };
 
 const sizes: Record<BadgeSize, string> = {
-  xs: "h-5 px-1.5 text-2xs gap-1 rounded-md",
-  sm: "h-6 px-2 text-xs gap-1 rounded-lg",
+  xs: "h-5 px-1.5 text-2xs gap-1 rounded-xl",
+  sm: "h-6 px-2 text-xs gap-1 rounded-xl",
   md: "h-7 px-2.5 text-xs gap-1.5 rounded-xl",
 };
 

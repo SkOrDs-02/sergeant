@@ -2,8 +2,24 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "corepack enable && corepack prepare pnpm@9.15.1 --activate && pnpm install --frozen-lockfile",
   "buildCommand": "pnpm --filter @sergeant/web build",
-  "outputDirectory": "../server/dist",
+  "outputDirectory": "apps/web/dist",
   "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "0" },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    },
     {
       "source": "/index.html",
       "headers": [
@@ -45,6 +61,15 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=3600"
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/security.txt",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
         }
       ]
     }

@@ -97,6 +97,8 @@ export interface OnboardingWizardProps {
     opts: OnboardingFinishOptions,
   ) => void;
   variant?: "modal" | "fullPage";
+  /** Allow users to skip the entire onboarding. Defaults to false. */
+  allowSkip?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -498,6 +500,7 @@ function GoalsStep({
 export function OnboardingWizard({
   onDone,
   variant = "modal",
+  allowSkip = false,
 }: OnboardingWizardProps) {
   const [state, dispatch] = useReducer(wizardReducer, {
     step: "welcome",
@@ -533,6 +536,17 @@ export function OnboardingWizard({
     onDone(null, { intent: "vibe_empty", picks: chosen });
   }, [onDone, state.picks, state.goals]);
 
+  const skipOnboarding = useCallback(() => {
+    // Skip with all modules enabled and empty goals
+    saveVibePicks(mmkvStore, [...ALL_MODULES]);
+    saveOnboardingGoals(mmkvStore, { ...EMPTY_GOALS });
+    markFirstActionStartedAt(mmkvStore);
+    markFirstActionPending(mmkvStore);
+    markOnboardingDone(mmkvStore);
+    hapticTap();
+    onDone(null, { intent: "vibe_empty", picks: [...ALL_MODULES] });
+  }, [onDone]);
+
   const stepIdx = ONBOARDING_STEPS.indexOf(state.step);
 
   const content = (
@@ -540,6 +554,17 @@ export function OnboardingWizard({
       testID="onboarding-splash-card"
       className="w-full max-w-sm rounded-3xl border border-cream-300 bg-cream-50 p-6 gap-4"
     >
+      {allowSkip && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Пропустити онбординг"
+          onPress={skipOnboarding}
+          className="absolute top-3 right-3 px-3 py-1.5 rounded-full active:opacity-70"
+          testID="onboarding-skip"
+        >
+          <Text className="text-xs text-fg-muted">Пропустити</Text>
+        </Pressable>
+      )}
       <StepIndicator current={stepIdx} total={ONBOARDING_STEPS.length} />
       {state.step === "welcome" && <WelcomeStep onContinue={handleNext} />}
       {state.step === "modules" && (

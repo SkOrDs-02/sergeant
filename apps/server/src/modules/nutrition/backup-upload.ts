@@ -3,19 +3,8 @@ import path from "node:path";
 import type { Request, Response } from "express";
 import { validateBody } from "../../http/validate.js";
 import { BackupUploadSchema } from "../../http/schemas.js";
+import { safeBackupKeyFromToken } from "../../lib/backupKey.js";
 import { AppError } from "../../obs/errors.js";
-
-function safeKeyFromToken(req: Request): string {
-  const tok = req?.headers?.["x-token"];
-  const raw = tok ? String(tok) : "public";
-  // tiny stable key; not a security boundary (token check happens separately)
-  let h = 2166136261;
-  for (let i = 0; i < raw.length; i++) {
-    h ^= raw.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0).toString(36);
-}
 
 /**
  * POST /api/nutrition/backup-upload — залити шифрований бекап.
@@ -41,7 +30,7 @@ export default async function handler(
 
   const dir = path.join(process.cwd(), ".data");
   await fs.mkdir(dir, { recursive: true });
-  const key = safeKeyFromToken(req);
+  const key = safeBackupKeyFromToken(req.headers["x-token"]);
   const file = path.join(dir, `nutrition-backup-${key}.json`);
   await fs.writeFile(file, raw, "utf8");
 

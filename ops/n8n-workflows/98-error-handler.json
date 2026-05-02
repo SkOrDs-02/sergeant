@@ -1,0 +1,89 @@
+{
+  "name": "98 - Global Error Handler (dead-letter + Telegram/email)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [180, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO n8n_failure_events\n  (workflow_id, workflow_name, execution_id, last_node, error_message, raw)\nVALUES (\n  '{{ $json.workflow.id || \"\" }}',\n  '{{ $json.workflow.name || \"unknown\" }}',\n  '{{ $json.execution.id || \"\" }}',\n  '{{ $json.execution.lastNodeExecuted || \"\" }}',\n  '{{ ($json.error.message || \"unknown error\").replace(/'/g, \"''\") }}',\n  '{{ JSON.stringify($json).replace(/'/g, \"''\") }}'::jsonb\n);",
+        "options": {}
+      },
+      "id": "insert-dead-letter",
+      "name": "Insert n8n failure event",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [420, 300],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "pwwVNTLBw43PJgey",
+          "name": "Sergeant Postgres (sergeant-db)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "=🚨 *n8n workflow failed*\n\nWorkflow: `{{ $('Error Trigger').first().json.workflow.name || 'unknown' }}`\nExecution: `{{ $('Error Trigger').first().json.execution.id || 'unknown' }}`\nNode: `{{ $('Error Trigger').first().json.execution.lastNodeExecuted || 'unknown' }}`\nError: {{ $('Error Trigger').first().json.execution.error.message || 'unknown error' }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-alert",
+      "name": "Telegram failure alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [660, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Insert n8n failure event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert n8n failure event": {
+      "main": [
+        [
+          {
+            "node": "Telegram failure alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv"
+  },
+  "active": false,
+  "tags": [
+    {
+      "name": "ops"
+    },
+    {
+      "name": "dead-letter"
+    }
+  ]
+}

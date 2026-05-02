@@ -36,7 +36,7 @@ export function SkipLink({
         // live ≤ z-[200]).
         "focus:fixed focus:top-3 focus:left-3 focus:z-[300]",
         "focus:px-4 focus:py-2 focus:rounded-xl",
-        "focus:bg-panel focus:text-text focus:shadow-float focus:border focus:border-line",
+        "focus:border focus-visible:bg-panel focus-visible:text-text focus-visible:shadow-float focus-visible:border-line",
         "focus:text-sm focus:font-semibold",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
         className,

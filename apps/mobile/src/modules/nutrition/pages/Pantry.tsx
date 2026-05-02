@@ -17,8 +17,11 @@ import {
 } from "@sergeant/nutrition-domain";
 import { hapticTap } from "@sergeant/shared";
 
+import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { useToast } from "@/components/ui/Toast";
+import { showUndoToast } from "@/lib/showUndoToast";
 
 import { useNutritionPantries } from "../hooks/useNutritionPantries";
 
@@ -41,8 +44,10 @@ export function PantryPage({ testID }: { testID?: string }) {
     addLine,
     applyParsedItems,
     removeItemAt,
+    restoreItemAt,
     addPantry,
   } = useNutritionPantries();
+  const toast = useToast();
   const [draft, setDraft] = useState("");
   const [newPantryName, setNewPantryName] = useState("");
   const [bulkText, setBulkText] = useState("");
@@ -89,14 +94,8 @@ export function PantryPage({ testID }: { testID?: string }) {
 
   return (
     <View className="flex-1 bg-cream-50" testID={testID}>
-      <View className="px-4 pt-2 pb-2 border-b border-cream-200 flex-row items-center gap-2">
-        <Pressable
-          onPress={onBack}
-          accessibilityRole="button"
-          accessibilityLabel="Назад"
-        >
-          <Text className="text-coral-700 text-base">‹ Назад</Text>
-        </Pressable>
+      <View className="px-4 pt-2 pb-2 border-b border-line flex-row items-center gap-3">
+        <BackButton variant="ghost" size="sm" onPress={onBack} />
         <Text className="text-lg font-semibold text-fg flex-1">Комора</Text>
       </View>
 
@@ -146,8 +145,7 @@ export function PantryPage({ testID }: { testID?: string }) {
           <Text className="text-xs text-fg-muted mb-2">
             Великий список мовою природи — на сервері Claude розкладе в позиції
             й додасть у цей склад (злиття, як на web). Потрібен Anthropic key на
-            бекенді; за `NUTRITION_API_TOKEN` — те саме в
-            `EXPO_PUBLIC_NUTRITION_API_TOKEN` у .env.
+            бекенді та авторизована сесія.
           </Text>
           <TextInput
             value={bulkText}
@@ -229,7 +227,13 @@ export function PantryPage({ testID }: { testID?: string }) {
                     <Pressable
                       onPress={() => {
                         hapticTap();
+                        const snapshot: PantryItem = it;
+                        const removedAt = idx;
                         removeItemAt(idx);
+                        showUndoToast(toast, {
+                          msg: `Видалено «${snapshot.name}»`,
+                          onUndo: () => restoreItemAt(removedAt, snapshot),
+                        });
                       }}
                       accessibilityLabel={`Видалити ${it.name}`}
                       className="px-2 py-1"

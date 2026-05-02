@@ -8,39 +8,34 @@
  *
  * @see apps/web/src/core/ModuleErrorBoundary.tsx — canonical source of truth
  *
- * Parity notes:
- * - Same class-component shape, same two-action fallback (retry /
- *   back-to-hub).
- * - `retryRev` counter reused as a React `key` on the children wrapper
- *   so a retry force-remounts the module sub-tree — effects that threw
- *   inside `useEffect` don't get a chance to re-throw on the same
- *   element identity.
- * - `onBackToHub` delegates the hub-navigation decision to the parent,
- *   matching web.
- *
- * Differences from web (intentional — see PR body):
- * - New optional `moduleName?: string` prop. When supplied, the
- *   fallback headline is contextualised as
- *   `"Модуль {moduleName} не вдалося завантажити"` (per Phase 2 task
- *   spec). Web doesn't currently pipe a module name into the fallback
- *   copy — keeping it optional preserves call-site parity.
- * - Telemetry: `@sentry/react-native` is **not** added yet
- *   (Phase 10+); `componentDidCatch` forwards to `console.error`.
- * - UI primitives: shared `Card` + `Button` from
- *   `@/components/ui/*` — no hand-rolled `<div>` / Tailwind classes.
- *   The fallback uses a slightly "less aggressive" surface
- *   (`Card padding="lg"`) than the top-level boundary so a module
- *   crash doesn't visually masquerade as a full-app crash.
- * - NativeWind classes resolve through the shared semantic
- *   `fg` / `fg-muted` / `panel` / `line` CSS-variable tokens so the
- *   fallback re-tints with the active light/dark palette.
+ * Improvements (2026-04-28):
+ * - Enhanced visual design with icon, semantic colors
+ * - Animated entrance for better UX
+ * - Haptic feedback on retry action
+ * - Collapsible error details
+ * - Dark mode support via semantic tokens
  */
 
-import { Component, type ReactNode } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Component, type ReactNode, useState, useEffect, useRef } from "react";
+import {
+  Animated,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+  AccessibilityInfo,
+} from "react-native";
+import {
+  AlertTriangle,
+  ChevronDown,
+  RefreshCw,
+  Home,
+} from "lucide-react-native";
+import * as Haptics from "expo-haptics";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { colors } from "@/theme";
 
 interface ModuleErrorBoundaryProps {
   onBackToHub: () => void;
@@ -50,11 +45,174 @@ interface ModuleErrorBoundaryProps {
 
 interface ModuleErrorBoundaryState {
   error: Error | null;
-  /** Rev counter used as a React `key` on the children wrapper so a
-   *  retry forces a clean remount — a plain `setState({error: null})`
-   *  doesn't always work when the error was thrown inside `useEffect`
-   *  (the same effect may re-throw). Mirrors the web implementation. */
   retryRev: number;
+}
+
+/**
+ * Fallback UI component with animations and improved design.
+ */
+function ErrorFallbackUI({
+  error,
+  moduleName,
+  onRetry,
+  onBack,
+}: {
+  error: Error;
+  moduleName?: string;
+  onRetry: () => void;
+  onBack: () => void;
+}) {
+  const [showDetails, setShowDetails] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+
+  useEffect(() => {
+    // Entrance animation
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Announce error to screen readers
+    AccessibilityInfo.announceForAccessibility(
+      moduleName
+        ? `Помилка в модулі ${moduleName}. Спробуйте ще раз або поверніться до головної.`
+        : "Виникла помилка. Спробуйте ще раз або поверніться до головної.",
+    );
+  }, [fadeAnim, scaleAnim, moduleName]);
+
+  const title = moduleName
+    ? `Модуль "${moduleName}" не вдалося завантажити`
+    : "Щось пішло не так";
+
+  const handleRetry = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onRetry();
+  };
+
+  const handleBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onBack();
+  };
+
+  const toggleDetails = () => {
+    Haptics.selectionAsync();
+    setShowDetails((prev) => !prev);
+  };
+
+  return (
+    <View className="flex-1 bg-bg items-center justify-center p-6">
+      <Animated.View
+        style={{
+          opacity: fadeAnim,
+          transform: [{ scale: scaleAnim }],
+          width: "100%",
+          maxWidth: 400,
+        }}
+      >
+        <Card variant="default" padding="lg" className="items-center">
+          {/* Icon */}
+          <View className="w-16 h-16 items-center justify-center rounded-2xl bg-danger/10 mb-4">
+            <AlertTriangle size={32} color={colors.danger} strokeWidth={1.5} />
+          </View>
+
+          {/* Title */}
+          <Text
+            className="text-lg font-bold text-fg text-center mb-2"
+            accessibilityRole="header"
+          >
+            {title}
+          </Text>
+
+          {/* Description */}
+          <Text className="text-sm text-fg-muted text-center mb-4 leading-relaxed">
+            Не хвилюйтесь, ваші дані в безпеці. Спробуйте оновити сторінку або
+            поверніться до головного екрану.
+          </Text>
+
+          {/* Error Details Collapsible */}
+          <Pressable
+            onPress={toggleDetails}
+            accessibilityRole="button"
+            accessibilityLabel={
+              showDetails ? "Сховати деталі помилки" : "Показати деталі помилки"
+            }
+            className="flex-row items-center gap-1 mb-4 px-3 py-2 rounded-lg bg-surface-muted active:opacity-70"
+          >
+            <Text className="text-xs text-fg-muted">
+              {showDetails ? "Сховати деталі" : "Показати деталі"}
+            </Text>
+            <ChevronDown
+              size={14}
+              color={colors.textMuted}
+              style={{
+                transform: [{ rotate: showDetails ? "180deg" : "0deg" }],
+              }}
+            />
+          </Pressable>
+
+          {showDetails && (
+            <ScrollView
+              className="max-h-32 w-full mb-4 p-3 rounded-lg bg-surface-muted"
+              showsVerticalScrollIndicator={true}
+            >
+              <Text
+                className="text-xs text-danger font-mono"
+                selectable
+                accessibilityLabel={`Деталі помилки: ${error.message}`}
+              >
+                {error.message}
+              </Text>
+              {error.stack && (
+                <Text
+                  className="text-[10px] text-fg-subtle font-mono mt-2"
+                  selectable
+                >
+                  {error.stack.split("\n").slice(0, 5).join("\n")}
+                </Text>
+              )}
+            </ScrollView>
+          )}
+
+          {/* Actions */}
+          <View className="w-full gap-3">
+            <Button
+              variant="primary"
+              size="lg"
+              onPress={handleRetry}
+              accessibilityLabel="Спробувати завантажити модуль знову"
+              leftIcon={<RefreshCw size={18} color="#fff" strokeWidth={2} />}
+            >
+              Спробувати ще раз
+            </Button>
+            <Button
+              variant="secondary"
+              size="lg"
+              onPress={handleBack}
+              accessibilityLabel="Повернутися до головного екрану"
+              leftIcon={<Home size={18} color={colors.text} strokeWidth={2} />}
+            >
+              На головну
+            </Button>
+          </View>
+        </Card>
+
+        {/* Support hint */}
+        <Text className="text-xs text-fg-subtle text-center mt-4">
+          Якщо проблема повторюється, зверніться до підтримки
+        </Text>
+      </Animated.View>
+    </View>
+  );
 }
 
 export default class ModuleErrorBoundary extends Component<
@@ -72,8 +230,7 @@ export default class ModuleErrorBoundary extends Component<
 
   componentDidCatch(error: Error) {
     // TODO(phase-10): forward via `@sentry/react-native` once mobile
-    // observability is wired up. See `ErrorBoundary.tsx` for the same
-    // deferral note.
+    // observability is wired up.
     try {
       console.error("[ModuleErrorBoundary] caught error", error, {
         moduleName: this.props.moduleName,
@@ -97,34 +254,13 @@ export default class ModuleErrorBoundary extends Component<
     const { moduleName } = this.props;
 
     if (error) {
-      const title = moduleName
-        ? `Модуль ${moduleName} не вдалося завантажити`
-        : "Помилка в модулі";
-
       return (
-        <View className="flex-1 bg-cream-50 items-stretch justify-center p-6">
-          <Card variant="default" padding="lg">
-            <Text className="text-base font-semibold text-fg mb-2">
-              {title}
-            </Text>
-            <ScrollView className="max-h-40 mb-4">
-              <Text className="text-xs text-danger">{error.message}</Text>
-            </ScrollView>
-            <View className="flex-col gap-2">
-              <Button
-                variant="primary"
-                size="lg"
-                onPress={this.handleRetry}
-                accessibilityLabel="Спробувати ще раз"
-              >
-                Спробувати ще
-              </Button>
-              <Button variant="secondary" size="lg" onPress={this.handleBack}>
-                До вибору модуля
-              </Button>
-            </View>
-          </Card>
-        </View>
+        <ErrorFallbackUI
+          error={error}
+          moduleName={moduleName}
+          onRetry={this.handleRetry}
+          onBack={this.handleBack}
+        />
       );
     }
 

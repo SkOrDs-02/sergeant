@@ -4,11 +4,10 @@
  * Canonical colour, axis, tick and tooltip tokens for all data-viz in the
  * app (ФІНІК trends, ФІЗРУК progress, Рутина heatmap, Харчування macros).
  *
- * The source-of-truth palette lives in
- * `src/modules/finyk/chartPalette/chartPalette.ts` so existing JS imports
- * keep working. This file re-exports the palette and adds shared
- * render-side primitives (Tailwind classNames + SVG attrs) so charts
- * across modules share axes, grid lines, ticks and tooltips.
+ * Source of truth: `@sergeant/design-tokens/tokens`. This file re-exports
+ * those tokens and adds shared render-side primitives (Tailwind classNames
+ * + SVG attrs) so charts across modules share axes, grid lines, ticks and
+ * tooltips.
  *
  * Usage:
  *
@@ -26,7 +25,7 @@ import {
   chartPaletteList,
   moduleColors,
   statusColors,
-} from "../../modules/finyk/chartPalette/chartPalette";
+} from "@sergeant/design-tokens/tokens";
 
 export {
   brandColors,
@@ -69,7 +68,7 @@ export const chartAxis = {
   },
   /** Axis label (e.g. "₴ за місяць"). */
   label: {
-    className: "fill-muted text-[11px] font-medium tabular-nums",
+    className: "fill-muted text-meta tabular-nums",
   },
 } as const;
 
@@ -89,7 +88,7 @@ export const chartGrid = {
 
 /** Tick label styling (numbers beside axes). */
 export const chartTick = {
-  className: "fill-muted text-[10px] tabular-nums",
+  className: "fill-muted text-micro tabular-nums",
   textAnchor: "middle" as const,
 } as const;
 
@@ -105,11 +104,18 @@ export const chartHeatmap = {
   routine: {
     empty: "bg-panelHi dark:bg-line/25",
     future: "bg-line/15 dark:bg-line/10",
+    /**
+     * Level scale (0 → 3). Levels 1–3 reference theme-aware CSS classes
+     * defined in `apps/web/src/styles/module-surfaces.css` so this module
+     * does not carry `dark:` overrides for chart palette pairs (Wave 2b
+     * of the dark-mode audit; see `docs/design/DARK-MODE-AUDIT.md` →
+     * "→ chart-palette refactor (chartTheme)").
+     */
     levels: [
       "bg-panelHi dark:bg-line/25",
-      "bg-coral-200/80 dark:bg-coral-900/55",
-      "bg-coral-400/75 dark:bg-coral-600/70",
-      "bg-coral-500/90 dark:bg-coral-500/80",
+      "bg-routine-heat-l1",
+      "bg-routine-heat-l2",
+      "bg-routine-heat-l3",
     ] as const,
     ring: "ring-coral-400/80 dark:ring-coral-300/70",
     outline: "outline-coral-400",

@@ -1,5 +1,10 @@
 import type { Request, Response } from "express";
+import {
+  BarcodeLookupSuccessSchema,
+  type BarcodeProduct,
+} from "@sergeant/shared/schemas";
 import { recordExternalHttp } from "../../lib/externalHttp.js";
+import { elapsedMs } from "../../lib/timing.js";
 import { BarcodeQuerySchema } from "../../http/schemas.js";
 import { validateQuery } from "../../http/validate.js";
 import { barcodeLookupsTotal } from "../../obs/metrics.js";
@@ -12,18 +17,11 @@ import {
   type USDAFood,
 } from "../../lib/normalizers/index.js";
 
-interface NormalizedProduct {
-  name: string;
-  brand: string | null;
-  kcal_100g: number | null;
-  protein_100g: number | null;
-  fat_100g: number | null;
-  carbs_100g: number | null;
-  servingSize: string | null;
-  servingGrams: number | null;
-  source: "off" | "usda" | "upcitemdb";
-  partial?: boolean;
-}
+// SSOT for the barcode response shape lives in `@sergeant/shared/schemas`
+// (AGENTS.md Hard Rule #3). The server derives its internal type via
+// `z.infer<>` and asserts the outgoing payload against the schema before
+// `res.json()` so drift from the api-client types becomes a test failure.
+type NormalizedProduct = BarcodeProduct;
 
 // ──────────────────────────────────────────────────────────────────────────────
 // In-memory TTL cache for cascade results.
@@ -142,6 +140,22 @@ function hasErrorName(e: unknown, name: string): boolean {
   return !!e && typeof e === "object" && (e as { name?: string }).name === name;
 }
 
+function isTransientHttpStatus(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+function transientHttpError(source: string, status: number): Error {
+  const error = new Error(`${source} upstream HTTP ${status}`);
+  error.name = "TransientUpstreamHttpError";
+  return error;
+}
+
+function nonOkOutcome(status: number): "miss" | "rate_limited" | "error" {
+  if (status === 429) return "rate_limited";
+  if (status >= 500) return "error";
+  return "miss";
+}
+
 /**
  * Record-helper одночасно емітить і domain-specific метрику
  * `barcode_lookups_total{source,outcome}` (читають існуючі дашборди), і
@@ -155,10 +169,6 @@ function recordLookup(source: string, outcome: string, ms: number): void {
     /* ignore */
   }
   recordExternalHttp(source, outcome, ms);
-}
-
-function elapsedMs(start: bigint): number {
-  return Number(process.hrtime.bigint() - start) / 1e6;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -186,7 +196,10 @@ async function lookupOFF(barcode: string): Promise<NormalizedProduct | null> {
       signal: AbortSignal.timeout(7000),
     });
     if (!r.ok) {
-      recordLookup("off", "miss", elapsedMs(start));
+      recordLookup("off", nonOkOutcome(r.status), elapsedMs(start));
+      if (isTransientHttpStatus(r.status)) {
+        throw transientHttpError("off", r.status);
+      }
       return null;
     }
     const data = (await r.json()) as { status?: number; product?: OFFProduct };
@@ -198,6 +211,7 @@ async function lookupOFF(barcode: string): Promise<NormalizedProduct | null> {
     recordLookup("off", product ? "hit" : "miss", elapsedMs(start));
     return product;
   } catch (e: unknown) {
+    if (hasErrorName(e, "TransientUpstreamHttpError")) throw e;
     recordLookup(
       "off",
       hasErrorName(e, "TimeoutError") ? "timeout" : "error",
@@ -231,7 +245,10 @@ async function lookupUSDA(barcode: string): Promise<NormalizedProduct | null> {
       signal: AbortSignal.timeout(7000),
     });
     if (!r.ok) {
-      recordLookup("usda", "miss", elapsedMs(start));
+      recordLookup("usda", nonOkOutcome(r.status), elapsedMs(start));
+      if (isTransientHttpStatus(r.status)) {
+        throw transientHttpError("usda", r.status);
+      }
       return null;
     }
     const data = (await r.json()) as { foods?: USDAFood[] };
@@ -252,6 +269,7 @@ async function lookupUSDA(barcode: string): Promise<NormalizedProduct | null> {
     recordLookup("usda", product ? "hit" : "miss", elapsedMs(start));
     return product;
   } catch (e: unknown) {
+    if (hasErrorName(e, "TransientUpstreamHttpError")) throw e;
     recordLookup(
       "usda",
       hasErrorName(e, "TimeoutError") ? "timeout" : "error",
@@ -277,7 +295,10 @@ async function lookupUPCitemdb(
       signal: AbortSignal.timeout(6000),
     });
     if (!r.ok) {
-      recordLookup("upcitemdb", "miss", elapsedMs(start));
+      recordLookup("upcitemdb", nonOkOutcome(r.status), elapsedMs(start));
+      if (isTransientHttpStatus(r.status)) {
+        throw transientHttpError("upcitemdb", r.status);
+      }
       return null;
     }
     const data = (await r.json()) as UPCitemdbResponse;
@@ -290,6 +311,7 @@ async function lookupUPCitemdb(
     recordLookup("upcitemdb", "hit", elapsedMs(start));
     return product;
   } catch (e: unknown) {
+    if (hasErrorName(e, "TransientUpstreamHttpError")) throw e;
     recordLookup(
       "upcitemdb",
       hasErrorName(e, "TimeoutError") ? "timeout" : "error",
@@ -324,7 +346,9 @@ export default async function handler(
   const cached = cacheGet(barcode);
   if (cached) {
     if (cached.product) {
-      res.status(200).json({ product: cached.product });
+      res
+        .status(200)
+        .json(BarcodeLookupSuccessSchema.parse({ product: cached.product }));
     } else {
       res.status(404).json({ error: "Продукт не знайдено" });
     }
@@ -366,7 +390,7 @@ export default async function handler(
     }
 
     cacheSet(barcode, product);
-    res.status(200).json({ product });
+    res.status(200).json(BarcodeLookupSuccessSchema.parse({ product }));
   } catch (e: unknown) {
     if (hasErrorName(e, "TimeoutError") || hasErrorName(e, "AbortError")) {
       res

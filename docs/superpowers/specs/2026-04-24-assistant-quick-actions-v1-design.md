@@ -1,11 +1,13 @@
 # Assistant Quick Actions v1 — дизайн-спек
 
+> **Last validated:** 2026-05-01 by @devin-ai. **Next review:** 2026-07-30.
 > **Status:** shipped (PR [#743](https://github.com/Skords-01/Sergeant/pull/743)) — **superseded by**
 > [`2026-04-25-assistant-capability-catalogue-design.md`](./2026-04-25-assistant-capability-catalogue-design.md).
 > Quick action chips, `RISKY_TOOLS` і action cards живі (`apps/web/src/core/components/ChatQuickActions.tsx`,
-> `apps/web/src/core/lib/hubChatActionCards.ts`), але `hubChatQuickActions.ts` тепер тонкий
-> back-compat shim над `ASSISTANT_CAPABILITIES`. Документ лишається як історичний
-> контекст; усі майбутні зміни surface-ів — у capability-catalogue spec-у.
+> `apps/web/src/core/lib/hubChatActionCards.ts`); back-compat shim
+> `apps/web/src/core/lib/<hubChatQuickActions>.ts` уже видалено (файлу немає) — `ChatQuickActions.tsx`
+> читає `ASSISTANT_CAPABILITIES` напряму з `packages/shared/src/lib/assistantCatalogue.ts`.
+> Документ лишається як історичний контекст; усі майбутні зміни surface-ів — у capability-catalogue spec-у.
 
 ## Контекст
 
@@ -250,7 +252,7 @@ const RISKY_TOOLS = new Set([
 - `apps/web/src/core/hub/HubChat.tsx`
 - `apps/web/src/core/components/ChatQuickActions.tsx`
 - `apps/web/src/core/components/ChatMessage.tsx`
-- `apps/web/src/core/lib/hubChatQuickActions.ts`
+- `apps/web/src/core/lib/<hubChatQuickActions>.ts` (історичний — на момент написання spec-у був живим, після міграції на capability catalogue видалений)
 - `apps/web/src/core/lib/hubChatActionCards.ts`
 - `apps/web/src/core/lib/hubChatUtils.ts`
 - tests поруч із новими lib/component файлами

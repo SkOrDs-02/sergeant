@@ -27,7 +27,7 @@ export interface InputDialogProps {
 
 export function InputDialog({
   open,
-  title = "Введіть значення",
+  title = "Введи значення",
   description,
   placeholder = "",
   defaultValue = "",
@@ -103,7 +103,7 @@ export function InputDialog({
       >
         <h2
           id={titleId}
-          className="text-[17px] font-bold text-text mb-1 leading-snug"
+          className="text-style-title text-text mb-1 leading-snug"
         >
           {title}
         </h2>
@@ -121,7 +121,7 @@ export function InputDialog({
           className={cn(
             "w-full h-12 rounded-xl bg-bg border border-line px-4 text-sm text-text placeholder:text-subtle mb-4",
             "transition-colors",
-            "focus:outline-none focus:border-brand-400",
+            "focus:outline-none",
             "focus-visible:outline-none focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-500/30",
           )}
           autoComplete="off"

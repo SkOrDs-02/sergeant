@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "@shared/lib/cn";
+import { hapticTap } from "@shared/lib/haptic";
 
 /**
  * Sergeant Design System — Segmented
@@ -67,7 +68,7 @@ const VARIANT_SOLID: Record<SegmentedVariant, string> = {
 
 const VARIANT_SOFT: Record<SegmentedVariant, string> = {
   brand:
-    "border-brand-200 bg-brand-50 text-brand-700 shadow-sm dark:border-brand/40 dark:bg-brand/15 dark:text-brand",
+    "border-brand-soft-border bg-brand-soft text-brand-strong shadow-sm dark:text-brand",
   fizruk:
     "border-fizruk-ring bg-fizruk-surface text-fizruk-strong shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15 dark:text-fizruk",
   routine:
@@ -115,7 +116,12 @@ export function Segmented<V extends string = string>({
             aria-selected={isActive}
             aria-label={item.ariaLabel}
             title={item.title}
-            onClick={() => onChange(item.value)}
+            onClick={() => {
+              if (item.value !== value) {
+                hapticTap();
+                onChange(item.value);
+              }
+            }}
             className={cn(
               "rounded-full border font-semibold transition-[background-color,border-color,color,box-shadow,opacity]",
               SIZE[size],

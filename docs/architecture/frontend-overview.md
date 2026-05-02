@@ -1,5 +1,8 @@
 # Огляд фронтенду (Sergeant-2)
 
+> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Status:** Active
+
 Короткий знімок поточного фронтенду монорепо: веб (Vite PWA), мобільний (Expo), спільні пакети та модулі продукту. Детальніший статус поверхонь — [platforms.md](./platforms.md). Навмисні винятки `react-hooks/exhaustive-deps` у web — [apps-web-exhaustive-deps.md](./apps-web-exhaustive-deps.md).
 
 ## Монорепо
@@ -54,7 +57,7 @@
 - ESLint + jsx-a11y; кастомний `packages/eslint-plugin-sergeant-design`
 - Веб: Vitest + Playwright (у т.ч. a11y)
 
-## Примітки для редизайну / frontend-design
+## Примітки для редизайну / UI work
 
 Це **не Next.js**, а **Vite SPA + PWA** з модульним Hub і **окремий Expo** клієнт. Візуальна ідентичність зав’язана на **design-tokens + Tailwind** (utility-first). Найбільший ефект від змін токенів/preset і ключових Hub- та модульних layout-компонентів на обох платформах.
 

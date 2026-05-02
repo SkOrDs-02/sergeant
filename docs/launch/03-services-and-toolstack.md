@@ -1,5 +1,8 @@
 # 03. Сервіси та тулстек
 
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Status:** Active
+
 > Повний аудит зовнішніх сервісів, інфраструктури, dev-інструментів: що є, що додати, що змінити.
 > Кожен запис — з офіційним посиланням, фактичною ціною (Date checked: 2026-04), статусом у Sergeant.
 > Джерело: `sergeant-services-audit.md` + `sergeant-toolstack.md` + перевірка `package.json`, `railway.toml`, `vercel.json`, `apps/server/src/lib/**`.
@@ -14,7 +17,7 @@
               | apps/web          |    HTTPS    | apps/server         |         | PostgreSQL     |
               | Vite + React 18   |------------>| Express + Node 20   |-------->| Railway managed|
               | PWA (Workbox)     |   API       | Better Auth         |         | Migrations     |
-              | Tailwind CSS      |             | Pino logging        |         | 001-008        |
+              | Tailwind CSS      |             | Pino logging        |         | 001-010        |
               | Sentry (@sentry/  |             | Helmet + CSP        |         +----------------+
               |   react)          |             | Sentry (@sentry/    |                |
               | TanStack Query    |             |   node)             |         +----------------+
@@ -95,12 +98,12 @@
 
 ### 2.3 Моніторинг / observability
 
-| Сервіс                         | Сайт                                       | Free tier                                                               | Paid tier                                                    | Date checked | Why this / Why not                                                                                                                                                  | Status |
-| ------------------------------ | ------------------------------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| **Sentry**                     | [sentry.io](https://sentry.io)             | Developer: 1 user, 5K errors/mo, 5M spans, 50 replays, 30-day retention | Team: $26/mo, 50K errors, 90-day retention. Business: $80/mo | 2026-04      | Error tracking web + server. SDK вже інтегровано (`@sentry/react`, `@sentry/node`). Free tier достатній для раннього етапу.                                         | in use |
-| **Prometheus** + `prom-client` | [prometheus.io](https://prometheus.io)     | Self-hosted, $0                                                         | N/A (open-source)                                            | 2026-04      | HTTP RED metrics, DB, AI quota. `/metrics` ендпоінт вже є.                                                                                                          | in use |
-| **Grafana Cloud**              | [grafana.com](https://grafana.com)         | Forever free: 10K metrics, 50 GB logs, 50 GB traces                     | Pro: $29/mo + usage                                          | 2026-04      | Дашборди для Prometheus. Безкоштовний tier покриває потреби до ~10K MAU.                                                                                            | to add |
-| **UptimeRobot**                | [uptimerobot.com](https://uptimerobot.com) | 50 monitors, 5-min interval                                             | Pro: $7/mo, 1-min interval                                   | 2026-04      | Зовнішній uptime моніторинг + status page. Деталі конфігурації алертів — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-1--product). | to add |
+| Сервіс                         | Сайт                                       | Free tier                                                               | Paid tier                                                    | Date checked | Why this / Why not                                                                                                                                                  | Status      |
+| ------------------------------ | ------------------------------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| **Sentry**                     | [sentry.io](https://sentry.io)             | Developer: 1 user, 5K errors/mo, 5M spans, 50 replays, 30-day retention | Team: $26/mo, 50K errors, 90-day retention. Business: $80/mo | 2026-04      | Error tracking web + server. SDK вже інтегровано (`@sentry/react`, `@sentry/node`). Free tier достатній для раннього етапу.                                         | in use      |
+| **Prometheus** + `prom-client` | [prometheus.io](https://prometheus.io)     | Self-hosted, $0                                                         | N/A (open-source)                                            | 2026-04      | HTTP RED metrics, DB, AI quota. `/metrics` ендпоінт вже є.                                                                                                          | in use      |
+| **Grafana Cloud**              | [grafana.com](https://grafana.com)         | Forever free: 10K metrics, 50 GB logs, 50 GB traces                     | Pro: $29/mo + usage                                          | 2026-05      | Дашборди для Prometheus. Безкоштовний tier покриває потреби до ~10K MAU. Конфіг скрейпера — `ops/grafana-alloy/` (Phase 2 trigger).                                 | setup-ready |
+| **UptimeRobot**                | [uptimerobot.com](https://uptimerobot.com) | 50 monitors, 5-min interval                                             | Pro: $7/mo, 1-min interval                                   | 2026-04      | Зовнішній uptime моніторинг + status page. Деталі конфігурації алертів — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-1--product). | to add      |
 
 ### 2.4 Платежі
 
@@ -111,7 +114,7 @@
 **Що створити для Stripe:**
 
 - Stripe Account + Product + Price (monthly ₴99 + yearly ₴799)
-- `apps/server/src/modules/billing.ts` — checkout, portal, plan endpoints
+- `apps/server/src/routes/internal/billing.ts` — checkout, portal, plan endpoints
 - `apps/server/src/routes/stripe-webhook.ts` — webhook handler з `stripe.webhooks.constructEvent()`
 - Env: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_PRO_MONTHLY`, `STRIPE_PRICE_ID_PRO_YEARLY`
 - Деталі edge cases (chargeback, webhook miss) — див. [04-launch-readiness.md](./04-launch-readiness.md#21-billing-edge-cases)
@@ -369,7 +372,7 @@ GOOGLE_PLAY_SERVICE_ACCOUNT=     # JSON credentials для EAS Submit
 
 ---
 
-## 6. Monthly cost projection
+## 6. Прогноз місячних витрат
 
 ```
                     Pre-launch   Launch       Growth       Scale
@@ -429,7 +432,7 @@ Breakeven subs      ---          ~30 Pro      ~100 Pro     profitable
 
 ---
 
-## 7. Week-by-week roadmap
+## 7. Роадмеп по тижнях
 
 ```
 WEEK 1: Payments foundation
@@ -487,7 +490,7 @@ TOTAL FIXED      ~$13/mo  (infrastructure already paid)
 
 ---
 
-## Pointers
+## Посилання
 
 - Бізнес-модель, тіри, payment provider порівняння -> [01-monetization-and-pricing.md](./01-monetization-and-pricing.md)
 - Маркетингові канали, growth engine, partnerships -> [02-go-to-market.md](./02-go-to-market.md)

@@ -25,7 +25,7 @@ const SYNC_MODULES = {
   nutrition: { keys: ["nutrition_log_v1", "nutrition_prefs_v1"] },
 };
 
-function keyToModule(key) {
+function keyToModule(key: string): string | null {
   for (const [mod, config] of Object.entries(SYNC_MODULES)) {
     if (config.keys.includes(key)) return mod;
   }
@@ -40,57 +40,66 @@ const DIRTY_KEY = "hub_sync_dirty_modules";
 const VERSION_KEY = "hub_sync_versions";
 const OFFLINE_QUEUE_KEY = "hub_sync_offline_queue";
 
-function getDirtyModules() {
+function getDirtyModules(): Record<string, boolean> {
   try {
     const raw = localStorage.getItem(DIRTY_KEY);
-    return raw ? JSON.parse(raw) : {};
+    return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
   } catch {
     return {};
   }
 }
 
-function markModuleDirty(moduleName) {
+function markModuleDirty(moduleName: string) {
   const dirty = getDirtyModules();
   dirty[moduleName] = true;
   localStorage.setItem(DIRTY_KEY, JSON.stringify(dirty));
 }
 
-function clearDirtyModule(moduleName) {
+function clearDirtyModule(moduleName: string) {
   const dirty = getDirtyModules();
   delete dirty[moduleName];
   localStorage.setItem(DIRTY_KEY, JSON.stringify(dirty));
 }
 
-function getModuleVersions() {
+type ModuleVersions = Record<string, Record<string, number>>;
+
+function getModuleVersions(): ModuleVersions {
   try {
     const raw = localStorage.getItem(VERSION_KEY);
-    return raw ? JSON.parse(raw) : {};
+    return raw ? (JSON.parse(raw) as ModuleVersions) : {};
   } catch {
     return {};
   }
 }
 
-function setModuleVersion(userId, moduleName, version) {
+function setModuleVersion(userId: string, moduleName: string, version: number) {
   const versions = getModuleVersions();
   if (!versions[userId]) versions[userId] = {};
   versions[userId][moduleName] = version;
   localStorage.setItem(VERSION_KEY, JSON.stringify(versions));
 }
 
-function getModuleVersion(userId, moduleName) {
+function getModuleVersion(userId: string, moduleName: string): number {
   return getModuleVersions()[userId]?.[moduleName] ?? 0;
 }
 
-function getOfflineQueue() {
+interface OfflineQueueEntry {
+  module: string;
+  action?: string;
+  payload?: unknown;
+  ts?: string;
+}
+
+function getOfflineQueue(): OfflineQueueEntry[] {
   try {
     const raw = localStorage.getItem(OFFLINE_QUEUE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    return raw ? (JSON.parse(raw) as OfflineQueueEntry[]) : [];
   } catch {
     return [];
   }
 }
 
-function addToOfflineQueue(entry) {
+function addToOfflineQueue(entry: Omit<OfflineQueueEntry, "ts">) {
   const queue = getOfflineQueue();
   queue.push({ ...entry, ts: new Date().toISOString() });
   localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));

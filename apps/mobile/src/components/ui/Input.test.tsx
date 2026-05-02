@@ -16,7 +16,9 @@ describe("Input", () => {
 
   it("applies size classes to the wrapper view", () => {
     const { UNSAFE_getAllByType } = render(<Input size="lg" />);
-    const wrapper = UNSAFE_getAllByType(View)[0];
+    // [0] is the outer label/group container (always rendered, holds `gap-1`),
+    // [1] is the inner sized row that owns h-{n} / px-{n} from `sizes[size]`.
+    const wrapper = UNSAFE_getAllByType(View)[1];
     expect(wrapper.props.className).toContain("h-12");
     expect(wrapper.props.className).toContain("px-5");
   });

@@ -17,7 +17,7 @@ const TX_CACHE_KEY = STORAGE_KEYS.FINYK_TX_CACHE;
 const TX_LAST_GOOD_KEY = STORAGE_KEYS.FINYK_TX_CACHE_LAST_GOOD;
 
 export function loadFinykSubscriptionsFromStorage() {
-  const arr = safeReadLS(SUBS_KEY, null);
+  const arr = safeReadLS<unknown[] | null>(SUBS_KEY, null);
   if (arr === null) return [...DEFAULT_SUBSCRIPTIONS];
   return Array.isArray(arr) && arr.length ? arr : [...DEFAULT_SUBSCRIPTIONS];
 }

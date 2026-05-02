@@ -36,6 +36,7 @@ function SubCardComponent({
   onDelete,
   onEdit,
   onLinkTransactions,
+  showBalance = true,
 }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
@@ -179,7 +180,7 @@ function SubCardComponent({
             Привʼязано до транзакції · оновлює суму та дату
           </div>
         )}
-        {lastTx && (
+        {lastTx && lastTx.time != null && (
           <div className="text-xs text-subtle mt-0.5">
             Останнє: {fmtDate(lastTx.time)}
           </div>
@@ -188,8 +189,9 @@ function SubCardComponent({
       <div className="flex flex-col items-end gap-1 shrink-0">
         {amount != null ? (
           <div className="text-sm font-bold">
-            {amount.toLocaleString("uk-UA", { maximumFractionDigits: 2 })}
-            {currency}
+            {showBalance
+              ? `${amount.toLocaleString("uk-UA", { maximumFractionDigits: 2 })}${currency}`
+              : "••••"}
           </div>
         ) : (
           <div className="text-xs text-subtle">ще не списувалось</div>

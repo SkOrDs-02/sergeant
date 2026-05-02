@@ -301,9 +301,15 @@ unreviewable.
 
 ### Decision
 
-**Винести в `apps/server/src/lib/anthropicModel.ts` як `ANTHROPIC_MODEL`
+**Винести в `apps/server/src/lib/<anthropicModel>.ts` (планований шлях) як `ANTHROPIC_MODEL`
 const.** Імпортується у `chat.ts`, `coach.ts`, `weekly-digest.ts`, всі
 `nutrition/*.ts`. Один PR — один git-diff, один CHANGELOG entry.
+
+> _Update 2026-04-30_: на момент імплементації окремого файлу
+> `anthropicModel.<ts>` немає; модель прописана inline у [`apps/server/src/modules/chat/chat.ts`](../../apps/server/src/modules/chat/chat.ts)
+> та [`coach.ts`](../../apps/server/src/modules/chat/coach.ts) (`"claude-sonnet-4-6"`),
+> а observability-helpers живуть у [`apps/server/src/lib/anthropic.ts`](../../apps/server/src/lib/anthropic.ts).
+> Винесення — все ще `proposed`; ADR не змінено.
 
 Не робимо це у цьому ADR-PR (бо ADR — рішення, не імплементація). Окремий
 PR з міткою `chore(server): centralize Anthropic model constant`.

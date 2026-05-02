@@ -166,7 +166,7 @@ describe("persistShoppingList", () => {
       ],
     });
     const stored = JSON.parse(
-      globalThis.localStorage.getItem(SHOPPING_LIST_KEY),
+      globalThis.localStorage.getItem(SHOPPING_LIST_KEY)!,
     );
     expect(stored.categories[0].items).toHaveLength(1);
   });
@@ -174,7 +174,7 @@ describe("persistShoppingList", () => {
   it("persists empty list on nullish input", () => {
     persistShoppingList(null);
     const stored = JSON.parse(
-      globalThis.localStorage.getItem(SHOPPING_LIST_KEY),
+      globalThis.localStorage.getItem(SHOPPING_LIST_KEY)!,
     );
     expect(stored).toEqual({ categories: [] });
   });

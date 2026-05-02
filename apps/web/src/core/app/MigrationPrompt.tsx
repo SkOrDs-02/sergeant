@@ -2,7 +2,17 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 
-export function MigrationPrompt({ onUpload, onSkip, syncing }) {
+interface MigrationPromptProps {
+  onUpload: () => void;
+  onSkip: () => void;
+  syncing: boolean;
+}
+
+export function MigrationPrompt({
+  onUpload,
+  onSkip,
+  syncing,
+}: MigrationPromptProps) {
   return (
     <div className="min-h-dvh bg-bg flex items-center justify-center p-6 page-enter">
       <Card
@@ -12,7 +22,7 @@ export function MigrationPrompt({ onUpload, onSkip, syncing }) {
         className="max-w-sm w-full space-y-5"
       >
         <div className="text-center space-y-2">
-          <div className="w-14 h-14 mx-auto bg-brand-500/10 rounded-2xl flex items-center justify-center text-brand-600 dark:text-brand-400">
+          <div className="w-14 h-14 mx-auto bg-brand-500/10 rounded-2xl flex items-center justify-center text-brand-strong dark:text-brand">
             <Icon name="upload" size={28} strokeWidth={1.8} />
           </div>
           <h2 className="text-xl font-bold text-text">

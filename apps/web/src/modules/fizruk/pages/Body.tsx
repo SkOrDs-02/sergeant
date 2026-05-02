@@ -7,6 +7,9 @@ import { cn } from "@shared/lib/cn";
 import { useDailyLog } from "../hooks/useDailyLog";
 import { Card } from "@shared/components/ui/Card";
 import { MiniLineChart } from "../components/MiniLineChart";
+import { useToast } from "@shared/hooks/useToast";
+import { showUndoToast } from "@shared/lib/undoToast";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage";
 
 /**
  * Trend cards on this page used to be always-expanded, which meant four
@@ -20,16 +23,41 @@ import { MiniLineChart } from "../components/MiniLineChart";
  *  - Tap/click the header to toggle. Per-card open state is persisted
  *    in localStorage under `fizruk:body:trend-open:<key>` so the user's
  *    choice survives reloads.
+ *
+ * The "Журнал" log section uses the same collapse pattern via
+ * `JournalSection` (open by default; persisted under
+ * `fizruk:body:journal-open`), and each entry inside is itself
+ * collapsible via `JournalEntryCard` (closed by default — only the
+ * date + a short metric summary are shown until tapped; persisted
+ * under `fizruk:body:journal-entry-open:<id>`).
  */
 const TREND_STORAGE_PREFIX = "fizruk:body:trend-open:";
+const JOURNAL_OPEN_STORAGE_KEY = "fizruk:body:journal-open";
+const JOURNAL_ENTRY_OPEN_PREFIX = "fizruk:body:journal-entry-open:";
+
+type JournalEntry = {
+  id: string;
+  at: string;
+  weightKg: number | null;
+  sleepHours: number | null;
+  energyLevel: number | null;
+  moodScore: number | null;
+  note: string;
+};
 
 function readTrendOpen(key: string): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    return window.localStorage.getItem(TREND_STORAGE_PREFIX + key) === "1";
-  } catch {
-    return false;
-  }
+  return safeReadStringLS(TREND_STORAGE_PREFIX + key) === "1";
+}
+
+function readPersistedOpen(storageKey: string, fallback: boolean): boolean {
+  const v = safeReadStringLS(storageKey);
+  if (v === "1") return true;
+  if (v === "0") return false;
+  return fallback;
+}
+
+function writePersistedOpen(storageKey: string, open: boolean): void {
+  safeWriteLS(storageKey, open ? "1" : "0");
 }
 
 function CollapsibleTrendCard({
@@ -55,16 +83,7 @@ function CollapsibleTrendCard({
   const toggle = useCallback(() => {
     setOpen((prev) => {
       const next = !prev;
-      if (typeof window !== "undefined") {
-        try {
-          window.localStorage.setItem(
-            TREND_STORAGE_PREFIX + storageKey,
-            next ? "1" : "0",
-          );
-        } catch {
-          /* ignore quota / disabled storage */
-        }
-      }
+      safeWriteLS(TREND_STORAGE_PREFIX + storageKey, next ? "1" : "0");
       return next;
     });
   }, [storageKey]);
@@ -129,6 +148,191 @@ function CollapsibleTrendCard({
   );
 }
 
+function JournalEntryCard({
+  entry,
+  onDelete,
+}: {
+  entry: JournalEntry;
+  onDelete: (id: string) => void;
+}) {
+  const storageKey = JOURNAL_ENTRY_OPEN_PREFIX + entry.id;
+  const [open, setOpen] = useState<boolean>(() =>
+    readPersistedOpen(storageKey, false),
+  );
+  const contentId = `journal-entry-${entry.id}`;
+
+  const toggle = useCallback(() => {
+    setOpen((prev) => {
+      const next = !prev;
+      writePersistedOpen(storageKey, next);
+      return next;
+    });
+  }, [storageKey]);
+
+  const dateLabel = new Date(entry.at).toLocaleDateString("uk-UA", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "2-digit",
+  });
+
+  const summaryParts: string[] = [];
+  if (entry.weightKg != null) summaryParts.push(`${entry.weightKg} кг`);
+  if (entry.sleepHours != null) summaryParts.push(`${entry.sleepHours} год`);
+  if (entry.energyLevel != null) summaryParts.push(`E ${entry.energyLevel}/5`);
+  if (entry.moodScore != null) summaryParts.push(`M ${entry.moodScore}/5`);
+  const summary = summaryParts.join(" · ");
+
+  return (
+    <div className="rounded-xl border border-line bg-bg">
+      <div className="flex items-start gap-2">
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={open}
+          aria-controls={contentId}
+          className={cn(
+            "flex-1 min-w-0 flex items-center gap-2 px-3 py-2 text-left",
+            "rounded-xl transition-colors hover:bg-panelHi/40",
+          )}
+        >
+          <span
+            aria-hidden
+            className={cn(
+              "inline-block w-3 text-muted transition-transform shrink-0 text-xs",
+              open ? "rotate-180" : "rotate-0",
+            )}
+          >
+            ▾
+          </span>
+          <span className="text-xs text-subtle shrink-0">{dateLabel}</span>
+          {!open && summary && (
+            <span className="text-xs text-muted truncate">· {summary}</span>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => onDelete(entry.id)}
+          className="shrink-0 w-8 h-8 m-1 flex items-center justify-center rounded-xl text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+          aria-label="Видалити запис"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2" />
+          </svg>
+        </button>
+      </div>
+      {open && (
+        <div id={contentId} className="px-3 pb-3 pt-0">
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            {entry.weightKg != null && (
+              <span className="text-xs text-text">
+                <span className="text-subtle">Вага:</span>{" "}
+                <span className="font-semibold">{entry.weightKg} кг</span>
+              </span>
+            )}
+            {entry.sleepHours != null && (
+              <span className="text-xs text-text">
+                <span className="text-subtle">Сон:</span>{" "}
+                <span className="font-semibold">{entry.sleepHours} год</span>
+              </span>
+            )}
+            {entry.energyLevel != null && (
+              <span className="text-xs text-text">
+                <span className="text-subtle">Енергія:</span>{" "}
+                <span className="font-semibold">{entry.energyLevel}/5</span>
+              </span>
+            )}
+            {entry.moodScore != null && (
+              <span className="text-xs text-text">
+                <span className="text-subtle">Настрій:</span>{" "}
+                <span className="font-semibold">{entry.moodScore}/5</span>
+              </span>
+            )}
+          </div>
+          {entry.note && (
+            <p className="text-xs text-subtle mt-1 italic">{entry.note}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function JournalSection({
+  entries,
+  totalCount,
+  onDelete,
+}: {
+  entries: readonly JournalEntry[];
+  totalCount: number;
+  onDelete: (id: string) => void;
+}) {
+  const [open, setOpen] = useState<boolean>(() =>
+    readPersistedOpen(JOURNAL_OPEN_STORAGE_KEY, true),
+  );
+  const contentId = "fizruk-body-journal-content";
+
+  const toggle = useCallback(() => {
+    setOpen((prev) => {
+      const next = !prev;
+      writePersistedOpen(JOURNAL_OPEN_STORAGE_KEY, next);
+      return next;
+    });
+  }, []);
+
+  return (
+    <Card as="section" radius="lg" padding="none" aria-label="Журнал записів">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        aria-controls={contentId}
+        className={cn(
+          "w-full flex items-center gap-3 px-4 py-3 text-left",
+          "rounded-2xl transition-colors hover:bg-panelHi/40",
+        )}
+      >
+        <div className="flex-1 min-w-0 flex items-baseline gap-2">
+          <SectionHeading as="h2" size="sm" className="!mb-0">
+            Журнал
+          </SectionHeading>
+          <span className="text-xs text-muted tabular-nums">{totalCount}</span>
+        </div>
+        <span
+          aria-hidden
+          className={cn(
+            "inline-block w-4 text-muted transition-transform shrink-0",
+            open ? "rotate-180" : "rotate-0",
+          )}
+        >
+          ▾
+        </span>
+      </button>
+      {open && (
+        <div id={contentId} className="px-4 pb-4 pt-1">
+          <div className="space-y-2">
+            {entries.map((entry) => (
+              <JournalEntryCard
+                key={entry.id}
+                entry={entry}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function lastValidValue<T extends { value: number | null }>(
   data: readonly T[],
 ): number | null {
@@ -183,7 +387,7 @@ function ScoreButton({ value, selected, onClick, label }) {
       <span className="text-base leading-none">{value}</span>
       <span
         className={cn(
-          "text-3xs leading-none truncate max-w-full px-1",
+          "text-2xs leading-none truncate max-w-full px-1",
           selected ? "text-white/80" : "text-muted",
         )}
       >
@@ -194,7 +398,21 @@ function ScoreButton({ value, selected, onClick, label }) {
 }
 
 export function Body({ onOpenMeasurements }) {
-  const { entries, addEntry, deleteEntry, recentWith } = useDailyLog();
+  const { entries, addEntry, deleteEntry, restoreEntry, recentWith } =
+    useDailyLog();
+  const toast = useToast();
+  const handleDeleteJournalEntry = useCallback(
+    (id) => {
+      const snapshot = entries.find((e) => e.id === id);
+      if (!snapshot) return;
+      deleteEntry(id);
+      showUndoToast(toast, {
+        msg: "Запис журналу видалено",
+        onUndo: () => restoreEntry(snapshot),
+      });
+    },
+    [entries, deleteEntry, restoreEntry, toast],
+  );
 
   const [form, setForm] = useState({
     weightKg: "",
@@ -466,7 +684,7 @@ export function Body({ onOpenMeasurements }) {
             <button
               type="submit"
               className={cn(
-                "w-full py-3 rounded-xl font-semibold text-sm transition-[background-color,box-shadow,opacity,transform]",
+                "focus-ring w-full py-3 rounded-xl font-semibold text-sm transition-[background-color,box-shadow,opacity,transform]",
                 submitSuccess
                   ? "bg-success-strong text-white"
                   : "bg-success-strong text-white active:scale-[0.98]",
@@ -544,87 +762,11 @@ export function Body({ onOpenMeasurements }) {
           })}
 
         {entries.length > 0 && (
-          <Card as="section" radius="lg" aria-label="Журнал записів">
-            <SectionHeading as="h2" size="sm" className="mb-3">
-              Журнал
-            </SectionHeading>
-            <div className="space-y-2">
-              {entries.slice(0, 15).map((entry) => (
-                <div
-                  key={entry.id}
-                  className="flex items-start gap-3 rounded-xl border border-line bg-bg p-3"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs text-subtle mb-1">
-                      {new Date(entry.at).toLocaleDateString("uk-UA", {
-                        weekday: "short",
-                        day: "numeric",
-                        month: "short",
-                        year: "2-digit",
-                      })}
-                    </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1">
-                      {entry.weightKg != null && (
-                        <span className="text-xs text-text">
-                          <span className="text-subtle">Вага:</span>{" "}
-                          <span className="font-semibold">
-                            {entry.weightKg} кг
-                          </span>
-                        </span>
-                      )}
-                      {entry.sleepHours != null && (
-                        <span className="text-xs text-text">
-                          <span className="text-subtle">Сон:</span>{" "}
-                          <span className="font-semibold">
-                            {entry.sleepHours} год
-                          </span>
-                        </span>
-                      )}
-                      {entry.energyLevel != null && (
-                        <span className="text-xs text-text">
-                          <span className="text-subtle">Енергія:</span>{" "}
-                          <span className="font-semibold">
-                            {entry.energyLevel}/5
-                          </span>
-                        </span>
-                      )}
-                      {entry.moodScore != null && (
-                        <span className="text-xs text-text">
-                          <span className="text-subtle">Настрій:</span>{" "}
-                          <span className="font-semibold">
-                            {entry.moodScore}/5
-                          </span>
-                        </span>
-                      )}
-                    </div>
-                    {entry.note && (
-                      <p className="text-xs text-subtle mt-1 italic">
-                        {entry.note}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => deleteEntry(entry.id)}
-                    className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-muted hover:text-danger hover:bg-danger/10 transition-colors"
-                    aria-label="Видалити запис"
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    >
-                      <path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <JournalSection
+            entries={entries.slice(0, 15)}
+            totalCount={entries.length}
+            onDelete={handleDeleteJournalEntry}
+          />
         )}
       </div>
     </div>

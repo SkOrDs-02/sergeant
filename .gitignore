@@ -33,5 +33,11 @@ apps/mobile/.expo/
 apps/mobile/ios/
 apps/mobile/android/
 
+# Ops stack secrets (n8n)
+ops/.env.ops
+
 # Sandbox / experimental prototypes
 artifacts/
+
+# CI-local caches
+.cache/

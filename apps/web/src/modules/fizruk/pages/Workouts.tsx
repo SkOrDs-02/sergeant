@@ -1,10 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  safeReadStringLS,
+  safeWriteLS,
+  safeRemoveLS,
+} from "@shared/lib/storage";
+import { requestCloudPull } from "@shared/lib/cloudPullRequest";
+import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/undoToast";
-import { hapticPattern } from "@shared/lib/haptic";
 import { WorkoutTemplatesSection } from "../components/WorkoutTemplatesSection";
 import { RestTimerOverlay } from "../components/workouts/RestTimerOverlay";
 import { WorkoutFinishSheets } from "../components/workouts/WorkoutFinishSheets";
@@ -12,67 +18,22 @@ import { AddExerciseSheet } from "../components/workouts/AddExerciseSheet";
 import { ExerciseDetailSheet } from "../components/workouts/ExerciseDetailSheet";
 import { WorkoutJournalSection } from "../components/workouts/WorkoutJournalSection";
 import { WorkoutCatalogSection } from "../components/workouts/WorkoutCatalogSection";
+import { QuickStartSheet } from "../components/workouts/QuickStartSheet";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
+import {
+  useFizrukRestSound,
+  type RestTimerState,
+} from "../hooks/useFizrukRestSound";
 import { useRecovery } from "../hooks/useRecovery";
 import { useWorkoutTemplates } from "../hooks/useWorkoutTemplates";
 import { useWorkouts } from "../hooks/useWorkouts";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
+import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
 import {
   ACTIVE_WORKOUT_KEY,
   summarizeWorkoutForFinish,
 } from "@sergeant/fizruk-domain";
-import { computeWorkoutSummary } from "@sergeant/fizruk-domain/domain";
-
-// Shared AudioContext reused across beeps. Creating/closing one per call
-// races with quick successive rest-timer completions and fights iOS' audio
-// session. Lazily created on first call (after a user gesture) and kept open
-// for the lifetime of the page; browsers GC it on unload.
-let sharedAudioCtx: AudioContext | null = null;
-function getAudioCtx(): AudioContext | null {
-  try {
-    if (sharedAudioCtx && sharedAudioCtx.state !== "closed")
-      return sharedAudioCtx;
-    const Ctor =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext;
-    sharedAudioCtx = new Ctor();
-    return sharedAudioCtx;
-  } catch {
-    return null;
-  }
-}
-
-function playRestCompletionSound() {
-  const ctx = getAudioCtx();
-  if (!ctx) return;
-  try {
-    // iOS can suspend the context between beeps; resume is a noop if running.
-    if (ctx.state === "suspended") void ctx.resume();
-    const playBeep = (freq: number, startTime: number, duration: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(freq, startTime);
-      gain.gain.setValueAtTime(0.18, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-      osc.start(startTime);
-      osc.stop(startTime + duration);
-    };
-    const t = ctx.currentTime;
-    playBeep(880, t, 0.15);
-    playBeep(1100, t + 0.18, 0.15);
-    playBeep(1320, t + 0.36, 0.3);
-  } catch {}
-}
-
-function vibrateRestComplete() {
-  // Haptic helper respects prefers-reduced-motion and swallows browser
-  // throttling errors that raw `navigator.vibrate` does not.
-  hapticPattern([200, 100, 200]);
-}
+import { WorkoutsHome } from "../components/workouts/WorkoutsHome";
 
 type WorkoutsView = "home" | "catalog" | "log" | "templates";
 
@@ -102,10 +63,33 @@ export function Workouts() {
     updateItem,
     removeItem,
   } = useWorkouts();
+  const removeItemWithUndo = useCallback(
+    (workoutId, itemId) => {
+      const w = workouts.find((x) => x.id === workoutId);
+      if (!w) {
+        removeItem(workoutId, itemId);
+        return;
+      }
+      const snapshot = {
+        items: w.items || [],
+        groups: w.groups || [],
+      };
+      removeItem(workoutId, itemId);
+      showUndoToast(toast, {
+        msg: "Вправу видалено з тренування",
+        onUndo: () =>
+          updateWorkout(workoutId, {
+            items: snapshot.items,
+            groups: snapshot.groups,
+          }),
+      });
+    },
+    [workouts, removeItem, updateWorkout, toast],
+  );
   const templateApi = useWorkoutTemplates();
   const [q, setQ] = useState("");
   const [equipmentFilter, setEquipmentFilter] = useState<string[]>([]);
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState<RawExerciseDef | null>(null);
   const [open, setOpen] = useState(() => ({}));
   const [addOpen, setAddOpen] = useState(false);
   // `view` drives the page chrome:
@@ -121,20 +105,16 @@ export function Workouts() {
   // "catalog" vs "log" (exercise-in-list click handler, `ExerciseDetailSheet`,
   // `WorkoutCatalogSection`). Kept in sync with `view` for those subviews.
   const mode = view === "templates" || view === "home" ? "catalog" : view;
-  const [restTimer, setRestTimer] = useState(null);
-  const [activeWorkoutId, setActiveWorkoutId] = useState(() => {
-    try {
-      return localStorage.getItem(ACTIVE_WORKOUT_KEY) || null;
-    } catch {
-      return null;
-    }
-  });
+  const [restTimer, setRestTimer] = useState<RestTimerState | null>(null);
+  const [activeWorkoutId, setActiveWorkoutId] = useState(() =>
+    safeReadStringLS(ACTIVE_WORKOUT_KEY),
+  );
   const [finishFlash, setFinishFlash] = useState(null);
-  const [deleteWorkoutConfirm, setDeleteWorkoutConfirm] = useState(false);
   const [deleteExerciseConfirm, setDeleteExerciseConfirm] = useState(false);
   const [riskyTemplateConfirm, setRiskyTemplateConfirm] = useState(null); // stores template when risky
   const [now, setNow] = useState(Date.now());
   const [retroOpen, setRetroOpen] = useState(false);
+  const [quickStartOpen, setQuickStartOpen] = useState(false);
   const [retroDate, setRetroDate] = useState(() => {
     const x = new Date();
     return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
@@ -164,10 +144,8 @@ export function Workouts() {
   }, [activeWorkout?.startedAt, activeWorkout?.endedAt, now]);
 
   useEffect(() => {
-    try {
-      if (!activeWorkoutId) localStorage.removeItem(ACTIVE_WORKOUT_KEY);
-      else localStorage.setItem(ACTIVE_WORKOUT_KEY, activeWorkoutId);
-    } catch {}
+    if (!activeWorkoutId) safeRemoveLS(ACTIVE_WORKOUT_KEY);
+    else safeWriteLS(ACTIVE_WORKOUT_KEY, activeWorkoutId);
   }, [activeWorkoutId]);
 
   // Clear a stale activeWorkoutId that no longer matches any workout
@@ -192,29 +170,21 @@ export function Workouts() {
     } catch {}
   }, []);
 
-  const restCompletedNaturally = useRef(false);
-
-  useEffect(() => {
-    if (restTimer === null && restCompletedNaturally.current) {
-      restCompletedNaturally.current = false;
-      playRestCompletionSound();
-      vibrateRestComplete();
-    }
-  }, [restTimer]);
+  const { markCompletedNaturally } = useFizrukRestSound(restTimer);
 
   useEffect(() => {
     if (!restTimer || restTimer.remaining <= 0) return;
     const id = setInterval(() => {
       setRestTimer((r) => {
         if (!r || r.remaining <= 1) {
-          restCompletedNaturally.current = true;
+          markCompletedNaturally();
           return null;
         }
         return { ...r, remaining: r.remaining - 1 };
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [restTimer]);
+  }, [restTimer, markCompletedNaturally]);
 
   // Live timer tick — only when there is an active, unfinished workout
   useEffect(
@@ -420,14 +390,19 @@ export function Workouts() {
     [workouts],
   );
 
+  // Workouts are local-first (MMKV-web), so PTR's job is to ask the
+  // App-level cloud-sync engine for a fresh pull. The local list will
+  // re-render automatically once the engine writes new state.
+  const handlePullRefresh = useCallback(() => requestCloudPull(2500), []);
+
   return (
-    <div className="flex-1 overflow-y-auto">
+    <PullToRefresh onRefresh={handlePullRefresh} variant="fizruk">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
         <div className="flex items-center gap-3 mb-3">
           {view !== "home" ? (
             <button
               type="button"
-              className="w-9 h-9 -ml-1 rounded-lg flex items-center justify-center text-text/80 hover:bg-surface-2"
+              className="w-9 h-9 -ml-1 rounded-xl flex items-center justify-center text-text/80 hover:bg-surface-2"
               onClick={() => setView("home")}
               aria-label="Повернутись до тренувань"
             >
@@ -435,7 +410,7 @@ export function Workouts() {
             </button>
           ) : null}
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-text">
+            <h1 className="text-style-title text-text">
               {view === "catalog"
                 ? "Каталог вправ"
                 : view === "templates"
@@ -473,12 +448,11 @@ export function Workouts() {
             activeWorkout={activeWorkout}
             activeDuration={activeDuration}
             recentWorkouts={recentWorkouts}
-            createWorkout={createWorkout}
-            setActiveWorkoutId={setActiveWorkoutId}
             onOpenSession={() => setView("log")}
             onOpenCatalog={() => setView("catalog")}
             onOpenTemplates={() => setView("templates")}
             onOpenJournal={() => setView("log")}
+            onRequestStart={() => setQuickStartOpen(true)}
             onOpenRetro={() => {
               setRetroOpen(true);
               setView("log");
@@ -523,13 +497,13 @@ export function Workouts() {
             setRestTimer={setRestTimer}
             updateWorkout={updateWorkout}
             updateItem={updateItem}
-            removeItem={removeItem}
+            removeItem={removeItemWithUndo}
             setFinishFlash={setFinishFlash}
             endWorkout={endWorkout}
-            setDeleteWorkoutConfirm={setDeleteWorkoutConfirm}
             summarizeWorkoutForFinish={summarizeWorkoutForFinish}
             submitRetroWorkout={submitRetroWorkout}
             deleteWorkout={deleteWorkout}
+            restoreWorkout={restoreWorkout}
           />
         )}
 
@@ -590,6 +564,44 @@ export function Workouts() {
           addExercise={addExercise}
         />
 
+        <QuickStartSheet
+          open={quickStartOpen}
+          onClose={() => setQuickStartOpen(false)}
+          exercises={exercises}
+          search={search}
+          primaryGroupsUk={primaryGroupsUk}
+          onPickTemplate={() => {
+            setQuickStartOpen(false);
+            setView("templates");
+          }}
+          onConfirmExercises={(picks) => {
+            // Build a fresh ad-hoc session and pre-load the picked
+            // exercises before flipping the active flag — that way the
+            // session-level live timer (`activeWorkout.startedAt`) is
+            // only created after the user confirmed their selection,
+            // matching the user-stated requirement that the timer must
+            // not start before exercises are lined up.
+            const w = createWorkout();
+            for (const ex of picks) {
+              const isCardio = ex.primaryGroup === "cardio";
+              addItem(w.id, {
+                exerciseId: ex.id,
+                nameUk: ex?.name?.uk || ex?.name?.en,
+                primaryGroup: ex.primaryGroup,
+                musclesPrimary: ex?.muscles?.primary || [],
+                musclesSecondary: ex?.muscles?.secondary || [],
+                type: isCardio ? "distance" : "strength",
+                sets: isCardio ? undefined : [{ weightKg: 0, reps: 0 }],
+                durationSec: isCardio ? 0 : 0,
+                distanceM: isCardio ? 0 : 0,
+              });
+            }
+            setActiveWorkoutId(w.id);
+            setQuickStartOpen(false);
+            setView("log");
+          }}
+        />
+
         <RestTimerOverlay
           restTimer={restTimer}
           onCancel={() => setRestTimer(null)}
@@ -602,30 +614,17 @@ export function Workouts() {
         />
       </div>
 
-      {/* Confirmation dialogs */}
-      <ConfirmDialog
-        open={deleteWorkoutConfirm}
-        title="Видалити тренування?"
-        description="Можна повернути одразу після видалення."
-        confirmLabel="Видалити"
-        onConfirm={() => {
-          if (activeWorkout) {
-            // Snapshot before delete so undo can re-insert with the
-            // original startedAt/items/groups intact (chronological
-            // order preserved by `restoreWorkout`).
-            const snapshot = activeWorkout;
-            deleteWorkout(snapshot.id);
-            setActiveWorkoutId((prev) => (prev === snapshot.id ? null : prev));
-            showUndoToast(toast, {
-              msg: "Тренування видалено",
-              onUndo: () => restoreWorkout(snapshot),
-            });
-          }
-          setDeleteWorkoutConfirm(false);
-        }}
-        onCancel={() => setDeleteWorkoutConfirm(false)}
-      />
+      {/*
+        Confirmation dialogs.
 
+        The "Delete active workout" `ConfirmDialog` was removed in favour
+        of the unified soft-delete flow (`onDeleteWorkout` in
+        `WorkoutJournalSection`) that calls `deleteWorkout` immediately
+        and surfaces a 5 s undo toast via `showUndoToast`. Per the
+        unified-undo policy, only non-reversible flows (e.g. exercise
+        removal that detaches the catalog entry) keep an explicit
+        confirmation step.
+      */}
       <ConfirmDialog
         open={deleteExerciseConfirm}
         title="Видалити вправу?"
@@ -662,235 +661,6 @@ export function Workouts() {
         }}
         onCancel={() => setRiskyTemplateConfirm(null)}
       />
-    </div>
-  );
-}
-
-/**
- * Landing view for the Workouts page.
- *
- * Shows one dominant path ("Почати тренування" → active session) plus two
- * supporting shortcuts (recent sessions preview and quick-link tiles to
- * the catalog / templates / full journal).
- */
-interface WorkoutsHomeProps {
-  activeWorkout: {
-    id: string;
-    startedAt: string;
-    endedAt?: string | null;
-    items?: ReadonlyArray<unknown>;
-  } | null;
-  activeDuration: string | null;
-  recentWorkouts: ReadonlyArray<{
-    id: string;
-    startedAt: string;
-    endedAt?: string | null;
-    items?: ReadonlyArray<unknown>;
-  }>;
-  createWorkout: () => { id: string };
-  setActiveWorkoutId: (id: string | null) => void;
-  onOpenSession: () => void;
-  onOpenCatalog: () => void;
-  onOpenTemplates: () => void;
-  onOpenJournal: () => void;
-  onOpenRetro: () => void;
-}
-
-function WorkoutsHome({
-  activeWorkout,
-  activeDuration,
-  recentWorkouts,
-  createWorkout,
-  setActiveWorkoutId,
-  onOpenSession,
-  onOpenCatalog,
-  onOpenTemplates,
-  onOpenJournal,
-  onOpenRetro,
-}: WorkoutsHomeProps) {
-  const hasActive = !!activeWorkout && !activeWorkout.endedAt;
-
-  const handleStart = () => {
-    const w = createWorkout();
-    setActiveWorkoutId(w.id);
-    onOpenSession();
-  };
-
-  return (
-    <div className="space-y-4">
-      {hasActive ? (
-        <div className="rounded-xl border border-teal-500/40 bg-teal-500/10 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-xs font-semibold text-teal-700">
-                Активне тренування
-              </div>
-              <div className="mt-1 text-sm text-text">
-                <span className="font-bold">{activeDuration ?? "00:00"}</span>
-                {" · "}
-                {(activeWorkout?.items || []).length} вправ
-              </div>
-            </div>
-            <Button className="h-11 px-4" onClick={onOpenSession}>
-              Відкрити →
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-xl border border-border bg-surface p-4 text-center">
-          <div className="text-sm font-semibold text-text">
-            Немає активного тренування
-          </div>
-          <div className="text-xs text-subtle mt-1">
-            Почни нове, обери шаблон або внеси проведене заняття заднім числом.
-          </div>
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <Button
-              className="h-12 text-base sm:col-span-2"
-              onClick={handleStart}
-            >
-              ▶︎ Почати тренування
-            </Button>
-            <Button
-              variant="ghost"
-              className="h-12 text-base"
-              onClick={onOpenTemplates}
-            >
-              📋 Тренування за шаблоном →
-            </Button>
-            <Button
-              variant="ghost"
-              className="h-12 text-base"
-              onClick={onOpenRetro}
-            >
-              ✏️ Внести проведене заняття
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <div>
-        <div className="flex items-center justify-between px-1 mb-2">
-          <h2 className="text-sm font-semibold text-text/80">
-            Останні тренування
-          </h2>
-          {recentWorkouts.length > 0 ? (
-            <button
-              type="button"
-              className="text-xs font-semibold text-teal-700 hover:underline"
-              onClick={onOpenJournal}
-            >
-              Всі →
-            </button>
-          ) : null}
-        </div>
-        {recentWorkouts.length > 0 ? (
-          <ul className="space-y-2">
-            {recentWorkouts.map((w) => (
-              <li key={w.id}>
-                <button
-                  type="button"
-                  className="w-full text-left rounded-xl border border-border bg-surface-2 px-3 py-3 flex items-center justify-between hover:bg-surface-3"
-                  onClick={onOpenJournal}
-                >
-                  <RecentWorkoutSummary workout={w} />
-                  <span className="text-subtle">›</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="rounded-xl border border-border bg-surface-2 p-4 text-xs text-subtle">
-            Після першого завершеного тренування тут з&apos;являться останні
-            сесії.
-          </div>
-        )}
-      </div>
-
-      <div>
-        <h2 className="text-sm font-semibold text-text/80 px-1 mb-2">
-          Довідники
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <button
-            type="button"
-            className="rounded-xl border border-border bg-surface-2 p-4 text-left hover:bg-surface-3"
-            onClick={onOpenCatalog}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">📚</span>
-              <div className="flex-1">
-                <div className="text-sm font-semibold text-text">
-                  Каталог вправ
-                </div>
-                <div className="text-xs text-subtle mt-0.5">
-                  Пошук · групи м&apos;язів · своя вправа
-                </div>
-              </div>
-              <span className="text-subtle">›</span>
-            </div>
-          </button>
-          <button
-            type="button"
-            className="rounded-xl border border-border bg-surface-2 p-4 text-left hover:bg-surface-3"
-            onClick={onOpenTemplates}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">📋</span>
-              <div className="flex-1">
-                <div className="text-sm font-semibold text-text">Шаблони</div>
-                <div className="text-xs text-subtle mt-0.5">
-                  Збережені набори вправ на швидкий старт
-                </div>
-              </div>
-              <span className="text-subtle">›</span>
-            </div>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface RecentWorkoutSummaryProps {
-  workout: {
-    id: string;
-    startedAt: string;
-    endedAt?: string | null;
-    items?: ReadonlyArray<unknown>;
-  };
-}
-
-function RecentWorkoutSummary({ workout }: RecentWorkoutSummaryProps) {
-  const summary = useMemo(
-    () => computeWorkoutSummary(workout as never),
-    [workout],
-  );
-  const started = new Date(workout.startedAt);
-  const dateLabel = started.toLocaleDateString("uk-UA", {
-    day: "numeric",
-    month: "short",
-  });
-  const parts: string[] = [];
-  if (summary.itemCount > 0) parts.push(`${summary.itemCount} вправ`);
-  if (summary.setCount > 0) parts.push(`${summary.setCount} сетів`);
-  const durMin = summary.durationSec
-    ? Math.max(1, Math.round(summary.durationSec / 60))
-    : null;
-  if (durMin !== null) parts.push(`${durMin} хв`);
-  const subtitle = parts.length ? parts.join(" · ") : "порожнє тренування";
-
-  return (
-    <div className="flex-1 pr-2">
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-text">{dateLabel}</span>
-        {!summary.isFinished ? (
-          <span className="text-[10px] uppercase font-bold text-amber-700 bg-amber-500/15 px-2 py-0.5 rounded-full">
-            Чернетка
-          </span>
-        ) : null}
-      </div>
-      <div className="text-xs text-subtle mt-0.5 truncate">{subtitle}</div>
-    </div>
+    </PullToRefresh>
   );
 }

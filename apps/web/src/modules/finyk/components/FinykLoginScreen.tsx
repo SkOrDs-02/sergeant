@@ -8,9 +8,6 @@ export interface FinykLoginScreenProps {
   onTokenInputChange: (value: string) => void;
   showToken: boolean;
   onToggleShowToken: () => void;
-  rememberToken: boolean;
-  onRememberTokenChange: (value: boolean) => void;
-  webhookEnabled: boolean;
   authError: string | null;
   error: string | null;
   connecting: boolean;
@@ -24,18 +21,17 @@ export interface FinykLoginScreenProps {
  * Login screen for Finyk module.
  *
  * Shown when the user has neither a Monobank token (`!clientInfo`) nor a
- * "manual only" bypass set. Lets the user paste a Mono API token, opt to
- * remember it on this device (when webhook flag is off), or proceed without
- * a bank connection (manual expenses only).
+ * "manual only" bypass set. Lets the user paste a Mono API token or proceed
+ * without a bank connection (manual expenses only). The token is sent
+ * server-side via the Monobank webhook flow — there is no longer a
+ * "remember on this device" checkbox because tokens are never persisted in
+ * the browser after the legacy polling cleanup.
  */
 export function FinykLoginScreen({
   tokenInput,
   onTokenInputChange,
   showToken,
   onToggleShowToken,
-  rememberToken,
-  onRememberTokenChange,
-  webhookEnabled,
   authError,
   error,
   connecting,
@@ -53,7 +49,7 @@ export function FinykLoginScreen({
               "w-20 h-20 mx-auto rounded-3xl flex items-center justify-center mb-4",
               "bg-gradient-to-br from-brand-100 to-brand-200",
               "dark:from-brand-900/40 dark:to-brand-800/30",
-              "border border-brand-200/60 dark:border-brand-700/30",
+              "border border-brand-soft-border/60",
               "shadow-card",
             )}
           >
@@ -66,7 +62,7 @@ export function FinykLoginScreen({
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-brand-600 dark:text-brand-400"
+              className="text-brand-strong dark:text-brand"
               aria-hidden
             >
               <rect x="3" y="8" width="18" height="12" rx="2" />
@@ -180,23 +176,9 @@ export function FinykLoginScreen({
             </Button>
           </div>
 
-          {webhookEnabled ? (
-            <p className="text-xs text-subtle mt-2">
-              Токен відправляється на сервер і не зберігається у браузері.
-            </p>
-          ) : (
-            <label className="flex items-center gap-2.5 mt-3 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                className="w-4 h-4 rounded accent-emerald-600 cursor-pointer"
-                checked={rememberToken}
-                onChange={(e) => onRememberTokenChange(e.target.checked)}
-              />
-              <span className="text-sm text-muted">
-                Запам{"'"}ятати токен на цьому пристрої
-              </span>
-            </label>
-          )}
+          <p className="text-xs text-subtle mt-2">
+            Токен відправляється на сервер і не зберігається у браузері.
+          </p>
 
           {authError && (
             <div className="mt-3 text-sm bg-warning/15 border border-warning/40 rounded-xl px-3 py-2.5 space-y-1">
@@ -226,6 +208,24 @@ export function FinykLoginScreen({
               "transition-[background-color,box-shadow,opacity,transform] duration-200",
               "active:scale-[0.98]",
             )}
+            onClick={onConnect}
+            disabled={connecting || !tokenInput.trim()}
+          >
+            {connecting ? "Підключення…" : "Підключити Monobank"}
+          </Button>
+
+          {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
+              "або" divider row — structurally a delimiter
+              between two bg-line spans, not a heading. */}
+          <div className="my-4 flex items-center gap-3 text-xs text-muted uppercase tracking-wider">
+            <span className="flex-1 h-px bg-line" />
+            або
+            <span className="flex-1 h-px bg-line" />
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full min-h-[48px]"
             onClick={onContinueWithoutBank}
           >
             Почати без банку
@@ -234,24 +234,6 @@ export function FinykLoginScreen({
             Ручні витрати, бюджети та аналітика — без API-токена. Monobank можна
             підключити пізніше.
           </p>
-
-          {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-              "або через API" divider row — structurally a delimiter
-              between two bg-line spans, not a heading. */}
-          <div className="my-4 flex items-center gap-3 text-xs text-muted uppercase tracking-wider">
-            <span className="flex-1 h-px bg-line" />
-            або через API
-            <span className="flex-1 h-px bg-line" />
-          </div>
-          <Button
-            type="button"
-            variant="secondary"
-            className="w-full min-h-[48px]"
-            onClick={onConnect}
-            disabled={connecting || !tokenInput.trim()}
-          >
-            {connecting ? "Підключення…" : "Підключити Monobank"}
-          </Button>
           {typeof onBackToHub === "function" && (
             <Button
               type="button"

@@ -165,10 +165,19 @@ const ALLOWED_LICENSES = new Set([
   // BSD-3-Clause half, so the dep is MIT-compatible for our purposes.
   "(BSD-2-Clause OR MIT OR Apache-2.0)", // triple-dual (rc); all halves
   // are already allowed individually.
+  "(MPL-2.0 OR Apache-2.0)", // dual (dompurify, transitively via
+  // posthog-js → @rrweb/*); both halves are already allowed individually.
+  "(MIT OR WTFPL)", // dual (expand-template, transitively via
+  // prebuild-install → better-sqlite3 → drizzle-orm@0.45 peer-chain).
+  // MIT is already in the allowlist; WTFPL is a permissive
+  // public-domain-equivalent so the dual is strictly weaker than MIT
+  // alone.
   "Python-2.0", // permissive PSF licence (argparse); MIT-compatible.
   "CC-BY-4.0", // attribution-only (caniuse-lite data file, used by
   // browserslist). Attribution requirement is satisfied by listing the
   // package in THIRD_PARTY_LICENSES.md, which is this file.
+  "OFL-1.1", // SIL Open Font License (fontsource self-hosted fonts);
+  // permissive, attribution-only for font redistribution.
 ]);
 
 function isDev(name) {

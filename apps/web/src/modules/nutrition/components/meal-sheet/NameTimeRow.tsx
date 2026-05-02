@@ -61,6 +61,7 @@ export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
               onResult={handleVoiceMeal}
               onError={(e) => setForm((s) => ({ ...s, err: e }))}
               label="Голосовий ввід страви"
+              promptHint="Прийом їжі: гречка 200 грам 180 ккал, овочевий салат 150 г 45 калорій, омлет 250 грам 30 г білка."
             />
           </SectionHeading>
           <Input

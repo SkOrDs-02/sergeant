@@ -14,14 +14,19 @@
  *   (already wired via `@better-auth/expo`). MMKV on iOS/Android stores
  *   data in app-private sandbox, but we do not treat it as a secure
  *   enclave; always prefer Keychain/Keystore for credentials.
- * - **No encryption (for now).** We pass no `encryptionKey`. Deriving
- *   a compile-time-safe key without shipping it in the JS bundle would
- *   require either a native module pull (Keychain → MMKV) or a fixed
- *   obfuscated string which adds no real security. Revisit once we
- *   decide we actually need at-rest encryption for module JSON blobs.
- *   TODO(security): if we ever persist anything sensitive here, derive
- *   an encryption key from `expo-secure-store` on first launch and pass
- *   it to the MMKV constructor.
+ * - **At-rest encryption (post-bootstrap).** The module is loaded with a
+ *   plaintext MMKV instance (`id: "sergeant.mobile.v1"`) so that helpers
+ *   keep working synchronously during the JS bundle's eval phase, but
+ *   `bootstrapEncryptedStorage()` (see `./storageEncryption`) swaps the
+ *   active instance to an encrypted one (`id: "sergeant.mobile.v1.enc"`)
+ *   on app startup. The encryption key is a 32-byte random secret
+ *   stored in `expo-secure-store` (Keychain on iOS, Keystore on Android),
+ *   so it never lives in the JS bundle. The bootstrap also migrates any
+ *   data left in the legacy plaintext store on first run after the
+ *   upgrade. The React tree must not mount until bootstrap completes;
+ *   `app/_layout.tsx` gates rendering behind a `ready` flag for that.
+ *   Auth tokens still live in `expo-secure-store` directly — MMKV is
+ *   for non-credential JSON blobs only.
  * - **No key prefixing.** Keys are passed through verbatim, matching the
  *   web adapter's behaviour so existing storage-key constants (e.g.
  *   `apps/web/src/shared/lib/storageKeys.ts`) port unchanged.
@@ -36,20 +41,44 @@ import { MMKV } from "react-native-mmkv";
  * Shared MMKV instance for the whole mobile app. The `id` is versioned
  * so we can cut a clean break in the future without colliding with old
  * data on upgraded installs.
+ *
+ * This module-scoped binding is intentionally `let`: at boot we open a
+ * plaintext instance synchronously so helpers work during the bundle's
+ * eval phase, then `bootstrapEncryptedStorage()` swaps it for an
+ * encrypted instance once the SecureStore-derived key is available.
+ * After the swap, every helper in this file reads/writes through the
+ * encrypted instance because each call dereferences `activeMmkv` at
+ * call time.
  */
-const mmkv = new MMKV({ id: "sergeant.mobile.v1" });
+let activeMmkv: MMKV = new MMKV({ id: "sergeant.mobile.v1" });
 
 /**
  * Exposed for tests and rare debug scenarios. Do not reach for this in
  * product code — use the named helpers or `createModuleStorage` instead.
+ * After `bootstrapEncryptedStorage()` runs this returns the encrypted
+ * instance.
  */
 export function _getMMKVInstance(): MMKV {
-  return mmkv;
+  return activeMmkv;
+}
+
+/**
+ * Swap the active MMKV instance. Internal — only `storageEncryption`
+ * should call this, after a successful encryption-key bootstrap and
+ * data migration. After the swap, every subsequent call to a helper in
+ * this module (or anything that reads through `_getMMKVInstance`) reads
+ * from the new instance. Live `addOnValueChangedListener` subscriptions
+ * registered against the previous instance keep firing on writes to it,
+ * so callers must register listeners *after* bootstrap (which the
+ * provider gating in `app/_layout.tsx` enforces).
+ */
+export function _setMMKVInstance(next: MMKV): void {
+  activeMmkv = next;
 }
 
 function readString(key: string): string | null {
   try {
-    const v = mmkv.getString(key);
+    const v = activeMmkv.getString(key);
     return v === undefined ? null : v;
   } catch {
     return null;
@@ -58,7 +87,7 @@ function readString(key: string): string | null {
 
 function writeString(key: string, value: string): boolean {
   try {
-    mmkv.set(key, value);
+    activeMmkv.set(key, value);
     return true;
   } catch {
     return false;
@@ -67,7 +96,7 @@ function writeString(key: string, value: string): boolean {
 
 function deleteKey(key: string): boolean {
   try {
-    mmkv.delete(key);
+    activeMmkv.delete(key);
     return true;
   } catch {
     return false;
@@ -191,7 +220,7 @@ export function useLocalStorage<T>(
   }, [key]);
 
   useEffect(() => {
-    const sub = mmkv.addOnValueChangedListener((changedKey) => {
+    const sub = activeMmkv.addOnValueChangedListener((changedKey) => {
       if (changedKey !== key) return;
       if (selfWriteRef.current) return;
       setValue(
@@ -312,7 +341,7 @@ export function createModuleStorage({
     const serialized = safeStringify(value, reportError);
     if (serialized === undefined) return false;
     try {
-      mmkv.set(k, serialized);
+      activeMmkv.set(k, serialized);
       lastWrittenCache.set(k, serialized);
       return true;
     } catch (error) {
@@ -330,7 +359,7 @@ export function createModuleStorage({
   function writeRaw(key: string, value: unknown): boolean {
     const k = String(key);
     try {
-      mmkv.set(k, String(value ?? ""));
+      activeMmkv.set(k, String(value ?? ""));
       return true;
     } catch (error) {
       reportError(`writeRaw("${k}")`, error);
@@ -350,7 +379,7 @@ export function createModuleStorage({
     pendingValues.delete(k);
     lastWrittenCache.delete(k);
     try {
-      mmkv.delete(k);
+      activeMmkv.delete(k);
       return true;
     } catch (error) {
       reportError(`remove("${k}")`, error);

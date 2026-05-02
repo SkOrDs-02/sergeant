@@ -143,16 +143,3 @@ export async function getFcmAccessToken(): Promise<string | null> {
 export function fcmProjectId(): string | null {
   return getFcmConfig()?.projectId ?? null;
 }
-
-/** Test-only reset. НЕ використовуй у прод-коді. */
-export function __resetFcmClient(): void {
-  cachedConfig = undefined;
-  cachedJwt = null;
-  cachedToken = null;
-  warnedDisabled = false;
-}
-
-/** Test-only: вставити access-token напряму, щоб обійти мережевий OAuth. */
-export function __setFcmAccessTokenForTest(token: FcmAccessToken | null): void {
-  cachedToken = token;
-}

@@ -1,0 +1,105 @@
+name: Container image scan (Trivy)
+
+# Сканує зібраний Docker-образ Hub API (`Dockerfile.api`) на CVE через
+# Trivy. Це OS+бібліотечний шар поверх існуючого `pnpm audit` / OSV-Scanner
+# / Snyk pipeline (див. `.github/workflows/nightly-audit.yml`) — там
+# скануються лише lockfile-залежності, тут — реальний runtime-image
+# (alpine layers, transitive npm у рантайм-вузлі тощо).
+
+on:
+  pull_request:
+    paths:
+      - "Dockerfile.api"
+      - ".dockerignore"
+      - "pnpm-lock.yaml"
+      - "apps/server/**"
+      - "packages/shared/**"
+      - "packages/config/**"
+      - "packages/finyk-domain/**"
+      - "patches/**"
+      - ".github/workflows/container-scan.yml"
+  push:
+    branches: [main]
+  schedule:
+    # Daily 04:00 UTC — через годину після nightly-audit, щоб не шарити
+    # runner pool у пік (03:00 UTC).
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: container-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  trivy-image:
+    name: Trivy image scan (Dockerfile.api)
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # docker/setup-buildx-action v4.0.0 (SHA-pinned)
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd
+
+      # docker/build-push-action v7.1.0 (SHA-pinned)
+      - name: Build hub-api image (load into local Docker, no push)
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f
+        with:
+          context: .
+          file: Dockerfile.api
+          load: true
+          push: false
+          tags: hub-api:scan
+          cache-from: type=gha,scope=container-scan
+          cache-to: type=gha,mode=max,scope=container-scan
+
+      # aquasecurity/trivy-action v0.36.0 (SHA-pinned)
+      # Один прогін генерує SARIF (для code-scanning + артефакту) і
+      # одночасно фейлить job на CRITICAL/HIGH через `exit-code: 1`.
+      # `ignore-unfixed: true` — типовий шум від CVE без патчу не
+      # блокує merge; такі випадки лишаються в SARIF-trend і
+      # розглядаються в nightly-audit triage.
+      - name: Trivy image scan (SARIF + fail on CRITICAL/HIGH)
+        id: trivy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: hub-api:scan
+          format: sarif
+          output: trivy-image.sarif
+          severity: "CRITICAL,HIGH"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          exit-code: "1"
+
+      - name: Upload SARIF to code-scanning
+        if: ${{ !cancelled() }}
+        # github/codeql-action/upload-sarif v4.35.2 (SHA-pinned)
+        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225
+        with:
+          sarif_file: trivy-image.sarif
+          category: trivy-image
+
+      - name: Upload SARIF artifact
+        if: ${{ !cancelled() }}
+        # actions/upload-artifact v4.4.3 (SHA-pinned)
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: trivy-image-sarif
+          path: trivy-image.sarif
+          retention-days: 30
+
+      - name: Summary
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo "### Trivy image scan summary"
+            echo
+            echo "- Image: \`hub-api:scan\` (built from \`Dockerfile.api\`)"
+            echo "- Severity gate: CRITICAL, HIGH (ignore-unfixed = true)"
+            echo "- SARIF artifact: \`trivy-image-sarif\`"
+            echo "- Code Scanning category: \`trivy-image\`"
+          } >> "$GITHUB_STEP_SUMMARY"

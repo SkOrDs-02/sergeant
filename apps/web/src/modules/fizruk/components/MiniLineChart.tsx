@@ -1,5 +1,8 @@
 import { EmptyState } from "@shared/components/ui/EmptyState";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Point = any;
+
 /** SVG line chart for measurement trends (weight, body fat %). */
 export function MiniLineChart({ data, unit, color, metricLabel = "показник" }) {
   const valid = (data || []).filter(
@@ -53,8 +56,8 @@ export function MiniLineChart({ data, unit, color, metricLabel = "показни
   });
 
   // Build line path segments (skip nulls, start new M for each gap)
-  const lineSegments = [];
-  let segment = [];
+  const lineSegments: Point[][] = [];
+  let segment: Point[] = [];
   for (const p of points) {
     if (p.y == null) {
       if (segment.length >= 2) lineSegments.push(segment);

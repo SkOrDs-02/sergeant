@@ -1,0 +1,200 @@
+{
+  "name": "08 — Weekly Financial Digest (Sun 20:00 Kyiv → Telegram)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 20 * * 0"
+            }
+          ]
+        }
+      },
+      "id": "cron-sunday",
+      "name": "Cron Sun 20:00 Kyiv",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  COALESCE(category_slug, 'без категорії') AS category,\n  ROUND(SUM(ABS(amount)) / 100.0, 2) AS total_uah,\n  COUNT(*) AS tx_count\nFROM mono_transaction\nWHERE amount < 0\n  AND time >= NOW() - INTERVAL '7 days'\nGROUP BY category_slug\nORDER BY total_uah DESC\nLIMIT 10",
+        "options": {}
+      },
+      "id": "query-spending",
+      "name": "Weekly spending by category",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [460, 300],
+      "credentials": {
+        "postgres": {
+          "id": "pwwVNTLBw43PJgey",
+          "name": "Sergeant Postgres (sergeant-db)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nif (!rows.length) {\n  return [{ json: { lines: '— немає витрат за останні 7 днів', total: '0.00', rowCount: 0, empty: true } }];\n}\nconst lines = rows.map(r =>\n  `  ${r.json.category}: ₴${r.json.total_uah} (${r.json.tx_count} tx)`\n).join('\\n');\nconst total = rows.reduce((s, r) => s + parseFloat(r.json.total_uah), 0);\nreturn [{ json: { lines, total: total.toFixed(2), rowCount: rows.length, empty: false } }];"
+      },
+      "id": "format-data",
+      "name": "Format spending data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 300, system: 'Ти фінансовий асистент. Отримай дані про витрати за тиждень і склади короткий, живий Telegram-дайджест українською. Використовуй emoji. Без зайвих слів — максимум 5-6 рядків.', messages: [{ role: 'user', content: `Витрати за тиждень:\n${$json.lines}\n\nЗагалом: ₴${$json.total}. Склади дайджест.` }] }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "ai-digest",
+      "name": "AI → format digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pr5jBxG3VFXSX5NB",
+          "name": "Anthropic (x-api-key)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Anthropic response. Fall back to raw spending lines if AI errors.\nconst body = $input.first()?.json ?? {};\nconst spending = $('Format spending data').first()?.json ?? {};\nconst aiText = body?.content?.[0]?.text;\nif (aiText) {\n  return [{ json: { text: aiText, errorMsg: '' } }];\n}\nconst errorMsg = body?.error?.message || body?.error?.type || body?.type || '';\nconst fallback = spending.empty\n  ? '— немає витрат за останні 7 днів'\n  : `Витрати за тиждень (₴${spending.total}):\\n${spending.lines}`;\nreturn [{ json: { text: fallback, errorMsg } }];"
+      },
+      "id": "parse-ai",
+      "name": "Parse AI response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "={{ $json.errorMsg ? `⚠️ *Тижневий фінансовий дайджест — fallback*\n\n_AI недоступний:_ \\`${$json.errorMsg}\\`\n\n${$json.text}\n\n_Sergeant · ${new Date().toLocaleDateString('uk-UA')}_` : `📊 *Тижневий фінансовий дайджест*\n\n${$json.text}\n\n_Sergeant · ${new Date().toLocaleDateString('uk-UA')}_` }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-digest",
+      "name": "Telegram → digest",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1340, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cron Sun 20:00 Kyiv": {
+      "main": [
+        [
+          {
+            "node": "Weekly spending by category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly spending by category": {
+      "main": [
+        [
+          {
+            "node": "Format spending data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format spending data": {
+      "main": [
+        [
+          {
+            "node": "AI → format digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI → format digest": {
+      "main": [
+        [
+          {
+            "node": "Parse AI response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI response": {
+      "main": [
+        [
+          {
+            "node": "Telegram → digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
+  },
+  "tags": [
+    {
+      "name": "sergeant"
+    },
+    {
+      "name": "finyk"
+    },
+    {
+      "name": "ai"
+    },
+    {
+      "name": "digest"
+    }
+  ],
+  "active": false
+}

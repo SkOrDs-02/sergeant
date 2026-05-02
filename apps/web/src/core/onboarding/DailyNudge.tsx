@@ -4,33 +4,12 @@ import { Button } from "@shared/components/ui/Button";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import {
   dismissNudge,
+  snoozeNudge,
   type NudgeDefinition,
-  type KVStore,
 } from "@sergeant/shared";
+import { webKVStore } from "@shared/lib/storage";
 
-const localStorageStore: KVStore = {
-  getString: (k) => {
-    try {
-      return localStorage.getItem(k);
-    } catch {
-      return null;
-    }
-  },
-  setString: (k, v) => {
-    try {
-      localStorage.setItem(k, v);
-    } catch {
-      /* noop */
-    }
-  },
-  remove: (k) => {
-    try {
-      localStorage.removeItem(k);
-    } catch {
-      /* noop */
-    }
-  },
-};
+const SNOOZE_DAYS = 7;
 
 export function DailyNudge({
   nudge,
@@ -51,7 +30,7 @@ export function DailyNudge({
   }, [nudge.id, sessionDays]);
 
   const handleDismiss = useCallback(() => {
-    dismissNudge(localStorageStore, nudge.id);
+    dismissNudge(webKVStore, nudge.id);
     trackEvent(ANALYTICS_EVENTS.DAILY_NUDGE_DISMISSED, {
       day: sessionDays,
       nudgeId: nudge.id,
@@ -59,8 +38,18 @@ export function DailyNudge({
     onDismiss();
   }, [nudge.id, sessionDays, onDismiss]);
 
+  const handleSnooze = useCallback(() => {
+    snoozeNudge(webKVStore, nudge.id, SNOOZE_DAYS);
+    trackEvent(ANALYTICS_EVENTS.DAILY_NUDGE_DISMISSED, {
+      day: sessionDays,
+      nudgeId: nudge.id,
+      snoozeDays: SNOOZE_DAYS,
+    });
+    onDismiss();
+  }, [nudge.id, sessionDays, onDismiss]);
+
   const handleClick = useCallback(() => {
-    dismissNudge(localStorageStore, nudge.id);
+    dismissNudge(webKVStore, nudge.id);
     trackEvent(ANALYTICS_EVENTS.DAILY_NUDGE_CLICKED, {
       day: sessionDays,
       nudgeId: nudge.id,
@@ -75,12 +64,12 @@ export function DailyNudge({
       aria-label="Щоденна порада"
     >
       <div className="flex items-start gap-3">
-        <div className="shrink-0 w-9 h-9 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center">
+        <div className="shrink-0 w-9 h-9 rounded-xl bg-brand-500/10 text-brand-strong dark:text-brand flex items-center justify-center">
           <Icon name="sparkle" size={18} />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm text-text leading-relaxed">{nudge.message}</p>
-          <div className="flex items-center gap-2 mt-2.5">
+          <div className="flex flex-wrap items-center gap-2 mt-2.5">
             {onAction && (
               <Button variant="primary" size="xs" onClick={handleClick}>
                 Спробувати
@@ -89,17 +78,26 @@ export function DailyNudge({
             <button
               type="button"
               onClick={handleDismiss}
-              className="text-xs text-muted hover:text-text px-2 py-1 rounded-lg transition-colors"
+              className="text-xs text-muted hover:text-text px-2 py-1 rounded-xl transition-colors"
             >
               Зрозуміло
+            </button>
+            <button
+              type="button"
+              onClick={handleSnooze}
+              className="text-xs text-muted hover:text-text px-2 py-1 rounded-xl transition-colors inline-flex items-center gap-1"
+              aria-label={`Нагадати через ${SNOOZE_DAYS} днів`}
+            >
+              <Icon name="clock" size={12} aria-hidden />
+              Нагадай за тиждень
             </button>
           </div>
         </div>
         <button
           type="button"
-          onClick={handleDismiss}
-          className="shrink-0 -mt-1 -mr-1 w-6 h-6 rounded-md flex items-center justify-center text-muted hover:text-text transition-colors"
-          aria-label="Сховати"
+          onClick={handleSnooze}
+          className="shrink-0 -mt-1 -mr-1 w-6 h-6 rounded-xl flex items-center justify-center text-muted hover:text-text transition-colors"
+          aria-label={`Сховати на ${SNOOZE_DAYS} днів`}
         >
           <Icon name="x" size={14} />
         </button>

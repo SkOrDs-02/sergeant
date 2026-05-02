@@ -123,7 +123,7 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
   return (
     <ScrollView
       testID={testID}
-      className="flex-1 bg-cream-50"
+      className="flex-1 bg-bg dark:bg-bg"
       contentContainerStyle={{ padding: 16, gap: 12 }}
     >
       <Card testID="nutrition-today-card">

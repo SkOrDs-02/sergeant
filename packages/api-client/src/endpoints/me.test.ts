@@ -40,6 +40,7 @@ describe("createMeEndpoints", () => {
         name: "Тест",
         image: null,
         emailVerified: true,
+        createdAt: "2026-01-15T08:30:00.000Z",
       },
     });
 
@@ -54,6 +55,7 @@ describe("createMeEndpoints", () => {
         name: "Тест",
         image: null,
         emailVerified: true,
+        createdAt: "2026-01-15T08:30:00.000Z",
       },
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -80,6 +82,7 @@ describe("createMeEndpoints", () => {
         name: null,
         image: null,
         emailVerified: false,
+        createdAt: null,
       },
     });
     const me = createMeEndpoints(createHttpClient());
@@ -94,6 +97,7 @@ describe("createMeEndpoints", () => {
         name: null,
         image: null,
         emailVerified: false,
+        createdAt: null,
       },
     });
     const me = createMeEndpoints(createHttpClient());

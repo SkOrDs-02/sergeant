@@ -78,3 +78,42 @@ describe("errorHandler → Sentry.captureException", () => {
     expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 });
+
+describe("errorHandler → response body shape", () => {
+  it("дублює `error` як `message` для бібліотек на зразок better-fetch", () => {
+    // Better Auth client (better-fetch) читає `message` при
+    // десеріалізації не-2xx body. Якщо там тільки `error` — фронт ловить
+    // `undefined` і показує generic fallback. Цей тест замикає контракт:
+    // обидва поля присутні і збігаються.
+    const { req, res } = makeReqRes();
+    const err = new AppError("bad input", { status: 400, code: "BAD_INPUT" });
+    errorHandler(err, req, res, () => {});
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        error: "bad input",
+        message: "bad input",
+        code: "BAD_INPUT",
+      }),
+    );
+  });
+
+  it("для не-operational 500 повертає generic `Server error` у обидвох полях", () => {
+    // На programmer-помилки витікати `e.message` не можна — там можуть
+    // бути SQL-фрагменти, токени тощо. `message` має містити те саме
+    // безпечне рядкове значення, що й `error`.
+    const { req, res } = makeReqRes();
+    errorHandler(
+      new Error("connection terminated unexpectedly"),
+      req,
+      res,
+      () => {},
+    );
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        error: "Server error",
+        message: "Server error",
+        code: "INTERNAL",
+      }),
+    );
+  });
+});

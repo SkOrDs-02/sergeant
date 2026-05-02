@@ -1,0 +1,190 @@
+{
+  "name": "06 — Mono Webhook Enrichment (Mono → AI categorize → budget alert)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mono-transaction",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "mono-webhook",
+      "name": "Mono Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 100,\n  \"system\": \"You are a transaction categorizer for a Ukrainian personal finance app. Categorize the transaction into one of: groceries, transport, dining, entertainment, utilities, health, shopping, education, subscriptions, income, transfer, other. Respond with JSON only: {\\\"category\\\": \\\"...\\\", \\\"confidence\\\": 0.0-1.0}\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Transaction: {{ $('Mono Webhook').item.json.body.data.description }} Amount: {{ $('Mono Webhook').item.json.body.data.amount / 100 }} UAH MCC: {{ $('Mono Webhook').item.json.body.data.mcc }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "ai-categorize",
+      "name": "AI → categorize",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "pr5jBxG3VFXSX5NB",
+          "name": "Anthropic (x-api-key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Anthropic response. content[0].text is supposed to be raw JSON like\n// {\"category\":\"groceries\",\"confidence\":0.9}, but Claude often wraps it in a\n// markdown fence (```json ... ```) or in prose. Strip the fence and fall back to\n// the first {...} block before parsing.\nconst raw = $input.first().json?.content?.[0]?.text ?? '';\nfunction extractJson(s) {\n  const fenced = s.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/i);\n  if (fenced) return fenced[1].trim();\n  const obj = s.match(/\\{[\\s\\S]*\\}/);\n  return obj ? obj[0] : s;\n}\nlet parsed;\ntry {\n  parsed = JSON.parse(extractJson(raw));\n} catch (e) {\n  parsed = { category: 'other', confidence: 0 };\n}\nreturn [{ json: { category: parsed.category ?? 'other', confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0 } }];"
+      },
+      "id": "parse-ai",
+      "name": "Parse AI response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COALESCE(SUM(ABS(amount) / 100.0), 0)::numeric AS monthly_spent FROM mono_transaction WHERE user_id = '{{ $('Mono Webhook').item.json.body.user_id }}' AND time >= date_trunc('month', NOW()) AND amount < 0;",
+        "options": {}
+      },
+      "id": "check-budget",
+      "name": "Check monthly budget",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [900, 300],
+      "credentials": {
+        "postgres": {
+          "id": "pwwVNTLBw43PJgey",
+          "name": "Sergeant Postgres (sergeant-db)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "over-budget",
+              "leftValue": "={{ Number($json.monthly_spent) }}",
+              "rightValue": 15000,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        }
+      },
+      "id": "budget-threshold",
+      "name": "Over ₴15K threshold?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "=💸 *Budget alert*\n\nMonthly spending: ₴{{ Math.round($json.monthly_spent) }}\nThreshold: ₴15,000\n\nLatest: {{ $('Mono Webhook').item.json.body.data.description }} (₴{{ Math.abs($('Mono Webhook').item.json.body.data.amount / 100) }})\nAI category: *{{ $('Parse AI response').item.json.category }}* ({{ Math.round($('Parse AI response').item.json.confidence * 100) }}%)",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-budget",
+      "name": "Telegram → budget alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1340, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Mono Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI → categorize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI → categorize": {
+      "main": [
+        [
+          {
+            "node": "Parse AI response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI response": {
+      "main": [
+        [
+          {
+            "node": "Check monthly budget",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check monthly budget": {
+      "main": [
+        [
+          {
+            "node": "Over ₴15K threshold?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Over ₴15K threshold?": {
+      "main": [
+        [
+          {
+            "node": "Telegram → budget alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
+  },
+  "active": false,
+  "tags": []
+}

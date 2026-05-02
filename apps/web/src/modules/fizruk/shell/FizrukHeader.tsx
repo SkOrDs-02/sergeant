@@ -1,7 +1,7 @@
+import type * as React from "react";
 import {
   ModuleHeader,
   ModuleHeaderBackButton,
-  ModuleHeaderChevronButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/cn";
 import type { FizrukPage } from "./fizrukRoute";
@@ -20,7 +20,7 @@ export interface FizrukHeaderProps {
 function titleFor(page: FizrukPage): string {
   switch (page) {
     case "atlas":
-      return "Атлас";
+      return "Атлас тіла";
     case "exercise":
       return "Вправа";
     case "plan":
@@ -28,10 +28,65 @@ function titleFor(page: FizrukPage): string {
     case "programs":
       return "Програми";
     case "body":
-      return "Тіло";
+      return "Моє тіло";
+    case "progress":
+      return "Прогрес і заміри";
+    case "measurements":
+      return "Заміри тіла";
     default:
       return "ФІЗРУК";
   }
+}
+
+/** The nav item label the user came from — used for contextual back title. */
+function backLabelFor(page: FizrukPage): string {
+  switch (page) {
+    case "atlas":
+      return "Моє тіло";
+    case "exercise":
+      return "Тренування";
+    case "measurements":
+      return "Прогрес і заміри";
+    default:
+      return "ФІЗРУК";
+  }
+}
+
+/** Inline back button with contextual label ("← Моє тіло"). */
+function ContextualBackButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "-ml-1 flex items-center gap-1 rounded-xl px-2 py-2 min-h-[40px]",
+        "text-sm font-medium text-muted hover:text-text hover:bg-panelHi transition-colors",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50",
+      )}
+      aria-label={`Назад до ${label}`}
+    >
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
+      <span className="hidden sm:inline">{label}</span>
+    </button>
+  );
 }
 
 function subtitleFor(
@@ -59,8 +114,8 @@ function DumbbellBadge() {
         "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center",
         "bg-gradient-to-br from-teal-100 to-cyan-100",
         "dark:from-teal-900/40 dark:to-cyan-900/30",
-        "text-teal-600 dark:text-teal-400",
-        "border border-teal-200/60 dark:border-teal-700/30",
+        "text-fizruk-strong dark:text-fizruk",
+        "border border-fizruk-soft-border/60",
         "shadow-sm",
       )}
       aria-hidden
@@ -89,15 +144,21 @@ export function FizrukHeader({
 }: FizrukHeaderProps) {
   const isAtlas = page === "atlas";
   const isExercise = page === "exercise";
-  const showChevronBack = isAtlas || isExercise;
+  const isMeasurements = page === "measurements";
+  const showContextualBack = isAtlas || isExercise || isMeasurements;
 
   // Module-level settings drawer was dropped per user request — all
   // Fizruk settings (backup, reminders, data reset) now live in the
   // Hub-wide Settings screen. The header no longer owns a gear icon,
   // so the right slot is left empty.
-  let left = null;
-  if (showChevronBack) {
-    left = <ModuleHeaderChevronButton onClick={onBackToDashboard} />;
+  let left: React.ReactNode = null;
+  if (showContextualBack) {
+    left = (
+      <ContextualBackButton
+        label={backLabelFor(page)}
+        onClick={onBackToDashboard}
+      />
+    );
   } else if (typeof onBackToHub === "function") {
     left = <ModuleHeaderBackButton onClick={onBackToHub} />;
   } else {
@@ -106,10 +167,12 @@ export function FizrukHeader({
 
   return (
     <ModuleHeader
-      module={showChevronBack ? undefined : "fizruk"}
+      module={showContextualBack ? undefined : "fizruk"}
       left={left}
       title={titleFor(page)}
-      subtitle={showChevronBack ? undefined : subtitleFor(page, activeProgram)}
+      subtitle={
+        showContextualBack ? undefined : subtitleFor(page, activeProgram)
+      }
     />
   );
 }

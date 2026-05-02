@@ -7,6 +7,7 @@ import {
   anthropicMessages,
   extractAnthropicText,
 } from "../../lib/anthropic.js";
+import { formatPantryForPrompt } from "../../lib/pantryFormat.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -131,7 +132,6 @@ export default async function handler(
   const parsed = validateBody(DayPlanSchema, req, res);
   if (!parsed.ok) return;
   const { pantry: pantryIn, targets, regenerateMealType, locale } = parsed.data;
-  const arr = Array.isArray(pantryIn) ? pantryIn : [];
   const loc = String(locale || "uk-UA");
 
   const tgt = targets || {};
@@ -140,22 +140,12 @@ export default async function handler(
   const fat = tgt.fat_g != null ? Number(tgt.fat_g) : null;
   const carbs = tgt.carbs_g != null ? Number(tgt.carbs_g) : null;
 
-  const pantryStr =
-    arr.length > 0
-      ? arr
-          .map((x) => {
-            if (typeof x === "string") return x;
-            const name = x?.name ? String(x.name) : "";
-            const qty = x?.qty != null ? String(x.qty) : "";
-            const unit = x?.unit ? String(x.unit) : "";
-            return [name, qty && unit ? `${qty} ${unit}` : qty || unit]
-              .filter(Boolean)
-              .join(" — ");
-          })
-          .filter(Boolean)
-          .slice(0, 50)
-          .join("\n- ")
-      : "продукти не вказані";
+  const pantryStr = formatPantryForPrompt(pantryIn, {
+    itemFormat: "nameQuantity",
+    limit: 50,
+    joinWith: "\n- ",
+    fallbackWhenEmpty: "продукти не вказані",
+  });
 
   const targetsStr =
     kcal != null

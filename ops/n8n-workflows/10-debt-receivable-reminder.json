@@ -1,0 +1,202 @@
+{
+  "name": "10 — Debt/Receivable Reminder (10:00 Kyiv → push + Telegram)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-morning",
+      "name": "Cron 10:00 Kyiv",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  md.user_id,\n  debt_elem->>'name' AS debt_name,\n  debt_elem->>'dueDate' AS due_date,\n  'debt' AS kind\nFROM module_data md\nCROSS JOIN jsonb_array_elements(\n  COALESCE(md.data->'d', md.data->'manualDebts', '[]'::jsonb)\n) AS debt_elem\nWHERE md.module = 'finyk'\n  AND debt_elem->>'dueDate' IS NOT NULL\n  AND debt_elem->>'paid' IS DISTINCT FROM 'true'\n  AND (debt_elem->>'dueDate')::date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '3 days'\n  AND EXISTS (\n    SELECT 1 FROM push_subscriptions ps\n    WHERE ps.user_id = md.user_id AND ps.deleted_at IS NULL\n  )\nUNION ALL\nSELECT\n  md.user_id,\n  recv_elem->>'name' AS debt_name,\n  recv_elem->>'dueDate' AS due_date,\n  'receivable' AS kind\nFROM module_data md\nCROSS JOIN jsonb_array_elements(\n  COALESCE(md.data->'r', md.data->'receivables', '[]'::jsonb)\n) AS recv_elem\nWHERE md.module = 'finyk'\n  AND recv_elem->>'dueDate' IS NOT NULL\n  AND recv_elem->>'paid' IS DISTINCT FROM 'true'\n  AND (recv_elem->>'dueDate')::date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '3 days'\n  AND EXISTS (\n    SELECT 1 FROM push_subscriptions ps\n    WHERE ps.user_id = md.user_id AND ps.deleted_at IS NULL\n  )\nORDER BY due_date",
+        "options": {}
+      },
+      "id": "query-debts",
+      "name": "Query upcoming debts",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [460, 300],
+      "credentials": {
+        "postgres": {
+          "id": "pwwVNTLBw43PJgey",
+          "name": "Sergeant Postgres (sergeant-db)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "has-debts",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        }
+      },
+      "id": "has-items",
+      "name": "Has upcoming debts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PUBLIC_API_BASE_URL || 'https://api.invalid.local' }}/api/push/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Secret",
+              "value": "={{ $env.API_SECRET }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"userId\": \"{{ $json.user_id }}\",\n  \"title\": \"{{ $json.kind === 'debt' ? '💸 Борг' : '💰 Дебіторка' }}: {{ $json.debt_name }}\",\n  \"body\": \"Термін: {{ $json.due_date }} — відкрий Фінік для деталей\",\n  \"module\": \"finyk\",\n  \"tag\": \"debt-reminder\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "send-push",
+      "name": "POST /api/push/send",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 200],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst grouped = {};\nfor (const item of items) {\n  const { user_id, debt_name, due_date, kind } = item.json;\n  if (!grouped[user_id]) grouped[user_id] = [];\n  grouped[user_id].push({ debt_name, due_date, kind });\n}\nconst lines = Object.entries(grouped).map(([uid, debts]) =>\n  debts.map(d => `• ${d.kind === 'debt' ? '💸' : '💰'} *${d.debt_name}* — ${d.due_date} (user: ${uid.slice(0,8)}...)`).join('\\n')\n).join('\\n');\nreturn [{ json: { lines, count: items.length } }];"
+      },
+      "id": "format-telegram",
+      "name": "Format Telegram summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "=📅 *Нагадування по боргах*\n\n{{ $json.lines }}\n\n_{{ $json.count }} нагадувань надіслано_",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-notify",
+      "name": "Telegram → debt summary",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1120, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cron 10:00 Kyiv": {
+      "main": [
+        [
+          {
+            "node": "Query upcoming debts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query upcoming debts": {
+      "main": [
+        [
+          {
+            "node": "Has upcoming debts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has upcoming debts?": {
+      "main": [
+        [
+          {
+            "node": "POST /api/push/send",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "POST /api/push/send": {
+      "main": [
+        [
+          {
+            "node": "Format Telegram summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Telegram summary": {
+      "main": [
+        [
+          {
+            "node": "Telegram → debt summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
+  },
+  "tags": [
+    {
+      "name": "sergeant"
+    },
+    {
+      "name": "finyk"
+    },
+    {
+      "name": "push"
+    }
+  ],
+  "active": false
+}

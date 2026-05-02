@@ -124,34 +124,51 @@ jobs:
 
   snyk:
     name: Snyk dependency check (optional)
-    if: ${{ secrets.SNYK_TOKEN != '' }}
     runs-on: ubuntu-latest
+    # Контекст `secrets` заборонений у `jobs.<job_id>.if` — це робить весь
+    # workflow file invalid (дивно, але GitHub mark-ить його як failed на
+    # кожен push і **жодного разу не triggers schedule cron**). Тому job
+    # запускається безумовно, а кожен step гейт-ить через `env.SNYK_TOKEN`.
+    # Без секрета вся робота — `Skip if SNYK_TOKEN absent` (no-op step).
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
+      - name: Skip if SNYK_TOKEN absent
+        if: ${{ env.SNYK_TOKEN == '' }}
+        run: |
+          echo "SNYK_TOKEN is empty — skipping Snyk job (it is opt-in)."
+          echo "### Snyk skipped" >> "$GITHUB_STEP_SUMMARY"
+          echo "SNYK_TOKEN secret is not configured." >> "$GITHUB_STEP_SUMMARY"
+
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        if: ${{ env.SNYK_TOKEN != '' }}
 
       # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
       - uses: pnpm/action-setup@903f9c1a6ebcba6cf41d87230be49611ac97822e
+        if: ${{ env.SNYK_TOKEN != '' }}
 
       # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        if: ${{ env.SNYK_TOKEN != '' }}
         with:
           node-version: "20"
           cache: pnpm
 
       - name: Install
+        if: ${{ env.SNYK_TOKEN != '' }}
         run: pnpm install --frozen-lockfile
 
       - name: Install Snyk CLI
+        if: ${{ env.SNYK_TOKEN != '' }}
         run: npm install -g snyk
 
       - name: Run Snyk test
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        if: ${{ env.SNYK_TOKEN != '' }}
         run: snyk test --all-projects --severity-threshold=high --json-file-output=snyk-report.json || true
 
       - name: Upload Snyk report
-        if: ${{ !cancelled() }}
+        if: ${{ env.SNYK_TOKEN != '' && !cancelled() }}
         # actions/upload-artifact v4.4.3 (SHA-pinned)
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
@@ -161,7 +178,7 @@ jobs:
 
   notify-failure:
     name: Create/update issue on nightly audit failure
-    needs: [pnpm-audit-full, osv-scanner]
+    needs: [pnpm-audit-full, osv-scanner, snyk]
     if: ${{ failure() }}
     runs-on: ubuntu-latest
     permissions:

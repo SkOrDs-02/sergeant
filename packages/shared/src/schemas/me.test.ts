@@ -10,6 +10,7 @@ describe("UserSchema", () => {
         name: "Ім'я",
         image: null,
         emailVerified: true,
+        createdAt: "2026-01-15T08:30:00.000Z",
       }),
     ).toEqual({
       id: "u-1",
@@ -17,6 +18,7 @@ describe("UserSchema", () => {
       name: "Ім'я",
       image: null,
       emailVerified: true,
+      createdAt: "2026-01-15T08:30:00.000Z",
     });
   });
 
@@ -28,8 +30,9 @@ describe("UserSchema", () => {
         name: null,
         image: null,
         emailVerified: false,
+        createdAt: null,
       }),
-    ).toMatchObject({ email: null, name: null, image: null });
+    ).toMatchObject({ email: null, name: null, image: null, createdAt: null });
   });
 
   it.each(["", " ", "bad-email"])("падає на невалідному email %p", (email) => {
@@ -40,6 +43,7 @@ describe("UserSchema", () => {
         name: null,
         image: null,
         emailVerified: false,
+        createdAt: null,
       }),
     ).toThrow();
   });
@@ -52,6 +56,20 @@ describe("UserSchema", () => {
         name: null,
         image: null,
         emailVerified: false,
+        createdAt: null,
+      }),
+    ).toThrow();
+  });
+
+  it("падає на не-ISO createdAt", () => {
+    expect(() =>
+      UserSchema.parse({
+        id: "u-5",
+        email: null,
+        name: null,
+        image: null,
+        emailVerified: false,
+        createdAt: "yesterday",
       }),
     ).toThrow();
   });
@@ -70,8 +88,10 @@ describe("MeResponseSchema", () => {
         name: "A",
         image: "https://x.test/avatar.png",
         emailVerified: true,
+        createdAt: "2026-01-15T08:30:00.000Z",
       },
     });
     expect(parsed.user.id).toBe("u-4");
+    expect(parsed.user.createdAt).toBe("2026-01-15T08:30:00.000Z");
   });
 });

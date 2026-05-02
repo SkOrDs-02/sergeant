@@ -38,7 +38,9 @@ export function initObservability(): void {
   Sentry.init({
     dsn,
     enableAutoSessionTracking: true,
-    tracesSampleRate: 0,
+    // 5% of transactions — enough for p95/p99 latency visibility without
+    // significant overhead. Bump to 0.1 if mobile APM data is sparse in prod.
+    tracesSampleRate: __DEV__ ? 0 : 0.05,
     debug: __DEV__,
   });
   initialized = true;

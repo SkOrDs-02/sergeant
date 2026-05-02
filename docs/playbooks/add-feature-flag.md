@@ -1,5 +1,8 @@
 # Playbook: Add a Feature Flag
 
+> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Status:** Active
+
 **Trigger:** "Put feature X behind a flag" / any new experimental feature that should be toggleable without a redeploy.
 
 ---

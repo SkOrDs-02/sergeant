@@ -23,6 +23,7 @@ import {
   applyDeleteHabit,
   applyMarkAllScheduledHabitsComplete,
   applyMoveHabitInOrder,
+  applyRestoreHabit,
   applySetCompletionNote,
   applySetHabitArchived,
   applySetHabitOrder,
@@ -31,9 +32,11 @@ import {
   defaultRoutineState,
   ensureHabitOrder,
   normalizeRoutineState,
+  snapshotHabit as snapshotHabitPure,
   type CreateHabitOptions,
   type Habit,
   type HabitDraftPatch,
+  type HabitSnapshot,
   type RoutineState,
 } from "@sergeant/routine-domain";
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
@@ -75,6 +78,16 @@ export interface UseRoutineStoreReturn {
   setHabitArchived: (id: string, archived: boolean) => void;
   /** Остаточне видалення звички разом із completions / order / notes. */
   deleteHabit: (id: string) => void;
+  /**
+   * Повний знімок звички (сама звичка + completions + notes + позиція)
+   * для undo-toast. Повертає `null`, якщо звичка не знайдена.
+   */
+  snapshotHabit: (id: string) => HabitSnapshot | null;
+  /**
+   * Відновити звичку зі знімка, отриманого `snapshotHabit`. Ідемпотентно:
+   * якщо id вже існує — no-op.
+   */
+  restoreHabit: (snapshot: HabitSnapshot | null) => void;
   /** Перемістити звичку в списку на `delta` позицій (-1 = вгору). */
   moveHabitInOrder: (id: string, delta: number) => void;
   /**
@@ -186,6 +199,25 @@ export function useRoutineStore(): UseRoutineStoreReturn {
     });
   }, []);
 
+  // Тримаємо в state-getter-стилі: snapshotHabit читає поточний routine.
+  // Не реактивний (useCallback з deps на routine), але стабільний у межах
+  // одного рендеру. Це OK — snapshot треба зробити в момент видалення,
+  // _до_ виклику deleteHabit.
+  const snapshotHabit = useCallback(
+    (id: string): HabitSnapshot | null => snapshotHabitPure(routine, id),
+    [routine],
+  );
+
+  const restoreHabit = useCallback((snapshot: HabitSnapshot | null) => {
+    setRoutineState((prev) => {
+      const next = applyRestoreHabit(prev, snapshot);
+      if (next === prev) return prev;
+      saveRoutineState(next);
+      enqueueChange(ROUTINE_STORAGE_KEY);
+      return next;
+    });
+  }, []);
+
   const moveHabitInOrder = useCallback((id: string, delta: number) => {
     setRoutineState((prev) => {
       const next = applyMoveHabitInOrder(prev, id, delta);
@@ -217,6 +249,8 @@ export function useRoutineStore(): UseRoutineStoreReturn {
     updateHabit,
     setHabitArchived,
     deleteHabit,
+    snapshotHabit,
+    restoreHabit,
     moveHabitInOrder,
     setHabitOrder,
   };

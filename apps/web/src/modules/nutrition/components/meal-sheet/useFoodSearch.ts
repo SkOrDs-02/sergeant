@@ -25,7 +25,11 @@ async function fetchOpenFoodFacts(
   signal?: AbortSignal,
 ): Promise<FoodSearchProduct[]> {
   const data = await foodSearchApi.search(query, { signal });
-  return Array.isArray(data?.products) ? data.products : [];
+  // `FoodSearchResponse` is a discriminated union `{ products } | { error }`;
+  // narrow via property presence before indexing.
+  return "products" in data && Array.isArray(data.products)
+    ? data.products
+    : [];
 }
 
 // Debounce user input separately from the queries themselves. We don't want

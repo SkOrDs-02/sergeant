@@ -53,6 +53,10 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // Celebrations (Phase 2 — enriched feedback)
   CELEBRATION_SHOWN: "celebration_shown",
 
+  // Streak milestones (Phase 2 — engagement)
+  //   STREAK_MILESTONE_REACHED { days: number, type: "toast" | "modal" }
+  STREAK_MILESTONE_REACHED: "streak_milestone_reached",
+
   // Daily nudges (Phase 3 — retention)
   DAILY_NUDGE_SHOWN: "daily_nudge_shown",
   DAILY_NUDGE_CLICKED: "daily_nudge_clicked",
@@ -67,6 +71,78 @@ export const ANALYTICS_EVENTS = Object.freeze({
   HINT_CLICKED: "hint_clicked",
   HINT_DISMISSED: "hint_dismissed",
   HINT_COMPLETED: "hint_completed",
+
+  // HubChat — AI conversational assistant.
+  //
+  // Трекаємо факт взаємодії, НЕ текст повідомлень. Payload-контракти:
+  //
+  //   HUBCHAT_MESSAGE_SENT   { length: number, fromVoice: boolean,
+  //                            hasQuickAction?: boolean, module?: string }
+  //   HUBCHAT_TOOL_INVOKED   { tool: string, module: string,
+  //                            success: boolean, latency_ms: number }
+  //   HUBCHAT_ERROR          { kind: "http" | "parse" | "aborted" | "network"
+  //                                 | "unknown",
+  //                            status?: number }
+  //
+  // `tool` — канонічне ім'я ChatAction (напр. `add_expense`, `log_workout`).
+  // Body повідомлень / tool_input НЕ потрапляють у payload — лише counts
+  // + latency + провайдер/модуль, щоб дашборди працювали без експорту PII.
+  HUBCHAT_MESSAGE_SENT: "hubchat_message_sent",
+  HUBCHAT_TOOL_INVOKED: "hubchat_tool_invoked",
+  HUBCHAT_ERROR: "hubchat_error",
+
+  // CloudSync — local-first replication engine (`apps/web/src/core/cloudSync`).
+  //
+  //   SYNC_STARTED            { trigger?: "manual" | "auto" | "initial" }
+  //   SYNC_SUCCEEDED          { duration_ms: number, modules?: number }
+  //   SYNC_FAILED             { error_type: SyncError["type"],
+  //                             retryable: boolean, duration_ms?: number }
+  //   SYNC_CONFLICT_RESOLVED  { kind: "push" | "initial-merge",
+  //                             modules: number }
+  //
+  // `SYNC_CONFLICT_RESOLVED.modules` — кількість модулів, для яких LWW
+  // guard на бекенді повернув `conflict: true` (push) або локальні
+  // dirty-зміни переважили cloud-snapshot (initial-merge). Дозволяє
+  // алерт-ити spike-и conflict-ів без експорту body.
+  SYNC_STARTED: "sync_started",
+  SYNC_SUCCEEDED: "sync_succeeded",
+  SYNC_FAILED: "sync_failed",
+  SYNC_CONFLICT_RESOLVED: "sync_conflict_resolved",
+
+  // Subscription / billing — placeholders. Білінг поки не підключено;
+  // константи зафіксовані тут, щоб майбутні callsite-и не винаходили
+  // власні імена і дашборд-funnel-и у PostHog не розвалилися між
+  // першим і другим релізом білінгу. Коли IAP / Stripe-інтеграція
+  // оживе, payload-контракти очікуються такі:
+  //
+  //   SUBSCRIPTION_STARTED   { plan: "monthly" | "yearly",
+  //                            source: "paywall" | "deeplink" | "cta",
+  //                            price_cents: number, currency: string }
+  //   SUBSCRIPTION_CANCELED  { plan: string, reason?: "user" | "billing"
+  //                                                  | "expired" }
+  //   SUBSCRIPTION_RENEWED   { plan: string, period: number }
+  //
+  // Revenue-аналітика (MRR / ARR) рахується у PostHog через
+  // `$revenue` super-property на `SUBSCRIPTION_STARTED` /
+  // `SUBSCRIPTION_RENEWED` (task TBD коли буде білінг).
+  SUBSCRIPTION_STARTED: "subscription_started",
+  SUBSCRIPTION_CANCELED: "subscription_canceled",
+  SUBSCRIPTION_RENEWED: "subscription_renewed",
+
+  // Pricing / waitlist (Phase 0 monetization rails). Без активного білінгу:
+  // вимірюємо попит до того, як вкладатись у Stripe / Mono jar інтеграцію.
+  // Очікувані payload-контракти:
+  //
+  //   PRICING_VIEWED         { source?: "settings" | "paywall" | "direct" }
+  //   PRICING_CTA_CLICKED    { tier: "free" | "plus" | "pro",
+  //                            cta: "waitlist" | "primary" }
+  //   WAITLIST_SUBMITTED     { tier_interest: "free" | "plus" | "pro" | "unsure",
+  //                            source: "pricing_page" | "paywall" | "settings"
+  //                                   | "onboarding",
+  //                            created: boolean }
+  PRICING_VIEWED: "pricing_viewed",
+  PRICING_CTA_CLICKED: "pricing_cta_clicked",
+  WAITLIST_SUBMITTED: "waitlist_submitted",
 } as const);
 
 export type AnalyticsEventName =

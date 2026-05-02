@@ -25,6 +25,7 @@ const preset = {
     extend: {
       fontFamily: {
         sans: [
+          '"DM Sans Variable"',
           '"DM Sans"',
           "system-ui",
           "-apple-system",
@@ -32,6 +33,7 @@ const preset = {
           "sans-serif",
         ],
         display: [
+          '"DM Sans Variable"',
           '"DM Sans"',
           "system-ui",
           "-apple-system",
@@ -72,6 +74,20 @@ const preset = {
         accent: "rgb(var(--c-accent) / <alpha-value>)",
         ring: "rgb(var(--c-accent) / <alpha-value>)",
 
+        // Ambient module accent — picks up the current module's brand
+        // color from `--module-accent-rgb` published by
+        // `ModuleAccentProvider` / `ModuleShell`. Inside a module, use
+        // `bg-module-accent/10`, `text-module-accent`, `border-module-accent-strong`
+        // etc. — no hardcoded `bg-finyk` / `bg-fizruk` per surface.
+        // The `-strong` variant is the WCAG-AA companion for solid
+        // fills behind `text-white`. Outside the provider both vars
+        // are undefined and the utility falls back to `rgb()` with
+        // empty channels (effectively transparent); only use inside a
+        // module subtree. See docs/design/MODULE-ACCENT.md.
+        "module-accent": "rgb(var(--module-accent-rgb) / <alpha-value>)",
+        "module-accent-strong":
+          "rgb(var(--module-accent-strong-rgb) / <alpha-value>)",
+
         // ═══════════════════════════════════════════════════════════════════
         // BRAND COLORS — Soft & Organic palette with Emerald/Teal accent
         // ═══════════════════════════════════════════════════════════════════
@@ -110,6 +126,13 @@ const preset = {
         "warning-soft": "rgb(var(--c-warning-soft) / <alpha-value>)",
         "danger-soft": "rgb(var(--c-danger-soft) / <alpha-value>)",
         "info-soft": "rgb(var(--c-info-soft) / <alpha-value>)",
+        // Brand soft tint trio (Wave 1b). Theme-adaptive via `--c-brand-soft*`
+        // in `apps/web/src/index.css`. Call-sites that previously wrote
+        // `bg-brand-50 dark:bg-brand-500/15` collapse to a single
+        // `bg-brand-soft` (see docs/design/DARK-MODE-AUDIT.md).
+        "brand-soft": "rgb(var(--c-brand-soft) / <alpha-value>)",
+        "brand-soft-border": "rgb(var(--c-brand-soft-border) / <alpha-value>)",
+        "brand-soft-hover": "rgb(var(--c-brand-soft-hover) / <alpha-value>)",
         // WCAG-AA companions: `text-{c}-strong` on cream / soft surfaces,
         // `bg-{c}-strong text-white` on solid fills (Buttons, Badges, Tabs).
         "success-strong": brandColors.emerald[700], // #047857 — 5.23:1 on cream / 5.48:1 on white
@@ -135,7 +158,14 @@ const preset = {
           hover: brandColors.emerald[600],
           strong: brandColors.emerald[700],
           ring: brandColors.emerald[200],
-          soft: brandColors.emerald[50],
+          // `soft` / `soft-border` / `soft-hover` are now theme-adaptive
+          // via `--c-finyk-soft*` (Wave 1b). Light values mirror the
+          // legacy hex (`emerald[50]` / `[200]` / `[100]`); dark values
+          // flip to the `-900` / `-800` family so dark mode stops showing
+          // a bright pale fill on the warm-charcoal panel.
+          soft: "rgb(var(--c-finyk-soft) / <alpha-value>)",
+          "soft-border": "rgb(var(--c-finyk-soft-border) / <alpha-value>)",
+          "soft-hover": "rgb(var(--c-finyk-soft-hover) / <alpha-value>)",
         },
 
         /** Фізрук — Teal fitness tracker */
@@ -147,7 +177,17 @@ const preset = {
           hover: brandColors.teal[600],
           strong: brandColors.teal[700],
           ring: brandColors.teal[200],
-          soft: brandColors.teal[50],
+          // Theme-adaptive soft tint trio (Wave 1b).
+          soft: "rgb(var(--c-fizruk-soft) / <alpha-value>)",
+          "soft-border": "rgb(var(--c-fizruk-soft-border) / <alpha-value>)",
+          "soft-hover": "rgb(var(--c-fizruk-soft-hover) / <alpha-value>)",
+          // `tile` + `tile-border` — subtle stat-tile wash on the
+          // fizruk hero gradient (Wave 2a). Light=teal-800,
+          // dark=white. Apply with the registered opacity scale,
+          // typically `bg-fizruk-tile/10` and
+          // `border-fizruk-tile-border/15`.
+          tile: "rgb(var(--c-fizruk-tile) / <alpha-value>)",
+          "tile-border": "rgb(var(--c-fizruk-tile-border) / <alpha-value>)",
         },
 
         /** Рутина — Soft coral habit tracker */
@@ -167,6 +207,10 @@ const preset = {
           ring: brandColors.coral[300],
           done: brandColors.coral[700],
           nav: brandColors.coral[500],
+          // Theme-adaptive soft tint trio (Wave 1b).
+          soft: "rgb(var(--c-routine-soft) / <alpha-value>)",
+          "soft-border": "rgb(var(--c-routine-soft-border) / <alpha-value>)",
+          "soft-hover": "rgb(var(--c-routine-soft-hover) / <alpha-value>)",
         },
 
         /** Харчування — Fresh lime nutrition tracker */
@@ -178,7 +222,10 @@ const preset = {
           hover: brandColors.lime[600],
           strong: brandColors.lime[800],
           ring: brandColors.lime[200],
-          soft: brandColors.lime[50],
+          // Theme-adaptive soft tint trio (Wave 1b).
+          soft: "rgb(var(--c-nutrition-soft) / <alpha-value>)",
+          "soft-border": "rgb(var(--c-nutrition-soft-border) / <alpha-value>)",
+          "soft-hover": "rgb(var(--c-nutrition-soft-hover) / <alpha-value>)",
         },
 
         // ═══════════════════════════════════════════════════════════════════
@@ -215,6 +262,11 @@ const preset = {
           "rgb(var(--c-nutrition-surface-dark) / <alpha-value>)",
         "nutrition-border-dark":
           "rgb(var(--c-nutrition-border-dark) / <alpha-value>)",
+
+        // ─── Celebration / Gamification ──────────────────────────────────
+        celebration: "rgb(var(--c-celebration) / <alpha-value>)",
+        "streak-glow": "rgb(var(--c-streak-glow) / <alpha-value>)",
+        xp: "rgb(var(--c-xp) / <alpha-value>)",
       },
 
       // ═══════════════════════════════════════════════════════════════════
@@ -231,7 +283,30 @@ const preset = {
       },
 
       // ═══════════════════════════════════════════════════════════════════
-      // BORDER RADIUS — Soft, organic, friendly shapes
+      // BORDER RADIUS — 3 semantic tiers (see docs/design/RADIUS-RHYTHM.md)
+      //
+      //   CONTROL  (12 px, rounded-xl)   — buttons, inputs, badges, chips,
+      //                                    icon-buttons, segmented controls
+      //   CARD     (16 px, rounded-2xl)  — cards, panels, list items,
+      //                                    dropdowns, sticky banners
+      //   HERO     (24 px, rounded-3xl)  — modals, sheets, hero cards,
+      //                                    module bento tiles
+      //
+      //   PILL     (9999 px, rounded-full) — FAB, avatars, status dots, tags
+      //   SWATCH   (2 px, rounded-sm)      — heatmap cells, chart legend dots
+      //
+      // 4xl / 5xl exist for one-off illustration surfaces (onboarding
+      // hero blob); they are NOT part of the regular rhythm.
+      //
+      // Forbidden in new code:
+      //   `rounded-lg` (8 px)  — sits between CONTROL and CARD with no role
+      //   `rounded-md` (6 px)  — folded into CONTROL; reach for `rounded-xl`
+      //   `rounded` / `rounded-DEFAULT` (4 px) — no semantic slot at all
+      //
+      // Lint: see `eslint-plugin-sergeant-design`. The design-system audit
+      // sweeps remaining call sites incrementally — when touching a file
+      // you usually want `rounded-xl` for ≤ 40 px controls and `rounded-2xl`
+      // for surfaces ≥ 48 px tall.
       // ═══════════════════════════════════════════════════════════════════
       borderRadius: {
         "2xl": "16px",
@@ -259,6 +334,15 @@ const preset = {
           "0 2px 4px rgba(13, 23, 38, 0.06), 0 12px 32px rgba(13, 23, 38, 0.12)",
         // Inner shadows for depth
         inner: "inset 0 2px 4px rgba(0, 0, 0, 0.05)",
+        // Celebration glow — warm amber for achievement moments
+        "celebration-glow":
+          "0 0 24px rgba(251, 191, 36, 0.3), 0 0 8px rgba(251, 191, 36, 0.2)",
+        // Streak glow — pulsing coral for active streaks
+        "streak-glow":
+          "0 0 16px rgba(249, 112, 102, 0.25), 0 0 4px rgba(249, 112, 102, 0.15)",
+        // Enhanced focus ring
+        "focus-ring":
+          "0 0 0 var(--focus-ring-width, 3px) var(--focus-ring-color, rgba(16, 185, 129, 0.4))",
       },
 
       // ═══════════════════════════════════════════════════════════════════
@@ -325,8 +409,15 @@ const preset = {
       // ═══════════════════════════════════════════════════════════════════
       // TYPOGRAPHY — Readable, friendly, clear hierarchy
       // ═══════════════════════════════════════════════════════════════════
+      // ─── Type-size scale ────────────────────────────────────────────────
+      // Floor: `text-2xs` (10px). `text-3xs` (9px) was retired — it
+      // never met readable-body contrast and we had no auditable use
+      // case for sub-10px outside chart axis ticks. Use one of the
+      // semantic `.text-style-*` utilities (defined in `plugins`)
+      // whenever a slot has a documented role (hero, title, body,
+      // label, caption, overline) — fall back to the raw scale only
+      // for one-off measurements.
       fontSize: {
-        "3xs": ["9px", { lineHeight: "12px" }],
         "2xs": ["10px", { lineHeight: "14px" }],
         xs: ["12px", { lineHeight: "16px" }],
         sm: ["14px", { lineHeight: "20px" }],
@@ -356,6 +447,18 @@ const preset = {
       // ═══════════════════════════════════════════════════════════════════
       // ANIMATIONS — Smooth, delightful, Duolingo-inspired
       // ═══════════════════════════════════════════════════════════════════
+      //
+      // ANIMATION BUDGET — 3 tiers, max 2 concurrent on-screen:
+      //
+      //   AMBIENT   — background, looped: shimmer, pulse-soft, wiggle
+      //               → Always gated by motion-safe:, reduced to opacity-only in prefers-reduced-motion
+      //   RESPONSE  — user-initiated, one-shot: fade-in, slide-up, scale-in, press-scale, hover-lift
+      //               → 150–300ms, ease-out. Fires once per interaction.
+      //   CELEBRATE — milestone, rare: check-pop, bounce-in, success-pulse, confetti
+      //               → Only for: first entry, streak ≥7, weekly goal hit. NOT every checkbox.
+      //
+      // RULE: A screen should never run more than 1 AMBIENT + 1 RESPONSE simultaneously.
+      // Stagger animations count as 1 RESPONSE regardless of child count.
       animation: {
         // Entry animations
         "fade-in": "fadeIn 0.2s ease-out",
@@ -378,6 +481,15 @@ const preset = {
         // Stagger enter — children use animation-delay: ${index * 50}ms
         "stagger-in":
           "fadeSlideUp 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both",
+        // Celebration modal animations
+        "fade-out": "fadeOut 0.2s ease-out forwards",
+        "scale-out": "scaleOut 0.2s ease-out forwards",
+        "draw-check": "drawCheck 0.4s ease-out 0.2s forwards",
+        // iOS-style "edit mode" wiggle for sortable bento cards. Looped,
+        // very subtle (±0.6°) so it signals "I am draggable" without
+        // becoming an attention sink. `motion-safe:` variants in
+        // consumers handle the reduced-motion case.
+        wiggle: "wiggle 0.45s ease-in-out infinite",
       },
       keyframes: {
         fadeIn: {
@@ -430,6 +542,18 @@ const preset = {
           "0%": { strokeDashoffset: "100" },
           "100%": { strokeDashoffset: "var(--progress-offset, 0)" },
         },
+        fadeOut: {
+          "0%": { opacity: "1" },
+          "100%": { opacity: "0" },
+        },
+        scaleOut: {
+          "0%": { opacity: "1", transform: "scale(1)" },
+          "100%": { opacity: "0", transform: "scale(0.95)" },
+        },
+        drawCheck: {
+          "0%": { strokeDashoffset: "24" },
+          "100%": { strokeDashoffset: "0" },
+        },
         bounceIn: {
           "0%": { opacity: "0", transform: "scale(0.3)" },
           "50%": { transform: "scale(1.05)" },
@@ -439,6 +563,10 @@ const preset = {
         fadeSlideUp: {
           "0%": { opacity: "0", transform: "translateY(8px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        wiggle: {
+          "0%, 100%": { transform: "rotate(-0.6deg)" },
+          "50%": { transform: "rotate(0.6deg)" },
         },
       },
 
@@ -487,7 +615,107 @@ const preset = {
       },
     },
   },
-  plugins: [],
+  // ═══════════════════════════════════════════════════════════════════════
+  // PLUGINS
+  //   1. Semantic typography utilities (`.text-style-*`).
+  //   2. Touch-target floors (`.touch-target`, `.touch-target-48`).
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  // The `.text-style-*` utilities below are the canonical way to apply
+  // a typographic role. They bundle font-size, line-height, weight,
+  // letter-spacing, and casing into a single class so layouts can't
+  // drift on any one axis (e.g. shipping the hero size with the wrong
+  // weight). Prefer these over re-deriving the values from the raw
+  // `text-xs / text-sm / …` scale whenever a slot has a documented
+  // role:
+  //
+  //   .text-style-hero      — page H1s and hero stat numbers
+  //   .text-style-title     — section headings, card titles
+  //   .text-style-body      — main body copy
+  //   .text-style-label     — form labels, button text
+  //   .text-style-caption   — metadata, timestamps, helper text
+  //   .text-style-overline  — uppercase section kickers / eyebrows
+  //
+  // Minimum text size in the design system is 12px (`text-style-caption`);
+  // `text-2xs` (10px) is reserved for chart ticks and decorative
+  // metadata badges.
+  //
+  // The `.touch-target*` plugin enforces WCAG 2.5.5 / Apple HIG ≥44×44px
+  // on `(pointer: coarse)` — see the inline comment on the plugin for the
+  // opt-out / sibling utilities.
+  plugins: [
+    function semanticTypography({ addUtilities }) {
+      addUtilities({
+        ".text-style-hero": {
+          fontSize: "26px",
+          lineHeight: "32px",
+          fontWeight: "700",
+          letterSpacing: "-0.02em",
+        },
+        ".text-style-title": {
+          fontSize: "20px",
+          lineHeight: "28px",
+          fontWeight: "600",
+          letterSpacing: "-0.01em",
+        },
+        ".text-style-body": {
+          fontSize: "16px",
+          lineHeight: "24px",
+          fontWeight: "400",
+        },
+        ".text-style-label": {
+          fontSize: "14px",
+          lineHeight: "20px",
+          fontWeight: "500",
+        },
+        ".text-style-caption": {
+          fontSize: "12px",
+          lineHeight: "16px",
+          fontWeight: "400",
+        },
+        ".text-style-overline": {
+          fontSize: "12px",
+          lineHeight: "16px",
+          fontWeight: "600",
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+        },
+      });
+    },
+    // ═══════════════════════════════════════════════════════════════════════
+    // TOUCH TARGETS — WCAG 2.5.5 / Apple HIG ≥44×44px on coarse pointers
+    //
+    // `.touch-target`     — 44×44 floor on `(pointer: coarse)` (default).
+    // `.touch-target-48`  — 48×48 floor for primary nav / FAB-class targets.
+    //
+    // Both are no-ops on `(pointer: fine)` — desktop keeps its compact
+    // sizing. Use as a min sizing utility on interactive elements that
+    // are visually smaller than 44px on touch (icon buttons, chips,
+    // small toggles). The `Button` component already enforces the floor
+    // for `xs` / `sm` / `iconOnly`, so prefer `touch-target` only for
+    // bespoke interactive elements outside the `Button` shell.
+    //
+    // To intentionally render a smaller target (e.g. heatmap cells, dense
+    // data grids), opt out by setting `data-compact` on the element —
+    // see the safety-net rule in `apps/web/src/index.css`.
+    // ═══════════════════════════════════════════════════════════════════════
+    function touchTargets({ addUtilities }) {
+      addUtilities({
+        ".touch-target": {
+          "@media (pointer: coarse)": {
+            minHeight: "44px",
+            minWidth: "44px",
+          },
+        },
+        ".touch-target-48": {
+          "@media (pointer: coarse)": {
+            minHeight: "48px",
+            minWidth: "48px",
+          },
+        },
+      });
+    },
+  ],
 };
 
 export default preset;

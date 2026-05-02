@@ -58,6 +58,145 @@
 .hub-enter {
   animation: hub-slide-in 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
+
+/* ── Page Transition Animations (for PageTransition component) ───────── */
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-out-down {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@keyframes slide-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-out-up {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.24s ease-out both;
+}
+.animate-slide-out-left {
+  animation: slide-out-left 0.24s ease-out both;
+}
+.animate-slide-in-left {
+  animation: slide-in-left 0.24s ease-out both;
+}
+.animate-slide-out-right {
+  animation: slide-out-right 0.24s ease-out both;
+}
+.animate-slide-in-up {
+  animation: slide-in-up 0.24s ease-out both;
+}
+.animate-slide-out-down {
+  animation: slide-out-down 0.24s ease-out both;
+}
+.animate-slide-in-down {
+  animation: slide-in-down 0.24s ease-out both;
+}
+.animate-slide-out-up {
+  animation: slide-out-up 0.24s ease-out both;
+}
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out both;
+}
+.animate-fade-out {
+  animation: fade-out 0.2s ease-out both;
+}
 .animate-onboarding-enter {
   animation: onboarding-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
@@ -239,6 +378,192 @@
   }
 }
 
+.animate-shimmer {
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ── Skeleton stagger (for sequential skeleton appearance) ───────────── */
+
+@keyframes skeleton-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.skeleton-stagger > * {
+  opacity: 0;
+  animation: skeleton-fade-in 0.3s ease-out forwards;
+}
+.skeleton-stagger > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.skeleton-stagger > *:nth-child(2) {
+  animation-delay: 30ms;
+}
+.skeleton-stagger > *:nth-child(3) {
+  animation-delay: 60ms;
+}
+.skeleton-stagger > *:nth-child(4) {
+  animation-delay: 90ms;
+}
+.skeleton-stagger > *:nth-child(5) {
+  animation-delay: 120ms;
+}
+.skeleton-stagger > *:nth-child(6) {
+  animation-delay: 150ms;
+}
+.skeleton-stagger > *:nth-child(7) {
+  animation-delay: 180ms;
+}
+.skeleton-stagger > *:nth-child(8) {
+  animation-delay: 210ms;
+}
+
+/* ── Content reveal (skeleton to content transition) ─────────────────── */
+
+@keyframes content-reveal {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.animate-content-reveal {
+  animation: content-reveal 0.25s ease-out forwards;
+}
+
+/* ── Page exit animations ────────────────────────────────────────────── */
+
+@keyframes module-slide-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+}
+
+@keyframes hub-slide-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+@keyframes page-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.module-exit {
+  animation: module-slide-out 0.2s ease-in forwards;
+}
+
+.hub-exit {
+  animation: hub-slide-out 0.2s ease-in forwards;
+}
+
+.page-exit {
+  animation: page-exit 0.15s ease-in forwards;
+}
+
+/* ── Toast animations ────────────────────────────────────────────────── */
+
+@keyframes toast-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-exit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+}
+
+.animate-toast-enter {
+  animation: toast-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-toast-exit {
+  animation: toast-exit 0.2s ease-in forwards;
+}
+
+/* ── Streak milestone celebration ────────────────────────────────────── */
+
+@keyframes streak-milestone-burst {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(249, 112, 102, 0));
+  }
+  25% {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 12px rgba(249, 112, 102, 0.5));
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  75% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 20px rgba(249, 112, 102, 0.3));
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 8px rgba(249, 112, 102, 0.2));
+  }
+}
+
+.animate-streak-milestone {
+  animation: streak-milestone-burst 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)
+    forwards;
+}
+
+/* ── Pull to refresh ─────────────────────────────────────────────────── */
+
+@keyframes pull-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-pull-rotate {
+  animation: pull-rotate 0.8s linear infinite;
+}
+
 /* ── Number counter ticks ────────────────────────────────────────────── */
 
 @keyframes number-tick-up {
@@ -269,4 +594,304 @@
 
 .animate-tick-down {
   animation: number-tick-down 0.3s ease-out forwards;
+}
+
+/* ── Fade in/out ─────────────────────────────────────────────────────── */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
+
+.animate-fade-out {
+  animation: fade-out 0.15s ease-in forwards;
+}
+
+/* ── Scale in/out for modals ─────────────────────────────────────────── */
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-scale-out {
+  animation: scale-out 0.15s ease-in forwards;
+}
+
+/* ── Check mark pop ──────────────────────────────────────────────────── */
+
+@keyframes check-pop {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-check-pop {
+  animation: check-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ── Confetti fall (for extended confetti particles) ─────────────────── */
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-confetti-fall {
+  animation: confetti-fall 2.5s ease-in forwards;
+}
+
+/* ── Form error shake ────────────────────────────────────────────────── */
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-4px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* ── Chart entrance animations ───────────────────────────────────────── */
+
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.animate-bar-grow {
+  animation: bar-grow 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-origin: bottom;
+}
+
+@keyframes chart-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-chart-enter {
+  animation: chart-fade-in 0.3s ease-out both;
+}
+
+/* ── Number counter pulse ────────────────────────────────────────────── */
+
+@keyframes number-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-number-update {
+  animation: number-pulse 0.3s ease-out;
+}
+
+/* ── AnimatedCheckbox bounce ─────────────────────────────────────────── */
+
+@keyframes check-bounce {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.25);
+  }
+  50% {
+    transform: scale(0.92);
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-check-bounce {
+  animation: check-bounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ── Checkbox confetti burst (uses CSS custom properties) ────────────── */
+
+@keyframes confetti-particle-burst {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(
+        calc(-50% + var(--tx, 0px)),
+        calc(-50% + var(--ty, 0px))
+      )
+      scale(1);
+    opacity: 0;
+  }
+}
+
+.animate-confetti-burst {
+  animation: confetti-particle-burst 0.6s ease-out forwards;
+}
+
+/* ── FloatingActionButton item entry ─────────────────────────────────── */
+
+@keyframes fab-item-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fab-item {
+  animation: fab-item-enter 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ── Slide up (for spotlights, tooltips) ─────────────────────────────── */
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.25s ease-out forwards;
+}
+
+/* ── Welcome screen floating shapes ──────────────────────────────────── */
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-20px) scale(1.05);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+/* ── Slow fade in for backdrop elements ──────────────────────────────── */
+
+@keyframes fade-in-slow {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in-slow {
+  animation: fade-in-slow 0.8s ease-out forwards;
+}
+
+/* ── Card entry with scale ───────────────────────────────────────────── */
+
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-card-enter {
+  animation: card-enter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }

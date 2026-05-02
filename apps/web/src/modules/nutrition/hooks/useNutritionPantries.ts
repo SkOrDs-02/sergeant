@@ -24,6 +24,10 @@ import {
   parseLoosePantryText,
   type PantryItem,
 } from "../lib/pantryTextParser";
+import type {
+  PantryForm,
+  PantryFormMode,
+} from "../components/PantryManagerSheet";
 
 export interface UseNutritionPantriesParams {
   setBusy: Dispatch<SetStateAction<boolean>>;
@@ -64,7 +68,7 @@ export function useNutritionPantries({
 
   const [pantryManagerOpen, setPantryManagerOpen] = useState(false);
 
-  const [pantryForm, setPantryForm] = useState(() => ({
+  const [pantryForm, setPantryForm] = useState<PantryForm>(() => ({
     mode: "create",
     name: "",
     err: "",
@@ -194,7 +198,7 @@ export function useNutritionPantries({
     setConfirmDeleteOpen(true);
   };
 
-  const onSavePantryForm = (name: string, mode: "rename" | "create") => {
+  const onSavePantryForm = (name: string, mode: PantryFormMode) => {
     if (mode === "rename") {
       setPantries((cur) =>
         updatePantry(cur, activePantryId, (p) => ({ ...p, name })),

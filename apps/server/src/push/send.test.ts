@@ -83,8 +83,6 @@ vi.mock("./apnsClient.js", async () => {
 vi.mock("./fcmClient.js", () => ({
   getFcmAccessToken: getFcmAccessTokenMock,
   fcmProjectId: fcmProjectIdMock,
-  __resetFcmClient: vi.fn(),
-  __setFcmAccessTokenForTest: vi.fn(),
 }));
 
 // `@parse/node-apn` імпортується лише як namespace для `apn.Notification` —

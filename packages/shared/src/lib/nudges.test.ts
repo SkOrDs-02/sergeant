@@ -3,6 +3,7 @@ import { createMemoryKVStore } from "./kvStore";
 import {
   getActiveNudge,
   dismissNudge,
+  snoozeNudge,
   recordLastActiveDate,
   getDaysInactive,
   shouldShowReengagement,
@@ -65,6 +66,21 @@ describe("getActiveNudge", () => {
       modulesWithEntries: new Set(["routine"]),
     });
     expect(nudge === null || nudge.id !== "day2_routine").toBe(true);
+  });
+
+  it("skips snoozed nudges while the window is open, re-surfaces them later", () => {
+    const store = createMemoryKVStore();
+    const first = getActiveNudge(store, 3, { picks: ["finyk"] });
+    expect(first).not.toBeNull();
+    snoozeNudge(store, first!.id, 7);
+    const second = getActiveNudge(store, 3, { picks: ["finyk"] });
+    expect(second === null || second.id !== first!.id).toBe(true);
+    // Simulate the snooze window elapsing by writing an expired timestamp.
+    const expired = Date.now() - 1000;
+    const raw = JSON.stringify({ [first!.id]: expired });
+    store.setString("hub_nudge_snooze_v1", raw);
+    const third = getActiveNudge(store, 3, { picks: ["finyk"] });
+    expect(third?.id).toBe(first!.id);
   });
 });
 

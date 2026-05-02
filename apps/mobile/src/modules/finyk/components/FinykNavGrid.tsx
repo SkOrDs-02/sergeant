@@ -21,15 +21,18 @@ type NavEntry = (typeof FINYK_PAGES)[number];
 
 function NavCard({ entry }: { entry: NavEntry }) {
   const router = useRouter();
+  const IconComponent = entry.Icon;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${entry.label}. ${entry.description}`}
       testID={`finyk-nav-grid-${entry.id}`}
       onPress={() => router.push(entry.href as never)}
-      className="flex-1 min-w-[46%] rounded-2xl border border-cream-300 bg-cream-50 p-4 active:opacity-80"
+      className="flex-1 min-w-[46%] rounded-2xl border border-line bg-surface dark:bg-cream-800 p-4 active:opacity-80"
     >
-      <Text className="text-2xl mb-2">{entry.emoji}</Text>
+      <View className="w-10 h-10 rounded-xl bg-brand-100 dark:bg-brand-900/40 items-center justify-center mb-2">
+        <IconComponent size={22} color="#7c3aed" />
+      </View>
       <Text className="text-sm font-semibold text-fg">{entry.label}</Text>
       <Text className="text-xs text-fg-muted mt-1" numberOfLines={2}>
         {entry.description}

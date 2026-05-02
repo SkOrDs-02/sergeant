@@ -1,0 +1,169 @@
+{
+  "name": "05 — Renovate PR Auto-Handler (GitHub → auto-merge / Telegram)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "github-pr",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "github-webhook",
+      "name": "GitHub Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "is-renovate",
+              "leftValue": "={{ $json.body.pull_request.user.login }}",
+              "rightValue": "renovate[bot]",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "is-opened",
+              "leftValue": "={{ $json.body.action }}",
+              "rightValue": "opened",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "filter-renovate",
+      "name": "Renovate PR opened?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "is-patch",
+              "leftValue": "={{ $json.body.pull_request.title }}",
+              "rightValue": "fix(deps):",
+              "operator": {
+                "type": "string",
+                "operation": "startsWith"
+              }
+            }
+          ]
+        }
+      },
+      "id": "check-semver",
+      "name": "Is patch?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/Skords-01/Sergeant/pulls/{{ $json.body.pull_request.number }}/reviews",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.GITHUB_TOKEN }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"event\": \"APPROVE\", \"body\": \"Auto-approved patch update by n8n ops bot.\" }"
+      },
+      "id": "auto-approve",
+      "name": "Auto-approve patch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "=📦 *Renovate PR (non-patch)*\n\n[#{{ $json.body.pull_request.number }}]({{ $json.body.pull_request.html_url }}) — {{ $json.body.pull_request.title }}\n\nNeeds manual review.",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-review",
+      "name": "Telegram → review needed",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [900, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "GitHub Webhook": {
+      "main": [
+        [
+          {
+            "node": "Renovate PR opened?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Renovate PR opened?": {
+      "main": [
+        [
+          {
+            "node": "Is patch?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is patch?": {
+      "main": [
+        [
+          {
+            "node": "Auto-approve patch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram → review needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
+  },
+  "active": false,
+  "tags": []
+}

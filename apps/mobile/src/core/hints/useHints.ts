@@ -2,6 +2,9 @@ import { useEffect, useMemo, useRef } from "react";
 import {
   pickNextHint,
   recordHintShown,
+  getRetentionHintId,
+  canShowHint,
+  getFirstActionStartedAt,
   STORAGE_KEYS,
   type HintContext,
   type HintId,
@@ -49,10 +52,15 @@ export function useHints({
         "ftux_switch_modules",
         "ftux_open_chat",
         "ftux_reports_unlock",
+        "ftux_swipe_to_delete",
       ];
     }
     if (hasFirstRealEntry) {
-      return ["module_first_entry", "hub_reorder_modules"];
+      return [
+        "module_first_entry",
+        "hub_reorder_modules",
+        "ftux_swipe_to_delete",
+      ];
     }
     return [];
   }, [hasFirstRealEntry, inFtuxSession]);
@@ -60,8 +68,33 @@ export function useHints({
   useEffect(() => {
     if (!showHints) return;
     if (shownThisMount.current) return;
-    if (candidates.length === 0) return;
 
+    // ── Retention hints (Day 1 / 3 / 7) take priority
+    if (hasFirstRealEntry) {
+      const startedAt = getFirstActionStartedAt(store);
+      if (startedAt) {
+        const retentionId = getRetentionHintId(startedAt);
+        if (retentionId) {
+          const res = canShowHint(store, retentionId, ctx);
+          if (res.ok) {
+            shownThisMount.current = retentionId;
+            recordHintShown(store, retentionId);
+            const msg = {
+              retention_day_1:
+                "Перший день — вже здобуток! Поверніться завтра.",
+              retention_day_3: "3 дні поспіль — стрік почався!",
+              retention_day_7: "Тиждень — серйозна заявка! 7 днів поспіль.",
+            }[retentionId];
+            if (msg) {
+              toast.info(msg, 6000);
+              return;
+            }
+          }
+        }
+      }
+    }
+
+    if (candidates.length === 0) return;
     const next = pickNextHint(store, candidates, ctx);
     if (!next) return;
 
@@ -89,6 +122,8 @@ export function useHints({
           return "Після першого запису спробуй «Звіти» — там найшвидше видно прогрес.";
         case "hub_reorder_modules":
           return "Можна переставити модулі в Налаштуваннях → Загальні.";
+        case "ftux_swipe_to_delete":
+          return "Порада: потягни запис вліво, щоб видалити.";
         default:
           return null;
       }
@@ -96,5 +131,5 @@ export function useHints({
 
     if (!msg) return;
     toast.info(msg, 5000);
-  }, [candidates, ctx, showHints, store, toast]);
+  }, [candidates, ctx, hasFirstRealEntry, showHints, store, toast]);
 }

@@ -54,4 +54,31 @@ describe("AssetsNetworthCard", () => {
     const nonLucideBars = Array.from(bars).filter((el) => !el.closest("svg"));
     expect(nonLucideBars.length).toBe(0);
   });
+
+  it("colours networth red when negative", () => {
+    const { container } = render(
+      <AssetsNetworthCard
+        networth={-68499}
+        totalAssets={12555}
+        totalDebt={81054}
+        showBalance={true}
+      />,
+    );
+    const valueEl = container.querySelector(".text-danger-strong");
+    expect(valueEl).not.toBeNull();
+    expect(valueEl?.textContent).toContain("-68");
+  });
+
+  it("colours networth in finyk tone when non-negative", () => {
+    const { container } = render(
+      <AssetsNetworthCard
+        networth={12345}
+        totalAssets={15000}
+        totalDebt={2655}
+        showBalance={true}
+      />,
+    );
+    expect(container.querySelector(".text-finyk-strong")).not.toBeNull();
+    expect(container.querySelector(".text-danger-strong")).toBeNull();
+  });
 });

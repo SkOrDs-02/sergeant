@@ -17,6 +17,8 @@ export interface RequestContextStore {
   requestId: string | null;
   userId: string | null;
   module: string | null;
+  /** W3C-сумісний trace ID (32 hex chars). Встановлюється `traceMiddleware`. */
+  traceId: string | null;
 }
 
 export const als = new AsyncLocalStorage<RequestContextStore>();
@@ -30,6 +32,7 @@ export function withRequestContext(
     requestId: (req as Request & { requestId?: string }).requestId ?? null,
     userId: null,
     module: null,
+    traceId: null,
   };
   als.run(store, () => next());
 }
@@ -46,4 +49,9 @@ export function setUserId(userId: string | null): void {
 export function setRequestModule(mod: string | null): void {
   const store = als.getStore();
   if (store) store.module = mod;
+}
+
+export function setTraceId(traceId: string | null): void {
+  const store = als.getStore();
+  if (store) store.traceId = traceId;
 }

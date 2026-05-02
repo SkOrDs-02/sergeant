@@ -17,7 +17,7 @@ export default defineConfig({
         ...baseCoverageConfig.exclude,
         "src/test/**",
         "src/sw.ts",
-        "src/main.jsx",
+        "src/main.tsx",
       ],
       thresholds: {
         // Baseline (2026-04-25): lines 17.42 / branches 65.51 / fns 52.42.

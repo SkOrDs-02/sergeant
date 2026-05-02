@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
 
 const STORAGE_KEY = MONTHLY_PLAN_STORAGE_KEY;
 
@@ -20,38 +21,29 @@ function todayKey() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw)
-      return {
-        reminderEnabled: true,
-        reminderHour: 18,
-        reminderMinute: 0,
-        days: {},
-      };
-    const p = JSON.parse(raw);
-    return {
-      reminderEnabled: p.reminderEnabled !== false,
-      reminderHour: Number.isFinite(p.reminderHour) ? p.reminderHour : 18,
-      reminderMinute: Number.isFinite(p.reminderMinute) ? p.reminderMinute : 0,
-      days: typeof p.days === "object" && p.days ? p.days : {},
-    };
-  } catch {
-    return {
-      reminderEnabled: true,
-      reminderHour: 18,
-      reminderMinute: 0,
-      days: {},
-    };
-  }
+const DEFAULT_STATE: MonthlyPlanState = {
+  reminderEnabled: true,
+  reminderHour: 18,
+  reminderMinute: 0,
+  days: {},
+};
+
+function loadState(): MonthlyPlanState {
+  const p = safeReadLS<Partial<MonthlyPlanState>>(STORAGE_KEY);
+  if (!p) return DEFAULT_STATE;
+  return {
+    reminderEnabled: p.reminderEnabled !== false,
+    reminderHour: Number.isFinite(p.reminderHour) ? (p.reminderHour ?? 18) : 18,
+    reminderMinute: Number.isFinite(p.reminderMinute)
+      ? (p.reminderMinute ?? 0)
+      : 0,
+    days: typeof p.days === "object" && p.days ? p.days : {},
+  };
 }
 
-function saveState(s: MonthlyPlanState) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-    window.dispatchEvent(new CustomEvent("fizruk-storage-monthly-plan"));
-  } catch {}
+function saveState(s: MonthlyPlanState): void {
+  safeWriteLS(STORAGE_KEY, s);
+  window.dispatchEvent(new CustomEvent("fizruk-storage-monthly-plan"));
 }
 
 export function useMonthlyPlan() {

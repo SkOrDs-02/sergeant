@@ -46,6 +46,14 @@ export interface PopoverProps {
   className?: string;
   /** Additional className on the wrapper. */
   wrapperClassName?: string;
+  /**
+   * Controlled open state. When provided, the popover becomes a
+   * controlled component and `onOpenChange` must be wired up. Useful
+   * when the parent needs to close the popover after an item action
+   * (e.g. opening a sibling drawer).
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function Popover({
@@ -54,13 +62,26 @@ export function Popover({
   placement = "bottom-start",
   className,
   wrapperClassName,
+  open: controlledOpen,
+  onOpenChange,
 }: PopoverProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
   const wrapperRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
 
-  const close = useCallback(() => setOpen(false), []);
+  const setOpen = useCallback(
+    (next: boolean | ((prev: boolean) => boolean)) => {
+      const value = typeof next === "function" ? next(open) : next;
+      if (!isControlled) setInternalOpen(value);
+      onOpenChange?.(value);
+    },
+    [open, isControlled, onOpenChange],
+  );
+
+  const close = useCallback(() => setOpen(false), [setOpen]);
 
   // Close on outside click
   useEffect(() => {

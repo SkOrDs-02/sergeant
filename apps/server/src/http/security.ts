@@ -84,5 +84,11 @@ export function apiHelmetMiddleware({
           reportOnly,
         },
     crossOriginResourcePolicy: { policy: "cross-origin" },
+    // HSTS тільки у production — на localhost він заблокував би всі HTTP-запити
+    // у браузері надовго (max-age 1 рік без можливості скинути без devtools).
+    hsts:
+      process.env.NODE_ENV === "production"
+        ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+        : false,
   });
 }

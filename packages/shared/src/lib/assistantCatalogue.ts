@@ -958,7 +958,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresOnline: true,
   },
 
-  // ───── Пам'ять (3) ────────────────────────────────────────────────────
+  // ───── Пам'ять (4) ────────────────────────────────────────────────────
   {
     id: "remember",
     module: "memory",
@@ -996,6 +996,25 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     prompt: "Що ти про мене запам'ятав?",
     requiresInput: false,
     requiresOnline: true,
+  },
+  {
+    id: "recall_memory",
+    module: "memory",
+    label: "Пошук у памʼяті",
+    shortLabel: "Згадати",
+    icon: "search",
+    description:
+      "Семантичний пошук по ai-memory bank-у: чат, харчування, тренування, фінанси, журнал. Знаходить схожі записи, навіть якщо формулювання інше.",
+    examples: [
+      "що я їв коли худнув",
+      "знайди мої тренування на витривалість",
+      "коли я скаржився на сон",
+    ],
+    prompt: "Знайди в памʼяті: ",
+    requiresInput: true,
+    requiresOnline: true,
+    isNew: true,
+    keywords: ["recall", "search", "memory", "семантичний"],
   },
 ];
 

@@ -53,7 +53,7 @@ export const FIZRUK_NAV: readonly FizrukNavItem[] = [
   },
   {
     id: "progress",
-    label: "Прогрес",
+    label: "Прогрес і заміри",
     icon: (
       <svg {...NAV_SVG_PROPS}>
         <polyline points="3 17 9 11 13 15 21 7" />
@@ -63,7 +63,7 @@ export const FIZRUK_NAV: readonly FizrukNavItem[] = [
   },
   {
     id: "body",
-    label: "Тіло",
+    label: "Моє тіло",
     icon: (
       <svg {...NAV_SVG_PROPS}>
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />

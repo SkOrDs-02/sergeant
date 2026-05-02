@@ -1,0 +1,16 @@
+// TODO: move this executor into the appropriate chatActions file:
+// apps/web/src/core/lib/chatActions/<domain>Actions.ts
+// and add a case for "{{toolName}}" in the switch / dispatch.
+
+interface {{pascalCase toolName}}Input {
+  // TODO: mirror the input_schema properties from the server tooldef
+  // example_param: string;
+}
+
+export async function execute{{pascalCase toolName}}(
+  input: {{pascalCase toolName}}Input,
+): Promise<string> {
+  // TODO: implement the client-side action (API call, mutation, etc.)
+  // Return a human-readable confirmation string shown in chat.
+  throw new Error("execute{{pascalCase toolName}} not implemented");
+}

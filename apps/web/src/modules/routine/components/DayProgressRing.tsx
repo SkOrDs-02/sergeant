@@ -22,7 +22,7 @@ export function DayProgressRing({
       type="button"
       onClick={onClick}
       className="flex flex-col items-center gap-1.5 group cursor-pointer shrink-0"
-      aria-label={`Прогрес дня: ${completed} з ${scheduled}. Натисніть для денного звіту`}
+      aria-label={`Прогрес дня: ${completed} з ${scheduled}. Тапни для денного звіту`}
     >
       <div className="relative" style={{ width: SIZE, height: SIZE }}>
         <svg

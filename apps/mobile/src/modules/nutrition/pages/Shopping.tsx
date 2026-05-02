@@ -1,8 +1,9 @@
 import { useCallback, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 import { useShoppingList } from "../hooks/useShoppingList";
 
@@ -79,14 +80,15 @@ export function Shopping({ testID }: { testID?: string }) {
         </View>
       ))}
 
-      <View className="flex-row gap-2 mt-2">
-        <TextInput
-          value={draft}
-          onChangeText={setDraft}
-          placeholder="Назва продукту"
-          className="flex-1 border border-cream-300 rounded-xl px-3 py-2 text-fg bg-white"
-          placeholderTextColor="#a8a29e"
-        />
+      <View className="flex-row gap-2 mt-2 items-end">
+        <View className="flex-1">
+          <Input
+            value={draft}
+            onChangeText={setDraft}
+            placeholder="Назва продукту"
+            size="md"
+          />
+        </View>
         <Button variant="nutrition" onPress={onAdd} disabled={!draft.trim()}>
           Додати
         </Button>

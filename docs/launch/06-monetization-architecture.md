@@ -1,5 +1,8 @@
 # 06. Архітектура монетизації (технічний скелетон v2)
 
+> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Status:** Active
+
 > Pre-MVP draft. Розширення [01 — Монетизація і ціноутворення](./01-monetization-and-pricing.md) в бік реальної імплементації: розбивка на PR-и, ADR-рішення, risk register, rollout-plan.
 >
 > **Diff проти v1 (skeleton-attachment):** виправлені 5 red flags (idempotency, period_end semantics, cache-invalidation, grandfather policy, aiQuota×requirePlan). Розбивка PR розширена з 6 до 10. Додано: ADR-список рішень, risk register, rollout-план з feature-flag, env-template, контракт-тести.

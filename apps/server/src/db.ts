@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import pg from "pg";
 import type { PoolClient, QueryResult, QueryResultRow } from "pg";
 import { logger } from "./obs/logger.js";
+import { env } from "./env.js";
 import {
   dbErrorsTotal,
   dbQueryDurationMs,
@@ -13,18 +14,21 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
- * Максимум активних клієнтів у пулі. На Railway Hobby-інстансі з ~512MB
- * пам'яті та одним vCPU 10 — розумний baseline, але під пікове навантаження
- * або після bump-у плану хочеться підняти без релізу коду. Ставиться через
- * `PG_POOL_MAX`; Postgres-сторона (`max_connections`) лишається єдиним
- * жорстким лімітом — значення вище за неї просто призведе до conn-помилок.
+ * PG Pool with centralized configuration, health checks, and retry support.
+ *
+ * Features:
+ * - Configurable via env.ts (PG_POOL_SIZE, PG_CONNECTION_TIMEOUT_MS, etc.)
+ * - Statement timeout to prevent long-running queries
+ * - Idle connection cleanup
+ * - Connection validation before use
  */
-const PG_POOL_MAX = Number(process.env.PG_POOL_MAX) || 10;
-
 const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: PG_POOL_MAX,
-  idleTimeoutMillis: 30_000,
+  connectionString: env.DATABASE_URL,
+  max: env.PG_POOL_SIZE,
+  idleTimeoutMillis: env.PG_IDLE_TIMEOUT_MS,
+  connectionTimeoutMillis: env.PG_CONNECTION_TIMEOUT_MS,
+  // Set statement_timeout on each connection to prevent runaway queries
+  statement_timeout: env.PG_STATEMENT_TIMEOUT_MS,
 });
 
 interface PgErrorLike {
@@ -49,12 +53,14 @@ pool.on("error", (err: Error) => {
   }
 });
 
-const SLOW_MS = Number(process.env.DB_SLOW_MS) || 200;
+const SLOW_MS = env.SLOW_QUERY_THRESHOLD_MS;
 
 type QueryText = string | { text: string; values?: unknown[] };
 
 interface QueryMeta {
   op?: string;
+  /** Skip retry logic (default: false). Set to true for mutations that shouldn't be retried. */
+  noRetry?: boolean;
 }
 
 /** Коротке ім'я SQL для логів (перше слово + перші 120 символів, без параметрів). */
@@ -64,9 +70,36 @@ function sqlSummary(text: unknown): string | undefined {
 }
 
 /**
- * Обгортка над `pool.query` з логуванням повільних запитів, метриками і
- * підрахунком помилок. Підпис збережено один-в-один з pg, щоб можна було
- * поступово переводити handler-и без зміни викликів.
+ * Transient PG error codes that are safe to retry:
+ * - 40001: serialization_failure (concurrent transaction conflict)
+ * - 40P01: deadlock_detected
+ * - 08006: connection_failure
+ * - 08003: connection_does_not_exist
+ * - 57P01: admin_shutdown (server restarting)
+ */
+const RETRYABLE_PG_CODES = new Set([
+  "40001",
+  "40P01",
+  "08006",
+  "08003",
+  "57P01",
+]);
+
+function isRetryableError(err: unknown): boolean {
+  const code = pgErr(err).code;
+  return !!code && RETRYABLE_PG_CODES.has(code);
+}
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Обгортка над `pool.query` з логуванням повільних запитів, метриками,
+ * retry для transient помилок і підрахунком помилок.
+ *
+ * Підпис збережено один-в-один з pg, щоб можна було поступово переводити
+ * handler-и без зміни викликів.
  */
 export async function query<R extends QueryResultRow = QueryResultRow>(
   text: QueryText,
@@ -74,49 +107,95 @@ export async function query<R extends QueryResultRow = QueryResultRow>(
   meta?: QueryMeta,
 ): Promise<QueryResult<R>> {
   const op = meta?.op ?? "query";
-  const start = process.hrtime.bigint();
+  const noRetry = meta?.noRetry ?? false;
+  const maxRetries = noRetry ? 0 : env.DB_MAX_RETRIES;
   const sqlText = typeof text === "string" ? text : text.text;
-  try {
-    const result = await pool.query<R>(
-      sqlText,
-      values as unknown[] | undefined,
-    );
-    const ms = Number(process.hrtime.bigint() - start) / 1e6;
+
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const start = process.hrtime.bigint();
+
     try {
-      dbQueryDurationMs.observe({ op }, ms);
-    } catch {
-      /* ignore */
-    }
-    if (ms >= SLOW_MS) {
+      const result = await pool.query<R>(
+        sqlText,
+        values as unknown[] | undefined,
+      );
+      const ms = Number(process.hrtime.bigint() - start) / 1e6;
+
       try {
-        dbSlowQueriesTotal.inc({ op });
+        dbQueryDurationMs.observe({ op }, ms);
       } catch {
         /* ignore */
       }
-      logger.warn({
-        msg: "db_slow",
+
+      if (ms >= SLOW_MS && env.LOG_SLOW_QUERIES) {
+        try {
+          dbSlowQueriesTotal.inc({ op });
+        } catch {
+          /* ignore */
+        }
+        logger.warn({
+          msg: "db_slow",
+          op,
+          sql: sqlSummary(sqlText),
+          ms: Math.round(ms),
+          rows: result.rowCount,
+        });
+      }
+
+      return result;
+    } catch (err: unknown) {
+      lastError = err;
+      const e = pgErr(err);
+
+      // Check if error is retryable and we have retries left
+      if (attempt < maxRetries && isRetryableError(err)) {
+        const delayMs = Math.min(100 * Math.pow(2, attempt), 2000);
+        logger.warn({
+          msg: "db_retry",
+          op,
+          sql: sqlSummary(sqlText),
+          attempt: attempt + 1,
+          maxRetries,
+          delayMs,
+          code: e.code,
+        });
+        await sleep(delayMs);
+        continue;
+      }
+
+      try {
+        dbErrorsTotal.inc({ code: e.code || "unknown" });
+      } catch {
+        /* ignore */
+      }
+
+      logger.error({
+        msg: "db_error",
         op,
         sql: sqlSummary(sqlText),
-        ms: Math.round(ms),
-        rows: result.rowCount,
+        err: { message: e.message || String(err), code: e.code },
+        attempt: attempt + 1,
       });
+
+      throw err;
     }
-    return result;
-  } catch (err: unknown) {
-    const e = pgErr(err);
-    try {
-      dbErrorsTotal.inc({ code: e.code || "unknown" });
-    } catch {
-      /* ignore */
-    }
-    logger.error({
-      msg: "db_error",
-      op,
-      sql: sqlSummary(sqlText),
-      err: { message: e.message || String(err), code: e.code },
-    });
-    throw err;
   }
+
+  // Should never reach here, but TypeScript needs this
+  throw lastError;
+}
+
+/**
+ * Get database pool statistics for monitoring.
+ */
+export function getPoolStats() {
+  return {
+    totalCount: pool.totalCount,
+    idleCount: pool.idleCount,
+    waitingCount: pool.waitingCount,
+  };
 }
 
 /**

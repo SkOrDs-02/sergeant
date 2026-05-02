@@ -34,3 +34,49 @@ const authClient = createAuthClient({
 // `app/_layout.tsx`, де піднято `ApiClientProvider`.
 export const { signIn, signUp, signOut, getSession } = authClient;
 export { authClient };
+
+/**
+ * Password-reset request.
+ *
+ * Better Auth's `forgetPassword` action lives on the server's
+ * `emailAndPassword` plugin (`apps/server/src/auth.ts`). The expo client's
+ * inferred type surface doesn't expose it, so we hit `POST /api/auth/forget-password`
+ * directly with the same payload shape the web client uses.
+ */
+export type ForgetPasswordArgs = {
+  email: string;
+  /** Deep link the reset email should redirect to (`sergeant://...`). */
+  redirectTo?: string;
+};
+
+export type ForgetPasswordResult = {
+  error: { message: string } | null;
+};
+
+export async function forgetPassword(
+  args: ForgetPasswordArgs,
+): Promise<ForgetPasswordResult> {
+  const baseURL = getApiBaseURL();
+  try {
+    const res = await fetch(`${baseURL ?? ""}/api/auth/forget-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(args),
+    });
+    if (!res.ok) {
+      const data = (await res.json().catch(() => null)) as {
+        message?: string;
+      } | null;
+      return {
+        error: { message: data?.message ?? `HTTP ${res.status}` },
+      };
+    }
+    return { error: null };
+  } catch (e) {
+    return {
+      error: {
+        message: e instanceof Error ? e.message : "Network error",
+      },
+    };
+  }
+}

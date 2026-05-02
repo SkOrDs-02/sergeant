@@ -39,8 +39,19 @@
  *    a folder with `_layout.tsx` Stack without touching this file.
  */
 
-import { useCallback, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { View } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from "react-native-reanimated";
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { router } from "expo-router";
@@ -78,8 +89,27 @@ function readPersistedTab(): RoutineMainTab {
   return isRoutineMainTab(raw) ? raw : "calendar";
 }
 
+/** Wraps a tab panel with a fade-in animation on mount. */
+function TabPanel({ children }: { children: ReactNode }) {
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: 180 });
+  }, [opacity]);
+
+  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  return (
+    <Animated.View style={[{ flex: 1 }, animatedStyle]}>
+      {children}
+    </Animated.View>
+  );
+}
+
 function RoutineShell() {
   const [mainTab, setMainTab] = useState<RoutineMainTab>(readPersistedTab);
+  // Track previous tab to remount TabPanel only on actual tab change
+  const prevTab = useRef(mainTab);
 
   // Subscribe to the routine store so the reminder scheduler sees
   // live habit edits without us re-reading MMKV on every change.
@@ -91,6 +121,7 @@ function RoutineShell() {
   useRoutineReminders(routine);
 
   const handleSelectTab = useCallback((next: RoutineMainTab) => {
+    prevTab.current = next;
     setMainTab(next);
     // Raw-string write keeps the persisted value parseable on the next
     // mount (`JSON.parse("calendar")` would throw).
@@ -98,12 +129,13 @@ function RoutineShell() {
   }, []);
 
   return (
-    <View className="flex-1 bg-cream-50" testID="routine-shell">
-      <View className="flex-1">
+    <View className="flex-1 bg-bg dark:bg-bg" testID="routine-shell">
+      {/* key forces TabPanel to remount (and re-animate) on tab change */}
+      <TabPanel key={mainTab}>
         {mainTab === "calendar" ? <Calendar testID="routine-calendar" /> : null}
         {mainTab === "stats" ? <HeatmapPage /> : null}
         {mainTab === "settings" ? <HabitsPage testID="routine-habits" /> : null}
-      </View>
+      </TabPanel>
 
       <RoutineBottomNav
         mainTab={mainTab}

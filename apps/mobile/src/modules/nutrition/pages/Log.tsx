@@ -26,7 +26,8 @@ import {
 import { toLocalISODate } from "@sergeant/shared";
 
 import { Card } from "@/components/ui/Card";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
+import { showUndoToast } from "@/lib/showUndoToast";
 
 import {
   AddMealSheet,
@@ -98,12 +99,9 @@ export function Log({ testID, onMealAdded }: LogProps) {
     updateMeal,
     removeMeal,
   } = useNutritionLog();
+  const toast = useToast();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editMeal, setEditMeal] = useState<InitialMeal | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<{
-    date: string;
-    id: string;
-  } | null>(null);
 
   const handleAdd = useCallback(() => {
     setEditMeal(null);
@@ -135,12 +133,19 @@ export function Log({ testID, onMealAdded }: LogProps) {
     [editMeal, selectedDate, addMeal, updateMeal, onMealAdded],
   );
 
-  const confirmDelete = useCallback(() => {
-    if (deleteTarget) {
-      removeMeal(deleteTarget.date, deleteTarget.id);
-      setDeleteTarget(null);
-    }
-  }, [deleteTarget, removeMeal]);
+  // Замість ConfirmDialog — single-tap видалення з undo-toast (parity з web).
+  const handleDeleteMeal = useCallback(
+    (meal: Meal) => {
+      removeMeal(selectedDate, meal.id);
+      const dateAtDelete = selectedDate;
+      const mealName = meal.name || "прийом";
+      showUndoToast(toast, {
+        msg: `Видалено «${mealName}»`,
+        onUndo: () => addMeal(dateAtDelete, meal),
+      });
+    },
+    [addMeal, removeMeal, selectedDate, toast],
+  );
 
   const rows = useMemo(
     () => getRowsForDate(nutritionLog, selectedDate),
@@ -298,12 +303,7 @@ export function Log({ testID, onMealAdded }: LogProps) {
                         {Math.round(item.meal.macros?.carbs_g || 0)}
                       </Text>
                       <Pressable
-                        onPress={() =>
-                          setDeleteTarget({
-                            date: selectedDate,
-                            id: item.meal.id,
-                          })
-                        }
+                        onPress={() => handleDeleteMeal(item.meal)}
                         accessibilityRole="button"
                         accessibilityLabel={`Видалити ${item.meal.name || "прийом"}`}
                         hitSlop={8}
@@ -328,15 +328,6 @@ export function Log({ testID, onMealAdded }: LogProps) {
         }}
         onSave={handleSave}
         initialMeal={editMeal}
-      />
-
-      <ConfirmDialog
-        open={deleteTarget !== null}
-        title="Видалити прийом їжі?"
-        description="Цей запис буде видалено назавжди."
-        confirmLabel="Видалити"
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteTarget(null)}
       />
     </View>
   );

@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
+import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { useLocalStorageState } from "@shared/hooks";
 import { cn } from "@shared/lib/cn";
+import { emitHubBus } from "@shared/lib/hubBus";
 import {
   ASSISTANT_CAPABILITIES,
   CAPABILITY_MODULE_META,
@@ -14,6 +15,20 @@ import {
   type CapabilityModule,
 } from "@sergeant/shared";
 import { CapabilityDetailModal } from "./components/CapabilityDetailModal";
+
+// Per-module icon swatch — keeps each card visually anchored to its module
+// brand without leaning on saturated fills behind body text. Opacity steps
+// stay on the registered Tailwind scale (rule #8 in AGENTS.md).
+const MODULE_SWATCH: Record<CapabilityModule, string> = {
+  finyk: "bg-finyk/10 text-finyk-strong dark:bg-finyk/15",
+  fizruk: "bg-fizruk/10 text-fizruk-strong dark:bg-fizruk/15",
+  routine: "bg-routine/10 text-routine-strong dark:bg-routine/15",
+  nutrition: "bg-nutrition/10 text-nutrition-strong dark:bg-nutrition/15",
+  cross: "bg-brand/10 text-brand-strong dark:bg-brand/15",
+  analytics: "bg-info/10 text-info-strong dark:bg-info/15",
+  utility: "bg-panelHi text-muted",
+  memory: "bg-accent/10 text-accent",
+};
 
 interface AssistantCataloguePageProps {
   onClose: () => void;
@@ -30,17 +45,16 @@ const isCollapsedShape = (v: unknown): v is CapabilityModule[] =>
   Array.isArray(v) && v.every(isCapabilityModule);
 
 /**
- * Send a chat message via the global `hub:openChat` event. Avoids importing
- * the chat module directly from this page (and the cycle that would create).
+ * Send a chat message via the typed `hubBus.openChat` signal. Avoids
+ * importing the chat module directly from this page (and the cycle that
+ * would create).
  *
  * - `autoSend=true` ⇒ assistant sends the message immediately;
  * - `autoSend=false` ⇒ message is prefilled into the input, waiting for the
  *   user to add details and hit enter.
  */
 function dispatchOpenChat(message: string, autoSend: boolean): void {
-  window.dispatchEvent(
-    new CustomEvent("hub:openChat", { detail: { message, autoSend } }),
-  );
+  emitHubBus("openChat", { message, autoSend });
 }
 
 export function AssistantCataloguePage({
@@ -109,6 +123,8 @@ export function AssistantCataloguePage({
     dispatchOpenChat(cap.prompt, false);
   };
 
+  const totalCount = ASSISTANT_CAPABILITIES.length;
+
   return (
     <div
       className="min-h-dvh bg-bg"
@@ -117,8 +133,8 @@ export function AssistantCataloguePage({
         paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
       }}
     >
-      <div className="max-w-2xl mx-auto px-5 pb-8">
-        <div className="flex items-center gap-3 pt-6 pb-3">
+      <div className="max-w-2xl mx-auto px-5 pb-8 space-y-4">
+        <div className="flex items-center gap-2 pt-6">
           <Button
             variant="ghost"
             size="sm"
@@ -128,17 +144,31 @@ export function AssistantCataloguePage({
           >
             <Icon name="chevron-left" size={20} />
           </Button>
-          <h1 className="text-xl font-bold text-text">Можливості асистента</h1>
         </div>
 
-        <p className="text-sm text-subtle mb-3">
-          Усе, що вміє робити асистент. Натисни картку щоб запустити сценарій
-          або побачити приклади.
-        </p>
+        <Card variant="default" radius="lg" padding="lg">
+          <div className="flex items-start gap-3">
+            <span
+              aria-hidden
+              className="shrink-0 w-11 h-11 rounded-2xl bg-brand/10 text-brand-strong flex items-center justify-center dark:bg-brand/15"
+            >
+              <Icon name="sparkles" size={20} />
+            </span>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-style-title text-text leading-tight">
+                Можливості асистента
+              </h1>
+              <p className="text-sm text-subtle mt-1 leading-relaxed">
+                Усе, що вміє робити асистент ({totalCount} сценаріїв). Натисни
+                картку щоб запустити або побачити приклади.
+              </p>
+            </div>
+          </div>
+        </Card>
 
         <CapabilityLegend />
 
-        <div className="relative mb-3">
+        <div className="relative">
           <span
             aria-hidden
             className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle"
@@ -150,13 +180,13 @@ export function AssistantCataloguePage({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Пошук — наприклад, «витрата», «звичка», «1RM»…"
-            className="w-full bg-panel border border-line rounded-2xl pl-9 pr-3 py-3 text-sm text-text placeholder:text-subtle focus:outline-none focus:border-brand-500/50"
+            className="w-full bg-panel border border-line rounded-2xl pl-9 pr-3 py-3 text-sm text-text placeholder:text-subtle focus:outline-none focus-visible:border-brand-500/50 focus-visible:ring-2 focus-visible:ring-brand-500/30 shadow-card"
             aria-label="Пошук можливостей"
           />
         </div>
 
         {!isSearching && groups.length > 0 && (
-          <div className="flex justify-end mb-3">
+          <div className="flex justify-end -mt-1">
             <button
               type="button"
               onClick={toggleAll}
@@ -178,12 +208,14 @@ export function AssistantCataloguePage({
         )}
 
         {filtered.length === 0 && (
-          <div className="text-center text-subtle py-12 text-sm">
-            Нічого не знайдено за «{query}». Спробуй інший термін.
-          </div>
+          <Card variant="flat" radius="lg" padding="xl">
+            <p className="text-center text-subtle text-sm">
+              Нічого не знайдено за «{query}». Спробуй інший термін.
+            </p>
+          </Card>
         )}
 
-        <div className="space-y-6">
+        <div className="space-y-3">
           {groups.map((g) => (
             <ModuleGroup
               key={g.module}
@@ -224,8 +256,16 @@ function ModuleGroup({
   const meta = CAPABILITY_MODULE_META[module];
   const headingId = `catalogue-module-${module}`;
   const listId = `catalogue-module-${module}-list`;
+  const swatch = MODULE_SWATCH[module];
   return (
-    <section aria-labelledby={headingId}>
+    <Card
+      as="section"
+      variant="default"
+      radius="lg"
+      padding="none"
+      className="overflow-hidden"
+      aria-labelledby={headingId}
+    >
       <button
         type="button"
         onClick={onToggle}
@@ -233,36 +273,48 @@ function ModuleGroup({
         aria-expanded={!collapsed}
         aria-controls={listId}
         className={cn(
-          "w-full flex items-center gap-2 text-left rounded-lg",
-          "-mx-1 px-1 py-0.5 mb-2 hover:bg-panel/60 transition-colors",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
+          "w-full flex items-center gap-3 text-left px-4 py-3",
+          "hover:bg-panelHi/60 transition-colors",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500/45",
         )}
       >
-        <Icon name={meta.icon} size={14} aria-hidden />
-        <SectionHeading
-          as="span"
-          size="sm"
-          variant="text"
-          id={headingId}
-          className="flex items-center gap-2 m-0"
-        >
-          {meta.title}
-          <span className="text-subtle font-normal normal-case tracking-normal">
-            ({capabilities.length})
-          </span>
-        </SectionHeading>
-        <Icon
-          name="chevron-down"
-          size={14}
+        <span
           aria-hidden
           className={cn(
-            "ml-auto text-muted transition-transform",
+            "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center",
+            swatch,
+          )}
+        >
+          <Icon name={meta.icon} size={18} />
+        </span>
+        <span className="flex-1 min-w-0">
+          <span
+            id={headingId}
+            className="block text-base font-semibold text-text leading-tight"
+          >
+            {meta.title}
+          </span>
+          <span className="block text-xs text-subtle mt-0.5">
+            {capabilities.length}{" "}
+            {pluralizeUk(capabilities.length, [
+              "сценарій",
+              "сценарії",
+              "сценаріїв",
+            ])}
+          </span>
+        </span>
+        <Icon
+          name="chevron-down"
+          size={16}
+          aria-hidden
+          className={cn(
+            "shrink-0 text-muted transition-transform",
             collapsed ? "-rotate-90" : "rotate-0",
           )}
         />
       </button>
       {!collapsed && (
-        <ul id={listId} className="space-y-2">
+        <ul id={listId} className="border-t border-line divide-y divide-line">
           {capabilities.map((cap) => (
             <li key={cap.id}>
               <CapabilityRow capability={cap} onActivate={onActivate} />
@@ -270,8 +322,22 @@ function ModuleGroup({
           ))}
         </ul>
       )}
-    </section>
+    </Card>
   );
+}
+
+// Ukrainian plural form (1 / 2-4 / 5+) — used for the count subtitle on
+// each module card. Kept inline because no existing util covers this.
+function pluralizeUk(
+  n: number,
+  forms: readonly [string, string, string],
+): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return forms[0];
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20))
+    return forms[1];
+  return forms[2];
 }
 
 interface CapabilityRowProps {
@@ -286,23 +352,21 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
       data-testid={`catalogue-capability-${capability.id}`}
       onClick={() => onActivate(capability)}
       className={cn(
-        "w-full text-left bg-panel border border-line rounded-2xl px-4 py-3",
-        "hover:border-muted hover:bg-panel/80 transition-colors",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
+        "w-full text-left px-4 py-3",
+        "hover:bg-panelHi/60 transition-colors",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500/45",
         "flex items-start gap-3",
       )}
     >
       <span
         aria-hidden
-        className="shrink-0 w-9 h-9 rounded-full bg-bg flex items-center justify-center text-text"
+        className="shrink-0 w-9 h-9 rounded-xl bg-bg border border-line flex items-center justify-center text-text"
       >
         <Icon name={capability.icon} size={16} />
       </span>
       <span className="flex-1 min-w-0">
         <span className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-semibold text-text">
-            {capability.label}
-          </span>
+          <span className="text-style-label text-text">{capability.label}</span>
           {capability.isNew && (
             <BadgeChip
               tone="success"
@@ -387,7 +451,8 @@ function BadgeChip({ tone, icon, label, title }: BadgeChipProps) {
     <span
       title={title}
       className={cn(
-        "inline-flex items-center gap-1 text-[10px] uppercase tracking-wide font-bold",
+        // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- BadgeChip is an intentional pill-overlay typography (status badge with border + icon)
+        "inline-flex items-center gap-1 text-micro uppercase tracking-wide font-bold",
         "border rounded-full px-1.5 py-0.5",
         cls,
       )}

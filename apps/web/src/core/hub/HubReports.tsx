@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/cn";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
-import { safeReadLS } from "@shared/lib/storage";
+import { safeReadLS, safeReadStringLS } from "@shared/lib/storage";
 import { generateInsights } from "../lib/insightsEngine";
 import {
   getFinykExcludedTxIdsFromStorage,
@@ -20,7 +20,7 @@ function useReportData(period: Period, offset: number): ReportData {
   return useMemo(
     () =>
       aggregateReport(period, offset, {
-        rawFizrukWorkouts: localStorage.getItem("fizruk_workouts_v1"),
+        rawFizrukWorkouts: safeReadStringLS("fizruk_workouts_v1"),
         finyk: {
           txList: (() => {
             const raw = safeReadLS("finyk_tx_cache", null) as
@@ -46,7 +46,7 @@ function useReportData(period: Period, offset: number): ReportData {
   );
 }
 
-function formatPeriodLabel(period, offset) {
+function formatPeriodLabel(period: Period, offset: number): string {
   const { start, end } = getPeriodRange(period, offset);
   if (period === "week") {
     const opts: Intl.DateTimeFormatOptions = {
@@ -115,7 +115,7 @@ function BarChart({
   return (
     <div>
       {selected !== null && (
-        <div className="text-xs text-center text-text font-medium mb-1 h-4">
+        <div className="text-style-caption text-center text-text mb-1 h-4">
           {formatTooltip(dates[selected], vals[selected])}
         </div>
       )}
@@ -135,6 +135,7 @@ function BarChart({
               <div
                 className={cn(
                   "w-full rounded-t-sm transition-[height,background-color,opacity]",
+                  "motion-safe:animate-bar-grow",
                   colorClass,
                   (isToday || isSelected) && "opacity-100",
                   !isToday && !isSelected && "opacity-60",
@@ -142,6 +143,7 @@ function BarChart({
                 style={{
                   height: `${pct}%`,
                   minHeight: v > 0 ? "2px" : "0",
+                  animationDelay: `${i * 30}ms`,
                 }}
               />
             </button>
@@ -155,7 +157,7 @@ function BarChart({
             <span
               key={d}
               className={cn(
-                "flex-1 text-center text-[10px] leading-tight",
+                "flex-1 text-center text-micro leading-tight",
                 selected === i ? "text-text font-medium" : "text-muted",
               )}
             >
@@ -168,7 +170,13 @@ function BarChart({
   );
 }
 
-function Delta({ cur, prev, higherIsBetter = true }) {
+interface DeltaProps {
+  cur: number;
+  prev: number;
+  higherIsBetter?: boolean;
+}
+
+function Delta({ cur, prev, higherIsBetter = true }: DeltaProps) {
   if (prev === 0 && cur === 0) return null;
   if (prev === 0) return <span className="text-xs text-muted">—</span>;
   const diff = cur - prev;
@@ -178,7 +186,7 @@ function Delta({ cur, prev, higherIsBetter = true }) {
   return (
     <span
       className={cn(
-        "text-xs font-medium",
+        "text-style-caption",
         positive ? "text-success" : "text-danger",
       )}
     >
@@ -186,6 +194,17 @@ function Delta({ cur, prev, higherIsBetter = true }) {
       {pct}%
     </span>
   );
+}
+
+interface StatCardProps {
+  title: string;
+  icon: string;
+  current: number | string;
+  prev: number | string;
+  unit?: string;
+  higherIsBetter?: boolean;
+  chart?: React.ReactNode;
+  storageKey: string;
 }
 
 function StatCard({
@@ -197,7 +216,7 @@ function StatCard({
   higherIsBetter,
   chart,
   storageKey,
-}) {
+}: StatCardProps) {
   const [collapsed, setCollapsed] = useLocalStorageState<boolean>(
     storageKey,
     false,
@@ -220,7 +239,7 @@ function StatCard({
         onClick={() => setCollapsed((c) => !c)}
         aria-expanded={!collapsed}
         className={cn(
-          "w-full flex items-center gap-2 text-left rounded-lg",
+          "w-full flex items-center gap-2 text-left rounded-xl",
           "-m-1 p-1 hover:bg-panelHi transition-colors",
         )}
       >
@@ -240,7 +259,11 @@ function StatCard({
               {formattedCurrent}
               {unit}
             </span>
-            <Delta cur={current} prev={prev} higherIsBetter={higherIsBetter} />
+            <Delta
+              cur={typeof current === "number" ? current : 0}
+              prev={typeof prev === "number" ? prev : 0}
+              higherIsBetter={higherIsBetter}
+            />
           </span>
         )}
         <svg
@@ -264,11 +287,15 @@ function StatCard({
       {!collapsed && (
         <>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-text">
+            <span className="text-style-hero text-text">
               {formattedCurrent}
               {unit}
             </span>
-            <Delta cur={current} prev={prev} higherIsBetter={higherIsBetter} />
+            <Delta
+              cur={typeof current === "number" ? current : 0}
+              prev={typeof prev === "number" ? prev : 0}
+              higherIsBetter={higherIsBetter}
+            />
           </div>
           {prev !== undefined && (
             <p className="text-xs text-muted">
@@ -283,14 +310,21 @@ function StatCard({
   );
 }
 
-function InsightCard({ emoji, title, stat, detail }) {
+interface InsightCardProps {
+  emoji: string;
+  title: string;
+  stat: string;
+  detail?: string;
+}
+
+function InsightCard({ emoji, title, stat, detail }: InsightCardProps) {
   return (
     <div className="bg-panel border border-line rounded-2xl p-4 flex gap-3 items-start">
       <span className="text-2xl shrink-0 leading-none pt-0.5">{emoji}</span>
       <div className="min-w-0 flex-1 space-y-1">
         <p className="text-sm text-text leading-snug">{title}</p>
         <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-lg font-bold text-brand-600 dark:text-brand-400">
+          <span className="text-style-title text-brand-strong dark:text-brand">
             {stat}
           </span>
           {detail && (
@@ -326,7 +360,7 @@ export function HubReports() {
                 setOffset(0);
               }}
               className={cn(
-                "px-3 py-1.5 text-xs font-medium transition-colors",
+                "px-3 py-1.5 text-style-caption transition-colors",
                 period === p
                   ? "bg-brand-strong text-white"
                   : "text-muted hover:text-text hover:bg-panelHi",

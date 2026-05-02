@@ -4,9 +4,14 @@ import type { Mock } from "vitest";
 
 // ── Mocks ────────────────────────────────────────────────────
 
-vi.mock("../../db.js", () => ({
-  query: vi.fn(),
-}));
+vi.mock("../../db.js", () => {
+  const pool = { connect: vi.fn(), query: vi.fn() };
+  return {
+    default: pool,
+    pool,
+    query: vi.fn(),
+  };
+});
 
 vi.mock("../../obs/logger.js", () => ({
   logger: {
@@ -20,18 +25,38 @@ vi.mock("../../obs/logger.js", () => ({
 vi.mock("../../obs/metrics.js", () => ({
   monoWebhookReceivedTotal: { inc: vi.fn() },
   monoWebhookDurationMs: { observe: vi.fn() },
+  // AI memory ingest hook (PR2). Заглушки достатньо — webhook-test не
+  // верифікує enqueue-метрики напряму, а лише poll-ить, що hook не
+  // throw-нув. Реальні поведінкові тести queue-у — у `ingestQueue.test.ts`.
+  aiMemoryIngestEnqueuedTotal: { inc: vi.fn() },
+  aiMemoryIngestProcessedTotal: { inc: vi.fn() },
+  aiMemoryIngestDurationMs: { observe: vi.fn() },
+  aiMemoryIngestQueueDepth: { set: vi.fn() },
 }));
 
-import { query as _query } from "../../db.js";
+vi.mock("../ai-memory/ingestQueue.js", () => ({
+  // PR2 hook: webhook-у достатньо знати, що `enqueueMemoryIngest` resolved-ить
+  // без помилки. Реальний flow покрито у ingestQueue.test.ts.
+  enqueueMemoryIngest: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../../push/send.js", () => ({
+  sendToUserQuietly: vi.fn().mockResolvedValue(undefined),
+}));
+
+import _pool, { query as _query } from "../../db.js";
 import {
   monoWebhookReceivedTotal as _counter,
   monoWebhookDurationMs as _histogram,
 } from "../../obs/metrics.js";
+import { sendToUserQuietly as _sendToUserQuietly } from "../../push/send.js";
 import { webhookHandler } from "./webhook.js";
 
 const dbQuery = _query as unknown as Mock;
+const pool = _pool as unknown as { connect: Mock; query: Mock };
 const counter = _counter as unknown as { inc: Mock };
 const histogram = _histogram as unknown as { observe: Mock };
+const sendPushMock = _sendToUserQuietly as unknown as Mock;
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -91,6 +116,46 @@ function makeReq(secret: string, body?: unknown): Request {
   } as unknown as Request;
 }
 
+interface ClientMock {
+  query: Mock;
+  release: Mock;
+}
+
+function makeClient(): ClientMock {
+  return { query: vi.fn(), release: vi.fn() };
+}
+
+/**
+ * Послідовність client.query-викликів для happy-path транзакції без
+ * autocreate-у: BEGIN → SAVEPOINT → tx upsert → RELEASE → balance update →
+ * connection event → enrichment outbox → COMMIT.
+ *
+ * Параметр `inserted` керує `(xmax = 0) AS inserted` у result-row upsert-а.
+ * `withBalance` контролює, чи robimo `UPDATE mono_account SET balance` (true
+ * для дефолтного payload-у з `balance: 1500000`).
+ */
+function queueHappyPathClient(
+  client: ClientMock,
+  opts: { inserted: boolean; withBalance?: boolean; withEnrichment?: boolean },
+): void {
+  client.query
+    .mockResolvedValueOnce({}) // BEGIN
+    .mockResolvedValueOnce({}) // SAVEPOINT
+    .mockResolvedValueOnce({
+      rows: [{ inserted: opts.inserted }],
+      rowCount: 1,
+    }) // upsert
+    .mockResolvedValueOnce({}); // RELEASE
+  if (opts.withBalance !== false) {
+    client.query.mockResolvedValueOnce({}); // UPDATE balance
+  }
+  client.query.mockResolvedValueOnce({}); // UPDATE connection event
+  if (opts.inserted && opts.withEnrichment !== false) {
+    client.query.mockResolvedValueOnce({}); // INSERT enrichment outbox
+  }
+  client.query.mockResolvedValueOnce({}); // COMMIT
+}
+
 // ── Tests ────────────────────────────────────────────────────
 
 beforeEach(() => {
@@ -106,6 +171,7 @@ describe("webhookHandler", () => {
 
     expect(res.statusCode).toBe(404);
     expect(counter.inc).toHaveBeenCalledWith({ status: "invalid_secret" });
+    expect(pool.connect).not.toHaveBeenCalled();
   });
 
   it("returns 400 for invalid payload", async () => {
@@ -119,20 +185,17 @@ describe("webhookHandler", () => {
     expect(res.statusCode).toBe(400);
     expect(res.body.error).toBe("Invalid payload");
     expect(counter.inc).toHaveBeenCalledWith({ status: "bad_payload" });
+    expect(pool.connect).not.toHaveBeenCalled();
   });
 
   it("processes valid webhook: upserts transaction, updates balance and last_event_at", async () => {
-    // Lookup connection
     dbQuery.mockResolvedValueOnce({
       rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
     });
 
-    // INSERT transaction
-    dbQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
-    // UPDATE balance
-    dbQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
-    // UPDATE last_event_at
-    dbQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    const client = makeClient();
+    queueHappyPathClient(client, { inserted: true });
+    pool.connect.mockResolvedValue(client);
 
     const res = makeRes();
     await webhookHandler(makeReq(VALID_SECRET), res);
@@ -145,16 +208,106 @@ describe("webhookHandler", () => {
       expect.any(Number),
     );
 
-    // 4 DB calls: lookup + tx upsert + balance update + event update
-    expect(dbQuery).toHaveBeenCalledTimes(4);
+    // Транзакція виконує 8 client.query-викликів: BEGIN + SAVEPOINT + upsert
+    // + RELEASE + UPDATE balance + UPDATE connection + INSERT outbox + COMMIT.
+    expect(client.query).toHaveBeenCalledTimes(8);
+    expect(client.query.mock.calls[0][0]).toBe("BEGIN");
+    expect(client.query.mock.calls[1][0]).toMatch(/^SAVEPOINT/);
+    expect(client.query.mock.calls[2][0]).toMatch(
+      /INSERT INTO mono_transaction/,
+    );
+    expect(client.query.mock.calls[3][0]).toMatch(/^RELEASE SAVEPOINT/);
+    expect(client.query.mock.calls[4][0]).toMatch(
+      /UPDATE mono_account[\s\S]+SET balance/,
+    );
+    expect(client.query.mock.calls[5][0]).toMatch(/UPDATE mono_connection/);
+    expect(client.query.mock.calls[6][0]).toMatch(
+      /INSERT INTO mono_ai_enrichment_queue/,
+    );
+    expect(client.query.mock.calls[7][0]).toBe("COMMIT");
+    expect(client.release).toHaveBeenCalledTimes(1);
+  });
+
+  it("fires push (fire-and-forget) on first INSERT with formatted amount + balance", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+    });
+    const client = makeClient();
+    queueHappyPathClient(client, { inserted: true });
+    pool.connect.mockResolvedValue(client);
+
+    const res = makeRes();
+    await webhookHandler(makeReq(VALID_SECRET), res);
+    await Promise.resolve();
+
+    expect(res.statusCode).toBe(200);
+    expect(sendPushMock).toHaveBeenCalledTimes(1);
+    expect(sendPushMock.mock.calls[0][0]).toBe("user_1");
+    const payload = sendPushMock.mock.calls[0][1];
+    // amount=-6500 копійок → -65.00 ₴ → "−65,00 ₴" (U+2212 minus, NBSP separator)
+    expect(payload.title).toBe("−65,00 ₴");
+    expect(payload.body).toBe("Кава · доступно 15\u00A0000,00 ₴");
+    expect(payload.data).toMatchObject({
+      kind: "mono_tx",
+      monoTxId: "tx_001",
+      monoAccountId: "acc_uah",
+    });
+    expect(sendPushMock.mock.calls[0][2]).toEqual({ module: "mono" });
+  });
+
+  it("does NOT fire push when ON CONFLICT updates existing transaction (Monobank retry)", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+    });
+    const client = makeClient();
+    queueHappyPathClient(client, { inserted: false });
+    pool.connect.mockResolvedValue(client);
+
+    const res = makeRes();
+    await webhookHandler(makeReq(VALID_SECRET), res);
+    await Promise.resolve();
+
+    expect(res.statusCode).toBe(200);
+    expect(sendPushMock).not.toHaveBeenCalled();
+  });
+
+  it("marks `(резерв)` in body for hold transactions", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+    });
+    const client = makeClient();
+    queueHappyPathClient(client, { inserted: true });
+    pool.connect.mockResolvedValue(client);
+
+    const base = validPayload();
+    const holdPayload = {
+      ...base,
+      data: {
+        ...base.data,
+        statementItem: {
+          ...base.data.statementItem,
+          hold: true,
+        },
+      },
+    };
+
+    const res = makeRes();
+    await webhookHandler(makeReq(VALID_SECRET, holdPayload), res);
+    await Promise.resolve();
+
+    expect(sendPushMock).toHaveBeenCalledTimes(1);
+    expect(sendPushMock.mock.calls[0][1].body).toBe(
+      "(резерв) Кава · доступно 15\u00A0000,00 ₴",
+    );
   });
 
   it("idempotent: duplicate mono_tx_id is handled by ON CONFLICT", async () => {
     dbQuery.mockResolvedValueOnce({
       rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
     });
-    // Both calls succeed (ON CONFLICT DO UPDATE)
-    dbQuery.mockResolvedValue({ rows: [], rowCount: 1 });
+    const client1 = makeClient();
+    queueHappyPathClient(client1, { inserted: true });
+    pool.connect.mockResolvedValueOnce(client1);
 
     const res1 = makeRes();
     await webhookHandler(makeReq(VALID_SECRET), res1);
@@ -164,7 +317,9 @@ describe("webhookHandler", () => {
     dbQuery.mockResolvedValueOnce({
       rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
     });
-    dbQuery.mockResolvedValue({ rows: [], rowCount: 1 });
+    const client2 = makeClient();
+    queueHappyPathClient(client2, { inserted: false });
+    pool.connect.mockResolvedValueOnce(client2);
 
     const res2 = makeRes();
     await webhookHandler(makeReq(VALID_SECRET), res2);
@@ -201,11 +356,79 @@ describe("webhookHandler", () => {
     expect(res.statusCode).toBe(404);
   });
 
-  it("re-throws DB errors and records error metric", async () => {
+  it("маппить mcc → category_slug і передає його у INSERT (Monobank Roadmap C)", async () => {
     dbQuery.mockResolvedValueOnce({
       rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
     });
-    dbQuery.mockRejectedValueOnce(new Error("DB gone"));
+    const client = makeClient();
+    queueHappyPathClient(client, { inserted: true });
+    pool.connect.mockResolvedValue(client);
+
+    // mcc=5814 → 'restaurant' (з validPayload())
+    const res = makeRes();
+    await webhookHandler(makeReq(VALID_SECRET), res);
+    expect(res.statusCode).toBe(200);
+
+    // Третій client.query-call — це сам upsert (після BEGIN, SAVEPOINT);
+    // останній параметр — categorySlug.
+    const upsertCall = client.query.mock.calls[2];
+    const params = upsertCall[1];
+    expect(params[params.length - 1]).toBe("restaurant");
+  });
+
+  it("category_slug = null для невідомого MCC", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+    });
+    const client = makeClient();
+    queueHappyPathClient(client, { inserted: true });
+    pool.connect.mockResolvedValue(client);
+
+    const base = validPayload();
+    const unknownMccPayload = {
+      ...base,
+      data: {
+        ...base.data,
+        statementItem: { ...base.data.statementItem, mcc: 9999 },
+      },
+    };
+
+    const res = makeRes();
+    await webhookHandler(makeReq(VALID_SECRET, unknownMccPayload), res);
+    expect(res.statusCode).toBe(200);
+
+    const params = client.query.mock.calls[2][1];
+    expect(params[params.length - 1]).toBeNull();
+  });
+
+  it("ON CONFLICT-гілка SQL зберігає category_slug під захистом category_overridden", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+    });
+    const client = makeClient();
+    queueHappyPathClient(client, { inserted: false });
+    pool.connect.mockResolvedValue(client);
+
+    const res = makeRes();
+    await webhookHandler(makeReq(VALID_SECRET), res);
+
+    const sql = client.query.mock.calls[2][0] as string;
+    // Sanity-check, що SQL містить захист category_overridden.
+    expect(sql).toMatch(/category_overridden/);
+    expect(sql).toMatch(/category_slug = CASE/);
+  });
+
+  it("re-throws DB errors and records error metric (rollback runs)", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+    });
+    const client = makeClient();
+    client.query
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({}) // SAVEPOINT
+      .mockRejectedValueOnce(new Error("DB gone")) // upsert fails
+      .mockResolvedValueOnce({}); // ROLLBACK (catch path)
+    pool.connect.mockResolvedValue(client);
 
     const res = makeRes();
     await expect(webhookHandler(makeReq(VALID_SECRET), res)).rejects.toThrow(
@@ -213,5 +436,84 @@ describe("webhookHandler", () => {
     );
 
     expect(counter.inc).toHaveBeenCalledWith({ status: "error" });
+    expect(counter.inc).not.toHaveBeenCalledWith({ status: "ok" });
+    // ROLLBACK був викликаний на catch-гілці.
+    expect(client.query.mock.calls.at(-1)?.[0]).toBe("ROLLBACK");
+    expect(client.release).toHaveBeenCalledTimes(1);
+  });
+
+  it("FK violation (23503) on tx upsert → autocreates mono_account stub and retries inside same TX", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+    });
+
+    const fkErr = Object.assign(new Error("FK violation"), { code: "23503" });
+    const client = makeClient();
+    client.query
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({}) // SAVEPOINT
+      .mockRejectedValueOnce(fkErr) // first upsert attempt
+      .mockResolvedValueOnce({}) // ROLLBACK TO SAVEPOINT
+      .mockResolvedValueOnce({}) // INSERT mono_account stub
+      .mockResolvedValueOnce({
+        rows: [{ inserted: true }],
+        rowCount: 1,
+      }) // retry upsert
+      .mockResolvedValueOnce({}) // UPDATE balance
+      .mockResolvedValueOnce({}) // UPDATE connection
+      .mockResolvedValueOnce({}) // INSERT enrichment outbox
+      .mockResolvedValueOnce({}); // COMMIT
+    pool.connect.mockResolvedValue(client);
+
+    const res = makeRes();
+    await webhookHandler(makeReq(VALID_SECRET), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(counter.inc).toHaveBeenCalledWith({ status: "account_autocreated" });
+    expect(counter.inc).toHaveBeenCalledWith({ status: "ok" });
+
+    // Перевіряємо, що ROLLBACK TO SAVEPOINT справді викликаний перед stub-INSERT.
+    const calls = client.query.mock.calls.map((c) => c[0]);
+    const rollbackIdx = calls.findIndex((sql: string) =>
+      /^ROLLBACK TO SAVEPOINT/.test(sql),
+    );
+    expect(rollbackIdx).toBeGreaterThanOrEqual(0);
+    expect(calls[rollbackIdx + 1]).toMatch(/INSERT INTO mono_account/);
+
+    // Stub використовує currency + balance з самого StatementItem.
+    const stubCall = client.query.mock.calls[rollbackIdx + 1];
+    expect(stubCall[1]).toEqual(["user_1", "acc_uah", 980, 1500000]);
+
+    expect(client.release).toHaveBeenCalledTimes(1);
+  });
+
+  it("non-FK errors are NOT retried (only 23503 triggers autocreate)", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+    });
+
+    const otherErr = Object.assign(new Error("connection lost"), {
+      code: "08006",
+    });
+    const client = makeClient();
+    client.query
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({}) // SAVEPOINT
+      .mockRejectedValueOnce(otherErr) // upsert fails with non-FK code
+      .mockResolvedValueOnce({}); // ROLLBACK
+    pool.connect.mockResolvedValue(client);
+
+    const res = makeRes();
+    await expect(webhookHandler(makeReq(VALID_SECRET), res)).rejects.toThrow(
+      "connection lost",
+    );
+
+    expect(counter.inc).toHaveBeenCalledWith({ status: "error" });
+    expect(counter.inc).not.toHaveBeenCalledWith({
+      status: "account_autocreated",
+    });
+    // BEGIN, SAVEPOINT, fail, ROLLBACK — рівно 4 виклики, ніяких retry.
+    expect(client.query).toHaveBeenCalledTimes(4);
   });
 });

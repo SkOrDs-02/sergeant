@@ -17,13 +17,16 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { apiClient } from "@/api/apiClient";
 import { _getMMKVInstance } from "@/lib/storage";
+import { ToastProvider } from "@/components/ui/Toast";
 
 import { NutritionApp } from "./NutritionApp";
 
 function renderNutrition() {
   return render(
     <ApiClientProvider client={apiClient}>
-      <NutritionApp />
+      <ToastProvider>
+        <NutritionApp />
+      </ToastProvider>
     </ApiClientProvider>,
   );
 }

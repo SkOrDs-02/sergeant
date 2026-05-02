@@ -147,39 +147,47 @@ export function normalizeStoredMessages(raw: unknown): ChatMessage[] {
   }));
 }
 
+// Thin adapters over the canonical safe-storage helpers.
+// Callers import `ls`/`lsSet` for backward-compat; new code should prefer
+// `safeReadLS`/`safeWriteLS` from `@shared/lib/storage` directly.
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+
 export function ls<T>(key: string, fallback: T): T {
-  try {
-    const v = localStorage.getItem(key);
-    return v ? (JSON.parse(v) as T) : fallback;
-  } catch {
-    return fallback;
-  }
+  return (safeReadLS<T>(key) as T | null) ?? fallback;
 }
 
 export function lsSet(key: string, value: unknown): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
+  safeWriteLS(key, value);
 }
 
 export function fmt(n: number): string {
   return Math.round(n).toLocaleString("uk-UA");
 }
 
-type IdleHandle = number;
+// IdleHandle can be either requestIdleCallback id (number) or setTimeout id (ReturnType<typeof setTimeout>)
+// We use a union type to avoid unsafe casts
+export type IdleHandle = number | ReturnType<typeof setTimeout>;
 
 export function requestIdle(cb: () => void): IdleHandle {
-  if (typeof window === "undefined")
-    return setTimeout(cb, 0) as unknown as IdleHandle;
-  if (window.requestIdleCallback)
-    return window.requestIdleCallback(cb, { timeout: 800 }) as IdleHandle;
-  return setTimeout(cb, 0) as unknown as IdleHandle;
+  if (typeof window !== "undefined") {
+    if (window.requestIdleCallback)
+      return window.requestIdleCallback(cb, { timeout: 800 });
+    return window.setTimeout(cb, 0);
+  }
+  setTimeout(cb, 0);
+  return 0;
 }
 
 export function cancelIdle(id: IdleHandle): void {
-  if (typeof window === "undefined") return clearTimeout(id);
-  if (window.cancelIdleCallback) return window.cancelIdleCallback(id);
-  return clearTimeout(id);
+  if (typeof window === "undefined") {
+    clearTimeout(id as ReturnType<typeof setTimeout>);
+    return;
+  }
+  if (window.cancelIdleCallback && typeof id === "number") {
+    window.cancelIdleCallback(id);
+    return;
+  }
+  clearTimeout(id as ReturnType<typeof setTimeout>);
 }
 
 const HELP_RE = /^\/(help|допомога|команди|інструменти)\s*$/i;

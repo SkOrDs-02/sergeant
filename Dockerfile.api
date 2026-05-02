@@ -1,24 +1,42 @@
 # Мінімальний образ лише для Hub API (Railway / Docker).
 # Збірка: docker build -f Dockerfile.api -t hub-api .
-FROM node:20-alpine AS builder
+FROM node:20.20.2-alpine AS builder
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
 
 # --- Залежності (кеш-шар) ---
+# `patches/` потрібен ДО `pnpm install`, бо `pnpm.patchedDependencies` у
+# package.json (наразі `@expo/cli@0.22.28`) застосовується завжди — навіть з
+# `--ignore-scripts` — і відсутність патч-файлу валить frozen-install.
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY patches ./patches
 COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/config/package.json ./packages/config/package.json
+COPY packages/db-schema/package.json ./packages/db-schema/package.json
+COPY packages/finyk-domain/package.json ./packages/finyk-domain/package.json
 COPY apps/server/package.json ./apps/server/package.json
 
 RUN pnpm install --frozen-lockfile --ignore-scripts \
       --filter @sergeant/server... \
-      --filter @sergeant/shared...
+      --filter @sergeant/shared... \
+      --filter @sergeant/db-schema... \
+      --filter @sergeant/finyk-domain...
 
 # --- Джерела ---
 COPY packages/shared ./packages/shared
 COPY packages/config ./packages/config
+COPY packages/db-schema ./packages/db-schema
+COPY packages/finyk-domain ./packages/finyk-domain
 COPY apps/server ./apps/server
+
+# `@sergeant/db-schema` мусить бути ЗБИЛДЖЕНИЙ ДО серверного `pnpm build`:
+# `apps/server/build.mjs` (esbuild, packages: "bundle") резолвить
+# `@sergeant/db-schema/pg` через `packages/db-schema/dist/pg/index.js`,
+# який існує тільки після `tsc -p tsconfig.build.json`. Без цього
+# Docker-build падає на esbuild-resolve:
+# `Could not resolve "@sergeant/db-schema/pg"` (Railway deploy fails).
+RUN pnpm --filter @sergeant/db-schema build
 
 WORKDIR /app/apps/server
 ENV NODE_ENV=production
@@ -27,7 +45,7 @@ RUN pnpm build
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Runtime image
-FROM node:20-alpine AS runtime
+FROM node:20.20.2-alpine AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -35,11 +53,22 @@ ENV NODE_ENV=production
 RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
 
 # Install production deps only (keeps runtime small & safer).
+# `patches/` обов'язково ДО `pnpm install` — див. коментар у builder-stage.
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY patches ./patches
 COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/config/package.json ./packages/config/package.json
+COPY packages/db-schema/package.json ./packages/db-schema/package.json
+COPY packages/finyk-domain/package.json ./packages/finyk-domain/package.json
 COPY apps/server/package.json ./apps/server/package.json
 
+# `pnpm install --prod --filter @sergeant/server...` обходить deps-граф, у
+# тому числі workspace-only `@sergeant/db-schema` (через `apps/server`).
+# Сам `dist/` нам у runtime не потрібен — esbuild у builder-стейджі
+# забандлив db-schema у `dist-server/index.js`. Але без `package.json`-а
+# `pnpm` не зможе резолвнути workspace-протокол `workspace:^` і впаде
+# на старті install. Тому копіюємо тільки маніфест, як і для інших
+# workspace-пакетів вище (shared/config/finyk-domain).
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts \
       --filter @sergeant/server...
 
@@ -47,5 +76,53 @@ RUN pnpm install --prod --frozen-lockfile --ignore-scripts \
 COPY apps/server ./apps/server
 COPY --from=builder /app/apps/server/dist-server ./apps/server/dist-server
 
+# Trim vulnerabilities surfaced by Trivy on the runtime image:
+#
+#   1. `pnpm install --prod` авто-встановлює optional-peer-и (`vitest` у
+#      `better-auth`, `@tanstack/react-start` тощо) і разом із ними тягне
+#      `vite` + `@esbuild/linux-x64`. У runtime ми виконуємо лише
+#      `node dist-server/index.js`, тож ні `vite`, ні `vitest`, ні Go-binary
+#      `esbuild` не потрібні, але Trivy фейлить CRITICAL/HIGH у Go-stdlib
+#      `esbuild`-білда (CVE-2025-68121 + 8 HIGH). `--frozen-lockfile`
+#      блокує перемикання `auto-install-peers`, тому прибираємо ці модулі
+#      постфактум, тримаючи lockfile незмінним.
+#   2. `node:*-alpine` ships старий `npm` (bundles vulnerable `cross-spawn`,
+#      `glob`, `minimatch`, `tar`) і `corepack`-prepared `pnpm@9.15.1` під
+#      `/root/.local/share/pnpm` (CVE-2025-69262/69263). У runtime ми не
+#      викликаємо жоден із цих менеджерів — прибираємо їх та супутні
+#      symlink-и під `/usr/local/bin/`.
+#
+# Усе виконуємо ще під root-юзером, до зміни на `app`.
+RUN find node_modules -maxdepth 3 -type d \
+      \( -path 'node_modules/.pnpm/vite@*' \
+         -o -path 'node_modules/.pnpm/vitest@*' \
+         -o -path 'node_modules/.pnpm/vite-node@*' \
+         -o -path 'node_modules/.pnpm/@vitest+*' \
+         -o -path 'node_modules/.pnpm/esbuild@*' \
+         -o -path 'node_modules/.pnpm/@esbuild+*' \
+         -o -path 'node_modules/.pnpm/tsx@*' \
+         -o -path 'node_modules/.pnpm/rollup@*' \
+         -o -path 'node_modules/.pnpm/@rollup+*' \) \
+      -prune -exec rm -rf {} + \
+ && rm -rf /usr/local/lib/node_modules/corepack \
+           /usr/local/lib/node_modules/npm \
+           /usr/local/bin/corepack \
+           /usr/local/bin/npm \
+           /usr/local/bin/npx \
+           /usr/local/bin/yarn \
+           /usr/local/bin/yarnpkg \
+           /root/.local/share/pnpm \
+           /root/.cache
+
+# Non-root user for security (CIS Docker Benchmark, OWASP).
+RUN addgroup -S app && adduser -S app -G app
+USER app
+
 WORKDIR /app/apps/server
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+
 CMD ["node", "dist-server/index.js"]

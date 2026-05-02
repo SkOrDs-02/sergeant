@@ -14,7 +14,7 @@ export function RoutineSlide({ slide }: { slide: RoutineSlideData }) {
 
   return (
     <StoryShell slide={slide}>
-      <p className="text-[12px] uppercase tracking-[0.3em] text-white/70 font-bold mb-2">
+      <p className="text-xs uppercase tracking-[0.3em] text-white/70 font-bold mb-2">
         Звички · Рутина
       </p>
 
@@ -41,7 +41,7 @@ export function RoutineSlide({ slide }: { slide: RoutineSlideData }) {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="text-[28px] font-black leading-none tabular-nums">
+            <div className="text-3xl font-black leading-none tabular-nums">
               {agg?.overallRate ?? 0}%
             </div>
             <div className="text-2xs uppercase tracking-wider font-bold text-white/75 mt-0.5">
@@ -50,10 +50,10 @@ export function RoutineSlide({ slide }: { slide: RoutineSlideData }) {
           </div>
         </div>
         <div>
-          <div className="text-[12px] uppercase tracking-wider text-white/75 font-bold">
+          <div className="text-xs uppercase tracking-wider text-white/75 font-bold">
             Активних звичок
           </div>
-          <div className="text-[32px] font-black leading-tight tabular-nums">
+          <div className="text-3xl font-black leading-tight tabular-nums">
             {agg?.habitCount ?? 0}
           </div>
         </div>
@@ -66,7 +66,7 @@ export function RoutineSlide({ slide }: { slide: RoutineSlideData }) {
           </p>
           {top.map((h) => (
             <div key={h.name} className="space-y-1">
-              <div className="flex items-baseline justify-between text-[13px]">
+              <div className="flex items-baseline justify-between text-sm">
                 <span className="font-semibold text-white/95 truncate pr-2">
                   {h.name}
                 </span>
@@ -87,9 +87,9 @@ export function RoutineSlide({ slide }: { slide: RoutineSlideData }) {
 
       {ai?.summary && (
         <div className="mt-auto rounded-2xl bg-white/15 backdrop-blur-sm px-4 py-3 border border-white/20">
-          <p className="text-[14px] font-semibold leading-snug">{ai.summary}</p>
+          <p className="text-style-label leading-snug">{ai.summary}</p>
           {ai.comment && (
-            <p className="text-[12.5px] text-white/85 mt-2 leading-relaxed">
+            <p className="text-xs text-white/85 mt-2 leading-relaxed">
               {ai.comment}
             </p>
           )}

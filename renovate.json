@@ -8,10 +8,10 @@
     ":maintainLockFilesWeekly",
     ":separateMultipleMajorReleases",
     ":prHourlyLimit2",
-    ":prConcurrentLimit10",
     "group:monorepos",
     "group:recommended"
   ],
+  "prConcurrentLimit": 30,
   "timezone": "Europe/Kyiv",
   "schedule": ["before 6am on monday"],
   "labels": ["dependencies"],
@@ -34,10 +34,8 @@
     "minimumReleaseAge": "0 days"
   },
   "lockFileMaintenance": {
-    "enabled": true,
     "schedule": ["before 6am on monday"],
-    "commitMessageAction": "refresh",
-    "extends": ["schedule:weekly"]
+    "commitMessageAction": "refresh"
   },
   "packageRules": [
     {
@@ -116,7 +114,7 @@
       "matchDepTypes": ["devDependencies"],
       "matchUpdateTypes": ["patch", "pin", "digest"],
       "automerge": true,
-      "automergeType": "branch",
+      "automergeType": "pr",
       "platformAutomerge": true
     },
     {

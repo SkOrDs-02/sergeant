@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { safeReadLS } from "@shared/lib/storage";
 import { hubKeys } from "@shared/lib/queryKeys";
 
 /**
@@ -23,14 +24,8 @@ export interface FinykHubPreview {
 }
 
 function readHasMonoData(): boolean {
-  try {
-    const raw = localStorage.getItem(TX_CACHE_LS_KEY);
-    if (!raw) return false;
-    const parsed = JSON.parse(raw) as { txs?: unknown[] } | null;
-    return Array.isArray(parsed?.txs) && parsed.txs.length > 0;
-  } catch {
-    return false;
-  }
+  const parsed = safeReadLS<{ txs?: unknown[] }>(TX_CACHE_LS_KEY);
+  return Array.isArray(parsed?.txs) && parsed.txs.length > 0;
 }
 
 function readPreview(): FinykHubPreview {

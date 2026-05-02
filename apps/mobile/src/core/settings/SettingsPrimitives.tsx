@@ -42,6 +42,7 @@ export interface SettingsGroupProps {
   emoji?: string;
   children: ReactNode;
   defaultOpen?: boolean;
+  testID?: string;
 }
 
 export function SettingsGroup({
@@ -49,6 +50,7 @@ export function SettingsGroup({
   emoji,
   children,
   defaultOpen = false,
+  testID,
 }: SettingsGroupProps) {
   const [open, setOpen] = useState<boolean>(defaultOpen);
   return (
@@ -58,18 +60,48 @@ export function SettingsGroup({
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         accessibilityLabel={title}
-        className="w-full px-4 py-3.5 flex-row items-center justify-between gap-2"
+        accessibilityHint={open ? "Згорнути секцію" : "Розгорнути секцію"}
+        className={cx(
+          "w-full px-4 py-3.5 flex-row items-center justify-between gap-2",
+          open && "bg-cream-50 dark:bg-cream-800",
+        )}
+        style={({ pressed }) =>
+          pressed ? { opacity: 0.9, transform: [{ scale: 0.99 }] } : undefined
+        }
+        testID={testID}
       >
-        <View className="flex-row items-center gap-2 flex-1 min-w-0">
-          {emoji ? <Text className="text-base">{emoji}</Text> : null}
+        <View className="flex-row items-center gap-2.5 flex-1 min-w-0">
+          {emoji ? (
+            <View className="w-8 h-8 rounded-lg bg-cream-100 dark:bg-cream-700 items-center justify-center">
+              <Text className="text-base">{emoji}</Text>
+            </View>
+          ) : null}
           <Text className="text-sm font-semibold text-fg" numberOfLines={1}>
             {title}
           </Text>
         </View>
-        <Text className="text-fg-muted text-base">{open ? "▾" : "▸"}</Text>
+        <View
+          className={cx(
+            "w-6 h-6 rounded-full items-center justify-center",
+            open
+              ? "bg-brand/10 dark:bg-brand/20"
+              : "bg-cream-200 dark:bg-cream-700",
+          )}
+        >
+          <Text
+            className={cx(
+              "text-xs font-medium",
+              open ? "text-brand" : "text-fg-muted",
+            )}
+          >
+            {open ? "▾" : "▸"}
+          </Text>
+        </View>
       </Pressable>
       {open ? (
-        <View className="border-t border-cream-300 p-4 gap-5">{children}</View>
+        <View className="border-t border-cream-300 dark:border-cream-700 p-4 gap-5">
+          {children}
+        </View>
       ) : null}
     </Card>
   );
@@ -133,7 +165,13 @@ export function SettingsSubGroup({ title, children }: SettingsSubGroupProps) {
   return (
     <View className="gap-3">
       {title ? (
-        <Text className="text-xs font-semibold text-fg-muted">{title}</Text>
+        <View className="flex-row items-center gap-2 pb-1.5 mb-1 border-b border-cream-200 dark:border-cream-700">
+          <View className="w-1 h-3.5 rounded-full bg-brand/60" />
+          {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift */}
+          <Text className="text-xs font-semibold text-fg-muted uppercase tracking-wide">
+            {title}
+          </Text>
+        </View>
       ) : null}
       <View className="gap-3">{children}</View>
     </View>

@@ -84,6 +84,8 @@ export interface MonoTransactionRow {
   counterEdrpou: string | null;
   counterIban: string | null;
   counterName: string | null;
+  categorySlug: string | null;
+  categoryOverridden: boolean;
   source: string;
   receivedAt: Date | string;
 }
@@ -109,6 +111,8 @@ export interface NormalizedMonoTransaction {
   counterEdrpou: string | null;
   counterIban: string | null;
   counterName: string | null;
+  categorySlug: string | null;
+  categoryOverridden: boolean;
   source: string;
   receivedAt: string;
 }

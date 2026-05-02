@@ -1,122 +1,65 @@
 # Playbook: Add SQL Migration
 
-**Trigger:** "Додати нове поле / таблицю в БД" / зміна схеми PostgreSQL / нова колонка для існуючої таблиці.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Status:** Active
 
----
+**Trigger:** "Додати нове поле або таблицю в БД" / зміна PostgreSQL schema / новий індекс, constraint або rollout, що вимагає migration file.
+
+## Owner surface
+
+- Primary surface: `apps/server/src/migrations`
+- Governing skill: `sergeant-data-and-migrations`
+
+## Required context
+
+- Почни з `sergeant-start-here`, потім відкрий `sergeant-data-and-migrations`.
+- Звір hard rules #1, #3 і #4 в [AGENTS.md](../../AGENTS.md).
+- Якщо schema change обслуговує новий API behavior, далі виконай [`add-api-endpoint.md`](./add-api-endpoint.md).
 
 ## Steps
 
-### 1. Визначити поточний номер міграції
+### 1. Спроєктуй safe rollout
 
-```bash
-ls apps/server/src/migrations/
-# Наприклад: 001_init.sql, 002_..., ..., 008_mono_integration.sql
-# Наступний файл — 009_*.sql
-```
+- Чітко відділи add/backfill/read-switch/drop stages.
+- Для `DROP COLUMN`, `DROP TABLE` або destructive rewrite використовуй two-phase rollout.
+- Визнач, які app surfaces залежать від нового поля чи таблиці.
 
-Номер має бути **sequential, без gaps** (AGENTS.md rule #4).
+### 2. Створи migration file
 
-### 2. Створити файл міграції
+- Візьми наступний sequential номер `NNN_*.sql`.
+- Не роби gaps і не перейменовуй уже випущені migration files.
+- Для potentially destructive operations додай audit note або `ALLOW_DROP` escape hatch там, де це вимагає lint.
 
-```bash
-touch apps/server/src/migrations/NNN_<short_desc>.sql
-```
+### 3. Онови server/app code
 
-Правила для SQL:
+- Додай нові поля в SQL queries, types і serializers.
+- Якщо response shape змінюється, синхронізуй `packages/api-client`.
+- Не завершуй роботу лише migration file'ом, якщо код ще не готовий читати нову схему.
 
-- Використовувати `IF NOT EXISTS` / `IF EXISTS` де можливо (ідемпотентність).
-- `TIMESTAMPTZ` замість `TIMESTAMP` (з timezone).
-- Foreign keys з `ON DELETE CASCADE` якщо логічно.
-- Індекси для полів які будуть в `WHERE` / `JOIN`.
+### 4. Перевір local execution path
 
-### 3. Оновити серверний код
-
-- Оновити типи в `apps/server/src/modules/<module>/types.ts`.
-- Оновити serializer — **обов'язково** коерсити bigint→number (AGENTS.md rule #1, [#708](https://github.com/Skords-01/Sergeant/issues/708)).
-- Оновити handler якщо новий endpoint або змінений response shape.
-
-### 4. Оновити `packages/api-client`
-
-Якщо змінюється response shape — оновити типи в `packages/api-client/src/endpoints/*` (AGENTS.md rule #3).
-
-### 5. Тести
-
-```bash
-# Запустити тести сервера
-pnpm --filter @sergeant/server exec vitest run
-
-# Snapshot-тест на serializer (якщо є)
-pnpm --filter @sergeant/server exec vitest run apps/server/src/modules/<module>/
-```
-
-Перевірити:
-
-- Bigint поля повертаються як `number`, не як `string`.
-- Нові поля присутні у response.
-- Міграція виконується без помилок.
-
-### 6. Перевірити локально
-
-```bash
-# Запустити міграцію локально
-pnpm db:migrate
-```
-
-### 7. Створити PR
-
-- Branch: `devin/<unix-ts>-feat-<desc>`
-- Commit: `feat(server): add migration NNN — <what changed>`
-- PR description: що змінилось в схемі, які endpoint-и зачеплено.
-
----
+- Запусти локальну міграцію на чистій або актуальній БД.
+- Переконайся, що код стартує після міграції без ручних правок.
+- За потреби зафіксуй deploy order у PR.
 
 ## Verification
 
-- [ ] Номер міграції sequential, без gaps
-- [ ] `pnpm lint` — green
-- [ ] `pnpm typecheck` — green
-- [ ] Тести сервера — green
-- [ ] Bigint→number coercion у serializer (rule #1)
-- [ ] Типи в `packages/api-client` оновлені (rule #3)
-- [ ] `pnpm db:migrate` працює локально
-- [ ] `pnpm lint:migrations` — green (CI: `migration-lint` job)
+- [ ] `pnpm lint`
+- [ ] `pnpm typecheck`
+- [ ] `pnpm test`
+- [ ] `pnpm lint:migrations`
+- [ ] `pnpm db:migrate`
+- [ ] Sequential numbering без gaps
+- [ ] Для destructive change описано two-phase rollout
 
-## CI: Migration lint (`migration-lint` job)
+## When not to use this playbook
 
-The `migration-lint` CI job (runs on every PR) enforces AGENTS.md rule #4 automatically:
+- Потрібен лише data backfill script без schema change.
+- Змінюється тільки API/client type без дотику до БД.
 
-1. **No unguarded `DROP COLUMN` / `DROP TABLE`** in new or changed `*.sql` files (`.down.sql` is exempt).
-2. **Sequential numbering** — no gaps, no duplicates across all migration files.
+## Related playbooks and skills
 
-If the job fails because your migration contains a legitimate DROP:
-
-- Ensure the column/table is already unused in code (deployed in a **previous, merged** PR).
-- Add an escape-hatch comment anywhere in the migration file:
-  ```sql
-  -- ALLOW_DROP: column unused since PR #NNN (due: YYYY-MM-DD)
-  ```
-  The `due:` date is an audit reminder — choose a date ~30 days out.
-
-Run locally:
-
-```bash
-pnpm lint:migrations
-# or directly:
-BASE_REF=main node scripts/lint-migrations.mjs
-```
-
-Script: [`scripts/lint-migrations.mjs`](../../scripts/lint-migrations.mjs) | Tests: `node --test scripts/__tests__/lint-migrations.test.mjs`
-
-## Notes
-
-- Pre-deploy job на Railway автоматично запускає `pnpm db:migrate`.
-- Міграції копіюються через `apps/server/build.mjs` (виправлено в [#704](https://github.com/Skords-01/Sergeant/issues/704)).
-- `MIGRATE_DATABASE_URL` env потрібен для міграцій (= public DB URL).
-- **Ніколи** не видаляй колонки в тій самій міграції що додає нові — це окремий крок після деплою нового коду.
-
-## See also
-
-- [pre-merge-migration-checklist.md](pre-merge-migration-checklist.md) — **обов'язковий чек-лист** для рев'ю PR-у з міграцією перед merge.
-- [AGENTS.md](../../AGENTS.md) — rule #1 (bigint), rule #3 (API contract), rule #4 (migrations)
-- [monobank-webhook-migration.md](../monobank-webhook-migration.md) — приклад великої міграції (008)
-- [backend-tech-debt.md](../tech-debt/backend.md) — §Database & migrations review
+- [add-api-endpoint.md](./add-api-endpoint.md)
+- [hotfix-prod-regression.md](./hotfix-prod-regression.md)
+- Skill: `sergeant-data-and-migrations`
+- Skill: `sergeant-server-api`

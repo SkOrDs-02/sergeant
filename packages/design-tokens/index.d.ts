@@ -50,6 +50,21 @@ export declare const moduleColors: Readonly<
   Record<ModuleAccent, Readonly<Record<string, string>>>
 >;
 
+/**
+ * RGB triplet ("R G B", space-separated) per module for the
+ * `--module-accent-rgb` and `--module-accent-strong-rgb` CSS variables
+ * published by `ModuleAccentProvider`. The `strong` shade is the
+ * WCAG-AA companion (`-700` / `-800`).
+ */
+export interface ModuleAccentRgb {
+  readonly default: string;
+  readonly strong: string;
+}
+
+export declare const moduleAccentRgb: Readonly<
+  Record<ModuleAccent, ModuleAccentRgb>
+>;
+
 /** Status / semantic colours, keyed by `StatusColor`. */
 export declare const statusColors: Readonly<Record<StatusColor, string>>;
 

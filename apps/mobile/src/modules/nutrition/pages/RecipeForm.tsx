@@ -1,16 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, ScrollView, Text, TextInput, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { hapticTap, type NullableMacros } from "@sergeant/shared";
 
+import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
@@ -175,14 +169,8 @@ export function RecipeFormPage({ testID }: { testID?: string }) {
 
   return (
     <View className="flex-1 bg-cream-50" testID={testID}>
-      <View className="px-4 pt-2 pb-2 border-b border-cream-200 flex-row items-center gap-2">
-        <Pressable
-          onPress={onBack}
-          accessibilityRole="button"
-          accessibilityLabel="Назад"
-        >
-          <Text className="text-coral-700 text-base">‹ Назад</Text>
-        </Pressable>
+      <View className="px-4 pt-2 pb-2 border-b border-line flex-row items-center gap-3">
+        <BackButton variant="ghost" size="sm" onPress={onBack} />
         <Text
           className="text-lg font-semibold text-fg flex-1"
           numberOfLines={1}

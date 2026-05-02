@@ -1,3 +1,5 @@
+import { memo, type ReactNode } from "react";
+import { type User } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
@@ -5,20 +7,34 @@ import { ErrorBoundary } from "../ErrorBoundary";
 import { HubDashboard } from "../hub/HubDashboard";
 import { HubReports } from "../hub/HubReports";
 import { HubSettingsPage } from "../hub/HubSettingsPage";
+import { ProfilePage } from "../profile";
+import type { OpenModuleOptions } from "../hooks/useHubNavigation";
+import type { HubView } from "../hooks/useHubUIState";
 import { IOSInstallBanner } from "./IOSInstallBanner";
+
+interface HubSectionFallbackProps {
+  resetError: () => void;
+}
+
+interface HubChromeBannerProps {
+  iconName: string;
+  title: string;
+  description?: string;
+  children: ReactNode;
+}
 
 // Дешевий inline-fallback для секцій хаба: повідомляємо про збій і
 // даємо кнопку `reset`, щоб спробувати перемонтувати секцію без
 // перезавантаження вкладки. Шапка/таби лишаються робочими, бо
 // ErrorBoundary стоїть навколо окремого view, а не навколо `<main>`.
-function HubSectionFallback({ resetError }) {
+function HubSectionFallback({ resetError }: HubSectionFallbackProps) {
   return (
     <div className="px-1 py-6 text-center">
       <p className="text-sm text-muted mb-3">Щось пішло не так у цій секції.</p>
       <button
         type="button"
         onClick={resetError}
-        className="px-4 py-2 rounded-xl bg-panel border border-line text-text text-sm font-medium hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        className="px-4 py-2 rounded-xl bg-panel border border-line text-text text-style-label hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
       >
         Спробувати ще раз
       </button>
@@ -26,7 +42,55 @@ function HubSectionFallback({ resetError }) {
   );
 }
 
-export function HubMainContent({
+function HubChromeBanner({
+  iconName,
+  title,
+  description,
+  children,
+}: HubChromeBannerProps) {
+  return (
+    <div className="px-5 max-w-lg mx-auto w-full mb-2">
+      <Card
+        variant="default"
+        radius="lg"
+        padding="none"
+        className="px-4 py-3 flex items-center gap-3"
+      >
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+          <Icon name={iconName} size={20} className="text-primary" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-style-label text-text">{title}</p>
+          {description && <p className="text-xs text-muted">{description}</p>}
+        </div>
+        {children}
+      </Card>
+    </div>
+  );
+}
+
+export interface HubMainContentProps {
+  updateAvailable: boolean;
+  onApplyUpdate: () => void;
+  canInstall: boolean;
+  onInstall: () => Promise<void>;
+  onDismissInstall: () => void;
+  onOpenModule: (
+    id: string | null | undefined,
+    opts?: OpenModuleOptions,
+  ) => void;
+  iosVisible: boolean;
+  onDismissIos: () => void;
+  hubView: HubView;
+  syncing: boolean;
+  onSync: () => void;
+  onPull: () => void;
+  user: User | null;
+  onShowAuth: () => void;
+  inFtuxSession?: boolean;
+}
+
+export const HubMainContent = memo(function HubMainContent({
   updateAvailable,
   onApplyUpdate,
   canInstall,
@@ -36,14 +100,13 @@ export function HubMainContent({
   iosVisible,
   onDismissIos,
   hubView,
-  onOpenChat,
   syncing,
   onSync,
   onPull,
   user,
   onShowAuth,
   inFtuxSession = false,
-}) {
+}: HubMainContentProps) {
   // Banner budget: at most one chrome banner above the hub content.
   // Priority: update > install (PWA) > iOS install.
   //
@@ -61,90 +124,43 @@ export function HubMainContent({
   return (
     <>
       {showUpdate && (
-        <div className="px-5 max-w-lg mx-auto w-full mb-2">
-          <div className="px-4 py-3 rounded-2xl bg-primary/10 border border-primary/20 flex items-center gap-3">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-primary shrink-0"
-              aria-hidden
-            >
-              <polyline points="23 4 23 10 17 10" />
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-            </svg>
-            <span className="text-sm text-text flex-1">
-              Доступна нова версія
-            </span>
-            <button
-              onClick={onApplyUpdate}
-              className="text-sm font-semibold text-primary hover:underline shrink-0"
-            >
-              Оновити
-            </button>
-          </div>
-        </div>
+        <HubChromeBanner iconName="refresh-cw" title="Доступна нова версія">
+          <Button
+            variant="secondary"
+            size="xs"
+            onClick={onApplyUpdate}
+            className="shrink-0 font-semibold"
+          >
+            Оновити
+          </Button>
+        </HubChromeBanner>
       )}
 
       {showInstall && (
-        <div className="px-5 max-w-lg mx-auto w-full mb-2">
-          <Card
-            variant="default"
-            radius="lg"
-            padding="none"
-            className="px-4 py-3 flex items-center gap-3"
+        <HubChromeBanner
+          iconName="download"
+          title="Встановити додаток"
+          description="Офлайн · пуш-нагадування · ярлик на екрані"
+        >
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={onInstall}
+            className="shrink-0 font-semibold"
           >
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-primary"
-                aria-hidden
-              >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-text">
-                Встановити додаток
-              </p>
-              <p className="text-xs text-muted">
-                Офлайн · пуш-нагадування · ярлик на екрані
-              </p>
-            </div>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={onInstall}
-              className="shrink-0 font-semibold"
-            >
-              Так
-            </Button>
-            <Button
-              variant="ghost"
-              size="xs"
-              iconOnly
-              onClick={onDismissInstall}
-              aria-label="Закрити"
-              className="shrink-0 text-muted hover:text-text"
-            >
-              <Icon name="close" size={16} />
-            </Button>
-          </Card>
-        </div>
+            Так
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            iconOnly
+            onClick={onDismissInstall}
+            aria-label="Закрити"
+            className="shrink-0 text-muted hover:text-text"
+          >
+            <Icon name="close" size={16} />
+          </Button>
+        </HubChromeBanner>
       )}
 
       {showIos && <IOSInstallBanner onDismiss={onDismissIos} />}
@@ -152,14 +168,18 @@ export function HubMainContent({
       <main
         id="main"
         tabIndex={-1}
-        className="flex-1 px-5 pb-28 max-w-lg mx-auto w-full overflow-y-auto rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-inset"
+        className="flex-1 px-5 pb-28 max-w-lg mx-auto w-full overflow-y-auto rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-inset"
       >
         {hubView === "dashboard" && (
           <ErrorBoundary key="dashboard" fallback={HubSectionFallback}>
-            <div className="flex flex-col gap-5 pt-2">
+            <div
+              id="hub-panel-dashboard"
+              role="tabpanel"
+              aria-labelledby="hub-tab-dashboard"
+              className="flex flex-col gap-5 pt-2"
+            >
               <HubDashboard
                 onOpenModule={onOpenModule}
-                onOpenChat={onOpenChat}
                 user={user}
                 onShowAuth={onShowAuth}
               />
@@ -169,23 +189,47 @@ export function HubMainContent({
 
         {hubView === "reports" && (
           <ErrorBoundary key="reports" fallback={HubSectionFallback}>
-            <div className="pt-2">
+            <div
+              id="hub-panel-reports"
+              role="tabpanel"
+              aria-labelledby="hub-tab-reports"
+              className="pt-2"
+            >
               <HubReports />
+            </div>
+          </ErrorBoundary>
+        )}
+
+        {hubView === "profile" && (
+          <ErrorBoundary key="profile" fallback={HubSectionFallback}>
+            <div
+              id="hub-panel-profile"
+              role="tabpanel"
+              aria-labelledby="hub-tab-profile"
+              className="pt-2"
+            >
+              <ProfilePage />
             </div>
           </ErrorBoundary>
         )}
 
         {hubView === "settings" && (
           <ErrorBoundary key="settings" fallback={HubSectionFallback}>
-            <HubSettingsPage
-              syncing={syncing}
-              onSync={onSync}
-              onPull={onPull}
-              user={user}
-            />
+            <div
+              id="hub-panel-settings"
+              role="tabpanel"
+              aria-labelledby="hub-tab-settings"
+            >
+              <HubSettingsPage
+                syncing={syncing}
+                onSync={onSync}
+                onPull={onPull}
+                user={user}
+              />
+            </div>
           </ErrorBoundary>
         )}
       </main>
     </>
   );
-}
+});

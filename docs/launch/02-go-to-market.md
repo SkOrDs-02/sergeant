@@ -1,5 +1,8 @@
 # 02. Go-to-market: запуск, промоутинг, growth
 
+> **Last validated:** 2026-05-01 by @devin-ai. **Next review:** 2026-07-30.
+> **Status:** Active
+
 > Pre-MVP draft. Цифри traffic/CPA/reach — оцінкові, для брейнштормінгу.
 > Джерело: `sergeant-monetization-plan.md` (ч.2), `sergeant-launch-checklist.md` (§7–§9),
 > `sergeant-toolstack.md` (§5–§7, §11).
@@ -595,18 +598,18 @@ PWA SEO складніший (SPA = один HTML), але можна:
 щоб рядки були vendor-agnostic і готові до підключення бібліотеки i18n
 (react-intl, i18next або lingui):
 
-| #   | Файл / Патерн                                 | Що зробити                                                       | Пріоритет |
-| --- | --------------------------------------------- | ---------------------------------------------------------------- | --------- |
-| 1   | `apps/web/src/**/*.tsx` — inline strings      | Витягнути всі user-facing рядки (label, placeholder, title,      | 🔴 High   |
-|     |                                               | toast, error message) у централізований файл `messages/uk.ts`    |           |
-| 2   | `apps/web/src/core/lib/assistantCatalogue.ts` | Замінити hardcoded UA-промпти на шаблони з `{locale}` параметром | 🔴 High   |
-| 3   | `apps/web/src/shared/constants/*.ts`          | Перевірити: назви модулів, label, units — винести у messages     | 🟡 Medium |
-| 4   | `packages/shared/src/**`                      | Zod error messages — зробити locale-aware або залишити EN-only   | 🟡 Medium |
-| 5   | `apps/web/src/modules/*/components/**`        | Перевірити hardcoded `"₴"` → використовувати Intl.NumberFormat   | 🟡 Medium |
-| 6   | `apps/web/public/manifest.json`               | `name`, `short_name`, `description` — параметризувати для locale | 🟢 Low    |
-| 7   | `apps/web/index.html`                         | `<html lang="uk">` → динамічний `lang` атрибут                   | 🟢 Low    |
-| 8   | Дати / числа / валюта                         | Використовувати `Intl.DateTimeFormat`, `Intl.NumberFormat`       | 🟡 Medium |
-|     |                                               | замість hardcoded форматів                                       |           |
+| #   | Файл / Патерн                                   | Що зробити                                                       | Пріоритет |
+| --- | ----------------------------------------------- | ---------------------------------------------------------------- | --------- |
+| 1   | `apps/web/src/**/*.tsx` — inline strings        | Витягнути всі user-facing рядки (label, placeholder, title,      | 🔴 High   |
+|     |                                                 | toast, error message) у централізований файл `messages/uk.ts`    |           |
+| 2   | `packages/shared/src/lib/assistantCatalogue.ts` | Замінити hardcoded UA-промпти на шаблони з `{locale}` параметром | 🔴 High   |
+| 3   | `apps/web/src/shared/constants/*.ts`            | Перевірити: назви модулів, label, units — винести у messages     | 🟡 Medium |
+| 4   | `packages/shared/src/**`                        | Zod error messages — зробити locale-aware або залишити EN-only   | 🟡 Medium |
+| 5   | `apps/web/src/modules/*/components/**`          | Перевірити hardcoded `"₴"` → використовувати Intl.NumberFormat   | 🟡 Medium |
+| 6   | `apps/web/public/manifest.json`                 | `name`, `short_name`, `description` — параметризувати для locale | 🟢 Low    |
+| 7   | `apps/web/index.html`                           | `<html lang="uk">` → динамічний `lang` атрибут                   | 🟢 Low    |
+| 8   | Дати / числа / валюта                           | Використовувати `Intl.DateTimeFormat`, `Intl.NumberFormat`       | 🟡 Medium |
+|     |                                                 | замість hardcoded форматів                                       |           |
 
 > **Крок 1 (мінімум для запуску):** винести рядки у `messages/uk.ts` +
 > зробити `useTranslation()` wrapper. Можна без бібліотеки — простий

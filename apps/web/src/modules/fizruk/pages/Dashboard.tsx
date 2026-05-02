@@ -1,3 +1,4 @@
+import { safeWriteLS } from "@shared/lib/storage";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -41,8 +42,11 @@ export function Dashboard({
   const { entries: measurements } = useMeasurements();
 
   const [planConfirmOpen, setPlanConfirmOpen] = useState(false);
-  const [pendingPicks, setPendingPicks] = useState(null);
-  const [pendingTemplateId, setPendingTemplateId] = useState(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [pendingPicks, setPendingPicks] = useState<any[] | null>(null);
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(
+    null,
+  );
 
   const closePlanConfirm = () => {
     setPlanConfirmOpen(false);
@@ -81,9 +85,7 @@ export function Dashboard({
       });
     }
     if (templateId) markTemplateUsed(templateId);
-    try {
-      localStorage.setItem(ACTIVE_WORKOUT_KEY, w.id);
-    } catch {}
+    safeWriteLS(ACTIVE_WORKOUT_KEY, w.id);
     try {
       sessionStorage.setItem("fizruk_workouts_mode", "log");
     } catch {}
@@ -93,7 +95,11 @@ export function Dashboard({
   const tryStartPlan = (picks: unknown[], templateId?: string | null) => {
     if (!picks?.length) return;
     const risky = picks.some(
-      (ex) => recoveryConflictsForExercise(ex, rec.by).hasWarning,
+      (ex) =>
+        recoveryConflictsForExercise(
+          ex as { muscles?: { primary?: string[]; secondary?: string[] } },
+          rec.by,
+        ).hasWarning,
     );
     if (risky) {
       setPendingPicks(picks);

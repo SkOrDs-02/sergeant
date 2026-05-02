@@ -31,8 +31,12 @@ jobs:
       (github.event_name == 'pull_request' && github.event.label.name == 'extended-e2e')
     timeout-minutes: 30
     services:
+      # pgvector/pgvector:pg16 — Postgres 16 + the `vector` extension
+      # required by migration 025_ai_memories_pgvector.sql. Plain
+      # postgres:16-alpine does not ship the extension and breaks
+      # `db:migrate:dev` at boot. SHA-pinned (manifest-list digest).
       postgres:
-        image: postgres:16-alpine@sha256:4e6e670bb069649261c9c18031f0aded7bb249a5b6664ddec29c013a89310d50
+        image: pgvector/pgvector:pg16@sha256:7d400e340efb42f4d8c9c12c6427adb253f726881a9985d2a471bf0eed824dff
         env:
           POSTGRES_USER: hub
           POSTGRES_PASSWORD: hub

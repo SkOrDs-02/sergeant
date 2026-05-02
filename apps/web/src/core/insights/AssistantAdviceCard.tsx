@@ -2,6 +2,11 @@ import { useState } from "react";
 import { cn } from "@shared/lib/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import {
+  safeReadStringLS,
+  safeWriteLS,
+  safeRemoveLS,
+} from "@shared/lib/storage";
 
 interface AssistantAdviceCardProps {
   insight: string | null;
@@ -13,20 +18,12 @@ interface AssistantAdviceCardProps {
 const COLLAPSED_KEY = "hub_assistant_advice_collapsed";
 
 function readCollapsed(): boolean {
-  try {
-    return localStorage.getItem(COLLAPSED_KEY) === "1";
-  } catch {
-    return false;
-  }
+  return safeReadStringLS(COLLAPSED_KEY) === "1";
 }
 
 function writeCollapsed(v: boolean): void {
-  try {
-    if (v) localStorage.setItem(COLLAPSED_KEY, "1");
-    else localStorage.removeItem(COLLAPSED_KEY);
-  } catch {
-    /* noop */
-  }
+  if (v) safeWriteLS(COLLAPSED_KEY, "1");
+  else safeRemoveLS(COLLAPSED_KEY);
 }
 
 export function AssistantAdviceCard({
@@ -66,7 +63,7 @@ export function AssistantAdviceCard({
         >
           <div className="flex items-center gap-2">
             <span
-              className="w-6 h-6 rounded-full bg-brand-50 dark:bg-brand-500/15 flex items-center justify-center text-xs"
+              className="w-6 h-6 rounded-full bg-brand-soft flex items-center justify-center text-xs"
               aria-hidden
             >
               S
@@ -106,7 +103,7 @@ export function AssistantAdviceCard({
               disabled={loading}
               aria-label="Оновити пораду"
               className={cn(
-                "mt-2 p-1 rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors",
+                "mt-2 p-1 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors",
                 loading &&
                   "opacity-40 cursor-not-allowed motion-safe:animate-spin",
               )}

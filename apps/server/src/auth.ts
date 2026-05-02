@@ -1,14 +1,33 @@
+import { createHash } from "node:crypto";
+
 import { betterAuth } from "better-auth";
 import { fromNodeHeaders } from "better-auth/node";
 import { bearer } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import type { Request } from "express";
 import pool from "./db.js";
+import { env } from "./env/env.js";
+import { createEncryptingAdapter } from "./auth/encryptingAdapter.js";
+import { sanitizeUserImage } from "./auth/sanitizeUserImage.js";
 import { queueAuthTransactionalEmail } from "./email/authTransactionalMail.js";
+import { logger } from "./obs/logger.js";
 import {
   authAttemptsTotal,
   authSessionLookupDurationMs,
 } from "./obs/metrics.js";
+
+/**
+ * Короткий fingerprint email-у для логів. Той самий патерн (sha256 → 12 hex),
+ * що й у `email/authTransactionalMail.ts`: дозволяє корелювати auth-event-и
+ * у Datadog/Sentry без зливу самої адреси у логи. Локальна копія — щоб не
+ * створювати cross-module coupling заради 5 рядків.
+ */
+function emailFingerprint(email: string): string {
+  return createHash("sha256")
+    .update(email.toLowerCase(), "utf8")
+    .digest("hex")
+    .slice(0, 12);
+}
 
 interface AdvancedCookieOptions {
   useSecureCookies: true;
@@ -57,8 +76,47 @@ function getAdvancedCookieOptions(): AdvancedCookieOptions | null {
 
 const advancedCookies = getAdvancedCookieOptions();
 
+/**
+ * Збираємо `socialProviders` тільки коли пара
+ * `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` обидві задані. Якщо
+ * хоча б одна порожня — кидати конфіг до Better Auth не можна
+ * (він зразу падає при старті, бо валідатор сприймає це як
+ * misconfigured provider). Тому у dev/CI без credentials просто не
+ * вмикаємо провайдера: фронтова кнопка отримає `Provider not
+ * configured` через стандартний `authError` (див. `loginWithGoogle`
+ * у `apps/web/src/core/auth/AuthContext.tsx`), а сервер стартує без
+ * сюрпризів.
+ */
+function getSocialProviders():
+  | { google: { clientId: string; clientSecret: string } }
+  | undefined {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return undefined;
+  return {
+    google: {
+      clientId,
+      clientSecret,
+    },
+  };
+}
+
+const socialProviders = getSocialProviders();
+
+/**
+ * `accessToken` / `refreshToken` / `idToken` стовпці в `account` за
+ * замовчуванням `TEXT` plaintext (фікс C1). Якщо є env-ключ — заходимо
+ * в Better Auth через encrypting-adapter, який шифрує токени AES-256-GCM
+ * на запис і дешифрує на читання. Без ключа (dev/local) лишаємось на
+ * стандартному `database: pool` — `assertStartupEnv` уже заборонив
+ * такий старт у production.
+ */
+const databaseConfig = env.BETTER_AUTH_TOKEN_ENC_KEY
+  ? createEncryptingAdapter(pool, env.BETTER_AUTH_TOKEN_ENC_KEY)
+  : pool;
+
 export const auth = betterAuth({
-  database: pool,
+  database: databaseConfig,
   baseURL: getBaseURL(),
   basePath: "/api/auth",
   user: {
@@ -66,6 +124,7 @@ export const auth = betterAuth({
       enabled: true,
     },
   },
+  ...(socialProviders ? { socialProviders } : {}),
   emailAndPassword: {
     enabled: true,
     // NIST SP 800-63B рекомендує мінімум 8 символів; 10 — розумний trade-off,
@@ -102,6 +161,63 @@ export const auth = betterAuth({
     cookieCache: {
       enabled: true,
       maxAge: 60 * 5,
+    },
+  },
+  /**
+   * `databaseHooks.user.{create,update}.before` пропускає payload через
+   * `sanitizeUserImage`, який нулить `image`, якщо клієнт прислав
+   * `data:` URL або рядок > 2 КБ. Чому це треба:
+   *
+   * Better Auth писав весь user-обʼєкт у session cookie cache (стратегія
+   * `compact`, HMAC + base64). Якщо у `user.image` сидить 19 КБ-ова
+   * embedded картинка (реальний інцидент 2026-05-02), один Set-Cookie
+   * розчленовується на 7+ chunks, відповідь зависає на 90+ секунд через
+   * проксі-ланцюг Vercel → Railway → iOS Safari, і логін падає у 504
+   * («Сервер тимчасово недоступний» на UI, хоч пароль правильний).
+   *
+   * Логимо WARN, щоб у Sentry/Datadog видно, які клієнти ще шлють
+   * data-URL — це сигнал на UI-фікс (треба робити нормальний
+   * upload-pipeline у CDN, не вшивати base64 у БД). Сам реквест
+   * успішний — зрізаний `image` краще, ніж 504.
+   */
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (data) => {
+          const result = sanitizeUserImage(data);
+          if (result.imageStripped) {
+            logger.warn(
+              {
+                event: "auth.user.image.stripped",
+                op: "create",
+                reason: result.reason,
+                email_hash:
+                  typeof data.email === "string"
+                    ? emailFingerprint(data.email)
+                    : null,
+              },
+              "sanitizeUserImage stripped oversized/data-URL image on user.create",
+            );
+          }
+          return { data: result.data };
+        },
+      },
+      update: {
+        before: async (data) => {
+          const result = sanitizeUserImage(data);
+          if (result.imageStripped) {
+            logger.warn(
+              {
+                event: "auth.user.image.stripped",
+                op: "update",
+                reason: result.reason,
+              },
+              "sanitizeUserImage stripped oversized/data-URL image on user.update",
+            );
+          }
+          return { data: result.data };
+        },
+      },
     },
   },
   trustedOrigins: getTrustedOrigins(),
@@ -152,7 +268,10 @@ function getTrustedOrigins(): string[] {
 
 interface SessionUser {
   id: string;
-  [key: string]: unknown;
+  email?: string;
+  name?: string;
+  image?: string;
+  emailVerified?: boolean;
 }
 
 export async function getSessionUser(

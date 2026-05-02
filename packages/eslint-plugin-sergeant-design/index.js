@@ -14,6 +14,17 @@
  *     what Web Interface Guidelines recommend for truncation cues
  *     ("Loading…", "Пошук…", etc.). Auto-fixable.
  *
+ *   - no-hex-in-classname: forbid arbitrary-value hex colors in
+ *     className (`bg-[#10b981]`, `text-[#fff]/50`, …). Every color must
+ *     come from the design-system token layer so dark-mode, palette
+ *     migration, and WCAG tiers apply uniformly.
+ *
+ *   - no-foreign-module-accent: inside `apps/[app]/src/modules/[X]/`
+ *     subtrees, only `[X]`'s accent utilities (`bg-[X]-surface`,
+ *     `text-[X]-strong`, `ring-[X]`, …) are allowed. Cross-module
+ *     shells (`core/`, `shared/`, `stories/`) remain free to reference
+ *     all four module accents.
+ *
  * Motion / reduced-motion (convention — not auto-enforced yet):
  *   - Prefer `motion-safe:` on `animate-*` and decorative transitions so
  *     `prefers-reduced-motion: reduce` users get calmer UI; pair with
@@ -177,7 +188,9 @@ const TRACKED_STORAGE_KEY_NAMES = new Set([
   "FINYK_INFO_CACHE",
   "FINYK_TX_CACHE_LAST_GOOD",
   "FINYK_SHOW_BALANCE",
-  "FINYK_TOKEN",
+  // FINYK_TOKEN intentionally NOT tracked: the Monobank PAT is server-only
+  // (`mono_connection.token_ciphertext`) and writing it client-side is
+  // banned by the dedicated `no-finyk-token-in-storage` rule.
   "FINYK_MANUAL_EXPENSES",
   "FINYK_TX_FILTERS",
   // fizruk
@@ -221,7 +234,8 @@ const TRACKED_STORAGE_KEY_VALUES = new Set([
   "finyk_info_cache",
   "finyk_tx_cache_last_good",
   "finyk_show_balance_v1",
-  "finyk_token",
+  // "finyk_token" intentionally NOT tracked: server-only PAT, see
+  // `no-finyk-token-in-storage` rule.
   "finyk_manual_expenses_v1",
   "finyk_tx_filters_v1",
   // fizruk
@@ -1415,19 +1429,1107 @@ const noStrictBypass = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────────────
+// `no-hex-in-classname` — forbid arbitrary hex colors in Tailwind className
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Tailwind's arbitrary-value syntax (`bg-[#10b981]`, `text-[#fff]/50`,
+// `border-[#123]`) bypasses the design-system tokens entirely. A raw hex
+// in a className means: (a) dark-mode won't adapt, (b) the value doesn't
+// re-theme when the palette evolves, (c) it can't be grep'd from a single
+// place when we need to migrate. The Sergeant rule is simple: every color
+// in a className comes from the token scale (`bg-surface`, `text-muted`,
+// `border-border`, `bg-finyk-surface`, `text-brand-strong`, `bg-success-soft`,
+// …). If a colour is truly one-off (chart series, illustration fill), put
+// it in the token layer (CSS var + preset alias) — not inline.
+//
+// The rule only flags hex inside the arbitrary-value brackets of
+// Tailwind's color-aware utilities (`bg-`, `text-`, `border-`, `ring-`,
+// `fill-`, `stroke-`, `from-`, `to-`, `via-`, `shadow-`, `outline-`,
+// `divide-`, `placeholder-`, `caret-`, `decoration-`, `accent-`). Plain
+// hex literals outside className context (e.g. chart config passing a
+// hex to recharts) are NOT this rule's concern — those are a code review
+// issue for `shared/charts/chartPalette.ts`.
+
+const HEX_IN_CLASSNAME_MESSAGE =
+  "Raw hex `{{utility}}-[#{{hex}}]` bypasses the design-system tokens — use a semantic utility (e.g. `bg-surface`, `text-fg`, `bg-finyk-surface`, `text-brand-strong`, `bg-success-soft`) or extend the palette in `packages/design-tokens/tailwind-preset.js` if a new token is genuinely needed.";
+
+// Match `[variants:]<utility>-[#HEX]` with optional `/OPACITY` suffix.
+//   • utility ∈ TAILWIND_OPACITY_UTILITIES (the color-aware set reused from
+//     valid-tailwind-opacity so we keep one list).
+//   • `<HEX>` is 3, 4, 6, or 8 hex digits.
+//   • `\b` anchor lets variant prefixes (`dark:`, `hover:`, `lg:`) sit in
+//     front of the utility without tripping the regex.
+const RX_HEX_IN_CLASSNAME = new RegExp(
+  String.raw`\b(` +
+    TAILWIND_OPACITY_UTILITIES.join("|") +
+    String.raw`)-\[#([0-9a-fA-F]{3,8})\]`,
+  "g",
+);
+
+function findHexInClassName(value) {
+  if (typeof value !== "string" || value.length === 0) return [];
+  if (!value.includes("[#")) return [];
+  const hits = [];
+  let match;
+  RX_HEX_IN_CLASSNAME.lastIndex = 0;
+  while ((match = RX_HEX_IN_CLASSNAME.exec(value)) !== null) {
+    const [, utility, hex] = match;
+    // Validate hex length so `bg-[#12]` or `bg-[#1234567]` don't trigger.
+    if (![3, 4, 6, 8].includes(hex.length)) continue;
+    hits.push({ utility, hex });
+  }
+  return hits;
+}
+
+const noHexInClassname = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid arbitrary `<utility>-[#hex]` colors in className — every color must come from the design-system token layer.",
+    },
+    schema: [],
+    messages: { hex: HEX_IN_CLASSNAME_MESSAGE },
+  },
+  create(context) {
+    function report(node, value) {
+      const hits = findHexInClassName(value);
+      for (const hit of hits) {
+        context.report({
+          node,
+          messageId: "hex",
+          data: { utility: hit.utility, hex: hit.hex },
+        });
+      }
+    }
+    return {
+      Literal(node) {
+        if (typeof node.value === "string") report(node, node.value);
+      },
+      TemplateElement(node) {
+        const cooked = node.value && node.value.cooked;
+        if (typeof cooked === "string") report(node, cooked);
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// `no-foreign-module-accent` — keep module colors within their module
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Sergeant has 4 module brand colors: `finyk` (emerald), `fizruk` (teal),
+// `routine` (coral), `nutrition` (lime). They're tuned close in saturation,
+// so accidental cross-module use reads as a design bug — a fizruk button
+// rendering coral `ring-routine` says "Рутина" to the user. The rule:
+//
+//   Files under `apps/web/src/modules/<X>/**` may only use `<X>`'s accent
+//   utilities. Cross-module shells (`core/**`, `shared/**`, `stories/**`)
+//   are free to use all four, because that's their job.
+//
+// Accent utilities matched: `(bg|text|border|ring|from|to|via|fill|stroke|
+// shadow|outline|divide|placeholder|caret|decoration|accent)-<module>`
+// with optional `-<shade>` suffix (e.g. `-strong`, `-soft`, `-500`,
+// `-surface`) and optional `/<opacity>` suffix. Variant prefixes
+// (`dark:`, `hover:`, `lg:`) are allowed in front.
+
+const MODULE_ACCENTS = ["finyk", "fizruk", "routine", "nutrition"];
+
+const FOREIGN_MODULE_ACCENT_MESSAGE =
+  "`{{match}}` is a `{{foreign}}` accent inside a `{{home}}` module — modules must only use their own accent. Use `{{home}}` equivalents or move this to a cross-module surface (`core/**`, `shared/**`).";
+
+// Match `[variants:]<utility>-<module>[-<shade>][/<opacity>]`.
+const RX_MODULE_ACCENT = new RegExp(
+  String.raw`\b(` +
+    TAILWIND_OPACITY_UTILITIES.join("|") +
+    String.raw`)-(` +
+    MODULE_ACCENTS.join("|") +
+    String.raw`)(-[a-z0-9]+(?:-[a-z0-9]+)?)?(\/\d{1,3})?\b`,
+  "g",
+);
+
+// Derive the "home" module from an absolute or repo-relative file path.
+// Accepts web and mobile source trees; returns null for non-module paths
+// and for `modules/shared/` (a cross-module utility folder that hosts
+// primitives rendering any of the four accents — e.g.
+// `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx`).
+function homeModuleFromFilename(filename) {
+  if (typeof filename !== "string") return null;
+  // Normalize path separators for Windows; tests feed a unix-style mock.
+  const norm = filename.replace(/\\/g, "/");
+  const m = norm.match(
+    /\/(?:apps\/(?:web|mobile)\/src|apps\/mobile\/app)\/modules\/([a-z]+)\//,
+  );
+  if (!m) return null;
+  const home = m[1];
+  // Only the four canonical modules own their accent palette — any
+  // other folder under `modules/` is a cross-module utility and must
+  // stay free to render every accent.
+  return MODULE_ACCENTS.includes(home) ? home : null;
+}
+
+function findForeignModuleAccents(value, home) {
+  if (typeof value !== "string" || value.length === 0) return [];
+  if (!home) return [];
+  // Cheap prefilter so we don't regex every unrelated literal.
+  let maybe = false;
+  for (const m of MODULE_ACCENTS) {
+    if (m !== home && value.includes(`-${m}`)) {
+      maybe = true;
+      break;
+    }
+  }
+  if (!maybe) return [];
+  const hits = [];
+  let match;
+  RX_MODULE_ACCENT.lastIndex = 0;
+  while ((match = RX_MODULE_ACCENT.exec(value)) !== null) {
+    const [full, , mod] = match;
+    if (mod !== home) hits.push({ match: full, foreign: mod });
+  }
+  return hits;
+}
+
+const noForeignModuleAccent = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid cross-module accent utilities inside `apps/*/src/modules/<X>/**` — a fizruk component must not render `ring-routine` etc.",
+    },
+    schema: [],
+    messages: { foreign: FOREIGN_MODULE_ACCENT_MESSAGE },
+  },
+  create(context) {
+    const filename =
+      (context.filename != null ? context.filename : context.getFilename()) ||
+      "";
+    const home = homeModuleFromFilename(filename);
+    if (!home) return {};
+    // Cross-module accent rule doesn't apply to the module-accent system
+    // itself (the map literals that declare every accent) or to module-
+    // scoped tests (they naturally reference all four for coverage).
+    if (/\.(test|spec)\.[jt]sx?$/.test(filename)) return {};
+
+    function report(node, value) {
+      const hits = findForeignModuleAccents(value, home);
+      for (const hit of hits) {
+        context.report({
+          node,
+          messageId: "foreign",
+          data: { match: hit.match, foreign: hit.foreign, home },
+        });
+      }
+    }
+    return {
+      Literal(node) {
+        if (typeof node.value === "string") report(node, node.value);
+      },
+      TemplateElement(node) {
+        const cooked = node.value && node.value.cooked;
+        if (typeof cooked === "string") report(node, cooked);
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// `no-raw-dark-palette` — forbid the raw-palette light/dark anti-pattern
+// ─────────────────────────────────────────────────────────────────────────
+//
+// The dark-mode audit (`docs/design/DARK-MODE-AUDIT.md`) catalogues a
+// recurring shape: a className that encodes both themes by hand by
+// pairing a raw Tailwind palette utility on the light side with a
+// `dark:` raw-palette override —
+//
+//   bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300
+//   bg-coral-100 dark:bg-coral-900/30
+//   border-teal-200/50 ... dark:border-teal-800/30
+//
+// Both halves of the pair encode palette knowledge at the call-site, so
+// the next palette migration (or the next `theme.opacity` step renaming
+// — bug #814) silently drops one half and the surrounding override
+// falls through to the wrong colour. The fix is always the same: lift
+// the (light, dark) pair into the design-system token layer
+// (`bg-success-soft`, `bg-finyk-surface`, `border-routine-soft-border`,
+// …) so the preset owns the swap and the call-site has zero `dark:`
+// overrides.
+//
+// The rule fires on a className **only** when *both* halves of the
+// pair are present:
+//
+//   • a bare `<utility>-<PALETTE>-<SHADE>` (or `…/<opacity>`), AND
+//   • a `dark:<utility>-<PALETTE>-<SHADE>` (or `…/<opacity>`),
+//
+// where `<utility>` ∈ { bg, text, border } and `<PALETTE>` is one of
+// the 24 raw Tailwind palette names (24 = 22 default Tailwind families
+// + Sergeant's `brand` and `coral` aliases — both are theme-inert raw
+// palettes despite the brand-y names; the per-theme aware utilities
+// are `bg-brand-soft`, `bg-routine-surface`, etc.). `<SHADE>` is a
+// numeric step (`50`, `100`, …, `950`), so semantic suffixes
+// (`brand-soft`, `brand-strong`, `coral-soft-border`) do NOT match.
+//
+// Patterns that intentionally STAY (do NOT fire):
+//
+//   • `dark:bg-white/10`, `dark:border-white/15`, `dark:bg-black/40` —
+//     bare colour washes (no palette name), per
+//     `docs/design/design-system.md` § 2.1.
+//   • `dark:bg-surface`, `dark:text-fg`, `dark:border-border` —
+//     semantic tokens that simply happen to carry a `dark:` prefix
+//     because a stacked surface needs an explicit override.
+//   • Dark-side-only "patches" where the *light* half is already a
+//     semantic token (e.g. `Banner.tsx` line 22:
+//     `bg-success-soft text-success-strong dark:text-emerald-100` —
+//     light is the semantic `text-success-strong`, dark patches a
+//     lighter shade because the `-strong` companion does not adapt
+//     well on dark panels). These are documented gaps in the
+//     `-strong` companion scale, not raw-palette pairs.
+//
+// Promotion path: this rule ships at `error` level once the audit's
+// inventory hits zero (Wave 2c of `docs/design/DARK-MODE-AUDIT.md`).
+// Any future violation must be intentional — either extend the token
+// layer in `packages/design-tokens/tailwind-preset.js` or, in the rare
+// case where an inline raw-palette override is justified (e.g. a
+// chart-series fallback), add an `// eslint-disable-next-line
+// sergeant-design/no-raw-dark-palette` with a comment explaining why
+// the token layer cannot own the pair.
+
+const RAW_DARK_PALETTE_FAMILIES = [
+  "gray",
+  "slate",
+  "zinc",
+  "neutral",
+  "stone",
+  "red",
+  "orange",
+  "amber",
+  "yellow",
+  "lime",
+  "green",
+  "emerald",
+  "teal",
+  "cyan",
+  "sky",
+  "blue",
+  "indigo",
+  "violet",
+  "purple",
+  "fuchsia",
+  "pink",
+  "rose",
+  // Sergeant aliases that map to raw Tailwind palettes (not theme-aware).
+  "brand",
+  "coral",
+];
+
+const RAW_DARK_PALETTE_UTILITIES = ["bg", "text", "border"];
+
+const RAW_DARK_PALETTE_MESSAGE =
+  "Raw-palette light/dark pair (`{{light}}` + `{{dark}}`) — the call-site encodes both themes by hand. Use a single semantic utility (e.g. `bg-{family}-soft`, `bg-{module}-surface`, `border-{module}-soft-border`, `text-{status}-strong`) so the preset owns the light/dark swap. See `docs/design/DARK-MODE-AUDIT.md` for the migration recipe.";
+
+// Match `<utility>-<palette>-<step>[/<opacity>]` where step is numeric
+// (so `brand-soft`, `brand-strong`, `coral-soft-border` do NOT match).
+const RX_LIGHT_RAW_PALETTE = new RegExp(
+  String.raw`(?<![\w:-])(` +
+    RAW_DARK_PALETTE_UTILITIES.join("|") +
+    String.raw`)-(` +
+    RAW_DARK_PALETTE_FAMILIES.join("|") +
+    String.raw`)-(\d{2,3})(\/\d{1,3})?\b`,
+  "g",
+);
+
+// Match `dark:<utility>-<palette>-<step>[/<opacity>]`. The negative
+// lookbehind `(?<![\w:-])` excludes any token where `dark:` itself is
+// preceded by another variant (`lg:dark:bg-amber-500/15`,
+// `hover:dark:text-coral-300`, …) — those tokens carry an extra
+// breakpoint / state condition that the rule's pair-only contract does
+// not model, and treating them as bare `dark:` matches produced
+// false-positive pair reports against unrelated bare light utilities
+// elsewhere in the same className. The light-side regex already uses
+// the same lookbehind, so the pair logic stays symmetric: only
+// genuinely bare `<utility>-<palette>-<step>` and bare
+// `dark:<utility>-<palette>-<step>` tokens contribute to a match.
+const RX_DARK_RAW_PALETTE = new RegExp(
+  String.raw`(?<![\w:-])dark:(` +
+    RAW_DARK_PALETTE_UTILITIES.join("|") +
+    String.raw`)-(` +
+    RAW_DARK_PALETTE_FAMILIES.join("|") +
+    String.raw`)-(\d{2,3})(\/\d{1,3})?\b`,
+  "g",
+);
+
+function findRawDarkPalettePairs(value) {
+  if (typeof value !== "string" || value.length === 0) return [];
+  // Cheap prefilter: must contain both `dark:` and a palette family
+  // name. Without this every literal in the codebase pays a regex tax.
+  if (!value.includes("dark:")) return [];
+  let hasFamily = false;
+  for (const f of RAW_DARK_PALETTE_FAMILIES) {
+    if (value.includes(`-${f}-`)) {
+      hasFamily = true;
+      break;
+    }
+  }
+  if (!hasFamily) return [];
+
+  const lightHits = [];
+  let m;
+  RX_LIGHT_RAW_PALETTE.lastIndex = 0;
+  while ((m = RX_LIGHT_RAW_PALETTE.exec(value)) !== null) {
+    // Skip `dark:`-prefixed matches — the lookbehind catches `:`,
+    // but a regex engine without lookbehind support would still need
+    // this guard. Confirm the char before the match isn't `:`.
+    const start = m.index;
+    if (start > 0 && value[start - 1] === ":") continue;
+    lightHits.push(m[0]);
+  }
+  if (lightHits.length === 0) return [];
+
+  const darkHits = [];
+  RX_DARK_RAW_PALETTE.lastIndex = 0;
+  while ((m = RX_DARK_RAW_PALETTE.exec(value)) !== null) {
+    darkHits.push(m[0]);
+  }
+  if (darkHits.length === 0) return [];
+
+  // One report per className value — pair the first light hit with
+  // the first dark hit so the message stays focused. Reporting every
+  // (light, dark) pair would spam call-sites that already migrate as
+  // a single edit.
+  return [{ light: lightHits[0], dark: darkHits[0] }];
+}
+
+const noRawDarkPalette = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid raw-palette light/dark pairs in className — both halves of the (light, dark) swap must come from the design-system token layer.",
+    },
+    schema: [],
+    messages: { pair: RAW_DARK_PALETTE_MESSAGE },
+  },
+  create(context) {
+    function report(node, value) {
+      const hits = findRawDarkPalettePairs(value);
+      for (const hit of hits) {
+        context.report({
+          node,
+          messageId: "pair",
+          data: { light: hit.light, dark: hit.dark },
+        });
+      }
+    }
+    return {
+      Literal(node) {
+        if (typeof node.value === "string") report(node, node.value);
+      },
+      TemplateElement(node) {
+        const cooked = node.value && node.value.cooked;
+        if (typeof cooked === "string") report(node, cooked);
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// `prefer-focus-visible` — ban `focus:` color utilities, require
+//                          `focus-visible:` for visible focus rings
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Sergeant's design-system contract (see `docs/design/design-system.md`):
+//
+//   | Стан             | Поведінка                                                    |
+//   | :focus-visible   | ring-2 ring-brand-500/45 ring-offset-2 ring-offset-surface   |
+//
+//   "Focus — focus-visible:ring-brand-500/30, а не focus:, аби pointer-клік
+//    не блимав кільцем."
+//
+// `focus:` fires for any focus state, including pointer click — which
+// produces a flashing ring on every mouse interaction. `focus-visible:`
+// only fires when the user is navigating with the keyboard (or assistive
+// tech) and is the correct primitive for a visible focus indicator.
+//
+// The single legitimate `focus:` utility is `focus:outline-none`: it
+// resets the user-agent outline so the design-system ring (rendered via
+// `focus-visible:ring-*`) takes over. The rule therefore allows
+// `focus:outline-none` and bans every `focus:` color/border/ring/shadow
+// utility — those must be `focus-visible:` instead.
+//
+// Scope: `apps/web/**/*.{ts,tsx,js,jsx}`. Mobile (NativeWind) doesn't
+// have a `:focus-visible` pseudo-class equivalent; React Native uses
+// `onFocus` handlers and the ring concept is web-only. Registering the
+// rule on mobile would force authors to use a primitive that doesn't
+// exist in their target runtime.
+
+const FOCUS_COLOR_UTILITIES = [
+  "bg",
+  "text",
+  "border",
+  "ring",
+  "ring-offset",
+  "shadow",
+  "fill",
+  "stroke",
+  "divide",
+  "placeholder",
+  "caret",
+  "decoration",
+  "accent",
+  "outline-offset",
+];
+
+const PREFER_FOCUS_VISIBLE_MESSAGE =
+  "`{{match}}` uses the `focus:` variant — pointer clicks blink the colour. Replace with `focus-visible:{{tail}}` so only keyboard/assistive-tech focus shows the indicator. The single legitimate `focus:` utility is `focus:outline-none` (resets the user-agent outline so the design-system ring takes over).";
+
+// Match a bare `focus:<utility>-...` token. We intentionally exclude
+// `focus:outline-none` (the canonical reset that pairs with
+// `focus-visible:ring-*`) and any token where `focus:` itself is
+// preceded by another variant — `lg:focus:bg-…`, `hover:focus:…`,
+// `dark:focus:…`, `group-focus:…`, `peer-focus:…`. The lookbehind
+// `(?<![\w:-])` keeps the contract tight.
+//
+// `<utility>-<rest>` covers the colour/visual utilities listed in
+// `FOCUS_COLOR_UTILITIES`. `<rest>` is `[\w/.\-[\]#%]+` so we capture
+// arbitrary values (`bg-[#fff]`), opacity suffixes (`/45`), and dotted
+// shades (`text-brand-strong`). `outline-` itself isn't in the list
+// because the only legit `focus:outline-*` is `focus:outline-none`,
+// which is excluded by the explicit guard below; everything else
+// (`focus:outline-2`, `focus:outline-brand-500`, …) falls through to
+// the regex via `outline-offset` (intentionally) plus a separate
+// `outline-` arm below.
+const RX_PREFER_FOCUS_VISIBLE = new RegExp(
+  String.raw`(?<![\w:-])focus:(` +
+    FOCUS_COLOR_UTILITIES.join("|") +
+    String.raw`)-([\w/.\-#%[\]]+)`,
+  "g",
+);
+
+// Separate arm for `focus:outline-*` so we can exempt
+// `focus:outline-none` (and the inert `focus:outline-hidden`,
+// `focus:outline-transparent`) without uglifying the colour-utility
+// regex above.
+const RX_PREFER_FOCUS_VISIBLE_OUTLINE = new RegExp(
+  String.raw`(?<![\w:-])focus:outline-([\w/.\-#%[\]]+)`,
+  "g",
+);
+
+const FOCUS_OUTLINE_ALLOWED_TAILS = new Set(["none", "hidden", "transparent"]);
+
+// `text-` is overloaded in Tailwind: `text-{color}` is a colour
+// (`text-brand-strong`, `text-danger`), but `text-{size|alignment|
+// transform|opacity}` are unrelated dimensions (`text-sm`, `text-base`,
+// `text-center`, `text-left`, `text-uppercase`, …). The rule's intent
+// is to ban *colour* blinks on pointer focus, so we explicitly exempt
+// the non-colour `text-` tails that Sergeant uses (size scale + the
+// `text-mini` / `text-dialog` tokens added in Wave 2d, plus alignment
+// + transform). A `focus:text-sm` on a skip-link that grows on focus
+// is intentional UX, not a regression.
+const FOCUS_TEXT_NON_COLOR_TAILS = new Set([
+  // Tailwind default size scale
+  "xs",
+  "sm",
+  "base",
+  "lg",
+  "xl",
+  "2xl",
+  "3xl",
+  "4xl",
+  "5xl",
+  "6xl",
+  "7xl",
+  "8xl",
+  "9xl",
+  // Sergeant custom size tokens (Wave 2d)
+  "mini",
+  "dialog",
+  // Alignment / wrap / overflow / transform
+  "left",
+  "right",
+  "center",
+  "justify",
+  "start",
+  "end",
+  "wrap",
+  "nowrap",
+  "balance",
+  "pretty",
+  "ellipsis",
+  "clip",
+  "uppercase",
+  "lowercase",
+  "capitalize",
+  "normal-case",
+]);
+
+function findPreferFocusVisibleHits(value) {
+  if (typeof value !== "string" || value.length === 0) return [];
+  if (!value.includes("focus:")) return [];
+  const hits = [];
+  let m;
+  RX_PREFER_FOCUS_VISIBLE.lastIndex = 0;
+  while ((m = RX_PREFER_FOCUS_VISIBLE.exec(value)) !== null) {
+    const [full, util, rest] = m;
+    if (util === "text" && FOCUS_TEXT_NON_COLOR_TAILS.has(rest)) continue;
+    hits.push({ match: full, tail: `${util}-${rest}` });
+  }
+  RX_PREFER_FOCUS_VISIBLE_OUTLINE.lastIndex = 0;
+  while ((m = RX_PREFER_FOCUS_VISIBLE_OUTLINE.exec(value)) !== null) {
+    const [full, tail] = m;
+    if (FOCUS_OUTLINE_ALLOWED_TAILS.has(tail)) continue;
+    // The colour-utility arm above already covers `focus:outline-offset-N`
+    // (because `outline-offset` is in `FOCUS_COLOR_UTILITIES`); the outline
+    // arm's broader regex also matches the same token. Dedup by `match`
+    // so each token produces a single report.
+    if (hits.some((h) => h.match === full)) continue;
+    hits.push({ match: full, tail: `outline-${tail}` });
+  }
+  return hits;
+}
+
+const preferFocusVisible = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid `focus:` color/ring/shadow utilities — visible focus indicators must use `focus-visible:` so pointer clicks don't blink the ring.",
+    },
+    schema: [],
+    messages: { focus: PREFER_FOCUS_VISIBLE_MESSAGE },
+  },
+  create(context) {
+    function report(node, value) {
+      const hits = findPreferFocusVisibleHits(value);
+      for (const hit of hits) {
+        context.report({
+          node,
+          messageId: "focus",
+          data: { match: hit.match, tail: hit.tail },
+        });
+      }
+    }
+    return {
+      Literal(node) {
+        if (typeof node.value === "string") report(node, node.value);
+      },
+      TemplateElement(node) {
+        const cooked = node.value && node.value.cooked;
+        if (typeof cooked === "string") report(node, cooked);
+      },
+    };
+  },
+};
+
+// ─── no-finyk-token-in-storage ─────────────────────────────────────────
+//
+// Monobank PAT must live exclusively in the server-side
+// `mono_connection.token_ciphertext` (AES-GCM, see
+// `apps/server/src/modules/mono/`). Persisting it on the client —
+// `localStorage`, `sessionStorage`, MMKV, IDB, cloud-sync `module_data`,
+// etc. — is a security regression: cleartext PAT can be exfiltrated by
+// any XSS, leaks into devtools, and survives logout.
+//
+// The migration hook `useMonoTokenMigration` reads the legacy
+// `finyk_token` / `finyk_token_remembered` keys once on cold-boot, POSTs
+// the value to `/api/mono/connect`, and removes the local copy. After
+// this rule lands, no new code path is allowed to write the token back
+// — only reads (for one-shot migration) and removals are permitted.
+//
+// Detected forms:
+//   - `localStorage.setItem("finyk_token", …)`
+//   - `localStorage.setItem(STORAGE_KEYS.FINYK_TOKEN, …)`
+//   - `sessionStorage.setItem(...)` with the same keys
+//   - `safeWriteLS(...)` / `safeWriteJSONLS(...)` / generic `setItem(...)`
+//     calls with the same keys
+//   - `useLocalStorage(...)` / `useSyncedStorage(...)` /
+//     `createModuleStorage(...)` initialised with the same key
+//
+// Test files (`*.test.ts(x)`, `*.spec.ts(x)`, paths under `__tests__/`)
+// are exempt — fixtures often need to seed `localStorage` with a legacy
+// token to verify the migration path.
+
+const FINYK_TOKEN_KEY_VALUES = new Set([
+  "finyk_token",
+  "finyk_token_remembered",
+]);
+const FINYK_TOKEN_KEY_NAMES = new Set(["FINYK_TOKEN"]);
+
+const FINYK_TOKEN_WRITE_FUNCTIONS = new Set([
+  "setItem",
+  "safeWriteLS",
+  "safeWriteJSONLS",
+  "useLocalStorage",
+  "useSyncedStorage",
+  "useLocalStorageState",
+  "useSyncedStorageState",
+  "createModuleStorage",
+  "lsSet",
+  "writeLS",
+]);
+
+const FINYK_TOKEN_MESSAGE =
+  "Monobank PAT (`finyk_token`) must not be persisted client-side. The token lives in `mono_connection.token_ciphertext` server-side; legacy LS/sessionStorage values are migrated by `useMonoTokenMigration` and then removed. Only reads (for migration) and removals are allowed.";
+
+function isFinykTokenKeyArgument(arg) {
+  if (!arg) return false;
+  if (arg.type === "Literal" && typeof arg.value === "string") {
+    return FINYK_TOKEN_KEY_VALUES.has(arg.value);
+  }
+  if (
+    arg.type === "TemplateLiteral" &&
+    arg.expressions.length === 0 &&
+    arg.quasis.length === 1
+  ) {
+    const cooked = arg.quasis[0].value && arg.quasis[0].value.cooked;
+    if (typeof cooked === "string") {
+      return FINYK_TOKEN_KEY_VALUES.has(cooked);
+    }
+  }
+  if (
+    arg.type === "MemberExpression" &&
+    !arg.computed &&
+    arg.object.type === "Identifier" &&
+    arg.object.name === "STORAGE_KEYS" &&
+    arg.property.type === "Identifier"
+  ) {
+    return FINYK_TOKEN_KEY_NAMES.has(arg.property.name);
+  }
+  if (
+    arg.type === "MemberExpression" &&
+    arg.computed &&
+    arg.object.type === "Identifier" &&
+    arg.object.name === "STORAGE_KEYS" &&
+    arg.property.type === "Literal" &&
+    typeof arg.property.value === "string"
+  ) {
+    return FINYK_TOKEN_KEY_NAMES.has(arg.property.value);
+  }
+  return false;
+}
+
+function getCalleeName(callee) {
+  if (!callee) return null;
+  if (callee.type === "Identifier") return callee.name;
+  if (
+    callee.type === "MemberExpression" &&
+    !callee.computed &&
+    callee.property.type === "Identifier"
+  ) {
+    return callee.property.name;
+  }
+  return null;
+}
+
+const noFinykTokenInStorage = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid persisting the Monobank PAT (`finyk_token`) on the client. The token must live only in `mono_connection.token_ciphertext` server-side.",
+    },
+    schema: [],
+    messages: { write: FINYK_TOKEN_MESSAGE },
+  },
+  create(context) {
+    return {
+      CallExpression(node) {
+        const calleeName = getCalleeName(node.callee);
+        if (!calleeName) return;
+        if (!FINYK_TOKEN_WRITE_FUNCTIONS.has(calleeName)) return;
+        if (!node.arguments || node.arguments.length === 0) return;
+        if (isFinykTokenKeyArgument(node.arguments[0])) {
+          context.report({ node, messageId: "write" });
+        }
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// `no-rounded-lg` — prevent border-radius drift back to the 8 px tier
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Sergeant uses a size-driven radius scale (docs/design/RADIUS-RHYTHM.md):
+//   Swatch   rounded-sm  (2 px)   — heatmap cells, chart legend dots
+//   Marker   rounded-md  (6 px)   — chips, badges, checkboxes ≤6 px
+//   Control  rounded-xl  (12 px)  — buttons xs/sm, icon-buttons ≤40 px
+//   Card     rounded-2xl (16 px)  — cards, buttons md/lg, icon-buttons ≥44 px
+//   Hero     rounded-3xl (24 px)  — hero cards, modals, bottom sheets
+//   Pill     rounded-full (∞)     — FABs, avatars, status dots
+//
+// `rounded-lg` (8 px) sits between Marker and Control without a clear
+// semantic role. It was present in 53 locations before the audit; those
+// were cleaned up. This rule prevents re-introduction.
+//
+// Exempt paths:
+//   - `packages/design-tokens/**` (token definitions use raw px values)
+//   - `apps/web/src/index.css` (legacy progress-bar utilities, tracked)
+//   - `*.test.{ts,tsx,mjs}` (test fixtures may reference legacy class names)
+
+const NO_ROUNDED_LG_MESSAGE =
+  "Avoid `rounded-lg` (8 px) — it sits between Marker and Control without a semantic role. " +
+  "Use `rounded-md` (6 px, Marker tier) for chips / badges / inline pills, or " +
+  "`rounded-xl` (12 px, Control tier) for buttons ≤40 px and icon-buttons. " +
+  "See docs/design/RADIUS-RHYTHM.md for the full scale.";
+
+const RX_ROUNDED_LG = /(?:^|\s)(?:[\w-]+:)*rounded-lg(?:\s|$)/;
+
+function classNameHasRoundedLg(value) {
+  if (typeof value !== "string") return false;
+  return RX_ROUNDED_LG.test(value);
+}
+
+const noRoundedLg = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Forbid `rounded-lg` (8 px) in className strings — use `rounded-md` (Marker) or `rounded-xl` (Control sm) from the semantic radius scale.",
+    },
+    schema: [],
+    messages: { rounded: NO_ROUNDED_LG_MESSAGE },
+  },
+  create(context) {
+    const filename =
+      (context.filename != null ? context.filename : context.getFilename()) ||
+      "";
+    // Exempt token definitions, legacy CSS, and test files.
+    if (
+      /packages[\\/]design-tokens[\\/]/.test(filename) ||
+      /src[\\/]index\.css$/.test(filename) ||
+      /\.(test|spec)\.[jt]sx?$/.test(filename) ||
+      /__tests__[\\/]/.test(filename)
+    ) {
+      return {};
+    }
+
+    function report(node, value) {
+      if (classNameHasRoundedLg(value)) {
+        context.report({ node, messageId: "rounded" });
+      }
+    }
+    return {
+      Literal(node) {
+        if (typeof node.value === "string") report(node, node.value);
+      },
+      TemplateElement(node) {
+        const cooked = node.value && node.value.cooked;
+        if (typeof cooked === "string") report(node, cooked);
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// `no-bare-empty-text` — enforce empty-state tier discipline
+// ─────────────────────────────────────────────────────────────────────────
+//
+// docs/design/EMPTY-STATES.md defines three tiers:
+//   Tier 1 — Full-screen: <ModuleEmptyState> or <EmptyState> (no compact)
+//   Tier 2 — Compact card: <EmptyState compact>
+//   Tier 3 — Inline text: one muted line (text-xs text-muted)
+//
+// The anti-pattern this rule targets: bare JSX text or <p>/<span> tags
+// with Ukrainian "Поки" / "поки" / "немає" / "ще немає" patterns that
+// signal an empty-state message but are rendered outside any EmptyState
+// component. These ad-hoc messages bypass the tier system and produce
+// visually inconsistent empty views.
+//
+// The rule fires on JSXText or string literals inside JSX that contain
+// the signal phrases AND whose parent is NOT an EmptyState/ModuleEmptyState
+// element (checked via JSX ancestor scanning).
+
+const NO_BARE_EMPTY_TEXT_MESSAGE =
+  "Use the <EmptyState> component (or <ModuleEmptyState>) instead of bare text for empty states. " +
+  "Choose the right tier: full-screen → no `compact`, card-internal → `compact`, " +
+  "mini stat (< 120 px tall) → `text-xs text-muted` is OK. " +
+  "See docs/design/EMPTY-STATES.md for tier guidance.";
+
+// Phrases that signal an empty-state message in Ukrainian product copy.
+const RX_EMPTY_SIGNAL =
+  /(?:Поки|поки)\s+(?:що\s+)?(?:немає|порожньо|нічого|пусто)|ще\s+немає|не\s+має\s+даних/;
+
+function isInsideEmptyStateComponent(node) {
+  let current = node.parent;
+  while (current) {
+    if (
+      current.type === "JSXElement" &&
+      current.openingElement &&
+      current.openingElement.name
+    ) {
+      const name =
+        current.openingElement.name.name ||
+        (current.openingElement.name.property &&
+          current.openingElement.name.property.name) ||
+        "";
+      if (name === "EmptyState" || name === "ModuleEmptyState") return true;
+    }
+    current = current.parent;
+  }
+  return false;
+}
+
+const noBareEmptyText = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Forbid bare JSX text / <p> / <span> empty-state messages outside <EmptyState> or <ModuleEmptyState>.",
+    },
+    schema: [],
+    messages: { bare: NO_BARE_EMPTY_TEXT_MESSAGE },
+  },
+  create(context) {
+    return {
+      JSXText(node) {
+        const text = typeof node.value === "string" ? node.value.trim() : "";
+        if (!text || !RX_EMPTY_SIGNAL.test(text)) return;
+        if (isInsideEmptyStateComponent(node)) return;
+        context.report({ node, messageId: "bare" });
+      },
+      Literal(node) {
+        // Catch string literals passed as children in JSX expressions like
+        // {condition && "Поки що порожньо"}
+        if (typeof node.value !== "string") return;
+        if (!RX_EMPTY_SIGNAL.test(node.value)) return;
+        // Only fire when the literal is used as JSX child content.
+        if (!node.parent || node.parent.type !== "JSXExpressionContainer")
+          return;
+        if (isInsideEmptyStateComponent(node)) return;
+        context.report({ node, messageId: "bare" });
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// `prefer-text-style` — semantic typography over hand-rolled combos
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Sergeant has `.text-style-*` semantic utilities defined in index.css
+// (hero, title, body, label, caption, overline). These encode the full
+// pairing (size + weight + tracking) so a future design-system change
+// only touches the CSS, not hundreds of call-sites.
+//
+// The rule flags className strings that contain a (text-{size}, font-{weight})
+// pair matching a known text-style slot, AND do NOT already contain a
+// `text-style-` utility. It suggests the semantic alternative.
+//
+// Exempt: design-system primitives that intentionally define the raw scale
+// (SectionHeading, Button, Label, Badge, etc.) — these are excluded by
+// allowing `// eslint-disable-next-line sergeant-design/prefer-text-style`.
+
+const PREFER_TEXT_STYLE_MESSAGE =
+  "Hand-rolled `{{combo}}` can be replaced with the semantic `text-style-{{slot}}` utility. " +
+  "The semantic utility owns size + weight + tracking as a unit so design-token changes " +
+  "propagate automatically. See docs/design/design-system.md § Typography.";
+
+// Ordered from most-specific to least-specific so the first match wins.
+const TEXT_STYLE_MAPPINGS = [
+  // hero: large display heading
+  {
+    slot: "hero",
+    sizes: new Set(["text-2xl", "text-3xl"]),
+    weights: new Set(["font-bold", "font-extrabold"]),
+  },
+  // title: section/card heading
+  {
+    slot: "title",
+    sizes: new Set(["text-xl", "text-lg"]),
+    weights: new Set(["font-semibold", "font-bold"]),
+  },
+  // label: data labels, small headings
+  {
+    slot: "label",
+    sizes: new Set(["text-sm"]),
+    weights: new Set(["font-medium", "font-semibold"]),
+  },
+  // caption: supporting text
+  {
+    slot: "caption",
+    sizes: new Set(["text-xs"]),
+    weights: new Set(["font-normal", "font-medium"]),
+  },
+];
+
+const RX_TEXT_SIZE =
+  /(?:^|\s)(text-(?:xs|sm|base|lg|xl|2xl|3xl|4xl|5xl))(?:\s|$)/;
+const RX_FONT_WEIGHT =
+  /(?:^|\s)(font-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black))(?:\s|$)/;
+const RX_TEXT_STYLE = /(?:^|\s)text-style-[\w-]+/;
+
+function findTextStyleSlot(value) {
+  if (typeof value !== "string") return null;
+  if (RX_TEXT_STYLE.test(value)) return null; // already using semantic utility
+
+  const sizeMatch = RX_TEXT_SIZE.exec(value);
+  const weightMatch = RX_FONT_WEIGHT.exec(value);
+  if (!sizeMatch || !weightMatch) return null;
+
+  const size = sizeMatch[1];
+  const weight = weightMatch[1];
+
+  for (const mapping of TEXT_STYLE_MAPPINGS) {
+    if (mapping.sizes.has(size) && mapping.weights.has(weight)) {
+      return { slot: mapping.slot, combo: `${size} ${weight}` };
+    }
+  }
+  return null;
+}
+
+const preferTextStyle = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Prefer `text-style-*` semantic utilities over hand-rolled size+weight combinations.",
+    },
+    schema: [],
+    messages: { prefer: PREFER_TEXT_STYLE_MESSAGE },
+  },
+  create(context) {
+    const filename =
+      (context.filename != null ? context.filename : context.getFilename()) ||
+      "";
+    // Exempt design-system primitive source files and test files.
+    if (
+      /shared[\\/]components[\\/]ui[\\/](?:Button|SectionHeading|Label|Badge|Stat|Card|Input|Tabs|Segmented)\.tsx?$/.test(
+        filename,
+      ) ||
+      /\.(test|spec)\.[jt]sx?$/.test(filename) ||
+      /__tests__[\\/]/.test(filename)
+    ) {
+      return {};
+    }
+
+    function report(node, value) {
+      const hit = findTextStyleSlot(value);
+      if (hit) {
+        context.report({
+          node,
+          messageId: "prefer",
+          data: { combo: hit.combo, slot: hit.slot },
+        });
+      }
+    }
+    return {
+      Literal(node) {
+        if (typeof node.value === "string") report(node, node.value);
+      },
+      TemplateElement(node) {
+        const cooked = node.value && node.value.cooked;
+        if (typeof cooked === "string") report(node, cooked);
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// `no-arbitrary-text-size` — ban Tailwind arbitrary `text-[Npx]` / `text-[Nrem]`
+// ─────────────────────────────────────────────────────────────────────────
+//
+// The Sergeant typography scale is defined in `apps/web/src/index.css`
+// (`.text-display`, `.text-h1..h3`, `.text-body`, `.text-body-sm`,
+// `.text-caption`, `.text-eyebrow`, `.text-meta`, `.text-micro`,
+// `.text-display-stat`, `.text-display-hero`, `.text-style-{hero,title,
+// body,label,caption,overline}`, `.text-celebration`, `.text-xp`).
+//
+// Hand-rolled `text-[12px]` / `text-[14px]` strings bypass the scale —
+// they create vertical-rhythm drift, often land below WCAG-comfort
+// (8 px in PushupsWidget, 10 px in stats badges), and don't move with
+// design-token updates. Forbid them and route every author to a named
+// utility instead. Stage-one rollout is `warn`, then `error` once
+// migrations land.
+
+const NO_ARBITRARY_TEXT_SIZE_MESSAGE =
+  "Arbitrary `{{cls}}` bypasses the Sergeant typography scale. " +
+  "Use a named utility from index.css (`text-display`, `text-h1..h3`, " +
+  "`text-body`, `text-body-sm`, `text-caption`, `text-eyebrow`, " +
+  "`text-meta`, `text-micro`, `text-display-stat`, `text-display-hero`, " +
+  "`text-style-*`) or a Tailwind preset size (`text-xs..text-5xl`). " +
+  "See docs/design/design-system.md § Typography.";
+
+const RX_ARBITRARY_TEXT_SIZE = /text-\[\d+(?:\.\d+)?(?:px|rem|em)\]/g;
+
+// Files that legitimately encode raw size literals: the tokens / scale
+// are defined here, so they must spell out the px values. Everything
+// else routes through the named utilities.
+const NO_ARBITRARY_TEXT_SIZE_EXEMPT_RX = [
+  /shared[\\/]components[\\/]ui[\\/](?:Button|SectionHeading|Label|Badge|Stat|Input|Tabs|Segmented|Toast|Skeleton)\.tsx?$/,
+  /\.(test|spec)\.[jt]sx?$/,
+  /__tests__[\\/]/,
+];
+
+const noArbitraryTextSize = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Disallow Tailwind arbitrary `text-[Npx]` / `text-[Nrem]` text-size values; use a named typography utility from index.css.",
+    },
+    schema: [],
+    messages: { ban: NO_ARBITRARY_TEXT_SIZE_MESSAGE },
+  },
+  create(context) {
+    const filename =
+      (context.filename != null ? context.filename : context.getFilename()) ||
+      "";
+    if (NO_ARBITRARY_TEXT_SIZE_EXEMPT_RX.some((rx) => rx.test(filename))) {
+      return {};
+    }
+
+    function report(node, value) {
+      if (typeof value !== "string") return;
+      const matches = value.match(RX_ARBITRARY_TEXT_SIZE);
+      if (!matches) return;
+      // Report once per literal even if multiple hits — the message
+      // already shows the offending class.
+      const seen = new Set();
+      for (const cls of matches) {
+        if (seen.has(cls)) continue;
+        seen.add(cls);
+        context.report({
+          node,
+          messageId: "ban",
+          data: { cls },
+        });
+      }
+    }
+    return {
+      Literal(node) {
+        if (typeof node.value === "string") report(node, node.value);
+      },
+      TemplateElement(node) {
+        const cooked = node.value && node.value.cooked;
+        if (typeof cooked === "string") report(node, cooked);
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
     "no-ellipsis-dots": noEllipsisDots,
     "no-raw-tracked-storage": noRawTrackedStorage,
     "no-raw-local-storage": noRawLocalStorage,
+    "no-finyk-token-in-storage": noFinykTokenInStorage,
     "ai-marker-syntax": aiMarkerSyntax,
     "valid-tailwind-opacity": validTailwindOpacity,
+    "no-hex-in-classname": noHexInClassname,
+    "no-foreign-module-accent": noForeignModuleAccent,
     "no-low-contrast-text-on-fill": noLowContrastTextOnFill,
     "no-bigint-string": noBigintString,
     "rq-keys-only-from-factory": rqKeysOnlyFromFactory,
     "no-anthropic-key-in-logs": noAnthropicKeyInLogs,
     "no-strict-bypass": noStrictBypass,
+    "no-raw-dark-palette": noRawDarkPalette,
+    "prefer-focus-visible": preferFocusVisible,
+    "no-rounded-lg": noRoundedLg,
+    "no-bare-empty-text": noBareEmptyText,
+    "prefer-text-style": preferTextStyle,
+    "no-arbitrary-text-size": noArbitraryTextSize,
   },
 };
 
@@ -1445,6 +2547,17 @@ export {
   NO_ANTHROPIC_KEY_MESSAGE,
   NO_STRICT_BYPASS_MESSAGES,
   DEFAULT_FORBID_PATTERNS,
+  RAW_DARK_PALETTE_FAMILIES,
+  RAW_DARK_PALETTE_UTILITIES,
+  RAW_DARK_PALETTE_MESSAGE,
+  FOCUS_COLOR_UTILITIES,
+  FOCUS_OUTLINE_ALLOWED_TAILS,
+  PREFER_FOCUS_VISIBLE_MESSAGE,
+  NO_ROUNDED_LG_MESSAGE,
+  NO_BARE_EMPTY_TEXT_MESSAGE,
+  PREFER_TEXT_STYLE_MESSAGE,
+  TEXT_STYLE_MAPPINGS,
+  NO_ARBITRARY_TEXT_SIZE_MESSAGE,
 };
 
 export default plugin;

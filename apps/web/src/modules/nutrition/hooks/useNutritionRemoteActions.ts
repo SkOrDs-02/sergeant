@@ -430,7 +430,13 @@ export function useNutritionRemoteActions({
           );
           return { ...prevWithMeals, meals: merged, ...totals };
         }
-        return plan as unknown as UiNutritionDayPlan;
+        return {
+          ...plan,
+          totalKcal: plan.totalKcal ?? undefined,
+          totalProtein_g: plan.totalProtein_g ?? undefined,
+          totalFat_g: plan.totalFat_g ?? undefined,
+          totalCarbs_g: plan.totalCarbs_g ?? undefined,
+        };
       });
     },
     onError: (err) => {

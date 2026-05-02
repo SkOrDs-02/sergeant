@@ -97,9 +97,9 @@ describe("notifySyncDirty", () => {
     localStorage.setItem(STORAGE_KEYS.SYNC_DIRTY_MODULES, "{}");
     localStorage.removeItem(STORAGE_KEYS.SYNC_MODULE_MODIFIED);
     notifySyncDirty(STORAGE_KEYS.FINYK_BUDGETS);
-    const parsed = JSON.parse(
-      localStorage.getItem(STORAGE_KEYS.SYNC_MODULE_MODIFIED),
-    );
+    const raw = localStorage.getItem(STORAGE_KEYS.SYNC_MODULE_MODIFIED);
+    expect(raw).not.toBeNull();
+    const parsed = JSON.parse(raw as string);
     expect(parsed.finyk).toBeTruthy();
     expect(new Date(parsed.finyk).toISOString()).toBe(parsed.finyk);
   });

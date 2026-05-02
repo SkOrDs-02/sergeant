@@ -11,9 +11,12 @@ import { pool } from "./db.js";
 import {
   apiCorsMiddleware,
   apiHelmetMiddleware,
+  createCompressionMiddleware,
   errorHandler,
   requestIdMiddleware,
   requestLogMiddleware,
+  requestTimeout,
+  traceMiddleware,
   withRequestContext,
 } from "./http/index.js";
 import { httpLogger } from "./obs/logger.js";
@@ -98,6 +101,11 @@ export function createApp({
 
   app.use(requestIdMiddleware);
   app.use(withRequestContext);
+  app.use(traceMiddleware);
+  // Global request timeout - prevents zombie requests from consuming resources
+  app.use(requestTimeout());
+  // Response compression (gzip/br) - must be early in the chain
+  app.use(createCompressionMiddleware());
   // pino-http: додає req.log (child logger) до кожного запиту. autoLogging
   // вимкнено — access-log генерується requestLogMiddleware (з метриками).
   app.use(httpLogger);
@@ -139,6 +147,10 @@ export function createApp({
   app.use("/api/coach/memory", express.json({ limit: "6mb" }));
   app.use("/api/chat", express.json({ limit: "1mb" }));
   app.use("/api/mono/webhook", express.json({ limit: "32kb" }));
+  // Voice transcription: raw audio blob, NOT JSON. Mount раніше за глобальний
+  // `express.json({ limit: "128kb" })`, щоб 10mb-блоб не різався 128KB-парсером
+  // (хоч `express.json()` no-op-ить на не-JSON, явний raw-парсер чіткіший).
+  app.use("/api/transcribe", express.raw({ type: "audio/*", limit: "10mb" }));
   app.use(express.json({ limit: "128kb" }));
 
   // Global CORS for the whole /api surface. Individual handlers may re-set

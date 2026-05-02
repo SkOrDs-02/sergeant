@@ -1,5 +1,12 @@
 /**
- * Finyk module — public entry point.
+ * @scaffolded
+ * @owner @Skords-01
+ * @nextStep Have the App router (`apps/web/src/core/app/appRouter.tsx`) and
+ *           hub registry import `FinykApp` from `@finyk` (this barrel) instead
+ *           of `@modules/finyk/FinykApp`. Once consumers exist, drop this tag.
+ *
+ * Public entry point for the Finyk module — declared API surface kept for
+ * cross-module consumers. See AGENTS.md → Hard Rule #10.
  *
  * Prefer importing from `@finyk` or `@modules/finyk` instead of deep paths
  * for cross-module consumers (e.g. App router, hub registry):

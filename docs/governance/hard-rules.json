@@ -1,0 +1,268 @@
+{
+  "$schema": "./hard-rules.schema.json",
+  "version": 1,
+  "source": "AGENTS.md § Hard rules (do not break)",
+  "generated": false,
+  "_comment": [
+    "Single source of truth for the Hard Rules numbering & enforcement map.",
+    "Sync is enforced by `pnpm lint:hard-rules-registry`:",
+    "  AGENTS.md § Hard rules ↔ this file ↔ CONTRIBUTING.md § Hard rules.",
+    "When you add or rewrite a Hard Rule, do all three in the same PR."
+  ],
+  "rules": [
+    {
+      "id": 1,
+      "title": "DB types: coerce `bigint` to `number` in serializers",
+      "scope": ["apps/server/src/modules/**"],
+      "severity": "blocker",
+      "enforced_by": [
+        {
+          "kind": "test",
+          "ref": "apps/server/src/modules/**/*.test.ts (snapshot tests lock the response shapes)"
+        }
+      ],
+      "links": [
+        { "type": "issue", "ref": "#708" },
+        { "type": "agents", "ref": "#1" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "RQ keys: only via centralized factories",
+      "scope": ["apps/web/src/**", "apps/mobile/src/**"],
+      "severity": "blocker",
+      "enforced_by": [
+        {
+          "kind": "convention",
+          "ref": "apps/web/src/shared/lib/queryKeys.ts (single source of truth)"
+        }
+      ],
+      "links": [{ "type": "agents", "ref": "#2" }]
+    },
+    {
+      "id": 3,
+      "title": "API contract: server response shape ↔ `api-client` types ↔ test",
+      "scope": [
+        "apps/server/src/modules/**",
+        "packages/api-client/src/**",
+        "apps/server/src/modules/**/*.test.ts"
+      ],
+      "severity": "blocker",
+      "enforced_by": [
+        {
+          "kind": "ci",
+          "ref": "pnpm api:check-openapi (apps/server openapi vs packages/api-client)"
+        }
+      ],
+      "links": [{ "type": "agents", "ref": "#3" }]
+    },
+    {
+      "id": 4,
+      "title": "SQL migrations: sequential, no gaps, two-phase for DROP",
+      "scope": ["apps/server/src/migrations/**"],
+      "severity": "blocker",
+      "enforced_by": [
+        { "kind": "ci", "ref": "pnpm lint:migrations" },
+        { "kind": "codeowners", "ref": ".github/CODEOWNERS" }
+      ],
+      "links": [
+        { "type": "issue", "ref": "#704" },
+        { "type": "agents", "ref": "#4" }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Conventional Commits: explicit scope enum",
+      "scope": ["**/*"],
+      "severity": "blocker",
+      "enforced_by": [
+        { "kind": "ci", "ref": "Workflow lint (commitlint)" },
+        { "kind": "hook", "ref": ".husky/commit-msg" }
+      ],
+      "links": [{ "type": "agents", "ref": "#5" }]
+    },
+    {
+      "id": 6,
+      "title": "No force push to main/master",
+      "scope": ["main", "master"],
+      "severity": "blocker",
+      "enforced_by": [
+        {
+          "kind": "branch-protection",
+          "ref": "GitHub branch protection: 'Allow force pushes' = off on main"
+        }
+      ],
+      "links": [{ "type": "agents", "ref": "#6" }]
+    },
+    {
+      "id": 7,
+      "title": "Pre-commit hooks via Husky — do not skip",
+      "scope": ["**/*"],
+      "severity": "blocker",
+      "enforced_by": [
+        { "kind": "hook", "ref": ".husky/pre-commit (lint-staged)" }
+      ],
+      "links": [{ "type": "agents", "ref": "#7" }]
+    },
+    {
+      "id": 8,
+      "title": "Tailwind colour-opacity steps must be on the registered scale",
+      "scope": ["apps/web/src/**", "packages/design-tokens/**"],
+      "severity": "blocker",
+      "enforced_by": [
+        {
+          "kind": "eslint-rule",
+          "ref": "sergeant-design/valid-tailwind-opacity (error)"
+        }
+      ],
+      "links": [
+        { "type": "pr", "ref": "#814" },
+        { "type": "agents", "ref": "#8" }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Saturated brand fills behind `text-white` must use the `-strong` companion",
+      "scope": ["apps/web/src/**"],
+      "severity": "blocker",
+      "enforced_by": [
+        {
+          "kind": "eslint-rule",
+          "ref": "sergeant-design/no-low-contrast-text-on-fill (error)"
+        },
+        {
+          "kind": "doc",
+          "ref": "docs/design/BRANDBOOK.md § WCAG-AA -strong Tier"
+        }
+      ],
+      "links": [
+        { "type": "pr", "ref": "#854" },
+        { "type": "pr", "ref": "#855" },
+        { "type": "pr", "ref": "#857" },
+        { "type": "agents", "ref": "#9" }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Lifecycle markers — every file/doc declares its status",
+      "scope": [
+        "apps/**/*.{ts,tsx,js,jsx,mjs,cjs}",
+        "packages/**/*.{ts,tsx,js,jsx,mjs,cjs}",
+        "docs/**/*.md",
+        "scripts/**/*.{mjs,js}"
+      ],
+      "severity": "blocker",
+      "enforced_by": [
+        {
+          "kind": "eslint-rule",
+          "ref": "sergeant-design/ai-marker-syntax (error)"
+        },
+        { "kind": "ci", "ref": "pnpm lint:ai-legacy" },
+        {
+          "kind": "ci",
+          "ref": "pnpm dead-code:files (honours @scaffolded markers)"
+        }
+      ],
+      "links": [{ "type": "agents", "ref": "#10" }]
+    },
+    {
+      "id": 11,
+      "title": "No arbitrary hex colors in `className`",
+      "scope": ["apps/web/src/**", "apps/mobile/src/**"],
+      "severity": "blocker",
+      "enforced_by": [
+        {
+          "kind": "eslint-rule",
+          "ref": "sergeant-design/no-hex-in-classname (error)"
+        }
+      ],
+      "links": [{ "type": "agents", "ref": "#11" }]
+    },
+    {
+      "id": 12,
+      "title": "Module-accent containment — no foreign accents inside a module subtree",
+      "scope": [
+        "apps/web/src/modules/finyk/**",
+        "apps/web/src/modules/fizruk/**",
+        "apps/web/src/modules/nutrition/**",
+        "apps/web/src/modules/routine/**"
+      ],
+      "severity": "blocker",
+      "enforced_by": [
+        {
+          "kind": "eslint-rule",
+          "ref": "sergeant-design/no-foreign-module-accent (error)"
+        }
+      ],
+      "links": [{ "type": "agents", "ref": "#12" }]
+    },
+    {
+      "id": 13,
+      "title": "No raw-palette light/dark `className` pairs",
+      "scope": ["apps/web/src/**", "apps/mobile/src/**"],
+      "severity": "blocker",
+      "enforced_by": [
+        {
+          "kind": "eslint-rule",
+          "ref": "sergeant-design/no-raw-dark-palette (error)"
+        }
+      ],
+      "links": [{ "type": "agents", "ref": "#13" }]
+    },
+    {
+      "id": 14,
+      "title": "Visible focus indicators must use `focus-visible:`, not `focus:`",
+      "scope": ["apps/web/src/**"],
+      "severity": "blocker",
+      "enforced_by": [
+        {
+          "kind": "eslint-rule",
+          "ref": "sergeant-design/prefer-focus-visible (error)"
+        }
+      ],
+      "links": [{ "type": "agents", "ref": "#14" }]
+    },
+    {
+      "id": 15,
+      "title": "Read governance before coding; update docs alongside code; internal docs in Ukrainian",
+      "scope": ["**/*"],
+      "severity": "blocker",
+      "enforced_by": [
+        {
+          "kind": "ci",
+          "ref": "pnpm lint:governance-sync (errors on dangling apps/packages/scripts refs in non-aspirational docs)"
+        },
+        { "kind": "ci", "ref": "pnpm docs:check-freshness-coverage" },
+        {
+          "kind": "ci",
+          "ref": "pnpm lint:hard-rules-registry (this rule's own enforcer)"
+        },
+        {
+          "kind": "pr-template",
+          "ref": ".github/PULL_REQUEST_TEMPLATE.md (Hard Rule #15 checkboxes)"
+        }
+      ],
+      "links": [{ "type": "agents", "ref": "#15" }]
+    },
+    {
+      "id": 16,
+      "title": "Typography scale — semantic styles + 12px floor",
+      "scope": ["apps/web/src/**", "packages/design-tokens/**"],
+      "severity": "blocker",
+      "enforced_by": [
+        {
+          "kind": "convention",
+          "ref": "packages/design-tokens/tailwind-preset.js → plugins.semanticTypography (.text-style-* utilities are the canonical type slots)"
+        },
+        {
+          "kind": "doc",
+          "ref": "docs/design/design-system.md § Типографічна шкала"
+        }
+      ],
+      "links": [
+        { "type": "doc", "ref": "docs/audits/UX-UI-AUDIT-2026.md" },
+        { "type": "agents", "ref": "#16" }
+      ]
+    }
+  ]
+}

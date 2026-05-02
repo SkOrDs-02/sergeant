@@ -22,6 +22,14 @@ module.exports = {
   moduleNameMapper: {
     "^(\\.{1,2}/.*)\\.js$": "$1",
     "^@app/(.*)$": "<rootDir>/app/$1",
+    // `@sergeant/db-schema` ships a built `dist/` artefact in
+    // production but Jest runs against the workspace TS source so we
+    // don't need a `pnpm build` step before tests. Map every subpath
+    // (`/sqlite`, `/pg`, `/shared`) and the package root onto
+    // `packages/db-schema/src/...`.
+    "^@sergeant/db-schema$": "<rootDir>/../../packages/db-schema/src/index.ts",
+    "^@sergeant/db-schema/(.*)$":
+      "<rootDir>/../../packages/db-schema/src/$1/index.ts",
   },
   transformIgnorePatterns: [
     // Keep the default `node_modules/` ignore but punch holes for the RN

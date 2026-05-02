@@ -1,14 +1,17 @@
-# API v1 — versioning
+# API v1 — версіонування
+
+> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Status:** Active
 
 Коротка довідка, як влаштоване версіонування Sergeant-API і коли куди ходити.
 
 ## TL;DR
 
 - Усі існуючі маршрути доступні **одночасно** на `/api/*` і `/api/v1/*`.
-- Bреб-клієнт (див. `src/shared/lib/apiUrl.ts`) за замовчуванням шле в `/api/v1/*`.
+- Bреб-клієнт (див. `apps/web/src/shared/lib/apiUrl.ts`) за замовчуванням шле в `/api/v1/*`.
 - Mobile/Expo-клієнт — зобов'язаний шле в `/api/v1/*`.
 - Жодного дублювання роутерів: сервер переписує `req.url` на канонічний
-  `/api/...` ще до маршрутизації (див. `apiVersionRewrite` у `server/app.ts`).
+  `/api/...` ще до маршрутизації (див. `apiVersionRewrite` у `apps/server/src/app.ts`).
 
 ## Чому саме так
 
@@ -16,7 +19,7 @@
   — якщо треба відкотити фронтенд-реліз, старий код продовжує працювати.
 - **Один код — дві точки входу.** Немає `v1Router`/`legacyRouter`-дубля, який
   розходиться за півроку. Middleware переписування дешевий (дві умови +
-  slice рядка) і тестується окремо у `server/smoke.test.ts`.
+  slice рядка) і тестується окремо у `apps/server/src/smoke.test.ts` та `apps/server/src/routes/apiV1.test.ts`.
 - **Гнучкий rollout для фронта.** `VITE_API_VERSION=none` повертає
   старий `/api/*` префікс без редеплою сервера — корисно як escape hatch.
 
@@ -61,10 +64,10 @@ Web прокидає `apiPrefix` через `getApiPrefix()` (див. `apps/web/
 
 ## Як ми це тестуємо
 
-- `server/smoke.test.ts` — для ключових роутів перевіряє, що обидва префікси
+- `apps/server/src/smoke.test.ts` та `apps/server/src/routes/apiV1.test.ts` — для ключових роутів перевіряють, що обидва префікси
   повертають однакову відповідь (status, тіло, ключові заголовки).
-- `server/routes/me.test.ts` — `/api/v1/me` через cookie-сесію і через
-  `Authorization: Bearer`.
+- `apps/server/src/routes/me.ts` реалізує `/api/v1/me` (cookie-сесія або `Authorization: Bearer`);
+  покриття — в тих же v1-смоуках.
 
 ## FAQ
 

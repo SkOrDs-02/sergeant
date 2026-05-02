@@ -26,6 +26,7 @@ import _pool from "../../db.js";
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
 import { coachInsight, coachMemoryGet, coachMemoryPost } from "./coach.js";
 import { MAX_BLOB_SIZE } from "../sync/sync.js";
+import { ExternalServiceError } from "../../obs/errors.js";
 
 const pool = _pool as unknown as { query: Mock };
 const anthropicMessages = _anthropicMessages as unknown as Mock;
@@ -229,26 +230,49 @@ describe("coachInsight", () => {
     expect(anthropicMessages).not.toHaveBeenCalled();
   });
 
-  it("AI upstream !ok → прокидає status+message (AI timeout/500 сценарій)", async () => {
+  it("AI upstream !ok → кидає ExternalServiceError зі статусом і message", async () => {
+    // Уніфікуємо upstream-помилки під `errorHandler`: status 504,
+    // code: EXTERNAL_SERVICE — той самий контракт, що в `chat.ts`/`weekly-digest.ts`.
     anthropicMessages.mockResolvedValueOnce({
       response: { ok: false, status: 504 },
       data: { error: { message: "Upstream timeout" } },
     });
     const res = makeRes();
-    await coachInsight(makeReq({ snapshot: {}, memory: {} }), res);
-    expect(res.statusCode).toBe(504);
-    expect(res.body).toEqual({ error: "Upstream timeout" });
+    let caught: unknown = null;
+    try {
+      await coachInsight(makeReq({ snapshot: {}, memory: {} }), res);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(ExternalServiceError);
+    expect(caught).toMatchObject({
+      status: 504,
+      code: "EXTERNAL_SERVICE",
+      message: "Upstream timeout",
+    });
   });
 
-  it("AI відповідь без помилкового тіла → fallback 'AI error'", async () => {
+  it("AI відповідь без помилкового тіла → fallback на 502 з 'AI error'", async () => {
+    // Якщо upstream-status відсутній (network glitch, response без `.status`),
+    // 5xx-fallback — 502 (`Bad Gateway`) — стандартне відображення для
+    // невдалого зовнішнього сервісу.
     anthropicMessages.mockResolvedValueOnce({
-      response: { ok: false, status: 500 },
+      response: { ok: false, status: 0 },
       data: null,
     });
     const res = makeRes();
-    await coachInsight(makeReq({ snapshot: {}, memory: {} }), res);
-    expect(res.statusCode).toBe(500);
-    expect(res.body).toEqual({ error: "AI error" });
+    let caught: unknown = null;
+    try {
+      await coachInsight(makeReq({ snapshot: {}, memory: {} }), res);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(ExternalServiceError);
+    expect(caught).toMatchObject({
+      status: 502,
+      code: "EXTERNAL_SERVICE",
+      message: "AI error",
+    });
   });
 
   it("порожній snapshot → prompt містить 'Даних за поточний тиждень ще немає.'", async () => {

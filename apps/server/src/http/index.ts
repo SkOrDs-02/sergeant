@@ -15,7 +15,11 @@ export {
   authMetricsMiddleware,
 } from "./authMiddleware.js";
 
-export { livezHandler, createReadyzHandler } from "./health.js";
+export {
+  livezHandler,
+  createReadyzHandler,
+  createHealthzHandler,
+} from "./health.js";
 
 export { errorHandler } from "./errorHandler.js";
 
@@ -39,9 +43,10 @@ export { asyncHandler } from "./asyncHandler.js";
 export { setModule } from "./setModule.js";
 export { requireSession, requireSessionSoft } from "./requireSession.js";
 export { requireApiSecret } from "./requireApiSecret.js";
+export { safeStringEqual } from "./safeCompare.js";
 export { requireAnthropicKey } from "./requireAnthropicKey.js";
+export { requireGroqKey } from "./requireGroqKey.js";
 export { requireAiQuota } from "./requireAiQuota.js";
-export {
-  requireNutritionToken,
-  requireNutritionTokenIfConfigured,
-} from "./requireNutritionToken.js";
+export { requestTimeout } from "./timeout.js";
+export { createCompressionMiddleware } from "./compression.js";
+export { traceMiddleware } from "./traceContext.js";

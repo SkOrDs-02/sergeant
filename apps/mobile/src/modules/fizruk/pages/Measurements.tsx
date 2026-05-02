@@ -16,11 +16,14 @@
  *    `domain/progress` module (do NOT duplicate).
  *  - Sub-components live in `../components/measurements/*`.
  */
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import type { MobileMeasurementEntry } from "@sergeant/fizruk-domain/domain";
+
+import { useToast } from "@/components/ui/Toast";
+import { showUndoToast } from "@/lib/showUndoToast";
 
 import {
   MeasurementEntryForm,
@@ -34,9 +37,6 @@ type FormState =
   | { mode: "new" }
   | { mode: "edit"; entry: MobileMeasurementEntry };
 
-/** Two-tap delete confirm window — mirrors `HabitsPage`. */
-const DELETE_CONFIRM_MS = 5000;
-
 export interface MeasurementsProps {
   /** Optional root testID — sub-ids derive from it. */
   testID?: string;
@@ -45,13 +45,10 @@ export interface MeasurementsProps {
 export function Measurements({
   testID = "fizruk-measurements",
 }: MeasurementsProps) {
-  const { entries, add, update, remove } = useMeasurements();
+  const { entries, add, update, remove, restore } = useMeasurements();
+  const toast = useToast();
 
   const [formState, setFormState] = useState<FormState>({ mode: "closed" });
-  const [deletePending, setDeletePending] = useState<{
-    id: string;
-    expiresAt: number;
-  } | null>(null);
 
   const openNew = useCallback(() => setFormState({ mode: "new" }), []);
   const openEdit = useCallback(
@@ -71,27 +68,23 @@ export function Measurements({
     [formState, add, update],
   );
 
+  // Single-tap delete + undo-toast (parity з web-ом і з HabitsPage).
   const handleRequestDelete = useCallback(
     (id: string) => {
-      const now = Date.now();
-      if (
-        deletePending &&
-        deletePending.id === id &&
-        deletePending.expiresAt > now
-      ) {
-        remove(id);
-        setDeletePending(null);
-      } else {
-        setDeletePending({ id, expiresAt: now + DELETE_CONFIRM_MS });
-      }
+      const snapshot = entries.find((e) => e.id === id);
+      if (!snapshot) return;
+      remove(id);
+      showUndoToast(toast, {
+        msg: "Запис вимірювання видалено",
+        onUndo: () => restore(snapshot),
+      });
     },
-    [deletePending, remove],
+    [entries, remove, restore, toast],
   );
 
-  const pendingDeleteId = useMemo(() => {
-    if (!deletePending) return null;
-    return deletePending.expiresAt > Date.now() ? deletePending.id : null;
-  }, [deletePending]);
+  // Після переходу на undo-toast pending-стану більше нема — лишили
+  // `pendingDeleteId` у ПРОП-списку листа для зворотної сумісності.
+  const pendingDeleteId: string | null = null;
 
   const editingEntry = formState.mode === "edit" ? formState.entry : null;
 

@@ -8,34 +8,8 @@
 
 import { detectFirstRealEntry as sharedDetectFirstRealEntry } from "@sergeant/shared";
 import { hasAnyRealEntry as sharedHasAnyRealEntry } from "@sergeant/shared";
-import type { KVStore } from "@sergeant/shared";
+import { webKVStore } from "@shared/lib/storage";
 import { trackEvent } from "../observability/analytics";
-
-const localStorageStore: KVStore = {
-  getString(key) {
-    try {
-      return typeof localStorage !== "undefined"
-        ? localStorage.getItem(key)
-        : null;
-    } catch {
-      return null;
-    }
-  },
-  setString(key, value) {
-    try {
-      localStorage.setItem(key, value);
-    } catch {
-      /* noop */
-    }
-  },
-  remove(key) {
-    try {
-      localStorage.removeItem(key);
-    } catch {
-      /* noop */
-    }
-  },
-};
 
 /**
  * Returns true if the user has at least one non-demo entry anywhere.
@@ -45,7 +19,7 @@ const localStorageStore: KVStore = {
  * true — an empty reports view is worse than no tab at all.
  */
 export function hasAnyRealEntry(): boolean {
-  return sharedHasAnyRealEntry(localStorageStore);
+  return sharedHasAnyRealEntry(webKVStore);
 }
 
 /**
@@ -54,5 +28,5 @@ export function hasAnyRealEntry(): boolean {
  * flag so this becomes a no-op for all future renders.
  */
 export function detectFirstRealEntry(): boolean {
-  return sharedDetectFirstRealEntry(localStorageStore, { trackEvent });
+  return sharedDetectFirstRealEntry(webKVStore, { trackEvent });
 }

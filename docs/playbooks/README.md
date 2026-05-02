@@ -1,50 +1,56 @@
 # Playbooks
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Status:** Active
 
-Repeatable step-by-step recipes for common tasks in the Sergeant monorepo.
-Each playbook is a checklist that **AI agents and human developers** can follow to reduce variance and avoid missed steps.
+Playbooks are the canonical execution layer for repeatable tasks in Sergeant. Skills decide the governing surface and repo rules; playbooks define the execution order.
 
-> **Origin:** `docs/planning/ai-coding-improvements.md` Block 2.
-> **Format:** Option A — markdown files in-repo. If the team later wants GUI-driven execution, these can be imported into Devin webapp as `playbook-<uuid>`.
+## Taxonomy
 
-### Decision Tree Format
+- `delivery` - new features, API work, HubChat tools, product surfaces
+- `bugfix/debugging` - CI red, regressions, alerts, flaky tests
+- `data/migrations` - schema changes, rollout safety, DB hygiene, restore drills
+- `AI/HubChat` - tools, prompts, console agents
+- `mobile` - Expo, RN porting, migration progress, mobile releases
+- `deploy/ops` - releases, prod hotfixes, incidents, secrets, runtime safety, n8n workflows
+- `governance/docs` - hard rules, review, docs upkeep, operating-system hygiene
 
-Playbooks marked with 🌳 use the **decision tree** format: a structured `if/else` flow at the top of the file that guides you from symptom to action via explicit fork points. The original step-by-step content is preserved in a **Background** section below the tree for reference.
+## Standard for every playbook
 
-New playbooks should follow the decision-tree template: [`_TEMPLATE-decision-tree.md`](_TEMPLATE-decision-tree.md).
+Each playbook must include:
 
-## Available Playbooks
+- `**Trigger:**`
+- owner surface
+- required prerequisite docs or skills
+- ordered steps
+- verification section
+- when not to use this playbook
+- related playbooks / related skills
 
-| Playbook                                                                           | Trigger                                                                                                         |
-| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| [add-feature-flag.md](add-feature-flag.md)                                         | "Put feature X behind a flag" / new experimental feature                                                        |
-| [cleanup-dead-code.md](cleanup-dead-code.md)                                       | "Remove X and all its usages" / dead code cleanup                                                               |
-| 🌳 [hotfix-prod-regression.md](hotfix-prod-regression.md)                          | "Прод впав" / HTTP 500 на `/health` / Sentry alert / production incident response                               |
-| [add-monobank-event-handler.md](add-monobank-event-handler.md)                     | "Треба обробити нову подію X від Monobank" / новий тип webhook event                                            |
-| [bump-dep-safely.md](bump-dep-safely.md)                                           | "Оновити X до версії Y" / Renovate major-bump / security advisory                                               |
-| [add-sql-migration.md](add-sql-migration.md)                                       | "Додати нове поле / таблицю в БД" / зміна схеми PostgreSQL                                                      |
-| [pre-merge-migration-checklist.md](pre-merge-migration-checklist.md)               | PR із `apps/server/src/migrations/` готовий до merge / рев'юер валідує міграцію                                 |
-| 🌳 [rotate-secrets.md](rotate-secrets.md)                                          | "Secret leaked" / планова ротація / security audit                                                              |
-| [add-new-page-route.md](add-new-page-route.md)                                     | "Додати нову сторінку в apps/web" / новий route для SPA                                                         |
-| [migrate-localstorage-to-typedstore.md](migrate-localstorage-to-typedstore.md)     | Мігрувати файл з прямого localStorage на typedStore (tech debt #2)                                              |
-| [fix-exhaustive-deps.md](fix-exhaustive-deps.md)                                   | Виправити exhaustive-deps warnings / React hooks cleanup                                                        |
-| [port-web-screen-to-mobile.md](port-web-screen-to-mobile.md)                       | "Перенести екран X з apps/web в apps/mobile" / React Native міграція                                            |
-| [add-api-endpoint.md](add-api-endpoint.md)                                         | "Додати новий endpoint в apps/server" / нова API-функціональність                                               |
-| [onboard-external-api.md](onboard-external-api.md)                                 | "Інтегрувати нову зовнішню API" / новий third-party сервіс                                                      |
-| 🌳 [investigate-alert.md](investigate-alert.md)                                    | Prometheus alert спрацював / Sentry alert / деградація `/health`                                                |
-| [add-hubchat-tool.md](add-hubchat-tool.md)                                         | «Дай асистенту нову дію X» / новий tool-call для Anthropic-асистента                                            |
-| [add-react-query-hook.md](add-react-query-hook.md)                                 | Новий `useQuery` / `useMutation` у `apps/web` / нова server-state дата                                          |
-| [add-onboarding-step.md](add-onboarding-step.md)                                   | «Додай новий крок в онбординг» / новий FTUX-етап для нових юзерів                                               |
-| [tune-system-prompt.md](tune-system-prompt.md)                                     | «AI відповідає не так як треба» / зміна тону / правил tool-calling                                              |
-| 🌳 [debug-chat-tool.md](debug-chat-tool.md)                                        | «Асистент каже що зробив, але нічого не сталось» / `Невідома дія: …` / tool call повернувся текстом замість дії |
-| [add-push-notification.md](add-push-notification.md)                               | «Надсилай push коли X» / нагадування / реакція на подію (Mono webhook, AI insight, scheduler)                   |
-| [enable-prompt-caching.md](enable-prompt-caching.md)                               | «Зменшити cost Anthropic» / `SYSTEM_PREFIX` повторюється на кожному запиті — ввімкнути prompt caching           |
-| 🌳 [stabilize-flaky-test.md](stabilize-flaky-test.md)                              | «Тест X падає 1 з 5 разів» / тест у AGENTS.md flaky-list                                                        |
-| [../observability/error-budget-policy.md](../observability/error-budget-policy.md) | Error budget вигорає / burn-rate alert / треба визначити чи дозволена зміна під час freeze                      |
+## How to use
 
-## How to Use
+1. Identify the primary scenario.
+2. Open [playbook-catalog.md](./playbook-catalog.md).
+3. Use exactly one primary playbook unless the scenario explicitly crosses into another operating class.
+4. If the task changes class mid-stream, switch playbooks intentionally and capture that in the PR or incident note.
 
-1. **AI agents:** When a task matches a playbook trigger, read the playbook and follow it step-by-step. For 🌳 decision-tree playbooks, start at Q1 and follow the branches.
-2. **Humans:** Use as a PR checklist — copy the steps into your PR description or mentally tick them off.
-3. **Adding a new playbook:** Create a new `.md` file in this folder using [`_TEMPLATE-decision-tree.md`](_TEMPLATE-decision-tree.md) as a starting point, add a row to the table above, and follow the same format (trigger, decision tree, background steps, verification, notes).
+## Routing
+
+- Agent routing catalog: [docs/superpowers/agent-skills-catalog.md](../superpowers/agent-skills-catalog.md)
+- Trigger index: [INDEX.md](./INDEX.md)
+- Reviewer checklist: [docs/governance/review-checklist.md](../governance/review-checklist.md)
+
+## Priority playbooks
+
+- [add-api-endpoint.md](./add-api-endpoint.md)
+- [add-sql-migration.md](./add-sql-migration.md)
+- [add-hubchat-tool.md](./add-hubchat-tool.md)
+- [fix-failing-ci.md](./fix-failing-ci.md)
+- [hotfix-prod-regression.md](./hotfix-prod-regression.md)
+- [investigate-alert.md](./investigate-alert.md)
+- [release-web-and-api.md](./release-web-and-api.md)
+- [declare-incident.md](./declare-incident.md)
+- [restore-from-backup.md](./restore-from-backup.md)
+- [port-web-screen-to-mobile.md](./port-web-screen-to-mobile.md)
+- [modify-console-agent.md](./modify-console-agent.md)
+- [modify-n8n-workflow.md](./modify-n8n-workflow.md)

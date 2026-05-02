@@ -17,11 +17,16 @@ function buildDataFromStatuses(
   return out;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type BodyHighlighterInstance = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Selected = any;
+
 export function BodyAtlas({ statusByMuscle, height = 320, showLegend = true }) {
   const [view, setView] = useState("anterior"); // anterior | posterior
-  const [selected, setSelected] = useState(null);
-  const containerRef = useRef(null);
-  const instRef = useRef(null);
+  const [selected, setSelected] = useState<Selected | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const instRef = useRef<BodyHighlighterInstance | null>(null);
 
   const data = useMemo(
     () => buildDataFromStatuses(statusByMuscle),

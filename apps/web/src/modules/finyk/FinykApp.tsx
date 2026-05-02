@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
+import { useSwipeNavigation } from "@shared/hooks/useSwipeNavigation";
 import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
 import { useStorage } from "./hooks/useStorage";
@@ -6,17 +7,34 @@ import { readRaw, writeRaw } from "./lib/finykStorage";
 import { FINYK_MANUAL_ONLY_KEY, enableFinykManualOnly } from "./lib/demoData";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import {
+  ModuleAccentProvider,
   ModuleHeader,
   ModuleHeaderBackButton,
 } from "@shared/components/layout";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { cn } from "@shared/lib/cn";
 import { useToast } from "@shared/hooks/useToast";
+import { tryShowCrossModulePrompt } from "@shared/lib/crossModulePrompt";
+import { openHubModuleWithAction } from "@shared/lib/hubNav";
 import { Overview } from "./pages/Overview";
-import { Transactions } from "./pages/Transactions";
-import { Budgets } from "./pages/Budgets";
-import { Assets } from "./pages/Assets";
-import { Analytics } from "./pages/Analytics";
+import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
+
+// Heavy sub-pages are lazy-loaded so navigating into them for the first
+// time shows the finyk-branded ModulePageLoader skeleton instead of a
+// blank flash. Overview stays eager because it is the landing page and
+// must not add a waterfall to cold module navigation.
+const Transactions = lazy(() =>
+  import("./pages/transactions").then((m) => ({ default: m.Transactions })),
+);
+const Budgets = lazy(() =>
+  import("./pages/budgets").then((m) => ({ default: m.Budgets })),
+);
+const Assets = lazy(() =>
+  import("./pages/Assets").then((m) => ({ default: m.Assets })),
+);
+const Analytics = lazy(() =>
+  import("./pages/Analytics").then((m) => ({ default: m.Analytics })),
+);
 import { ManualExpenseSheet } from "./components/ManualExpenseSheet";
 import { FinykLoginScreen } from "./components/FinykLoginScreen";
 import { NAV_ICONS, NAV_IDS, NAV_ITEMS } from "./components/finykNav";
@@ -24,7 +42,6 @@ import { useHashRouter, useHashQueryParam } from "./hooks/useHashRouter";
 import { useUnifiedFinanceData } from "./hooks/useUnifiedFinanceData";
 import { useFinykPersonalization } from "./hooks/useFinykPersonalization";
 import { useMonoTokenMigration } from "./hooks/useMonoTokenMigration";
-import { useFlag } from "../../core/lib/featureFlags";
 import { consumePresetPrefill } from "../../core/onboarding/presetPrefill";
 
 const PRIVAT_ENABLED = false;
@@ -42,7 +59,6 @@ export default function App({
 }: FinykAppProps = {}) {
   const mono = useMonobank();
   const privat = usePrivatbank(PRIVAT_ENABLED);
-  const webhookEnabled = useFlag("mono_webhook");
   // One-time migration of legacy browser tokens to server-side webhook
   useMonoTokenMigration(/* isLoggedIn */ true);
   const toast = useToast();
@@ -58,21 +74,22 @@ export default function App({
   const focusLimitCategoryId = useHashQueryParam("cat");
   const [tokenInput, setTokenInput] = useState("");
   const [showToken, setShowToken] = useState(false);
-  const [rememberToken, setRememberToken] = useState(
-    () => !!readRaw("finyk_token_remembered", ""),
-  );
-  const [categoryFilter, setCategoryFilter] = useState(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [showBalance, setShowBalance] = useState(
     () => readRaw("finyk_show_balance_v1", "1") !== "0",
   );
   const [showExpenseSheet, setShowExpenseSheet] = useState(false);
-  const [editingManualExpenseId, setEditingManualExpenseId] = useState(null);
+  const [editingManualExpenseId, setEditingManualExpenseId] = useState<
+    string | null
+  >(null);
   // Для prefill категорії при кліку на quick-add картку з Overview.
-  const [quickAddCategory, setQuickAddCategory] = useState(null);
+  const [quickAddCategory, setQuickAddCategory] = useState<string | null>(null);
   // Prefill опису з FTUX preset sheet («Кава», «Таксі», «Обід»). Окрема
   // стейт-клітинка, бо quick-add з Overview задає лише категорію —
   // description лишається порожнім і поповнюється користувачем.
-  const [quickAddDescription, setQuickAddDescription] = useState(null);
+  const [quickAddDescription, setQuickAddDescription] = useState<string | null>(
+    null,
+  );
   // "Manual only" bypass: user completed onboarding without Monobank or
   // pressed «Далі без банку» on the login screen. When set, we render the
   // normal Finyk UI populated from manual expenses even if `clientInfo` is
@@ -165,65 +182,24 @@ export default function App({
               pill: "bg-success/10  text-success border-success/20",
             };
 
-  // Свайп між вкладками (без pull-to-refresh: скрол живе всередині сторінок, зовнішній scrollTop завжди 0)
-  const touchStartX = useRef(null);
-  const touchStartY = useRef(null);
-
-  // Ascend from the touch target and bail out if any ancestor is marked as
-  // a horizontal scroller (e.g. the category filter strip on Operations) or
-  // is itself horizontally scrollable — otherwise scrolling such a list
-  // would also be interpreted as a tab swipe.
-  //
-  // Fast-path: `closest('[data-finyk-no-swipe]')` short-circuits the whole
-  // traversal for explicitly-tagged scrollers without invoking the layout
-  // engine. Only when the target lacks that marker do we fall back to the
-  // generic overflow walk, and even then we pre-filter by the cheap
-  // `scrollWidth > clientWidth` check before asking `getComputedStyle` —
-  // most DOM nodes the touch traverses are neither scrollable nor
-  // overflowing, so we skip the expensive style resolution entirely for
-  // them. Previous implementation called `getComputedStyle` on every
-  // ancestor unconditionally, which showed up as 5–15 ms per `touchstart`
-  // on deep trees.
-  const isInsideHorizontalScroller = (target) => {
-    const el = target instanceof HTMLElement ? target : null;
-    if (!el) return false;
-    if (el.closest("[data-finyk-no-swipe]")) return true;
-    let node: HTMLElement | null = el;
-    while (node && node !== document.body) {
-      if (node.scrollWidth > node.clientWidth) {
-        const overflowX = window.getComputedStyle(node).overflowX;
-        if (overflowX === "auto" || overflowX === "scroll") return true;
-      }
-      node = node.parentElement;
-    }
-    return false;
-  };
-
-  const handleTouchStart = (e) => {
-    if (isInsideHorizontalScroller(e.target)) {
-      touchStartX.current = null;
-      touchStartY.current = null;
-      return;
-    }
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-  };
-  const handleTouchEnd = (e) => {
-    if (touchStartX.current === null || touchStartY.current === null) return;
-    const dx = touchStartX.current - e.changedTouches[0].clientX;
-    const dy = touchStartY.current - e.changedTouches[0].clientY;
-    touchStartX.current = null;
-    touchStartY.current = null;
-
-    // Require a clearly horizontal swipe so vertical scrolls in nested lists
-    // (transactions, budgets) never trigger tab switches: |dx| must exceed
-    // both a comfortable threshold (60px) AND ~1.5× the vertical travel.
-    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    const curIdx = NAV_IDS.indexOf(page);
-    if (curIdx === -1) return;
-    const next = curIdx + (dx > 0 ? 1 : -1);
-    if (next >= 0 && next < NAV_IDS.length) navigate(NAV_IDS[next]);
-  };
+  // Свайп між вкладками (без pull-to-refresh: скрол живе всередині сторінок, зовнішній scrollTop завжди 0).
+  // Logic shared with other module shells via useSwipeNavigation.
+  const SWIPE_THRESHOLD_PX = 60;
+  const curPageIdx = NAV_IDS.indexOf(page);
+  const swipe = useSwipeNavigation({
+    onSwipeLeft: () => {
+      const next = curPageIdx + 1;
+      if (next >= 0 && next < NAV_IDS.length) navigate(NAV_IDS[next]);
+    },
+    onSwipeRight: () => {
+      const next = curPageIdx - 1;
+      if (next >= 0 && next < NAV_IDS.length) navigate(NAV_IDS[next]);
+    },
+    threshold: SWIPE_THRESHOLD_PX,
+    atStart: curPageIdx === 0,
+    atEnd: curPageIdx === NAV_IDS.length - 1,
+  });
+  const swipeDx = swipe.dragDx;
 
   // ── Login screen ──────────────────────────────────────────────────────
   if (!clientInfo && !manualOnly) {
@@ -233,13 +209,10 @@ export default function App({
         onTokenInputChange={setTokenInput}
         showToken={showToken}
         onToggleShowToken={() => setShowToken((v) => !v)}
-        rememberToken={rememberToken}
-        onRememberTokenChange={setRememberToken}
-        webhookEnabled={webhookEnabled}
         authError={authError}
         error={error}
         connecting={connecting}
-        onConnect={() => connect(tokenInput.trim(), false, rememberToken)}
+        onConnect={() => connect(tokenInput.trim())}
         onContinueWithoutBank={() => {
           enableFinykManualOnly();
           setManualOnly(true);
@@ -252,7 +225,7 @@ export default function App({
 
   // ── Main app ──────────────────────────────────────────────────────────
   return (
-    <div className="h-dvh flex flex-col bg-bg text-text overflow-hidden">
+    <ModuleAccentProvider module="finyk" asShellRoot>
       <ModuleHeader
         module="finyk"
         left={
@@ -260,7 +233,7 @@ export default function App({
             <ModuleHeaderBackButton onClick={onBackToHub} />
           ) : (
             <div
-              className="shrink-0 w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 border border-emerald-500/15"
+              className="shrink-0 w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success-strong dark:text-success border border-success/15"
               aria-hidden
             >
               <svg
@@ -286,7 +259,7 @@ export default function App({
             <div
               className={cn(
                 "flex items-center gap-1.5 select-none",
-                "text-xs font-medium px-2 py-0.5 rounded-full border",
+                "text-style-caption px-2 py-0.5 rounded-full border",
                 "transition-colors duration-200",
                 syncTone.pill,
               )}
@@ -303,7 +276,7 @@ export default function App({
             <button
               type="button"
               onClick={() => setShowBalance((v) => !v)}
-              className="w-11 h-11 flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors"
+              className="focus-ring w-11 h-11 flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors"
               aria-label={showBalance ? "Приховати суми" : "Показати суми"}
               title={showBalance ? "Приховати суми" : "Показати суми"}
             >
@@ -345,78 +318,125 @@ export default function App({
 
       {/* Page content */}
       <div
-        className="flex-1 overflow-hidden flex flex-col min-h-0 touch-pan-y"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+        className="flex-1 overflow-hidden flex flex-col min-h-0 touch-pan-y relative"
+        onTouchStart={swipe.onTouchStart}
+        onTouchMove={swipe.onTouchMove}
+        onTouchEnd={swipe.onTouchEnd}
       >
+        {/*
+          Swipe progress bar — surfaces an in-progress tab swipe so
+          the gesture isn't a black box anymore. Sits at the top of
+          the page wrapper, fills toward the threshold (60 px), then
+          tints fully on commit. Hidden when the user isn't dragging
+          to keep the chrome clean.
+        */}
+        {swipeDx !== 0 && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute top-0 inset-x-0 h-0.5 z-20 overflow-hidden"
+          >
+            <div
+              className={cn(
+                "h-full",
+                Math.abs(swipeDx) >= SWIPE_THRESHOLD_PX
+                  ? "bg-finyk"
+                  : "bg-finyk/40",
+              )}
+              style={{
+                width: `${Math.min(100, (Math.abs(swipeDx) / SWIPE_THRESHOLD_PX) * 100)}%`,
+                marginLeft: swipeDx < 0 ? "auto" : 0,
+                transition: "background-color 120ms linear",
+              }}
+            />
+          </div>
+        )}
         <div
           key={`page-${page}`}
           className="flex-1 overflow-hidden flex flex-col min-h-0 motion-safe:animate-fade-in"
+          style={
+            swipeDx !== 0
+              ? {
+                  // 0.45 follow-coefficient mirrors iOS' "rubber band"
+                  // feel — the page tracks the finger but lags behind
+                  // it, so the dominant motion stays in the user's
+                  // hand, not the screen. No transition while dragging
+                  // so there's no rubber-banding lag.
+                  transform: `translate3d(${swipeDx * 0.45}px, 0, 0)`,
+                  transition: "none",
+                  willChange: "transform",
+                }
+              : {
+                  transform: "translate3d(0, 0, 0)",
+                  transition: "transform 200ms cubic-bezier(0.32, 0.72, 0, 1)",
+                }
+          }
         >
-          {page === "overview" && (
-            <SectionErrorBoundary
-              key="page-overview"
-              title="Не вдалось показати «Огляд»"
-            >
-              <Overview
-                mono={mergedMono}
-                storage={storage}
-                onNavigate={navigate}
-                showBalance={showBalance}
-              />
-            </SectionErrorBoundary>
-          )}
-          {page === "transactions" && (
-            <SectionErrorBoundary
-              key="page-transactions"
-              title="Не вдалось показати «Операції»"
-            >
-              <Transactions
-                mono={mergedMono}
-                storage={storage}
-                showBalance={showBalance}
-                categoryFilter={categoryFilter}
-                onClearCategoryFilter={() => setCategoryFilter(null)}
-                onEditManualExpense={(id) => {
-                  setEditingManualExpenseId(String(id));
-                  setShowExpenseSheet(true);
-                }}
-              />
-            </SectionErrorBoundary>
-          )}
-          {page === "budgets" && (
-            <SectionErrorBoundary
-              key="page-budgets"
-              title="Не вдалось показати «Планування»"
-            >
-              <Budgets
-                mono={mergedMono}
-                storage={storage}
-                showBalance={showBalance}
-                focusLimitCategoryId={focusLimitCategoryId}
-              />
-            </SectionErrorBoundary>
-          )}
-          {page === "analytics" && (
-            <SectionErrorBoundary
-              key="page-analytics"
-              title="Не вдалось показати «Аналітику»"
-            >
-              <Analytics mono={mergedMono} storage={storage} />
-            </SectionErrorBoundary>
-          )}
-          {page === "assets" && (
-            <SectionErrorBoundary
-              key="page-assets"
-              title="Не вдалось показати «Активи»"
-            >
-              <Assets
-                mono={mergedMono}
-                storage={storage}
-                showBalance={showBalance}
-              />
-            </SectionErrorBoundary>
-          )}
+          <Suspense fallback={<ModulePageLoader module="finyk" />}>
+            {page === "overview" && (
+              <SectionErrorBoundary
+                key="page-overview"
+                title="Не вдалось показати «Огляд»"
+              >
+                <Overview
+                  mono={mergedMono}
+                  storage={storage}
+                  onNavigate={navigate}
+                  showBalance={showBalance}
+                />
+              </SectionErrorBoundary>
+            )}
+            {page === "transactions" && (
+              <SectionErrorBoundary
+                key="page-transactions"
+                title="Не вдалось показати «Операції»"
+              >
+                <Transactions
+                  mono={mergedMono}
+                  storage={storage}
+                  showBalance={showBalance}
+                  categoryFilter={categoryFilter}
+                  onClearCategoryFilter={() => setCategoryFilter(null)}
+                  onEditManualExpense={(id) => {
+                    setEditingManualExpenseId(String(id));
+                    setShowExpenseSheet(true);
+                  }}
+                />
+              </SectionErrorBoundary>
+            )}
+            {page === "budgets" && (
+              <SectionErrorBoundary
+                key="page-budgets"
+                title="Не вдалось показати «Планування»"
+              >
+                <Budgets
+                  mono={mergedMono}
+                  storage={storage}
+                  showBalance={showBalance}
+                  focusLimitCategoryId={focusLimitCategoryId}
+                />
+              </SectionErrorBoundary>
+            )}
+            {page === "analytics" && (
+              <SectionErrorBoundary
+                key="page-analytics"
+                title="Не вдалось показати «Аналітику»"
+              >
+                <Analytics mono={mergedMono} storage={storage} />
+              </SectionErrorBoundary>
+            )}
+            {page === "assets" && (
+              <SectionErrorBoundary
+                key="page-assets"
+                title="Не вдалось показати «Активи»"
+              >
+                <Assets
+                  mono={mergedMono}
+                  storage={storage}
+                  showBalance={showBalance}
+                />
+              </SectionErrorBoundary>
+            )}
+          </Suspense>
         </div>
       </div>
 
@@ -440,7 +460,7 @@ export default function App({
           <div className="bg-warning/15 border border-warning/40 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-card">
             <span className="text-lg shrink-0 mt-0.5">⚠️</span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-text">
+              <p className="text-style-label text-text">
                 Токен потребує оновлення
               </p>
               <p className="text-xs text-muted mt-0.5">{mono.authError}</p>
@@ -487,9 +507,34 @@ export default function App({
           if (expense?.id) {
             storage.editManualExpense?.(expense.id, expense);
             toast.success("Витрату оновлено.");
-          } else {
-            storage.addManualExpense(expense);
-            toast.success("Витрату додано.");
+            return;
+          }
+          storage.addManualExpense(expense);
+          toast.success("Витрату додано.");
+
+          // Cross-module nudge (UX wave-4 #4):
+          // After a Кафе/Ресторан/Продукти save, suggest logging the
+          // matching meal in Nutrition. Suppressed automatically after
+          // ≥3 dismissals in 14 days or 12 h after the user accepts —
+          // see `docs/design/CROSS-MODULE-PROMPTS.md`.
+          const cat = String(expense?.category || "");
+          const promptId =
+            cat === "restaurant"
+              ? "finyk-restaurant-to-meal"
+              : cat === "food"
+                ? "finyk-food-to-meal"
+                : null;
+          if (promptId) {
+            const msg =
+              promptId === "finyk-restaurant-to-meal"
+                ? "Додати прийом їжі з ресторану?"
+                : "Додати прийом їжі з продуктів?";
+            tryShowCrossModulePrompt(toast, {
+              id: promptId,
+              msg,
+              acceptLabel: "Додати →",
+              onAccept: () => openHubModuleWithAction("nutrition", "add_meal"),
+            });
           }
         }}
       />
@@ -505,6 +550,6 @@ export default function App({
         onChange={navigate}
         module="finyk"
       />
-    </div>
+    </ModuleAccentProvider>
   );
 }

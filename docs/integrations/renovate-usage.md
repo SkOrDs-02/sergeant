@@ -1,5 +1,8 @@
 # Renovate — як працювати з PR-ами
 
+> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Status:** Active
+>
 > Створено 2026-04-25 разом з [#721](https://github.com/Skords-01/Sergeant/pull/721). Конфіг: `renovate.json` у корені.
 
 ## TL;DR
@@ -26,7 +29,7 @@
 
 Тайтл: `chore(deps): update <package> to v<version>`
 
-Розклад: **щопонеділка до 6:00 за Києвом**, max 10 одночасних, max 2 на годину.
+Розклад: **щопонеділка до 6:00 за Києвом**, max 30 одночасних, max 2 на годину.
 
 Згруповані за екосистемами (один PR на групу, не один на кожен пакет):
 
@@ -70,7 +73,8 @@
 ## Що merge-аю автоматично (не треба робити нічого)
 
 - **Dev-only patch / pin / digest** оновлення → автомердж після зеленого CI.
-- Платформа автомерджу — `branch` (Renovate сам викличе merge через GitHub API коли всі required checks зеленіли).
+- Стратегія — **GitHub Auto-merge на PR** (`automergeType: "pr"` + `platformAutomerge: true`). Renovate створює PR, ставить його в auto-merge, GitHub сам мерджить коли всі required checks зеленіли.
+- Передумова на стороні репо: у **Settings → General → Pull Requests** має бути увімкнений **"Allow auto-merge"**. Без цього GitHub auto-merge не запуститься, PR-и просто залишаться відкритими.
 
 Це означає що `@types/node 20.10.5 → 20.10.6` або `eslint 9.15.0 → 9.15.1` не вимагатимуть твоєї уваги.
 
@@ -136,7 +140,7 @@
 | Lockfile maintenance | Mon ранок                     |
 | Dependency Dashboard | оновлюється при кожному скані |
 | Скан репо            | приблизно раз на годину       |
-| Concurrent PRs       | max 10                        |
+| Concurrent PRs       | max 30                        |
 | PRs per hour         | max 2                         |
 
 Якщо хочеш на тиждень "тихо" — закрий усі PR без merge, наступного понеділка прийдуть нові.
@@ -155,7 +159,7 @@
 
 **Q: Renovate створив 50 PR-ів одразу.**
 
-- При першому запуску — нормально, він проходить весь беклог. Подальше — обмежено `prHourlyLimit2` + `prConcurrentLimit10`. Якщо все одно багато — запини що тобі найважливіше, решта почекає.
+- При першому запуску — нормально, він проходить весь беклог. Подальше — обмежено `prHourlyLimit2` + `prConcurrentLimit: 30`. Якщо все одно багато — запини що тобі найважливіше, решта почекає.
 
 **Q: Чи бачить Renovate приватні дані?**
 

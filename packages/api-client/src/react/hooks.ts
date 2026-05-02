@@ -18,7 +18,6 @@ import type {
 } from "../endpoints/push";
 import type { BarcodeLookupResponse } from "../endpoints/barcode";
 import type { FoodSearchResponse } from "../endpoints/foodSearch";
-import type { MonoClientInfo, MonoStatementEntry } from "../endpoints/mono";
 import type {
   PrivatBalanceFinalResponse,
   PrivatCredentials,
@@ -209,41 +208,10 @@ export function useBarcodeLookup(
   });
 }
 
-// ── Mono / Privat ────────────────────────────────────────────────────────
-
-export function useMonoClientInfo(
-  token: string,
-  opts?: QueryOpts<MonoClientInfo>,
-) {
-  const api = useApiClient();
-  return useQuery({
-    queryKey: apiQueryKeys.mono.clientInfo(token),
-    queryFn: ({ signal }) => api.mono.clientInfo(token, { signal }),
-    enabled: !!token,
-    ...opts,
-  });
-}
-
-export interface MonoStatementArgs {
-  token: string;
-  accountId: string;
-  from: number;
-  to: number;
-}
-
-export function useMonoStatement(
-  { token, accountId, from, to }: MonoStatementArgs,
-  opts?: QueryOpts<MonoStatementEntry[]>,
-) {
-  const api = useApiClient();
-  return useQuery({
-    queryKey: apiQueryKeys.mono.statement(token, accountId, from, to),
-    queryFn: ({ signal }) =>
-      api.mono.statement(token, accountId, from, to, { signal }),
-    enabled: !!token && !!accountId,
-    ...opts,
-  });
-}
+// ── Privat ──────────────────────────────────────────────────────────────
+// Mono lives entirely in the webhook flow now (apps/server/src/modules/mono);
+// the legacy `useMonoClientInfo` / `useMonoStatement` hooks were removed when
+// the polling proxy was deleted in roadmap A.
 
 export function usePrivatBalanceFinal(
   creds: PrivatCredentials | null,

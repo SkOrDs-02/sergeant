@@ -57,7 +57,7 @@ export function MacrosEditor({
     if (!pendingUnlink) return;
     const { key, value } = pendingUnlink;
     setPickedFood(null);
-    if (key) field(key)(value);
+    if (key && value !== null) field(key)(value);
     setPendingUnlink(null);
   };
 
@@ -132,7 +132,7 @@ export function MacrosEditor({
           className="mt-3 rounded-2xl border border-warning/40 bg-warning/10 p-3 text-xs text-text space-y-2"
         >
           <p className="font-semibold">
-            Відʼєднати «{pickedFood.name || "продукт"}»?
+            Відʼєднати «{pickedFood?.name || "продукт"}»?
           </p>
           <p className="text-muted">
             Макроси перестануть оновлюватись з бази продуктів — значення
@@ -151,6 +151,7 @@ export function MacrosEditor({
             <Button
               type="button"
               variant="primary"
+              module="nutrition"
               size="sm"
               className="flex-1"
               onClick={confirmUnlink}

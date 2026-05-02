@@ -1,0 +1,14 @@
+import type { Request, Response } from "express";
+import { logger } from "../../obs/logger.js";
+
+// {{method}} /api/{{module}}/{{kebabCase name}}
+
+export async function {{name}}Handler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  // TODO: validate req.body / req.query with zod
+  // TODO: implement business logic
+  logger.info({ handler: "{{name}}" }, "TODO: log meaningful event");
+  res.json({ ok: true });
+}

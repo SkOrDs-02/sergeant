@@ -9,44 +9,76 @@ import { cn } from "../../lib/cn";
 /**
  * Sergeant Design System — Card Component
  *
- * Variants:
- * - default: Standard panel card
- * - interactive: Hover lift effect for clickable cards
- * - flat: No shadow, minimal border
- * - elevated: Soft float shadow for hero/preview surfaces
- * - ghost: Transparent (use only when nesting in a coloured wrapper)
+ * The Card surface has two layers of decisions:
+ *   1. **Identity** — "is this card branded for a module?" → `module` prop
+ *      (`finyk` / `fizruk` / `routine` / `nutrition`).
+ *   2. **Prominence** — "how loud should the card read on the page?" →
+ *      `prominence` prop (`hero` / `soft` / `tinted` / `flat` /
+ *      `interactive` / `elevated` / `ghost`).
  *
- * Plus module-branded variants (finyk, fizruk, routine, nutrition) and
- * their soft counterparts (`*-soft`).
+ * `module` and `prominence` are orthogonal: every prominence has a
+ * neutral and a module-tinted version, and the radius is always
+ * controlled by the `radius` prop (no more "module variants silently
+ * bake `rounded-3xl`").
  *
- * Padding: none | sm | md (default) | lg | xl.
+ * Dark-mode parity: module-branded surfaces (`hero`, `soft`, `tinted`)
+ * resolve their tint through the `--c-{module}-soft*` token family
+ * defined in `apps/web/src/index.css`. In light mode the tokens are
+ * the `-50/-200` family; in dark mode they swap to a deep `-900/-800`
+ * family, so module identity stays present across themes — light
+ * cards no longer collapse into a near-neutral panel in dark mode.
  *
- * Radius hierarchy (canonical):
- *   - md  → rounded-xl  (16px) — inline / list cards & chips
- *   - lg  → rounded-2xl (24px) — section/panel cards (DEFAULT for content
- *                                blocks inside a page)
- *   - xl  → rounded-3xl (32px) — hero & module-branded cards (the four
- *                                module variants bake this in already)
+ * Radius hierarchy — maps to the 3 semantic tiers in `tailwind-preset.js`:
+ *   - md  → rounded-xl  (12px, CONTROL) — inline / list cards & chips
+ *   - lg  → rounded-2xl (16px, CARD)    — section/panel cards
+ *   - xl  → rounded-3xl (24px, HERO)    — hero & module-branded cards
  *
- * The default `radius="xl"` matches the largest hero treatment so that
- * branded cards and `<Card variant="default" radius="xl">` wrappers feel
- * consistent. Use `radius="lg"` for the typical settings/list panel.
+ * The `variant` prop is preserved as a **deprecated alias** for the
+ * historical string union (`default` / `interactive` / `flat` /
+ * `elevated` / `ghost` / `finyk` / `finyk-soft` / …). Module variant
+ * strings are translated to (`module`, `prominence`) internally.
+ * Prefer the orthogonal API in new code; existing call-sites keep
+ * working unchanged.
+ *
+ * @example
+ *   // Neutral, default surface (page-level content cards)
+ *   <Card>...</Card>
+ *
+ *   // Module-branded hero (Finyk dashboard)
+ *   <Card module="finyk" prominence="hero" radius="xl">...</Card>
+ *
+ *   // Module-tinted soft surface (sub-card inside a module screen)
+ *   <Card module="finyk" prominence="soft" radius="lg">...</Card>
+ *
+ *   // Legacy (still works — emits a deprecation hint via JSDoc only)
+ *   <Card variant="finyk-soft">...</Card>
  */
 
+export type CardModule = "finyk" | "fizruk" | "routine" | "nutrition";
+
+export type CardProminence =
+  | "default"
+  | "interactive"
+  | "flat"
+  | "elevated"
+  | "ghost"
+  | "hero"
+  | "soft"
+  | "tinted";
+
+/**
+ * @deprecated Prefer the orthogonal `module` + `prominence` props.
+ * The string union is kept for back-compat with existing call-sites
+ * and is internally mapped to the new API.
+ */
 export type CardVariant =
   | "default"
   | "interactive"
   | "flat"
   | "elevated"
   | "ghost"
-  | "finyk"
-  | "fizruk"
-  | "routine"
-  | "nutrition"
-  | "finyk-soft"
-  | "fizruk-soft"
-  | "routine-soft"
-  | "nutrition-soft";
+  | CardModule
+  | `${CardModule}-soft`;
 
 export type CardPadding = "none" | "sm" | "md" | "lg" | "xl";
 
@@ -58,37 +90,6 @@ const radii: Record<CardRadius, string> = {
   xl: "rounded-3xl",
 };
 
-// Core variants omit the radius class — it's controlled by the `radius` prop.
-// Module (branded) variants bake rounded-3xl into their class string for hero surfaces.
-const variants: Record<CardVariant, string> = {
-  default: "bg-panel border border-line shadow-card",
-  interactive:
-    "bg-panel border border-line shadow-card transition-interactive hover:shadow-float hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer",
-  flat: "bg-panel border border-line",
-  elevated: "bg-panel border border-line shadow-float",
-  ghost: "bg-transparent border border-transparent",
-
-  // Module hero cards — branded surface in light, subtle tinted panel in dark.
-  finyk:
-    "rounded-3xl border border-brand-200/50 bg-hero-emerald shadow-card dark:border-brand-800/30 dark:bg-panel dark:bg-card-finyk-dark",
-  fizruk:
-    "rounded-3xl border border-teal-200/50 bg-hero-teal shadow-card dark:border-teal-800/30 dark:bg-panel dark:bg-card-fizruk-dark",
-  routine:
-    "rounded-3xl border border-coral-200/50 bg-hero-coral shadow-card dark:border-[rgba(162,51,51,0.3)] dark:bg-panel dark:bg-card-routine-dark",
-  nutrition:
-    "rounded-3xl border border-lime-200/50 bg-hero-lime shadow-card dark:border-[rgba(70,98,18,0.3)] dark:bg-panel dark:bg-card-nutrition-dark",
-
-  // Soft module cards (less prominent)
-  "finyk-soft":
-    "rounded-2xl border border-brand-100 bg-brand-50/50 backdrop-blur-sm dark:border-brand-500/20 dark:bg-brand-500/10",
-  "fizruk-soft":
-    "rounded-2xl border border-teal-100 bg-teal-50/50 backdrop-blur-sm dark:border-teal-500/20 dark:bg-teal-500/10",
-  "routine-soft":
-    "rounded-2xl border border-coral-100 bg-coral-50/50 backdrop-blur-sm dark:border-coral-500/20 dark:bg-coral-500/10",
-  "nutrition-soft":
-    "rounded-2xl border border-lime-100 bg-lime-50/50 backdrop-blur-sm dark:border-lime-500/20 dark:bg-lime-500/10",
-};
-
 const paddings: Record<CardPadding, string> = {
   none: "",
   sm: "p-3",
@@ -97,42 +98,185 @@ const paddings: Record<CardPadding, string> = {
   xl: "p-6",
 };
 
+// ─── Non-module surfaces ──────────────────────────────────────────────
+// Reach for these when the card is **not** branded for a module.
+// Padding and radius are layered on top of these by the wrapper below.
+const NON_MODULE_PROMINENCE: Record<
+  Exclude<CardProminence, "hero" | "soft" | "tinted">,
+  string
+> = {
+  default: "bg-panel border border-line shadow-card",
+  interactive:
+    "bg-panel border border-line shadow-card transition-interactive hover:shadow-float hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer",
+  flat: "bg-panel border border-line",
+  elevated: "bg-panel border border-line shadow-float",
+  ghost: "bg-transparent border border-transparent",
+};
+
+// ─── Module-branded surfaces ───────────────────────────────────────────
+// Each module owns 3 prominence treatments. Light + dark are encoded
+// together so call-sites never need to re-implement the dark variant.
+//
+//   hero    — full saturated identity (light: bg-hero-{module} gradient;
+//             dark: bg-{module}-soft, the deep -900 family token).
+//   soft    — branded surface on a panel (single token, no /50 wash).
+//             Replaces the legacy `bg-{module}-soft/50` pattern that
+//             washed out in light and dropped to ~6% in dark.
+//   tinted  — neutral panel with a module-tinted hairline. Quietest
+//             form of identity — module belongs to this card but its
+//             content is the focus.
+const MODULE_PROMINENCE: Record<
+  CardModule,
+  Record<"hero" | "soft" | "tinted", string>
+> = {
+  finyk: {
+    hero: "border shadow-card bg-hero-emerald border-finyk-soft-border/50 dark:bg-finyk-soft dark:border-finyk-soft-border/40",
+    soft: "border bg-finyk-soft border-finyk-soft-border backdrop-blur-sm",
+    tinted: "bg-panel border border-finyk-soft-border shadow-card",
+  },
+  fizruk: {
+    hero: "border shadow-card bg-hero-teal border-fizruk-soft-border/50 dark:bg-fizruk-soft dark:border-fizruk-soft-border/40",
+    soft: "border bg-fizruk-soft border-fizruk-soft-border backdrop-blur-sm",
+    tinted: "bg-panel border border-fizruk-soft-border shadow-card",
+  },
+  routine: {
+    hero: "border shadow-card bg-hero-coral border-coral-200/50 dark:bg-routine-soft dark:border-routine-soft-border/40",
+    soft: "border bg-routine-soft border-routine-soft-border backdrop-blur-sm",
+    tinted: "bg-panel border border-routine-soft-border shadow-card",
+  },
+  nutrition: {
+    hero: "border shadow-card bg-hero-lime border-lime-200/50 dark:bg-nutrition-soft dark:border-nutrition-soft-border/40",
+    soft: "border bg-nutrition-soft border-nutrition-soft-border backdrop-blur-sm",
+    tinted: "bg-panel border border-nutrition-soft-border shadow-card",
+  },
+};
+
+const SOFT_VARIANT_RE = /^(finyk|fizruk|routine|nutrition)-soft$/;
+const MODULE_VARIANT_RE = /^(finyk|fizruk|routine|nutrition)$/;
+
+interface ResolvedVariant {
+  readonly module: CardModule | null;
+  readonly prominence: CardProminence;
+}
+
+/**
+ * Maps a legacy `variant` string to the new (`module`, `prominence`)
+ * pair, or passes through the new API when the caller uses it
+ * directly. The new API wins when both are provided — explicit beats
+ * implicit. This is identical to how `<Button>` resolves its
+ * `module`-vs-`variant` collision (see Button.tsx line ~178 in the
+ * test).
+ */
+function resolveVariant(
+  variant: CardVariant | undefined,
+  module: CardModule | undefined,
+  prominence: CardProminence | undefined,
+): ResolvedVariant {
+  if (module || prominence) {
+    return {
+      module: module ?? null,
+      prominence: prominence ?? (module ? "hero" : "default"),
+    };
+  }
+  if (!variant) {
+    return { module: null, prominence: "default" };
+  }
+  if (SOFT_VARIANT_RE.test(variant)) {
+    const m = variant.replace("-soft", "") as CardModule;
+    return { module: m, prominence: "soft" };
+  }
+  if (MODULE_VARIANT_RE.test(variant)) {
+    return { module: variant as CardModule, prominence: "hero" };
+  }
+  return {
+    module: null,
+    prominence: variant as Exclude<CardProminence, "hero" | "soft" | "tinted">,
+  };
+}
+
+function surfaceClass(resolved: ResolvedVariant): string {
+  const { module, prominence } = resolved;
+  if (module) {
+    if (
+      prominence === "hero" ||
+      prominence === "soft" ||
+      prominence === "tinted"
+    ) {
+      return MODULE_PROMINENCE[module][prominence];
+    }
+    // `module` set with a non-module prominence → fall through to the
+    // neutral surface but keep the module-tinted hairline so the card
+    // still reads as belonging to the module. This makes
+    // `<Card module="finyk" prominence="interactive">` a valid combo
+    // for clickable list items inside a Finyk screen.
+    return cn(
+      NON_MODULE_PROMINENCE[prominence],
+      `border-${module}-soft-border`,
+    );
+  }
+  if (
+    prominence === "hero" ||
+    prominence === "soft" ||
+    prominence === "tinted"
+  ) {
+    // Module-only prominences without a module → defensive fallback to
+    // the historical default surface. We don't want a runtime throw
+    // here because it would crash production for a misconfiguration
+    // that's purely cosmetic.
+    return NON_MODULE_PROMINENCE.default;
+  }
+  return NON_MODULE_PROMINENCE[prominence];
+}
+
 export interface CardProps extends HTMLAttributes<HTMLElement> {
+  /**
+   * @deprecated Prefer `module` + `prominence`. Kept for back-compat
+   * with existing call-sites; module-style variants are mapped to the
+   * new API internally.
+   */
   variant?: CardVariant;
+  module?: CardModule;
+  prominence?: CardProminence;
   padding?: CardPadding;
   radius?: CardRadius;
   as?: ElementType;
   children?: ReactNode;
 }
 
-const CORE_VARIANTS: ReadonlySet<CardVariant> = new Set([
-  "default",
-  "interactive",
-  "flat",
-  "elevated",
-  "ghost",
-]);
+/**
+ * The historical visual default for legacy module-`-soft` variants was
+ * `rounded-2xl` (lg). Preserve that for back-compat when the caller
+ * didn't pass an explicit `radius`. New API consumers (`module` +
+ * `prominence`) always honour the `radius` prop with the standard
+ * `xl` default.
+ */
+function defaultRadius(variant: CardVariant | undefined): CardRadius {
+  if (variant && SOFT_VARIANT_RE.test(variant)) return "lg";
+  return "xl";
+}
 
 export const Card = forwardRef<HTMLElement, CardProps>(function Card(
   {
     className,
-    variant = "default",
+    variant,
+    module,
+    prominence,
     padding = "md",
-    radius = "xl",
+    radius,
     as: Component = "div",
     children,
     ...props
   },
   ref,
 ) {
-  // Module (branded) variants bake their own radius for hero treatment.
-  const radiusClass = CORE_VARIANTS.has(variant) ? radii[radius] : "";
+  const resolved = resolveVariant(variant, module, prominence);
+  const effectiveRadius = radius ?? defaultRadius(variant);
   return (
     <Component
       ref={ref}
       className={cn(
-        variants[variant],
-        radiusClass,
+        surfaceClass(resolved),
+        radii[effectiveRadius],
         paddings[padding],
         className,
       )}

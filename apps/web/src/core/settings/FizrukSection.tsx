@@ -3,7 +3,6 @@ import {
   useRestSettings,
   REST_CATEGORY_LABELS,
 } from "../../modules/fizruk/hooks/useRestSettings";
-import { WorkoutBackupBar } from "../../modules/fizruk/components/workouts/WorkoutBackupBar";
 import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
 
 type RestCategory = keyof typeof REST_CATEGORY_LABELS;
@@ -46,9 +45,6 @@ export function FizrukSection() {
             </div>
           ))}
         </div>
-      </SettingsSubGroup>
-      <SettingsSubGroup title="Резервні копії та дані" defaultOpen>
-        <WorkoutBackupBar className="border-0 bg-transparent p-0" />
       </SettingsSubGroup>
     </SettingsGroup>
   );

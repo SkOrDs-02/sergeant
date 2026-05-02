@@ -28,9 +28,14 @@ export default function RoutineStackLayout() {
           headerTitleStyle: { color: colors.text },
           headerTintColor: colors.accent,
           contentStyle: { backgroundColor: colors.bg },
+          animation: "slide_from_right",
+          animationDuration: 250,
         }}
       >
-        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="index"
+          options={{ headerShown: false, animation: "fade" }}
+        />
         <Stack.Screen name="habit/[id]" options={{ title: "Звичка" }} />
       </Stack>
     </ModuleErrorBoundary>

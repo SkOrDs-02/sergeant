@@ -2,8 +2,15 @@ import { useState } from "react";
 import { cn } from "@shared/lib/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
+import type { Rec } from "../lib/recommendationEngine";
 
-const MODULE_ACCENT = {
+type ModuleId = "finyk" | "fizruk" | "routine" | "nutrition" | "hub";
+type Severity = "danger" | "warning";
+
+// Re-export Rec as Recommendation for backward compat
+type Recommendation = Rec;
+
+const MODULE_ACCENT: Record<ModuleId, string> = {
   finyk: "bg-finyk",
   fizruk: "bg-fizruk",
   routine: "bg-routine",
@@ -11,14 +18,20 @@ const MODULE_ACCENT = {
   hub: "bg-primary",
 };
 
-const SEVERITY_ACCENT = {
+const SEVERITY_ACCENT: Record<Severity, string> = {
   danger: "bg-danger",
   warning: "bg-warning",
 };
 
-function RecRow({ rec, onAction, onDismiss }) {
+interface RecRowProps {
+  rec: Recommendation;
+  onAction: (module: string, hash?: string) => void;
+  onDismiss?: (id: string) => void;
+}
+
+function RecRow({ rec, onAction, onDismiss }: RecRowProps) {
   const accent =
-    rec.severity === "danger" || rec.severity === "warning"
+    rec.severity && (rec.severity === "danger" || rec.severity === "warning")
       ? SEVERITY_ACCENT[rec.severity]
       : MODULE_ACCENT[rec.module] || "bg-primary";
   return (
@@ -51,7 +64,7 @@ function RecRow({ rec, onAction, onDismiss }) {
         {rec.action && (
           <button
             type="button"
-            onClick={() => onAction(rec.action, rec.actionHash)}
+            onClick={() => onAction(rec.action ?? "", rec.actionHash)}
             className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-text hover:text-primary transition-colors"
           >
             Відкрити
@@ -76,6 +89,12 @@ function RecRow({ rec, onAction, onDismiss }) {
   );
 }
 
+interface HubInsightsPanelProps {
+  items: Recommendation[];
+  onOpenModule: (module: string, hash?: string) => void;
+  onDismiss?: (id: string) => void;
+}
+
 /**
  * Колапсована панель вторинних інсайтів на дашборді. Показує список
  * рекомендацій із нижчим пріоритетом, які не попали в NextCard. Coach-insight
@@ -83,7 +102,11 @@ function RecRow({ rec, onAction, onDismiss }) {
  * під body. Це знімає дубль-UI: раніше інсайт існував і в картці фокусу, і
  * в цьому блоці окремо.
  */
-export function HubInsightsPanel({ items, onOpenModule, onDismiss }) {
+export function HubInsightsPanel({
+  items,
+  onOpenModule,
+  onDismiss,
+}: HubInsightsPanelProps) {
   const [open, setOpen] = useState(false);
 
   const total = items?.length || 0;
@@ -126,11 +149,13 @@ export function HubInsightsPanel({ items, onOpenModule, onDismiss }) {
       >
         <div className="overflow-hidden">
           <div className="space-y-2 pt-1">
-            {items?.map((rec) => (
+            {items.map((rec: Recommendation) => (
               <RecRow
                 key={rec.id}
                 rec={rec}
-                onAction={(m, hash) => onOpenModule(m, hash)}
+                onAction={(m: string, hash?: string) =>
+                  onOpenModule(m, hash ?? undefined)
+                }
                 onDismiss={onDismiss}
               />
             ))}

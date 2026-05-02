@@ -84,12 +84,13 @@ export function Avatar({
 
       {status && (
         <span
+          role="img"
+          aria-label={status}
           className={cn(
             "absolute bottom-0 right-0 rounded-full ring-panel",
             statusDotSizes[size],
             statusDotColors[status],
           )}
-          aria-label={status}
         />
       )}
     </span>

@@ -75,6 +75,15 @@ function TxListItemImpl({
           onSwipeRight={undefined}
           rightLabel="🙈 Приховати"
           rightColor="bg-warning/80"
+          // Surface the swipe-affordance peek on the first row of the list
+          // for first-time users only — `SwipeToAction` reads/writes a
+          // single localStorage flag (`sergeant:swipe_hint_shown`) so the
+          // hint is dismissed for good after the first successful swipe
+          // anywhere in the app.
+          showHint={canSwipeLeft && rowIndex === 0}
+          hintText={
+            isManual ? "Свайпни вліво — видалити" : "Свайпни вліво — приховати"
+          }
         >
           <TxRow
             tx={tx}

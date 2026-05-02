@@ -3,7 +3,17 @@ import crypto from "node:crypto";
 import { env } from "../../env/env.js";
 import { query } from "../../db.js";
 import { logger } from "../../obs/logger.js";
-import { encryptToken, decryptToken, tokenFingerprint } from "./crypto.js";
+import {
+  MonoConnectResponseSchema,
+  MonoDisconnectResponseSchema,
+  MonoSyncStateSchema,
+} from "../../http/schemas.js";
+import {
+  encryptToken,
+  decryptToken,
+  tokenFingerprint,
+  webhookSecretHash,
+} from "./crypto.js";
 import type { EncryptedToken } from "./crypto.js";
 
 /**
@@ -14,6 +24,9 @@ import type { EncryptedToken } from "./crypto.js";
  * All three require an authenticated session (`req.user`).
  * Gated behind `MONO_WEBHOOK_ENABLED`.
  */
+
+/** Timeout for outbound Monobank API calls (client-info, webhook register). */
+const MONO_API_TIMEOUT_MS = 15_000;
 
 interface AuthedRequest extends Request {
   user?: { id: string };
@@ -75,10 +88,26 @@ export async function connectHandler(
     return;
   }
 
-  const clientInfoRes = await fetch(
-    "https://api.monobank.ua/personal/client-info",
-    { headers: { "X-Token": token } },
-  );
+  let clientInfoRes: globalThis.Response;
+  try {
+    clientInfoRes = await fetch(
+      "https://api.monobank.ua/personal/client-info",
+      {
+        headers: { "X-Token": token },
+        signal: AbortSignal.timeout(MONO_API_TIMEOUT_MS),
+      },
+    );
+  } catch (err) {
+    logger.warn({
+      msg: "mono_connect_client_info_timeout",
+      fingerprint: tokenFingerprint(token),
+      err: err instanceof Error ? err.message : String(err),
+    });
+    res
+      .status(504)
+      .json({ error: "Monobank API не відповідає. Спробуйте пізніше." });
+    return;
+  }
   if (!clientInfoRes.ok) {
     const body = await clientInfoRes.text();
     logger.warn({
@@ -103,14 +132,28 @@ export async function connectHandler(
   const webhookSecret = crypto.randomBytes(32).toString("hex");
   const webhookUrl = `${env.PUBLIC_API_BASE_URL}/api/mono/webhook/${webhookSecret}`;
 
-  const registerRes = await fetch("https://api.monobank.ua/personal/webhook", {
-    method: "POST",
-    headers: {
-      "X-Token": token,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ webHookUrl: webhookUrl }),
-  });
+  let registerRes: globalThis.Response;
+  try {
+    registerRes = await fetch("https://api.monobank.ua/personal/webhook", {
+      method: "POST",
+      headers: {
+        "X-Token": token,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ webHookUrl: webhookUrl }),
+      signal: AbortSignal.timeout(MONO_API_TIMEOUT_MS),
+    });
+  } catch (err) {
+    logger.warn({
+      msg: "mono_webhook_register_timeout",
+      fingerprint: tokenFingerprint(token),
+      err: err instanceof Error ? err.message : String(err),
+    });
+    res
+      .status(504)
+      .json({ error: "Monobank API не відповідає. Спробуйте пізніше." });
+    return;
+  }
 
   if (!registerRes.ok) {
     const body = await registerRes.text();
@@ -128,18 +171,25 @@ export async function connectHandler(
 
   const encrypted: EncryptedToken = encryptToken(token, encKey);
   const fingerprint = tokenFingerprint(token);
+  // Plaintext secret stays in `webhook_secret` only for one release cycle
+  // (rollback safety) — see migration 017's header. The new lookup path
+  // resolves rows by `webhook_secret_hash`, so even if the plaintext
+  // column is dropped tomorrow this insert keeps working.
+  const webhookSecretHashHex = webhookSecretHash(webhookSecret);
 
   await query(
     `INSERT INTO mono_connection
        (user_id, token_ciphertext, token_iv, token_tag, token_fingerprint,
-        webhook_secret, webhook_registered_at, status, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, NOW(), 'active', NOW())
+        webhook_secret, webhook_secret_hash, webhook_registered_at,
+        status, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), 'active', NOW())
      ON CONFLICT (user_id) DO UPDATE SET
        token_ciphertext = EXCLUDED.token_ciphertext,
        token_iv = EXCLUDED.token_iv,
        token_tag = EXCLUDED.token_tag,
        token_fingerprint = EXCLUDED.token_fingerprint,
        webhook_secret = EXCLUDED.webhook_secret,
+       webhook_secret_hash = EXCLUDED.webhook_secret_hash,
        webhook_registered_at = NOW(),
        status = 'active',
        updated_at = NOW()`,
@@ -150,6 +200,7 @@ export async function connectHandler(
       encrypted.tag,
       fingerprint,
       webhookSecret,
+      webhookSecretHashHex,
     ],
     { op: "mono_connection_upsert" },
   );
@@ -192,7 +243,15 @@ export async function connectHandler(
     accountsCount: accounts.length,
   });
 
-  res.status(200).json({ status: "active", accountsCount: accounts.length });
+  // Validate response against the SSOT (Hard Rule #3) so any drift between
+  // server emit and `MonoConnectResponse` z.infer in the api-client throws
+  // here instead of silently shipping a typed lie.
+  res.status(200).json(
+    MonoConnectResponseSchema.parse({
+      status: "active",
+      accountsCount: accounts.length,
+    }),
+  );
 }
 
 export async function disconnectHandler(
@@ -233,6 +292,7 @@ export async function disconnectHandler(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ webHookUrl: "" }),
+        signal: AbortSignal.timeout(MONO_API_TIMEOUT_MS),
       });
     } catch (err) {
       logger.warn({ msg: "mono_webhook_unregister_failed", err });
@@ -244,7 +304,7 @@ export async function disconnectHandler(
   });
 
   logger.info({ msg: "mono_disconnected" });
-  res.status(200).json({ ok: true });
+  res.status(200).json(MonoDisconnectResponseSchema.parse({ ok: true }));
 }
 
 export async function syncStateHandler(
@@ -257,9 +317,9 @@ export async function syncStateHandler(
 
   const connResult = await query<{
     status: string;
-    webhook_registered_at: string | null;
-    last_event_at: string | null;
-    last_backfill_at: string | null;
+    webhook_registered_at: Date | string | null;
+    last_event_at: Date | string | null;
+    last_backfill_at: Date | string | null;
   }>(
     `SELECT status, webhook_registered_at, last_event_at, last_backfill_at
      FROM mono_connection WHERE user_id = $1`,
@@ -268,13 +328,15 @@ export async function syncStateHandler(
   );
 
   if (connResult.rows.length === 0) {
-    res.status(200).json({
-      status: "disconnected",
-      webhookActive: false,
-      lastEventAt: null,
-      lastBackfillAt: null,
-      accountsCount: 0,
-    });
+    res.status(200).json(
+      MonoSyncStateSchema.parse({
+        status: "disconnected",
+        webhookActive: false,
+        lastEventAt: null,
+        lastBackfillAt: null,
+        accountsCount: 0,
+      }),
+    );
     return;
   }
 
@@ -286,12 +348,20 @@ export async function syncStateHandler(
     { op: "mono_accounts_count" },
   );
 
-  res.status(200).json({
-    status: conn.status,
-    webhookActive:
-      conn.status === "active" && conn.webhook_registered_at != null,
-    lastEventAt: conn.last_event_at,
-    lastBackfillAt: conn.last_backfill_at,
-    accountsCount: Number(countResult.rows[0]?.count ?? 0),
-  });
+  res.status(200).json(
+    MonoSyncStateSchema.parse({
+      status: conn.status,
+      webhookActive:
+        conn.status === "active" && conn.webhook_registered_at != null,
+      lastEventAt:
+        conn.last_event_at instanceof Date
+          ? conn.last_event_at.toISOString()
+          : conn.last_event_at,
+      lastBackfillAt:
+        conn.last_backfill_at instanceof Date
+          ? conn.last_backfill_at.toISOString()
+          : conn.last_backfill_at,
+      accountsCount: Number(countResult.rows[0]?.count ?? 0),
+    }),
+  );
 }

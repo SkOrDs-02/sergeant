@@ -3,13 +3,17 @@ import {
   useRef,
   useState,
   useCallback,
+  useEffect,
   type ReactNode,
   type TouchEvent,
 } from "react";
 import { cn } from "@shared/lib/cn";
+import { Icon } from "./Icon";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
 
 const SWIPE_THRESHOLD = 60;
 const MAX_SWIPE = 100;
+const SWIPE_HINT_STORAGE_KEY = "sergeant:swipe_hint_shown";
 
 export interface SwipeToActionProps {
   children?: ReactNode;
@@ -20,6 +24,10 @@ export interface SwipeToActionProps {
   leftColor?: string;
   rightColor?: string;
   disabled?: boolean;
+  /** Show swipe hint for first-time users */
+  showHint?: boolean;
+  /** Custom hint text */
+  hintText?: string;
 }
 
 function SwipeToActionImpl({
@@ -31,10 +39,13 @@ function SwipeToActionImpl({
   leftColor = "bg-success",
   rightColor = "bg-danger",
   disabled = false,
+  showHint = false,
+  hintText,
 }: SwipeToActionProps) {
   const [offset, setOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [committed, setCommitted] = useState(false);
+  const [hintVisible, setHintVisible] = useState(false);
   const startX = useRef<number | null>(null);
   const startY = useRef<number | null>(null);
   const isHorizontal = useRef<boolean | null>(null);
@@ -42,6 +53,27 @@ function SwipeToActionImpl({
   // commit animation — setCommitted() is async, so we cannot read the state
   // back in onTouchStart to ignore the duplicate.
   const committingRef = useRef<boolean>(false);
+
+  // Show hint for first-time users
+  useEffect(() => {
+    if (!showHint || disabled) return;
+    const shown = safeReadLS(SWIPE_HINT_STORAGE_KEY);
+    if (!shown) {
+      // Show hint after a short delay
+      const timer = setTimeout(() => {
+        setHintVisible(true);
+        // Auto-hide after 4 seconds
+        setTimeout(() => setHintVisible(false), 4000);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [showHint, disabled]);
+
+  // Mark hint as shown after first successful swipe
+  const markHintShown = useCallback(() => {
+    safeWriteLS(SWIPE_HINT_STORAGE_KEY, "true");
+    setHintVisible(false);
+  }, []);
 
   const reset = useCallback(() => {
     setOffset(0);
@@ -102,6 +134,7 @@ function SwipeToActionImpl({
     if (offset < -SWIPE_THRESHOLD && onSwipeLeft) {
       setCommitted(true);
       committingRef.current = true;
+      markHintShown();
       setTimeout(() => {
         onSwipeLeft();
         reset();
@@ -111,6 +144,7 @@ function SwipeToActionImpl({
     } else if (offset > SWIPE_THRESHOLD && onSwipeRight) {
       setCommitted(true);
       committingRef.current = true;
+      markHintShown();
       setTimeout(() => {
         onSwipeRight();
         reset();
@@ -121,7 +155,7 @@ function SwipeToActionImpl({
       reset();
     }
     setIsDragging(false);
-  }, [isDragging, offset, onSwipeLeft, onSwipeRight, reset]);
+  }, [isDragging, offset, onSwipeLeft, onSwipeRight, reset, markHintShown]);
 
   const onTouchCancel = useCallback(() => {
     // System cancel (iOS bounce / app switcher / pinch) — abandon the drag
@@ -134,8 +168,31 @@ function SwipeToActionImpl({
   const showLeft = offset < 0 && onSwipeLeft;
   const showRight = offset > 0 && onSwipeRight;
 
+  const defaultHintText = onSwipeLeft
+    ? "Свайпни вліво для дії"
+    : onSwipeRight
+      ? "Свайпни вправо для дії"
+      : "Свайпни для дії";
+
   return (
     <div className="relative overflow-hidden rounded-2xl">
+      {/* First-time swipe hint */}
+      {hintVisible && (
+        <div
+          className={cn(
+            "absolute inset-x-0 -top-8 z-10 flex items-center justify-center gap-1.5",
+            "text-xs text-muted",
+            "motion-safe:animate-fade-in",
+          )}
+        >
+          <Icon
+            name="arrow-left"
+            size={12}
+            className="motion-safe:animate-pulse"
+          />
+          <span>{hintText || defaultHintText}</span>
+        </div>
+      )}
       {showLeft && (
         <div
           className={cn(

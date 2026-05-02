@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "_comment": "External URLs the markdown link checker (scripts/docs/check-markdown-links.mjs) must not enforce. Every entry needs a non-trivial 'reason' so reviewers can audit drift. Patterns are JS regex source matched against the raw URL.",
+  "entries": [
+    {
+      "pattern": "^https?://localhost(:\\d+)?(/|$)",
+      "reason": "localhost URLs are documented for local dev (e.g. n8n at :5678 in ops/README.md) and are never reachable from CI runners."
+    },
+    {
+      "pattern": "^https?://stripe\\.com/docs/account/closing",
+      "reason": "Cited in docs/adr/0016-user-deletion-and-pii-handling.md as a 30-day-grace reference at the time of the decision; ADRs are immutable records — link rot since 2025 is expected."
+    },
+    {
+      "pattern": "^https?://docs\\.github\\.com/en/account-and-profile/setting-up-and-managing-your-personal-account-on-github/managing-user-account-settings/deleting-your-personal-account",
+      "reason": "Cited in docs/adr/0016-user-deletion-and-pii-handling.md; GitHub docs URL was valid at the time of the decision and is preserved as a historical reference."
+    },
+    {
+      "pattern": "^https?://linear\\.app/docs/account-deletion",
+      "reason": "Cited in docs/adr/0016-user-deletion-and-pii-handling.md; Linear restructured their docs path tree in 2025. Preserved as historical reference."
+    },
+    {
+      "pattern": "^https?://firstpagesage\\.com/reports/saas-conversion-rate-benchmarks/",
+      "reason": "Cited as a SaaS conversion benchmark source in docs/launch/01-monetization-and-pricing.md; First Page Sage rotates report URLs per quarter, the citation pins the report+year (2021–2025) which is the auditable claim."
+    },
+    {
+      "pattern": "^https?://appalize\\.com/reports/retention-2026/",
+      "reason": "Cited as a mobile retention benchmark in docs/launch/01-monetization-and-pricing.md; the report+year is the auditable claim, not the live URL — host has had stability issues throughout 2026."
+    },
+    {
+      "pattern": "^https?://(www\\.)?producthunt\\.com/(directory/upcoming|coming-soon)",
+      "reason": "Product Hunt blocks HEAD/GET from non-browser user-agents and frequently returns 403/404 to checker tools even when the page renders fine in browsers."
+    },
+    {
+      "pattern": "^https?://(www\\.)?cookieyes\\.com/?",
+      "reason": "CookieYes returns HTTP 415 to HEAD/GET requests but the page renders correctly in browsers; treated-as-ok status code already handles this, listed here as a belt-and-suspenders for documentation."
+    },
+    {
+      "pattern": "^https?://(www\\.)?adjust\\.com/resources/ebooks/mobile-app-trends/",
+      "reason": "Adjust applies aggressive rate-limiting to ebook download URLs; treated-as-ok already covers 429 but listed here so PR reviewers see the explicit justification."
+    },
+    {
+      "pattern": "^https?://claude\\.ai(/.*)?$",
+      "reason": "claude.ai gates project pages behind login and returns 403 to anonymous HEAD/GET; cited in docs/launch/05-operations-and-automation.md as a Claude Projects reference, the link is correct for authenticated users."
+    }
+  ]
+}

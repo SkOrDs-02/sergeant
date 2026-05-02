@@ -1,0 +1,62 @@
+{
+  "name": "@sergeant/db-schema",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./pg": {
+      "types": "./dist/pg/index.d.ts",
+      "import": "./dist/pg/index.js"
+    },
+    "./sqlite": {
+      "types": "./dist/sqlite/index.d.ts",
+      "import": "./dist/sqlite/index.js"
+    },
+    "./shared": {
+      "types": "./dist/shared/index.d.ts",
+      "import": "./dist/shared/index.js"
+    },
+    "./migrate": {
+      "types": "./dist/migrate/index.d.ts",
+      "import": "./dist/migrate/index.js"
+    },
+    "./migrate/pg": {
+      "types": "./dist/migrate/pg.d.ts",
+      "import": "./dist/migrate/pg.js"
+    },
+    "./migrate/sqlite": {
+      "types": "./dist/migrate/sqlite.d.ts",
+      "import": "./dist/migrate/sqlite.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2"
+  },
+  "devDependencies": {
+    "@sergeant/config": "workspace:*",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.6.0",
+    "@types/pg": "^8.20.0",
+    "@vitest/coverage-v8": "^3.0.0",
+    "better-sqlite3": "^11",
+    "drizzle-kit": "^0.31.10",
+    "pg": "^8.20.0",
+    "pg-mem": "^3.0.14",
+    "typescript": "^6.0.3",
+    "vitest": "^3.0.0"
+  }
+}

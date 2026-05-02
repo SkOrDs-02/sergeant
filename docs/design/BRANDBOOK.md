@@ -1,38 +1,39 @@
-# Sergeant Brandbook & Design System
+# Sergeant Brandbook & Design-система
 
 > **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Status:** Active
 
-> **Version:** 2.0
+> **Версія:** 2.0
 > **Last Updated:** April 2026
-> **Design Philosophy:** Soft & Organic with Emerald/Teal accent
+> **Дизайн-філософія:** Soft & Organic з Emerald/Teal-акцентом
 
 ---
 
-## Brand Identity
+## Бренд-ідентичність
 
-### Name & Voice
+### Назва й голос
 
-- **Name:** Sergeant (Сержант)
-- **Tagline:** "Твій персональний хаб життя"
-- **Voice:** Friendly, motivating, supportive — like a helpful friend, not a drill sergeant
-- **Tone:** Warm, encouraging, clear, Ukrainian-first
+- **Назва:** Sergeant (Сержант)
+- **Tagline:** «Твій персональний хаб життя»
+- **Voice:** дружній, мотивуючий, підтримуючий — як корисний друг, а не drill-сержант
+- **Tone:** теплий, ободрюючий, ясний, ukrainian-first
 
-### Brand Personality
+### Бренд-персональність
 
-- **Approachable:** Not intimidating, welcoming to beginners
-- **Supportive:** Celebrates small wins, doesn't shame for missed goals
-- **Smart:** Provides insights without overwhelming
-- **Playful:** Gamification elements inspired by Duolingo
+- **Доступний:** не лякає, вітає новачків
+- **Підтримуючий:** святкує маленькі перемоги, не соромить за пропущені цілі
+- **Розумний:** дає інсайти без перевантаження
+- **Грайливий:** гейміфікаційні елементи в дусі Duolingo
 
 ---
 
-## Color System
+## Кольорова система
 
-### Primary Brand Colors
+### Основні бренд-кольори
 
-#### Emerald (Primary Accent)
+#### Emerald (основний акцент)
 
-The main brand color representing growth, health, and financial prosperity.
+Головний бренд-колір — символ росту, здоров'я й фінансового добробуту.
 
 ```
 Emerald 50:  #ecfdf5  (Lightest surfaces)
@@ -47,9 +48,9 @@ Emerald 800: #065f46
 Emerald 900: #064e3b  (Darkest)
 ```
 
-#### Teal (Secondary Accent)
+#### Teal (вторинний акцент)
 
-Used for Fizruk module and complementary accents.
+Використовується для модуля Fizruk і додаткових акцентів.
 
 ```
 Teal 50:  #f0fdfa
@@ -62,16 +63,16 @@ Teal 600: #0d9488
 Teal 700: #0f766e
 ```
 
-### Module Colors
+### Кольори модулів
 
-| Module    | Primary | Surface | Use Case         |
-| --------- | ------- | ------- | ---------------- |
-| Finyk     | #10b981 | #ecfdf5 | Finance tracking |
-| Fizruk    | #14b8a6 | #f0fdfa | Fitness tracking |
-| Routine   | #f97066 | #fff5f3 | Habit tracking   |
-| Nutrition | #92cc17 | #f8fee7 | Food tracking    |
+| Модуль    | Primary | Surface | Сфера      |
+| --------- | ------- | ------- | ---------- |
+| Finyk     | #10b981 | #ecfdf5 | Фінанси    |
+| Fizruk    | #14b8a6 | #f0fdfa | Фітнес     |
+| Routine   | #f97066 | #fff5f3 | Звички     |
+| Nutrition | #92cc17 | #f8fee7 | Харчування |
 
-### Semantic Colors
+### Семантичні кольори
 
 ```
 Success:  #10b981 (Emerald 500)
@@ -80,15 +81,9 @@ Danger:   #ef4444 (Red 500)
 Info:     #0ea5e9 (Sky 500)
 ```
 
-### WCAG-AA `-strong` Tier
+### WCAG-AA-тір `-strong`
 
-The saturated `-500` shades above are correct for **brand identity**
-(logos, marketing assets, dark-mode rendering, App Store screenshots,
-solid module surfaces) but do **not** clear WCAG 2.1 AA 4.5 : 1
-against the cream `bg-bg` (`#fdf9f3`) or pure white `bg-panel`
-(`#ffffff`) at body sizes. Each saturated brand colour ships with a
-`-strong` companion that does. **Use the strong tier whenever the
-colour is rendered as text or as the fill behind `text-white`.**
+Насичені `-500`-відтінки вище коректні для **бренд-ідентичності** (лого, marketing-asset-и, dark-mode-рендер, App Store-скріншоти, solid-module-surface-и), але **не** проходять WCAG 2.1 AA 4.5 : 1 на кремовому `bg-bg` (`#fdf9f3`) чи чисто білому `bg-panel` (`#ffffff`) на body-розмірах. Кожен насичений brand-колір має `-strong`-companion-а, який проходить. **Використовуй тір strong, коли колір рендериться як текст або як fill під `text-white`.**
 
 | Family    | Saturated (`-500`) | Strong (Tailwind utility)                                  | Hex       | Contrast vs `bg-bg` | Contrast vs `text-white` |
 | --------- | ------------------ | ---------------------------------------------------------- | --------- | ------------------- | ------------------------ |
@@ -102,13 +97,12 @@ colour is rendered as text or as the fill behind `text-white`.**
 | routine   | `#f97066`          | `bg-routine-strong` / `text-routine-strong` (coral-700)    | `#c23a3a` | 5.06 : 1            | 5.30 : 1                 |
 | nutrition | `#92cc17`          | `bg-nutrition-strong` / `text-nutrition-strong` (lime-800) | `#466212` | 6.64 : 1            | 6.96 : 1                 |
 
-> **Note on nutrition.** Lime is exceptionally light at every step;
-> `lime-700` (`#567c0f`) clears 4.67 : 1 — only a 0.17 margin over the
-> threshold. The nutrition `-strong` companion is therefore bumped one
-> step further to `lime-800` (`#466212`) for a 6.64 : 1 ratio. Other
-> families stay at `-700`.
+> **Примітка про nutrition.** Lime винятково світлий на кожному степі;
+> `lime-700` (`#567c0f`) дає 4.67 : 1 — лише 0.17 над порогом. Тому nutrition-`-strong`
+> піднято ще на один степ до `lime-800` (`#466212`) з 6.64 : 1. Інші родини
+> лишаються на `-700`.
 
-#### Decision matrix — which tier per primitive
+#### Матриця рішень — який тір для якого примітиву
 
 | Primitive           | Variant / tone                                              | Background                     | Text                   | Tier rule                                    |
 | ------------------- | ----------------------------------------------------------- | ------------------------------ | ---------------------- | -------------------------------------------- |
@@ -130,19 +124,17 @@ colour is rendered as text or as the fill behind `text-white`.**
 | Marketing / hero    | logo, illustration                                          | n/a                            | n/a                    | **always** saturated `-500`                  |
 | Dark-mode (`.dark`) | any                                                         | dark surface                   | brand `-300/400/500`   | **never** `-strong` (would regress contrast) |
 
-Cross-platform: the `-strong` Tailwind utilities are exposed by
-`packages/design-tokens/tailwind-preset.js` so both `apps/web`
-(Tailwind) and `apps/mobile` (NativeWind) get them automatically. For
-RN consumers that style via `StyleSheet.create({ color: ... })`,
-`@sergeant/design-tokens/mobile` exposes `accentStrong` /
-`successStrong` / `warningStrong` / `dangerStrong` / `infoStrong` with
-the same hex values (see `packages/design-tokens/mobile.js`).
+Cross-platform: `-strong`-Tailwind-утиліти вивезені через
+`packages/design-tokens/tailwind-preset.js`, тож їх автоматично отримують
+як `apps/web` (Tailwind), так і `apps/mobile` (NativeWind). Для RN-споживачів, які
+стилюються через `StyleSheet.create({ color: ... })`, `@sergeant/design-tokens/mobile`
+вивозить `accentStrong` / `successStrong` / `warningStrong` / `dangerStrong` / `infoStrong`
+з тими самими hex-значеннями (див. `packages/design-tokens/mobile.js`).
 
-See [`docs/design/brand-palette-wcag-aa-proposal.md`](./brand-palette-wcag-aa-proposal.md)
-for the full rationale, contrast measurements, and the migration
-history (PR #851 → PR #855).
+Повне обґрунтування, виміряння контрасту й історію міграції (PR #851 → PR #855)
+див. у [`docs/design/brand-palette-wcag-aa-proposal.md`](./brand-palette-wcag-aa-proposal.md).
 
-### Background Colors (Light Mode)
+### Кольори фону (Light-режим)
 
 ```
 Page Background:    #fdf9f3 (Warm cream)
@@ -151,7 +143,7 @@ Panel Hover:        #faf7f1 (Warm hover)
 Border:             #ebe4da (Warm gray)
 ```
 
-### Text Colors (Light Mode)
+### Кольори тексту (Light-режим)
 
 ```
 Primary Text:   #1c1917 (Warm black - Stone 900)
@@ -161,11 +153,11 @@ Subtle Text:    #a8a29e (Stone 400)
 
 ---
 
-## Typography
+## Типографія
 
 ### Font Family
 
-**DM Sans** — A geometric sans-serif that's friendly yet professional.
+**DM Sans** — геометричний sans-serif, дружній і водночас професійний.
 
 ```css
 font-family:
@@ -176,32 +168,32 @@ font-family:
   sans-serif;
 ```
 
-### Type Scale
+### Type-scale
 
-| Name | Size | Line Height | Weight   | Use Case            |
-| ---- | ---- | ----------- | -------- | ------------------- |
-| 2xs  | 10px | 14px        | Medium   | Tiny labels         |
-| xs   | 12px | 16px        | Medium   | Captions, badges    |
-| sm   | 14px | 20px        | Regular  | Body small, buttons |
-| base | 16px | 24px        | Regular  | Body text           |
-| lg   | 18px | 28px        | Medium   | Large body          |
-| xl   | 20px | 28px        | Semibold | Card titles         |
-| 2xl  | 24px | 32px        | Bold     | Section headers     |
-| 3xl  | 30px | 36px        | Bold     | Page titles         |
-| 4xl  | 36px | 40px        | Bold     | Hero headlines      |
+| Назва | Size | Line Height | Weight   | Сфера              |
+| ----- | ---- | ----------- | -------- | ------------------ |
+| 2xs   | 10px | 14px        | Medium   | Крихітні лейбли    |
+| xs    | 12px | 16px        | Medium   | Caption-и, badge-і |
+| sm    | 14px | 20px        | Regular  | Body small, кнопки |
+| base  | 16px | 24px        | Regular  | Body-текст         |
+| lg    | 18px | 28px        | Medium   | Large body         |
+| xl    | 20px | 28px        | Semibold | Заголовки карток   |
+| 2xl   | 24px | 32px        | Bold     | Заголовки секцій   |
+| 3xl   | 30px | 36px        | Bold     | Заголовки сторінок |
+| 4xl   | 36px | 40px        | Bold     | Hero-заголовки     |
 
-### Font Weights
+### Товщина шрифту
 
-- Regular (400): Body text
-- Medium (500): Labels, captions
-- Semibold (600): Buttons, card titles
-- Bold (700): Headlines, important numbers
+- Regular (400): body-текст
+- Medium (500): лейбли, caption-и
+- Semibold (600): кнопки, заголовки карток
+- Bold (700): заголовки, важливі числа
 
 ---
 
-## Spacing System
+## Система відступів
 
-Based on 4px grid with Tailwind defaults:
+На основі 4px-сітки зі стандартними Tailwind-відступами:
 
 ```
 0.5: 2px    (Micro gaps)
@@ -219,9 +211,9 @@ Based on 4px grid with Tailwind defaults:
 
 ---
 
-## Border Radius
+## Border-radius
 
-Soft, organic, friendly shapes:
+М'які, органічні, дружні форми:
 
 ```
 xl:   12px  (Small buttons, chips)
@@ -234,11 +226,11 @@ full: 9999px (Pills, avatars)
 
 ---
 
-## Shadows
+## Тіні
 
-Layered, soft shadows for depth without harshness:
+Шаристі м'які тіні для глибини без різкості:
 
-### Card Shadow
+### Card-тінь
 
 ```css
 box-shadow:
@@ -247,7 +239,7 @@ box-shadow:
   inset 0 1px 0 rgba(255, 255, 255, 0.9);
 ```
 
-### Float Shadow (Elevated/Hover)
+### Float-тінь (Elevated/Hover)
 
 ```css
 box-shadow:
@@ -256,7 +248,7 @@ box-shadow:
   inset 0 1px 0 rgba(255, 255, 255, 0.85);
 ```
 
-### Glow (Focus states)
+### Glow (focus-states)
 
 ```css
 box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
@@ -264,35 +256,35 @@ box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
 
 ---
 
-## Components
+## Компоненти
 
-### Buttons
+### Кнопки
 
-#### Primary Button
+#### Primary-кнопка
 
-- Background: `bg-brand-strong` (= emerald-700, `#047857`) — clears
-  WCAG AA 5.48 : 1 against `text-white`. The saturated `bg-brand`
-  (`#10b981`) only cleared ~2.5 : 1 and was retired from CTAs in
-  PR #855; see _WCAG-AA `-strong` Tier_ above.
+- Background: `bg-brand-strong` (= emerald-700, `#047857`) — проходить
+  WCAG AA 5.48 : 1 проти `text-white`. Насичений `bg-brand` (`#10b981`)
+  давав лише ~2.5 : 1 і був виведений з CTA в PR #855;
+  див. _WCAG-AA `-strong`-тір_ вище.
 - Text: `text-white`
-- Hover: Darker shade (`bg-brand-800`) + subtle glow
-- Active: Scale down to 98%
+- Hover: темніший відтінок (`bg-brand-800`) + легкий glow
+- Active: scale down до 98 %
 
-#### Secondary Button
+#### Secondary-кнопка
 
-- Background: White panel
-- Border: Line color
-- Hover: Slight background, border color change
+- Background: білий panel
+- Border: line-color
+- Hover: легкий фон, зміна кольору border-а
 
-#### Ghost Button
+#### Ghost-кнопка
 
-- Background: Transparent
-- Text: Muted color
-- Hover: Subtle background fill
+- Background: прозорий
+- Text: muted-колір
+- Hover: легкий fill фону
 
-### Cards
+### Картки
 
-#### Default Card
+#### Default-картка
 
 ```css
 .card {
@@ -304,86 +296,86 @@ box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
 }
 ```
 
-#### Interactive Card
+#### Interactive-картка
 
-Same as default + hover lift animation:
+Те саме, що default + hover-lift-анімація:
 
 - Transform: translateY(-2px)
-- Shadow: float shadow
+- Shadow: float-тінь
 - Transition: 200ms ease-smooth
 
-#### Hero Card (Module-branded)
+#### Hero-картка (module-branded)
 
-Gradient background matching module color.
+Градієнтний фон відповідно до module-color.
 
-### Progress Ring
+### Progress-ring
 
-Duolingo-inspired circular progress indicator:
+Круглий індикатор прогресу в дусі Duolingo:
 
-- Animated fill on mount
-- Centered percentage/value display
-- Module-colored variants
+- Анімований філ при mount-і
+- Центроване відображення відсотка/значення
+- Module-color-варіанти
 
-### Badges
+### Badge-і
 
-Pill-shaped status indicators. All solid tones use the `-strong` fill
-so labels remain legible at body sizes (see _WCAG-AA `-strong` Tier_).
+Pill-status-індикатори. Усі solid-тони використовують `-strong`-fill,
+щоб лейбли лишалися читабельними на body-розмірах (див. _WCAG-AA `-strong`-тір_).
 
 - Success: `bg-success-strong` (emerald-700) + `text-white`
 - Warning: `bg-warning-strong` (amber-700) + `text-white`
 - Danger: `bg-danger-strong` (red-700) + `text-white`
-- Outline / soft variants: `text-{tone}-strong` against the tinted or
-  transparent surface
-- Sizes: xs, sm, md, lg
+- Outline / soft-варіанти: `text-{tone}-strong` на tinted-
+  або прозорій surface
+- Розміри: xs, sm, md, lg
 
 ---
 
-## Animations
+## Анімації
 
-### Timing Functions
+### Timing-функції
 
 ```css
 ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94)
 ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1)
 ```
 
-### Duration
+### Тривалість
 
-- Fast: 150ms (hover states)
-- Default: 200ms (most transitions)
-- Slow: 300ms (complex animations)
+- Fast: 150ms (hover-states)
+- Default: 200ms (більшість transition-ів)
+- Slow: 300ms (складні анімації)
 
-### Key Animations
+### Ключові анімації
 
-#### Page Enter
+#### Page-Enter
 
-Fade in + slide up from 8px.
+Fade in + slide up від 8px.
 
-#### Module Slide
+#### Module-Slide
 
-Slide in from right (32px) when entering module.
+Slide in справа (32px) при вході в модуль.
 
-#### Check Pop (Duolingo-style)
+#### Check-Pop (Duolingo-style)
 
-Scale 0 → 1.2 → 1 with bounce easing.
+Scale 0 → 1.2 → 1 з bounce-easing.
 
-#### Success Pulse
+#### Success-Pulse
 
-Expanding ring glow from center.
+Розширюваний ring-glow від центру.
 
-#### Hover Lift
+#### Hover-Lift
 
-translateY(-2px) + shadow upgrade.
+translateY(-2px) + upgrade-тіні.
 
-#### Stagger Enter
+#### Stagger-Enter
 
-Children animate in sequence with 50ms delay each.
+Діти анімуються послідовно з затримкою 50ms кожен.
 
 ---
 
-## Gradients
+## Градієнти
 
-### Hero Gradients (Light backgrounds)
+### Hero-градієнти (light-фони)
 
 ```css
 /* Emerald (Finyk) */
@@ -399,7 +391,7 @@ background: linear-gradient(135deg, #fff5f3 0%, #ffe8e3 50%, #ffd4cb 100%);
 background: linear-gradient(135deg, #f8fee7 0%, #effccb 50%, #dff99d 100%);
 ```
 
-### Hub Hero
+### Hub-Hero
 
 ```css
 background: linear-gradient(150deg, #fdf9f3 0%, #fefdfb 50%, #f0fdfa 100%);
@@ -407,71 +399,70 @@ background: linear-gradient(150deg, #fdf9f3 0%, #fefdfb 50%, #f0fdfa 100%);
 
 ---
 
-## Icons
+## Іконки
 
-### Style Guidelines
+### Гайдлайни стилю
 
-- Stroke width: 1.6-2px
+- Stroke-товщина: 1.6–2px
 - Line cap: Round
 - Line join: Round
-- Size: 16px, 18px, 20px, 22px, 24px
+- Розміри: 16px, 18px, 20px, 22px, 24px
 
-### Recommended Sources
+### Рекомендовані джерела
 
 - Lucide Icons (primary)
 - Heroicons (alternative)
 
 ---
 
-## Accessibility
+## Доступність
 
-### Touch Targets
+### Touch-таргети
 
-- Minimum: 44x44px for all interactive elements
-- Input fields: Minimum 44px height
+- Мінімум: 44×44px для всіх інтерактивних елементів
+- Input-поля: мінімум 44px висоти
 
-### Focus States
+### Focus-states
 
-- Visible ring: 2px brand color at 50% opacity
-- Offset: 2px from element
+- Видимий ring: 2px brand-color при 50 % opacity
+- Offset: 2px від елемента
 
-### Color Contrast
+### Колірний контраст
 
-- Text on backgrounds: Minimum 4.5 : 1 ratio (WCAG 2.1 AA, § 1.4.3)
-- Large text (≥18 px regular **or** ≥14 px bold): Minimum 3 : 1 ratio
-- All saturated brand colours (`brand` / `success` / `warning` /
+- Текст на фонах: мінімум 4.5 : 1 (WCAG 2.1 AA, § 1.4.3)
+- Large-текст (≥18 px regular **або** ≥14 px bold): мінімум 3 : 1
+- Усі насичені brand-кольори (`brand` / `success` / `warning` /
   `danger` / `info` / `finyk` / `fizruk` / `routine` / `nutrition`)
-  ship with a `-strong` companion that clears the 4.5 : 1 threshold
-  at body sizes. Reach for it whenever the colour appears as text or
-  as the fill behind `text-white`. The full mapping lives in
-  _Color System → WCAG-AA `-strong` Tier_. A companion ESLint rule
-  (`sergeant-design/no-low-contrast-text-on-fill`) is being introduced
-  alongside this guide to flag the saturated-tier mistakes statically.
-- The `/design` showcase route is gated by axe-core in CI (see
-  `apps/web/tests/a11y/axe.spec.ts`) so any primitive that drifts
-  back to a saturated `-500` fill behind `text-white` fails the
-  pipeline before merge.
+  мають `-strong`-companion-а, який проходить 4.5 : 1 на body-розмірах.
+  Використовуй його, коли колір виступає як текст або як fill під `text-white`.
+  Повне мапування — у _Кольорова система → WCAG-AA `-strong`-тір_. Супровідне ESLint-правило
+  (`sergeant-design/no-low-contrast-text-on-fill`) додається разом із цим гайдом,
+  щоб ловити saturated-tier-помилки статично.
+- Showcase-роут `/design` гейтиться axe-core у CI (див.
+  `apps/web/tests/a11y/axe.spec.ts`), тож будь-який примітив, що дрейфує
+  назад до насиченого `-500`-fill під `text-white`, падає в pipeline
+  до merge-у.
 
 ### Motion
 
-- Respect prefers-reduced-motion
-- No auto-playing animations longer than 5 seconds
+- Поважати prefers-reduced-motion
+- Жодних автозапускних анімацій, довших за 5 секунд
 
 ---
 
-## Mobile-First Principles
+## Mobile-First-принципи
 
-1. **Design for mobile first**, enhance for desktop
-2. **Touch-friendly**: Large tap targets, swipe gestures
-3. **iOS Safari optimized**: No zoom on inputs (min 16px font)
-4. **Safe areas**: Respect notches and home indicators
-5. **Performance**: Minimize layout shifts, optimize images
+1. **Дизайн mobile-first**, потім розширення для desktop
+2. **Touch-friendly:** великі tap-target-и, swipe-жести
+3. **Оптимізовано під iOS Safari:** без zoom на input-ах (мінімум 16px-шрифт)
+4. **Safe-area-и:** поважати notch-і й home-indicator-и
+5. **Performance:** мінімізувати layout-shift-и, оптимізувати картинки
 
 ---
 
-## Dark Mode
+## Dark-режим
 
-Full dark mode support with warm undertones:
+Повна підтримка dark-режиму з теплими підтонами:
 
 ```css
 .dark {
@@ -493,159 +484,158 @@ Full dark mode support with warm undertones:
 
 ---
 
-## References & Inspiration
+## Посилання й натхнення
 
-### Primary References
+### Основні референси
 
-- **Duolingo**: Gamification, friendly characters, celebratory animations
-- **Yazio**: Clean health data visualization, macro tracking UI
-- **Monobank**: Smooth animations, swipe gestures, minimalist fintech
+- **Duolingo:** гейміфікація, дружні персонажі, святкові анімації
+- **Yazio:** чиста візуалізація health-даних, macro-tracking UI
+- **Monobank:** плавні анімації, swipe-жести, мінімалістичний fintech
 
-### Design Principles Borrowed
+### Запозичені дизайн-принципи
 
-- Duolingo's streak celebrations and progress rings
-- Yazio's macro circle visualizations
-- Monobank's card interactions and transaction lists
-
----
-
-## Implementation Notes
-
-### File Locations
-
-- **Tailwind preset (web + mobile)**: `packages/design-tokens/tailwind-preset.js`
-- **Raw visual tokens**: `packages/design-tokens/tokens.js`
-- **Mobile-only tokens (NativeWind)**: `packages/design-tokens/mobile.js`
-- **Global CSS (semantic variables)**: `apps/web/src/index.css`
-- **Chart theme (series, palette, gradients)**: `apps/web/src/shared/charts/chartTheme.ts`
-- **UI primitives (web)**: `apps/web/src/shared/components/ui/`
-- **UI primitives (mobile)**: `apps/mobile/src/components/ui/`
-
-### Key Components
-
-- `Button` - All button variants
-- `Card` - Card containers with variants
-- `ProgressRing` - Circular progress indicators
-- `Badge` - Status pills and tags
-- `Input` - Form inputs with states
+- Streak-святкування й progress-ring-и Duolingo
+- Macro-circle-візуалізації Yazio
+- Card-інтеракції й transaction-list-и Monobank
 
 ---
 
-## Native Patterns (iOS / Android)
+## Implementation-нотатки
 
-> Scope: `apps/mobile` only. This section **extends** the existing brand
-> identity with native-specific guidance; web look & feel is unchanged —
-> same tokens, same palette, same voice. See
-> [`react-native-migration.md` §13, Q9](../mobile/react-native-migration.md#13-прийняті-рішення-q1q10)
-> for the decision that produced this section.
+### Розташування файлів
 
-### Safe area & layout
+- **Tailwind-preset (web + mobile):** `packages/design-tokens/tailwind-preset.js`
+- **Сирі visual-токени:** `packages/design-tokens/tokens.js`
+- **Mobile-only-токени (NativeWind):** `packages/design-tokens/mobile.js`
+- **Глобальний CSS (семантичні variable-и):** `apps/web/src/index.css`
+- **Chart-тема (series, palette, gradients):** `apps/web/src/shared/charts/chartTheme.ts`
+- **UI-примітиви (web):** `apps/web/src/shared/components/ui/`
+- **UI-примітиви (mobile):** `apps/mobile/src/components/ui/`
 
-Use `react-native-safe-area-context` (`useSafeAreaInsets()` /
-`SafeAreaView`) on every screen. Never hardcode status-bar or home-indicator
-paddings.
+### Ключові компоненти
 
-- **Top inset:** respect on all content screens. Hero gradients and
-  full-bleed media may extend under the status bar, but interactive
-  content must start below `insets.top`.
-- **Bottom inset:** always respect on scroll containers, modals, bottom
-  sheets, and sticky CTAs. Primary actions stay above the home indicator.
-- **Side insets:** apply on landscape / notched devices; standard page
-  padding otherwise.
-- **Tab bar / keyboard:** combine `insets.bottom` with the active tab-bar
-  height; use `KeyboardAvoidingView` (`padding` on iOS, `height` on Android)
-  for forms.
+- `Button` — усі варіанти кнопок
+- `Card` — card-контейнери з варіантами
+- `ProgressRing` — круглі progress-індикатори
+- `Badge` — status-pill-и й тег-и
+- `Input` — form-input-и зі стейтами
 
-### Native gestures
+---
 
-Gestures are the mobile equivalent of web hover — they are the main way
-users signal intent. Enable them deliberately, document them when they
-carry destructive meaning.
+## Native-патерни (iOS / Android)
 
-| Gesture          | Where                                              | Notes                                                              |
-| ---------------- | -------------------------------------------------- | ------------------------------------------------------------------ |
-| Swipe-back (iOS) | All stack screens by default                       | Disable only on destructive flows (delete wizard, unsaved edits).  |
-| Pull-to-refresh  | Finyk `Transactions`, Routine calendar, Hub feed   | Use native `RefreshControl`; tie to the module's React Query sync. |
-| Long-press       | Transaction row, habit cell, workout item          | Opens contextual menu (edit / duplicate / delete).                 |
-| Swipe-to-delete  | Finyk `Transactions`, Routine habits, pantry items | Requires confirm step for items older than today.                  |
+> Скоуп: лише `apps/mobile`. Ця секція **розширює** наявну бренд-ідентичність
+> native-специфічними гайдансами; web look & feel не змінюється —
+> ті самі токени, та сама палітра, той самий voice. Рішення, що породило
+> цю секцію, див. у [`react-native-migration.md` §13, Q9](../mobile/react-native-migration.md#13-прийняті-рішення-q1q10).
 
-See [`hub-modules-roadmap.md`](./hub-modules-roadmap.md) for the per-module
-screen list these map onto.
+### Safe-area & layout
+
+Використовуй `react-native-safe-area-context` (`useSafeAreaInsets()` /
+`SafeAreaView`) на кожному екрані. Ніколи не хардкодить відступи status-bar-а
+чи home-indicator-а.
+
+- **Top inset:** поважати на всіх content-екранах. Hero-градієнти й
+  full-bleed-медіа можуть заходити під status-bar, але інтерактивний контент
+  має починатися нижче `insets.top`.
+- **Bottom inset:** завжди поважати у scroll-контейнерах, modal-ах, bottom-sheet-ах
+  і sticky-CTA. Primary-дії залишаються над home-indicator-ом.
+- **Side-inset-и:** застосовувати на landscape / notched-пристроях; інакше —
+  стандартний page-padding.
+- **Tab-bar / клавіатура:** поєднувати `insets.bottom` з активною
+  tab-bar-висотою; використовувати `KeyboardAvoidingView` (`padding` на iOS,
+  `height` на Android) для форм.
+
+### Native-жести
+
+Жести — mobile-еквівалент web-hover-у; це основний спосіб, у який користувачі
+сигналізують намір. Увімкнення має бути обдуманим, а для destructive-жестів —
+задокументованим.
+
+| Жест             | Де                                                  | Нотатки                                                                           |
+| ---------------- | --------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Swipe-back (iOS) | Усі stack-екрани за промовчанням                    | Вимикати лише на destructive-потоках (delete-wizard, unsaved-edits).              |
+| Pull-to-refresh  | Finyk `Transactions`, Routine-календар, Hub-фід     | Використовувати native `RefreshControl`; прив'язувати до React Query-sync модуля. |
+| Long-press       | Transaction-row, habit-cell, workout-item           | Відкриває контекстне меню (edit / duplicate / delete).                            |
+| Swipe-to-delete  | Finyk `Transactions`, Routine-звички, pantry-item-и | Потребує confirm-кроку для елементів, старших за сьогодні.                        |
+
+Список екранів по модулях, на які це мапується, див. у
+[`docs/architecture/platforms.md`](../architecture/platforms.md).
 
 ### Haptics
 
-Use `expo-haptics`. Haptics fire on **intent**, not on every touch — no
-haptic spam, no haptic on scroll, no haptic on hover-equivalents.
+Використовуй `expo-haptics`. Haptic-и спрацьовують на **намір**, а не на кожний тач —
+жодного haptic-спаму, haptic-у на scroll чи hover-еквівалентах.
 
-| Feedback                     | When                                                |
-| ---------------------------- | --------------------------------------------------- |
-| `ImpactFeedbackStyle.Light`  | Selection, toggle, tab switch, segmented control    |
-| `ImpactFeedbackStyle.Medium` | Successful save / submit / sync                     |
-| `ImpactFeedbackStyle.Heavy`  | Destructive confirm (delete, reset, disconnect)     |
-| `NotificationFeedbackType.*` | Toast with semantic meaning (success/warning/error) |
+| Feedback                     | Коли                                                   |
+| ---------------------------- | ------------------------------------------------------ |
+| `ImpactFeedbackStyle.Light`  | Вибір, toggle, tab-switch, segmented-control           |
+| `ImpactFeedbackStyle.Medium` | Успішний save / submit / sync                          |
+| `ImpactFeedbackStyle.Heavy`  | Destructive-confirm (delete, reset, disconnect)        |
+| `NotificationFeedbackType.*` | Toast із семантичним значенням (success/warning/error) |
 
 ```tsx
-// On a save button press handler:
+// У save-button press-handler-і:
 await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 await saveTransaction();
 ```
 
-### Platform-adaptive typography
+### Platform-adaptive-типографія
 
-Mobile inherits the type scale from `@sergeant/design-tokens` (same DM Sans,
-same sizes). Platform differences stay at the OS-accessibility layer:
+Mobile успадковує type-scale від `@sergeant/design-tokens` (той самий DM Sans,
+ті самі розміри). Платформовані відмінності залишаються на рівні OS-accessibility:
 
-- Respect OS `Dynamic Type` (iOS) and `Font scale` (Android) **up to 1.3×**.
-  Above that we clamp to preserve layout of cards, rings, and tables.
-- Set `maxFontSizeMultiplier={1.3}` on `Text` primitives; expose it as the
-  default on the mobile `Text` component.
-- Do **not** branch font sizes by `Platform.OS`. Web typography is unchanged.
+- Поважати OS `Dynamic Type` (iOS) і `Font scale` (Android) **до 1.3×**.
+  Вище — clamp-имо, щоб зберегти layout карток, ring-ів, таблиць.
+- Виставити `maxFontSizeMultiplier={1.3}` на `Text`-примітивах; ввести
+  як default на mobile-`Text`-компоненті.
+- **Не** бранчувати font-size за `Platform.OS`. Web-типографія не змінюється.
 
-### Dark mode
+### Dark-режим
 
-Palette from the [Dark Mode](#dark-mode) section above is canonical.
-Mobile simply resolves it from the OS theme:
+Палітра з секції [Dark-режим](#dark-режим) вище — канонічна.
+Mobile просто резолвить її з OS-теми:
 
-- Read `useColorScheme()` from React Native; follow system by default.
-- Same token names as web (`--c-bg`, `--c-panel`, `--c-text`, …) — only the
-  resolved values differ, handled inside `@sergeant/design-tokens`.
-- Allow a per-user override in `HubSettings` (system / light / dark), stored
-  in MMKV.
+- Читати `useColorScheme()` з React Native; за промовчанням — за системою.
+- Ті самі token-імена, що й в web (`--c-bg`, `--c-panel`, `--c-text`, …) —
+  відрізняються лише резолвлені значення, обробляються всередині `@sergeant/design-tokens`.
+- Дозволити per-user-override у `HubSettings` (system / light / dark),
+  збережений у MMKV.
 
 ### Motion
 
-Use `react-native-reanimated` v3 for all non-trivial animation. Keep
-durations aligned with the web scale:
+Використовуй `react-native-reanimated` v3 для всіх нетривіальних анімацій.
+Тривалості узгоджені зі web-шкалою:
 
-- **150 ms** — micro (toggle, press-in, tab switch). Matches web "fast".
-- **250 ms** — page / screen transitions. Matches web "default".
-- **400 ms** — modals and bottom sheets (enter); dismiss is ~250 ms.
-- Default easing is `easeOutQuad`-like (`Easing.out(Easing.quad)`); the
-  Duolingo-style "bounce" pop stays reserved for celebratory moments.
-- Respect OS **Reduce Motion** via `useReducedMotion()` — disable
-  non-essential animation (parallax, stagger, success pulse), keep only
-  functional transitions (e.g. sheet open/close) at reduced amplitude.
+- **150 ms** — мікро (toggle, press-in, tab-switch). Відповідає web-«fast».
+- **250 ms** — page / screen-transition-и. Відповідає web-«default».
+- **400 ms** — modal-и й bottom-sheet-и (enter); dismiss — ~250 ms.
+- Default easing — `easeOutQuad`-подібний (`Easing.out(Easing.quad)`);
+  Duolingo-style-bounce «pop» лишається для святкових моментів.
+- Поважати OS-**Reduce Motion** через `useReducedMotion()` — вимикати
+  non-essential-анімацію (parallax, stagger, success-pulse), лишати лише
+  функціональні transition-и (наприклад, sheet-відкриття/закриття) з зменшеною амплітудою.
 
-### Icons
+### Іконки
 
-- **Navigation & tabs:** platform-idiomatic set via `@expo/vector-icons`
-  (Apple HIG on iOS, Material on Android) so tab bars feel native.
-- **Content icons:** Lucide (matches web) to keep module surfaces visually
-  consistent across platforms.
-- Keep the stroke/size rules from the [Icons](#icons) section above.
+- **Навігація & tab-и:** platform-idiomatic-набір через `@expo/vector-icons`
+  (Apple HIG на iOS, Material на Android), щоб tab-bar відчувався native.
+- **Content-іконки:** Lucide (як в web), щоб module-surface-и були
+  візуально консистентними на платформах.
+- Правила stroke/розміру з секції [Іконки](#іконки) вище — зберігати.
 
-### Forbidden on mobile
+### Заборонено на mobile
 
-Web patterns that don't translate — do not port them to `apps/mobile`:
+Web-патерни, які не перекладаються — не переносити їх у `apps/mobile`:
 
-- **Hover states** — use press-in / focus states instead.
-- **Desktop keyboard shortcuts** — no `⌘K`, no global hotkeys.
-- **Right-click / context menus** — replace with long-press contextual menu.
-- **`position: fixed` floating panels** — replace with bottom sheets
-  (`@gorhom/bottom-sheet` or native `Modal`).
-- **Tooltips on hover** — if the info is important, make it a tap-target
-  with an inline hint; otherwise drop it.
+- **Hover-states** — замість них press-in / focus.
+- **Desktop-keyboard-шорткати** — жодних `⌘K`, жодних глобальних hotkey-ів.
+- **Right-click / context-menu** — замінити long-press-контекстним меню.
+- **`position: fixed`-floating-панелі** — замінити bottom-sheet-ами
+  (`@gorhom/bottom-sheet` або native `Modal`).
+- **Tooltip-и на hover** — якщо інфо важлива, зробити tap-target-ом
+  з inline-hint-ом; інакше — викинути.
 
 ---
 
-_This brandbook is a living document. Update as the design system evolves._
+_Цей brandbook — living document. Оновлюй у міру розвитку дизайн-системи._

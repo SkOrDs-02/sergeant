@@ -84,7 +84,7 @@ export function PushupsWidget() {
                       }}
                       title={`${d.date}: ${d.total}`}
                     />
-                    <span className="text-[8px] text-subtle">
+                    <span className="text-micro text-subtle">
                       {new Date(`${d.date}T12:00:00`).toLocaleDateString(
                         "uk-UA",
                         { weekday: "narrow" },

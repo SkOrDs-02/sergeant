@@ -21,6 +21,8 @@ export interface ToastItem {
   msg: ReactNode;
   type: ToastType;
   action: ToastAction | null;
+  /** Set to true during the exit animation before actual removal. */
+  leaving?: boolean;
 }
 
 export interface ToastApi {
@@ -56,11 +58,23 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const dismiss = useCallback((id: number) => {
-    clearTimeout(timersRef.current[id]);
-    delete timersRef.current[id];
+  const remove = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
+
+  const dismiss = useCallback(
+    (id: number) => {
+      clearTimeout(timersRef.current[id]);
+      delete timersRef.current[id];
+      // Mark as leaving → triggers exit animation in <ToastContainer>.
+      // After 200ms (matches the CSS exit transition), actually remove.
+      setToasts((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, leaving: true } : t)),
+      );
+      setTimeout(() => remove(id), 200);
+    },
+    [remove],
+  );
 
   const show = useCallback<ToastApi["show"]>(
     (msg, type = "success", duration = 3500, action) => {

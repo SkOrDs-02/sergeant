@@ -15,8 +15,7 @@
  *    `expo-file-system` + `expo-sharing` + `expo-document-picker`.
  *
  * Dashboard reorder list:
- *  - Рендерить **видимий** підмножину модулей (без `nutrition` у
- *    `VISIBLE_DASHBOARD_MODULES`, поки Phase 7 Hub-gate) з ↑/↓ — a11y fallback
+ *  - Рендерить **видимий** підмножину модулей з ↑/↓ — a11y fallback
  *    for the long-press drag on the dashboard itself. State is shared
  *    with the dashboard via `useDashboardOrder` and persisted through
  *    the same `STORAGE_KEYS.DASHBOARD_ORDER` slice used by web.
@@ -45,12 +44,27 @@
 
 import { useState } from "react";
 import { DeviceEventEmitter, Pressable, Text, View } from "react-native";
+import { Sun, Moon, Smartphone } from "lucide-react-native";
+
+import { useThemeMode, type ThemeMode } from "@/core/theme/ColorSchemeBridge";
+import { colors } from "@/theme";
 import {
+  ALL_MODULES,
   DASHBOARD_MODULE_LABELS,
+  DASHBOARD_DENSITIES,
+  DASHBOARD_DENSITY_LABELS,
+  DASHBOARD_DENSITY_DESCRIPTIONS,
+  normalizeDashboardDensity,
   downloadJson,
+  getActiveModules,
+  getHideInactiveModules,
   pickJson,
   resetOnboardingState,
+  setActiveModules,
+  setHideInactiveModules,
   STORAGE_KEYS,
+  type DashboardDensity,
+  type DashboardModuleId,
   type KVStore,
 } from "@sergeant/shared";
 
@@ -118,6 +132,62 @@ function DeferredNotice({ children }: { children: string }) {
     <Card variant="flat" radius="md" padding="md" className="border-dashed">
       <Text className="text-xs text-fg-muted leading-snug">{children}</Text>
     </Card>
+  );
+}
+
+const THEME_OPTIONS: { value: ThemeMode; label: string; Icon: typeof Sun }[] = [
+  { value: "light", label: "Світла", Icon: Sun },
+  { value: "dark", label: "Темна", Icon: Moon },
+  { value: "system", label: "Системна", Icon: Smartphone },
+];
+
+function ThemeToggle() {
+  const { mode, setTheme, isDark } = useThemeMode();
+
+  return (
+    <View className="gap-2">
+      <Text className="text-sm font-medium text-fg">Тема оформлення</Text>
+      <View className="flex-row gap-2">
+        {THEME_OPTIONS.map(({ value, label, Icon }) => {
+          const isSelected = mode === value;
+          return (
+            <Pressable
+              key={value}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: isSelected }}
+              accessibilityLabel={`Тема: ${label}`}
+              accessibilityHint="Змінює тему оформлення застосунку"
+              onPress={() => setTheme(value)}
+              className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border py-3 active:scale-[0.98] ${
+                isSelected
+                  ? "border-brand bg-brand/10"
+                  : "border-cream-300 bg-cream-50 dark:border-cream-600 dark:bg-cream-800"
+              }`}
+              testID={`theme-toggle-${value}`}
+            >
+              <Icon
+                size={18}
+                color={
+                  isSelected
+                    ? colors.accent
+                    : isDark
+                      ? colors.textMuted
+                      : colors.textMuted
+                }
+                strokeWidth={2}
+              />
+              <Text
+                className={`text-sm font-medium ${
+                  isSelected ? "text-brand" : "text-fg"
+                }`}
+              >
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 
@@ -190,8 +260,38 @@ export function GeneralSection() {
   const toast = useToast();
 
   const showCoach = prefs.showCoach !== false;
-  const dark = prefs.darkMode === true;
   const showHints = prefs.showHints !== false;
+  const [density, setDensityState] = useLocalStorage<string>(
+    STORAGE_KEYS.DASHBOARD_DENSITY,
+    "comfortable",
+  );
+  const currentDensity = normalizeDashboardDensity(density) as DashboardDensity;
+  const handleDensityChange = (d: DashboardDensity) => setDensityState(d);
+
+  const [activeModules, setActiveModulesState] = useState<DashboardModuleId[]>(
+    () => getActiveModules(mmkvStore),
+  );
+  const [hideInactive, setHideInactiveState] = useState(() =>
+    getHideInactiveModules(mmkvStore),
+  );
+  const toggleActive = (id: DashboardModuleId) => {
+    setActiveModulesState((prev) => {
+      const isActive = prev.includes(id);
+      if (isActive && prev.length === 1) {
+        toast.error("Щонайменше один модуль має бути активним");
+        return prev;
+      }
+      const next = isActive
+        ? prev.filter((x) => x !== id)
+        : ALL_MODULES.filter((x) => prev.includes(x) || x === id);
+      setActiveModules(mmkvStore, next);
+      return next;
+    });
+  };
+  const toggleHideInactive = (next: boolean) => {
+    setHideInactiveState(next);
+    setHideInactiveModules(mmkvStore, next);
+  };
 
   const handleExport = async () => {
     try {
@@ -222,13 +322,8 @@ export function GeneralSection() {
   };
 
   return (
-    <SettingsGroup title="Загальні" emoji="⚙️">
-      <ToggleRow
-        label="Темна тема"
-        checked={dark}
-        onChange={(next) => setPrefs((prev) => ({ ...prev, darkMode: next }))}
-        testID="general-dark-mode-toggle"
-      />
+    <SettingsGroup title="Загальні" emoji="⚙️" testID="settings-general-group">
+      <ThemeToggle />
       <SettingsSubGroup title="Дашборд">
         <ToggleRow
           label="Показувати AI-коуч"
@@ -249,6 +344,42 @@ export function GeneralSection() {
           testID="general-show-hints-toggle"
         />
       </SettingsSubGroup>
+      <SettingsSubGroup title="Щільність дашборду">
+        <Text className="text-xs text-fg-muted leading-snug">
+          Скільки простору між картками на головному екрані.
+        </Text>
+        <View className="flex-row gap-2">
+          {DASHBOARD_DENSITIES.map((d) => (
+            <Pressable
+              key={d}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: d === currentDensity }}
+              accessibilityLabel={DASHBOARD_DENSITY_LABELS[d]}
+              onPress={() => handleDensityChange(d)}
+              className={`flex-1 rounded-xl border px-3 py-2.5 ${
+                d === currentDensity
+                  ? "border-brand bg-brand/8"
+                  : "border-cream-300 bg-cream-50 active:bg-cream-100"
+              }`}
+              testID={`dashboard-density-${d}`}
+            >
+              <Text
+                className={`text-sm font-medium ${
+                  d === currentDensity ? "text-brand" : "text-fg"
+                }`}
+              >
+                {DASHBOARD_DENSITY_LABELS[d]}
+              </Text>
+              <Text
+                className="text-[11px] text-fg-muted mt-0.5"
+                numberOfLines={2}
+              >
+                {DASHBOARD_DENSITY_DESCRIPTIONS[d]}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </SettingsSubGroup>
       <SettingsSubGroup title="Онбординг">
         <Text className="text-xs text-fg-muted leading-snug">
           Перезапуск не видаляє твої дані — лише повертає вітальний екран та
@@ -265,6 +396,51 @@ export function GeneralSection() {
         >
           Перезапустити онбординг
         </Button>
+      </SettingsSubGroup>
+      <SettingsSubGroup title="Активні модулі">
+        <Text className="text-xs text-fg-muted leading-snug">
+          Неактивні модулі відображаються на дашборді приглушено — без кнопки
+          швидкого додавання. Чонайменше один модуль має залишатися активним.
+        </Text>
+        <View className="overflow-hidden rounded-xl border border-cream-300">
+          {ALL_MODULES.map((id, index) => {
+            const checked = activeModules.includes(id);
+            const label = DASHBOARD_MODULE_LABELS[id];
+            return (
+              <Pressable
+                key={id}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked }}
+                accessibilityLabel={label}
+                onPress={() => toggleActive(id)}
+                className={`flex-row items-center gap-3 bg-cream-50 px-3 py-3 active:bg-cream-100 ${
+                  index === 0 ? "" : "border-t border-cream-300"
+                }`}
+                testID={`general-active-module-${id}`}
+              >
+                <View
+                  className={`h-5 w-5 items-center justify-center rounded border ${
+                    checked
+                      ? "border-primary bg-primary"
+                      : "border-cream-300 bg-cream-50"
+                  }`}
+                >
+                  {checked ? (
+                    <Text className="text-[11px] font-bold text-bg">✓</Text>
+                  ) : null}
+                </View>
+                <Text className="flex-1 text-sm text-fg">{label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <ToggleRow
+          label="Приховати неактивні модулі"
+          description="Повністю ховає неактивні плитки з дашборду."
+          checked={hideInactive}
+          onChange={toggleHideInactive}
+          testID="general-hide-inactive-toggle"
+        />
       </SettingsSubGroup>
       <SettingsSubGroup title="Упорядкувати модулі">
         <ModuleReorderList />

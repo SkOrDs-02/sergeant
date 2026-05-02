@@ -175,7 +175,7 @@ export function HabitQuickCreateDialog({
           <button
             type="button"
             onClick={onClose}
-            className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
+            className="focus-ring w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
             aria-label="Закрити"
           >
             <svg

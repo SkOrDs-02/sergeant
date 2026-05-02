@@ -155,7 +155,7 @@ export function NotificationsSection() {
           label="Нагадування про звички"
           description="Спрацьовує у встановлений в кожній звичці час, навіть коли застосунок закрито."
           checked={routine.prefs?.routineRemindersEnabled === true}
-          onChange={(e) => handleRoutineToggle(e.target.checked)}
+          onChange={handleRoutineToggle}
         />
       </SettingsSubGroup>
 
@@ -164,7 +164,7 @@ export function NotificationsSection() {
           label="Нагадування про тренування"
           description="Надсилається о вказаній годині, якщо на сьогодні призначено тренування."
           checked={monthlyPlan.reminderEnabled}
-          onChange={(e) => handleFizrukToggle(e.target.checked)}
+          onChange={handleFizrukToggle}
         />
         {monthlyPlan.reminderEnabled && (
           <label className="flex items-center gap-2 text-sm">
@@ -187,7 +187,7 @@ export function NotificationsSection() {
           label="Нагадування про їжу"
           description="Щоденне нагадування записати прийоми їжі, навіть коли застосунок закрито."
           checked={Boolean(nutritionPrefs.reminderEnabled)}
-          onChange={(e) => handleNutritionToggle(e.target.checked)}
+          onChange={handleNutritionToggle}
         />
         {nutritionPrefs.reminderEnabled && (
           <label className="flex items-center gap-2 text-sm">

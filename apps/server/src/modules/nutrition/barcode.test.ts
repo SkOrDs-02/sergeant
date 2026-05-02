@@ -357,6 +357,29 @@ describe("barcode handler", () => {
       expect(global.fetch).toHaveBeenCalledTimes(6);
     });
 
+    it("does not cache transient non-ok upstream HTTP responses as miss sentinels", async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(mockFetchResponse({ ok: false, status: 503 }))
+        .mockResolvedValueOnce(mockFetchResponse({ ok: false, status: 500 }))
+        .mockResolvedValueOnce(mockFetchResponse({ ok: false, status: 429 }));
+
+      const res1 = mockRes();
+      await handler(asReq({ barcode: "9999999999999" }), res1);
+      expect(res1.statusCode).toBe(404);
+      expect(global.fetch).toHaveBeenCalledTimes(3);
+
+      (global.fetch as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(USDA_MISS)
+        .mockResolvedValueOnce(UPCITEMDB_MISS);
+
+      const res2 = mockRes();
+      await handler(asReq({ barcode: "9999999999999" }), res2);
+      expect(res2.statusCode).toBe(404);
+      expect(global.fetch).toHaveBeenCalledTimes(6);
+    });
+
     it("після того як hit-TTL вийшов, наступний запит знову викликає upstream", async () => {
       // Скорочуємо hit TTL до 0 — будь-яка перевірка експірації одразу вважає
       // запис прострочений.

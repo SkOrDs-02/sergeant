@@ -1,103 +1,156 @@
-# Document Freshness Tracking
+# Відстеження свіжості документації
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-04-30 by @devin-ai. **Next review:** 2026-07-29.
+> **Status:** Active
 
-This system ensures critical documentation stays up-to-date by embedding
-freshness headers and running a nightly check that opens GitHub issues for
-overdue docs.
+Ця система гарантує, що критична документація лишається актуальною — у документах вшиваються freshness-заголовки, а нічний джоб відкриває GitHub-issue для протермінованих файлів. **Список відстежуваних файлів автоматично виводиться з самого репо** — нічого додавати в JSON-allowlist не треба.
 
 ---
 
-## How it works
+## Як це працює
 
-1. **Freshness header** — each tracked document has a blockquote near the top:
+1. **Freshness-заголовок** — у кожному відстежуваному документі біля початку (перші 15 рядків) є blockquote канонічного формату:
 
    ```markdown
    > **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
    ```
 
-2. **Allowlist** — `scripts/docs/freshness-allowlist.json` lists every tracked
-   file with its review cadence (days):
+2. **Auto-discovery** — `scripts/docs/freshness-config.mjs` через `git ls-files '*.md'` сканує кожен `.md`, шукає канонічний заголовок та автоматично додає файл до списку відстежуваних із `defaultCadenceDays = 90`. Виключення (templates, ADR, code-adjacent README) — у `excludeGlobs` із розумних дефолтів.
+
+3. **Конфіг** — `scripts/docs/freshness-config.json` містить лише **відхилення від дефолтів**:
+   - `cadenceOverrides` — інший cadence для конкретних файлів (60 днів для runbook, 180 для аудитів);
+   - `explicitInclude` — файли без заголовка, які треба тримати у списку (рідкість);
+   - `explicitExclude` — файли, які навмисно вимкнено;
+   - `excludeGlobs` — додаткові glob-патерни поверх дефолту.
 
    ```json
-   [
-     { "path": "README.md", "cadenceDays": 90 },
-     { "path": "docs/observability/runbook.md", "cadenceDays": 60 }
-   ]
+   {
+     "cadenceOverrides": {
+       "docs/observability/runbook.md": 60,
+       "docs/audits/ux-audit-2025.md": 365
+     }
+   }
    ```
 
-3. **Nightly workflow** — `.github/workflows/docs-freshness.yml` runs
-   `scripts/docs/check-freshness.mjs` daily at 07:00 UTC. For each file whose
-   **Next review** date has passed, it opens a GitHub issue with labels
-   `documentation` and `freshness-overdue`.
+4. **Нічний workflow** — `.github/workflows/docs-freshness.yml` запускає `scripts/docs/check-freshness.mjs` щодня о 07:00 UTC. Для кожного файлу, у якого минула дата **Next review**, скрипт відкриває GitHub-issue з лейблами `documentation` і `freshness-overdue`.
 
-4. **Idempotency** — the script embeds a marker comment
-   (`<!-- doc-freshness:<path> -->`) in the issue body. Before creating a new
-   issue it searches for an existing open issue with the same marker and skips
-   if found.
+5. **Coverage-gate** — `node scripts/docs/check-freshness.mjs --check-coverage` фейлиться, якщо в репо знайдено `.md` без freshness-заголовка, який при цьому не виключено через `excludeGlobs` / `explicitExclude`. Запускається в pre-merge CI, щоб новий док не пройшов без header-а.
+
+6. **Ідемпотентність** — скрипт вшиває коментар-маркер (`<!-- doc-freshness:<path> -->`) у тіло issue. Перед створенням нової issue він шукає вже відкриту з таким маркером і пропускає, якщо знайшов.
 
 ---
 
-## Supported header formats
+## Підтримувані формати заголовка
 
-| Format    | Example                                                                   | Notes                                                  |
-| --------- | ------------------------------------------------------------------------- | ------------------------------------------------------ |
-| Canonical | `> **Last validated:** 2026-04-27 by @user. **Next review:** 2026-07-26.` | Preferred. Contains explicit next-review date.         |
-| Legacy    | `> Last reviewed: 2026-04-27. Reviewer: @user`                            | AGENTS.md style before PR-11.A. No explicit next date. |
+| Формат     | Приклад                                                                   | Нотатки                                                                                               |
+| ---------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Канонічний | `> **Last validated:** 2026-04-27 by @user. **Next review:** 2026-07-26.` | Бажаний. Auto-discovery враховує лише цей формат.                                                     |
+| Legacy     | `> Last reviewed: 2026-04-27. Reviewer: @user`                            | Стиль AGENTS.md до PR-11.A. Розпізнається парсером, але **не** включається auto-discovery — мігруйте. |
 
-When a legacy header is found, the script computes the next review date as
-`lastValidated + cadenceDays` from the allowlist.
+Коли знайдено legacy-заголовок (через `explicitInclude` або старий `freshness-allowlist.json`), скрипт обчислює дату наступного рев'ю як `lastValidated + cadenceDays`.
 
 ---
 
-## Adding a document to the freshness list
+## Як додати документ у freshness-список
 
-1. Add the freshness header to the document (right after the title):
+> Зазвичай нічого не треба робити з конфігом — просто додайте заголовок. Дату й handle оновить **auto-bump pre-commit hook** (`scripts/docs/bump-last-validated.mjs`).
+
+1. Додайте freshness-заголовок до документа (одразу після title):
 
    ```markdown
-   # My Document
+   # Мій документ
 
    > **Last validated:** YYYY-MM-DD by @yourhandle. **Next review:** YYYY-MM-DD.
+   > **Status:** Active
    ```
 
-   Compute the next-review date as `today + cadenceDays`.
+   Дата наступного рев'ю — `today + 90` (стандартний cadence).
 
-2. Add an entry to `scripts/docs/freshness-allowlist.json`:
+2. Якщо документ потребує іншого cadence-у — додайте запис у `scripts/docs/freshness-config.json` → `cadenceOverrides`:
 
    ```json
-   { "path": "docs/my-document.md", "cadenceDays": 90 }
+   "cadenceOverrides": {
+     "docs/my-runbook.md": 60
+   }
    ```
 
-3. Commit both changes in the same PR.
+3. Якщо файл — це не код-агностичний governance-док (наприклад, це auto-generated SDK-doc), додайте його шлях у `excludeGlobs` чи `explicitExclude`.
+
+4. Запустіть локально, щоб переконатися, що файл потрапив у tracking:
+
+   ```bash
+   pnpm docs:freshness-dashboard
+   open dist/freshness-dashboard.html
+   ```
 
 ---
 
-## Changing cadence
+## Зміна cadence-у
 
-Edit the `cadenceDays` field in `scripts/docs/freshness-allowlist.json`. Update
-the **Next review** date in the document header to match. Recommended cadences:
+Поправте поле в `scripts/docs/freshness-config.json` → `cadenceOverrides`. Оновіть дату **Next review** у заголовку документа, щоб вона збігалася. Рекомендовані cadence-и:
 
-| Cadence | Use for                                                      |
-| ------- | ------------------------------------------------------------ |
-| 60 days | High-criticality ops docs (runbook, hotfix, secret rotation) |
-| 90 days | Standard docs (README, CONTRIBUTING, SLO, playbooks index)   |
+| Cadence  | Для чого                                                        |
+| -------- | --------------------------------------------------------------- |
+| 60 днів  | Високо-критичні ops-доки (runbook, hotfix, ротація секретів)    |
+| 90 днів  | Стандартні доки (README, CONTRIBUTING, SLO, індекс playbook-ів) |
+| 180 днів | Аудити, специфікації-проєкти, історичні roadmap-и               |
+| 365 днів | Snapshot-аудити, які мали б бути замінені, а не оновлені        |
 
 ---
 
-## Running locally
+## Свідомо виключено
+
+Дефолтний `excludeGlobs` (`scripts/docs/freshness-config.mjs` → `DEFAULT_CONFIG`) виключає:
+
+- `docs/adr/**` — Architecture Decision Records іммутабельні (див. нижче).
+- `**/_TEMPLATE*.md`, `**/TEMPLATE*.md`, `docs/playbooks/INDEX.md` — шаблони / згенеровані індекси.
+- `apps/**/README.md`, `packages/**/README.md`, `ops/**/README.md` — code-adjacent доки, які живуть із кодом.
+- `apps/server/src/ai-prompts/**` — промпти, які версіюються разом зі своїми консумерами.
+- `.github/**`, `.agents/**`, `.claude/**` — UI-templates і агентські skill-набори, що приходять зверху.
+- `CHANGELOG.md`, `THIRD_PARTY_LICENSES.md` — генеровані / суто історичні.
+
+### Architecture Decision Records (`docs/adr/**`)
+
+ADR-и **навмисно виключені**. ADR фіксує контекст, альтернативи та обґрунтування рішення **на момент його прийняття** — це історичний запис, а не «живий» документ. Коли базове рішення змінюється:
+
+1. Напишіть новий ADR, який описує нове рішення з актуальним контекстом.
+2. Виставте `Status: Accepted` на новому ADR і `Status: Superseded by ADR-NNNN` на старому.
+3. Додайте рядок `Supersedes: ADR-MMMM` у заголовок нового ADR.
+
+Це стандартний патерн із [оригінальної пропозиції Майкла Найгарда](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) та спільноти [adr.github.io](https://adr.github.io/).
+
+Якщо ADR коли-небудь потребує операційних метаданих, які треба перевалідовувати за cadence-ом (наприклад, таблиця квот, прайс-лист), винесіть ці дані в окремий док під `docs/integrations/`, `docs/launch/` або `docs/observability/` і додайте **його** заголовок — а сам ADR не чіпайте.
+
+---
+
+## Локальний запуск
 
 ```bash
-# Dry run (no issues created)
+# Dry-run (issue не створюються) — показує overdue-статус кожного відстежуваного файлу
 DRY_RUN=1 node scripts/docs/check-freshness.mjs
 
-# Real run (requires GITHUB_TOKEN with issues:write)
+# Coverage-gate — фейлиться, якщо є .md без freshness-заголовка
+node scripts/docs/check-freshness.mjs --check-coverage
+
+# Реальний запуск (потрібен GITHUB_TOKEN з issues:write)
 GITHUB_TOKEN=ghp_... node scripts/docs/check-freshness.mjs
+
+# HTML-дашборд із усіма відстежуваними файлами
+pnpm docs:freshness-dashboard
+open dist/freshness-dashboard.html
 ```
 
 ---
 
-## Running tests
+## Legacy: `freshness-allowlist.json`
+
+`scripts/docs/freshness-allowlist.json` тепер порожній (`[]`) і існує лише як backward-compat fallback. Усі 83 попередні записи мігровані: 14 із них живуть у `cadenceOverrides` (інші cadence-и), решта 69 авто-виявляються через сам канонічний заголовок. Файл буде видалено в наступному cleanup-PR після того, як ми переконаємося, що жоден зовнішній скрипт від нього не залежить.
+
+---
+
+## Тести
 
 ```bash
 node --test scripts/docs/__tests__/check-freshness.test.mjs
+node --test scripts/docs/__tests__/freshness-config.test.mjs
 ```

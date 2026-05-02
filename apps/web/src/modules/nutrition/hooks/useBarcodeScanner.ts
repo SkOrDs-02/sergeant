@@ -7,6 +7,26 @@ import {
 } from "react";
 import { isCapacitor } from "@sergeant/shared";
 
+// Shape of the experimental `BarcodeDetector` Web API. Some Chromium
+// variants expose the global, others don't; Safari/Firefox never do.
+// Not in `lib.dom.d.ts`, so we declare a structural type and attach it
+// to `Window` via module augmentation below.
+interface NativeBarcodeDetector {
+  detect(
+    source: HTMLVideoElement,
+  ): Promise<Array<{ rawValue?: string; format?: string }>>;
+}
+interface NativeBarcodeDetectorCtor {
+  new (opts: { formats: string[] }): NativeBarcodeDetector;
+  getSupportedFormats?: () => Promise<string[]>;
+}
+
+declare global {
+  interface Window {
+    BarcodeDetector?: NativeBarcodeDetectorCtor;
+  }
+}
+
 /**
  * Normalized barcode payload returned by both the native ML Kit plugin
  * and the browser zxing / BarcodeDetector flow. Consumers of the hook
@@ -234,18 +254,7 @@ export function useWebScanner({
       // and the user would stare at a "scanning" UI forever. Verify
       // format support up front and fall through to zxing when the
       // native detector can't actually help us.
-      interface NativeBarcodeDetector {
-        detect(
-          source: HTMLVideoElement,
-        ): Promise<Array<{ rawValue?: string; format?: string }>>;
-      }
-      interface NativeBarcodeDetectorCtor {
-        new (opts: { formats: string[] }): NativeBarcodeDetector;
-        getSupportedFormats?: () => Promise<string[]>;
-      }
-      const BarcodeDetectorCtor = (
-        window as unknown as { BarcodeDetector?: NativeBarcodeDetectorCtor }
-      ).BarcodeDetector;
+      const BarcodeDetectorCtor = window.BarcodeDetector;
 
       let detector: NativeBarcodeDetector | null = null;
       if (usedBarcodeDetector && BarcodeDetectorCtor) {

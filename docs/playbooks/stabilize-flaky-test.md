@@ -1,5 +1,8 @@
 # Playbook: Stabilize Flaky Test
 
+> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Status:** Active
+
 **Trigger:** «Тест X падає 1 з 5 разів» / у CI red, локально green / тест у списку **«Pre-existing flaky tests»** в AGENTS.md.
 
 ---

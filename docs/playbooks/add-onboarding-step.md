@@ -1,5 +1,8 @@
 # Playbook: Add Onboarding Step
 
+> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Status:** Active
+
 **Trigger:** «Додай новий крок в онбординг» / зміна послідовності перших кроків нового юзера / новий FTUX-етап.
 
 ---
@@ -8,7 +11,7 @@
 
 Onboarding wizard є двох видів:
 
-- **Web** — `apps/web/src/core/OnboardingWizard.tsx` (production, стабільний).
+- **Web** — `apps/web/src/core/onboarding/OnboardingWizard.tsx` (production, стабільний).
 - **Mobile** — `apps/mobile/src/core/OnboardingWizard.tsx` (v2, **з 3 known flaky тестами** — див. AGENTS.md).
 
 Послідовність кроків — single source of truth у `packages/shared/src/lib/onboarding.ts`:
@@ -73,7 +76,7 @@ export const ONBOARDING_STEP_DESCRIPTIONS: Record<OnboardingStepId, string> = {
 
 ### 3. Web wizard
 
-`apps/web/src/core/OnboardingWizard.tsx` — додай case у render-функцію step body:
+`apps/web/src/core/onboarding/OnboardingWizard.tsx` — додай case у render-функцію step body:
 
 ```tsx
 {

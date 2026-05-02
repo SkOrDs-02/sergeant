@@ -20,6 +20,78 @@
  * environment; storage I/O is the caller's responsibility.
  */
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Dashboard layout density — compact / comfortable / spacious.
+   Affects card padding, gap sizes, and font weights in the hub grid.
+   Persisted under `STORAGE_KEYS.DASHBOARD_DENSITY`.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export const DASHBOARD_DENSITIES = [
+  "compact",
+  "comfortable",
+  "spacious",
+] as const;
+
+export type DashboardDensity = (typeof DASHBOARD_DENSITIES)[number];
+
+export const DEFAULT_DASHBOARD_DENSITY: DashboardDensity = "comfortable";
+
+export const DASHBOARD_DENSITY_LABELS: Record<DashboardDensity, string> = {
+  compact: "Компактно",
+  comfortable: "Комфортно",
+  spacious: "Просторо",
+};
+
+export const DASHBOARD_DENSITY_DESCRIPTIONS: Record<DashboardDensity, string> =
+  {
+    compact: "Більше інформації, менше простору",
+    comfortable: "Баланс між інформацією і повітрям",
+    spacious: "Великі картки, більше повітря",
+  };
+
+/** Spacing tokens (in Tailwind units) per density level. */
+export const DASHBOARD_DENSITY_SPACING: Record<
+  DashboardDensity,
+  {
+    /** Gap between cards (Tailwind: gap-N) */
+    cardGap: number;
+    /** Card internal padding (Tailwind: p-N) */
+    cardPadding: number;
+    /** Section vertical margin (Tailwind: my-N) */
+    sectionGap: number;
+  }
+> = {
+  compact: { cardGap: 2, cardPadding: 3, sectionGap: 3 },
+  comfortable: { cardGap: 3, cardPadding: 4, sectionGap: 5 },
+  spacious: { cardGap: 4, cardPadding: 5, sectionGap: 6 },
+};
+
+/**
+ * Custom DOM event name that the Settings → Дашборд density picker
+ * dispatches on `window` so that an already-mounted Hub dashboard re-renders
+ * with the new spacing without waiting for the next remount or storage event.
+ *
+ * Same-window `localStorage` writes do NOT fire `storage` events, so the
+ * picker has to nudge listeners explicitly. Cross-tab updates are still
+ * picked up via the standard `storage` event in parallel.
+ */
+export const DASHBOARD_DENSITY_EVENT = "sergeant:dashboard-density-changed";
+
+export function isDashboardDensity(value: unknown): value is DashboardDensity {
+  return (
+    typeof value === "string" &&
+    (DASHBOARD_DENSITIES as readonly string[]).includes(value)
+  );
+}
+
+export function normalizeDashboardDensity(raw: unknown): DashboardDensity {
+  return isDashboardDensity(raw) ? raw : DEFAULT_DASHBOARD_DENSITY;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Dashboard module ordering — pure helpers.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 export const DASHBOARD_MODULE_IDS = [
   "finyk",
   "fizruk",

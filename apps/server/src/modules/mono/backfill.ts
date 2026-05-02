@@ -3,6 +3,7 @@ import { env } from "../../env/env.js";
 import { query } from "../../db.js";
 import { bankProxyFetch } from "../../lib/bankProxy.js";
 import { logger } from "../../obs/logger.js";
+import { MonoBackfillResponseSchema } from "../../http/schemas.js";
 import { decryptToken } from "./crypto.js";
 
 interface AuthedRequest extends Request {
@@ -243,7 +244,15 @@ export async function backfillHandler(
 
   activeBackfills.set(userId, true);
 
-  res.json({ status: "started", accountsCount: accounts.length });
+  // Hard Rule #3: validate the synchronous "started" response shape against
+  // the SSOT before emitting. The 31-day statement pull then continues in
+  // the background — clients poll `sync-state.lastBackfillAt` for completion.
+  res.json(
+    MonoBackfillResponseSchema.parse({
+      status: "started",
+      accountsCount: accounts.length,
+    }),
+  );
 
   (async () => {
     try {

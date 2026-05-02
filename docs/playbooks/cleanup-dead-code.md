@@ -1,6 +1,36 @@
 # Playbook: Cleanup Dead Code
 
+> **Last validated:** 2026-04-29 by @Skords-01. **Next review:** 2026-07-29.
+> **Status:** Active
+
 **Trigger:** "Remove X and all its usages" / deleting a deprecated module, component, utility, or feature flag.
+
+---
+
+## Step 0. Verify the file isn't scaffolding
+
+> Added 2026-04-29 in response to PR [#1143](https://github.com/Skords-01/Sergeant/pull/1143). See AGENTS.md → Hard Rule #10.
+> Also see Hard Rule #15 — read governance before coding; update docs alongside code.
+
+Before deleting **anything** flagged by `pnpm knip`, check whether it carries a lifecycle marker:
+
+```bash
+# 1. Use the marker-aware wrapper instead of raw knip
+pnpm dead-code:files
+
+# 2. For each candidate file, look for a JSDoc lifecycle tag in the first ~30 lines
+head -30 <file> | grep -E '@scaffolded|@deprecated|@experimental'
+
+# 3. Also check git log — was it added as feat(...)? When? By whom?
+git log --follow --oneline -- <file>
+```
+
+A file that:
+
+- Has a `@scaffolded` JSDoc block → **leave it alone**, even if knip says zero importers. It's intentional pre-wired infrastructure.
+- Has `@deprecated` with a future `@removeBy` date → leave until that date, then remove (along with consumers).
+- Was added in a recent `feat(...)` commit (< 90 days) and has no marker → **add the marker, do not delete**. The author likely just forgot to mark it. Open a follow-up to ask the owner whether to wire it or remove it.
+- Has no marker, no recent author, no consumers, AND `git log --follow` shows it sat untouched for > 12 months → safe to delete.
 
 ---
 

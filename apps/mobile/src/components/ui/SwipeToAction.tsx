@@ -33,6 +33,7 @@
  *   `disabled` is true we simply skip the detector.
  */
 
+import * as Haptics from "expo-haptics";
 import {
   forwardRef,
   useCallback,
@@ -116,6 +117,8 @@ export const SwipeToAction = forwardRef<RNView, SwipeToActionProps>(
 
     const commit = useCallback(
       (direction: "left" | "right") => {
+        // Haptic feedback on commit
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
         if (direction === "left") {
           onSwipeLeft?.();
         } else {

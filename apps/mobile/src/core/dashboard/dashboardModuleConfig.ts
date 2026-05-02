@@ -2,16 +2,16 @@
  * Hub dashboard — per-module rendering config (icons, routes, colour
  * accents). The source of truth for ids and labels lives in
  * `@sergeant/shared/dashboard`; this file adds the mobile-only
- * view-model (emoji glyph, accent classes, deep-link route).
- *
- * We intentionally keep this co-located with the dashboard instead of
- * pulling from the web `MODULE_CONFIGS` object — the web copy bakes
- * localStorage reads for quick-stats previews into each entry, which
- * would drag a whole rendering pathway into a pure config file. The
- * mobile StatusRow renders labels + icons only for now; preview stats
- * land in a follow-up PR (Phase 3 / quick-stats writers).
+ * view-model (Lucide icon, accent classes, deep-link route).
  */
 
+import {
+  Wallet,
+  Dumbbell,
+  CheckSquare,
+  UtensilsCrossed,
+} from "lucide-react-native";
+import type { LucideIcon } from "lucide-react-native";
 import type { DashboardModuleId } from "@sergeant/shared";
 
 /**
@@ -29,13 +29,10 @@ export const DASHBOARD_MODULE_ROUTES: Record<DashboardModuleId, string> = {
 export interface DashboardModuleRenderConfig {
   /** User-facing short label rendered inside the row. */
   readonly label: string;
-  /**
-   * Single-character glyph used as the row's leading icon. Keeping a
-   * text glyph (not an SVG) sidesteps the need for a vector-icon
-   * dependency in this first cut and matches the mobile tab bar,
-   * which also emoji-ifies module icons.
-   */
-  readonly glyph: string;
+  /** Lucide icon component for the row's leading icon. */
+  readonly Icon: LucideIcon;
+  /** Icon color for the Lucide icon. */
+  readonly iconColor: string;
   /** Tailwind class applied to the leading icon wrapper. */
   readonly iconBgClass: string;
   /** Tailwind class applied to the narrow accent bar on the left edge. */
@@ -55,43 +52,42 @@ export const DASHBOARD_MODULE_RENDER: Record<
 > = {
   finyk: {
     label: "Фінік",
-    glyph: "💰",
+    Icon: Wallet,
+    iconColor: "#7c3aed",
     iconBgClass: "bg-brand-100",
     accentClass: "bg-finyk",
     description: "Транзакції та бюджети",
   },
   fizruk: {
     label: "Фізрук",
-    glyph: "🏋",
+    Icon: Dumbbell,
+    iconColor: "#0d9488",
     iconBgClass: "bg-teal-100",
     accentClass: "bg-fizruk",
     description: "Тренування та прогрес",
   },
   routine: {
     label: "Рутина",
-    glyph: "✅",
+    Icon: CheckSquare,
+    iconColor: "#f97316",
     iconBgClass: "bg-coral-100",
     accentClass: "bg-routine",
     description: "Звички та щоденні цілі",
   },
   nutrition: {
     label: "Харчування",
-    glyph: "🍽",
+    Icon: UtensilsCrossed,
+    iconColor: "#84cc16",
     iconBgClass: "bg-lime-100",
     accentClass: "bg-nutrition",
     description: "КБЖВ та раціон",
   },
 };
 
-/**
- * Modules rendered on the mobile dashboard in this phase. Nutrition
- * is deliberately hidden until Phase 7 (see
- * `docs/mobile/react-native-migration.md`). The persisted order still holds
- * all four ids so a web client opening the same account sees the
- * full list — see `reorderWithHidden` in `@sergeant/shared`.
- */
+/** Modules rendered on the mobile dashboard. */
 export const VISIBLE_DASHBOARD_MODULES: readonly DashboardModuleId[] = [
   "finyk",
   "fizruk",
   "routine",
+  "nutrition",
 ];

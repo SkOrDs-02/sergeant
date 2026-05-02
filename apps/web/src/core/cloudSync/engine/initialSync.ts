@@ -1,4 +1,5 @@
 import { syncApi } from "@shared/api";
+import { trackEvent, ANALYTICS_EVENTS } from "../../observability/analytics";
 import { SYNC_MODULES } from "../config";
 import { isModulePushSuccess } from "../conflict/pushSuccess";
 import { resolveInitialSync } from "../conflict/resolver";
@@ -102,6 +103,13 @@ async function applyMerge(
       "[cloudSync] initialSync.merge: server rejected push for modules (kept dirty for retry)",
       conflicted,
     );
+    // Окрема подія для initial-merge гілки: сигналізує про збіг dirty-flag
+    // і cloud-snapshot, який свіжіший за локальну версію — типово трапляється
+    // коли користувач вмикає синк на другому пристрої.
+    trackEvent(ANALYTICS_EVENTS.SYNC_CONFLICT_RESOLVED, {
+      kind: "initial-merge",
+      modules: conflicted.length,
+    });
   }
 }
 

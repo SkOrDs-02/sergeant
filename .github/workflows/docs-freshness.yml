@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "0 7 * * *" # daily 07:00 UTC
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "**/*.md"
+      - "scripts/docs/**"
+      - ".github/workflows/docs-freshness.yml"
 
 permissions:
   issues: write
@@ -25,6 +30,35 @@ jobs:
         with:
           node-version: "20"
 
-      - run: node scripts/docs/check-freshness.mjs
+      - name: Coverage gate — every non-excluded .md must have a freshness header
+        # Auto-discovery (PR-12.B): we no longer maintain a manual allowlist,
+        # so the gate that catches "new doc landed without a header" is this
+        # CI step. Runs on every event (PR + scheduled) so a regression is
+        # caught before merge AND in the next nightly cron after main.
+        run: node scripts/docs/check-freshness.mjs --check-coverage
+
+      - name: Open GitHub issues for overdue docs
+        # Issue-creation is skipped on pull_request because forks cannot write.
+        # The dry-run below still validates the auto-discovered list on every PR.
+        if: github.event_name != 'pull_request'
+        run: node scripts/docs/check-freshness.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Dry-run freshness check (PRs — smoke-test the auto-discovered list)
+        if: github.event_name == 'pull_request'
+        run: DRY_RUN=1 node scripts/docs/check-freshness.mjs
+
+      - name: Build freshness dashboard (HTML artifact)
+        # Always produce the dashboard so engineers can download a single
+        # HTML file from any run instead of grepping the allowlist or the
+        # open-issues list.
+        run: node scripts/docs/generate-freshness-dashboard.mjs
+
+      - name: Upload freshness dashboard
+        # actions/upload-artifact v4.4.3 (SHA-pinned for supply-chain hardening)
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: docs-freshness-dashboard
+          path: dist/freshness-dashboard.html
+          retention-days: 30

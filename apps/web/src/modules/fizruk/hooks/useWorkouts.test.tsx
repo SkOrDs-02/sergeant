@@ -47,7 +47,7 @@ describe("useWorkouts – finish flow edge cases", () => {
     );
     const firstEndedAt = result.current.workouts.find(
       (w) => w.id === created.id,
-    ).endedAt;
+    )?.endedAt;
 
     // Re-ending must NOT bump endedAt: the workout is already ended.
     act(() => {
@@ -98,7 +98,7 @@ describe("useWorkouts – finish flow edge cases", () => {
     );
     const firstEndedAt = result.current.workouts.find(
       (w) => w.id === "pre-existing",
-    ).endedAt;
+    )?.endedAt;
 
     act(() => {
       result.current.endWorkout("pre-existing");

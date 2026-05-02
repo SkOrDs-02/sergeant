@@ -9,6 +9,8 @@
 import { View, Text } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 
+import { chartColors } from "@/theme";
+
 export interface MacroRingProps {
   /** Поточне значення (відображається в центрі). */
   value: number;
@@ -28,7 +30,7 @@ export interface MacroRingProps {
 export function MacroRing({
   value,
   target,
-  color = "#f97316",
+  color = chartColors.nutrition.kcal,
   size = 56,
   stroke = 5,
   label,
@@ -53,7 +55,7 @@ export function MacroRing({
             cy={size / 2}
             r={r}
             fill="none"
-            stroke="#e7e5e4"
+            stroke={chartColors.nutrition.track}
             strokeWidth={stroke}
           />
           {target > 0 ? (

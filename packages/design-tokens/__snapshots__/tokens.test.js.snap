@@ -139,6 +139,27 @@ exports[`@sergeant/design-tokens — tokens.js > chartPalette / chartPaletteList
 }
 `;
 
+exports[`@sergeant/design-tokens — tokens.js > moduleAccentRgb is stable (snapshot) 1`] = `
+{
+  "finyk": {
+    "default": "16 185 129",
+    "strong": "4 120 87",
+  },
+  "fizruk": {
+    "default": "20 184 166",
+    "strong": "15 118 110",
+  },
+  "nutrition": {
+    "default": "146 204 23",
+    "strong": "70 98 18",
+  },
+  "routine": {
+    "default": "249 112 102",
+    "strong": "194 58 58",
+  },
+}
+`;
+
 exports[`@sergeant/design-tokens — tokens.js > moduleColors define canonical finyk/fizruk/routine/nutrition primary+surface 1`] = `
 {
   "finyk": {

@@ -1,5 +1,10 @@
 import { createHash } from "node:crypto";
 
+import {
+  enqueueAuthMail,
+  registerAuthMailDispatcher,
+  type AuthMailJobData,
+} from "../lib/jobs/authMail.js";
 import { logger } from "../obs/logger.js";
 
 function isDeployedProduction(): boolean {
@@ -17,11 +22,22 @@ function emailFingerprint(email: string): string {
     .slice(0, 12);
 }
 
-export type AuthMailKind = "password_reset" | "email_verification";
+export type AuthMailKind = AuthMailJobData["kind"];
 
 /**
  * Транзакційні листи Better Auth (reset / verify) через Resend HTTP API.
- * Без `RESEND_API_KEY` у dev логуємо факт (без URL/token); у prod — warn без токена.
+ *
+ * **Durability:** при наявному `REDIS_URL` лист потрапляє у BullMQ-чергу
+ * (`auth-mail`) з 5-ма ретраями та exponential-backoff (5min → 6h). Без
+ * Redis — fallback у in-process direct-dispatch (як було раніше),
+ * тестовано у `authTransactionalMail.test.ts`.
+ *
+ * Без `RESEND_API_KEY`: у dev — лог `info` (без URL/токенів),
+ * у prod — `warn` без токена.
+ *
+ * Caller (Better Auth callback) НЕ блокується — `void` тут навмисний:
+ * enqueue має латентність ~ms, але у fallback-режимі це fetch до Resend,
+ * блокувати auth-callback на цьому ми не хочемо.
  */
 export function queueAuthTransactionalEmail(args: {
   kind: AuthMailKind;
@@ -30,9 +46,9 @@ export function queueAuthTransactionalEmail(args: {
   text: string;
   html?: string;
 }): void {
-  void dispatchAuthTransactionalEmail(args).catch((err: unknown) => {
+  void enqueueAuthMail(args).catch((err: unknown) => {
     logger.error({
-      msg: "auth_transactional_email_failed",
+      msg: "auth_mail_enqueue_unexpected_failure",
       kind: args.kind,
       emailHash: emailFingerprint(args.to),
       err: err instanceof Error ? err.message : String(err),
@@ -40,13 +56,9 @@ export function queueAuthTransactionalEmail(args: {
   });
 }
 
-async function dispatchAuthTransactionalEmail(args: {
-  kind: AuthMailKind;
-  to: string;
-  subject: string;
-  text: string;
-  html?: string;
-}): Promise<void> {
+async function dispatchAuthTransactionalEmail(
+  args: AuthMailJobData,
+): Promise<void> {
   const key = process.env.RESEND_API_KEY?.trim();
   if (!key) {
     if (isDeployedProduction()) {
@@ -94,3 +106,8 @@ async function dispatchAuthTransactionalEmail(args: {
     emailHash: emailFingerprint(args.to),
   });
 }
+
+// Реєструємо dispatcher один раз при імпорті модуля. Кругова залежність
+// уникнена через цей register-pattern: `lib/jobs/authMail.ts` НЕ імпортує
+// з `./authTransactionalMail.ts`.
+registerAuthMailDispatcher(dispatchAuthTransactionalEmail);

@@ -10,7 +10,7 @@
  * Mirrors the assets/budgets/transactions parity tests in
  * `modules/finyk/lib/__tests__/`.
  */
-import { fireEvent, render, within } from "@testing-library/react-native";
+import { fireEvent, render } from "@testing-library/react-native";
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 
@@ -63,14 +63,12 @@ describe("FinykSection — enqueueChange wiring", () => {
 
     fireEvent.press(getByTestId("finyk-custom-cat-remove-c_1"));
 
-    const modal = getByText("Видалити категорію?").parent?.parent as
-      | Parameters<typeof within>[0]
-      | undefined;
-    if (modal) {
-      fireEvent.press(within(modal).getByText("Видалити"));
-    } else {
-      fireEvent.press(getByText("Видалити"));
-    }
+    // ConfirmDialog ships explicit `confirm-dialog-confirm` /
+    // `confirm-dialog-cancel` testIDs — target the action button
+    // directly instead of relying on `parent.parent` traversal of the
+    // dialog title.
+    expect(getByText("Видалити категорію?")).toBeTruthy();
+    fireEvent.press(getByTestId("confirm-dialog-confirm"));
 
     expect(mockEnqueueChange).toHaveBeenCalledWith(KEY);
     expect(mockEnqueueChange).toHaveBeenCalledTimes(1);

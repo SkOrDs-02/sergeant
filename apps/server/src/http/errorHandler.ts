@@ -71,8 +71,17 @@ export const errorHandler: ErrorRequestHandler = (
 
   if (res.headersSent) return;
 
+  // `error` залишається для прямих `fetch`-споживачів (які звикли до цього
+  // поля з самого початку), `message` дублюється поряд для бібліотек на
+  // кшталт Better Auth client / better-fetch, що читають саме його при
+  // десеріалізації не-2xx body. Без цього все, що не йде через Better
+  // Auth-власний хендлер (rate-limit, AppError, generic 500), приходить у
+  // фронт без `message` → ловиться загальним fallback-ом на кшталт
+  // «Помилка входу» без жодних деталей.
+  const userMessage = operational ? e.message : "Server error";
   res.status(status).json({
-    error: operational ? e.message : "Server error",
+    error: userMessage,
+    message: userMessage,
     code,
     requestId: (req as Request & { requestId?: string }).requestId,
   });

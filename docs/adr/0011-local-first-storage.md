@@ -116,7 +116,7 @@ engine у `apps/web/src/core/cloudSync/` (mobile паралель — `apps/mobi
   Offline-UX ламається. Відкинуто на етапі MVP.
 - **CRDT (Yjs).** Великий бандл, operational overhead, і для personal-scale
   конфлікт-rate не виправдовує. Можливий перегляд на Phase 7+ для
-  shared/family features (ADR-0004 TBD).
+  shared/family features (TBD ADR — family/team plans).
 - **Service Worker cache + network-first API.** Приховує loading, але
   write-mutations потребують online. Не вирішує offline-write.
 
@@ -126,7 +126,7 @@ engine у `apps/web/src/core/cloudSync/` (mobile паралель — `apps/mobi
 
 - Module-level LWW масово губить дані (>1% юзерів / місяць скаржаться) —
   переходимо на row-level + CRDT хоча б для одного модуля.
-- Family/team plans (ADR-0004 TBD) потребують shared state — там local-first
+- Family/team plans (TBD ADR) потребують shared state — там local-first
   не працює, треба server-authoritative multiplayer state.
 
 ---
@@ -163,7 +163,7 @@ export interface KVStore {
 Нейтральні функції приймають `KVStore` як параметр. Платформо-специфічні
 адаптери:
 
-- **web:** `apps/web/src/core/onboarding/webKVStore.ts` обгортає `window.localStorage`.
+- **web:** `apps/web/src/shared/lib/storage.ts` експортує `webKVStore` який обгортає `window.localStorage`.
 - **mobile:** `apps/mobile/src/lib/storage.ts` обгортає `react-native-mmkv`.
 - **tests:** `createMemoryKVStore({...})` з `packages/shared/src/lib/kvStore.ts`.
 

@@ -1,6 +1,7 @@
-# Локальний PostgreSQL для розробки (npm run start + npm run dev).
-# Запуск: docker compose up -d
-# Зупинка: docker compose down
+# ⚠️  LOCAL DEVELOPMENT ONLY — не використовуйте ці credentials у production.
+# Локальний PostgreSQL для розробки (pnpm dev:server + pnpm dev:web).
+# Запуск: docker compose up -d   (або pnpm db:up)
+# Зупинка: docker compose down   (або pnpm db:down)
 # DATABASE_URL у .env: postgresql://hub:hub@localhost:5432/hub
 
 services:

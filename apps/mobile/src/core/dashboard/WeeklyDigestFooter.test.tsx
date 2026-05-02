@@ -17,6 +17,27 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 import { apiClient } from "@/api/apiClient";
 import { _getMMKVInstance } from "@/lib/storage";
 
+// `WeeklyDigestCard` (rendered as a closed `<Modal>` inside the
+// footer) calls `useWeeklyDigest`, which subscribes to a TanStack
+// Query that fires a `setState` on the next microtask. That update
+// reaches the footer tree after the synchronous test assertion —
+// surfacing as an "An update inside a test was not wrapped in act"
+// warning, and on slower CI runners it pushes first-render past the
+// default 5 s Jest timeout. The smoke tests below only care about
+// the footer's visibility-rule + open/close behaviour, so we stub
+// the hook the same way `HubDashboard.test.tsx` does.
+jest.mock("./useWeeklyDigest", () => ({
+  useWeeklyDigest: () => ({
+    digest: null,
+    loading: false,
+    error: null,
+    weekKey: "2026-01-01",
+    weekRange: "",
+    generate: jest.fn(),
+    isCurrentWeek: true,
+  }),
+}));
+
 import { WeeklyDigestFooter } from "./WeeklyDigestFooter";
 
 const DIGEST_PREFIX = STORAGE_KEYS.WEEKLY_DIGEST_PREFIX;

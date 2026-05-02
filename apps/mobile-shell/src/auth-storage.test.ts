@@ -77,3 +77,37 @@ describe("clearBearerToken", () => {
     expect(remove).toHaveBeenCalledWith({ key: BEARER_KEY });
   });
 });
+
+describe("boundary / error propagation", () => {
+  it("getBearerToken — нормалізує value: undefined у null", async () => {
+    // Типізація @capacitor/preferences повертає `string | null`, але на
+    // практиці деякі обгортки можуть повернути undefined — перевіряємо стійкість.
+    get.mockResolvedValue({ value: undefined as unknown as null });
+    const { getBearerToken } = await import("./auth-storage.js");
+
+    await expect(getBearerToken()).resolves.toBeNull();
+  });
+
+  it("getBearerToken — пробрасує виняток від Preferences.get", async () => {
+    get.mockRejectedValue(new Error("storage unavailable"));
+    const { getBearerToken } = await import("./auth-storage.js");
+
+    await expect(getBearerToken()).rejects.toThrow("storage unavailable");
+  });
+
+  it("setBearerToken — пробрасує виняток від Preferences.set", async () => {
+    set.mockRejectedValue(new Error("quota exceeded"));
+    const { setBearerToken } = await import("./auth-storage.js");
+
+    await expect(setBearerToken("some-token")).rejects.toThrow(
+      "quota exceeded",
+    );
+  });
+
+  it("clearBearerToken — пробрасує виняток від Preferences.remove", async () => {
+    remove.mockRejectedValue(new Error("permission denied"));
+    const { clearBearerToken } = await import("./auth-storage.js");
+
+    await expect(clearBearerToken()).rejects.toThrow("permission denied");
+  });
+});

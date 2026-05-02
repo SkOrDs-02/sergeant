@@ -23,7 +23,12 @@ function clearAll() {
 
 /** Генерує N завершених тренувань розподілених по днях тижня */
 function makeWorkouts(count, dayOfWeek = 1) {
-  const workouts = [];
+  const workouts: Array<{
+    id: string;
+    startedAt: string;
+    endedAt: string;
+    items: unknown[];
+  }> = [];
   for (let i = 0; i < count; i++) {
     const d = new Date("2025-01-06"); // Понеділок
     d.setDate(d.getDate() + i * 7 + dayOfWeek);
@@ -87,8 +92,8 @@ describe("generateInsights", () => {
     const result = generateInsights();
     const ins = result.find((r) => r.id === "best_workout_day");
     expect(ins).toBeDefined();
-    expect(ins.emoji).toBe("📅");
-    expect(typeof ins.stat).toBe("string");
+    expect(ins!.emoji).toBe("📅");
+    expect(typeof ins!.stat).toBe("string");
   });
 
   it("не дублює id інсайтів", () => {

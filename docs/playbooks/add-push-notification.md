@@ -1,5 +1,8 @@
 # Playbook: Add Push Notification
 
+> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Status:** Active
+
 **Trigger:** «Надсилай push коли X» / «Додати новий тип сповіщення» / нагадування / реакція на зовнішню подію (Mono webhook, AI insight, scheduler).
 
 ---

@@ -5,8 +5,12 @@ import { useToast } from "@shared/hooks/useToast";
 import { cn } from "@shared/lib/cn";
 import { applyHubBackupPayload, buildHubBackupPayload } from "./hubBackup";
 
-export function HubBackupPanel({ className }) {
-  const fileRef = useRef(null);
+interface HubBackupPanelProps {
+  className?: string;
+}
+
+export function HubBackupPanel({ className }: HubBackupPanelProps) {
+  const fileRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
 
   const exportJson = async () => {
@@ -17,7 +21,7 @@ export function HubBackupPanel({ className }) {
     );
   };
 
-  const runImport = (e) => {
+  const runImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
     const r = new FileReader();
@@ -27,7 +31,9 @@ export function HubBackupPanel({ className }) {
         applyHubBackupPayload(data);
         window.location.reload();
       } catch (err) {
-        toast.error(err?.message || "Не вдалось імпортувати файл");
+        const message =
+          err instanceof Error ? err.message : "Не вдалось імпортувати файл";
+        toast.error(message);
       }
       e.target.value = "";
     };

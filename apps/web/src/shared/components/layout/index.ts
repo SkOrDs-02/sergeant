@@ -9,6 +9,9 @@
 export { ModuleShell } from "./ModuleShell";
 export type { ModuleShellProps } from "./ModuleShell";
 
+export { ModuleAccentProvider, useModuleAccent } from "./ModuleAccentProvider";
+export type { ModuleAccentProviderProps } from "./ModuleAccentProvider";
+
 export {
   ModuleHeader,
   ModuleHeaderBackButton,

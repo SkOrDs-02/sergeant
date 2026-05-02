@@ -4,6 +4,9 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 
 const KEY = STORAGE_KEYS.FIZRUK_MEASUREMENTS;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type MeasurementEntry = any;
+
 function uid() {
   return `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -26,7 +29,7 @@ export const MEASURE_FIELDS = [
 ];
 
 export function useMeasurements() {
-  const [entries, setEntries] = useState([]);
+  const [entries, setEntries] = useState<MeasurementEntry[]>([]);
 
   useEffect(() => {
     const parsed = safeReadLS(KEY, []);
@@ -54,9 +57,23 @@ export function useMeasurements() {
     [persist, entries],
   );
 
+  /**
+   * Re-insert a previously deleted measurement, preserving the original
+   * `id` and `at` timestamp. Used by undo flows after `deleteEntry`.
+   */
+  const restoreEntry = useCallback(
+    (entry) => {
+      if (!entry || !entry.id) return;
+      persist(
+        entries.some((e) => e.id === entry.id) ? entries : [entry, ...entries],
+      );
+    },
+    [persist, entries],
+  );
+
   const sorted = useMemo(() => {
     return [...entries].sort((a, b) => (b.at || "").localeCompare(a.at || ""));
   }, [entries]);
 
-  return { entries: sorted, addEntry, deleteEntry };
+  return { entries: sorted, addEntry, deleteEntry, restoreEntry };
 }

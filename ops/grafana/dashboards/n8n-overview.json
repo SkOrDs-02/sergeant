@@ -1,0 +1,618 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "n8n Instance Health",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            {
+              "options": {
+                "0": { "color": "red", "text": "DOWN" },
+                "1": { "color": "green", "text": "UP" }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto"
+      },
+      "title": "n8n Status",
+      "type": "stat",
+      "targets": [{ "expr": "up{job=\"n8n\"}", "legendFormat": "" }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 86400 },
+              { "color": "red", "value": 604800 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto"
+      },
+      "title": "Uptime",
+      "type": "stat",
+      "targets": [
+        { "expr": "process_uptime_seconds{job=\"n8n\"}", "legendFormat": "" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 268435456 },
+              { "color": "red", "value": 536870912 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto"
+      },
+      "title": "Memory (RSS)",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes{job=\"n8n\"}",
+          "legendFormat": ""
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.1 },
+              { "color": "red", "value": 0.5 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto"
+      },
+      "title": "Event Loop Lag",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "nodejs_eventloop_lag_seconds{job=\"n8n\"}",
+          "legendFormat": ""
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "steps": [{ "color": "green", "value": null }] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto"
+      },
+      "title": "Active Handles",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "nodejs_active_handles_total{job=\"n8n\"}",
+          "legendFormat": ""
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "steps": [{ "color": "green", "value": null }] }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto"
+      },
+      "title": "Active Requests",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "nodejs_active_requests_total{job=\"n8n\"}",
+          "legendFormat": ""
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 101,
+      "title": "Workflow Executions",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 6 },
+      "id": 10,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto"
+      },
+      "title": "Total Success",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "n8n_workflow_production_success_total{job=\"n8n\"}",
+          "legendFormat": "success"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "fixedColor": "red", "mode": "fixed" }
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 6 },
+      "id": 11,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto"
+      },
+      "title": "Total Errors",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "n8n_workflow_production_error_total{job=\"n8n\"}",
+          "legendFormat": "errors"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": { "unit": "ops", "color": { "mode": "palette-classic" } }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 6 },
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto"
+      },
+      "title": "Success Rate (5m)",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "rate(n8n_workflow_production_success_total{job=\"n8n\"}[5m])",
+          "legendFormat": ""
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "fixedColor": "red", "mode": "fixed" }
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 6 },
+      "id": 13,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto"
+      },
+      "title": "Error Rate (5m)",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "rate(n8n_workflow_production_error_total{job=\"n8n\"}[5m])",
+          "legendFormat": ""
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 20, "lineWidth": 2, "spanNulls": false }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "id": 20,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "title": "Workflow Executions Over Time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "increase(n8n_workflow_production_success_total{job=\"n8n\"}[5m])",
+          "legendFormat": "success"
+        },
+        {
+          "expr": "increase(n8n_workflow_production_error_total{job=\"n8n\"}[5m])",
+          "legendFormat": "errors"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "custom": { "fillOpacity": 10, "lineWidth": 2 }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+      "id": 21,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "title": "Success Rate Over Time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(n8n_workflow_production_success_total{job=\"n8n\"}[5m]) / (rate(n8n_workflow_production_success_total{job=\"n8n\"}[5m]) + rate(n8n_workflow_production_error_total{job=\"n8n\"}[5m]))",
+          "legendFormat": "success rate"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "id": 102,
+      "title": "n8n Process Resources",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short",
+          "custom": { "fillOpacity": 20, "lineWidth": 2 }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+      "id": 30,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "title": "CPU Usage (rate)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(process_cpu_user_seconds_total{job=\"n8n\"}[5m])",
+          "legendFormat": "user"
+        },
+        {
+          "expr": "rate(process_cpu_system_seconds_total{job=\"n8n\"}[5m])",
+          "legendFormat": "system"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "bytes",
+          "custom": { "fillOpacity": 20, "lineWidth": 2 }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
+      "id": 31,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "title": "Memory Usage",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes{job=\"n8n\"}",
+          "legendFormat": "RSS"
+        },
+        {
+          "expr": "nodejs_heap_size_used_bytes{job=\"n8n\"}",
+          "legendFormat": "heap used"
+        },
+        {
+          "expr": "nodejs_heap_size_total_bytes{job=\"n8n\"}",
+          "legendFormat": "heap total"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "s",
+          "custom": { "fillOpacity": 10, "lineWidth": 2 }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 27 },
+      "id": 32,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "title": "Event Loop Lag",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "nodejs_eventloop_lag_seconds{job=\"n8n\"}",
+          "legendFormat": "lag"
+        },
+        {
+          "expr": "nodejs_eventloop_lag_p99_seconds{job=\"n8n\"}",
+          "legendFormat": "p99"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 20, "lineWidth": 2 }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 27 },
+      "id": 33,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "title": "GC Duration",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(nodejs_gc_duration_seconds_sum{job=\"n8n\"}[5m])",
+          "legendFormat": "{{kind}}"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 35 },
+      "id": 103,
+      "title": "Sergeant Server",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            {
+              "options": {
+                "0": { "color": "red", "text": "DOWN" },
+                "1": { "color": "green", "text": "UP" }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 36 },
+      "id": 40,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto"
+      },
+      "title": "Server Status",
+      "type": "stat",
+      "targets": [{ "expr": "up{job=\"sergeant-server\"}", "legendFormat": "" }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 268435456 },
+              { "color": "red", "value": 536870912 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 36 },
+      "id": 41,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "textMode": "auto"
+      },
+      "title": "Server Memory",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes{job=\"sergeant-server\"}",
+          "legendFormat": ""
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short",
+          "custom": { "fillOpacity": 20, "lineWidth": 2 }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 36 },
+      "id": 42,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "title": "Server CPU",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(process_cpu_user_seconds_total{job=\"sergeant-server\"}[5m])",
+          "legendFormat": "user"
+        },
+        {
+          "expr": "rate(process_cpu_system_seconds_total{job=\"sergeant-server\"}[5m])",
+          "legendFormat": "system"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "bytes",
+          "custom": { "fillOpacity": 20, "lineWidth": 2 }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 36 },
+      "id": 43,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "title": "Server Memory Over Time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes{job=\"sergeant-server\"}",
+          "legendFormat": "RSS"
+        },
+        {
+          "expr": "nodejs_heap_size_used_bytes{job=\"sergeant-server\"}",
+          "legendFormat": "heap used"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["n8n", "sergeant", "ops"],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "Prometheus",
+          "value": "Prometheus"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "type": "datasource"
+      }
+    ]
+  },
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "timezone": "Europe/Kyiv",
+  "title": "Sergeant Ops Overview",
+  "uid": "sergeant-ops-overview",
+  "version": 1
+}

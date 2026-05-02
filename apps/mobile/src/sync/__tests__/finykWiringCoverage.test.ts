@@ -72,10 +72,12 @@ const WIRED: Record<string, string> = {
  * (i.e. in neither set) is what fails the test.
  */
 const PENDING_NO_WRITER: Record<string, string> = {
-  // Monobank OAuth flow + cached account/info blob — written by the
-  // mobile Monobank client when ported (Phase 4+, see
-  // `docs/mobile/react-native-migration.md` §6.2).
-  [STORAGE_KEYS.FINYK_TOKEN]: "Monobank port (Phase 4+)",
+  // Monobank cached account/info blob — written by the mobile Monobank
+  // client when ported (Phase 4+, see
+  // `docs/mobile/react-native-migration.md` §6.2). The PAT itself
+  // (`STORAGE_KEYS.FINYK_TOKEN`) is intentionally NOT in `SYNC_MODULES.finyk.keys`
+  // and therefore not listed here — see `useMonoTokenMigration` and the
+  // backend `mono_connection.token_ciphertext` for the canonical store.
   [STORAGE_KEYS.FINYK_INFO_CACHE]: "Monobank port (Phase 4+)",
   [STORAGE_KEYS.FINYK_TX_CACHE]: "Monobank port (Phase 4+)",
   [STORAGE_KEYS.FINYK_TX_CACHE_LAST_GOOD]: "Monobank port (Phase 4+)",

@@ -1,4 +1,4 @@
-# ADR-0001: Monetization architecture (16 рішень перед стартом)
+> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.`r`n> **Status:** Proposed`r`n`r`n# ADR-0001: Monetization architecture (16 рішень перед стартом)
 
 - **Status:** proposed
 - **Date:** 2026-04-27
@@ -8,8 +8,8 @@
 - **Related:**
   - [`docs/launch/01-monetization-and-pricing.md`](../launch/01-monetization-and-pricing.md) — бізнес-модель, тіри, ціни.
   - [`docs/launch/06-monetization-architecture.md`](../launch/06-monetization-architecture.md) — технічний скелетон v2 (PR-розбивка, schema, risk register).
-  - [ADR-0003](./0003-refund-and-dispute.md) — refund / dispute flow (закриває open question з ADR-1.11).
-  - [ADR-0004](./0004-pii-and-account-deletion.md) — account-deletion flow + Stripe customer cleanup.
+  - [ADR-0003](./0003-refund-and-dispute-handling.md) — refund / dispute flow (закриває open question з ADR-1.11).
+  - [ADR-0016](./0016-user-deletion-and-pii-handling.md) — account-deletion flow + Stripe customer cleanup.
 
 ---
 
@@ -64,7 +64,7 @@ ADR посилається на «Phase N» декілька разів. Гло�
 | ADR-1.15 | ADR-1.8           | Серверна dedup-table — по структурі аналогічна `stripe_webhook_events`.                              |
 | ADR-1.16 | усі 1.1–1.15      | Observability покриває увесь pipeline.                                                               |
 | ADR-0003 | ADR-1.8, ADR-1.11 | Refund-flow використовує webhook-events і cancel-семантику.                                          |
-| ADR-0004 | ADR-1.2           | Account-deletion змінює `subscriptions` row + Stripe customer.                                       |
+| ADR-0016 | ADR-1.2           | Account-deletion змінює `subscriptions` row + Stripe customer.                                       |
 
 ---
 
@@ -552,7 +552,7 @@ return "free";
 
 - **Immediate cancel з pro-rata refund:** складніший код (proration math), Customer Portal не робить за замовчуванням. Відкинуто.
 - **Immediate cancel без refund:** unfair — юзер заплатив, не отримав, churn гарантовано. Відкинуто.
-- **Окремий ADR про refund/dispute flow:** винесено в [ADR-0003](./0003-refund-and-dispute.md) — закрито у тому самому PR-і.
+- **Окремий ADR про refund/dispute flow:** винесено в [ADR-0003](./0003-refund-and-dispute-handling.md) — закрито у тому самому PR-і.
 
 ---
 
@@ -851,7 +851,7 @@ Thresholds — **initial heuristic**, ревалідуємо після перш
 | PR-M.15    | ADR-1.14, ADR-1.15 (API pin + idempotency) | pending                         |
 | PR-M.16    | ADR-1.16 (observability + SLO)             | pending                         |
 | PR-M.17    | ADR-0003 (refund / dispute)                | pending                         |
-| PR-M.18    | ADR-0004 (account deletion)                | pending                         |
+| PR-M.18    | ADR-0016 (account deletion)                | pending                         |
 | PR-M.7     | ADR-1.1, ADR-1.8, ADR-1.10 (legal)         | pending                         |
 | PR-M.8     | ADR-1.5, ADR-1.11 (cancel UI)              | pending                         |
 | PR-M.9     | ADR-1.9                                    | pending                         |

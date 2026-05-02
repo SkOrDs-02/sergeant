@@ -59,7 +59,7 @@ interface ErrorBoundaryState {
 
 function DefaultErrorFallback({ error, resetError }: FallbackProps) {
   return (
-    <View className="flex-1 bg-cream-50 items-stretch justify-center p-6">
+    <View className="flex-1 bg-bg dark:bg-bg items-stretch justify-center p-6">
       <Card variant="default" padding="lg">
         <Text className="text-lg font-semibold text-fg mb-2">
           Щось пішло не так

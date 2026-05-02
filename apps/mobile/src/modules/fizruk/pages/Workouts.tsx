@@ -34,6 +34,7 @@ import { router } from "expo-router";
 
 import { hapticSuccess, hapticTap, hapticWarning } from "@sergeant/shared";
 
+import { BackButton } from "@/components/ui/BackButton";
 import { Card } from "@/components/ui/Card";
 
 import { RestTimerOverlay } from "../components/RestTimerOverlay";
@@ -274,18 +275,15 @@ export function Workouts({ testID = "fizruk-workouts" }: WorkoutsProps) {
       edges={["top"]}
       testID={testID}
     >
-      <View className="flex-row items-center gap-2 px-4 pt-4 pb-1">
+      <View className="flex-row items-center gap-3 px-4 pt-4 pb-1">
         {view !== "home" ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Назад"
+          <BackButton
+            variant="ghost"
+            size="sm"
             onPress={() => setView("home")}
+            autoNavigate={false}
             testID={`${testID}-back`}
-            className="w-10 h-10 items-center justify-center -ml-2"
-            hitSlop={8}
-          >
-            <Text className="text-2xl text-fg">‹</Text>
-          </Pressable>
+          />
         ) : (
           <Text className="text-[22px]">🏋️</Text>
         )}
@@ -383,7 +381,7 @@ export function Workouts({ testID = "fizruk-workouts" }: WorkoutsProps) {
             <View className="gap-3" testID={`${testID}-recent`}>
               <View className="flex-row items-center justify-between px-1">
                 <Text className="text-sm font-semibold text-fg">
-                  Останні тренування
+                  О��танні тренування
                 </Text>
                 {workouts.length > 0 ? (
                   <Pressable

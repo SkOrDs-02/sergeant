@@ -27,12 +27,14 @@ interface SpeechRecognitionLike {
 
 type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
 
-declare global {
-  interface Window {
-    SpeechRecognition?: SpeechRecognitionCtor;
-    webkitSpeechRecognition?: SpeechRecognitionCtor;
-  }
-}
+// Web Speech API не входить у lib.dom — типи держимо локально і
+// читаємо `window` через приватну window-shape без `declare global`,
+// щоб не нав'язувати єдину сигнатуру іншим call-сайтам (наприклад,
+// `VoiceMicButton.tsx` має власну сумісну форму, ширшу для тестів).
+type WindowWithSpeech = typeof window & {
+  SpeechRecognition?: SpeechRecognitionCtor;
+  webkitSpeechRecognition?: SpeechRecognitionCtor;
+};
 
 export interface UseSpeechResult {
   listening: boolean;
@@ -50,11 +52,15 @@ export function useSpeech(
 
   const supported =
     typeof window !== "undefined" &&
-    !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+    !!(
+      (window as WindowWithSpeech).SpeechRecognition ||
+      (window as WindowWithSpeech).webkitSpeechRecognition
+    );
 
   const toggle = useCallback(() => {
-    if (!supported) return;
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!supported || typeof window === "undefined") return;
+    const w = window as WindowWithSpeech;
+    const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
     if (!SR) return;
     if (listening) {
       recRef.current?.abort();

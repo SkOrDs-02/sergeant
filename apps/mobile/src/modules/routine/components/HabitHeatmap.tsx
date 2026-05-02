@@ -44,6 +44,8 @@ import {
   type RoutineState,
 } from "@sergeant/routine-domain";
 
+import { chartColors } from "@/theme";
+
 /** Short ISO weekday labels (Mon-first). Blank cells keep the axis compact. */
 const DAY_LABELS = ["Пн", "", "Ср", "", "Пт", "", "Нд"] as const;
 
@@ -89,23 +91,21 @@ const WEEKDAY_NAMES_UK_FULL = [
 ] as const;
 
 /**
- * Intensity → hex fill. Values correspond to the routine module's
- * coral palette (`packages/design-tokens/tokens.js`). They follow the
- * same 4-step scale as the web `chartHeatmap.routine.levels` so the
- * two platforms produce visually aligned heatmaps.
+ * Intensity → hex fill. Uses centralized chartColors from theme
+ * to maintain consistency with web and support future theming.
  */
 const INTENSITY_FILL: Record<HeatmapIntensity, string> = {
-  future: "#f5ead8", // cream-300 — disabled/future
-  empty: "#faf3e8", // cream-200 — neutral, no activity
-  l1: "#ffd4cb", // coral-200 — weak
-  l2: "#ff8c78", // coral-400 — medium
-  l3: "#f97066", // coral-500 — strong
+  future: chartColors.routine.future,
+  empty: chartColors.routine.empty,
+  l1: chartColors.routine.l1,
+  l2: chartColors.routine.l2,
+  l3: chartColors.routine.l3,
 };
 
 /** Stroke colours for focus-visible / today / selected affordances. */
 const STROKE_DEFAULT = "transparent";
-const STROKE_TODAY = "#c23a3a"; // coral-700
-const STROKE_SELECTED = "#862e2e"; // coral-900
+const STROKE_TODAY = chartColors.routine.strokeToday;
+const STROKE_SELECTED = chartColors.routine.strokeSelected;
 
 /** Visual constants — tuned to match the web component's 12 px cells. */
 const CELL_SIZE = 12;

@@ -24,6 +24,12 @@ export const UserSchema = z.object({
   name: z.string().nullable(),
   image: z.string().nullable(),
   emailVerified: z.boolean(),
+  // Better Auth's `user.createdAt` (час реєстрації акаунта) — ISO-8601
+  // рядок. Потрібен PostHog `identify` для трейту `signup_date` і для
+  // майбутніх "за днем життя акаунта" сегментацій. Nullable, бо для
+  // legacy-юзерів, у яких поле відсутнє у БД, краще лишити null, ніж
+  // валити `/api/v1/me` для всієї сесії.
+  createdAt: z.string().datetime({ offset: true }).nullable(),
 });
 export type User = z.infer<typeof UserSchema>;
 
@@ -53,6 +59,53 @@ export const ChatRequestSchema = z.object({
   tool_calls_raw: z.array(z.unknown()).max(20).optional(),
   stream: z.boolean().optional(),
 });
+
+/**
+ * Допустимі `source`-фільтри для `POST /api/ai-memory/recall`. Дзеркалить
+ * `ALLOWED_MEMORY_SOURCES` у server-side `types.ts`. Тримаємо строкові
+ * літерали тут (а не enum-import з server-only модуля), щоб
+ * `@sergeant/shared` лишився edge-runtime-friendly без deps на Postgres.
+ */
+const RECALL_MEMORY_SOURCES = [
+  "chat",
+  "finyk",
+  "fizruk",
+  "nutrition",
+  "routine",
+  "journal",
+  "digest",
+] as const;
+
+/** POST /api/ai-memory/recall — semantic memory retrieval. */
+export const RecallMemoryRequestSchema = z
+  .object({
+    query: z.string().min(1).max(1000),
+    topK: z.number().int().min(1).max(50).optional(),
+    sources: z.array(z.enum(RECALL_MEMORY_SOURCES)).max(10).optional(),
+  })
+  .strict();
+
+/** Один результат у відповіді `/api/ai-memory/recall`. */
+export const RecallMemoryResultSchema = z.object({
+  /** ID запису. Number, не bigint (rule #1, AGENTS.md). */
+  id: z.number().int(),
+  source: z.enum(RECALL_MEMORY_SOURCES),
+  sourceRef: z.string().nullable(),
+  content: z.string(),
+  /** Cosine similarity у [0, 1]. Більше — ближче. */
+  score: z.number().min(0).max(1),
+  /** ISO-8601 timestamp. */
+  createdAt: z.string(),
+  metadata: z.record(z.string(), z.unknown()),
+});
+
+/** Response для `POST /api/ai-memory/recall`. */
+export const RecallMemoryResponseSchema = z.object({
+  memories: z.array(RecallMemoryResultSchema),
+});
+export type RecallMemoryRequest = z.infer<typeof RecallMemoryRequestSchema>;
+export type RecallMemoryResult = z.infer<typeof RecallMemoryResultSchema>;
+export type RecallMemoryResponse = z.infer<typeof RecallMemoryResponseSchema>;
 
 /** /api/nutrition/analyze-photo */
 export const AnalyzePhotoSchema = z.object({
@@ -306,6 +359,79 @@ export const WeeklyDigestSchema = z.object({
   nutrition: NutritionDigestSchema.nullish(),
   routine: RoutineDigestSchema.nullish(),
 });
+/**
+ * Request payload type for `POST /api/weekly-digest`. Both the server handler
+ * and the api-client derive their types from `WeeklyDigestSchema` per Hard
+ * Rule #3 — the api-client's historical `WeeklyDigestPayload` typed every
+ * field as `unknown`, which was only a way to silence TypeScript rather than
+ * describe the contract.
+ */
+export type WeeklyDigestRequest = z.infer<typeof WeeklyDigestSchema>;
+
+// ── Weekly digest response ─────────────────────────────────────────────
+//
+// Response from `POST /api/weekly-digest`. The server prompts Claude for a
+// JSON blob with four module-specific analysis blocks + an overall
+// recommendations array (see the prompt template in
+// `apps/server/src/modules/digest/weekly-digest.ts`). The blob is the
+// contract with Claude; after `extractJsonObject` succeeds, we validate it
+// against `WeeklyDigestReportSchema` so a shape drift from the LLM becomes
+// a 502 `ANTHROPIC_PARSE_ERROR` at the edge rather than a typed lie going
+// all the way to the UI.
+//
+// Each module block is `.partial()` — Claude is explicitly instructed to
+// return `null` for modules with no input data, and `.nullable()` captures
+// that. `recommendations` is always an array of strings (the prompt asks
+// for it; an empty array is the "no recommendation" encoding).
+
+const DigestModuleBlockSchema = z
+  .object({
+    summary: z.string().max(500),
+    comment: z.string().max(2000),
+    recommendations: z.array(z.string().max(500)).max(20),
+  })
+  .nullable();
+
+/**
+ * The AI-generated digest body. Lives under `report` in the HTTP response.
+ * Shape is fixed by the system prompt in the server handler; if the prompt
+ * changes, update this schema in the same PR (Hard Rule #3).
+ */
+export const WeeklyDigestReportSchema = z.object({
+  finyk: DigestModuleBlockSchema,
+  fizruk: DigestModuleBlockSchema,
+  nutrition: DigestModuleBlockSchema,
+  routine: DigestModuleBlockSchema,
+  overallRecommendations: z.array(z.string().max(500)).max(30),
+});
+export type WeeklyDigestReport = z.infer<typeof WeeklyDigestReportSchema>;
+
+/**
+ * Success envelope: the parsed `report` plus an ISO timestamp used by the
+ * client as a "when was this generated" marker (persisted to localStorage
+ * alongside the report so the UI can show a relative time like "6h ago").
+ */
+export const WeeklyDigestSuccessSchema = z.object({
+  report: WeeklyDigestReportSchema,
+  generatedAt: z.string().min(1),
+});
+export type WeeklyDigestSuccess = z.infer<typeof WeeklyDigestSuccessSchema>;
+
+/** Error envelope — validation / Anthropic upstream / parse failures. */
+export const WeeklyDigestErrorSchema = z.object({
+  error: z.string().min(1),
+});
+export type WeeklyDigestErrorResponse = z.infer<typeof WeeklyDigestErrorSchema>;
+
+/**
+ * Discriminated response. Same `{ data } | { error }` shape as the other
+ * AI-backed endpoints in this file.
+ */
+export const WeeklyDigestResponseSchema = z.union([
+  WeeklyDigestSuccessSchema,
+  WeeklyDigestErrorSchema,
+]);
+export type WeeklyDigestResponse = z.infer<typeof WeeklyDigestResponseSchema>;
 
 // AI-NOTE: `dateContext` обов'язковий для адекватного темпорального
 // обрамлення інсайту (без нього модель імпровізує "середина тижня" в неділю).
@@ -434,12 +560,6 @@ const BankApiPath = z
   .max(256)
   .regex(/^\/[A-Za-z0-9\-_/]+$/, "Некоректний шлях API");
 
-export const MonoQuerySchema = z
-  .object({
-    path: BankApiPath.optional(),
-  })
-  .passthrough();
-
 export const PrivatQuerySchema = z
   .object({
     path: BankApiPath.optional(),
@@ -556,7 +676,7 @@ export const PushSendErrorSchema = z.object({
   platform: PushSendPlatformSchema,
   reason: z.string(),
 });
-export const PushSendSummarySchema = z.object({
+export const PushTestResponseSchema = z.object({
   delivered: z.object({
     ios: z.number().int().nonnegative(),
     android: z.number().int().nonnegative(),
@@ -566,7 +686,11 @@ export const PushSendSummarySchema = z.object({
   errors: z.array(PushSendErrorSchema),
 });
 
-export const PushTestResponseSchema = PushSendSummarySchema;
+// `/api/push/send` (worker fan-out) повертає той самий summary, що й
+// `/api/push/test`. OpenAPI registry віддає їх як окремі іменовані схеми
+// `PushSendSummary` / `PushTestResponse`, тож тримаємо явний alias —
+// рефактор може розщепити їх у майбутньому без зміни контракту.
+export const PushSendSummarySchema = PushTestResponseSchema;
 
 // ────────────────────── Pagination ──────────────────────
 // Переused у будь-якому endpoint-і, що повертає список. Query-params завжди
@@ -590,7 +714,15 @@ export const BarcodeQuerySchema = z.object({
   barcode: z.string().trim().min(1, "Штрихкод не може бути порожнім").max(32),
 });
 
-// ────────────────────── Mono webhook integration (Track B) ──────────────────
+// ────────────────────── Mono webhook integration (Track A/B/C) ──────────────
+//
+// SSOT for the `/api/mono/*` HTTP contract per AGENTS.md Hard Rule #3.
+// Server handlers in `apps/server/src/modules/mono/{connection,read,backfill}`
+// derive their response shapes from these schemas, validate via `.parse()`
+// before `res.json()`, and the api-client (`packages/api-client/src/endpoints/
+// mono.ts`) re-exports `z.infer<>` so the three artefacts (server, client
+// types, tests) cannot drift again silently.
+
 export const MonoTransactionsQuerySchema = z.object({
   from: z.string().optional(),
   to: z.string().optional(),
@@ -598,5 +730,304 @@ export const MonoTransactionsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
   cursor: z.string().min(3).optional(),
 });
+
+/**
+ * Lifecycle of the per-user `mono_connection` row. Webhook flips
+ * `active`→`invalid` when Monobank rejects a delivery (e.g. token revoked);
+ * UI then prompts the user to reconnect. `pending` exists for a short
+ * window between `connect` and the first webhook delivery / accounts
+ * upsert (currently unused — `connect` immediately sets `active`).
+ */
+export const MonoConnectionStatusSchema = z.enum([
+  "pending",
+  "active",
+  "invalid",
+  "disconnected",
+]);
+export type MonoConnectionStatus = z.infer<typeof MonoConnectionStatusSchema>;
+
+/**
+ * `transaction.source` — `'webhook'` for live deliveries from Monobank,
+ * `'backfill'` for rows ingested by `POST /api/mono/backfill` (last 31d
+ * statement window). Used by the upsert-conflict CASE so a webhook row
+ * never gets its `received_at` overwritten by a later backfill.
+ */
+export const MonoTransactionSourceSchema = z.enum(["webhook", "backfill"]);
+export type MonoTransactionSource = z.infer<typeof MonoTransactionSourceSchema>;
+
+/**
+ * Row from `GET /api/mono/accounts`. Mirrors the columns of `mono_account`
+ * after `normalizeMonoAccount()` coerces `bigint`→`number` (Hard Rule #1)
+ * and `Date`→ISO-8601 string. `lastSeenAt` is always present — DB column
+ * is `NOT NULL` and the normalizer renders `null` to a string only via
+ * `.toISOString()`, never null.
+ */
+export const MonoAccountDtoSchema = z.object({
+  userId: z.string().min(1),
+  monoAccountId: z.string().min(1),
+  sendId: z.string().nullable(),
+  type: z.string().nullable(),
+  currencyCode: z.number().int(),
+  cashbackType: z.string().nullable(),
+  // Monobank can return up to 4 PANs per account (multi-card). Empty array
+  // is the "no cards" encoding (e.g. FOP accounts).
+  maskedPan: z.array(z.string()).max(8),
+  iban: z.string().nullable(),
+  // bigint columns coerced to number by `normalizeMonoAccount`; `null` when
+  // Monobank hadn't reported a balance yet.
+  balance: z.number().nullable(),
+  creditLimit: z.number().nullable(),
+  lastSeenAt: z.string().min(1),
+});
+export type MonoAccountDto = z.infer<typeof MonoAccountDtoSchema>;
+
+/** Response of `GET /api/mono/accounts` — array of accounts, no envelope. */
+export const MonoAccountsResponseSchema = z.array(MonoAccountDtoSchema);
+export type MonoAccountsResponse = z.infer<typeof MonoAccountsResponseSchema>;
+
+/**
+ * Row from `GET /api/mono/transactions`. Mirrors the columns of
+ * `mono_transaction` after `normalizeMonoTransaction()`. Bigint money
+ * columns (`amount`, `operationAmount`, `cashbackAmount`,
+ * `commissionRate`, `balance`) are coerced to `number`; `time` and
+ * `receivedAt` are ISO-8601 strings.
+ */
+export const MonoTransactionDtoSchema = z.object({
+  userId: z.string().min(1),
+  monoAccountId: z.string().min(1),
+  monoTxId: z.string().min(1),
+  time: z.string().min(1),
+  // Monobank denominates in the smallest currency unit (kopecks for UAH);
+  // negative values are debits, positive are credits.
+  amount: z.number(),
+  operationAmount: z.number(),
+  currencyCode: z.number().int(),
+  // MCC / original-MCC / hold are missing for jar-to-jar internal transfers
+  // and a few legacy rows; UI must handle null.
+  mcc: z.number().int().nullable(),
+  originalMcc: z.number().int().nullable(),
+  hold: z.boolean().nullable(),
+  description: z.string().nullable(),
+  comment: z.string().nullable(),
+  cashbackAmount: z.number().nullable(),
+  commissionRate: z.number().nullable(),
+  balance: z.number().nullable(),
+  receiptId: z.string().nullable(),
+  invoiceId: z.string().nullable(),
+  counterEdrpou: z.string().nullable(),
+  counterIban: z.string().nullable(),
+  counterName: z.string().nullable(),
+  /**
+   * Server-resolved expense-category slug derived from `mcc` via the
+   * `MCC_CATEGORIES` map in `@sergeant/finyk-domain/constants`. `null` when
+   * the MCC is unknown / 0 / missing — UI then falls back to its own
+   * client-side categorisation (description keywords, user override).
+   */
+  categorySlug: z.string().nullable(),
+  /**
+   * Sticky latch set by the (forthcoming) `PATCH /api/mono/transactions/:id/
+   * category` endpoint and the data-migrations. Once `true`, subsequent
+   * webhook deliveries (e.g. Monobank refunds with a different MCC) do not
+   * silently undo the user's manual correction.
+   */
+  categoryOverridden: z.boolean(),
+  source: MonoTransactionSourceSchema,
+  receivedAt: z.string().min(1),
+});
+export type MonoTransactionDto = z.infer<typeof MonoTransactionDtoSchema>;
+
+/**
+ * Cursor-paginated response from `GET /api/mono/transactions`. Server
+ * returns up to `limit` items (default 50, max 200) ordered by
+ * `(time DESC, monoTxId DESC)`; `nextCursor` is non-null when more rows
+ * are available and is consumed by `fetchAllMonoTransactions`.
+ */
+export const MonoTransactionsPageSchema = z.object({
+  data: z.array(MonoTransactionDtoSchema),
+  nextCursor: z.string().nullable(),
+});
+export type MonoTransactionsPage = z.infer<typeof MonoTransactionsPageSchema>;
+
+/**
+ * Response of `GET /api/mono/sync-state`. UI uses this to decide whether
+ * to render the "Connect Monobank" form or the connected dashboard.
+ * `webhookActive=true` means the row is `active` and Monobank has
+ * confirmed registration (`webhook_registered_at != NULL`).
+ */
+export const MonoSyncStateSchema = z.object({
+  status: MonoConnectionStatusSchema,
+  webhookActive: z.boolean(),
+  lastEventAt: z.string().nullable(),
+  lastBackfillAt: z.string().nullable(),
+  accountsCount: z.number().int().nonnegative(),
+});
+export type MonoSyncState = z.infer<typeof MonoSyncStateSchema>;
+
+/**
+ * Response of `POST /api/mono/connect`. After token validation +
+ * webhook registration with Monobank succeeded, the connection is
+ * persisted as `active` and the response carries the count of accounts
+ * upserted from `client-info` (used by UI to confirm "X accounts
+ * connected").
+ */
+export const MonoConnectResponseSchema = z.object({
+  status: z.literal("active"),
+  accountsCount: z.number().int().nonnegative(),
+});
+export type MonoConnectResponse = z.infer<typeof MonoConnectResponseSchema>;
+
+/**
+ * Response of `POST /api/mono/disconnect`. Server best-efforts deregister
+ * the webhook with Monobank, then deletes `mono_connection`. The `ok:
+ * true` envelope mirrors the rest of the boolean-result write endpoints
+ * in this codebase.
+ */
+export const MonoDisconnectResponseSchema = z.object({
+  ok: z.literal(true),
+});
+export type MonoDisconnectResponse = z.infer<
+  typeof MonoDisconnectResponseSchema
+>;
+
+/**
+ * Response of `POST /api/mono/backfill`. The handler returns `started`
+ * synchronously and runs the per-account 31-day statement pull in the
+ * background; clients poll `sync-state.lastBackfillAt` to detect
+ * completion.
+ */
+export const MonoBackfillResponseSchema = z.object({
+  status: z.literal("started"),
+  accountsCount: z.number().int().nonnegative(),
+});
+export type MonoBackfillResponse = z.infer<typeof MonoBackfillResponseSchema>;
+
+// ────────────────────── Waitlist (Phase 0 monetization rails) ───────────────
+// Простий sign-up для майбутнього Pro-тіру. Валідується тут, щоб і клієнт
+// (через `@sergeant/api-client`) і сервер (через `validateBody`) мали одне
+// джерело правди. Tier-и навмисно матчать `docs/launch/01-monetization-and-pricing.md`.
+
+export const WaitlistTierSchema = z.enum(["free", "plus", "pro", "unsure"]);
+export type WaitlistTier = z.infer<typeof WaitlistTierSchema>;
+
+export const WaitlistSourceSchema = z.enum([
+  "pricing_page",
+  "paywall",
+  "settings",
+  "onboarding",
+]);
+export type WaitlistSource = z.infer<typeof WaitlistSourceSchema>;
+
+export const WaitlistSubmitSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Некоректна email-адреса")
+    .max(254),
+  tier_interest: WaitlistTierSchema.default("unsure"),
+  source: WaitlistSourceSchema.default("pricing_page"),
+  // ISO-639-1, два символи: "uk", "en". Опційний — UI може не знати.
+  locale: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z]{2}$/, "locale має бути 2-літерний ISO-639-1")
+    .optional(),
+});
+export type WaitlistSubmitPayload = z.infer<typeof WaitlistSubmitSchema>;
+
+export const WaitlistSubmitResponseSchema = z.object({
+  ok: z.literal(true),
+  // `created` — true якщо це новий запис; false якщо email уже був у списку.
+  // Дозволяє UI показати «ми памʼятаємо твій інтерес» замість «дякуємо що
+  // підписався» — без розкриття конкретики.
+  created: z.boolean(),
+});
+export type WaitlistSubmitResponse = z.infer<
+  typeof WaitlistSubmitResponseSchema
+>;
+
+// ────────────────────── Transcribe (Groq Whisper proxy) ─────────────────────
+// `POST /api/transcribe` приймає сире audio-тіло (Content-Type: `audio/*`),
+// query визначає мову/prompt. Schema тут — SSOT і для server-side
+// `validateQuery`, і для `@sergeant/api-client` (типізує query + response).
+
+const TRANSCRIBE_MAX_PROMPT_LENGTH = 1024;
+
+export const TranscribeQuerySchema = z.object({
+  language: z
+    .string()
+    .trim()
+    .min(2)
+    .max(8)
+    .optional()
+    .describe("ISO-код мови, напр. uk або en. Якщо порожньо — auto-detect."),
+  prompt: z
+    .string()
+    .trim()
+    .max(TRANSCRIBE_MAX_PROMPT_LENGTH)
+    .optional()
+    .describe("Доменна підказка (списки вправ, продуктів тощо)."),
+});
+export type TranscribeQuery = z.infer<typeof TranscribeQuerySchema>;
+
+export const TranscribeResponseSchema = z.object({
+  text: z.string(),
+  durationSec: z.number().nonnegative(),
+  model: z.string(),
+});
+export type TranscribeResponse = z.infer<typeof TranscribeResponseSchema>;
+
+// ────────────────────── Web Vitals ingestion ────────────────────────────────
+// `POST /api/metrics/web-vitals` — анонімний beacon-endpoint, приймає батч
+// Core Web Vitals замірів. Server завжди відповідає 204 No Content.
+
+export const WebVitalsMetricNameSchema = z.enum([
+  "LCP",
+  "INP",
+  "FCP",
+  "TTFB",
+  "CLS",
+]);
+export type WebVitalsMetricName = z.infer<typeof WebVitalsMetricNameSchema>;
+
+export const WebVitalsMetricRatingSchema = z.enum([
+  "good",
+  "needs-improvement",
+  "poor",
+]);
+export type WebVitalsMetricRating = z.infer<typeof WebVitalsMetricRatingSchema>;
+
+// CLS — безрозмірний (0..1+, 0.25 = "poor"). Таймінги (LCP/INP/FCP/TTFB) —
+// мс, upper-bound 120_000 (2 хв — будь-що більше це зламаний клієнтський
+// таймер). Окремий upper-bound для CLS не дає анонімному endpoint-у інфлейтити
+// `web_vitals_cls_sum`, що зробило б `avg = _sum / _count` беззмістовним.
+//
+// Розбито на дискримінований union по `name` замість `.refine()` так, щоб межі
+// `value` для CLS (≤10) і таймінгів (≤120_000) переживали серіалізацію в
+// OpenAPI: кастомні `.refine()`-предикати у `docs/api/openapi.json` не
+// потрапляють, і генерований контракт мовчки втрачав би верхні межі.
+const WebVitalsClsMetricSchema = z.object({
+  name: z.literal("CLS"),
+  value: z.number().finite().min(0).max(10),
+  rating: WebVitalsMetricRatingSchema,
+});
+
+const WebVitalsTimingMetricSchema = z.object({
+  name: z.enum(["LCP", "INP", "FCP", "TTFB"]),
+  value: z.number().finite().min(0).max(120_000),
+  rating: WebVitalsMetricRatingSchema,
+});
+
+export const WebVitalsMetricSchema = z.discriminatedUnion("name", [
+  WebVitalsClsMetricSchema,
+  WebVitalsTimingMetricSchema,
+]);
+export type WebVitalsMetric = z.infer<typeof WebVitalsMetricSchema>;
+
+export const WebVitalsPayloadSchema = z.object({
+  metrics: z.array(WebVitalsMetricSchema).min(1).max(10),
+});
+export type WebVitalsPayload = z.infer<typeof WebVitalsPayloadSchema>;
 
 export { z };

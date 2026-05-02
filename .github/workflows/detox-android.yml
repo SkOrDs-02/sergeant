@@ -168,7 +168,7 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           working-directory: apps/mobile
-          script: pnpm e2e:test:android -- --headless --record-logs all
+          script: pnpm e2e:test:android:ci
 
       - name: Upload Detox artefacts on failure
         if: always()

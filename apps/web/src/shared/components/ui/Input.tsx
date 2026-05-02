@@ -60,16 +60,14 @@ const sizes: Record<InputSize, string> = {
  * Focus treatment — mirrors `Button`'s `focus-visible:ring-2 ring-brand-500/45`
  * contract so all interactive elements share one a11y language. Keyboard
  * users always see a ring; pointer clicks on text inputs don't flash it.
- * Fallback `focus:` rules keep legacy browsers without :focus-visible on
- * par with click-visible behaviour.
  */
 const variants: Record<InputVariant, string> = {
   default:
-    "bg-panelHi border border-line focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-500/30 focus:border-brand-400",
+    "bg-panelHi border border-line focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-500/30",
   filled:
-    "bg-panelHi border-transparent focus-visible:bg-panel focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-500/30 focus:bg-panel focus:border-brand-400",
+    "bg-panelHi border-transparent focus-visible:bg-panel focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-500/30",
   ghost:
-    "bg-transparent border-transparent hover:bg-panelHi focus-visible:bg-panelHi focus-visible:ring-2 focus-visible:ring-brand-500/30 focus:bg-panelHi",
+    "bg-transparent border-transparent hover:bg-panelHi focus-visible:bg-panelHi focus-visible:ring-2 focus-visible:ring-brand-500/30",
 };
 
 export interface InputProps extends Omit<
@@ -82,6 +80,16 @@ export interface InputProps extends Omit<
   success?: boolean;
   icon?: ReactNode;
   suffix?: ReactNode;
+  /** Helper text shown below the input — turns red on error. */
+  helperText?: string;
+  /** Input label — rendered above the field with correct `htmlFor`. */
+  label?: string;
+  /**
+   * When `true` (or when `maxLength` is set and a `value` prop is present),
+   * renders a live "12/50" counter in the helper row. Color shifts to
+   * warning at ≥80 % and danger at 100 %.
+   */
+  showCharCount?: boolean;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
@@ -93,18 +101,34 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     success,
     icon,
     suffix,
+    helperText,
+    label,
+    id,
     type,
     spellCheck,
     inputMode,
+    showCharCount,
     ...props
   },
   ref,
 ) {
   const stateClass = error
-    ? "border-danger/70 focus-visible:border-danger focus-visible:ring-danger/25 focus:border-danger"
+    ? "border-danger/70 focus-visible:border-danger focus-visible:ring-danger/25"
     : success
-      ? "border-brand-400 focus-visible:border-brand-500 focus-visible:ring-brand-500/25 focus:border-brand-500"
+      ? "border-brand-400 focus-visible:border-brand-500 focus-visible:ring-brand-500/25"
       : "";
+
+  const maxLen = props.maxLength;
+  const currentLen =
+    maxLen !== undefined ? String(props.value ?? "").length : 0;
+  const renderCounter =
+    (showCharCount || maxLen !== undefined) && maxLen !== undefined;
+  const counterColor =
+    currentLen >= maxLen!
+      ? "text-danger"
+      : currentLen / maxLen! >= 0.8
+        ? "text-warning"
+        : "text-subtle";
 
   // Type-aware defaults. The caller's explicit prop always wins — these
   // only fill in when `undefined` so existing call sites don't change.
@@ -114,34 +138,75 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     inputMode ?? (type ? DEFAULT_INPUT_MODE[type] : undefined);
 
   return (
-    <div className="relative">
-      {icon && (
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
-          {icon}
-        </div>
+    <div className="flex flex-col gap-1">
+      {label && (
+        <label
+          htmlFor={id}
+          className="text-sm font-medium text-text leading-snug"
+        >
+          {label}
+        </label>
       )}
-      <input
-        ref={ref}
-        type={type}
-        spellCheck={resolvedSpellCheck}
-        inputMode={resolvedInputMode}
-        aria-invalid={error ? true : undefined}
-        className={cn(
-          "w-full text-text placeholder:text-subtle/70",
-          "outline-none transition-colors duration-200",
-          "disabled:opacity-50 disabled:cursor-not-allowed",
-          sizes[size],
-          variants[variant],
-          stateClass,
-          icon && "pl-10",
-          suffix && "pr-10",
-          className,
+      <div className="relative">
+        {icon && (
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
+            {icon}
+          </div>
         )}
-        {...props}
-      />
-      {suffix && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted">
-          {suffix}
+        <input
+          ref={ref}
+          id={id}
+          type={type}
+          spellCheck={resolvedSpellCheck}
+          inputMode={resolvedInputMode}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={helperText && id ? `${id}-helper` : undefined}
+          className={cn(
+            "w-full text-text placeholder:text-subtle/70",
+            "outline-none transition-colors duration-200",
+            "disabled:opacity-50 disabled:cursor-not-allowed",
+            sizes[size],
+            variants[variant],
+            stateClass,
+            icon && "pl-10",
+            suffix && "pr-10",
+            className,
+          )}
+          {...props}
+        />
+        {suffix && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted">
+            {suffix}
+          </div>
+        )}
+      </div>
+      {(helperText || renderCounter) && (
+        <div className="flex items-center justify-between gap-2">
+          {helperText ? (
+            <p
+              id={id ? `${id}-helper` : undefined}
+              className={cn(
+                "text-xs leading-snug",
+                error ? "text-danger" : "text-subtle",
+              )}
+            >
+              {helperText}
+            </p>
+          ) : (
+            <span />
+          )}
+          {renderCounter && (
+            <span
+              className={cn(
+                "text-xs tabular-nums shrink-0 transition-colors",
+                counterColor,
+              )}
+              aria-live="polite"
+              aria-label={`${currentLen} з ${maxLen} символів`}
+            >
+              {currentLen}/{maxLen}
+            </span>
+          )}
         </div>
       )}
     </div>
@@ -151,6 +216,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   variant?: InputVariant;
   error?: boolean;
+  /** Helper text shown below the textarea — turns red on error. */
+  helperText?: string;
+  /** Label rendered above the textarea. */
+  label?: string;
 }
 
 /**
@@ -158,28 +227,60 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
  */
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   function Textarea(
-    { className, variant = "default", error, rows = 3, ...props },
+    {
+      className,
+      variant = "default",
+      error,
+      rows = 3,
+      helperText,
+      label,
+      id,
+      ...props
+    },
     ref,
   ) {
     const stateClass = error
-      ? "border-danger/70 focus-visible:border-danger focus-visible:ring-danger/25 focus:border-danger"
+      ? "border-danger/70 focus-visible:border-danger focus-visible:ring-danger/25"
       : "";
 
     return (
-      <textarea
-        ref={ref}
-        rows={rows}
-        aria-invalid={error ? true : undefined}
-        className={cn(
-          "w-full px-4 py-3 text-base text-text placeholder:text-subtle/70 rounded-2xl",
-          "outline-none transition-colors duration-200 resize-none",
-          "disabled:opacity-50 disabled:cursor-not-allowed",
-          variants[variant],
-          stateClass,
-          className,
+      <div className="flex flex-col gap-1">
+        {label && (
+          <label
+            htmlFor={id}
+            className="text-sm font-medium text-text leading-snug"
+          >
+            {label}
+          </label>
         )}
-        {...props}
-      />
+        <textarea
+          ref={ref}
+          id={id}
+          rows={rows}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={helperText && id ? `${id}-helper` : undefined}
+          className={cn(
+            "w-full px-4 py-3 text-base text-text placeholder:text-subtle/70 rounded-2xl",
+            "outline-none transition-colors duration-200 resize-none",
+            "disabled:opacity-50 disabled:cursor-not-allowed",
+            variants[variant],
+            stateClass,
+            className,
+          )}
+          {...props}
+        />
+        {helperText && (
+          <p
+            id={id ? `${id}-helper` : undefined}
+            className={cn(
+              "text-xs leading-snug",
+              error ? "text-danger" : "text-subtle",
+            )}
+          >
+            {helperText}
+          </p>
+        )}
+      </div>
     );
   },
 );

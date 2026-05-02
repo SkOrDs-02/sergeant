@@ -9,15 +9,12 @@ import {
   type MonoSyncState,
 } from "@shared/api";
 import {
-  safeReadLS,
   safeReadStringLS,
   safeWriteLS,
   safeRemoveLS,
 } from "@shared/lib/storage";
 import { finykKeys, hubKeys } from "@shared/lib/queryKeys";
-import { useFlag } from "../lib/featureFlags";
 import { useStorage as useFinykStorage } from "../../modules/finyk/hooks/useStorage";
-import { getAccountLabel } from "../../modules/finyk/utils";
 import {
   ConfirmModal,
   SettingsGroup,
@@ -33,22 +30,7 @@ interface CustomCategory {
   label: string;
 }
 
-interface UahAccount {
-  id: string;
-  currencyCode: number;
-  balance: number;
-  creditLimit?: number;
-}
-
-interface FinykInfoCache {
-  info?: { name?: string; accounts?: UahAccount[] };
-  name?: string;
-  accounts?: UahAccount[];
-}
-
 interface FinykStorageShape {
-  hiddenAccounts: string[];
-  toggleHideAccount: (id: string) => void;
   customCategories: CustomCategory[];
   addCustomCategory: (label: string) => void;
   removeCustomCategory: (id: string) => void;
@@ -56,13 +38,8 @@ interface FinykStorageShape {
 
 export function FinykSection() {
   const queryClient = useQueryClient();
-  const {
-    hiddenAccounts,
-    toggleHideAccount,
-    customCategories,
-    addCustomCategory,
-    removeCustomCategory,
-  } = useFinykStorage({}) as FinykStorageShape;
+  const { customCategories, addCustomCategory, removeCustomCategory } =
+    useFinykStorage({}) as FinykStorageShape;
 
   const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
   const [newCategoryLabel, setNewCategoryLabel] = useState("");
@@ -98,7 +75,7 @@ export function FinykSection() {
     const cleanId = privatIdInput.trim();
     const cleanToken = privatTokenInput.trim();
     if (!cleanId || !cleanToken) {
-      setPrivatError("Введіть Merchant ID та токен");
+      setPrivatError("Введи Merchant ID та токен");
       return;
     }
     setPrivatConnecting(true);
@@ -152,9 +129,7 @@ export function FinykSection() {
     window.location.reload();
   };
 
-  const webhookEnabled = useFlag("mono_webhook");
-
-  // === Webhook mode: server-side connect ===
+  // === Webhook mode: server-side connect (only mode after roadmap A cleanup) ===
   const [webhookTokenInput, setWebhookTokenInput] = useState("");
   const [webhookConnecting, setWebhookConnecting] = useState(false);
   const [webhookError, setWebhookError] = useState("");
@@ -163,7 +138,6 @@ export function FinykSection() {
   const syncStateQuery = useQuery<MonoSyncState>({
     queryKey: finykKeys.monoSyncState,
     queryFn: ({ signal }) => monoWebhookApi.syncState({ signal }),
-    enabled: webhookEnabled,
     staleTime: 30_000,
     refetchOnWindowFocus: true,
   });
@@ -174,13 +148,15 @@ export function FinykSection() {
   const connectWebhook = async () => {
     const clean = webhookTokenInput.trim();
     if (!clean) {
-      setWebhookError("Введіть токен");
+      setWebhookError("Введи токен");
       return;
     }
     setWebhookConnecting(true);
     setWebhookError("");
     try {
-      await monoWebhookApi.connect(clean);
+      await monoWebhookApi.connect(clean, {
+        signal: AbortSignal.timeout(30_000),
+      });
       setWebhookTokenInput("");
       await queryClient.invalidateQueries({
         queryKey: finykKeys.monoSyncState,
@@ -195,6 +171,8 @@ export function FinykSection() {
           e.serverMessage ||
             "Токен Monobank недійсний або закінчився. Оновіть токен.",
         );
+      } else if (isApiError(e) && e.kind === "aborted") {
+        setWebhookError("Monobank API не відповідає. Спробуйте пізніше.");
       } else {
         setWebhookError(
           e instanceof Error && e.message ? e.message : "Помилка підключення",
@@ -230,43 +208,29 @@ export function FinykSection() {
     }
   };
 
-  // === Legacy mode: browser-stored token ===
-  const rawCache = safeReadLS<FinykInfoCache | null>("finyk_info_cache", null);
-  const infoData = rawCache?.info ?? rawCache;
-  const token = (() => {
-    if (webhookEnabled) return null;
-    return (
-      safeReadStringLS("finyk_token", null) ??
-      sessionStorage.getItem("finyk_token") ??
-      null
-    );
-  })();
-  const clientName = webhookEnabled ? null : (infoData?.name ?? null);
-  const uahAccounts: UahAccount[] =
-    !webhookEnabled && Array.isArray(infoData?.accounts)
-      ? infoData.accounts.filter((a) => a.currencyCode === 980)
-      : [];
-
   const clearTxCache = () => {
     safeRemoveLS("finyk_tx_cache");
     safeRemoveLS("finyk_tx_cache_last_good");
     queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
-    if (webhookEnabled) {
-      queryClient.removeQueries({
-        queryKey: finykKeys.monoWebhookTransactions(),
-      });
-      queryClient.invalidateQueries({ queryKey: finykKeys.monoSyncState });
-    }
+    queryClient.removeQueries({
+      queryKey: finykKeys.monoWebhookTransactions(),
+    });
+    queryClient.invalidateQueries({ queryKey: finykKeys.monoSyncState });
   };
 
-  const disconnect = () => {
-    sessionStorage.removeItem("finyk_token");
-    safeRemoveLS("finyk_token");
-    safeRemoveLS("finyk_token_remembered");
-    safeRemoveLS("finyk_info_cache");
-    safeRemoveLS("finyk_tx_cache");
-    safeRemoveLS("finyk_tx_cache_last_good");
-    window.location.reload();
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshAllData = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: finykKeys.mono }),
+        queryClient.invalidateQueries({ queryKey: finykKeys.monoSyncState }),
+        queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") }),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const catInputClass =
@@ -280,22 +244,14 @@ export function FinykSection() {
         body={
           confirmKind === "cache"
             ? "Буде видалено збережені транзакції в кеші. Потім дані підтягнуться з Monobank знову."
-            : webhookEnabled
-              ? "Webhook-з'єднання буде від'єднано. Щоб відновити — введіть токен заново."
-              : "Токен API буде видалено з цього браузера. Потрібно буде ввести його знову."
+            : "Webhook-з'єднання буде від'єднано. Щоб відновити — введіть токен заново."
         }
         confirmLabel={confirmKind === "cache" ? "Очистити" : "Вийти"}
         danger={confirmKind === "disconnect"}
         onCancel={() => setConfirmKind(null)}
         onConfirm={() => {
           if (confirmKind === "cache") clearTxCache();
-          if (confirmKind === "disconnect") {
-            if (webhookEnabled) {
-              disconnectWebhook();
-            } else {
-              disconnect();
-            }
-          }
+          if (confirmKind === "disconnect") disconnectWebhook();
           setConfirmKind(null);
         }}
       />
@@ -355,196 +311,131 @@ export function FinykSection() {
       </SettingsSubGroup>
 
       {/* ── Webhook mode: Monobank status & connect ── */}
-      {webhookEnabled && (
-        <SettingsSubGroup title="Monobank (Webhook)">
-          {webhookConnected && webhookSyncState ? (
-            <div className="space-y-3">
+      <SettingsSubGroup title="Monobank (Webhook)">
+        {webhookConnected && webhookSyncState ? (
+          <div className="space-y-3">
+            <div
+              className={cn(
+                "flex items-center gap-3 p-3 rounded-xl border",
+                webhookSyncState.status === "active"
+                  ? "bg-bg border-green-500/30"
+                  : webhookSyncState.status === "pending"
+                    ? "bg-bg border-yellow-500/30"
+                    : "bg-bg border-red-500/30",
+              )}
+            >
               <div
                 className={cn(
-                  "flex items-center gap-3 p-3 rounded-xl border",
+                  "w-2.5 h-2.5 rounded-full shrink-0",
                   webhookSyncState.status === "active"
-                    ? "bg-bg border-green-500/30"
+                    ? "bg-success"
                     : webhookSyncState.status === "pending"
-                      ? "bg-bg border-yellow-500/30"
-                      : "bg-bg border-red-500/30",
+                      ? "bg-warning"
+                      : "bg-danger",
                 )}
-              >
-                <div
-                  className={cn(
-                    "w-2.5 h-2.5 rounded-full shrink-0",
-                    webhookSyncState.status === "active"
-                      ? "bg-success"
-                      : webhookSyncState.status === "pending"
-                        ? "bg-warning"
-                        : "bg-danger",
+              />
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold">
+                  {webhookSyncState.status === "active"
+                    ? "Webhook active"
+                    : webhookSyncState.status === "pending"
+                      ? "Webhook pending"
+                      : "Webhook error"}
+                </div>
+                <div className="text-xs text-subtle mt-0.5">
+                  {webhookSyncState.accountsCount} рахунків
+                  {webhookSyncState.lastEventAt && (
+                    <>
+                      {" · "}
+                      {new Date(webhookSyncState.lastEventAt).toLocaleString(
+                        "uk-UA",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          day: "numeric",
+                          month: "short",
+                        },
+                      )}
+                    </>
                   )}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold">
-                    {webhookSyncState.status === "active"
-                      ? "Webhook active"
-                      : webhookSyncState.status === "pending"
-                        ? "Webhook pending"
-                        : "Webhook error"}
-                  </div>
-                  <div className="text-xs text-subtle mt-0.5">
-                    {webhookSyncState.accountsCount} рахунків
-                    {webhookSyncState.lastEventAt && (
-                      <>
-                        {" · "}
-                        {new Date(webhookSyncState.lastEventAt).toLocaleString(
-                          "uk-UA",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            day: "numeric",
-                            month: "short",
-                          },
-                        )}
-                      </>
-                    )}
-                  </div>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  className="flex-1 h-11"
-                  onClick={triggerBackfill}
-                >
-                  Re-sync (backfill)
-                </Button>
-                <Button
-                  variant="danger"
-                  className="flex-1 h-11"
-                  onClick={() => setConfirmKind("disconnect")}
-                >
-                  Від{"'"}єднати
-                </Button>
-              </div>
             </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-xs text-subtle leading-snug">
-                Токен відправляється на сервер і не зберігається у браузері.
-                Mono → Налаштування → Інші → API.
-              </p>
-              <div className="relative">
-                <input
-                  type={showWebhookToken ? "text" : "password"}
-                  value={webhookTokenInput}
-                  onChange={(e) => setWebhookTokenInput(e.target.value)}
-                  placeholder="Токен Monobank API"
-                  autoComplete="off"
-                  className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 pr-10 text-sm text-text"
-                  onKeyDown={(e) => e.key === "Enter" && connectWebhook()}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowWebhookToken((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle hover:text-text"
-                >
-                  {showWebhookToken ? "\u{1F648}" : "\u{1F441}"}
-                </button>
-              </div>
-              {webhookError && (
-                <p className="text-sm text-danger bg-danger/10 rounded-xl px-3 py-2">
-                  {webhookError}
-                </p>
-              )}
+            <div className="flex gap-2">
               <Button
-                className="w-full h-11"
-                onClick={connectWebhook}
-                disabled={webhookConnecting}
+                variant="ghost"
+                className="flex-1 h-11"
+                onClick={triggerBackfill}
               >
-                {webhookConnecting ? "Підключення…" : "Підключити Monobank"}
+                Re-sync (backfill)
+              </Button>
+              <Button
+                variant="danger"
+                className="flex-1 h-11"
+                onClick={() => setConfirmKind("disconnect")}
+              >
+                Від{"'"}єднати
               </Button>
             </div>
-          )}
-        </SettingsSubGroup>
-      )}
-
-      {/* ── Legacy mode: browser-stored token ── */}
-      {!webhookEnabled && uahAccounts.length > 0 && (
-        <SettingsSubGroup title="Рахунки">
-          <p className="text-xs text-subtle leading-snug">
-            Сховані рахунки не враховуються у балансі та нетворсі.
-          </p>
-          <div className="space-y-0 -mx-4">
-            {uahAccounts.map((acc) => {
-              const hidden = hiddenAccounts.includes(acc.id);
-              return (
-                <div
-                  key={acc.id}
-                  className="flex items-center justify-between px-4 py-3 border-b border-line last:border-0"
-                >
-                  <div>
-                    <div className="text-sm font-medium">
-                      {getAccountLabel(acc)}
-                    </div>
-                    <div className="text-xs text-subtle mt-0.5 tabular-nums">
-                      {(acc.balance / 100).toLocaleString("uk-UA", {
-                        maximumFractionDigits: 0,
-                      })}{" "}
-                      ₴
-                      {(acc.creditLimit ?? 0) > 0 &&
-                        ` · ліміт ${((acc.creditLimit ?? 0) / 100).toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴`}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => toggleHideAccount(acc.id)}
-                    className={cn(
-                      "text-xs px-3 py-1.5 rounded-xl border font-semibold transition-colors",
-                      hidden
-                        ? "border-subtle/50 text-subtle hover:border-muted hover:text-text"
-                        : "border-success/40 text-success hover:border-danger/40 hover:text-danger",
-                    )}
-                  >
-                    {hidden ? "Сховано" : "Видно"}
-                  </button>
-                </div>
-              );
-            })}
           </div>
-        </SettingsSubGroup>
-      )}
-
-      {!webhookEnabled && clientName && (
-        <SettingsSubGroup title="Monobank">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-panelHi border border-line flex items-center justify-center text-xl">
-              {clientName.charAt(0) || "?"}
-            </div>
-            <div>
-              <div className="text-sm font-semibold">{clientName}</div>
-              <div className="text-xs text-subtle mt-0.5">
-                {uahAccounts.length} UAH рахунків
-              </div>
-            </div>
-          </div>
-          {token && (
-            <div className="flex items-center gap-2 p-3 bg-bg rounded-xl border border-line">
-              <span className="text-xs text-subtle font-mono flex-1 truncate">
-                {token.slice(0, 8) + "••••••••••••••••••" + token.slice(-4)}
-              </span>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs text-subtle leading-snug">
+              Токен відправляється на сервер і не зберігається у браузері. Mono
+              → Налаштування → Інші → API.
+            </p>
+            <div className="relative">
+              <input
+                type={showWebhookToken ? "text" : "password"}
+                value={webhookTokenInput}
+                onChange={(e) => setWebhookTokenInput(e.target.value)}
+                placeholder="Токен Monobank API"
+                autoComplete="off"
+                className="input-focus-finyk w-full h-11 rounded-xl border border-line bg-panelHi px-3 pr-10 text-sm text-text"
+                onKeyDown={(e) => e.key === "Enter" && connectWebhook()}
+              />
               <button
-                onClick={() =>
-                  navigator.clipboard?.writeText(token).catch(() => {})
+                type="button"
+                onClick={() => setShowWebhookToken((v) => !v)}
+                className="focus-ring absolute right-3 top-1/2 -translate-y-1/2 rounded-xl text-subtle hover:text-text"
+                aria-label={
+                  showWebhookToken ? "Приховати токен" : "Показати токен"
                 }
-                className="text-xs text-muted hover:text-text transition-colors shrink-0"
               >
-                📋 Копіювати
+                {showWebhookToken ? "\u{1F648}" : "\u{1F441}"}
               </button>
             </div>
-          )}
-        </SettingsSubGroup>
-      )}
+            {webhookError && (
+              <p className="text-sm text-danger bg-danger/10 rounded-xl px-3 py-2">
+                {webhookError}
+              </p>
+            )}
+            <Button
+              className="w-full h-11"
+              onClick={connectWebhook}
+              disabled={webhookConnecting}
+            >
+              {webhookConnecting ? "Підключення…" : "Підключити Monobank"}
+            </Button>
+          </div>
+        )}
+      </SettingsSubGroup>
 
       <SettingsSubGroup title="Сервіс">
         <p className="text-xs text-subtle leading-snug">
-          Якщо список операцій виглядає некоректно — очисти кеш і синхронізуй
-          знову.
+          Дані Monobank приходять автоматично через webhook та оновлюються при
+          поверненні у вкладку. Якщо потрібно примусово перепитати сервер —
+          натисни «Оновити дані». Якщо список операцій виглядає некоректно —
+          очисти кеш і синхронізуй знову.
         </p>
+        <Button
+          variant="ghost"
+          className="w-full h-11"
+          onClick={refreshAllData}
+          disabled={refreshing}
+        >
+          {refreshing ? "Оновлення…" : "🔄 Оновити дані"}
+        </Button>
         <Button
           variant="ghost"
           className="w-full h-11"
@@ -552,15 +443,6 @@ export function FinykSection() {
         >
           🧹 Очистити кеш транзакцій
         </Button>
-        {!webhookEnabled && token && (
-          <Button
-            variant="danger"
-            className="w-full h-11"
-            onClick={() => setConfirmKind("disconnect")}
-          >
-            Вийти з Monobank
-          </Button>
-        )}
       </SettingsSubGroup>
 
       {PRIVAT_ENABLED && (
@@ -643,7 +525,7 @@ export function FinykSection() {
                   <button
                     type="button"
                     onClick={() => setShowPrivatToken((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle hover:text-text"
+                    className="focus-ring absolute right-3 top-1/2 -translate-y-1/2 rounded-xl text-subtle hover:text-text"
                     aria-label={showPrivatToken ? "Приховати" : "Показати"}
                   >
                     {showPrivatToken ? "🙈" : "👁"}

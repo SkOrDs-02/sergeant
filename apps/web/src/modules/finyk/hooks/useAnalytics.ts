@@ -7,12 +7,31 @@ import {
   computeCategorySpendIndex,
   selectTopCategoriesFromIndex,
   selectCategoryDistributionFromIndex,
+  type MonthlyHistoryEntry,
 } from "@sergeant/finyk-domain/domain/selectors";
+
+interface UseAnalyticsArgs {
+  mono: { realTx?: AnyTx[]; loadingTx?: boolean };
+  storage: {
+    excludedTxIds?: Set<string> | Iterable<string> | null;
+    txCategories?: Record<string, string | undefined>;
+    txSplits?: AnyTx;
+    customCategories?: AnyTx[];
+  };
+  monthlyHistory?: readonly MonthlyHistoryEntry[];
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyTx = any;
 
 // Central analytics hook for Finyk. All derived views are memoized so a
 // re-render that does not change transactions or any filter leaves the
 // heavy per-transaction loops skipped.
-export function useAnalytics({ mono, storage, monthlyHistory = [] }) {
+export function useAnalytics({
+  mono,
+  storage,
+  monthlyHistory = [],
+}: UseAnalyticsArgs) {
   const { realTx = [], loadingTx } = mono;
   const { excludedTxIds, txCategories, txSplits, customCategories } = storage;
 
@@ -28,7 +47,11 @@ export function useAnalytics({ mono, storage, monthlyHistory = [] }) {
   // active set of transactions. Depends on tx list + excludedTxIds + txSplits
   // (category overrides do not affect totals).
   const summary = useMemo(
-    () => getMonthlySummary(realTx, { excludedTxIds, txSplits }),
+    () =>
+      getMonthlySummary(realTx, {
+        excludedTxIds: excludedTxIds ?? undefined,
+        txSplits,
+      }),
     [realTx, excludedTxIds, txSplits],
   );
 
@@ -36,7 +59,11 @@ export function useAnalytics({ mono, storage, monthlyHistory = [] }) {
   // in analytics). Shared below by top categories and category distribution
   // so we iterate transactions at most once per (tx + filters) change.
   const categorySpendIndex = useMemo(
-    () => computeCategorySpendIndex(realTx, opts),
+    () =>
+      computeCategorySpendIndex(realTx, {
+        ...opts,
+        excludedTxIds: opts.excludedTxIds ?? undefined,
+      }),
     [realTx, opts],
   );
 
@@ -60,7 +87,11 @@ export function useAnalytics({ mono, storage, monthlyHistory = [] }) {
   // нормалізуються до чистої частки користувача, щоб цифри збігалися з
   // "Підсумком місяця" та "Категоріями".
   const topMerchants = useMemo(
-    () => getTopMerchants(realTx, { excludedTxIds, txSplits }),
+    () =>
+      getTopMerchants(realTx, {
+        excludedTxIds: excludedTxIds ?? undefined,
+        txSplits,
+      }),
     [realTx, excludedTxIds, txSplits],
   );
 
@@ -80,7 +111,7 @@ export function useAnalytics({ mono, storage, monthlyHistory = [] }) {
     return getTrendComparison(
       curr?.transactions || [],
       prev?.transactions || [],
-      { excludedTxIds, txSplits },
+      { excludedTxIds: excludedTxIds ?? undefined, txSplits },
     );
   }, [monthlyHistory, excludedTxIds, txSplits]);
 

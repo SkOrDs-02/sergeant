@@ -58,6 +58,12 @@ export interface UseMeasurementsResult {
   ) => MobileMeasurementEntry | null;
   /** Remove the entry with the given id. No-op when the id is unseen. */
   remove: (id: string) => void;
+  /**
+   * Re-insert a previously-removed entry. Used by undo-toast after
+   * `remove`. No-op (referentially identical state) when an entry with
+   * the same id already exists.
+   */
+  restore: (entry: MobileMeasurementEntry) => void;
   /** Delete every entry. Used by the settings "reset data" button. */
   clear: () => void;
 }
@@ -113,9 +119,21 @@ export function useMeasurements(): UseMeasurementsResult {
     [raw, setRaw],
   );
 
+  const restore = useCallback<UseMeasurementsResult["restore"]>(
+    (entry) => {
+      if (!entry?.id) return;
+      setRaw((prev) => {
+        const list = Array.isArray(prev) ? prev : [];
+        if (list.some((e) => e.id === entry.id)) return list;
+        return upsertMeasurement(list, entry);
+      });
+    },
+    [setRaw],
+  );
+
   const clear = useCallback<UseMeasurementsResult["clear"]>(() => {
     removeRaw();
   }, [removeRaw]);
 
-  return { entries, add, update, remove, clear };
+  return { entries, add, update, remove, restore, clear };
 }

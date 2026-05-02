@@ -7,6 +7,8 @@
  * this module is the single source of truth.
  */
 
+import type { z } from "zod";
+
 /**
  * Read a JSON value from localStorage.
  * Returns `fallback` on missing/invalid/unavailable storage.
@@ -27,6 +29,38 @@ export function safeReadLS<T = unknown>(
   } catch {
     return fallback;
   }
+}
+
+/**
+ * Read + validate a JSON value from localStorage against a Zod schema.
+ *
+ * Use this for any structured payload that crosses the persistence boundary:
+ * `safeReadLS` returns `T | null` based on a static cast, so corrupted blobs
+ * (older app versions, manual edits, partially migrated rows) become silent
+ * type lies that surface deep in render trees — usually as
+ * `Cannot read properties of undefined` inside a memoised selector. Validating
+ * up front lets us fall back to a known-good default at the read site, where
+ * the caller already has the typed shape it needs.
+ *
+ * Failure cases (missing key, malformed JSON, schema mismatch, storage thrown)
+ * all collapse to `fallback`; the helper never throws.
+ *
+ * @example
+ *   const settings = safeReadLSValidated(
+ *     STORAGE_KEYS.FIZRUK_REST_SETTINGS,
+ *     RestSettingsSchema,
+ *     REST_DEFAULTS,
+ *   );
+ */
+export function safeReadLSValidated<T>(
+  key: string,
+  schema: z.ZodType<T>,
+  fallback: T,
+): T {
+  const raw = safeReadLS<unknown>(key);
+  if (raw === null) return fallback;
+  const result = schema.safeParse(raw);
+  return result.success ? result.data : fallback;
 }
 
 /**
@@ -69,3 +103,42 @@ export function safeRemoveLS(key: string): boolean {
     return false;
   }
 }
+
+/**
+ * Enumerate every key currently in localStorage.
+ *
+ * Returns an empty array on missing/unavailable storage (private-mode
+ * Safari, disabled storage, throwing access). Callers that need to walk
+ * keys to expire stale entries (e.g. day-bucketed notification flags)
+ * should use this instead of touching `localStorage.length` /
+ * `localStorage.key(i)` directly — both throw the same way `getItem`
+ * does, and both trip `sergeant-design/no-raw-local-storage`.
+ */
+export function safeListLSKeys(): string[] {
+  try {
+    const out: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k !== null) out.push(k);
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * KVStore adapter for @sergeant/shared functions.
+ * Allows shared pure functions to work with web localStorage.
+ */
+import type { KVStore } from "@sergeant/shared";
+
+export const webKVStore: KVStore = {
+  getString: safeReadStringLS,
+  setString: (k, v) => {
+    safeWriteLS(k, v);
+  },
+  remove: (k) => {
+    safeRemoveLS(k);
+  },
+};

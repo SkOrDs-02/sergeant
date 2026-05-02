@@ -1,0 +1,180 @@
+{
+  "name": "17 — GitHub PR Stale Alert (10:00 Kyiv → Telegram if PRs > 48h)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "cron-weekday",
+      "name": "Cron 10:00 Mon–Fri",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/skords-01/sergeant/pulls",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.GITHUB_PAT }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "state",
+              "value": "open"
+            },
+            {
+              "name": "per_page",
+              "value": "50"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "github-prs",
+      "name": "GitHub → open PRs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prs = $input.all().flatMap(item => Array.isArray(item.json) ? item.json : [item.json]);\nconst now = Date.now();\nconst stale = prs.filter(pr => {\n  if (pr.draft) return false;\n  const age = now - new Date(pr.created_at).getTime();\n  return age > 48 * 60 * 60 * 1000; // 48 hours\n});\nif (!stale.length) return [{ json: { hasStale: false, text: '' } }];\nconst lines = stale.map(pr => {\n  const hours = Math.round((now - new Date(pr.created_at).getTime()) / 3600000);\n  return `• [#${pr.number}](${pr.html_url}) _${pr.title}_ — ${hours}h`;\n}).join('\\n');\nreturn [{ json: { hasStale: true, count: stale.length, text: lines } }];"
+      },
+      "id": "filter-stale",
+      "name": "Filter stale PRs (>48h)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "has-stale",
+              "leftValue": "={{ $json.hasStale }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "id": "has-stale",
+      "name": "Has stale PRs?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "=⏰ *Stale PRs (>48h без активності)*\n\n{{ $json.text }}\n\n_{{ $json.count }} PR(и) потребують уваги_",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-stale",
+      "name": "Telegram → stale PRs",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1120, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cron 10:00 Mon–Fri": {
+      "main": [
+        [
+          {
+            "node": "GitHub → open PRs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub → open PRs": {
+      "main": [
+        [
+          {
+            "node": "Filter stale PRs (>48h)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter stale PRs (>48h)": {
+      "main": [
+        [
+          {
+            "node": "Has stale PRs?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has stale PRs?": {
+      "main": [
+        [
+          {
+            "node": "Telegram → stale PRs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
+  },
+  "tags": [
+    {
+      "name": "sergeant"
+    },
+    {
+      "name": "github"
+    },
+    {
+      "name": "ci"
+    }
+  ],
+  "active": false
+}

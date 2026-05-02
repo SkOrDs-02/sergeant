@@ -23,8 +23,14 @@ import { Stack } from "expo-router";
 
 export default function FizrukStackLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        animationDuration: 250,
+      }}
+    >
+      <Stack.Screen name="index" options={{ animation: "fade" }} />
       <Stack.Screen name="workouts" />
       <Stack.Screen name="exercise" />
       <Stack.Screen name="programs" />

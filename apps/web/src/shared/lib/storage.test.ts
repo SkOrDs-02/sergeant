@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, beforeAll } from "vitest";
+import { z } from "zod";
 import {
   safeReadLS,
+  safeReadLSValidated,
   safeReadStringLS,
   safeWriteLS,
   safeRemoveLS,
@@ -73,5 +75,44 @@ describe("shared storage helpers", () => {
     localStorage.setItem("x", "1");
     expect(safeRemoveLS("x")).toBe(true);
     expect(localStorage.getItem("x")).toBeNull();
+  });
+
+  describe("safeReadLSValidated", () => {
+    const Schema = z.object({ count: z.number().int(), label: z.string() });
+    const fallback = { count: 0, label: "default" };
+
+    it("returns fallback when key is missing", () => {
+      expect(safeReadLSValidated("missing", Schema, fallback)).toEqual(
+        fallback,
+      );
+    });
+
+    it("returns fallback when JSON is malformed", () => {
+      localStorage.setItem("bad", "{not json");
+      expect(safeReadLSValidated("bad", Schema, fallback)).toEqual(fallback);
+    });
+
+    it("returns fallback when payload fails schema validation", () => {
+      // String where the schema demands an object — typical "user manually
+      // edited the value" or "older format" corruption.
+      localStorage.setItem("scalar", JSON.stringify("nope"));
+      expect(safeReadLSValidated("scalar", Schema, fallback)).toEqual(fallback);
+
+      // Object with a wrong-typed field — the dangerous case
+      // `safeReadLS<T>` would silently let through.
+      localStorage.setItem(
+        "wrongShape",
+        JSON.stringify({ count: "two", label: "x" }),
+      );
+      expect(safeReadLSValidated("wrongShape", Schema, fallback)).toEqual(
+        fallback,
+      );
+    });
+
+    it("returns the parsed value when payload matches the schema", () => {
+      const value = { count: 7, label: "ok" };
+      localStorage.setItem("ok", JSON.stringify(value));
+      expect(safeReadLSValidated("ok", Schema, fallback)).toEqual(value);
+    });
   });
 });

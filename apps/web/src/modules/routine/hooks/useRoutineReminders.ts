@@ -1,5 +1,11 @@
 import { useEffect, useRef } from "react";
 import {
+  safeListLSKeys,
+  safeReadStringLS,
+  safeRemoveLS,
+  safeWriteLS,
+} from "@shared/lib/storage";
+import {
   dateKeyFromDate,
   habitScheduledOnDate,
 } from "../lib/hubCalendarAggregate";
@@ -9,18 +15,15 @@ import type { RoutineState } from "../lib/types";
 export const ROUTINE_NOTIFY_PREFIX = "routine_notify_";
 
 export function cleanupStaleRoutineNotifyKeys(maxAgeDays = 45): void {
-  try {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - maxAgeDays);
-    const cutoffKey = cutoff.toISOString().slice(0, 10);
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const k = localStorage.key(i);
-      if (!k || !k.startsWith(ROUTINE_NOTIFY_PREFIX)) continue;
-      const m = k.match(/(\d{4}-\d{2}-\d{2})$/);
-      const d = m?.[1];
-      if (d && d < cutoffKey) localStorage.removeItem(k);
-    }
-  } catch {}
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - maxAgeDays);
+  const cutoffKey = cutoff.toISOString().slice(0, 10);
+  for (const k of safeListLSKeys()) {
+    if (!k.startsWith(ROUTINE_NOTIFY_PREFIX)) continue;
+    const m = k.match(/(\d{4}-\d{2}-\d{2})$/);
+    const d = m?.[1];
+    if (d && d < cutoffKey) safeRemoveLS(k);
+  }
 }
 
 function todayKey() {
@@ -108,22 +111,22 @@ export function useRoutineReminders(routine: RoutineState): void {
         if (completions.includes(dk)) continue;
 
         const storageKey = `${ROUTINE_NOTIFY_PREFIX}${h.id}_${hm}_${dk}`;
-        try {
-          if (localStorage.getItem(storageKey)) continue;
-        } catch {}
+        if (safeReadStringLS(storageKey, null)) continue;
 
         const title = `${h.emoji || "✓"} ${h.name}`;
         showNotification(title, "Нагадування про звичку", storageKey);
+        // `safeWriteLS` keeps raw strings as-is (no JSON.stringify), so the
+        // stored value matches the legacy `localStorage.setItem(_, "1")`
+        // shape that `safeReadStringLS(_) → "1"` then short-circuits on
+        // re-entry above.
+        safeWriteLS(storageKey, "1");
         try {
-          localStorage.setItem(storageKey, "1");
-          try {
-            if (navigator.serviceWorker?.controller) {
-              navigator.serviceWorker.controller.postMessage({
-                type: "ROUTINE_NOTIFICATION_SENT",
-                data: { storageKey },
-              });
-            }
-          } catch {}
+          if (navigator.serviceWorker?.controller) {
+            navigator.serviceWorker.controller.postMessage({
+              type: "ROUTINE_NOTIFICATION_SENT",
+              data: { storageKey },
+            });
+          }
         } catch {}
       }
 

@@ -32,6 +32,7 @@ interface DebtCardProps {
   linkedCount?: number;
   isReceivable?: boolean;
   dueDate?: string | null;
+  showBalance?: boolean;
 }
 
 // Чиста картка боргу / заборгованості — рендер повністю керується пропсами,
@@ -47,6 +48,7 @@ function DebtCardComponent({
   linkedCount,
   isReceivable,
   dueDate,
+  showBalance = true,
 }: DebtCardProps) {
   const pct = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
   const dueText = formatDueDate(dueDate);
@@ -56,7 +58,8 @@ function DebtCardComponent({
     <div className="bg-panel border border-line rounded-xl p-4 mb-3">
       <div className="flex items-start justify-between mb-3">
         <span className="text-sm font-semibold leading-snug">
-          {emoji} {name}
+          {emoji ? `${emoji} ` : ""}
+          {name}
         </span>
         <div className="flex items-center gap-2 shrink-0 ml-2">
           <span
@@ -65,8 +68,9 @@ function DebtCardComponent({
               isReceivable ? "text-success" : "text-danger",
             )}
           >
-            {isReceivable ? "+" : "−"}
-            {remaining.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴
+            {showBalance
+              ? `${isReceivable ? "+" : "−"}${remaining.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴`
+              : "••••"}
           </span>
           {onDelete && (
             <button
@@ -89,8 +93,9 @@ function DebtCardComponent({
       </div>
       <div className="text-xs text-subtle mt-2">
         {isReceivable ? "Отримано" : "Сплачено"}{" "}
-        {paid.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} з{" "}
-        {total.toLocaleString("uk-UA")} ₴
+        {showBalance
+          ? `${paid.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} з ${total.toLocaleString("uk-UA")} ₴`
+          : "••••"}
       </div>
       {dueText && (
         <div
@@ -105,7 +110,7 @@ function DebtCardComponent({
       {onLink && (
         <button
           onClick={onLink}
-          className="mt-3 w-full text-xs text-muted border border-dashed border-line rounded-lg py-2 hover:border-primary hover:text-primary transition-colors"
+          className="mt-3 w-full text-xs text-muted border border-dashed border-line rounded-xl py-2 hover:border-primary hover:text-primary transition-colors"
         >
           🔗 Прив&apos;язати транзакції ({linkedCount || 0})
         </button>

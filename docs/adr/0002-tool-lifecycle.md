@@ -1,4 +1,4 @@
-# ADR-0002: AI tool lifecycle (proposal → safety review → rollout → KPIs)
+> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.`r`n> **Status:** Accepted`r`n`r`n# ADR-0002: AI tool lifecycle (proposal → safety review → rollout → KPIs)
 
 - **Status:** accepted
 - **Date:** 2026-04-27
@@ -14,7 +14,7 @@
   - [`docs/playbooks/add-hubchat-tool.md`](../playbooks/add-hubchat-tool.md) — операційний how-to.
   - [`docs/playbooks/tune-system-prompt.md`](../playbooks/tune-system-prompt.md).
   - [`docs/playbooks/add-feature-flag.md`](../playbooks/add-feature-flag.md) — feature-flag механіка для фази 3 (rollout) і ADR-2.10.
-  - [ADR-0005](./0005-anthropic-model-and-caching.md) — model selection + prompt caching (закриває TBD-ADR з §2.8).
+  - [ADR-0005](./0005-anthropic-model-selection-and-prompt-caching.md) — model selection + prompt caching (закриває TBD-ADR з §2.8).
 
 ---
 
@@ -160,7 +160,7 @@ PR з кодом нового tool-у (`apps/server/src/modules/chat/toolDefs/<s
 ### RLS / authorization
 
 - [ ] Handler перевіряє ownership перед мутацією (`req.user.id === resource.user_id` або RLS-policy на DB-рівні).
-- [ ] Якщо tool читає дані — додано до `apps/server/src/lib/rls.ts` snapshot-test.
+- [ ] Якщо tool читає дані — додано до RLS snapshot-test в `apps/server/src/lib/` (файл проявиться разом з реалізацією RLS-фреймворку — plan, not yet shipped).
 
 ### Rate limiting
 
@@ -302,7 +302,7 @@ n/a (operational reference).
 
 - **Tool authoring style** (іменування, opinionated input shapes) — це operational guidance у `docs/playbooks/add-hubchat-tool.md`.
 - **System prompt tuning** — окремий playbook `docs/playbooks/tune-system-prompt.md`.
-- **Anthropic version bumps / model selection / prompt caching budget** — [ADR-0005](./0005-anthropic-model-and-caching.md) (закриває TBD-ADR).
+- **Anthropic version bumps / model selection / prompt caching budget** — [ADR-0005](./0005-anthropic-model-selection-and-prompt-caching.md) (закриває TBD-ADR).
 - **Quotas і monetization gating** — ADR-0001 + `requireAiQuota` middleware.
 - **Безпека ширше за tool boundary** (XSS, CSRF, secrets management) — repo-wide AGENTS.md hard rules.
 
@@ -340,7 +340,7 @@ proposed.
    - Через 30 днів — `delete_transaction` ремув-иться з реєстру (deprecation flow з ADR-2.5).
    - **Проходить фази 1-3 заново** як новий tool.
 3. **Cache-invalidation note:** Anthropic prompt-cache (ADR-2.7) інвалідується автоматично на будь-яку зміну `tools` array, включно з minor. Acceptable cost-spike, якщо schema-edits рідкі.
-4. **Detection:** у CI додаємо перевірку (`scripts/lint-tool-schemas.mjs`): дифф `apps/server/src/modules/chat/toolDefs/**/*.ts` від base-бранчу. Якщо tool-name той самий, а schema видалила або перейменувала field — CI fail з повідомленням «this is a major change, use \_v2 suffix».
+4. **Detection:** у CI додаємо перевірку (планований `scripts/lint-tool-schemas.<mjs>` — not yet shipped): дифф `apps/server/src/modules/chat/toolDefs/**/*.ts` від base-бранчу. Якщо tool-name той самий, а schema видалила або перейменувала field — CI fail з повідомленням «this is a major change, use \_v2 suffix».
 
 ### Consequences
 
@@ -395,7 +395,7 @@ ADR-2.4 (фаза 3 rollout) описує feature-flag (`AI_TOOL_<NAME>_ENABLED=
 2. **In-memory cache** (сервер-side LRU `Map<tool_name, boolean>`, розмір ~50). Читається на кожен Anthropic-call перед будуванням `tools` array — disabled tools **видаляються з array**.
 3. **NOTIFY-trigger** на `tool_kill_switches` UPDATE/INSERT → LISTEN-loop у сервері робить `cache.set(tool_name, enabled)`. Пропагація по всіх server-instance-ах < 1 c.
 4. **API for toggle:** `POST /api/admin/tools/:name/disable` (admin-only, Better Auth `admin`-role). Body: `{ reason: "chronic crashes in handler #N", disabled_by: "@Skords-01" }`. Повертає 200 якщо cache invalidate-нувся.
-5. **CLI fallback:** `pnpm tool:kill <name> --reason "..."` (`scripts/tool-kill.mjs`) — пише в DB напряму через Railway DB-proxy. Рятує, якщо admin-API сам зламаний.
+5. **CLI fallback:** `pnpm tool:kill <name> --reason "..."` (планований `scripts/tool-kill.<mjs>` — not yet shipped) — пише в DB напряму через Railway DB-proxy. Рятує, якщо admin-API сам зламаний.
 6. **Re-enable** — той самий endpoint з `enabled=true`, але **вимагає ADR-2.5 KPI-фази заново** (re-rollout, не hot resume).
 7. **Auth model:** список `disabled_by`-операторів — owner-домену (ADR-2.6) або on-call (якщо в майбутньому).
 
@@ -447,7 +447,7 @@ proposed.
 **16 KB cap на суму `JSON.stringify(input_schema).length` усіх enabled tools, enforced в CI.**
 
 1. **Limit:** Сума байт-довжин серіалізованих `input_schema` (без `description`-полів, які окремо розраховуємо) ≤ 16 384 байт. Це ~2 700 token вхідного бюджету.
-2. **CI-check** (`scripts/check-tool-budget.mjs`):
+2. **CI-check** (планований `scripts/check-tool-budget.<mjs>` — not yet shipped):
    - Обходить `apps/server/src/modules/chat/toolDefs/**/*.ts`, рахує розмір кожної schema.
    - Logs розмір кожного tool в CSV (для будь-якого PR-у).
    - Fails якщо total > 16 KB.

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { safeRemoveLS } from "@shared/lib/storage";
 import { downloadJson } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
@@ -227,9 +228,7 @@ export function Progress() {
 
   const resetAll = () => {
     for (const k of FIZRUK_RESET_KEYS) {
-      try {
-        localStorage.removeItem(k);
-      } catch {}
+      safeRemoveLS(k);
     }
     window.location.reload();
   };
@@ -248,8 +247,10 @@ export function Progress() {
       ],
     ];
     for (const w of workouts || []) {
-      const we = w.wellbeing?.energy ?? "";
-      const wm = w.wellbeing?.mood ?? "";
+      // CSV cells are stringified downstream — coerce here so the typed
+      // `rows: string[][]` doesn't accept a `string | number` union.
+      const we = w.wellbeing?.energy != null ? String(w.wellbeing.energy) : "";
+      const wm = w.wellbeing?.mood != null ? String(w.wellbeing.mood) : "";
       for (const it of w.items || []) {
         let detail = "";
         if (it.type === "strength")
@@ -396,13 +397,13 @@ export function Progress() {
                   <span
                     className={cn(
                       "font-semibold",
-                      meas.delta("weightKg") > 0
+                      meas.delta("weightKg")! > 0
                         ? "text-warning"
                         : "text-success",
                     )}
                   >
-                    {meas.delta("weightKg") > 0 ? "+" : ""}
-                    {meas.delta("weightKg").toFixed(1)} кг
+                    {meas.delta("weightKg")! > 0 ? "+" : ""}
+                    {meas.delta("weightKg")!.toFixed(1)} кг
                   </span>
                 )
               }
@@ -423,13 +424,13 @@ export function Progress() {
                   <span
                     className={cn(
                       "font-semibold",
-                      meas.delta("bodyFatPct") > 0
+                      meas.delta("bodyFatPct")! > 0
                         ? "text-warning"
                         : "text-success",
                     )}
                   >
-                    {meas.delta("bodyFatPct") > 0 ? "+" : ""}
-                    {meas.delta("bodyFatPct").toFixed(1)}%
+                    {meas.delta("bodyFatPct")! > 0 ? "+" : ""}
+                    {meas.delta("bodyFatPct")!.toFixed(1)}%
                   </span>
                 )
               }
@@ -515,7 +516,11 @@ export function Progress() {
         {/* PR Board */}
         {(() => {
           const muscleGroups = [
-            ...new Set(prs.map((p) => p.muscleGroup).filter(Boolean)),
+            ...new Set(
+              prs
+                .map((p) => p.muscleGroup)
+                .filter((g): g is string => Boolean(g)),
+            ),
           ].sort();
           const filtered =
             prFilter === "all"

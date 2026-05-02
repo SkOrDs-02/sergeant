@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
+import { trackEvent, ANALYTICS_EVENTS } from "../../observability/analytics";
 import { updateDebugSnapshot } from "../debugState";
 import { toSyncError } from "../errorNormalizer";
 import { syncLog } from "../logger";
@@ -156,6 +157,10 @@ export function useSyncCallbacks(): SyncLifecycle {
         value: undefined,
         set: false,
       };
+      // Захоплюємо старт у закритті, щоб кожен bound-callback-set мав
+      // власний таймер — не ділили timestamp з іншим sync-id, навіть
+      // якщо два runExclusive-и накладаються через `runBypassed`.
+      let startedAt: number | null = null;
       return {
         onStart: () => {
           if (!isActive()) {
@@ -175,6 +180,8 @@ export function useSyncCallbacks(): SyncLifecycle {
             syncId,
           });
           setState("syncing", syncId);
+          startedAt = Date.now();
+          trackEvent(ANALYTICS_EVENTS.SYNC_STARTED, {});
         },
         onSuccess: (when: Date) => {
           if (!isActive()) {
@@ -193,6 +200,10 @@ export function useSyncCallbacks(): SyncLifecycle {
             lastError: null,
           });
           setState("success", syncId);
+          const durationMs = startedAt !== null ? Date.now() - startedAt : 0;
+          trackEvent(ANALYTICS_EVENTS.SYNC_SUCCEEDED, {
+            duration_ms: durationMs,
+          });
         },
         onErrorRaw: (err: unknown) => {
           // Stash the raw error so the subsequent `onError(message)`
@@ -220,6 +231,12 @@ export function useSyncCallbacks(): SyncLifecycle {
           setSyncErrorDetail(detail);
           updateDebugSnapshot({ lastError: detail, lastAction: "error" });
           setState("error", syncId);
+          const durationMs = startedAt !== null ? Date.now() - startedAt : 0;
+          trackEvent(ANALYTICS_EVENTS.SYNC_FAILED, {
+            error_type: detail.type,
+            retryable: detail.retryable,
+            duration_ms: durationMs,
+          });
         },
         onSettled: () => {
           // Always release the guard, even for superseded callbacks — a

@@ -109,8 +109,12 @@ export function useStorage({
     "finyk_rec_dismissed",
     [],
   );
-  const networthSnapshotRef = useRef(
-    readJSON("finyk_networth_last_snap", { date: null, value: null }),
+  type NetworthSnap = { date: string | null; value: number | null };
+  const networthSnapshotRef = useRef<NetworthSnap>(
+    readJSON<NetworthSnap>("finyk_networth_last_snap", {
+      date: null,
+      value: null,
+    }) ?? { date: null, value: null },
   );
 
   const addManualExpense = (expense) => {

@@ -41,19 +41,6 @@ export type UpsertFoodResult =
   | { ok: true; product: FoodProduct }
   | { ok: false; error: string };
 
-export interface FoodDbExport {
-  version: 1;
-  exportedAt: number;
-  foods: FoodProduct[];
-  barcodes: Record<string, string>;
-}
-
-export type ImportFoodDbMode = "merge" | "replace";
-
-export type ImportFoodDbResult =
-  | { ok: true; added: number }
-  | { ok: false; error: string };
-
 function normText(s: unknown): string {
   return String(s || "")
     .trim()

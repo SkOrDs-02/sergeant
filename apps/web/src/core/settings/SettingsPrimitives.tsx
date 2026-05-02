@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { cn } from "@shared/lib/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
@@ -37,26 +37,36 @@ export function SettingsGroup({
 }: SettingsGroupProps) {
   const [open, setOpen] = useState<boolean>(defaultOpen);
   return (
-    <Card radius="lg" padding="none" className="overflow-hidden">
+    <Card radius="lg" padding="none" className="overflow-hidden shadow-soft">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full px-4 py-3.5 flex items-center justify-between gap-2 hover:bg-panelHi/50 transition-colors"
+        className={cn(
+          "w-full px-4 py-4 flex items-center justify-between gap-3",
+          "hover:bg-panelHi/60 active:bg-panelHi transition-colors",
+          open && "bg-panelHi/30",
+        )}
       >
-        <div className="flex items-center gap-2 min-w-0">
-          {emoji && <span className="text-base">{emoji}</span>}
-          <span className="text-sm font-semibold text-text">{title}</span>
+        <div className="flex items-center gap-3 min-w-0">
+          {emoji && (
+            <span className="text-lg w-7 h-7 flex items-center justify-center rounded-xl bg-bg">
+              {emoji}
+            </span>
+          )}
+          <span className="text-base font-semibold text-text">{title}</span>
         </div>
         <ChevronIcon expanded={open} />
       </button>
       <div
         className={cn(
-          "grid transition-[grid-template-rows] duration-200 ease-in-out",
+          "grid transition-[grid-template-rows] duration-200 ease-out",
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
         )}
       >
         <div className="overflow-hidden">
-          <div className="border-t border-line p-4 space-y-5">{children}</div>
+          <div className="border-t border-line/60 px-4 py-5 space-y-6">
+            {children}
+          </div>
         </div>
       </div>
     </Card>
@@ -76,29 +86,32 @@ export function SettingsSubGroup({
 }: SettingsSubGroupProps) {
   const [open, setOpen] = useState<boolean>(defaultOpen);
   return (
-    <div>
+    <div className="rounded-xl bg-bg/50 border border-line/40 overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 w-full text-left group mb-1"
+        className={cn(
+          "flex items-center gap-2 w-full text-left group px-3 py-2.5",
+          "hover:bg-panelHi/40 transition-colors",
+        )}
       >
         <ChevronIcon expanded={open} />
         {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
             Collapsible header uses `group-hover:text-text` interactive state +
             transition-colors, which SectionHeading can't express via its
             static tone tokens. */}
-        <span className="text-xs font-bold text-muted uppercase tracking-widest group-hover:text-text transition-colors">
+        <span className="text-xs font-bold text-muted uppercase tracking-wider group-hover:text-text transition-colors">
           {title}
         </span>
       </button>
       <div
         className={cn(
-          "grid transition-[grid-template-rows] duration-200 ease-in-out",
+          "grid transition-[grid-template-rows] duration-200 ease-out",
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
         )}
       >
         <div className="overflow-hidden">
-          <div className="pt-2 space-y-3">{children}</div>
+          <div className="px-3 pb-3 pt-1 space-y-3">{children}</div>
         </div>
       </div>
     </div>
@@ -109,7 +122,7 @@ export interface ToggleRowProps {
   label: ReactNode;
   description?: ReactNode;
   checked: boolean;
-  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onChange: (checked: boolean) => void;
 }
 
 export function ToggleRow({
@@ -119,11 +132,18 @@ export function ToggleRow({
   onChange,
 }: ToggleRowProps) {
   return (
-    <label className="flex items-start justify-between gap-3 cursor-pointer group">
+    <label
+      className={cn(
+        "flex items-start justify-between gap-4 cursor-pointer group",
+        "p-3 -mx-3 rounded-xl hover:bg-panelHi/40 transition-colors",
+      )}
+    >
       <div className="flex-1 min-w-0">
-        <span className="text-sm text-text">{label}</span>
+        <span className="text-sm font-medium text-text group-hover:text-brand-strong transition-colors">
+          {label}
+        </span>
         {description && (
-          <p className="text-xs text-subtle mt-0.5 leading-snug">
+          <p className="text-xs text-subtle mt-1 leading-relaxed">
             {description}
           </p>
         )}
@@ -165,7 +185,7 @@ export function ConfirmModal({
     >
       <button
         type="button"
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-md motion-safe:animate-fade-in"
         onClick={onCancel}
         aria-label="Закрити"
       />
@@ -174,16 +194,21 @@ export function ConfirmModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-modal-title"
-        className="relative w-full max-w-sm bg-panel border border-line rounded-2xl shadow-soft p-5 z-10"
+        className="relative w-full max-w-sm bg-panel border border-line rounded-2xl shadow-float p-6 z-10 motion-safe:animate-scale-in"
       >
-        <h2 id="confirm-modal-title" className="text-base font-bold text-text">
+        <h2
+          id="confirm-modal-title"
+          className="text-lg font-bold text-text leading-tight"
+        >
           {title}
         </h2>
-        {body && <p className="text-sm text-muted mt-2">{body}</p>}
-        <div className="flex gap-2 mt-5">
+        {body && (
+          <p className="text-sm text-muted mt-3 leading-relaxed">{body}</p>
+        )}
+        <div className="flex gap-3 mt-6">
           <button
             type="button"
-            className="flex-1 py-3 rounded-xl border border-line text-sm font-semibold text-muted hover:bg-panelHi transition-colors"
+            className="flex-1 py-3.5 rounded-xl border border-line text-sm font-semibold text-muted hover:bg-panelHi hover:text-text transition-colors"
             onClick={onCancel}
           >
             Скасувати
@@ -191,10 +216,10 @@ export function ConfirmModal({
           <button
             type="button"
             className={cn(
-              "flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-colors",
+              "flex-1 py-3.5 rounded-xl text-sm font-semibold text-white transition-colors shadow-soft",
               danger
-                ? "bg-danger hover:bg-danger/90"
-                : "bg-emerald-600 hover:bg-emerald-700",
+                ? "bg-danger hover:bg-danger/90 active:bg-danger/80"
+                : "bg-brand hover:bg-brand/90 active:bg-brand/80",
             )}
             onClick={onConfirm}
           >

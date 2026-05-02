@@ -3,7 +3,7 @@
     "path": "apps/web",
     "option": "strict",
     "value": false,
-    "reason": "PR-6.C in flight — migrating apps/web to strict: true",
-    "expires": "2026-05-27"
+    "reason": "Phase 4 sized 2026-05-02: 768 implicit-any errors in 69 files; per-file rollout starting from modules/finyk/hooks/useStorage.ts (71). Phases 1–3.1 done — see docs/tech-debt/frontend.md §11.",
+    "expires": "2026-08-15"
   }
 ]

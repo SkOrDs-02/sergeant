@@ -1,18 +1,17 @@
-import { lazy, Suspense, useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { ErrorBoundary } from "../ErrorBoundary";
+import { lazyImport } from "../lib/lazyImport";
+import type { OpenModuleOptions } from "../hooks/useHubNavigation";
 
-const HubSearch = lazy(() =>
-  import("../hub/HubSearch").then((m) => ({ default: m.HubSearch })),
-);
-const HubChat = lazy(() => import("../hub/HubChat"));
+const HubSearch = lazyImport(() => import("../hub/search"), "HubSearch");
 
 // Коли модалка крешиться, `ErrorBoundary` рендерить `null`, але стан
-// `chatOpen` / `searchOpen` у `useHubUIState` лишається `true` — усі
-// хендлери закриття (Esc, click-outside, X) живуть усередині самої
-// модалки і після збою вже не рендеряться. Без явного виклику
-// `onClose` користувач опиняється у "невидимій" модалці, яку не
-// можна ні закрити, ні перевідкрити (React ігнорує `setChatOpen(true)`,
-// бо значення вже `true`).
+// `searchOpen` у `useHubUIState` лишається `true` — усі хендлери
+// закриття (Esc, click-outside, X) живуть усередині самої модалки і
+// після збою вже не рендеряться. Без явного виклику `onClose`
+// користувач опиняється у "невидимій" модалці, яку не можна ні
+// закрити, ні перевідкрити (React ігнорує `setSearchOpen(true)`, бо
+// значення вже `true`).
 //
 // `CloseOnError` — крихітний side-effect-only компонент: після mount
 // кличе `onClose`, що очищує стан у батьківському хуку. Рендер
@@ -25,31 +24,22 @@ function CloseOnError({ onClose }: { onClose: () => void }) {
   return null;
 }
 
+export interface HubModalsProps {
+  searchOpen: boolean;
+  onCloseSearch: () => void;
+  onOpenModule: (
+    id: string | null | undefined,
+    opts?: OpenModuleOptions,
+  ) => void;
+}
+
 export function HubModals({
-  chatOpen,
-  onCloseChat,
-  chatInitialMessage,
-  chatAutoSend,
-  onOpenCatalogue,
   searchOpen,
   onCloseSearch,
   onOpenModule,
-}) {
+}: HubModalsProps) {
   return (
     <>
-      {chatOpen && (
-        <ErrorBoundary fallback={<CloseOnError onClose={onCloseChat} />}>
-          <Suspense fallback={null}>
-            <HubChat
-              onClose={onCloseChat}
-              initialMessage={chatInitialMessage}
-              autoSendInitial={chatAutoSend}
-              onOpenCatalogue={onOpenCatalogue}
-            />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
       {searchOpen && (
         <ErrorBoundary fallback={<CloseOnError onClose={onCloseSearch} />}>
           <Suspense fallback={null}>

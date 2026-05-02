@@ -1,0 +1,49 @@
+{
+  "name": "Sergeant",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-20-bookworm",
+
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "forwardPorts": [5173, 3000, 5432, 5678, 9090, 3001],
+  "portsAttributes": {
+    "5173": { "label": "Web (Vite)", "onAutoForward": "notify" },
+    "3000": { "label": "API (Express)", "onAutoForward": "notify" },
+    "5432": { "label": "PostgreSQL", "onAutoForward": "silent" },
+    "5678": { "label": "n8n", "onAutoForward": "silent" },
+    "9090": { "label": "Prometheus", "onAutoForward": "silent" },
+    "3001": { "label": "Grafana", "onAutoForward": "silent" }
+  },
+
+  "postCreateCommand": "corepack enable && pnpm install --frozen-lockfile && cp -n .env.example .env || true",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-typescript-next",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ms-azuretools.vscode-docker",
+        "github.vscode-github-actions",
+        "bradlc.vscode-tailwindcss",
+        "vitest.explorer",
+        "ms-playwright.playwright"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "typescript.enablePromptUseWorkspaceTsdk": true
+      }
+    }
+  },
+
+  "remoteEnv": {
+    "AI_QUOTA_DISABLED": "1"
+  }
+}

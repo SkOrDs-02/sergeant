@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { ACTIVE_WORKOUT_KEY } from "@sergeant/fizruk-domain";
+import { safeWriteLS } from "@shared/lib/storage";
 
 interface Exercise {
   id: string;
@@ -79,8 +80,8 @@ export function useFizrukProgramStart({
           ...(isCardio ? { distanceM: 0 } : {}),
         });
       }
+      safeWriteLS(ACTIVE_WORKOUT_KEY, w.id);
       try {
-        localStorage.setItem(ACTIVE_WORKOUT_KEY, w.id);
         sessionStorage.setItem("fizruk_workouts_mode", "log");
       } catch {
         // best-effort session handoff; failure just means the Workouts

@@ -62,8 +62,14 @@ function clearCreds() {
   } catch {}
 }
 
-function loadTxCache() {
-  const c = readJSON(PRIVAT_CACHE_KEY, null);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PrivatTx = any;
+interface PrivatTxCache {
+  txs: PrivatTx[];
+  timestamp: number;
+}
+function loadTxCache(): PrivatTxCache | null {
+  const c = readJSON<PrivatTxCache | null>(PRIVAT_CACHE_KEY, null);
   if (!c || typeof c !== "object") return null;
   if (!c.timestamp || Date.now() - c.timestamp > PRIVAT_CACHE_TTL) return null;
   if (!Array.isArray(c.txs) || c.txs.length === 0) return null;
@@ -74,8 +80,12 @@ function saveTxCache(txs) {
   writeJSON(PRIVAT_CACHE_KEY, { txs, timestamp: Date.now() });
 }
 
-function loadBalanceCache() {
-  const c = readJSON(PRIVAT_BALANCE_KEY, null);
+interface PrivatBalanceCache {
+  accounts: PrivatTx[];
+  timestamp: number;
+}
+function loadBalanceCache(): PrivatTx[] | null {
+  const c = readJSON<PrivatBalanceCache | null>(PRIVAT_BALANCE_KEY, null);
   if (!c || typeof c !== "object") return null;
   if (!c.timestamp || Date.now() - c.timestamp > PRIVAT_CACHE_TTL) return null;
   return Array.isArray(c.accounts) ? c.accounts : null;
@@ -171,14 +181,19 @@ export function usePrivatbank(enabled = true) {
   const [credentials, setCredentials] = useState(() =>
     enabled ? loadStoredCreds() : { id: "", token: "" },
   );
-  const [accounts, setAccounts] = useState([]);
-  const [transactions, setTransactions] = useState([]);
+  const [accounts, setAccounts] = useState<PrivatTx[]>([]);
+  const [transactions, setTransactions] = useState<PrivatTx[]>([]);
   const [connecting, setConnecting] = useState(false);
   const [loadingTx, setLoadingTx] = useState(false);
   const [error, setError] = useState("");
   const [connected, setConnected] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState(null);
-  const [syncState, setSyncState] = useState({
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [syncState, setSyncState] = useState<{
+    status: string;
+    source: string;
+    lastSuccess: Date | null;
+    lastError: string;
+  }>({
     status: "idle",
     source: "none",
     lastSuccess: null,
@@ -199,7 +214,7 @@ export function usePrivatbank(enabled = true) {
         `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`,
       );
 
-      const allTxs = [];
+      const allTxs: PrivatTx[] = [];
       for (const acc of accs) {
         try {
           const data = await apiFetch(
@@ -247,7 +262,7 @@ export function usePrivatbank(enabled = true) {
     } catch (e) {
       if (e.name === "AuthError") {
         setError(
-          "Невірні credentials PrivatBank. Перевірте Merchant ID та токен.",
+          "Невірні credentials PrivatBank. Перевір Merchant ID та токен.",
         );
         setSyncState((s) => ({
           ...s,
@@ -288,7 +303,7 @@ export function usePrivatbank(enabled = true) {
     const cleanToken = (merchantToken || "").trim();
 
     if (!cleanId || !cleanToken) {
-      setError("Введіть Merchant ID та токен");
+      setError("Введи Merchant ID та токен");
       setConnecting(false);
       return;
     }
@@ -340,7 +355,7 @@ export function usePrivatbank(enabled = true) {
     } catch (e) {
       if (e.name === "AuthError") {
         setError(
-          "Невірні credentials PrivatBank. Перевірте Merchant ID та токен.",
+          "Невірні credentials PrivatBank. Перевір Merchant ID та токен.",
         );
       } else {
         setError(e.message || "Помилка підключення до PrivatBank");
@@ -400,14 +415,14 @@ export function usePrivatbank(enabled = true) {
     setLastUpdated(null);
   };
 
-  const connectRef = useRef(null);
+  const connectRef = useRef<typeof connect | null>(null);
   connectRef.current = connect;
 
   useEffect(() => {
     if (!enabled) return;
     if (storedId && storedToken) {
       setConnected(true);
-      connectRef.current(storedId, storedToken, false);
+      connectRef.current?.(storedId, storedToken, false);
     }
   }, [enabled, storedId, storedToken]);
 

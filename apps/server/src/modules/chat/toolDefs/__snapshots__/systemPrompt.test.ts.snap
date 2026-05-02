@@ -14,7 +14,7 @@ exports[`SYSTEM_PREFIX — registry-driven > matches the canonical snapshot 1`] 
   - Кросмодульні: morning_briefing, weekly_summary, compare_weeks (YYYY-Www; default цей+минулий), set_goal
   - Аналітика: spending_trend, category_breakdown, weight_chart, habit_trend, detect_anomalies
   - Утиліти: calculate_1rm, convert_units, save_note, list_notes, export_module_data
-  - Пам'ять: remember, forget, my_profile
+  - Пам'ять: remember, forget, my_profile, recall_memory
 - Транзакції мають id і дату — використовуй для tool calls.
 - Якщо користувач каже щось важливе про себе (алергії, уподобання, цілі, обмеження) — АВТОМАТИЧНО використай remember щоб запам'ятати. Не питай дозволу.
 - Блок [Профіль користувача] містить раніше запам'ятовані факти — ЗАВЖДИ враховуй їх у порадах (тренування, їжа, цілі).

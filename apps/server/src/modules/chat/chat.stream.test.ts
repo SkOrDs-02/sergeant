@@ -29,6 +29,7 @@ vi.mock("../../lib/anthropic.js", () => ({
   anthropicMessages: vi.fn(),
   anthropicMessagesStream: vi.fn(),
   extractAnthropicText: vi.fn(),
+  recordAnthropicUsage: vi.fn(),
 }));
 
 vi.mock("../../obs/metrics.js", () => ({
@@ -41,12 +42,15 @@ vi.mock("../../obs/metrics.js", () => ({
   externalHttpRequestsTotal: { inc: vi.fn() },
 }));
 
-import { anthropicMessagesStream as _anthropicMessagesStream } from "../../lib/anthropic.js";
-import { anthropicPromptCacheHitTotal as _cacheMetric } from "../../obs/metrics.js";
+import {
+  anthropicMessagesStream as _anthropicMessagesStream,
+  recordAnthropicUsage as _recordAnthropicUsage,
+} from "../../lib/anthropic.js";
 import handler from "./chat.js";
+import { ExternalServiceError } from "../../obs/errors.js";
 
 const anthropicMessagesStream = _anthropicMessagesStream as unknown as Mock;
-const cacheMetricInc = (_cacheMetric as unknown as { inc: Mock }).inc;
+const recordAnthropicUsageMock = _recordAnthropicUsage as unknown as Mock;
 
 interface SseEvent {
   type: string;
@@ -202,7 +206,7 @@ function dataPayloads(writes: string[]): string[] {
 beforeEach(() => {
   vi.clearAllMocks();
   anthropicMessagesStream.mockReset();
-  cacheMetricInc.mockReset();
+  recordAnthropicUsageMock.mockReset();
 });
 
 describe("chat handler — SSE streaming (basic forwarding)", () => {
@@ -507,7 +511,12 @@ describe("chat handler — SSE graceful degradation на continuation-помил
 });
 
 describe("chat handler — SSE first-call upstream errors", () => {
-  it("перший upstream !ok → JSON-помилка зі статусом, БЕЗ SSE-заголовків і БЕЗ data-подій", async () => {
+  it("перший upstream !ok → кидає ExternalServiceError, БЕЗ SSE-заголовків і БЕЗ data-подій", async () => {
+    // Pre-SSE upstream-помилка: SSE-заголовки ще не виставлені, тому
+    // нормалізуємо у `ExternalServiceError`. `asyncHandler` довеже до
+    // `errorHandler`, який віддасть JSON `{ error, code: EXTERNAL_SERVICE,
+    // requestId }` зі статусом 429. Перевіряємо контракт на рівні throw —
+    // обгортка `errorHandler` тестується окремо в `errorHandler.test.ts`.
     anthropicMessagesStream.mockResolvedValueOnce({
       response: new Response(
         JSON.stringify({ error: { message: "rate limited" } }),
@@ -518,15 +527,24 @@ describe("chat handler — SSE first-call upstream errors", () => {
 
     const req = makeReq(makeStreamReqBody());
     const res = makeSseRes();
-    await handler(req, res);
-
-    expect(res.statusCode).toBe(429);
-    expect(res.body).toEqual({ error: "rate limited" });
+    let caught: unknown = null;
+    try {
+      await handler(req, res);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(ExternalServiceError);
+    expect(caught).toMatchObject({
+      status: 429,
+      code: "EXTERNAL_SERVICE",
+      message: "rate limited",
+    });
+    // Жодного запису у SSE-стрім (заголовки і body не задіяні).
     expect(res.writes).toHaveLength(0);
     expect(res.headers["Content-Type"]).toBeUndefined();
   });
 
-  it("перший upstream !ok з не-JSON боді → fallback на raw text() через clone()", async () => {
+  it("перший upstream !ok з не-JSON боді → fallback на raw text() через clone(), кидає ExternalServiceError", async () => {
     // `firstResponse.json()` консьюмить body-стрім. Щоб після failed-`.json()`
     // мати можливість прочитати raw-text, у chat.ts тримаємо `clone()` ДО
     // першої спроби — інакше `.text()` поверне нічого і ми втратимо edge-case
@@ -541,12 +559,58 @@ describe("chat handler — SSE first-call upstream errors", () => {
 
     const req = makeReq(makeStreamReqBody());
     const res = makeSseRes();
+    let caught: unknown = null;
+    try {
+      await handler(req, res);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(ExternalServiceError);
+    expect(caught).toMatchObject({
+      status: 503,
+      code: "EXTERNAL_SERVICE",
+      message: "Service Unavailable",
+    });
+    // SSE-заголовки НЕ виставлені (помилкова гілка йде через errorHandler, а не event-stream).
+    expect(res.headers["Content-Type"]).toBeUndefined();
+  });
+
+  it("getReader() === null edge-case → SSE 'err'-подія перед [DONE], стрім коректно закривається", async () => {
+    // Anthropic повернув 200 OK без body (Cloudflare/edge-проксі іноді
+    // стрипають body). SSE-заголовки вже виставлені на цьому етапі —
+    // ми НЕ кидаємо у JSON, а пишемо явну err-подію в стрім, інакше
+    // клієнт побачив би лише тиху [DONE]-закриватку без причини.
+    const responseWithoutBody = new Response(null, {
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+    });
+    // Деякі рантайми не повертають `getReader`-сумісне body для пустого
+    // Response — якщо платформа все ж повернула body, явно нулюємо.
+    Object.defineProperty(responseWithoutBody, "body", {
+      value: null,
+      configurable: true,
+    });
+
+    anthropicMessagesStream.mockResolvedValueOnce({
+      response: responseWithoutBody,
+      recordStreamEnd: vi.fn(),
+    });
+
+    const req = makeReq(makeStreamReqBody());
+    const res = makeSseRes();
     await handler(req, res);
 
-    expect(res.statusCode).toBe(503);
-    expect((res.body as { error: string }).error).toBe("Service Unavailable");
-    // SSE-заголовки НЕ виставлені (помилкова гілка віддає JSON, а не event-stream).
-    expect(res.headers["Content-Type"]).toBeUndefined();
+    const payloads = dataPayloads(res.writes);
+    // Очікуємо рівно одну err-подію (саме від edge-case-у), потім [DONE].
+    expect(payloads).toContain(
+      JSON.stringify({ err: "AI upstream returned empty body" }),
+    );
+    expect(payloads[payloads.length - 1]).toBe("[DONE]");
+    expect(res.writableEnded).toBe(true);
+    // SSE-заголовки виставлені (стрім ВЖЕ почато на момент edge-case-у).
+    expect(res.headers["Content-Type"]).toBe(
+      "text/event-stream; charset=utf-8",
+    );
   });
 });
 
@@ -665,7 +729,7 @@ describe("chat handler — SSE protocol robustness", () => {
 });
 
 describe("chat handler — SSE prompt-cache metric", () => {
-  it("cache_read_input_tokens > 0 → outcome=hit, інакше miss", async () => {
+  it("usage із message_start прокидається у recordAnthropicUsage (включно з cache_read>0)", async () => {
     anthropicMessagesStream.mockResolvedValueOnce({
       response: makeUpstreamSse([
         {
@@ -685,12 +749,18 @@ describe("chat handler — SSE prompt-cache metric", () => {
     const res = makeSseRes();
     await handler(req, res);
 
-    expect(cacheMetricInc).toHaveBeenCalledWith(
-      expect.objectContaining({ outcome: "hit" }),
-    );
+    // Tokens/cost/cache-hit метрики тепер емітяться через спільний helper.
+    // Тест мокає `recordAnthropicUsage` цілком і перевіряє лише, що chat.ts
+    // викликав його з правильно витягнутим usage-payload-ом.
+    expect(recordAnthropicUsageMock).toHaveBeenCalledTimes(1);
+    const call = recordAnthropicUsageMock.mock.calls[0];
+    // signature: (model, endpoint, usage, promptVersion?)
+    expect(typeof call[1]).toBe("string");
+    expect(call[1].length).toBeGreaterThan(0);
+    expect(call[2]).toMatchObject({ cache_read_input_tokens: 4096 });
   });
 
-  it("cache_read_input_tokens=0 → outcome=miss", async () => {
+  it("usage із cache_read=0 теж форвардиться у helper (helper сам класифікує hit/miss)", async () => {
     anthropicMessagesStream.mockResolvedValueOnce({
       response: makeUpstreamSse([
         {
@@ -710,12 +780,52 @@ describe("chat handler — SSE prompt-cache metric", () => {
     const res = makeSseRes();
     await handler(req, res);
 
-    expect(cacheMetricInc).toHaveBeenCalledWith(
-      expect.objectContaining({ outcome: "miss" }),
-    );
+    expect(recordAnthropicUsageMock).toHaveBeenCalledTimes(1);
+    const call = recordAnthropicUsageMock.mock.calls[0];
+    expect(call[2]).toMatchObject({ cache_read_input_tokens: 0 });
   });
 
-  it("без message_start usage → метрика не інкрементиться", async () => {
+  it("output_tokens із message_delta мерджаться з input_tokens із message_start", async () => {
+    // Anthropic надсилає `output_tokens` ЛИШЕ у фінальному `message_delta`
+    // (як top-level `usage.output_tokens`), а `input_tokens` + cache-токени —
+    // у `message_start`. Без merge `kind=completion` лічильник лишається
+    // порожнім і `ai_cost_estimate_usd_total` систематично занижує вартість
+    // (для Sonnet output = $15/Mtok vs input = $3/Mtok).
+    anthropicMessagesStream.mockResolvedValueOnce({
+      response: makeUpstreamSse([
+        {
+          type: "message_start",
+          message: {
+            usage: { input_tokens: 1000, cache_read_input_tokens: 4096 },
+          },
+        },
+        {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: "ok" },
+        },
+        {
+          type: "message_delta",
+          delta: { stop_reason: "end_turn" },
+          usage: { output_tokens: 250 },
+        },
+      ]),
+      recordStreamEnd: vi.fn(),
+    });
+
+    const req = makeReq(makeStreamReqBody());
+    const res = makeSseRes();
+    await handler(req, res);
+
+    expect(recordAnthropicUsageMock).toHaveBeenCalledTimes(1);
+    const call = recordAnthropicUsageMock.mock.calls[0];
+    expect(call[2]).toMatchObject({
+      input_tokens: 1000,
+      cache_read_input_tokens: 4096,
+      output_tokens: 250,
+    });
+  });
+
+  it("без message_start usage → recordAnthropicUsage не викликається", async () => {
     anthropicMessagesStream.mockResolvedValueOnce({
       response: makeUpstreamSse([
         {
@@ -731,6 +841,6 @@ describe("chat handler — SSE prompt-cache metric", () => {
     const res = makeSseRes();
     await handler(req, res);
 
-    expect(cacheMetricInc).not.toHaveBeenCalled();
+    expect(recordAnthropicUsageMock).not.toHaveBeenCalled();
   });
 });

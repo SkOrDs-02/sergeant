@@ -200,6 +200,33 @@ describe("connectHandler", () => {
     expect(res.statusCode).toBe(502);
     expect(res.body.error).toMatch(/register webhook/i);
   });
+
+  it("returns 504 when client-info fetch times out", async () => {
+    mockFetch.mockRejectedValueOnce(
+      new DOMException("signal timed out", "TimeoutError"),
+    );
+
+    const res = makeRes();
+    await connectHandler(makeReq({ token: "valid_personal_token_12345" }), res);
+    expect(res.statusCode).toBe(504);
+    expect(res.body.error).toMatch(/не відповідає/i);
+  });
+
+  it("returns 504 when webhook registration fetch times out", async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ accounts: [] }),
+      })
+      .mockRejectedValueOnce(
+        new DOMException("signal timed out", "TimeoutError"),
+      );
+
+    const res = makeRes();
+    await connectHandler(makeReq({ token: "valid_personal_token_12345" }), res);
+    expect(res.statusCode).toBe(504);
+    expect(res.body.error).toMatch(/не відповідає/i);
+  });
 });
 
 describe("disconnectHandler", () => {
@@ -327,5 +354,30 @@ describe("syncStateHandler", () => {
     expect(res.body.webhookActive).toBe(true);
     expect(res.body.lastEventAt).toBe("2026-04-25T12:00:00Z");
     expect(res.body.accountsCount).toBe(3);
+  });
+
+  it("coerces pg Date objects to ISO strings (TIMESTAMPTZ columns)", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [
+        {
+          status: "active",
+          webhook_registered_at: new Date("2026-04-25T10:00:00Z"),
+          last_event_at: new Date("2026-04-25T12:00:00Z"),
+          last_backfill_at: new Date("2026-04-26T08:30:00Z"),
+        },
+      ],
+    });
+    dbQuery.mockResolvedValueOnce({ rows: [{ count: "5" }] });
+
+    const req = { method: "GET", user: { id: "user_1" } } as unknown as Request;
+    const res = makeRes();
+    await syncStateHandler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.status).toBe("active");
+    expect(res.body.webhookActive).toBe(true);
+    expect(res.body.lastEventAt).toBe("2026-04-25T12:00:00.000Z");
+    expect(res.body.lastBackfillAt).toBe("2026-04-26T08:30:00.000Z");
+    expect(res.body.accountsCount).toBe(5);
   });
 });

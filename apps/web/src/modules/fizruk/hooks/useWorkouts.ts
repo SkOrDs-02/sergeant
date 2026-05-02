@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { Workout } from "@sergeant/fizruk-domain/domain";
 import {
   parseWorkoutsFromStorage,
   serializeWorkoutsToStorage,
@@ -114,14 +115,18 @@ export function makeDefaultCooldown() {
  * }}
  */
 export function useWorkouts() {
-  const [workouts, setWorkouts] = useState([]);
+  const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(WORKOUTS_STORAGE_KEY);
       const parsed = parseWorkoutsFromStorage(raw);
-      if (Array.isArray(parsed)) setWorkouts(parsed);
+      // Storage parser returns `unknown[]` (the persisted blob is loose):
+      // it's the boundary between untyped JSON and typed runtime state, so
+      // we trust the shape here. Each consumer already guards optional
+      // fields (`w.items || []`, `w.endedAt`, etc.).
+      if (Array.isArray(parsed)) setWorkouts(parsed as Workout[]);
     } catch {}
     setLoaded(true);
   }, []);
@@ -213,7 +218,7 @@ export function useWorkouts() {
   const endWorkout = useCallback(
     (id) => {
       const nowIso = new Date().toISOString();
-      let ended = null;
+      let ended: Workout | null = null;
       persist((prev) =>
         prev.map((w) => {
           if (w.id !== id) return w;

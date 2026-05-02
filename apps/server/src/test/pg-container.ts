@@ -22,7 +22,11 @@ let connectionUri: string | undefined;
 export async function startPgContainer(): Promise<pg.Pool> {
   if (pool) return pool;
 
-  container = await new GenericContainer("postgres:16-alpine")
+  // Use the pgvector image (matches the local-dev image called out in
+  // migration 025_ai_memories_pgvector.sql). The plain `postgres:16-alpine`
+  // image does not ship the `vector` extension, which causes that
+  // migration to fail at container boot.
+  container = await new GenericContainer("pgvector/pgvector:pg16")
     .withEnvironment({
       POSTGRES_USER: "hub",
       POSTGRES_PASSWORD: "hub",

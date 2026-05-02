@@ -2,7 +2,7 @@
 
 import { precacheAndRoute, cleanupOutdatedCaches } from "workbox-precaching";
 import { registerRoute, NavigationRoute } from "workbox-routing";
-import { NetworkFirst, CacheFirst } from "workbox-strategies";
+import { NetworkFirst } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
 import { CacheableResponsePlugin } from "workbox-cacheable-response";
 
@@ -19,8 +19,6 @@ const SW_VERSION =
 const CACHE_NAMES = {
   navigations: `navigations-v${SW_VERSION}`,
   api: `api-cache-v${SW_VERSION}`,
-  fontsCss: "google-fonts-css",
-  fontsWoff: "google-fonts-woff",
 };
 
 let debugEnabled = false;
@@ -72,34 +70,6 @@ registerRoute(
     ],
   }),
   "GET",
-);
-
-registerRoute(
-  ({ url }) => url.origin === "https://fonts.googleapis.com",
-  new CacheFirst({
-    cacheName: CACHE_NAMES.fontsCss,
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 10,
-        maxAgeSeconds: 60 * 60 * 24 * 365,
-      }),
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-    ],
-  }),
-);
-
-registerRoute(
-  ({ url }) => url.origin === "https://fonts.gstatic.com",
-  new CacheFirst({
-    cacheName: CACHE_NAMES.fontsWoff,
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 30,
-        maxAgeSeconds: 60 * 60 * 24 * 365,
-      }),
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-    ],
-  }),
 );
 
 const ROUTINE_NOTIFY_PREFIX = "routine_notify_";
@@ -423,12 +393,7 @@ async function buildSwSnapshot() {
   const cacheNames = await caches.keys();
   const workboxCaches = cacheNames.filter((n) => n.startsWith("workbox-"));
   const counts = {};
-  for (const n of [
-    CACHE_NAMES.navigations,
-    CACHE_NAMES.api,
-    CACHE_NAMES.fontsCss,
-    CACHE_NAMES.fontsWoff,
-  ]) {
+  for (const n of [CACHE_NAMES.navigations, CACHE_NAMES.api]) {
     counts[n] = await cacheEntryCount(n);
   }
   for (const n of workboxCaches.slice(0, 5)) {
@@ -465,8 +430,8 @@ async function clearAppCaches() {
   const names = await caches.keys();
   const toDelete = names.filter(
     (n) =>
-      n === CACHE_NAMES.fontsCss ||
-      n === CACHE_NAMES.fontsWoff ||
+      n === "google-fonts-css" ||
+      n === "google-fonts-woff" ||
       n.startsWith("navigations-v") ||
       n.startsWith("api-cache-v") ||
       n.startsWith("workbox-precache"),

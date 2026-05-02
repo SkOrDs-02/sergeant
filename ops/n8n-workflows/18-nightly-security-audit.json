@@ -1,0 +1,180 @@
+{
+  "name": "18 — Nightly Security Audit Summary (04:00 UTC → Telegram if failures)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 4 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-4am-utc",
+      "name": "Cron 04:00 UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.github.com/repos/skords-01/sergeant/actions/runs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.GITHUB_PAT }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "workflow_file",
+              "value": "nightly-audit.yml"
+            },
+            {
+              "name": "per_page",
+              "value": "5"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "github-runs",
+      "name": "GitHub → nightly-audit runs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst runs = data?.workflow_runs ?? [];\nconst latest = runs[0];\nif (!latest) return [{ json: { hasFailed: false } }];\nconst failed = ['failure', 'cancelled'].includes(latest.conclusion);\nconst runUrl = latest.html_url ?? '';\nconst status = latest.conclusion ?? latest.status;\nconst createdAt = new Date(latest.created_at).toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' });\nreturn [{ json: { hasFailed: failed, status, runUrl, createdAt } }];"
+      },
+      "id": "check-status",
+      "name": "Check audit status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "audit-failed",
+              "leftValue": "={{ $json.hasFailed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "id": "audit-failed",
+      "name": "Audit failed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "=🔐 *Nightly Security Audit — {{ $json.status.toUpperCase() }}*\n\n⚠️ Перевір звіт — можливі CVE або вразливості!\n\n📋 Запуск: {{ $json.createdAt }}\n🔗 [GitHub Actions →]({{ $json.runUrl }})",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-audit",
+      "name": "Telegram → #incidents",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1120, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cron 04:00 UTC": {
+      "main": [
+        [
+          {
+            "node": "GitHub → nightly-audit runs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub → nightly-audit runs": {
+      "main": [
+        [
+          {
+            "node": "Check audit status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check audit status": {
+      "main": [
+        [
+          {
+            "node": "Audit failed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audit failed?": {
+      "main": [
+        [
+          {
+            "node": "Telegram → #incidents",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "UTC",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
+  },
+  "tags": [
+    {
+      "name": "sergeant"
+    },
+    {
+      "name": "security"
+    },
+    {
+      "name": "github"
+    }
+  ],
+  "active": false
+}

@@ -1,4 +1,5 @@
 import { syncApi } from "@shared/api";
+import { trackEvent, ANALYTICS_EVENTS } from "../../observability/analytics";
 import { SYNC_MODULES } from "../config";
 import { isModulePushSuccess } from "../conflict/pushSuccess";
 import { addToOfflineQueue } from "../queue/offlineQueue";
@@ -131,6 +132,13 @@ export async function pushAll(args: PushArgs): Promise<void> {
         "[cloudSync] pushAll: server rejected push for modules (kept dirty)",
         conflicted,
       );
+      // PostHog: spike-и conflict-ів — сигнал регресії LWW-guard-а або
+      // clock-drift-у. `modules` — лічильник, не імена, щоб не тягнути
+      // module-level кардинальність у події.
+      trackEvent(ANALYTICS_EVENTS.SYNC_CONFLICT_RESOLVED, {
+        kind: "push",
+        modules: conflicted.length,
+      });
     }
     onSuccess(new Date());
   } catch (err) {

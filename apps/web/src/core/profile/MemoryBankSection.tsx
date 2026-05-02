@@ -3,6 +3,8 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
+import { emitHubBus } from "@shared/lib/hubBus";
+import { showUndoToast } from "@shared/lib/undoToast";
 import {
   CATEGORY_META,
   groupMemoryEntries,
@@ -36,10 +38,19 @@ export function MemoryBankSection() {
 
   const handleDelete = useCallback(
     (id: string) => {
+      const previous = entries;
+      const target = entries.find((e) => e.id === id);
       const result = removeMemoryEntry(entries, id);
       saveEntries(result.entries);
+      if (!target) return;
+      const factPreview =
+        target.fact.length > 60 ? `${target.fact.slice(0, 60)}…` : target.fact;
+      showUndoToast(toast, {
+        msg: `Запис «${factPreview}» видалено`,
+        onUndo: () => saveEntries(previous),
+      });
     },
-    [entries, saveEntries],
+    [entries, saveEntries, toast],
   );
 
   const openMemoryChat = useCallback(() => {
@@ -47,7 +58,7 @@ export function MemoryBankSection() {
       entries.length === 0
         ? MEMORY_ONBOARDING_PROMPT
         : "Хочу додати інформацію про себе. Запитай мене що важливого я хочу щоб ти запам'ятав.";
-    window.dispatchEvent(new CustomEvent("hub:openChat", { detail: prompt }));
+    emitHubBus("openChat", { message: prompt });
   }, [entries.length]);
 
   const handleExport = useCallback(() => {
@@ -125,7 +136,9 @@ export function MemoryBankSection() {
       <div className="p-4">
         {isEmpty ? (
           <div className="text-center py-6">
-            <div className="text-3xl mb-3">🧠</div>
+            <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center mx-auto mb-3">
+              <Icon name="sparkle" size={22} className="text-brand-500" />
+            </div>
             <p className="text-sm text-muted mb-1">
               Банк пам&apos;яті порожній
             </p>
@@ -161,8 +174,8 @@ export function MemoryBankSection() {
               const meta = CATEGORY_META[cat] || { label: cat, emoji: "📝" };
               return (
                 <div key={cat}>
-                  <div className="text-xs font-semibold text-muted mb-1.5">
-                    {meta.emoji} {meta.label}
+                  <div className="text-eyebrow text-muted/70 mb-2">
+                    {meta.label}
                   </div>
                   <div className="space-y-1">
                     {items.map((entry) => (
@@ -176,7 +189,7 @@ export function MemoryBankSection() {
                         <button
                           type="button"
                           onClick={() => handleDelete(entry.id)}
-                          className="shrink-0 w-8 h-8 rounded-md flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+                          className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition-colors"
                           aria-label={`Видалити: ${entry.fact}`}
                         >
                           <Icon name="close" size={14} />

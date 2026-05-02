@@ -1,41 +1,60 @@
 # Sergeant — незалежний аудит (Devin)
 
+> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Status:** Active
+
+> **STATUS — historical record (2026-04-27): 30 / 31 closed.**
+> Цей аудит — **історичний рекорд**, а не activity-tracker. Майже всі
+> recommended PR-и закриті (детальна таблиця нижче). Один залишковий
+> пункт переслідується у відповідних living-документах
+> (`docs/planning/dev-stack-roadmap.md`, `docs/tech-debt/frontend.md`,
+> `docs/tech-debt/backend.md`). Не правити цей файл, окрім як для
+> закриття останнього пункту чи виправлення фактичних помилок —
+> якщо з'являється нова робота, заводь її у відповідному
+> living-документі або створюй новий audit-файл з поточною датою.
+
 **Дата:** 2026-04-26
 **Скоуп:** репо `Skords-01/Sergeant` (default branch на момент клонування).
 **Метод:** репозиторний прохід — структура, конфіги, `AGENTS.md`/`CONTRIBUTING.md`/`README.md`, `docs/*` (roadmap, tech-debt, observability, playbooks), `.github/workflows/ci.yml`, `eslint.config.js`, `packages/eslint-plugin-sergeant-design/`, `apps/*/tsconfig.json`, міграції в `apps/server/src/migrations/`. Без виконання CI/тестів.
 
-> **Статус виконання — оновлено 2026-04-27 (шоста ревізія: +PR-11.C partial)**
+> **Статус виконання — оновлено 2026-04-27 (сьома ревізія: re-sync з реальним станом коду)**
 > Поки документ жив в attachments, частина PR-ідей з нього вже відпрацьована
 > через дочерні Devin-сесії. Узагальнений знімок прогресу:
 
-| Аудит-ID | Тема                                                                   | Статус     | PR (merged)                                                                                                            |
-| -------- | ---------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
-| PR-9.A   | `pnpm audit --audit-level=high` blocking + escape hatch                | ✅ closed  | [#862](https://github.com/Skords-01/Sergeant/pull/862)                                                                 |
-| PR-2.A   | commitlint + husky `commit-msg` (rule #5 enum)                         | ✅ closed  | [#866](https://github.com/Skords-01/Sergeant/pull/866)                                                                 |
-| PR-5.A   | `migration-lint` CI job (rule #4)                                      | ✅ closed  | [#863](https://github.com/Skords-01/Sergeant/pull/863)                                                                 |
-| PR-12.A  | Anthropic prompt-cache hit metric + streaming tracking                 | ✅ closed  | [#864](https://github.com/Skords-01/Sergeant/pull/864)                                                                 |
-| PR-3.D   | top-3 `localStorage` files → safe wrappers (allowlist 55→52)           | ✅ closed  | [#865](https://github.com/Skords-01/Sergeant/pull/865)                                                                 |
-| PR-6.A   | `strictNullChecks` phase 1 (`apps/web/src/shared/**`)                  | ✅ closed  | [#870](https://github.com/Skords-01/Sergeant/pull/870)                                                                 |
-| PR-2.B   | ESLint `no-bigint-string` (rule #1)                                    | ✅ closed  | [#868](https://github.com/Skords-01/Sergeant/pull/868)                                                                 |
-| PR-2.C   | ESLint `rq-keys-only-from-factory` (rule #2)                           | ✅ closed  | [#869](https://github.com/Skords-01/Sergeant/pull/869)                                                                 |
-| PR-6.F   | CI metric: `strict-coverage.mjs` + `$GITHUB_STEP_SUMMARY`              | ✅ closed  | [#872](https://github.com/Skords-01/Sergeant/pull/872), доробка [#874](https://github.com/Skords-01/Sergeant/pull/874) |
-| PR-9.D   | ESLint `no-anthropic-key-in-logs`                                      | ✅ closed  | [#871](https://github.com/Skords-01/Sergeant/pull/871)                                                                 |
-| PR-2.D   | `docs/governance/policy-review.md` template                            | ✅ closed  | [#875](https://github.com/Skords-01/Sergeant/pull/875)                                                                 |
-| PR-6.E   | ESLint `no-strict-bypass` (forbid new `ts-expect-error`/`as any`)      | ✅ closed  | [#877](https://github.com/Skords-01/Sergeant/pull/877)                                                                 |
-| PR-4.C   | extract OFF/USDA/Mono normalizers → `apps/server/src/lib/normalizers/` | ✅ closed  | [#882](https://github.com/Skords-01/Sergeant/pull/882)                                                                 |
-| PR-12.B  | `chatActions` contract tests (happy + error path per handler)          | ✅ closed  | [#885](https://github.com/Skords-01/Sergeant/pull/885)                                                                 |
-| PR-7.A   | `recommendationEngine` + `TodayFocusCard` unit/integration tests       | ✅ closed  | [#886](https://github.com/Skords-01/Sergeant/pull/886)                                                                 |
-| PR-3.B   | decompose `Assets.tsx` (1147 LOC) into smaller modules                 | ✅ closed  | [#887](https://github.com/Skords-01/Sergeant/pull/887)                                                                 |
-| PR-9.B   | gitleaks SHA-pinned secret-scan blocking job in CI                     | ✅ closed  | [#897](https://github.com/Skords-01/Sergeant/pull/897)                                                                 |
-| PR-3.C   | split `seedFoodsUk.ts` (1614 LOC) by category into `seeds/*`           | ✅ closed  | [#898](https://github.com/Skords-01/Sergeant/pull/898)                                                                 |
-| PR-9.C   | vulnerability SLA matrix + weekly breach-reminder workflow             | ✅ closed  | [#902](https://github.com/Skords-01/Sergeant/pull/902)                                                                 |
-| PR-7.B   | cloud-sync offline-queue + replay-on-reconnect integration tests       | ✅ closed  | [#904](https://github.com/Skords-01/Sergeant/pull/904)                                                                 |
-| PR-5.B   | rollback sanity для `*.down.sql` міграцій (Testcontainers)             | ✅ closed  | [#918](https://github.com/Skords-01/Sergeant/pull/918)                                                                 |
-| PR-6.B   | `noImplicitAny` phase 2 — routine + shared + nutrition (3 з 6)         | 🟡 partial | [#923](https://github.com/Skords-01/Sergeant/pull/923), [#934](https://github.com/Skords-01/Sergeant/pull/934)         |
-| PR-7.E   | de-flake `OnboardingWizard.test.tsx` (1/3 flaky triage)                | ✅ closed  | [#963](https://github.com/Skords-01/Sergeant/pull/963)                                                                 |
-| PR-11.C  | ADR template + README index                                            | 🟡 partial | template+README зроблено, retroactive ADRs ⏳                                                                          |
-| PR-8.A   | `docs(obs): error-budget policy`                                       | ✅ closed  | [#942](https://github.com/Skords-01/Sergeant/pull/942)                                                                 |
-| Інші     | див. inline-теги нижче                                                 | ⏳ pending | —                                                                                                                      |
+| Аудит-ID | Тема                                                                                                                 | Статус     | PR (merged)                                                                                                                                                                                                                                                                     |
+| -------- | -------------------------------------------------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PR-9.A   | `pnpm audit --audit-level=high` blocking + escape hatch                                                              | ✅ closed  | [#862](https://github.com/Skords-01/Sergeant/pull/862)                                                                                                                                                                                                                          |
+| PR-2.A   | commitlint + husky `commit-msg` (rule #5 enum)                                                                       | ✅ closed  | [#866](https://github.com/Skords-01/Sergeant/pull/866)                                                                                                                                                                                                                          |
+| PR-5.A   | `migration-lint` CI job (rule #4)                                                                                    | ✅ closed  | [#863](https://github.com/Skords-01/Sergeant/pull/863)                                                                                                                                                                                                                          |
+| PR-12.A  | Anthropic prompt-cache hit metric + streaming tracking                                                               | ✅ closed  | [#864](https://github.com/Skords-01/Sergeant/pull/864)                                                                                                                                                                                                                          |
+| PR-3.D   | top-3 `localStorage` files → safe wrappers (allowlist 55→52)                                                         | ✅ closed  | [#865](https://github.com/Skords-01/Sergeant/pull/865)                                                                                                                                                                                                                          |
+| PR-6.A   | `strictNullChecks` phase 1 (`apps/web/src/shared/**`)                                                                | ✅ closed  | [#870](https://github.com/Skords-01/Sergeant/pull/870)                                                                                                                                                                                                                          |
+| PR-2.B   | ESLint `no-bigint-string` (rule #1)                                                                                  | ✅ closed  | [#868](https://github.com/Skords-01/Sergeant/pull/868)                                                                                                                                                                                                                          |
+| PR-2.C   | ESLint `rq-keys-only-from-factory` (rule #2)                                                                         | ✅ closed  | [#869](https://github.com/Skords-01/Sergeant/pull/869)                                                                                                                                                                                                                          |
+| PR-6.F   | CI metric: `strict-coverage.mjs` + `$GITHUB_STEP_SUMMARY`                                                            | ✅ closed  | [#872](https://github.com/Skords-01/Sergeant/pull/872), доробка [#874](https://github.com/Skords-01/Sergeant/pull/874)                                                                                                                                                          |
+| PR-9.D   | ESLint `no-anthropic-key-in-logs`                                                                                    | ✅ closed  | [#871](https://github.com/Skords-01/Sergeant/pull/871)                                                                                                                                                                                                                          |
+| PR-2.D   | `docs/governance/policy-review.md` template                                                                          | ✅ closed  | [#875](https://github.com/Skords-01/Sergeant/pull/875)                                                                                                                                                                                                                          |
+| PR-6.E   | ESLint `no-strict-bypass` (forbid new `ts-expect-error`/`as any`)                                                    | ✅ closed  | [#877](https://github.com/Skords-01/Sergeant/pull/877)                                                                                                                                                                                                                          |
+| PR-4.C   | extract OFF/USDA/Mono normalizers → `apps/server/src/lib/normalizers/`                                               | ✅ closed  | [#882](https://github.com/Skords-01/Sergeant/pull/882)                                                                                                                                                                                                                          |
+| PR-12.B  | `chatActions` contract tests (happy + error path per handler)                                                        | ✅ closed  | [#885](https://github.com/Skords-01/Sergeant/pull/885)                                                                                                                                                                                                                          |
+| PR-7.A   | `recommendationEngine` + `TodayFocusCard` unit/integration tests                                                     | ✅ closed  | [#886](https://github.com/Skords-01/Sergeant/pull/886)                                                                                                                                                                                                                          |
+| PR-3.B   | decompose `Assets.tsx` (1147 LOC) into smaller modules                                                               | ✅ closed  | [#887](https://github.com/Skords-01/Sergeant/pull/887)                                                                                                                                                                                                                          |
+| PR-9.B   | gitleaks SHA-pinned secret-scan blocking job in CI                                                                   | ✅ closed  | [#897](https://github.com/Skords-01/Sergeant/pull/897)                                                                                                                                                                                                                          |
+| PR-3.C   | split `seedFoodsUk.ts` (1614 LOC) by category into `seeds/*`                                                         | ✅ closed  | [#898](https://github.com/Skords-01/Sergeant/pull/898)                                                                                                                                                                                                                          |
+| PR-9.C   | vulnerability SLA matrix + weekly breach-reminder workflow                                                           | ✅ closed  | [#902](https://github.com/Skords-01/Sergeant/pull/902)                                                                                                                                                                                                                          |
+| PR-7.B   | cloud-sync offline-queue + replay-on-reconnect integration tests                                                     | ✅ closed  | [#904](https://github.com/Skords-01/Sergeant/pull/904)                                                                                                                                                                                                                          |
+| PR-5.B   | rollback sanity для `*.down.sql` міграцій (Testcontainers)                                                           | ✅ closed  | [#918](https://github.com/Skords-01/Sergeant/pull/918)                                                                                                                                                                                                                          |
+| PR-6.B   | `noImplicitAny` phase 2 — routine + shared + nutrition (3 з 6)                                                       | 🟡 partial | [#923](https://github.com/Skords-01/Sergeant/pull/923), [#934](https://github.com/Skords-01/Sergeant/pull/934)                                                                                                                                                                  |
+| PR-7.E   | de-flake 3 flaky tests (`OnboardingWizard` + `WeeklyDigestFooter` + `HubSettingsPage`)                               | ✅ closed  | [#963](https://github.com/Skords-01/Sergeant/pull/963) (Onboarding); цим PR-ом — `WeeklyDigestFooter` + `HubSettingsPage`                                                                                                                                                       |
+| PR-11.C  | ADR template + README index + retroactive ADRs (5 з 5: Better Auth / Capacitor / Anthropic / Turbo / Monorepo split) | ✅ closed  | template+README ✅; ADR-0017/0010/0005 ✅ via [#958](https://github.com/Skords-01/Sergeant/pull/958), [#956](https://github.com/Skords-01/Sergeant/pull/956), [#962](https://github.com/Skords-01/Sergeant/pull/962); ADR-0023 (turbo) + ADR-0024 (monorepo split) ✅ цим PR-ом |
+| PR-8.A   | `docs(obs): error-budget policy`                                                                                     | ✅ closed  | [#942](https://github.com/Skords-01/Sergeant/pull/942)                                                                                                                                                                                                                          |
+| PR-7.D   | weekly flaky-tests dashboard workflow                                                                                | ✅ closed  | [#945](https://github.com/Skords-01/Sergeant/pull/945)                                                                                                                                                                                                                          |
+| PR-8.B   | Prometheus `/metrics` endpoint + Grafana dashboards JSON                                                             | ✅ closed  | [#946](https://github.com/Skords-01/Sergeant/pull/946), [#948](https://github.com/Skords-01/Sergeant/pull/948), [#953](https://github.com/Skords-01/Sergeant/pull/953)                                                                                                          |
+| PR-10.A  | p95 pipeline-duration metric у CI summary                                                                            | ✅ closed  | [#951](https://github.com/Skords-01/Sergeant/pull/951), доробка [#970](https://github.com/Skords-01/Sergeant/pull/970), [#971](https://github.com/Skords-01/Sergeant/pull/971)                                                                                                  |
+| PR-11.A  | freshness badges для топ-документів + nightly overdue-doc workflow                                                   | ✅ closed  | [#952](https://github.com/Skords-01/Sergeant/pull/952)                                                                                                                                                                                                                          |
+| PR-11.B  | top-5 playbooks → decision-tree формат + `_TEMPLATE-decision-tree.md`                                                | ✅ closed  | [#955](https://github.com/Skords-01/Sergeant/pull/955)                                                                                                                                                                                                                          |
+| PR-6.D   | `apps/server` strict TS — explicit `"strict": true`                                                                  | ✅ closed  | [#937](https://github.com/Skords-01/Sergeant/pull/937)                                                                                                                                                                                                                          |
+| Інші     | див. inline-теги нижче                                                                                               | ⏳ pending | —                                                                                                                                                                                                                                                                               |
 
 > Sprint-таблиці нижче (`Спринт 0`, `Спринт 1-2`, `Спринт 3-6`) також оновлені
 > in-line — кожен закритий PR-ID має ✅ + посилання на змержений PR.
@@ -48,11 +67,11 @@
 
 **Несуттєві уточнення там, де я б скоригував:**
 
-| Блок                         | Оцінка Васі | Моя оцінка | Чому інша                                                                                                                                                                                 |
-| ---------------------------- | ----------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 3. Frontend platform         | 8/10        | **7.5/10** | Великих файлів (>600 LOC) **25, не 10**. Топ — 1614 LOC (`seedFoodsUk.ts`). Storage migration ще на 55 файлів у TODO. Це більший regression-surface, ніж видається.                       |
-| 6. Type safety               | 7.5/10      | **6.5/10** | `strict: true` ввімкнений у `tsconfig.base`, але **`apps/web` і `apps/server` його перевизначають на `false`** + `allowJs: true, checkJs: false`. Це не «pending», це активне regression. |
-| 11. Документація / playbooks | 9/10        | **9.5/10** | 23 playbooks з конкретними кроками + структурований AI-marker система (`AI-NOTE`/`AI-CONTEXT`/`AI-DANGER`/`AI-LEGACY`) + `eslint-plugin-sergeant-design` з 6 кастомних правил. Виняткове. |
+| Блок                         | Оцінка Васі | Моя оцінка | Чому інша                                                                                                                                                                                                                                                                    |
+| ---------------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3. Frontend platform         | 8/10        | **7.5/10** | Великих файлів (>600 LOC) **25, не 10**. Топ — 1614 LOC (`seedFoodsUk.ts`). Storage migration ще на 55 файлів у TODO. Це більший regression-surface, ніж видається.                                                                                                          |
+| 6. Type safety               | 7.5/10      | **6.5/10** | `strict: true` ввімкнений у `tsconfig.base`. `apps/server` уже на `"strict": true"` (PR-6.D, [#937](https://github.com/Skords-01/Sergeant/pull/937)), але `apps/web` досі перевизначає на `false` + `allowJs: true, checkJs: false`. Це не «pending», це активне regression. |
+| 11. Документація / playbooks | 9/10        | **9.5/10** | 23 playbooks з конкретними кроками + структурований AI-marker система (`AI-NOTE`/`AI-CONTEXT`/`AI-DANGER`/`AI-LEGACY`) + `eslint-plugin-sergeant-design` з 6 кастомних правил. Виняткове.                                                                                    |
 
 **Чого не вистачає в аудиті Васі (мої додаткові спостереження):**
 
@@ -162,7 +181,7 @@
 - `PR-4.A` ✅ closed — [#900](https://github.com/Skords-01/Sergeant/pull/900) `test(server): add SSE end-to-end harness for chat streaming` (17 тестів на `streamAnthropicToSse` / `streamOneIterationToSse`: text-дельти, auto-continuation на `max_tokens`, cap, graceful errors, chunk-боундарі, prompt-cache метрика).
 - `PR-4.B` ✅ closed — [#908](https://github.com/Skords-01/Sergeant/pull/908) `test(server): barcode contract tests for OFF/USDA/UPCitemdb normalizers` (UPCitemdb extracted з `barcode.ts` у власний `normalizers/upcitemdb.ts`; 22 unit-тести + 14 cross-source contract тестів із realistic фікстурами Nutella/Cheerios/Coca-Cola; спільний `NormalizedProduct`-shape зафіксовано через `assertContract()` helper).
 - `PR-4.C` ✅ closed — [#882](https://github.com/Skords-01/Sergeant/pull/882) `refactor(server,lib): extract OFF/USDA/Mono normalizers into apps/server/src/lib/normalizers/{off,usda,mono}.ts`.
-- `PR-4.D` — `chore(server,api-client): generate api-client types from server zod schemas via zod-to-openapi` (закриває drift у rule #3 автоматично).
+- `PR-4.D` 🟡 partial Phase 1 — інфраструктура `zod-openapi` + `docs/api/openapi.json` (36 paths, 26 components) + freshness check-скрипт (`scripts/api/check-openapi-fresh.mjs`, runnable локально через `pnpm api:check-openapi`) + ADR-0025. Workflow `.github/workflows/openapi-freshness.yml` додає юзер вручну (OAuth App без `workflow` scope не може писати в `.github/workflows/`). Phase 2 (codegen api-client типів зі spec через `openapi-typescript`) — окремий PR.
 
 ---
 
@@ -241,8 +260,8 @@
 - `PR-7.A` ✅ closed — [#886](https://github.com/Skords-01/Sergeant/pull/886) `test(web): unit + integration tests for recommendationEngine and TodayFocusCard`.
 - `PR-7.B` ✅ closed — [#904](https://github.com/Skords-01/Sergeant/pull/904) `test(web,cloud-sync): integration tests for offline queue + replay on reconnect` — 17 тестів, 4 сценарії (coalesce, happy replay, server-error, MAX_OFFLINE_QUEUE overflow).
 - `PR-7.C` ✅ closed — [#913](https://github.com/Skords-01/Sergeant/pull/913) `test(web): hub-reports aggregation snapshot tests` — витягнуто 4 чисті агрегатори з inline-замикань `useReportData` у `apps/web/src/core/hub/hubReports.aggregation.ts`; 44 snapshot-тести покривають date-helpers, per-module aggregators і повний cross-module звіт із усіма 4 модулями заповненими.
-- `PR-7.D` — `ci(test): add weekly flaky-tests dashboard` (GitHub Action, що збирає `vitest --reporter json` за 7 днів і публікує markdown trend в artifact).
-- `PR-7.E` — `test(mobile): triage 3 known flaky tests one-by-one (each in own PR), document fixes`.
+- `PR-7.D` ✅ closed — [#945](https://github.com/Skords-01/Sergeant/pull/945) `ci(test): weekly flaky-tests dashboard workflow + aggregator script`. Реалізовано як `.github/workflows/flaky-tests-dashboard.yml` з cron-розкладом і markdown trend в artifact.
+- `PR-7.E` ✅ closed (3/3) — [#963](https://github.com/Skords-01/Sergeant/pull/963) `OnboardingWizard.test.tsx`; цим PR-ом — `WeeklyDigestFooter.test.tsx` + `HubSettingsPage.test.tsx` (де-флак: stub `useWeeklyDigest` TanStack Query subscription, що шедулила setState після sync render → "act not wrapped" warning + first-render тяжіє до 5 s timeout). Запис «Pre-existing flaky tests» з `AGENTS.md` прибрано.
 
 ---
 
@@ -262,8 +281,8 @@
 **PR-ідеї:**
 
 - `PR-8.A` ✅ closed — [#942](https://github.com/Skords-01/Sergeant/pull/942) `docs(obs): error-budget policy` — який тип фіч freeze, коли HTTP API budget вигорає; які ні (security fixes, hotfixes).
-- `PR-8.B` — `feat(obs): expose Prometheus /metrics from apps/server` (якщо ще не) + Grafana dashboard import JSON у `docs/observability/dashboards/`.
-- `PR-8.C` — `feat(server,chat): SYSTEM_PROMPT_VERSION constant + cache-hit metric` — підготовка до prompt-cache rollout.
+- `PR-8.B` ✅ closed — [#946](https://github.com/Skords-01/Sergeant/pull/946) `feat(server): Prometheus /metrics endpoint on apps/server`, [#948](https://github.com/Skords-01/Sergeant/pull/948) Grafana dashboard JSON files, [#953](https://github.com/Skords-01/Sergeant/pull/953) `docs(obs): metrics catalog`. `apps/server/src/routes/health.ts` реєструє `r.get("/metrics", metricsHandler)` (виключений з auth/CORS ланцюжка).
+- `PR-8.C` ✅ closed — реалізовано в межах PR-12.A ([#864](https://github.com/Skords-01/Sergeant/pull/864)): `SYSTEM_PROMPT_VERSION` const + `anthropic_prompt_cache_hit_total{version, outcome}` (вкл. streaming-шлях).
 
 ---
 
@@ -314,7 +333,7 @@
 
 **PR-ідеї:**
 
-- `PR-10.A` — `ci: add p95 pipeline-duration metric to CI summary` (script, що читає GitHub Actions API і публікує trend у PR як коментар).
+- `PR-10.A` ✅ closed — [#951](https://github.com/Skords-01/Sergeant/pull/951) `ci: p95 pipeline-duration metric у CI summary`, доробка [#970](https://github.com/Skords-01/Sergeant/pull/970)/[#971](https://github.com/Skords-01/Sergeant/pull/971) (`needs:` fix після розділення smoke-e2e → critical-flow). Реалізовано як job `pipeline-duration-summary` у `ci.yml`.
 - `PR-10.B` — `ci: split smoke-e2e into critical-flow (must-pass) + extended-flow (nightly)`. ✅ closed
 - `PR-10.C` — `ci: nightly job for full audit (critical+high blocking) + dependency-check (snyk або osv-scanner)`. Nightly не блокує PR, але дає трендовий сигнал. ✅ closed — [#944](https://github.com/Skords-01/Sergeant/pull/944)
 
@@ -336,9 +355,15 @@
 
 **PR-ідеї:**
 
-- `PR-11.A` — `docs(meta): freshness badge for top-10 docs` — простий header `**Last validated:** YYYY-MM-DD by @user. **Next review:** YYYY-MM-DD.` + nightly script, що відкриває issue, якщо `Next review` пройшов.
-- `PR-11.B` — `docs(playbooks): convert top-5 playbooks to "decision tree" format` (`when ... do X, else Y`).
-- `PR-11.C` 🟡 partial — ADR практика "живе": `docs/adr/0001-monetization-architecture.md` ([#912](https://github.com/Skords-01/Sergeant/pull/912)) і `docs/adr/0002-tool-lifecycle.md` ([#926](https://github.com/Skords-01/Sergeant/pull/926)) уже існують. Цим PR-ом формалізовано: `docs/adr/TEMPLATE.md` (1-page MADR-adapted skeleton із secção Status / Context / Considered options / Decision / Consequences / Compliance / Links) і `docs/adr/README.md` (index, naming convention, lifecycle, посилання на TEMPLATE). **Залишилось ⏳:** retroactive ADRs для turbo / Better Auth / monorepo split / Capacitor wrapper / Anthropic tool-on-client architecture (5 шт., по PR на кожен).
+- `PR-11.A` ✅ closed — [#952](https://github.com/Skords-01/Sergeant/pull/952) `docs(docs): freshness badges for top-10 docs + nightly overdue-doc issue workflow`. `**Last validated:**` бейдж додано на 11+ топ-документів, `.github/workflows/docs-freshness.yml` + `scripts/docs/check-freshness.mjs` відкриває issue на overdue.
+- `PR-11.B` ✅ closed — [#955](https://github.com/Skords-01/Sergeant/pull/955) `docs(docs): convert top-5 playbooks to decision-tree format`. Додано `docs/playbooks/_TEMPLATE-decision-tree.md` і конвертовано: `debug-chat-tool.md`, `hotfix-prod-regression.md`, `investigate-alert.md`, `rotate-secrets.md`, `stabilize-flaky-test.md`.
+- `PR-11.C` ✅ closed (5/5) — ADR template + README ✅ ([#938](https://github.com/Skords-01/Sergeant/pull/938)) + retroactive batches:
+  - `docs/adr/0017-better-auth-choice-and-session-model.md` (Better Auth) ✅ ([#962](https://github.com/Skords-01/Sergeant/pull/962))
+  - `docs/adr/0010-mobile-dual-track-capacitor-expo.md` (Capacitor wrapper) ✅ ([#956](https://github.com/Skords-01/Sergeant/pull/956))
+  - `docs/adr/0005-anthropic-model-selection-and-prompt-caching.md` (Anthropic tool-on-client) ✅ ([#958](https://github.com/Skords-01/Sergeant/pull/958))
+  - `docs/adr/0023-turbo-monorepo-runner.md` (Turborepo as monorepo task runner) ✅
+  - `docs/adr/0024-monorepo-apps-packages-split.md` (`apps/*` + `packages/*` split) ✅
+  - **Caveat (resolved):** паралельні ADR-пакети #956/#961/#962 створили колізії номерів 0003-0012 (10 пар файлів з однаковим NNNN); розв'язано через PR [#989](https://github.com/Skords-01/Sergeant/pull/989) `docs(adr): resolve numbering collisions`.
 
 ---
 
@@ -409,14 +434,14 @@
 
 ### Спринт 3-6 (2-3 місяці) — «масштабування»
 
-| #   | PR                                                       | Effort    | Імпакт               | Status                                                                                            |
-| --- | -------------------------------------------------------- | --------- | -------------------- | ------------------------------------------------------------------------------------------------- |
-| 13  | `PR-6.C` — strict: true full + remove allowJs            | 1 тиждень | strict TS done       | ⏳ pending                                                                                        |
-| 14  | `PR-4.D` — zod-to-openapi для api-client                 | 1 тиждень | автоматизує rule #3  |
-| 15  | `PR-8.A` + `PR-8.C` — error-budget policy + tool metrics | 3-5 д     | operational maturity |
-| 16  | `PR-10.B` + `PR-10.C` — split smoke-e2e + nightly audit  | 2-3 д     | CI scaling           | `PR-10.B` ✅ closed; `PR-10.C` ✅ closed — [#944](https://github.com/Skords-01/Sergeant/pull/944) |
-| 17  | `PR-11.A` + `PR-11.C` — freshness badges + ADR template  | 1 тиждень | doc lifecycle        |
-| 18  | `PR-3.B/C` next 5 — file decomposition next wave         | 1-2 тижні | regression-surface   |
+| #   | PR                                                       | Effort    | Імпакт               | Status                                                                                                                                                   |
+| --- | -------------------------------------------------------- | --------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 13  | `PR-6.C` — strict: true full + remove allowJs            | 1 тиждень | strict TS done       | ⏳ pending                                                                                                                                               |
+| 14  | `PR-4.D` — zod-to-openapi для api-client                 | 1 тиждень | автоматизує rule #3  | 🟡 Phase 1 done — spec згенеровано, freshness-скрипт працює (`pnpm api:check-openapi`); workflow додає юзер; Phase 2 (api-client codegen) — наступний PR |
+| 15  | `PR-8.A` + `PR-8.C` — error-budget policy + tool metrics | 3-5 д     | operational maturity | `PR-8.A` ✅ [#942](https://github.com/Skords-01/Sergeant/pull/942); `PR-8.C` ✅ через PR-12.A [#864](https://github.com/Skords-01/Sergeant/pull/864)     |
+| 16  | `PR-10.B` + `PR-10.C` — split smoke-e2e + nightly audit  | 2-3 д     | CI scaling           | `PR-10.B` ✅ closed; `PR-10.C` ✅ closed — [#944](https://github.com/Skords-01/Sergeant/pull/944)                                                        |
+| 17  | `PR-11.A` + `PR-11.C` — freshness badges + ADR template  | 1 тиждень | doc lifecycle        | `PR-11.A` ✅ [#952](https://github.com/Skords-01/Sergeant/pull/952); `PR-11.C` ✅ closed (5/5)                                                           |
+| 18  | `PR-3.B/C` next 5 — file decomposition next wave         | 1-2 тижні | regression-surface   | ⏳ pending                                                                                                                                               |
 
 ### Поза 6 місяців
 

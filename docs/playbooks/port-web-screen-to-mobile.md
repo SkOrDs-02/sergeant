@@ -1,123 +1,69 @@
 # Playbook: Port Web Screen to Mobile
 
-**Trigger:** "Перенести екран X з apps/web в apps/mobile" / чергова фаза React Native міграції / `react-native-migration.md`.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Status:** Active
 
----
+**Trigger:** "Перенести екран з `apps/web` у `apps/mobile`" / чергова фаза RN migration / mobile feature має повторити існуючий web capability без дублювання domain logic.
+
+## Owner surface
+
+- Primary surfaces: `apps/mobile`, `apps/web`
+- Governing skills: `sergeant-mobile-expo`, `sergeant-monorepo-boundaries`
+
+## Required context
+
+- Почни з `sergeant-start-here`, потім відкрий `sergeant-mobile-expo`.
+- Далі обов'язково звір `sergeant-monorepo-boundaries`, щоб винести shared logic у package, а не дублювати.
+- Якщо screen залежить від нового API або schema change, спочатку виконай відповідний playbook для backend surface.
 
 ## Steps
 
-### 1. Визначити scope web-екрану
+### 1. Розклади web screen на reusable і platform-specific частини
 
-```bash
-# Знайти компонент в apps/web
-find apps/web/src -name "<ScreenName>*" -type f
+- Shared domain logic
+- Shared API contract
+- Web-only UI glue
+- Web-only storage, browser, router або DOM behavior
 
-# Перевірити залежності компонента
-grep -n "import" apps/web/src/modules/<module>/pages/<Screen>.tsx
-```
+### 2. Винеси shared logic туди, де їй місце
 
-Розділити залежності на:
+- Domain math / parsing / schemas -> `packages/*`
+- Shared API usage -> `packages/api-client`
+- Не копіюй behavior просто тому, що так швидше сьогодні
 
-- **Reusable** (domain packages: `@sergeant/shared`, `@sergeant/api-client`, `@sergeant/finyk-domain` тощо) — переносяться as-is.
-- **Web-specific** (React Router, Tailwind, web-only hooks) — потрібні RN-аналоги.
+### 3. Побудуй mobile screen нативно
 
-### 2. Створити screen в apps/mobile
+- Використовуй Expo Router patterns.
+- Не тягни web-only imports або DOM APIs.
+- Використовуй mobile storage/runtime conventions замість browser ones.
 
-```bash
-# Expo Router використовує file-based routing
-touch apps/mobile/app/(tabs)/<screen-name>.tsx
-```
+### 4. Під'єднай дані і navigation
 
-Базова структура:
+- React Query keys мають лишатись factory-based.
+- Session/auth flow має бути mobile-safe.
+- Navigation tree оновлюй у mobile layout, а не через web assumptions.
 
-```tsx
-import { View, Text } from "react-native";
-// Реюзати domain-пакети напряму
-import { someUtil } from "@sergeant/shared";
+### 5. Перевір UX parity без pixel-copy
 
-export default function ScreenName() {
-  return (
-    <View>
-      <Text>Screen Name</Text>
-    </View>
-  );
-}
-```
-
-### 3. Замінити web-специфічні компоненти
-
-| Web (apps/web)                   | Mobile (apps/mobile)                   |
-| -------------------------------- | -------------------------------------- |
-| `<div>`, `<span>`                | `<View>`, `<Text>`                     |
-| Tailwind classes                 | StyleSheet / NativeWind                |
-| `<Link to="...">` (React Router) | `<Link href="...">` (Expo Router)      |
-| `useNavigate()`                  | `useRouter()` (Expo Router)            |
-| `localStorage`                   | `AsyncStorage` / `SecureStore`         |
-| `fetch` / React Query            | React Query (той самий `api-client`)   |
-| `<img src="...">`                | `<Image source={{uri: "..."}}>`        |
-| CSS animations                   | `react-native-reanimated`              |
-| `window.addEventListener`        | RN `AppState` / `Dimensions` listeners |
-
-### 4. Data fetching
-
-Реюзати `@sergeant/api-client` напряму — ті самі endpoint-и, ті самі типи:
-
-```tsx
-import { api } from "@sergeant/api-client";
-import { useQuery } from "@tanstack/react-query";
-import { finykKeys } from "@shared/lib/queryKeys";
-
-const { data } = useQuery({
-  queryKey: finykKeys.accounts(),
-  queryFn: () => api.mono.accounts(),
-});
-```
-
-React Query key factories — ті самі з `queryKeys.ts` (AGENTS.md rule #2).
-
-### 5. Навігація
-
-Додати screen до tab-бару або stack navigator в `apps/mobile/app/_layout.tsx` (Expo Router).
-
-### 6. Тести
-
-```bash
-# Тест на mobile
-pnpm --filter @sergeant/mobile exec vitest run src/<path>/<Screen>.test.tsx
-```
-
-Перевірити на Expo Go (або Expo Dev Client) на реальному пристрої / емуляторі.
-
-### 7. Створити PR
-
-- Branch: `devin/<unix-ts>-feat-mobile-<screen>`
-- Commit: `feat(mobile): port <screen-name> from web`
-- PR description:
-  - Який екран перенесено
-  - Що реюзано з domain-пакетів
-  - Які web-компоненти замінено на RN-аналоги
-  - Screenshot з мобільного (обов'язково)
-
----
+- Паритет поведінки важливіший за буквальне копіювання DOM layout.
+- Переконайся, що mobile screen відчувається native і не ламає shared domain assumptions.
 
 ## Verification
 
-- [ ] `pnpm lint` — green
-- [ ] `pnpm typecheck` — green
-- [ ] Mobile тести — green (окрім known flaky: `OnboardingWizard`, `WeeklyDigestFooter`, `HubSettingsPage`)
-- [ ] React Query keys — через factories (rule #2)
-- [ ] Domain packages реюзано без дублювання
-- [ ] Screenshot з мобільного додано до PR
+- [ ] `pnpm lint`
+- [ ] `pnpm typecheck`
+- [ ] `pnpm --filter @sergeant/mobile test`
+- [ ] Немає DOM або web-only imports у mobile screen
+- [ ] Shared logic не продубльована без причини
+- [ ] Navigation і data flow працюють на mobile runtime
 
-## Notes
+## When not to use this playbook
 
-- `apps/mobile` — Expo 52 + React Native 0.76 + Expo Router (file-based routing).
-- Domain packages (`@sergeant/finyk-domain`, `@sergeant/api-client` тощо) — спільні між web і mobile.
-- Flaky mobile-тести не блокують merge (AGENTS.md).
-- Якщо screen потребує native module — перевірити чи він доступний в Expo Go або потрібен dev-client build.
+- Потрібно лише поправити існуючий mobile screen.
+- Задача лише про shared domain package без UI переносу.
 
-## See also
+## Related playbooks and skills
 
-- [react-native-migration.md](../mobile/react-native-migration.md) — повний план міграції
-- [mobile.md](../mobile/overview.md) — загальна документація mobile app
-- [AGENTS.md](../../AGENTS.md) — rule #2 (RQ keys), flaky tests
+- [add-api-endpoint.md](./add-api-endpoint.md)
+- Skill: `sergeant-mobile-expo`
+- Skill: `sergeant-monorepo-boundaries`

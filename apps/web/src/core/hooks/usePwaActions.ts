@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { safeWriteLS } from "@shared/lib/storage";
 import { PWA_ACTION_KEY, consumePwaAction } from "../app/pwaAction";
 
 export type PwaAction =
@@ -31,11 +32,7 @@ export function usePwaActions(searchParams: URLSearchParams): PwaActions {
   const [pwaAction, setPwaAction] = useState<PwaAction | null>(() => {
     const fromUrl = searchParams.get("action");
     if (isPwaAction(fromUrl)) {
-      try {
-        localStorage.setItem(PWA_ACTION_KEY, fromUrl);
-      } catch {
-        /* noop */
-      }
+      safeWriteLS(PWA_ACTION_KEY, fromUrl);
       return fromUrl;
     }
     const consumed = consumePwaAction();

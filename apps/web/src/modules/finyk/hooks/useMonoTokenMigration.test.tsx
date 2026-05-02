@@ -4,12 +4,6 @@ import { renderHook, waitFor, cleanup } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
-const flagState = { value: false };
-
-vi.mock("../../../core/lib/featureFlags", () => ({
-  useFlag: () => flagState.value,
-}));
-
 vi.mock("@shared/api", async () => {
   const actual =
     await vi.importActual<typeof import("@shared/api")>("@shared/api");
@@ -67,7 +61,6 @@ describe("useMonoTokenMigration", () => {
     vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
-    flagState.value = false;
   });
 
   afterEach(() => {
@@ -76,25 +69,8 @@ describe("useMonoTokenMigration", () => {
     sessionStorage.clear();
   });
 
-  it("does nothing when webhook flag is off", async () => {
-    localStorage.setItem("finyk_token", "legacy-token");
-    flagState.value = false;
-
-    renderHook(() => useMonoTokenMigration(true), {
-      wrapper: makeWrapper(),
-    });
-
-    // Wait a tick for effects to run
-    await new Promise((r) => setTimeout(r, 50));
-
-    expect(mockedConnect).not.toHaveBeenCalled();
-    // Token should remain
-    expect(localStorage.getItem("finyk_token")).toBe("legacy-token");
-  });
-
   it("does nothing when user is not logged in", async () => {
     localStorage.setItem("finyk_token", "legacy-token");
-    flagState.value = true;
 
     renderHook(() => useMonoTokenMigration(false), {
       wrapper: makeWrapper(),
@@ -105,9 +81,8 @@ describe("useMonoTokenMigration", () => {
     expect(mockedConnect).not.toHaveBeenCalled();
   });
 
-  it("migrates legacy token to server when webhook enabled and logged in", async () => {
+  it("migrates legacy token to server when logged in", async () => {
     localStorage.setItem("finyk_token", "my-legacy-token");
-    flagState.value = true;
     mockedConnect.mockResolvedValue({ status: "active", accountsCount: 1 });
 
     renderHook(() => useMonoTokenMigration(true), {
@@ -115,7 +90,10 @@ describe("useMonoTokenMigration", () => {
     });
 
     await waitFor(() => {
-      expect(mockedConnect).toHaveBeenCalledWith("my-legacy-token");
+      expect(mockedConnect).toHaveBeenCalledWith(
+        "my-legacy-token",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
     });
 
     // Legacy token keys should be removed
@@ -134,7 +112,6 @@ describe("useMonoTokenMigration", () => {
 
   it("migrates finyk_token_remembered if present", async () => {
     localStorage.setItem("finyk_token_remembered", "remembered-token");
-    flagState.value = true;
     mockedConnect.mockResolvedValue({ status: "active", accountsCount: 2 });
 
     renderHook(() => useMonoTokenMigration(true), {
@@ -142,7 +119,10 @@ describe("useMonoTokenMigration", () => {
     });
 
     await waitFor(() => {
-      expect(mockedConnect).toHaveBeenCalledWith("remembered-token");
+      expect(mockedConnect).toHaveBeenCalledWith(
+        "remembered-token",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
     });
 
     expect(localStorage.getItem("finyk_token_remembered")).toBeNull();
@@ -151,7 +131,6 @@ describe("useMonoTokenMigration", () => {
   it("does not re-migrate if already done", async () => {
     localStorage.setItem("finyk_token", "legacy-token");
     localStorage.setItem("finyk_mono_token_migrated", "1");
-    flagState.value = true;
 
     renderHook(() => useMonoTokenMigration(true), {
       wrapper: makeWrapper(),
@@ -164,7 +143,6 @@ describe("useMonoTokenMigration", () => {
 
   it("does not remove token if connect fails", async () => {
     localStorage.setItem("finyk_token", "legacy-token");
-    flagState.value = true;
     mockedConnect.mockRejectedValue(new Error("Server error"));
 
     renderHook(() => useMonoTokenMigration(true), {

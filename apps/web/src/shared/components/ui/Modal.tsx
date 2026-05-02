@@ -7,7 +7,9 @@ import {
 } from "react";
 import { cn } from "@shared/lib/cn";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
 import { Button } from "./Button";
+import { Sheet } from "./Sheet";
 
 /**
  * Sergeant Design System — Modal (centered dialog)
@@ -83,16 +85,47 @@ export function Modal({
   const descriptionId = useId();
   useDialogFocusTrap(open, panelRef, { onEscape: onClose });
 
+  // Adaptive layout: on coarse-pointer devices (touch screens) the
+  // bottom-sheet hand-off feels more native than a centered modal.
+  // We delegate to <Sheet>, which already owns drag-to-dismiss, the
+  // 44×44 close button, focus trap and safe-area handling, so the
+  // behaviour stays consistent with sheets that callers render
+  // directly. We only swap when the modal has a title (Sheet requires
+  // one for `aria-labelledby`) and the close affordance is visible —
+  // titleless / unclosable modals (e.g. Stories controls) keep the
+  // centered layout because the sheet's drag-handle + close button
+  // would conflict with their bespoke chrome.
+  const coarse = useCoarsePointer();
+  const useSheet = coarse && !hideClose && Boolean(title);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open || useSheet) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [open]);
+  }, [open, useSheet]);
 
   if (!open) return null;
+
+  if (useSheet) {
+    return (
+      <Sheet
+        open={open}
+        onClose={onClose}
+        title={title}
+        description={description}
+        footer={footer}
+        zIndex={zIndex}
+        closeLabel={closeLabel}
+        panelClassName={panelClassName}
+        bodyClassName={bodyClassName}
+      >
+        {children}
+      </Sheet>
+    );
+  }
 
   const handleOverlayKey = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "Enter" || event.key === " ") {

@@ -1,6 +1,7 @@
-# Prometheus Metrics Reference
+# Довідник Prometheus-метрик
 
-> Last reviewed: 2026-04-27. Reviewer: Devin (automated).
+> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Status:** Active
 
 Каталог усіх Prometheus-метрик бекенду Sergeant (`GET /metrics`, bearer `METRICS_TOKEN`).
 Джерело істини — [`metrics.ts`](../../apps/server/src/obs/metrics.ts).
@@ -8,7 +9,7 @@
 
 ---
 
-## Naming / labeling convention
+## Конвенція неймінгу / лейблінгу
 
 | Правило                                | Приклад                                                                           |
 | -------------------------------------- | --------------------------------------------------------------------------------- |
@@ -31,9 +32,9 @@
 | `http_errors_total`        | Counter   | `method` · `path` · `status_class` · `module` | [requestLog.ts:79](../../apps/server/src/http/requestLog.ts#L79) |
 | `http_in_flight`           | Gauge     | `method`                                      | [requestLog.ts:37](../../apps/server/src/http/requestLog.ts#L37) |
 
-Buckets duration: `5, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000` ms. `path` = route pattern (не raw URL) → fallback `"unknown"` ([requestLog.ts:46](../../apps/server/src/http/requestLog.ts#L46)). `http_errors_total` інкрементується лише при `status ≥ 400`. `module` з ALS.
+Buckets-duration: `5, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000` ms. `path` = route pattern (не raw URL) → fallback `"unknown"` ([requestLog.ts:46](../../apps/server/src/http/requestLog.ts#L46)). `http_errors_total` інкрементується лише при `status ≥ 400`. `module` — з ALS.
 
-**Cardinality**: ~20 path × 4 method × 6 status-class × ~15 module ≈ **7 200** серій (counter); histogram ~4 800.
+**Кардинальність**: ~20 path × 4 method × 6 status-class × ~15 module ≈ **7 200** серій (counter); histogram ~4 800.
 
 ```promql
 sum by (path) (rate(http_requests_total[5m]))                              # RPS
@@ -58,7 +59,7 @@ histogram_quantile(0.95, sum by (le, path) (rate(http_request_duration_ms_bucket
 
 Buckets duration: `1, 5, 25, 100, 250, 1000, 5000` ms. Slow threshold: `DB_SLOW_MS` (default 200 ms). Pool sampler кожні 10 с, запускається з [index.ts:44](../../apps/server/src/index.ts#L44).
 
-**Cardinality**: ~15 op × 7 buckets = **105**; gauges — 3 серії.
+**Кардинальність**: ~15 op × 7 buckets = **105**; gauges — 3 серії.
 
 ```promql
 histogram_quantile(0.95, sum by (le, op) (rate(db_query_duration_ms_bucket[5m])))  # p95 per op
@@ -79,7 +80,7 @@ max(db_pool_waiting)                                                            
 
 `op`: `sign_in` · `sign_up` · `forget_password` · `reset_password` · `signout` · `session_check`. `outcome`: `ok` · `bad_credentials` · `rate_limited` · `invalid` · `error` · `hit` · `miss`. Buckets: `1, 5, 10, 25, 50, 100, 250, 500, 1000` ms.
 
-**Cardinality**: 6 op × 7 outcome ≈ **42**; histogram 3 outcome × 9 buckets = **27**.
+**Кардинальність**: 6 op × 7 outcome ≈ **42**; histogram 3 outcome × 9 buckets = **27**.
 
 ```promql
 sum by (op, outcome) (rate(auth_attempts_total[5m]))                                       # breakdown
@@ -102,7 +103,7 @@ sum(rate(auth_attempts_total{outcome="error"}[5m])) / sum(rate(auth_attempts_tot
 
 `op`: `push` · `pull` · `push_all` · `pull_all`. `module`: `finyk` · `fizruk` · `routine` · `nutrition` · `profile`. `outcome`: `ok` · `empty` · `conflict` · `invalid` · `too_large` · `unauthorized` · `error`. Buckets duration: `10…10000` ms; bytes: `1024…5242880` (MAX_BLOB_SIZE = 5 MB).
 
-**Cardinality**: 4 × 5 × 7 ≈ **140** (counter); histograms ~180 кожна.
+**Кардинальність**: 4 × 5 × 7 ≈ **140** (counter); histograms ~180 кожна.
 
 ```promql
 sum by (op, module, outcome) (rate(sync_operations_total[5m]))                              # breakdown
@@ -121,7 +122,7 @@ sum(rate(sync_operations_total{op=~"push|push_all",outcome="conflict"}[1h]))
 | ----------------------- | ------- | ----------------- | -------------------------------------------------------------- |
 | `rate_limit_hits_total` | Counter | `key` · `outcome` | [rateLimit.ts:10](../../apps/server/src/http/rateLimit.ts#L10) |
 
-`key`: `api:auth:sensitive` · `api:web-vitals` · `api:chat` тощо. `outcome`: `allowed` · `blocked`. **Cardinality**: ~6 × 2 = **12**.
+`key`: `api:auth:sensitive` · `api:web-vitals` · `api:chat` тощо. `outcome`: `allowed` · `blocked`. **Кардинальність**: ~6 × 2 = **12**.
 
 ```promql
 sum by (key, outcome) (rate(rate_limit_hits_total[5m]))
@@ -145,7 +146,7 @@ rate(rate_limit_hits_total{key="api:auth:sensitive",outcome="blocked"}[5m])    #
 
 `outcome` (requests): `ok` · `rate_limited` · `timeout` · `error` · `bad_response`. `kind` (tokens): `prompt` · `completion` · `cache_write` · `cache_read`. `outcome` (cache): `hit` · `miss`. `reason` (quota blocks): `limit` · `disabled` · `tool_disabled`. `reason` (fail-open): `database_url_missing` · `db_error`. Buckets duration: `100…60000` ms.
 
-**Cardinality**: requests ~120; tokens ~12; quota ~5. Загалом ≈ **~150**.
+**Кардинальність**: requests ~120; tokens ~12; quota ~5. Загалом ≈ **~150**.
 
 ```promql
 sum(rate(ai_requests_total{outcome!="ok"}[5m])) / sum(rate(ai_requests_total[5m]))         # SLI 97%
@@ -165,7 +166,7 @@ sum(rate(anthropic_prompt_cache_hit_total{outcome="hit"}[5m]))
 | `chat_tool_invocations_total`      | Counter | `tool` · `outcome` | [toolMetrics.ts:53](../../apps/server/src/modules/chat/toolMetrics.ts#L53), [:96](../../apps/server/src/modules/chat/toolMetrics.ts#L96) |
 | `chat_tool_result_truncated_total` | Counter | `reason`           | [toolResultTruncation.ts:132](../../apps/server/src/modules/chat/toolResultTruncation.ts#L132)                                           |
 
-`tool`: whitelist із `TOOLS` ([toolMetrics.ts:23](../../apps/server/src/modules/chat/toolMetrics.ts#L23)) або `"unknown"`. `outcome`: `proposed` · `executed` · `unknown_tool`. `reason`: `size_threshold`. **Cardinality**: ~32 tool × 3 = **96**; truncation = **1**.
+`tool`: whitelist із `TOOLS` ([toolMetrics.ts:23](../../apps/server/src/modules/chat/toolMetrics.ts#L23)) або `"unknown"`. `outcome`: `proposed` · `executed` · `unknown_tool`. `reason`: `size_threshold`. **Кардинальність**: ~32 tool × 3 = **96**; truncation = **1**.
 
 ```promql
 sum by (tool) (rate(chat_tool_invocations_total{outcome="proposed"}[5m]))                  # tool popularity
@@ -175,7 +176,7 @@ sum by (tool) (rate(chat_tool_invocations_total{outcome="proposed"}[1h]))
 
 ---
 
-## 8. External HTTP
+## 8. Зовнішній HTTP
 
 | Metric                         | Type      | Labels                 | Emitter                                                                                                                            |
 | ------------------------------ | --------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
@@ -194,13 +195,13 @@ sum by (upstream) (rate(external_http_requests_total{outcome=~"error|timeout"}[5
 
 ---
 
-## 9. Web push
+## 9. Web-push
 
 | Metric             | Type    | Labels    | Emitter                                                   |
 | ------------------ | ------- | --------- | --------------------------------------------------------- |
 | `push_sends_total` | Counter | `outcome` | [push/send.ts:45](../../apps/server/src/push/send.ts#L45) |
 
-`outcome`: `ok` · `invalid_endpoint` · `rate_limited` · `error`. **Cardinality**: **4**.
+`outcome`: `ok` · `invalid_endpoint` · `rate_limited` · `error`. **Кардинальність**: **4**.
 
 ```promql
 sum by (outcome) (rate(push_sends_total[5m]))
@@ -208,14 +209,14 @@ sum by (outcome) (rate(push_sends_total[5m]))
 
 ---
 
-## 10. Mono webhooks
+## 10. Mono-webhook-и
 
 | Metric                        | Type      | Labels   | Emitter                                                                     |
 | ----------------------------- | --------- | -------- | --------------------------------------------------------------------------- |
 | `mono_webhook_received_total` | Counter   | `status` | [mono/webhook.ts:63](../../apps/server/src/modules/mono/webhook.ts#L63) ff. |
 | `mono_webhook_duration_ms`    | Histogram | `status` | [mono/webhook.ts:173](../../apps/server/src/modules/mono/webhook.ts#L173)   |
 
-`status`: `ok` · `invalid_secret` · `bad_payload` · `error`. Buckets: `1, 5, 25, 50, 100, 250, 500, 1000` ms. **Cardinality**: 4 (counter); 32 (histogram).
+`status`: `ok` · `invalid_secret` · `bad_payload` · `error`. Buckets: `1, 5, 25, 50, 100, 250, 500, 1000` ms. **Кардинальність**: 4 (counter); 32 (histogram).
 
 ```promql
 sum(rate(mono_webhook_received_total{status="ok"}[5m])) / sum(rate(mono_webhook_received_total[5m]))
@@ -224,13 +225,13 @@ histogram_quantile(0.95, sum by (le) (rate(mono_webhook_duration_ms_bucket[5m]))
 
 ---
 
-## 11. Barcode
+## 11. Barcode-лукапи
 
 | Metric                  | Type    | Labels               | Emitter                                                                   |
 | ----------------------- | ------- | -------------------- | ------------------------------------------------------------------------- |
 | `barcode_lookups_total` | Counter | `source` · `outcome` | [barcode.ts:153](../../apps/server/src/modules/nutrition/barcode.ts#L153) |
 
-`source`: `off` · `usda` · `upcitemdb`. `outcome`: `hit` · `miss` · `error`. Свідоме дублювання з `external_http_requests_total`. **Cardinality**: **9**.
+`source`: `off` · `usda` · `upcitemdb`. `outcome`: `hit` · `miss` · `error`. Свідоме дублювання з `external_http_requests_total`. **Кардинальність**: **9**.
 
 ```promql
 sum by (source) (rate(barcode_lookups_total{outcome="hit"}[5m])) / sum by (source) (rate(barcode_lookups_total[5m]))
@@ -238,14 +239,14 @@ sum by (source) (rate(barcode_lookups_total{outcome="hit"}[5m])) / sum by (sourc
 
 ---
 
-## 12. Frontend CWV
+## 12. Frontend-CWV
 
 | Metric                   | Type      | Labels              | Emitter                                                                           |
 | ------------------------ | --------- | ------------------- | --------------------------------------------------------------------------------- |
 | `web_vitals_duration_ms` | Histogram | `metric` · `rating` | [web-vitals.ts:72](../../apps/server/src/modules/observability/web-vitals.ts#L72) |
 | `web_vitals_cls`         | Histogram | `rating`            | [web-vitals.ts:70](../../apps/server/src/modules/observability/web-vitals.ts#L70) |
 
-`metric`: `LCP` · `INP` · `FCP` · `TTFB`. `rating`: `good` · `needs-improvement` · `poor`. Endpoint `POST /api/metrics/web-vitals` (anonymous, `sendBeacon`). Buckets duration: `50…10000` ms; CLS: `0.01…1`. **Cardinality**: 4 × 3 × 11 + 3 × 7 = **153**.
+`metric`: `LCP` · `INP` · `FCP` · `TTFB`. `rating`: `good` · `needs-improvement` · `poor`. Endpoint `POST /api/metrics/web-vitals` (anonymous, `sendBeacon`). Buckets duration: `50…10000` ms; CLS: `0.01…1`. **Кардинальність**: 4 × 3 × 11 + 3 × 7 = **153**.
 
 | CWV  | good      | needs-improvement | poor   |
 | ---- | --------- | ----------------- | ------ |
@@ -263,13 +264,13 @@ histogram_quantile(0.75, sum by (le) (rate(web_vitals_duration_ms_bucket{metric=
 
 ---
 
-## 13. Application errors
+## 13. Помилки додатку
 
 | Metric             | Type    | Labels                                | Emitter                                                              |
 | ------------------ | ------- | ------------------------------------- | -------------------------------------------------------------------- |
 | `app_errors_total` | Counter | `kind` · `status` · `code` · `module` | [errorHandler.ts:38](../../apps/server/src/http/errorHandler.ts#L38) |
 
-`kind`: `operational` (AppError) · `programmer`. `status`: HTTP status string. `code`: `VALIDATION` · `UNAUTHORIZED` · `INTERNAL` · `RATE_LIMIT` · `BAD_REQUEST` тощо. **Cardinality**: реально ~50–100.
+`kind`: `operational` (AppError) · `programmer`. `status`: HTTP-status-рядок. `code`: `VALIDATION` · `UNAUTHORIZED` · `INTERNAL` · `RATE_LIMIT` · `BAD_REQUEST` тощо. **Кардинальність**: реально ~50–100.
 
 ```promql
 sum by (module) (rate(app_errors_total{kind="programmer"}[5m]))    # bugs — always investigate
@@ -280,14 +281,14 @@ sum by (module, code) (rate(app_errors_total{status=~"5.."}[5m]))  # 5xx by modu
 
 ---
 
-## 14. Process-level
+## 14. Process-рівень
 
 | Metric                       | Type    | Labels | Emitter                                             |
 | ---------------------------- | ------- | ------ | --------------------------------------------------- |
 | `unhandled_rejections_total` | Counter | —      | [index.ts:164](../../apps/server/src/index.ts#L164) |
 | `uncaught_exceptions_total`  | Counter | —      | [index.ts:180](../../apps/server/src/index.ts#L180) |
 
-**Cardinality**: **2**. В нормі обидві = 0.
+**Кардинальність**: **2**. В нормі обидві = 0.
 
 ```promql
 increase(unhandled_rejections_total[5m]) > 0    # always a bug
@@ -298,13 +299,13 @@ increase(uncaught_exceptions_total[5m]) > 0     # process state corrupted
 
 ---
 
-## 15. Node runtime defaults
+## 15. Default-метрики Node-runtime
 
 `client.collectDefaultMetrics({ register })` ([metrics.ts:11](../../apps/server/src/obs/metrics.ts#L11)) реєструє стандартні `prom-client` метрики: `process_cpu_seconds_total`, `process_resident_memory_bytes`, `nodejs_eventloop_lag_seconds`, GC-метрики тощо. Фіксована кардинальність ~15–20 серій. Використовуються в runbook для діагностики OOM ([runbook.md §HttpErrorBudgetBurn p.6](./runbook.md#httperrorbudgetburn)).
 
 ---
 
-## Cardinality budget / bad smells
+## Бюджет кардинальності / bad-smell-и
 
 Загальна оцінка: 36 кастомних метрик генерують ≈ **8 000–10 000 серій** — прийнятно для single-instance Railway.
 
@@ -320,7 +321,7 @@ increase(uncaught_exceptions_total[5m]) > 0     # process state corrupted
 
 ---
 
-## Open issues
+## Відкриті питання
 
 Сиріт і несумісних label-set-ів **не знайдено**. Всі 36 метрик інкрементуються щонайменше в одному emitter.
 

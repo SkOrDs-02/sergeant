@@ -58,7 +58,7 @@ export function DayReportSheet({
                   type="button"
                   onClick={() => onToggleHabit(h.id, dateKey)}
                   className={cn(
-                    "w-8 h-8 rounded-lg border flex items-center justify-center text-sm font-bold shrink-0 transition-colors",
+                    "w-8 h-8 rounded-xl border flex items-center justify-center text-sm font-bold shrink-0 transition-colors",
                     C.done,
                   )}
                   aria-label="Скасувати виконання"
@@ -88,7 +88,7 @@ export function DayReportSheet({
                 <button
                   type="button"
                   onClick={() => onToggleHabit(h.id, dateKey)}
-                  className="w-8 h-8 rounded-lg border border-line flex items-center justify-center text-sm font-bold shrink-0 text-muted hover:bg-panelHi transition-colors"
+                  className="w-8 h-8 rounded-xl border border-line flex items-center justify-center text-sm font-bold shrink-0 text-muted hover:bg-panelHi transition-colors"
                   aria-label="Відмітити як виконано"
                 >
                   ○

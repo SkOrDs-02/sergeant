@@ -3,6 +3,8 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { useToast } from "@shared/hooks/useToast";
+import { showUndoToast } from "@shared/lib/undoToast";
 import { createTag, deleteTag, updateTag } from "../../lib/routineStorage";
 import type { RoutineState } from "../../lib/types";
 
@@ -22,6 +24,7 @@ export function TagsSection({
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
   const [editingTagName, setEditingTagName] = useState("");
   const tagSavedRef = useRef(false);
+  const toast = useToast();
 
   const commitEdit = (id: string) => {
     if (!tagSavedRef.current && editingTagName.trim()) {
@@ -89,7 +92,7 @@ export function TagsSection({
                 {t.name}
                 <button
                   type="button"
-                  className="text-subtle hover:text-text min-w-[28px] min-h-[28px] flex items-center justify-center rounded-lg"
+                  className="text-subtle hover:text-text min-w-[28px] min-h-[28px] flex items-center justify-center rounded-xl"
                   onClick={() => {
                     tagSavedRef.current = false;
                     setEditingTagId(t.id);
@@ -101,8 +104,25 @@ export function TagsSection({
                 </button>
                 <button
                   type="button"
-                  className="text-subtle hover:text-danger min-w-[28px] min-h-[28px] flex items-center justify-center rounded-lg"
-                  onClick={() => setRoutine((s) => deleteTag(s, t.id))}
+                  className="text-subtle hover:text-danger min-w-[28px] min-h-[28px] flex items-center justify-center rounded-xl"
+                  onClick={() => {
+                    // Soft-delete with undo (see docs/design/UNDO-PATTERN.md):
+                    // snapshot the routine before applying the delete, then
+                    // surface a 5 s undo toast that restores the snapshot.
+                    // No ConfirmDialog — confirms are reserved for
+                    // non-reversible flows per the unified undo policy.
+                    const snapshot = routine;
+                    const usageCount = routine.habits.filter((h) =>
+                      (h.tagIds || []).includes(t.id),
+                    ).length;
+                    setRoutine((s) => deleteTag(s, t.id));
+                    const detail =
+                      usageCount > 0 ? ` (відʼєднано від ${usageCount})` : "";
+                    showUndoToast(toast, {
+                      msg: `Видалено тег «${t.name}»${detail}`,
+                      onUndo: () => setRoutine(snapshot),
+                    });
+                  }}
                   aria-label={`Видалити ${t.name}`}
                 >
                   ×

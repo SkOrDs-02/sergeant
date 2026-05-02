@@ -22,8 +22,8 @@
  *   variables as web (see `apps/mobile/global.css`).
  */
 
-import type { ReactNode } from "react";
-import { Text, View, type ViewProps } from "react-native";
+import { useEffect, useRef, type ReactNode } from "react";
+import { Animated, Text, View, type ViewProps } from "react-native";
 
 export type BadgeVariant =
   | "neutral"
@@ -165,6 +165,8 @@ export interface BadgeProps extends ViewProps {
   size?: BadgeSize;
   /** Leading dot (useful for status indicators). */
   dot?: boolean;
+  /** Animate the dot with a pulse effect (for live/new indicators). */
+  pulse?: boolean;
   children?: ReactNode;
   className?: string;
 }
@@ -174,10 +176,50 @@ export function Badge({
   tone = "soft",
   size = "sm",
   dot = false,
+  pulse = false,
   className,
   children,
   ...props
 }: BadgeProps) {
+  // Pulse animation for live indicators
+  const pulseScale = useRef(new Animated.Value(1)).current;
+  const pulseOpacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!pulse || !dot) return;
+
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(pulseScale, {
+            toValue: 1.8,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseOpacity, {
+            toValue: 0,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(pulseScale, {
+            toValue: 1,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseOpacity, {
+            toValue: 1,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+    );
+
+    animation.start();
+    return () => animation.stop();
+  }, [pulse, dot, pulseScale, pulseOpacity]);
   const containerMap =
     tone === "solid"
       ? solidVariants
@@ -199,10 +241,26 @@ export function Badge({
       {...props}
     >
       {dot && (
-        <View
-          accessibilityElementsHidden
-          className={cx("rounded-full", dotSizes[size], dotMap[variant])}
-        />
+        <View className="relative">
+          {pulse && (
+            <Animated.View
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                transform: [{ scale: pulseScale }],
+                opacity: pulseOpacity,
+              }}
+              className={cx("rounded-full", dotSizes[size], dotMap[variant])}
+            />
+          )}
+          <View
+            accessibilityElementsHidden
+            className={cx("rounded-full", dotSizes[size], dotMap[variant])}
+          />
+        </View>
       )}
       {typeof children === "string" || typeof children === "number" ? (
         <Text

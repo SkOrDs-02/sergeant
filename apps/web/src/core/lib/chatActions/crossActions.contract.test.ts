@@ -24,10 +24,10 @@ afterEach(() => {
 
 function call(action: ChatAction): string {
   const out = handleCrossAction(action);
-  if (typeof out !== "string") {
-    throw new Error(`handler returned ${typeof out}, expected string`);
+  if (out == null) {
+    throw new Error(`handler returned ${typeof out}, expected string|object`);
   }
-  return out;
+  return typeof out === "string" ? out : out.result;
 }
 
 // ---------------------------------------------------------------------------
@@ -200,7 +200,12 @@ describe("detect_anomalies", () => {
 
   it("happy: detects anomaly when large outlier exists", () => {
     const now = Math.floor(Date.now() / 1000);
-    const txs = [];
+    const txs: Array<{
+      id: string;
+      amount: number;
+      time: number;
+      description: string;
+    }> = [];
     for (let i = 0; i < 10; i++) {
       txs.push({
         id: `t${i}`,
@@ -562,5 +567,95 @@ describe("compare_weeks", () => {
     const out = call({ name: "compare_weeks", input: {} });
     expect(typeof out).toBe("string");
     expect(out.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// save_note · undo
+// ---------------------------------------------------------------------------
+describe("save_note · undo", () => {
+  it("повертає {undo} який видаляє щойно додану нотатку за id", () => {
+    const out = handleCrossAction({
+      name: "save_note",
+      input: { text: "Тест запам'ятати щось важливе", tag: "ideas" },
+    });
+    if (out == null || typeof out === "string") {
+      throw new Error(`expected undoable result, got ${typeof out}`);
+    }
+    const before = JSON.parse(localStorage.getItem("hub_notes_v1") || "[]");
+    expect(before).toHaveLength(1);
+
+    out.undo();
+    const after = JSON.parse(localStorage.getItem("hub_notes_v1") || "[]");
+    expect(after).toHaveLength(0);
+  });
+
+  it("undo прибирає лише свою нотатку, попередні залишаються", () => {
+    handleCrossAction({
+      name: "save_note",
+      input: { text: "Перша нотатка", tag: "other" },
+    });
+    const second = handleCrossAction({
+      name: "save_note",
+      input: { text: "Друга нотатка", tag: "ideas" },
+    });
+    if (second == null || typeof second === "string") {
+      throw new Error("expected undoable result");
+    }
+    second.undo();
+
+    const after = JSON.parse(localStorage.getItem("hub_notes_v1") || "[]");
+    expect(after).toHaveLength(1);
+    expect(after[0].text).toBe("Перша нотатка");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// remember · undo
+// ---------------------------------------------------------------------------
+describe("remember · undo", () => {
+  it("created: undo видаляє факт", () => {
+    const out = handleCrossAction({
+      name: "remember",
+      input: { fact: "Я люблю каву зранку" },
+    });
+    if (out == null || typeof out === "string") {
+      throw new Error(`expected undoable result, got ${typeof out}`);
+    }
+
+    out.undo();
+    // After undo, the entry should be gone
+    const profile = handleCrossAction({
+      name: "my_profile",
+      input: {},
+    });
+    expect(typeof profile === "string" ? profile : profile?.result).toContain(
+      "порожній",
+    );
+  });
+
+  it("updated: undo повертає попередню версію факту", () => {
+    handleCrossAction({
+      name: "remember",
+      input: { fact: "Я програміст", category: "work" },
+    });
+    const out = handleCrossAction({
+      name: "remember",
+      input: { fact: "Я програміст", category: "work" },
+    });
+    if (out == null || typeof out === "string") {
+      throw new Error(`expected undoable result, got ${typeof out}`);
+    }
+    expect(out.result).toContain("Оновив");
+
+    out.undo();
+    // Should still have the entry (we restored prev version)
+    const profile = handleCrossAction({
+      name: "my_profile",
+      input: {},
+    });
+    const profileText =
+      typeof profile === "string" ? profile : (profile?.result ?? "");
+    expect(profileText).toContain("Я програміст");
   });
 });

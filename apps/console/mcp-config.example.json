@@ -1,0 +1,18 @@
+{
+  "policy": "read-only-by-default",
+  "mutationApproval": "explicit-human-approval-required",
+  "audit": {
+    "requiredFields": ["actor", "tool", "target", "requestedAction", "result"]
+  },
+  "servers": {
+    "github": {
+      "enabled": true,
+      "allowedActions": ["read_repository", "read_issues", "read_pull_requests"]
+    },
+    "database": {
+      "enabled": true,
+      "allowedActions": ["select"],
+      "deniedActions": ["insert", "update", "delete", "ddl"]
+    }
+  }
+}

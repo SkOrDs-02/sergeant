@@ -41,7 +41,7 @@ export type ProgressRingVariant =
   | "routine"
   | "nutrition";
 
-export type ProgressRingSize = "sm" | "md" | "lg" | "xl";
+export type ProgressRingSize = "xs" | "sm" | "md" | "lg" | "xl";
 
 const variantColor: Record<ProgressRingVariant, string> = {
   accent: "text-accent",
@@ -56,6 +56,7 @@ const variantColor: Record<ProgressRingVariant, string> = {
 };
 
 const sizePx: Record<ProgressRingSize, number> = {
+  xs: 32,
   sm: 48,
   md: 72,
   lg: 96,
@@ -63,6 +64,7 @@ const sizePx: Record<ProgressRingSize, number> = {
 };
 
 const labelTextSize: Record<ProgressRingSize, string> = {
+  xs: "text-micro",
   sm: "text-xs",
   md: "text-sm",
   lg: "text-lg",
@@ -80,6 +82,8 @@ export interface ProgressRingProps extends Omit<
   variant?: ProgressRingVariant;
   label?: ReactNode;
   showPercent?: boolean;
+  /** Alias for `showPercent` (kept for parity with showcase callers). */
+  showValue?: boolean;
 }
 
 export function ProgressRing({
@@ -90,9 +94,13 @@ export function ProgressRing({
   variant = "accent",
   label,
   showPercent = true,
+  showValue,
   className,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
   ...props
 }: ProgressRingProps) {
+  const showLabel = showValue ?? showPercent;
   const diameter = sizePx[size];
   const stroke = strokeWidth ?? Math.max(2, Math.round(diameter / 12));
   const radius = (diameter - stroke) / 2;
@@ -104,7 +112,18 @@ export function ProgressRing({
   const percentText = Math.round(pct * 100);
 
   const displayLabel =
-    label !== undefined ? label : showPercent ? `${percentText}%` : null;
+    label !== undefined ? label : showLabel ? `${percentText}%` : null;
+
+  // ARIA progressbar requires an accessible name. The visible centre label
+  // is `aria-hidden`, so derive a default `aria-label` ("65%" / "65 / 100")
+  // when the caller did not pass one explicitly.
+  const accessibleLabel =
+    ariaLabel ??
+    (ariaLabelledBy
+      ? undefined
+      : max === 100
+        ? `${percentText}%`
+        : `${clamped} / ${safeMax}`);
 
   return (
     <div
@@ -112,6 +131,8 @@ export function ProgressRing({
       aria-valuenow={clamped}
       aria-valuemin={0}
       aria-valuemax={safeMax}
+      aria-label={accessibleLabel}
+      aria-labelledby={ariaLabelledBy}
       className={cn(
         "relative inline-flex items-center justify-center",
         variantColor[variant],

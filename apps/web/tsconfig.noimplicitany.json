@@ -8,6 +8,14 @@
     "src/shared/**/*",
     "src/modules/routine/**/*",
     "src/modules/nutrition/**/*",
+    "src/core/auth/**/*",
+    "src/core/cloudSync/**/*",
+    "src/core/components/**/*",
+    "src/core/hints/**/*",
+    "src/core/hooks/**/*",
+    "src/core/observability/**/*",
+    "src/core/pricing/**/*",
+    "src/core/profile/**/*",
     "src/test/**/*"
   ],
   "exclude": ["node_modules", "dist"]

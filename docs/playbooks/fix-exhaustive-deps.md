@@ -1,5 +1,8 @@
 # Playbook: Fix Exhaustive Deps Warnings
 
+> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Status:** Active
+
 **Trigger:** "Виправити exhaustive-deps warnings" / ESLint `react-hooks/exhaustive-deps` violations / стале закриття з `apps-web-exhaustive-deps.md`.
 
 ---

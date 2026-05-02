@@ -40,7 +40,7 @@ import {
   type CapabilityModule,
 } from "@sergeant/shared";
 
-import { Button } from "@/components/ui/Button";
+import { BackButton } from "@/components/ui/BackButton";
 import { Card } from "@/components/ui/Card";
 import { Sheet } from "@/components/ui/Sheet";
 import { useLocalStorage } from "@/lib/storage";
@@ -145,16 +145,13 @@ export function AssistantCataloguePage({
   return (
     <SafeAreaView className="flex-1 bg-cream-50" edges={["top"]}>
       <View className="flex-row items-center gap-3 px-5 pt-3 pb-2">
-        <Button
+        <BackButton
           variant="ghost"
           size="sm"
-          iconOnly
           onPress={handleClose}
-          accessibilityLabel="Назад"
+          autoNavigate={false}
           testID="assistant-catalogue-back"
-        >
-          <Text className="text-fg text-lg">‹</Text>
-        </Button>
+        />
         <Text className="text-[20px] font-bold text-fg">
           Можливості асистента
         </Text>

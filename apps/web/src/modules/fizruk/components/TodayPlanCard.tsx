@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { safeWriteLS } from "@shared/lib/storage";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -45,7 +46,7 @@ export function TodayPlanCard({
     const picked = tpl
       ? tpl.exerciseIds
           .map((id) => exercises.find((e) => e.id === id))
-          .filter(Boolean)
+          .filter((e): e is NonNullable<typeof e> => Boolean(e))
       : [];
     return { picked, templateName: tpl?.name || "" };
   }, [effectiveTemplateId, templates, exercises]);
@@ -73,9 +74,7 @@ export function TodayPlanCard({
       });
     }
     if (templateId) markTemplateUsed(templateId);
-    try {
-      localStorage.setItem(ACTIVE_WORKOUT_KEY, w.id);
-    } catch {}
+    safeWriteLS(ACTIVE_WORKOUT_KEY, w.id);
     try {
       sessionStorage.setItem("fizruk_workouts_mode", "log");
     } catch {}
@@ -85,7 +84,11 @@ export function TodayPlanCard({
   const tryStartPlan = (picks: unknown[], templateId?: string | null) => {
     if (!picks?.length) return;
     const risky = picks.some(
-      (ex) => recoveryConflictsForExercise(ex, rec.by).hasWarning,
+      (ex) =>
+        recoveryConflictsForExercise(
+          ex as { muscles?: { primary?: string[]; secondary?: string[] } },
+          rec.by,
+        ).hasWarning,
     );
     if (risky) {
       setPendingPicks(picks);
@@ -130,9 +133,7 @@ export function TodayPlanCard({
             onChange={(e) => {
               const v = e.target.value;
               setSelectedTemplateId(v);
-              try {
-                localStorage.setItem(SELECTED_TEMPLATE_KEY, v);
-              } catch {}
+              safeWriteLS(SELECTED_TEMPLATE_KEY, v);
             }}
             aria-label="Обрати збережений шаблон тренування"
           >

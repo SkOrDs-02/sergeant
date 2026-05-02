@@ -8,10 +8,8 @@ import {
   restoreHabit,
   snapshotHabit,
 } from "../../modules/routine/lib/routineStorage";
-import { ROUTINE_THEME as C } from "../../modules/routine/lib/routineConstants";
 import { HabitDetailSheet } from "../../modules/routine/components/HabitDetailSheet";
 import { HabitQuickCreateDialog } from "../../modules/routine/components/HabitQuickCreateDialog";
-import { RoutineBackupSection } from "../../modules/routine/components/RoutineBackupSection";
 import { TagsSection } from "../../modules/routine/components/settings/TagsSection";
 import { CategoriesSection } from "../../modules/routine/components/settings/CategoriesSection";
 import { ActiveHabitsSection } from "../../modules/routine/components/settings/ActiveHabitsSection";
@@ -50,13 +48,13 @@ export function RoutineSection() {
         <ToggleRow
           label="Показувати тренування з Фізрука в календарі"
           checked={routine.prefs?.showFizrukInCalendar !== false}
-          onChange={(e) => updatePref("showFizrukInCalendar", e.target.checked)}
+          onChange={(checked) => updatePref("showFizrukInCalendar", checked)}
         />
         <ToggleRow
           label="Показувати планові платежі підписок Фініка в календарі"
           checked={routine.prefs?.showFinykSubscriptionsInCalendar !== false}
-          onChange={(e) =>
-            updatePref("showFinykSubscriptionsInCalendar", e.target.checked)
+          onChange={(checked) =>
+            updatePref("showFinykSubscriptionsInCalendar", checked)
           }
         />
       </SettingsSubGroup>
@@ -106,10 +104,6 @@ export function RoutineSection() {
             setCatDraft={setCatDraft}
           />
         </div>
-      </SettingsSubGroup>
-
-      <SettingsSubGroup title="Резервна копія">
-        <RoutineBackupSection theme={C} />
       </SettingsSubGroup>
 
       <HabitQuickCreateDialog

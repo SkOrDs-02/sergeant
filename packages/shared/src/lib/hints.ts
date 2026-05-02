@@ -21,7 +21,23 @@ export type HintId =
   | "module_first_entry"
   | "hub_reorder_modules"
   | "settings_hints_toggle"
-  | "settings_restart_onboarding";
+  | "settings_restart_onboarding"
+  // Contextual onboarding hints
+  | "ftux_swipe_to_delete"
+  // Retention hooks — shown once on the Nth day after first real entry
+  | "retention_day_1"
+  | "retention_day_3"
+  | "retention_day_7";
+
+/**
+ * Subset of {@link HintId} that {@link getRetentionHintId} can return.
+ * Narrower than `HintId` so callers can index a 3-key message dictionary
+ * (`{ retention_day_1, retention_day_3, retention_day_7 }`) without TS errors.
+ */
+export type RetentionHintId =
+  | "retention_day_1"
+  | "retention_day_3"
+  | "retention_day_7";
 
 export type HintSurface =
   | "welcome"
@@ -157,6 +173,44 @@ export const HINT_DEFINITIONS: Readonly<Record<HintId, HintDefinition>> =
       cooldownHours: 9999,
       dismissCooldownDays: 365,
       surfaces: ["settings"],
+    },
+    // ─── Contextual onboarding ────────────────────────────────────────────
+    ftux_swipe_to_delete: {
+      id: "ftux_swipe_to_delete",
+      title: "Потягни вліво, щоб видалити",
+      body: "Свайп вправо — для дій архівування або редагування.",
+      maxShowsTotal: 1,
+      cooldownHours: 9999,
+      dismissCooldownDays: 365,
+      surfaces: ["module"],
+    },
+    // ─── Retention hooks ─────────────────────────────────────────────────
+    retention_day_1: {
+      id: "retention_day_1",
+      title: "Перший день — вже здобуток!",
+      body: "Поверніться завтра — звичка формується з трьох повторень.",
+      maxShowsTotal: 1,
+      cooldownHours: 9999,
+      dismissCooldownDays: 365,
+      surfaces: ["hub"],
+    },
+    retention_day_3: {
+      id: "retention_day_3",
+      title: "3 дні поспіль — стрік почався",
+      body: "Ще кілька днів і мозок зафіксує нову звичку.",
+      maxShowsTotal: 1,
+      cooldownHours: 9999,
+      dismissCooldownDays: 365,
+      surfaces: ["hub"],
+    },
+    retention_day_7: {
+      id: "retention_day_7",
+      title: "Тиждень — серйозна заявка!",
+      body: "7 днів поспіль доведено підвищують шанс закріпити звичку.",
+      maxShowsTotal: 1,
+      cooldownHours: 9999,
+      dismissCooldownDays: 365,
+      surfaces: ["hub"],
     },
   });
 
@@ -319,6 +373,30 @@ export function snoozeHint(
   };
   setHintState(store, id, next);
   return next;
+}
+
+const MS_PER_DAY = 86_400_000;
+
+/**
+ * Returns the retention HintId to show based on how many days have passed
+ * since `firstEntryAt` (unix timestamp ms). Returns `null` when none is due.
+ *
+ * Rules:
+ *  - Day 1 (same calendar day as first entry)
+ *  - Day 3 (3 calendar days after first entry)
+ *  - Day 7 (7 calendar days after first entry)
+ *
+ * The caller is responsible for checking `canShowHint` before rendering.
+ */
+export function getRetentionHintId(
+  firstEntryAt: number,
+  now = Date.now(),
+): RetentionHintId | null {
+  const daysSince = Math.floor((now - firstEntryAt) / MS_PER_DAY);
+  if (daysSince === 0) return "retention_day_1";
+  if (daysSince === 3) return "retention_day_3";
+  if (daysSince === 7) return "retention_day_7";
+  return null;
 }
 
 /**

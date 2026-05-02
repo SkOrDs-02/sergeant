@@ -10,11 +10,14 @@
  *    and flips the status label;
  *  - the routine-reminders toggle persists into the shared
  *    `@routine_prefs_v1` MMKV slice;
- *  - the Fizruk and Nutrition sub-groups surface their deferred-port
- *    placeholder strings (Phase 6 / Phase 7).
+ *  - the nutrition reminder toggle/hour picker persists into the shared
+ *    nutrition prefs MMKV slice;
+ *  - the Fizruk sub-group surfaces its deferred-port placeholder string.
  */
 
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
+
+import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance } from "@/lib/storage";
 
@@ -60,7 +63,7 @@ describe("NotificationsSection", () => {
     expect(queryByText("Push-сповіщення")).toBeNull();
   });
 
-  it("expands to reveal the permission card, toggle and deferred sub-groups", async () => {
+  it("expands to reveal the permission card, toggles and deferred sub-groups", async () => {
     mockedGetPerms.mockResolvedValueOnce({
       granted: true,
       status: "granted",
@@ -85,11 +88,8 @@ describe("NotificationsSection", () => {
       ),
     ).toBeTruthy();
     expect(getByText("Харчування")).toBeTruthy();
-    expect(
-      getByText(
-        "Нагадування про їжу підключаться з портом модуля Харчування (Phase 7).",
-      ),
-    ).toBeTruthy();
+    expect(getByText("Нагадування про їжу")).toBeTruthy();
+    expect(getByTestId("notifications-nutrition-toggle")).toBeTruthy();
   });
 
   it("requests permissions when 'Дозволити' is tapped and updates the label", async () => {
@@ -150,6 +150,41 @@ describe("NotificationsSection", () => {
     expect(stored).toBeTruthy();
     expect(JSON.parse(stored as string)).toMatchObject({
       routineRemindersEnabled: true,
+    });
+  });
+
+  it("persists nutrition reminder toggle and hour into nutrition prefs", async () => {
+    mockedGetPerms.mockResolvedValueOnce({
+      granted: true,
+      status: "granted",
+    });
+    const { getByText, getByTestId } = render(<NotificationsSection />);
+
+    fireEvent.press(getByText("Сповіщення"));
+
+    await waitFor(() => {
+      expect(getByTestId("notifications-nutrition-toggle")).toBeTruthy();
+    });
+
+    await act(async () => {
+      fireEvent(
+        getByTestId("notifications-nutrition-toggle"),
+        "valueChange",
+        true,
+      );
+    });
+
+    await waitFor(() => {
+      expect(getByTestId("notifications-nutrition-hour")).toBeTruthy();
+    });
+
+    fireEvent.changeText(getByTestId("notifications-nutrition-hour"), "25");
+
+    const stored = _getMMKVInstance().getString(STORAGE_KEYS.NUTRITION_PREFS);
+    expect(stored).toBeTruthy();
+    expect(JSON.parse(stored as string)).toMatchObject({
+      reminderEnabled: true,
+      reminderHour: 23,
     });
   });
 });

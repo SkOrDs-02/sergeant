@@ -1,4 +1,7 @@
-# Error-Budget Policy
+# Error-budget-політика
+
+> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Status:** Active
 
 > Автор: obs-team. Огляд щокварталу (див. [`docs/governance/policy-review.md`](../governance/policy-review.md)).
 >
@@ -155,12 +158,12 @@ budget_remaining = (0.995 - 0.99) / (1 - 0.99) = 0.5 = 50%  → жовта зо�
 | AI            | `rate(ai_requests_total{outcome!="ok"}[30d]) / rate(ai_requests_total[30d])`                                                              |
 | External HTTP | `rate(external_http_requests_total{upstream="X",outcome=~"error\|timeout"}[30d]) / rate(external_http_requests_total{upstream="X"}[30d])` |
 
-### Dashboard
+### Дашборд
 
-Рекомендований Grafana dashboard: [`dashboards.md`](./dashboards.md).
-Панель "Error Budget Remaining (%)" має показувати поточний % бюджету
-для кожного SLO з кольоровими зонами (green > 50%, yellow 10-50%,
-red < 10%, black = 0%).
+Рекомендований Grafana-дашборд: [`dashboards.md`](./dashboards.md).
+Панель «Error Budget Remaining (%)» має показувати поточний % бюджету
+для кожного SLO з кольоровими зонами (зелена > 50 %, жовта 10–50 %,
+червона < 10 %, чорна = 0 %).
 
 ---
 

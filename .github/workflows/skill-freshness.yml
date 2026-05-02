@@ -1,0 +1,82 @@
+name: Skill freshness check
+
+on:
+  schedule:
+    # Every Monday at 06:00 UTC (09:00 Kyiv)
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-skills:
+    name: Check skill freshness
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Verify skills-lock.json is valid JSON
+        run: |
+          if ! python3 -c "import json; json.load(open('.agents/skills-lock.json'))"; then
+            echo "::error::skills-lock.json is not valid JSON"
+            exit 1
+          fi
+
+      - name: Check all locked skills have directories
+        run: |
+          MISSING=""
+          for skill in $(python3 -c "
+          import json
+          data = json.load(open('.agents/skills-lock.json'))
+          for name in data.get('skills', {}):
+              print(name)
+          "); do
+            if [ ! -d ".agents/skills/$skill" ]; then
+              MISSING="$MISSING $skill"
+            fi
+            if [ ! -f ".agents/skills/$skill/SKILL.md" ]; then
+              MISSING="$MISSING $skill(no SKILL.md)"
+            fi
+          done
+          if [ -n "$MISSING" ]; then
+            echo "::error::Missing skill directories or SKILL.md files:$MISSING"
+            exit 1
+          fi
+
+      - name: Check for unlocked skill directories
+        run: |
+          UNLOCKED=""
+          for dir in .agents/skills/*/; do
+            skill=$(basename "$dir")
+            if ! python3 -c "
+          import json, sys
+          data = json.load(open('.agents/skills-lock.json'))
+          sys.exit(0 if '$skill' in data.get('skills', {}) else 1)
+          " 2>/dev/null; then
+              UNLOCKED="$UNLOCKED $skill"
+            fi
+          done
+          if [ -n "$UNLOCKED" ]; then
+            echo "::warning::Skill directories not in skills-lock.json:$UNLOCKED"
+          fi
+
+      - name: Check DEVIN.md references all project skills
+        run: |
+          MISSING_REF=""
+          for skill in $(python3 -c "
+          import json
+          data = json.load(open('.agents/skills-lock.json'))
+          for name, info in data.get('skills', {}).items():
+              if info.get('sourceType') == 'local':
+                  print(name)
+          "); do
+            if ! grep -q "$skill" DEVIN.md; then
+              MISSING_REF="$MISSING_REF $skill"
+            fi
+          done
+          if [ -n "$MISSING_REF" ]; then
+            echo "::warning::Local skills not referenced in DEVIN.md:$MISSING_REF"
+          fi

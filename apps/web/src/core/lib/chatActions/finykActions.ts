@@ -3,6 +3,7 @@ import {
   resolveExpenseCategoryMeta,
   getTxStatAmount,
 } from "../../../modules/finyk/utils";
+import { safeRemoveLS } from "@shared/lib/storage";
 import type {
   BatchCategorizeAction,
   ChangeCategoryAction,
@@ -28,6 +29,7 @@ import type {
   BudgetGoal,
   MonthlyPlan,
   ChatAction,
+  ChatActionResult,
 } from "./types";
 
 type FinykSearchTx = {
@@ -182,7 +184,9 @@ function formatTxList(items: FinykSearchTx[]): string {
     .join("; ");
 }
 
-export function handleFinykAction(action: ChatAction): string | undefined {
+export function handleFinykAction(
+  action: ChatAction,
+): ChatActionResult | undefined {
   switch (action.name) {
     case "change_category": {
       const { tx_id, category_id } = (action as ChangeCategoryAction).input;
@@ -282,7 +286,15 @@ export function handleFinykAction(action: ChatAction): string | undefined {
       };
       debts.push(newDebt);
       lsSet("finyk_debts", debts);
-      return `Борг "${name}" на ${amount} грн створено (id:${newDebt.id})`;
+      const debtId = newDebt.id;
+      return {
+        result: `Борг "${name}" на ${amount} грн створено (id:${debtId})`,
+        undo: () => {
+          const cur = ls<Debt[]>("finyk_debts", []);
+          const next = cur.filter((d) => d.id !== debtId);
+          if (next.length !== cur.length) lsSet("finyk_debts", next);
+        },
+      };
     }
     case "create_receivable": {
       const { name, amount } = (action as CreateReceivableAction).input;
@@ -295,7 +307,15 @@ export function handleFinykAction(action: ChatAction): string | undefined {
       };
       recv.push(newRecv);
       lsSet("finyk_recv", recv);
-      return `Дебіторку "${name}" на ${amount} грн додано (id:${newRecv.id})`;
+      const recvId = newRecv.id;
+      return {
+        result: `Дебіторку "${name}" на ${amount} грн додано (id:${recvId})`,
+        undo: () => {
+          const cur = ls<Receivable[]>("finyk_recv", []);
+          const next = cur.filter((r) => r.id !== recvId);
+          if (next.length !== cur.length) lsSet("finyk_recv", next);
+        },
+      };
     }
     case "hide_transaction": {
       const { tx_id } = (action as HideTransactionAction).input;
@@ -386,7 +406,24 @@ export function handleFinykAction(action: ChatAction): string | undefined {
       lsSet("finyk_manual_expenses_v1", manualExpenses);
       const label = categoryLabel ? ` (${categoryLabel})` : "";
       const human = txType === "income" ? "Дохід" : "Витрату";
-      return `${human} ${amt} грн${description ? ` "${description.trim()}"` : ""}${label} записано (id:${manualId})`;
+      const result = `${human} ${amt} грн${description ? ` "${description.trim()}"` : ""}${label} записано (id:${manualId})`;
+      // Undo видаляє щойно додану транзакцію за `manualId`. Якщо юзер
+      // паралельно встиг видалити її іншим шляхом — ідемпотентно
+      // нічого не робимо (а не throw): двічі натиснений undo не має
+      // дати "не вдалось повернути".
+      return {
+        result,
+        undo: () => {
+          const current = ls<Array<{ id: string }>>(
+            "finyk_manual_expenses_v1",
+            [],
+          );
+          const next = current.filter((tx) => tx.id !== manualId);
+          if (next.length !== current.length) {
+            lsSet("finyk_manual_expenses_v1", next);
+          }
+        },
+      };
     }
     case "delete_transaction": {
       const { tx_id } = (action as DeleteTransactionAction).input;
@@ -531,12 +568,42 @@ export function handleFinykAction(action: ChatAction): string | undefined {
       const cur =
         (currency && String(currency).trim().slice(0, 3).toUpperCase()) ||
         "UAH";
-      const assets = ls<
-        Array<{ name: string; amount: number | string; currency?: string }>
-      >("finyk_assets", []);
-      assets.push({ name: trimmed, amount: amt, currency: cur });
-      lsSet("finyk_assets", assets);
-      return `Актив "${trimmed}" додано: ${amt} ${cur}`;
+      type AssetEntry = {
+        name: string;
+        amount: number | string;
+        currency?: string;
+      };
+      const prevAssets = ls<AssetEntry[]>("finyk_assets", []);
+      const newEntry: AssetEntry = {
+        name: trimmed,
+        amount: amt,
+        currency: cur,
+      };
+      lsSet("finyk_assets", [...prevAssets, newEntry]);
+      // У `finyk_assets` немає id-поля; тримаємо посилання на щойно
+      // додану entry (referential equality в pure-JS після lsSet не
+      // тримається, тож порівнюємо за повним shape). Undo прибирає
+      // _одну_ перший попавшийся matching item з кінця — досить для
+      // human-rate-у undo (5 c вікно), без переписання снапшоту.
+      return {
+        result: `Актив "${trimmed}" додано: ${amt} ${cur}`,
+        undo: () => {
+          const list = ls<AssetEntry[]>("finyk_assets", []);
+          for (let i = list.length - 1; i >= 0; i--) {
+            const e = list[i];
+            if (
+              e.name === newEntry.name &&
+              Number(e.amount) === Number(newEntry.amount) &&
+              (e.currency || "UAH") === (newEntry.currency || "UAH")
+            ) {
+              const next = list.slice();
+              next.splice(i, 1);
+              lsSet("finyk_assets", next);
+              return;
+            }
+          }
+        },
+      };
     }
     case "import_monobank_range": {
       const { from, to } = (action as ImportMonobankRangeAction).input;
@@ -561,7 +628,7 @@ export function handleFinykAction(action: ChatAction): string | undefined {
         const y = cur.getFullYear();
         const m0 = cur.getMonth();
         try {
-          localStorage.removeItem(`finyk_tx_cache_${y}_${m0}`);
+          safeRemoveLS(`finyk_tx_cache_${y}_${m0}`);
         } catch {}
         clearedMonths.push(`${y}-${String(m0 + 1).padStart(2, "0")}`);
         cur.setMonth(cur.getMonth() + 1);

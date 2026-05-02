@@ -11,8 +11,8 @@ function AppleBadge() {
         "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center",
         "bg-gradient-to-br from-lime-100 to-green-100",
         "dark:from-lime-900/40 dark:to-green-900/30",
-        "text-lime-600 dark:text-lime-400",
-        "border border-lime-200/60 dark:border-lime-700/30",
+        "text-nutrition-strong dark:text-nutrition",
+        "border border-nutrition-soft-border/60",
         "shadow-sm",
       )}
       aria-hidden

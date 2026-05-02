@@ -43,20 +43,84 @@ jest.mock("@/auth/authClient", () => {
   const getSession = jest.fn(() =>
     Promise.resolve({ data: null, error: null }),
   );
+  const forgetPassword = jest.fn(() => Promise.resolve({ error: null }));
   return {
     __esModule: true,
     signIn,
     signUp,
     signOut,
     getSession,
+    forgetPassword,
     authClient: { signIn, signUp, signOut, getSession },
   };
 });
 
+// `react-native-safe-area-context` reads device insets via a native
+// TurboModule that isn't loaded in the jest-expo runtime. Without a
+// SafeAreaProvider mounted at the root of every render tree, every
+// component calling `useSafeAreaInsets()` (Sheet, Toast, every screen
+// under apps/mobile/src/modules/**, …) crashes with:
+//   "No safe area value available. Make sure you are rendering
+//    <SafeAreaProvider> at the top of your app."
+//
+// Several test files already register an identical mock locally; this
+// setup-level mock is a superset so new tests don't have to remember
+// the boilerplate (and the per-file mocks remain valid because Jest
+// hoists `jest.mock` calls and lets the file-level one take precedence).
+//
+// Insets default to `{0,0,0,0}` — render-tests rarely care about exact
+// pixel offsets; the few that do can override the mock with their own
+// `jest.mock(..., () => ({ useSafeAreaInsets: () => ({ top: 47, ... }) }))`.
+jest.mock("react-native-safe-area-context", () => {
+  const RN = require("react-native");
+  const React = require("react");
+  const Passthrough = ({ children }) =>
+    React.createElement(React.Fragment, null, children);
+  return {
+    __esModule: true,
+    SafeAreaProvider: Passthrough,
+    SafeAreaConsumer: ({ children }) =>
+      typeof children === "function"
+        ? children({ top: 0, bottom: 0, left: 0, right: 0 })
+        : children,
+    SafeAreaView: RN.View,
+    SafeAreaInsetsContext: {
+      Consumer: ({ children }) =>
+        typeof children === "function"
+          ? children({ top: 0, bottom: 0, left: 0, right: 0 })
+          : children,
+      Provider: Passthrough,
+    },
+    useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+    useSafeAreaFrame: () => ({ x: 0, y: 0, width: 390, height: 844 }),
+    initialWindowMetrics: {
+      frame: { x: 0, y: 0, width: 390, height: 844 },
+      insets: { top: 0, bottom: 0, left: 0, right: 0 },
+    },
+  };
+});
+
 jest.mock("react-native-mmkv", () => {
+  // Module-scope cache shared across MMKV instances within a single
+  // test run. Two `new MMKV({ id })` calls with the same id must read
+  // each other's writes — that's what powers the encryption-bootstrap
+  // migration test, which opens a "legacy" plaintext instance, writes
+  // some keys, then opens a fresh handle to the same id and expects
+  // those keys to be visible. Real MMKV behaves the same way (the id
+  // identifies an on-disk file).
+  const stores = new Map();
+  function getStore(id) {
+    if (!stores.has(id)) stores.set(id, new Map());
+    return stores.get(id);
+  }
   class MMKV {
-    constructor() {
-      this._store = new Map();
+    constructor(options = {}) {
+      this._id = options.id || "default";
+      // Exposed for test assertions — the production code never reads
+      // these properties off the instance, but tests verify that
+      // `bootstrapEncryptedStorage` opens MMKV with the right key.
+      this._encryptionKey = options.encryptionKey;
+      this._store = getStore(this._id);
     }
     set(key, value) {
       this._store.set(key, String(value));
@@ -89,6 +153,10 @@ jest.mock("react-native-mmkv", () => {
       return { remove: () => {} };
     }
   }
+  // Test helper for resetting state between tests that exercise
+  // multiple MMKV ids (encryption bootstrap, migration). Not part of
+  // the real react-native-mmkv API.
+  MMKV.__resetForTests = () => stores.clear();
   return { MMKV };
 });
 

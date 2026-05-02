@@ -1,0 +1,139 @@
+{
+  "name": "99 — Heartbeat (n8n alive check every 3h)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 3
+            }
+          ]
+        }
+      },
+      "id": "cron-3h",
+      "name": "Every 3 hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "=✅ n8n alive — {{ new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv', hour12: false }) }}",
+        "additionalFields": {
+          "disable_notification": true
+        }
+      },
+      "id": "telegram-heartbeat",
+      "name": "Telegram → heartbeat",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [460, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "telegram-failed",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ]
+        }
+      },
+      "id": "check-telegram-ok",
+      "name": "Telegram failed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from\": \"Sergeant Ops <ops@sergeant.app>\",\n  \"to\": [\"{{ $env.OPS_ALERT_EMAIL }}\"],\n  \"subject\": \"🚨 n8n heartbeat via Telegram FAILED\",\n  \"html\": \"<p>n8n is running but could not send a Telegram heartbeat at <strong>{{ new Date().toISOString() }}</strong>.</p><p>Check: Telegram Bot Token, chat ID, bot permissions.</p>\"\n}",
+        "options": {}
+      },
+      "id": "email-fallback",
+      "name": "Resend → email fallback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "E765p971FMV4eDbY",
+          "name": "Resend (Bearer)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every 3 hours": {
+      "main": [
+        [
+          {
+            "node": "Telegram → heartbeat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram → heartbeat": {
+      "main": [
+        [
+          {
+            "node": "Telegram failed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram failed?": {
+      "main": [
+        [
+          {
+            "node": "Resend → email fallback",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false,
+    "errorWorkflow": "iC82EFJzqBny9kxI"
+  },
+  "tags": [
+    {
+      "name": "ops"
+    },
+    {
+      "name": "heartbeat"
+    }
+  ]
+}

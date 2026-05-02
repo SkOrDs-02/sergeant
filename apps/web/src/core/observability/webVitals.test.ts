@@ -118,6 +118,34 @@ describe("webVitals.flush", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  it("drops metrics without a recognized rating to avoid server-side batch loss", async () => {
+    // Server validates `WebVitalsPayloadSchema` де `rating` обов'язковий.
+    // Якщо відправити запис без рейтингу, ВЕСЬ батч буде відкинутий і
+    // решта валідних метрик мовчки втратиться. Тому drop саме на клієнті,
+    // ще до буфера.
+    enqueue({ name: "LCP", value: 100 } as { name: string; value: number });
+    enqueue({ name: "LCP", value: 100, rating: "" });
+    enqueue({ name: "LCP", value: 100, rating: "unknown" });
+    await waitMicrotasks();
+    expect(sendBeaconSpy).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    // Натомість запис із рейтингом потрапляє в батч одного хоста.
+    enqueue({ name: "LCP", value: 100, rating: "good" });
+    enqueue({ name: "INP", value: 100, rating: "needs-improvement" });
+    await waitMicrotasks();
+    expect(sendBeaconSpy).toHaveBeenCalledTimes(1);
+    const payload = JSON.parse(
+      await (sendBeaconSpy.mock.calls[0][1] as Blob).text(),
+    );
+    expect(payload.metrics).toHaveLength(2);
+    expect(payload.metrics[0]).toMatchObject({ name: "LCP", rating: "good" });
+    expect(payload.metrics[1]).toMatchObject({
+      name: "INP",
+      rating: "needs-improvement",
+    });
+  });
+
   it("rounds non-CLS metrics to integers and keeps CLS precision", async () => {
     enqueue(makeMetric("LCP", 123.6));
     enqueue(makeMetric("CLS", 0.123456));

@@ -16,8 +16,17 @@ import { fireEvent, render } from "@testing-library/react-native";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance } from "@/lib/storage";
+import { ToastProvider } from "@/components/ui/Toast";
 
 import { RoutineApp } from "./RoutineApp";
+
+function renderApp() {
+  return render(
+    <ToastProvider>
+      <RoutineApp />
+    </ToastProvider>,
+  );
+}
 
 // Unique copy inside the mounted Calendar screen (the bottom-nav item
 // label is just "Календар", so we pin to the eyebrow kicker inside
@@ -38,12 +47,12 @@ beforeEach(() => {
 
 describe("RoutineApp shell", () => {
   it("renders the Calendar screen by default", () => {
-    const { getByText } = render(<RoutineApp />);
+    const { getByText } = renderApp();
     expect(getByText(CALENDAR_EYEBROW)).toBeTruthy();
   });
 
   it("switches to the Heatmap page when the Stats tab is pressed", () => {
-    const { getAllByText, getByText, queryByText } = render(<RoutineApp />);
+    const { getAllByText, getByText, queryByText } = renderApp();
 
     fireEvent.press(getAllByText("Статистика")[0]);
 
@@ -53,7 +62,7 @@ describe("RoutineApp shell", () => {
   });
 
   it("switches to the Habits page when the Settings tab is pressed", () => {
-    const { getAllByText, getByText } = render(<RoutineApp />);
+    const { getAllByText, getByText } = renderApp();
 
     fireEvent.press(getAllByText("Налаштування")[0]);
 
@@ -62,7 +71,7 @@ describe("RoutineApp shell", () => {
   });
 
   it("writes the selected tab to MMKV under the shared ROUTINE_MAIN_TAB key", () => {
-    const { getAllByText } = render(<RoutineApp />);
+    const { getAllByText } = renderApp();
 
     fireEvent.press(getAllByText("Статистика")[0]);
 
@@ -75,7 +84,7 @@ describe("RoutineApp shell", () => {
   it("picks up a persisted tab from MMKV on first mount", () => {
     _getMMKVInstance().set(STORAGE_KEYS.ROUTINE_MAIN_TAB, "settings");
 
-    const { getByText } = render(<RoutineApp />);
+    const { getByText } = renderApp();
 
     expect(getByText(SETTINGS_HEADLINE)).toBeTruthy();
   });
@@ -83,7 +92,7 @@ describe("RoutineApp shell", () => {
   it("falls back to the Calendar tab when the persisted value is malformed", () => {
     _getMMKVInstance().set(STORAGE_KEYS.ROUTINE_MAIN_TAB, "not-a-valid-tab");
 
-    const { getByText } = render(<RoutineApp />);
+    const { getByText } = renderApp();
 
     expect(getByText(CALENDAR_EYEBROW)).toBeTruthy();
   });

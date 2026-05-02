@@ -1,12 +1,1 @@
-[
-  { "path": "AGENTS.md", "cadenceDays": 90 },
-  { "path": "README.md", "cadenceDays": 90 },
-  { "path": "CONTRIBUTING.md", "cadenceDays": 90 },
-  { "path": "docs/observability/SLO.md", "cadenceDays": 90 },
-  { "path": "docs/observability/runbook.md", "cadenceDays": 60 },
-  { "path": "docs/observability/dashboards.md", "cadenceDays": 90 },
-  { "path": "docs/design/BRANDBOOK.md", "cadenceDays": 90 },
-  { "path": "docs/playbooks/README.md", "cadenceDays": 90 },
-  { "path": "docs/playbooks/hotfix-prod-regression.md", "cadenceDays": 60 },
-  { "path": "docs/playbooks/rotate-secrets.md", "cadenceDays": 60 }
-]
+[]

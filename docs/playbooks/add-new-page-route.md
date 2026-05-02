@@ -1,5 +1,8 @@
 # Playbook: Add New Page Route
 
+> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Status:** Active
+
 **Trigger:** "Додати нову сторінку в apps/web" / новий розділ UI / новий route для SPA.
 
 ---
@@ -27,7 +30,7 @@ export function NewPage() {
 
 ### 2. Додати route
 
-Додати route у відповідний router файл (`apps/web/src/core/router.tsx` або module-level router):
+Додати route у відповідний router файл (`apps/web/src/core/App.tsx` — routing is inline there — або module-level router, e.g. `FizrukRouter.tsx`):
 
 ```tsx
 import { NewPage } from "@module/pages/NewPage";

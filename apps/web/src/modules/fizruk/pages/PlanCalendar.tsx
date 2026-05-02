@@ -27,9 +27,23 @@ export function PlanCalendar({
               Запланувати тренування
             </Button>
           )}
-          <p className="text-xs text-subtle text-center leading-snug">
-            Заплановані тренування відображатимуться у календарі модуля «Рутина»
-          </p>
+          {onOpenRoutine ? (
+            <button
+              type="button"
+              onClick={onOpenRoutine}
+              className="block w-full text-xs text-subtle hover:text-text text-center leading-snug min-h-[44px] px-2 py-2 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fizruk"
+            >
+              Заплановані тренування відображатимуться у{" "}
+              <span className="underline underline-offset-2">
+                календарі модуля «Рутина»
+              </span>
+            </button>
+          ) : (
+            <p className="text-xs text-subtle text-center leading-snug">
+              Заплановані тренування відображатимуться у календарі модуля
+              «Рутина»
+            </p>
+          )}
         </div>
       </div>
     </div>

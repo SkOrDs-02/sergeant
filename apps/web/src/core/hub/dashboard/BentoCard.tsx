@@ -3,6 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@shared/lib/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import { getModulePrefetchProps } from "../../lib/intentPrefetch";
 import {
   MODULE_CONFIGS,
   type ModuleConfig,
@@ -23,6 +24,31 @@ export interface BentoCardProps {
   primaryRef?: (node: HTMLButtonElement | null) => void;
   primaryProps?: Record<string, unknown>;
   isDragging?: boolean;
+  /**
+   * When `true`, the card is rendered in a muted/greyed-out state
+   * because the user did not mark this module as important during
+   * onboarding. Quick-add is suppressed and a hint pointing at Hub
+   * Settings is shown in place of the preview numbers.
+   */
+  inactive?: boolean;
+  /**
+   * When `true`, the card is in dashboard "edit mode": it wiggles to
+   * signal it is draggable, exposes a visible top-right grip handle, and
+   * suppresses quick-add (since the primary affordance is now reorder).
+   * The grip handle uses `handleRef` / `handleProps` as the dnd-kit
+   * activator so the whole card body can keep navigating to the module
+   * on tap.
+   */
+  editMode?: boolean;
+  handleRef?: (node: HTMLButtonElement | null) => void;
+  handleProps?: Record<string, unknown>;
+  /**
+   * Set on the single card the adaptive-bento engine has lifted to the top
+   * for the current context (signal × time of day). Renders a small
+   * "Зараз" pill with the reason so the reorder is explainable, not magic.
+   * `null`/`undefined` = not lifted.
+   */
+  adaptiveReason?: string | null;
 }
 
 /**
@@ -41,49 +67,121 @@ export const BentoCard = memo(function BentoCard({
   primaryRef,
   primaryProps,
   isDragging,
+  inactive,
+  editMode,
+  handleRef,
+  handleProps,
+  adaptiveReason,
 }: BentoCardProps) {
   const preview = config.getPreview();
   const showProgress =
-    config.hasGoal && preview.progress !== undefined && preview.progress > 0;
+    !inactive &&
+    config.hasGoal &&
+    preview.progress !== undefined &&
+    preview.progress > 0;
   const hasData = !!(preview.main || preview.sub);
+  // Inactive modules suppress quick-add to avoid implying parity with
+  // active modules — the user has to reactivate them in Hub Settings
+  // before a quick-add affordance reappears.
+  // In edit mode quick-add is also suppressed so the only top-right
+  // affordance is the drag handle.
+  const showQuickAdd = !inactive && !editMode && !!onQuickAdd;
+  const showHandle = !!editMode;
 
   return (
-    <div className={cn("relative", isDragging && "opacity-70 z-50")}>
+    <div
+      className={cn(
+        "relative",
+        isDragging && "opacity-70 z-50",
+        inactive && "opacity-60",
+        // Edit-mode wiggle. Suppressed while a card is being dragged so
+        // the dnd-kit transform is not fighting the rotation keyframes.
+        editMode && !isDragging && "motion-safe:animate-wiggle",
+      )}
+    >
       <button
         ref={primaryRef}
         type="button"
         onClick={onClick}
         {...primaryProps}
+        aria-label={
+          inactive
+            ? `${config.label} — неактивний модуль. Увімкнути в налаштуваннях Hub.`
+            : undefined
+        }
+        data-inactive={inactive ? "true" : undefined}
         className={cn(
-          "group relative flex flex-col w-full rounded-3xl border border-line p-3.5",
-          "shadow-card transition-all duration-200 text-left",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-          "active:scale-[0.98]",
-          config.cardBg,
+          "group relative flex flex-col w-full rounded-3xl border border-line",
+          "p-3.5 [@media(pointer:coarse)]:p-4",
+          "min-h-[120px] [@media(pointer:coarse)]:min-h-[132px]",
+          "shadow-card transition-interactive text-left",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2",
+          // Hover effect for desktop - lift and glow
+          "[@media(pointer:fine)]:hover:shadow-float [@media(pointer:fine)]:hover:-translate-y-0.5",
+          "[@media(pointer:fine)]:hover:border-brand-200/50 dark:[@media(pointer:fine)]:hover:border-line/80",
+          "active:scale-[0.98] [@media(pointer:coarse)]:active:scale-[0.97]",
+          inactive ? "bg-panel grayscale" : config.cardBg,
           isDragging && "shadow-float cursor-grabbing",
         )}
       >
         <div className="flex items-center justify-between mb-2">
           <div
             className={cn(
-              "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
-              config.iconClass,
+              "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+              inactive ? "bg-line/40 text-muted" : config.iconClass,
             )}
           >
             {config.icon}
           </div>
 
-          {/* Layout placeholder for the absolutely-positioned quick-add
-              sibling — keeps the label centred consistently regardless of
-              whether the module exposes a quick-add action. */}
-          {onQuickAdd && <span aria-hidden className="w-6 h-6 shrink-0" />}
+          {/* Layout placeholder for the absolutely-positioned quick-add /
+              edit-handle sibling — keeps the label centred consistently
+              regardless of whether either affordance is currently rendered. */}
+          {(showQuickAdd || showHandle) && (
+            <span aria-hidden className="w-6 h-6 shrink-0" />
+          )}
         </div>
 
-        <span className="text-xs font-semibold text-text">
+        <span
+          className={cn(
+            "text-xs font-semibold",
+            inactive ? "text-muted" : "text-text",
+          )}
+        >
           {config.emoji} {config.label}
         </span>
 
-        {hasData ? (
+        {adaptiveReason && !inactive && (
+          <span
+            className={cn(
+              "mt-1 inline-flex items-start gap-1 self-start",
+              "rounded-full border border-line bg-panel/80 px-2 py-0.5",
+              "text-2xs font-medium text-muted",
+              // Soft entry animation so the lifted card visibly *animates*
+              // its reason chip in, instead of the previous instant-pop
+              // that made the adaptive reorder feel like layout jitter.
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 motion-safe:duration-300",
+            )}
+            title={adaptiveReason}
+          >
+            <span aria-hidden className="leading-none mt-px">
+              ✦
+            </span>
+            {/* Render the full reason instead of a 12-char truncated tail —
+             * the reason is what makes the adaptive reorder explainable
+             * (e.g. "ранкова кава" / "вечірня вечеря"); chopping it to
+             * "ранкова кав…" gave the lift an air of mystery without
+             * actually saving meaningful horizontal space (cards already
+             * accommodate the chip on a second visual line). */}
+            <span className="leading-snug">{adaptiveReason}</span>
+          </span>
+        )}
+
+        {inactive ? (
+          <span className="text-2xs text-muted mt-1 leading-snug">
+            Неактивний — увімкнути в налаштуваннях
+          </span>
+        ) : hasData ? (
           <>
             {preview.main && (
               <span className="text-lg font-bold text-text tabular-nums mt-1 truncate">
@@ -96,13 +194,41 @@ export const BentoCard = memo(function BentoCard({
               </span>
             )}
           </>
+        ) : onQuickAdd && !editMode ? (
+          // Empty-state CTA — promoted from a single inline pill (icon + label
+          // glyph) to a two-row layout with a tinted leading icon-box and an
+          // explicit «Натисни, щоб почати» helper. The richer treatment makes
+          // the card read as an *invitation* (clear affordance + verb) instead
+          // of a generic «+ Почни тут →» eyebrow that the eye skipped past.
+          <div className="mt-1.5 flex flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              <span
+                className={cn(
+                  "w-5 h-5 rounded-xl flex items-center justify-center",
+                  config.iconClass,
+                  "opacity-60",
+                )}
+              >
+                <Icon name="plus" size="xs" strokeWidth={2.5} aria-hidden />
+              </span>
+              <span
+                className={cn(
+                  "text-xs font-semibold",
+                  config.accentClass.replace("bg-", "text-"),
+                )}
+              >
+                {config.emptyLabel}
+              </span>
+            </div>
+            <span className="text-2xs text-subtle">Натисни, щоб почати</span>
+          </div>
         ) : (
           <span className="text-xs text-muted mt-1">{config.emptyLabel}</span>
         )}
 
         {showProgress && (
           <div
-            className="w-full h-1 rounded-full bg-line/40 dark:bg-white/10 overflow-hidden mt-2"
+            className="w-full h-1.5 rounded-full bg-line/60 dark:bg-white/10 overflow-hidden mt-2"
             aria-hidden
           >
             <div
@@ -116,7 +242,7 @@ export const BentoCard = memo(function BentoCard({
         )}
       </button>
 
-      {onQuickAdd && (
+      {showQuickAdd && onQuickAdd && (
         <button
           type="button"
           onClick={(e) => {
@@ -126,14 +252,46 @@ export const BentoCard = memo(function BentoCard({
           aria-label={onQuickAdd.label}
           title={onQuickAdd.label}
           className={cn(
-            "absolute top-3.5 right-3.5",
-            "w-6 h-6 rounded-md flex items-center justify-center",
+            "absolute top-3.5 right-3.5 [@media(pointer:coarse)]:top-4 [@media(pointer:coarse)]:right-4",
+            // WCAG 2.5.5 / HIG: ≥44×44 on coarse pointers. The visual
+            // glyph stays at 28 px on desktop; a `touch-target` floor
+            // expands the hit area to 44×44 on touch without bumping
+            // the visible icon size to 44 (which would crowd the card
+            // header against the module label).
+            "w-7 h-7 touch-target",
+            // CONTROL tier (12 px) per the 3-tier radius system in
+            // `tailwind-preset.js` — `rounded-xl` matches Button
+            // iconSizes.xs/sm and supersedes the legacy `rounded-lg` (8 px).
+            "rounded-xl flex items-center justify-center",
             "text-text bg-panel/80 hover:bg-primary hover:text-bg",
-            "transition-colors",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+            "transition-colors active:scale-95",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1",
           )}
         >
-          <Icon name="plus" size={13} strokeWidth={2.5} />
+          <Icon name="plus" size="sm" strokeWidth={2.5} />
+        </button>
+      )}
+
+      {showHandle && (
+        <button
+          ref={handleRef}
+          type="button"
+          {...handleProps}
+          aria-label={`Перетягнути ${config.label}`}
+          title="Перетягнути для зміни порядку"
+          className={cn(
+            "absolute top-3.5 right-3.5 [@media(pointer:coarse)]:top-4 [@media(pointer:coarse)]:right-4",
+            // Match the quick-add affordance: visible 28 px glyph,
+            // 44×44 hit area on coarse pointers via `touch-target`.
+            "w-7 h-7 touch-target",
+            // CONTROL tier (12 px) — see quick-add button above.
+            "rounded-xl flex items-center justify-center",
+            "text-muted bg-panel/90 hover:text-text hover:bg-panelHi",
+            "transition-colors cursor-grab active:cursor-grabbing touch-none",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-1",
+          )}
+        >
+          <Icon name="grip-vertical" size="sm" strokeWidth={2} />
         </button>
       )}
     </div>
@@ -144,6 +302,17 @@ export interface SortableCardProps {
   id: ModuleId;
   onOpenModule: (id: ModuleId) => void;
   quickAdd?: { label: string; run: () => void } | null;
+  inactive?: boolean;
+  /**
+   * When `true`, dnd-kit listeners attach to the visible drag handle
+   * instead of the primary card button — taps on the body still navigate
+   * to the module, while drag is gated to the explicit grip affordance.
+   */
+  editMode?: boolean;
+  /**
+   * Forwarded to `BentoCard` — adaptive-bento "lifted" reason chip.
+   */
+  adaptiveReason?: string | null;
 }
 
 /**
@@ -155,6 +324,9 @@ export const SortableCard = memo(function SortableCard({
   id,
   onOpenModule,
   quickAdd,
+  inactive,
+  editMode,
+  adaptiveReason,
 }: SortableCardProps) {
   const {
     attributes,
@@ -179,9 +351,26 @@ export const SortableCard = memo(function SortableCard({
   // would either nest interactive controls (button-in-button with quick-add)
   // or attach `role="button"` to a `<div>` whose only focusable child is the
   // primary `<button>` — both fail axe a11y rules.
-  const primaryProps = useMemo(
+  // In edit mode the same listeners move to the visible grip handle so
+  // accidental drags from the card body don't fight the explicit handle.
+  // We also fold in `getModulePrefetchProps(id)` (intent-prefetch on hover/
+  // focus) when not editing — the same primary button is the user's "I'm
+  // about to open this module" affordance, so warming its chunk on hover
+  // shaves the next dynamic-import RTT off the click handler. Suppressed
+  // in edit mode because hovers there are about reordering, not opening.
+  const dndProps = useMemo(
     () => ({ ...attributes, ...listeners }),
     [attributes, listeners],
+  );
+
+  const intentProps = useMemo(
+    () => (editMode ? null : getModulePrefetchProps(id)),
+    [editMode, id],
+  );
+
+  const primaryProps = useMemo(
+    () => (editMode ? undefined : { ...dndProps, ...intentProps }),
+    [editMode, dndProps, intentProps],
   );
 
   const handleClick = useCallback(() => onOpenModule(id), [onOpenModule, id]);
@@ -195,9 +384,14 @@ export const SortableCard = memo(function SortableCard({
         config={cfg}
         onClick={handleClick}
         onQuickAdd={quickAdd}
-        primaryRef={setActivatorNodeRef}
+        primaryRef={editMode ? undefined : setActivatorNodeRef}
         primaryProps={primaryProps}
+        handleRef={editMode ? setActivatorNodeRef : undefined}
+        handleProps={editMode ? dndProps : undefined}
         isDragging={isDragging}
+        inactive={inactive}
+        editMode={editMode}
+        adaptiveReason={adaptiveReason}
       />
     </div>
   );

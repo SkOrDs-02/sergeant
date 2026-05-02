@@ -1,0 +1,5332 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Sergeant API",
+    "version": "v1",
+    "description": "Сгенеровано з zod-схем у `@sergeant/shared/schemas/api`. Не редагуй вручну — `pnpm api:generate-openapi` перегенерує."
+  },
+  "servers": [
+    {
+      "url": "https://sergeant.app",
+      "description": "Production (Vercel edge → Railway)"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "Local dev (apps/server, default Express PORT)"
+    }
+  ],
+  "paths": {
+    "/api/me": {
+      "get": {
+        "summary": "Поточний публічний профіль користувача",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chat": {
+      "post": {
+        "summary": "Anthropic-чат: streaming SSE або JSON",
+        "tags": [
+          "chat"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai-memory/recall": {
+      "post": {
+        "summary": "Semantic-пошук у ai_memories за query (Voyage embed → pgvector ANN).",
+        "tags": [
+          "ai-memory"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecallMemoryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recall hits (масив може бути порожнім).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecallMemoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "AI memory вимкнено (`AI_MEMORY_ENABLED=false`) або провайдер ембеддингів недоступний.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/coach/memory": {
+      "get": {
+        "summary": "Зчитати збережений coach memory blob",
+        "tags": [
+          "coach"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Записати coach memory (weekly digest snapshot)",
+        "tags": [
+          "coach"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoachMemoryPost"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/coach/insight": {
+      "post": {
+        "summary": "Згенерувати coach insight (Anthropic) на основі snapshot + memory",
+        "tags": [
+          "coach"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoachInsight"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/weekly-digest": {
+      "post": {
+        "summary": "Згенерувати тижневий digest по агрегатах модулів",
+        "tags": [
+          "digest"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WeeklyDigest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/nutrition/analyze-photo": {
+      "post": {
+        "summary": "Аналіз фото страви: КБЖВ + ingredient-список",
+        "tags": [
+          "nutrition"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzePhoto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/nutrition/refine-photo": {
+      "post": {
+        "summary": "Уточнити аналіз фото (Q&A + portion override)",
+        "tags": [
+          "nutrition"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefinePhoto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/nutrition/parse-pantry": {
+      "post": {
+        "summary": "Розпарсити вільнорядковий список комори у структурний",
+        "tags": [
+          "nutrition"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParsePantry"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/nutrition/recommend-recipes": {
+      "post": {
+        "summary": "Рекомендувати рецепти за коморою + preferences",
+        "tags": [
+          "nutrition"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecommendRecipes"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/nutrition/day-hint": {
+      "post": {
+        "summary": "Згенерувати hint наступного прийому їжі на день",
+        "tags": [
+          "nutrition"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DayHint"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/nutrition/day-plan": {
+      "post": {
+        "summary": "Згенерувати/перегенерувати план прийомів їжі на день",
+        "tags": [
+          "nutrition"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DayPlan"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/nutrition/week-plan": {
+      "post": {
+        "summary": "Згенерувати тижневий план меню",
+        "tags": [
+          "nutrition"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WeekPlan"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/nutrition/shopping-list": {
+      "post": {
+        "summary": "Зібрати shopping-list з рецептів + week-plan",
+        "tags": [
+          "nutrition"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShoppingList"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/nutrition/backup-upload": {
+      "post": {
+        "summary": "Завантажити зашифрований backup nutrition-blob",
+        "tags": [
+          "nutrition"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupUpload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/nutrition/backup-download": {
+      "post": {
+        "summary": "Отримати останній зашифрований backup nutrition-blob",
+        "description": "Token-authenticated через header `x-token`. Повертає 404, якщо для наданого токена бекапів ще немає. Роут під `requireSession()` — потрібна активна сесія ЧИ Bearer-токен НА ДОДАЧУ до запитуваного `x-token`.",
+        "tags": [
+          "nutrition"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-token",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Опаковий токен, який хешується для формування імені файлу бекапу."
+            },
+            "required": true,
+            "description": "Опаковий токен, який хешується для формування імені файлу бекапу."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Backup для наданого x-token не знайдено.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sync/push": {
+      "post": {
+        "summary": "Push module-data (LWW; per-module)",
+        "tags": [
+          "sync"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncPush"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sync/pull": {
+      "post": {
+        "summary": "Pull module-data (LWW; per-module)",
+        "tags": [
+          "sync"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncPull"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sync/pull-all": {
+      "get": {
+        "summary": "Pull всіх модулів одразу (LWW resolved snapshot)",
+        "tags": [
+          "sync"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Pull всіх модулів (POST варіант для клієнтів без GET-body)",
+        "tags": [
+          "sync"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sync/push-all": {
+      "post": {
+        "summary": "Bulk push модулів за один request",
+        "tags": [
+          "sync"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncPushAll"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/push/vapid-public": {
+      "get": {
+        "summary": "Публічний VAPID-ключ для web-push subscribe",
+        "tags": [
+          "push"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/push/register": {
+      "post": {
+        "summary": "Зареєструвати push-пристрій (web/ios/android)",
+        "tags": [
+          "push"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushRegister"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/push/unregister": {
+      "post": {
+        "summary": "Зняти push-пристрій",
+        "tags": [
+          "push"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushUnregister"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/push/subscribe": {
+      "post": {
+        "summary": "Web-push subscribe (legacy alias для /push/register web)",
+        "tags": [
+          "push"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSubscribe"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Web-push unsubscribe (legacy alias для /push/unregister web)",
+        "tags": [
+          "push"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushUnsubscribe"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/push/send": {
+      "post": {
+        "summary": "Internal-only fan-out push (worker → cron job)",
+        "tags": [
+          "push"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSend"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Send summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushSendSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/push/test": {
+      "post": {
+        "summary": "Надіслати тестовий push поточному користувачеві",
+        "tags": [
+          "push"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushTestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Send summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushTestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/privat": {
+      "get": {
+        "summary": "PrivatBank API proxy",
+        "tags": [
+          "banks"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^\\/[A-Za-z0-9\\-_/]+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mono/webhook/{secret}": {
+      "post": {
+        "summary": "Mono webhook (per-user secret у URL — не header)",
+        "tags": [
+          "mono"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "secret",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mono/connect": {
+      "post": {
+        "summary": "Підключити Mono-token та зареєструвати webhook",
+        "tags": [
+          "mono"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mono integration активовано.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonoConnectResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mono/disconnect": {
+      "post": {
+        "summary": "Відключити Mono-token + забути webhook secret",
+        "tags": [
+          "mono"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mono integration вимкнено.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonoDisconnectResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mono/sync-state": {
+      "get": {
+        "summary": "Статус Mono-інтеграції + лічильники webhook events",
+        "tags": [
+          "mono"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Поточний стан синхронізації.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonoSyncState"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mono/accounts": {
+      "get": {
+        "summary": "Список Mono-рахунків поточного користувача",
+        "tags": [
+          "mono"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Нормалізовані рядки `mono_accounts`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonoAccountsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mono/transactions": {
+      "get": {
+        "summary": "Cursor-paginated історія Mono-транзакцій",
+        "tags": [
+          "mono"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "accountId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "minLength": 3
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Сторінка транзакцій + nextCursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonoTransactionsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mono/backfill": {
+      "post": {
+        "summary": "Бекфіл історії транзакцій у Mono integration",
+        "tags": [
+          "mono"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Бекфіл запущено синхронно — виконується в фоновому режимі.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonoBackfillResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/waitlist": {
+      "post": {
+        "summary": "Sign-up на waitlist для майбутнього Pro-тіру (анонімний)",
+        "tags": [
+          "monetization"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaitlistSubmit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Submitted (created=true) або уже був у списку (created=false)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitlistSubmitResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests — rate-limit перевищено.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/waitlist": {
+      "post": {
+        "summary": "Sign-up на waitlist для майбутнього Pro-тіру (v1 alias для /api/waitlist)",
+        "tags": [
+          "monetization"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaitlistSubmit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Submitted (created=true) або уже був у списку (created=false)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitlistSubmitResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests — rate-limit перевищено.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transcribe": {
+      "post": {
+        "summary": "Голосова транскрипція через Groq Whisper (audio/* → текст)",
+        "description": "Body — сирий аудіо-блоб (`Content-Type: audio/webm | audio/ogg | audio/mp4 | …`), ліміт 10 MB. Query визначає мову (auto-detect якщо порожньо) та prompt для доменних термінів. Потребує активну сесію + сконфігурований GROQ_API_KEY (503 інакше).",
+        "tags": [
+          "transcribe"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "language",
+            "schema": {
+              "description": "ISO-код мови, напр. uk або en. Якщо порожньо — auto-detect.",
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 8
+            },
+            "description": "ISO-код мови, напр. uk або en. Якщо порожньо — auto-detect."
+          },
+          {
+            "in": "query",
+            "name": "prompt",
+            "schema": {
+              "description": "Доменна підказка (списки вправ, продуктів тощо).",
+              "type": "string",
+              "maxLength": 1024
+            },
+            "description": "Доменна підказка (списки вправ, продуктів тощо)."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "audio/webm": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "audio/ogg": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "audio/mp4": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "audio/m4a": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "audio/mpeg": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "audio/mp3": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "audio/wav": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "audio/x-wav": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "audio/wave": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "audio/flac": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Транскрипція успішна.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscribeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload завеликий (>10 MB).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Непідтримуваний Content-Type (очікуємо audio/*).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "GROQ_API_KEY не сконфігурований на сервері.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/metrics/web-vitals": {
+      "post": {
+        "summary": "Ingest Core Web Vitals (LCP / INP / FCP / TTFB / CLS)",
+        "description": "Анонімний beacon-endpoint для `navigator.sendBeacon` при pagehide / visibilitychange=hidden. Завжди відповідає 204 No Content — навіть на malformed payload (sendBeacon ігнорує відповідь, не даємо feedback-у зондам).",
+        "tags": [
+          "observability"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebVitalsPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Accepted (завжди 204, незалежно від валідності payload)."
+          }
+        }
+      }
+    },
+    "/api/food-search": {
+      "get": {
+        "summary": "OpenFoodFacts search proxy",
+        "tags": [
+          "nutrition"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 120
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 8,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/barcode": {
+      "get": {
+        "summary": "OpenFoodFacts barcode lookup",
+        "tags": [
+          "nutrition"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "barcode",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/livez": {
+      "get": {
+        "summary": "Liveness probe",
+        "tags": [
+          "ops"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "summary": "Readiness probe (DB connectivity)",
+        "tags": [
+          "ops"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Prometheus metrics (text/plain)",
+        "tags": [
+          "ops"
+        ],
+        "responses": {
+          "200": {
+            "description": "Prometheus exposition format",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChatRequest": {
+        "type": "object",
+        "properties": {
+          "context": {
+            "default": "",
+            "type": "string",
+            "maxLength": 40000
+          },
+          "messages": {
+            "default": [],
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "assistant"
+                  ]
+                },
+                "content": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 8000
+                }
+              },
+              "required": [
+                "role",
+                "content"
+              ]
+            }
+          },
+          "tool_results": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tool_use_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "content": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 8000
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "tool_use_id"
+              ]
+            }
+          },
+          "tool_calls_raw": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {}
+          },
+          "stream": {
+            "type": "boolean"
+          }
+        },
+        "description": "POST /api/chat — Anthropic-чат із tool-results і опційним streaming."
+      },
+      "RecallMemoryRequest": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "topK": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "sources": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "chat",
+                "finyk",
+                "fizruk",
+                "nutrition",
+                "routine",
+                "journal",
+                "digest"
+              ]
+            }
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false,
+        "description": "POST /api/ai-memory/recall — semantic-search query body (query + optional topK/sources)."
+      },
+      "CoachMemoryPost": {
+        "type": "object",
+        "properties": {
+          "weeklyDigest": {
+            "type": "object",
+            "properties": {
+              "weekKey": {
+                "type": "string"
+              },
+              "weekRange": {
+                "type": "string"
+              },
+              "generatedAt": {
+                "type": "string"
+              },
+              "finyk": {},
+              "fizruk": {},
+              "nutrition": {},
+              "routine": {},
+              "overallRecommendations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "weekKey"
+            ]
+          }
+        },
+        "description": "POST /api/coach/memory."
+      },
+      "CoachInsight": {
+        "type": "object",
+        "properties": {
+          "snapshot": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "dateContext": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "todayKey": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                          },
+                          "weekDayUk": {
+                            "type": "string",
+                            "maxLength": 20
+                          },
+                          "dayOfWeekIso": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 7
+                          },
+                          "daysIntoWeek": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 7
+                          },
+                          "weekRange": {
+                            "type": "string",
+                            "maxLength": 80
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "finyk": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "totalSpent": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "totalIncome": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "monthlyBudget": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "txCount": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "topCategories": {
+                            "maxItems": 20,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string",
+                                  "maxLength": 120
+                                },
+                                "amount": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "name"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "fizruk": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "workoutsCount": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "totalVolume": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "recoveryLabel": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 120
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "topExercises": {
+                            "maxItems": 20,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string",
+                                  "maxLength": 120
+                                },
+                                "totalVolume": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "name"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "nutrition": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "avgKcal": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "targetKcal": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "avgProtein": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "avgFat": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "avgCarbs": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "daysLogged": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "routine": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "overallRate": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "habitCount": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "habits": {
+                            "maxItems": 50,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string",
+                                  "maxLength": 120
+                                },
+                                "completionRate": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "done": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "total": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "name"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "memory": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "weeklyDigests": {
+                    "maxItems": 24,
+                    "type": "array",
+                    "items": {}
+                  },
+                  "lastInsightDate": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 80
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "lastInsightText": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 4000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "description": "POST /api/coach/insight."
+      },
+      "WeeklyDigest": {
+        "type": "object",
+        "properties": {
+          "weekRange": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "finyk": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "totalSpent": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "totalIncome": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "monthlyBudget": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "txCount": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "topCategories": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        "amount": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fizruk": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "workoutsCount": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "totalVolume": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "recoveryLabel": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "topExercises": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        "totalVolume": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nutrition": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "avgKcal": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "targetKcal": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "avgProtein": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "avgFat": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "avgCarbs": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "daysLogged": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "routine": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "overallRate": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "habitCount": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "habits": {
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "maxLength": 120
+                        },
+                        "completionRate": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "done": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "total": {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "description": "POST /api/digest/weekly."
+      },
+      "AnalyzePhoto": {
+        "type": "object",
+        "properties": {
+          "image_base64": {
+            "type": "string",
+            "minLength": 100,
+            "maxLength": 7000000
+          },
+          "mime_type": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^image\\/[a-z+.-]+$"
+          },
+          "locale": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 16
+          }
+        },
+        "required": [
+          "image_base64"
+        ],
+        "description": "POST /api/nutrition/analyze-photo — base64 фото страви."
+      },
+      "RefinePhoto": {
+        "type": "object",
+        "properties": {
+          "image_base64": {
+            "type": "string",
+            "minLength": 100,
+            "maxLength": 7000000
+          },
+          "mime_type": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^image\\/[a-z+.-]+$"
+          },
+          "prior_result": {},
+          "portion_grams": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "qna": {
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "question": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "answer": {
+                  "type": "string",
+                  "maxLength": 500
+                }
+              }
+            }
+          },
+          "locale": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 16
+          }
+        },
+        "required": [
+          "image_base64"
+        ],
+        "description": "POST /api/nutrition/refine-photo — Q&A + portion override."
+      },
+      "ParsePantry": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "locale": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 16
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "description": "POST /api/nutrition/parse-pantry — вільний текст коморою."
+      },
+      "RecommendRecipes": {
+        "type": "object",
+        "properties": {
+          "pantry": {
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 120
+                    },
+                    "qty": {
+                      "anyOf": [
+                        {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string",
+                              "maxLength": 32
+                            }
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "unit": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 32
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "notes": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 200
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "preferences": {
+            "type": "object",
+            "properties": {
+              "goal": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "servings": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "timeMinutes": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "exclude": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "locale": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 16
+              }
+            }
+          },
+          "count": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 10
+          },
+          "locale": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 16
+          }
+        },
+        "description": "POST /api/nutrition/recommend-recipes."
+      },
+      "DayHint": {
+        "type": "object",
+        "properties": {
+          "macros": {
+            "type": "object",
+            "properties": {
+              "kcal": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "protein_g": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "fat_g": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "carbs_g": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "targets": {
+            "type": "object",
+            "properties": {
+              "kcal": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "protein_g": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "fat_g": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "carbs_g": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "dailyTargetKcal": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "dailyTargetProtein_g": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "dailyTargetFat_g": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "dailyTargetCarbs_g": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "additionalProperties": {}
+          },
+          "hasMeals": {
+            "type": "boolean"
+          },
+          "hasAnyMacros": {
+            "type": "boolean"
+          },
+          "macroSources": {
+            "anyOf": [
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "maxLength": 50
+                },
+                "additionalProperties": {
+                  "type": "number"
+                }
+              },
+              {
+                "maxItems": 20,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 50
+                }
+              }
+            ]
+          },
+          "locale": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 16
+          }
+        },
+        "description": "POST /api/nutrition/day-hint."
+      },
+      "DayPlan": {
+        "type": "object",
+        "properties": {
+          "pantry": {
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 120
+                    },
+                    "qty": {
+                      "anyOf": [
+                        {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string",
+                              "maxLength": 32
+                            }
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "unit": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 32
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "notes": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 200
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "targets": {
+            "type": "object",
+            "properties": {
+              "kcal": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "protein_g": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "fat_g": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "carbs_g": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "dailyTargetKcal": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "dailyTargetProtein_g": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "dailyTargetFat_g": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "dailyTargetCarbs_g": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "additionalProperties": {}
+          },
+          "regenerateMealType": {
+            "type": "string",
+            "enum": [
+              "breakfast",
+              "lunch",
+              "dinner",
+              "snack"
+            ]
+          },
+          "locale": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 16
+          }
+        },
+        "description": "POST /api/nutrition/day-plan."
+      },
+      "WeekPlan": {
+        "type": "object",
+        "properties": {
+          "pantry": {
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 120
+                    },
+                    "qty": {
+                      "anyOf": [
+                        {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string",
+                              "maxLength": 32
+                            }
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "unit": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 32
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "notes": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 200
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "preferences": {
+            "type": "object",
+            "properties": {
+              "goal": {
+                "type": "string",
+                "maxLength": 40
+              }
+            }
+          },
+          "locale": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 16
+          }
+        },
+        "description": "POST /api/nutrition/week-plan."
+      },
+      "ShoppingList": {
+        "type": "object",
+        "properties": {
+          "recipes": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "ingredients": {
+                  "maxItems": 50,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 200
+                  }
+                }
+              }
+            }
+          },
+          "weekPlan": {
+            "type": "object",
+            "properties": {
+              "days": {
+                "maxItems": 7,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string",
+                      "maxLength": 80
+                    },
+                    "meals": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "maxLength": 500
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "pantryItems": {
+            "maxItems": 300,
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 120
+                    },
+                    "qty": {
+                      "anyOf": [
+                        {
+                          "anyOf": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "string",
+                              "maxLength": 32
+                            }
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "unit": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 32
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "notes": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 200
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "locale": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 16
+          }
+        },
+        "description": "POST /api/nutrition/shopping-list."
+      },
+      "BackupUpload": {
+        "type": "object",
+        "properties": {
+          "blob": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "blob"
+        ],
+        "description": "POST /api/nutrition/backup-upload — зашифрований blob."
+      },
+      "SyncPush": {
+        "type": "object",
+        "properties": {
+          "module": {
+            "type": "string",
+            "enum": [
+              "finyk",
+              "fizruk",
+              "routine",
+              "nutrition",
+              "profile"
+            ]
+          },
+          "data": {},
+          "clientUpdatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "module",
+          "data",
+          "clientUpdatedAt"
+        ],
+        "description": "POST /api/sync/push (per-module LWW)."
+      },
+      "SyncPull": {
+        "type": "object",
+        "properties": {
+          "module": {
+            "type": "string",
+            "enum": [
+              "finyk",
+              "fizruk",
+              "routine",
+              "nutrition",
+              "profile"
+            ]
+          }
+        },
+        "required": [
+          "module"
+        ],
+        "description": "POST /api/sync/pull (per-module)."
+      },
+      "SyncPushAll": {
+        "type": "object",
+        "properties": {
+          "modules": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "data": {},
+                "clientUpdatedAt": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "data",
+                "clientUpdatedAt"
+              ]
+            }
+          }
+        },
+        "required": [
+          "modules"
+        ],
+        "description": "POST /api/sync/push-all (bulk)."
+      },
+      "PushRegister": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "platform": {
+                "type": "string",
+                "const": "web"
+              },
+              "token": {
+                "type": "string",
+                "maxLength": 2048,
+                "format": "uri"
+              },
+              "keys": {
+                "type": "object",
+                "properties": {
+                  "p256dh": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  },
+                  "auth": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  }
+                },
+                "required": [
+                  "p256dh",
+                  "auth"
+                ]
+              }
+            },
+            "required": [
+              "platform",
+              "token",
+              "keys"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "platform": {
+                "type": "string",
+                "enum": [
+                  "ios",
+                  "android"
+                ]
+              },
+              "token": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              }
+            },
+            "required": [
+              "platform",
+              "token"
+            ]
+          }
+        ],
+        "description": "POST /api/push/register — discriminated union web/ios/android.",
+        "type": "object"
+      },
+      "PushUnregister": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "platform": {
+                "type": "string",
+                "const": "web"
+              },
+              "endpoint": {
+                "type": "string",
+                "maxLength": 2048,
+                "format": "uri"
+              }
+            },
+            "required": [
+              "platform",
+              "endpoint"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "platform": {
+                "type": "string",
+                "enum": [
+                  "ios",
+                  "android"
+                ]
+              },
+              "token": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              }
+            },
+            "required": [
+              "platform",
+              "token"
+            ]
+          }
+        ],
+        "description": "POST /api/push/unregister.",
+        "type": "object"
+      },
+      "PushSubscribe": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri"
+          },
+          "keys": {
+            "type": "object",
+            "properties": {
+              "p256dh": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "auth": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              }
+            },
+            "required": [
+              "p256dh",
+              "auth"
+            ]
+          }
+        },
+        "required": [
+          "endpoint",
+          "keys"
+        ],
+        "description": "Web-push subscribe (legacy)."
+      },
+      "PushUnsubscribe": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri"
+          }
+        },
+        "required": [
+          "endpoint"
+        ],
+        "description": "Web-push unsubscribe (legacy)."
+      },
+      "PushSend": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "module": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "userId",
+          "title"
+        ],
+        "description": "Internal /api/push/send (worker)."
+      },
+      "PushTestRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "data": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 2000
+            }
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "silent": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "title",
+          "body"
+        ],
+        "description": "POST /api/push/test."
+      },
+      "WaitlistSubmit": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "tier_interest": {
+            "default": "unsure",
+            "type": "string",
+            "enum": [
+              "free",
+              "plus",
+              "pro",
+              "unsure"
+            ]
+          },
+          "source": {
+            "default": "pricing_page",
+            "type": "string",
+            "enum": [
+              "pricing_page",
+              "paywall",
+              "settings",
+              "onboarding"
+            ]
+          },
+          "locale": {
+            "type": "string",
+            "pattern": "^[a-z]{2}$"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "description": "POST /api/v1/waitlist — sign-up на майбутній Pro-тір (Phase 0 monetization)."
+      },
+      "WebVitalsPayload": {
+        "type": "object",
+        "properties": {
+          "metrics": {
+            "minItems": 1,
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "const": "CLS"
+                    },
+                    "value": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 10
+                    },
+                    "rating": {
+                      "type": "string",
+                      "enum": [
+                        "good",
+                        "needs-improvement",
+                        "poor"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "value",
+                    "rating"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "enum": [
+                        "LCP",
+                        "INP",
+                        "FCP",
+                        "TTFB"
+                      ]
+                    },
+                    "value": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 120000
+                    },
+                    "rating": {
+                      "type": "string",
+                      "enum": [
+                        "good",
+                        "needs-improvement",
+                        "poor"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "value",
+                    "rating"
+                  ]
+                }
+              ],
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "metrics"
+        ],
+        "description": "POST /api/metrics/web-vitals — батч Core Web Vitals (LCP/INP/FCP/TTFB/CLS)."
+      },
+      "MeResponse": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "email": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "image": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "emailVerified": {
+                "type": "boolean"
+              },
+              "createdAt": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "email",
+              "name",
+              "image",
+              "emailVerified",
+              "createdAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "user"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь на GET /api/me."
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false,
+        "description": "Стандартна shape 400-помилки після `validateBody`."
+      },
+      "RecallMemoryResponse": {
+        "type": "object",
+        "properties": {
+          "memories": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "chat",
+                    "finyk",
+                    "fizruk",
+                    "nutrition",
+                    "routine",
+                    "journal",
+                    "digest"
+                  ]
+                },
+                "sourceRef": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "content": {
+                  "type": "string"
+                },
+                "score": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "metadata": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "required": [
+                "id",
+                "source",
+                "sourceRef",
+                "content",
+                "score",
+                "createdAt",
+                "metadata"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "memories"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь POST /api/ai-memory/recall — масив результатів (може бути порожнім)."
+      },
+      "PushSendSummary": {
+        "type": "object",
+        "properties": {
+          "delivered": {
+            "type": "object",
+            "properties": {
+              "ios": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "android": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "web": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "ios",
+              "android",
+              "web"
+            ],
+            "additionalProperties": false
+          },
+          "cleaned": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "platform": {
+                  "type": "string",
+                  "enum": [
+                    "ios",
+                    "android",
+                    "web"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "platform",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "delivered",
+          "cleaned",
+          "errors"
+        ],
+        "additionalProperties": false,
+        "description": "Уніфікований summary push fan-out (delivered/cleaned/errors)."
+      },
+      "PushTestResponse": {
+        "type": "object",
+        "properties": {
+          "delivered": {
+            "type": "object",
+            "properties": {
+              "ios": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "android": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "web": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "ios",
+              "android",
+              "web"
+            ],
+            "additionalProperties": false
+          },
+          "cleaned": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "platform": {
+                  "type": "string",
+                  "enum": [
+                    "ios",
+                    "android",
+                    "web"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "platform",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "delivered",
+          "cleaned",
+          "errors"
+        ],
+        "additionalProperties": false,
+        "description": "POST /api/push/test response."
+      },
+      "MonoConnectResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "active"
+          },
+          "accountsCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "status",
+          "accountsCount"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь POST /api/mono/connect — `status: 'active'` literal."
+      },
+      "MonoDisconnectResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь POST /api/mono/disconnect — `{ ok: true }`."
+      },
+      "MonoSyncState": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "active",
+              "invalid",
+              "disconnected"
+            ]
+          },
+          "webhookActive": {
+            "type": "boolean"
+          },
+          "lastEventAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastBackfillAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "accountsCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "status",
+          "webhookActive",
+          "lastEventAt",
+          "lastBackfillAt",
+          "accountsCount"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь GET /api/mono/sync-state — статус інтеграції + лічильники."
+      },
+      "MonoAccountsResponse": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "userId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "monoAccountId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sendId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "currencyCode": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "cashbackType": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "maskedPan": {
+              "maxItems": 8,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "iban": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "balance": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "creditLimit": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastSeenAt": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "userId",
+            "monoAccountId",
+            "sendId",
+            "type",
+            "currencyCode",
+            "cashbackType",
+            "maskedPan",
+            "iban",
+            "balance",
+            "creditLimit",
+            "lastSeenAt"
+          ],
+          "additionalProperties": false
+        },
+        "description": "Відповідь GET /api/mono/accounts — масив MonoAccountDto."
+      },
+      "MonoTransactionsPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "monoAccountId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "monoTxId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "time": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "amount": {
+                  "type": "number"
+                },
+                "operationAmount": {
+                  "type": "number"
+                },
+                "currencyCode": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "mcc": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "originalMcc": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "hold": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "comment": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "cashbackAmount": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "commissionRate": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "balance": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "receiptId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "invoiceId": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "counterEdrpou": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "counterIban": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "counterName": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "categorySlug": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "categoryOverridden": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "webhook",
+                    "backfill"
+                  ]
+                },
+                "receivedAt": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "userId",
+                "monoAccountId",
+                "monoTxId",
+                "time",
+                "amount",
+                "operationAmount",
+                "currencyCode",
+                "mcc",
+                "originalMcc",
+                "hold",
+                "description",
+                "comment",
+                "cashbackAmount",
+                "commissionRate",
+                "balance",
+                "receiptId",
+                "invoiceId",
+                "counterEdrpou",
+                "counterIban",
+                "counterName",
+                "categorySlug",
+                "categoryOverridden",
+                "source",
+                "receivedAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь GET /api/mono/transactions — cursor-paginated `{data, nextCursor}`."
+      },
+      "MonoBackfillResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "started"
+          },
+          "accountsCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "status",
+          "accountsCount"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь POST /api/mono/backfill — `status: 'started'` literal."
+      },
+      "WaitlistSubmitResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "created": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "created"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь на POST /api/v1/waitlist — `created` розрізняє новий запис vs duplicate."
+      },
+      "TranscribeResponse": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "durationSec": {
+            "type": "number",
+            "minimum": 0
+          },
+          "model": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "durationSec",
+          "model"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь на POST /api/transcribe — розпізнаний текст + тривалість аудіо."
+      }
+    },
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "better-auth.session_token",
+        "description": "Better Auth session cookie. Web-клієнт надсилає автоматично; mobile використовує bearerAuth."
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Mobile (Expo) bearer-токен з Better Auth. Web використовує cookieAuth."
+      }
+    }
+  }
+}

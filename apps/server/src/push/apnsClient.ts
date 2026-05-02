@@ -10,7 +10,7 @@ import { logger } from "../obs/logger.js";
  *
  * Провайдер і конфіг кешуємо у модулі — node-apn тримає http2-сесію до APNs
  * open, і відкривати її заново на кожен send — це і latency, і зайві TLS-
- * handshake-и. `__resetApnsClient` використовується лише тестами.
+ * handshake-и.
  */
 
 interface ApnsConfig {
@@ -115,18 +115,4 @@ export function getApnsProvider(): apn.Provider | null {
 /** APNs topic (bundle id) або `null`, якщо конфіг не валідний. */
 export function apnsBundleId(): string | null {
   return getApnsConfig()?.bundleId ?? null;
-}
-
-/** Test-only reset. НЕ використовуй у прод-коді. */
-export function __resetApnsClient(): void {
-  cachedConfig = undefined;
-  if (cachedProvider) {
-    try {
-      cachedProvider.shutdown();
-    } catch {
-      /* ignore shutdown errors on reset */
-    }
-    cachedProvider = null;
-  }
-  warnedDisabled = false;
 }

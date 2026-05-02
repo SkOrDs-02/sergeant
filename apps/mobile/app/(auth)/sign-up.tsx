@@ -1,15 +1,11 @@
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { UserPlus } from "lucide-react-native";
+
 import { signUp } from "@/auth/authClient";
-import { colors, spacing } from "@/theme";
+import { colors } from "@/theme";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
@@ -22,15 +18,8 @@ function PasswordStrength({ password }: { password: string }) {
   const widths = ["33%", "66%", "100%"] as const;
 
   return (
-    <View style={{ marginTop: 6 }}>
-      <View
-        style={{
-          height: 4,
-          backgroundColor: colors.surface,
-          borderRadius: 4,
-          overflow: "hidden",
-        }}
-      >
+    <View className="mt-1.5">
+      <View className="h-1 bg-surface rounded overflow-hidden">
         <View
           style={{
             height: "100%",
@@ -41,12 +30,8 @@ function PasswordStrength({ password }: { password: string }) {
         />
       </View>
       <Text
-        style={{
-          color: levelColors[level],
-          fontSize: 11,
-          marginTop: 4,
-          fontWeight: "600",
-        }}
+        style={{ color: levelColors[level] }}
+        className="text-xs mt-1 font-semibold"
       >
         {labels[level]}
       </Text>
@@ -80,13 +65,18 @@ export default function SignUpScreen() {
   }
 
   return (
-    <SafeAreaView style={s.container} edges={["bottom"]}>
+    <SafeAreaView className="flex-1 bg-bg" edges={["bottom"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={s.form}
+        className="flex-1 px-6 justify-center gap-4"
       >
-        <Text style={s.title}>Створити акаунт</Text>
-        <Text style={s.subtitle}>Безкоштовно. Без зайвого.</Text>
+        <View className="flex-row items-center gap-2 mb-2">
+          <UserPlus size={28} color={colors.accent} strokeWidth={2} />
+          <Text className="text-text text-3xl font-bold">Створити акаунт</Text>
+        </View>
+        <Text className="text-muted text-sm mb-4">
+          Безкоштовно. Без зайвого.
+        </Text>
 
         <Input
           placeholder="Твоє ім'я"
@@ -115,7 +105,7 @@ export default function SignUpScreen() {
           <PasswordStrength password={password} />
         </View>
 
-        {error ? <Text style={s.error}>{error}</Text> : null}
+        {error ? <Text className="text-danger text-xs">{error}</Text> : null}
 
         <Button
           variant="primary"
@@ -127,36 +117,13 @@ export default function SignUpScreen() {
           Зареєструватися
         </Button>
 
-        <View style={s.footer}>
-          <Text style={s.footerText}>Вже є акаунт?</Text>
-          <Link href="/(auth)/sign-in" style={s.footerLink}>
-            <Text style={s.footerLinkText}>Увійти</Text>
+        <View className="flex-row justify-center items-center mt-4 gap-1.5">
+          <Text className="text-muted text-sm">Вже є акаунт?</Text>
+          <Link href="/(auth)/sign-in" className="px-1">
+            <Text className="text-accent text-sm font-medium">Увійти</Text>
           </Link>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  form: {
-    flex: 1,
-    padding: spacing.xl,
-    justifyContent: "center",
-    gap: spacing.md,
-  },
-  title: { color: colors.text, fontSize: 28, fontWeight: "700" },
-  subtitle: { color: colors.textMuted, fontSize: 14, marginBottom: spacing.lg },
-  error: { color: colors.danger, fontSize: 13 },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: spacing.lg,
-    gap: 6,
-  },
-  footerText: { color: colors.textMuted, fontSize: 14 },
-  footerLink: { paddingHorizontal: 4 },
-  footerLinkText: { color: colors.accent, fontSize: 14, fontWeight: "500" },
-});

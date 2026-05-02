@@ -5,9 +5,10 @@
 
 import { buildFinanceContext } from "./recommendations/financeContext";
 import { Recommendations } from "@sergeant/insights";
+import { safeReadLS, safeReadStringLS } from "@shared/lib/storage";
 
 const { FINANCE_RULES, runRules } = Recommendations;
-type Rec = Recommendations.Rec;
+export type Rec = Recommendations.Rec;
 
 interface Transaction {
   id: string;
@@ -59,12 +60,7 @@ interface NutritionPrefs {
 }
 
 function safeLS<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
+  return safeReadLS<T>(key, fallback) ?? fallback;
 }
 
 function localDateKey(d: Date = new Date()): string {
@@ -91,7 +87,7 @@ const MUSCLE_LABELS_UK: Record<string, string> = {
 };
 
 function parseFizrukWorkouts(): Workout[] {
-  const raw = localStorage.getItem("fizruk_workouts_v1");
+  const raw = safeReadStringLS("fizruk_workouts_v1");
   if (!raw) return [];
   try {
     const p = JSON.parse(raw) as Workout[] | { workouts?: Workout[] } | null;

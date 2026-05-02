@@ -1,6 +1,7 @@
 import { useMemo, type CSSProperties, type ReactNode } from "react";
 import { cn } from "@shared/lib/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import { StreakBadge } from "@shared/components/ui/StreakFlame";
 import { safeReadLS, safeReadStringLS } from "@shared/lib/storage";
 import { STORAGE_KEYS, countRealEntries } from "@sergeant/shared";
 import { getWeekRange } from "../../insights/useWeeklyDigest";
@@ -9,11 +10,16 @@ import { localStorageStore } from "./dashboardStore";
 
 const PILL_MODULES: ModuleId[] = ["finyk", "routine", "nutrition", "fizruk"];
 
+// AI-CONTEXT: Pill numbers render as bold text on the cream `bg-panel`
+// surface. The saturated `text-{module}` shades only clear ~2.4–3.1:1
+// against cream; switch to the `-strong` companion in light mode and
+// keep the saturated tone in dark mode where it clears AA on the
+// charcoal panel. See docs/design/BRANDBOOK.md → "WCAG-AA `-strong` Tier".
 const PILL_ACCENT: Record<ModuleId, string> = {
-  finyk: "text-finyk",
-  fizruk: "text-fizruk",
-  routine: "text-routine",
-  nutrition: "text-nutrition",
+  finyk: "text-finyk-strong dark:text-finyk",
+  fizruk: "text-fizruk-strong dark:text-fizruk",
+  routine: "text-routine-strong dark:text-routine",
+  nutrition: "text-nutrition-strong dark:text-nutrition",
 };
 
 /**
@@ -43,32 +49,41 @@ export function TodaySummaryStrip({
   if (!hasSomeData) return null;
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-1 px-1 no-scrollbar">
-      {pills.map((pill) => (
-        <button
-          key={pill.id}
-          type="button"
-          onClick={() => onOpenModule(pill.id)}
-          className={cn(
-            "shrink-0 flex flex-col items-center rounded-2xl",
-            "bg-panel border border-line px-3 py-2 min-w-[72px]",
-            "transition-all active:scale-[0.97]",
-            "hover:bg-panelHi hover:border-line",
-          )}
-        >
-          <span
+    <div
+      className="relative -mx-1 px-1"
+      style={{
+        maskImage: "linear-gradient(to right, black 85%, transparent 100%)",
+        WebkitMaskImage:
+          "linear-gradient(to right, black 85%, transparent 100%)",
+      }}
+    >
+      <div className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
+        {pills.map((pill) => (
+          <button
+            key={pill.id}
+            type="button"
+            onClick={() => onOpenModule(pill.id)}
             className={cn(
-              "text-base font-bold tabular-nums",
-              pill.main ? pill.accent : "text-subtle",
+              "shrink-0 flex flex-col items-center rounded-2xl",
+              "bg-panel border border-line px-3 py-2 min-w-[72px]",
+              "transition-all active:scale-[0.97]",
+              "hover:bg-panelHi hover:border-line",
             )}
           >
-            {pill.main || "\u2014"}
-          </span>
-          <span className="text-2xs text-muted font-medium mt-0.5">
-            {pill.label}
-          </span>
-        </button>
-      ))}
+            <span
+              className={cn(
+                "text-base font-bold tabular-nums",
+                pill.main ? pill.accent : "text-subtle",
+              )}
+            >
+              {pill.main || "\u2014"}
+            </span>
+            <span className="text-2xs text-muted font-medium mt-0.5">
+              {pill.label}
+            </span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -116,24 +131,17 @@ export function StreakIndicator() {
   if (streak < 2) return null;
 
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 px-2.5 py-1 rounded-full",
-        "text-xs font-semibold text-text",
-        "bg-panel border border-line shadow-sm",
-      )}
-      title="Серія днів"
-    >
-      <span aria-hidden>{"\uD83D\uDD25"}</span>
-      {streak} {"днів поспіль"}
-    </span>
+    <StreakBadge streak={streak} label="днів поспіль" className="shadow-sm" />
   );
 }
 
 /**
- * Wraps each row of the dashboard in a fade-up animation with an
- * incremental delay so the layout reveals itself top-down on mount
- * rather than snapping into existence.
+ * Wraps a dashboard *group* in a fade-up animation. The hub uses three
+ * stable groups — Hero / Modules / Insights — and each `index` maps to
+ * a fixed delay (`index * 80ms`) instead of the per-element ramp we used
+ * before. Grouping keeps the reveal under ~250ms so users don't see a
+ * long staircase of fades on slower devices, and prevents the index
+ * counter from drifting whenever a section toggles in or out.
  */
 export function StaggerChild({
   index,
@@ -143,7 +151,11 @@ export function StaggerChild({
   children: ReactNode;
 }) {
   const style: CSSProperties = {
-    animationDelay: `${index * 50}ms`,
+    // Hard Rule #17 (Animation budget): stagger ≤ 30 ms between children,
+    // total delay cap ≤ 150 ms. Three fixed groups (Hero / Modules /
+    // Insights) map to indices 0–2, so the cap rarely bites — but keep the
+    // `Math.min` so any future fourth group still respects the rule.
+    animationDelay: `${Math.min(index * 30, 150)}ms`,
   };
   return (
     <div className="motion-safe:animate-stagger-in" style={style}>
@@ -209,7 +221,7 @@ export function WeeklyDigestFooter({
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="text-brand-600 dark:text-brand-400"
+          className="text-brand-strong dark:text-brand"
           aria-hidden
         >
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />

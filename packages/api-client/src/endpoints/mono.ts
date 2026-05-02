@@ -1,4 +1,13 @@
-import { ApiError, isApiError } from "../ApiError";
+import type {
+  MonoAccountDto as SharedMonoAccountDto,
+  MonoTransactionDto as SharedMonoTransactionDto,
+  MonoTransactionsPage as SharedMonoTransactionsPage,
+  MonoSyncState as SharedMonoSyncState,
+  MonoConnectionStatus as SharedMonoConnectionStatus,
+  MonoConnectResponse as SharedMonoConnectResponse,
+  MonoDisconnectResponse as SharedMonoDisconnectResponse,
+  MonoBackfillResponse as SharedMonoBackfillResponse,
+} from "@sergeant/shared/schemas";
 import type { HttpClient } from "../httpClient";
 
 /**
@@ -11,70 +20,23 @@ import type { HttpClient } from "../httpClient";
 
 export type MonoCashbackType = "" | "None" | "UAH" | "Miles" | string;
 
-// ── Webhook migration DTOs (Track A) ─────────────────────────────────────
+// ── Webhook migration DTOs (Track A/B/C) ─────────────────────────────────
+//
+// SSOT for the `/api/mono/*` HTTP contract lives in
+// `@sergeant/shared/schemas/api` (AGENTS.md Hard Rule #3). The server
+// validates each response via `.parse()` before `res.json()`, and these
+// `z.infer<>` re-exports are how this client stays type-locked to the
+// same Zod schemas — preventing the silent "client interface drifts past
+// server reality" bug that motivated the rule.
 
-export type MonoConnectionStatus =
-  | "pending"
-  | "active"
-  | "invalid"
-  | "disconnected";
-
-export interface MonoAccountDto {
-  userId: string;
-  monoAccountId: string;
-  sendId: string | null;
-  type: string | null;
-  currencyCode: number;
-  cashbackType: string | null;
-  maskedPan: string[];
-  iban: string | null;
-  balance: number | null;
-  creditLimit: number | null;
-  lastSeenAt: string;
-}
-
-export interface MonoTransactionDto {
-  userId: string;
-  monoAccountId: string;
-  monoTxId: string;
-  time: string;
-  amount: number;
-  operationAmount: number;
-  currencyCode: number;
-  mcc: number | null;
-  originalMcc: number | null;
-  hold: boolean | null;
-  description: string | null;
-  comment: string | null;
-  cashbackAmount: number | null;
-  commissionRate: number | null;
-  balance: number | null;
-  receiptId: string | null;
-  invoiceId: string | null;
-  counterEdrpou: string | null;
-  counterIban: string | null;
-  counterName: string | null;
-  source: "webhook" | "backfill";
-  receivedAt: string;
-}
-
-export interface MonoSyncState {
-  status: MonoConnectionStatus;
-  webhookActive: boolean;
-  lastEventAt: string | null;
-  lastBackfillAt: string | null;
-  accountsCount: number;
-}
-
-/**
- * Cursor-paginated response from `GET /api/mono/transactions`. Server returns
- * up to `limit` items (default 50) ordered by `(time DESC, monoTxId DESC)`;
- * `nextCursor` is non-null when more rows are available.
- */
-export interface MonoTransactionsPage {
-  data: MonoTransactionDto[];
-  nextCursor: string | null;
-}
+export type MonoConnectionStatus = SharedMonoConnectionStatus;
+export type MonoAccountDto = SharedMonoAccountDto;
+export type MonoTransactionDto = SharedMonoTransactionDto;
+export type MonoSyncState = SharedMonoSyncState;
+export type MonoTransactionsPage = SharedMonoTransactionsPage;
+export type MonoConnectResponse = SharedMonoConnectResponse;
+export type MonoDisconnectResponse = SharedMonoDisconnectResponse;
+export type MonoBackfillResponse = SharedMonoBackfillResponse;
 
 export interface MonoAccount {
   id: string;
@@ -110,181 +72,16 @@ export interface MonoClientInfo {
   [key: string]: unknown;
 }
 
-export interface MonoStatementEntry {
-  id: string;
-  time: number;
-  description: string;
-  mcc: number;
-  originalMcc?: number;
-  hold?: boolean;
-  amount: number;
-  operationAmount: number;
-  currencyCode: number;
-  commissionRate?: number;
-  cashbackAmount?: number;
-  balance?: number;
-  comment?: string;
-  receiptId?: string;
-  invoiceId?: string;
-  counterEdrpou?: string;
-  counterIban?: string;
-  counterName?: string;
-  [key: string]: unknown;
-}
-
-export interface MonoEndpoints {
-  clientInfo: (
-    token: string,
-    opts?: { signal?: AbortSignal },
-  ) => Promise<MonoClientInfo>;
-  statement: (
-    token: string,
-    accId: string,
-    from: number,
-    to: number,
-    opts?: { signal?: AbortSignal },
-  ) => Promise<MonoStatementEntry[]>;
-}
-
-/**
- * Monobank Personal API обмежує `/personal/statement/{acc}/{from}/{to}` 500
- * транзакціями за запит — повертає останні 500 у діапазоні у зворотному
- * хронологічному порядку. Активні користувачі з >500 tx/міс мовчки отримували
- * обрізану виписку. Пагінуємо тут: запит за сторінкою (from, prevTo), далі
- * зсуваємо `prevTo := min(time) - 1` і повторюємо, поки сторінка повна.
- *
- * Safety cap — 20 сторінок (~10 000 tx) — практично неосяжно навіть для
- * бізнес-акаунтів, і стримує rate-limit (1 req/60 s/per token) від
- * нескінченного циклу при зламаному API.
- */
-const MONO_STATEMENT_PAGE_SIZE = 500;
-const MONO_STATEMENT_MAX_PAGES = 20;
-/**
- * Monobank Personal обмежує `/personal/statement` rate-limit-ом 1 req/60 s/per
- * token. У payload-ах з >500 tx (pagination додано після #585) другий page
- * раніше падав з `ApiError status=429` і всю виписку ми втрачали. Тепер при
- * 429 з `Retry-After` чекаємо стільки, скільки сервер попросив (capped 65s,
- * бо більше за 60s Monobank не потребує), і робимо до 2 ретраїв на сторінку.
- * `maxTotalMs` — жорстка межа, щоб у зламаному API не заклинити loop на
- * годину.
- */
-const MONO_RETRY_MAX_DELAY_MS = 65_000;
-const MONO_RETRY_MAX_PER_PAGE = 2;
-
-type Sleeper = (ms: number) => Promise<void>;
-const defaultSleep: Sleeper = (ms) => new Promise((r) => setTimeout(r, ms));
-let _sleep: Sleeper = defaultSleep;
-/**
- * Test-only hook: підміняє `setTimeout`-sleep на детермінований proxy. Без
- * нього `vitest`-тест на 429-ретрай чекав би реальні 65 s. Не експортуй у
- * прод-коді.
- */
-export function __setMonoSleep(fn: Sleeper | null): void {
-  _sleep = fn ?? defaultSleep;
-}
-
-export function createMonoEndpoints(http: HttpClient): MonoEndpoints {
-  const fetchStatementPageOnce = (
-    token: string,
-    accId: string,
-    from: number,
-    to: number,
-    signal?: AbortSignal,
-  ) =>
-    http.get<MonoStatementEntry[]>("/api/mono", {
-      query: { path: `/personal/statement/${accId}/${from}/${to}` },
-      headers: { "X-Token": token },
-      signal,
-    });
-
-  const fetchStatementPage = async (
-    token: string,
-    accId: string,
-    from: number,
-    to: number,
-    signal?: AbortSignal,
-  ): Promise<MonoStatementEntry[]> => {
-    let attempt = 0;
-    let lastErr: unknown;
-    while (attempt <= MONO_RETRY_MAX_PER_PAGE) {
-      try {
-        return await fetchStatementPageOnce(token, accId, from, to, signal);
-      } catch (err) {
-        lastErr = err;
-        if (
-          !isApiError(err) ||
-          err.status !== 429 ||
-          attempt >= MONO_RETRY_MAX_PER_PAGE
-        ) {
-          throw err;
-        }
-        // Без `retryAfterMs` від сервера не гадаємо навмання — прокидуємо
-        // 429 наверх. Активний rate-limit без retry-after — сигнал змінити
-        // upstream конфіг, а не сліпо ретраїти.
-        const waitMs = err.retryAfterMs;
-        if (!waitMs) throw err;
-        const safeWait = Math.min(waitMs, MONO_RETRY_MAX_DELAY_MS);
-        await _sleep(safeWait);
-        attempt += 1;
-      }
-    }
-    // Недосяжно: цикл повертає результат або викидає ще у catch-гілці.
-    /* c8 ignore next */
-    throw lastErr instanceof ApiError
-      ? lastErr
-      : new Error("mono.statement: exhausted retries");
-  };
-
-  return {
-    clientInfo: (token, opts) =>
-      http.get<MonoClientInfo>("/api/mono", {
-        query: { path: "/personal/client-info" },
-        headers: { "X-Token": token },
-        signal: opts?.signal,
-      }),
-    statement: async (token, accId, from, to, opts) => {
-      const all: MonoStatementEntry[] = [];
-      const seen = new Set<string>();
-      let pageTo = to;
-      for (let page = 0; page < MONO_STATEMENT_MAX_PAGES; page++) {
-        const rows = await fetchStatementPage(
-          token,
-          accId,
-          from,
-          pageTo,
-          opts?.signal,
-        );
-        if (!Array.isArray(rows) || rows.length === 0) break;
-        let oldest = Number.POSITIVE_INFINITY;
-        for (const r of rows) {
-          if (r?.id && !seen.has(r.id)) {
-            seen.add(r.id);
-            all.push(r);
-          }
-          if (typeof r?.time === "number" && r.time < oldest) oldest = r.time;
-        }
-        if (rows.length < MONO_STATEMENT_PAGE_SIZE) break;
-        if (!Number.isFinite(oldest)) break;
-        // Зсуваємо `to` на секунду раніше за найстарішу tx поточної сторінки,
-        // щоб Mono повернуло наступну «порцію» без перекриття (seen-Set усе одно
-        // страхує, якщо кілька tx поділяють ту саму секунду).
-        const nextTo = oldest - 1;
-        if (nextTo <= from) break;
-        pageTo = nextTo;
-      }
-      return all;
-    },
-  };
-}
-
-// ── Webhook-based API facade (Track A) ───────────────────────────────────
+// ── Webhook API (Track A) — only mode after roadmap-A polling cleanup ──
 
 export interface MonoWebhookEndpoints {
   connect: (
     token: string,
     opts?: { signal?: AbortSignal },
-  ) => Promise<{ status: MonoConnectionStatus; accountsCount: number }>;
-  disconnect: (opts?: { signal?: AbortSignal }) => Promise<void>;
+  ) => Promise<MonoConnectResponse>;
+  disconnect: (opts?: {
+    signal?: AbortSignal;
+  }) => Promise<MonoDisconnectResponse>;
   syncState: (opts?: { signal?: AbortSignal }) => Promise<MonoSyncState>;
   accounts: (opts?: { signal?: AbortSignal }) => Promise<MonoAccountDto[]>;
   transactions: (
@@ -297,7 +94,7 @@ export interface MonoWebhookEndpoints {
     },
     opts?: { signal?: AbortSignal },
   ) => Promise<MonoTransactionsPage>;
-  backfill: (opts?: { signal?: AbortSignal }) => Promise<void>;
+  backfill: (opts?: { signal?: AbortSignal }) => Promise<MonoBackfillResponse>;
 }
 
 export function createMonoWebhookEndpoints(
@@ -305,13 +102,13 @@ export function createMonoWebhookEndpoints(
 ): MonoWebhookEndpoints {
   return {
     connect: (token, opts) =>
-      http.post<{ status: MonoConnectionStatus; accountsCount: number }>(
+      http.post<MonoConnectResponse>(
         "/api/mono/connect",
         { token },
         { signal: opts?.signal },
       ),
     disconnect: (opts) =>
-      http.post<void>("/api/mono/disconnect", undefined, {
+      http.post<MonoDisconnectResponse>("/api/mono/disconnect", undefined, {
         signal: opts?.signal,
       }),
     syncState: (opts) =>
@@ -328,7 +125,7 @@ export function createMonoWebhookEndpoints(
         signal: opts?.signal,
       }),
     backfill: (opts) =>
-      http.post<void>("/api/mono/backfill", undefined, {
+      http.post<MonoBackfillResponse>("/api/mono/backfill", undefined, {
         signal: opts?.signal,
       }),
   };

@@ -12,13 +12,16 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { cn } from "@shared/lib/cn";
+import { signedDeltaClass } from "@shared/lib";
 import { useAnalytics } from "../hooks/useAnalytics";
 import { CategoryPieChart } from "../components/charts/lazy";
 import { ChartFallback } from "../components/charts/ChartFallback";
 import { MerchantList } from "../components/analytics/MerchantList";
 import { getTrendComparison } from "@sergeant/finyk-domain/domain/selectors";
-import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
-import { readJSON } from "../lib/finykStorage";
+import type {
+  Transaction,
+  TxSplitsMap,
+} from "@sergeant/finyk-domain/domain/types";
 import {
   trackEvent,
   ANALYTICS_EVENTS,
@@ -44,9 +47,9 @@ interface ComparisonRowProps {
 }
 
 export interface AnalyticsMonoAdapter {
-  realTx?: unknown[];
+  realTx?: Transaction[];
   loadingTx?: boolean;
-  fetchMonth: (year: number, month0Based: number) => Promise<unknown>;
+  fetchMonth: (year: number, month0Based: number) => Promise<Transaction[]>;
 }
 
 export interface AnalyticsStorageAdapter {
@@ -57,15 +60,6 @@ export interface AnalyticsStorageAdapter {
 interface AnalyticsProps {
   mono: AnalyticsMonoAdapter;
   storage: AnalyticsStorageAdapter;
-}
-
-// `fetchMonth` приймає 0-based місяць (як у `new Date(y, m, 1)`).
-// Сторінка оперує 1-based (1..12), тож тут нормалізуємо.
-function readTxCache(year: number, month1Based: number) {
-  const m0 = month1Based - 1;
-  const cache = readJSON(`finyk_tx_cache_${year}_${m0}`, null);
-  if (!cache || typeof cache !== "object") return null;
-  return Array.isArray(cache.txs) ? cache.txs : null;
 }
 
 // Презентаційний контейнер-секція. memo, бо приймає лише `title/className/children`
@@ -175,7 +169,7 @@ const ComparisonRow = memo(function ComparisonRow({
               good === null
                 ? "text-muted"
                 : good
-                  ? "text-emerald-600 dark:text-emerald-400"
+                  ? "text-success-strong dark:text-success"
                   : "text-danger",
             )}
           >
@@ -202,9 +196,14 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
   const isCurrentMonth =
     year === now.getFullYear() && month === now.getMonth() + 1;
 
-  const [historyCache, setHistoryCache] = useState({});
+  // In-memory cache of fetched historical months. Keyed by "YYYY-MM".
+  // No localStorage — source of truth is the server; React Query handles
+  // HTTP-level caching so repeated navigations don't re-fetch.
+  const [monthCache, setMonthCache] = useState<Record<string, Transaction[]>>(
+    {},
+  );
   const [loading, setLoading] = useState(false);
-  const fetchingRef = useRef(new Set());
+  const fetchingRef = useRef(new Set<string>());
 
   const monthKey = `${year}-${String(month).padStart(2, "0")}`;
 
@@ -212,64 +211,54 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
   const prevMonth = month === 1 ? 12 : month - 1;
   const prevKey = `${prevYear}-${String(prevMonth).padStart(2, "0")}`;
 
-  const ensureMonth = (y, m1, key) => {
-    if (fetchingRef.current.has(key)) return;
-    const cached = readTxCache(y, m1);
-    if (cached) {
-      setHistoryCache((prev) =>
-        prev[key] ? prev : { ...prev, [key]: cached },
-      );
-      return;
-    }
-    fetchingRef.current.add(key);
-    setLoading(true);
-    // `fetchMonth` очікує 0-based місяць (як `Date.getMonth()`).
-    mono
-      .fetchMonth(y, m1 - 1)
-      .then(() => {
-        const txs = readTxCache(y, m1) || [];
-        setHistoryCache((prev) => ({ ...prev, [key]: txs }));
-      })
-      .catch(() => {
-        setHistoryCache((prev) => ({ ...prev, [key]: [] }));
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
-
-  useEffect(() => {
-    if (!isCurrentMonth && !historyCache[monthKey]) {
-      ensureMonth(year, month, monthKey);
-    }
-    // `ensureMonth`/`historyCache` excluded — `ensureMonth` is redefined
-    // each render and `historyCache` changes after fetch, both would loop.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [year, month, isCurrentMonth, monthKey]);
-
-  useEffect(() => {
-    if (!historyCache[prevKey]) {
-      ensureMonth(prevYear, prevMonth, prevKey);
-    }
-    // `ensureMonth`/`historyCache` excluded — same reason as above.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prevYear, prevMonth, prevKey]);
-
-  // Transactions for the selected month: live list for the current month,
-  // on-demand cached list otherwise. Stable reference while month + cache
-  // entry stay the same.
-  const activeTx = useMemo(() => {
-    if (isCurrentMonth) return mono.realTx || [];
-    return historyCache[monthKey] || [];
-  }, [isCurrentMonth, mono.realTx, historyCache, monthKey]);
-
-  const prevTx = useMemo(
-    () => historyCache[prevKey] || [],
-    [historyCache, prevKey],
+  // Fetch a month from the server (via mono.fetchMonth → React Query)
+  // and store the result in the in-memory cache.
+  const ensureMonth = useCallback(
+    (y: number, m1: number, key: string) => {
+      if (fetchingRef.current.has(key)) return;
+      if (monthCache[key]) return;
+      fetchingRef.current.add(key);
+      setLoading(true);
+      mono
+        .fetchMonth(y, m1 - 1)
+        .then((txs) => {
+          setMonthCache((prev) => ({ ...prev, [key]: txs }));
+        })
+        .catch(() => {
+          // Don't poison the cache with an empty array — a transient or
+          // disconnected fetch should remain refetchable on the next
+          // navigation. Leaving the key absent keeps `comparison`/UI in
+          // a "no data yet" state instead of a misleading "0 ₴" state.
+        })
+        .finally(() => {
+          fetchingRef.current.delete(key);
+          // Keep the loading indicator on while any other month fetch is
+          // still in flight; flipping to `false` unconditionally would
+          // hide loading whenever the first parallel fetch resolves.
+          setLoading(fetchingRef.current.size > 0);
+        });
+    },
+    [mono, monthCache],
   );
 
-  // Stable adapter object passed into useAnalytics. Rebuilding this on every
-  // render would bust the hook's internal useMemo deps, so memoize it.
+  useEffect(() => {
+    if (!isCurrentMonth) ensureMonth(year, month, monthKey);
+  }, [year, month, isCurrentMonth, monthKey, ensureMonth]);
+
+  useEffect(() => {
+    ensureMonth(prevYear, prevMonth, prevKey);
+  }, [prevYear, prevMonth, prevKey, ensureMonth]);
+
+  const activeTx = useMemo(() => {
+    if (isCurrentMonth) return mono.realTx || [];
+    return monthCache[monthKey] || [];
+  }, [isCurrentMonth, mono.realTx, monthCache, monthKey]);
+
+  const prevTx = useMemo(
+    () => monthCache[prevKey] || [],
+    [monthCache, prevKey],
+  );
+
   const analyticsMono = useMemo(
     () => ({ ...mono, realTx: activeTx, loadingTx: mono.loadingTx || loading }),
     [mono, activeTx, loading],
@@ -280,17 +269,12 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
     storage,
   });
 
-  // Cache: month-over-month comparison for the picked month.
-  // Depends on the selected month's tx list, the previous month's tx list
-  // and the filters that actually affect totals (excluded ids + splits).
   const comparison = useMemo(() => {
-    // Попередній місяць ще не вичитаний — не показувати секцію.
-    if (!(prevKey in historyCache)) return null;
+    if (!(prevKey in monthCache)) return null;
     const c = getTrendComparison(activeTx, prevTx, {
       excludedTxIds: storage.excludedTxIds,
       txSplits: storage.txSplits,
     });
-    // Обидві сторони порожні — порівнювати немає чого.
     if (
       c.currentSpent === 0 &&
       c.prevSpent === 0 &&
@@ -303,7 +287,7 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
   }, [
     activeTx,
     prevTx,
-    historyCache,
+    monthCache,
     prevKey,
     storage.excludedTxIds,
     storage.txSplits,
@@ -342,7 +326,7 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
               </div>
               <div className="text-center">
                 <div className="text-2xs text-subtle mb-1">Дохід</div>
-                <div className="text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                <div className="text-sm font-bold tabular-nums text-success-strong dark:text-success">
                   {summary.income.toLocaleString("uk-UA")} ₴
                 </div>
               </div>
@@ -351,9 +335,7 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
                 <div
                   className={cn(
                     "text-sm font-bold tabular-nums",
-                    summary.balance >= 0
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-danger",
+                    signedDeltaClass(summary.balance),
                   )}
                 >
                   {summary.balance >= 0 ? "+" : ""}

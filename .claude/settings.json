@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm lint*)",
+      "Bash(pnpm typecheck*)",
+      "Bash(pnpm test*)",
+      "Bash(pnpm format*)",
+      "Bash(pnpm check)",
+      "Bash(pnpm build*)",
+      "Bash(pnpm --filter*)",
+      "Bash(pnpm gen*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git show*)",
+      "Bash(git stash list*)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(node *)",
+      "Bash(tsx *)",
+      "Bash(docker compose ps*)",
+      "Bash(docker compose logs*)",
+      "Bash(docker compose config*)"
+    ],
+    "deny": []
+  }
+}

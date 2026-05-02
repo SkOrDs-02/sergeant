@@ -6,7 +6,7 @@
  * the parsed JSON payload. Returns `null` if the user cancels.
  *
  * Importing this module has the side-effect of registering the web
- * adapter, so the side-effect import in `apps/web/src/main.jsx` is all
+ * adapter, so the side-effect import in `apps/web/src/main.tsx` is all
  * the app shell needs.
  */
 

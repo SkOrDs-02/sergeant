@@ -1,0 +1,42 @@
+import { useQuery } from "@tanstack/react-query";
+// TODO: import your DTO type
+// import { type {{name}}Dto } from "@shared/api";
+// TODO: import your query key factory
+// import { {{module}}Keys } from "@shared/lib/queryKeys";
+import { authAwareRetry } from "@shared/lib/queryClient";
+
+const STALE_TIME = 30_000;
+const GC_TIME = 5 * 60_000;
+
+export interface Use{{name}}Result {
+  data: unknown | null;
+  isFetching: boolean;
+  isLoading: boolean;
+  error: unknown;
+}
+
+export function use{{name}}(
+  { enabled = true }: { enabled?: boolean } = {},
+): Use{{name}}Result {
+  const { data, isFetching, isLoading, error } = useQuery({
+    // TODO: replace with proper key from your key factory
+    queryKey: ["{{camelCase name}}"],
+    queryFn: async ({ signal }) => {
+      // TODO: implement fetcher
+      throw new Error("Not implemented");
+    },
+    enabled,
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+    refetchOnWindowFocus: true,
+    retry: authAwareRetry(2),
+    retryDelay: (attempt: number) => 1000 * (attempt + 1),
+  });
+
+  return {
+    data: data ?? null,
+    isFetching,
+    isLoading,
+    error: error ?? null,
+  };
+}

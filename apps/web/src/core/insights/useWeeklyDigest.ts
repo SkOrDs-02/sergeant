@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { coachApi, weeklyDigestApi } from "@shared/api";
+import type { WeeklyDigestReport } from "@shared/api";
 import { STORAGE_KEYS, getWeekKey as sharedGetWeekKey } from "@sergeant/shared";
 import { safeReadLS } from "@shared/lib/storage";
 import { loadDigest as sharedLoadDigest } from "@shared/lib/weeklyDigestStorage";
@@ -371,7 +372,7 @@ export function aggregateRoutine(weekKey: string): RoutineAggregate | null {
 }
 
 async function generateWeeklyDigest(weekKey: string): Promise<{
-  report: unknown;
+  report: WeeklyDigestReport;
   generatedAt: string;
   weekKey: string;
   weekRange: string;
@@ -386,13 +387,20 @@ async function generateWeeklyDigest(weekKey: string): Promise<{
   // React Query (`isRetriableError` читає `.status`) і приховувало `kind`
   // від UI-селекторів. Консьюмери тепер читають `.serverMessage` через
   // `isApiError(query.error)`.
-  const json = (await weeklyDigestApi.generate({
+  const json = await weeklyDigestApi.generate({
     weekRange: currentWeekRange,
     finyk,
     fizruk,
     nutrition,
     routine,
-  })) as { report: unknown; generatedAt: string };
+  });
+
+  // `WeeklyDigestResponse` is a `{ report, generatedAt } | { error }` union;
+  // the HTTP client throws an `ApiError` on non-2xx, so by the time we reach
+  // this branch the response is the success variant. Narrow via `'report' in`.
+  if (!("report" in json)) {
+    throw new Error(json.error);
+  }
 
   return {
     report: json.report,
@@ -437,7 +445,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
     mutationFn: generateWeeklyDigest,
     onSuccess: ({ report, generatedAt, weekKey: wk, weekRange: wr }) => {
       const newDigest = {
-        ...(report as object),
+        ...report,
         generatedAt,
         weekKey: wk,
         weekRange: wr,
@@ -454,7 +462,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
               weekKey: wk,
               weekRange: wr,
               generatedAt,
-              ...(report as object),
+              ...report,
             },
           })
           .catch((err: unknown) => {
@@ -476,7 +484,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
     try {
       const result = await mutateAsync(weekKey);
       return {
-        ...(result.report as object),
+        ...result.report,
         generatedAt: result.generatedAt,
         weekKey: result.weekKey,
         weekRange: result.weekRange,

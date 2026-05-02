@@ -24,10 +24,7 @@ export function AIDigestSection() {
     }
   };
 
-  const handleToggleMondayAuto = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const next = event.target.checked;
+  const handleToggleMondayAuto = (next: boolean) => {
     setMondayAuto(next);
     safeWriteLS(STORAGE_KEYS.WEEKLY_DIGEST_MONDAY_AUTO, next ? "1" : "0");
   };

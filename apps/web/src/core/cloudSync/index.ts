@@ -19,6 +19,11 @@ export { useCloudSync } from "./hook/useCloudSync";
 export { useCloudSyncDebug } from "./hook/useCloudSyncDebug";
 export type { CloudSyncDebugView } from "./hook/useCloudSyncDebug";
 export { useSyncStatus } from "./hook/useSyncStatus";
+export {
+  useSyncErrorToast,
+  userFacingSyncErrorMessage,
+  SYNC_ERROR_TOAST_DURATION_MS,
+} from "./hook/useSyncErrorToast";
 export type { CloudSyncDebugSnapshot, SyncDebugAction } from "./debugState";
 export type { SyncError, SyncState } from "./types";
 export { toSyncError, isRetryableError } from "./errorNormalizer";

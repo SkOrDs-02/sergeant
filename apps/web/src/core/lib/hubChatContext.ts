@@ -25,6 +25,7 @@ import {
   weeklyVolumeSeriesNow,
 } from "@sergeant/fizruk-domain";
 import { perfMark, perfEnd } from "@shared/lib/perf";
+import { safeReadStringLS } from "@shared/lib/storage";
 import { ls, fmt } from "./hubChatUtils";
 import { generateRecommendations } from "./recommendationEngine";
 import { generateInsights } from "./insightsEngine";
@@ -406,7 +407,7 @@ function buildContext(): string {
 
   // ── Фізрук (тренування) ─────────────────────────────────────────
   try {
-    const raw = localStorage.getItem(WORKOUTS_STORAGE_KEY);
+    const raw = safeReadStringLS(WORKOUTS_STORAGE_KEY);
     const w = parseWorkoutsFromStorage(raw) as Array<{
       id?: string;
       startedAt?: string;
@@ -417,12 +418,12 @@ function buildContext(): string {
       const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
       const withTs = w.map((x) => ({
         ...x,
-        _ts: new Date(x.startedAt).getTime(),
+        _ts: x.startedAt ? new Date(x.startedAt).getTime() : 0,
       }));
       const cnt = withTs.filter((x) => x._ts > weekAgo).length;
       const sorted = [...withTs].sort((a, b) => b._ts - a._ts);
       const last = sorted[0];
-      const dt = last
+      const dt = last?.startedAt
         ? new Date(last.startedAt).toLocaleDateString("uk-UA", {
             day: "numeric",
             month: "short",
@@ -439,7 +440,7 @@ function buildContext(): string {
       );
       let activeHint = "немає";
       try {
-        const aid = localStorage.getItem(ACTIVE_WORKOUT_KEY);
+        const aid = safeReadStringLS(ACTIVE_WORKOUT_KEY);
         if (aid) {
           const aw = w.find((x) => x.id === aid && !x.endedAt);
           if (aw)
@@ -447,8 +448,9 @@ function buildContext(): string {
         }
       } catch {}
       lines.push(`[Фізрук активне тренування] ${activeHint}`);
-      if (sorted.length > 0 && sorted[0].items?.length > 0) {
-        const exercises = sorted[0].items
+      const firstItems = sorted[0]?.items;
+      if (firstItems && firstItems.length > 0) {
+        const exercises = firstItems
           .map(
             (i: { nameUk?: string; name?: string; exercise?: string }) =>
               i.nameUk || i.name || i.exercise || "—",

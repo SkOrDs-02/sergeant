@@ -1,36 +1,70 @@
 import { Icon } from "@shared/components/ui/Icon";
+import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { useSyncStatus } from "../cloudSync/useCloudSync";
 import { pluralUa } from "@sergeant/shared";
 
 /**
- * Офлайн-банер у шапці. Раніше показував лише статичне "Немає
- * підключення до інтернету". Тепер підтягує `useSyncStatus`, щоб
- * користувач одразу бачив, скільки дій стоїть у черзі — це закриває
- * головну тривогу ("чи збережеться витрата, якщо я без мережі?").
+ * Subtle connectivity-and-sync indicator — a small floating pill in the
+ * top-right corner. For a PWA designed to work offline, screaming
+ * "NO INTERNET!" felt like a critical error, so this stays compact.
  *
- * Шрифт/кольори не змінюємо, щоб не зміщувати layout у залежності від
- * кількості елементів у черзі (висота банера константна).
+ * Three states:
+ *   - **online + nothing pending:** invisible (returns `null`).
+ *   - **online + queue/dirty > 0:** "Синхронізація · N в черзі" with an
+ *     animated `refresh` icon. Tells the user that their last few
+ *     changes have not yet reached the cloud — useful on flaky 3G or
+ *     while a long push is in flight.
+ *   - **offline:** "Офлайн" or "Офлайн · N в черзі" with the wifi-off
+ *     icon, so the user knows their data is safe and waiting.
  */
 export function OfflineBanner() {
+  const online = useOnlineStatus();
   const { queuedCount, dirtyCount } = useSyncStatus();
   const pending = Math.max(queuedCount, dirtyCount);
-  const label =
-    pending > 0
-      ? `Немає підключення · ${pending} ${pluralUa(pending, {
-          one: "дія чекає",
-          few: "дії чекають",
-          many: "дій чекають",
-        })} синхронізації`
-      : "Немає підключення до інтернету";
 
+  // Online and nothing waiting — the happy path needs no chrome.
+  if (online && pending === 0) return null;
+
+  const queueLabel = (count: number) =>
+    `${count} ${pluralUa(count, {
+      one: "в черзі",
+      few: "в черзі",
+      many: "в черзі",
+    })}`;
+
+  if (!online) {
+    const label = pending > 0 ? `Офлайн · ${queueLabel(pending)}` : "Офлайн";
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        data-testid="offline-banner"
+        data-state="offline"
+        className="fixed top-3 right-3 z-[300] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-line text-muted text-style-caption shadow-soft backdrop-blur-sm safe-area-pt motion-safe:animate-fade-in"
+      >
+        <Icon name="wifi-off" size={12} strokeWidth={2.5} aria-hidden />
+        <span>{label}</span>
+      </div>
+    );
+  }
+
+  // online && pending > 0
   return (
     <div
       role="status"
       aria-live="polite"
-      className="fixed top-0 left-0 right-0 z-[300] flex items-center justify-center gap-2 px-4 py-2 bg-warning-strong text-white text-xs font-semibold safe-area-pt shadow-soft"
+      data-testid="offline-banner"
+      data-state="syncing"
+      className="fixed top-3 right-3 z-[300] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-line text-muted text-style-caption shadow-soft backdrop-blur-sm safe-area-pt motion-safe:animate-fade-in"
     >
-      <Icon name="wifi-off" size={14} strokeWidth={2.5} aria-hidden />
-      <span className="truncate max-w-[min(92vw,40rem)]">{label}</span>
+      <Icon
+        name="refresh-cw"
+        size={12}
+        strokeWidth={2.5}
+        aria-hidden
+        className="motion-safe:animate-spin [animation-duration:2.4s]"
+      />
+      <span>{`Синхронізація · ${queueLabel(pending)}`}</span>
     </div>
   );
 }

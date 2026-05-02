@@ -219,9 +219,11 @@ export function HabitDetailSheet({
           {habit.endDate ? ` до ${habit.endDate}` : ""}
           {!habit.startDate && !habit.endDate ? "Без обмежень дат" : ""}
         </p>
-        {habit.recurrence === "weekly" && habit.weekdays?.length > 0 && (
-          <p>{habit.weekdays.map((i) => WEEKDAY_LABELS[i]).join(", ")}</p>
-        )}
+        {habit.recurrence === "weekly" &&
+          habit.weekdays &&
+          habit.weekdays.length > 0 && (
+            <p>{habit.weekdays.map((i) => WEEKDAY_LABELS[i]).join(", ")}</p>
+          )}
       </div>
 
       <section className="mb-5" aria-label="Статистика">
@@ -282,7 +284,7 @@ export function HabitDetailSheet({
             <button
               type="button"
               onClick={() => goCalMonth(-1)}
-              className="w-8 h-8 rounded-lg border border-line text-muted hover:text-text flex items-center justify-center text-sm"
+              className="w-8 h-8 rounded-xl border border-line text-muted hover:text-text flex items-center justify-center text-sm"
               aria-label="Попередній місяць"
             >
               ‹
@@ -293,7 +295,7 @@ export function HabitDetailSheet({
             <button
               type="button"
               onClick={() => goCalMonth(1)}
-              className="w-8 h-8 rounded-lg border border-line text-muted hover:text-text flex items-center justify-center text-sm"
+              className="w-8 h-8 rounded-xl border border-line text-muted hover:text-text flex items-center justify-center text-sm"
               aria-label="Наступний місяць"
             >
               ›
@@ -304,7 +306,7 @@ export function HabitDetailSheet({
           {WEEKDAY_LABELS.map((wd) => (
             <div
               key={wd}
-              className="text-center text-3xs text-subtle font-medium pb-1"
+              className="text-center text-2xs text-subtle font-medium pb-1"
             >
               {wd}
             </div>
@@ -319,7 +321,7 @@ export function HabitDetailSheet({
               <div
                 key={dk}
                 className={cn(
-                  "aspect-square flex items-center justify-center rounded-lg text-xs font-medium transition-colors",
+                  "aspect-square flex items-center justify-center rounded-xl text-style-caption transition-colors",
                   done
                     ? "bg-routine-surface2 dark:bg-routine-surface-dark/15 text-routine-strong dark:text-routine border border-routine-ring/40 dark:border-routine-border-dark/30 font-bold"
                     : scheduled
@@ -341,7 +343,7 @@ export function HabitDetailSheet({
             );
           })}
         </div>
-        <div className="flex items-center gap-3 mt-2 text-3xs text-subtle">
+        <div className="flex items-center gap-3 mt-2 text-2xs text-subtle">
           <span className="flex items-center gap-1">
             <span className="inline-block w-3 h-3 rounded bg-routine-surface2 dark:bg-routine-surface-dark/15 border border-routine-ring/40 dark:border-routine-border-dark/30" />
             Виконано
@@ -362,7 +364,7 @@ export function HabitDetailSheet({
             {notes.map((n) => (
               <li
                 key={n.date}
-                className="text-[12px] bg-panelHi/50 border border-line/40 rounded-xl px-3 py-2"
+                className="text-caption bg-panelHi/50 border border-line/40 rounded-xl px-3 py-2"
               >
                 <span className="text-subtle">{n.date}:</span>{" "}
                 <span className="text-text">{n.text}</span>

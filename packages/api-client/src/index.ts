@@ -83,7 +83,6 @@ export {
   type NutritionDayPlan,
   type NutritionDayPlanResponse,
   type NutritionEndpoints,
-  type NutritionEndpointsConfig,
   type NutritionMacros,
   type NutritionMealType,
   type NutritionPantryItem,
@@ -97,7 +96,6 @@ export {
   type NutritionShoppingCategory,
   type NutritionShoppingItem,
   type NutritionShoppingListResponse,
-  type NutritionTokenProvider,
   type NutritionWeekDay,
   type NutritionWeekPlan,
   type NutritionWeekPlanResponse,
@@ -118,16 +116,16 @@ export {
 } from "./endpoints/foodSearch";
 
 export {
-  createMonoEndpoints,
   createMonoWebhookEndpoints,
   type MonoAccount,
   type MonoAccountDto,
+  type MonoBackfillResponse,
   type MonoCashbackType,
   type MonoClientInfo,
+  type MonoConnectResponse,
   type MonoConnectionStatus,
-  type MonoEndpoints,
+  type MonoDisconnectResponse,
   type MonoJar,
-  type MonoStatementEntry,
   type MonoSyncState,
   type MonoTransactionDto,
   type MonoTransactionsPage,
@@ -145,8 +143,36 @@ export {
 } from "./endpoints/privat";
 
 export {
+  createWaitlistEndpoints,
+  WaitlistSubmitRequestSchema,
+  WaitlistSubmitResponseSchema,
+  type WaitlistEndpoints,
+  type WaitlistSubmitRequest,
+  type WaitlistSubmitResponse,
+} from "./endpoints/waitlist";
+
+export {
   createWeeklyDigestEndpoints,
   type WeeklyDigestEndpoints,
   type WeeklyDigestPayload,
+  type WeeklyDigestReport,
   type WeeklyDigestResponse,
 } from "./endpoints/weeklyDigest";
+
+export {
+  createTranscribeEndpoints,
+  TranscribeQuerySchema,
+  TranscribeResponseSchema,
+  type TranscribeBody,
+  type TranscribeEndpoints,
+  type TranscribeOutcome,
+  type TranscribeQuery,
+  type TranscribeResponse,
+} from "./endpoints/transcribe";
+
+export {
+  createWebVitalsEndpoints,
+  WebVitalsPayloadSchema,
+  type WebVitalsEndpoints,
+  type WebVitalsPayload,
+} from "./endpoints/webVitals";

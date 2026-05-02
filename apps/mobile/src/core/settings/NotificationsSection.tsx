@@ -29,8 +29,6 @@
  *    users don't expect reminders to fire from this screen alone.
  *  - **Fizruk monthly-plan reminder** (web `useMonthlyPlan` — toggle +
  *    hour/minute picker). Ports with the Fizruk module (Phase 6).
- *  - **Nutrition reminders** (web `loadNutritionPrefs` / toggle + hour
- *    input). Ports with the Nutrition module (Phase 7).
  *
  * Notes on the permission-status model:
  *  - `expo-notifications` returns a `PermissionStatus` of
@@ -44,12 +42,13 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Linking, Text, View } from "react-native";
+import { Linking, Text, TextInput, View } from "react-native";
 import * as Notifications from "expo-notifications";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useLocalStorage } from "@/lib/storage";
+import { useNutritionPrefs } from "@/modules/nutrition/hooks/useNutritionPrefs";
 
 import {
   SettingsGroup,
@@ -103,12 +102,19 @@ function toStatus(
   return "undetermined";
 }
 
+function clampReminderHour(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(23, Math.max(0, Math.trunc(value)));
+}
+
 export function NotificationsSection() {
   const [permStatus, setPermStatus] = useState<PermStatus>("undetermined");
   const [routinePrefs, setRoutinePrefs] = useLocalStorage<RoutinePrefs>(
     ROUTINE_PREFS_KEY,
     {},
   );
+  const { prefs: nutritionPrefs, updatePrefs: updateNutritionPrefs } =
+    useNutritionPrefs();
 
   const refreshPermissions = useCallback(async () => {
     try {
@@ -126,14 +132,21 @@ export function NotificationsSection() {
     void refreshPermissions();
   }, [refreshPermissions]);
 
-  const requestPermission = useCallback(async () => {
+  const requestPermissionStatus = useCallback(async (): Promise<PermStatus> => {
     try {
       const perm = await Notifications.requestPermissionsAsync();
-      setPermStatus(toStatus(perm));
+      const nextStatus = toStatus(perm);
+      setPermStatus(nextStatus);
+      return nextStatus;
     } catch {
       setPermStatus("denied");
+      return "denied";
     }
   }, []);
+
+  const requestPermission = useCallback(() => {
+    void requestPermissionStatus();
+  }, [requestPermissionStatus]);
 
   const openSystemSettings = useCallback(() => {
     // `Linking.openSettings()` is the RN-standard way to jump to the
@@ -143,7 +156,27 @@ export function NotificationsSection() {
     void Linking.openSettings();
   }, []);
 
+  const handleNutritionToggle = useCallback(
+    async (next: boolean) => {
+      if (next && permStatus !== "granted") {
+        const nextStatus = await requestPermissionStatus();
+        if (nextStatus !== "granted") return;
+      }
+      updateNutritionPrefs({ reminderEnabled: next });
+    },
+    [permStatus, requestPermissionStatus, updateNutritionPrefs],
+  );
+
+  const handleNutritionHourChange = useCallback(
+    (value: string) => {
+      updateNutritionPrefs({ reminderHour: clampReminderHour(Number(value)) });
+    },
+    [updateNutritionPrefs],
+  );
+
   const routineEnabled = routinePrefs.routineRemindersEnabled === true;
+  const nutritionReminderEnabled = nutritionPrefs.reminderEnabled === true;
+  const nutritionReminderHour = nutritionPrefs.reminderHour ?? 12;
 
   return (
     <SettingsGroup title="Сповіщення" emoji="🔔">
@@ -214,14 +247,39 @@ export function NotificationsSection() {
         </DeferredNotice>
       </SettingsSubGroup>
 
-      {/* TODO(mobile-migration, Phase 7): wire to the nutrition-prefs
-          slice once the Nutrition module is ported — reminderEnabled +
-          reminderHour picker, analogue to web `NotificationsSection`
-          Харчування sub-group. */}
       <SettingsSubGroup title="Харчування">
-        <DeferredNotice>
-          Нагадування про їжу підключаться з портом модуля Харчування (Phase 7).
-        </DeferredNotice>
+        <ToggleRow
+          label="Нагадування про їжу"
+          description="Зберігає щоденне нагадування у nutrition prefs: toggle + година, як у web settings. Якщо push-дозвіл ще не виданий, спершу попросимо його."
+          checked={nutritionReminderEnabled}
+          onChange={(next) => {
+            void handleNutritionToggle(next);
+          }}
+          testID="notifications-nutrition-toggle"
+        />
+        {nutritionReminderEnabled ? (
+          <View className="flex-row items-center justify-between gap-3">
+            <View className="flex-1 min-w-0">
+              <Text className="text-sm text-fg">Година нагадування</Text>
+              <Text className="text-xs text-fg-muted mt-0.5 leading-snug">
+                Від 0 до 23, синхронізується разом із налаштуваннями харчування.
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-2">
+              <TextInput
+                value={String(nutritionReminderHour)}
+                onChangeText={handleNutritionHourChange}
+                keyboardType="number-pad"
+                inputMode="numeric"
+                selectTextOnFocus
+                maxLength={2}
+                className="w-16 h-10 rounded-xl border border-cream-300 dark:border-cream-700 bg-cream-50 dark:bg-cream-800 px-3 text-center text-sm text-fg"
+                testID="notifications-nutrition-hour"
+              />
+              <Text className="text-xs text-fg-muted">год.</Text>
+            </View>
+          </View>
+        ) : null}
       </SettingsSubGroup>
     </SettingsGroup>
   );

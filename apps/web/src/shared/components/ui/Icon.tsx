@@ -232,6 +232,30 @@ const PATHS: Record<string, ReactNode> = {
       <line x1="12" y1="16" x2="12.01" y2="16" />
     </>
   ),
+  info: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="16" x2="12" y2="12" />
+      <line x1="12" y1="8" x2="12.01" y2="8" />
+    </>
+  ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </>
+  ),
+  "grip-vertical": (
+    <>
+      <circle cx="9" cy="5" r="1" />
+      <circle cx="9" cy="12" r="1" />
+      <circle cx="9" cy="19" r="1" />
+      <circle cx="15" cy="5" r="1" />
+      <circle cx="15" cy="12" r="1" />
+      <circle cx="15" cy="19" r="1" />
+    </>
+  ),
+  minus: <line x1="5" y1="12" x2="19" y2="12" />,
   archive: (
     <>
       <polyline points="21 8 21 21 3 21 3 8" />
@@ -325,6 +349,15 @@ const PATHS: Record<string, ReactNode> = {
       <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
       <line x1="9" y1="12" x2="15" y2="12" />
       <line x1="9" y1="16" x2="13" y2="16" />
+    </>
+  ),
+  "list-checks": (
+    <>
+      <path d="m3 7 2 2 4-4" />
+      <path d="m3 17 2 2 4-4" />
+      <path d="M13 6h8" />
+      <path d="M13 12h8" />
+      <path d="M13 18h8" />
     </>
   ),
   copy: (
@@ -506,16 +539,77 @@ const PATHS: Record<string, ReactNode> = {
       <line x1="9" y1="9" x2="15" y2="15" />
     </>
   ),
+  // Padlock — Lucide `lock`. Used by `ChangePasswordSection` (the
+  // "Зміна пароля" eyebrow icon) and `OnboardingWizard`'s privacy
+  // step. Without this entry `Icon` renders nothing (returns `null`)
+  // so the eyebrow looked broken in /profile.
+  lock: (
+    <>
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </>
+  ),
+  // Desktop monitor — Lucide `monitor`. Used by `SessionsSection`
+  // ("Активні сесії") to mark the device row; previously hand-rolled
+  // inline SVG. Migrated to the shared icon so the bounding box and
+  // stroke width stay consistent with siblings.
+  monitor: (
+    <>
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+    </>
+  ),
+  // 4-cell grid — Lucide `layout-grid`. Used by the hub bottom-nav
+  // "Дашборд" tab; previously a hand-rolled inline SVG component
+  // (`DashboardIcon`) inside `HubBottomNav.tsx`. Migrated here so all
+  // bottom-nav tabs render through the same `<Icon />` pipeline (same
+  // stroke-width, viewBox, focus-ring/aria-hidden conventions). Same
+  // pattern as `monitor` above (#1189).
+  grid: (
+    <>
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </>
+  ),
 };
 
 export type IconName = keyof typeof PATHS;
+
+/**
+ * Tight 5-step scale (matches the Tailwind text-xs/sm/base/lg/xl ramp so an
+ * icon and its adjacent label visually align without ad-hoc numeric tweaks).
+ * Numeric `size` is still accepted for one-off cases (e.g. dense lists)
+ * and existing callers, but new code should prefer the tokens.
+ */
+export const ICON_SIZES = {
+  xs: 12,
+  sm: 14,
+  md: 16,
+  lg: 20,
+  xl: 24,
+} as const;
+
+export type IconSizeToken = keyof typeof ICON_SIZES;
+export type IconSize = IconSizeToken | number;
+
+function resolveIconSize(size: IconSize): number {
+  return typeof size === "number" ? size : ICON_SIZES[size];
+}
 
 export interface IconProps extends Omit<
   SVGAttributes<SVGSVGElement>,
   "name" | "title"
 > {
   name: IconName | (string & {});
-  size?: number;
+  /**
+   * Pixel size — accepts a numeric value (e.g. `18`) or a scale token
+   * (`xs`/`sm`/`md`/`lg`/`xl`). Defaults to `lg` (20px), which preserves
+   * the previous numeric default of `20`.
+   */
+  size?: IconSize;
   strokeWidth?: number;
   title?: string;
 }
@@ -526,7 +620,7 @@ export interface IconProps extends Omit<
  */
 export function Icon({
   name,
-  size = 20,
+  size = "lg",
   strokeWidth = 2,
   className,
   title,
@@ -539,13 +633,14 @@ export function Icon({
     }
     return null;
   }
+  const px = resolveIconSize(size);
   const labelProps: SVGAttributes<SVGSVGElement> = title
     ? { role: "img", "aria-label": title }
     : { "aria-hidden": true };
   return (
     <svg
-      width={size}
-      height={size}
+      width={px}
+      height={px}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

@@ -22,9 +22,17 @@
  */
 
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, View, type LayoutChangeEvent } from "react-native";
+import {
+  AccessibilityInfo,
+  Animated as RNAnimated,
+  Pressable,
+  Text,
+  View,
+  type LayoutChangeEvent,
+} from "react-native";
+import { GripVertical, X } from "lucide-react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, {
+import Reanimated, {
   LinearTransition,
   runOnJS,
   useAnimatedStyle,
@@ -39,11 +47,86 @@ import {
   hapticTap,
 } from "@sergeant/shared";
 
+import { safeReadLS, safeWriteLS } from "@/lib/storage";
+
 import { StatusRow } from "./StatusRow";
 
 export type DashboardModulePreviews = Partial<
   Record<DashboardModuleId, ModulePreview | null>
 >;
+
+/** Storage key for tracking if the user has seen the drag reorder coach mark */
+const COACH_MARK_SEEN_KEY = "dashboard_drag_coach_seen";
+
+/**
+ * DragReorderCoachMark — one-time tooltip explaining drag-to-reorder.
+ * Dismisses automatically after first drag or manual dismiss.
+ */
+function DragReorderCoachMark({
+  visible,
+  onDismiss,
+}: {
+  visible: boolean;
+  onDismiss: () => void;
+}) {
+  const opacity = useRef(new RNAnimated.Value(0)).current;
+  const translateY = useRef(new RNAnimated.Value(-8)).current;
+
+  useEffect(() => {
+    if (visible) {
+      RNAnimated.parallel([
+        RNAnimated.timing(opacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        RNAnimated.spring(translateY, {
+          toValue: 0,
+          damping: 15,
+          stiffness: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      RNAnimated.timing(opacity, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible, opacity, translateY]);
+
+  if (!visible) return null;
+
+  return (
+    <RNAnimated.View
+      style={{ opacity, transform: [{ translateY }] }}
+      className="mb-3 px-4 py-3 bg-brand rounded-2xl flex-row items-center gap-3"
+      accessibilityRole="alert"
+      accessibilityLabel="Утримуй модуль, щоб змінити порядок"
+    >
+      <View className="w-8 h-8 rounded-xl bg-white/20 items-center justify-center">
+        <GripVertical size={18} color="#fff" strokeWidth={2} />
+      </View>
+      <View className="flex-1">
+        <Text className="text-sm font-semibold text-white">
+          Утримуй, щоб перетягнути
+        </Text>
+        <Text className="text-xs text-white/80 mt-0.5">
+          Змінюй порядок модулів на свій смак
+        </Text>
+      </View>
+      <Pressable
+        onPress={onDismiss}
+        accessibilityRole="button"
+        accessibilityLabel="Закрити підказку"
+        className="w-7 h-7 rounded-full bg-white/20 items-center justify-center active:bg-white/30"
+      >
+        <X size={14} color="#fff" strokeWidth={2.5} />
+      </Pressable>
+    </RNAnimated.View>
+  );
+}
 
 /** Fallback row height (px) used until `onLayout` fires for a row. */
 const FALLBACK_ROW_HEIGHT = 72;
@@ -109,6 +192,12 @@ export interface DraggableDashboardProps {
    * module.
    */
   previews?: DashboardModulePreviews;
+  /**
+   * Module ids that should render in the muted/greyed-out "inactive"
+   * state. Driven by the user's onboarding picks; rows not in this
+   * set render normally.
+   */
+  inactiveModules?: ReadonlySet<DashboardModuleId>;
   testID?: string;
 }
 
@@ -121,6 +210,7 @@ interface DraggableRowProps {
   onLayoutHeight: (index: number, height: number) => void;
   reduceMotionRef: React.MutableRefObject<boolean>;
   preview?: ModulePreview | null;
+  inactive?: boolean;
   testID?: string;
 }
 
@@ -133,6 +223,7 @@ const DraggableRow = memo(function DraggableRow({
   onLayoutHeight,
   reduceMotionRef,
   preview,
+  inactive,
   testID,
 }: DraggableRowProps) {
   const translationY = useSharedValue(0);
@@ -192,7 +283,7 @@ const DraggableRow = memo(function DraggableRow({
 
   return (
     <GestureDetector gesture={pan}>
-      <Animated.View
+      <Reanimated.View
         layout={LinearTransition.duration(SNAP_DURATION_MS)}
         style={animatedStyle}
         onLayout={onLayout}
@@ -201,9 +292,10 @@ const DraggableRow = memo(function DraggableRow({
           id={id}
           onPress={onOpenModule}
           preview={preview}
+          inactive={inactive}
           testID={testID ? `${testID}-${id}` : undefined}
         />
-      </Animated.View>
+      </Reanimated.View>
     </GestureDetector>
   );
 });
@@ -213,6 +305,7 @@ export function DraggableDashboard({
   onReorder,
   onOpenModule,
   previews,
+  inactiveModules,
   testID,
 }: DraggableDashboardProps) {
   const orderRef = useRef<DashboardModuleId[]>([...modules]);
@@ -227,6 +320,17 @@ export function DraggableDashboard({
 
   const [reduceMotion, setReduceMotion] = useState(false);
   const reduceMotionRef = useRef(false);
+
+  // Coach mark state
+  const [showCoachMark, setShowCoachMark] = useState(() => {
+    const seen = safeReadLS<boolean>(COACH_MARK_SEEN_KEY, false);
+    return !seen;
+  });
+
+  const dismissCoachMark = useCallback(() => {
+    setShowCoachMark(false);
+    safeWriteLS(COACH_MARK_SEEN_KEY, true);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -248,9 +352,16 @@ export function DraggableDashboard({
     };
   }, []);
 
-  const handleDragStart = useCallback((_index: number) => {
-    hapticTap();
-  }, []);
+  const handleDragStart = useCallback(
+    (_index: number) => {
+      hapticTap();
+      // Dismiss coach mark on first drag
+      if (showCoachMark) {
+        dismissCoachMark();
+      }
+    },
+    [showCoachMark, dismissCoachMark],
+  );
 
   const handleDragEnd = useCallback(
     (fromIndex: number, translationY: number) => {
@@ -277,21 +388,28 @@ export function DraggableDashboard({
   void reduceMotion;
 
   return (
-    <View className="gap-2" testID={testID ?? "dashboard-module-list"}>
-      {modules.map((id, index) => (
-        <DraggableRow
-          key={id}
-          id={id}
-          index={index}
-          onOpenModule={onOpenModule}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          onLayoutHeight={handleLayoutHeight}
-          reduceMotionRef={reduceMotionRef}
-          preview={previews?.[id] ?? null}
-          testID={testID ?? "dashboard-module-row"}
-        />
-      ))}
+    <View testID={testID ?? "dashboard-module-list"}>
+      <DragReorderCoachMark
+        visible={showCoachMark && modules.length > 1}
+        onDismiss={dismissCoachMark}
+      />
+      <View className="gap-2">
+        {modules.map((id, index) => (
+          <DraggableRow
+            key={id}
+            id={id}
+            index={index}
+            onOpenModule={onOpenModule}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onLayoutHeight={handleLayoutHeight}
+            reduceMotionRef={reduceMotionRef}
+            preview={previews?.[id] ?? null}
+            inactive={inactiveModules?.has(id) ?? false}
+            testID={testID ?? "dashboard-module-row"}
+          />
+        ))}
+      </View>
     </View>
   );
 }

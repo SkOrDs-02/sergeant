@@ -91,7 +91,23 @@ export const dbPoolWaiting = new client.Gauge({
 export const aiTokensTotal = new client.Counter({
   name: "ai_tokens_total",
   help: "AI tokens consumed",
-  labelNames: ["provider", "model", "kind"], // kind=prompt|completion|cache_write|cache_read
+  // endpoint=analyze-photo|refine-photo|chat|coach|day-plan|...
+  // kind=prompt|completion|cache_write|cache_read
+  labelNames: ["provider", "model", "endpoint", "kind"],
+  registers: [register],
+});
+
+// Cost-attribution gauge для AI-викликів. Counter (а не Gauge), бо ми
+// акумулюємо $-витрати по кожному endpoint × model. Per-endpoint breakdown
+// потрібен щоб у Grafana (і в weekly cost-аудиті) видно було, котрий endpoint
+// "з'їдає" бюджет — `chat` vs `coach` vs `analyze-photo`. Pricing-таблиця
+// у `lib/anthropic.ts::ANTHROPIC_PRICING_USD_PER_MTOK`. На unknown-моделі
+// counter не інкрементується (щоб не давати fake-нулі), тому сума `rate(...)`
+// у Prometheus = «впевнена нижня межа» витрат.
+export const aiCostEstimateUsd = new client.Counter({
+  name: "ai_cost_estimate_usd_total",
+  help: "Estimated AI provider cost in USD, accumulated per endpoint × model",
+  labelNames: ["provider", "model", "endpoint"],
   registers: [register],
 });
 
@@ -207,6 +223,21 @@ export const rateLimitHitsTotal = new client.Counter({
   registers: [register],
 });
 
+// ───────────────────────── Circuit Breaker ────────────────────
+export const circuitBreakerState = new client.Gauge({
+  name: "circuit_breaker_state",
+  help: "Circuit breaker state (0=closed, 1=open, 2=half-open)",
+  labelNames: ["name"], // name=anthropic|external_api|...
+  registers: [register],
+});
+
+export const circuitBreakerTripsTotal = new client.Counter({
+  name: "circuit_breaker_trips_total",
+  help: "Circuit breaker state transitions",
+  labelNames: ["name", "from", "to"], // from/to=closed|open|half-open
+  registers: [register],
+});
+
 // ───────────────────────── Sync ───────────────────────────────
 export const syncOperationsTotal = new client.Counter({
   name: "sync_operations_total",
@@ -267,7 +298,10 @@ export const aiRequestsTotal = new client.Counter({
 export const aiRequestDurationMs = new client.Histogram({
   name: "ai_request_duration_ms",
   help: "AI request duration in ms",
-  labelNames: ["provider", "model", "endpoint"],
+  // outcome=ok|rate_limited|timeout|error|bad_response — дзеркалить
+  // `aiRequestsTotal`, щоб у Grafana можна було обчислити p95 latency окремо
+  // для error-шляхів (раніше latency error-шляху "розбавляла" ok-латенцію).
+  labelNames: ["provider", "model", "endpoint", "outcome"],
   buckets: [100, 250, 500, 1000, 2500, 5000, 10000, 20000, 30000, 60000],
   registers: [register],
 });
@@ -301,6 +335,50 @@ export const webVitalsCls = new client.Histogram({
   registers: [register],
 });
 
+// ───────────────────────── Build info ─────────────────────────
+// Const-`1` gauge with version/commit/release/env labels — the standard
+// Prometheus pattern for shipping immutable build metadata. Two reasons we
+// want it as a label-rich gauge instead of a plain log line at boot:
+//
+//   1. Dashboards can join `app_build_info` against any other series via
+//      `* on (instance) group_left(version, commit) <metric>` to attribute
+//      latency/error spikes to a specific deploy without re-tagging every
+//      counter.
+//   2. Alertmanager can include `{{ $labels.commit }}` in pages without
+//      having to hit Sentry / Railway. Cardinality stays at 1 series per
+//      pod (labels are constant for the process lifetime).
+//
+// Sources are read at module load (process.env is frozen for our purposes
+// after dotenv-flow). `RAILWAY_GIT_COMMIT_SHA` is injected by Railway on
+// every build; `SENTRY_RELEASE` is the canonical release tag if both
+// Sentry-cli and Railway are present (Sentry-cli takes precedence). Empty
+// strings collapse to `"unknown"` so PromQL queries never see an empty
+// label value (which Prometheus treats as label absence — breaks joins).
+export const appBuildInfo = new client.Gauge({
+  name: "app_build_info",
+  help: "Static gauge=1 with build/release metadata for join-on-labels in dashboards",
+  labelNames: ["version", "commit", "release", "env", "node_version"],
+  registers: [register],
+});
+
+appBuildInfo
+  .labels({
+    version: process.env.npm_package_version || "unknown",
+    commit: (
+      process.env.RAILWAY_GIT_COMMIT_SHA ||
+      process.env.GIT_COMMIT ||
+      process.env.VERCEL_GIT_COMMIT_SHA ||
+      "unknown"
+    ).slice(0, 12),
+    release:
+      process.env.SENTRY_RELEASE ||
+      process.env.RAILWAY_GIT_COMMIT_SHA ||
+      "unknown",
+    env: process.env.NODE_ENV || "development",
+    node_version: process.version,
+  })
+  .set(1);
+
 // ───────────────────────── Mono webhook ───────────────────────
 export const monoWebhookReceivedTotal = new client.Counter({
   name: "mono_webhook_received_total",
@@ -314,6 +392,102 @@ export const monoWebhookDurationMs = new client.Histogram({
   help: "Monobank webhook handler duration in ms",
   labelNames: ["status"],
   buckets: [1, 5, 25, 50, 100, 250, 500, 1000],
+  registers: [register],
+});
+
+// ───────────────────────── Mono enrichment worker ─────────────
+// Polling-worker для `mono_ai_enrichment_queue`. Раніше outbox-таблиця
+// існувала (міграція 013), але жоден консьюмер її не читав — n8n flow
+// `06-mono-webhook-enrichment.json` слухав окремий webhook, не БД.
+// Метрики мінімальні (4 серії), щоб мати зір на:
+//   * затримку enrichment-у (pending count = depth черги),
+//   * пропускну здатність (processed_total{outcome=ok|failed}),
+//   * latency на одну транзакцію.
+export const monoEnrichmentQueueDepth = new client.Gauge({
+  name: "mono_enrichment_queue_depth",
+  help: "mono_ai_enrichment_queue rows by status",
+  labelNames: ["status"], // pending|processing|done|failed
+  registers: [register],
+});
+
+export const monoEnrichmentProcessedTotal = new client.Counter({
+  name: "mono_enrichment_processed_total",
+  help: "Mono AI enrichment outcomes",
+  labelNames: ["outcome"], // ok|failed|skipped|missing_tx
+  registers: [register],
+});
+
+export const monoEnrichmentDurationMs = new client.Histogram({
+  name: "mono_enrichment_duration_ms",
+  help: "Per-transaction enrichment duration (ms): DB → Anthropic → write-back",
+  labelNames: ["outcome"], // ok|failed
+  buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000],
+  registers: [register],
+});
+
+// ───────────────────────── Auth-mail jobs (BullMQ) ────────────
+export const authMailJobsEnqueuedTotal = new client.Counter({
+  name: "auth_mail_jobs_enqueued_total",
+  help: "Auth transactional mail enqueue attempts by mode",
+  labelNames: ["mode"], // queued|fallback|enqueue_error
+  registers: [register],
+});
+
+export const authMailJobsProcessedTotal = new client.Counter({
+  name: "auth_mail_jobs_processed_total",
+  help: "Auth transactional mail processor outcomes",
+  labelNames: ["outcome"], // ok|retry|permanent_fail
+  registers: [register],
+});
+
+export const authMailJobDurationMs = new client.Histogram({
+  name: "auth_mail_job_duration_ms",
+  help: "Auth transactional mail per-job duration (ms)",
+  labelNames: ["outcome"], // ok|retry|permanent_fail
+  buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000],
+  registers: [register],
+});
+
+export const authMailQueueDepth = new client.Gauge({
+  name: "auth_mail_queue_depth",
+  help: "BullMQ auth-mail queue depth by status",
+  labelNames: ["status"], // waiting|active|delayed|failed
+  registers: [register],
+});
+
+// ───────────────── AI memory ingestion (BullMQ) ───────────────
+// Лічильники для PR2-черги `sergeant:ai-memory-ingest`. Дзеркалять
+// auth-mail-набір (enqueue / process / depth + duration), але з
+// додатковим лейблом `source`, щоб алерти могли біти по конкретному
+// домену (наприклад, finyk-spike при back-fill-і Monobank).
+export const aiMemoryIngestEnqueuedTotal = new client.Counter({
+  name: "ai_memory_ingest_enqueued_total",
+  help: "AI memory ingest enqueue attempts by mode and source",
+  labelNames: ["mode", "source"], // mode: queued|fallback|enqueue_error|disabled
+  registers: [register],
+});
+
+export const aiMemoryIngestProcessedTotal = new client.Counter({
+  name: "ai_memory_ingest_processed_total",
+  help: "AI memory ingest job outcomes",
+  labelNames: ["outcome", "source"], // outcome: ok|retry|permanent_fail|skipped
+  registers: [register],
+});
+
+export const aiMemoryIngestDurationMs = new client.Histogram({
+  name: "ai_memory_ingest_duration_ms",
+  help: "AI memory ingest per-job duration (ms)",
+  labelNames: ["outcome", "source"],
+  // Voyage embed-and-upsert ~300–500мс типово; bucket-и розтягнуті, бо
+  // у retry-сценарії duration може охопити timeout (`VOYAGE_TIMEOUT_MS`).
+  buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000],
+  registers: [register],
+});
+
+export const aiMemoryIngestQueueDepth = new client.Gauge({
+  name: "ai_memory_ingest_queue_depth",
+  help: "BullMQ AI memory ingest queue depth by status",
+  labelNames: ["status"], // waiting|active|delayed|failed
   registers: [register],
 });
 

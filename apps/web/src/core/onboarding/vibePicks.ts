@@ -9,7 +9,6 @@
 
 import {
   type DashboardModuleId,
-  type KVStore,
   ALL_MODULES as SHARED_ALL_MODULES,
   dismissSoftAuth as sharedDismissSoftAuth,
   clearFirstActionPending as sharedClearFirstActionPending,
@@ -27,93 +26,68 @@ import {
   saveTimeToValueMs as sharedSaveTimeToValueMs,
   saveVibePicks as sharedSaveVibePicks,
 } from "@sergeant/shared";
+import { webKVStore } from "@shared/lib/storage";
 
 export type HubModuleId = DashboardModuleId;
 
 export const ALL_MODULES: HubModuleId[] = [...SHARED_ALL_MODULES];
 
-const localStorageStore: KVStore = {
-  getString(key) {
-    try {
-      return typeof localStorage !== "undefined"
-        ? localStorage.getItem(key)
-        : null;
-    } catch {
-      return null;
-    }
-  },
-  setString(key, value) {
-    try {
-      localStorage.setItem(key, value);
-    } catch {
-      /* noop */
-    }
-  },
-  remove(key) {
-    try {
-      localStorage.removeItem(key);
-    } catch {
-      /* noop */
-    }
-  },
-};
-
 export function getVibePicks(): HubModuleId[] {
-  return sharedGetVibePicks(localStorageStore);
+  return sharedGetVibePicks(webKVStore);
 }
 
 export function saveVibePicks(picks: HubModuleId[]): void {
-  sharedSaveVibePicks(localStorageStore, picks);
+  sharedSaveVibePicks(webKVStore, picks);
 }
 
 export function markFirstActionPending(): void {
-  sharedMarkFirstActionPending(localStorageStore);
+  sharedMarkFirstActionPending(webKVStore);
 }
 
 export function clearFirstActionPending(): void {
-  sharedClearFirstActionPending(localStorageStore);
+  sharedClearFirstActionPending(webKVStore);
 }
 
 export function isFirstActionPending(): boolean {
-  return sharedIsFirstActionPending(localStorageStore);
+  return sharedIsFirstActionPending(webKVStore);
 }
 
 export function markFirstRealEntryDone(): void {
-  sharedMarkFirstRealEntryDone(localStorageStore);
+  sharedMarkFirstRealEntryDone(webKVStore);
 }
 
 export function isFirstRealEntryDone(): boolean {
-  return sharedIsFirstRealEntryDone(localStorageStore);
+  return sharedIsFirstRealEntryDone(webKVStore);
 }
 
 export function isSoftAuthDismissed(): boolean {
-  return sharedIsSoftAuthDismissed(localStorageStore);
+  return sharedIsSoftAuthDismissed(webKVStore);
 }
 
 export function dismissSoftAuth(): void {
-  sharedDismissSoftAuth(localStorageStore);
+  sharedDismissSoftAuth(webKVStore);
 }
 
 export function markFirstActionStartedAt(): void {
-  sharedMarkFirstActionStartedAt(localStorageStore);
+  sharedMarkFirstActionStartedAt(webKVStore);
 }
 
 export function getFirstActionStartedAt(): number | null {
-  return sharedGetFirstActionStartedAt(localStorageStore);
+  return sharedGetFirstActionStartedAt(webKVStore);
 }
 
 export function saveTimeToValueMs(ms: number): void {
-  sharedSaveTimeToValueMs(localStorageStore, ms);
+  sharedSaveTimeToValueMs(webKVStore, ms);
 }
 
 export function getTimeToValueMs(): number | null {
-  return sharedGetTimeToValueMs(localStorageStore);
+  return sharedGetTimeToValueMs(webKVStore);
 }
 
 export function recordSessionDay(): number {
-  return sharedRecordSessionDay(localStorageStore);
+  return sharedRecordSessionDay(webKVStore);
 }
 
 export function getSessionDays(): number {
-  return sharedGetSessionDays(localStorageStore);
+  return sharedGetSessionDays(webKVStore);
 }

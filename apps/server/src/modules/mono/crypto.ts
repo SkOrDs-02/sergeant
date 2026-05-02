@@ -57,3 +57,14 @@ export function decryptToken(enc: EncryptedToken, hexKey: string): string {
 export function tokenFingerprint(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
+
+/**
+ * SHA-256 of the Monobank webhook path secret. Matches the value computed
+ * by migration 017 (`encode(sha256(convert_to(secret, 'UTF8')), 'hex')`):
+ * Node's default `update(string)` is also UTF-8 and `digest('hex')` is
+ * lowercase. Used to make the webhook lookup oblivious to the secret's
+ * content so SQL execution time can't leak it byte-by-byte.
+ */
+export function webhookSecretHash(secret: string): string {
+  return crypto.createHash("sha256").update(secret, "utf8").digest("hex");
+}

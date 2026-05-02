@@ -56,7 +56,7 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     iconClass: "bg-finyk-soft text-finyk dark:bg-finyk-surface-dark/15",
     accentClass: "bg-finyk",
     cardBg:
-      "bg-finyk-soft/40 dark:bg-finyk-surface-dark/8 hover:shadow-float hover:-translate-y-0.5",
+      "bg-finyk-soft/40 dark:bg-finyk-surface-dark/10 dark:border-finyk-border-dark/25",
     description: "Транзакції та бюджети",
     hasGoal: false,
     emptyLabel: "Почни тут \u2192",
@@ -89,7 +89,7 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     iconClass: "bg-fizruk-soft text-fizruk dark:bg-fizruk-surface-dark/15",
     accentClass: "bg-fizruk",
     cardBg:
-      "bg-fizruk-soft/40 dark:bg-fizruk-surface-dark/8 hover:shadow-float hover:-translate-y-0.5",
+      "bg-fizruk-soft/40 dark:bg-fizruk-surface-dark/10 dark:border-fizruk-border-dark/25",
     description: "Тренування та прогрес",
     hasGoal: false,
     emptyLabel: "Почни тут \u2192",
@@ -122,7 +122,7 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
       "bg-routine-surface text-routine dark:bg-routine-surface-dark/15",
     accentClass: "bg-routine",
     cardBg:
-      "bg-routine-surface/40 dark:bg-routine-surface-dark/8 hover:shadow-float hover:-translate-y-0.5",
+      "bg-routine-surface/40 dark:bg-routine-surface-dark/10 dark:border-routine-border-dark/25",
     description: "Звички та щоденні цілі",
     hasGoal: true,
     emptyLabel: "Почни тут \u2192",
@@ -156,7 +156,7 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
       "bg-nutrition-soft text-nutrition dark:bg-nutrition-surface-dark/15",
     accentClass: "bg-nutrition",
     cardBg:
-      "bg-nutrition-soft/40 dark:bg-nutrition-surface-dark/8 hover:shadow-float hover:-translate-y-0.5",
+      "bg-nutrition-soft/40 dark:bg-nutrition-surface-dark/10 dark:border-nutrition-border-dark/25",
     description: "КБЖВ та раціон",
     hasGoal: true,
     emptyLabel: "Почни тут \u2192",

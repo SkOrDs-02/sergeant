@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   monoWebhookApi,
@@ -17,6 +17,19 @@ import {
   ANALYTICS_EVENTS,
 } from "../../../core/observability/analytics";
 import { fetchAllMonoTransactions } from "./monoTransactionsLoader";
+import { writeJSON, removeItem } from "../lib/finykStorage";
+
+/**
+ * Legacy localStorage keys still read by other surfaces (Hub previews,
+ * Analytics, recommendations engine, daily/weekly digests, hubChat actions,
+ * onboarding demo seed). The webhook hook keeps writing them as a
+ * forward-compat shim so existing readers keep working without a coordinated
+ * migration. Phase-out tracked under Monobank Roadmap follow-up — see
+ * `docs/integrations/monobank-roadmap.md` (section A → B).
+ */
+const LEGACY_TX_CACHE_KEY = "finyk_tx_cache";
+const LEGACY_TX_CACHE_LAST_GOOD_KEY = "finyk_tx_cache_last_good";
+const LEGACY_INFO_CACHE_KEY = "finyk_info_cache";
 
 const SYNC_STATE_STALE = 30_000;
 const ACCOUNTS_STALE = 5 * 60_000;
@@ -143,6 +156,31 @@ export function useMonobankWebhook({
 
   const loadingTx = txQuery.isLoading && isConnected;
 
+  // Legacy-cache shim: mirror current-month transactions into
+  // `finyk_tx_cache` (+ `_last_good`) so downstream readers (Hub, Analytics,
+  // recommendations, coach, hubChat) keep working unchanged. Was previously
+  // owned by `useMonobankLegacy()`. We invalidate the Hub finyk preview
+  // here too — same place the legacy hook used to fan-out.
+  useEffect(() => {
+    if (transactions.length === 0) return;
+    const payload = { txs: transactions, timestamp: Date.now() };
+    if (writeJSON(LEGACY_TX_CACHE_KEY, payload)) {
+      queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
+    }
+    if (transactions.length >= 3) {
+      writeJSON(LEGACY_TX_CACHE_LAST_GOOD_KEY, payload);
+    }
+  }, [transactions, queryClient]);
+
+  // Legacy-cache shim: `finyk_info_cache` shape is `{ token, info }`. In
+  // webhook-mode we have no client-side token (server holds it), so we leave
+  // `token` empty — readers that conditionally branch on it will keep
+  // working since they fall back to `rawCache?.info ?? rawCache`.
+  useEffect(() => {
+    if (!clientInfo) return;
+    writeJSON(LEGACY_INFO_CACHE_KEY, { token: "", info: clientInfo });
+  }, [clientInfo]);
+
   const lastUpdated: Date | null = useMemo(() => {
     if (syncStateData?.lastEventAt) {
       return new Date(syncStateData.lastEventAt);
@@ -196,8 +234,12 @@ export function useMonobankWebhook({
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   const fetchMonth = useCallback(
-    async (year: number, month: number) => {
-      if (!isConnected) return;
+    async (year: number, month: number): Promise<Transaction[]> => {
+      // Surface "not connected" as a rejected promise so callers can
+      // distinguish a missing-data state from a genuinely empty month.
+      // Resolving to `[]` here would let consumers cache an empty array
+      // for a month that simply hasn't been fetched yet.
+      if (!isConnected) throw new Error("monobank not connected");
       setLoadingHistory(true);
       try {
         const from = new Date(year, month, 1).toISOString();
@@ -216,8 +258,7 @@ export function useMonobankWebhook({
           .map(webhookTxToNormalized)
           .sort((a, b) => (b.time ?? 0) - (a.time ?? 0));
         setHistoryTx(normalized);
-      } catch {
-        // Partial failure — keep existing historyTx
+        return normalized;
       } finally {
         setLoadingHistory(false);
       }
@@ -230,7 +271,7 @@ export function useMonobankWebhook({
     async (token: string, _forceRefresh?: boolean, _remember?: boolean) => {
       const clean = (token ?? "").trim();
       if (!clean) {
-        setError("Введіть токен");
+        setError("Введи токен");
         return;
       }
       setConnecting(true);
@@ -243,7 +284,9 @@ export function useMonobankWebhook({
       });
 
       try {
-        const result = await monoWebhookApi.connect(clean);
+        const result = await monoWebhookApi.connect(clean, {
+          signal: AbortSignal.timeout(30_000),
+        });
 
         await queryClient.invalidateQueries({
           queryKey: finykKeys.monoSyncState,
@@ -266,6 +309,8 @@ export function useMonobankWebhook({
             e.serverMessage ||
               "Токен Monobank недійсний або закінчився. Оновіть токен.",
           );
+        } else if (isApiError(e) && e.kind === "aborted") {
+          setError("Monobank API не відповідає. Спробуйте пізніше.");
         } else {
           const msg =
             e instanceof Error && e.message ? e.message : "Помилка підключення";
@@ -312,6 +357,9 @@ export function useMonobankWebhook({
     queryClient.removeQueries({ queryKey: finykKeys.monoSyncState });
     queryClient.removeQueries({ queryKey: finykKeys.monoWebhookAccounts });
     queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
+    removeItem(LEGACY_TX_CACHE_KEY);
+    removeItem(LEGACY_TX_CACHE_LAST_GOOD_KEY);
+    removeItem(LEGACY_INFO_CACHE_KEY);
     setError("");
     setAuthError("");
   }, [queryClient]);
@@ -320,6 +368,8 @@ export function useMonobankWebhook({
     queryClient.removeQueries({
       queryKey: finykKeys.monoWebhookTransactions(),
     });
+    removeItem(LEGACY_TX_CACHE_KEY);
+    removeItem(LEGACY_TX_CACHE_LAST_GOOD_KEY);
     queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
     setError("");
   }, [queryClient]);

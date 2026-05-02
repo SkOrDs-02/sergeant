@@ -166,7 +166,7 @@ export function AddMealSheet({
       (typeof fromPantryItem === "string" ? fromPantryItem.trim() : "") ||
       (photoResult?.dishName || "").trim();
     if (!name) {
-      setForm((s) => ({ ...s, err: "Введіть назву страви." }));
+      setForm((s) => ({ ...s, err: "Введи назву страви." }));
       return;
     }
     const kcal = form.kcal === "" ? null : Number(form.kcal);

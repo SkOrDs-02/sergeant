@@ -1,16 +1,31 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { cn } from "@shared/lib/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { MEASURE_FIELDS, useMeasurements } from "../hooks/useMeasurements";
 import { Card } from "@shared/components/ui/Card";
 import { Stat } from "@shared/components/ui/Stat";
+import { useToast } from "@shared/hooks/useToast";
+import { showUndoToast } from "@shared/lib/undoToast";
 
 const inp =
   "input-focus-fizruk w-full h-11 rounded-2xl border border-line bg-panelHi px-4 text-text";
 
 export function Measurements() {
-  const { entries, addEntry, deleteEntry } = useMeasurements();
+  const { entries, addEntry, deleteEntry, restoreEntry } = useMeasurements();
+  const toast = useToast();
+  const handleDelete = useCallback(
+    (id) => {
+      const snapshot = entries.find((e) => e.id === id);
+      if (!snapshot) return;
+      deleteEntry(id);
+      showUndoToast(toast, {
+        msg: "Замір видалено",
+        onUndo: () => restoreEntry(snapshot),
+      });
+    },
+    [entries, deleteEntry, restoreEntry, toast],
+  );
   const [form, setForm] = useState(() =>
     Object.fromEntries(MEASURE_FIELDS.map((f) => [f.id, ""])),
   );
@@ -221,7 +236,7 @@ export function Measurements() {
                 </div>
                 <button
                   className="text-xs text-danger/80 hover:text-danger"
-                  onClick={() => deleteEntry(e.id)}
+                  onClick={() => handleDelete(e.id)}
                 >
                   Видалити
                 </button>

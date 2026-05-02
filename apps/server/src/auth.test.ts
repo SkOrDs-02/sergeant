@@ -58,6 +58,47 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
     expect(options.emailAndPassword?.enabled).toBe(true);
   });
 
+  /**
+   * `socialProviders.google` має вмикатися ТІЛЬКИ коли пара
+   * `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` обидві задані.
+   * У тестовому середовищі ці env-и порожні — тож конфіг має
+   * стартувати без `socialProviders`, інакше Better Auth впав би
+   * на старті з валідаційною помилкою.
+   */
+  it("без env-ів socialProviders НЕ передається у Better Auth", () => {
+    const options = (
+      auth as unknown as { options: { socialProviders?: unknown } }
+    ).options;
+    expect(options.socialProviders).toBeUndefined();
+  });
+
+  it("із заданими GOOGLE_CLIENT_ID/SECRET вмикається google-провайдер", async () => {
+    vi.resetModules();
+    vi.stubEnv("GOOGLE_CLIENT_ID", "test-client-id.apps.googleusercontent.com");
+    vi.stubEnv("GOOGLE_CLIENT_SECRET", "GOCSPX-test-secret");
+    try {
+      const { auth: authWithGoogle } = await import("./auth.js");
+      const options = (
+        authWithGoogle as unknown as {
+          options: {
+            socialProviders?: {
+              google?: { clientId?: string; clientSecret?: string };
+            };
+          };
+        }
+      ).options;
+      expect(options.socialProviders?.google?.clientId).toBe(
+        "test-client-id.apps.googleusercontent.com",
+      );
+      expect(options.socialProviders?.google?.clientSecret).toBe(
+        "GOCSPX-test-secret",
+      );
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
   it("налаштовані sendResetPassword та emailVerification (Resend у рантаймі)", () => {
     const options = (
       auth as unknown as {
@@ -71,5 +112,95 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
     expect(typeof options.emailVerification?.sendVerificationEmail).toBe(
       "function",
     );
+  });
+
+  /**
+   * Перевіряємо, що `databaseHooks.user.{create,update}.before` пропускає payload
+   * через `sanitizeUserImage`. Без цього регресія повертає 90+с зависання логіну
+   * для юзерів з 19 КБ data:image у `user.image` (інцидент 2026-05-02).
+   *
+   * Тут ми не запускаємо реальний Better Auth — лише викликаємо hook напряму
+   * як це робить `db/with-hooks.mjs`. Контракт: повертає `{ data }` де `image`
+   * нулиться для data: URL, інакше пропускає без змін.
+   */
+  it("databaseHooks.user.create.before стрипає data: URL у image", async () => {
+    const options = (
+      auth as unknown as {
+        options: {
+          databaseHooks?: {
+            user?: {
+              create?: {
+                before?: (
+                  data: Record<string, unknown>,
+                ) => Promise<{ data: Record<string, unknown> } | false | void>;
+              };
+            };
+          };
+        };
+      }
+    ).options;
+    const before = options.databaseHooks?.user?.create?.before;
+    expect(typeof before).toBe("function");
+    const result = await before!({
+      email: "test@example.com",
+      name: "Тест",
+      image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA",
+    });
+    expect(result).toBeTruthy();
+    if (result && typeof result === "object" && "data" in result) {
+      expect(result.data.image).toBeNull();
+      expect(result.data.name).toBe("Тест");
+    }
+  });
+
+  it("databaseHooks.user.update.before стрипає надмірно довгий URL", async () => {
+    const options = (
+      auth as unknown as {
+        options: {
+          databaseHooks?: {
+            user?: {
+              update?: {
+                before?: (
+                  data: Record<string, unknown>,
+                ) => Promise<{ data: Record<string, unknown> } | false | void>;
+              };
+            };
+          };
+        };
+      }
+    ).options;
+    const before = options.databaseHooks?.user?.update?.before;
+    expect(typeof before).toBe("function");
+    const longUrl = "https://example.com/" + "x".repeat(3000);
+    const result = await before!({ image: longUrl });
+    expect(result).toBeTruthy();
+    if (result && typeof result === "object" && "data" in result) {
+      expect(result.data.image).toBeNull();
+    }
+  });
+
+  it("databaseHooks.user.update.before пропускає звичайний HTTPS URL", async () => {
+    const options = (
+      auth as unknown as {
+        options: {
+          databaseHooks?: {
+            user?: {
+              update?: {
+                before?: (
+                  data: Record<string, unknown>,
+                ) => Promise<{ data: Record<string, unknown> } | false | void>;
+              };
+            };
+          };
+        };
+      }
+    ).options;
+    const before = options.databaseHooks?.user?.update?.before;
+    const url = "https://lh3.googleusercontent.com/a/AAcHTtdXyz=s96-c";
+    const result = await before!({ image: url });
+    expect(result).toBeTruthy();
+    if (result && typeof result === "object" && "data" in result) {
+      expect(result.data.image).toBe(url);
+    }
   });
 });

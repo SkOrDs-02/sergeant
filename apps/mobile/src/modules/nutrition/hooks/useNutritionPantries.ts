@@ -32,6 +32,12 @@ export interface UseNutritionPantriesResult {
   /** Результат `parsePantry` (сервер) — злиття в активний склад. */
   applyParsedItems: (items: readonly PantryItem[]) => void;
   removeItemAt: (index: number) => void;
+  /**
+   * Re-insert an item at the given index in the active pantry. Used by
+   * undo-toast after `removeItemAt`. Если index >= length — додаємо у
+   * кінець; index < 0 → no-op.
+   */
+  restoreItemAt: (index: number, item: PantryItem) => void;
   addPantry: (name: string) => void;
   refresh: () => void;
 }
@@ -110,6 +116,20 @@ export function useNutritionPantries(): UseNutritionPantriesResult {
     );
   }, []);
 
+  const restoreItemAt = useCallback((index: number, item: PantryItem) => {
+    if (index < 0 || !item) return;
+    setPantries((cur) =>
+      updatePantry(cur, activeIdRef.current, (p) => {
+        const items = Array.isArray(p.items) ? [...p.items] : [];
+        // Сплайс із clamp-нутим індексом — якщо item-ів стало менше
+        // (паралельний remove), просто додаємо в кінець.
+        const clamped = Math.min(index, items.length);
+        items.splice(clamped, 0, item);
+        return { ...p, items };
+      }),
+    );
+  }, []);
+
   const addPantry = useCallback((name: string) => {
     const n = String(name || "").trim();
     if (!n) return;
@@ -129,6 +149,7 @@ export function useNutritionPantries(): UseNutritionPantriesResult {
     addLine,
     applyParsedItems,
     removeItemAt,
+    restoreItemAt,
     addPantry,
     refresh,
   };

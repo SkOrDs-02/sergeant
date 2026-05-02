@@ -191,7 +191,7 @@ export function AssetForm({
 }) {
   return (
     <Card
-      ref={assetFormRef}
+      ref={assetFormRef as React.Ref<HTMLElement>}
       variant="finyk-soft"
       radius="md"
       className="space-y-3"
@@ -203,7 +203,7 @@ export function AssetForm({
         </div>
       </div>
       <Input
-        ref={assetNameInputRef}
+        ref={assetNameInputRef as React.Ref<HTMLInputElement>}
         placeholder="Назва"
         value={newAsset.name}
         onChange={(e) => setNewAsset((a) => ({ ...a, name: e.target.value }))}
@@ -283,7 +283,7 @@ export function DebtForm({
 }) {
   return (
     <Card
-      ref={debtFormRef}
+      ref={debtFormRef as React.Ref<HTMLElement>}
       variant="finyk-soft"
       radius="md"
       className="space-y-3 mb-2"
@@ -296,7 +296,7 @@ export function DebtForm({
       </div>
       <div className="flex gap-2">
         <Input
-          ref={debtNameInputRef}
+          ref={debtNameInputRef as React.Ref<HTMLInputElement>}
           className="flex-1"
           placeholder="Назва пасиву (кредит, борг…)"
           value={newDebt.name}
@@ -305,6 +305,7 @@ export function DebtForm({
         <VoiceMicButton
           size="md"
           label="Голосовий ввід"
+          promptHint="Пасив у гривнях: кредит 50000, борг 12000, іпотека."
           onResult={(transcript) => {
             const parsed = parseExpenseVoice(transcript);
             if (!parsed) return;

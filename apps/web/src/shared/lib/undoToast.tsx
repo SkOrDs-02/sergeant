@@ -1,5 +1,10 @@
 import type { ReactNode } from "react";
 import type { ToastApi } from "@shared/hooks/useToast";
+import {
+  UNDO_TOAST_DEFAULT_DURATION_MS,
+  UNDO_TOAST_DEFAULT_ERROR_MSG,
+  UNDO_TOAST_DEFAULT_LABEL,
+} from "@sergeant/shared";
 import { hapticError, hapticTap, hapticWarning } from "./haptic";
 
 export interface UndoToastOptions {
@@ -47,10 +52,10 @@ export function showUndoToast(
   toast: ToastApi,
   {
     msg,
-    duration = 5000,
-    undoLabel = "Повернути",
+    duration = UNDO_TOAST_DEFAULT_DURATION_MS,
+    undoLabel = UNDO_TOAST_DEFAULT_LABEL,
     onUndo,
-    onUndoErrorMsg = "Не вдалось повернути. Спробуй ще раз.",
+    onUndoErrorMsg = UNDO_TOAST_DEFAULT_ERROR_MSG,
   }: UndoToastOptions,
 ): number {
   hapticWarning();

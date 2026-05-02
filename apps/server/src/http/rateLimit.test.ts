@@ -48,27 +48,31 @@ describe("getIp", () => {
     expect(getIp(req)).toBe("198.51.100.7");
   });
 
-  it("falls back to the LAST X-Forwarded-For entry when req.ip is missing", () => {
+  it("ignores raw X-Forwarded-For when req.ip is missing (spoof-safe)", () => {
+    // Regression: previously we fell back to parsing XFF directly, which
+    // turned "no trust-proxy / detached socket" into a free-tier bypass —
+    // the attacker controls the entire header on a directly-exposed server.
+    // Now the safe failure mode is "unknown" so all such requests share a
+    // single bucket rather than each minting a fresh fake IP.
     const req = asReq({
       headers: { "x-forwarded-for": "1.1.1.1, 198.51.100.7" },
     });
-    expect(getIp(req)).toBe("198.51.100.7");
+    expect(getIp(req)).toBe("unknown");
   });
 
-  it("falls back to x-real-ip when both req.ip and XFF are missing", () => {
+  it("ignores X-Real-IP when req.ip is missing (spoof-safe)", () => {
+    // X-Real-IP has no append semantic — it is whatever the last sender
+    // wrote. Trusting it without a proxy guarantee = trusting the client.
     const req = asReq({ headers: { "x-real-ip": "10.0.0.42" } });
-    expect(getIp(req)).toBe("10.0.0.42");
+    expect(getIp(req)).toBe("unknown");
   });
 
   it('returns "unknown" when nothing is available', () => {
     expect(getIp(asReq({ headers: {} }))).toBe("unknown");
   });
 
-  it("trims whitespace in all paths", () => {
+  it("trims whitespace on req.ip", () => {
     expect(getIp(asReq({ ip: "  10.0.0.1  ", headers: {} }))).toBe("10.0.0.1");
-    expect(
-      getIp(asReq({ headers: { "x-forwarded-for": "  1.1.1.1 , 9.9.9.9  " } })),
-    ).toBe("9.9.9.9");
   });
 });
 
@@ -330,5 +334,43 @@ describe("rateLimitExpress — Redis path", () => {
 
     expect(redisEvalMock).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalledOnce();
+  });
+
+  it("returns 429 body with both `error` and `message` fields when blocked", async () => {
+    // Контракт із Better Auth client / better-fetch: вони читають саме
+    // `message` при десеріалізації не-2xx body. Якщо віддавати тільки
+    // `error`, юзер на /sign-in бачить generic «Помилка входу» замість
+    // реального rate-limit повідомлення. Тому тримаємо обидва поля
+    // синхронізованими.
+    vi.mocked(getRedis).mockReturnValue(null);
+    const key = `mw:body_${Math.random().toString(36).slice(2)}`;
+    const middleware = rateLimitExpress({ key, limit: 1, windowMs: 60_000 });
+    const req = makeReq("10.0.0.99");
+    const allowedRes = {
+      setHeader: vi.fn(),
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
+    } as never;
+    await middleware(req, allowedRes, vi.fn());
+
+    const blockedJson = vi.fn();
+    const blockedRes = {
+      setHeader: vi.fn(),
+      status: vi.fn().mockReturnThis(),
+      json: blockedJson,
+    } as never;
+    const next = vi.fn();
+    await middleware(req, blockedRes, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(blockedJson).toHaveBeenCalledTimes(1);
+    const body = blockedJson.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(body).toEqual(
+      expect.objectContaining({
+        error: "Забагато запитів. Спробуй пізніше.",
+        message: "Забагато запитів. Спробуй пізніше.",
+        code: "RATE_LIMIT",
+      }),
+    );
   });
 });

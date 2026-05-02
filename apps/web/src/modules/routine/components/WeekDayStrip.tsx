@@ -33,7 +33,7 @@ export function WeekDayStrip({
     <div className="flex items-center gap-1.5 sm:gap-2">
       <button
         type="button"
-        className="shrink-0 flex h-11 w-9 items-center justify-center rounded-xl border border-line bg-panel/90 text-lg text-muted transition-colors hover:bg-panelHi hover:text-text"
+        className="focus-ring shrink-0 flex h-11 w-9 items-center justify-center rounded-xl border border-line bg-panel/90 text-lg text-muted transition-colors hover:bg-panelHi hover:text-text"
         onClick={() => onShiftWeek(-1)}
         aria-label="Попередній тиждень"
       >
@@ -50,7 +50,7 @@ export function WeekDayStrip({
               type="button"
               onClick={() => onSelectDay(k)}
               className={cn(
-                "flex min-h-[44px] flex-col items-center justify-center rounded-xl border py-1 text-2xs font-semibold transition-colors sm:text-xs",
+                "focus-ring flex min-h-[44px] flex-col items-center justify-center rounded-xl border py-1 text-2xs font-semibold transition-colors sm:text-xs",
                 isSel
                   ? "border-routine-ring dark:border-routine-border-dark/40 bg-routine-surface2 dark:bg-routine-surface-dark/15 text-text shadow-sm ring-1 ring-routine-line/50 dark:ring-routine-border-dark/30"
                   : "border-transparent bg-panelHi/50 text-muted hover:bg-panelHi hover:text-text",
@@ -58,9 +58,9 @@ export function WeekDayStrip({
               )}
             >
               {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-                  Day-of-week caption at text-3xs inside a compact day-picker
+                  Day-of-week caption at text-2xs inside a compact day-picker
                   tile — smaller than SectionHeading xs's text-2xs. */}
-              <span className="text-3xs uppercase tracking-wide text-subtle">
+              <span className="text-2xs uppercase tracking-wide text-subtle">
                 {short[i]}
               </span>
               <span className="tabular-nums text-sm text-text">{dom}</span>
@@ -70,7 +70,7 @@ export function WeekDayStrip({
       </div>
       <button
         type="button"
-        className="shrink-0 flex h-11 w-9 items-center justify-center rounded-xl border border-line bg-panel/90 text-lg text-muted transition-colors hover:bg-panelHi hover:text-text"
+        className="focus-ring shrink-0 flex h-11 w-9 items-center justify-center rounded-xl border border-line bg-panel/90 text-lg text-muted transition-colors hover:bg-panelHi hover:text-text"
         onClick={() => onShiftWeek(1)}
         aria-label="Наступний тиждень"
       >

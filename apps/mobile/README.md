@@ -221,7 +221,7 @@ apps/mobile
 `useSession()` — ці дані джерелом правди — сервер, а не локальне
 SecureStore.
 
-## Push notifications
+## Push-нотифікації
 
 Push-флоу на mobile закриває `PushRegistrar`
 (`src/features/push/PushRegistrar.tsx`). Після логіну він:
@@ -255,9 +255,9 @@ pnpm --filter @sergeant/mobile start --dev-client
 
 ## Монорепо-правила
 
-- Нативні залежності (expo, react-native, expo-_) живуть **тільки** тут,
+- Нативні залежності (expo, react-native, expo-\_) живуть **тільки** тут,
   не в корені й не в інших пакетах — інакше Metro знайде два React-и.
-  Див. `.agents/skills/vercel-react-native-skills/rules/monorepo-_.md`.
+  Див. `.agents/skills/sergeant-mobile-expo/SKILL.md`.
 - Версії спільних пакетів (react, zod, @tanstack/react-query) мусять
   збігатися з `apps/web` — pnpm-workspace не ізолює їх автоматично на
   runtime.

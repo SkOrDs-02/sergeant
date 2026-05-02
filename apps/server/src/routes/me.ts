@@ -9,7 +9,22 @@ type AuthedUser = {
   name?: string;
   image?: string | null;
   emailVerified?: boolean;
+  // Better Auth повертає `createdAt` як `Date`; нормалізуємо у ISO-рядок
+  // нижче (схема `UserSchema` очікує `string | null`). Допускаємо `string`
+  // на випадок, якщо адаптер сесії віддасть уже серіалізоване значення.
+  createdAt?: Date | string;
 };
+
+function toIsoOrNull(value: Date | string | undefined): string | null {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  }
+  if (typeof value === "string" && value.length > 0) {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  return null;
+}
 
 /**
  * `/api/me` — уніфікований endpoint "хто я" для web cookie-сесій та
@@ -49,6 +64,7 @@ export function createMeRouter(): Router {
           name: user.name ?? null,
           image: user.image ?? null,
           emailVerified: Boolean(user.emailVerified),
+          createdAt: toIsoOrNull(user.createdAt),
         },
       });
       res.json(payload);

@@ -8,6 +8,10 @@
     "pnpm": ">=9"
   },
   "packageManager": "pnpm@9.15.1",
+  "volta": {
+    "node": "20.20.2",
+    "pnpm": "9.15.1"
+  },
   "scripts": {
     "dev": "turbo run dev --parallel",
     "dev:web": "pnpm --filter @sergeant/web dev",
@@ -17,11 +21,19 @@
     "build": "turbo run build",
     "build:web": "pnpm --filter @sergeant/web build",
     "build:analyze": "pnpm --filter @sergeant/web build:analyze",
+    "build:check-size": "node scripts/check-bundle-size.mjs",
     "preview": "pnpm --filter @sergeant/web preview",
-    "lint": "turbo run lint && node scripts/check-imports.mjs && pnpm lint:plugins && pnpm lint:tech-debt-freshness",
+    "lint": "turbo run lint && node scripts/check-imports.mjs && node tools/tsconfig-guard/check.mjs && pnpm lint:plugins && pnpm lint:tech-debt-freshness && pnpm api:check-openapi",
     "lint:imports": "node scripts/check-imports.mjs",
     "lint:migrations": "node scripts/lint-migrations.mjs",
+    "ops:n8n:validate": "node scripts/ops/validate-n8n-workflows.mjs",
+    "n8n:import": "node scripts/ops/n8n-workflows.mjs import",
+    "n8n:export": "node scripts/ops/n8n-workflows.mjs export",
     "lint:tech-debt-freshness": "node scripts/check-tech-debt-freshness.mjs",
+    "lint:governance-sync": "node scripts/check-governance-sync.mjs",
+    "lint:hard-rules-registry": "node scripts/check-hard-rules-registry.mjs",
+    "api:generate-openapi": "node scripts/api/generate-openapi.mjs",
+    "api:check-openapi": "node scripts/api/check-openapi-fresh.mjs",
     "lint:plugins": "node --test packages/eslint-plugin-sergeant-design/__tests__/*.test.mjs",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
@@ -33,13 +45,31 @@
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:migrate": "pnpm --filter @sergeant/server db:migrate",
+    "dev:db": "pnpm db:up && pnpm db:migrate",
     "licenses:gen": "node scripts/generate-licenses.mjs",
     "licenses:check": "node scripts/generate-licenses.mjs check",
     "strict:coverage": "node scripts/strict-coverage.mjs",
     "dead-code:packages": "node scripts/ts-prune-packages.mjs",
+    "dead-code:files": "node scripts/knip-respects-scaffolded.mjs",
     "knip": "knip",
     "depcheck:all": "pnpm -r exec depcheck --ignore-patterns=dist,dist-server,coverage,.turbo",
-    "prepare": "husky"
+    "prepare": "husky",
+    "gen": "plop",
+    "gen:adr": "plop adr",
+    "docs:check-links": "node scripts/docs/check-markdown-links.mjs",
+    "docs:gen-playbook-index": "node scripts/docs/generate-playbook-index.mjs",
+    "docs:check-playbook-index": "node scripts/docs/generate-playbook-index.mjs --check",
+    "docs:check-playbook-schema": "node scripts/docs/check-playbook-schema.mjs",
+    "docs:check-freshness-coverage": "node scripts/docs/check-freshness.mjs --check-coverage",
+    "docs:check-adr-graph": "node scripts/docs/check-adr-graph.mjs",
+    "hard-rules:generate": "node scripts/docs/generate-hard-rules-matrix.mjs",
+    "hard-rules:check": "node scripts/docs/generate-hard-rules-matrix.mjs --check",
+    "hard-rules:list": "node scripts/docs/generate-hard-rules-matrix.mjs --list",
+    "docs:freshness-dashboard": "node scripts/docs/generate-freshness-dashboard.mjs",
+    "lint:ai-legacy": "node scripts/check-ai-legacy.mjs --check",
+    "ai-legacy:dashboard": "node scripts/check-ai-legacy.mjs --dashboard dist/ai-legacy-dashboard.html",
+    "lint:codeowners": "node scripts/check-codeowners-coverage.mjs",
+    "ci:validate-pr-body": "node scripts/ci/validate-pr-body.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.2",
@@ -55,6 +85,7 @@
     "husky": "^9.1.7",
     "knip": "^6.7.0",
     "lint-staged": "^15.5.2",
+    "plop": "^4.0.5",
     "prettier": "^3.8.2",
     "ts-prune": "^0.10.3",
     "tsx": "^4.21.0",
@@ -67,7 +98,11 @@
       "eslint --fix --max-warnings=0",
       "prettier --write"
     ],
-    "*.{json,md,css,html,yml,yaml}": [
+    "*.md": [
+      "node scripts/docs/bump-last-validated.mjs",
+      "prettier --write"
+    ],
+    "*.{json,css,html,yml,yaml}": [
       "prettier --write"
     ]
   },
@@ -80,6 +115,9 @@
       "postcss": ">=8.5.10",
       "uuid": ">=14.0.0",
       "@tootallnate/once": ">=3.0.1"
+    },
+    "patchedDependencies": {
+      "@expo/cli@0.22.28": "patches/@expo__cli@0.22.28.patch"
     }
   }
 }

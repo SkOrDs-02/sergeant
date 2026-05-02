@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Skords-01/Sergeant/blob/main/docs/governance/hard-rules.schema.json",
+  "title": "Sergeant Hard Rules registry",
+  "description": "Machine-readable mirror of AGENTS.md § Hard rules. Validated by scripts/check-hard-rules-registry.mjs.",
+  "type": "object",
+  "required": ["version", "source", "rules"],
+  "additionalProperties": true,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "type": "integer", "minimum": 1 },
+    "source": { "type": "string" },
+    "generated": { "type": "boolean" },
+    "_comment": {
+      "anyOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ]
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "scope", "severity", "enforced_by"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-based rule number; must match the heading number in AGENTS.md."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 4,
+            "description": "Title from the AGENTS.md `### N. <title>` heading, verbatim."
+          },
+          "scope": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1,
+            "description": "Glob(s) or branch name(s) the rule applies to."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["blocker", "warning"]
+          },
+          "enforced_by": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["kind", "ref"],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "ci",
+                    "eslint-rule",
+                    "test",
+                    "hook",
+                    "branch-protection",
+                    "codeowners",
+                    "doc",
+                    "convention",
+                    "pr-template"
+                  ]
+                },
+                "ref": { "type": "string", "minLength": 1 }
+              }
+            },
+            "minItems": 1,
+            "description": "How the rule is mechanically enforced; an empty array means 'documented only, not enforced'."
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["type", "ref"],
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["pr", "issue", "agents", "doc", "external"]
+                },
+                "ref": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

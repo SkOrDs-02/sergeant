@@ -5,6 +5,7 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useWorkouts } from "../hooks/useWorkouts";
 import { epley1rm, suggestNextSet } from "@sergeant/fizruk-domain";
+import type { WorkoutSet } from "@sergeant/fizruk-domain/domain";
 import { Card } from "@shared/components/ui/Card";
 
 function fmt(n, digits = 0) {
@@ -75,7 +76,7 @@ function LoadCalculator({ oneRM }) {
                 return (
                   <div
                     key={pct}
-                    className="text-center bg-panel/60 rounded-lg py-1.5 px-1"
+                    className="text-center bg-panel/60 rounded-xl py-1.5 px-1"
                   >
                     <div className="text-2xs text-subtle leading-none mb-0.5">
                       {pct}%
@@ -83,7 +84,7 @@ function LoadCalculator({ oneRM }) {
                     <div className="text-sm font-bold text-text tabular-nums leading-tight">
                       {kg > 0 ? `${kg}` : "—"}
                     </div>
-                    <div className="text-3xs text-muted leading-none">кг</div>
+                    <div className="text-2xs text-muted leading-none">кг</div>
                   </div>
                 );
               })}
@@ -91,7 +92,7 @@ function LoadCalculator({ oneRM }) {
           </div>
         ))}
       </div>
-      <p className="text-3xs text-muted mt-2 text-center">
+      <p className="text-2xs text-muted mt-2 text-center">
         Ваги округлені до найближчих 2.5 кг
       </p>
     </Card>
@@ -243,6 +244,15 @@ function ProgressChart({ points, label, unit, color }) {
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type HistoryEntry = { workout: any; item: any };
+// Best/last sets carry an extra `_at` annotation that's not part of the
+// canonical `WorkoutSet`, so we extend the domain type instead of
+// shadowing the global `Set<T>` with `type Set = any`.
+type WorkoutSetWithMeta = WorkoutSet & { _at?: string };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Point = any;
+
 export function Exercise({ exerciseId }) {
   const { exercises, musclesUk } = useExerciseCatalog();
   const { workouts } = useWorkouts();
@@ -253,7 +263,7 @@ export function Exercise({ exerciseId }) {
   );
 
   const history = useMemo(() => {
-    const out = [];
+    const out: HistoryEntry[] = [];
     for (const w of workouts || []) {
       for (const it of w.items || []) {
         if (it.exerciseId !== exerciseId) continue;
@@ -267,10 +277,10 @@ export function Exercise({ exerciseId }) {
 
   const best = useMemo(() => {
     let best1rm = 0;
-    let bestSet = null;
-    let lastTopSet = null;
+    let bestSet: WorkoutSetWithMeta | null = null;
+    let lastTopSet: WorkoutSetWithMeta | null = null;
     let lastTopEst = 0;
-    let lastWorkoutId = null;
+    let lastWorkoutId: string | null = null;
     let lastWorkoutBest1rm = 0;
     let priorBest1rm = 0;
 
@@ -359,8 +369,8 @@ export function Exercise({ exerciseId }) {
   }, [history]);
 
   const cardioData = useMemo(() => {
-    const pacePoints = [];
-    const distPoints = [];
+    const pacePoints: Point[] = [];
+    const distPoints: Point[] = [];
     for (const { workout, item } of [...history].reverse()) {
       if (item?.type !== "distance" || !workout?.startedAt) continue;
       const dist = Number(item.distanceM) || 0;
@@ -430,10 +440,10 @@ export function Exercise({ exerciseId }) {
           <div className="flex items-center gap-2.5 rounded-2xl border border-yellow-400/40 bg-yellow-400/10 px-4 py-3">
             <span className="text-xl leading-none">🏆</span>
             <div>
-              <p className="text-sm font-bold text-yellow-700 dark:text-yellow-300">
+              <p className="text-sm font-bold text-warning-strong dark:text-warning">
                 Новий особистий рекорд!
               </p>
-              <p className="text-xs text-yellow-600/80 dark:text-yellow-400/70">
+              <p className="text-xs text-warning-strong/80 dark:text-warning/70">
                 Найкращий результат за всю історію
               </p>
             </div>

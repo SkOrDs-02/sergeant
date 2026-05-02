@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage";
 import { todayISODate } from "../lib/nutritionFormat";
 
 export interface NutritionReminderPrefs {
@@ -9,19 +10,11 @@ export interface NutritionReminderPrefs {
 const LAST_NOTIFY_KEY_STORAGE = "nutrition_last_reminder_notif_key";
 
 function readLastNotifyKey(): string {
-  try {
-    return localStorage.getItem(LAST_NOTIFY_KEY_STORAGE) || "";
-  } catch {
-    return "";
-  }
+  return safeReadStringLS(LAST_NOTIFY_KEY_STORAGE, "") ?? "";
 }
 
 function writeLastNotifyKey(key: string): void {
-  try {
-    localStorage.setItem(LAST_NOTIFY_KEY_STORAGE, key);
-  } catch {
-    /* ignore */
-  }
+  safeWriteLS(LAST_NOTIFY_KEY_STORAGE, key);
 }
 
 export function useNutritionReminders(prefs: NutritionReminderPrefs): void {

@@ -41,14 +41,49 @@ export type {
 export { Avatar } from "./Avatar";
 export type { AvatarProps, AvatarSize, AvatarStatus } from "./Avatar";
 
-export { EmptyState } from "./EmptyState";
-export type { EmptyStateProps } from "./EmptyState";
+export { EmptyState, ModuleEmptyState } from "./EmptyState";
+export type { EmptyStateProps, ModuleEmptyStateProps } from "./EmptyState";
 
-export { EmptyStateIllustration } from "./EmptyStateIllustration";
-export type {
-  EmptyStateIllustrationProps,
-  IllustrationVariant,
-} from "./EmptyStateIllustration";
+export {
+  FeatureSpotlight,
+  useResetSpotlight,
+  useSpotlightDismissed,
+} from "./FeatureSpotlight";
+export type { FeatureSpotlightProps } from "./FeatureSpotlight";
+
+export {
+  KeyboardShortcutsModal,
+  useKeyboardShortcutsModal,
+} from "./KeyboardShortcutsModal";
+export type { KeyboardShortcut } from "./KeyboardShortcutsModal";
+
+export {
+  AnimatedNumber,
+  AnimatedCurrency,
+  AnimatedPercent,
+} from "./AnimatedNumber";
+export type {} from "./AnimatedNumber";
+
+export { StreakProtection, useStreakRiskCheck } from "./StreakProtection";
+export type { StreakProtectionProps } from "./StreakProtection";
+
+export { QuickActionsMenu } from "./QuickActionsMenu";
+export type { QuickAction } from "./QuickActionsMenu";
+
+export { PageTransition } from "./PageTransition";
+export type { TransitionDirection } from "./PageTransition";
+
+export { PullToRefresh } from "./PullToRefresh";
+export type { PullToRefreshProps, PullToRefreshVariant } from "./PullToRefresh";
+export { PullToRefreshIndicator } from "./PullToRefreshIndicator";
+export type { PullToRefreshIndicatorProps } from "./PullToRefreshIndicator";
+
+export {
+  AccentColorPicker,
+  AccentColorPickerCard,
+  useAccentColor,
+} from "./AccentColorPicker";
+export type { AccentColor } from "./AccentColorPicker";
 
 export { FormField, Label } from "./FormField";
 export type { FormFieldProps, LabelProps } from "./FormField";
@@ -66,9 +101,6 @@ export type {
 
 export { SectionHeader, SectionHeading } from "./SectionHeading";
 export type {
-  SectionHeaderProps,
-  SectionHeaderSize,
-  SectionHeaderVariant,
   SectionHeadingProps,
   SectionHeadingSize,
   SectionHeadingVariant,
@@ -100,7 +132,15 @@ export type {
   ProgressRingVariant,
 } from "./ProgressRing";
 
-export { Skeleton, SkeletonText } from "./Skeleton";
+export {
+  Skeleton,
+  SkeletonText,
+  SkeletonTransactionRow,
+  SkeletonBudgetBar,
+  SkeletonHabitRow,
+  SkeletonWorkoutSet,
+  SkeletonMealCard,
+} from "./Skeleton";
 export type { SkeletonProps } from "./Skeleton";
 
 export { SkeletonCard, SkeletonList } from "./SkeletonCard";
@@ -133,3 +173,71 @@ export { Tooltip } from "./Tooltip";
 export type { TooltipPlacement, TooltipProps } from "./Tooltip";
 
 export type { FormVariant, SmallMediumLarge } from "./types";
+
+export {
+  CelebrationModal,
+  MiniSuccess,
+  useCelebration,
+} from "./CelebrationModal";
+export type {
+  CelebrationModalProps,
+  CelebrationType,
+  MiniSuccessProps,
+  ModuleTheme,
+} from "./CelebrationModal";
+
+export { StreakCelebration, useStreakCelebration } from "./StreakCelebration";
+export type { StreakCelebrationProps } from "./StreakCelebration";
+
+export { AnimatedCheckbox, HabitCheckbox } from "./AnimatedCheckbox";
+export type {
+  AnimatedCheckboxProps,
+  CheckboxSize,
+  CheckboxVariant,
+  HabitCheckboxProps,
+} from "./AnimatedCheckbox";
+
+export { StreakFlame, StreakBadge } from "./StreakFlame";
+export type {
+  StreakFlameProps,
+  StreakFlameSize,
+  StreakBadgeProps,
+} from "./StreakFlame";
+
+export {
+  AnimatedList,
+  AnimatedFadeIn,
+  AnimatedSlideIn,
+  AnimatedScale,
+} from "./AnimatedList";
+export type {
+  AnimatedListProps,
+  AnimatedFadeInProps,
+  AnimationStyle,
+} from "./AnimatedList";
+
+export { FloatingActionButton } from "./FloatingActionButton";
+export type {
+  FloatingActionButtonProps,
+  FABAction,
+  FABSize,
+  FABVariant,
+} from "./FloatingActionButton";
+
+export {
+  KeyboardAccessory,
+  AMOUNT_CHIPS_UAH,
+  PORTION_CHIPS_GRAM,
+  WEIGHT_CHIPS_KG,
+  REP_CHIPS,
+  WATER_CHIPS_ML,
+} from "./KeyboardAccessory";
+export type {
+  KeyboardAccessoryProps,
+  QuickFillChip,
+} from "./KeyboardAccessory";
+
+export {
+  ScreenReaderAnnouncerProvider,
+  useAnnounce,
+} from "./ScreenReaderAnnouncer";

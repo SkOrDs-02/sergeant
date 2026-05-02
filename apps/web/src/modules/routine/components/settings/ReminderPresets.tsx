@@ -24,7 +24,7 @@ export function ReminderPresets({
             key={preset.id}
             type="button"
             className={cn(
-              "text-xs px-2.5 py-1.5 rounded-lg border font-medium transition-colors min-h-[32px]",
+              "text-xs px-2.5 py-1.5 rounded-xl border font-medium transition-colors min-h-[32px]",
               JSON.stringify(times.slice().sort()) ===
                 JSON.stringify(preset.times.slice().sort())
                 ? C.chipOn
@@ -44,7 +44,7 @@ export function ReminderPresets({
         <button
           type="button"
           className={cn(
-            "text-xs px-2.5 py-1.5 rounded-lg border font-medium transition-colors min-h-[32px]",
+            "text-xs px-2.5 py-1.5 rounded-xl border font-medium transition-colors min-h-[32px]",
             times.length === 0 ? C.chipOn : C.chipOff,
           )}
           onClick={() =>
@@ -78,7 +78,7 @@ export function ReminderPresets({
           />
           <button
             type="button"
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-subtle hover:text-danger hover:bg-danger/10 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-xl text-subtle hover:text-danger hover:bg-danger/10 transition-colors"
             onClick={() =>
               setHabitDraft((d) => {
                 const arr = (d.reminderTimes || []).filter((_, j) => j !== i);

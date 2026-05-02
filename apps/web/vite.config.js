@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
   // (`apps/mobile-shell`): native WebView і без того ігнорує
   // `navigator.serviceWorker.register`, тому `vite-plugin-pwa`,
   // згенерований `sw.js` і `manifest.webmanifest` — dead weight у
-  // shell-бандлі. Відключаємо плагін повністю, а `main.jsx` під
+  // shell-бандлі. Відключаємо плагін повністю, а `main.tsx` під
   // build-time прапором викидає динамічний `import("virtual:pwa-register")`
   // через DCE — щоб Rollup не намагався резолвити virtual-модуль, якого
   // тепер немає у graph-і. Веб-деплой (Vercel) продовжує білдитись як
@@ -33,15 +33,25 @@ export default defineConfig(({ mode }) => {
     process.env.GITHUB_SHA ||
     process.env.BUILD_ID ||
     String(Date.now());
+  const outDir =
+    env.VITE_BUILD_OUT_DIR ||
+    (process.env.VERCEL === "1" ? "dist" : "../server/dist");
 
   return {
     define: {
       // Пробрасуємо значення у клієнтський бандл як статичний літерал,
-      // щоб `main.jsx` міг DCE-вирізати SW-гілку у capacitor-білді.
+      // щоб `main.tsx` міг DCE-вирізати SW-гілку у capacitor-білді.
       "import.meta.env.VITE_TARGET": JSON.stringify(
         isCapacitorBuild ? "capacitor" : "web",
       ),
       __SW_BUILD_ID__: JSON.stringify(buildId),
+      // Той самий buildId, доступний у головному бандлі (а не лише у
+      // SW). Persister React Query (`queryClientPersister.ts`)
+      // використовує його як `buster`, щоб новий деплой автоматично
+      // інвалідовував старий IDB-snapshot — інакше при changed
+      // response-shape (Hard Rule #3) кеш на диску ламає UI до
+      // наступного revalidate.
+      __APP_BUILD_ID__: JSON.stringify(buildId),
     },
     plugins: [
       react(),
@@ -132,7 +142,7 @@ export default defineConfig(({ mode }) => {
         }),
     ].filter(Boolean),
     build: {
-      outDir: "../server/dist",
+      outDir,
       emptyOutDir: true,
       rollupOptions: {
         output: {
@@ -162,7 +172,7 @@ export default defineConfig(({ mode }) => {
               // `@sergeant/mobile-shell/barcodeNative` (→
               // `useBarcodeScanner`), `@sergeant/mobile-shell/auth-storage`
               // (→ `apps/web/src/shared/lib/bearerToken.ts`) і
-              // `@sergeant/mobile-shell` (→ `main.jsx` під guard-ом
+              // `@sergeant/mobile-shell` (→ `main.tsx` під guard-ом
               // `isCapacitor()`). Без цього catch-all нижче загнав би
               // Capacitor-код у загальний `vendor`, який жадібно
               // підвантажується браузерами.
@@ -176,13 +186,25 @@ export default defineConfig(({ mode }) => {
               // Ізольований chunk для Sentry, щоб SDK (~30–40 KB gzip) не
               // потрапляв у загальний `vendor`, який шериться між eager-
               // імпортами main bundle. Див. правило 2.3 у
-              // `.agents/skills/vercel-react-best-practices/AGENTS.md`.
+              // `.agents/skills/sergeant-web-ui/SKILL.md`.
               if (id.includes("@sentry")) return "vendor-sentry";
               // Те саме міркування для `web-vitals` — пакет малий (~1 KB
               // gzip), але імпортується через dynamic `import()` після
               // `requestIdleCallback`, тож не повинен тягнутись у main.
               if (id.includes("/node_modules/web-vitals/"))
                 return "vendor-web-vitals";
+              // Ізольований chunk для sqlite-wasm + drizzle-orm —
+              // PR #015 storage roadmap. Пакет важкий (~700 KB brotli
+              // разом із .wasm) і потрібен лише фічам, які явно
+              // звертаються до клієнтської БД через `getSqliteDb()`.
+              // Без цього catch-all нижче загнав би його у головний
+              // `vendor`, який жадібно тягнеться головним bundle-ом
+              // (а sqlite-wasm зростив би його в 2× понад ліміт).
+              if (
+                id.includes("/node_modules/@sqlite.org/sqlite-wasm/") ||
+                id.includes("/node_modules/drizzle-orm/")
+              )
+                return "vendor-sqlite";
               return "vendor";
             }
           },

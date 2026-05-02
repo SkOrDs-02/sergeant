@@ -66,6 +66,8 @@ describe("useMonoTransactions", () => {
         counterEdrpou: null,
         counterIban: null,
         counterName: null,
+        categorySlug: null,
+        categoryOverridden: false,
         source: "webhook" as const,
         receivedAt: "2025-01-15T12:00:01Z",
       },

@@ -637,9 +637,3 @@ export async function sendToUserQuietly(
     });
   }
 }
-
-// ─────────────────────────── Exports for tests ─────────────────────
-export const __TEST__ = {
-  RETRY_DELAYS_MS,
-  MAX_ATTEMPTS,
-};

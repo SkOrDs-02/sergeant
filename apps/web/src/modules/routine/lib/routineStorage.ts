@@ -198,7 +198,7 @@ export function snapshotHabit(
  */
 export function restoreHabit(
   state: RoutineState,
-  snapshot: HabitSnapshot | null,
+  snapshot: HabitSnapshot | null | undefined,
 ): RoutineState {
   const next = applyRestoreHabit(state, snapshot);
   if (next === state) return state;

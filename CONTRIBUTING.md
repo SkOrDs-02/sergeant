@@ -1,359 +1,150 @@
 # Contributing to Sergeant
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-30.
+> **Status:** Active
 
-> **Ціль:** zero-to-running за ≤ 5 хвилин на будь-якій машині з Docker.
+`CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/playbooks/README.md](./docs/playbooks/README.md).
 
----
+## Перед стартом
 
-## Prerequisites
+1. Прочитай [AGENTS.md](./AGENTS.md), якщо торкаєшся коду, infra або docs governance.
+2. Знайди playbook для свого сценарію в [docs/playbooks/playbook-catalog.md](./docs/playbooks/playbook-catalog.md).
+3. Якщо зміна торкає API, migrations, HubChat, mobile, console agent або deploy surface, працюй за відповідним playbook від початку, а не після факту.
 
-| Tool        | Version    | Install                                                      |
-| ----------- | ---------- | ------------------------------------------------------------ |
-| **Node.js** | 20.x       | [nodejs.org](https://nodejs.org/) or `volta install node@20` |
-| **pnpm**    | 9.15.1     | `corepack enable && corepack prepare pnpm@9.15.1 --activate` |
-| **Docker**  | Any recent | [docker.com](https://docs.docker.com/get-docker/)            |
+## Setup
 
-Перевірте runtime перед інсталяцією:
+Вимоги:
 
-```bash
-node --version  # має бути v20.x
-pnpm --version  # має бути 9.15.1
-```
-
-Repo pins `"packageManager": "pnpm@9.15.1"` — Corepack автоматично підхоплює точну версію pnpm. CI також працює на Node 20; Node 22 може давати engine warning і відрізнятися від CI.
-
----
-
-## Before you start
-
-1. Прочитайте [`AGENTS.md`](AGENTS.md), якщо змінюєте код або правила проєкту. Там зібрані hard rules, module ownership map, performance budgets і anti-patterns з минулих багів.
-2. Визначте area/scope зміни: `web`, `server`, `mobile`, `api-client`, domain package, docs тощо.
-3. Якщо задача збігається з playbook trigger — спочатку відкрийте відповідний playbook і йдіть по checklist. Повний індекс із тригерами та 🌳-маркерами decision-tree формату — в [`docs/playbooks/README.md`](docs/playbooks/README.md) (single source of truth — щоб не дрейфувало). Часті entry-points: `add-api-endpoint`, `add-sql-migration`, `add-feature-flag`, `add-react-query-hook`, `add-hubchat-tool`, `add-new-page-route`, `bump-dep-safely`, `onboard-external-api`, `hotfix-prod-regression`, `rotate-secrets`, `investigate-alert`.
-
----
-
-## 5-Minute Quickstart
+- Node.js `20.x`
+- `pnpm 9.15.1`
+- Docker для локального Postgres
 
 ```bash
-# 1. Clone & install
 git clone https://github.com/Skords-01/Sergeant.git
 cd Sergeant
 pnpm install --frozen-lockfile
-
-# 2. Environment
 cp .env.example .env
-# Defaults work out of the box for local dev (Postgres creds, ports, CORS).
-# For AI features fill in ANTHROPIC_API_KEY; everything else is optional.
-# Local dev only — disables AI quota accounting so HubChat doesn't burn the
-# shared daily limit while you iterate:
-echo "AI_QUOTA_DISABLED=1" >> .env
-
-# 3. Database
-pnpm db:up                  # docker compose up -d (Postgres 16 on :5432)
-pnpm db:migrate             # run SQL migrations
-
-# 4. Dev servers (two terminals)
-pnpm dev:server             # Express API  → http://localhost:3000
-pnpm dev:web                # Vite dev     → http://localhost:5173  (proxies /api → :3000)
+pnpm dev:db
 ```
 
-Open <http://localhost:5173> — ви маєте побачити Hub dashboard.
-
-### Teardown
+Запуск локально:
 
 ```bash
-pnpm db:down                # stop & remove the Postgres container (data persists in volume)
+pnpm dev:server
+pnpm dev:web
 ```
 
----
+Опціонально:
 
-## Environment & secrets
+- `pnpm --filter @sergeant/mobile start`
+- `pnpm --filter @sergeant/console dev`
 
-- Скопіюйте `.env.example` у `.env`; реальний `.env` **ніколи не комітьте**.
-- `DATABASE_URL=postgresql://hub:hub@localhost:5432/hub` працює з локальним Docker Postgres.
-- `ANTHROPIC_API_KEY` потрібен тільки для AI features; без нього базовий local dev має запускатися.
-- `VITE_*` змінні потрапляють у frontend bundle. Не кладіть у `VITE_*` DB URLs, private API keys, session secrets або приватні tokens.
-- Frontend secrets живуть у Vercel тільки якщо вони справді публічні для browser bundle; backend secrets — у Railway.
-- Для VAPID, Resend, USDA, Sentry і production CORS дивіться коментарі в [`.env.example`](.env.example) та [`docs/integrations/railway-vercel.md`](docs/integrations/railway-vercel.md).
+## Щоденний цикл
 
----
+1. Визнач surface: `web`, `server`, `mobile`, `console`, `ops`, `docs`, `packages/*`.
+2. Відкрий playbook або specialist doc для цього surface.
+3. Зроби найменший узгоджений change-set.
+4. Прожени verification для свого типу зміни.
+5. Онови docs/governance/playbooks у тому ж PR, якщо поведінка або процес змінилися.
 
-## Everyday Commands
+## Verification за типом зміни
 
-| Command              | What it does                                                                         |
-| -------------------- | ------------------------------------------------------------------------------------ |
-| `pnpm lint`          | ESLint (all apps + packages) + import checker + plugin tests                         |
-| `pnpm typecheck`     | TypeScript type-check across the monorepo                                            |
-| `pnpm test`          | Vitest for all packages                                                              |
-| `pnpm test:coverage` | Vitest with per-package coverage floors                                              |
-| `pnpm format`        | Prettier — auto-fix                                                                  |
-| `pnpm format:check`  | Prettier — check only (CI uses this)                                                 |
-| `pnpm build`         | Turbo build (all apps)                                                               |
-| `pnpm check`         | `format:check` + `lint` + `typecheck` + `test` + `build` — the full CI suite locally |
-
-### Scoped commands
+Базовий мінімум:
 
 ```bash
-pnpm --filter @sergeant/web dev
-pnpm --filter @sergeant/server dev
-pnpm --filter <package> exec vitest run <path>
+pnpm lint
+pnpm typecheck
 ```
 
----
+Далі додатково за surface:
 
-## Working with HubChat locally
+- `web`: `pnpm test`, локальний smoke через browser, за потреби `pnpm --filter @sergeant/web test`
+- `server/api`: `pnpm test`, `pnpm api:check-openapi`
+- `migrations`: `pnpm db:migrate`, `pnpm lint:migrations`
+- `mobile`: `pnpm --filter @sergeant/mobile test`
+- `console`: `pnpm --filter @sergeant/console exec vitest run`
+- `governance/docs`: `pnpm docs:check-links`, `pnpm docs:check-playbook-schema`, `pnpm docs:check-playbook-index`, `pnpm lint:governance-sync --strict`
 
-HubChat tools визначаються на сервері в `apps/server/src/modules/chat/toolDefs/<domain>.ts` і виконуються на клієнті в `apps/web/src/core/lib/chatActions/<domain>Actions.ts` (див. `AGENTS.md` → _Architecture: AI tool execution path_). Сервер — тонкий pass-through до Anthropic, який повертає `tool_use` блоки; localStorage / API write-и робить клієнтський executor.
+Якщо сценарій має окремий playbook, секція `Verification` у playbook має пріоритет над загальним списком вище.
 
-### Тригерити tool call без браузера
+## Playbooks як execution layer
+
+Playbooks - це канонічні покрокові рецепти виконання роботи.
+
+- Каталог: [docs/playbooks/playbook-catalog.md](./docs/playbooks/playbook-catalog.md)
+- Trigger index: [docs/playbooks/INDEX.md](./docs/playbooks/INDEX.md)
+- Overview і taxonomy: [docs/playbooks/README.md](./docs/playbooks/README.md)
+
+Топові сценарії:
+
+- API зміни: `add-api-endpoint.md`
+- DB/schema зміни: `add-sql-migration.md`
+- HubChat tools: `add-hubchat-tool.md`
+- CI red: `fix-failing-ci.md`
+- Prod incident: `hotfix-prod-regression.md`
+- Alerts і деградація: `investigate-alert.md`
+- Web -> mobile porting: `port-web-screen-to-mobile.md`
+- Console agents: `modify-console-agent.md`
+- n8n workflows: `modify-n8n-workflow.md`
+
+## Commit і PR дисципліна
+
+- Conventional Commits обов'язкові.
+- Scope має описувати touched surface: `web`, `server`, `mobile`, `console`, `docs`, `agents`, `ops`, `shared`, `api-client`.
+- Не використовуй `--no-verify`.
+- Не force-push у `main`/`master`.
+
+Перед відкриттям PR:
+
+1. Заповни новий PR template повністю.
+2. Вкажи, який skill або playbook вів роботу.
+3. Переліч конкретні verification steps.
+4. Перевір, чи треба було оновити `AGENTS.md`, playbook, governance doc або roadmap.
+
+Reviewer checklist живе в [docs/governance/review-checklist.md](./docs/governance/review-checklist.md).
+
+### Hard rules (з `AGENTS.md`)
+
+1. **DB types: coerce `bigint` to `number` in serializers**
+2. **RQ keys: only via centralized factories**
+3. **API contract: server response shape ↔ `api-client` types ↔ test**
+4. **SQL migrations: sequential, no gaps, two-phase for DROP**
+5. **Conventional Commits: explicit scope enum**
+6. **No force push to main/master**
+7. **Pre-commit hooks via Husky — do not skip**
+8. **Tailwind colour-opacity steps must be on the registered scale**
+9. **Saturated brand fills behind `text-white` must use the `-strong` companion**
+10. **Lifecycle markers — every file/doc declares its status**
+11. **No arbitrary hex colors in `className`**
+12. **Module-accent containment — no foreign accents inside a module subtree**
+13. **No raw-palette light/dark `className` pairs**
+14. **Visible focus indicators must use `focus-visible:`, not `focus:`**
+15. **Read governance before coding; update docs alongside code; internal docs in Ukrainian**
+16. **Typography scale — semantic styles + 12px floor**
+17. **Animation budget — max 2 concurrent, 3 tiers**
+
+Джерела істини:
+
+- Human-readable contract: [AGENTS.md](./AGENTS.md)
+- Machine-readable registry: [docs/governance/hard-rules.json](./docs/governance/hard-rules.json)
+- Generated matrix: [docs/governance/hard-rules-matrix.md](./docs/governance/hard-rules-matrix.md)
+
+## Governance checks
+
+При зміні docs або process surfaces запускай:
 
 ```bash
-# Попередньо: відкрий http://localhost:5173, залогінся, скопіюй значення
-# better-auth.session_token з DevTools → Application → Cookies.
-
-curl -X POST http://localhost:3000/api/chat \
-  -H "Cookie: better-auth.session_token=<token>" \
-  -H "Content-Type: application/json" \
-  -d '{"messages":[{"role":"user","content":"залогуй 200мл води"}],"context":""}'
+pnpm docs:check-links
+pnpm docs:check-playbook-schema
+pnpm docs:check-playbook-index
+pnpm lint:governance-sync --strict
+pnpm lint:hard-rules-registry
+pnpm hard-rules:check
+pnpm lint:codeowners
 ```
 
-Якщо відповідь містить блоки `tool_use` але `localStorage` не змінився — це **норма**: сервер лише визначив tool call, виконання відбувається в `executeAction` на клієнті після рендеру відповіді в HubChat. Для перевірки повного циклу без UI треба вручну прогнати `tool_result` через другий `/api/chat` запит (див. continuation handler у `chat.ts`, `max_tokens: 2500`).
-
-### Пов'язані playbookи
-
-- [`docs/playbooks/add-hubchat-tool.md`](docs/playbooks/add-hubchat-tool.md) — як додати новий tool.
-- [`docs/playbooks/tune-system-prompt.md`](docs/playbooks/tune-system-prompt.md) — як міняти `SYSTEM_PREFIX` без поломки tool-calling.
-- [`docs/playbooks/debug-chat-tool.md`](docs/playbooks/debug-chat-tool.md) — секвенція перевірок коли «асистент каже що зробив, але нічого не сталось».
-
----
-
-## Testing by change type
-
-Run the smallest meaningful test set while developing, then use `pnpm check` before review when feasible.
-
-| Change type                | Minimum local verification                                                                                                                                                                                                                                                                                                                                         |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Docs-only                  | `pnpm format:check` or `pnpm exec prettier --check <file>`                                                                                                                                                                                                                                                                                                         |
-| Web UI (`apps/web`)        | Targeted Vitest/RTL test, `pnpm --filter @sergeant/web build`, screenshot in PR for visible UI changes                                                                                                                                                                                                                                                             |
-| Server/API (`apps/server`) | Targeted server Vitest, response shape snapshot if applicable, update `packages/api-client` types                                                                                                                                                                                                                                                                  |
-| DB migration               | Follow `add-sql-migration` playbook, run `pnpm db:up` + `pnpm --filter @sergeant/server db:migrate:dev`                                                                                                                                                                                                                                                            |
-| React Query hook           | Use centralized keys from `apps/web/src/shared/lib/queryKeys.ts`, test cache invalidation path                                                                                                                                                                                                                                                                     |
-| HubChat tool               | Update server tool definition, client executor, visible action card/quick action if user-facing. Targeted Vitest: `pnpm --filter @sergeant/web exec vitest run src/core/lib/chatActions` + `pnpm --filter @sergeant/server exec vitest run src/modules/chat`. Якщо додав tool у `toolDefs/` — онови список tools у `SYSTEM_PREFIX` (`systemPrompt.ts` рядки 7–14). |
-| Mobile (`apps/mobile`)     | Targeted mobile Vitest; be aware of known flaky tests listed below                                                                                                                                                                                                                                                                                                 |
-| Mobile shell               | Run relevant Capacitor/mobile-shell build command and watch Android/iOS workflow results                                                                                                                                                                                                                                                                           |
-| Dependency bump            | Separate PR, run lockfile install, tests for touched package, and watch `pnpm audit` / license check output                                                                                                                                                                                                                                                        |
-
-For UI changes, attach a screenshot or recording to the PR description when practical.
-
----
-
-## Pre-commit Hooks
-
-[Husky](https://typicode.github.io/husky/) + [lint-staged](https://github.com/lint-staged/lint-staged) run automatically on every commit:
-
-- **JS/TS files** → `eslint --fix --max-warnings=0` + `prettier --write`
-- **JSON/MD/CSS/HTML/YAML** → `prettier --write`
-
-Hooks are installed by `pnpm install` via the `prepare` script. **Do not skip them**: `--no-verify` is forbidden per `AGENTS.md` hard rule #7.
-
-### Commit message lint (commitlint)
-
-The `commit-msg` hook runs [commitlint](https://commitlint.js.org/) to enforce Conventional Commits with the exact scope enum from `AGENTS.md` rule #5. A commit with an unknown scope or missing scope is rejected **before** it lands in history.
-
-#### Verify locally
-
-```bash
-# Lint the last commit
-pnpm exec commitlint --last
-
-# Lint a range (useful before pushing a stack)
-pnpm exec commitlint --from HEAD~3 --to HEAD
-```
-
-#### CI
-
-The `commitlint` job in `.github/workflows/ci.yml` validates every commit in a PR against `origin/<base>`. If any commit fails, the job fails.
-
-#### Bypassing
-
-You cannot bypass commitlint — `--no-verify` is forbidden (`AGENTS.md` hard rule #7). If the scope enum needs a new entry, update both `AGENTS.md` and `commitlint.config.js` in the same PR.
-
----
-
-## Commit Messages
-
-We follow [Conventional Commits](https://www.conventionalcommits.org/):
-
-```text
-<type>(<scope>): <short description>
-
-feat(web): add weekly digest filter
-fix(server): coerce mono balance id to number
-docs(root): clarify local setup
-chore(config): tune shared eslint config
-```
-
-Allowed types: `feat`, `fix`, `docs`, `chore`, `refactor`, `perf`, `test`, `build`, `ci`.
-
-Use one of these scopes; do not invent scopes like `app`, `core`, `monorepo`, or `all`.
-
-| Scope              | When to use                                                    |
-| ------------------ | -------------------------------------------------------------- |
-| `web`              | `apps/web/**`                                                  |
-| `server`           | `apps/server/**` excluding migrations-only changes             |
-| `mobile`           | `apps/mobile/**`                                               |
-| `mobile-shell`     | `apps/mobile-shell/**`                                         |
-| `shared`           | `packages/shared/**`                                           |
-| `api-client`       | `packages/api-client/**`                                       |
-| `finyk-domain`     | `packages/finyk-domain/**`                                     |
-| `fizruk-domain`    | `packages/fizruk-domain/**`                                    |
-| `nutrition-domain` | `packages/nutrition-domain/**`                                 |
-| `routine-domain`   | `packages/routine-domain/**`                                   |
-| `insights`         | `packages/insights/**`                                         |
-| `design-tokens`    | `packages/design-tokens/**`                                    |
-| `config`           | `packages/config/**`                                           |
-| `eslint-plugins`   | `packages/eslint-plugin-sergeant-design/**`                    |
-| `migrations`       | `apps/server/src/migrations/**` only                           |
-| `deps`             | Renovate / dependency-only PRs                                 |
-| `docs`             | `docs/**`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`         |
-| `ci`               | `.github/workflows/**`, `turbo.json`, scripts under `scripts/` |
-| `root`             | Repo-level config (`pnpm-workspace.yaml`, root `package.json`) |
-
-If a PR genuinely spans multiple scopes, use the most user-visible scope and explain the rest in the PR body.
-
----
-
-## CI Pipeline
-
-Every push/PR triggers `.github/workflows/ci.yml`.
-
-| Job            | What                                                                                |
-| -------------- | ----------------------------------------------------------------------------------- |
-| **commitlint** | Conventional Commits + scope enum validation (PR only)                              |
-| **check**      | Install, audit, license policy check, `pnpm check`, bundle size guard               |
-| **coverage**   | `pnpm test:coverage`, coverage HTML/JSON artifacts                                  |
-| **a11y**       | Playwright Chromium install + axe-core accessibility checks                         |
-| **smoke-e2e**  | Real Postgres service, migrations, API server, Vite preview, Playwright smoke suite |
-
-### CI gotchas
-
-- `pnpm audit --audit-level=critical --prod` is blocking.
-- `pnpm audit --audit-level=high --prod` and full-tree `--audit-level=high` are **blocking**. If a PR carries the `audit-exception` label both steps are skipped (see [Audit exception workflow](#audit-exception-workflow) below).
-- `pnpm licenses:check` is blocking and requires `THIRD_PARTY_LICENSES.md` to match the lockfile.
-- `pnpm --filter @sergeant/web exec size-limit` is blocking.
-- `a11y` installs Playwright Chromium with system dependencies.
-- `smoke-e2e` runs migrations with `pnpm --filter @sergeant/server db:migrate:dev`.
-- Separate workflows exist for Detox Android/iOS and mobile-shell Android/iOS builds. Watch them when touching `apps/mobile` or `apps/mobile-shell`.
-
-### Performance budgets
-
-CI fails when bundle budgets regress:
-
-| Metric                       | Budget       |
-| ---------------------------- | ------------ |
-| `apps/web` JS total (brotli) | **≤ 615 kB** |
-| `apps/web` CSS (brotli)      | **≤ 18 kB**  |
-
-If a legitimate feature needs a higher limit, bump the number in the same PR and call it out in the description.
-
-### Known flaky mobile tests
-
-These two tests fail on `main` and **should not block merge** if your PR does not touch `apps/mobile`:
-
-- `apps/mobile/src/core/dashboard/WeeklyDigestFooter.test.tsx`
-- `apps/mobile/src/core/settings/HubSettingsPage.test.tsx`
-
-> `OnboardingWizard.test.tsx` was de-flaked in commit [`53853e00`](https://github.com/Skords-01/Sergeant/commit/53853e00) (PR-7.E 1/3) — replacing the never-resolving `AccessibilityInfo.isReduceMotionEnabled()` mock with `mockResolvedValue(false)` settled the unsettled microtask that interacted with React `act()` flushing under CI load.
-
-The canonical list lives in [`AGENTS.md` → _Pre-existing flaky tests_](AGENTS.md#pre-existing-flaky-tests-do-not-block-merge); update both files together when stabilising or adding entries.
-
-### Audit exception workflow
-
-When `pnpm audit --audit-level=high` fails in CI due to a vulnerability with no available fix:
-
-1. **Document** the vulnerability in [`docs/security/audit-exceptions.md`](docs/security/audit-exceptions.md) — include advisory link, affected package, severity, reason, mitigation, due date, and owner.
-2. **Add the `audit-exception` label** to the PR. This skips the two high-severity audit steps while keeping the critical-only audit blocking.
-3. **Remove the label** once the vulnerability is resolved and the entry is cleared from the exceptions file.
-
-> The `audit-exception` label is an escape hatch, not a blank cheque. Every exception must be tracked in `docs/security/audit-exceptions.md` with a due date so it does not drift indefinitely.
-
----
-
-## Pull Request Expectations
-
-1. **Branch naming:** `devin/<unix-ts>-<area>-<desc>` or `<your-name>/<short-desc>`.
-2. **Fill out the PR template** (`.github/PULL_REQUEST_TEMPLATE.md`) — especially _How to test_ and _How AI-tested this PR_ sections.
-3. **All checks green** before requesting review: relevant checks locally, CI on the PR.
-4. **Keep PRs focused** — one logical change per PR.
-5. **Don't mix dependency bumps** with feature work; use separate PRs.
-6. **Use Ukrainian for new/updated prose docs where practical.** Keep code identifiers, commands, API names, commit scopes, stack terms, and external quotes in their original language when clearer.
-
-### PR checklist before review
-
-- [ ] Branch name follows the convention.
-- [ ] PR template is filled: what changed, why, how to test.
-- [ ] Relevant local checks are listed in the PR.
-- [ ] UI changes include screenshot/recording when practical.
-- [ ] No secrets, `.env`, tokens, or private keys are committed.
-- [ ] Dependency bumps are not mixed with feature work.
-- [ ] API response shape changes update server, `packages/api-client`, and tests together.
-- [ ] DB changes follow sequential migration rules and avoid unsafe one-shot drops.
-- [ ] New permanent repo rules are added to `AGENTS.md`; otherwise mark “No” in the template.
-- [ ] No new `AI-DANGER` marker is added without justification.
-- [ ] Якщо додано HubChat tool — список tools у `SYSTEM_PREFIX` (`apps/server/src/modules/chat/toolDefs/systemPrompt.ts` рядки 7–14) оновлено.
-
-### Hard rules (from `AGENTS.md`)
-
-These are non-negotiable. Read `AGENTS.md` for full context.
-
-1. **Coerce `bigint` → `number`** in every server serializer (`pg` returns bigints as strings).
-2. **React Query keys** only via factories in `apps/web/src/shared/lib/queryKeys.ts` — never hardcoded arrays.
-3. **API contract changes** must update `packages/api-client` types AND add a test.
-4. **SQL migrations** are sequential `NNN_*.sql` in `apps/server/src/migrations/` — no gaps.
-5. **Conventional Commits** with the allowed type/scope set above.
-6. **No force-push to main.** `--force-with-lease` on feature branches is fine.
-7. **Never skip pre-commit hooks** (`--no-verify` is forbidden).
-
----
-
-## Project Structure (Quick Reference)
-
-```text
-Sergeant/
-├── apps/
-│   ├── web/            # Vite + React 18 SPA (frontend)
-│   ├── server/         # Express + PostgreSQL + Better Auth (API)
-│   ├── mobile/         # Expo 52 + React Native 0.76
-│   └── mobile-shell/   # Capacitor wrapper for web app
-├── packages/
-│   ├── shared/         # @sergeant/shared
-│   ├── api-client/     # @sergeant/api-client
-│   ├── config/         # @sergeant/config
-│   ├── design-tokens/  # @sergeant/design-tokens
-│   ├── insights/       # @sergeant/insights
-│   └── ...domain/      # finyk-domain, fizruk-domain, nutrition-domain, routine-domain
-├── docs/               # Roadmaps, architecture docs, playbooks
-├── AGENTS.md           # AI-agent rules & repo conventions
-├── docker-compose.yml  # Local Postgres
-└── .env.example        # All env vars with descriptions
-```
-
----
-
-## Deployment
-
-| Target       | Platform | Notes                                                                   |
-| ------------ | -------- | ----------------------------------------------------------------------- |
-| **Frontend** | Vercel   | Preview deploy on every PR; free tier may rate-limit.                   |
-| **Backend**  | Railway  | `Dockerfile.api`. Pre-deploy runs `pnpm db:migrate`. Health: `/health`. |
-
-See [`docs/integrations/railway-vercel.md`](docs/integrations/railway-vercel.md) for step-by-step deployment instructions.
-
----
-
-## Need Help?
-
-- Check existing docs in [`docs/`](docs/) and playbooks in [`docs/playbooks/`](docs/playbooks/).
-- Read [`AGENTS.md`](AGENTS.md) for the full set of repo conventions and AI-marker syntax.
-- Open an issue or ask in a PR comment.
+## Де шукати далі
+
+- Повний doc index: [docs/README.md](./docs/README.md)
+- Agent operating system: [docs/superpowers/README.md](./docs/superpowers/README.md)
+- Planning/roadmaps: [docs/planning/README.md](./docs/planning/README.md)

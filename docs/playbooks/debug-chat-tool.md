@@ -1,5 +1,8 @@
 # Playbook: Debug HubChat Tool
 
+> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-06-26.
+> **Status:** Active
+
 **Trigger:** «Асистент каже що зробив, але нічого не сталось» / «Натиснув кнопку quick action — нема ефекту» / tool call повернувся текстом замість дії / `Невідома дія: …` у відповіді.
 
 ---

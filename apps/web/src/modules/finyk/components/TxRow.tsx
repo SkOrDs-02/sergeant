@@ -1,4 +1,5 @@
 import { memo, useCallback, useMemo, useState } from "react";
+import { formatMoney } from "@sergeant/shared";
 import { getCategory, getIncomeCategory, fmtAmt, fmtDate } from "../utils";
 import {
   MCC_CATEGORIES,
@@ -184,36 +185,36 @@ function TxRowImpl({
         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
           <span className="text-xs text-subtle">{catName}</span>
           {cat.id === INTERNAL_TRANSFER_ID && (
-            <span className="text-3xs bg-muted/15 text-muted px-1.5 py-0.5 rounded-full font-semibold">
+            <span className="text-2xs bg-muted/15 text-muted px-1.5 py-0.5 rounded-full font-semibold">
               не в статистиці
             </span>
           )}
           {overrideCatId && cat.id !== INTERNAL_TRANSFER_ID && (
-            <span className="text-3xs bg-text/8 text-muted px-1.5 py-0.5 rounded-full font-semibold">
+            <span className="text-2xs bg-text/8 text-muted px-1.5 py-0.5 rounded-full font-semibold">
               змін.
             </span>
           )}
           {existingSplits.length > 0 && (
-            <span className="text-3xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold">
+            <span className="text-2xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold">
               ⅔ спліт
             </span>
           )}
           {isCreditCard && (
-            <span className="text-3xs bg-danger/8 text-danger px-1.5 py-0.5 rounded-full font-semibold">
+            <span className="text-2xs bg-danger/8 text-danger px-1.5 py-0.5 rounded-full font-semibold">
               💳 {accountName}
             </span>
           )}
           {!isCreditCard && account && (
-            <span className="text-3xs bg-panelHi text-muted border border-line px-1.5 py-0.5 rounded-full font-medium">
+            <span className="text-2xs bg-panelHi text-muted border border-line px-1.5 py-0.5 rounded-full font-medium">
               {accountName}
             </span>
           )}
           {tx._source === "privatbank" && (
-            <span className="text-3xs bg-green-500/10 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded-full font-semibold shrink-0">
+            <span className="text-2xs bg-success/10 text-success-strong dark:text-success px-1.5 py-0.5 rounded-full font-semibold shrink-0">
               П24
             </span>
           )}
-          <span className="text-xs text-subtle">· {fmtDate(tx.time)}</span>
+          <span className="text-xs text-subtle">· {fmtDate(tx.time ?? 0)}</span>
         </div>
       </div>
     </>
@@ -360,9 +361,7 @@ function TxRowImpl({
       {splitEditor && onSplitChange && (
         <div className="pb-3 px-2 space-y-2">
           <div className="text-xs text-subtle font-medium">
-            Розподіл ·{" "}
-            {totalAmt.toLocaleString("uk-UA", { minimumFractionDigits: 2 })} ₴
-            всього
+            Розподіл · {formatMoney(totalAmt, { minFractionDigits: 2 })} всього
           </div>
           {draftSplits.map((sp, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -418,7 +417,7 @@ function TxRowImpl({
           >
             {Math.abs(remaining) < 0.01
               ? "✓ Суми збігаються"
-              : `Залишок: ${remaining.toLocaleString("uk-UA", { minimumFractionDigits: 2 })} ₴`}
+              : `Залишок: ${formatMoney(remaining, { minFractionDigits: 2 })}`}
           </div>
           <button
             onClick={() =>
@@ -437,6 +436,7 @@ function TxRowImpl({
           <div className="flex gap-2 pt-1">
             <Button
               variant="primary"
+              module="finyk"
               size="xs"
               onClick={saveSplits}
               disabled={Math.abs(remaining) >= 0.01}

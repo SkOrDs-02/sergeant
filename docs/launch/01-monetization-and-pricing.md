@@ -1,5 +1,8 @@
 # 01. Монетизація і ціноутворення
 
+> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Status:** Active
+
 > Pre-MVP draft. Числа орієнтовні, тіри/ціни — для брейнштормінгу і A/B-тесту.
 > Джерело: `sergeant-monetization-plan.md` (ч.1), `sergeant-launch-checklist.md` (§3–§5).
 

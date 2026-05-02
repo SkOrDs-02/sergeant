@@ -57,7 +57,11 @@ let skipReason: string | null = null;
 
 beforeAll(async () => {
   try {
-    container = await new GenericContainer("postgres:16-alpine")
+    // Use the pgvector image — migration 025_ai_memories_pgvector.sql
+    // requires the `vector` extension which `postgres:16-alpine` does not
+    // ship. Without this the forward-migration phase fails before the
+    // rollback assertions can run.
+    container = await new GenericContainer("pgvector/pgvector:pg16")
       .withEnvironment({
         POSTGRES_USER: "hub",
         POSTGRES_PASSWORD: "hub",

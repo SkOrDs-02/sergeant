@@ -49,4 +49,9 @@ describe("Icon coverage for Assistant Catalogue", () => {
     const missing = CATALOGUE_HARDCODED_ICONS.filter((n) => !known.has(n));
     expect(missing).toEqual([]);
   });
+
+  it("registers an SVG path for onboarding UI hard-coded icons", () => {
+    const missing = ["list-checks"].filter((n) => !known.has(n));
+    expect(missing).toEqual([]);
+  });
 });

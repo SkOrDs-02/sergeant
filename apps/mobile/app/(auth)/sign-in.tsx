@@ -3,13 +3,15 @@ import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
-  StyleSheet,
+  Pressable,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Eye, EyeOff, Sparkles } from "lucide-react-native";
+
 import { signIn } from "@/auth/authClient";
-import { colors, spacing } from "@/theme";
+import { colors } from "@/theme";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
@@ -39,13 +41,16 @@ export default function SignInScreen() {
   }
 
   return (
-    <SafeAreaView style={s.container} edges={["bottom"]}>
+    <SafeAreaView className="flex-1 bg-bg" edges={["bottom"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={s.form}
+        className="flex-1 px-6 justify-center gap-4"
       >
-        <Text style={s.title}>З поверненням 👋</Text>
-        <Text style={s.subtitle}>Раді бачити тебе знову</Text>
+        <View className="flex-row items-center gap-2 mb-2">
+          <Sparkles size={28} color={colors.accent} strokeWidth={2} />
+          <Text className="text-text text-3xl font-bold">З поверненням</Text>
+        </View>
+        <Text className="text-muted text-sm mb-4">Раді бачити тебе знову</Text>
 
         <Input
           type="email"
@@ -56,10 +61,12 @@ export default function SignInScreen() {
         />
 
         <View>
-          <View style={s.passHeader}>
-            <Text style={s.label}>Пароль</Text>
+          <View className="flex-row justify-between items-center mb-1.5">
+            <Text className="text-muted text-xs">Пароль</Text>
             <Link href="/(auth)/forgot-password">
-              <Text style={s.forgotLink}>Забув пароль?</Text>
+              <Text className="text-accent text-xs font-medium">
+                Забув пароль?
+              </Text>
             </Link>
           </View>
           <Input
@@ -70,14 +77,24 @@ export default function SignInScreen() {
             secureTextEntry={!showPass}
             size="lg"
             suffix={
-              <Text onPress={() => setShowPass((v) => !v)} style={s.eyeBtn}>
-                {showPass ? "🙈" : "👁️"}
-              </Text>
+              <Pressable
+                onPress={() => setShowPass((v) => !v)}
+                className="px-1 active:opacity-70"
+                accessibilityLabel={
+                  showPass ? "Сховати пароль" : "Показати пароль"
+                }
+              >
+                {showPass ? (
+                  <EyeOff size={20} color={colors.textMuted} strokeWidth={2} />
+                ) : (
+                  <Eye size={20} color={colors.textMuted} strokeWidth={2} />
+                )}
+              </Pressable>
             }
           />
         </View>
 
-        {error ? <Text style={s.error}>{error}</Text> : null}
+        {error ? <Text className="text-danger text-xs">{error}</Text> : null}
 
         <Button
           variant="primary"
@@ -89,45 +106,13 @@ export default function SignInScreen() {
           Увійти
         </Button>
 
-        <View style={s.footer}>
-          <Text style={s.footerText}>Ще не маєш акаунта?</Text>
-          <Link href="/(auth)/sign-up" style={s.footerLink}>
-            <Text style={s.footerLinkText}>Створити</Text>
+        <View className="flex-row justify-center items-center mt-4 gap-1">
+          <Text className="text-muted text-sm">Ще не маєш акаунта?</Text>
+          <Link href="/(auth)/sign-up" className="px-1">
+            <Text className="text-accent text-sm font-medium">Створити</Text>
           </Link>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  form: {
-    flex: 1,
-    padding: spacing.xl,
-    justifyContent: "center",
-    gap: spacing.md,
-  },
-  title: { color: colors.text, fontSize: 28, fontWeight: "700" },
-  subtitle: { color: colors.textMuted, fontSize: 14, marginBottom: spacing.lg },
-  passHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  label: { color: colors.textMuted, fontSize: 13 },
-  forgotLink: { color: colors.accent, fontSize: 13, fontWeight: "500" },
-  eyeBtn: { fontSize: 18, paddingHorizontal: 4 },
-  error: { color: colors.danger, fontSize: 13 },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: spacing.lg,
-    gap: spacing.xs,
-  },
-  footerText: { color: colors.textMuted, fontSize: 14 },
-  footerLink: { paddingHorizontal: spacing.xs },
-  footerLinkText: { color: colors.accent, fontSize: 14, fontWeight: "500" },
-});

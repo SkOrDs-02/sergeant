@@ -25,6 +25,7 @@ vi.mock("../../lib/anthropic.js", () => ({
 
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
 import handler from "./chat.js";
+import { ExternalServiceError } from "../../obs/errors.js";
 
 const anthropicMessages = _anthropicMessages as unknown as Mock;
 
@@ -365,7 +366,7 @@ describe("chat handler — tool_use parsing", () => {
     expect(anthropicMessages).not.toHaveBeenCalled();
   });
 
-  it("поширює помилку коли Anthropic повертає !ok", async () => {
+  it("кидає ExternalServiceError коли Anthropic повертає !ok (єдиний контракт через errorHandler)", async () => {
     anthropicMessages.mockResolvedValueOnce({
       response: { ok: false, status: 429 },
       data: { error: { message: "rate limit" } },
@@ -374,9 +375,55 @@ describe("chat handler — tool_use parsing", () => {
       messages: [{ role: "user", content: "hello" }],
     });
     const res = makeRes();
-    await handler(req, res);
-    expect(res.statusCode).toBe(429);
-    expect(res.body).toEqual({ error: "rate limit" });
+    // Замість прямого `res.status().json()` тепер кидаємо `ExternalServiceError`.
+    // `asyncHandler` ловить через `Promise.resolve(...).catch(next)` і
+    // термінальний `errorHandler` віддає клієнту 4xx/5xx + `code: EXTERNAL_SERVICE`,
+    // інкрементує `app_errors_total` і (для 5xx без operational-маркера) пише в Sentry.
+    let caught: unknown = null;
+    try {
+      await handler(req, res);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(ExternalServiceError);
+    expect(caught).toMatchObject({
+      name: "ExternalServiceError",
+      status: 429,
+      message: "rate limit",
+      code: "EXTERNAL_SERVICE",
+    });
+  });
+
+  it("tool-result не-стрім !ok → кидає ExternalServiceError (502 fallback без upstream-статусу)", async () => {
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: false, status: 0 }, // upstream без status (network glitch)
+      data: null,
+    });
+    const req = makeReq({
+      messages: [{ role: "user", content: "hi" }],
+      tool_calls_raw: [
+        {
+          type: "tool_use",
+          id: "toolu_01ABC",
+          name: "delete_transaction",
+          input: { tx_id: "m_abc123" },
+        },
+      ],
+      tool_results: [{ tool_use_id: "toolu_01ABC", content: "ok" }],
+    });
+    const res = makeRes();
+    let caught: unknown = null;
+    try {
+      await handler(req, res);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(ExternalServiceError);
+    expect(caught).toMatchObject({
+      status: 502,
+      code: "EXTERNAL_SERVICE",
+      message: "AI error",
+    });
   });
 });
 

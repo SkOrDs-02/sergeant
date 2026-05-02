@@ -1,5 +1,9 @@
 import { apiUrl } from "@shared/lib/apiUrl";
-import { isCapacitor } from "@sergeant/shared";
+import {
+  isCapacitor,
+  type WebVitalsMetricName,
+  type WebVitalsMetricRating,
+} from "@sergeant/shared";
 
 /**
  * Збір Core Web Vitals (LCP / INP / CLS / FCP / TTFB) і відправка батчем
@@ -22,7 +26,16 @@ import { isCapacitor } from "@sergeant/shared";
 const ENDPOINT_PATH = "/api/metrics/web-vitals";
 export const MAX_BATCH = 10;
 
-const buffer = [];
+// Shape локальних буферних записів похідна від SSOT-схеми
+// `WebVitalsPayloadSchema` у `@sergeant/shared`. Якщо додати нову метрику
+// у шарі schemas, TS одразу підсвітить необхідні зміни тут.
+interface WebVitalReport {
+  name: WebVitalsMetricName;
+  value: number;
+  rating: WebVitalsMetricRating;
+}
+
+const buffer: WebVitalReport[] = [];
 let flushScheduled = false;
 let wiredLifecycle = false;
 let initialized = false;
@@ -101,13 +114,48 @@ export function __resetForTests() {
   initialized = false;
 }
 
-export function enqueue(metric) {
+interface MetricInput {
+  name: string;
+  value: number;
+  rating?: string;
+}
+
+const SUPPORTED_METRIC_NAMES = new Set<WebVitalsMetricName>([
+  "LCP",
+  "INP",
+  "FCP",
+  "TTFB",
+  "CLS",
+]);
+
+const SUPPORTED_RATINGS = new Set<WebVitalsMetricRating>([
+  "good",
+  "needs-improvement",
+  "poor",
+]);
+
+function isSupportedName(value: string): value is WebVitalsMetricName {
+  return SUPPORTED_METRIC_NAMES.has(value as WebVitalsMetricName);
+}
+
+function isSupportedRating(value: string): value is WebVitalsMetricRating {
+  return SUPPORTED_RATINGS.has(value as WebVitalsMetricRating);
+}
+
+export function enqueue(metric: MetricInput | null | undefined) {
   if (
     !metric ||
     typeof metric.value !== "number" ||
     !Number.isFinite(metric.value) ||
-    metric.value < 0
+    metric.value < 0 ||
+    !isSupportedName(metric.name) ||
+    !metric.rating ||
+    !isSupportedRating(metric.rating)
   ) {
+    // SSOT `WebVitalsPayloadSchema` робить `rating` обов'язковим. Якщо
+    // буферити запис без рейтингу, server safeParse відкине ВЕСЬ батч —
+    // і кілька валідних метрик мовчки втрачаються разом з невалідним.
+    // Тому метрики без розпізнаного рейтингу drop'аємо тут, до буфера.
     return;
   }
   buffer.push({

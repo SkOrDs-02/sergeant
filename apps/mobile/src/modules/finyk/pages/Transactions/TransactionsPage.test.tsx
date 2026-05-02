@@ -83,7 +83,16 @@ jest.mock("@/components/ui/SwipeToAction", () => {
   };
 });
 
+import { ToastProvider } from "@/components/ui/Toast";
+
 import { TransactionsPage } from "./TransactionsPage";
+
+// Toast provider — компонент очікує `useToast` з Toast.tsx; тести
+// через RTL рендерять сторінку в ізоляції, тому загортаємо в ToastProvider.
+import type { ReactElement } from "react";
+
+const renderTransactionsPage = (ui: ReactElement) =>
+  render(<ToastProvider>{ui}</ToastProvider>);
 
 const FIXED_NOW = new Date("2026-04-21T12:00:00.000Z");
 
@@ -133,7 +142,7 @@ beforeEach(() => {
 
 describe("TransactionsPage — render", () => {
   it("renders the empty state with a primary CTA when there are no transactions", () => {
-    render(<TransactionsPage now={FIXED_NOW} />);
+    renderTransactionsPage(<TransactionsPage now={FIXED_NOW} />);
     expect(screen.getByTestId("finyk-transactions-empty")).toBeTruthy();
     const cta = screen.getByTestId("finyk-transactions-empty-add");
     expect(cta).toBeTruthy();
@@ -142,7 +151,7 @@ describe("TransactionsPage — render", () => {
   });
 
   it("renders seeded manual expenses grouped by day with running totals", () => {
-    render(
+    renderTransactionsPage(
       <TransactionsPage
         now={FIXED_NOW}
         seed={{
@@ -180,7 +189,7 @@ describe("TransactionsPage — render", () => {
   });
 
   it("computes per-day running totals correctly across multiple groups", () => {
-    render(
+    renderTransactionsPage(
       <TransactionsPage
         now={FIXED_NOW}
         seed={{
@@ -236,7 +245,7 @@ describe("TransactionsPage — render", () => {
   });
 
   it("disables the next-month button when viewing the current month", () => {
-    render(<TransactionsPage now={FIXED_NOW} />);
+    renderTransactionsPage(<TransactionsPage now={FIXED_NOW} />);
     const nextBtn = screen.getByTestId("finyk-transactions-next-month");
     expect(nextBtn.props.accessibilityState?.disabled).toBe(true);
   });
@@ -244,7 +253,7 @@ describe("TransactionsPage — render", () => {
 
 describe("TransactionsPage — filters", () => {
   it("filters to expenses only when the 'Витрати' chip is tapped", () => {
-    render(
+    renderTransactionsPage(
       <TransactionsPage
         now={FIXED_NOW}
         seed={{
@@ -281,7 +290,9 @@ describe("TransactionsPage — filters", () => {
   });
 
   it("persists the active filter to MMKV and exposes a clear-all action", async () => {
-    const { unmount } = render(<TransactionsPage now={FIXED_NOW} />);
+    const { unmount } = renderTransactionsPage(
+      <TransactionsPage now={FIXED_NOW} />,
+    );
     fireEvent.press(screen.getByTestId("finyk-transactions-filter-income"));
 
     await waitFor(() => {
@@ -301,7 +312,7 @@ describe("TransactionsPage — filters", () => {
   });
 
   it("filters by a date range when the user picks a window", async () => {
-    render(
+    renderTransactionsPage(
       <TransactionsPage
         now={FIXED_NOW}
         seed={{
@@ -358,7 +369,7 @@ describe("TransactionsPage — filters", () => {
       description: "Метро",
       mcc: 4111, // transport
     });
-    render(
+    renderTransactionsPage(
       <TransactionsPage
         now={FIXED_NOW}
         seed={{ realTx: [foodTx, transportTx] }}
@@ -384,7 +395,7 @@ describe("TransactionsPage — filters", () => {
       accountIds: [],
       range: { startMs: null, endMs: null },
     });
-    render(
+    renderTransactionsPage(
       <TransactionsPage
         now={FIXED_NOW}
         seed={{
@@ -410,7 +421,7 @@ describe("TransactionsPage — filters", () => {
 
 describe("TransactionsPage — swipe actions", () => {
   it("opens a categorize picker when a row is swiped right", async () => {
-    render(
+    renderTransactionsPage(
       <TransactionsPage
         now={FIXED_NOW}
         seed={{
@@ -434,7 +445,7 @@ describe("TransactionsPage — swipe actions", () => {
   });
 
   it("re-reads MMKV-backed manual expenses on pull-to-refresh", async () => {
-    render(
+    renderTransactionsPage(
       <TransactionsPage
         now={FIXED_NOW}
         seed={{
@@ -493,7 +504,7 @@ describe("TransactionsPage — swipe actions", () => {
       txs: [realTx],
       timestamp: Date.now(),
     });
-    render(<TransactionsPage now={FIXED_NOW} />);
+    renderTransactionsPage(<TransactionsPage now={FIXED_NOW} />);
     expect(screen.getByText("Сільпо")).toBeTruthy();
   });
 
@@ -509,12 +520,12 @@ describe("TransactionsPage — swipe actions", () => {
       txs: [realTx],
       timestamp: Date.now(),
     });
-    render(<TransactionsPage now={FIXED_NOW} />);
+    renderTransactionsPage(<TransactionsPage now={FIXED_NOW} />);
     expect(screen.getByText("Аврора")).toBeTruthy();
   });
 
   it("removes a manual expense when the user taps Delete in the edit sheet", async () => {
-    render(
+    renderTransactionsPage(
       <TransactionsPage
         now={FIXED_NOW}
         seed={{
@@ -548,7 +559,9 @@ describe("TransactionsPage — swipe actions", () => {
       description: "ATB",
       mcc: 5411,
     });
-    render(<TransactionsPage now={FIXED_NOW} seed={{ realTx: [realTx] }} />);
+    renderTransactionsPage(
+      <TransactionsPage now={FIXED_NOW} seed={{ realTx: [realTx] }} />,
+    );
     expect(screen.getByText("ATB")).toBeTruthy();
 
     const swipeLeft = screen.getAllByTestId(/swipe-left-/i)[0]!;
@@ -566,7 +579,7 @@ describe("TransactionsPage — swipe actions", () => {
   });
 
   it("opens the prefilled edit sheet when a manual row is swiped left", async () => {
-    render(
+    renderTransactionsPage(
       <TransactionsPage
         now={FIXED_NOW}
         seed={{
@@ -617,7 +630,9 @@ describe("TransactionsPage — day collapse", () => {
     // Reset the month-wide expansion from the global beforeEach so we
     // can assert the real first-run default.
     _getMMKVInstance().clearAll();
-    render(<TransactionsPage now={FIXED_NOW} seed={COLLAPSE_SEED} />);
+    renderTransactionsPage(
+      <TransactionsPage now={FIXED_NOW} seed={COLLAPSE_SEED} />,
+    );
 
     // Both day headers render regardless of collapse state.
     expect(screen.getByTestId("finyk-tx-day-h-2026-04-21")).toBeTruthy();
@@ -631,7 +646,9 @@ describe("TransactionsPage — day collapse", () => {
 
   it("toggles a day expanded when the header is pressed, and persists the choice to MMKV", () => {
     _getMMKVInstance().clearAll();
-    render(<TransactionsPage now={FIXED_NOW} seed={COLLAPSE_SEED} />);
+    renderTransactionsPage(
+      <TransactionsPage now={FIXED_NOW} seed={COLLAPSE_SEED} />,
+    );
 
     // Precondition: yesterday starts collapsed.
     expect(screen.queryByText("вчора-tx")).toBeNull();
@@ -651,7 +668,9 @@ describe("TransactionsPage — day collapse", () => {
 
   it("collapses today when the user explicitly toggles its header", () => {
     _getMMKVInstance().clearAll();
-    render(<TransactionsPage now={FIXED_NOW} seed={COLLAPSE_SEED} />);
+    renderTransactionsPage(
+      <TransactionsPage now={FIXED_NOW} seed={COLLAPSE_SEED} />,
+    );
 
     // Precondition: today starts expanded.
     expect(screen.getByText("сьогодні-tx")).toBeTruthy();
@@ -668,7 +687,9 @@ describe("TransactionsPage — day collapse", () => {
 
   it("temporarily ignores the collapsed state when the user types a search query", () => {
     _getMMKVInstance().clearAll();
-    render(<TransactionsPage now={FIXED_NOW} seed={COLLAPSE_SEED} />);
+    renderTransactionsPage(
+      <TransactionsPage now={FIXED_NOW} seed={COLLAPSE_SEED} />,
+    );
 
     // Precondition: yesterday is hidden (default-collapsed).
     expect(screen.queryByText("вчора-tx")).toBeNull();
@@ -690,7 +711,9 @@ describe("TransactionsPage — day collapse", () => {
       "2026-04-20": true,
     });
 
-    render(<TransactionsPage now={FIXED_NOW} seed={COLLAPSE_SEED} />);
+    renderTransactionsPage(
+      <TransactionsPage now={FIXED_NOW} seed={COLLAPSE_SEED} />,
+    );
 
     expect(screen.getByText("вчора-tx")).toBeTruthy();
     expect(screen.getByText("сьогодні-tx")).toBeTruthy();

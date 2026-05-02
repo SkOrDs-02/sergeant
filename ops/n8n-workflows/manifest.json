@@ -1,0 +1,216 @@
+{
+  "$schema": "./manifest.schema.json",
+  "sourceOfTruth": "git",
+  "workflows": {
+    "01-billing-pipeline.json": {
+      "owner": "ops",
+      "status": "prod-ready",
+      "riskTier": "P0",
+      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
+      "requiredCredentials": [
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)"
+      ],
+      "notes": "Stripe subscription webhook → update DB to Pro → Telegram notification."
+    },
+    "02-failed-payment-recovery.json": {
+      "owner": "ops",
+      "status": "prod-ready",
+      "riskTier": "P0",
+      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
+      "requiredCredentials": [
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)",
+        "Resend (Bearer)"
+      ],
+      "notes": "Stripe failed-payment webhook → Telegram + Resend email → 24h wait → downgrade if >=4 attempts."
+    },
+    "03-sentry-alert-routing.json": {
+      "owner": "ops",
+      "status": "prod-ready",
+      "riskTier": "P1",
+      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
+      "notes": "Sentry webhook → severity filter → fatal/warning → Telegram."
+    },
+    "04-daily-backup-verification.json": {
+      "owner": "ops",
+      "status": "prod-ready",
+      "riskTier": "P1",
+      "requiredEnv": [
+        "RAILWAY_TOKEN",
+        "RAILWAY_PROJECT_ID",
+        "TELEGRAM_ALERT_CHAT_ID"
+      ],
+      "requiredCredentials": [
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)"
+      ],
+      "notes": "Cron 03:00 UTC → Railway API latest deployments → Sanity SQL check → Telegram OK/CRITICAL."
+    },
+    "05-renovate-pr-auto-handler.json": {
+      "owner": "devex",
+      "status": "prod-ready",
+      "riskTier": "P1",
+      "requiredEnv": ["GITHUB_TOKEN", "TELEGRAM_ALERT_CHAT_ID"],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
+      "notes": "GitHub webhook → Renovate PR → auto-approve patch / Telegram review needed."
+    },
+    "06-mono-webhook-enrichment.json": {
+      "owner": "finyk",
+      "status": "prod-ready",
+      "riskTier": "P1",
+      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
+      "requiredCredentials": [
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)",
+        "Anthropic (x-api-key)"
+      ],
+      "notes": "Mono webhook → Claude AI categorize → monthly budget check → Telegram alert if over ₴15K."
+    },
+    "07-morning-briefing-push.json": {
+      "owner": "product",
+      "status": "experimental",
+      "riskTier": "P2",
+      "requiredEnv": ["PUBLIC_API_BASE_URL", "API_SECRET"],
+      "requiredCredentials": ["Sergeant Postgres (sergeant-db)"],
+      "notes": "User push workflow; requires product approval before activation."
+    },
+    "08-weekly-financial-digest.json": {
+      "owner": "finyk",
+      "status": "experimental",
+      "riskTier": "P2",
+      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
+      "requiredCredentials": [
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)",
+        "Anthropic (x-api-key)"
+      ],
+      "notes": "Weekly AI digest; token usage must be monitored before production activation."
+    },
+    "09-habit-streak-alert.json": {
+      "owner": "product",
+      "status": "experimental",
+      "riskTier": "P2",
+      "requiredEnv": ["PUBLIC_API_BASE_URL", "API_SECRET"],
+      "requiredCredentials": ["Sergeant Postgres (sergeant-db)"],
+      "notes": "User engagement push workflow; keep inactive until notification policy is approved."
+    },
+    "10-debt-receivable-reminder.json": {
+      "owner": "finyk",
+      "status": "experimental",
+      "riskTier": "P2",
+      "requiredEnv": [
+        "PUBLIC_API_BASE_URL",
+        "API_SECRET",
+        "TELEGRAM_ALERT_CHAT_ID"
+      ],
+      "requiredCredentials": [
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)"
+      ],
+      "notes": "Debt reminders; keep inactive until debt schema and push copy are verified."
+    },
+    "15-railway-deployment-notify.json": {
+      "owner": "ops",
+      "status": "prod-ready",
+      "riskTier": "P2",
+      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
+      "notes": "Railway webhook notifications. Active; webhook path /webhook/railway-deploy. Railway-side wiring is per-project: Project Settings → Webhooks → Add URL https://n8n-production-09ac.up.railway.app/webhook/railway-deploy → Save → Test Webhook. Required on humorous-eagerness (sergeant-api) and grateful-nurturing (n8n). See docs/integrations/railway-vercel.md §8 for full procedure incl. event-type reference and cleanup of stale rules."
+    },
+    "16-posthog-daily-metrics.json": {
+      "owner": "growth",
+      "status": "experimental",
+      "riskTier": "P2",
+      "requiredEnv": [
+        "POSTHOG_PROJECT_ID",
+        "POSTHOG_API_KEY",
+        "POSTHOG_HOST",
+        "TELEGRAM_ALERT_CHAT_ID"
+      ],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
+      "notes": "Daily 09:00 Kyiv → PostHog HogQL (count pageviews + uniq distinct_id) for yesterday → Telegram. POSTHOG_HOST defaults to https://eu.i.posthog.com when unset; POSTHOG_API_KEY must be a Personal API key (phx_…) with project read access. Until env vars are set on n8n Railway the workflow sends a graceful Telegram alert pointing at the missing config."
+    },
+    "17-github-pr-stale-alert.json": {
+      "owner": "devex",
+      "status": "prod-ready",
+      "riskTier": "P2",
+      "requiredEnv": ["GITHUB_PAT", "TELEGRAM_ALERT_CHAT_ID"],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
+      "notes": "PR hygiene reminder. Active; cron fires Mon–Fri 10:00 Kyiv against skords-01/sergeant open PRs > 48h."
+    },
+    "18-nightly-security-audit.json": {
+      "owner": "security",
+      "status": "prod-ready",
+      "riskTier": "P1",
+      "requiredEnv": ["GITHUB_PAT", "TELEGRAM_ALERT_CHAT_ID"],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
+      "notes": "Nightly security audit status report. Active; cron fires daily 04:00 UTC against the .github/workflows/nightly-audit.yml run history; alerts only if latest conclusion is failure/cancelled."
+    },
+    "19-db-health-report.json": {
+      "owner": "ops",
+      "status": "prod-ready",
+      "riskTier": "P1",
+      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID"],
+      "requiredCredentials": [
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)"
+      ],
+      "notes": "DB health report. Active; cron fires Mon 07:00 Kyiv. Sequential chain (DB size → Top tables → Slow queries → Format → Telegram) with executeOnce=true on chained postgres+code nodes. pg_stat_statements may be absent and is tolerated via continueOnFail."
+    },
+    "60-growth-funnel-snapshot.json": {
+      "owner": "growth",
+      "status": "experimental",
+      "riskTier": "P2",
+      "requiredEnv": [
+        "POSTHOG_PROJECT_ID",
+        "POSTHOG_API_KEY",
+        "POSTHOG_HOST",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY",
+        "TELEGRAM_ALERT_CHAT_ID"
+      ],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
+      "notes": "Daily 02:30 Kyiv → PostHog HogQL count distinct users per funnel step (visit/signup/onboard/first_action/paid) for yesterday → POST /api/internal/growth/funnel (mig 019, growth_funnel_daily) → Telegram summary. POSTHOG_HOST defaults to https://eu.i.posthog.com; POSTHOG_API_KEY must be a Personal API key (phx_…). PUBLIC_API_BASE_URL defaults to https://api.invalid.local so the workflow proceeds gracefully on missing env. POST /api/internal/growth/funnel uses onError=continueRegularOutput so a Telegram alert is always sent. Required PostHog events: $pageview, signup_completed, onboarding_completed, first_action_completed, subscription_started — until instrumented, non-visit steps will read 0."
+    },
+    "63-growth-acquisition-snapshot.json": {
+      "owner": "growth",
+      "status": "experimental",
+      "riskTier": "P2",
+      "requiredEnv": [
+        "POSTHOG_PROJECT_ID",
+        "POSTHOG_API_KEY",
+        "POSTHOG_HOST",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY",
+        "TELEGRAM_ALERT_CHAT_ID"
+      ],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
+      "notes": "Daily 02:35 Kyiv → PostHog HogQL count signups by ($utm_source, $utm_medium, $utm_campaign) for yesterday → POST /api/internal/growth/acquisition (mig 019, growth_acquisition_daily) → Telegram top-5 channels. POSTHOG_HOST defaults to https://eu.i.posthog.com; POSTHOG_API_KEY must be a Personal API key (phx_…). PUBLIC_API_BASE_URL defaults to https://api.invalid.local so the workflow proceeds gracefully on missing env. POST /api/internal/growth/acquisition uses onError=continueRegularOutput so a Telegram alert is always sent. spendCents/cacCents stay 0/null until ad-platform integration is wired (Google Ads, Meta, etc.)."
+    },
+    "98-error-handler.json": {
+      "owner": "ops",
+      "status": "prod-ready",
+      "riskTier": "P0",
+      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID", "OPS_ALERT_EMAIL"],
+      "requiredCredentials": [
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)",
+        "Resend (Bearer)"
+      ],
+      "notes": "Global n8n error workflow. Configure as the Error Workflow in n8n settings."
+    },
+    "99-heartbeat.json": {
+      "owner": "ops",
+      "status": "prod-ready",
+      "riskTier": "P0",
+      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID", "OPS_ALERT_EMAIL"],
+      "requiredCredentials": [
+        "Telegram (Sergeant_alert_bot)",
+        "Resend (Bearer)"
+      ],
+      "notes": "n8n liveness heartbeat (every 3 hours) with email fallback."
+    }
+  }
+}

@@ -25,16 +25,14 @@ const sizes: Record<SelectSize, string> = {
 /**
  * Focus treatment — mirrors `Input` and `Button`: keyboard focus shows a
  * `focus-visible:ring-2 ring-brand-500/30` ring, pointer clicks don't.
- * Legacy `focus:` fallback is kept so browsers without :focus-visible
- * still render a visible cue.
  */
 const variants: Record<SelectVariant, string> = {
   default:
-    "bg-panelHi border border-line focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-500/30 focus:border-brand-400",
+    "bg-panelHi border border-line focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-500/30",
   filled:
-    "bg-panelHi border-transparent focus-visible:bg-panel focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-500/30 focus:bg-panel focus:border-brand-400",
+    "bg-panelHi border-transparent focus-visible:bg-panel focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-brand-500/30",
   ghost:
-    "bg-transparent border-transparent hover:bg-panelHi focus-visible:bg-panelHi focus-visible:ring-2 focus-visible:ring-brand-500/30 focus:bg-panelHi",
+    "bg-transparent border-transparent hover:bg-panelHi focus-visible:bg-panelHi focus-visible:ring-2 focus-visible:ring-brand-500/30",
 };
 
 export interface SelectProps extends Omit<
@@ -53,7 +51,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     ref,
   ) {
     const stateClass = error
-      ? "border-danger/70 focus-visible:border-danger focus-visible:ring-danger/25 focus:border-danger"
+      ? "border-danger/70 focus-visible:border-danger focus-visible:ring-danger/25"
       : "";
 
     return (

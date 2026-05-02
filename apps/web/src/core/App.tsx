@@ -1,26 +1,28 @@
-import {
-  useCallback,
-  useEffect,
-  lazy,
-  useState,
-  Suspense,
-  type ComponentType,
-} from "react";
+import { useCallback, useEffect, useState, Suspense } from "react";
+import { lazyDefault, lazyImport } from "./lib/lazyImport";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@shared/lib/cn";
+import { safeWriteLS } from "@shared/lib/storage";
 import { SkipLink } from "@shared/components/ui/SkipLink";
 import ModuleErrorBoundary from "./ModuleErrorBoundary";
 import { useDarkMode } from "@shared/hooks/useDarkMode";
-import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
-import { ToastProvider } from "@shared/hooks/useToast";
+import { ToastProvider, useToast } from "@shared/hooks/useToast";
 import { ToastContainer } from "@shared/components/ui/Toast";
-import { KeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
+import { ScreenReaderAnnouncerProvider } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { HUB_OPEN_MODULE_EVENT } from "@shared/lib/hubNav";
+import { onHubBus } from "@shared/lib/hubBus";
+import {
+  REQUEST_PULL_EVENT,
+  emitCloudPullComplete,
+} from "@shared/lib/cloudPullRequest";
 import { ApiClientProvider } from "@sergeant/api-client/react";
 import { apiClient } from "@shared/api";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { useCloudSync } from "./cloudSync/useCloudSync";
+import { useSyncErrorToast } from "./cloudSync/hook/useSyncErrorToast";
 import { PageLoader } from "./app/PageLoader";
+import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
+import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { OfflineBanner } from "./app/OfflineBanner";
 import { MigrationPrompt } from "./app/MigrationPrompt";
 import { usePwaInstall } from "./app/usePwaInstall";
@@ -28,13 +30,13 @@ import { useIosInstallBanner } from "./app/useIosInstallBanner";
 import { useSWUpdate } from "./app/useSWUpdate";
 import { PWA_ACTION_KEY } from "./app/pwaAction";
 import { HubHeader } from "./app/HubHeader";
-import { HubTabs } from "./app/HubTabs";
+import { HubBottomNav } from "./app/HubBottomNav";
 import { HubMainContent } from "./app/HubMainContent";
-import { HubFloatingActions } from "./app/HubFloatingActions";
 import { HubModals } from "./app/HubModals";
 import { ActiveWorkoutBanner } from "./app/ActiveWorkoutBanner";
 import { WelcomeScreen } from "./app/WelcomeScreen";
 import { shouldShowOnboarding } from "./onboarding/OnboardingWizard";
+import { ModuleFirstRunGoalSheet } from "./onboarding/ModuleFirstRunGoalSheet";
 import { isFirstRealEntryDone } from "./onboarding/vibePicks";
 import { hasAnyRealEntry } from "./onboarding/firstRealEntry";
 import { useHubNavigation } from "./hooks/useHubNavigation";
@@ -42,64 +44,74 @@ import { useHubKeyboardShortcuts } from "./hooks/useHubKeyboardShortcuts";
 import { useHubUIState } from "./hooks/useHubUIState";
 import { usePwaActions, type PwaAction } from "./hooks/usePwaActions";
 import { ShellDeepLinkBridge } from "./app/ShellDeepLinkBridge";
+import { PageviewTracker } from "./observability/PageviewTracker";
 import { HintsOrchestrator } from "./hints/HintsOrchestrator";
+import {
+  KeyboardShortcutsModal,
+  useKeyboardShortcutsModal,
+} from "@shared/components/ui/KeyboardShortcutsModal";
+import { prefetchCriticalModules } from "./lib/useRoutePrefetch";
 
-const AuthPage = lazy(() =>
-  import("./auth/AuthPage").then((m) => ({ default: m.AuthPage })),
+const AuthPage = lazyImport(() => import("./auth/AuthPage"), "AuthPage");
+const ResetPasswordPage = lazyImport(
+  () => import("./auth/ResetPasswordPage"),
+  "ResetPasswordPage",
 );
-const ResetPasswordPage = lazy(() =>
-  import("./auth/ResetPasswordPage").then((m) => ({
-    default: m.ResetPasswordPage,
-  })),
+const DesignShowcase = lazyImport(
+  () => import("./DesignShowcase"),
+  "DesignShowcase",
 );
-const DesignShowcase = lazy(() =>
-  import("./DesignShowcase").then((m) => ({ default: m.DesignShowcase })),
+const AssistantCataloguePage = lazyImport(
+  () => import("./AssistantCataloguePage"),
+  "AssistantCataloguePage",
 );
-const ProfilePage = lazy(() =>
-  import("./profile/ProfilePage").then((m) => ({ default: m.ProfilePage })),
+const PricingPage = lazyImport(() => import("./PricingPage"), "PricingPage");
+const HubChatPage = lazyImport(
+  () => import("./hub/HubChatPage"),
+  "HubChatPage",
 );
-const AssistantCataloguePage = lazy(() =>
-  import("./AssistantCataloguePage").then((m) => ({
-    default: m.AssistantCataloguePage,
-  })),
-);
-interface ModuleAppProps {
-  onBackToHub: () => void;
-  pwaAction?: PwaAction;
-  onPwaActionConsumed?: () => void;
-  onOpenModule?: (module: string) => void;
-}
-
-const FinykApp = lazy(
-  () => import("../modules/finyk/FinykApp"),
-) as unknown as ComponentType<ModuleAppProps>;
-const FizrukApp = lazy(() => import("../modules/fizruk/FizrukApp"));
-const NutritionApp = lazy(
+const FinykApp = lazyDefault(() => import("../modules/finyk/FinykApp"));
+const FizrukApp = lazyDefault(() => import("../modules/fizruk/FizrukApp"));
+const NutritionApp = lazyDefault(
   () => import("../modules/nutrition/NutritionApp"),
-) as unknown as ComponentType<ModuleAppProps>;
+);
 // Routine раніше імпортувалось синхронно — це зобов'язувало тягнути
 // весь модуль у main chunk навіть для користувачів, що сидять у Фінікові.
 // Ліниве завантаження збігається з іншими модулями (Suspense fallback
 // та ModuleErrorBoundary уже огортають цей слот).
-const RoutineApp = lazy(
-  () => import("../modules/routine/RoutineApp"),
-) as unknown as ComponentType<ModuleAppProps>;
+const RoutineApp = lazyDefault(() => import("../modules/routine/RoutineApp"));
 
 export default function App() {
   return (
     <ToastProvider>
       <ToastContainer />
+      {/*
+        Screen reader announcer: mounts two `aria-live` regions
+        (polite + assertive) at the app root. Any descendant can call
+        `useAnnounce()` to surface dynamic state changes (toggles,
+        expand/collapse, training completion, etc.) to assistive
+        tech. Lives outside ApiClientProvider/AuthProvider so even
+        unauthenticated screens (sign-in, onboarding) can announce.
+      */}
       {/* Capacitor deep-link bridge: монтуємо ВСЕРЕДИНІ роутера (App
           рендериться під <BrowserRouter>), але поза AppInner, щоб
           bridge переживав ранні return-и в AppInner (/sign-in,
           /reset-password, /design тощо) — deep link може прилетіти у
           будь-який із цих станів. */}
       <ShellDeepLinkBridge />
-      <ApiClientProvider client={apiClient}>
-        <AuthProvider>
-          <AppInner />
-        </AuthProvider>
-      </ApiClientProvider>
+      {/* PostHog `$pageview` tracker: монтуємо тут (всередині
+          BrowserRouter, поза AuthProvider), щоб фіксувати pathname і
+          в unauthenticated-шляхах (`/sign-in`, `/welcome`,
+          `/reset-password`) — без цього onboarding / auth funnels
+          у PostHog були б сліпими перед login-ом. */}
+      <PageviewTracker />
+      <ScreenReaderAnnouncerProvider>
+        <ApiClientProvider client={apiClient}>
+          <AuthProvider>
+            <AppInner />
+          </AuthProvider>
+        </ApiClientProvider>
+      </ScreenReaderAnnouncerProvider>
     </ToastProvider>
   );
 }
@@ -116,6 +128,11 @@ const SIGN_IN_PATH = "/sign-in";
 // chat input all converge here). URL-addressable so it survives reload
 // and can be deep-linked from notifications / docs.
 const ASSISTANT_PATH = "/assistant";
+// Dedicated AI chat route. Replaces the fullscreen modal that used to
+// slam over the dashboard. Reads `?q=` and `?autoSend=1` so launcher
+// hand-offs (`AnswerRail`, `ai-handoff`, capability `Try in chat` CTA)
+// and external deep links share one URL shape.
+const CHAT_PATH = "/chat";
 // URL-addressable cold-start splash. Having a real route (not just a
 // modal overlay on `/`) means the splash can be deep-linked, shows the
 // right title in history/back navigation, and — crucially — renders the
@@ -143,24 +160,33 @@ function AppInner() {
   const onSignInRoute = location.pathname === SIGN_IN_PATH;
   const onWelcomeRoute = location.pathname === WELCOME_PATH;
   const onResetPasswordRoute = location.pathname === RESET_PASSWORD_PATH;
-  const onProfileRoute = location.pathname === PROFILE_PATH;
   const onAssistantRoute = location.pathname === ASSISTANT_PATH;
+  const onChatRoute = location.pathname === CHAT_PATH;
 
   const openAuth = useCallback(() => {
     navigate(SIGN_IN_PATH);
   }, [navigate]);
 
-  // «Продовжити без акаунту» на /sign-in для cold-start користувача має
-  // завести його у FTUX splash (/welcome), а не на порожній дашборд.
-  // Інакше тап «Вже маю акаунт» → назад стає тихим dead-end-ом, який
-  // пропускає онбординг назавжди.
+  // «Поки що пропустити» на /sign-in:
+  // 1. cold-start (онбординг не завершений) → /welcome (replace) — як раніше,
+  //    щоб не «з’їсти» FTUX splash.
+  // 2. warm-start, юзер прийшов з застосунку (натиснув user-icon у HubHeader,
+  //    `location.key !== "default"`) → `navigate(-1)`. Це повертає на ту саму
+  //    сторінку, з якої прийшов (наприклад, дашборд або сторінку модуля),
+  //    а не до replace-/, який для повторного юзера виглядає як no-op.
+  // 3. fallback (deep-link або refresh на /sign-in, `location.key === "default"`):
+  //    `navigate("/", { replace: true })` — як раніше.
   const leaveAuth = useCallback(() => {
     if (shouldShowOnboarding()) {
       navigate(WELCOME_PATH, { replace: true });
-    } else {
-      navigate("/", { replace: true });
+      return;
     }
-  }, [navigate]);
+    if (location.key !== "default") {
+      navigate(-1);
+      return;
+    }
+    navigate("/", { replace: true });
+  }, [navigate, location.key]);
 
   const leaveWelcome = useCallback(() => {
     navigate("/", { replace: true });
@@ -173,14 +199,48 @@ function AppInner() {
   const { pwaAction, setPwaAction, clearPwaAction, validActions } =
     usePwaActions(searchParams);
   const { dark, toggle: toggleDark } = useDarkMode();
+  const keyboardShortcuts = useKeyboardShortcutsModal();
   const { canInstall, install, dismiss } = usePwaInstall();
   const { visible: iosVisible, dismiss: iosDismiss } = useIosInstallBanner();
-  const online = useOnlineStatus();
   const { updateAvailable, applyUpdate } = useSWUpdate();
-  const { user, isLoading: authLoading, logout } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const sync = useCloudSync(user);
+  const toast = useToast();
+  useSyncErrorToast(sync.syncErrorDetail, toast, sync.pushAll);
+
+  // Prefetch critical module chunks once the main thread is free.
+  // Previously hard-coded to `setTimeout(2000)`, which over-paid on fast
+  // devices (idle by 200 ms) and under-paid on slow ones (still hydrating
+  // at 2 s). `requestIdleCallback` lets the browser fire whenever the
+  // initial-render burst is genuinely done; the 4 s `timeout` cap stops
+  // a permanently-busy main thread from starving the prefetch entirely.
+  // Safari ≤ 16 has no `requestIdleCallback`, so we keep the original
+  // 2 s fallback for it.
   useEffect(() => {
-    const onMessage = (event) => {
+    if ("requestIdleCallback" in window) {
+      const id = requestIdleCallback(() => prefetchCriticalModules(), {
+        timeout: 4000,
+      });
+      return () => cancelIdleCallback(id);
+    }
+    const timer = setTimeout(() => {
+      prefetchCriticalModules();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // If the user signs out while the «Профіль» tab is active, bounce the
+  // hub back to the dashboard — the tab itself disappears from the
+  // bottom nav (gated on `user`), and without this the main content
+  // area would render nothing for the `profile` view.
+  useEffect(() => {
+    if (!user && ui.hubView === "profile") {
+      ui.setHubView("dashboard");
+    }
+  }, [user, ui]);
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
       if (event.data?.type === "OPEN_MODULE") {
         openModule(event.data.module);
       }
@@ -192,50 +252,68 @@ function AppInner() {
     }
   }, [openModule]);
 
-  // Global event to open chat from any page (e.g. ProfilePage memory bank,
-  // AssistantCataloguePage). Detail accepts either a plain string (legacy:
-  // prefill input) or `{message, autoSend}` (new: optional auto-send) so
-  // existing emitters keep working without modification.
-  const openChatStable = ui.openChat;
+  // Bridge module-level pull-to-refresh gestures to the App-level
+  // cloud-sync engine. Modules dispatch `REQUEST_PULL_EVENT` and we run
+  // `sync.pullAll()` on their behalf, then emit a completion event so
+  // the requesting component can resolve its spinner. See
+  // `shared/lib/cloudPullRequest.ts` for the contract.
   useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as
-        | string
-        | null
-        | { message: string; autoSend?: boolean };
-      navigate("/", { replace: true });
-      requestAnimationFrame(() => {
-        if (detail && typeof detail === "object" && "message" in detail) {
-          openChatStable(detail.message, { autoSend: detail.autoSend });
-        } else {
-          openChatStable(detail as string | null);
-        }
-      });
+    const handler = async () => {
+      try {
+        await sync.pullAll();
+      } catch {
+        // Errors are surfaced via `useSyncErrorToast`; the requester
+        // only cares that we settled, so swallow here and emit the
+        // completion event regardless.
+      } finally {
+        emitCloudPullComplete();
+      }
     };
-    window.addEventListener("hub:openChat", handler);
-    return () => window.removeEventListener("hub:openChat", handler);
-  }, [openChatStable, navigate]);
+    window.addEventListener(REQUEST_PULL_EVENT, handler);
+    return () => window.removeEventListener(REQUEST_PULL_EVENT, handler);
+  }, [sync]);
 
-  // Global event to open HubSearch from any surface (used by hint toasts).
-  // Mirrors the existing `hub:openChat` event contract.
-  useEffect(() => {
-    const handler = () => {
-      ui.setSearchOpen(true);
-    };
-    window.addEventListener("hub:openSearch", handler as EventListener);
-    return () =>
-      window.removeEventListener("hub:openSearch", handler as EventListener);
-  }, [ui]);
+  // Global signal to open chat from any page (e.g. ProfilePage memory
+  // bank, AssistantCataloguePage, hint toasts). Now routes to the
+  // dedicated `/chat` route — replaces the previous fullscreen-modal
+  // overlay. The `?q=` / `?autoSend=` URL shape is the single source of
+  // truth; `HubChatPage` reads those params on mount.
+  useEffect(
+    () =>
+      onHubBus("openChat", (detail) => {
+        const params = new URLSearchParams();
+        if (detail.message) params.set("q", detail.message);
+        if (detail.autoSend) params.set("autoSend", "1");
+        const search = params.toString();
+        navigate(search ? `${CHAT_PATH}?${search}` : CHAT_PATH);
+      }),
+    [navigate],
+  );
+
+  // Global signal to open HubSearch from any surface (used by hint
+  // toasts). Mirrors the typed `openChat` contract on the same bus.
+  const setSearchOpenStable = ui.setSearchOpen;
+  useEffect(
+    () =>
+      onHubBus("openSearch", () => {
+        setSearchOpenStable(true);
+      }),
+    [setSearchOpenStable],
+  );
 
   useEffect(() => {
-    const onHubOpen = (ev) => {
-      const { module, hash, action } = ev.detail || {};
+    const onHubOpen = (ev: Event) => {
+      const detail =
+        (
+          ev as CustomEvent<{
+            module?: string;
+            hash?: string;
+            action?: PwaAction;
+          }>
+        ).detail || {};
+      const { module, hash, action } = detail;
       if (action && validActions.has(action)) {
-        try {
-          localStorage.setItem(PWA_ACTION_KEY, action);
-        } catch {
-          /* noop */
-        }
+        safeWriteLS(PWA_ACTION_KEY, action);
         setPwaAction(action);
       }
       openModule(module, hash ? { hash } : undefined);
@@ -301,20 +379,19 @@ function AppInner() {
     );
   }
 
-  if (onProfileRoute) {
+  // `/profile` is a legacy deep-link target — profile actions now live
+  // behind the bottom-nav `Профіль` tab inside the hub. Redirect to
+  // the hub with the `profile` tab pre-activated so old links keep
+  // working (and so the back button still pops the entry off history
+  // instead of bouncing the user back here).
+  if (location.pathname === PROFILE_PATH) {
     if (authLoading) {
       return <PageLoader />;
     }
     if (!user) {
       return <RedirectTo to={SIGN_IN_PATH} />;
     }
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <div className="page-enter">
-          <ProfilePage />
-        </div>
-      </Suspense>
-    );
+    return <RedirectTo to="/?tab=profile" />;
   }
 
   if (location.pathname === "/design") {
@@ -325,12 +402,33 @@ function AppInner() {
     );
   }
 
+  // `/pricing` — Phase 0 monetization рейки: статична сторінка з тарифами
+  // і waitlist-формою. Анонімна (auth не вимагається), бо основний
+  // траффік — неавторизовані відвідувачі, які ще не зробили sign-up.
+  if (location.pathname === "/pricing") {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <div className="page-enter">
+          <PricingPage />
+        </div>
+      </Suspense>
+    );
+  }
+
   if (onAssistantRoute) {
     return (
       <Suspense fallback={<PageLoader />}>
         <div className="page-enter">
           <AssistantCataloguePage onClose={() => navigate("/")} />
         </div>
+      </Suspense>
+    );
+  }
+
+  if (onChatRoute) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <HubChatPage />
       </Suspense>
     );
   }
@@ -355,47 +453,31 @@ function AppInner() {
   if (!activeModule) {
     // FTUX session = the window between the splash and the user's first
     // real (non-demo) entry. During this window we intentionally
-    // suppress PWA install / iOS install / SW update banners and the
-    // "Sign in" header button so the one signal on screen is the
-    // FirstActionRow. The update banner comes back the moment a real
-    // entry is logged.
+    // suppress PWA install / iOS install / SW update banners and other
+    // noisy chrome so the one signal on screen is the FirstActionRow.
+    // The update banner comes back the moment a real entry is logged.
     // Important: after the onboarding route is finished, the hub must still
     // allow the user to sign in. Otherwise they can land on the dashboard
     // (no entries yet) with no discoverable auth entry point.
-    const inFtuxSession =
-      shouldShowOnboarding() && !user && !isFirstRealEntryDone();
+    const hasFirstRealEntry = hasAnyRealEntry();
+    const inFtuxSession = !hasFirstRealEntry && !isFirstRealEntryDone();
     return (
-      <div className="min-h-dvh bg-bg flex flex-col safe-area-pt-pb page-enter">
+      <div className="h-dvh bg-bg flex flex-col overflow-hidden safe-area-pt page-enter">
         <SkipLink />
         <HintsOrchestrator
           inFtuxSession={inFtuxSession}
-          hasFirstRealEntry={hasAnyRealEntry()}
+          hasFirstRealEntry={hasFirstRealEntry}
         />
-        {!online && <OfflineBanner />}
+        <OfflineBanner />
 
         <HubHeader
           onOpenSearch={() => ui.setSearchOpen(true)}
           user={user}
-          syncing={sync.syncing}
-          lastSync={sync.lastSync}
-          onSync={sync.pushAll}
-          onPull={sync.pullAll}
-          onLogout={logout}
           authLoading={authLoading}
           onShowAuth={openAuth}
           dark={dark}
           onToggleDark={toggleDark}
-          hideAuthButton={inFtuxSession}
-        />
-
-        <HubTabs
-          hubView={ui.hubView}
-          onChange={ui.setHubView}
-          // «Звіти» — пустий екран без даних, тому ховаємо tab до
-          // першого реального запису. Якщо юзер уже обрав «Звіти» і
-          // потім стер дані — повертаємо його на дашборд, щоб не
-          // лишався на неіснуючому табі.
-          showReports={hasAnyRealEntry()}
+          hideAuthButton={shouldShowOnboarding() && !user && inFtuxSession}
         />
 
         <HubMainContent
@@ -408,7 +490,6 @@ function AppInner() {
           iosVisible={iosVisible}
           onDismissIos={iosDismiss}
           hubView={ui.hubView}
-          onOpenChat={ui.openChat}
           syncing={sync.syncing}
           onSync={sync.pushAll}
           onPull={sync.pullAll}
@@ -417,14 +498,17 @@ function AppInner() {
           inFtuxSession={inFtuxSession}
         />
 
-        {/* Thumb-reach entry to the AI assistant. Module quick-add is
-            handled above by `TodayFocusCard`'s chips (+ Витрата / + Їжа /
-            + Звичка / + Тренування), so a separate add-speed-dial FAB
-            would be a pure duplicate. Hidden during the FTUX session so
-            the only interactive surface in view is the FirstActionHero
-            → PresetSheet one-tap path; the FAB returns the moment the
-            first real entry lands. */}
-        <HubFloatingActions hidden={inFtuxSession} onOpenChat={ui.openChat} />
+        <HubBottomNav
+          hubView={ui.hubView}
+          onChange={ui.setHubView}
+          // «Звіти» — пустий екран без даних, тому ховаємо tab до
+          // першого реального запису. Якщо юзер уже обрав «Звіти» і
+          // потім стер дані — повертаємо його на дашборд, щоб не
+          // лишався на неіснуючому табі.
+          showReports={hasAnyRealEntry()}
+          showProfile={!!user}
+          onShowAuth={!user ? openAuth : undefined}
+        />
 
         {/* Persistent shortcut back to an in-progress Fizruk workout.
             Hidden during FTUX so the splash stays single-CTA; otherwise
@@ -433,14 +517,6 @@ function AppInner() {
         <ActiveWorkoutBanner hidden={inFtuxSession} />
 
         <HubModals
-          chatOpen={ui.chatOpen}
-          onCloseChat={ui.closeChat}
-          chatInitialMessage={ui.chatInitialMessage}
-          chatAutoSend={ui.chatAutoSend}
-          onOpenCatalogue={() => {
-            ui.closeChat();
-            navigate(ASSISTANT_PATH);
-          }}
           searchOpen={ui.searchOpen}
           onCloseSearch={ui.closeSearch}
           onOpenModule={openModule}
@@ -456,11 +532,7 @@ function AppInner() {
   return (
     <div className="h-dvh flex flex-col bg-bg text-text overflow-hidden">
       <SkipLink />
-      {!online && <OfflineBanner />}
-      <KeyboardShortcutsModal
-        open={shortcutsOpen}
-        onClose={() => setShortcutsOpen(false)}
-      />
+      <OfflineBanner />
       {/* Persistent "resume workout" shortcut — rendered in Finyk,
           Routine, Nutrition (but not inside Fizruk itself, where the
           in-module ActiveWorkoutPanel is already the primary surface).
@@ -468,7 +540,15 @@ function AppInner() {
           requirement: switching modules mid-set must not bury the
           workout. */}
       {activeModule !== "fizruk" && <ActiveWorkoutBanner />}
-      <Suspense fallback={<PageLoader />}>
+      <SuspenseWithMinDelay
+        fallback={
+          <ModulePageLoader
+            module={
+              activeModule as "finyk" | "fizruk" | "routine" | "nutrition"
+            }
+          />
+        }
+      >
         {/* Skip-link target. We render `<main>` by default so every screen
             exposes a `main` landmark for AT users. One exception: the
             Routine module renders its own `<main id="routine-main">`
@@ -524,7 +604,17 @@ function AppInner() {
             </Tag>
           );
         })()}
-      </Suspense>
+      </SuspenseWithMinDelay>
+      <HubModals
+        searchOpen={ui.searchOpen}
+        onCloseSearch={ui.closeSearch}
+        onOpenModule={openModule}
+      />
+      <KeyboardShortcutsModal
+        open={keyboardShortcuts.open}
+        onClose={keyboardShortcuts.onClose}
+      />
+      <ModuleFirstRunGoalSheet moduleId={activeModule} />
     </div>
   );
 }

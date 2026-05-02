@@ -45,6 +45,9 @@ import {
   type HabitDraftPatch,
 } from "@sergeant/routine-domain";
 
+import { useToast } from "@/components/ui/Toast";
+import { showUndoToast } from "@/lib/showUndoToast";
+
 import { useRoutineStore } from "../../lib/routineStore";
 import { DraggableHabitList } from "./DraggableHabitList";
 import { HabitForm } from "./HabitForm";
@@ -54,9 +57,6 @@ type FormState =
   | { mode: "closed" }
   | { mode: "new" }
   | { mode: "edit"; habit: Habit };
-
-/** Delete confirmation pulse window — same "tap twice" pattern as Finyk. */
-const DELETE_CONFIRM_MS = 5000;
 
 export interface HabitsPageProps {
   /** Optional root `testID` — children derive stable sub-ids. */
@@ -70,15 +70,14 @@ export function HabitsPage({ testID }: HabitsPageProps) {
     updateHabit,
     setHabitArchived,
     deleteHabit,
+    snapshotHabit,
+    restoreHabit,
     moveHabitInOrder,
     setHabitOrder,
   } = useRoutineStore();
+  const toast = useToast();
 
   const [formState, setFormState] = useState<FormState>({ mode: "closed" });
-  const [deletePending, setDeletePending] = useState<{
-    id: string;
-    expiresAt: number;
-  } | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
 
   const activeHabits = useMemo(
@@ -118,33 +117,33 @@ export function HabitsPage({ testID }: HabitsPageProps) {
     [formState, createHabit, updateHabit],
   );
 
+  // Single-tap delete + undo-toast (parity з web-ом). Знімок робимо
+  // _до_ виклику `deleteHabit`, бо після reducer-а звички в `routine`
+  // вже немає.
   const handleRequestDelete = useCallback(
     (id: string) => {
-      const now = Date.now();
-      if (
-        deletePending &&
-        deletePending.id === id &&
-        deletePending.expiresAt > now
-      ) {
-        deleteHabit(id);
-        setDeletePending(null);
-      } else {
-        setDeletePending({ id, expiresAt: now + DELETE_CONFIRM_MS });
-      }
+      const snapshot = snapshotHabit(id);
+      if (!snapshot) return;
+      deleteHabit(id);
+      const habitName = snapshot.habit.name || "звичку";
+      showUndoToast(toast, {
+        msg: `Видалено звичку «${habitName}»`,
+        onUndo: () => restoreHabit(snapshot),
+      });
     },
-    [deletePending, deleteHabit],
+    [deleteHabit, restoreHabit, snapshotHabit, toast],
   );
 
-  const pendingDeleteId =
-    deletePending && deletePending.expiresAt > Date.now()
-      ? deletePending.id
-      : null;
+  // `pendingDeleteId` залишається у списку API DraggableHabitList для
+  // зворотної сумісності, але після переходу на undo-toast pending-стану
+  // більше нема — завжди передаємо `null`.
+  const pendingDeleteId: string | null = null;
 
   const editingId = formState.mode === "edit" ? formState.habit.id : null;
 
   return (
     <SafeAreaView
-      className="flex-1 bg-cream-50"
+      className="flex-1 bg-bg dark:bg-bg"
       edges={["top"]}
       testID={testID}
     >
@@ -235,14 +234,6 @@ export function HabitsPage({ testID }: HabitsPageProps) {
             )
           ) : null}
         </View>
-
-        {pendingDeleteId ? (
-          <View className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2">
-            <Text className="text-xs text-danger text-center">
-              Ще раз «Видалити», щоб остаточно прибрати звичку.
-            </Text>
-          </View>
-        ) : null}
       </ScrollView>
 
       <View className="absolute right-4 bottom-6">

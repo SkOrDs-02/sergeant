@@ -52,8 +52,12 @@ describe("parseTechDebtFiles", () => {
   it("returns the default list when the env var is missing", () => {
     assert.deepEqual(parseTechDebtFiles(undefined), [
       "docs/tech-debt/frontend.md",
+      "docs/tech-debt/mobile.md",
     ]);
-    assert.deepEqual(parseTechDebtFiles(""), ["docs/tech-debt/frontend.md"]);
+    assert.deepEqual(parseTechDebtFiles(""), [
+      "docs/tech-debt/frontend.md",
+      "docs/tech-debt/mobile.md",
+    ]);
   });
 
   it("splits a comma-separated list and trims whitespace", () => {
@@ -70,7 +74,10 @@ describe("parseTechDebtFiles", () => {
   });
 
   it("returns the default when only commas are provided", () => {
-    assert.deepEqual(parseTechDebtFiles(",,,"), ["docs/tech-debt/frontend.md"]);
+    assert.deepEqual(parseTechDebtFiles(",,,"), [
+      "docs/tech-debt/frontend.md",
+      "docs/tech-debt/mobile.md",
+    ]);
   });
 });
 

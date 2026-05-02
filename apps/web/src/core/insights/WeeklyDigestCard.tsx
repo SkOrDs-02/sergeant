@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { cn } from "@shared/lib/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import { Skeleton, SkeletonText } from "@shared/components/ui/Skeleton";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import {
   useWeeklyDigest,
@@ -16,34 +17,40 @@ import { WeeklyDigestStories } from "./WeeklyDigestStories";
 // path without touching either module.
 export { hasLiveWeeklyDigest } from "@shared/lib/weeklyDigestStorage";
 
+// Wave 1b: `bgClass` / `borderClass` consolidated onto the
+// `{module}-soft` / `{module}-soft-border` token family (preset-owned
+// light/dark pair via `--c-{module}-soft*`). `colorClass` keeps the
+// explicit `-600 / dark:-400` pair because the module accent text uses
+// the saturated `-500` family (not the `-soft` wash) and does not have
+// a theme-adaptive semantic token today.
 const MODULE_CONFIG = {
   finyk: {
     icon: "💳",
     label: "Фінанси",
-    colorClass: "text-brand-600 dark:text-brand-400",
-    bgClass: "bg-brand-100 dark:bg-brand-900/30",
-    borderClass: "border-brand-200/60 dark:border-brand-700/30",
+    colorClass: "text-brand-strong dark:text-brand",
+    bgClass: "bg-finyk-soft",
+    borderClass: "border-finyk-soft-border/60",
   },
   fizruk: {
     icon: "🏋️",
     label: "Тренування",
-    colorClass: "text-teal-600 dark:text-teal-400",
-    bgClass: "bg-teal-100 dark:bg-teal-900/30",
-    borderClass: "border-teal-200/60 dark:border-teal-700/30",
+    colorClass: "text-fizruk-strong dark:text-fizruk",
+    bgClass: "bg-fizruk-soft",
+    borderClass: "border-fizruk-soft-border/60",
   },
   nutrition: {
     icon: "🥗",
     label: "Харчування",
-    colorClass: "text-lime-600 dark:text-lime-400",
-    bgClass: "bg-lime-100 dark:bg-lime-900/30",
-    borderClass: "border-lime-200/60 dark:border-lime-700/30",
+    colorClass: "text-nutrition-strong dark:text-nutrition",
+    bgClass: "bg-nutrition-soft",
+    borderClass: "border-nutrition-soft-border/60",
   },
   routine: {
     icon: "✅",
     label: "Звички",
-    colorClass: "text-coral-600 dark:text-coral-400",
-    bgClass: "bg-coral-100 dark:bg-coral-900/30",
-    borderClass: "border-coral-200/60 dark:border-coral-700/30",
+    colorClass: "text-routine-strong dark:text-routine",
+    bgClass: "bg-routine-soft",
+    borderClass: "border-routine-soft-border/60",
   },
 };
 
@@ -75,7 +82,7 @@ function ModuleBlock({ moduleKey, data }) {
       >
         <div
           className={cn(
-            "w-6 h-6 rounded-lg flex items-center justify-center text-xs shrink-0",
+            "w-6 h-6 rounded-xl flex items-center justify-center text-xs shrink-0",
             cfg.bgClass,
           )}
         >
@@ -130,20 +137,41 @@ function ModuleBlock({ moduleKey, data }) {
   );
 }
 
+// Shape-aware loader: matches the real digest layout — 4 module rows
+// (icon + 2 lines of summary text). When the digest lands, only the
+// content swaps in; the rough shape is already on screen.
 function LoadingSpinner() {
   return (
-    <div className="flex items-center justify-center gap-2 py-6">
-      <svg
-        className="motion-safe:animate-spin w-4 h-4 text-primary"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        aria-hidden
-      >
-        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-      </svg>
-      <span className="text-xs text-muted">Генерую звіт тижня…</span>
+    <div
+      className="px-4 pb-4 space-y-2.5"
+      aria-busy="true"
+      aria-live="polite"
+      aria-label="Генеруємо звіт тижня"
+    >
+      <span className="sr-only">Генеруємо звіт тижня…</span>
+      {Array(4)
+        .fill(0)
+        .map((_, i) => (
+          <div
+            key={i}
+            className={cn(
+              "flex items-start gap-3 p-3 rounded-2xl border border-line bg-panel",
+              i === 0
+                ? "opacity-100"
+                : i === 1
+                  ? "opacity-85"
+                  : i === 2
+                    ? "opacity-65"
+                    : "opacity-45",
+            )}
+          >
+            <Skeleton className="w-9 h-9 rounded-xl shrink-0" />
+            <div className="flex-1 min-w-0 space-y-1.5 pt-0.5">
+              <SkeletonText className="w-1/3 h-3" />
+              <SkeletonText className="w-2/3 h-2.5" />
+            </div>
+          </div>
+        ))}
     </div>
   );
 }
@@ -221,6 +249,7 @@ function DigestContent({
             "dark:from-brand-600 dark:via-brand-500 dark:to-teal-500",
             "shadow-card hover:brightness-110 active:scale-[0.98] transition-[box-shadow,filter,opacity,transform]",
             "flex items-center justify-center gap-2",
+            "focus-ring",
           )}
         >
           <svg
@@ -359,7 +388,7 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="text-brand-600 dark:text-brand-400"
+            className="text-brand-strong dark:text-brand"
           >
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
             <polyline points="14 2 14 8 20 8" />
@@ -387,7 +416,7 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
               onClick={() => setShowHistory((v) => !v)}
               title="Попередні тижні"
               className={cn(
-                "w-7 h-7 flex items-center justify-center rounded-lg transition-colors",
+                "w-7 h-7 flex items-center justify-center rounded-xl transition-colors",
                 showHistory
                   ? "bg-primary/15 text-primary"
                   : "text-muted hover:text-text hover:bg-panelHi",
@@ -417,7 +446,7 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
                 type="button"
                 onClick={onCollapse}
                 aria-label="Згорнути звіт тижня"
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
               >
                 <Icon name="chevron-up" size={15} strokeWidth={2.5} />
               </button>
@@ -438,7 +467,7 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
                   setShowHistory(false);
                 }}
                 className={cn(
-                  "px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors",
+                  "px-2.5 py-1 rounded-xl text-xs font-semibold transition-colors",
                   selectedWeekKey === h.weekKey
                     ? "bg-primary/15 text-primary"
                     : "bg-panelHi text-muted hover:text-text",
@@ -446,7 +475,7 @@ export function WeeklyDigestCard({ onCollapse }: WeeklyDigestCardProps = {}) {
               >
                 {h.weekRange}
                 {h.weekKey === currentWeekKey && (
-                  <span className="ml-1 text-3xs opacity-70">поточний</span>
+                  <span className="ml-1 text-2xs opacity-70">поточний</span>
                 )}
               </button>
             ))}
