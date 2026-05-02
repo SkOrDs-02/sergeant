@@ -2,8 +2,10 @@
  * HubDashboard — one-hero rule tests.
  *
  * Verifies the FTUX priority chain: `FirstActionHeroCard` >
- * `SoftAuthPromptCard` > `TodayFocusCard` (empty state). Each frame
- * renders exactly one hero.
+ * `SoftAuthPromptCard` > `TodayFocusCard`. Each frame renders at most
+ * one hero. When no recommendation is available `TodayFocusCard`
+ * intentionally renders nothing — the bento module rows below already
+ * handle quick-add, so a chip fallback would just duplicate them.
  */
 
 import { fireEvent, render } from "@testing-library/react-native";
@@ -105,18 +107,20 @@ describe("HubDashboard one-hero rule", () => {
     _getMMKVInstance().set(FIRST_REAL_ENTRY_KEY, "1");
     mockUserData.data = { user: { name: "Test" } };
 
-    const { getByTestId, queryByTestId } = renderDashboard();
+    const { queryByTestId } = renderDashboard();
 
     expect(queryByTestId("soft-auth-prompt")).toBeNull();
-    expect(getByTestId("today-focus-empty")).toBeTruthy();
+    // No focus rec available — TodayFocusCard renders nothing in this
+    // case; the bento module rows below carry the activation surface.
+    expect(queryByTestId("today-focus-empty")).toBeNull();
   });
 
-  it("falls back to the TodayFocusCard empty state when no other hero is eligible", () => {
-    const { getByTestId, queryByTestId } = renderDashboard();
+  it("renders no hero when no FTUX prompt and no focus rec are eligible", () => {
+    const { queryByTestId } = renderDashboard();
 
-    expect(getByTestId("today-focus-empty")).toBeTruthy();
     expect(queryByTestId("first-action-hero")).toBeNull();
     expect(queryByTestId("soft-auth-prompt")).toBeNull();
+    expect(queryByTestId("today-focus-empty")).toBeNull();
   });
 
   it("respects a previous soft-auth dismissal", () => {
@@ -124,33 +128,16 @@ describe("HubDashboard one-hero rule", () => {
     mmkv.set(FIRST_REAL_ENTRY_KEY, "1");
     mmkv.set(SOFT_AUTH_DISMISSED_KEY, "1");
 
-    const { getByTestId, queryByTestId } = renderDashboard();
+    const { queryByTestId } = renderDashboard();
 
     expect(queryByTestId("soft-auth-prompt")).toBeNull();
-    expect(getByTestId("today-focus-empty")).toBeTruthy();
+    expect(queryByTestId("today-focus-empty")).toBeNull();
   });
 
-  it("fires a quick-add route when an empty-state chip is tapped", () => {
-    const { getByTestId } = renderDashboard();
-
-    fireEvent.press(getByTestId("today-focus-chip-routine"));
-
-    const { router } = jest.requireMock("expo-router") as {
-      router: { push: jest.Mock };
-    };
-    expect(router.push).toHaveBeenCalledWith("/(tabs)/routine");
-  });
-
-  it("renders Nutrition in the dashboard stack and quick-add chips", () => {
+  it("renders Nutrition in the dashboard stack", () => {
     const { getByTestId } = renderDashboard();
 
     expect(getByTestId("dashboard-module-row-nutrition")).toBeTruthy();
-    fireEvent.press(getByTestId("today-focus-chip-nutrition"));
-
-    const { router } = jest.requireMock("expo-router") as {
-      router: { push: jest.Mock };
-    };
-    expect(router.push).toHaveBeenCalledWith("/(tabs)/nutrition");
   });
 
   it("navigates to sign-in when SoftAuthPromptCard CTA is tapped", () => {

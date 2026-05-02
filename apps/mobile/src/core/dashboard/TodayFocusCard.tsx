@@ -1,9 +1,12 @@
 /**
  * Mobile port of `apps/web/src/core/insights/TodayFocusCard.tsx`.
  *
- * Shape mirrors the web version: one hero card that shows either the
- * current `focus` rec (primary CTA + optional dismiss) or an
- * empty-state prompt with module-tinted quick-add chips.
+ * Shape mirrors the web version: one hero card that shows the current
+ * `focus` rec (primary CTA + optional dismiss). When there is no focus
+ * rec the card renders nothing — the bento module rows below already
+ * expose per-module quick-add affordances, so a chip fallback would
+ * duplicate them and split the user's attention (ONE-HERO rule,
+ * mirrored in `HubDashboard`).
  *
  * Optional `coachInsight` — короткий AI-підзаголовок (як на web), якщо
  * `useCoachInsight` вже зібрав копію.
@@ -11,7 +14,6 @@
  *     `hubNav` dispatches a custom DOM event caught by each module
  *     screen; mobile uses expo-router intent params (Phase 3) so for
  *     now the CTA just navigates via `onAction`.
- *   - Quick-add chips cover all dashboard modules, including Nutrition.
  */
 
 import { Pressable, Text, View } from "react-native";
@@ -42,107 +44,27 @@ const MODULE_OPEN_CTA = {
   hub: "Подивитись",
 } as const;
 
-const MODULE_CHIP_CLASS = {
-  finyk: "bg-brand-50 border border-brand-200/60",
-  fizruk: "bg-teal-50 border border-teal-200/60",
-  routine: "bg-coral-50 border border-coral-300/60",
-  nutrition: "bg-lime-50 border border-lime-200/60",
-} as const;
-
-const MODULE_CHIP_TEXT_CLASS = {
-  finyk: "text-brand-700",
-  fizruk: "text-teal-700",
-  routine: "text-coral-700",
-  nutrition: "text-lime-800",
-} as const;
-
-/**
- * Module-tinted quick-add chips shown in the empty state. The `action`
- * slot is preserved on the chip so future callers can still derive a
- * PWA-intent from it without recomputing here.
- */
-interface QuickAddChip {
-  module: "finyk" | "fizruk" | "routine" | "nutrition";
-  label: string;
-}
-
-const QUICK_ADD_CHIPS: QuickAddChip[] = [
-  { module: "finyk", label: "Витрата" },
-  { module: "routine", label: "Звичка" },
-  { module: "fizruk", label: "Тренування" },
-  { module: "nutrition", label: "Їжа" },
-];
-
-function EmptyFocus({
-  onQuickAdd,
-}: {
-  onQuickAdd?: (module: QuickAddChip["module"]) => void;
-}) {
-  return (
-    <View
-      className="overflow-hidden rounded-2xl border border-cream-300 bg-cream-100/80 p-4"
-      testID="today-focus-empty"
-    >
-      <View className="mb-2 flex-row items-center justify-between">
-        {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- intentional narrative eyebrow, mirrors web TodayFocusCard */}
-        <Text className="text-[11px] font-semibold uppercase tracking-wide text-fg-muted">
-          Зараз
-        </Text>
-      </View>
-      <Text className="text-base font-bold leading-snug text-fg">
-        Що зафіксуємо?
-      </Text>
-      <Text className="mt-1 text-xs leading-relaxed text-fg-muted">
-        Один тап — один запис. Обери модуль і продовжуй.
-      </Text>
-      <View className="mt-3 flex-row flex-wrap gap-2">
-        {QUICK_ADD_CHIPS.map((chip) => (
-          <Pressable
-            key={chip.module}
-            accessibilityRole="button"
-            accessibilityLabel={`Швидкий запис: ${chip.label}`}
-            onPress={() => {
-              hapticTap();
-              onQuickAdd?.(chip.module);
-            }}
-            className={`flex-row items-center gap-1.5 rounded-full px-3 py-1.5 active:opacity-80 ${MODULE_CHIP_CLASS[chip.module]}`}
-            testID={`today-focus-chip-${chip.module}`}
-          >
-            <Text
-              className={`text-xs font-semibold ${MODULE_CHIP_TEXT_CLASS[chip.module]}`}
-            >
-              {chip.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-    </View>
-  );
-}
-
 export interface TodayFocusCardProps {
   focus: Rec | null;
   onAction: (module: string, focus: Rec) => void;
   onDismiss?: (id: string) => void;
-  onQuickAdd?: (module: QuickAddChip["module"]) => void;
   /** Короткий AI-інсайт під рекомендацією (опційно). */
   coachInsight?: string | null;
 }
 
 /**
  * Primary hero on the mobile hub dashboard: one next-best-action
- * derived from the recommendation engine, or an action-driven empty
- * state when nothing is pending.
+ * derived from the recommendation engine. Renders nothing when there
+ * is no focus rec — the bento module rows below handle quick-add.
  */
 export function TodayFocusCard({
   focus,
   onAction,
   onDismiss,
-  onQuickAdd,
   coachInsight,
 }: TodayFocusCardProps) {
   if (!focus) {
-    return <EmptyFocus onQuickAdd={onQuickAdd} />;
+    return null;
   }
 
   const moduleKey = (focus.module as keyof typeof MODULE_ACCENT_CLASS) || "hub";

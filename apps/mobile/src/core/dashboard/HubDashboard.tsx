@@ -460,7 +460,6 @@ export function HubDashboard() {
                 }
               }}
               onDismiss={dismissFocus}
-              onQuickAdd={(id) => openModule(id)}
             />
           )}
         </View>

@@ -18,33 +18,13 @@ function rec(partial: Partial<Rec> = {}): Rec {
 }
 
 describe("TodayFocusCard", () => {
-  it("renders empty state with all 4 quick-add chips when focus is null", () => {
-    const { getByTestId } = render(
+  it("renders nothing when focus is null (bento module rows handle quick-add)", () => {
+    const { toJSON, queryByTestId } = render(
       <TodayFocusCard focus={null} onAction={jest.fn()} />,
     );
 
-    expect(getByTestId("today-focus-empty")).toBeTruthy();
-    expect(getByTestId("today-focus-chip-finyk")).toBeTruthy();
-    expect(getByTestId("today-focus-chip-routine")).toBeTruthy();
-    expect(getByTestId("today-focus-chip-fizruk")).toBeTruthy();
-    // Nutrition was promoted out of the Phase-7 gate by
-    // 2f17f9b5 ("feat(mobile): show nutrition on hub dashboard"); it
-    // now ships alongside finyk / routine / fizruk.
-    expect(getByTestId("today-focus-chip-nutrition")).toBeTruthy();
-  });
-
-  it("fires onQuickAdd with the correct module when a chip is tapped", () => {
-    const onQuickAdd = jest.fn();
-    const { getByTestId } = render(
-      <TodayFocusCard
-        focus={null}
-        onAction={jest.fn()}
-        onQuickAdd={onQuickAdd}
-      />,
-    );
-
-    fireEvent.press(getByTestId("today-focus-chip-routine"));
-    expect(onQuickAdd).toHaveBeenCalledWith("routine");
+    expect(toJSON()).toBeNull();
+    expect(queryByTestId("today-focus-empty")).toBeNull();
   });
 
   it("renders focus title + body and invokes onAction on primary press", () => {
