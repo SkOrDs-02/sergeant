@@ -20,6 +20,7 @@ import {
   runOpenClawAgent,
   type OpenClawAgentDeps,
 } from "../agents/openclaw.js";
+import { COUNCIL_PERSONAS, type OpenClawPersona } from "../agents/personas.js";
 import {
   escapeTelegramMarkdownV2,
   FixedWindowRateLimiter,
@@ -33,24 +34,56 @@ import {
 } from "./security.js";
 import { OpenClawSessionStore } from "./session.js";
 
+const DEFAULT_COUNCIL_USD_BUDGET = 2.0;
+/**
+ * Скільки lifecycle-USD має бути в залишку, щоб дозволити запуск
+ * `/council` (sequential 4 personas + cofounder synthesis = ~5 turn-ів).
+ * Phase 1 не парсить usage з Anthropic, тому це opportunity-cap проти
+ * запуску council вечером, коли денний budget уже з'їдено.
+ */
+function parseCouncilUsdBudget(value: string | undefined): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0)
+    return DEFAULT_COUNCIL_USD_BUDGET;
+  return parsed;
+}
+
+const PERSONA_LABEL: Record<OpenClawPersona, string> = {
+  cofounder: "Cofounder",
+  ops: "Ops",
+  growth: "Growth",
+  eng: "Eng",
+  finance: "Finance",
+};
+
 const HELP_TEXT = [
   "*OpenClaw* — твій co-founder bot.",
   "",
   "Я аналізую дані Sergeant (PG, Stripe, Sentry, PostHog, GitHub, n8n logs, strategy docs)",
   "і даю advisory-думку. Я не пишу в продакшн.",
   "",
-  "*Швидкі команди:*",
+  "*Швидкі команди (preset-prompts):*",
   "/status — короткий ops-зріз (Stripe + Sentry + healthz)",
   "/metrics — детальні метрики за тиждень",
   "/digest — growth-дайджест (PostHog + GitHub releases + n8n)",
   "/logs — останні n8n executions з помилками",
   "/review — recent PRs / merges за тиждень",
+  "",
+  "*Personas (ADR-0033, Phase 2.5):*",
+  "/ops <q> — reliability фокус (Sentry + n8n + healthz)",
+  "/growth <q> — PostHog + GitHub releases + strategy docs",
+  "/eng <q> — GitHub PRs + schema + engineering topic",
+  "/finance <q> — Stripe + cofounder memory + decisions",
+  "/cofounder <q> — default синтез (всі tools)",
+  "/council <q> — round-table: ops → growth → eng → finance → cofounder synthesis",
+  "",
+  "*Службові:*",
   "/decisions — останні зафіксовані рішення",
   "/budget — поточний денний spend",
   "/reset — почати нову сесію",
   "/help — ця довідка",
   "",
-  "_Phase 1, ADR-0031 + ADR-0032._",
+  "_Phase 1, ADR-0031 + ADR-0032 + ADR-0033._",
 ].join("\n");
 
 // ADR-0032: команди типу /status — це prefilled-message, який запускає той
@@ -154,6 +187,9 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
   const rateLimiter = new FixedWindowRateLimiter(
     parseOpenClawRateLimitPerMinute(process.env.OPENCLAW_RATE_LIMIT_PER_MIN),
   );
+  const councilUsdBudget = parseCouncilUsdBudget(
+    process.env.OPENCLAW_COUNCIL_USD_BUDGET,
+  );
 
   const deps: OpenClawAgentDeps = {
     serverUrl,
@@ -242,14 +278,25 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     ctx: Context,
     userMessage: string,
     trigger: "dm" | "morning_ritual" | "weekly_review" | "monthly_okr",
-  ): Promise<void> {
+    persona?: OpenClawPersona,
+    options?: {
+      /** Skip auto-reply to chat (caller will batch-reply or aggregate). */
+      silent?: boolean;
+      /** Override iteration cap (default — config.maxIterations). */
+      maxIterationsOverride?: number;
+      /** Pre-checked budget; skip the second HTTP probe. */
+      skipBudgetCheck?: boolean;
+      /** Tag in audit-log metadata to mark council sub-turns. */
+      metadataExtras?: Record<string, unknown>;
+    },
+  ): Promise<{ reply: string; ok: boolean }> {
     const userId = ctx.from?.id;
     const founderTgUserId = parseFounderTgUserId(
       process.env.OPENCLAW_FOUNDER_TG_USER_ID,
     );
     if (!userId || !founderTgUserId) {
       await ctx.reply("OpenClaw not configured (missing founder TG id).");
-      return;
+      return { reply: "", ok: false };
     }
 
     // 1) Open invocation row у audit-log (status=success, потім finalize-имо).
@@ -261,50 +308,61 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
         founderTgUserId,
         trigger,
         userMessage,
-        metadata: { telegramChatId: ctx.chat?.id },
+        metadata: {
+          telegramChatId: ctx.chat?.id,
+          persona: persona ?? "cofounder",
+          ...(options?.metadataExtras ?? {}),
+        },
       },
     );
     const invocationId = openRes.data?.invocationId;
 
-    // 2) Budget pre-check.
-    const budget = await postJson<BudgetResponse>(
-      `${serverUrl}/api/internal/openclaw/budget`,
-      internalApiKey,
-      { founderUserId },
-    );
-    if (!budget.ok || !budget.data?.allowed) {
-      const spent = budget.data?.spentUsd ?? 0;
-      const cap = budget.data?.budgetUsd ?? 0;
-      await ctx.reply(
-        `OpenClaw quota exceeded for today ($${spent.toFixed(2)} / $${cap.toFixed(2)}). Спробуй завтра.`,
+    // 2) Budget pre-check (skipped — caller уже перевірив, як у council mode).
+    if (!options?.skipBudgetCheck) {
+      const budget = await postJson<BudgetResponse>(
+        `${serverUrl}/api/internal/openclaw/budget`,
+        internalApiKey,
+        { founderUserId },
       );
-      if (invocationId) {
-        await postJson(
-          `${serverUrl}/api/internal/openclaw/invocations/finalize`,
-          internalApiKey,
-          {
-            invocationId,
-            status: "budget_exceeded",
-            assistantResponse: null,
-            errorMessage: "daily budget exceeded",
-          },
+      if (!budget.ok || !budget.data?.allowed) {
+        const spent = budget.data?.spentUsd ?? 0;
+        const cap = budget.data?.budgetUsd ?? 0;
+        await ctx.reply(
+          `OpenClaw quota exceeded for today ($${spent.toFixed(2)} / $${cap.toFixed(2)}). Спробуй завтра.`,
         );
+        if (invocationId) {
+          await postJson(
+            `${serverUrl}/api/internal/openclaw/invocations/finalize`,
+            internalApiKey,
+            {
+              invocationId,
+              status: "budget_exceeded",
+              assistantResponse: null,
+              errorMessage: "daily budget exceeded",
+            },
+          );
+        }
+        return { reply: "", ok: false };
       }
-      return;
     }
 
     // 3) Run agent loop.
-    await ctx.replyWithChatAction("typing");
+    if (!options?.silent) await ctx.replyWithChatAction("typing");
     const startedAt = Date.now();
     try {
-      const { reply, toneMode } = await runOpenClawAgent({
+      const {
+        reply,
+        toneMode,
+        persona: personaUsed,
+      } = await runOpenClawAgent({
         client: anthropic,
         userMessage,
         founderHandle: ctx.from?.username
           ? `@${ctx.from.username}`
           : `id:${userId}`,
         trigger,
-        maxIterations,
+        maxIterations: options?.maxIterationsOverride ?? maxIterations,
+        persona,
         deps: { ...deps, invocationId },
       });
       const durationMs = Date.now() - startedAt;
@@ -313,9 +371,11 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
         lastToneMode: toneMode,
       });
 
-      const safe = escapeTelegramMarkdownV2(reply);
-      for (const chunk of splitTelegramMessage(safe)) {
-        await ctx.reply(chunk, { parse_mode: "MarkdownV2" });
+      if (!options?.silent) {
+        const safe = escapeTelegramMarkdownV2(reply);
+        for (const chunk of splitTelegramMessage(safe)) {
+          await ctx.reply(chunk, { parse_mode: "MarkdownV2" });
+        }
       }
 
       if (invocationId) {
@@ -331,14 +391,18 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
             assistantResponse: reply,
             durationMs,
             toneMode,
+            metadata: { persona: personaUsed },
           },
         );
       }
+      return { reply, ok: true };
     } catch (err) {
       const durationMs = Date.now() - startedAt;
       const message = err instanceof Error ? err.message : String(err);
       console.error("OpenClaw agent error:", message);
-      await ctx.reply("Помилка під час обробки. Спробуй ще раз.");
+      if (!options?.silent) {
+        await ctx.reply("Помилка під час обробки. Спробуй ще раз.");
+      }
       if (invocationId) {
         await postJson(
           `${serverUrl}/api/internal/openclaw/invocations/finalize`,
@@ -351,6 +415,7 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
           },
         );
       }
+      return { reply: "", ok: false };
     }
   }
 
@@ -369,6 +434,145 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
       await runAgentTurn(ctx, preset, "dm");
     });
   }
+
+  // ADR-0033 (Phase 2.5): persona-scoped slash-команди. Очікуємо
+  // argument: `/ops <q>`. Порожня команда → короткий hint.
+  const PERSONA_COMMANDS: ReadonlyArray<{
+    cmd: string;
+    persona: OpenClawPersona;
+  }> = [
+    { cmd: "ops", persona: "ops" },
+    { cmd: "growth", persona: "growth" },
+    { cmd: "eng", persona: "eng" },
+    { cmd: "finance", persona: "finance" },
+    { cmd: "cofounder", persona: "cofounder" },
+  ];
+
+  for (const { cmd, persona } of PERSONA_COMMANDS) {
+    bot.command(cmd, async (ctx) => {
+      if (!isAllowedDmContext(ctx)) return;
+      const userId = ctx.from?.id;
+      if (!userId) return;
+      if (!rateLimiter.allow(String(userId))) {
+        await ctx.reply("Rate limit exceeded. Спробуй за хвилину.");
+        return;
+      }
+      const argument = (ctx.match ?? "").toString().trim();
+      if (!argument) {
+        await ctx.reply(
+          `Напиши питання після /${cmd}, напр. \`/${cmd} як виглядає ${PERSONA_LABEL[persona].toLowerCase()} ситуація зараз?\``,
+        );
+        return;
+      }
+      await runAgentTurn(ctx, argument, "dm", persona);
+    });
+  }
+
+  /**
+   * `/council <q>` — round-table mode (ADR-0033).
+   *
+   * Sequential execution чотирьох specialist-персон потім cofounder
+   * synthesis. Sequential а не parallel — для cost predictability і бо Anthropic
+   * client один (rate-limit shared). Iteration cap у кожної specialist-turn-и
+   * обрізаний до ≤3 (разом ≤5 turn-ів, орієнтовно ~$0.50 в sonnet-cost-і).
+   */
+  bot.command("council", async (ctx) => {
+    if (!isAllowedDmContext(ctx)) return;
+    const userId = ctx.from?.id;
+    if (!userId) return;
+    if (!rateLimiter.allow(String(userId))) {
+      await ctx.reply("Rate limit exceeded. Спробуй за хвилину.");
+      return;
+    }
+    const question = (ctx.match ?? "").toString().trim();
+    if (!question) {
+      await ctx.reply(
+        "Напиши питання після /council, напр. `/council чи вводимо B2B в Q3?`",
+      );
+      return;
+    }
+
+    // Pre-check budget headroom — рахуємо реальний daily-spend і виходимо
+    // fail-fast якщо залишок менше council-cap-у. Phase 1 не парсить usage,
+    // тому реально це опирається на daily $5 бар'єр (з manual decrement-ом).
+    const headroom = await postJson<BudgetResponse>(
+      `${serverUrl}/api/internal/openclaw/budget`,
+      internalApiKey,
+      { founderUserId },
+    );
+    if (!headroom.ok || !headroom.data?.allowed) {
+      const spent = headroom.data?.spentUsd ?? 0;
+      const cap = headroom.data?.budgetUsd ?? 0;
+      await ctx.reply(
+        `Не вистачає бюджету: $${spent.toFixed(2)} / $${cap.toFixed(2)}. /council потребує мінімум $${councilUsdBudget.toFixed(2)} залишку.`,
+      );
+      return;
+    }
+    if (headroom.data.remainingUsd < councilUsdBudget) {
+      await ctx.reply(
+        `Council вимагає ≥3 $${councilUsdBudget.toFixed(2)} budget headroom; зараз залишок $${headroom.data.remainingUsd.toFixed(4)}. Спробуй окрему /ops або завтра.`,
+      );
+      return;
+    }
+
+    await ctx.reply(
+      `Рада розпочата. Присутні: ops → growth → eng → finance → cofounder synthesis.`,
+    );
+
+    // 4 specialist turns — sequential, with shorter iteration cap.
+    const PER_TURN_ITER_CAP = Math.min(3, maxIterations);
+    const specialistReplies: Array<{
+      persona: OpenClawPersona;
+      reply: string;
+    }> = [];
+
+    for (const persona of COUNCIL_PERSONAS) {
+      await ctx.reply(`*${PERSONA_LABEL[persona]}* думає…`, {
+        parse_mode: "Markdown",
+      });
+      const turn = await runAgentTurn(ctx, question, "dm", persona, {
+        maxIterationsOverride: PER_TURN_ITER_CAP,
+        metadataExtras: { council: true, councilStep: persona },
+      });
+      if (!turn.ok) {
+        await ctx.reply(
+          `Council aborted on persona=${persona}. Дивись logs / спробуй окрему /${persona}.`,
+        );
+        return;
+      }
+      specialistReplies.push({ persona, reply: turn.reply });
+      const safeReply = escapeTelegramMarkdownV2(
+        `*${PERSONA_LABEL[persona]}*\n${turn.reply}`,
+      );
+      for (const chunk of splitTelegramMessage(safeReply)) {
+        await ctx.reply(chunk, { parse_mode: "MarkdownV2" });
+      }
+    }
+
+    // Final cofounder synthesis — бачить питання + 4 specialist-відповіді,
+    // об'єднує їх у синтез. Cofounder primer + full-toolset (якщо захоче
+    // дореалвати дані — може).
+    const synthesisPrompt = [
+      `Оригінальне питання: ${question}`,
+      "",
+      "Думки ради з різних кутів:",
+      ...specialistReplies.map(
+        ({ persona, reply }) => `\n--- ${PERSONA_LABEL[persona]} ---\n${reply}`,
+      ),
+      "",
+      "Твоє завдання як cofounder-фасилітатора:",
+      "1) Брифли збиги і розбіжності між specialist-думками.",
+      "2) Сформулюй рекомендацію з 1–3 наступних кроків.",
+      "3) Якщо вирішення вимагає повної фіксації — запропонуй record_decision.",
+      "Будь стислий, леди з висновку.",
+    ].join("\n");
+
+    await ctx.reply("*Cofounder synthesis…*", { parse_mode: "Markdown" });
+    await runAgentTurn(ctx, synthesisPrompt, "dm", "cofounder", {
+      maxIterationsOverride: Math.min(4, maxIterations),
+      metadataExtras: { council: true, councilStep: "synthesis" },
+    });
+  });
 
   bot.on("message:text", async (ctx) => {
     // 1) DM-only.

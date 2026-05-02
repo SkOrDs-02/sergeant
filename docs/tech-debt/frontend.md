@@ -8,13 +8,14 @@
 > **Оновлено 2026-05-02.** Sync з реальним станом коду після кількох wave-ів decomposition:
 > Розділ 2 (localStorage burndown) — TODO-allowlist у `eslint.config.js` скорочено з 41 до **17 файлів**
 > (нові хвилі міграцій у `routine`/`finyk`/`onboarding`/`chatActions`/`insights`/`recommendations`).
-> Розділ 4 (великі файли) — у `apps/web/src` залишилось **20 файлів >600 LOC** (раніше 22);
+> Розділ 4 (великі файли) — у `apps/web/src` залишилось **19 файлів >600 LOC** (раніше 22);
 > декомпозовано `Transactions.tsx`, `HubSearch.tsx`, `Budgets.tsx`, `Overview.tsx`, `DesignShowcase.tsx`,
 > `ActiveWorkoutPanel.tsx`, `core/App.tsx` (645 → 224 LOC, винесено
 > `app/{appPaths,RedirectTo,useAppEffects,StandaloneRoutes,HubHomeView,ActiveModuleView}.{ts,tsx}`),
+> `shared/components/ui/VoiceMicButton.tsx` (852 → 256 LOC, винесено
+> `voice/{useVoiceInput,useGroqVoiceInput,PendingVoiceChip,resolveVoiceProvider}.{ts,tsx}`),
 > `core/lib/chatActions/crossActions.ts` (788 → 78 LOC, винесено
-> `crossActions/{helpers,briefingHandlers,goalAndUtility,financeAnalytics,noteHandlers,memoryHandlers,exportHandler,compareWeeksHandler}.ts`);
-> водночас виросли нові: `VoiceMicButton.tsx` (852).
+> `crossActions/{helpers,briefingHandlers,goalAndUtility,financeAnalytics,noteHandlers,memoryHandlers,exportHandler,compareWeeksHandler}.ts`).
 > Розділ 9 (`any` типи) — production тепер містить **10 файлів** із `: any`
 > (7 у finyk sub-pages + `BudgetsGoalsSection.tsx` + 2 нові у fizruk після decomposition).
 > `no-strict-bypass` — allowlist на 9 production-файлів **обнулено**: усі call-сайти мігровані,
@@ -161,6 +162,16 @@ Codemod ідемпотентний: повторний запуск дасть `
 > (132 — active-module shell з лінивими `FinykApp`/`FizrukApp`/`RoutineApp`/
 > `NutritionApp`). Усі < 200 LOC. Count 22 → 21.
 >
+> `shared/components/ui/VoiceMicButton.tsx` (раніше 852 рядків) декомпозовано на
+> `VoiceMicButton.tsx` (256 — публічний компонент + re-export `useVoiceInput`/
+> `UseVoiceInputOptions`/`UseVoiceInputReturn` для backward-compat),
+> `voice/useVoiceInput.ts` (139 — Web Speech API hook + типи),
+> `voice/useGroqVoiceInput.ts` (270 — Groq Whisper recorder hook через
+> `/api/transcribe` + утиліти `pickRecorderMimeType`/`isGroqSupported`),
+> `voice/PendingVoiceChip.tsx` (188 — 3-сек preview/undo чип з countdown
+> ring + portal-positioning), `voice/resolveVoiceProvider.ts` (12 — env-flag
+> resolver `auto`/`groq`/`webspeech`). Count 21 → 20.
+>
 > `core/lib/chatActions/crossActions.ts` (раніше 788 рядків) декомпозовано на
 > `crossActions.ts` (78 — thin dispatcher над `action.name` switch),
 > `crossActions/helpers.ts` (68 — `weekLabelToMondayKey`/`previousWeekKey`/
@@ -172,7 +183,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 > `crossActions/memoryHandlers.ts` (84 — `remember` + `forget` + `my_profile`),
 > `crossActions/exportHandler.ts` (46 — `export_module_data` з вкладеним
 > per-module switch), `crossActions/compareWeeksHandler.ts` (121 — `compare_weeks`
-> з 4 module-секціями). Усі < 200 LOC. Count 21 → 20.
+> з 4 module-секціями). Усі < 200 LOC. Count 20 → 19.
 >
 > **Скоуп таблиці нижче** — лише `apps/web/src`. Mobile (`apps/mobile/src/modules/finyk/pages/Transactions/TransactionsPage.tsx` 1215),
 > packages (`packages/shared/src/lib/assistantCatalogue.ts` 1133, `schemas/api.ts` 986,
@@ -182,7 +193,6 @@ Codemod ідемпотентний: повторний запуск дасть `
 | Рядків | Файл                                                  |
 | ------ | ----------------------------------------------------- |
 | 897    | `core/onboarding/seedDemoData.ts`                     |
-| 852    | `shared/components/ui/VoiceMicButton.tsx`             |
 | 774    | `modules/fizruk/pages/Body.tsx`                       |
 | 758    | `core/lib/chatActions/finykActions.ts`                |
 | 733    | `modules/nutrition/components/LogCard.tsx`            |
@@ -246,31 +256,45 @@ aggregation, cloud sync flows.
 
 ## 🟢 Nice-to-have
 
-### 7. `console.log/debug` у production коді — 9 рядків
+### 7. `console.*` у production коді — 35 рядків (re-audit 2026-05-02)
 
-```
-core/settings/GeneralSection.tsx:193  console.log("[sw] snapshot", snap)
-core/settings/GeneralSection.tsx:215  console.log("[sw] caches cleared", res)
-core/observability/analytics.ts:58                  console.log("[analytics]", event)
-core/cloudSync/logger.ts:39-41        console.debug("[cloud-sync]")
-core/cloudSync/hook/useCloudSyncDebug.ts:15  (docstring reference)
-shared/lib/perf.ts:28                 console.debug("[perf]")
-sw.js:491                             console.log("[sw] debug enabled", …)
-```
+**Re-audit 2026-05-02.** Попередня версія цього розділу декларувала «9
+рядків» і покривала лише `console.log` / `console.debug`. Реальний
+скан `apps/web/src/**` (без тестів і `__tests__/`) дає **35 викликів**
+у 21 production-файлі. Збільшення — наслідок:
 
-Усі 9 — навмисні. `cloud-sync` / `perf` / `analytics` — debug-mode logger,
-що пишеться через `console.debug` і не відображається в default-консолі.
-`GeneralSection` — кнопки «Діагностика SW», що цілеспрямовано виводять
-снапшот у консоль (toast: «SW-діагностика виведена в консоль»). `sw.js` —
-service worker власний debug toggle. Виправлень не потрібно.
+- розширення скоупу до `console.warn` / `console.error` / `console.info`
+  (best-effort failure logging);
+- декомпозиції `core/settings/GeneralSection.tsx` → `core/settings/PWASection.tsx`
+  (4 виклики замість 2);
+- нових debug-toggle / fallback-warn у `core/db/sqlite.ts` (4),
+  `shared/hooks/usePushNotifications.ts` (4), `core/cloudSync/engine/{initialSync,push}.ts` (3),
+  `modules/routine/lib/dualWrite/{adapter,index}.ts` (2),
+  `modules/nutrition/hooks/useNutritionLog.ts` (2).
+
+| Категорія                        | Файли                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | К-сть |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| Debug-mode logger                | `core/cloudSync/logger.ts` (2), `shared/lib/perf.ts` (1), `core/observability/analytics.ts` (1)                                                                                                                                                                                                                                                                                                                                                                             | 4     |
+| Best-effort failure warn (catch) | `main.tsx` (1), `core/app/ShellDeepLinkBridge.tsx` (1), `core/insights/useWeeklyDigest.ts` (1), `core/lib/chatActions/nutritionActions.ts` (1), `core/cloudSync/engine/{initialSync,push}.ts` (3), `core/hooks/useSpeech.ts` (1), `modules/finyk/hooks/usePrivatbank.ts` (1), `modules/finyk/hooks/useStorage.ts` (1), `shared/hooks/usePushNotifications.ts` (4), `shared/lib/{createModuleStorage,storageManager,typedStore}.ts` (3), `shared/components/ui/Icon.tsx` (1) | 19    |
+| Fallback warn (sqlite probe)     | `core/db/sqlite.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                         | 4     |
+| User-facing debug toggle         | `core/settings/PWASection.tsx` (4 — кнопки «Діагностика SW» / «Очистити кеш SW»), `sw.ts` (1 — `[sw] debug enabled`)                                                                                                                                                                                                                                                                                                                                                        | 5     |
+| dualWrite structured logger      | `modules/routine/lib/dualWrite/{adapter,index}.ts`                                                                                                                                                                                                                                                                                                                                                                                                                          | 2     |
+| JSON-parse error                 | `modules/nutrition/hooks/useNutritionLog.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                | 1     |
+
+**Усі 35 — навмисні** (best-effort logging без Sentry-context або
+debug-mode toggles). Виправлень не потрібно. Як пастка для нових
+випадків — додати ESLint-правило `no-console` з allowlist на
+debug-logger/warn-патерни — окремий PR (Phase 6 candidate).
 
 ---
 
-### 8. `eslint-disable no-eyebrow-drift` — 25 рядків
+### 8. `eslint-disable no-eyebrow-drift` — 26 рядків (`apps/web/src`)
 
-Custom DS-rule пригнічується 25 разів. Усі з обґрунтуваннями в коментарях
-(кастомні hero kickers, calendar headers). Не критично; колись варто
-розширити `SectionHeading` API, щоб ці випадки відпали.
+Custom DS-rule пригнічується 26 разів у `apps/web/src` (+17 у `apps/mobile/src`).
+Усі з обґрунтуваннями в коментарях (кастомні hero kickers, calendar headers,
+pill-overlay typography, marketing eyebrow). Не критично; колись варто
+розширити `SectionHeading` API (нові слоти `eyebrowTone` / `as` / `id`)
+або ввести primitive `Eyebrow` з phrased typography, щоб ці випадки відпали.
 
 ---
 

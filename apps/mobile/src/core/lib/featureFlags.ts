@@ -69,6 +69,13 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
       "Кожен write у MMKV Рутини додатково мирорить у локальну SQLite (`routine_entries`). Reads ще беруться з MMKV. Stage 4 PR #024 storage-roadmap. Best-effort: помилка SQLite-запису не ламає MMKV. Default: off.",
     defaultValue: false,
   },
+  {
+    id: "feature.routine.sqlite_v2.read_sqlite",
+    label: "Routine — read completions from SQLite",
+    description:
+      "Completions читаються з локальної SQLite (`routine_entries`) замість MMKV blob. MMKV-write залишається як safety net. Stage 4 PR #025 storage-roadmap. Потребує увімкненого dual-write. Default: off.",
+    defaultValue: false,
+  },
 ] as const;
 
 const DEFAULTS: FlagValues = Object.freeze(

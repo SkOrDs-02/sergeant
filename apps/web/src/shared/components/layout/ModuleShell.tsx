@@ -74,7 +74,10 @@ export function ModuleShell({
       {overlays}
       {banner}
       <div
-        className={cn("flex-1 overflow-hidden flex flex-col", mainClassName)}
+        className={cn(
+          "flex-1 overflow-hidden flex flex-col module-card-tight",
+          mainClassName,
+        )}
       >
         {children}
       </div>

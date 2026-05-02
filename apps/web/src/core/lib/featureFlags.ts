@@ -67,6 +67,14 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     defaultValue: false,
     experimental: true,
   },
+  {
+    id: "feature.routine.sqlite_v2.read_sqlite",
+    label: "Routine — read completions from SQLite",
+    description:
+      "Completions читаються з локальної SQLite (`routine_entries`) замість LS blob. LS-write залишається як safety net. Stage 4 PR #025 storage-roadmap. Потребує увімкненого dual-write. Default: off.",
+    defaultValue: false,
+    experimental: true,
+  },
 ] as const;
 
 export type FlagId = (typeof FLAG_REGISTRY)[number]["id"];

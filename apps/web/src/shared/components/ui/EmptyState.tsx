@@ -180,6 +180,12 @@ export interface ModuleEmptyStateProps {
   variant?: "default" | "compact";
   onAction?: () => void;
   actionLabel?: string;
+  /** Show a dismiss/close button in the top-right corner. */
+  dismissible?: boolean;
+  /** Called when the user taps the dismiss button. */
+  onDismiss?: () => void;
+  /** Override the default description from the module config. */
+  description?: string;
   className?: string;
 }
 
@@ -245,6 +251,9 @@ export function ModuleEmptyState({
   variant = "default",
   onAction,
   actionLabel,
+  dismissible = false,
+  onDismiss,
+  description: descriptionOverride,
   className,
 }: ModuleEmptyStateProps) {
   const config = MODULE_EMPTY_CONFIG[module];
@@ -261,7 +270,7 @@ export function ModuleEmptyState({
         <Icon name={config.icon} size={18} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-text truncate">
+        <p className="text-style-label text-text truncate">
           {config.exampleLine1}
         </p>
         <p className="text-xs text-muted">{config.exampleLine2}</p>
@@ -270,48 +279,60 @@ export function ModuleEmptyState({
   );
 
   return (
-    <EmptyState
-      // Compact variant keeps the small icon-in-rounded-square so it fits
-      // dense surfaces (in-list placeholders, sidebar panels). The default
-      // (full-bleed) variant promotes to a module-shaped SVG illustration
-      // which carries far more personality and recognisability than the
-      // generic lucide glyph the empty state used to render.
-      icon={
-        compact ? (
-          <Icon
-            name={config.icon}
-            size="lg"
-            className={config.accent.split(" ")[0]}
-          />
-        ) : undefined
-      }
-      illustration={
-        compact ? undefined : (
-          <ModuleEmptyIllustration
-            module={module}
-            size={120}
-            className="text-text"
-          />
-        )
-      }
-      title={config.title}
-      description={config.description}
-      hint={config.hint}
-      examplePreview={!compact ? examplePreview : undefined}
-      compact={compact}
-      className={className}
-      module={module}
-      action={
-        onAction && (
-          <Button
-            variant="primary"
-            size={compact ? "sm" : "md"}
-            onClick={onAction}
-          >
-            {actionLabel || config.actionLabel}
-          </Button>
-        )
-      }
-    />
+    <div className="relative">
+      {dismissible && onDismiss && (
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Закрити"
+          className="absolute top-2 right-2 p-1.5 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors z-10"
+        >
+          <Icon name="x" size={16} />
+        </button>
+      )}
+      <EmptyState
+        // Compact variant keeps the small icon-in-rounded-square so it fits
+        // dense surfaces (in-list placeholders, sidebar panels). The default
+        // (full-bleed) variant promotes to a module-shaped SVG illustration
+        // which carries far more personality and recognisability than the
+        // generic lucide glyph the empty state used to render.
+        icon={
+          compact ? (
+            <Icon
+              name={config.icon}
+              size="lg"
+              className={config.accent.split(" ")[0]}
+            />
+          ) : undefined
+        }
+        illustration={
+          compact ? undefined : (
+            <ModuleEmptyIllustration
+              module={module}
+              size={120}
+              className="text-text"
+            />
+          )
+        }
+        title={config.title}
+        description={descriptionOverride ?? config.description}
+        hint={config.hint}
+        examplePreview={!compact ? examplePreview : undefined}
+        compact={compact}
+        className={className}
+        module={module}
+        action={
+          onAction && (
+            <Button
+              variant="primary"
+              size={compact ? "sm" : "md"}
+              onClick={onAction}
+            >
+              {actionLabel || config.actionLabel}
+            </Button>
+          )
+        }
+      />
+    </div>
   );
 }

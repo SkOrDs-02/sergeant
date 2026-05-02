@@ -54,6 +54,9 @@ export type { FeatureSpotlightProps } from "./FeatureSpotlight";
 export {
   KeyboardShortcutsModal,
   useKeyboardShortcutsModal,
+  ShortcutRegistryProvider,
+  ShortcutRegistryContext,
+  useRegisterShortcuts,
 } from "./KeyboardShortcutsModal";
 export type { KeyboardShortcut } from "./KeyboardShortcutsModal";
 

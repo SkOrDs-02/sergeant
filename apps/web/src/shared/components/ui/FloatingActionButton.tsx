@@ -170,11 +170,11 @@ export const FloatingActionButton = memo(function FloatingActionButton({
 
   const positionClasses: Record<string, string> = {
     "bottom-right":
-      "fixed bottom-[max(1.5rem,env(safe-area-inset-bottom,0px)+0.75rem)] right-5",
+      "fixed bottom-[max(1.5rem,env(safe-area-inset-bottom,0px)+0.75rem)] right-[max(1.25rem,env(safe-area-inset-right,0px))]",
     "bottom-center":
       "fixed bottom-[max(1.5rem,env(safe-area-inset-bottom,0px)+0.75rem)] left-1/2 -translate-x-1/2",
     "bottom-left":
-      "fixed bottom-[max(1.5rem,env(safe-area-inset-bottom,0px)+0.75rem)] left-5",
+      "fixed bottom-[max(1.5rem,env(safe-area-inset-bottom,0px)+0.75rem)] left-[max(1.25rem,env(safe-area-inset-left,0px))]",
   };
 
   const styles = sizeStyles[size];
@@ -218,7 +218,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
               )}
             />
             {label && (
-              <span className="text-sm font-semibold whitespace-nowrap">
+              <span className="text-style-label whitespace-nowrap">
                 {label}
               </span>
             )}
@@ -271,7 +271,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
                     style={{ color: action.color }}
                   />
                 </span>
-                <span className="text-sm font-semibold text-text whitespace-nowrap">
+                <span className="text-style-label text-text whitespace-nowrap">
                   {action.label}
                 </span>
               </button>
