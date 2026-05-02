@@ -1,7 +1,16 @@
-# 0030 — Структура Telegram-каналів для n8n reporting
+# ADR-0030: Структура Telegram-каналів для n8n reporting
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-08-01.
-> **Status:** Accepted
+- **Status:** Accepted
+- **Date:** 2026-05-02
+- **Deciders:** @Skords-01
+- **Supersedes:** —
+- **Related:**
+  - [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../ops/n8n-workflows/REPORTING-MATRIX.md) — workflow → topic routing matrix.
+  - [`docs/observability/telegram-control-plane.md`](../observability/telegram-control-plane.md) — architectural review.
+  - [ADR-0026 — n8n workflow source of truth](./0026-n8n-workflow-source-of-truth.md) — Git-as-truth для workflow JSON.
+  - [`docs/playbooks/modify-n8n-workflow.md`](../playbooks/modify-n8n-workflow.md) — playbook оновлення matrix-у разом з workflow.
+
+---
 
 ## Context
 

@@ -97,7 +97,8 @@ pnpm gen:adr
 | 0026 | n8n — джерело істини для воркфлоу               | accepted | 2026-04-27 | Git — джерело істини для n8n; JSON у `ops/n8n-workflows/` + manifest з owner / risk / secrets.            |
 | 0027 | Політика OpenClaw, Console та MCP               | accepted | 2026-04-27 | `apps/console` як internal admin; allowlist по Telegram user-id; вивід агента — untrusted.                |
 | 0028 | pgvector + AI memory                            | accepted | 2026-05-01 | Voyage embeddings → `halfvec(1024)` у Postgres з HNSW + hash-партиціонуванням; vector-store-agnostic API. |
+| 0030 | Telegram reporting channel structure            | accepted | 2026-05-02 | Single supergroup + Forum mode (8 канонічних топіків) + P0/P1/P2 escalation hierarchy + WF-98 fan-out.    |
 
-> **Note on numbering 0016–0022 jump:** ADRs `0016`–`0022` — це retroactive batch, що був написаний паралельно з `0006`–`0012`. Через паралельне виконання Devin-сесій виникли колізії номерів `0003`–`0012`. Розв'язано через PR `docs(adr): resolve numbering collisions` — same-topic дублі (refund, anthropic, PII) видалено, late-comers перенумеровано в `0016`+. ADRs нумеруються **sequentially without gaps** надалі — наступний номер `0029`.
+> **Note on numbering 0016–0022 jump:** ADRs `0016`–`0022` — це retroactive batch, що був написаний паралельно з `0006`–`0012`. Через паралельне виконання Devin-сесій виникли колізії номерів `0003`–`0012`. Розв'язано через PR `docs(adr): resolve numbering collisions` — same-topic дублі (refund, anthropic, PII) видалено, late-comers перенумеровано в `0016`+. ADRs нумеруються **sequentially without gaps** надалі — наступний номер `0031`.
 
 > **Graph integrity:** Парсинг метаданих ADR (`Status:` / `Supersedes:`, з підтримкою англо- та україномовних назв полів — див. ADR-0026/0027) і перевірка індексу + бідіректіонального supersede-зв'язку автоматизовані: `node scripts/docs/check-adr-graph.mjs` (CI gate в `docs-automation.yml`).
