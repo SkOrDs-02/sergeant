@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-02 by @sonher468. **Next review:** 2026-07-31.
 > **Status:** Active
 
 Аналіз кодової бази `apps/web/src` (434 source файли, 87k рядків).
@@ -8,12 +8,14 @@
 > **Оновлено 2026-05-02.** Sync з реальним станом коду після кількох wave-ів decomposition:
 > Розділ 2 (localStorage burndown) — TODO-allowlist у `eslint.config.js` скорочено з 41 до **17 файлів**
 > (нові хвилі міграцій у `routine`/`finyk`/`onboarding`/`chatActions`/`insights`/`recommendations`).
-> Розділ 4 (великі файли) — у `apps/web/src` залишилось **20 файлів >600 LOC** (раніше 22);
+> Розділ 4 (великі файли) — у `apps/web/src` залишилось **19 файлів >600 LOC** (раніше 22);
 > декомпозовано `Transactions.tsx`, `HubSearch.tsx`, `Budgets.tsx`, `Overview.tsx`, `DesignShowcase.tsx`,
 > `ActiveWorkoutPanel.tsx`, `core/App.tsx` (645 → 224 LOC, винесено
 > `app/{appPaths,RedirectTo,useAppEffects,StandaloneRoutes,HubHomeView,ActiveModuleView}.{ts,tsx}`),
 > `shared/components/ui/VoiceMicButton.tsx` (852 → 256 LOC, винесено
-> `voice/{useVoiceInput,useGroqVoiceInput,PendingVoiceChip,resolveVoiceProvider}.{ts,tsx}`).
+> `voice/{useVoiceInput,useGroqVoiceInput,PendingVoiceChip,resolveVoiceProvider}.{ts,tsx}`),
+> `modules/fizruk/pages/Body.tsx` (774 → 414 LOC, винесено
+> `Body/{storage,trendUtils,ScoreButton,CollapsibleTrendCard,JournalEntryCard,JournalSection}`).
 > Розділ 9 (`any` типи) — production тепер містить **10 файлів** із `: any`
 > (7 у finyk sub-pages + `BudgetsGoalsSection.tsx` + 2 нові у fizruk після decomposition).
 > `no-strict-bypass` — allowlist на 9 production-файлів **обнулено**: усі call-сайти мігровані,
@@ -170,6 +172,19 @@ Codemod ідемпотентний: повторний запуск дасть `
 > ring + portal-positioning), `voice/resolveVoiceProvider.ts` (12 — env-flag
 > resolver `auto`/`groq`/`webspeech`). Count 21 → 20.
 >
+> `modules/fizruk/pages/Body.tsx` (раніше 774 рядків) декомпозовано на
+> `Body.tsx` (414 — публічний `Body` компонент: form + chart configs +
+> композиція), `Body/storage.ts` (33 — `TREND_STORAGE_PREFIX`/
+> `JOURNAL_OPEN_STORAGE_KEY`/`JOURNAL_ENTRY_OPEN_PREFIX` константи +
+> `JournalEntry` тип + `readTrendOpen`/`readPersistedOpen`/
+> `writePersistedOpen` обгортки), `Body/trendUtils.ts` (19 —
+> `lastValidValue`/`firstValidValue` для chart-data), `Body/ScoreButton.tsx`
+> (45 — energy/mood 1–5 кнопки + `ENERGY_LABELS`/`MOOD_LABELS`),
+> `Body/CollapsibleTrendCard.tsx` (95 — collapsible chart card з
+> persisted open-state), `Body/JournalEntryCard.tsx` (126 — окремий
+> щоденниковий запис з date label + summary + delete), `Body/JournalSection.tsx`
+> (78 — wrapper для журналу з зовнішнім collapse). Усі < 200 LOC. Count 20 → 19.
+>
 > **Скоуп таблиці нижче** — лише `apps/web/src`. Mobile (`apps/mobile/src/modules/finyk/pages/Transactions/TransactionsPage.tsx` 1215),
 > packages (`packages/shared/src/lib/assistantCatalogue.ts` 1133, `schemas/api.ts` 986,
 > `openapi/routes.ts` 837), server (`modules/chat/chat.ts` 783) — трекаються окремо
@@ -179,7 +194,6 @@ Codemod ідемпотентний: повторний запуск дасть `
 | ------ | ----------------------------------------------------- |
 | 897    | `core/onboarding/seedDemoData.ts`                     |
 | 788    | `core/lib/chatActions/crossActions.ts`                |
-| 774    | `modules/fizruk/pages/Body.tsx`                       |
 | 758    | `core/lib/chatActions/finykActions.ts`                |
 | 733    | `modules/nutrition/components/LogCard.tsx`            |
 | 732    | `modules/routine/RoutineApp.tsx`                      |
