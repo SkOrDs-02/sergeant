@@ -1,6 +1,7 @@
 import js from "@eslint/js";
 import eslintConfigPrettier from "eslint-config-prettier";
 import globals from "globals";
+import importPlugin from "eslint-plugin-import";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
@@ -44,10 +45,29 @@ export default [
     },
     settings: {
       react: { version: "detect" },
+      // TypeScript-aware resolver lets `import/extensions` see through
+      // multi-dot filenames (`hubReports.aggregation.ts`,
+      // `hubPrefs.schema.ts`, `webpushSend.webpush.ts`) and through
+      // path aliases (`@shared/*` → `./src/shared/*`) so the rule
+      // checks the resolved file's real extension instead of the
+      // text-suffix after the last dot.
+      "import/resolver": {
+        typescript: {
+          alwaysTryTypes: true,
+          project: [
+            "apps/web/tsconfig.json",
+            "apps/console/tsconfig.json",
+            "apps/mobile/tsconfig.json",
+            "apps/mobile-shell/tsconfig.json",
+          ],
+        },
+        node: true,
+      },
     },
     plugins: {
       "react-hooks": reactHooks,
       "sergeant-design": sergeantDesign,
+      import: importPlugin,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
@@ -204,6 +224,37 @@ export default [
       // sub-WCAG 8 px regression family.
       // See docs/design/design-system.md § Typography.
       "sergeant-design/no-arbitrary-text-size": "error",
+    },
+  },
+  // Import-extension hygiene — bans `.js`/`.jsx`/`.ts`/`.tsx`/`.mjs`/`.cjs`
+  // suffixes in import specifiers for the bundler-fed frontend apps. Codemod
+  // #3 stripped 436 historical extension-suffixed imports in `apps/web/src`
+  // (see `docs/tech-debt/frontend.md` §"Уже закрито"); without an enforcing
+  // rule, new code silently re-introduces the suffix and the
+  // `tsc --moduleResolution bundler` / `vite` / `vitest` triple disagrees
+  // about resolution again.
+  //
+  // Scope is intentionally limited to the four bundler-fed apps. The server
+  // (`apps/server`) is built by esbuild for Node ESM where the `.js`
+  // extension on relative imports is the canonical NodeNext-style pattern;
+  // the workspace packages (`packages/*/src`) are consumed by both Node and
+  // Vite via their `./src/*.ts` exports map and use the same NodeNext-style
+  // `.js` imports today. Migrating those is out of scope of the rule's
+  // original codemod.
+  //
+  // `ignorePackages` keeps node-builtin / npm-package specifiers free; non-
+  // code asset extensions (`.css`, `.svg`, `.png`, `.json`, …) keep their
+  // suffix as before.
+  {
+    files: [
+      "apps/web/src/**/*.{ts,tsx,js,jsx}",
+      "apps/console/src/**/*.{ts,tsx,js,jsx}",
+      "apps/mobile/src/**/*.{ts,tsx,js,jsx}",
+      "apps/mobile/app/**/*.{ts,tsx,js,jsx}",
+      "apps/mobile-shell/src/**/*.{ts,tsx,js,jsx}",
+    ],
+    rules: {
+      "import/extensions": ["error", "never"],
     },
   },
   // DS primitives that legitimately define the eyebrow treatment.
