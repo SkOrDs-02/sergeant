@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-02 by @sonher468. **Next review:** 2026-07-31.
 > **Status:** Active
 
 Аналіз кодової бази `apps/web/src` (434 source файли, 87k рядків).
@@ -8,12 +8,14 @@
 > **Оновлено 2026-05-02.** Sync з реальним станом коду після кількох wave-ів decomposition:
 > Розділ 2 (localStorage burndown) — TODO-allowlist у `eslint.config.js` скорочено з 41 до **17 файлів**
 > (нові хвилі міграцій у `routine`/`finyk`/`onboarding`/`chatActions`/`insights`/`recommendations`).
-> Розділ 4 (великі файли) — у `apps/web/src` залишилось **20 файлів >600 LOC** (раніше 22);
+> Розділ 4 (великі файли) — у `apps/web/src` залишилось **19 файлів >600 LOC** (раніше 22);
 > декомпозовано `Transactions.tsx`, `HubSearch.tsx`, `Budgets.tsx`, `Overview.tsx`, `DesignShowcase.tsx`,
 > `ActiveWorkoutPanel.tsx`, `core/App.tsx` (645 → 224 LOC, винесено
 > `app/{appPaths,RedirectTo,useAppEffects,StandaloneRoutes,HubHomeView,ActiveModuleView}.{ts,tsx}`),
 > `shared/components/ui/VoiceMicButton.tsx` (852 → 256 LOC, винесено
-> `voice/{useVoiceInput,useGroqVoiceInput,PendingVoiceChip,resolveVoiceProvider}.{ts,tsx}`).
+> `voice/{useVoiceInput,useGroqVoiceInput,PendingVoiceChip,resolveVoiceProvider}.{ts,tsx}`),
+> `core/lib/chatActions/finykActions.ts` (758 → 96 LOC, винесено 7 модулів
+> у `finykActions/` — search/transactions/debts/budgets/assets/monobank/report).
 > Розділ 9 (`any` типи) — production тепер містить **10 файлів** із `: any`
 > (7 у finyk sub-pages + `BudgetsGoalsSection.tsx` + 2 нові у fizruk після decomposition).
 > `no-strict-bypass` — allowlist на 9 production-файлів **обнулено**: усі call-сайти мігровані,
@@ -125,7 +127,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 
 ---
 
-### 4. Великі файли (>600 рядків) — 22 файли (тільки `apps/web/src`)
+### 4. Великі файли (>600 рядків) — 19 файлів (тільки `apps/web/src`)
 
 > `finyk/pages/Assets.tsx` (раніше 1147 рядків) декомпозовано на
 > `useAssetsState.ts` (259), `AssetsForm.tsx` (376), `AssetsTable.tsx` (511),
@@ -170,6 +172,21 @@ Codemod ідемпотентний: повторний запуск дасть `
 > ring + portal-positioning), `voice/resolveVoiceProvider.ts` (12 — env-flag
 > resolver `auto`/`groq`/`webspeech`). Count 21 → 20.
 >
+> `core/lib/chatActions/finykActions.ts` (раніше 758 рядків, 17 case-branchів)
+> декомпозовано на thin dispatcher `finykActions.ts` (96 LOC) + 7 модулів у
+> `finykActions/`: `search.ts` (248 — `change_category`/`find_transaction`/
+> `batch_categorize` + helpers `toIsoDay`/`toDisplayAmount`/`readSearchTransactions`/
+> `matchesFinykSearch`/`clampLimit`/`formatTxList` + тип `FinykSearchTx`),
+> `transactions.ts` (134 — `create_transaction`/`hide_transaction`/
+> `delete_transaction`/`split_transaction` з undo на manual-entries),
+> `debts.ts` (112 — `create_debt`/`create_receivable`/`mark_debt_paid`),
+> `budgets.ts` (114 — `set_budget_limit`/`set_monthly_plan`/`update_budget`
+> з `limit`/`goal` scope), `assets.ts` (84 — `add_asset` з shape-equality
+> undo + `recurring_expense`), `monobank.ts` (50 — `import_monobank_range`
+> з cache-clear + `hub:finyk-mono-import-range` event), `report.ts` (53 —
+> `export_report` для week/month/custom). Усі тести (68) зелені, публічний
+> API (`handleFinykAction`) ідентичний. Count 20 → 19.
+>
 > **Скоуп таблиці нижче** — лише `apps/web/src`. Mobile (`apps/mobile/src/modules/finyk/pages/Transactions/TransactionsPage.tsx` 1215),
 > packages (`packages/shared/src/lib/assistantCatalogue.ts` 1133, `schemas/api.ts` 986,
 > `openapi/routes.ts` 837), server (`modules/chat/chat.ts` 783) — трекаються окремо
@@ -180,7 +197,6 @@ Codemod ідемпотентний: повторний запуск дасть `
 | 897    | `core/onboarding/seedDemoData.ts`                     |
 | 788    | `core/lib/chatActions/crossActions.ts`                |
 | 774    | `modules/fizruk/pages/Body.tsx`                       |
-| 758    | `core/lib/chatActions/finykActions.ts`                |
 | 733    | `modules/nutrition/components/LogCard.tsx`            |
 | 732    | `modules/routine/RoutineApp.tsx`                      |
 | 697    | `modules/fizruk/pages/Progress.tsx`                   |
