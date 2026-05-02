@@ -456,11 +456,48 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 
 #### **Routine** (3 тижні)
 
-##### **PR #023 — `feat(routine): Drizzle schema + SQLite migration files`**
+##### **PR #023 — `feat(routine): Drizzle schema + SQLite migration files`** ⏳ IN-PROGRESS
+
+> **Статус (2026-05-02):** PR відкрито у гілці
+> `devin/1777757976-routine-sqlite-pr-023-schema`. Скоп — pure schema
+> promotion: SQLite Drizzle-схеми (`routineEntries`, `routineStreaks`,
+> `syncOpOutbox`, `syncOpCursor`) і inline міграцію вже залендили в
+> Stage 2 (PR #018) і живили SPIKE з PR #022. Цей PR промоутить їх з
+> SPIKE-only naming у production source-of-truth: додає neutral
+> `ROUTINE_CLIENT_MIGRATIONS` / `ROUTINE_MIGRATIONS_TABLE` exports
+> (попередні `ROUTINE_SPIKE_*` лишаються як `@deprecated` aliases для
+> back-compat зі SPIKE library), додає SQLite snapshot test парний до
+> існуючого `pg-routine-snapshot.test.ts` і прибирає stale «Stage 3
+> SPIKE» формулювання з коментарів. **Без SPIKE-pass dependency** —
+> production routine module на цей шар ще не сів (це PR #024
+> dual-write); за feature flag нічого не активується.
 
 - Додати таблиці у `packages/db-schema/sqlite/routine.ts`. Postgres-таблиці
   вже існують (PR #020). Migration scripts.
-- **Dep.** PR #022 (SPIKE pass).
+- **Артефакти.**
+  - `packages/db-schema/src/sqlite/migrations/index.ts` — нові
+    `ROUTINE_CLIENT_MIGRATIONS` + `ROUTINE_MIGRATIONS_TABLE`; стара пара
+    `ROUTINE_SPIKE_*` тримається як `@deprecated` alias на ту саму
+    `MigrationFile[]` й ту саму ledger-table (Hard Rule: SPIKE library
+    не змінюється).
+  - `packages/db-schema/src/sqlite/index.ts` — re-export нових констант
+    поряд із Drizzle-схемами; SPIKE-named aliases теж re-export-ються
+    щоб ніщо в споживачах не зламалось.
+  - `packages/db-schema/src/__tests__/sqlite-routine-snapshot.test.ts`
+    — snapshot тест на column types, defaults, indexes (включно з
+    partial-index `WHERE` clauses) і enum-кортежі для `op` / `status`.
+    Парний до `pg-routine-snapshot.test.ts`.
+- **AC.** `pnpm --filter @sergeant/db-schema test` — passes; новий тест
+  виявить будь-яку drift між Drizzle-схемою і inline-DDL. SPIKE library
+  тести (`apps/{web,mobile}/.../sqliteSpike/__tests__/`) проходять без
+  змін бо `_SPIKE_*` aliases вказують на ті ж масиви/рядки.
+- **Out-of-scope (відкладено).** Жодних змін у production routine
+  module (`apps/{web,mobile}/src/modules/routine/{hooks,components}/`),
+  жодного видалення SPIKE library, жодних feature-flag-ів — це PR #024.
+- **Dep.** PR #022 (SPIKE pass) — _м'яка_ залежність: schema-promotion
+  не блокується hardware-gate замірами, бо за відсутністю dual-write
+  prod routine module ще читає з LS і ці схеми залишаються off-path до
+  PR #024.
 
 ##### **PR #024 — `feat(routine): dual-write LS↔SQLite behind feature flag`**
 

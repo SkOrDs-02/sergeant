@@ -8,21 +8,26 @@
  * `@sergeant/db-schema/migrate` for filesystem-driven loading; this
  * module is the parallel surface for client bundles.
  *
- * Stage 3 SPIKE (PR #022 of `docs/planning/storage-roadmap.md`) ships
- * a single migration that creates the four client-side tables backing
- * the routine SQLite proof-of-concept. New SPIKE revisions append a
- * new entry (`002_*`, `003_*`, …) — never edit `001_*` in place so
- * already-migrated client DBs do not have to re-apply.
- *
- * SQL is kept inline (not loaded via `?raw`) so the same module works
- * unchanged across the three bundlers we target — Vite, Metro, and
- * Vitest's Node runner. The DDL mirrors the Postgres counterparts
- * (migrations 026 and 027 in `apps/server/src/migrations/`):
+ * The bundled migration creates the four client-side tables that back
+ * the routine module on SQLite:
  *
  *   - routine_entries — habit-completion rows.
  *   - routine_streaks — per-user aggregate streak metrics.
  *   - sync_op_outbox  — client-only queue of pending /v2/sync/push ops.
  *   - sync_op_cursor  — client-only cursor for /v2/sync/pull.
+ *
+ * History: the inline migration shipped first as the Stage 3 routine
+ * SQLite SPIKE (PR #022 of `docs/planning/storage-roadmap.md`); the
+ * `ROUTINE_SPIKE_*` exports stay in place so the SPIKE library under
+ * `apps/{web,mobile}/src/modules/routine/lib/sqliteSpike/` does not
+ * have to be touched on the Stage 4 promotion. PR #023 introduces the
+ * neutral `ROUTINE_CLIENT_MIGRATIONS` / `ROUTINE_MIGRATIONS_TABLE`
+ * aliases that production (non-SPIKE) consumers should import.
+ *
+ * SQL is kept inline (not loaded via `?raw`) so the same module works
+ * unchanged across the three bundlers we target — Vite, Metro, and
+ * Vitest's Node runner. The DDL mirrors the Postgres counterparts
+ * (migration 026 in `apps/server/src/migrations/`).
  *
  * Differences from PG:
  *   - `id` columns are TEXT (no native UUID type in SQLite).
@@ -33,6 +38,9 @@
  *   - No FK to `"user"(id)` — there is no auth schema on the client.
  *   - Index names get a `_lite` suffix to make accidental drift between
  *     server and client visible at code-review time.
+ *
+ * Append-only: never edit `001_*` in place — already-migrated client
+ * DBs must not re-apply. Schema changes ship as `002_*`, `003_*`, …
  */
 
 import type { MigrationFile } from "../../migrate/types.js";
@@ -90,18 +98,39 @@ CREATE TABLE IF NOT EXISTS sync_op_cursor (
 `;
 
 /**
- * Ordered list of bundled client migrations for the Stage 3 routine
- * SPIKE. Pass this directly to `runMigrations` from
+ * Ordered list of bundled client migrations for the routine module on
+ * SQLite. Pass this directly to `runMigrations` from
  * `@sergeant/db-schema/migrate`.
+ *
+ * The migration name `001_routine_spike.sql` is preserved verbatim so
+ * client DBs that ran the migration under the SPIKE name don't see a
+ * different ledger entry on the Stage 4 cut-over and re-apply the DDL.
+ * Future Stage-4+ migrations append as `002_*.sql`, `003_*.sql`, … and
+ * always show a Stage-4-or-later prefix in the file name.
  */
-export const ROUTINE_SPIKE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
+export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_routine_spike.sql", sql: ROUTINE_SPIKE_SQL },
 ] as const;
 
 /**
- * Stable ledger table name used by SPIKE clients. Matches the runner
- * default but spelled out so consumers can write self-documenting
- * `runMigrations` calls without reaching into `@sergeant/db-schema/migrate`
- * for the default constant.
+ * Stable ledger table name used by the routine SQLite module. Matches
+ * the runner default but spelled out so consumers can write
+ * self-documenting `runMigrations` calls without reaching into
+ * `@sergeant/db-schema/migrate` for the default constant.
  */
-export const ROUTINE_SPIKE_MIGRATIONS_TABLE = "__migrations";
+export const ROUTINE_MIGRATIONS_TABLE = "__migrations";
+
+/**
+ * @deprecated Stage-3 SPIKE alias for {@link ROUTINE_CLIENT_MIGRATIONS}.
+ * Kept so the SPIKE library at
+ * `apps/{web,mobile}/src/modules/routine/lib/sqliteSpike/` can carry
+ * on importing the original symbol; new consumers should import
+ * `ROUTINE_CLIENT_MIGRATIONS` directly.
+ */
+export const ROUTINE_SPIKE_CLIENT_MIGRATIONS = ROUTINE_CLIENT_MIGRATIONS;
+
+/**
+ * @deprecated Stage-3 SPIKE alias for {@link ROUTINE_MIGRATIONS_TABLE}.
+ * Kept for the same reason as {@link ROUTINE_SPIKE_CLIENT_MIGRATIONS}.
+ */
+export const ROUTINE_SPIKE_MIGRATIONS_TABLE = ROUTINE_MIGRATIONS_TABLE;

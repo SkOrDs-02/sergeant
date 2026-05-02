@@ -11,10 +11,14 @@ import { sql } from "drizzle-orm";
  * SQLite schema for the `routine_entries` table.
  *
  * Mirrors the Postgres version from `apps/server/src/migrations/026_routine_tables.sql`
- * and `packages/db-schema/src/pg/routine.ts`. Used by the Stage 3 SPIKE
- * (PR #022 in `docs/planning/storage-roadmap.md`) — the proof-of-concept
- * for hosting one routine slice fully on SQLite on web (sqlite-wasm)
- * and mobile (`expo-sqlite`).
+ * and `packages/db-schema/src/pg/routine.ts`. Hosts the routine slice
+ * (habit completions) on SQLite for both surfaces — web (sqlite-wasm
+ * via OPFS-SAH) and mobile (`expo-sqlite`).
+ *
+ * History: shipped first as the Stage 3 SPIKE (PR #022 in
+ * `docs/planning/storage-roadmap.md`); promoted to production
+ * source-of-truth in PR #023. The accompanying inline migration lives
+ * in `packages/db-schema/src/sqlite/migrations/index.ts` (`ROUTINE_CLIENT_MIGRATIONS`).
  *
  * Differences from Postgres:
  * - `id` is TEXT (UUID stored as a string — SQLite has no native UUID).
@@ -22,7 +26,7 @@ import { sql } from "drizzle-orm";
  * - All TIMESTAMPTZ columns are TEXT (ISO-8601 with offset). Default
  *   `datetime('now')` returns UTC without offset; clients should write
  *   ISO-8601-with-offset themselves so cross-device LWW comparisons stay
- *   consistent with what the server's apply-shлях persists.
+ *   consistent with what the server's apply-шлях persists.
  * - No FK to `"user"(id)` — the client SQLite database has no auth tables.
  * - Index names are `_lite`-suffixed so a future SQLite-on-Postgres
  *   linter can spot drift if a server-side migration accidentally lifts
