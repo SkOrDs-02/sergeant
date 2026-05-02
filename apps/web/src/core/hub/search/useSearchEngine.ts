@@ -9,6 +9,7 @@ import {
 } from "../hubSearchEngine";
 import { performSearch } from "./searchSources";
 import type { Hit } from "./searchTypes";
+import { type UseInlineAiRailResult, useInlineAiRail } from "./useInlineAiRail";
 
 export interface UseSearchEngineOptions {
   onClose: () => void;
@@ -29,6 +30,17 @@ export interface UseSearchEngineResult {
   openHit: (hit: Hit) => void;
   pickRecent: (q: string) => void;
   clearRecents: () => void;
+  /**
+   * Single-shot AI rail state. `ai-handoff` hits resolve here instead
+   * of dispatching the fullscreen chat overlay; the rail renders the
+   * answer directly under SearchResults.
+   */
+  inlineAi: UseInlineAiRailResult;
+  /**
+   * Escalate the current rail prompt to the fullscreen chat surface
+   * (e.g. user wants multi-turn / tool-call execution).
+   */
+  escalateToChat: (prompt: string) => void;
 }
 
 /**
@@ -56,6 +68,7 @@ export function useSearchEngine({
   // so it can navigate to the URL-addressable Settings tab and the Assistant
   // catalogue without plumbing extra callbacks through the modal stack.
   const navigate = useNavigate();
+  const inlineAi = useInlineAiRail();
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -109,9 +122,27 @@ export function useSearchEngine({
     setRecents(next);
   };
 
+  const escalateToChat = (prompt: string) => {
+    inlineAi.reset();
+    onClose();
+    // Hand off to the dedicated `/chat` route. `autoSend=0` keeps the
+    // user in control: the chat opens with the prompt prefilled, ready
+    // to edit before sending. Matches `AssistantCataloguePage`'s
+    // "Try in chat" CTA shape so deep-links share one URL surface.
+    navigate(`/chat?q=${encodeURIComponent(prompt)}`);
+  };
+
   const openHit = (hit: Hit) => {
     hapticTap();
     commitQuery(query);
+    // AI handoff is a hot-path command — keep the launcher mounted and
+    // resolve the question inline rather than swapping the whole screen
+    // for the fullscreen chat overlay. Multi-turn / tool-call execution
+    // still escalates to the chat surface via the rail's own CTA.
+    if (hit.target.kind === "ai-handoff") {
+      void inlineAi.ask(hit.target.query);
+      return;
+    }
     onClose();
     // `target` carries the navigation intent so we don't have to re-derive
     // it from `hit.module` (which is the visual grouping, not the route):
@@ -158,14 +189,9 @@ export function useSearchEngine({
         openHubModuleWithAction(hit.target.moduleId, hit.target.action);
         break;
       }
-      case "ai-handoff": {
-        // Graceful degradation — nothing structured matched, so hand the
-        // raw query off to the assistant via the dedicated `/chat`
-        // route. The chat opens with the prompt prefilled, ready to
-        // edit before sending (matches AnswerRail).
-        navigate(`/chat?q=${encodeURIComponent(hit.target.query)}`);
-        break;
-      }
+      // Note: `ai-handoff` hits never reach this switch — they're
+      // intercepted above (before `onClose`) and resolved inline by
+      // the rail. Adding a case here would be unreachable code.
     }
   };
 
@@ -226,5 +252,7 @@ export function useSearchEngine({
     openHit,
     pickRecent,
     clearRecents,
+    inlineAi,
+    escalateToChat,
   };
 }

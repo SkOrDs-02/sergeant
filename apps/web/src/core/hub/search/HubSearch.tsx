@@ -1,5 +1,4 @@
-import { useNavigate } from "react-router-dom";
-import { AnswerRail } from "./AnswerRail";
+import { InlineAiRail } from "./InlineAiRail";
 import { SearchInput } from "./SearchInput";
 import { SearchResults } from "./SearchResults";
 import { useSearchEngine } from "./useSearchEngine";
@@ -13,6 +12,9 @@ export interface HubSearchProps {
  * Global ⌘K palette shell. Composes:
  *   - {@link useSearchEngine} for query/results/keyboard state
  *   - {@link SearchInput} for the top input bar
+ *   - {@link InlineAiRail} for the single-shot AI answer rail that
+ *     replaces the previous fullscreen `HubChat` handoff for
+ *     `ai-handoff` hits
  *   - {@link SearchResults} for the grouped result list + empty/recents states
  *
  * The shell owns nothing beyond the dialog overlay and wiring; the
@@ -21,15 +23,8 @@ export interface HubSearchProps {
  */
 export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
   const engine = useSearchEngine({ onClose, onOpenModule });
-  const navigate = useNavigate();
 
   const activeHit = engine.flat[engine.activeIdx];
-
-  const handleAskAssistant = (query: string) => {
-    engine.commitQuery(query);
-    onClose();
-    navigate(`/chat?q=${encodeURIComponent(query)}`);
-  };
 
   return (
     <div
@@ -48,6 +43,14 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
         activeId={activeHit ? `hub-hit-${activeHit.id}` : undefined}
       />
 
+      <InlineAiRail
+        state={engine.inlineAi.state}
+        onRetry={(q) => void engine.inlineAi.ask(q)}
+        onCancel={engine.inlineAi.cancel}
+        onOpenInChat={engine.escalateToChat}
+        onDismiss={engine.inlineAi.reset}
+      />
+
       <SearchResults
         ref={engine.listRef}
         query={engine.query}
@@ -63,8 +66,6 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
         onOpenModule={onOpenModule}
         onClose={onClose}
       />
-
-      <AnswerRail query={engine.query} onAskAssistant={handleAskAssistant} />
     </div>
   );
 }

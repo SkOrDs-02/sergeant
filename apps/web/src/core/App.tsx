@@ -130,8 +130,9 @@ const SIGN_IN_PATH = "/sign-in";
 const ASSISTANT_PATH = "/assistant";
 // Dedicated AI chat route. Replaces the fullscreen modal that used to
 // slam over the dashboard. Reads `?q=` and `?autoSend=1` so launcher
-// hand-offs (`AnswerRail`, `ai-handoff`, capability `Try in chat` CTA)
-// and external deep links share one URL shape.
+// hand-offs (`InlineAiRail`'s "Open in chat" escalation, `ai-handoff`
+// fallback, capability `Try in chat` CTA) and external deep links
+// share one URL shape.
 const CHAT_PATH = "/chat";
 // URL-addressable cold-start splash. Having a real route (not just a
 // modal overlay on `/`) means the splash can be deep-linked, shows the
