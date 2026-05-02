@@ -13,19 +13,30 @@ COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY patches ./patches
 COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/config/package.json ./packages/config/package.json
+COPY packages/db-schema/package.json ./packages/db-schema/package.json
 COPY packages/finyk-domain/package.json ./packages/finyk-domain/package.json
 COPY apps/server/package.json ./apps/server/package.json
 
 RUN pnpm install --frozen-lockfile --ignore-scripts \
       --filter @sergeant/server... \
       --filter @sergeant/shared... \
+      --filter @sergeant/db-schema... \
       --filter @sergeant/finyk-domain...
 
 # --- Джерела ---
 COPY packages/shared ./packages/shared
 COPY packages/config ./packages/config
+COPY packages/db-schema ./packages/db-schema
 COPY packages/finyk-domain ./packages/finyk-domain
 COPY apps/server ./apps/server
+
+# `@sergeant/db-schema` мусить бути ЗБИЛДЖЕНИЙ ДО серверного `pnpm build`:
+# `apps/server/build.mjs` (esbuild, packages: "bundle") резолвить
+# `@sergeant/db-schema/pg` через `packages/db-schema/dist/pg/index.js`,
+# який існує тільки після `tsc -p tsconfig.build.json`. Без цього
+# Docker-build падає на esbuild-resolve:
+# `Could not resolve "@sergeant/db-schema/pg"` (Railway deploy fails).
+RUN pnpm --filter @sergeant/db-schema build
 
 WORKDIR /app/apps/server
 ENV NODE_ENV=production
@@ -47,9 +58,17 @@ COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY patches ./patches
 COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/config/package.json ./packages/config/package.json
+COPY packages/db-schema/package.json ./packages/db-schema/package.json
 COPY packages/finyk-domain/package.json ./packages/finyk-domain/package.json
 COPY apps/server/package.json ./apps/server/package.json
 
+# `pnpm install --prod --filter @sergeant/server...` обходить deps-граф, у
+# тому числі workspace-only `@sergeant/db-schema` (через `apps/server`).
+# Сам `dist/` нам у runtime не потрібен — esbuild у builder-стейджі
+# забандлив db-schema у `dist-server/index.js`. Але без `package.json`-а
+# `pnpm` не зможе резолвнути workspace-протокол `workspace:^` і впаде
+# на старті install. Тому копіюємо тільки маніфест, як і для інших
+# workspace-пакетів вище (shared/config/finyk-domain).
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts \
       --filter @sergeant/server...
 
