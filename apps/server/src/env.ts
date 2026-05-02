@@ -258,6 +258,45 @@ export const env = {
    * (8 memory × ~80 токенів/memory ≈ 640 токенів input).
    */
   AI_MEMORY_TOP_K: parseIntEnv("AI_MEMORY_TOP_K", 8),
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // AI memory ingestion (PR2 — BullMQ async queue + hooks)
+  // ─────────────────────────────────────────────────────────────────────────
+  //
+  // Hooks у `mono/webhook.ts` (finyk), `digest/weekly-digest.ts` (digest) і
+  // `POST /api/ai-memory/ingest` (nutrition / fizruk / journal / routine з
+  // клієнта) ставлять задачу у BullMQ-чергу `sergeant:ai-memory-ingest`.
+  // Worker викликає `aiMemory.remember()`, який робить Voyage embedding +
+  // pgvector upsert. Якщо `REDIS_URL` не заданий — fallback на in-process
+  // direct dispatch (як у authMail).
+
+  /**
+   * Concurrent worker-jobs для ingestion. Default 4: Voyage embed-and-upsert
+   * займає ~300–500мс, тому 4 паралельних достатньо щоб тримати throughput
+   * ~10 jobs/s без перегріву Voyage rate-limit-у. У great-spike-сценарії
+   * BullMQ автоматично черговує — ніколи не падаємо.
+   */
+  AI_MEMORY_INGEST_CONCURRENCY: parseIntEnv("AI_MEMORY_INGEST_CONCURRENCY", 4),
+
+  /**
+   * Max content-length у `MemoryIngestPayload.content` (символи). Voyage
+   * `voyage-3-lite` max input — ~32K токенів, але типовий memory-record
+   * (`"Витрата 100 ₴ Сільпо · продукти · 2026-01-15"`) — десятки символів.
+   * 4_000 — generous-cap для digest-summaries; вище за нього content-text
+   * обрізається на edge (`/api/ai-memory/ingest`) і у hooks-callsite-ах.
+   */
+  AI_MEMORY_INGEST_MAX_CONTENT_LEN: parseIntEnv(
+    "AI_MEMORY_INGEST_MAX_CONTENT_LEN",
+    4_000,
+  ),
+
+  /**
+   * Per-attempt BullMQ-attempt count. 5 — миттєво → 30s → 2min → 8min →
+   * 30min, сумарно ~40min. Voyage 5xx зазвичай recovery-ються за хвилини;
+   * якщо й після 5 спроб не вдалось — memory-job помічається як `failed` і
+   * НЕ блокує інших job-ів для того ж юзера.
+   */
+  AI_MEMORY_INGEST_ATTEMPTS: parseIntEnv("AI_MEMORY_INGEST_ATTEMPTS", 5),
 } as const;
 
 export type Env = typeof env;

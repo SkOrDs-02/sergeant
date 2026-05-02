@@ -9,6 +9,7 @@ import {
 } from "../../obs/metrics.js";
 import { sendToUserQuietly } from "../../push/send.js";
 import type { PushPayload } from "../../push/types.js";
+import { enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import { categorizeMcc } from "./mccCategories.js";
 import { webhookSecretHash } from "./crypto.js";
 
@@ -130,6 +131,29 @@ function buildMonoPushPayload(
     },
     url: "/?module=finyk",
   };
+}
+
+/**
+ * Будує human-readable content-string для AI-memory-ingestion. Використовуємо
+ * **уже-локалізований** money-format (₴, +/−), бо Voyage embedding-модель
+ * краще працює з consistent text-формою, не з raw integer minor-units.
+ * Категорія включається у content тільки якщо MCC зміг резолвитись —
+ * embed-модель сама вивезе "продукти/cafe/таксі" з description-у, не
+ * палимо токени на "(none)" placeholder-ах.
+ *
+ * Приклад: "Витрата −150,00 ₴ Сільпо · продукти · 2026-01-15"
+ */
+function buildMonoMemoryContent(
+  item: StatementItem,
+  categorySlug: string | null,
+): string {
+  const amountStr = formatMonoMoney(item.amount, item.currencyCode);
+  const isExpense = item.amount < 0;
+  const verb = isExpense ? "Витрата" : "Надходження";
+  const description = (item.description || "Без опису").trim().slice(0, 200);
+  const dateIso = new Date(item.time * 1000).toISOString().slice(0, 10);
+  const categoryPart = categorySlug ? ` · ${categorySlug}` : "";
+  return `${verb} ${amountStr} ${description}${categoryPart} · ${dateIso}`;
 }
 
 export async function webhookHandler(
@@ -381,6 +405,28 @@ export async function webhookHandler(
   if (inserted) {
     void sendToUserQuietly(userId, buildMonoPushPayload(item, monoAccountId), {
       module: "mono",
+    });
+
+    // AI-memory-ingestion hook (PR2 з ADR-0028). `enqueueMemoryIngest`
+    // ніколи не throw-ить — на enqueue-помилку метрика
+    // `ai_memory_ingest_enqueued_total{mode="enqueue_error"}` плюс лог.
+    // BullMQ-jobId-dedup за `mono_tx_id` означає, що Monobank-retry на
+    // TCP-rest не створить дублів навіть якщо ми ще раз ввійшли б у цю
+    // гілку (`inserted=true` після race-condition unlikely-але-possible).
+    // SQL-UNIQUE на `(user_id, source, source_ref)` — другий шар захисту.
+    void enqueueMemoryIngest({
+      userId,
+      source: "finyk",
+      sourceRef: item.id,
+      content: buildMonoMemoryContent(item, categorySlug),
+      metadata: {
+        monoAccountId,
+        amount: item.amount,
+        currencyCode: item.currencyCode,
+        mcc: item.mcc ?? null,
+        categorySlug,
+        time: new Date(item.time * 1000).toISOString(),
+      },
     });
   }
 }

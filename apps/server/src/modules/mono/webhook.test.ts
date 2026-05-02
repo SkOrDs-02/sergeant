@@ -25,6 +25,19 @@ vi.mock("../../obs/logger.js", () => ({
 vi.mock("../../obs/metrics.js", () => ({
   monoWebhookReceivedTotal: { inc: vi.fn() },
   monoWebhookDurationMs: { observe: vi.fn() },
+  // AI memory ingest hook (PR2). Заглушки достатньо — webhook-test не
+  // верифікує enqueue-метрики напряму, а лише poll-ить, що hook не
+  // throw-нув. Реальні поведінкові тести queue-у — у `ingestQueue.test.ts`.
+  aiMemoryIngestEnqueuedTotal: { inc: vi.fn() },
+  aiMemoryIngestProcessedTotal: { inc: vi.fn() },
+  aiMemoryIngestDurationMs: { observe: vi.fn() },
+  aiMemoryIngestQueueDepth: { set: vi.fn() },
+}));
+
+vi.mock("../ai-memory/ingestQueue.js", () => ({
+  // PR2 hook: webhook-у достатньо знати, що `enqueueMemoryIngest` resolved-ить
+  // без помилки. Реальний flow покрито у ingestQueue.test.ts.
+  enqueueMemoryIngest: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../../push/send.js", () => ({

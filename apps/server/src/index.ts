@@ -33,6 +33,10 @@ import {
 } from "./lib/jobs/authMail.js";
 import { connectRedis, disconnectRedis } from "./lib/redis.js";
 import {
+  startMemoryIngestWorker,
+  type StartedMemoryIngestWorker,
+} from "./modules/ai-memory/ingestQueue.js";
+import {
   startMonoEnrichmentWorker,
   type StartedWorker,
 } from "./modules/mono/enrichmentWorker.js";
@@ -82,6 +86,15 @@ if (env.MONO_ENRICHMENT_WORKER_ENABLED && env.ANTHROPIC_API_KEY) {
 // `startAuthMailWorker()` повертає null, і `enqueueAuthMail()` падає у
 // in-process fallback (як було до цього PR-а). Це збережено для CI / dev.
 const authMailWorker: StartedAuthMailWorker | null = startAuthMailWorker();
+
+// AI memory ingestion BullMQ worker. Так само як `authMailWorker`, повертає
+// null коли `REDIS_URL` не задано (CI / local dev) — у такому разі
+// producer-и (`mono/webhook`, `weekly-digest`, `POST /api/ai-memory/ingest`)
+// падають у in-process fallback. Стартує тільки при `AI_MEMORY_ENABLED=true`,
+// щоб не тримати Redis-connection відкритим у environment-ах, де AI memory
+// pipeline не використовується.
+const memoryIngestWorker: StartedMemoryIngestWorker | null =
+  startMemoryIngestWorker();
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Graceful shutdown
@@ -174,6 +187,21 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
       } catch (err) {
         logger.warn({
           msg: "auth_mail_worker_close_error",
+          err: serializeError(err, { includeStack: false }),
+        });
+      }
+    }
+
+    if (memoryIngestWorker) {
+      try {
+        // Дочекатися in-flight memory-ingest job-ів і закрити BullMQ-обʼязки
+        // та ioredis-connections, ПЕРЕД pool.end(): майбутні retrieval-job-и
+        // будуть пг-залежними, тож порядок важливий.
+        await memoryIngestWorker.close();
+        logger.info({ msg: "ai_memory_ingest_worker_closed" });
+      } catch (err) {
+        logger.warn({
+          msg: "ai_memory_ingest_worker_close_error",
           err: serializeError(err, { includeStack: false }),
         });
       }

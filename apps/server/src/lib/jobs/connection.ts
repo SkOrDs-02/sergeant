@@ -46,3 +46,12 @@ export function createBullConnection(name: string): IORedisClient | null {
 
 /** Ім'я BullMQ-черги, шарене між producer-ом і consumer-ом. */
 export const AUTH_MAIL_QUEUE_NAME = "sergeant:auth-mail";
+
+/**
+ * Черга async-ingestion-у AI memory (PR2 з ADR-0028). Producer-и:
+ *   - hooks у `mono/webhook.ts` (finyk) та `digest/weekly-digest.ts` (digest)
+ *   - публічний endpoint `POST /api/ai-memory/ingest` для клієнт-driven
+ *     sources (nutrition / fizruk / journal / routine)
+ * Consumer — `startMemoryIngestWorker` у `modules/ai-memory/ingestQueue.ts`.
+ */
+export const AI_MEMORY_INGEST_QUEUE_NAME = "sergeant:ai-memory-ingest";

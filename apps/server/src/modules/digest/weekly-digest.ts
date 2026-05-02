@@ -10,8 +10,49 @@ import {
   WeeklyDigestSuccessSchema,
 } from "../../http/schemas.js";
 import { ExternalServiceError, ValidationError } from "../../obs/errors.js";
+import { env } from "../../env.js";
+import { logger } from "../../obs/logger.js";
+import { enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 
 type WithAnthropicKey = Request & { anthropicKey?: string };
+type WithSessionUser = Request & { user?: { id: string } };
+
+/**
+ * Витягує всі непорожні summary/comment-секції з структурованого digest-у і
+ * зливає у one-line memory-string. Воєйдж-embedding краще працює з
+ * самодостатнім текстом ("За тиждень X-Y юзер витратив 1200 ₴..."), ніж з
+ * JSON-дампом, тому формуємо людську форму.
+ */
+function buildDigestMemoryContent(
+  weekRange: string | undefined,
+  report: unknown,
+): string {
+  const safe = (report ?? {}) as Record<string, unknown>;
+  const sections: string[] = [];
+  const tag = weekRange ? `Тижневий звіт ${weekRange}` : "Тижневий звіт";
+  for (const key of ["finyk", "fizruk", "nutrition", "routine"] as const) {
+    const sec = safe[key] as
+      | { summary?: string; comment?: string }
+      | null
+      | undefined;
+    if (!sec) continue;
+    const summary = (sec.summary || "").trim();
+    const comment = (sec.comment || "").trim();
+    const piece = [summary, comment].filter(Boolean).join(" ");
+    if (piece) sections.push(`${key}: ${piece}`);
+  }
+  const overall = Array.isArray(safe.overallRecommendations)
+    ? (safe.overallRecommendations as unknown[])
+        .filter((x): x is string => typeof x === "string" && x.length > 0)
+        .join("; ")
+    : "";
+  if (overall) sections.push(`overall: ${overall}`);
+  const joined = sections.join(" | ");
+  // Cap-имо до AI_MEMORY_INGEST_MAX_CONTENT_LEN — длинна digest-секцій
+  // непередбачувана (Claude може вискочити за середній обʼєм).
+  const cap = env.AI_MEMORY_INGEST_MAX_CONTENT_LEN;
+  return `${tag}. ${joined}`.slice(0, cap);
+}
 
 interface AnthropicErrorPayload {
   error?: { message?: string };
@@ -226,10 +267,47 @@ ${dataContext}`;
     );
   }
 
+  const generatedAt = new Date().toISOString();
+
   res.status(200).json(
     WeeklyDigestSuccessSchema.parse({
       report: reportParse.data,
-      generatedAt: new Date().toISOString(),
+      generatedAt,
     }),
   );
+
+  // AI memory ingest hook (PR2). Fire-and-forget після відправки відповіді,
+  // щоб не затримувати клієнт. `userId` беремо з сесії; для anon-режиму
+  // (квота через IP) digest без `req.user` теж генерується — у такому разі
+  // memory не зберігаємо. `weekRange` як sourceRef означає, що повторні
+  // generate-кліки за той самий тиждень дедуплікуються (jobId-rule у BullMQ).
+  const sessionUser = (req as WithSessionUser).user ?? null;
+  if (sessionUser?.id && weekRange) {
+    try {
+      const content = buildDigestMemoryContent(weekRange, reportParse.data);
+      void enqueueMemoryIngest({
+        userId: sessionUser.id,
+        source: "digest",
+        sourceRef: weekRange,
+        content,
+        metadata: {
+          weekRange,
+          generatedAt,
+          sections: {
+            finyk: !!finyk,
+            fizruk: !!fizruk,
+            nutrition: !!nutrition,
+            routine: !!routine,
+          },
+        },
+      });
+    } catch (err) {
+      // enqueueMemoryIngest сам не throw-ить, але buildDigestMemoryContent
+      // теоретично може у крайньому випадку — не валимо response через це.
+      logger.warn({
+        msg: "weekly_digest_memory_ingest_skipped",
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
 }

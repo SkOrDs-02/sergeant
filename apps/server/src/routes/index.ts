@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import type { Pool } from "pg";
 import { createInternalRouter } from "./internal/index.js";
+import { createAiMemoryRouter } from "./ai-memory.js";
 import { createAuthRouter } from "./auth.js";
 import { createBanksRouter } from "./banks.js";
 import { createMonoWebhookRouter } from "./mono-webhook.js";
@@ -48,4 +49,5 @@ export function registerRoutes(app: Express, { pool }: { pool: Pool }): void {
   app.use(createPushRouter());
   app.use(createTranscribeRouter());
   app.use(createWaitlistRouter());
+  app.use(createAiMemoryRouter());
 }

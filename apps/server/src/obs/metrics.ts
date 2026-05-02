@@ -455,6 +455,42 @@ export const authMailQueueDepth = new client.Gauge({
   registers: [register],
 });
 
+// ───────────────── AI memory ingestion (BullMQ) ───────────────
+// Лічильники для PR2-черги `sergeant:ai-memory-ingest`. Дзеркалять
+// auth-mail-набір (enqueue / process / depth + duration), але з
+// додатковим лейблом `source`, щоб алерти могли біти по конкретному
+// домену (наприклад, finyk-spike при back-fill-і Monobank).
+export const aiMemoryIngestEnqueuedTotal = new client.Counter({
+  name: "ai_memory_ingest_enqueued_total",
+  help: "AI memory ingest enqueue attempts by mode and source",
+  labelNames: ["mode", "source"], // mode: queued|fallback|enqueue_error|disabled
+  registers: [register],
+});
+
+export const aiMemoryIngestProcessedTotal = new client.Counter({
+  name: "ai_memory_ingest_processed_total",
+  help: "AI memory ingest job outcomes",
+  labelNames: ["outcome", "source"], // outcome: ok|retry|permanent_fail|skipped
+  registers: [register],
+});
+
+export const aiMemoryIngestDurationMs = new client.Histogram({
+  name: "ai_memory_ingest_duration_ms",
+  help: "AI memory ingest per-job duration (ms)",
+  labelNames: ["outcome", "source"],
+  // Voyage embed-and-upsert ~300–500мс типово; bucket-и розтягнуті, бо
+  // у retry-сценарії duration може охопити timeout (`VOYAGE_TIMEOUT_MS`).
+  buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000],
+  registers: [register],
+});
+
+export const aiMemoryIngestQueueDepth = new client.Gauge({
+  name: "ai_memory_ingest_queue_depth",
+  help: "BullMQ AI memory ingest queue depth by status",
+  labelNames: ["status"], // waiting|active|delayed|failed
+  registers: [register],
+});
+
 // ───────────────────────── Helpers ────────────────────────────
 export type StatusClass = "5xx" | "4xx" | "3xx" | "2xx" | "other";
 
