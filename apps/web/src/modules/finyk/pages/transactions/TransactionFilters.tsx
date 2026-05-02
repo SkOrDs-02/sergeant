@@ -38,13 +38,14 @@ export function TransactionFilters({
 
   return (
     <div data-no-swipe className="-mx-3 px-3 overflow-x-auto no-scrollbar">
-      <div className="flex gap-1.5 whitespace-nowrap">
+      <div className="flex gap-1 whitespace-nowrap">
         {filters.map((f) => (
           <button
             key={f.id}
+            data-compact
             onClick={() => onChangeFilter(f.id)}
             className={cn(
-              "shrink-0 text-style-caption px-4 py-2 rounded-full border transition-colors min-h-[36px]",
+              "shrink-0 inline-flex items-center h-7 px-3 text-style-caption font-medium rounded-full border transition-colors",
               filter === f.id
                 ? "bg-primary border-primary text-bg shadow-sm"
                 : "bg-panelHi border-line text-text hover:border-muted",

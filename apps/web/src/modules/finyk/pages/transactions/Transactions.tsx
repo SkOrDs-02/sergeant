@@ -1,4 +1,3 @@
-import { Card } from "@shared/components/ui/Card";
 import { useToast } from "@shared/hooks/useToast";
 import { TransactionsHeader } from "./TransactionsHeader";
 import { TransactionsBatchToolbar } from "./TransactionsBatchToolbar";
@@ -127,13 +126,7 @@ export function Transactions({
       onCatChange={selection.stableOverrideCategory}
       onSplitChange={selection.stableSetSplitTx}
       header={
-        <Card
-          as="section"
-          radius="lg"
-          padding="sm"
-          aria-label="Керування операціями"
-          className="mb-4 space-y-2.5"
-        >
+        <section aria-label="Керування операціями" className="mb-4 space-y-2.5">
           <TransactionsHeader
             monthLabel={filters.monthLabel}
             isCurrentMonth={filters.isCurrentMonth}
@@ -155,7 +148,7 @@ export function Transactions({
             hasCreditAccounts={filters.creditAccIds.size > 0}
             catSpends={filters.catSpends}
           />
-        </Card>
+        </section>
       }
       trailing={
         filters.activeLoading && filters.activeTx.length > 0 ? (
