@@ -13,3 +13,9 @@ export {
   type SyncOpOutboxOp,
   type SyncOpOutboxStatus,
 } from "./routine.js";
+export {
+  ROUTINE_CLIENT_MIGRATIONS,
+  ROUTINE_MIGRATIONS_TABLE,
+  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
+  ROUTINE_SPIKE_MIGRATIONS_TABLE,
+} from "./migrations/index.js";
