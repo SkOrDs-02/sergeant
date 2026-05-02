@@ -37,8 +37,30 @@ import {
   isRoutineDualWriteRegistered,
   triggerRoutineDualWrite,
 } from "./dualWrite/index.js";
+import { getCachedSqliteCompletions } from "./sqliteReader.js";
 
 const storage = createModuleStorage({ name: "routine" });
+
+// ---------------------------------------------------------------------------
+// SQLite read-path gating (PR #025). Follows the same registration pattern
+// as the dual-write layer — the boot wiring sets this once, keeping
+// `routineStorage` decoupled from the flag store and sqlite singletons.
+// ---------------------------------------------------------------------------
+let sqliteReadEnabled = false;
+
+/**
+ * Enable / disable the SQLite read path for completions.
+ * Called from the boot wiring file when the
+ * `feature.routine.sqlite_v2.read_sqlite` flag is evaluated.
+ */
+export function setSqliteReadEnabled(enabled: boolean): void {
+  sqliteReadEnabled = enabled;
+}
+
+/** Test helper — returns the current gating state. */
+export function isSqliteReadEnabled(): boolean {
+  return sqliteReadEnabled;
+}
 
 // Re-export key constants so web callers can keep their existing imports.
 export { ROUTINE_STORAGE_KEY, ROUTINE_EVENT, ROUTINE_STORAGE_ERROR };
@@ -67,11 +89,26 @@ function finalizeLoadedRoutineState(state: RoutineState): RoutineState {
 /**
  * Load and normalize the full routine state from localStorage.
  * Falls back to default state on parse errors or missing key.
+ *
+ * When `feature.routine.sqlite_v2.read_sqlite` is on (PR #025),
+ * the `completions` field is replaced with the cached SQLite
+ * completions so reads come from the normalized `routine_entries`
+ * table. Everything else (habits, tags, categories, prefs,
+ * pushups, habitOrder, completionNotes) still comes from LS.
  */
 export function loadRoutineState(): RoutineState {
   const raw = storage.readJSON(ROUTINE_STORAGE_KEY, null);
   const merged = normalizeRoutineState(raw);
-  return finalizeLoadedRoutineState(merged);
+  const finalized = finalizeLoadedRoutineState(merged);
+
+  if (sqliteReadEnabled) {
+    const sqliteCache = getCachedSqliteCompletions();
+    if (sqliteCache.refreshedAt !== null) {
+      return { ...finalized, completions: sqliteCache.completions };
+    }
+  }
+
+  return finalized;
 }
 
 /**
