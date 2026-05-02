@@ -19,41 +19,12 @@
 
 import { useLocalStorage } from "@/lib/storage";
 
+import {
+  EXPERIMENTAL_FLAGS,
+  FLAGS_KEY,
+  type FlagValues,
+} from "../lib/featureFlags";
 import { SettingsGroup, ToggleRow } from "./SettingsPrimitives";
-
-interface FlagDefinition {
-  id: string;
-  label: string;
-  description: string;
-  defaultValue: boolean;
-}
-
-// TODO(mobile-migration): replace with a shared `FLAG_REGISTRY` once
-// `featureFlags` moves into `@sergeant/shared`. Entries here mirror the
-// `experimental: true` subset from
-// `apps/web/src/core/lib/featureFlags.ts` 1:1.
-const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
-  {
-    id: "finyk_subscriptions_category",
-    label: "Категорія «Підписки» у швидкому додаванні",
-    description:
-      "Додає окрему кнопку для підписок у ManualExpenseSheet (раніше вони потрапляли у «інше»).",
-    defaultValue: false,
-  },
-  {
-    id: "hub_command_palette",
-    label: "Command Palette (Ctrl/⌘+K)",
-    description:
-      "Глобальний пошук і дії через клавіатуру. Ранній preview — може не працювати у деяких PWA-кейсах.",
-    defaultValue: false,
-  },
-] as const;
-
-// Mirrors the web `hub_flags_v1` typedStore key (minus the shared-schema
-// envelope). See TODO above.
-const FLAGS_KEY = "@hub_flags_v1";
-
-type FlagValues = Record<string, boolean>;
 
 export function ExperimentalSection() {
   const [flags, setFlags] = useLocalStorage<FlagValues>(FLAGS_KEY, {});
