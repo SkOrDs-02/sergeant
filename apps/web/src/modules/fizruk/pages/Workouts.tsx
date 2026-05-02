@@ -14,7 +14,10 @@ import { showUndoToast } from "@shared/lib/undoToast";
 import { WorkoutTemplatesSection } from "../components/WorkoutTemplatesSection";
 import { RestTimerOverlay } from "../components/workouts/RestTimerOverlay";
 import { WorkoutFinishSheets } from "../components/workouts/WorkoutFinishSheets";
-import { AddExerciseSheet } from "../components/workouts/AddExerciseSheet";
+import {
+  AddExerciseSheet,
+  type AddExerciseForm,
+} from "../components/workouts/AddExerciseSheet";
 import { ExerciseDetailSheet } from "../components/workouts/ExerciseDetailSheet";
 import { WorkoutJournalSection } from "../components/workouts/WorkoutJournalSection";
 import { WorkoutCatalogSection } from "../components/workouts/WorkoutCatalogSection";
@@ -25,10 +28,18 @@ import {
   type RestTimerState,
 } from "../hooks/useFizrukRestSound";
 import { useRecovery } from "../hooks/useRecovery";
-import { useWorkoutTemplates } from "../hooks/useWorkoutTemplates";
+import {
+  useWorkoutTemplates,
+  type WorkoutTemplate,
+} from "../hooks/useWorkoutTemplates";
 import { useWorkouts } from "../hooks/useWorkouts";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
 import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
+import type {
+  WorkoutFinishSummary,
+  WorkoutGroup,
+  WorkoutItem,
+} from "@sergeant/fizruk-domain";
 import {
   ACTIVE_WORKOUT_KEY,
   summarizeWorkoutForFinish,
@@ -36,6 +47,28 @@ import {
 import { WorkoutsHome } from "../components/workouts/WorkoutsHome";
 
 type WorkoutsView = "home" | "catalog" | "log" | "templates";
+
+/**
+ * Mirrors `FinishFlashState` in `WorkoutJournalSection` / consumed by
+ * `WorkoutFinishSheets`. Owned here so the `useState` setter can be
+ * passed across both sheets without re-deriving the shape twice.
+ */
+interface FinishFlashState extends WorkoutFinishSummary {
+  step: "wellbeing" | "summary";
+  collapsed: boolean;
+  workoutId: string;
+  energy: number | null;
+  mood: number | null;
+  savedWellbeing?: { energy?: number | null; mood?: number | null } | null;
+}
+
+/**
+ * The catalog `WorkoutItem` carries the workout `startedAt` when
+ * resolved as the most recent occurrence of an exercise. We only attach
+ * a single extra field, so widen the canonical domain item rather than
+ * lying via `any`.
+ */
+type LastExerciseItem = WorkoutItem & { _startedAt?: string };
 
 export function Workouts() {
   const toast = useToast();
@@ -64,7 +97,7 @@ export function Workouts() {
     removeItem,
   } = useWorkouts();
   const removeItemWithUndo = useCallback(
-    (workoutId, itemId) => {
+    (workoutId: string, itemId: string) => {
       const w = workouts.find((x) => x.id === workoutId);
       if (!w) {
         removeItem(workoutId, itemId);
@@ -90,7 +123,7 @@ export function Workouts() {
   const [q, setQ] = useState("");
   const [equipmentFilter, setEquipmentFilter] = useState<string[]>([]);
   const [selected, setSelected] = useState<RawExerciseDef | null>(null);
-  const [open, setOpen] = useState(() => ({}));
+  const [open, setOpen] = useState<Record<string, boolean>>(() => ({}));
   const [addOpen, setAddOpen] = useState(false);
   // `view` drives the page chrome:
   //   "home"      — new landing layout with active/start hero, recent 3
@@ -109,9 +142,10 @@ export function Workouts() {
   const [activeWorkoutId, setActiveWorkoutId] = useState(() =>
     safeReadStringLS(ACTIVE_WORKOUT_KEY),
   );
-  const [finishFlash, setFinishFlash] = useState(null);
+  const [finishFlash, setFinishFlash] = useState<FinishFlashState | null>(null);
   const [deleteExerciseConfirm, setDeleteExerciseConfirm] = useState(false);
-  const [riskyTemplateConfirm, setRiskyTemplateConfirm] = useState(null); // stores template when risky
+  const [riskyTemplateConfirm, setRiskyTemplateConfirm] =
+    useState<WorkoutTemplate | null>(null); // stores template when risky
   const [now, setNow] = useState(Date.now());
   const [retroOpen, setRetroOpen] = useState(false);
   const [quickStartOpen, setQuickStartOpen] = useState(false);
@@ -120,7 +154,7 @@ export function Workouts() {
     return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
   });
   const [retroTime, setRetroTime] = useState("18:00");
-  const [form, setForm] = useState(() => ({
+  const [form, setForm] = useState<AddExerciseForm>(() => ({
     nameUk: "",
     primaryGroup: "chest",
     musclesPrimary: [],
@@ -198,7 +232,7 @@ export function Workouts() {
   );
 
   const addExerciseToActive = useCallback(
-    (ex) => {
+    (ex: RawExerciseDef) => {
       if (!activeWorkoutId) return;
       const isCardio = ex.primaryGroup === "cardio";
       addItem(activeWorkoutId, {
@@ -217,7 +251,7 @@ export function Workouts() {
   );
 
   const handleExerciseInListClick = useCallback(
-    (ex) => {
+    (ex: RawExerciseDef) => {
       if (mode !== "log") {
         setSelected(ex);
         return;
@@ -240,12 +274,12 @@ export function Workouts() {
   );
 
   const executeTemplateStart = useCallback(
-    (tpl) => {
-      const picks = (tpl?.exerciseIds || [])
-        .map((id) => exercises.find((e) => e.id === id))
-        .filter(Boolean);
+    (tpl: WorkoutTemplate) => {
+      const picks: RawExerciseDef[] = (tpl?.exerciseIds || [])
+        .map((id: string) => exercises.find((e) => e.id === id))
+        .filter((e): e is RawExerciseDef => Boolean(e));
       const w = createWorkout();
-      const exIdToItemId = {};
+      const exIdToItemId: Record<string, string> = {};
       for (const ex of picks) {
         const isCardio = ex.primaryGroup === "cardio";
         const itemId = addItem(w.id, {
@@ -262,14 +296,30 @@ export function Workouts() {
         exIdToItemId[ex.id] = itemId;
       }
       if ((tpl?.groups || []).length > 0) {
-        const workoutGroups = (tpl.groups || [])
+        // Templates persist `groups` as `unknown[]` (see useWorkoutTemplates),
+        // so narrow each group to the template-shape we read here before
+        // building the workout-side `groups` payload. The mapped shape
+        // matches the canonical `WorkoutGroup` (`id`, `itemIds` + the
+        // optional `type`/`restSec` carried over from the template).
+        interface TemplateGroup {
+          id: string;
+          exerciseIds?: string[];
+          itemIds?: string[];
+          type?: "circuit" | "superset";
+          restSec?: number;
+        }
+        const workoutGroups: WorkoutGroup[] = (
+          (tpl.groups || []) as TemplateGroup[]
+        )
           .map((g) => ({
-            ...g,
+            id: g.id,
+            type: g.type,
+            restSec: g.restSec,
             itemIds: (g.exerciseIds || [])
-              .map((exId) => exIdToItemId[exId])
-              .filter(Boolean),
+              .map((exId: string) => exIdToItemId[exId])
+              .filter((id): id is string => Boolean(id)),
           }))
-          .filter((g) => (g.itemIds || []).length >= 2);
+          .filter((g) => g.itemIds.length >= 2);
         if (workoutGroups.length > 0) {
           updateWorkout(w.id, { groups: workoutGroups });
         }
@@ -282,10 +332,10 @@ export function Workouts() {
   );
 
   const startWorkoutFromTemplate = useCallback(
-    (tpl) => {
-      const picks = (tpl?.exerciseIds || [])
-        .map((id) => exercises.find((e) => e.id === id))
-        .filter(Boolean);
+    (tpl: WorkoutTemplate) => {
+      const picks: RawExerciseDef[] = (tpl?.exerciseIds || [])
+        .map((id: string) => exercises.find((e) => e.id === id))
+        .filter((e): e is RawExerciseDef => Boolean(e));
       if (!picks.length) {
         toast.warning(
           "У шаблоні немає вправ з каталогу. Відредагуй шаблон і додай вправи.",
@@ -314,7 +364,7 @@ export function Workouts() {
   }, [retroDate, retroTime, createWorkoutWithTimes]);
 
   const lastByExerciseId = useMemo(() => {
-    const out = {};
+    const out: Record<string, LastExerciseItem> = {};
     for (const w of workouts || []) {
       if (w.id === activeWorkoutId) continue;
       for (const it of w.items || []) {
@@ -337,11 +387,12 @@ export function Workouts() {
     const pool = eqSet
       ? list.filter((ex) => (ex.equipment ?? []).some((e) => eqSet.has(e)))
       : list;
-    const m = new Map();
+    const m = new Map<string, RawExerciseDef[]>();
     for (const ex of pool) {
       const gid = ex.primaryGroup || "full_body";
-      if (!m.has(gid)) m.set(gid, []);
-      m.get(gid).push(ex);
+      const bucket = m.get(gid);
+      if (bucket) bucket.push(ex);
+      else m.set(gid, [ex]);
     }
     const order = [
       "chest",
@@ -574,7 +625,7 @@ export function Workouts() {
             setQuickStartOpen(false);
             setView("templates");
           }}
-          onConfirmExercises={(picks) => {
+          onConfirmExercises={(picks: RawExerciseDef[]) => {
             // Build a fresh ad-hoc session and pre-load the picked
             // exercises before flipping the active flag — that way the
             // session-level live timer (`activeWorkout.startedAt`) is

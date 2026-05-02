@@ -23,7 +23,16 @@ export { hasLiveWeeklyDigest } from "@shared/lib/weeklyDigestStorage";
 // explicit `-600 / dark:-400` pair because the module accent text uses
 // the saturated `-500` family (not the `-soft` wash) and does not have
 // a theme-adaptive semantic token today.
-const MODULE_CONFIG = {
+const MODULE_CONFIG: Record<
+  ModuleKey,
+  {
+    icon: string;
+    label: string;
+    colorClass: string;
+    bgClass: string;
+    borderClass: string;
+  }
+> = {
   finyk: {
     icon: "💳",
     label: "Фінанси",
@@ -54,7 +63,30 @@ const MODULE_CONFIG = {
   },
 };
 
-function ChevronIcon({ expanded }) {
+// `WeeklyDigestReport` (the AI-generated body) lives in
+// `@sergeant/shared`; we only need the per-module block shape here. The
+// hook returns the report flattened with `{ generatedAt, weekKey,
+// weekRange }` (saved digest) plus an `overallRecommendations` array, so
+// we describe just the fields the card touches rather than re-importing
+// the full report type.
+export type ModuleKey = "finyk" | "fizruk" | "nutrition" | "routine";
+
+export interface DigestModuleData {
+  summary?: string;
+  comment?: string;
+  recommendations?: string[];
+}
+
+export interface DigestPayload {
+  generatedAt?: string;
+  finyk?: DigestModuleData | null;
+  fizruk?: DigestModuleData | null;
+  nutrition?: DigestModuleData | null;
+  routine?: DigestModuleData | null;
+  overallRecommendations?: string[];
+}
+
+function ChevronIcon({ expanded }: { expanded: boolean }) {
   return (
     <Icon
       name="chevron-right"
@@ -68,7 +100,12 @@ function ChevronIcon({ expanded }) {
   );
 }
 
-function ModuleBlock({ moduleKey, data }) {
+interface ModuleBlockProps {
+  moduleKey: ModuleKey;
+  data: DigestModuleData | null | undefined;
+}
+
+function ModuleBlock({ moduleKey, data }: ModuleBlockProps) {
   const [open, setOpen] = useState(false);
   const cfg = MODULE_CONFIG[moduleKey];
   if (!cfg || !data) return null;
@@ -113,7 +150,7 @@ function ModuleBlock({ moduleKey, data }) {
             {Array.isArray(data.recommendations) &&
               data.recommendations.length > 0 && (
                 <div className="space-y-1">
-                  {data.recommendations.map((rec, i) => (
+                  {data.recommendations.map((rec: string, i: number) => (
                     <div key={i} className="flex items-start gap-1.5">
                       <span
                         className={cn(
@@ -176,6 +213,16 @@ function LoadingSpinner() {
   );
 }
 
+interface DigestContentProps {
+  digest: DigestPayload | null | undefined;
+  loading: boolean;
+  error: string | null | undefined;
+  isCurrentWeek: boolean;
+  onGenerate: () => void;
+  onUpdate: () => void;
+  onPlayStories: () => void;
+}
+
 function DigestContent({
   digest,
   loading,
@@ -184,7 +231,7 @@ function DigestContent({
   onGenerate,
   onUpdate,
   onPlayStories,
-}) {
+}: DigestContentProps) {
   const [expanded, setExpanded] = useState(false);
   const hasData =
     digest &&
@@ -223,7 +270,7 @@ function DigestContent({
             <button
               type="button"
               onClick={onGenerate}
-              className="w-full h-10 rounded-xl bg-primary text-bg text-sm font-semibold hover:brightness-110 transition-[filter,opacity,transform] active:scale-[0.98]"
+              className="w-full h-10 rounded-xl bg-primary text-bg text-style-label hover:brightness-110 transition-[filter,opacity,transform] active:scale-[0.98]"
             >
               Згенерувати звіт
             </button>
@@ -272,10 +319,11 @@ function DigestContent({
       >
         <div className="overflow-hidden">
           <div className="border-t border-line px-4 pt-3 pb-4 space-y-2">
-            {["finyk", "fizruk", "nutrition", "routine"].map((key) =>
-              digest[key] ? (
-                <ModuleBlock key={key} moduleKey={key} data={digest[key]} />
-              ) : null,
+            {(["finyk", "fizruk", "nutrition", "routine"] as const).map(
+              (key) =>
+                digest?.[key] ? (
+                  <ModuleBlock key={key} moduleKey={key} data={digest[key]} />
+                ) : null,
             )}
             {Array.isArray(digest.overallRecommendations) &&
               digest.overallRecommendations.length > 0 && (
@@ -287,16 +335,18 @@ function DigestContent({
                   <p className="text-2xs font-bold text-primary uppercase tracking-wider">
                     Загальні рекомендації
                   </p>
-                  {digest.overallRecommendations.map((rec, i) => (
-                    <div key={i} className="flex items-start gap-1.5">
-                      <span className="text-2xs font-bold text-primary mt-0.5 shrink-0">
-                        ★
-                      </span>
-                      <span className="text-xs text-text leading-snug">
-                        {rec}
-                      </span>
-                    </div>
-                  ))}
+                  {digest.overallRecommendations.map(
+                    (rec: string, i: number) => (
+                      <div key={i} className="flex items-start gap-1.5">
+                        <span className="text-2xs font-bold text-primary mt-0.5 shrink-0">
+                          ★
+                        </span>
+                        <span className="text-xs text-text leading-snug">
+                          {rec}
+                        </span>
+                      </div>
+                    ),
+                  )}
                 </div>
               )}
             {isCurrentWeek && (

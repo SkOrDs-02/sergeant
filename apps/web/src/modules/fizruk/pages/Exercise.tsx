@@ -5,16 +5,20 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useWorkouts } from "../hooks/useWorkouts";
 import { epley1rm, suggestNextSet } from "@sergeant/fizruk-domain";
-import type { WorkoutSet } from "@sergeant/fizruk-domain/domain";
+import type {
+  Workout,
+  WorkoutItem,
+  WorkoutSet,
+} from "@sergeant/fizruk-domain/domain";
 import { Card } from "@shared/components/ui/Card";
 
-function fmt(n, digits = 0) {
+function fmt(n: number | string | null | undefined, digits = 0): string {
   const x = Number(n);
   if (!Number.isFinite(x)) return "—";
   return x.toFixed(digits);
 }
 
-function roundTo2_5(kg) {
+function roundTo2_5(kg: number): number {
   return Math.round(kg / 2.5) * 2.5;
 }
 
@@ -45,7 +49,7 @@ const CALC_ZONES = [
   },
 ];
 
-function LoadCalculator({ oneRM }) {
+function LoadCalculator({ oneRM }: { oneRM: number }) {
   return (
     <Card radius="lg">
       <div className="flex items-baseline justify-between gap-2 mb-3">
@@ -99,7 +103,19 @@ function LoadCalculator({ oneRM }) {
   );
 }
 
-function ProgressChart({ points, label, unit, color }) {
+interface ProgressPoint {
+  value: number;
+  dateLabel: string;
+}
+
+interface ProgressChartProps {
+  points: ProgressPoint[];
+  label: string;
+  unit: string;
+  color: string;
+}
+
+function ProgressChart({ points, label, unit, color }: ProgressChartProps) {
   if (!points || points.length < 2) {
     return (
       <div className="rounded-xl border border-dashed border-line bg-panelHi/50 py-6 text-center text-xs text-subtle">
@@ -147,8 +163,8 @@ function ProgressChart({ points, label, unit, color }) {
   const labelSet = new Set([0, n - 1]);
   if (n > 3) labelSet.add(Math.floor(n / 2));
 
-  const lastVal = points[points.length - 1]?.value;
-  const firstVal = points[0]?.value;
+  const lastVal = points[points.length - 1]?.value ?? 0;
+  const firstVal = points[0]?.value ?? 0;
   const delta = lastVal - firstVal;
 
   return (
@@ -244,16 +260,16 @@ function ProgressChart({ points, label, unit, color }) {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type HistoryEntry = { workout: any; item: any };
+interface HistoryEntry {
+  workout: Workout;
+  item: WorkoutItem;
+}
 // Best/last sets carry an extra `_at` annotation that's not part of the
 // canonical `WorkoutSet`, so we extend the domain type instead of
 // shadowing the global `Set<T>` with `type Set = any`.
 type WorkoutSetWithMeta = WorkoutSet & { _at?: string };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Point = any;
 
-export function Exercise({ exerciseId }) {
+export function Exercise({ exerciseId }: { exerciseId: string }) {
   const { exercises, musclesUk } = useExerciseCatalog();
   const { workouts } = useWorkouts();
 
@@ -323,7 +339,12 @@ export function Exercise({ exerciseId }) {
   }, [ex, musclesUk]);
 
   const progressData = useMemo(() => {
-    const byWeek = new Map();
+    interface WeekBucket {
+      maxRm: number;
+      vol: number;
+      date: Date;
+    }
+    const byWeek = new Map<string, WeekBucket>();
     for (const { workout, item } of history) {
       if (item?.type !== "strength" || !workout?.startedAt) continue;
       const d = new Date(workout.startedAt);
@@ -331,7 +352,7 @@ export function Exercise({ exerciseId }) {
       weekStart.setDate(d.getDate() - ((d.getDay() + 6) % 7));
       weekStart.setHours(0, 0, 0, 0);
       const key = weekStart.toISOString().slice(0, 10);
-      const sets = item.sets || [];
+      const sets: WorkoutSet[] = item.sets ?? [];
       let maxRm = 0;
       let vol = 0;
       for (const s of sets) {
@@ -339,7 +360,7 @@ export function Exercise({ exerciseId }) {
         if (rm > maxRm) maxRm = rm;
         vol += (Number(s.weightKg) || 0) * (Number(s.reps) || 0);
       }
-      const existing = byWeek.get(key) || { maxRm: 0, vol: 0, date: weekStart };
+      const existing = byWeek.get(key) ?? { maxRm: 0, vol: 0, date: weekStart };
       byWeek.set(key, {
         maxRm: Math.max(existing.maxRm, maxRm),
         vol: existing.vol + vol,
@@ -369,8 +390,8 @@ export function Exercise({ exerciseId }) {
   }, [history]);
 
   const cardioData = useMemo(() => {
-    const pacePoints: Point[] = [];
-    const distPoints: Point[] = [];
+    const pacePoints: ProgressPoint[] = [];
+    const distPoints: ProgressPoint[] = [];
     for (const { workout, item } of [...history].reverse()) {
       if (item?.type !== "distance" || !workout?.startedAt) continue;
       const dist = Number(item.distanceM) || 0;
@@ -413,7 +434,7 @@ export function Exercise({ exerciseId }) {
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3">
         <div>
-          <h1 className="text-xl font-bold text-text leading-tight">
+          <h1 className="text-style-title text-text leading-tight">
             {ex?.name?.uk ||
               ex?.name?.en ||
               history?.[0]?.item?.nameUk ||
@@ -424,7 +445,7 @@ export function Exercise({ exerciseId }) {
               {muscleLabels.map((m) => (
                 <span
                   key={m}
-                  className="text-xs font-medium px-2.5 py-1 rounded-full bg-success/10 text-success border border-success/20"
+                  className="text-style-caption px-2.5 py-1 rounded-full bg-success/10 text-success border border-success/20"
                 >
                   {m}
                 </span>
@@ -455,7 +476,7 @@ export function Exercise({ exerciseId }) {
             <SectionHeading as="div" size="xs">
               Особистий рекорд
             </SectionHeading>
-            <div className="text-2xl font-extrabold text-text mt-1 tabular-nums">
+            <div className="text-style-hero text-text mt-1 tabular-nums">
               {best.best1rm ? `${fmt(best.best1rm, 0)} кг` : "—"}
             </div>
             <div className="text-xs text-subtle mt-1">
@@ -477,7 +498,7 @@ export function Exercise({ exerciseId }) {
             <SectionHeading as="div" size="xs">
               Наступного разу
             </SectionHeading>
-            <div className="text-2xl font-extrabold text-text mt-1 tabular-nums">
+            <div className="text-style-hero text-text mt-1 tabular-nums">
               {suggestedNext ? `${fmt(suggestedNext.weightKg, 1)} кг` : "—"}
             </div>
             <div className="text-xs text-subtle mt-1">
