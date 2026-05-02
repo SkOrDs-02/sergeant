@@ -347,7 +347,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   rollback на середині міграції залишає БД у consistent state.
 - **Dep.** PR #014.
 
-#### **PR #020 — `feat(server): create normalized routine_* tables (target shape)`**
+#### **PR #020 — `feat(server): create normalized routine_* tables (target shape)`** ✅ IN PROGRESS — [#1332](https://github.com/Skords-01/Sergeant/pull/1332)
 
 - **Scope.** `026_routine_tables.{sql,down.sql}`:
   - `routine_entries (id UUID, user_id, name, completed_at, created_at, updated_at, deleted_at)`
