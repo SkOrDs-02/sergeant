@@ -113,4 +113,94 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
       "function",
     );
   });
+
+  /**
+   * Перевіряємо, що `databaseHooks.user.{create,update}.before` пропускає payload
+   * через `sanitizeUserImage`. Без цього регресія повертає 90+с зависання логіну
+   * для юзерів з 19 КБ data:image у `user.image` (інцидент 2026-05-02).
+   *
+   * Тут ми не запускаємо реальний Better Auth — лише викликаємо hook напряму
+   * як це робить `db/with-hooks.mjs`. Контракт: повертає `{ data }` де `image`
+   * нулиться для data: URL, інакше пропускає без змін.
+   */
+  it("databaseHooks.user.create.before стрипає data: URL у image", async () => {
+    const options = (
+      auth as unknown as {
+        options: {
+          databaseHooks?: {
+            user?: {
+              create?: {
+                before?: (
+                  data: Record<string, unknown>,
+                ) => Promise<{ data: Record<string, unknown> } | false | void>;
+              };
+            };
+          };
+        };
+      }
+    ).options;
+    const before = options.databaseHooks?.user?.create?.before;
+    expect(typeof before).toBe("function");
+    const result = await before!({
+      email: "test@example.com",
+      name: "Тест",
+      image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA",
+    });
+    expect(result).toBeTruthy();
+    if (result && typeof result === "object" && "data" in result) {
+      expect(result.data.image).toBeNull();
+      expect(result.data.name).toBe("Тест");
+    }
+  });
+
+  it("databaseHooks.user.update.before стрипає надмірно довгий URL", async () => {
+    const options = (
+      auth as unknown as {
+        options: {
+          databaseHooks?: {
+            user?: {
+              update?: {
+                before?: (
+                  data: Record<string, unknown>,
+                ) => Promise<{ data: Record<string, unknown> } | false | void>;
+              };
+            };
+          };
+        };
+      }
+    ).options;
+    const before = options.databaseHooks?.user?.update?.before;
+    expect(typeof before).toBe("function");
+    const longUrl = "https://example.com/" + "x".repeat(3000);
+    const result = await before!({ image: longUrl });
+    expect(result).toBeTruthy();
+    if (result && typeof result === "object" && "data" in result) {
+      expect(result.data.image).toBeNull();
+    }
+  });
+
+  it("databaseHooks.user.update.before пропускає звичайний HTTPS URL", async () => {
+    const options = (
+      auth as unknown as {
+        options: {
+          databaseHooks?: {
+            user?: {
+              update?: {
+                before?: (
+                  data: Record<string, unknown>,
+                ) => Promise<{ data: Record<string, unknown> } | false | void>;
+              };
+            };
+          };
+        };
+      }
+    ).options;
+    const before = options.databaseHooks?.user?.update?.before;
+    const url = "https://lh3.googleusercontent.com/a/AAcHTtdXyz=s96-c";
+    const result = await before!({ image: url });
+    expect(result).toBeTruthy();
+    if (result && typeof result === "object" && "data" in result) {
+      expect(result.data.image).toBe(url);
+    }
+  });
 });
