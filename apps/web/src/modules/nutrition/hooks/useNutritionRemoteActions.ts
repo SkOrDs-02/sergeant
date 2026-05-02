@@ -1,5 +1,6 @@
 import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { hapticSuccess } from "@shared/lib/haptic";
 import { nutritionApi } from "@shared/api";
 import { toLocalISODate } from "@sergeant/shared";
 import type {
@@ -283,8 +284,8 @@ export function useNutritionRemoteActions({
     onMutate: () => {
       setWeekPlanBusy(true);
       setErr("");
-      setWeekPlan(null);
-      setWeekPlanRaw("");
+      // Capture snapshot for rollback on error (weekPlanRaw not passed as param)
+      return { prevWeekPlan: weekPlan };
     },
     onSuccess: (data) => {
       const plan = (data?.plan ?? null) as
@@ -292,8 +293,13 @@ export function useNutritionRemoteActions({
         | null;
       setWeekPlan(plan);
       setWeekPlanRaw(typeof data?.rawText === "string" ? data.rawText : "");
+      hapticSuccess();
     },
-    onError: (err) => {
+    onError: (err, _vars, ctx) => {
+      // Rollback to previous week plan on failure
+      if (ctx) {
+        setWeekPlan(ctx.prevWeekPlan);
+      }
       setErr(formatNutritionError(err, "Помилка плану"));
     },
     onSettled: () => {
@@ -384,9 +390,14 @@ export function useNutritionRemoteActions({
           if (!plan) throw new Error("Не вдалося отримати план харчування");
           return { plan, regenerateMealType };
         }),
-    onMutate: () => {
+    onMutate: (regenerateMealType) => {
       setDayPlanBusy(true);
       setErr("");
+      // Capture current day plan for rollback — only when regenerating a
+      // specific meal type (full regen intentionally clears the old plan).
+      return regenerateMealType
+        ? { prevDayPlan: null as UiNutritionDayPlan | null }
+        : {};
     },
     onSuccess: ({
       plan,
@@ -439,7 +450,11 @@ export function useNutritionRemoteActions({
         };
       });
     },
-    onError: (err) => {
+    onError: (err, _vars, ctx) => {
+      // Rollback partial regen on failure so the previous plan stays visible
+      if (ctx && "prevDayPlan" in ctx && ctx.prevDayPlan !== undefined) {
+        setDayPlan(ctx.prevDayPlan);
+      }
       setErr(formatNutritionError(err, "Помилка генерації плану"));
     },
     onSettled: () => {
@@ -531,6 +546,7 @@ export function useNutritionRemoteActions({
     },
     onSuccess: (data) => {
       shopping.setGeneratedList(adaptShoppingCategories(data.categories));
+      hapticSuccess();
     },
     onError: (err) => {
       setErr(formatNutritionError(err, "Помилка генерації списку покупок"));

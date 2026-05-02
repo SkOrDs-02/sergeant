@@ -7,15 +7,17 @@ import {
 } from "react";
 import { cn } from "@shared/lib/cn";
 import { Banner } from "@shared/components/ui/Banner";
+import { SkeletonHabitRow } from "@shared/components/ui/Skeleton";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { requestCloudPull } from "@shared/lib/cloudPullRequest";
+import { useToast } from "@shared/hooks/useToast";
 import {
   ModuleAccentProvider,
   ModuleHeader,
   ModuleHeaderBackButton,
 } from "@shared/components/layout";
-import { hapticTap } from "@shared/lib/haptic";
+import { hapticTap, hapticSuccess } from "@shared/lib/haptic";
 import {
   loadRoutineState,
   toggleHabitCompletion,
@@ -168,11 +170,12 @@ export default function RoutineApp({
   pwaAction,
   onPwaActionConsumed,
 }: RoutineAppProps = {}) {
+  const toast = useToast();
   const [routine, setRoutine] = useRoutineState();
   // Low-priority transition for habit toggles: the checkbox haptic fires
   // instantly while React defers the heavier re-render (full list + persist)
   // so the animation never feels janky on slower devices.
-  const [, startHabitTransition] = useTransition();
+  const [isHabitPending, startHabitTransition] = useTransition();
   // Finyk calendar events depend on both the Finyk Monobank cache and the
   // subscription calendar. The former now flows through React Query
   // (`hubKeys.preview("finyk")`), the latter still uses a custom event
@@ -428,6 +431,7 @@ export default function RoutineApp({
     const dk = range.startKey;
     if (range.startKey !== range.endKey) return;
     setRoutine((s) => markAllScheduledHabitsComplete(s, dk));
+    hapticSuccess();
   }, [range.startKey, range.endKey, setRoutine]);
 
   const canBulkMark = useMemo(() => {
@@ -527,6 +531,9 @@ export default function RoutineApp({
   // listener (`ROUTINE_EVENT`) re-renders us when the engine writes new
   // state into localStorage.
   const handlePullRefresh = useCallback(() => requestCloudPull(2500), []);
+  const handlePullRefreshError = useCallback(() => {
+    toast.error("Не вдалося оновити дані. Перевір з'єднання.");
+  }, [toast]);
 
   return (
     <ModuleAccentProvider module="routine" asShellRoot>
@@ -582,6 +589,7 @@ export default function RoutineApp({
           id="routine-main"
           tabIndex={-1}
           onRefresh={handlePullRefresh}
+          onError={handlePullRefreshError}
           variant="routine"
           contentClassName="page-tabbar-pad routine-main-pad"
         >
@@ -696,7 +704,20 @@ export default function RoutineApp({
               )}
             >
               <SectionErrorBoundary title="Не вдалось показати «Календар»">
-                <RoutineCalendarPanel hidden={mainTab !== "calendar"} />
+                {isHabitPending && mainTab === "calendar" ? (
+                  <div className="px-4 pt-2 space-y-2 motion-safe:animate-pulse">
+                    {[0, 1, 2, 3].map((i) => (
+                      <SkeletonHabitRow
+                        key={i}
+                        shimmer
+                        module="routine"
+                        style={{ animationDelay: `${i * 40}ms` }}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <RoutineCalendarPanel hidden={mainTab !== "calendar"} />
+                )}
               </SectionErrorBoundary>
             </RoutineCalendarProvider>
 
