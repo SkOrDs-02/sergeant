@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { type User } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
@@ -44,6 +44,20 @@ const GROUPS = [
   },
 ] as const;
 
+function readSettingsSectionHash() {
+  if (typeof window === "undefined") return null;
+  const raw = window.location.hash.replace(/^#/, "");
+  if (!raw.startsWith("settings-")) return null;
+  return raw.replace(/^settings-/, "");
+}
+
+function groupForSection(sectionId: string | null) {
+  if (!sectionId) return undefined;
+  return GROUPS.find((group) =>
+    (group.sections as readonly string[]).includes(sectionId),
+  );
+}
+
 export interface HubSettingsPageProps {
   syncing: boolean;
   onSync: () => void;
@@ -57,9 +71,15 @@ export function HubSettingsPage({
   onPull,
   user,
 }: HubSettingsPageProps) {
-  const [tab, setTab] = useState("general");
+  const [tab, setTab] = useState<string>(() => {
+    const sectionId = readSettingsSectionHash();
+    return groupForSection(sectionId)?.id ?? "general";
+  });
   const [query, setQuery] = useState("");
   const refs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [hashSectionId, setHashSectionId] = useState<string | null>(
+    readSettingsSectionHash,
+  );
 
   // Sections with the keywords a user might type to find them. The labels
   // match the <h3>/<h4> headings used by each Section component.
@@ -168,6 +188,30 @@ export function HubSettingsPage({
     : [...(GROUPS.find((g) => g.id === tab)?.sections ?? [])];
 
   const visible = sections.filter((s) => visibleSectionIds.includes(s.id));
+  const visibleSectionKey = visibleSectionIds.join("|");
+
+  useEffect(() => {
+    const syncHash = () => {
+      const sectionId = readSettingsSectionHash();
+      if (!sectionId) return;
+      const group = groupForSection(sectionId);
+      if (!group) return;
+      setQuery("");
+      setTab(group.id);
+      setHashSectionId(sectionId);
+    };
+
+    syncHash();
+    window.addEventListener("hashchange", syncHash);
+    return () => window.removeEventListener("hashchange", syncHash);
+  }, []);
+
+  useEffect(() => {
+    if (!hashSectionId) return;
+    const el = refs.current[hashSectionId];
+    if (!el) return;
+    el.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [hashSectionId, visibleSectionKey]);
 
   return (
     <div className="flex flex-col gap-4 pt-3 pb-6">
@@ -234,7 +278,15 @@ export function HubSettingsPage({
           </div>
         ) : (
           visible.map((s) => (
-            <div key={s.id} ref={(el) => (refs.current[s.id] = el)}>
+            <div
+              key={s.id}
+              id={`settings-${s.id}`}
+              data-search-keywords={`${s.title} ${s.keywords}`}
+              ref={(el) => {
+                refs.current[s.id] = el;
+              }}
+              className="scroll-mt-4"
+            >
               {s.render()}
             </div>
           ))

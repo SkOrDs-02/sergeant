@@ -1,4 +1,4 @@
-import { useCallback, useEffect, Suspense } from "react";
+import { useCallback, useEffect, useState, Suspense } from "react";
 import { lazyDefault, lazyImport } from "./lib/lazyImport";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@shared/lib/cn";
@@ -40,6 +40,7 @@ import { ModuleFirstRunGoalSheet } from "./onboarding/ModuleFirstRunGoalSheet";
 import { isFirstRealEntryDone } from "./onboarding/vibePicks";
 import { hasAnyRealEntry } from "./onboarding/firstRealEntry";
 import { useHubNavigation } from "./hooks/useHubNavigation";
+import { useHubKeyboardShortcuts } from "./hooks/useHubKeyboardShortcuts";
 import { useHubUIState } from "./hooks/useHubUIState";
 import { usePwaActions, type PwaAction } from "./hooks/usePwaActions";
 import { ShellDeepLinkBridge } from "./app/ShellDeepLinkBridge";
@@ -194,6 +195,7 @@ function AppInner() {
   const { activeModule, openModule, goToHub, moduleAnimClass } =
     useHubNavigation();
   const ui = useHubUIState();
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const { pwaAction, setPwaAction, clearPwaAction, validActions } =
     usePwaActions(searchParams);
   const { dark, toggle: toggleDark } = useDarkMode();
@@ -320,27 +322,19 @@ function AppInner() {
     return () => window.removeEventListener(HUB_OPEN_MODULE_EVENT, onHubOpen);
   }, [openModule, setPwaAction, validActions]);
 
-  // Глобальний shortcut ⌘K / Ctrl+K → відкрити HubSearch. Ставимо
-  // `preventDefault`, щоб не спрацював нативний focus-address-bar у
-  // браузера. Не реагуємо, якщо пошук вже відкритий або фокус у
-  // input/textarea — тоді ⌘K не має перехоплювати typing.
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const mod = e.metaKey || e.ctrlKey;
-      if (!mod || (e.key !== "k" && e.key !== "K")) return;
-      const target = e.target as HTMLElement | null;
-      const tag = target?.tagName;
-      const inEditable =
-        tag === "INPUT" ||
-        tag === "TEXTAREA" ||
-        (target && target.isContentEditable);
-      if (inEditable) return;
-      e.preventDefault();
-      ui.setSearchOpen(true);
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [ui]);
+  const openSearchFromShortcut = useCallback(() => {
+    if (activeModule) {
+      goToHub();
+      requestAnimationFrame(() => ui.setSearchOpen(true));
+      return;
+    }
+    ui.setSearchOpen(true);
+  }, [activeModule, goToHub, ui]);
+
+  useHubKeyboardShortcuts({
+    onOpenSearch: openSearchFromShortcut,
+    onOpenShortcuts: () => setShortcutsOpen(true),
+  });
 
   if (sync.migrationPending) {
     return (
@@ -528,8 +522,8 @@ function AppInner() {
           onOpenModule={openModule}
         />
         <KeyboardShortcutsModal
-          open={keyboardShortcuts.open}
-          onClose={keyboardShortcuts.onClose}
+          open={shortcutsOpen}
+          onClose={() => setShortcutsOpen(false)}
         />
       </div>
     );
