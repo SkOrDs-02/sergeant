@@ -1,12 +1,13 @@
 import { useCallback } from "react";
 import { ACTIVE_WORKOUT_KEY } from "@sergeant/fizruk-domain";
+import type { WorkoutItem } from "@sergeant/fizruk-domain/domain";
 import { safeWriteLS } from "@shared/lib/storage";
 
 interface Exercise {
   id: string;
   name?: { uk?: string; en?: string };
   primaryGroup?: string;
-  muscles?: { primary?: unknown[]; secondary?: unknown[] };
+  muscles?: { primary?: string[]; secondary?: string[] };
 }
 
 interface Session {
@@ -19,7 +20,7 @@ interface WorkoutsApi {
     items?: Array<{ exerciseId?: string; sets?: Array<{ weightKg?: number }> }>;
   }>;
   createWorkout: () => { id: string };
-  addItem: (workoutId: string, item: unknown) => void;
+  addItem: (workoutId: string, item: Partial<WorkoutItem>) => string;
 }
 
 /**

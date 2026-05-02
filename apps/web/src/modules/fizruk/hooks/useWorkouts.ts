@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Workout } from "@sergeant/fizruk-domain/domain";
+import type {
+  ChecklistItem,
+  Workout,
+  WorkoutGroup,
+  WorkoutItem,
+} from "@sergeant/fizruk-domain/domain";
 import {
   parseWorkoutsFromStorage,
   serializeWorkoutsToStorage,
@@ -74,9 +79,8 @@ const DEFAULT_COOLDOWN_ITEMS = [
 
 /**
  * Build a default warmup checklist with generated IDs.
- * @returns {ChecklistItem[]}
  */
-export function makeDefaultWarmup() {
+export function makeDefaultWarmup(): ChecklistItem[] {
   return DEFAULT_WARMUP_ITEMS.map((x) => ({
     id: uid("wm"),
     ...x,
@@ -86,9 +90,8 @@ export function makeDefaultWarmup() {
 
 /**
  * Build a default cooldown checklist with generated IDs.
- * @returns {ChecklistItem[]}
  */
-export function makeDefaultCooldown() {
+export function makeDefaultCooldown(): ChecklistItem[] {
   return DEFAULT_COOLDOWN_ITEMS.map((x) => ({
     id: uid("cd"),
     ...x,
@@ -134,45 +137,47 @@ export function useWorkouts() {
   /**
    * Persist an updated workouts array to localStorage.
    * Accepts either a new array or an updater function.
-   * @param {Workout[]|((prev: Workout[]) => Workout[])} nextOrUpdater
    */
-  const persist = useCallback((nextOrUpdater) => {
-    setWorkouts((prev) => {
-      const next =
-        typeof nextOrUpdater === "function"
-          ? nextOrUpdater(prev)
-          : nextOrUpdater;
-      try {
-        localStorage.setItem(
-          WORKOUTS_STORAGE_KEY,
-          serializeWorkoutsToStorage(next),
-        );
-      } catch (err) {
-        // Surface quota/private-mode failures to the UI instead of silently
-        // losing data. We keep `next` in memory so the current session does
-        // not visibly reset — the banner prompts the user to act.
+  const persist = useCallback(
+    (nextOrUpdater: Workout[] | ((prev: Workout[]) => Workout[])) => {
+      setWorkouts((prev) => {
+        const next =
+          typeof nextOrUpdater === "function"
+            ? nextOrUpdater(prev)
+            : nextOrUpdater;
         try {
-          const message =
-            err instanceof Error ? err.message : "невідома помилка";
-          window.dispatchEvent(
-            new CustomEvent(FIZRUK_WORKOUTS_STORAGE_ERROR, {
-              detail: { message },
-            }),
+          localStorage.setItem(
+            WORKOUTS_STORAGE_KEY,
+            serializeWorkoutsToStorage(next),
           );
-        } catch {
-          /* dispatchEvent can throw in exotic embeddings — ignore */
+        } catch (err) {
+          // Surface quota/private-mode failures to the UI instead of silently
+          // losing data. We keep `next` in memory so the current session does
+          // not visibly reset — the banner prompts the user to act.
+          try {
+            const message =
+              err instanceof Error ? err.message : "невідома помилка";
+            window.dispatchEvent(
+              new CustomEvent(FIZRUK_WORKOUTS_STORAGE_ERROR, {
+                detail: { message },
+              }),
+            );
+          } catch {
+            /* dispatchEvent can throw in exotic embeddings — ignore */
+          }
         }
-      }
-      return next;
-    });
-  }, []);
+        return next;
+      });
+    },
+    [],
+  );
 
   /**
    * Create a new workout session starting now and add it to the list.
    * @returns {Workout} The newly created workout.
    */
-  const createWorkout = useCallback(() => {
-    const w = {
+  const createWorkout = useCallback((): Workout => {
+    const w: Workout = {
       id: uid("w"),
       startedAt: new Date().toISOString(),
       endedAt: null,
@@ -182,7 +187,7 @@ export function useWorkouts() {
       cooldown: null,
       note: "",
     };
-    persist((prev) => [w, ...prev]);
+    persist((prev: Workout[]) => [w, ...prev]);
     return w;
   }, [persist]);
 
@@ -192,8 +197,8 @@ export function useWorkouts() {
    * @returns {Workout} The newly created workout.
    */
   const createWorkoutWithTimes = useCallback(
-    ({ startedAt }) => {
-      const w = {
+    ({ startedAt }: { startedAt: string }): Workout => {
+      const w: Workout = {
         id: uid("w"),
         startedAt: startedAt || new Date().toISOString(),
         endedAt: null,
@@ -203,7 +208,7 @@ export function useWorkouts() {
         cooldown: null,
         note: "",
       };
-      persist((prev) => [w, ...prev]);
+      persist((prev: Workout[]) => [w, ...prev]);
       return w;
     },
     [persist],
@@ -216,11 +221,11 @@ export function useWorkouts() {
    * @returns {Workout|null} The updated (or already-ended) workout, or null.
    */
   const endWorkout = useCallback(
-    (id) => {
+    (id: string): Workout | null => {
       const nowIso = new Date().toISOString();
       let ended: Workout | null = null;
-      persist((prev) =>
-        prev.map((w) => {
+      persist((prev: Workout[]) =>
+        prev.map((w: Workout): Workout => {
           if (w.id !== id) return w;
           if (w.endedAt) {
             ended = w;
@@ -241,9 +246,9 @@ export function useWorkouts() {
    * @param {Partial<Workout>} patch - Fields to merge.
    */
   const updateWorkout = useCallback(
-    (id, patch) => {
-      persist((prev) =>
-        prev.map((w) => (w.id === id ? { ...w, ...patch } : w)),
+    (id: string, patch: Partial<Workout>) => {
+      persist((prev: Workout[]) =>
+        prev.map((w: Workout) => (w.id === id ? { ...w, ...patch } : w)),
       );
     },
     [persist],
@@ -254,8 +259,8 @@ export function useWorkouts() {
    * @param {string} id - Workout ID.
    */
   const deleteWorkout = useCallback(
-    (id) => {
-      persist((prev) => prev.filter((w) => w.id !== id));
+    (id: string) => {
+      persist((prev: Workout[]) => prev.filter((w: Workout) => w.id !== id));
     },
     [persist],
   );
@@ -266,12 +271,12 @@ export function useWorkouts() {
    * @param {Workout} workout
    */
   const restoreWorkout = useCallback(
-    (workout) => {
+    (workout: Workout) => {
       if (!workout?.id) return;
-      persist((prev) => {
-        if (prev.some((w) => w.id === workout.id)) return prev;
+      persist((prev: Workout[]) => {
+        if (prev.some((w: Workout) => w.id === workout.id)) return prev;
         const next = [...prev, workout];
-        next.sort((a, b) => {
+        next.sort((a: Workout, b: Workout) => {
           const at = Date.parse(a?.startedAt || "") || 0;
           const bt = Date.parse(b?.startedAt || "") || 0;
           return at - bt;
@@ -291,14 +296,14 @@ export function useWorkouts() {
    * @returns {string} The generated item ID.
    */
   const addItem = useCallback(
-    (workoutId, item) => {
+    (workoutId: string, item: Partial<WorkoutItem>): string => {
       const itemId = item.id || uid("i");
-      persist((prev) =>
-        prev.map((w) => {
+      persist((prev: Workout[]) =>
+        prev.map((w: Workout): Workout => {
           if (w.id !== workoutId) return w;
           return {
             ...w,
-            items: [...(w.items || []), { id: itemId, ...item }],
+            items: [...(w.items || []), { id: itemId, ...item } as WorkoutItem],
           };
         }),
       );
@@ -314,13 +319,13 @@ export function useWorkouts() {
    * @param {Partial<WorkoutItem>} patch
    */
   const updateItem = useCallback(
-    (workoutId, itemId, patch) => {
-      persist((prev) =>
-        prev.map((w) => {
+    (workoutId: string, itemId: string, patch: Partial<WorkoutItem>) => {
+      persist((prev: Workout[]) =>
+        prev.map((w: Workout): Workout => {
           if (w.id !== workoutId) return w;
           return {
             ...w,
-            items: (w.items || []).map((i) =>
+            items: (w.items || []).map((i: WorkoutItem) =>
               i.id === itemId ? { ...i, ...patch } : i,
             ),
           };
@@ -337,19 +342,19 @@ export function useWorkouts() {
    * @param {string} itemId
    */
   const removeItem = useCallback(
-    (workoutId, itemId) => {
-      persist((prev) =>
-        prev.map((w) => {
+    (workoutId: string, itemId: string) => {
+      persist((prev: Workout[]) =>
+        prev.map((w: Workout): Workout => {
           if (w.id !== workoutId) return w;
           const newGroups = (w.groups || [])
-            .map((g) => ({
+            .map((g: WorkoutGroup) => ({
               ...g,
-              itemIds: (g.itemIds || []).filter((id) => id !== itemId),
+              itemIds: (g.itemIds || []).filter((id: string) => id !== itemId),
             }))
-            .filter((g) => (g.itemIds || []).length >= 2);
+            .filter((g: WorkoutGroup) => (g.itemIds || []).length >= 2);
           return {
             ...w,
-            items: (w.items || []).filter((i) => i.id !== itemId),
+            items: (w.items || []).filter((i: WorkoutItem) => i.id !== itemId),
             groups: newGroups,
           };
         }),
