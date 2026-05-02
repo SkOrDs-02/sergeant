@@ -305,7 +305,7 @@ export function ManualExpenseSheet({
     onSave?.({
       ...(initialExpense?.id ? { id: String(initialExpense.id) } : {}),
       description,
-      amount: amt,
+      amount: parseFloat(form.amount),
       category: form.category,
       // "YYYY-MM-DD" як local date може з’їхати при toISOString() в UTC.
       // Ставимо полудень, щоб стабільно зберігати правильний день.
