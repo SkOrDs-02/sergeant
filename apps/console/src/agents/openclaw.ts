@@ -15,6 +15,12 @@
  */
 
 import type Anthropic from "@anthropic-ai/sdk";
+import {
+  DEFAULT_PERSONA,
+  filterToolsForPersona,
+  personaPrimer,
+  type OpenClawPersona,
+} from "./personas.js";
 import { runAgentLoop } from "./run-agent-loop.js";
 
 const MODEL = "claude-sonnet-4-6";
@@ -145,21 +151,26 @@ export function buildSystemPromptInline({
   maxIterations,
   founderHandle,
   trigger,
+  persona = DEFAULT_PERSONA,
 }: {
   toneMode: OpenClawToneMode;
   maxIterations: number;
   founderHandle: string;
   trigger: string;
+  persona?: OpenClawPersona;
 }): string {
   const body = toneMode === "direct" ? DIRECT_BODY : DIPLOMATIC_BODY;
   return [
     COMMON_PREFIX.replace("__MAX_ITER__", String(maxIterations)),
+    "",
+    personaPrimer(persona),
     "",
     body,
     "",
     `FOUNDER: ${founderHandle}`,
     `TRIGGER: ${trigger}`,
     `TONE_MODE: ${toneMode}`,
+    `PERSONA: ${persona}`,
   ].join("\n");
 }
 
@@ -499,27 +510,39 @@ export interface RunOpenClawAgentInput {
   trigger: "dm" | "morning_ritual" | "weekly_review" | "monthly_okr";
   maxIterations: number;
   deps: OpenClawAgentDeps;
+  /**
+   * ADR-0033: persona switches primer + tool subset. Default — `cofounder`
+   * (full toolset, synthesis voice). Inside `/council`, caller runs each
+   * specialist persona separately and then a final `cofounder` synthesis.
+   */
+  persona?: OpenClawPersona;
 }
 
-export async function runOpenClawAgent(
-  input: RunOpenClawAgentInput,
-): Promise<{ reply: string; toneMode: OpenClawToneMode }> {
+export async function runOpenClawAgent(input: RunOpenClawAgentInput): Promise<{
+  reply: string;
+  toneMode: OpenClawToneMode;
+  persona: OpenClawPersona;
+}> {
+  const persona = input.persona ?? DEFAULT_PERSONA;
   const toneMode = selectToneMode(input.userMessage);
   const systemPrompt = buildSystemPromptInline({
     toneMode,
     maxIterations: input.maxIterations,
     founderHandle: input.founderHandle,
     trigger: input.trigger,
+    persona,
   });
+
+  const tools = filterToolsForPersona(openClawTools, persona);
 
   const reply = await runAgentLoop(input.client, input.userMessage, {
     model: MODEL,
     maxTokens: MAX_TOKENS,
     systemPrompt,
-    tools: openClawTools,
+    tools,
     executeTool: createOpenClawToolExecutor(input.deps),
     maxIterations: input.maxIterations,
   });
 
-  return { reply, toneMode };
+  return { reply, toneMode, persona };
 }

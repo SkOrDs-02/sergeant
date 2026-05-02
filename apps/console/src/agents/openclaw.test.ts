@@ -89,4 +89,78 @@ describe("OpenClaw buildSystemPromptInline", () => {
     expect(p).toContain("TRIGGER: morning_ritual");
     expect(p).toContain("TONE_MODE: direct");
   });
+
+  it("defaults to cofounder persona when not specified", () => {
+    const p = buildSystemPromptInline({
+      toneMode: "diplomatic",
+      maxIterations: 8,
+      founderHandle: "@x",
+      trigger: "dm",
+    });
+    expect(p).toContain("PERSONA: cofounder");
+    expect(p).toContain("синтез"); // cofounder primer mentions synthesis
+  });
+
+  it("ops persona prepends ops primer + ops persona tag", () => {
+    const p = buildSystemPromptInline({
+      toneMode: "direct",
+      maxIterations: 8,
+      founderHandle: "@x",
+      trigger: "dm",
+      persona: "ops",
+    });
+    expect(p).toContain("PERSONA: ops");
+    expect(p.toLowerCase()).toContain("ops-engineer");
+  });
+
+  it("growth persona prepends growth primer + growth persona tag", () => {
+    const p = buildSystemPromptInline({
+      toneMode: "diplomatic",
+      maxIterations: 8,
+      founderHandle: "@x",
+      trigger: "dm",
+      persona: "growth",
+    });
+    expect(p).toContain("PERSONA: growth");
+    expect(p.toLowerCase()).toContain("growth");
+  });
+
+  it("eng persona prepends eng primer + eng persona tag", () => {
+    const p = buildSystemPromptInline({
+      toneMode: "diplomatic",
+      maxIterations: 8,
+      founderHandle: "@x",
+      trigger: "dm",
+      persona: "eng",
+    });
+    expect(p).toContain("PERSONA: eng");
+    expect(p.toLowerCase()).toContain("engineer");
+  });
+
+  it("finance persona prepends finance primer + finance persona tag", () => {
+    const p = buildSystemPromptInline({
+      toneMode: "diplomatic",
+      maxIterations: 8,
+      founderHandle: "@x",
+      trigger: "dm",
+      persona: "finance",
+    });
+    expect(p).toContain("PERSONA: finance");
+    expect(p.toLowerCase()).toContain("finance");
+  });
+
+  it("persona primer is placed BEFORE the tone-mode body so it sets context first", () => {
+    const p = buildSystemPromptInline({
+      toneMode: "direct",
+      maxIterations: 8,
+      founderHandle: "@x",
+      trigger: "dm",
+      persona: "ops",
+    });
+    const personaIdx = p.indexOf("PERSONA: ops-engineer");
+    const toneBodyIdx = p.indexOf("ops-mode");
+    expect(personaIdx).toBeGreaterThanOrEqual(0);
+    expect(toneBodyIdx).toBeGreaterThanOrEqual(0);
+    expect(personaIdx).toBeLessThan(toneBodyIdx);
+  });
 });
