@@ -293,7 +293,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   у реальному Chromium.
 - **Dep.** PR #014.
 
-#### **PR #016 — `feat(web): add COOP/COEP headers on app routes for OPFS cross-origin isolation`** IN PROGRESS — [#1354](https://github.com/Skords-01/Sergeant/pull/1354)
+#### **PR #016 — `feat(web): add COOP/COEP headers on app routes for OPFS cross-origin isolation`** ✅ LANDED — [#1354](https://github.com/Skords-01/Sergeant/pull/1354)
 
 - **Scope.** `vercel.json` — додати:
   ```json
@@ -359,7 +359,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 - **AC.** Backfill коректний на staging; spot-check на 100 юзерах.
 - **Dep.** PR #014, #019.
 
-#### **PR #021 — `feat(server): /v2/sync/push + /v2/sync/pull endpoints (op-log based)`** 🚧 IN PROGRESS
+#### **PR #021 — `feat(server): /v2/sync/push + /v2/sync/pull endpoints (op-log based)`** ✅ LANDED — [#1355](https://github.com/Skords-01/Sergeant/pull/1355)
 
 - **Scope.**
   - `POST /v2/sync/push` — приймає масив op-log entries
