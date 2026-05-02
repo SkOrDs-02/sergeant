@@ -8,10 +8,12 @@
 > **Оновлено 2026-05-02.** Sync з реальним станом коду після кількох wave-ів decomposition:
 > Розділ 2 (localStorage burndown) — TODO-allowlist у `eslint.config.js` скорочено з 41 до **17 файлів**
 > (нові хвилі міграцій у `routine`/`finyk`/`onboarding`/`chatActions`/`insights`/`recommendations`).
-> Розділ 4 (великі файли) — у `apps/web/src` залишилось **21 файл >600 LOC** (раніше 22);
+> Розділ 4 (великі файли) — у `apps/web/src` залишилось **20 файлів >600 LOC** (раніше 22);
 > декомпозовано `Transactions.tsx`, `HubSearch.tsx`, `Budgets.tsx`, `Overview.tsx`, `DesignShowcase.tsx`,
 > `ActiveWorkoutPanel.tsx`, `core/App.tsx` (645 → 224 LOC, винесено
-> `app/{appPaths,RedirectTo,useAppEffects,StandaloneRoutes,HubHomeView,ActiveModuleView}.{ts,tsx}`);
+> `app/{appPaths,RedirectTo,useAppEffects,StandaloneRoutes,HubHomeView,ActiveModuleView}.{ts,tsx}`),
+> `core/lib/chatActions/crossActions.ts` (788 → 78 LOC, винесено
+> `crossActions/{helpers,briefingHandlers,goalAndUtility,financeAnalytics,noteHandlers,memoryHandlers,exportHandler,compareWeeksHandler}.ts`);
 > водночас виросли нові: `VoiceMicButton.tsx` (852).
 > Розділ 9 (`any` типи) — production тепер містить **10 файлів** із `: any`
 > (7 у finyk sub-pages + `BudgetsGoalsSection.tsx` + 2 нові у fizruk після decomposition).
@@ -159,6 +161,19 @@ Codemod ідемпотентний: повторний запуск дасть `
 > (132 — active-module shell з лінивими `FinykApp`/`FizrukApp`/`RoutineApp`/
 > `NutritionApp`). Усі < 200 LOC. Count 22 → 21.
 >
+> `core/lib/chatActions/crossActions.ts` (раніше 788 рядків) декомпозовано на
+> `crossActions.ts` (78 — thin dispatcher над `action.name` switch),
+> `crossActions/helpers.ts` (68 — `weekLabelToMondayKey`/`previousWeekKey`/
+> `formatWeekRangeLabel`/`diffLine`), `crossActions/briefingHandlers.ts` (159 —
+> `morning_briefing` + `weekly_summary`), `crossActions/goalAndUtility.ts` (94 —
+> `set_goal` + `convert_units`), `crossActions/financeAnalytics.ts` (173 —
+> `spending_trend` + `category_breakdown` + `detect_anomalies`),
+> `crossActions/noteHandlers.ts` (64 — `save_note` + `list_notes`),
+> `crossActions/memoryHandlers.ts` (84 — `remember` + `forget` + `my_profile`),
+> `crossActions/exportHandler.ts` (46 — `export_module_data` з вкладеним
+> per-module switch), `crossActions/compareWeeksHandler.ts` (121 — `compare_weeks`
+> з 4 module-секціями). Усі < 200 LOC. Count 21 → 20.
+>
 > **Скоуп таблиці нижче** — лише `apps/web/src`. Mobile (`apps/mobile/src/modules/finyk/pages/Transactions/TransactionsPage.tsx` 1215),
 > packages (`packages/shared/src/lib/assistantCatalogue.ts` 1133, `schemas/api.ts` 986,
 > `openapi/routes.ts` 837), server (`modules/chat/chat.ts` 783) — трекаються окремо
@@ -168,7 +183,6 @@ Codemod ідемпотентний: повторний запуск дасть `
 | ------ | ----------------------------------------------------- |
 | 897    | `core/onboarding/seedDemoData.ts`                     |
 | 852    | `shared/components/ui/VoiceMicButton.tsx`             |
-| 788    | `core/lib/chatActions/crossActions.ts`                |
 | 774    | `modules/fizruk/pages/Body.tsx`                       |
 | 758    | `core/lib/chatActions/finykActions.ts`                |
 | 733    | `modules/nutrition/components/LogCard.tsx`            |
