@@ -1,5 +1,6 @@
 import { drizzle, type SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
 import * as sqliteSchema from "@sergeant/db-schema/sqlite";
+import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { addSentryBreadcrumb } from "../observability/sentry.js";
 
 /**
@@ -53,6 +54,18 @@ export interface SqliteDbHandle {
   readonly vfs: SqliteVfs;
   /** Whether the page met the COOP/COEP isolation requirement at init. */
   readonly crossOriginIsolated: boolean;
+  /**
+   * Returns a `{exec, run, all}` migration-runner client backed by the
+   * same `oo1.DB` instance the Drizzle handle uses.
+   *
+   * SPIKE-only escape hatch (PR #022 of the storage roadmap): the
+   * routine SQLite SPIKE library is written against raw SQL so the
+   * same source unit-tests against `better-sqlite3`. Sharing the
+   * singleton's connection avoids opening a second OPFS handle on the
+   * same origin. Production module code should keep using
+   * {@link SqliteDbHandle.drizzle}.
+   */
+  migrationClient(): SqliteMigrationClient;
   /** Closes the underlying SQLite handle. */
   close(): Promise<void>;
 }
@@ -111,6 +124,7 @@ async function initSqliteDb(): Promise<SqliteDbHandle> {
 
   return {
     drizzle: drizzleDb,
+    migrationClient: () => makeMigrationClient(driver.db),
     vfs: driver.vfs,
     crossOriginIsolated: coi,
     async close() {
@@ -155,6 +169,36 @@ function warnIfNotCrossOriginIsolated(): boolean {
   });
 
   return false;
+}
+
+/**
+ * Wrap an `oo1.DB` so it satisfies the cross-platform
+ * {@link SqliteMigrationClient} contract — the same `{exec, run, all}`
+ * surface the migration runner and the routine SPIKE repo are written
+ * against. Each method calls `db.exec(...)` with the explicit object
+ * form so we never hit sqlite-wasm's string-first legacy overload.
+ */
+function makeMigrationClient(db: Sqlite3Database): SqliteMigrationClient {
+  return {
+    exec(sql) {
+      db.exec({ sql });
+    },
+    run(sql, params) {
+      db.exec({ sql, bind: params as BindArg });
+    },
+    all<R extends Record<string, unknown> = Record<string, unknown>>(
+      sql: string,
+      params?: readonly unknown[],
+    ): R[] {
+      const rows = db.exec({
+        sql,
+        bind: (params ?? []) as BindArg,
+        rowMode: "object",
+        returnValue: "resultRows",
+      });
+      return Array.isArray(rows) ? (rows as R[]) : [];
+    },
+  };
 }
 
 async function loadSqliteWasm(): Promise<SqliteWasmModule["default"]> {
