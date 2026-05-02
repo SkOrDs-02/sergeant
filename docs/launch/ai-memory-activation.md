@@ -155,6 +155,69 @@ Master-flag `AI_MEMORY_ENABLED=true` сам по собі ще не почина
 
 ---
 
+## Redis startup configuration
+
+`Sergeant.redis` (Railway service `humorous-eagerness/redis`,
+id `51da2282-8cf4-47bb-b632-92e060704b78`) хостить BullMQ-стейт двох черг
+(`auth-mail`, `ai-memory-ingest`, prefix `sergeant:`) і rate-limit
+counters. Конфігурація задається у `startCommand` сервіс-інстансу
+(`production` env, id `81b68dcb-0107-44ba-b719-df445ea71c71`) — у репо її
+немає, бо Redis провіжнений з template-image `redis:7-alpine` без
+own-Dockerfile-у.
+
+**Поточний `startCommand` (2026-05-02):**
+
+```sh
+sh -c 'exec redis-server \
+  --requirepass "$REDIS_PASSWORD" \
+  --maxmemory 200mb \
+  --maxmemory-policy noeviction \
+  --appendonly no \
+  --save ""'
+```
+
+**Чому `noeviction`, а не `allkeys-lru`:** BullMQ docs
+(<https://docs.bullmq.io/guide/going-to-production#maxmemory-policy>) явно
+вимагають `noeviction`. Із `allkeys-lru` Redis під memory-pressure може
+evict-ити enqueued jobs до того, як worker їх підхопить — це viewable
+data-loss всередині черги (job було записано, але worker його ніколи не
+побачить). Спочатку (2026-05-02) Redis підняли з default-template
+`--maxmemory-policy allkeys-lru` → BullMQ при connect-і логував warning. У
+той самий день переключили через Railway GraphQL `serviceInstanceUpdate` +
+`serviceInstanceRedeploy`. Тепер worker-и логують лише
+`bullmq_connection_ready` без warning-у.
+
+**Як змінити повторно:**
+
+```sh
+RAILWAY_TOKEN="…" \
+  ENVIRONMENT_ID="81b68dcb-0107-44ba-b719-df445ea71c71" \
+  SERVICE_ID="51da2282-8cf4-47bb-b632-92e060704b78"
+
+curl -sS -X POST https://backboard.railway.com/graphql/v2 \
+  -H "Authorization: Bearer $RAILWAY_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"query\":\"mutation Q(\$eid: String!, \$sid: String!, \$cmd: String!) { serviceInstanceUpdate(environmentId: \$eid, serviceId: \$sid, input: { startCommand: \$cmd }) }\",\"variables\":{\"eid\":\"$ENVIRONMENT_ID\",\"sid\":\"$SERVICE_ID\",\"cmd\":\"<новий startCommand>\"}}"
+
+curl -sS -X POST https://backboard.railway.com/graphql/v2 \
+  -H "Authorization: Bearer $RAILWAY_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"query\":\"mutation Q(\$eid: String!, \$sid: String!) { serviceInstanceRedeploy(environmentId: \$eid, serviceId: \$sid) }\",\"variables\":{\"eid\":\"$ENVIRONMENT_ID\",\"sid\":\"$SERVICE_ID\"}}"
+```
+
+**Verify:** `curl -sS https://sergeant-production.up.railway.app/healthz |
+jq .checks.redis` має повертати `connected: true, reconnectAttempts: 0`,
+а Sergeant logs — `redis_connected` + `bullmq_connection_ready` без
+`Eviction policy is allkeys-lru` warning-у.
+
+**Persistence trade-off:** `--appendonly no --save ""` означає, що Redis
+ephemeral — на restart-і всі in-flight BullMQ jobs губляться. Для нашого
+use case (finyk → ingest, weekly digest, auth-mail) це OK: продюсери
+ретраяться (`mono-webhook` re-fires, `weekly-digest` cron-працює щонеділі).
+Якщо колись захочемо durability — окремий PR з recreate volume + chown.
+
+---
+
 ## Roadmap після активації
 
 Технічні TODO, які не блокують rollout, але треба підбити:
