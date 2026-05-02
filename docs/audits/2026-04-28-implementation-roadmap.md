@@ -1,6 +1,6 @@
 # Sergeant - Детальний План Реалізації Покращень
 
-> **Last validated:** 2026-05-01 by @devin-ai. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
 > **Status:** Active
 
 > **Дата створення:** 2026-04-28
@@ -51,12 +51,12 @@
 
 ### 2.1. Критичні (P0) — блокують production-якість
 
-| ID       | Проблема                       | Файлів         | Поточний Прогрес       |
-| -------- | ------------------------------ | -------------- | ---------------------- |
+| ID       | Проблема                       | Файлів                                                    | Поточний Прогрес                                                                                                                            |
+| -------- | ------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | **P0-1** | `apps/web` strict: false       | ~374 TS errors (full `strict: true` baseline, 2026-05-02) | Phases 1–3.1 done (`tsconfig.strict.json` покриває `src/{shared,test,core/*,modules/*}`); Phase 4 (`strict: true` + зняти `allowJs`) — TODO |
-| **P0-2** | localStorage без safe wrappers | 52 файли       | 3 файли мігровано      |
-| **P0-3** | Mobile flaky tests             | 2 тести        | 1 з 3 виправлено       |
-| **P0-4** | Mobile APM відсутній           | 0% coverage    | Не почато              |
+| **P0-2** | localStorage без safe wrappers | 52 файли                                                  | 3 файли мігровано                                                                                                                           |
+| **P0-3** | Mobile flaky tests             | 2 тести                                                   | 1 з 3 виправлено                                                                                                                            |
+| **P0-4** | Mobile APM відсутній           | 0% coverage                                               | Не почато                                                                                                                                   |
 
 ### 2.2. Високі (P1) — значний tech-debt
 
@@ -164,11 +164,11 @@ Top blockers (одиничний фікс розблокує найбільше)
 **Виконання (орієнтовно):**
 
 | Day | Задача                                                          | Файлів | Effort |
-| --- | ------------------------------------------------------------------ | ------- | ------ |
-| 1   | sw.ts + core/onboarding/presetApply (top-2 blockers, 50 errors)    | 2       | 4h     |
-| 2-3 | modules/fizruk top-7 (AddExerciseSheet, WorkoutItemCard, …)         | 7       | 10h    |
-| 4   | core/insights/WeeklyDigestCard + залишкові fizruk             | ~10     | 6h     |
-| 5   | Зріз `allowJs: true` + ввімкнути `strict: true` + cleanup | ~27     | 6h     |
+| --- | --------------------------------------------------------------- | ------ | ------ |
+| 1   | sw.ts + core/onboarding/presetApply (top-2 blockers, 50 errors) | 2      | 4h     |
+| 2-3 | modules/fizruk top-7 (AddExerciseSheet, WorkoutItemCard, …)     | 7      | 10h    |
+| 4   | core/insights/WeeklyDigestCard + залишкові fizruk               | ~10    | 6h     |
+| 5   | Зріз `allowJs: true` + ввімкнути `strict: true` + cleanup       | ~27    | 6h     |
 
 > **Чому Phase 4 не дробиться через `tsconfig.noimplicitany.json`-include:** TypeScript застосовує `noImplicitAny` ко всій програмі (всі transitively reached файли), не тільки до `include`-списку. Спроба додати `core/{lib,hub,insights,onboarding,settings,stories,designShowcase}` дає 801 помилку бо вони імпортують з `modules/{finyk,fizruk}`. Рухатись треба per-file (top blockers першими), без проміжної "Phase 3.2".
 
