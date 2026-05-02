@@ -209,6 +209,19 @@
       ],
       "notes": "DB health report. Active; cron fires Mon 07:00 Kyiv. Sequential chain (DB size → Top tables → Slow queries → Format → Telegram) with executeOnce=true on chained postgres+code nodes. pg_stat_statements may be absent and is tolerated via continueOnFail."
     },
+    "30-ai-memory-daily-digest.json": {
+      "owner": "ops",
+      "status": "experimental",
+      "riskTier": "P2",
+      "telegramTopic": "digest",
+      "audienceTier": "P2",
+      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID", "TELEGRAM_TOPIC_DIGEST"],
+      "requiredCredentials": [
+        "Sergeant Postgres (sergeant-db)",
+        "Telegram (Sergeant_alert_bot)"
+      ],
+      "notes": "Daily 09:05 Kyiv → SELECT з ai_memories (rolling 24h totals + per-source breakdown + lifetime) → Telegram #digest. Aggregated only, без user_id у тексті. Voyage cost — rough estimate з total chars (chars/4 tokens × $0.02 / 1M). Активуй у self-hosted n8n після того як ingestion-flag-и (наприклад MONO_AI_MEMORY_INGEST_ENABLED) вмикнуть і таблиця почне наповнюватись."
+    },
     "60-growth-funnel-snapshot.json": {
       "owner": "growth",
       "status": "experimental",
