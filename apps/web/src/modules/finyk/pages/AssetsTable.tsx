@@ -45,55 +45,69 @@ export function AssetsNetworthCard({
 }: Pick<State, "networth" | "totalAssets" | "totalDebt" | "showBalance">) {
   const isNegative = networth < 0;
   return (
-    <div className="rounded-3xl bg-finyk/[.06] dark:bg-finyk-surface-dark/10 border border-finyk/[.14] dark:border-finyk-border-dark/20 p-5 mb-3 shadow-card">
-      <p className="text-sm text-muted">Загальний нетворс</p>
-      <div
-        className={cn(
-          "text-[40px] font-bold tracking-tight leading-tight mt-2 tabular-nums",
-          isNegative
-            ? "text-danger-strong dark:text-danger"
-            : "text-finyk-strong dark:text-finyk",
-          !showBalance && "tracking-widest",
-        )}
-      >
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-3xl border p-5 mb-3 shadow-soft",
+        "bg-finyk/5 dark:bg-finyk-surface-dark/10 border-finyk/15 dark:border-finyk-border-dark/20",
+        "before:absolute before:inset-0 before:pointer-events-none before:bg-gradient-to-br",
+        isNegative
+          ? "before:from-danger/5 before:via-transparent before:to-transparent"
+          : "before:from-finyk/10 before:via-transparent before:to-transparent",
+      )}
+    >
+      <div className="relative">
+        <p className="text-sm text-muted inline-flex items-center gap-1.5">
+          <Icon name="wallet" size={14} aria-hidden />
+          Загальний нетворс
+        </p>
+        <div
+          className={cn(
+            "text-[40px] font-bold tracking-tight leading-tight mt-2 tabular-nums",
+            isNegative
+              ? "text-danger-strong dark:text-danger"
+              : "text-finyk-strong dark:text-finyk",
+            !showBalance && "tracking-widest",
+          )}
+        >
+          {showBalance ? (
+            <>
+              {networth.toLocaleString("uk-UA", { maximumFractionDigits: 0 })}
+              <span
+                className={cn(
+                  "text-2xl font-semibold ml-1",
+                  isNegative ? "text-danger/60" : "text-finyk/60",
+                )}
+              >
+                ₴
+              </span>
+            </>
+          ) : (
+            "\u2022\u2022\u2022\u2022\u2022\u2022"
+          )}
+        </div>
         {showBalance ? (
-          <>
-            {networth.toLocaleString("uk-UA", { maximumFractionDigits: 0 })}
-            <span
-              className={cn(
-                "text-2xl font-semibold ml-1",
-                isNegative ? "text-danger/60" : "text-finyk/60",
-              )}
-            >
-              ₴
-            </span>
-          </>
+          <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-finyk/20 text-sm">
+            <div>
+              <div className="text-xs text-subtle mb-0.5">Активи</div>
+              <div className="font-semibold tabular-nums text-text">
+                {`+${totalAssets.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴`}
+              </div>
+            </div>
+            <div className="w-px bg-finyk/20 hidden sm:block self-stretch min-h-[2.5rem]" />
+            <div>
+              <div className="text-xs text-subtle mb-0.5">Пасиви</div>
+              <div className="font-semibold tabular-nums text-text">
+                {`\u2212${totalDebt.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴`}
+              </div>
+            </div>
+          </div>
         ) : (
-          "\u2022\u2022\u2022\u2022\u2022\u2022"
+          <p className="text-xs text-muted mt-3">Суми приховано</p>
+        )}
+        {showBalance && totalAssets + totalDebt > 0 && (
+          <AssetsLiabilitiesBar assets={totalAssets} liabilities={totalDebt} />
         )}
       </div>
-      {showBalance ? (
-        <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-finyk/20 text-sm">
-          <div>
-            <div className="text-xs text-subtle mb-0.5">Активи</div>
-            <div className="font-semibold tabular-nums text-text">
-              {`+${totalAssets.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴`}
-            </div>
-          </div>
-          <div className="w-px bg-finyk/20 hidden sm:block self-stretch min-h-[2.5rem]" />
-          <div>
-            <div className="text-xs text-subtle mb-0.5">Пасиви</div>
-            <div className="font-semibold tabular-nums text-text">
-              {`\u2212${totalDebt.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ₴`}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <p className="text-xs text-muted mt-3">Суми приховано</p>
-      )}
-      {showBalance && totalAssets + totalDebt > 0 && (
-        <AssetsLiabilitiesBar assets={totalAssets} liabilities={totalDebt} />
-      )}
     </div>
   );
 }
@@ -240,9 +254,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                   <Icon name={visual.iconName} size={18} />
                 </span>
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold truncate">
-                    {visual.name}
-                  </div>
+                  <div className="text-style-label truncate">{visual.name}</div>
                   <div className="text-[11px] text-subtle mt-0.5">Monobank</div>
                 </div>
               </div>
@@ -370,7 +382,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
               {a.emoji}
             </span>
             <div className="min-w-0">
-              <div className="text-sm font-semibold truncate">{a.name}</div>
+              <div className="text-style-label truncate">{a.name}</div>
               <div className="text-[11px] text-subtle mt-0.5">{a.currency}</div>
             </div>
           </div>
@@ -576,16 +588,19 @@ export function AssetsTable({ state }: { state: State }) {
         <QuickActionButton
           iconName="refresh-cw"
           label="Підписка"
+          tone="finyk"
           onClick={openSubscriptionForm}
         />
         <QuickActionButton
           iconName="trending-up"
           label="Актив"
+          tone="success"
           onClick={openAssetForm}
         />
         <QuickActionButton
           iconName="trending-down"
           label="Пасив"
+          tone="danger"
           onClick={openDebtForm}
         />
       </div>
@@ -603,6 +618,7 @@ export function AssetsTable({ state }: { state: State }) {
       <SectionBar
         title="Підписки"
         iconName="refresh-cw"
+        iconTone="finyk"
         summary={`${subscriptions.length} активн${
           subscriptions.length === 1 ? "а" : "их"
         }`}
