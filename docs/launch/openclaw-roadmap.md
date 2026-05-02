@@ -19,6 +19,8 @@
 > [ADR-0031](../adr/0031-openclaw-v0-telegram-cofounder.md) (OpenClaw v0 baseline),
 > [ADR-0032](../adr/0032-console-consolidated-into-openclaw.md) (Sergeant Console
 > consolidated into OpenClaw — slash-commands + ops/marketing tools live в OpenClaw),
+> [ADR-0033](../adr/0033-openclaw-multi-personas-and-council.md) (multi-personas +
+> `/council` round-table — Phase 2.5 architecture),
 > [05 — Operations and Automation](./05-operations-and-automation.md) (узагальнена картина
 > n8n + OpenClaw).
 
@@ -245,48 +247,54 @@ sentry,server,posthog}` + `/api/internal/openclaw/github/releases`) з
 - 1-го червня 09:00 — DM monthly OKR review.
 - Запит "що ми вирішили 2 тижні тому по pricing-у" → relevant recall.
 
-### Phase 2.5 — Specialist personas + "round-table" (≈ 1 PR, ≈ 2 дні)
+### Phase 2.5 — Specialist personas + "round-table" (ADR-0033, **shipped**)
+
+**Status:** ✅ Shipped (ADR-0033, 1 PR, ≈ 2 дні roboti).
 
 **Ціль:** OpenClaw перестає бути одним голосом. Founder може гукнути
-конкретного спеціаліста (`/ops`, `/growth`, `/eng`, `/finance`) або
-зібрати "нараду" з кількох голосів за одне питання (`/council`).
+конкретного спеціаліста (`/ops`, `/growth`, `/eng`, `/finance`, `/cofounder`)
+або зібрати "нараду" з кількох голосів за одне питання (`/council`).
 
 Це досі **один Node-процес** і **той самий OpenClaw bot** — змінюються
 тільки persona-prompt + filtered toolset за командою. n8n тут не задіяний;
 агенти не екстерналізуються (це за дизайном — Anthropic sub-agents pattern).
 
-**Personas:**
+**Personas (`apps/console/src/agents/personas.ts`):**
 
-| Persona     | System prompt focus                         | Toolset (filtered)                                                                                   |
-| ----------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `cofounder` | default — синтез, опонент, holds priorities | весь tool-set                                                                                        |
-| `ops`       | reliability/incidents/n8n health            | `read_workflow_logs`, `get_sentry_issues`, `get_server_stats`, `get_stripe_metrics` (refunds/failed) |
-| `growth`    | activation, retention, funnels, content     | `get_posthog_stats`, `get_github_releases`, `read_strategy_docs`                                     |
-| `eng`       | code review, PR queue, tech-debt            | `read_github`, `query_app_db`, `read_telegram_topic_history` (engineering)                           |
-| `finance`   | MRR, runway, cofounder-budget memory        | `get_stripe_metrics`, `recall_memory`, `record_decision`                                             |
+| Persona     | Slash        | System prompt focus                         | Toolset (filtered)                                                                                   |
+| ----------- | ------------ | ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `cofounder` | `/cofounder` | default — синтез, опонент, holds priorities | **всі** tools (sentinel `null` → no-filter)                                                          |
+| `ops`       | `/ops`       | reliability / incidents / n8n health        | `read_workflow_logs`, `get_sentry_issues`, `get_server_stats`, `get_stripe_metrics`, `recall_memory` |
+| `growth`    | `/growth`    | activation / retention / funnels / content  | `get_posthog_stats`, `get_github_releases`, `read_strategy_docs`, `recall_memory`                    |
+| `eng`       | `/eng`       | code review / PR queue / tech-debt          | `read_github`, `query_app_db`, `read_telegram_topic_history`, `get_github_releases`, `recall_memory` |
+| `finance`   | `/finance`   | MRR / runway / cofounder-budget memory      | `get_stripe_metrics`, `recall_memory`, `record_decision`, `query_app_db`                             |
 
-**Routing:**
+**Routing (shipped):**
 
-- `/ops <q>` → primer "ти ops-engineer..." + ops-toolset → один agent-turn.
-- `@growth <q>` (inline-tag) — те саме без slash, "більш природно у DM".
-- `/council <q>` — round-table режим:
-  1. Послідовно проганяємо `/ops`, `/growth`, `/eng`, `/finance` з тим
-     самим prompt-ом (cap 3 ітерації кожен).
-  2. Один "facilitator" (cofounder persona) синтезує 4 голоси у
-     final-recommendation з explicit trade-offs.
-  3. Audit row має `tool_calls=['council:ops','council:growth',...]`.
-  4. Cost cap — `OPENCLAW_COUNCIL_USD_BUDGET=2` (окремо від щоденного $5,
-     щоб одна нарада не з'їла весь день).
+- `/ops <q>` → primer "ти ops-engineer…" + filtered toolset → один agent-turn.
+- `/growth <q>`, `/eng <q>`, `/finance <q>`, `/cofounder <q>` — те саме з власною
+  персоною. Без arg-у — usage-help.
+- Free-text DM без slash → default cofounder persona (back-compat).
+- `/council <q>` — round-table режим (ADR-0033 §2):
+  1. Sequential pre-budget check: якщо `dailySpentUsd + OPENCLAW_COUNCIL_USD_BUDGET
+     > OPENCLAW_DAILY_USD_BUDGET` → council скіпається з повідомленням про headroom.
+  2. Послідовно проганяємо `ops` → `growth` → `eng` → `finance` з тим самим
+     prompt-ом, hard-cap iter `min(3, OPENCLAW_MAX_ITERATIONS)` на кожного.
+  3. Один "synthesizer" (`cofounder` persona) бачить усі 4 відповіді як
+     context і робить final-recommendation з explicit trade-offs.
+  4. Кожен specialist-turn та synthesis-turn — окремий audit-row з
+     `metadata.council=true` + `metadata.council_persona=<name>`.
 
-**Acceptance:**
+**Acceptance (live після деплою Phase 1+2.5):**
 
 - `/ops чого Sentry почав сипати?` → відповідь у тоні reliability-eng з
   Sentry-перевіркою.
-- `/council варто запускати B2B-pilot чи поки рано?` → 4 голоси + 1
-  синтез у одному message thread (4 reply-message + 1 final).
+- `/council варто запускати B2B-pilot чи поки рано?` → 4 progress-повідомлення
+  ("_ops-engineer_ думає…" і т.д.) + final synthesis.
 - Switch persona в межах сесії не leak-ає toolset (eng не бачить Stripe
-  refunds).
-- Audit row для кожного `council:*` зберігає окремий cost.
+  refunds — guarded `personas.test.ts`).
+- Audit-row для кожного `council:*` invocation зберігає окремий cost і
+  специфічну `metadata.council_persona`.
 
 **НЕ робимо у Phase 2.5:**
 
