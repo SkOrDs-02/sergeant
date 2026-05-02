@@ -84,7 +84,38 @@ function currentHm() {
   return `${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}`;
 }
 
-function habitScheduledOnDateSW(h, dk) {
+type SwRoutineHabit = {
+  id: string;
+  name: string;
+  emoji?: string;
+  archived?: boolean;
+  recurrence?: string;
+  startDate?: string;
+  endDate?: string | null;
+  weekdays?: number[];
+  reminderTimes?: unknown[];
+  timeOfDay?: string;
+};
+
+type SwRoutineState = {
+  prefs?: { routineRemindersEnabled?: boolean };
+  habits?: SwRoutineHabit[];
+  completions?: Record<string, string[]>;
+};
+
+type SwFizrukState = {
+  reminderEnabled?: boolean;
+  reminderHour?: number;
+  reminderMinute?: number;
+  days?: Record<string, { templateId?: string } | undefined>;
+};
+
+type SwNutritionState = {
+  reminderEnabled?: boolean;
+  reminderHour?: number;
+};
+
+function habitScheduledOnDateSW(h: SwRoutineHabit, dk: string) {
   if (!h || h.archived) return false;
   if (h.startDate && dk < h.startDate) return false;
   if (h.endDate && dk > h.endDate) return false;
@@ -107,11 +138,11 @@ function habitScheduledOnDateSW(h, dk) {
 }
 
 const notifiedKeys = new Set<string>();
-let lastPrunedDk = null;
-let routineData = null;
-let fizrukData = null;
-let nutritionData = null;
-let scheduledTimerId = null;
+let lastPrunedDk: string | null = null;
+let routineData: SwRoutineState | null = null;
+let fizrukData: SwFizrukState | null = null;
+let nutritionData: SwNutritionState | null = null;
+let scheduledTimerId: ReturnType<typeof setTimeout> | null = null;
 
 // Persist `notifiedKeys` in IndexedDB so the dedup Set survives the SW
 // lifecycle. Browsers typically terminate an idle SW after ~30 s; the
@@ -156,7 +187,7 @@ async function idbLoadAllKeys() {
   }
 }
 
-async function idbPutKey(key) {
+async function idbPutKey(key: string) {
   const db = (await openNotifiedDb()) as IDBDatabase;
   try {
     await new Promise<void>((resolve, reject) => {
@@ -171,7 +202,7 @@ async function idbPutKey(key) {
   }
 }
 
-async function idbDeleteKeys(keys) {
+async function idbDeleteKeys(keys: string[]) {
   if (!keys.length) return;
   const db = (await openNotifiedDb()) as IDBDatabase;
   try {
@@ -188,8 +219,8 @@ async function idbDeleteKeys(keys) {
   }
 }
 
-let notifiedKeysLoadPromise = null;
-function loadNotifiedKeys() {
+let notifiedKeysLoadPromise: Promise<void> | null = null;
+function loadNotifiedKeys(): Promise<void> {
   if (notifiedKeysLoadPromise) return notifiedKeysLoadPromise;
   notifiedKeysLoadPromise = (async () => {
     try {
@@ -205,7 +236,7 @@ function loadNotifiedKeys() {
   return notifiedKeysLoadPromise;
 }
 
-function recordNotified(key) {
+function recordNotified(key: string) {
   if (!key) return;
   notifiedKeys.add(key);
   idbPutKey(key).catch(() => {
@@ -219,11 +250,11 @@ function recordNotified(key) {
  * three `*_notify_*_<dk>` emit sites above), so we keep only entries ending
  * in the current `dk`.
  */
-function pruneOldNotifiedKeys(currentDk) {
+function pruneOldNotifiedKeys(currentDk: string) {
   if (lastPrunedDk === currentDk) return;
   lastPrunedDk = currentDk;
   const suffix = `_${currentDk}`;
-  const toDelete = [];
+  const toDelete: string[] = [];
   for (const k of notifiedKeys) {
     if (!k.endsWith(suffix)) {
       notifiedKeys.delete(k);
@@ -237,10 +268,10 @@ function pruneOldNotifiedKeys(currentDk) {
   }
 }
 
-function normalizeReminderTimesSW(h) {
+function normalizeReminderTimesSW(h: SwRoutineHabit): string[] {
   if (Array.isArray(h.reminderTimes) && h.reminderTimes.length > 0) {
     return h.reminderTimes.filter(
-      (t) => typeof t === "string" && /^\d{2}:\d{2}$/.test(t),
+      (t): t is string => typeof t === "string" && /^\d{2}:\d{2}$/.test(t),
     );
   }
   const legacy = h.timeOfDay && String(h.timeOfDay).trim();
@@ -379,7 +410,7 @@ function startReminderLoop() {
     });
 }
 
-async function cacheEntryCount(cacheName) {
+async function cacheEntryCount(cacheName: string) {
   try {
     const cache = await caches.open(cacheName);
     const keys = await cache.keys();
@@ -392,7 +423,7 @@ async function cacheEntryCount(cacheName) {
 async function buildSwSnapshot() {
   const cacheNames = await caches.keys();
   const workboxCaches = cacheNames.filter((n) => n.startsWith("workbox-"));
-  const counts = {};
+  const counts: Record<string, number | null> = {};
   for (const n of [CACHE_NAMES.navigations, CACHE_NAMES.api]) {
     counts[n] = await cacheEntryCount(n);
   }
