@@ -588,5 +588,59 @@ export default [
       "sergeant-design/no-strict-bypass": "error",
     },
   },
+  // Routine cloud-sync retirement guard (PR #026, storage-roadmap Stage 4).
+  // `STORAGE_KEYS.ROUTINE` was the single LS key that held the entire
+  // routine blob pushed to `module_data.routine` via cloud sync.  Now that
+  // completions are read from SQLite and the module has been removed from
+  // `SYNC_MODULES`, new code must NOT read/write that key directly —
+  // use `loadRoutineState()` / `saveRoutineState()` from
+  // `apps/web/src/modules/routine/lib/routineStorage.ts` instead (they
+  // handle the SQLite overlay transparently).
+  //
+  // The selector matches the exact property access `STORAGE_KEYS.ROUTINE`
+  // but NOT `STORAGE_KEYS.ROUTINE_MAIN_TAB` or `STORAGE_KEYS.ROUTINE_QUICK_STATS`.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}", "apps/mobile/src/**/*.{ts,tsx}"],
+    ignores: [
+      // Tests can reference the key freely as fixtures.
+      "apps/web/src/**/*.test.{ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      // The routine module storage wrappers — they are the canonical
+      // read/write entry-points that everyone else should call.
+      "apps/web/src/modules/routine/lib/routineStorage.ts",
+      "apps/mobile/src/modules/routine/lib/routineStore.ts",
+      // Mobile backup still reads ROUTINE for full-state export/import
+      // (migration planned for a future PR).
+      "apps/mobile/src/core/hub/hubBackup.ts",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        // Inherit the legacy palette selectors from the top-level block so
+        // this scoped override doesn't accidentally drop them.
+        {
+          selector:
+            "Literal[value=/\\b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-\\d+)(?:\\/\\d+)?\\b/]",
+          message:
+            "Legacy `forest` / tonal `accent-NNN` retired — use semantic `accent`, `brand-500`, `fizruk`, `routine`, `nutrition`, or `finyk` instead.",
+        },
+        {
+          selector:
+            "TemplateElement[value.raw=/\\b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-\\d+)(?:\\/\\d+)?\\b/]",
+          message:
+            "Legacy `forest` / tonal `accent-NNN` retired — use semantic `accent`, `brand-500`, `fizruk`, `routine`, `nutrition`, or `finyk` instead.",
+        },
+        // PR #026 — routine cloud-sync retirement.
+        {
+          selector:
+            "MemberExpression[object.name='STORAGE_KEYS'][property.name='ROUTINE']",
+          message:
+            "Direct access to STORAGE_KEYS.ROUTINE is retired (PR #026, storage-roadmap). Use loadRoutineState() / saveRoutineState() from the routine module instead — they handle the SQLite overlay transparently.",
+        },
+      ],
+    },
+  },
   eslintConfigPrettier,
 ];
