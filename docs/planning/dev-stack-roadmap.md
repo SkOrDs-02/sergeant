@@ -16,7 +16,7 @@
 
 | #   | Інструмент / практика                             | Effort    | Cost             | ROI    | Статус                                                                                                                                                    |
 | --- | ------------------------------------------------- | --------- | ---------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Sentry** для error tracking                     | 2 год     | $26/міс          | 🔥🔥🔥 | ✅ done (DSN-gated; потребує `SENTRY_DSN` / `VITE_SENTRY_DSN` / `EXPO_PUBLIC_SENTRY_DSN` для активації)                                                   |
+| 1   | **Sentry** для error tracking                     | 2 год     | $26/міс          | 🔥🔥🔥 | ✅ done — `SENTRY_DSN` (Railway server) + `VITE_SENTRY_DSN` (Vercel web) **активні**; `EXPO_PUBLIC_SENTRY_DSN` (Expo EAS mobile) — pending provisioning   |
 | 2   | **Knip + depcheck** — clean dead code             | 1 год     | $0               | 🔥🔥   | ✅ done [#716](https://github.com/Skords-01/Sergeant/pull/716)                                                                                            |
 | 3a  | **Strict TS — server**                            | —         | $0               | 🔥🔥🔥 | ✅ done (`apps/server/tsconfig.json` має `strict: true`)                                                                                                  |
 | 3b  | **Strict TS — web (incremental)**                 | 1-2 тижні | $0               | 🔥🔥🔥 | 🟡 in progress (Phase 1: `apps/web/tsconfig.strict.json` вмикає `strictNullChecks` для `src/shared/**`; Phase 2/3 — TODO; див. tech-debt/frontend.md §11) |
@@ -35,7 +35,7 @@
 
 **Сумарно:** ~3-5 робочих днів + ~$50/міс. Це 80% wins за 20% effort-у.
 
-**Прогрес (2026-04-27):** 13 / 15 закрито (з урахуванням розщеплення #3 на 3a/3b: 3a closed, 3b in progress). Закриті: #1 Sentry (DSN-gated, `apps/web/src/core/observability/sentry.ts`, `apps/server/src/sentry.ts`, `apps/mobile/src/lib/observability.ts`), #2 Knip+depcheck, #3a Strict TS server, #4 Testcontainers (#728), #6 Turbo remote cache, #7 Renovate, #8 AGENTS.md, #9 MSW (#729), #10 Snapshot tests, #11 Pino logging (#738), #12 Playwright E2E, #13 PostHog (web + server SDK, env-gated), #14 size-limit + bundle-analyzer (#740), #15 CONTRIBUTING.md (#726). Залишається: #3b (Strict TS web — Phase 2/3), #5 (Vercel Pro — credentials/credit card мейнтейнера). Sentry/PostHog активація = тільки доставити відповідні env-и (`SENTRY_DSN`, `POSTHOG_KEY`, `VITE_POSTHOG_KEY`).
+**Прогрес (2026-05-02):** 13 / 15 закрито (з урахуванням розщеплення #3 на 3a/3b: 3a closed, 3b in progress). Закриті: #1 Sentry (інтеграція + DSN виставлено на Railway server + Vercel web; mobile `EXPO_PUBLIC_SENTRY_DSN` — pending EAS provisioning), #2 Knip+depcheck, #3a Strict TS server, #4 Testcontainers (#728), #6 Turbo remote cache, #7 Renovate, #8 AGENTS.md, #9 MSW (#729), #10 Snapshot tests, #11 Pino logging (#738), #12 Playwright E2E, #13 PostHog (web + server SDK, env-gated), #14 size-limit + bundle-analyzer (#740), #15 CONTRIBUTING.md (#726). Залишається: #3b (Strict TS web — Phase 2/3), #5 (Vercel Pro — credentials/credit card мейнтейнера).
 
 ---
 
@@ -323,7 +323,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 **Sergeant-priority:** Sentry. Найбільший single-tool ROI у production. Без error tracking ти дізнаєшся про bug-и тільки коли user скаржиться у чат — як було з #706/#707/#708.
 
-**Статус (2026-04-26):** integration готова на всіх трьох клієнтах. `apps/web/src/core/observability/sentry.ts`, `apps/server/src/sentry.ts`, `apps/mobile/src/lib/observability.ts` — кожен no-op без відповідного DSN env-а (`VITE_SENTRY_DSN`, `SENTRY_DSN`, `EXPO_PUBLIC_SENTRY_DSN`). Активація = доставити DSN мейнтейнером у Vercel / Railway / EAS secrets. Beforesend-фільтр у server (`sentry.ts`) стрипає cookies/auth + email хеш-логуючи.
+**Статус (2026-05-02):** integration готова на всіх трьох клієнтах. `SENTRY_DSN` виставлено на Railway (server) ✅, `VITE_SENTRY_DSN` виставлено на Vercel (web) ✅. `EXPO_PUBLIC_SENTRY_DSN` (mobile) — ще не виставлено в Expo EAS Secrets, mobile помилки не агрегуються. Beforesend-фільтр у server (`sentry.ts`) стрипає cookies/auth + email хеш-логуючи.
 
 ### 6.2. APM і tracing
 
