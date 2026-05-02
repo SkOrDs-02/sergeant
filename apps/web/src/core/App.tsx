@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   lazy,
+  useState,
   Suspense,
   type ComponentType,
 } from "react";
@@ -13,6 +14,7 @@ import { useDarkMode } from "@shared/hooks/useDarkMode";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { ToastContainer } from "@shared/components/ui/Toast";
+import { KeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
 import { HUB_OPEN_MODULE_EVENT } from "@shared/lib/hubNav";
 import { ApiClientProvider } from "@sergeant/api-client/react";
 import { apiClient } from "@shared/api";
@@ -36,6 +38,7 @@ import { shouldShowOnboarding } from "./onboarding/OnboardingWizard";
 import { isFirstRealEntryDone } from "./onboarding/vibePicks";
 import { hasAnyRealEntry } from "./onboarding/firstRealEntry";
 import { useHubNavigation } from "./hooks/useHubNavigation";
+import { useHubKeyboardShortcuts } from "./hooks/useHubKeyboardShortcuts";
 import { useHubUIState } from "./hooks/useHubUIState";
 import { usePwaActions, type PwaAction } from "./hooks/usePwaActions";
 import { ShellDeepLinkBridge } from "./app/ShellDeepLinkBridge";
@@ -166,6 +169,7 @@ function AppInner() {
   const { activeModule, openModule, goToHub, moduleAnimClass } =
     useHubNavigation();
   const ui = useHubUIState();
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const { pwaAction, setPwaAction, clearPwaAction, validActions } =
     usePwaActions(searchParams);
   const { dark, toggle: toggleDark } = useDarkMode();
@@ -240,27 +244,19 @@ function AppInner() {
     return () => window.removeEventListener(HUB_OPEN_MODULE_EVENT, onHubOpen);
   }, [openModule, setPwaAction, validActions]);
 
-  // Глобальний shortcut ⌘K / Ctrl+K → відкрити HubSearch. Ставимо
-  // `preventDefault`, щоб не спрацював нативний focus-address-bar у
-  // браузера. Не реагуємо, якщо пошук вже відкритий або фокус у
-  // input/textarea — тоді ⌘K не має перехоплювати typing.
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const mod = e.metaKey || e.ctrlKey;
-      if (!mod || (e.key !== "k" && e.key !== "K")) return;
-      const target = e.target as HTMLElement | null;
-      const tag = target?.tagName;
-      const inEditable =
-        tag === "INPUT" ||
-        tag === "TEXTAREA" ||
-        (target && target.isContentEditable);
-      if (inEditable) return;
-      e.preventDefault();
-      ui.setSearchOpen(true);
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [ui]);
+  const openSearchFromShortcut = useCallback(() => {
+    if (activeModule) {
+      goToHub();
+      requestAnimationFrame(() => ui.setSearchOpen(true));
+      return;
+    }
+    ui.setSearchOpen(true);
+  }, [activeModule, goToHub, ui]);
+
+  useHubKeyboardShortcuts({
+    onOpenSearch: openSearchFromShortcut,
+    onOpenShortcuts: () => setShortcutsOpen(true),
+  });
 
   if (sync.migrationPending) {
     return (
@@ -449,6 +445,10 @@ function AppInner() {
           onCloseSearch={ui.closeSearch}
           onOpenModule={openModule}
         />
+        <KeyboardShortcutsModal
+          open={shortcutsOpen}
+          onClose={() => setShortcutsOpen(false)}
+        />
       </div>
     );
   }
@@ -457,6 +457,10 @@ function AppInner() {
     <div className="h-dvh flex flex-col bg-bg text-text overflow-hidden">
       <SkipLink />
       {!online && <OfflineBanner />}
+      <KeyboardShortcutsModal
+        open={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+      />
       {/* Persistent "resume workout" shortcut — rendered in Finyk,
           Routine, Nutrition (but not inside Fizruk itself, where the
           in-module ActiveWorkoutPanel is already the primary surface).
