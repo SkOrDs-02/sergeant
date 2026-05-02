@@ -1,6 +1,6 @@
 # SPIKE — Routine module on SQLite v2
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-05-16.
+> **Last validated:** 2026-05-02 by @sonher468. **Next review:** 2026-05-16.
 > **Status:** Active — automated gates PASS; awaiting hardware confirmation
 > (iOS Safari 16.4+, multi-device toggle).
 
