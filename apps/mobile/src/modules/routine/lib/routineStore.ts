@@ -45,8 +45,29 @@ import {
   isRoutineDualWriteRegistered,
   triggerRoutineDualWrite,
 } from "./dualWrite";
+import { getCachedSqliteCompletions } from "./sqliteReader";
 
-/** Читає й нормалізує повний стан Рутини з MMKV. */
+// ---------------------------------------------------------------------------
+// SQLite read-path gating (PR #025). Same pattern as the web layer —
+// the boot wiring sets the flag, keeping this module decoupled.
+// ---------------------------------------------------------------------------
+let sqliteReadEnabled = false;
+
+export function setSqliteReadEnabled(enabled: boolean): void {
+  sqliteReadEnabled = enabled;
+}
+
+export function isSqliteReadEnabled(): boolean {
+  return sqliteReadEnabled;
+}
+
+/**
+ * Читає й нормалізує повний стан Рутини з MMKV.
+ *
+ * When `feature.routine.sqlite_v2.read_sqlite` is on (PR #025),
+ * the `completions` field is replaced with the cached SQLite
+ * completions. Everything else still comes from MMKV.
+ */
 export function loadRoutineState(): RoutineState {
   const raw = safeReadLS<unknown>(ROUTINE_STORAGE_KEY, null);
   const merged = normalizeRoutineState(raw);
@@ -54,6 +75,14 @@ export function loadRoutineState(): RoutineState {
   if (changed) {
     safeWriteLS(ROUTINE_STORAGE_KEY, state);
   }
+
+  if (sqliteReadEnabled) {
+    const sqliteCache = getCachedSqliteCompletions();
+    if (sqliteCache.refreshedAt !== null) {
+      return { ...state, completions: sqliteCache.completions };
+    }
+  }
+
   return state;
 }
 
