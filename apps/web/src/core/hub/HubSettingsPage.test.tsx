@@ -1,7 +1,16 @@
 /** @vitest-environment jsdom */
+import type { ReactNode } from "react";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ToastProvider } from "@shared/hooks/useToast";
 import { HubSettingsPage } from "./HubSettingsPage";
+
+// `DashboardSection` and `PWASection` consume `useToast`, which throws
+// outside a `ToastProvider`. The other sections are mocked above; these
+// two render in-tree because the test exercises their anchor wiring.
+function renderWithToast(ui: ReactNode) {
+  return render(<ToastProvider>{ui}</ToastProvider>);
+}
 
 vi.mock("../settings/AIDigestSection", () => ({
   AIDigestSection: () => <section>AI digest section</section>,
@@ -43,7 +52,7 @@ describe("HubSettingsPage", () => {
   });
 
   it("renders stable anchors and search keywords for settings sections", () => {
-    render(
+    renderWithToast(
       <HubSettingsPage
         syncing={false}
         onSync={vi.fn()}
@@ -62,16 +71,21 @@ describe("HubSettingsPage", () => {
     const general = document.getElementById("settings-general");
 
     expect(general).toBeInTheDocument();
+    // "sync cloud" is the General section's stable findability marker.
+    // ("backup" used to live here but moved to the dedicated `dataExport`
+    // section in `ecbac8d8` — see HubSettingsPage.tsx for the keyword owner.
+    // `dataExport` lives under the «Додатково» tab so it isn't in the DOM
+    // for this default-tab render; assert against `general` only.)
     expect(general).toHaveAttribute(
       "data-search-keywords",
-      expect.stringContaining("sync cloud backup"),
+      expect.stringContaining("sync cloud"),
     );
   });
 
   it("reveals and scrolls to a hash-linked settings section", () => {
     window.history.replaceState(null, "", "/?tab=settings#settings-finyk");
 
-    render(
+    renderWithToast(
       <HubSettingsPage
         syncing={false}
         onSync={vi.fn()}
