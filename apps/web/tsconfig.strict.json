@@ -20,6 +20,8 @@
     "src/core/onboarding/**/*",
     "src/core/insights/**/*",
     "src/core/app/**/*",
+    "src/core/designShowcase/**/*",
+    "src/core/stories/**/*",
     "src/modules/nutrition/**/*",
     "src/modules/routine/**/*",
     "src/modules/fizruk/**/*",

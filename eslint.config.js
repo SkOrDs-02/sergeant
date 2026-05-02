@@ -181,6 +181,19 @@ export default [
       // React Native (NativeWind) doesn't expose a `:focus-visible`
       // pseudo-class equivalent.
       "sergeant-design/prefer-focus-visible": "error",
+      // `no-rounded-lg` — prevent border-radius drift back to the 8 px tier.
+      // `rounded-lg` sits between Marker (6 px) and Control (12 px) without a
+      // semantic role; use `rounded-md` or `rounded-xl` instead.
+      // See docs/design/RADIUS-RHYTHM.md.
+      "sergeant-design/no-rounded-lg": "warn",
+      // `no-bare-empty-text` — enforce empty-state tier discipline.
+      // Bare JSX text with Ukrainian "Поки немає" / "ще немає" phrases must
+      // use <EmptyState> / <ModuleEmptyState> — see docs/design/EMPTY-STATES.md.
+      "sergeant-design/no-bare-empty-text": "warn",
+      // `prefer-text-style` — semantic typography over hand-rolled combos.
+      // Replace (text-sm font-medium) with text-style-label etc.
+      // See docs/design/design-system.md § Typography.
+      "sergeant-design/prefer-text-style": "warn",
     },
   },
   // DS primitives that legitimately define the eyebrow treatment.
@@ -223,6 +236,9 @@ export default [
       "sergeant-design/no-foreign-module-accent": "off",
       "sergeant-design/no-raw-dark-palette": "off",
       "sergeant-design/prefer-focus-visible": "off",
+      "sergeant-design/no-rounded-lg": "off",
+      "sergeant-design/no-bare-empty-text": "off",
+      "sergeant-design/prefer-text-style": "off",
     },
   },
   // Jest setup / test files need jest globals.

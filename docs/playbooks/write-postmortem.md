@@ -1,6 +1,6 @@
 # Playbook: Write Postmortem
 
-> **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
 > **Status:** Active
 
 **Trigger:** a SEV1/SEV2 incident occurred, a recurring production failure needs formal learning capture, or repo guardrails changed because of an incident.

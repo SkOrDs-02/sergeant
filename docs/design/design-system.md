@@ -1,6 +1,6 @@
 # Sergeant Design System
 
-> **Last validated:** 2026-05-01 by @Skords-01. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
 > **Status:** Active
 
 Єдина візуальна мова для хаба з 4 модулями: **ФІНІК**, **ФІЗРУК**, **Рутина**,
@@ -833,18 +833,42 @@ announce("Не вдалось зберегти. Спробуй ще раз.", { 
 не озвучується. Щоб явно придушити озвучення при заданому `label`,
 передай `() => ""`. Колбек отримує **новий** стан після toggle.
 
-### Finyk swipe-between-tabs — visual feedback
+### `useSwipeNavigation` — shared swipe-between-tabs hook
 
-`FinykApp` тепер показує two-channel feedback при горизонтальному
-свайпі між табами:
+Спільний хук для горизонтального свайпу між табами модульних шеллів
+(Фінік / Фізрук / Рутина / Харчування).
+
+```ts
+import { useSwipeNavigation } from "@shared/hooks/useSwipeNavigation";
+
+const swipe = useSwipeNavigation({
+  onSwipeLeft: goToNextTab,   // ← next tab
+  onSwipeRight: goToPrevTab,  // ← previous tab
+  atStart: activeIndex === 0,
+  atEnd: activeIndex === tabs.length - 1,
+  enabled: !isModalOpen,
+});
+
+// Wire handlers to the page wrapper:
+<div
+  onTouchStart={swipe.onTouchStart}
+  onTouchMove={swipe.onTouchMove}
+  onTouchEnd={swipe.onTouchEnd}
+  style={{ transform: `translate3d(${swipe.dragDx * 0.45}px, 0, 0)` }}
+>
+```
+
+**Відмова від свайпу:** Додай `data-no-swipe` до будь-якого
+горизонтально-прокрутного елементу, щоб він не перехоплював жест
+(фільтр-стрічки, каруселі тощо). Елементи з `overflow-x: auto|scroll`
+автоматично виключаються.
+
+**Visual feedback (Finyk pattern):**
 
 - **Live drag follow** — page wrapper рухається разом із пальцем
   (`translate3d(dx * 0.45, 0, 0)`) для тактильного відгуку.
-- **Top progress bar** — тонка `bg-finyk` смужка згори, що заповнюється
-  до 60px threshold (повільний `0–100%` фейд) і темнішає на коміті.
-
-Цей патерн поки локальний для Finyk; якщо buyer-у потрібно перенести в
-інші модулі — обгорни в `useSwipeBetweenTabs` хук і документуй тут.
+- **Top progress bar** — тонка `bg-{module}` смужка згори, що
+  заповнюється до threshold (`swipe.dragDx / threshold * 100%`).
 
 ---
 

@@ -1,6 +1,6 @@
 # AI-coding improvements roadmap
 
-> **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
 > **Status:** Active
 
 Roadmap for the agent infrastructure in Sergeant. This is not the product roadmap; it is the plan for making AI-assisted development faster, safer, and more disciplined.

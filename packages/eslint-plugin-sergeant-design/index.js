@@ -2146,6 +2146,285 @@ const noFinykTokenInStorage = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────────────
+// `no-rounded-lg` — prevent border-radius drift back to the 8 px tier
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Sergeant uses a size-driven radius scale (docs/design/RADIUS-RHYTHM.md):
+//   Swatch   rounded-sm  (2 px)   — heatmap cells, chart legend dots
+//   Marker   rounded-md  (6 px)   — chips, badges, checkboxes ≤6 px
+//   Control  rounded-xl  (12 px)  — buttons xs/sm, icon-buttons ≤40 px
+//   Card     rounded-2xl (16 px)  — cards, buttons md/lg, icon-buttons ≥44 px
+//   Hero     rounded-3xl (24 px)  — hero cards, modals, bottom sheets
+//   Pill     rounded-full (∞)     — FABs, avatars, status dots
+//
+// `rounded-lg` (8 px) sits between Marker and Control without a clear
+// semantic role. It was present in 53 locations before the audit; those
+// were cleaned up. This rule prevents re-introduction.
+//
+// Exempt paths:
+//   - `packages/design-tokens/**` (token definitions use raw px values)
+//   - `apps/web/src/index.css` (legacy progress-bar utilities, tracked)
+//   - `*.test.{ts,tsx,mjs}` (test fixtures may reference legacy class names)
+
+const NO_ROUNDED_LG_MESSAGE =
+  "Avoid `rounded-lg` (8 px) — it sits between Marker and Control without a semantic role. " +
+  "Use `rounded-md` (6 px, Marker tier) for chips / badges / inline pills, or " +
+  "`rounded-xl` (12 px, Control tier) for buttons ≤40 px and icon-buttons. " +
+  "See docs/design/RADIUS-RHYTHM.md for the full scale.";
+
+const RX_ROUNDED_LG = /(?:^|\s)(?:[\w-]+:)*rounded-lg(?:\s|$)/;
+
+function classNameHasRoundedLg(value) {
+  if (typeof value !== "string") return false;
+  return RX_ROUNDED_LG.test(value);
+}
+
+const noRoundedLg = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Forbid `rounded-lg` (8 px) in className strings — use `rounded-md` (Marker) or `rounded-xl` (Control sm) from the semantic radius scale.",
+    },
+    schema: [],
+    messages: { rounded: NO_ROUNDED_LG_MESSAGE },
+  },
+  create(context) {
+    const filename =
+      (context.filename != null ? context.filename : context.getFilename()) ||
+      "";
+    // Exempt token definitions, legacy CSS, and test files.
+    if (
+      /packages[\\/]design-tokens[\\/]/.test(filename) ||
+      /src[\\/]index\.css$/.test(filename) ||
+      /\.(test|spec)\.[jt]sx?$/.test(filename) ||
+      /__tests__[\\/]/.test(filename)
+    ) {
+      return {};
+    }
+
+    function report(node, value) {
+      if (classNameHasRoundedLg(value)) {
+        context.report({ node, messageId: "rounded" });
+      }
+    }
+    return {
+      Literal(node) {
+        if (typeof node.value === "string") report(node, node.value);
+      },
+      TemplateElement(node) {
+        const cooked = node.value && node.value.cooked;
+        if (typeof cooked === "string") report(node, cooked);
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// `no-bare-empty-text` — enforce empty-state tier discipline
+// ─────────────────────────────────────────────────────────────────────────
+//
+// docs/design/EMPTY-STATES.md defines three tiers:
+//   Tier 1 — Full-screen: <ModuleEmptyState> or <EmptyState> (no compact)
+//   Tier 2 — Compact card: <EmptyState compact>
+//   Tier 3 — Inline text: one muted line (text-xs text-muted)
+//
+// The anti-pattern this rule targets: bare JSX text or <p>/<span> tags
+// with Ukrainian "Поки" / "поки" / "немає" / "ще немає" patterns that
+// signal an empty-state message but are rendered outside any EmptyState
+// component. These ad-hoc messages bypass the tier system and produce
+// visually inconsistent empty views.
+//
+// The rule fires on JSXText or string literals inside JSX that contain
+// the signal phrases AND whose parent is NOT an EmptyState/ModuleEmptyState
+// element (checked via JSX ancestor scanning).
+
+const NO_BARE_EMPTY_TEXT_MESSAGE =
+  "Use the <EmptyState> component (or <ModuleEmptyState>) instead of bare text for empty states. " +
+  "Choose the right tier: full-screen → no `compact`, card-internal → `compact`, " +
+  "mini stat (< 120 px tall) → `text-xs text-muted` is OK. " +
+  "See docs/design/EMPTY-STATES.md for tier guidance.";
+
+// Phrases that signal an empty-state message in Ukrainian product copy.
+const RX_EMPTY_SIGNAL =
+  /(?:Поки|поки)\s+(?:що\s+)?(?:немає|порожньо|нічого|пусто)|ще\s+немає|не\s+має\s+даних/;
+
+function isInsideEmptyStateComponent(node) {
+  let current = node.parent;
+  while (current) {
+    if (
+      current.type === "JSXElement" &&
+      current.openingElement &&
+      current.openingElement.name
+    ) {
+      const name =
+        current.openingElement.name.name ||
+        (current.openingElement.name.property &&
+          current.openingElement.name.property.name) ||
+        "";
+      if (name === "EmptyState" || name === "ModuleEmptyState") return true;
+    }
+    current = current.parent;
+  }
+  return false;
+}
+
+const noBareEmptyText = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Forbid bare JSX text / <p> / <span> empty-state messages outside <EmptyState> or <ModuleEmptyState>.",
+    },
+    schema: [],
+    messages: { bare: NO_BARE_EMPTY_TEXT_MESSAGE },
+  },
+  create(context) {
+    return {
+      JSXText(node) {
+        const text = typeof node.value === "string" ? node.value.trim() : "";
+        if (!text || !RX_EMPTY_SIGNAL.test(text)) return;
+        if (isInsideEmptyStateComponent(node)) return;
+        context.report({ node, messageId: "bare" });
+      },
+      Literal(node) {
+        // Catch string literals passed as children in JSX expressions like
+        // {condition && "Поки що порожньо"}
+        if (typeof node.value !== "string") return;
+        if (!RX_EMPTY_SIGNAL.test(node.value)) return;
+        // Only fire when the literal is used as JSX child content.
+        if (!node.parent || node.parent.type !== "JSXExpressionContainer")
+          return;
+        if (isInsideEmptyStateComponent(node)) return;
+        context.report({ node, messageId: "bare" });
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// `prefer-text-style` — semantic typography over hand-rolled combos
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Sergeant has `.text-style-*` semantic utilities defined in index.css
+// (hero, title, body, label, caption, overline). These encode the full
+// pairing (size + weight + tracking) so a future design-system change
+// only touches the CSS, not hundreds of call-sites.
+//
+// The rule flags className strings that contain a (text-{size}, font-{weight})
+// pair matching a known text-style slot, AND do NOT already contain a
+// `text-style-` utility. It suggests the semantic alternative.
+//
+// Exempt: design-system primitives that intentionally define the raw scale
+// (SectionHeading, Button, Label, Badge, etc.) — these are excluded by
+// allowing `// eslint-disable-next-line sergeant-design/prefer-text-style`.
+
+const PREFER_TEXT_STYLE_MESSAGE =
+  "Hand-rolled `{{combo}}` can be replaced with the semantic `text-style-{{slot}}` utility. " +
+  "The semantic utility owns size + weight + tracking as a unit so design-token changes " +
+  "propagate automatically. See docs/design/design-system.md § Typography.";
+
+// Ordered from most-specific to least-specific so the first match wins.
+const TEXT_STYLE_MAPPINGS = [
+  // hero: large display heading
+  {
+    slot: "hero",
+    sizes: new Set(["text-2xl", "text-3xl"]),
+    weights: new Set(["font-bold", "font-extrabold"]),
+  },
+  // title: section/card heading
+  {
+    slot: "title",
+    sizes: new Set(["text-xl", "text-lg"]),
+    weights: new Set(["font-semibold", "font-bold"]),
+  },
+  // label: data labels, small headings
+  {
+    slot: "label",
+    sizes: new Set(["text-sm"]),
+    weights: new Set(["font-medium", "font-semibold"]),
+  },
+  // caption: supporting text
+  {
+    slot: "caption",
+    sizes: new Set(["text-xs"]),
+    weights: new Set(["font-normal", "font-medium"]),
+  },
+];
+
+const RX_TEXT_SIZE =
+  /(?:^|\s)(text-(?:xs|sm|base|lg|xl|2xl|3xl|4xl|5xl))(?:\s|$)/;
+const RX_FONT_WEIGHT =
+  /(?:^|\s)(font-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black))(?:\s|$)/;
+const RX_TEXT_STYLE = /(?:^|\s)text-style-[\w-]+/;
+
+function findTextStyleSlot(value) {
+  if (typeof value !== "string") return null;
+  if (RX_TEXT_STYLE.test(value)) return null; // already using semantic utility
+
+  const sizeMatch = RX_TEXT_SIZE.exec(value);
+  const weightMatch = RX_FONT_WEIGHT.exec(value);
+  if (!sizeMatch || !weightMatch) return null;
+
+  const size = sizeMatch[1];
+  const weight = weightMatch[1];
+
+  for (const mapping of TEXT_STYLE_MAPPINGS) {
+    if (mapping.sizes.has(size) && mapping.weights.has(weight)) {
+      return { slot: mapping.slot, combo: `${size} ${weight}` };
+    }
+  }
+  return null;
+}
+
+const preferTextStyle = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Prefer `text-style-*` semantic utilities over hand-rolled size+weight combinations.",
+    },
+    schema: [],
+    messages: { prefer: PREFER_TEXT_STYLE_MESSAGE },
+  },
+  create(context) {
+    const filename =
+      (context.filename != null ? context.filename : context.getFilename()) ||
+      "";
+    // Exempt design-system primitive source files and test files.
+    if (
+      /shared[\\/]components[\\/]ui[\\/](?:Button|SectionHeading|Label|Badge|Stat|Card|Input|Tabs|Segmented)\.tsx?$/.test(
+        filename,
+      ) ||
+      /\.(test|spec)\.[jt]sx?$/.test(filename) ||
+      /__tests__[\\/]/.test(filename)
+    ) {
+      return {};
+    }
+
+    function report(node, value) {
+      const hit = findTextStyleSlot(value);
+      if (hit) {
+        context.report({
+          node,
+          messageId: "prefer",
+          data: { combo: hit.combo, slot: hit.slot },
+        });
+      }
+    }
+    return {
+      Literal(node) {
+        if (typeof node.value === "string") report(node, node.value);
+      },
+      TemplateElement(node) {
+        const cooked = node.value && node.value.cooked;
+        if (typeof cooked === "string") report(node, cooked);
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
@@ -2164,6 +2443,9 @@ const plugin = {
     "no-strict-bypass": noStrictBypass,
     "no-raw-dark-palette": noRawDarkPalette,
     "prefer-focus-visible": preferFocusVisible,
+    "no-rounded-lg": noRoundedLg,
+    "no-bare-empty-text": noBareEmptyText,
+    "prefer-text-style": preferTextStyle,
   },
 };
 
@@ -2187,6 +2469,10 @@ export {
   FOCUS_COLOR_UTILITIES,
   FOCUS_OUTLINE_ALLOWED_TAILS,
   PREFER_FOCUS_VISIBLE_MESSAGE,
+  NO_ROUNDED_LG_MESSAGE,
+  NO_BARE_EMPTY_TEXT_MESSAGE,
+  PREFER_TEXT_STYLE_MESSAGE,
+  TEXT_STYLE_MAPPINGS,
 };
 
 export default plugin;

@@ -74,7 +74,7 @@ interface ErrorFallbackProps {
 function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   return (
     <div className="p-8 font-sans">
-      <h2 className="text-lg font-semibold text-text">Щось пішло не так</h2>
+      <h2 className="text-style-title text-text">Щось пішло не так</h2>
       <pre className="text-xs text-danger whitespace-pre-wrap mt-2">
         {error?.message}
       </pre>
@@ -84,7 +84,7 @@ function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
           resetError?.();
           window.location.reload();
         }}
-        className="mt-4 px-4 py-2 rounded-xl border border-line bg-panel text-sm font-medium text-text"
+        className="mt-4 px-4 py-2 rounded-xl border border-line bg-panel text-style-label text-text"
       >
         Перезавантажити
       </button>

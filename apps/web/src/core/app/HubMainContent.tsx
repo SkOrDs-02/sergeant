@@ -34,7 +34,7 @@ function HubSectionFallback({ resetError }: HubSectionFallbackProps) {
       <button
         type="button"
         onClick={resetError}
-        className="px-4 py-2 rounded-xl bg-panel border border-line text-text text-sm font-medium hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        className="px-4 py-2 rounded-xl bg-panel border border-line text-text text-style-label hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
       >
         Спробувати ще раз
       </button>
@@ -60,7 +60,7 @@ function HubChromeBanner({
           <Icon name={iconName} size={20} className="text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-text">{title}</p>
+          <p className="text-style-label text-text">{title}</p>
           {description && <p className="text-xs text-muted">{description}</p>}
         </div>
         {children}

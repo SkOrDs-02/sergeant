@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-05-01 by @Skords-01. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
 > **Status:** Active
 
 Аналіз кодової бази `apps/web/src` (434 source файли, 87k рядків).
@@ -286,7 +286,7 @@ filter-предикатів:
 
 ---
 
-### 11. Strict TypeScript rollout — Phase 1 (`strictNullChecks`) in progress
+### 11. Strict TypeScript rollout — Phases 1–3 complete, Phase 4 pending
 
 **Контекст:** `apps/web/tsconfig.json` має `strict: false` + `allowJs: true`.
 Базовий `packages/config/tsconfig.base.json` — `strict: true`, але web-app
@@ -299,6 +299,7 @@ filter-предикатів:
 | 1     | `strictNullChecks`                          | `src/shared/**`                                                                                               | ✅ Виконано |
 | 2     | `strictNullChecks`                          | + `src/test/**`, `src/core/{auth,cloudSync,components,hints,hooks,observability,pricing,profile}/**` (10 дир) | ✅ Виконано |
 | 3     | `strictNullChecks`                          | + `src/modules/{routine,nutrition,finyk,fizruk}/**`, `src/core/{app,hub,insights,onboarding,settings,lib}/**` | ✅ Виконано |
+| 3.1   | `strictNullChecks`                          | + `src/core/designShowcase/**`, `src/core/stories/**`                                                         | ✅ Виконано |
 | 4     | повний `strict: true` + видалення `allowJs` | всі файли                                                                                                     | TODO        |
 
 **Phase 1 деталі (PR-6.A):**

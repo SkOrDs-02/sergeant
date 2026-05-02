@@ -67,7 +67,6 @@ function isInsideHorizontalScroller(target: EventTarget | null): boolean {
   const el = target instanceof HTMLElement ? target : null;
   if (!el) return false;
   if (el.closest("[data-no-swipe]")) return true;
-  if (el.closest("[data-finyk-no-swipe]")) return true;
   let node: HTMLElement | null = el;
   while (node && node !== document.body) {
     if (node.scrollWidth > node.clientWidth) {

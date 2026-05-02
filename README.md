@@ -6,7 +6,7 @@
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
 > **Status:** Active
 
 Sergeant is a personal hub platform for finance, habits, sport, nutrition, and AI-assisted day-to-day workflows. The product lives in one `pnpm` + `Turborepo` monorepo and ships across web/PWA, mobile, and internal ops surfaces.

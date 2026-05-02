@@ -79,7 +79,7 @@ function GoalRadioGroup({
   if (!question.options) return null;
   return (
     <div className="space-y-1.5">
-      <p className="text-sm font-semibold text-text">{question.title}</p>
+      <p className="text-style-label text-text">{question.title}</p>
       <div className="flex flex-wrap gap-2">
         {question.options.map((opt) => (
           <button
@@ -87,7 +87,7 @@ function GoalRadioGroup({
             type="button"
             onClick={() => onChange(opt.value)}
             className={cn(
-              "px-3.5 py-2 rounded-xl border text-sm font-medium transition-all duration-150",
+              "px-3.5 py-2 rounded-xl border text-style-label transition-all duration-150",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
               value === opt.value
                 ? "border-brand-500/60 bg-brand-500/10 text-brand-strong dark:text-brand"
@@ -117,7 +117,7 @@ function GoalSlider({
   return (
     <div className="space-y-2">
       <div className="flex items-baseline justify-between">
-        <p className="text-sm font-semibold text-text">{question.title}</p>
+        <p className="text-style-label text-text">{question.title}</p>
         <span className="text-sm font-bold text-brand-strong dark:text-brand tabular-nums">
           {current.toLocaleString("uk-UA")}
           {s.unit}

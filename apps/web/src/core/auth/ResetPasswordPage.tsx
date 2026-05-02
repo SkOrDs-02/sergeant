@@ -1,8 +1,9 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, useRef, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { useToast } from "@shared/hooks/useToast";
+import { useFormValidation } from "@shared/hooks/useFormValidation";
 import { BrandLogo } from "../app/BrandLogo";
 import { resetPassword } from "./authClient";
 
@@ -23,49 +24,59 @@ export function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [status, setStatus] = useState("idle");
-  const [message, setMessage] = useState("");
+  const [serverError, setServerError] = useState("");
+  const passwordRef = useRef(() => password);
+  passwordRef.current = () => password;
+
+  const pwValidation = useFormValidation({
+    password: {
+      rules: [
+        {
+          validate: (v: string) => v.length >= 10,
+          message: "Пароль має бути мінімум 10 символів.",
+        },
+      ],
+    },
+    confirm: {
+      rules: [
+        {
+          validate: (v: string) => v === passwordRef.current(),
+          message: "Паролі не збігаються.",
+        },
+      ],
+    },
+  });
 
   const INPUT_CLS =
     "input-focus w-full min-h-[44px] px-4 py-3 rounded-xl bg-panel border border-line text-text text-[16px] md:text-sm placeholder:text-muted/50";
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setMessage("");
+    setServerError("");
     if (!token) {
-      setStatus("error");
-      setMessage(
+      setServerError(
         "Посилання неповне. Відкрий лист повністю або запроси новий скид пароля.",
       );
       return;
     }
-    if (password.length < 10) {
-      setStatus("error");
-      setMessage("Пароль має бути мінімум 10 символів.");
-      return;
-    }
-    if (password !== confirm) {
-      setStatus("error");
-      setMessage("Паролі не збігаються.");
-      return;
-    }
+    if (!pwValidation.validateAll({ password, confirm })) return;
     setStatus("sending");
     try {
       const result = await resetPassword({ token, newPassword: password });
       if (result?.error) {
         setStatus("error");
-        setMessage(
+        setServerError(
           result.error.message ||
             "Не вдалося скинути пароль. Посилання могло вже бути використане.",
         );
         return;
       }
       setStatus("done");
-      setMessage("Пароль оновлено. Зараз перенесу на вхід…");
       toast.success("Пароль оновлено");
       window.setTimeout(() => navigate("/sign-in", { replace: true }), 1500);
     } catch (err) {
       setStatus("error");
-      setMessage(err?.message || "Щось пішло не так. Спробуй ще раз.");
+      setServerError(err?.message || "Щось пішло не так. Спробуй ще раз.");
     }
   };
 
@@ -84,7 +95,7 @@ export function ResetPasswordPage() {
 
         <Card variant="elevated" radius="xl" padding="lg" className="space-y-5">
           <div className="text-center">
-            <h2 className="text-lg font-bold text-text">Новий пароль</h2>
+            <h2 className="text-style-title text-text">Новий пароль</h2>
             <p className="text-xs text-subtle mt-1">
               Встанови новий пароль для свого акаунта.
             </p>
@@ -111,10 +122,10 @@ export function ResetPasswordPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
+              <div className="space-y-1">
                 <label
                   htmlFor="reset-password-new"
-                  className="block text-xs font-medium text-muted mb-1.5"
+                  className="block text-style-caption text-muted mb-1.5"
                 >
                   Новий пароль
                 </label>
@@ -128,13 +139,27 @@ export function ResetPasswordPage() {
                   className={INPUT_CLS}
                   placeholder="Мінімум 10 символів"
                   autoComplete="new-password"
+                  aria-invalid={
+                    pwValidation.fields.password.error ? true : undefined
+                  }
+                  aria-describedby={
+                    pwValidation.fields.password.error
+                      ? "reset-pw-error"
+                      : undefined
+                  }
+                  {...pwValidation.getFieldProps("password")}
                 />
+                {pwValidation.fields.password.error && (
+                  <p id="reset-pw-error" className="text-xs text-danger">
+                    {pwValidation.fields.password.error}
+                  </p>
+                )}
               </div>
 
-              <div>
+              <div className="space-y-1">
                 <label
                   htmlFor="reset-password-confirm"
-                  className="block text-xs font-medium text-muted mb-1.5"
+                  className="block text-style-caption text-muted mb-1.5"
                 >
                   Підтвердження
                 </label>
@@ -148,19 +173,33 @@ export function ResetPasswordPage() {
                   className={INPUT_CLS}
                   placeholder="Введи пароль ще раз"
                   autoComplete="new-password"
+                  aria-invalid={
+                    pwValidation.fields.confirm.error ? true : undefined
+                  }
+                  aria-describedby={
+                    pwValidation.fields.confirm.error
+                      ? "reset-confirm-error"
+                      : undefined
+                  }
+                  {...pwValidation.getFieldProps("confirm")}
                 />
+                {pwValidation.fields.confirm.error && (
+                  <p id="reset-confirm-error" className="text-xs text-danger">
+                    {pwValidation.fields.confirm.error}
+                  </p>
+                )}
               </div>
 
-              {message && (
+              {(serverError || status === "done") && (
                 <div
-                  role={status === "error" ? "alert" : "status"}
+                  role={serverError ? "alert" : "status"}
                   className={
-                    status === "error"
+                    serverError
                       ? "text-xs text-error bg-error/10 border border-error/20 rounded-xl px-4 py-2.5"
                       : "text-xs text-text bg-brand-500/10 border border-brand-500/30 rounded-xl px-4 py-2.5"
                   }
                 >
-                  {message}
+                  {serverError || "Пароль оновлено. Зараз перенесу на вхід…"}
                 </div>
               )}
 

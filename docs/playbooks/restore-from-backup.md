@@ -1,6 +1,6 @@
 # Playbook: Restore from Backup
 
-> **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
 > **Status:** Active
 
 **Trigger:** critical data must be recovered after corruption, destructive migration, provider incident, or unrecoverable runtime state loss.

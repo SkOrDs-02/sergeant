@@ -234,7 +234,7 @@ function WelcomeOneScreen({
   return (
     <div className="flex flex-col items-center text-center space-y-5">
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-text">
+        <h2 className="text-style-hero text-text">
           <BrandLogo
             size="md"
             variant="inline"

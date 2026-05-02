@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useSwipeNavigation } from "@shared/hooks/useSwipeNavigation";
 import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
@@ -17,10 +17,24 @@ import { useToast } from "@shared/hooks/useToast";
 import { tryShowCrossModulePrompt } from "@shared/lib/crossModulePrompt";
 import { openHubModuleWithAction } from "@shared/lib/hubNav";
 import { Overview } from "./pages/Overview";
-import { Transactions } from "./pages/transactions";
-import { Budgets } from "./pages/budgets";
-import { Assets } from "./pages/Assets";
-import { Analytics } from "./pages/Analytics";
+import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
+
+// Heavy sub-pages are lazy-loaded so navigating into them for the first
+// time shows the finyk-branded ModulePageLoader skeleton instead of a
+// blank flash. Overview stays eager because it is the landing page and
+// must not add a waterfall to cold module navigation.
+const Transactions = lazy(() =>
+  import("./pages/transactions").then((m) => ({ default: m.Transactions })),
+);
+const Budgets = lazy(() =>
+  import("./pages/budgets").then((m) => ({ default: m.Budgets })),
+);
+const Assets = lazy(() =>
+  import("./pages/Assets").then((m) => ({ default: m.Assets })),
+);
+const Analytics = lazy(() =>
+  import("./pages/Analytics").then((m) => ({ default: m.Analytics })),
+);
 import { ManualExpenseSheet } from "./components/ManualExpenseSheet";
 import { FinykLoginScreen } from "./components/FinykLoginScreen";
 import { NAV_ICONS, NAV_IDS, NAV_ITEMS } from "./components/finykNav";
@@ -245,7 +259,7 @@ export default function App({
             <div
               className={cn(
                 "flex items-center gap-1.5 select-none",
-                "text-xs font-medium px-2 py-0.5 rounded-full border",
+                "text-style-caption px-2 py-0.5 rounded-full border",
                 "transition-colors duration-200",
                 syncTone.pill,
               )}
@@ -357,70 +371,72 @@ export default function App({
                 }
           }
         >
-          {page === "overview" && (
-            <SectionErrorBoundary
-              key="page-overview"
-              title="Не вдалось показати «Огляд»"
-            >
-              <Overview
-                mono={mergedMono}
-                storage={storage}
-                onNavigate={navigate}
-                showBalance={showBalance}
-              />
-            </SectionErrorBoundary>
-          )}
-          {page === "transactions" && (
-            <SectionErrorBoundary
-              key="page-transactions"
-              title="Не вдалось показати «Операції»"
-            >
-              <Transactions
-                mono={mergedMono}
-                storage={storage}
-                showBalance={showBalance}
-                categoryFilter={categoryFilter}
-                onClearCategoryFilter={() => setCategoryFilter(null)}
-                onEditManualExpense={(id) => {
-                  setEditingManualExpenseId(String(id));
-                  setShowExpenseSheet(true);
-                }}
-              />
-            </SectionErrorBoundary>
-          )}
-          {page === "budgets" && (
-            <SectionErrorBoundary
-              key="page-budgets"
-              title="Не вдалось показати «Планування»"
-            >
-              <Budgets
-                mono={mergedMono}
-                storage={storage}
-                showBalance={showBalance}
-                focusLimitCategoryId={focusLimitCategoryId}
-              />
-            </SectionErrorBoundary>
-          )}
-          {page === "analytics" && (
-            <SectionErrorBoundary
-              key="page-analytics"
-              title="Не вдалось показати «Аналітику»"
-            >
-              <Analytics mono={mergedMono} storage={storage} />
-            </SectionErrorBoundary>
-          )}
-          {page === "assets" && (
-            <SectionErrorBoundary
-              key="page-assets"
-              title="Не вдалось показати «Активи»"
-            >
-              <Assets
-                mono={mergedMono}
-                storage={storage}
-                showBalance={showBalance}
-              />
-            </SectionErrorBoundary>
-          )}
+          <Suspense fallback={<ModulePageLoader module="finyk" />}>
+            {page === "overview" && (
+              <SectionErrorBoundary
+                key="page-overview"
+                title="Не вдалось показати «Огляд»"
+              >
+                <Overview
+                  mono={mergedMono}
+                  storage={storage}
+                  onNavigate={navigate}
+                  showBalance={showBalance}
+                />
+              </SectionErrorBoundary>
+            )}
+            {page === "transactions" && (
+              <SectionErrorBoundary
+                key="page-transactions"
+                title="Не вдалось показати «Операції»"
+              >
+                <Transactions
+                  mono={mergedMono}
+                  storage={storage}
+                  showBalance={showBalance}
+                  categoryFilter={categoryFilter}
+                  onClearCategoryFilter={() => setCategoryFilter(null)}
+                  onEditManualExpense={(id) => {
+                    setEditingManualExpenseId(String(id));
+                    setShowExpenseSheet(true);
+                  }}
+                />
+              </SectionErrorBoundary>
+            )}
+            {page === "budgets" && (
+              <SectionErrorBoundary
+                key="page-budgets"
+                title="Не вдалось показати «Планування»"
+              >
+                <Budgets
+                  mono={mergedMono}
+                  storage={storage}
+                  showBalance={showBalance}
+                  focusLimitCategoryId={focusLimitCategoryId}
+                />
+              </SectionErrorBoundary>
+            )}
+            {page === "analytics" && (
+              <SectionErrorBoundary
+                key="page-analytics"
+                title="Не вдалось показати «Аналітику»"
+              >
+                <Analytics mono={mergedMono} storage={storage} />
+              </SectionErrorBoundary>
+            )}
+            {page === "assets" && (
+              <SectionErrorBoundary
+                key="page-assets"
+                title="Не вдалось показати «Активи»"
+              >
+                <Assets
+                  mono={mergedMono}
+                  storage={storage}
+                  showBalance={showBalance}
+                />
+              </SectionErrorBoundary>
+            )}
+          </Suspense>
         </div>
       </div>
 
@@ -444,7 +460,7 @@ export default function App({
           <div className="bg-warning/15 border border-warning/40 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-card">
             <span className="text-lg shrink-0 mt-0.5">⚠️</span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-text">
+              <p className="text-style-label text-text">
                 Токен потребує оновлення
               </p>
               <p className="text-xs text-muted mt-0.5">{mono.authError}</p>

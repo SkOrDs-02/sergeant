@@ -1,6 +1,6 @@
 # Superpowers
 
-> **Last validated:** 2026-05-01 by @Skords-01. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
 > **Status:** Active
 
 Операційний розділ для AI-агентів у Sergeant. Тут лежить не лише історія design specs, а й канонічна навігація по repo-owned skills.

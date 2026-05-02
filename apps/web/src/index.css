@@ -498,6 +498,29 @@
     @apply text-[0.6875rem] leading-none font-semibold tracking-[0.08em] uppercase;
   }
 
+  /* ── Semantic text-style utilities (design-system.md § Typography) ──────
+     Owned shorthand classes: each bundles size + weight (+ optional
+     tracking) so design-token changes propagate automatically.
+     Referenced by the `prefer-text-style` ESLint rule.              ─── */
+  .text-style-hero {
+    @apply text-2xl font-bold tracking-tight;
+  }
+  .text-style-title {
+    @apply text-xl font-semibold leading-snug;
+  }
+  .text-style-body {
+    @apply text-base font-normal leading-relaxed;
+  }
+  .text-style-label {
+    @apply text-sm font-medium leading-snug;
+  }
+  .text-style-caption {
+    @apply text-xs font-medium leading-snug;
+  }
+  .text-style-overline {
+    @apply text-[0.6875rem] font-semibold tracking-[0.08em] uppercase;
+  }
+
   /* Celebration — achievement moments: XP gains, streaks, confetti title */
   .text-celebration {
     @apply text-[1.25rem] leading-tight font-bold tracking-[0.02em];
