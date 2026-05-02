@@ -33,6 +33,10 @@ import {
   type Habit,
   type HabitSnapshot,
 } from "@sergeant/routine-domain";
+import {
+  isRoutineDualWriteRegistered,
+  triggerRoutineDualWrite,
+} from "./dualWrite/index.js";
 
 const storage = createModuleStorage({ name: "routine" });
 
@@ -71,13 +75,37 @@ export function loadRoutineState(): RoutineState {
 }
 
 /**
+ * Read the currently-persisted routine state without triggering the
+ * `ensureHabitOrder` re-save that {@link loadRoutineState} performs.
+ * Used by {@link saveRoutineState} as the `prev` snapshot for the
+ * Stage 4 PR #024 dual-write layer; returns `null` if the dual-write
+ * context is not registered (zero overhead when the feature is off).
+ */
+function peekRoutineDualWritePrev(): RoutineState | null {
+  if (!isRoutineDualWriteRegistered()) return null;
+  try {
+    const raw = storage.readJSON(ROUTINE_STORAGE_KEY, null);
+    return normalizeRoutineState(raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Persist routine state to localStorage and dispatch a storage event.
  * Returns `true` on success, `false` if localStorage threw (e.g. quota exceeded).
+ *
+ * On success, also fires the Stage 4 PR #024 dual-write hook (mirror
+ * to local SQLite under `feature.routine.sqlite_v2.dual_write`). The
+ * hook is fire-and-forget — SQLite latency or failures never block
+ * or break the LS write.
  */
 export function saveRoutineState(next: RoutineState): boolean {
+  const prev = peekRoutineDualWritePrev();
   const ok = storage.writeJSON(ROUTINE_STORAGE_KEY, next);
   if (ok) {
     emitRoutineStorage();
+    if (prev !== null) triggerRoutineDualWrite(prev, next);
     return true;
   }
   try {

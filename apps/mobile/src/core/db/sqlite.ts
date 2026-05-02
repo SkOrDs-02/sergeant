@@ -31,6 +31,12 @@
 import { drizzle, type ExpoSQLiteDatabase } from "drizzle-orm/expo-sqlite";
 import * as ExpoSQLite from "expo-sqlite";
 import * as schema from "@sergeant/db-schema/sqlite";
+import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+
+import {
+  createExpoSqliteRawClient,
+  type ExpoSqliteAsyncHandle,
+} from "../../modules/routine/lib/sqliteSpike/expoSqliteAdapter.js";
 
 /**
  * Filename of the on-device SQLite database. expo-sqlite stores it at
@@ -67,6 +73,19 @@ export type SqliteTx = Parameters<Parameters<SqliteDb["transaction"]>[0]>[0];
 let dbInstance: SqliteDb | null = null;
 
 /**
+ * Native expo-sqlite handle held alongside the Drizzle wrapper so we
+ * can hand out a `SqliteMigrationClient` (the `{exec, run, all}`
+ * shape used by the routine SPIKE library + the Stage 4 PR #024
+ * dual-write adapter) without re-opening the file.
+ *
+ * Re-opening would force expo-sqlite to acquire a second handle on
+ * the same DB, which deadlocks under WAL on iOS — see
+ * `apps/mobile/src/modules/routine/lib/sqliteSpike/expoSqliteAdapter.ts`
+ * for the wrapper that turns this handle into the raw-SQL client.
+ */
+let nativeInstance: ExpoSQLite.SQLiteDatabase | null = null;
+
+/**
  * In-flight initialization promise. While `initSqlite()` is running,
  * concurrent callers await this same promise so the underlying
  * `openDatabaseAsync` call is deduped to one open per process.
@@ -92,6 +111,7 @@ export async function initSqlite(): Promise<SqliteDb> {
       const native = await ExpoSQLite.openDatabaseAsync(DATABASE_NAME);
       const db = drizzle(native, { schema });
       dbInstance = db;
+      nativeInstance = native;
       return db;
     } catch (err) {
       // Drop the failed promise so the next caller can retry instead
@@ -101,6 +121,44 @@ export async function initSqlite(): Promise<SqliteDb> {
     }
   })();
   return initPromise;
+}
+
+/**
+ * Resolves a `SqliteMigrationClient` (`{exec, run, all}`) backed by
+ * the same native handle the singleton's Drizzle client uses.
+ *
+ * Use cases:
+ *  - Stage 4 PR #024 routine dual-write adapter — keeps the SQL
+ *    surface identical between web (sqlite-wasm) and mobile
+ *    (expo-sqlite) so a single adapter implementation serves both.
+ *  - Unit-tests that need raw `{exec, run, all}` against a real
+ *    expo-sqlite instance (rare — most mobile tests inject a fake
+ *    handle through `createExpoSqliteRawClient` directly).
+ *
+ * Awaits `initSqlite()` first, so callers do not need to ensure the
+ * singleton is hot.
+ */
+export async function getSqliteMigrationClient(): Promise<SqliteMigrationClient> {
+  await initSqlite();
+  if (!nativeInstance) {
+    throw new Error(
+      "[sqlite] getSqliteMigrationClient(): native handle missing after initSqlite()",
+    );
+  }
+  // expo-sqlite's `SQLiteDatabase` declares `runAsync` / `getAllAsync`
+  // as overload sets, which structurally do not unify with our minimal
+  // `ExpoSqliteAsyncHandle`. Cherry-pick the methods so the SPIKE
+  // adapter sees the simple `(sql, params) => Promise<…>` shape it
+  // expects, without bypassing the type system. Same pattern as
+  // `apps/mobile/src/modules/routine/components/RoutineSpikeDevPanel.tsx`.
+  const native = nativeInstance;
+  const handle: ExpoSqliteAsyncHandle = {
+    execAsync: (sql) => native.execAsync(sql),
+    runAsync: (sql, params) => native.runAsync(sql, params as never[]),
+    getAllAsync: <R>(sql: string, params: readonly unknown[]) =>
+      native.getAllAsync<R>(sql, params as never[]),
+  };
+  return createExpoSqliteRawClient(handle);
 }
 
 /**
@@ -161,5 +219,6 @@ export async function withTransaction<T>(
  */
 export function _resetSqliteForTests(): void {
   dbInstance = null;
+  nativeInstance = null;
   initPromise = null;
 }
