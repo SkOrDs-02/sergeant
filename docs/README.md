@@ -14,23 +14,24 @@ Main documentation index for Sergeant.
 - Playbook catalog: [playbooks/playbook-catalog.md](./playbooks/playbook-catalog.md)
 - Service catalog: [architecture/service-catalog.md](./architecture/service-catalog.md)
 - Feature flag registry: [feature-flags.md](./feature-flags.md)
+- Security access system: [security/access-policy.md](./security/access-policy.md)
 
 ## Sections
 
-| Section                                       | Purpose                                             |
-| --------------------------------------------- | --------------------------------------------------- |
-| [`adr/`](./adr/README.md)                     | Architectural decisions and tradeoffs               |
-| [`api/`](./api/README.md)                     | OpenAPI, API contracts, generated artifacts         |
-| [`architecture/`](./architecture/README.md)   | Repo map, runtime surfaces, platform architecture   |
-| [`governance/`](./governance/README.md)       | Hard rules registry, review checklists, policy docs |
-| [`mobile/`](./mobile/README.md)               | Expo/mobile strategy and migration docs             |
-| [`observability/`](./observability/README.md) | Alerts, SLOs, logs, engineering metrics             |
-| [`planning/`](./planning/README.md)           | Roadmaps, infra plans, staged improvements          |
-| [`playbooks/`](./playbooks/README.md)         | Canonical execution recipes for repeatable tasks    |
-| [`postmortems/`](./postmortems/README.md)     | Incident reviews and follow-up memory               |
-| [`security/`](./security/README.md)           | Security policy, recovery, and audit docs           |
-| [`superpowers/`](./superpowers/README.md)     | Agent operating system, routing catalog, workflows  |
-| [`tech-debt/`](./tech-debt/README.md)         | Active debt registries and cleanup plans            |
+| Section                                       | Purpose                                                      |
+| --------------------------------------------- | ------------------------------------------------------------ |
+| [`adr/`](./adr/README.md)                     | Architectural decisions and tradeoffs                        |
+| [`api/`](./api/README.md)                     | OpenAPI, API contracts, generated artifacts                  |
+| [`architecture/`](./architecture/README.md)   | Repo map, runtime surfaces, platform architecture            |
+| [`governance/`](./governance/README.md)       | Hard rules registry, review checklists, policy docs          |
+| [`mobile/`](./mobile/README.md)               | Expo/mobile strategy and migration docs                      |
+| [`observability/`](./observability/README.md) | Alerts, SLOs, logs, engineering metrics                      |
+| [`planning/`](./planning/README.md)           | Roadmaps, infra plans, staged improvements                   |
+| [`playbooks/`](./playbooks/README.md)         | Canonical execution recipes for repeatable tasks             |
+| [`postmortems/`](./postmortems/README.md)     | Incident reviews and follow-up memory                        |
+| [`security/`](./security/README.md)           | Security policy, access governance, recovery, and audit docs |
+| [`superpowers/`](./superpowers/README.md)     | Agent operating system, routing catalog, workflows           |
+| [`tech-debt/`](./tech-debt/README.md)         | Active debt registries and cleanup plans                     |
 
 ## Adding new docs
 

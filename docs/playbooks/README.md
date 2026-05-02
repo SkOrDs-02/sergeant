@@ -13,7 +13,7 @@ Playbooks are the canonical execution layer for repeatable tasks in Sergeant. Sk
 - `AI/HubChat` - tools, prompts, console agents
 - `mobile` - Expo, RN porting, migration progress, mobile releases
 - `deploy/ops` - releases, prod hotfixes, incidents, secrets, runtime safety, n8n workflows
-- `governance/docs` - hard rules, review, docs upkeep, operating-system hygiene
+- `governance/docs` - hard rules, review, docs upkeep, operating-system hygiene, access governance
 
 ## Standard for every playbook
 
@@ -51,6 +51,8 @@ Each playbook must include:
 - [release-web-and-api.md](./release-web-and-api.md)
 - [declare-incident.md](./declare-incident.md)
 - [restore-from-backup.md](./restore-from-backup.md)
+- [grant-privileged-access.md](./grant-privileged-access.md)
+- [respond-to-suspected-account-compromise.md](./respond-to-suspected-account-compromise.md)
 - [port-web-screen-to-mobile.md](./port-web-screen-to-mobile.md)
 - [modify-console-agent.md](./modify-console-agent.md)
 - [modify-n8n-workflow.md](./modify-n8n-workflow.md)

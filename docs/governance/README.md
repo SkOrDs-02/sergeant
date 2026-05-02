@@ -13,6 +13,7 @@ Governance in Sergeant is intentionally split between human-readable policy and 
 - [review-checklist.md](./review-checklist.md) - reviewer operating checklist.
 - [release-policy.md](./release-policy.md) - release classes, blockers, ordering, note-taking expectations.
 - [incident-severity-policy.md](./incident-severity-policy.md) - severity model and postmortem threshold.
+- [security-incident-policy.md](./security-incident-policy.md) - access compromise classification and first-response policy.
 - [policy-review.md](./policy-review.md) and [doc-freshness.md](./doc-freshness.md) - cadence and review process.
 
 ## CI gates
