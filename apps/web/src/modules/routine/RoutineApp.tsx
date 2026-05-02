@@ -7,6 +7,8 @@ import {
 } from "react";
 import { cn } from "@shared/lib/cn";
 import { Banner } from "@shared/components/ui/Banner";
+import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
+import { requestCloudPull } from "@shared/lib/cloudPullRequest";
 import {
   ModuleAccentProvider,
   ModuleHeader,
@@ -518,6 +520,13 @@ export default function RoutineApp({
   const hasListFilter = Boolean(tagFilter) || listQuery.trim().length > 0;
   const listIsEmpty = grouped.length === 0;
 
+  // Routine is local-first (localStorage) and the visible state is
+  // recomputed from `routine` on each render, so PTR's only job is to
+  // ask the App-level cloud-sync engine for a pull. The `routine`
+  // listener (`ROUTINE_EVENT`) re-renders us when the engine writes new
+  // state into localStorage.
+  const handlePullRefresh = useCallback(() => requestCloudPull(2500), []);
+
   return (
     <ModuleAccentProvider module="routine" asShellRoot>
       <ModuleHeader
@@ -567,129 +576,134 @@ export default function RoutineApp({
       />
 
       <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-        <main
+        <PullToRefresh
+          as="main"
           id="routine-main"
-          className="flex-1 overflow-y-auto page-tabbar-pad routine-main-pad max-w-4xl mx-auto w-full pt-4 space-y-4"
           tabIndex={-1}
+          onRefresh={handlePullRefresh}
+          variant="routine"
+          contentClassName="page-tabbar-pad routine-main-pad"
         >
-          {storageErrorMsg && (
-            <Banner
-              variant="danger"
-              role="alert"
-              className="flex items-start justify-between gap-3"
-            >
-              <span>
-                Не вдалося зберегти дані Рутини ({storageErrorMsg}). Можливо,
-                браузер переповнив сховище — звільни місце або експортуй
-                резервну копію.
-              </span>
-              <button
-                type="button"
-                onClick={() => setStorageErrorMsg(null)}
-                className="shrink-0 text-xs font-semibold text-danger/80 hover:text-danger"
-                aria-label="Закрити повідомлення"
+          <div className="max-w-4xl mx-auto w-full pt-4 space-y-4">
+            {storageErrorMsg && (
+              <Banner
+                variant="danger"
+                role="alert"
+                className="flex items-start justify-between gap-3"
               >
-                Закрити
-              </button>
-            </Banner>
-          )}
-          <RoutineCalendarProvider
-            data={useMemo(
-              () => ({
-                rangeLabel,
-                headlineDate,
-                filtered,
-                routine,
-                currentStreak: streakMax,
-                completionRate: completionRateVal,
-                dayProgress,
-                timeMode,
-                selectedDay,
-                todayKey,
-                shiftWeekStrip,
-                setSelectedDay,
-                setTimeMode,
-                listQuery,
-                setListQuery,
-                tagFilter,
-                setTagFilter,
-                tagChips,
-                monthCursor,
-                monthTitle,
-                goMonth,
-                goToToday,
-                cells,
-                dayCounts,
-                listIsEmpty,
-                hasListFilter,
-                hasNoHabits,
-                grouped,
-                canBulkMark,
-              }),
-              [
-                rangeLabel,
-                headlineDate,
-                filtered,
-                routine,
-                streakMax,
-                completionRateVal,
-                dayProgress,
-                timeMode,
-                selectedDay,
-                todayKey,
-                shiftWeekStrip,
-                setSelectedDay,
-                setTimeMode,
-                listQuery,
-                setListQuery,
-                tagFilter,
-                setTagFilter,
-                tagChips,
-                monthCursor,
-                monthTitle,
-                goMonth,
-                goToToday,
-                cells,
-                dayCounts,
-                listIsEmpty,
-                hasListFilter,
-                hasNoHabits,
-                grouped,
-                canBulkMark,
-              ],
+                <span>
+                  Не вдалося зберегти дані Рутини ({storageErrorMsg}). Можливо,
+                  браузер переповнив сховище — звільни місце або експортуй
+                  резервну копію.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setStorageErrorMsg(null)}
+                  className="shrink-0 text-xs font-semibold text-danger/80 hover:text-danger"
+                  aria-label="Закрити повідомлення"
+                >
+                  Закрити
+                </button>
+              </Banner>
             )}
-            actions={useMemo(
-              () => ({
-                applyTimeMode,
-                onToggleHabit,
-                setRoutine,
-                setMainTab,
-                onOpenModule,
-                onBulkMarkDay,
-                onOpenQuickAddHabit: () => {
-                  setQuickAddHabitOpen(true);
-                  setQuickAddFocusTick((t) => t + 1);
-                },
-              }),
-              [
-                applyTimeMode,
-                onToggleHabit,
-                setRoutine,
-                setMainTab,
-                onOpenModule,
-                onBulkMarkDay,
-              ],
-            )}
-          >
-            <RoutineCalendarPanel hidden={mainTab !== "calendar"} />
-          </RoutineCalendarProvider>
+            <RoutineCalendarProvider
+              data={useMemo(
+                () => ({
+                  rangeLabel,
+                  headlineDate,
+                  filtered,
+                  routine,
+                  currentStreak: streakMax,
+                  completionRate: completionRateVal,
+                  dayProgress,
+                  timeMode,
+                  selectedDay,
+                  todayKey,
+                  shiftWeekStrip,
+                  setSelectedDay,
+                  setTimeMode,
+                  listQuery,
+                  setListQuery,
+                  tagFilter,
+                  setTagFilter,
+                  tagChips,
+                  monthCursor,
+                  monthTitle,
+                  goMonth,
+                  goToToday,
+                  cells,
+                  dayCounts,
+                  listIsEmpty,
+                  hasListFilter,
+                  hasNoHabits,
+                  grouped,
+                  canBulkMark,
+                }),
+                [
+                  rangeLabel,
+                  headlineDate,
+                  filtered,
+                  routine,
+                  streakMax,
+                  completionRateVal,
+                  dayProgress,
+                  timeMode,
+                  selectedDay,
+                  todayKey,
+                  shiftWeekStrip,
+                  setSelectedDay,
+                  setTimeMode,
+                  listQuery,
+                  setListQuery,
+                  tagFilter,
+                  setTagFilter,
+                  tagChips,
+                  monthCursor,
+                  monthTitle,
+                  goMonth,
+                  goToToday,
+                  cells,
+                  dayCounts,
+                  listIsEmpty,
+                  hasListFilter,
+                  hasNoHabits,
+                  grouped,
+                  canBulkMark,
+                ],
+              )}
+              actions={useMemo(
+                () => ({
+                  applyTimeMode,
+                  onToggleHabit,
+                  setRoutine,
+                  setMainTab,
+                  onOpenModule,
+                  onBulkMarkDay,
+                  onOpenQuickAddHabit: () => {
+                    setQuickAddHabitOpen(true);
+                    setQuickAddFocusTick((t) => t + 1);
+                  },
+                }),
+                [
+                  applyTimeMode,
+                  onToggleHabit,
+                  setRoutine,
+                  setMainTab,
+                  onOpenModule,
+                  onBulkMarkDay,
+                ],
+              )}
+            >
+              <RoutineCalendarPanel hidden={mainTab !== "calendar"} />
+            </RoutineCalendarProvider>
 
-          <RoutineStatsPanel
-            routine={routine}
-            currentStreak={streakMax}
-            hidden={mainTab !== "stats"}
-          />
-        </main>
+            <RoutineStatsPanel
+              routine={routine}
+              currentStreak={streakMax}
+              hidden={mainTab !== "stats"}
+            />
+          </div>
+        </PullToRefresh>
       </div>
 
       <RoutineBottomNav

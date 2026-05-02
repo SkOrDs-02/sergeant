@@ -15,6 +15,10 @@ import { NutritionOverlays } from "./components/NutritionOverlays";
 import { Banner } from "@shared/components/ui/Banner";
 import { ModuleAccentProvider } from "@shared/components/layout";
 import { Icon } from "@shared/components/ui/Icon";
+import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
+import { requestCloudPull } from "@shared/lib/cloudPullRequest";
+import { useQueryClient } from "@tanstack/react-query";
+import { nutritionKeys } from "@shared/lib/queryKeys";
 import {
   loadNutritionPrefs,
   persistNutritionPrefs,
@@ -357,11 +361,23 @@ export default function NutritionApp({
     .filter(Boolean)
     .join(" ");
 
+  // PTR refresh both invalidates nutrition RQ keys (so meal log / OFF
+  // cache refetch on next read) and asks the App-level cloud-sync engine
+  // for a pull. Both are awaited with `Promise.allSettled` so a slow
+  // cloud-pull doesn't keep the spinner pinned past the refetch.
+  const queryClient = useQueryClient();
+  const handlePullRefresh = useCallback(async () => {
+    await Promise.allSettled([
+      queryClient.invalidateQueries({ queryKey: nutritionKeys.all }),
+      requestCloudPull(2500),
+    ]);
+  }, [queryClient]);
+
   return (
     <ModuleAccentProvider module="nutrition" asShellRoot>
       <NutritionHeader busy={busy} onBackToHub={onBackToHub} />
 
-      <div className="flex-1 overflow-y-auto">
+      <PullToRefresh onRefresh={handlePullRefresh} variant="nutrition">
         <div className="max-w-2xl mx-auto px-4 pt-4 pb-6 w-full">
           <NutritionPantrySelector pantry={pantry} busy={busy} />
 
@@ -406,7 +422,7 @@ export default function NutritionApp({
                     if (!e.currentTarget.open) setPhotoCardForceOpen(false);
                   }}
                 >
-                  <summary className="flex items-center gap-2 cursor-pointer select-none py-2 px-1 text-sm font-semibold text-text">
+                  <summary className="flex items-center gap-2 cursor-pointer select-none py-2 px-1 text-style-label text-text">
                     <Icon
                       name="chevron-right"
                       size={16}
@@ -582,7 +598,7 @@ export default function NutritionApp({
             )}
           </div>
         </div>
-      </div>
+      </PullToRefresh>
 
       <NutritionBottomNav
         activePage={activePage}

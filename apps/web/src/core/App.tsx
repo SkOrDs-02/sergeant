@@ -6,12 +6,15 @@ import { safeWriteLS } from "@shared/lib/storage";
 import { SkipLink } from "@shared/components/ui/SkipLink";
 import ModuleErrorBoundary from "./ModuleErrorBoundary";
 import { useDarkMode } from "@shared/hooks/useDarkMode";
-import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { ToastProvider, useToast } from "@shared/hooks/useToast";
 import { ToastContainer } from "@shared/components/ui/Toast";
 import { ScreenReaderAnnouncerProvider } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { HUB_OPEN_MODULE_EVENT } from "@shared/lib/hubNav";
 import { onHubBus } from "@shared/lib/hubBus";
+import {
+  REQUEST_PULL_EVENT,
+  emitCloudPullComplete,
+} from "@shared/lib/cloudPullRequest";
 import { ApiClientProvider } from "@sergeant/api-client/react";
 import { apiClient } from "@shared/api";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
@@ -197,7 +200,6 @@ function AppInner() {
   const keyboardShortcuts = useKeyboardShortcutsModal();
   const { canInstall, install, dismiss } = usePwaInstall();
   const { visible: iosVisible, dismiss: iosDismiss } = useIosInstallBanner();
-  const online = useOnlineStatus();
   const { updateAvailable, applyUpdate } = useSWUpdate();
   const { user, isLoading: authLoading } = useAuth();
   const sync = useCloudSync(user);
@@ -247,6 +249,27 @@ function AppInner() {
         navigator.serviceWorker.removeEventListener("message", onMessage);
     }
   }, [openModule]);
+
+  // Bridge module-level pull-to-refresh gestures to the App-level
+  // cloud-sync engine. Modules dispatch `REQUEST_PULL_EVENT` and we run
+  // `sync.pullAll()` on their behalf, then emit a completion event so
+  // the requesting component can resolve its spinner. See
+  // `shared/lib/cloudPullRequest.ts` for the contract.
+  useEffect(() => {
+    const handler = async () => {
+      try {
+        await sync.pullAll();
+      } catch {
+        // Errors are surfaced via `useSyncErrorToast`; the requester
+        // only cares that we settled, so swallow here and emit the
+        // completion event regardless.
+      } finally {
+        emitCloudPullComplete();
+      }
+    };
+    window.addEventListener(REQUEST_PULL_EVENT, handler);
+    return () => window.removeEventListener(REQUEST_PULL_EVENT, handler);
+  }, [sync]);
 
   // Global signal to open chat from any page (e.g. ProfilePage memory
   // bank, AssistantCataloguePage, hint toasts). Now routes to the
@@ -451,7 +474,7 @@ function AppInner() {
           inFtuxSession={inFtuxSession}
           hasFirstRealEntry={hasFirstRealEntry}
         />
-        {!online && <OfflineBanner />}
+        <OfflineBanner />
 
         <HubHeader
           onOpenSearch={() => ui.setSearchOpen(true)}
@@ -515,7 +538,7 @@ function AppInner() {
   return (
     <div className="h-dvh flex flex-col bg-bg text-text overflow-hidden">
       <SkipLink />
-      {!online && <OfflineBanner />}
+      <OfflineBanner />
       {/* Persistent "resume workout" shortcut — rendered in Finyk,
           Routine, Nutrition (but not inside Fizruk itself, where the
           in-module ActiveWorkoutPanel is already the primary surface).

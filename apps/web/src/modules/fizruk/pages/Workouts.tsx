@@ -4,6 +4,8 @@ import {
   safeWriteLS,
   safeRemoveLS,
 } from "@shared/lib/storage";
+import { requestCloudPull } from "@shared/lib/cloudPullRequest";
+import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Skeleton } from "@shared/components/ui/Skeleton";
@@ -388,8 +390,13 @@ export function Workouts() {
     [workouts],
   );
 
+  // Workouts are local-first (MMKV-web), so PTR's job is to ask the
+  // App-level cloud-sync engine for a fresh pull. The local list will
+  // re-render automatically once the engine writes new state.
+  const handlePullRefresh = useCallback(() => requestCloudPull(2500), []);
+
   return (
-    <div className="flex-1 overflow-y-auto">
+    <PullToRefresh onRefresh={handlePullRefresh} variant="fizruk">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
         <div className="flex items-center gap-3 mb-3">
           {view !== "home" ? (
@@ -403,7 +410,7 @@ export function Workouts() {
             </button>
           ) : null}
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-text">
+            <h1 className="text-style-title text-text">
               {view === "catalog"
                 ? "Каталог вправ"
                 : view === "templates"
@@ -654,6 +661,6 @@ export function Workouts() {
         }}
         onCancel={() => setRiskyTemplateConfirm(null)}
       />
-    </div>
+    </PullToRefresh>
   );
 }
