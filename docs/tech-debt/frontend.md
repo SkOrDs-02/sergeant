@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-02 by @sonher468. **Next review:** 2026-07-31.
 > **Status:** Active
 
 Аналіз кодової бази `apps/web/src` (434 source файли, 87k рядків).
@@ -8,9 +8,11 @@
 > **Оновлено 2026-05-02.** Sync з реальним станом коду після кількох wave-ів decomposition:
 > Розділ 2 (localStorage burndown) — TODO-allowlist у `eslint.config.js` скорочено з 41 до **17 файлів**
 > (нові хвилі міграцій у `routine`/`finyk`/`onboarding`/`chatActions`/`insights`/`recommendations`).
-> Розділ 4 (великі файли) — у `apps/web/src` залишилось **22 файли >600 LOC** (раніше 24);
+> Розділ 4 (великі файли) — у `apps/web/src` залишилось **21 файл >600 LOC** (раніше 22);
 > декомпозовано `Transactions.tsx`, `HubSearch.tsx`, `Budgets.tsx`, `Overview.tsx`, `DesignShowcase.tsx`,
-> `ActiveWorkoutPanel.tsx`; водночас виросли нові: `VoiceMicButton.tsx` (852), `core/App.tsx` (645).
+> `ActiveWorkoutPanel.tsx`, `core/App.tsx` (645 → 224 LOC, винесено
+> `app/{appPaths,RedirectTo,useAppEffects,StandaloneRoutes,HubHomeView,ActiveModuleView}.{ts,tsx}`);
+> водночас виросли нові: `VoiceMicButton.tsx` (852).
 > Розділ 9 (`any` типи) — production тепер містить **10 файлів** із `: any`
 > (7 у finyk sub-pages + `BudgetsGoalsSection.tsx` + 2 нові у fizruk після decomposition).
 > `no-strict-bypass` — allowlist на 9 production-файлів **обнулено**: усі call-сайти мігровані,
@@ -144,7 +146,18 @@ Codemod ідемпотентний: повторний запуск дасть `
 > `MemoryBankSection.tsx` (242), `SessionsSection.tsx` (134),
 > `ChangePasswordSection.tsx` (122), `DeleteAccountDialog.tsx` (104),
 > `DangerZoneSection.tsx` (97) + barrel re-export `index.ts`.
-> Усі < 600 LOC. Count 22 → 21.
+> Усі < 600 LOC.
+>
+> `core/App.tsx` (раніше 645 рядків) декомпозовано на
+> `core/App.tsx` (224 — outer provider tree + AppInner shell), `app/appPaths.ts`
+> (52 — URL constants + `KNOWN_PATHS`), `app/RedirectTo.tsx` (14),
+> `app/useAppEffects.ts` (153 — idle-prefetch / SW message / cloud-pull /
+> hub-bus / `HUB_OPEN_MODULE_EVENT` listeners), `app/StandaloneRoutes.tsx`
+> (181 — `/sign-in`, `/reset-password`, `/profile`, `/design`, `/pricing`,
+> `/assistant`, `/chat`, `/welcome`, 404 dispatch), `app/HubHomeView.tsx`
+> (141 — no-active-module hub home surface), `app/ActiveModuleView.tsx`
+> (132 — active-module shell з лінивими `FinykApp`/`FizrukApp`/`RoutineApp`/
+> `NutritionApp`). Усі < 200 LOC. Count 22 → 21.
 >
 > **Скоуп таблиці нижче** — лише `apps/web/src`. Mobile (`apps/mobile/src/modules/finyk/pages/Transactions/TransactionsPage.tsx` 1215),
 > packages (`packages/shared/src/lib/assistantCatalogue.ts` 1133, `schemas/api.ts` 986,
@@ -172,7 +185,6 @@ Codemod ідемпотентний: повторний запуск дасть `
 | 660    | `shared/components/ui/Icon.tsx`                       |
 | 651    | `modules/nutrition/NutritionApp.tsx`                  |
 | 647    | `modules/fizruk/pages/Exercise.tsx`                   |
-| 645    | `core/App.tsx`                                        |
 | 612    | `sw.ts`                                               |
 | 602    | `modules/routine/components/RoutineCalendarPanel.tsx` |
 

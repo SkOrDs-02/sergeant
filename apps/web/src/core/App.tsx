@@ -1,86 +1,33 @@
-import { useCallback, useEffect, useState, Suspense } from "react";
-import { lazyDefault, lazyImport } from "./lib/lazyImport";
+import { useCallback, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { cn } from "@shared/lib/cn";
-import { safeWriteLS } from "@shared/lib/storage";
-import { SkipLink } from "@shared/components/ui/SkipLink";
-import ModuleErrorBoundary from "./ModuleErrorBoundary";
+import { ApiClientProvider } from "@sergeant/api-client/react";
+import { apiClient } from "@shared/api";
 import { useDarkMode } from "@shared/hooks/useDarkMode";
 import { ToastProvider, useToast } from "@shared/hooks/useToast";
 import { ToastContainer } from "@shared/components/ui/Toast";
 import { ScreenReaderAnnouncerProvider } from "@shared/components/ui/ScreenReaderAnnouncer";
-import { HUB_OPEN_MODULE_EVENT } from "@shared/lib/hubNav";
-import { onHubBus } from "@shared/lib/hubBus";
-import {
-  REQUEST_PULL_EVENT,
-  emitCloudPullComplete,
-} from "@shared/lib/cloudPullRequest";
-import { ApiClientProvider } from "@sergeant/api-client/react";
-import { apiClient } from "@shared/api";
+import { useKeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
+
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { useCloudSync } from "./cloudSync/useCloudSync";
 import { useSyncErrorToast } from "./cloudSync/hook/useSyncErrorToast";
-import { PageLoader } from "./app/PageLoader";
-import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
-import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
-import { OfflineBanner } from "./app/OfflineBanner";
+import { ActiveModuleView } from "./app/ActiveModuleView";
+import { HubHomeView } from "./app/HubHomeView";
 import { MigrationPrompt } from "./app/MigrationPrompt";
-import { usePwaInstall } from "./app/usePwaInstall";
-import { useIosInstallBanner } from "./app/useIosInstallBanner";
-import { useSWUpdate } from "./app/useSWUpdate";
-import { PWA_ACTION_KEY } from "./app/pwaAction";
-import { HubHeader } from "./app/HubHeader";
-import { HubBottomNav } from "./app/HubBottomNav";
-import { HubMainContent } from "./app/HubMainContent";
-import { HubModals } from "./app/HubModals";
-import { ActiveWorkoutBanner } from "./app/ActiveWorkoutBanner";
-import { WelcomeScreen } from "./app/WelcomeScreen";
-import { shouldShowOnboarding } from "./onboarding/OnboardingWizard";
-import { ModuleFirstRunGoalSheet } from "./onboarding/ModuleFirstRunGoalSheet";
-import { isFirstRealEntryDone } from "./onboarding/vibePicks";
-import { hasAnyRealEntry } from "./onboarding/firstRealEntry";
-import { useHubNavigation } from "./hooks/useHubNavigation";
-import { useHubKeyboardShortcuts } from "./hooks/useHubKeyboardShortcuts";
-import { useHubUIState } from "./hooks/useHubUIState";
-import { usePwaActions, type PwaAction } from "./hooks/usePwaActions";
+import { RedirectTo } from "./app/RedirectTo";
 import { ShellDeepLinkBridge } from "./app/ShellDeepLinkBridge";
+import { renderStandaloneRoute } from "./app/StandaloneRoutes";
+import { useAppEffects } from "./app/useAppEffects";
+import { useIosInstallBanner } from "./app/useIosInstallBanner";
+import { usePwaInstall } from "./app/usePwaInstall";
+import { useSWUpdate } from "./app/useSWUpdate";
+import { SIGN_IN_PATH, WELCOME_PATH } from "./app/appPaths";
+import { useHubKeyboardShortcuts } from "./hooks/useHubKeyboardShortcuts";
+import { useHubNavigation } from "./hooks/useHubNavigation";
+import { useHubUIState } from "./hooks/useHubUIState";
+import { usePwaActions } from "./hooks/usePwaActions";
+import { shouldShowOnboarding } from "./onboarding/OnboardingWizard";
 import { PageviewTracker } from "./observability/PageviewTracker";
-import { HintsOrchestrator } from "./hints/HintsOrchestrator";
-import {
-  KeyboardShortcutsModal,
-  useKeyboardShortcutsModal,
-} from "@shared/components/ui/KeyboardShortcutsModal";
-import { prefetchCriticalModules } from "./lib/useRoutePrefetch";
-
-const AuthPage = lazyImport(() => import("./auth/AuthPage"), "AuthPage");
-const ResetPasswordPage = lazyImport(
-  () => import("./auth/ResetPasswordPage"),
-  "ResetPasswordPage",
-);
-const DesignShowcase = lazyImport(
-  () => import("./DesignShowcase"),
-  "DesignShowcase",
-);
-const AssistantCataloguePage = lazyImport(
-  () => import("./AssistantCataloguePage"),
-  "AssistantCataloguePage",
-);
-const PricingPage = lazyImport(() => import("./PricingPage"), "PricingPage");
-const HubChatPage = lazyImport(
-  () => import("./hub/HubChatPage"),
-  "HubChatPage",
-);
-const FinykApp = lazyDefault(() => import("../modules/finyk/FinykApp"));
-const FizrukApp = lazyDefault(() => import("../modules/fizruk/FizrukApp"));
-const NutritionApp = lazyDefault(
-  () => import("../modules/nutrition/NutritionApp"),
-);
-// Routine раніше імпортувалось синхронно — це зобов'язувало тягнути
-// весь модуль у main chunk навіть для користувачів, що сидять у Фінікові.
-// Ліниве завантаження збігається з іншими модулями (Suspense fallback
-// та ModuleErrorBoundary уже огортають цей слот).
-const RoutineApp = lazyDefault(() => import("../modules/routine/RoutineApp"));
-const NotFoundPage = lazyImport(() => import("./NotFoundPage"), "NotFoundPage");
 
 export default function App() {
   return (
@@ -117,67 +64,10 @@ export default function App() {
   );
 }
 
-// Auth lives at `/sign-in` rather than as an in-page overlay. This keeps
-// the FTUX splash (`/`) as the true cold-start surface — the old
-// `showAuth` boolean meant that a first-time visitor who tapped
-// "Вже маю акаунт" bounced into the auth form with no URL change, so
-// the back button, deep links, and shared URLs all misbehaved. Having
-// a named route also lets us link straight to sign-in from emails,
-// push-notification landing pages, etc.
-const SIGN_IN_PATH = "/sign-in";
-// Assistant capability catalogue (`/help`, Settings link, `?` button in
-// chat input all converge here). URL-addressable so it survives reload
-// and can be deep-linked from notifications / docs.
-const ASSISTANT_PATH = "/assistant";
-// Dedicated AI chat route. Replaces the fullscreen modal that used to
-// slam over the dashboard. Reads `?q=` and `?autoSend=1` so launcher
-// hand-offs (`InlineAiRail`'s "Open in chat" escalation, `ai-handoff`
-// fallback, capability `Try in chat` CTA) and external deep links
-// share one URL shape.
-const CHAT_PATH = "/chat";
-// URL-addressable cold-start splash. Having a real route (not just a
-// modal overlay on `/`) means the splash can be deep-linked, shows the
-// right title in history/back navigation, and — crucially — renders the
-// populated-hub peek behind itself instead of hovering over an empty
-// dashboard.
-const WELCOME_PATH = "/welcome";
-const RESET_PASSWORD_PATH = "/reset-password";
-const PROFILE_PATH = "/profile";
-
-// All URL paths the app handles. Anything outside this set gets a 404
-// instead of silently falling through to the dashboard.
-const KNOWN_PATHS = new Set([
-  "/",
-  SIGN_IN_PATH,
-  RESET_PASSWORD_PATH,
-  PROFILE_PATH,
-  "/design",
-  "/pricing",
-  ASSISTANT_PATH,
-  CHAT_PATH,
-  WELCOME_PATH,
-]);
-
-// Tiny effect-only component so the redirect is a declarative render,
-// not a `navigate()` call in the middle of AppInner — keeps the render
-// phase free of side effects and avoids the React warning.
-function RedirectTo({ to }: { to: string }) {
-  const navigate = useNavigate();
-  useEffect(() => {
-    navigate(to, { replace: true });
-  }, [navigate, to]);
-  return <PageLoader />;
-}
-
 function AppInner() {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const onSignInRoute = location.pathname === SIGN_IN_PATH;
-  const onWelcomeRoute = location.pathname === WELCOME_PATH;
-  const onResetPasswordRoute = location.pathname === RESET_PASSWORD_PATH;
-  const onAssistantRoute = location.pathname === ASSISTANT_PATH;
-  const onChatRoute = location.pathname === CHAT_PATH;
 
   const openAuth = useCallback(() => {
     navigate(SIGN_IN_PATH);
@@ -185,7 +75,7 @@ function AppInner() {
 
   // «Поки що пропустити» на /sign-in:
   // 1. cold-start (онбординг не завершений) → /welcome (replace) — як раніше,
-  //    щоб не «з’їсти» FTUX splash.
+  //    щоб не «з'їсти» FTUX splash.
   // 2. warm-start, юзер прийшов з застосунку (натиснув user-icon у HubHeader,
   //    `location.key !== "default"`) → `navigate(-1)`. Це повертає на ту саму
   //    сторінку, з якої прийшов (наприклад, дашборд або сторінку модуля),
@@ -208,10 +98,15 @@ function AppInner() {
     navigate("/", { replace: true });
   }, [navigate]);
 
+  const onAssistantClose = useCallback(() => {
+    navigate("/");
+  }, [navigate]);
+
   const { activeModule, openModule, goToHub, moduleAnimClass } =
     useHubNavigation();
   const ui = useHubUIState();
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const closeShortcuts = useCallback(() => setShortcutsOpen(false), []);
   const { pwaAction, setPwaAction, clearPwaAction, validActions } =
     usePwaActions(searchParams);
   const { dark, toggle: toggleDark } = useDarkMode();
@@ -224,119 +119,15 @@ function AppInner() {
   const toast = useToast();
   useSyncErrorToast(sync.syncErrorDetail, toast, sync.pushAll);
 
-  // Prefetch critical module chunks once the main thread is free.
-  // Previously hard-coded to `setTimeout(2000)`, which over-paid on fast
-  // devices (idle by 200 ms) and under-paid on slow ones (still hydrating
-  // at 2 s). `requestIdleCallback` lets the browser fire whenever the
-  // initial-render burst is genuinely done; the 4 s `timeout` cap stops
-  // a permanently-busy main thread from starving the prefetch entirely.
-  // Safari ≤ 16 has no `requestIdleCallback`, so we keep the original
-  // 2 s fallback for it.
-  useEffect(() => {
-    if ("requestIdleCallback" in window) {
-      const id = requestIdleCallback(() => prefetchCriticalModules(), {
-        timeout: 4000,
-      });
-      return () => cancelIdleCallback(id);
-    }
-    const timer = setTimeout(() => {
-      prefetchCriticalModules();
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // If the user signs out while the «Профіль» tab is active, bounce the
-  // hub back to the dashboard — the tab itself disappears from the
-  // bottom nav (gated on `user`), and without this the main content
-  // area would render nothing for the `profile` view.
-  useEffect(() => {
-    if (!user && ui.hubView === "profile") {
-      ui.setHubView("dashboard");
-    }
-  }, [user, ui]);
-
-  useEffect(() => {
-    const onMessage = (event: MessageEvent) => {
-      if (event.data?.type === "OPEN_MODULE") {
-        openModule(event.data.module);
-      }
-    };
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.addEventListener("message", onMessage);
-      return () =>
-        navigator.serviceWorker.removeEventListener("message", onMessage);
-    }
-  }, [openModule]);
-
-  // Bridge module-level pull-to-refresh gestures to the App-level
-  // cloud-sync engine. Modules dispatch `REQUEST_PULL_EVENT` and we run
-  // `sync.pullAll()` on their behalf, then emit a completion event so
-  // the requesting component can resolve its spinner. See
-  // `shared/lib/cloudPullRequest.ts` for the contract.
-  useEffect(() => {
-    const handler = async () => {
-      try {
-        await sync.pullAll();
-      } catch {
-        // Errors are surfaced via `useSyncErrorToast`; the requester
-        // only cares that we settled, so swallow here and emit the
-        // completion event regardless.
-      } finally {
-        emitCloudPullComplete();
-      }
-    };
-    window.addEventListener(REQUEST_PULL_EVENT, handler);
-    return () => window.removeEventListener(REQUEST_PULL_EVENT, handler);
-  }, [sync]);
-
-  // Global signal to open chat from any page (e.g. ProfilePage memory
-  // bank, AssistantCataloguePage, hint toasts). Now routes to the
-  // dedicated `/chat` route — replaces the previous fullscreen-modal
-  // overlay. The `?q=` / `?autoSend=` URL shape is the single source of
-  // truth; `HubChatPage` reads those params on mount.
-  useEffect(
-    () =>
-      onHubBus("openChat", (detail) => {
-        const params = new URLSearchParams();
-        if (detail.message) params.set("q", detail.message);
-        if (detail.autoSend) params.set("autoSend", "1");
-        const search = params.toString();
-        navigate(search ? `${CHAT_PATH}?${search}` : CHAT_PATH);
-      }),
-    [navigate],
-  );
-
-  // Global signal to open HubSearch from any surface (used by hint
-  // toasts). Mirrors the typed `openChat` contract on the same bus.
-  const setSearchOpenStable = ui.setSearchOpen;
-  useEffect(
-    () =>
-      onHubBus("openSearch", () => {
-        setSearchOpenStable(true);
-      }),
-    [setSearchOpenStable],
-  );
-
-  useEffect(() => {
-    const onHubOpen = (ev: Event) => {
-      const detail =
-        (
-          ev as CustomEvent<{
-            module?: string;
-            hash?: string;
-            action?: PwaAction;
-          }>
-        ).detail || {};
-      const { module, hash, action } = detail;
-      if (action && validActions.has(action)) {
-        safeWriteLS(PWA_ACTION_KEY, action);
-        setPwaAction(action);
-      }
-      openModule(module, hash ? { hash } : undefined);
-    };
-    window.addEventListener(HUB_OPEN_MODULE_EVENT, onHubOpen);
-    return () => window.removeEventListener(HUB_OPEN_MODULE_EVENT, onHubOpen);
-  }, [openModule, setPwaAction, validActions]);
+  useAppEffects({
+    user,
+    ui,
+    sync,
+    openModule,
+    navigate,
+    setPwaAction,
+    validActions,
+  });
 
   const openSearchFromShortcut = useCallback(() => {
     if (activeModule) {
@@ -362,110 +153,26 @@ function AppInner() {
     );
   }
 
-  // `/sign-in` is a URL-addressable auth entry. Already-authenticated
-  // users landing here (e.g. from a stale link or from tapping "Вже маю
-  // акаунт" after logging in on another tab) get redirected straight
-  // back to `/` — no need to re-prompt for credentials they already
-  // have. We defer the redirect until `authLoading` settles, otherwise
-  // a freshly-mounted session would briefly bounce the user away from
-  // the form before `user` hydrates.
-  if (onSignInRoute) {
-    if (!authLoading && user) {
-      return <RedirectTo to="/" />;
-    }
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <div className="page-enter">
-          <AuthPage onContinueWithoutAccount={leaveAuth} />
-        </div>
-      </Suspense>
-    );
-  }
-
-  // `/reset-password` is the Better Auth magic-link landing page. We
-  // render it unconditionally — even for logged-in users — because the
-  // token may belong to a different account they want to recover.
-  if (onResetPasswordRoute) {
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <div className="page-enter">
-          <ResetPasswordPage />
-        </div>
-      </Suspense>
-    );
-  }
-
-  // `/profile` is a legacy deep-link target — profile actions now live
-  // behind the bottom-nav `Профіль` tab inside the hub. Redirect to
-  // the hub with the `profile` tab pre-activated so old links keep
-  // working (and so the back button still pops the entry off history
-  // instead of bouncing the user back here).
-  if (location.pathname === PROFILE_PATH) {
-    if (authLoading) {
-      return <PageLoader />;
-    }
-    if (!user) {
-      return <RedirectTo to={SIGN_IN_PATH} />;
-    }
-    return <RedirectTo to="/?tab=profile" />;
-  }
-
-  if (location.pathname === "/design") {
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <DesignShowcase />
-      </Suspense>
-    );
-  }
-
-  // `/pricing` — Phase 0 monetization рейки: статична сторінка з тарифами
-  // і waitlist-формою. Анонімна (auth не вимагається), бо основний
-  // траффік — неавторизовані відвідувачі, які ще не зробили sign-up.
-  if (location.pathname === "/pricing") {
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <div className="page-enter">
-          <PricingPage />
-        </div>
-      </Suspense>
-    );
-  }
-
-  if (onAssistantRoute) {
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <div className="page-enter">
-          <AssistantCataloguePage onClose={() => navigate("/")} />
-        </div>
-      </Suspense>
-    );
-  }
-
-  if (onChatRoute) {
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <HubChatPage />
-      </Suspense>
-    );
-  }
-
-  // `/welcome` is the cold-start surface. A returning user who somehow
-  // lands here (stale link, auto-complete, shared URL) bounces back to
-  // the dashboard instead of being asked to re-onboard.
-  if (onWelcomeRoute) {
-    if (!shouldShowOnboarding()) {
-      return <RedirectTo to="/" />;
-    }
-    return <WelcomeScreen onDone={leaveWelcome} onOpenAuth={openAuth} />;
-  }
-
-  // Unknown paths get a 404 instead of silently showing the dashboard.
-  if (!KNOWN_PATHS.has(location.pathname)) {
-    return (
-      <Suspense fallback={<PageLoader />}>
-        <NotFoundPage />
-      </Suspense>
-    );
+  // URL-addressable surfaces that live outside the hub composition
+  // (sign-in, reset-password, /design, /pricing, /assistant, /chat,
+  // /welcome, 404). When `null` is returned, no standalone route
+  // matched and we fall through to the hub home / active-module shell.
+  const standalone = renderStandaloneRoute({
+    pathname: location.pathname,
+    user,
+    authLoading,
+    onLeaveAuth: leaveAuth,
+    onLeaveWelcome: leaveWelcome,
+    onOpenAuth: openAuth,
+    onAssistantClose,
+  });
+  if (standalone) {
+    // `/profile` redirects mid-flight while auth is still loading and
+    // therefore needs the standalone branch to be able to short-circuit
+    // the hub even though it returns a `<PageLoader />`. The function
+    // returns `null` (and we fall through) only when no surface owns
+    // the current path.
+    return <>{standalone}</>;
   }
 
   // First-time visitors at `/` get redirected to `/welcome` so the
@@ -476,170 +183,42 @@ function AppInner() {
   }
 
   if (!activeModule) {
-    // FTUX session = the window between the splash and the user's first
-    // real (non-demo) entry. During this window we intentionally
-    // suppress PWA install / iOS install / SW update banners and other
-    // noisy chrome so the one signal on screen is the FirstActionRow.
-    // The update banner comes back the moment a real entry is logged.
-    // Important: after the onboarding route is finished, the hub must still
-    // allow the user to sign in. Otherwise they can land on the dashboard
-    // (no entries yet) with no discoverable auth entry point.
-    const hasFirstRealEntry = hasAnyRealEntry();
-    const inFtuxSession = !hasFirstRealEntry && !isFirstRealEntryDone();
     return (
-      <div className="h-dvh bg-bg flex flex-col overflow-hidden safe-area-pt page-enter">
-        <SkipLink />
-        <HintsOrchestrator
-          inFtuxSession={inFtuxSession}
-          hasFirstRealEntry={hasFirstRealEntry}
-        />
-        <OfflineBanner />
-
-        <HubHeader
-          onOpenSearch={() => ui.setSearchOpen(true)}
-          user={user}
-          authLoading={authLoading}
-          onShowAuth={openAuth}
-          dark={dark}
-          onToggleDark={toggleDark}
-          hideAuthButton={shouldShowOnboarding() && !user && inFtuxSession}
-        />
-
-        <HubMainContent
-          updateAvailable={updateAvailable}
-          onApplyUpdate={applyUpdate}
-          canInstall={canInstall}
-          onInstall={install}
-          onDismissInstall={dismiss}
-          onOpenModule={openModule}
-          iosVisible={iosVisible}
-          onDismissIos={iosDismiss}
-          hubView={ui.hubView}
-          syncing={sync.syncing}
-          onSync={sync.pushAll}
-          onPull={sync.pullAll}
-          user={user}
-          onShowAuth={openAuth}
-          inFtuxSession={inFtuxSession}
-        />
-
-        <HubBottomNav
-          hubView={ui.hubView}
-          onChange={ui.setHubView}
-          // «Звіти» — пустий екран без даних, тому ховаємо tab до
-          // першого реального запису. Якщо юзер уже обрав «Звіти» і
-          // потім стер дані — повертаємо його на дашборд, щоб не
-          // лишався на неіснуючому табі.
-          showReports={hasAnyRealEntry()}
-          showProfile={!!user}
-          onShowAuth={!user ? openAuth : undefined}
-        />
-
-        {/* Persistent shortcut back to an in-progress Fizruk workout.
-            Hidden during FTUX so the splash stays single-CTA; otherwise
-            visible whenever `fizruk_active_workout_id_v1` is set, so the
-            user never loses the thread after jumping to another tab. */}
-        <ActiveWorkoutBanner hidden={inFtuxSession} />
-
-        <HubModals
-          searchOpen={ui.searchOpen}
-          onCloseSearch={ui.closeSearch}
-          onOpenModule={openModule}
-        />
-        <KeyboardShortcutsModal
-          open={shortcutsOpen}
-          onClose={() => setShortcutsOpen(false)}
-        />
-      </div>
+      <HubHomeView
+        ui={ui}
+        user={user}
+        authLoading={authLoading}
+        onOpenAuth={openAuth}
+        dark={dark}
+        onToggleDark={toggleDark}
+        canInstall={canInstall}
+        onInstall={install}
+        onDismissInstall={dismiss}
+        iosVisible={iosVisible}
+        onDismissIos={iosDismiss}
+        updateAvailable={updateAvailable}
+        onApplyUpdate={applyUpdate}
+        syncing={sync.syncing}
+        onSync={sync.pushAll}
+        onPull={sync.pullAll}
+        openModule={openModule}
+        shortcutsOpen={shortcutsOpen}
+        onCloseShortcuts={closeShortcuts}
+      />
     );
   }
 
   return (
-    <div className="h-dvh flex flex-col bg-bg text-text overflow-hidden">
-      <SkipLink />
-      <OfflineBanner />
-      {/* Persistent "resume workout" shortcut — rendered in Finyk,
-          Routine, Nutrition (but not inside Fizruk itself, where the
-          in-module ActiveWorkoutPanel is already the primary surface).
-          This is the "at transitions" part of the persistent-CTA
-          requirement: switching modules mid-set must not bury the
-          workout. */}
-      {activeModule !== "fizruk" && <ActiveWorkoutBanner />}
-      <SuspenseWithMinDelay
-        fallback={
-          <ModulePageLoader
-            module={
-              activeModule as "finyk" | "fizruk" | "routine" | "nutrition"
-            }
-          />
-        }
-      >
-        {/* Skip-link target. We render `<main>` by default so every screen
-            exposes a `main` landmark for AT users. One exception: the
-            Routine module renders its own `<main id="routine-main">`
-            internally (src/modules/routine/RoutineApp.tsx) — in that case
-            we fall back to `<div>` here so the DOM never has two visible
-            `<main>` elements (HTML spec violation, confuses AT landmark
-            navigation). Either way, the SkipLink's target contract
-            (`id="main"` + focusability) is preserved. */}
-        {(() => {
-          const Tag = activeModule === "routine" ? "div" : "main";
-          return (
-            <Tag
-              key={activeModule}
-              id="main"
-              tabIndex={-1}
-              className={cn(
-                moduleAnimClass,
-                "h-full flex flex-col outline-none",
-              )}
-            >
-              <ModuleErrorBoundary onBackToHub={goToHub}>
-                {activeModule === "finyk" && (
-                  <FinykApp
-                    onBackToHub={goToHub}
-                    pwaAction={pwaAction}
-                    onPwaActionConsumed={clearPwaAction}
-                  />
-                )}
-                {activeModule === "fizruk" && (
-                  <FizrukApp
-                    onBackToHub={goToHub}
-                    onOpenModule={openModule}
-                    pwaAction={pwaAction}
-                    onPwaActionConsumed={clearPwaAction}
-                  />
-                )}
-                {activeModule === "routine" && (
-                  <RoutineApp
-                    onBackToHub={goToHub}
-                    onOpenModule={openModule}
-                    pwaAction={pwaAction}
-                    onPwaActionConsumed={clearPwaAction}
-                  />
-                )}
-                {activeModule === "nutrition" && (
-                  <NutritionApp
-                    onBackToHub={goToHub}
-                    pwaAction={pwaAction}
-                    onPwaActionConsumed={clearPwaAction}
-                  />
-                )}
-              </ModuleErrorBoundary>
-            </Tag>
-          );
-        })()}
-      </SuspenseWithMinDelay>
-      <HubModals
-        searchOpen={ui.searchOpen}
-        onCloseSearch={ui.closeSearch}
-        onOpenModule={openModule}
-      />
-      <KeyboardShortcutsModal
-        open={keyboardShortcuts.open}
-        onClose={keyboardShortcuts.onClose}
-      />
-      <ModuleFirstRunGoalSheet moduleId={activeModule} />
-    </div>
+    <ActiveModuleView
+      activeModule={activeModule}
+      goToHub={goToHub}
+      openModule={openModule}
+      moduleAnimClass={moduleAnimClass}
+      ui={ui}
+      pwaAction={pwaAction}
+      clearPwaAction={clearPwaAction}
+      shortcutsOpen={keyboardShortcuts.open}
+      onCloseShortcuts={keyboardShortcuts.onClose}
+    />
   );
 }
