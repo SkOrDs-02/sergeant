@@ -3,16 +3,22 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/cn";
+import { safeReadStringLS } from "@shared/lib/storage";
 import {
+  DASHBOARD_DENSITY_EVENT,
+  DEFAULT_DASHBOARD_DENSITY,
+  STORAGE_KEYS,
   countRealEntries,
   getActiveModules,
   getActiveNudge,
   getHideInactiveModules,
   getVibePicks,
   isActiveModule,
+  normalizeDashboardDensity,
   recordLastActiveDate,
   setHideInactiveModules,
   shouldShowReengagement,
+  type DashboardDensity,
   type User,
 } from "@sergeant/shared";
 import { openHubModule, openHubModuleWithAction } from "@shared/lib/hubNav";
@@ -82,6 +88,60 @@ export {
   resetDashboardOrder,
 } from "./dashboard/dashboardStore";
 
+/**
+ * Tailwind class lookup for dashboard density. Static literals (not template
+ * strings) so the JIT picks them up at build time.
+ *
+ * Spacing comes from `DASHBOARD_DENSITY_SPACING` in `@sergeant/shared`; the
+ * values are mirrored here (compact: 2/3, comfortable: 3/4, spacious: 4/5)
+ * because Tailwind cannot consume runtime numbers — only literal class names.
+ */
+const DENSITY_OUTER_SPACE: Record<DashboardDensity, string> = {
+  compact: "space-y-3",
+  comfortable: "space-y-4",
+  spacious: "space-y-5",
+};
+const DENSITY_BENTO_GAP: Record<DashboardDensity, string> = {
+  compact: "gap-2",
+  comfortable: "gap-3",
+  spacious: "gap-4",
+};
+
+/**
+ * Reactive read of the user's dashboard-density preference.
+ *
+ * Same-window `localStorage` writes do NOT fire `storage`, so the picker in
+ * Settings → Дашборд dispatches a `DASHBOARD_DENSITY_EVENT` we listen to
+ * here. Cross-tab writes are still handled via the standard `storage` event.
+ */
+function useDashboardDensity(): DashboardDensity {
+  const [density, setDensity] = useState<DashboardDensity>(() => {
+    const raw = safeReadStringLS(STORAGE_KEYS.DASHBOARD_DENSITY);
+    return raw === null
+      ? DEFAULT_DASHBOARD_DENSITY
+      : normalizeDashboardDensity(raw);
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onCustom = (e: Event) => {
+      const detail = (e as CustomEvent<unknown>).detail;
+      setDensity(normalizeDashboardDensity(detail));
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEYS.DASHBOARD_DENSITY) {
+        setDensity(normalizeDashboardDensity(e.newValue));
+      }
+    };
+    window.addEventListener(DASHBOARD_DENSITY_EVENT, onCustom);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(DASHBOARD_DENSITY_EVENT, onCustom);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
+  return density;
+}
+
 // Ukrainian 1 / 2-4 / 5+ plural. Inline because this file is the only
 // current consumer; `AssistantCataloguePage` has its own copy with a
 // slightly different (tuple-based) signature. Kept intentionally small;
@@ -106,6 +166,7 @@ export function HubDashboard({
   onShowAuth,
 }: HubDashboardProps) {
   const [order, setOrder] = useState(loadDashboardOrder);
+  const density = useDashboardDensity();
   useMondayAutoDigest();
 
   const [firstActionVisible, setFirstActionVisible] = useState(() =>
@@ -396,7 +457,7 @@ export function HubDashboard({
   // of fades on slower devices and shifted whenever a section toggled.
   // Stable group indices keep the reveal under ~250ms and predictable.
   return (
-    <div className="space-y-4">
+    <div className={DENSITY_OUTER_SPACE[density]}>
       {/* GROUP 0 — Hero block (re-engagement OR streak + hero + checklist) */}
       <StaggerChild index={0}>
         <div className="space-y-4">
@@ -497,7 +558,12 @@ export function HubDashboard({
               items={displayOrder}
               strategy={rectSortingStrategy}
             >
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div
+                className={cn(
+                  "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
+                  DENSITY_BENTO_GAP[density],
+                )}
+              >
                 {displayOrder.map((id) => (
                   <SortableCard
                     key={id}

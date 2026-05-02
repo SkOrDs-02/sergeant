@@ -10,6 +10,7 @@ import {
   DASHBOARD_DENSITIES,
   DASHBOARD_DENSITY_LABELS,
   DASHBOARD_DENSITY_DESCRIPTIONS,
+  DASHBOARD_DENSITY_EVENT,
   DEFAULT_DASHBOARD_DENSITY,
   normalizeDashboardDensity,
   STORAGE_KEYS,
@@ -101,6 +102,11 @@ export function DashboardSection() {
   const handleDensityChange = useCallback((next: DashboardDensity) => {
     setDensityState(next);
     safeWriteLS(STORAGE_KEYS.DASHBOARD_DENSITY, next);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent(DASHBOARD_DENSITY_EVENT, { detail: next }),
+      );
+    }
   }, []);
   const [order, setOrder] = useState<ModuleId[]>(
     () => loadDashboardOrder() as ModuleId[],
