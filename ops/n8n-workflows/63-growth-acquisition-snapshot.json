@@ -103,7 +103,8 @@
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "={{ $('Build acquisition rows').item.json.errorMsg ? `⚠️ *Acquisition — ${$('Build acquisition rows').item.json.snapshotDate}*\n\n_PostHog API error:_ \\`${$('Build acquisition rows').item.json.errorMsg}\\`\n\nПеревірте \\`POSTHOG_API_KEY\\` / \\`POSTHOG_PROJECT_ID\\` / \\`POSTHOG_HOST\\` на n8n Railway.` : `📥 *Acquisition — ${$('Build acquisition rows').item.json.snapshotDate}*\n\nTotal signups: \\`${$('Build acquisition rows').item.json.summary.total}\\` із \\`${$('Build acquisition rows').item.json.summary.channelCount}\\` каналів\n\nTop:\n\\`\\`\\`\n${$('Build acquisition rows').item.json.summary.top}\n\\`\\`\\`` }}",
         "additionalFields": {
-          "parse_mode": "Markdown"
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_GROWTH }}"
         }
       },
       "id": "telegram-acq",

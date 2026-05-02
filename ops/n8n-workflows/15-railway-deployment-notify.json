@@ -28,7 +28,8 @@
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "={{ $json.ok ? '✅' : '❌' }} *Railway Deploy {{ $json.ok ? 'Success' : 'Failed' }}*\n\n🔧 Service: `{{ $json.service }}` ({{ $json.env }})\n🌿 Branch: `{{ $json.branch }}`\n📝 `{{ $json.commitHash }}` — {{ $json.commitMsg }}\n⏱ Duration: {{ $json.duration }}\n{{ $json.url ? '🔗 ' + $json.url : '' }}",
         "additionalFields": {
-          "parse_mode": "Markdown"
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $json.ok ? $env.TELEGRAM_TOPIC_OPS : $env.TELEGRAM_TOPIC_INCIDENTS }}"
         }
       },
       "id": "telegram-deploy",

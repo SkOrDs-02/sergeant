@@ -210,17 +210,24 @@ railway up --detach
 
 Додай у n8n → Settings → Environment Variables (або на Railway service «n8n» як env vars):
 
-| Змінна                   | Використовується в | Де взяти                                                                                           |
-| ------------------------ | ------------------ | -------------------------------------------------------------------------------------------------- |
-| `API_SECRET`             | 07, 09, 10         | `.env` сервера (той самий `API_SECRET`)                                                            |
-| `INTERNAL_API_KEY`       | 60, 63             | `.env` сервера (той самий `INTERNAL_API_KEY`, у самого Sergeant API)                               |
-| `PUBLIC_API_BASE_URL`    | 07, 09, 10, 60, 63 | `https://your-api.railway.app` (в проді: `https://sergeant-production.up.railway.app`)             |
-| `POSTHOG_API_KEY`        | 16, 60, 63         | PostHog → Settings → **Personal** API Keys (префікс `phx_…`, scopes: `project:read`, `query:read`) |
-| `POSTHOG_PROJECT_ID`     | 16, 60, 63         | PostHog → Settings → Project → ID у URL                                                            |
-| `POSTHOG_HOST`           | 16, 60, 63         | `https://eu.i.posthog.com` (EU instance) або `https://us.i.posthog.com` (US)                       |
-| `GITHUB_PAT`             | 17, 18             | GitHub → Settings → Developer settings → PAT (classic), scope: `repo`                              |
-| `TELEGRAM_ALERT_CHAT_ID` | більшість          | Supergroup ID (від’ємне число з `getUpdates`)                                                      |
-| `OPS_ALERT_EMAIL`        | 98, 99             | Email для P0 fallback (Resend `From: ops@…`)                                                       |
+| Змінна                       | Використовується в       | Де взяти                                                                                           |
+| ---------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------- |
+| `API_SECRET`                 | 07, 09, 10               | `.env` сервера (той самий `API_SECRET`)                                                            |
+| `INTERNAL_API_KEY`           | 60, 63                   | `.env` сервера (той самий `INTERNAL_API_KEY`, у самого Sergeant API)                               |
+| `PUBLIC_API_BASE_URL`        | 07, 09, 10, 60, 63       | `https://your-api.railway.app` (в проді: `https://sergeant-production.up.railway.app`)             |
+| `POSTHOG_API_KEY`            | 16, 60, 63               | PostHog → Settings → **Personal** API Keys (префікс `phx_…`, scopes: `project:read`, `query:read`) |
+| `POSTHOG_PROJECT_ID`         | 16, 60, 63               | PostHog → Settings → Project → ID у URL                                                            |
+| `POSTHOG_HOST`               | 16, 60, 63               | `https://eu.i.posthog.com` (EU instance) або `https://us.i.posthog.com` (US)                       |
+| `GITHUB_PAT`                 | 17, 18                   | GitHub → Settings → Developer settings → PAT (classic), scope: `repo`                              |
+| `TELEGRAM_ALERT_CHAT_ID`     | більшість                | Supergroup ID (від’ємне число з `getUpdates`, формат `-100…`)                                      |
+| `TELEGRAM_TOPIC_INCIDENTS`   | 02-fail, 03, 04-fail, 18 | `message_thread_id` топіка `🔴 Інциденти` у Sergeant Ops                                           |
+| `TELEGRAM_TOPIC_REVENUE`     | 01, 02, 06               | `message_thread_id` топіка `💰 Виторг`                                                             |
+| `TELEGRAM_TOPIC_META`        | 98, 99                   | `message_thread_id` топіка `⚙️ Контрол-план`                                                       |
+| `TELEGRAM_TOPIC_OPS`         | 04-ok, 10, 15-ok, 19     | `message_thread_id` топіка `🟡 Опс`                                                                |
+| `TELEGRAM_TOPIC_ENGINEERING` | 05, 17                   | `message_thread_id` топіка `🛠️ Інженерія`                                                          |
+| `TELEGRAM_TOPIC_GROWTH`      | 16, 60, 63               | `message_thread_id` топіка `🚀 Зростання`                                                          |
+| `TELEGRAM_TOPIC_DIGEST`      | 08                       | `message_thread_id` топіка `📊 Дайджести`                                                          |
+| `OPS_ALERT_EMAIL`            | 98, 99                   | Email для P0 fallback (Resend `From: ops@…`)                                                       |
 
 > **Увага:** в n8n env vars ключ фігурує як `POSTHOG_API_KEY` (не `POSTHOG_PERSONAL_API_KEY`). `POSTHOG_PERSONAL_API_KEY` — це GitHub Actions secret для `posthog-release-annotation.yml` (інший контекст). Саме ключ — однаковий (`phx_…`), просто різні імена змінних в різних рантаймах.
 

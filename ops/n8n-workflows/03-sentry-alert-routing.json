@@ -64,7 +64,8 @@
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=🚨 *FATAL — Sentry*\n\n*{{ $json.body.data.issue.title }}*\nProject: {{ $json.body.data.issue.project.name }}\nEvents: {{ $json.body.data.issue.count }}\n[Open in Sentry]({{ $json.body.data.issue.permalink }})",
         "additionalFields": {
-          "parse_mode": "Markdown"
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_INCIDENTS }}"
         }
       },
       "id": "telegram-fatal",
@@ -84,7 +85,8 @@
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=⚠️ *Sentry — {{ $json.body.data.issue.level }}*\n\n*{{ $json.body.data.issue.title }}*\nProject: {{ $json.body.data.issue.project.name }}\nEvents: {{ $json.body.data.issue.count }}\n[Open in Sentry]({{ $json.body.data.issue.permalink }})",
         "additionalFields": {
-          "parse_mode": "Markdown"
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_INCIDENTS }}"
         }
       },
       "id": "telegram-warning",

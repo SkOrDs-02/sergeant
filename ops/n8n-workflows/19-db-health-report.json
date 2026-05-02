@@ -100,7 +100,8 @@
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "={{ $json.text }}",
         "additionalFields": {
-          "parse_mode": "Markdown"
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_OPS }}"
         }
       },
       "id": "telegram-db",

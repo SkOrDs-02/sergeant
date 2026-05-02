@@ -108,7 +108,8 @@
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=📅 *Нагадування по боргах*\n\n{{ $json.lines }}\n\n_{{ $json.count }} нагадувань надіслано_",
         "additionalFields": {
-          "parse_mode": "Markdown"
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_OPS }}"
         }
       },
       "id": "telegram-notify",

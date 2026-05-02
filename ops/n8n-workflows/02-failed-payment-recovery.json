@@ -43,7 +43,8 @@
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=⚠️ *Failed payment*\n\nCustomer: {{ $json.body.data.object.customer_email || 'N/A' }}\nAmount: ₴{{ Math.round($json.body.data.object.amount_due / 100) }}\nAttempt: {{ $json.body.data.object.attempt_count }}/4",
         "additionalFields": {
-          "parse_mode": "Markdown"
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_REVENUE }}"
         }
       },
       "id": "telegram-alert",

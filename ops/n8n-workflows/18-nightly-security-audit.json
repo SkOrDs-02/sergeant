@@ -97,7 +97,8 @@
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=🔐 *Nightly Security Audit — {{ $json.status.toUpperCase() }}*\n\n⚠️ Перевір звіт — можливі CVE або вразливості!\n\n📋 Запуск: {{ $json.createdAt }}\n🔗 [GitHub Actions →]({{ $json.runUrl }})",
         "additionalFields": {
-          "parse_mode": "Markdown"
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_INCIDENTS }}"
         }
       },
       "id": "telegram-audit",

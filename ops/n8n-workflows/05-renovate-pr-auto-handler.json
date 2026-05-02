@@ -101,7 +101,8 @@
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=📦 *Renovate PR (non-patch)*\n\n[#{{ $json.body.pull_request.number }}]({{ $json.body.pull_request.html_url }}) — {{ $json.body.pull_request.title }}\n\nNeeds manual review.",
         "additionalFields": {
-          "parse_mode": "Markdown"
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_ENGINEERING }}"
         }
       },
       "id": "telegram-review",

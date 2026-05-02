@@ -104,7 +104,8 @@
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "={{ $json.errorMsg ? `⚠️ *Тижневий фінансовий дайджест — fallback*\n\n_AI недоступний:_ \\`${$json.errorMsg}\\`\n\n${$json.text}\n\n_Sergeant · ${new Date().toLocaleDateString('uk-UA')}_` : `📊 *Тижневий фінансовий дайджест*\n\n${$json.text}\n\n_Sergeant · ${new Date().toLocaleDateString('uk-UA')}_` }}",
         "additionalFields": {
-          "parse_mode": "Markdown"
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_DIGEST }}"
         }
       },
       "id": "telegram-digest",

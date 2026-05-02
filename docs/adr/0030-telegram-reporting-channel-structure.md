@@ -148,18 +148,32 @@ PII у P0 alerts, > 5 одночасних bot commands, > 30 workflow × > 8
 
 ## Implementation checklist
 
-- [x] Створити Telegram supergroup `Sergeant Ops` у Forum mode.
-- [x] Додати `Sergeant_alert_bot` як admin (post + manage topics).
-- [x] Створити 8 канонічних топіків, прив'язати топік-id до n8n
-      credentials (`Sergeant Ops Topic IDs` JSON у credentials).
+- [x] Створити Telegram supergroup `Sergeant Ops` у Forum mode
+      (chat id `-1003924852082`, _live since 2026-05-02_).
+- [x] Додати `Sergeant_alert_bot` як admin (post + manage topics + pin).
+- [x] Створити 7 канонічних топіків + закріпити в кожному pinned-message
+      з описом області відповідальності (Ukrainian UI labels:
+      `🔴 Інциденти`, `💰 Виторг`, `⚙️ Контрол-план`, `🟡 Опс`,
+      `🛠️ Інженерія`, `🚀 Зростання`, `📊 Дайджести`).
+- [x] Прокинути 7 `TELEGRAM_TOPIC_*` env vars на Railway n8n service +
+      оновити `ops/.env.ops.example` + `ops/README.md`.
+- [x] Оновити всі 17 workflow JSON-ів — додати
+      `additionalFields.message_thread_id =
+"={{ $env.TELEGRAM_TOPIC_<NAME> }}"` per
+      [`REPORTING-MATRIX.md`](../../ops/n8n-workflows/REPORTING-MATRIX.md).
+      WF-15 використовує тернарне routing на `$json.ok`.
+- [x] Розширити `manifest.json` полями `telegramTopic` + `audienceTier`
+      (machine-readable mapping). Schema cross-check у
+      `pnpm ops:n8n:validate` — наступний крок.
 - [x] Документувати layout у `REPORTING-MATRIX.md`.
 - [x] Документувати архітектурне обґрунтування у
       `docs/observability/telegram-control-plane.md`.
 - [x] Прийняти цей ADR.
-- [ ] (Roadmap) Розширити `manifest.schema.json` полями
-      `telegramTopic` + `audienceTier`.
-- [ ] (Roadmap) Розширити `pnpm ops:n8n:validate` cross-check matrix
-      vs manifest.
+- [ ] (Roadmap) Розширити `manifest.schema.json` schema for
+      `telegramTopic` + `audienceTier` (поки valid as additional fields,
+      але без явного enum-у).
+- [ ] (Roadmap) Розширити `pnpm ops:n8n:validate` cross-check
+      matrix vs manifest vs JSON expressions.
 - [ ] (Roadmap) Inline-button "Acknowledge" у WF-98 dead-letter
       повідомленнях → bot endpoint → `n8n_errors.acknowledged_at`.
 

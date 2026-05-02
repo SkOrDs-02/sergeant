@@ -23,7 +23,8 @@
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=✅ n8n alive — {{ new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv', hour12: false }) }}",
         "additionalFields": {
-          "disable_notification": true
+          "disable_notification": true,
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_META }}"
         }
       },
       "id": "telegram-heartbeat",

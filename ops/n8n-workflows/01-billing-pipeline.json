@@ -66,7 +66,8 @@
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=🎉 *Нова Pro-підписка!*\n\nEmail: {{ $json.body.data.object.customer_email || 'N/A' }}\nПлан: {{ $json.body.data.object.items.data[0].price.recurring.interval }}ly\nСума: ₴{{ Math.round($json.body.data.object.items.data[0].price.unit_amount / 100) }}",
         "additionalFields": {
-          "parse_mode": "Markdown"
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_REVENUE }}"
         }
       },
       "id": "telegram-notify",

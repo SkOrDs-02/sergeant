@@ -97,7 +97,8 @@
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=⏰ *Stale PRs (>48h без активності)*\n\n{{ $json.text }}\n\n_{{ $json.count }} PR(и) потребують уваги_",
         "additionalFields": {
-          "parse_mode": "Markdown"
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_ENGINEERING }}"
         }
       },
       "id": "telegram-stale",

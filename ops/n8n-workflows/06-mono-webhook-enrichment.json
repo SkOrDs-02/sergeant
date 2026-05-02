@@ -106,7 +106,8 @@
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=💸 *Budget alert*\n\nMonthly spending: ₴{{ Math.round($json.monthly_spent) }}\nThreshold: ₴15,000\n\nLatest: {{ $('Mono Webhook').item.json.body.data.description }} (₴{{ Math.abs($('Mono Webhook').item.json.body.data.amount / 100) }})\nAI category: *{{ $('Parse AI response').item.json.category }}* ({{ Math.round($('Parse AI response').item.json.confidence * 100) }}%)",
         "additionalFields": {
-          "parse_mode": "Markdown"
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_REVENUE }}"
         }
       },
       "id": "telegram-budget",

@@ -91,7 +91,8 @@
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=✅ *Backup OK* ({{ new Date().toISOString().slice(0,10) }})\n\nUsers: {{ $json.user_count }}\nTransactions: {{ $json.tx_count }}",
         "additionalFields": {
-          "parse_mode": "Markdown"
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_OPS }}"
         }
       },
       "id": "telegram-ok",
@@ -111,7 +112,8 @@
         "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
         "text": "=🚨 *BACKUP FAILED* ({{ new Date().toISOString().slice(0,10) }})\n\nSanity check returned 0 users. Investigate immediately!",
         "additionalFields": {
-          "parse_mode": "Markdown"
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_INCIDENTS }}"
         }
       },
       "id": "telegram-fail",
