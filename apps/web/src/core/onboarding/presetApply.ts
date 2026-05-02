@@ -1,3 +1,5 @@
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+
 // Writes a single preset entry directly into the matching module's
 // localStorage key. This is how the FTUX PresetSheet turns "tap a tile"
 // into a real (non-demo) entry without forcing the user into a module's
@@ -27,26 +29,6 @@ const FIZRUK_WORKOUTS_KEY = "fizruk_workouts_v1";
 const NUTRITION_LOG_KEY = "nutrition_log_v1";
 const NUTRITION_LOG_EVENT = "nutrition-log-storage";
 
-function safeReadJSON(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw);
-    return parsed == null ? fallback : parsed;
-  } catch {
-    return fallback;
-  }
-}
-
-function safeWriteJSON(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 function dispatch(eventName) {
   try {
     window.dispatchEvent(new CustomEvent(eventName));
@@ -69,7 +51,7 @@ function toLocalISODate(d = new Date()) {
 // ─── Finyk ───────────────────────────────────────────────────────────────
 
 function applyFinykPreset(preset) {
-  const existing = safeReadJSON(FINYK_MANUAL_EXPENSES_KEY, []);
+  const existing = safeReadLS(FINYK_MANUAL_EXPENSES_KEY, []);
   const list = Array.isArray(existing) ? existing : [];
   const entry = {
     id: uid("tx"),
@@ -79,20 +61,18 @@ function applyFinykPreset(preset) {
     amount: preset.amount,
     category: preset.category,
   };
-  safeWriteJSON(FINYK_MANUAL_EXPENSES_KEY, [entry, ...list]);
+  safeWriteLS(FINYK_MANUAL_EXPENSES_KEY, [entry, ...list]);
   // Keep the user out of the Monobank login gate — mirrors what
   // `enableFinykManualOnly()` does on the «Далі без банку» path.
-  try {
-    localStorage.setItem(FINYK_MANUAL_ONLY_KEY, "1");
-  } catch {
-    /* noop */
-  }
+  // `safeWriteLS` keeps raw strings as-is (no JSON.stringify) so the
+  // stored value matches the legacy `localStorage.setItem(_, "1")` shape.
+  safeWriteLS(FINYK_MANUAL_ONLY_KEY, "1");
 }
 
 // ─── Routine ─────────────────────────────────────────────────────────────
 
 function applyRoutinePreset(preset) {
-  const state = safeReadJSON(ROUTINE_STATE_KEY, null);
+  const state = safeReadLS(ROUTINE_STATE_KEY, null);
   const today = toLocalISODate();
   const habit = {
     id: uid("hab"),
@@ -122,7 +102,7 @@ function applyRoutinePreset(preset) {
     ? [...base.habitOrder, habit.id]
     : [habit.id];
 
-  safeWriteJSON(ROUTINE_STATE_KEY, {
+  safeWriteLS(ROUTINE_STATE_KEY, {
     schemaVersion: 3,
     prefs: base.prefs || {
       showFizrukInCalendar: true,
@@ -143,7 +123,7 @@ function applyRoutinePreset(preset) {
 // ─── Fizruk ──────────────────────────────────────────────────────────────
 
 function applyFizrukPreset(preset) {
-  const existing = safeReadJSON(FIZRUK_WORKOUTS_KEY, null);
+  const existing = safeReadLS(FIZRUK_WORKOUTS_KEY, null);
   const existingList = Array.isArray(existing)
     ? existing
     : existing && Array.isArray(existing.workouts)
@@ -160,7 +140,7 @@ function applyFizrukPreset(preset) {
     durationSec: preset.durationMin * 60,
     exercises: [],
   };
-  safeWriteJSON(FIZRUK_WORKOUTS_KEY, {
+  safeWriteLS(FIZRUK_WORKOUTS_KEY, {
     schemaVersion: 1,
     workouts: [workout, ...existingList],
   });
@@ -169,7 +149,7 @@ function applyFizrukPreset(preset) {
 // ─── Nutrition ───────────────────────────────────────────────────────────
 
 function applyNutritionPreset(preset) {
-  const existing = safeReadJSON(NUTRITION_LOG_KEY, null);
+  const existing = safeReadLS(NUTRITION_LOG_KEY, null);
   const base =
     existing && typeof existing === "object" && !Array.isArray(existing)
       ? { ...existing }
@@ -201,7 +181,7 @@ function applyNutritionPreset(preset) {
   });
   day.meals = meals;
   base[today] = day;
-  safeWriteJSON(NUTRITION_LOG_KEY, base);
+  safeWriteLS(NUTRITION_LOG_KEY, base);
   dispatch(NUTRITION_LOG_EVENT);
 }
 

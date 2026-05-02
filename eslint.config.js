@@ -340,7 +340,6 @@ export default [
 
       "apps/web/src/core/hub/hubBackup.ts",
       "apps/web/src/core/hub/hubSearchEngine.ts",
-      "apps/web/src/core/onboarding/presetApply.ts",
       "apps/web/src/core/insights/useWeeklyDigest.ts",
       // useWorkouts.ts: intentional direct-storage access — dispatches
       // FIZRUK_WORKOUTS_STORAGE_ERROR custom event on quota failure so the
