@@ -62,6 +62,13 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
       "Вмикає dev-only панель у блоці «Акаунт» для зняття замірів decision-gate. Без флагу панель не монтує SPIKE-бібліотеку (нульовий runtime-cost).",
     defaultValue: false,
   },
+  {
+    id: "feature.routine.sqlite_v2.dual_write",
+    label: "Routine — dual-write MMKV↔SQLite",
+    description:
+      "Кожен write у MMKV Рутини додатково мирорить у локальну SQLite (`routine_entries`). Reads ще беруться з MMKV. Stage 4 PR #024 storage-roadmap. Best-effort: помилка SQLite-запису не ламає MMKV. Default: off.",
+    defaultValue: false,
+  },
 ] as const;
 
 const DEFAULTS: FlagValues = Object.freeze(

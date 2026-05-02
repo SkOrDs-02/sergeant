@@ -327,6 +327,88 @@ export const openClawTools: Tool[] = [
       required: ["topic", "context", "decision", "rationale"],
     },
   },
+  // ──── ADR-0032: tools ported from Sergeant Console (ADR-0027) agents ────
+  // Goal: OpenClaw becomes the single founder surface — chat + commands +
+  // metrics — without spinning up a separate `@sergeant_console_bot`.
+  {
+    name: "get_stripe_metrics",
+    description:
+      "Fetch Stripe billing metrics over the last N days: successful charges, failed charges, gross UAH amount. Fail-soft if STRIPE_SECRET_KEY is not configured.",
+    input_schema: {
+      type: "object",
+      properties: {
+        days: {
+          type: "number",
+          description: "Lookback window in days (default 7, max 90).",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "get_sentry_issues",
+    description:
+      "List unresolved Sentry issues filtered by severity. Fail-soft if SENTRY_AUTH_TOKEN is not configured.",
+    input_schema: {
+      type: "object",
+      properties: {
+        level: {
+          type: "string",
+          enum: ["fatal", "error", "warning"],
+          description: "Minimum severity (default 'error').",
+        },
+        limit: {
+          type: "number",
+          description: "Max issues (default 10, max 50).",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "get_server_stats",
+    description:
+      "Read `/healthz` of the Sergeant API server (DB, Redis, queue depth aggregate).",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "get_posthog_stats",
+    description:
+      "Fetch a PostHog pageview trend over the last N days. Fail-soft if POSTHOG_API_KEY/POSTHOG_PROJECT_ID are not configured.",
+    input_schema: {
+      type: "object",
+      properties: {
+        days: {
+          type: "number",
+          description: "Lookback window (default 7, max 180).",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "get_github_releases",
+    description:
+      "Fetch the most recent releases from a GitHub repo (defaults to OPENCLAW_GITHUB_REPO).",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: {
+          type: "number",
+          description: "Releases to return (default 5, max 20).",
+        },
+        repo: {
+          type: "string",
+          description: "owner/repo (optional).",
+        },
+      },
+      required: [],
+    },
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -356,6 +438,12 @@ const TOOL_ROUTE: Record<string, string> = {
   read_workflow_logs: "/api/internal/openclaw/workflow",
   read_telegram_topic_history: "/api/internal/openclaw/telegram",
   record_decision: "/api/internal/openclaw/decision",
+  // ADR-0032: ports of Sergeant Console (ADR-0027) ops/marketing tools.
+  get_stripe_metrics: "/api/internal/openclaw/metrics/stripe",
+  get_sentry_issues: "/api/internal/openclaw/metrics/sentry",
+  get_server_stats: "/api/internal/openclaw/metrics/server",
+  get_posthog_stats: "/api/internal/openclaw/metrics/posthog",
+  get_github_releases: "/api/internal/openclaw/github/releases",
 };
 
 /**

@@ -17,8 +17,13 @@ import { MODULE_CONFIGS } from "./dashboard/moduleConfigs";
 
 type TestRec = Rec & { actionHash?: string };
 
-const EXPECTED_FINYK_MAIN = "1 250 \u0433\u0440\u043d";
-const EXPECTED_FINYK_SUB = "\u0417\u0430\u043b\u0438\u0448\u043e\u043a: 7 300";
+// `formatMoney` (single source of truth in `@sergeant/shared`) renders
+// hryvnia amounts as `"<number> ₴"` (e.g. `"1 250 ₴"`) using a regular
+// space before the symbol. testing-library normalises NBSP/space to a
+// single space, so plain spaces are fine in the expectation strings.
+const EXPECTED_FINYK_MAIN = "1 250 \u20b4";
+const EXPECTED_FINYK_SUB =
+  "\u0417\u0430\u043b\u0438\u0448\u043e\u043a: 7 300 \u20b4";
 const EXPECTED_ROUTINE_SUB =
   "\u0421\u0435\u0440\u0456\u044f: 5 \u0434\u043d\u0456\u0432";
 const INACTIVE_TOGGLE_NEEDLE =

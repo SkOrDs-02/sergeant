@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -456,10 +456,9 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 
 #### **Routine** (3 тижні)
 
-##### **PR #023 — `feat(routine): Drizzle schema + SQLite migration files`** ⏳ IN-PROGRESS
+##### **PR #023 — `feat(routine): Drizzle schema + SQLite migration files`** ✅ MERGED
 
-> **Статус (2026-05-02):** PR відкрито у гілці
-> `devin/1777757976-routine-sqlite-pr-023-schema`. Скоп — pure schema
+> **Статус (2026-05-02):** залендили (merge `47bade84`). Скоп — pure schema
 > promotion: SQLite Drizzle-схеми (`routineEntries`, `routineStreaks`,
 > `syncOpOutbox`, `syncOpCursor`) і inline міграцію вже залендили в
 > Stage 2 (PR #018) і живили SPIKE з PR #022. Цей PR промоутить їх з
@@ -499,12 +498,70 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   prod routine module ще читає з LS і ці схеми залишаються off-path до
   PR #024.
 
-##### **PR #024 — `feat(routine): dual-write LS↔SQLite behind feature flag`**
+##### **PR #024 — `feat(routine-domain): dual-write LS↔SQLite behind feature flag`** ⏳ IN-PROGRESS
 
-- Кожен write йде у LS (старий path) + у SQLite (новий path) синхронно.
-- Read залишається з LS. Recoverable якщо SQLite ламається.
-- Feature flag `feature.routine.sqlite_v2.dual_write` — gradual rollout
-  через PostHog-cohort.
+> **Статус (2026-05-02):** PR відкрито у гілці
+> `devin/1777758771-routine-sqlite-pr-024-dual-write`. Скоп — додає
+> новий feature flag `feature.routine.sqlite_v2.dual_write` (web +
+> mobile, default: off, experimental: true) і дзеркальний шар
+> `apps/{web,mobile}/src/modules/routine/lib/dualWrite/` з трьох
+> файлів: `diff.ts` (pure-function diff `prev → next` →
+> `RoutineDualWriteOp[]` — completion-add / completion-remove /
+> habit-rename), `adapter.ts` (best-effort SQL поверх
+> `SqliteMigrationClient` із LWW-guard на `updated_at`, ідемпотентний
+> `${habitId}:${dateKey}` row id) і `index.ts` (orchestrator з
+> registration-pattern контекстом — `isEnabled()`, `getUserId()`,
+> `getMigrationClient()`, `getNow()`, `logger?` — щоб LS-write шар
+> залишався без cycle-dep на auth/sqlite singleton-и). Інтегровано у
+> `apps/web/src/modules/routine/lib/routineStorage.ts ::saveRoutineState`
+> та `apps/mobile/src/modules/routine/lib/routineStore.ts ::saveRoutineState`
+> через `triggerRoutineDualWrite(prev, next)` fire-and-forget;
+> `peekRoutineDualWritePrev()` повертає `null` коли контекст не
+> зареєстровано — нульовий overhead на off-flag шляху. Boot wiring
+> (web `main.tsx` + mobile entry) **відкладено окремим follow-up
+> PR-ом** щоб тримати цей PR pure mechanism.
+
+- **Артефакти.**
+  - `apps/{web,mobile}/src/core/lib/featureFlags.ts` — нова
+    `feature.routine.sqlite_v2.dual_write` (default off, experimental).
+  - `apps/web/src/modules/routine/lib/dualWrite/{diff,adapter,index}.ts`
+    - парні `__tests__/{diff,adapter,integration}.test.ts` (vitest +
+      `better-sqlite3` через існуючий
+      `sqliteSpike/__tests__/testSqlite.ts` хелпер).
+  - `apps/mobile/src/modules/routine/lib/dualWrite/{diff,adapter,index}.ts`
+    - jest-парні `__tests__/{diff,adapter,integration}.test.ts`
+      (`better-sqlite3` напряму, як SPIKE-тести роблять).
+  - `apps/mobile/src/core/db/sqlite.ts` — додано
+    `getSqliteMigrationClient()` + збереження native handle поряд з
+    Drizzle wrapper, щоб дзеркальний шар отримував той самий expo-sqlite
+    handle без re-open (під WAL на iOS це deadlock).
+  - `apps/web/src/modules/routine/lib/routineStorage.ts` +
+    `apps/mobile/src/modules/routine/lib/routineStore.ts` — wiring у
+    `saveRoutineState`.
+
+- **AC.**
+  - `pnpm --filter @sergeant/web test -- --run modules/routine/lib/dualWrite`
+    (vitest) — diff, adapter, integration спеки pass.
+  - `pnpm --filter @sergeant/mobile test -- modules/routine/lib/dualWrite`
+    (jest) — те саме на mobile.
+  - `pnpm lint` — clean (322+ rules).
+  - SPIKE library тести лишаються green — adapter дзеркально пише в
+    ту саму `routine_entries` таблицю, що SPIKE піднімає через ту ж
+    `migrateRoutineSpike` міграцію.
+
+- **Out-of-scope (відкладено).**
+  - Boot wiring (`registerRoutineDualWriteContext` з реальними
+    auth/sqlite singleton-ами) — окремий follow-up.
+  - Cut-over reads на SQLite — це PR #025.
+  - Drop `module_data.routine` blob — PR #026.
+  - `routine_streaks` mirror — defer до PR #025/#040 (derived data,
+    пишеться з reads cut-over-у).
+  - Persistent op-log + retry — PR #040.
+  - Зміни SPIKE library — не торкаємо.
+
+- **Dep.** PR #023 (schema promotion) ✅ landed; PR #022 (SPIKE pass)
+  — _м'яка_ залежність (за flag default off нічого в проді не
+  активується).
 
 ##### **PR #025 — `feat(routine): cut-over reads to SQLite, deprecate LS`**
 

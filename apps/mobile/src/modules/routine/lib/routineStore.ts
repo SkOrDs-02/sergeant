@@ -41,6 +41,10 @@ import {
 } from "@sergeant/routine-domain";
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
 import { enqueueChange } from "@/sync/enqueue";
+import {
+  isRoutineDualWriteRegistered,
+  triggerRoutineDualWrite,
+} from "./dualWrite";
 
 /** Читає й нормалізує повний стан Рутини з MMKV. */
 export function loadRoutineState(): RoutineState {
@@ -53,9 +57,38 @@ export function loadRoutineState(): RoutineState {
   return state;
 }
 
-/** Записує повний стан Рутини у MMKV. */
+/**
+ * Read the currently-persisted MMKV state without triggering the
+ * `ensureHabitOrder` re-save that {@link loadRoutineState} performs.
+ * Used by {@link saveRoutineState} as the `prev` snapshot for the
+ * Stage 4 PR #024 dual-write layer; returns `null` when the
+ * dual-write context is not registered (zero overhead off-flag).
+ */
+function peekRoutineDualWritePrev(): RoutineState | null {
+  if (!isRoutineDualWriteRegistered()) return null;
+  try {
+    const raw = safeReadLS<unknown>(ROUTINE_STORAGE_KEY, null);
+    return normalizeRoutineState(raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Записує повний стан Рутини у MMKV.
+ *
+ * On success, also fires the Stage 4 PR #024 dual-write hook (mirror
+ * to the local SQLite `routine_entries` table under
+ * `feature.routine.sqlite_v2.dual_write`). Fire-and-forget — SQLite
+ * errors never break the MMKV write path.
+ */
 export function saveRoutineState(next: RoutineState): boolean {
-  return safeWriteLS(ROUTINE_STORAGE_KEY, next);
+  const prev = peekRoutineDualWritePrev();
+  const ok = safeWriteLS(ROUTINE_STORAGE_KEY, next);
+  if (ok && prev !== null) {
+    triggerRoutineDualWrite(prev, next);
+  }
+  return ok;
 }
 
 export interface UseRoutineStoreReturn {

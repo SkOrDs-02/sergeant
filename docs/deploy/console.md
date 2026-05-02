@@ -1,15 +1,18 @@
 # Deploy `apps/console` (sergeant-hubchat)
 
 > **Status:** Active
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-08-02.
+> **Status:** Active
 > **Власник:** `sergeant-hubchat`.
 
 ## Що це
 
-`apps/console` — Node.js процес, що хостить **два long-poll grammy-боти** в одному ранчасі:
-
-1. **`@sergeant_console_bot`** (ADR-0027) — multi-agent ops/marketing асистент.
-2. **`@OpenClaw_sergeant_bot`** (ADR-0031) — DM-only co-founder bot.
+`apps/console` — Node.js процес, що хостить grammy long-poll-боти Sergeant.
+Після [ADR-0032](../adr/0032-console-consolidated-into-openclaw.md) активний
+там тільки **`@OpenClaw_sergeant_bot`** (ADR-0031, DM-only co-founder з
+chat + slash-командами + ops/marketing tool-ами). Legacy
+`@sergeant_console_bot` (ADR-0027) консолідовано в OpenClaw і він тепер
+dormant: процес стартує його гілку лише якщо встановлено `CONSOLE_BOT_TOKEN`.
 
 На відміну від `@Sergeant_alert_bot` (push-only, керується n8n через
 `api.telegram.org/sendMessage`), цей процес **обов'язково має крутитись 24/7**,
@@ -67,20 +70,47 @@ mutation {
 ### Required env vars (production)
 
 Виставляються через `variableUpsert` mutation на `serviceId` console-сервісу.
+Після ADR-0032 OpenClaw — primary surface; CONSOLE_BOT_TOKEN optional (fail-soft).
 
-| Variable                      | Source                                      | Опис                                                                  |
-| ----------------------------- | ------------------------------------------- | --------------------------------------------------------------------- |
-| `CONSOLE_BOT_TOKEN`           | `@sergeant_console_bot` token               | Sergeant Console long-poll. Без значення — `apps/console` exits 1.    |
-| `ALLOWED_USER_IDS`            | CSV Telegram numeric IDs                    | Allowlist для Sergeant Console (multi-value).                         |
-| `ANTHROPIC_API_KEY`           | reference `${{Sergeant.ANTHROPIC_API_KEY}}` | Claude tool-use для обох ботів.                                       |
-| `SERVER_INTERNAL_URL`         | `http://sergeant.railway.internal:3000`     | Internal API base URL (Railway private DNS).                          |
-| `INTERNAL_API_KEY`            | reference `${{Sergeant.INTERNAL_API_KEY}}`  | Bearer для `/api/internal/openclaw/*` ендпоінтів.                     |
-| `OPENCLAW_BOT_TOKEN`          | `@OpenClaw_sergeant_bot` token              | Без значення — OpenClaw тихо не стартує (Sergeant Console — стартує). |
-| `OPENCLAW_FOUNDER_TG_USER_ID` | numeric Telegram id founder-а               | Allowlist single-value (ADR-0031 §2).                                 |
-| `OPENCLAW_FOUNDER_USER_ID`    | Better Auth `users.id` founder-а            | Server-side audit attribution.                                        |
-| `OPENCLAW_MAX_ITERATIONS`     | (optional) default 8                        | Tool-call cap у agent-loop.                                           |
-| `OPENCLAW_RATE_LIMIT_PER_MIN` | (optional) default 10                       | Per-message rate limit.                                               |
-| `OPENCLAW_DAILY_USD_BUDGET`   | (optional) default 5.0                      | Hard $5/day cap (fail-closed).                                        |
+**Required для OpenClaw:**
+
+| Variable                      | Source                                      | Опис                                              |
+| ----------------------------- | ------------------------------------------- | ------------------------------------------------- |
+| `OPENCLAW_BOT_TOKEN`          | `@OpenClaw_sergeant_bot` token              | Без значення — OpenClaw тихо не стартує (warn).   |
+| `OPENCLAW_FOUNDER_TG_USER_ID` | numeric Telegram id founder-а               | Allowlist single-value (ADR-0031 §2).             |
+| `OPENCLAW_FOUNDER_USER_ID`    | Better Auth `users.id` founder-а            | Server-side audit attribution.                    |
+| `ANTHROPIC_API_KEY`           | reference `${{Sergeant.ANTHROPIC_API_KEY}}` | Claude tool-use.                                  |
+| `SERVER_INTERNAL_URL`         | `http://sergeant.railway.internal:3000`     | Internal API base URL (Railway private DNS).      |
+| `INTERNAL_API_KEY`            | reference `${{Sergeant.INTERNAL_API_KEY}}`  | Bearer для `/api/internal/openclaw/*` ендпоінтів. |
+
+**Optional (tool-level, fail-soft):**
+
+Ці передаються `apps/server` через `${{Sergeant.*}}` references — bot їх не читає напряму, але вони мають бути виставлені на server-side щоб `get_*_metrics` tools повертали дані замість `notConfigured: true`.
+
+| Variable               | Опис                                                                             |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| `STRIPE_SECRET_KEY`    | Без неї `get_stripe_metrics` повертає `{notConfigured:true}`.                    |
+| `SENTRY_AUTH_TOKEN`    | Без неї `get_sentry_issues` повертає `{notConfigured:true}`.                     |
+| `SENTRY_ORG`           | Default `sergeant`. Override якщо org slug інший.                                |
+| `POSTHOG_API_KEY`      | Без неї `get_posthog_stats` повертає `{notConfigured:true}`.                     |
+| `POSTHOG_PROJECT_ID`   | Те саме — обидва потрібні разом для PostHog tool-у.                              |
+| `OPENCLAW_GITHUB_PAT`  | Default — unauthenticated GitHub (60 RPH). PAT піднімає до 5000 RPH.             |
+| `OPENCLAW_GITHUB_REPO` | Default `Skords-01/Sergeant`. Repo, з якого `get_github_releases` бере releases. |
+
+**Limits / governance (optional з defaults):**
+
+| Variable                      | Default | Опис                           |
+| ----------------------------- | ------- | ------------------------------ |
+| `OPENCLAW_MAX_ITERATIONS`     | 8       | Tool-call cap у agent-loop.    |
+| `OPENCLAW_RATE_LIMIT_PER_MIN` | 10      | Per-message rate limit.        |
+| `OPENCLAW_DAILY_USD_BUDGET`   | 5.0     | Hard $5/day cap (fail-closed). |
+
+**Legacy console (dormant після ADR-0032):**
+
+| Variable            | Опис                                                                                |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| `CONSOLE_BOT_TOKEN` | Optional. Якщо відсутній — Sergeant Console гілка не стартує, OpenClaw — стартує.   |
+| `ALLOWED_USER_IDS`  | Optional. Multi-value allowlist для legacy Console (ігнорується якщо немає токена). |
 
 ### Що робити, якщо щось зламалось
 
