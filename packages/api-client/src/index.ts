@@ -42,6 +42,20 @@ export {
 } from "./endpoints/sync";
 
 export {
+  createSyncV2Endpoints,
+  type SyncV2Endpoints,
+  type SyncV2OpKind,
+  type SyncV2OpResult,
+  type SyncV2OpResultStatus,
+  type SyncV2PullOp,
+  type SyncV2PullOptions,
+  type SyncV2PullResponse,
+  type SyncV2PushOp,
+  type SyncV2PushOptions,
+  type SyncV2PushResponse,
+} from "./endpoints/syncV2";
+
+export {
   createCoachEndpoints,
   type CoachEndpoints,
   type CoachInsightPayload,
