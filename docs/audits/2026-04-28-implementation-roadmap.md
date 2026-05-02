@@ -53,7 +53,7 @@
 
 | ID       | Проблема                       | Файлів         | Поточний Прогрес       |
 | -------- | ------------------------------ | -------------- | ---------------------- |
-| **P0-1** | `apps/web` strict: false       | ~495 TS errors | Phase 1 done (shared/) |
+| **P0-1** | `apps/web` strict: false       | ~374 TS errors (full `strict: true` baseline, 2026-05-02) | Phases 1–3.1 done (`tsconfig.strict.json` покриває `src/{shared,test,core/*,modules/*}`); Phase 4 (`strict: true` + зняти `allowJs`) — TODO |
 | **P0-2** | localStorage без safe wrappers | 52 файли       | 3 файли мігровано      |
 | **P0-3** | Mobile flaky tests             | 2 тести        | 1 з 3 виправлено       |
 | **P0-4** | Mobile APM відсутній           | 0% coverage    | Не почато              |
@@ -117,39 +117,67 @@ EFFORT                  │                   EFFORT
 
 **Мета:** Усунути критичні блокери, стабілізувати CI
 
-#### Завдання 1.1: TypeScript strict, фази 2–3
+#### Завдання 1.1: TypeScript strict, Phase 4 (повний `strict: true`)
 
-**Scope:** `apps/web/src/core/**`
+**Scope:** `apps/web/tsconfig.json` — зняти `allowJs: true`, ввімкнути `strict: true`, починити залишкові implicit-any.
+
+**Статус фаз (див. `docs/tech-debt/frontend.md` §11):**
 
 ```
-Estimated TS errors by module:
-├── core/lib/         ~16 errors (Phase 2)
-├── core/hub/         ~45 errors
-├── core/settings/    ~30 errors
-├── fizruk/           ~85 errors
-├── finyk/            ~70 errors
-├── nutrition/        ~95 errors
-├── routine/          ~55 errors
-└── shared/           ✅ Done (PR #870)
+Phase 1   — strictNullChecks: src/shared/**                              ✅ done (PR #870)
+Phase 2   — strictNullChecks: + src/test, core/{auth,cloudSync,components,
+             hints,hooks,observability,pricing,profile}                   ✅ done
+Phase 2.1 — strictNullChecks: + core/{hub,settings}                       ✅ done
+Phase 3   — strictNullChecks: + modules/{routine,nutrition,finyk,fizruk}
+             + core/{app,hub,insights,onboarding,settings,lib}             ✅ done
+Phase 3.1 — strictNullChecks: + core/{designShowcase,stories}             ✅ done
+Phase 4   — strict: true + remove allowJs (весь apps/web)              ⏳ todo
 ```
 
-**Виконання:**
+**Заміряний скоуп Phase 4 (2026-05-02 re-measure через діагностичний `tsconfig.strict-full.json`):** **374 помилки в 46 файлах**.
 
-| Day   | Задача                               | Файлів | Effort |
-| ----- | ------------------------------------ | ------ | ------ |
-| 1-2   | Enable strictNullChecks для core/lib | ~8     | 4h     |
-| 3-4   | Fix core/hub TS errors               | ~12    | 6h     |
-| 5-6   | Fix core/settings TS errors          | ~8     | 4h     |
-| 7-8   | Fix fizruk module                    | ~15    | 8h     |
-| 9-10  | Fix finyk module                     | ~12    | 6h     |
-| 11-12 | Fix nutrition module                 | ~18    | 8h     |
-| 13-14 | Fix routine + final strict: true     | ~10    | 4h     |
+```
+TS error breakdown:
+├── TS7006 parameter implicit-any         — 162
+├── TS7031 binding element implicit-any   — 114
+├── TS7053 element implicit-any           —  23
+├── TS2345 argument type                  —  17
+├── TS2339 property does not exist        —  15
+├── TS2322 type assignability             —  10
+├── TS7005 var without type               —   9
+├── TS2307 cannot find module             —   7
+└── інші                                  —  17
+
+Top blockers (одиничний фікс розблокує найбільше):
+├── sw.ts                                                    — 27
+├── core/onboarding/presetApply.ts                           — 23
+├── modules/fizruk/components/workouts/AddExerciseSheet      — 21
+├── modules/fizruk/components/WorkoutTemplatesSection        — 21
+├── modules/fizruk/components/workouts/WorkoutItemCard       — 20
+├── modules/fizruk/components/workouts/WorkoutCatalogSection — 20
+├── modules/fizruk/components/workouts/ExerciseDetailSheet   — 19
+├── modules/fizruk/pages/Workouts                            — 18
+├── modules/fizruk/pages/Exercise                            — 18
+└── core/insights/WeeklyDigestCard                           — 15
+```
+
+**Виконання (орієнтовно):**
+
+| Day | Задача                                                          | Файлів | Effort |
+| --- | ------------------------------------------------------------------ | ------- | ------ |
+| 1   | sw.ts + core/onboarding/presetApply (top-2 blockers, 50 errors)    | 2       | 4h     |
+| 2-3 | modules/fizruk top-7 (AddExerciseSheet, WorkoutItemCard, …)         | 7       | 10h    |
+| 4   | core/insights/WeeklyDigestCard + залишкові fizruk             | ~10     | 6h     |
+| 5   | Зріз `allowJs: true` + ввімкнути `strict: true` + cleanup | ~27     | 6h     |
+
+> **Чому Phase 4 не дробиться через `tsconfig.noimplicitany.json`-include:** TypeScript застосовує `noImplicitAny` ко всій програмі (всі transitively reached файли), не тільки до `include`-списку. Спроба додати `core/{lib,hub,insights,onboarding,settings,stories,designShowcase}` дає 801 помилку бо вони імпортують з `modules/{finyk,fizruk}`. Рухатись треба per-file (top blockers першими), без проміжної "Phase 3.2".
 
 **Definition of Done:**
 
 - [ ] `apps/web/tsconfig.json` має `"strict": true`
+- [ ] `apps/web/tsconfig.json` не має `allowJs: true`
 - [ ] `pnpm typecheck` проходить без помилок
-- [ ] CI strict-coverage metric = 100%
+- [ ] CI strict-coverage metric рапортує `apps/web` як strict
 
 ---
 
@@ -818,4 +846,4 @@ pnpm --filter @sergeant/web build     # Web only
 
 ---
 
-**Документ готовий до виконання. При команді "почати" або "виконуй" - починаємо зі Sprint 1, Task 1.1 (TypeScript Strict Phase 2).**
+**Документ готовий до виконання. При команді "почати" або "виконуй" — починаємо зі Sprint 1, Task 1.1 (TypeScript Strict Phase 4 — зняття `allowJs` та ввімкнення повного `strict: true`; фази 1–3.1 вже виконані).**
