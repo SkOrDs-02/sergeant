@@ -147,7 +147,9 @@ describe("log_set", () => {
       weightKg: 80,
     });
 
-    const activeId = readLS<string | null>("fizruk_active_workout_id_v1", null);
+    // `fizruk_active_workout_id_v1` is stored as a raw string (not JSON), so
+    // read it directly via localStorage to match the production storage format.
+    const activeId = localStorage.getItem("fizruk_active_workout_id_v1");
     expect(activeId).toBe(saved.workouts[0].id);
   });
 

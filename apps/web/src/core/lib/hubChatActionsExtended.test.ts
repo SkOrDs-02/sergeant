@@ -410,7 +410,9 @@ describe("start_workout / finish_workout", () => {
     expect(saved.workouts).toHaveLength(1);
     expect(saved.workouts[0].note).toBe("ранкова");
     expect(saved.workouts[0].endedAt).toBeNull();
-    const activeId = readLS<string | null>("fizruk_active_workout_id_v1", null);
+    // `fizruk_active_workout_id_v1` is stored as a raw string (not JSON), so
+    // read it directly via localStorage to match the production storage format.
+    const activeId = localStorage.getItem("fizruk_active_workout_id_v1");
     expect(activeId).toBe(saved.workouts[0].id);
   });
 
@@ -428,7 +430,7 @@ describe("start_workout / finish_workout", () => {
       workouts: Array<{ endedAt: string | null }>;
     }>("fizruk_workouts_v1", { workouts: [] });
     expect(saved.workouts[0].endedAt).not.toBeNull();
-    const activeId = readLS<string | null>("fizruk_active_workout_id_v1", null);
+    const activeId = localStorage.getItem("fizruk_active_workout_id_v1");
     expect(activeId).toBeNull();
   });
 

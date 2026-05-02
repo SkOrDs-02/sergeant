@@ -1,4 +1,8 @@
-import { safeReadLS, safeReadStringLS } from "@shared/lib/storage";
+import {
+  safeReadLS,
+  safeReadStringLS,
+  safeRemoveLS,
+} from "@shared/lib/storage";
 import { ls, lsSet } from "../hubChatUtils";
 import type {
   PlanWorkoutAction,
@@ -254,7 +258,7 @@ export function handleFizrukAction(
       const idx = workouts.findIndex((w) => w.id === targetId);
       if (idx < 0) return `Тренування ${targetId} не знайдено.`;
       if (workouts[idx].endedAt) {
-        if (activeId === targetId) lsSet("fizruk_active_workout_id_v1", null);
+        if (activeId === targetId) safeRemoveLS("fizruk_active_workout_id_v1");
         return `Тренування ${targetId} вже завершено.`;
       }
       workouts[idx] = {
@@ -262,7 +266,7 @@ export function handleFizrukAction(
         endedAt: new Date().toISOString(),
       };
       lsSet("fizruk_workouts_v1", { schemaVersion: 1, workouts });
-      if (activeId === targetId) lsSet("fizruk_active_workout_id_v1", null);
+      if (activeId === targetId) safeRemoveLS("fizruk_active_workout_id_v1");
       const setsCount = workouts[idx].items.reduce(
         (acc, it) => acc + (Array.isArray(it.sets) ? it.sets.length : 0),
         0,
