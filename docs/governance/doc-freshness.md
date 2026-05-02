@@ -1,6 +1,6 @@
 # Відстеження свіжості документації
 
-> **Last validated:** 2026-04-30 by @devin-ai. **Next review:** 2026-07-29.
+> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
 > **Status:** Active
 
 Ця система гарантує, що критична документація лишається актуальною — у документах вшиваються freshness-заголовки, а нічний джоб відкриває GitHub-issue для протермінованих файлів. **Список відстежуваних файлів автоматично виводиться з самого репо** — нічого додавати в JSON-allowlist не треба.
@@ -27,7 +27,7 @@
    {
      "cadenceOverrides": {
        "docs/observability/runbook.md": 60,
-       "docs/audits/ux-audit-2025.md": 365
+       "docs/audits/archive/ux-audit-2025.md": 365
      }
    }
    ```

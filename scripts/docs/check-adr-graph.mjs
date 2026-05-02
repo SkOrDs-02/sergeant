@@ -14,6 +14,12 @@
 //      ADR» table) under its number.
 //   5. No "dangling" ADRs: every file has a numeric prefix and its
 //      status is one of accepted / proposed / deprecated / superseded.
+//   6. ADR numbering is **sequential without gaps**, with the sole
+//      exception of `KNOWN_NUMBERING_GAPS` (gaps that became permanent
+//      because of merge-time collisions and are documented in
+//      `docs/adr/README.md`'s «Note on missing NNNN» blockquotes).
+//      Any new gap fails the check — a future parallel-session collision
+//      cannot quietly drop a number.
 //
 // Both English and Ukrainian field names are accepted in metadata
 // (`Status:` / `Статус:`, `Supersedes:` / `Замінює:`) — ADR-0026 and
@@ -43,6 +49,23 @@ const VALID_STATUSES = new Set([
   "proposed",
   "deprecated",
   "superseded",
+]);
+
+/**
+ * Known permanent gaps in ADR numbering. Each entry MUST be documented
+ * in `docs/adr/README.md` under a «Note on missing NNNN» blockquote so
+ * future readers understand why the number is reserved-but-empty.
+ *
+ * Adding to this set is a deliberate act — the default expectation is
+ * that ADRs are sequential. Use it only for past collisions that were
+ * resolved without backfilling the number.
+ */
+export const KNOWN_NUMBERING_GAPS = new Set([
+  // 2026-05-02: ADR-0029-candidate (per-source AI-memory ingestion gating)
+  // was rolled back into ADR-0028 during review; ADR-0030 / ADR-0031 were
+  // created in parallel sessions on the same day and skipped 0029.
+  // See `docs/adr/README.md` § «Note on missing 0029».
+  "0029",
 ]);
 
 // ── Pure helpers ─────────────────────────────────────────────────────────────
@@ -159,6 +182,35 @@ export function listIndexedNumbers(readmeContent) {
 }
 
 /**
+ * Detect gaps in the ADR numbering sequence. Returns the list of
+ * missing 4-digit numbers between min(adrs) and max(adrs), excluding
+ * anything in `knownGaps`.
+ */
+export function findNumberingGaps(adrs, knownGaps = KNOWN_NUMBERING_GAPS) {
+  const numbers = adrs
+    .map((a) => a.number)
+    .filter((n) => n != null)
+    .map((n) => parseInt(n, 10))
+    .filter((n) => !Number.isNaN(n))
+    .sort((x, y) => x - y);
+
+  if (numbers.length === 0) return [];
+
+  const lo = numbers[0];
+  const hi = numbers[numbers.length - 1];
+  const present = new Set(numbers);
+
+  const gaps = [];
+  for (let i = lo; i <= hi; i++) {
+    const padded = String(i).padStart(4, "0");
+    if (!present.has(i) && !knownGaps.has(padded)) {
+      gaps.push(padded);
+    }
+  }
+  return gaps;
+}
+
+/**
  * Validate the cross-file invariants given the parsed ADRs and the README
  * index. Returns an array of human-readable error strings.
  */
@@ -167,6 +219,13 @@ export function validateGraph(adrs, readmeIndexed) {
   const byNumber = new Map();
   for (const a of adrs) {
     if (a.number) byNumber.set(a.number, a);
+  }
+
+  // 6. Sequential numbering — no unrecorded gaps.
+  for (const missing of findNumberingGaps(adrs)) {
+    errors.push(
+      `numbering gap: ADR-${missing} is missing and not whitelisted in KNOWN_NUMBERING_GAPS (docs/adr/README.md must also document it under «Note on missing ${missing}»)`,
+    );
   }
 
   for (const a of adrs) {

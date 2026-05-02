@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR) — реєстр рішень
 
-> **Last validated:** 2026-05-01 by @devin-ai-integration[bot]. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
 > **Status:** Active
 
 > Архітектурні рішення Sergeant. Кожен ADR фіксує **рішення з контекстом і альтернативами**, щоб через рік не довелось гадати «чому ми тут зробили так, а не інакше».
@@ -100,6 +100,8 @@ pnpm gen:adr
 | 0030 | Telegram reporting channel structure            | accepted | 2026-05-02 | Single supergroup + Forum mode (8 канонічних топіків) + P0/P1/P2 escalation hierarchy + WF-98 fan-out.        |
 | 0031 | OpenClaw v0 — Telegram-only co-founder bot      | accepted | 2026-05-02 | Окремий @OpenClaw_sergeant_bot (DM-only, allowlist) з 7 read-only tools, strict memory isolation, $5/day cap. |
 
-> **Note on numbering 0016–0022 jump:** ADRs `0016`–`0022` — це retroactive batch, що був написаний паралельно з `0006`–`0012`. Через паралельне виконання Devin-сесій виникли колізії номерів `0003`–`0012`. Розв'язано через PR `docs(adr): resolve numbering collisions` — same-topic дублі (refund, anthropic, PII) видалено, late-comers перенумеровано в `0016`+. ADRs нумеруються **sequentially without gaps** надалі — наступний номер `0031`.
+> **Note on numbering 0016–0022 jump:** ADRs `0016`–`0022` — це retroactive batch, що був написаний паралельно з `0006`–`0012`. Через паралельне виконання Devin-сесій виникли колізії номерів `0003`–`0012`. Розв'язано через PR `docs(adr): resolve numbering collisions` — same-topic дублі (refund, anthropic, PII) видалено, late-comers перенумеровано в `0016`+.
+
+> **Note on missing 0029:** Номер `0029` зарезервований під ADR, що не дійшов до merge — паралельні Devin-сесії на 2026-05-02 створили `0030` (Telegram reporting) і `0031` (OpenClaw v0) майже одночасно, а 0029-кандидат (proposed: per-source AI-memory ingestion gating) був згорнутий в ADR-0028 під час рев'ю замість окремого документа. ADR-и не нумеруються заднім числом, тому `0029` лишається як **відомий gap** — задокументований у `KNOWN_NUMBERING_GAPS` в `scripts/docs/check-adr-graph.mjs` і whitelisted у gap-rule. Наступний ADR — **`0032`** (`pnpm gen:adr` обчислює `max + 1` через `nextAdrNumber()` у `plopfile.mjs`).
 
 > **Graph integrity:** Парсинг метаданих ADR (`Status:` / `Supersedes:`, з підтримкою англо- та україномовних назв полів — див. ADR-0026/0027) і перевірка індексу + бідіректіонального supersede-зв'язку автоматизовані: `node scripts/docs/check-adr-graph.mjs` (CI gate в `docs-automation.yml`).

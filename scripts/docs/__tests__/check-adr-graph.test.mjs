@@ -18,6 +18,8 @@ import {
   listIndexedNumbers,
   validateGraph,
   listAdrFiles,
+  findNumberingGaps,
+  KNOWN_NUMBERING_GAPS,
 } from "../check-adr-graph.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -267,6 +269,95 @@ test("validateGraph: complains when supersede target points to wrong ADR (mismat
   assert.ok(
     errors.some((e) => /points to ADR-0002 \(mismatch\)/.test(e)),
     `expected mismatch error, got: ${JSON.stringify(errors)}`,
+  );
+});
+
+// ── findNumberingGaps ────────────────────────────────────────────────────────
+
+test("findNumberingGaps: empty input returns empty list", () => {
+  assert.deepEqual(findNumberingGaps([], new Set()), []);
+});
+
+test("findNumberingGaps: contiguous range has no gaps", () => {
+  const adrs = [{ number: "0001" }, { number: "0002" }, { number: "0003" }];
+  assert.deepEqual(findNumberingGaps(adrs, new Set()), []);
+});
+
+test("findNumberingGaps: single missing number is reported", () => {
+  const adrs = [{ number: "0001" }, { number: "0003" }];
+  assert.deepEqual(findNumberingGaps(adrs, new Set()), ["0002"]);
+});
+
+test("findNumberingGaps: respects the known-gap allowlist", () => {
+  const adrs = [{ number: "0001" }, { number: "0003" }];
+  assert.deepEqual(findNumberingGaps(adrs, new Set(["0002"])), []);
+});
+
+test("findNumberingGaps: reports multiple gaps in a range", () => {
+  const adrs = [{ number: "0001" }, { number: "0005" }];
+  assert.deepEqual(findNumberingGaps(adrs, new Set()), [
+    "0002",
+    "0003",
+    "0004",
+  ]);
+});
+
+test("findNumberingGaps: pads numbers to 4 digits", () => {
+  const adrs = [{ number: "0001" }, { number: "0011" }];
+  const gaps = findNumberingGaps(adrs, new Set());
+  for (const g of gaps) {
+    assert.equal(g.length, 4);
+  }
+});
+
+test("findNumberingGaps: ignores entries without a number", () => {
+  const adrs = [{ number: null }, { number: "0001" }, { number: "0002" }];
+  assert.deepEqual(findNumberingGaps(adrs, new Set()), []);
+});
+
+test("KNOWN_NUMBERING_GAPS: 0029 is permanently whitelisted", () => {
+  // Guard test — ensure the runtime allowlist still contains the
+  // documented gap. If someone deletes 0029 from the set, this test
+  // forces them to read the comment and update README in the same PR.
+  assert.ok(KNOWN_NUMBERING_GAPS.has("0029"));
+});
+
+test("validateGraph: flags an undocumented numbering gap", () => {
+  const a = parseAdr(
+    "/x/0001-a.md",
+    sample({ status: "accepted", supersedes: "—" }),
+  );
+  const c = parseAdr(
+    "/x/0003-c.md",
+    sample({ status: "accepted", supersedes: "—" }),
+  );
+  const errors = validateGraph([a, c], new Set(["0001", "0003"]));
+  assert.ok(
+    errors.some((e) => /numbering gap: ADR-0002/.test(e)),
+    `expected gap error, got: ${JSON.stringify(errors)}`,
+  );
+});
+
+test("validateGraph: does NOT flag a whitelisted gap (0029)", () => {
+  // Build a synthetic graph that has 0028 + 0030 + 0031 but no 0029,
+  // mirroring the on-disk situation. Should pass cleanly.
+  const a = parseAdr(
+    "/x/0028-a.md",
+    sample({ status: "accepted", supersedes: "—" }),
+  );
+  const b = parseAdr(
+    "/x/0030-b.md",
+    sample({ status: "accepted", supersedes: "—" }),
+  );
+  const c = parseAdr(
+    "/x/0031-c.md",
+    sample({ status: "accepted", supersedes: "—" }),
+  );
+  const errors = validateGraph([a, b, c], new Set(["0028", "0030", "0031"]));
+  // No gap error — 0029 is whitelisted in KNOWN_NUMBERING_GAPS.
+  assert.ok(
+    !errors.some((e) => /numbering gap/.test(e)),
+    `unexpected gap error: ${JSON.stringify(errors)}`,
   );
 });
 
