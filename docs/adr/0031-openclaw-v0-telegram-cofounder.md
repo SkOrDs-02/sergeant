@@ -149,6 +149,26 @@ nutrition | routine | journal | digest`).
 | `read_telegram_topic_history` | read           | Telegram Bot API          | limited capability (Bot API не дає історію) — у v0 stub з clear error |
 | `record_decision`             | write (narrow) | Postgres + GitHub PR      | INSERT + open PR з markdown                                           |
 
+### Dispatcher compatibility
+
+OpenClaw v0 не замінює n8n dispatcher і не виконує production mutations
+самостійно. Для сумісності з Telegram-controlled agent dispatcher payload має
+явне поле `source`, яке може бути:
+
+- `telegram-console` — команди з основного Sergeant Console bot-а;
+- `openclaw` — founder-DM / OpenClaw-originated task envelope.
+
+Це дає n8n WF-20 і downstream specialist-agent workflows змогу відрізняти
+людську console-команду від OpenClaw-originated запиту без зміни решти contract:
+`commandText`, `action`, `specialist`, `riskTier`, `mode`, `requiresApproval`,
+`telegram.userId`, `telegram.chatId`, `telegram.messageId`.
+
+У v0 OpenClaw лишається read-only co-founder bot-ом. Будь-яка майбутня
+mutating дія через dispatcher повинна пройти той самий approval gate, що й
+console dispatcher: `requiresApproval=true`, explicit founder approval у
+Telegram, audit trail, і тільки після цього n8n continuation. Це не дозволяє
+OpenClaw робити silent writes навіть якщо він сформував правильний task payload.
+
 `query_app_db` table-allowlist (read-only role, parameterized only):
 
 - `subscriptions`, `payments`, `users`, `digest_runs`, `n8n_errors`,

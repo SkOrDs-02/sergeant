@@ -145,6 +145,13 @@ cross-domain знання продукту. Це робить його _парт
   повідомленням у `⚙️ Контрол-план` групи + edit reply у DM.
 - Audit log — кожна команда у `openclaw_invocations` з actor (TG user_id),
   prompt, tool_calls, cost, latency.
+- Dispatcher compatibility — WF-20 (`20-agent-dispatcher.json`) приймає той
+  самий task envelope для `source="telegram-console"` і `source="openclaw"`.
+  Це не робить OpenClaw execution layer-ом: OpenClaw формує/пояснює intent,
+  dispatcher/n8n маршрутизує agent work, а mutating tasks лишаються за
+  explicit approval у Telegram. CI/test/check задачі маршрутизуються до
+  `qa-release`, щоб запити на перевірку PR/CI не падали в generic architect
+  lane.
 
 **Acceptance:**
 
