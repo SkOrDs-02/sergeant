@@ -138,44 +138,13 @@ describe("TodayFocusCard", () => {
   // Empty state
   // -----------------------------------------------------------------------
 
-  it("рендерить порожній стан (EmptyFocus) коли focus=null", () => {
-    render(
+  it("нічого не рендерить коли focus=null (бенто-сітка нижче відповідає за quick-add)", () => {
+    const { container } = render(
       <TodayFocusCard focus={null} onAction={onAction} onDismiss={onDismiss} />,
     );
 
-    expect(screen.getByText("Що зафіксуємо?")).toBeTruthy();
-    expect(
-      screen.getByText("Один тап — один запис. Обери модуль і продовжуй."),
-    ).toBeTruthy();
-  });
-
-  it("EmptyFocus показує 4 quick-add чипи для модулів", () => {
-    render(
-      <TodayFocusCard focus={null} onAction={onAction} onDismiss={onDismiss} />,
-    );
-
-    // Check for module quick-add buttons by role
-    const buttons = screen.getAllByRole("button");
-    const labels = buttons.map((b) => b.textContent?.trim());
-    expect(labels).toContain("Витрата");
-    expect(labels).toContain("Тренування");
-    expect(labels).toContain("Звичка");
-    expect(labels).toContain("Їжа");
-  });
-
-  it("click на quick-add чип запускає openHubModuleWithAction", () => {
-    render(
-      <TodayFocusCard focus={null} onAction={onAction} onDismiss={onDismiss} />,
-    );
-
-    const buttons = screen.getAllByRole("button");
-    const finykBtn = buttons.find((b) => b.textContent?.trim() === "Витрата");
-    expect(finykBtn).toBeDefined();
-    fireEvent.click(finykBtn!);
-    expect(openHubModuleWithActionMock).toHaveBeenCalledWith(
-      "finyk",
-      "add_expense",
-    );
+    expect(container.firstChild).toBeNull();
+    expect(screen.queryByText("Що зафіксуємо?")).toBeNull();
   });
 
   // -----------------------------------------------------------------------

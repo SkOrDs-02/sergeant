@@ -88,23 +88,18 @@ vi.mock("../insights/TodayFocusCard", () => ({
     focus: TestRec | null;
     onAction: (module: string) => void;
     onDismiss: (id: string) => void;
-  }) => (
-    <section data-testid="today-focus-card">
-      {focus ? (
-        <>
-          <p>{focus.title}</p>
-          <button type="button" onClick={() => onAction(focus.action)}>
-            focus-action
-          </button>
-          <button type="button" onClick={() => onDismiss(focus.id)}>
-            focus-dismiss
-          </button>
-        </>
-      ) : (
-        <p data-testid="today-focus-empty">empty-focus</p>
-      )}
-    </section>
-  ),
+  }) =>
+    focus ? (
+      <section data-testid="today-focus-card">
+        <p>{focus.title}</p>
+        <button type="button" onClick={() => onAction(focus.action)}>
+          focus-action
+        </button>
+        <button type="button" onClick={() => onDismiss(focus.id)}>
+          focus-dismiss
+        </button>
+      </section>
+    ) : null,
 }));
 
 vi.mock("./HubInsightsPanel", () => ({
@@ -319,7 +314,10 @@ describe("HubDashboard", () => {
 
     renderDashboard();
 
-    expect(screen.getByTestId("today-focus-card")).toBeInTheDocument();
+    // Hero slot is empty when there is no focus rec — the bento module
+    // grid handles the FTUX entry points, so a chip fallback would only
+    // duplicate the per-module quick-add affordances below.
+    expect(screen.queryByTestId("today-focus-card")).toBeNull();
     expect(screen.getByText(MODULE_CHECKLISTS.finyk.title)).toBeInTheDocument();
     expect(screen.queryByTestId("assistant-advice-card")).toBeNull();
     expect(screen.queryByTestId("hub-insights-panel")).toBeNull();
