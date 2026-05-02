@@ -1,11 +1,36 @@
 # 🛠️ Технічний план покращення UI/UX
 
-> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Last validated:** 2026-05-02 by @Codex. **Next review:** 2026-07-31.
 > **Status:** Active
 
 **Базується на:** UX-UI-AUDIT-2026.md  
 **Автор:** v0 AI  
 **Дата:** 28 квітня 2026
+
+> **Code-sync 2026-05-02.** Цей документ тепер є execution tracker для
+> залишкових UI/UX робіт. Канонічні правила живуть у
+> [`docs/design/design-system.md`](../design/design-system.md); історичний
+> аудит і оцінки — у [`UX-UI-AUDIT-2026.md`](./UX-UI-AUDIT-2026.md). Статуси
+> нижче звірені з фактичними файлами `apps/mobile` і `apps/web`.
+
+## Актуальний стан за кодом (2026-05-02)
+
+| Напрям | Статус | Підтвердження в коді |
+| --- | --- | --- |
+| Dark mode + theme toggle | Done | `apps/mobile/src/core/theme/ColorSchemeBridge.tsx`, `GeneralSection.tsx` |
+| Unified BackButton | Done | `apps/mobile/src/components/ui/BackButton.tsx` |
+| Mobile Sheet gesture dismiss | Done | `Sheet.tsx` uses `react-native-gesture-handler` + Reanimated pan gesture |
+| Input helper icons | Done | `Input.tsx` has `showHelperIcon`, `AlertCircle`, `CheckCircle` |
+| EmptyState semantic UI | Done | `EmptyState.tsx` uses semantic text/surface classes without raw dark compatibility classes |
+| Toast safe area | Done | `Toast.tsx` uses `useSafeAreaInsets()` |
+| Settings grouping | Done | `HubSettingsPage.tsx` groups sections into system/modules/advanced |
+| Forgot password route | Done | `apps/mobile/app/(auth)/forgot-password.tsx` |
+| Tab badges | Done | `useTabBadges.ts`, `apps/mobile/app/(tabs)/_layout.tsx` |
+| Pull-to-refresh | Done | `HubDashboard.tsx` uses `RefreshControl` |
+| PageSkeleton / loading primitives | Done with audit follow-up | `PageSkeleton.tsx`, `LoadingOverlay.tsx`, `Skeleton.tsx` exist |
+| ModuleErrorBoundary UX | Done | `ModuleErrorBoundary.tsx` has retry/home actions and a11y labels |
+| E2E and device validation | Partial | `hub-ux-smoke.e2e.ts` added; needs current iOS/Android Detox execution |
+| Accessibility audit | Partial | Settings/theme/loading primitives improved; needs full screen-reader pass |
 
 ---
 
@@ -777,41 +802,44 @@ export default function ForgotPasswordScreen() {
 
 ### Фаза 1 (тижні 1–4)
 
-- [ ] **Week 1**
-  - [ ] Імплементувати `ColorSchemeBridge` з theme toggle
-  - [ ] Додати `ThemeToggle` в `GeneralSection`
-  - [ ] Створити `BackButton` компонент
-  - [ ] Замінити всі ← текстові кнопки на `BackButton`
+- [x] **Week 1**
+  - [x] Імплементувати `ColorSchemeBridge` з theme toggle
+  - [x] Додати `ThemeToggle` в `GeneralSection`
+  - [x] Створити `BackButton` компонент
+  - [x] Замінити основні текстові `←` кнопки на `BackButton`
 
 - [ ] **Week 2**
-  - [x] Додати gesture dismiss в `Sheet` _(web — done у [#1181](https://github.com/Skords-01/Sergeant/pull/1181) через `useSwipeToDismiss`; також застосовано в `ConfirmDialog` і `ModuleSettingsDrawer`. Mobile RN-частина — pending.)_
-  - [ ] Встановити `react-native-reanimated` якщо ще не встановлено
+  - [x] Додати gesture dismiss в `Sheet` _(mobile RN-частина також done: `Sheet.tsx` використовує `Gesture.Pan()` і Reanimated `translateY`.)_
+  - [x] Встановити `react-native-reanimated` якщо ще не встановлено (`apps/mobile/package.json`)
   - [ ] Тестувати на iOS та Android
 
-- [ ] **Week 3**
-  - [ ] Оновити `Input` з helper icons
-  - [ ] Оновити `EmptyState` з semantic tokens
-  - [ ] Виправити `Toast` safe area
+- [x] **Week 3**
+  - [x] Оновити `Input` з helper icons
+  - [x] Оновити `EmptyState` з semantic tokens
+  - [x] Виправити `Toast` safe area
 
 - [ ] **Week 4**
-  - [ ] Реструктуризувати `HubSettingsPage`
-  - [ ] Створити `forgot-password.tsx` маршрут
-  - [ ] E2E тести для нових flows
+  - [x] Реструктуризувати `HubSettingsPage`
+  - [x] Створити `forgot-password.tsx` маршрут
+  - [x] E2E smoke для Hub settings/theme navigation
+  - [ ] Прогнати E2E на iOS/Android
 
 ### Фаза 2 (тижні 5–8)
 
-- [ ] **Week 5**
-  - [ ] Створити хуки для badge counts (всі модулі)
-  - [ ] Оновити `_layout.tsx` з badges
+- [x] **Week 5**
+  - [x] Створити хуки для badge counts (всі модулі)
+  - [x] Оновити `_layout.tsx` з badges
 
 - [ ] **Week 6**
-  - [ ] Pull-to-refresh на `HubDashboard`
+  - [x] Pull-to-refresh на `HubDashboard`
+  - [x] Accessibility contract для `PageSkeleton` / `InlineSkeleton`
   - [ ] Loading state audit всіх сторінок
 
 - [ ] **Week 7-8**
-  - [ ] Unified `PageSkeleton` компонент
-  - [ ] Custom `ModuleErrorBoundary` UI
-  - [ ] Accessibility audit та виправлення
+  - [x] Unified `PageSkeleton` компонент
+  - [x] Custom `ModuleErrorBoundary` UI
+  - [x] Очевидні a11y fixes для settings/theme/loading controls
+  - [ ] Повний accessibility audit та виправлення
 
 ---
 

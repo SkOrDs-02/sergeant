@@ -43,12 +43,14 @@ jest.mock("@/auth/authClient", () => {
   const getSession = jest.fn(() =>
     Promise.resolve({ data: null, error: null }),
   );
+  const forgetPassword = jest.fn(() => Promise.resolve({ error: null }));
   return {
     __esModule: true,
     signIn,
     signUp,
     signOut,
     getSession,
+    forgetPassword,
     authClient: { signIn, signUp, signOut, getSession },
   };
 });

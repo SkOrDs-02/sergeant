@@ -87,7 +87,11 @@ export default function TabsLayout() {
       >
         <Tabs.Screen
           name="index"
-          options={{ title: "Хаб", tabBarIcon: createTabIcon(Home) }}
+          options={{
+            title: "Хаб",
+            tabBarIcon: createTabIcon(Home),
+            tabBarButtonTestID: "tab-hub",
+          }}
         />
         <Tabs.Screen
           name="finyk"
@@ -104,6 +108,7 @@ export default function TabsLayout() {
           options={{
             title: "ФІЗРУК",
             tabBarIcon: createTabIcon(Dumbbell),
+            tabBarButtonTestID: "tab-fizruk",
             // The Fizruk tab hosts a nested Expo Router `Stack` (see
             // `app/(tabs)/fizruk/_layout.tsx`) that draws its own headers
             // per screen. Hiding the Tabs header prevents a double bar.
@@ -126,6 +131,7 @@ export default function TabsLayout() {
           options={{
             title: "Їжа",
             tabBarIcon: createTabIcon(UtensilsCrossed),
+            tabBarButtonTestID: "tab-nutrition",
             tabBarBadge: badges.nutrition,
             tabBarBadgeStyle: { backgroundColor: colors.success },
           }}

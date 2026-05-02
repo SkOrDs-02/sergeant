@@ -1,6 +1,6 @@
 # Sergeant Design System
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-02 by @Codex. **Next review:** 2026-07-31.
 > **Status:** Active
 
 Єдина візуальна мова для хаба з 4 модулями: **ФІНІК**, **ФІЗРУК**, **Рутина**,
@@ -26,8 +26,9 @@
 2. **Темна тема — first-class.** Всі токени живуть у CSS-змінних
    `:root` та `.dark`; теми перемикаються класом без перезапису стилів.
    Парні `dark:` override з сирою палітрою (`bg-teal-100 dark:bg-teal-900/30`)
-   — це міграційний борг: [`DARK-MODE-AUDIT.md`](./DARK-MODE-AUDIT.md)
-   ведe інвентар 28 таких сайтів і план переносу в семантичні токени.
+   — заборонений анти-патерн. [`DARK-MODE-AUDIT.md`](./DARK-MODE-AUDIT.md)
+   збережений як історія міграції; поточний guardrail —
+   `sergeant-design/no-raw-dark-palette` на рівні `error` для `apps/web`.
 3. **Модулі діляться токенами, а не стилями.** `bg-finyk-surface`,
    `text-fizruk`, `border-routine/30` — це семантичні аксенти; вся базова
    типографіка, spacing, радіуси одні для всіх. Всередині

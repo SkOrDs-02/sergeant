@@ -42,6 +42,7 @@ export interface SettingsGroupProps {
   emoji?: string;
   children: ReactNode;
   defaultOpen?: boolean;
+  testID?: string;
 }
 
 export function SettingsGroup({
@@ -49,6 +50,7 @@ export function SettingsGroup({
   emoji,
   children,
   defaultOpen = false,
+  testID,
 }: SettingsGroupProps) {
   const [open, setOpen] = useState<boolean>(defaultOpen);
   return (
@@ -58,6 +60,7 @@ export function SettingsGroup({
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         accessibilityLabel={title}
+        accessibilityHint={open ? "Згорнути секцію" : "Розгорнути секцію"}
         className={cx(
           "w-full px-4 py-3.5 flex-row items-center justify-between gap-2",
           open && "bg-cream-50 dark:bg-cream-800",
@@ -65,6 +68,7 @@ export function SettingsGroup({
         style={({ pressed }) =>
           pressed ? { opacity: 0.9, transform: [{ scale: 0.99 }] } : undefined
         }
+        testID={testID}
       >
         <View className="flex-row items-center gap-2.5 flex-1 min-w-0">
           {emoji ? (

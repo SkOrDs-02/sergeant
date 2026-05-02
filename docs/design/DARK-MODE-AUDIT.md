@@ -1,11 +1,17 @@
 # Dark-mode audit
 
-> **Last validated:** 2026-04-29 by @Skords-01.
+> **Last validated:** 2026-05-02 by @Codex.
 > **Status:** Closed (Wave 2c shipped, lint-guardrail на `error`)
 > **Аудиторія:** усі, хто чіпає Tailwind-класи в `apps/web`.
 > **Ціль:** скаталогізувати всі місця, де dark-mode виражений як явний `dark:` override над сирим palette-кольором, щоб мігрувати їх у single-token-семантичні утиліти (`bg-success-soft`, `bg-finyk-surface`, `border-brand-strong`, …) і дати preset-у володіти light/dark-парою в **одному** місці.
 
 ## TL;DR
+
+> **Code-sync 2026-05-02.** Це історичний аудит закритої міграції `apps/web`.
+> Поточна норма описана в [`design-system.md`](./design-system.md): новий код
+> використовує semantic tokens (`bg-*-soft`, `text-*-strong`,
+> `border-*-soft-border`) і не додає raw palette light/dark пари. Таблиці
+> нижче залишені як audit trail того, що було мігровано.
 
 - **306** `dark:` overrides у `apps/web/src/**/*.{ts,tsx}` (без тестів).
 - **28** з них були анти-патерном, на який націлений цей аудит: фон з _сирої палітри_ у світлій темі, спарений із hand-tuned-_сирим palette_ (або ad-hoc `-soft`/`/15`) dark-варіантом — `bg-teal-100 dark:bg-teal-900/30`, `bg-amber-50 … dark:bg-amber-500/15`, `bg-teal-800/10 dark:bg-white/10` тощо.
@@ -26,13 +32,17 @@
 
 Фікс завжди той самий: або токен уже існує (`bg-warning-soft`, `bg-brand-soft`, `bg-finyk-surface`, …) і call-site його використовує, або токена ще нема — і ми розширюємо `packages/design-tokens/tailwind-preset.js`.
 
-## Повний інвентар (28 сайтів)
+## Повний інвентар міграції (28 сайтів, historical)
 
-Групуємо за target-токеном — тобто семантичною утилітою, до якої має дійти рядок після міграції.
+Групуємо за target-токеном — тобто семантичною утилітою, до якої рядок був
+мігрований під час Wave 1b/2a/2b.
 
 ### → `bg-{module}-surface` (module-tinted hero / list surface-и)
 
-**Target-токени (Wave 1b додасть авто-адаптацію dark-режиму):** сьогодні `bg-{finyk,fizruk,routine,nutrition}-surface` резолвиться у фіксований світлий колір (`moduleColors.{module}.surface`), а його dark-mode-аналог живе в окремому `{module}-surface-dark`-токені, який caller-и зобов'язані парувати з явним `dark:`-варіантом. Wave 1b зробить одне з двох: (a) backне кожну `{module}-surface`-утиліту CSS-variable-ою, яка фліпається per-theme (`--c-{module}-surface-light` / `-dark`), або (b) вивезе один `{module}-surface-soft`-alias, що вже несе `dark:` override — трек у [`docs/planning/dev-stack-roadmap.md`](../planning/dev-stack-roadmap.md). Рядки нижче — hand-rolling light/dark-пари в call-site; після зміни preset-а вони стануть однотокенними.
+**Target-токени:** Wave 1b перевела ці call-site-и на module/status/brand
+semantic surfaces, щоб light/dark пара жила в preset/CSS-variable шарі, а не
+в кожному компоненті. Рядки нижче показують історичний стан до міграції та
+цільовий токен, на який вони були переведені.
 
 | File                                                   | Line | Current                                                                                                 | Target                                         |
 | ------------------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
@@ -49,7 +59,10 @@
 
 ### → `bg-brand-soft` (фон brand-акценту)
 
-**Target-токен (Wave 1b його додає):** `bg-brand-soft` (light 8 % / dark 15 %-wash) **ще не в preset-і** — сьогодні call-site-и нижче руками котять `bg-brand-50 dark:bg-brand-500/15`. Wave 1b додасть `--c-brand-soft`, `--c-brand-soft-border`, `--c-brand-soft-hover` у `apps/web/src/index.css` і зареєструє відповідні Tailwind-утиліти в `packages/design-tokens/tailwind-preset.js`, щоб варіанти `Segmented`, `Tabs`, `Button`, `Badge` могли їх перевикористати.
+**Target-токен:** `bg-brand-soft` плюс companion-токени
+`border-brand-soft-border`, `hover:bg-brand-soft-hover`, `text-brand-strong`.
+Wave 1b додала їх у token layer, щоб `Segmented`, `Tabs`, `Button`, `Badge`
+використовували один semantic API замість raw palette пар.
 
 | File                                                 | Line | Current                                                                                                                                        | Target                                                                               |
 | ---------------------------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |

@@ -47,6 +47,10 @@ export interface PageSkeletonProps {
   itemCount?: number;
   /** Additional class for the container. */
   className?: string;
+  /** Accessible loading label announced to assistive tech. */
+  accessibilityLabel?: string;
+  /** Test ID for screen-level loading audits. */
+  testID?: string;
 }
 
 function cx(...classes: Array<string | false | null | undefined>): string {
@@ -218,6 +222,8 @@ export function PageSkeleton({
   showHeader = true,
   itemCount,
   className,
+  accessibilityLabel = "Завантаження сторінки",
+  testID = "page-skeleton",
 }: PageSkeletonProps) {
   const resolvedCount = itemCount ?? (variant === "cards" ? 4 : 5);
 
@@ -225,6 +231,9 @@ export function PageSkeleton({
     <SafeAreaView
       className={cx("flex-1 bg-bg dark:bg-bg", className)}
       edges={["top"]}
+      testID={testID}
+      accessibilityRole="progressbar"
+      accessibilityLabel={accessibilityLabel}
     >
       {showHeader && <HeaderSkeleton />}
 
@@ -240,9 +249,20 @@ export function PageSkeleton({
 /**
  * Inline loading state for smaller components
  */
-export function InlineSkeleton() {
+export function InlineSkeleton({
+  accessibilityLabel = "Завантаження секції",
+  testID = "inline-skeleton",
+}: {
+  accessibilityLabel?: string;
+  testID?: string;
+} = {}) {
   return (
-    <View className="flex-row items-center gap-3 py-2">
+    <View
+      className="flex-row items-center gap-3 py-2"
+      testID={testID}
+      accessibilityRole="progressbar"
+      accessibilityLabel={accessibilityLabel}
+    >
       <Skeleton className="h-10 w-10 rounded-full" />
       <View className="flex-1 gap-1.5">
         <SkeletonText className="w-3/4" />

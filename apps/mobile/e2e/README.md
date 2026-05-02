@@ -8,6 +8,7 @@ Detox-E2E-харнес для мобільного застосунку (Phase 4
 | ----------------------------- | --------------------------------------------------------------------------- |
 | `finyk-manual-expense.e2e.ts` | Фінік Overview → Transactions → додати manual expense → row видно.          |
 | `finyk-transactions.e2e.ts`   | Фінік Transactions, period filter (prev-month / next-month chevrons).       |
+| `hub-ux-smoke.e2e.ts`         | Hub → Settings → theme toggle + стабільні top-level tab testIDs.            |
 | `routine-smoke.e2e.ts`        | Рутина → Settings → додати daily habit → Calendar → toggle today → ✓ видно. |
 
 Усі три спираються на спільні примітиви з `helpers.ts` (`tapWhenVisible`, `waitForVisibleById`, `byId`) і той самий launch-flag `EXPO_PUBLIC_E2E=1`, який обходить auth. Сьюти крутяться послідовно з `maxWorkers: 1`, щоб MMKV-стан був детермінованим між блоками `it()` — кожен сьют засіває власний row, не покладаючись на залишки від іншого сьюта.

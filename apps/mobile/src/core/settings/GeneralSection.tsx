@@ -156,6 +156,7 @@ function ThemeToggle() {
               accessibilityRole="radio"
               accessibilityState={{ selected: isSelected }}
               accessibilityLabel={`Тема: ${label}`}
+              accessibilityHint="Змінює тему оформлення застосунку"
               onPress={() => setTheme(value)}
               className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border py-3 active:scale-[0.98] ${
                 isSelected
@@ -321,7 +322,7 @@ export function GeneralSection() {
   };
 
   return (
-    <SettingsGroup title="Загальні" emoji="⚙️">
+    <SettingsGroup title="Загальні" emoji="⚙️" testID="settings-general-group">
       <ThemeToggle />
       <SettingsSubGroup title="Дашборд">
         <ToggleRow

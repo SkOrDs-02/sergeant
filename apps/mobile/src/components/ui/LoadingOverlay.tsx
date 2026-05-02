@@ -90,6 +90,7 @@ export function LoadingOverlay({
       accessibilityRole="progressbar"
       accessibilityLabel={message || "Завантаження"}
       accessibilityLiveRegion="polite"
+      accessibilityViewIsModal={!inline}
     >
       <View className="items-center gap-4 p-6 rounded-2xl bg-panel shadow-lg">
         <ActivityIndicator size={size} color={color} />

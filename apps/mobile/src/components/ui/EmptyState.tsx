@@ -253,7 +253,6 @@ export function EmptyState({
           <View
             className={cx(
               "items-center justify-center rounded-2xl bg-surface-muted border border-line",
-              "dark:bg-cream-800 dark:border-cream-700",
               compact ? "w-12 h-12" : "w-16 h-16",
             )}
           >
@@ -303,7 +302,7 @@ export function EmptyState({
             className={cx(
               "px-5 py-2.5 rounded-xl active:scale-95",
               action.variant === "secondary"
-                ? "bg-surface-muted border border-line dark:bg-cream-800 dark:border-cream-700"
+                ? "bg-surface-muted border border-line"
                 : "bg-brand",
             )}
           >
