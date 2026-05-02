@@ -12,6 +12,29 @@ This note tracks decisions and learnings for the Stage 3 SPIKE — the
 last hard decision gate before committing to per-module SQLite migration
 in Stage 4.
 
+## What is this SPIKE? (TL;DR)
+
+A SPIKE is a **time-boxed proof of concept**: 2 weeks of focused work
+to answer one question — _can the routine module run on local SQLite
+on web and mobile, and stay in sync between devices, without paying
+unacceptable bundle / latency / build-time cost?_
+
+It is **not** the final implementation. The code lives behind the
+feature flag `feature.routine.sqlite_v2` (default `false`) and is
+explicitly disposable — the "If we decide STOP" section at the bottom
+spells out the rollback. Until the gate is closed and the flag flipped
+on, every routine read/write still goes through the existing
+whole-blob `/v1/sync` path; the SPIKE only writes a parallel SQLite
+mirror inside a runtime `if (flag) {…}` branch.
+
+The SPIKE answers a specific go/no-go question for **Stage 3** of
+[`docs/planning/storage-roadmap.md`](../../planning/storage-roadmap.md#stage-3--spike-на-routine).
+A "go" signal unlocks Stage 4 (per-module migration of the rest of the
+app — habits, scratchpad, focus, settings — onto the same pattern).
+A "no-go" signal makes us delete the SPIKE library and stop on
+Stage 1+2 (Drizzle + foundations already shipped) without burning
+Stage 4 effort.
+
 ## Goal
 
 > «Demo: toggle звички з web + mobile паралельно → обидва девайси у sync
@@ -129,7 +152,65 @@ is wired and a manual demo is run from a real device pair.
 | Multi-device toggle conflict-free | yes      | manual conflict resolution required | TBD      |
 | Vercel bundle build time          | ≤ +30s   | ≥ 2 min                             | TBD      |
 
-Recording method (planned):
+### What each metric actually measures
+
+Five numbers, five distinct risks. Every threshold answers a different
+"are we sure this scales out of routine into the rest of the app?"
+question.
+
+**1. Initial bundle delta (web): ≤ +5 KB pass, ≥ +50 KB fail.**
+Measures **tree-shaking effectiveness when the flag is off**. The
+SPIKE library compiles into the web bundle even though no caller
+reaches it at runtime (because the flag default is `false`). If Vite's
+prod build cannot dead-code-eliminate the SPIKE through the
+`if (flag) {…}` gates, every user — including the >99 % who will
+never see the SPIKE — pays the download cost. +5 KB gz is "noise
+floor of one helper file"; +50 KB gz is "we're actually shipping the
+whole sqlite-wasm + sync engine to everyone". Stage 4 multiplies this
+across ≥4 modules, so a fail here would compound badly.
+
+**2. First-open SQLite latency: ≤ 200 ms pass, ≥ 800 ms fail.**
+Measures **migration runner + first connection time on a real
+OPFS-SAH connection** — i.e. the user-visible cold-start cost the
+first time someone enables the flag. Wrapped from
+`migrateRoutineSpike()` through the first `listActiveRoutineEntries()`
+call. 200 ms ≈ "one frame at 60 Hz times a few" — perceptible but
+not annoying. 800 ms ≈ "a full second blocking the routine screen on
+every cold start"; that would force us to move migrations off the
+main thread before Stage 4, which is its own multi-PR project.
+
+**3. OPFS на Safari iOS 16.4+: works pass, doesn't load fail.**
+Measures **platform support reality on the riskiest target**.
+OPFS-SAH is the only SQLite-WASM VFS that gives us synchronous
+persistence on iOS Safari, and Apple shipped it in 16.4 (March 2023).
+Older iOS already falls back to the in-memory `kvvfs` adapter
+(`apps/web/src/core/db/sqlite.ts`), but if 16.4+ itself does not
+load OPFS reliably (e.g. private-mode quirks, Capacitor WKWebView
+restrictions) then the whole "local-first" thesis collapses on
+mobile-Safari users. "Works" here means: opens, persists, reloads —
+not just compiles.
+
+**4. Multi-device toggle conflict-free: yes pass, manual fail.**
+Measures **sync correctness end-to-end with the real LWW conflict
+resolver, not the unit-test fake**. Two devices (web tab + mobile
+build), each with its own `originDeviceId`, toggle the same habit
+within the same minute against staging. Pass = both converge to the
+same state via `pullSince` without showing the user a "which version
+do you want to keep?" dialog. Fail = the LWW guard
+(`updated_at` comparison) lets through inconsistent state we have to
+patch up by hand. This is the only metric that is binary by design —
+sync is either correct or it isn't; "mostly correct" doesn't ship.
+
+**5. Vercel build time: ≤ +30 s pass, ≥ 2 min fail.**
+Measures **CI / deploy-pipeline impact** of dragging sqlite-wasm
+loaders, the migration manifest, and the new Drizzle SQLite schema
+through the prod build. Baseline is the last 3 main-branch builds
+(≈40 s as of 2026-05-02). +30 s is "another tsc + bundle pass" —
+acceptable. +2 min is "deploy feedback loop has visibly slowed" —
+unacceptable, because Stage 4 will keep adding modules and the cost
+compounds linearly.
+
+### Recording method (planned)
 
 - **Bundle.** `pnpm --filter @sergeant/web build` with the flag default
   off → `dist/` size, then with the flag forced on at compile time →

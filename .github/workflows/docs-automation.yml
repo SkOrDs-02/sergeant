@@ -19,6 +19,13 @@ on:
   push:
     branches: [main]
   pull_request:
+    # `edited` lets `pr-body-validator` re-run when the author fixes the
+    # body in the GitHub UI without pushing a new commit. The default
+    # trigger set (`opened, synchronize, reopened`) does not cover body
+    # edits, and "Re-run failed jobs" replays the original event payload —
+    # so without this the only way to re-validate a corrected body was to
+    # push a no-op commit.
+    types: [opened, synchronize, reopened, edited]
 
 permissions:
   contents: read

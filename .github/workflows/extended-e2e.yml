@@ -72,6 +72,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build @sergeant/db-schema
+        # The server's `dev` script and `db:migrate:dev` import
+        # `@sergeant/db-schema/pg`, which the package's `exports` map resolves
+        # to `dist/pg/index.js`. Without this build step the import fails
+        # with ERR_MODULE_NOT_FOUND at server boot — see waitlistService.ts /
+        # drizzle.ts. Cheap (~5s, tsc only) and skips on remote-cache hit.
+        run: pnpm --filter @sergeant/db-schema build
+
       - name: Get Playwright version
         id: pw-version
         run: echo "version=$(pnpm --filter @sergeant/web exec playwright --version | head -1)" >> "$GITHUB_OUTPUT"
