@@ -3,6 +3,8 @@
 Self-hosted n8n для автоматизації ops-задач Sergeant.
 Повний контекст — [docs/launch/05-operations-and-automation.md](../docs/launch/05-operations-and-automation.md).
 
+> **Routing & ownership matrix:** [`n8n-workflows/REPORTING-MATRIX.md`](./n8n-workflows/REPORTING-MATRIX.md) — workflow → Telegram topic → audience → cadence → escalation. Архітектурне обґрунтування — [`docs/observability/telegram-control-plane.md`](../docs/observability/telegram-control-plane.md), формальне рішення — [ADR-0030](../docs/adr/0030-telegram-reporting-channel-structure.md).
+
 ## Що всередині
 
 ```
@@ -26,12 +28,20 @@ ops/
     ├── 09-habit-streak-alert.json        # Cron 21:00 Kyiv → push habit reminder
     ├── 10-debt-receivable-reminder.json  # Cron 10:00 → debts due in 3 days → push + Telegram
     │  — Developer / Ops —
-    ├── 15-railway-deployment-notify.json # Railway webhook → Telegram #deploys
-    ├── 16-posthog-daily-metrics.json     # Cron 09:00 → PostHog API → Telegram #metrics
+    ├── 15-railway-deployment-notify.json # Railway webhook → Telegram #ops / #incidents
+    ├── 16-posthog-daily-metrics.json     # Cron 09:00 → PostHog HogQL → Telegram #growth
     ├── 17-github-pr-stale-alert.json     # Cron 10:00 Mon–Fri → PRs >48h → Telegram
     ├── 18-nightly-security-audit.json    # Cron 04:00 UTC → GitHub audit run → Telegram
-    └── 19-db-health-report.json          # Cron Mon 07:00 → DB size + slow queries → Telegram
+    ├── 19-db-health-report.json          # Cron Mon 07:00 → DB size + slow queries → Telegram
+    │  — Growth —
+    ├── 60-growth-funnel-snapshot.json    # Cron 02:30 → PostHog funnel → /api/internal/growth/funnel → Telegram #growth
+    ├── 63-growth-acquisition-snapshot.json # Cron 02:35 → PostHog UTM → /api/internal/growth/acquisition → Telegram #growth
+    │  — Meta (n8n control plane) —
+    ├── 98-error-handler.json             # n8n error trigger → Postgres `n8n_errors` + Telegram #meta + email (P0)
+    └── 99-heartbeat.json                 # Cron */3h → Telegram #meta + Resend email fallback
 ```
+
+Повний routing-таблиця workflow → Telegram topic → owner → escalation — у [`n8n-workflows/REPORTING-MATRIX.md`](./n8n-workflows/REPORTING-MATRIX.md).
 
 ## Швидкий старт
 
@@ -145,7 +155,7 @@ railway up --detach
 ### 16. Щоденні PostHog-метрики
 
 **Тригер:** Cron 09:00 Kyiv (щодня)
-**Дія:** PostHog API → DAU + pageviews за вчора → Telegram `#metrics`
+**Дія:** PostHog HogQL → DAU + pageviews за вчора → Telegram `#growth`
 
 ### 17. Алерт про застоялі GitHub-PR
 
@@ -162,6 +172,26 @@ railway up --detach
 **Тригер:** Cron понеділок 07:00 Kyiv
 **Дія:** Postgres → розмір DB, топ-5 таблиць, повільні запити (`pg_stat_statements`) → Telegram `#ops`
 
+### 60. Snapshot growth-funnel-у
+
+**Тригер:** Cron 02:30 Kyiv (щодня)
+**Дія:** PostHog HogQL → distinct users по 5 funnel-кроках (visit/signup/onboard/first_action/paid) за вчора → POST `/api/internal/growth/funnel` (mig 019, `growth_funnel_daily`) → Telegram `#growth` summary. PostHog events потрібні: `$pageview`, `signup_completed`, `onboarding_completed`, `first_action_completed`, `subscription_started`.
+
+### 63. Snapshot acquisition-каналів
+
+**Тригер:** Cron 02:35 Kyiv (щодня)
+**Дія:** PostHog HogQL → signups згруповані по `($utm_source, $utm_medium, $utm_campaign)` за вчора → POST `/api/internal/growth/acquisition` (mig 019, `growth_acquisition_daily`) → Telegram `#growth` top-5 каналів. `spendCents` / `cacCents` лишаються 0/null поки ad-platform integration не wired.
+
+### 98. Error-handler (n8n control plane)
+
+**Тригер:** n8n Error Workflow trigger (configured у Settings).
+**Дія:** Збагачує payload (workflow name, execution ID, severity) → Postgres `n8n_errors` insert → Telegram `#meta` повідомлення → для P0 (`riskTier=P0` з manifest) додатково — Resend email на `OPS_ALERT_EMAIL`. **Anti-loop:** WF-98 сам не має `errorWorkflow` посилання — Hard rule.
+
+### 99. Heartbeat
+
+**Тригер:** Cron `0 */3 * * *` (кожні 3 години).
+**Дія:** POST у Telegram `#meta` (“n8n alive @ <ts>”). При помилці — fallback на Resend email (`OPS_ALERT_EMAIL`). Відсутність хартбіту > 6 год → ручний сигнал для operator-а перевірити n8n status (n8n down / Railway down / network).
+
 ## Credential-и у n8n
 
 Після імпорту workflows — налаштуй credentials через n8n UI:
@@ -176,17 +206,23 @@ railway up --detach
 | GitHub            | Token / Webhook secret | 05, 17, 18            |
 | Railway           | API Token              | 04                    |
 
-### Нові env-змінні для workflow-ів 07–19
+### Нові env-змінні для workflow-ів 07–99
 
-Додай у n8n → Settings → Environment Variables:
+Додай у n8n → Settings → Environment Variables (або на Railway service «n8n» як env vars):
 
-| Змінна                     | Використовується в | Де взяти                                                              |
-| -------------------------- | ------------------ | --------------------------------------------------------------------- |
-| `API_SECRET`               | 07, 09, 10         | `.env` сервера (той самий `API_SECRET`)                               |
-| `PUBLIC_API_BASE_URL`      | 07, 09, 10         | `https://your-api.railway.app`                                        |
-| `POSTHOG_PERSONAL_API_KEY` | 16                 | PostHog → Settings → Personal API Keys                                |
-| `POSTHOG_PROJECT_ID`       | 16                 | PostHog → Settings → Project → ID у URL                               |
-| `GITHUB_PAT`               | 17, 18             | GitHub → Settings → Developer settings → PAT (classic), scope: `repo` |
+| Змінна                   | Використовується в | Де взяти                                                                                           |
+| ------------------------ | ------------------ | -------------------------------------------------------------------------------------------------- |
+| `API_SECRET`             | 07, 09, 10         | `.env` сервера (той самий `API_SECRET`)                                                            |
+| `INTERNAL_API_KEY`       | 60, 63             | `.env` сервера (той самий `INTERNAL_API_KEY`, у самого Sergeant API)                               |
+| `PUBLIC_API_BASE_URL`    | 07, 09, 10, 60, 63 | `https://your-api.railway.app` (в проді: `https://sergeant-production.up.railway.app`)             |
+| `POSTHOG_API_KEY`        | 16, 60, 63         | PostHog → Settings → **Personal** API Keys (префікс `phx_…`, scopes: `project:read`, `query:read`) |
+| `POSTHOG_PROJECT_ID`     | 16, 60, 63         | PostHog → Settings → Project → ID у URL                                                            |
+| `POSTHOG_HOST`           | 16, 60, 63         | `https://eu.i.posthog.com` (EU instance) або `https://us.i.posthog.com` (US)                       |
+| `GITHUB_PAT`             | 17, 18             | GitHub → Settings → Developer settings → PAT (classic), scope: `repo`                              |
+| `TELEGRAM_ALERT_CHAT_ID` | більшість          | Supergroup ID (від’ємне число з `getUpdates`)                                                      |
+| `OPS_ALERT_EMAIL`        | 98, 99             | Email для P0 fallback (Resend `From: ops@…`)                                                       |
+
+> **Увага:** в n8n env vars ключ фігурує як `POSTHOG_API_KEY` (не `POSTHOG_PERSONAL_API_KEY`). `POSTHOG_PERSONAL_API_KEY` — це GitHub Actions secret для `posthog-release-annotation.yml` (інший контекст). Саме ключ — однаковий (`phx_…`), просто різні імена змінних в різних рантаймах.
 
 ### Railway-webhook (для workflow 15)
 
@@ -320,7 +356,11 @@ docker compose -f ops/docker-compose.ops.yml --env-file ops/.env.ops --profile c
 
 ## Додавання нового workflow-у
 
-Дивись секцію «Workflow basics» у [`docs/adr/0026-n8n-workflow-source-of-truth.md`](../docs/adr/0026-n8n-workflow-source-of-truth.md) та приклади у `ops/n8n-workflows/`.
+1. [Playbook: modify-or-add an n8n workflow](../docs/playbooks/modify-n8n-workflow.md) — канонічна послідовність кроків.
+2. [ADR-0026 «n8n workflow source of truth»](../docs/adr/0026-n8n-workflow-source-of-truth.md) — «Workflow basics» розділ + Git-as-truth інваріант.
+3. [Reporting matrix](./n8n-workflows/REPORTING-MATRIX.md) — оновити **разом з PR**, інакше ламає Hard Rule #15.
+4. [`manifest.json`](./n8n-workflows/manifest.json) — owner / status / riskTier / requiredEnv / requiredCredentials.
+5. Приклади JSON — у `ops/n8n-workflows/`.
 
 ## Вартість
 
