@@ -390,13 +390,16 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 
 ### Stage 3 — SPIKE на routine
 
-#### **PR #022 — `feat(spike): routine module on SQLite — proof of concept`** ⏳ IN-PROGRESS (DRAFT, time-boxed 2 weeks)
+#### **PR #022 — `feat(spike): routine module on SQLite — proof of concept`** ⏳ IN-PROGRESS (closure PR відкрито 2026-05-02)
 
-> **Статус:** PR відкрито 2026-05-02 у гілці `devin/1777743313-spike-routine-sqlite-v2`.
-> Поточний стан — бібліотечний шар повністю готовий і покритий тестами,
-> dev-UI panel і інтеграція в `RoutineApp` лишилися як follow-up частина
-> цього ж SPIKE-у. Декізіон-гейт перевірятиметься після того, як UI
-> підключений хоча б одній платформі.
+> **Статус (2026-05-02):** library + dev panels + automated decision-gate
+> measurements landed. Closure PR — `devin/1777755997-close-routine-sqlite-spike`.
+> SPIKE pre-decision: **conditionally GO** — bundle delta = 0 KB і local
+> build-time proxy ≈ 19 s обидва PASS із запасом; лишилося три
+> hardware-pending перевірки (first-open latency, OPFS на iOS Safari 16.4+,
+> multi-device toggle), для яких dev panel уже виставляє всі
+> метрики — потрібен лише operator pass. Деталі та operator runbook
+> у [`docs/notes/spikes/routine-sqlite-v2.md`](../notes/spikes/routine-sqlite-v2.md#decision-gate-metrics).
 
 - **Goal.** Один модуль повністю на SQLite на обох платформах. Demo:
   toggle звички з web + mobile паралельно → обидва девайси у sync без
@@ -663,7 +666,11 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
    з фіксованими decision criteria для SPIKE.~~
 5. ~~**Тиждень 8-9:** Stage 2 (Foundation) — найризикованіша частина в плані
    bundle/CORP/iOS-compat.~~ ✅ **Stage 2 завершено (2026-05-02).** Усі 8 PR-ів (#014–#021) landed.
-6. **Тиждень 10-11:** SPIKE. Hard decision gate. ← **НАСТУПНИЙ КРОК**
+6. **Тиждень 10-11:** SPIKE. Hard decision gate. ← **ЗАКРИВАЄТЬСЯ ЗАРАЗ.**
+   Library + dev panels + automated gates landed; залишився operator
+   pass на real hardware (iOS Safari 16.4+, multi-device toggle vs
+   staging) перед фінальним go/no-go. Деталі — у
+   [`docs/notes/spikes/routine-sqlite-v2.md`](../notes/spikes/routine-sqlite-v2.md#decision-gate-metrics).
 
 ---
 
