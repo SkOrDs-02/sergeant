@@ -205,8 +205,10 @@ const TRACKED_STORAGE_KEY_NAMES = new Set([
   "FIZRUK_MONTHLY_PLAN",
   "FIZRUK_WELLBEING",
   "FIZRUK_DAILY_LOG",
-  // routine
-  "ROUTINE",
+  // routine — removed from SYNC_MODULES in PR #026 (storage-roadmap
+  // Stage 4). Completions now live in SQLite; the LS blob is no longer
+  // cloud-synced. The dedicated ESLint guard in eslint.config.js
+  // prevents new direct reads of STORAGE_KEYS.ROUTINE.
   // nutrition
   "NUTRITION_LOG",
   "NUTRITION_PANTRIES",
@@ -250,8 +252,7 @@ const TRACKED_STORAGE_KEY_VALUES = new Set([
   "fizruk_monthly_plan_v1",
   "fizruk_wellbeing_v1",
   "fizruk_daily_log_v1",
-  // routine
-  "hub_routine_v1",
+  // routine — see TRACKED_STORAGE_KEY_NAMES comment above.
   // nutrition
   "nutrition_log_v1",
   "nutrition_pantries_v1",

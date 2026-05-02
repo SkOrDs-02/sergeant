@@ -8,9 +8,7 @@
  *
  *  1. Sets `sqliteReadEnabled = true` in `routineStorage` so
  *     `loadRoutineState()` overlays completions from the SQLite cache.
- *  2. Marks the `routine` sync-module as excluded so the client stops
- *     pushing the LS blob to `module_data.routine`.
- *  3. Performs the initial `refreshSqliteCompletions()` so the cache is
+ *  2. Performs the initial `refreshSqliteCompletions()` so the cache is
  *     warm before the first render reads it.
  *
  * The function is idempotent — calling it twice with the same flag
@@ -18,7 +16,6 @@
  */
 
 import { getFlag } from "../../../core/lib/featureFlags.js";
-import { setModuleSyncExcluded } from "../../../core/cloudSync/config.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
 import { migrateRoutineSpike } from "./sqliteSpike/clientMigrate.js";
 import { setSqliteReadEnabled } from "./routineStorage.js";
@@ -53,7 +50,6 @@ export async function bootSqliteReadPath(
     await refreshSqliteCompletions(client, userId);
 
     setSqliteReadEnabled(true);
-    setModuleSyncExcluded("routine", true);
     booted = true;
     return true;
   } catch (err) {

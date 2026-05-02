@@ -60,17 +60,16 @@ describe("no-raw-tracked-storage", () => {
     assert.equal(messages[0].ruleId, RULE_ID);
   });
 
-  it("flags useLocalStorage with the routine key", () => {
-    // Special case: ROUTINE is the only tracked key for the `routine`
-    // module; its literal value is `hub_routine_v1` and it does NOT
-    // share the per-module `*_*` prefix the others use, so the rule
-    // must list it explicitly rather than relying on a prefix match.
+  it("does NOT flag useLocalStorage with the retired routine key", () => {
+    // PR #026 (storage-roadmap Stage 4): routine was removed from
+    // SYNC_MODULES — its LS blob is no longer cloud-synced. Direct
+    // access is now guarded by a separate `no-restricted-syntax` rule
+    // in eslint.config.js, not by `no-raw-tracked-storage`.
     const messages = lint(
       `import { useLocalStorage } from "@/lib/storage";
        useLocalStorage("hub_routine_v1", null);`,
     );
-    assert.equal(messages.length, 1);
-    assert.equal(messages[0].ruleId, RULE_ID);
+    assert.deepEqual(messages, []);
   });
 
   it("flags template-literal keys with no expressions", () => {

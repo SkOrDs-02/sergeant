@@ -57,9 +57,6 @@ export const SYNC_MODULES = {
       STORAGE_KEYS.FIZRUK_DAILY_LOG,
     ],
   },
-  routine: {
-    keys: [STORAGE_KEYS.ROUTINE],
-  },
   nutrition: {
     keys: [
       STORAGE_KEYS.NUTRITION_LOG,

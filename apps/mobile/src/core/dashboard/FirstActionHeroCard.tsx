@@ -34,6 +34,7 @@ import {
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 import {
   safeReadLS as mmkvGet,
   safeRemoveLS as mmkvRemove,
@@ -213,10 +214,9 @@ export function FirstActionHeroCard({
     >
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
-          {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- intentional FTUX eyebrow, mirrors web FirstActionHeroCard */}
-          <Text className="text-[11px] font-semibold uppercase tracking-wide text-fg-muted">
+          <SectionHeading size="2xs" weight="semibold" variant="muted">
             Почнемо
-          </Text>
+          </SectionHeading>
           <Text className="mt-1 text-base font-bold leading-snug text-fg">
             {primary.title}
           </Text>

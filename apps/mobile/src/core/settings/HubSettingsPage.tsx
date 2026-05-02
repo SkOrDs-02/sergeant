@@ -29,6 +29,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { hapticTap } from "@sergeant/shared";
 
+import { SectionHeading } from "@/components/ui/SectionHeading";
+
 import { AccountSection } from "./AccountSection";
 import { AIDigestSection } from "./AIDigestSection";
 import { AssistantCatalogueSection } from "./AssistantCatalogueSection";
@@ -175,10 +177,9 @@ export function HubSettingsPage() {
             {/* Group Header */}
             <View className="flex-row items-center gap-2 mb-3">
               <View className="h-1 w-1 rounded-full bg-brand" />
-              {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift */}
-              <Text className="text-xs font-semibold text-fg-muted uppercase tracking-wider">
+              <SectionHeading size="xs" weight="semibold" variant="muted">
                 {group.title}
-              </Text>
+              </SectionHeading>
               <View className="flex-1 h-px bg-line dark:bg-cream-700 ml-2" />
             </View>
 

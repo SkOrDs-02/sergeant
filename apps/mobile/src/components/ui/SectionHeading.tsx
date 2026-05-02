@@ -21,7 +21,7 @@
 import type { ReactNode } from "react";
 import { Text, type TextProps } from "react-native";
 
-export type SectionHeadingSize = "xs" | "sm" | "md" | "lg" | "xl";
+export type SectionHeadingSize = "2xs" | "xs" | "sm" | "md" | "lg" | "xl";
 
 export type SectionHeadingVariant =
   | "subtle"
@@ -33,15 +33,25 @@ export type SectionHeadingVariant =
   | "routine"
   | "nutrition";
 
-export type SectionHeadingWeight = "semibold" | "bold" | "extrabold";
+export type SectionHeadingWeight =
+  | "normal"
+  | "medium"
+  | "semibold"
+  | "bold"
+  | "extrabold";
 
 // This IS the SectionHeading primitive itself — canonical owner of the
 // uppercase + tracking + text-* eyebrow combo. Raw-className call-sites
-// elsewhere must still go through <SectionHeading>.
+// elsewhere must still go through <SectionHeading>. This file is on the
+// `no-eyebrow-drift` allowlist (see `eslint.config.js`); per-line disables
+// are not needed here. The `2xs` step is the mobile-side mirror of the
+// web addition — covers compact eyebrows on hub-dashboard cards, FTUX
+// hero, sheet sub-headers, and weekly-digest module subheadings
+// (formerly `text-[10px]`/`text-[11px]`/`text-2xs` raw className
+// triplets).
 const sizeTokens: Record<SectionHeadingSize, string> = {
-  // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- primitive owner
+  "2xs": "text-2xs uppercase tracking-wide",
   xs: "text-xs uppercase tracking-wider",
-  // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- primitive owner
   sm: "text-xs uppercase tracking-widest",
   md: "text-sm",
   lg: "text-lg leading-tight",
@@ -49,12 +59,15 @@ const sizeTokens: Record<SectionHeadingSize, string> = {
 };
 
 const weightTokens: Record<SectionHeadingWeight, string> = {
+  normal: "font-normal",
+  medium: "font-medium",
   semibold: "font-semibold",
   bold: "font-bold",
   extrabold: "font-extrabold",
 };
 
 const defaultWeightForSize: Record<SectionHeadingSize, SectionHeadingWeight> = {
+  "2xs": "bold",
   xs: "bold",
   sm: "bold",
   md: "semibold",
@@ -75,6 +88,7 @@ const variants: Record<SectionHeadingVariant, string> = {
 
 const defaultVariantForSize: Record<SectionHeadingSize, SectionHeadingVariant> =
   {
+    "2xs": "subtle",
     xs: "subtle",
     sm: "subtle",
     md: "text",

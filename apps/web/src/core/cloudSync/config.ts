@@ -45,9 +45,6 @@ export const SYNC_MODULES = {
       STORAGE_KEYS.FIZRUK_WELLBEING,
     ],
   },
-  routine: {
-    keys: [STORAGE_KEYS.ROUTINE],
-  },
   nutrition: {
     keys: [
       STORAGE_KEYS.NUTRITION_LOG,

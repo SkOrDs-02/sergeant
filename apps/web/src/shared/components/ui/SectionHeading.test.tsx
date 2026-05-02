@@ -82,4 +82,30 @@ describe("SectionHeading", () => {
     expect(container.querySelector("h2")).not.toBeNull();
     expect(container.querySelector("h3")).toBeNull();
   });
+
+  it("size='2xs' renders the compact eyebrow scale (text-2xs + uppercase + tracking-wide + bold)", () => {
+    const { container } = render(
+      <SectionHeading size="2xs">Загальні рекомендації</SectionHeading>,
+    );
+    const cls = container.querySelector("h3")!.className;
+    expect(cls).toContain("text-2xs");
+    expect(cls).toContain("uppercase");
+    expect(cls).toContain("tracking-wide");
+    expect(cls).toContain("font-bold");
+    expect(cls).toContain("text-subtle");
+  });
+
+  it("weight='medium' / weight='normal' override the size-default bold", () => {
+    const { container: med } = render(
+      <SectionHeading weight="medium">Розділ</SectionHeading>,
+    );
+    expect(med.querySelector("h3")!.className).toContain("font-medium");
+    expect(med.querySelector("h3")!.className).not.toContain("font-bold");
+
+    const { container: norm } = render(
+      <SectionHeading weight="normal">Розділ</SectionHeading>,
+    );
+    expect(norm.querySelector("h3")!.className).toContain("font-normal");
+    expect(norm.querySelector("h3")!.className).not.toContain("font-bold");
+  });
 });

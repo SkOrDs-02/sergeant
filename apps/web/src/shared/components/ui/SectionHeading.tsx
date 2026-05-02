@@ -18,7 +18,7 @@ import { cn } from "../../lib/cn";
  * default to <h3>.
  */
 
-export type SectionHeadingSize = "xs" | "sm" | "md" | "lg" | "xl";
+export type SectionHeadingSize = "2xs" | "xs" | "sm" | "md" | "lg" | "xl";
 
 export type SectionHeadingVariant =
   | "subtle"
@@ -35,13 +35,25 @@ export type SectionHeadingVariant =
  * md semibold, lg/xl extrabold). Primary use-case is the Finyk drift
  * "text-xs text-muted uppercase tracking-wide font-semibold" — after this
  * prop exists, call-sites can opt-in via `<SectionHeading weight="semibold">`
- * and drop their raw-className eslint-disable.
+ * and drop their raw-className eslint-disable. `normal` covers the
+ * `text-[11px] uppercase tracking-wide` no-explicit-weight pattern used
+ * by sheet sub-headers (see `apps/mobile/src/modules/finyk/pages/Transactions`).
  */
-export type SectionHeadingWeight = "semibold" | "bold" | "extrabold";
+export type SectionHeadingWeight =
+  | "normal"
+  | "medium"
+  | "semibold"
+  | "bold"
+  | "extrabold";
 
 // Size-only tokens (font-scale + casing + tracking). Weight is applied
-// separately so `weight` prop overrides can compose cleanly.
+// separately so `weight` prop overrides can compose cleanly. The `2xs`
+// step (10px) covers the compact eyebrow drift on hub-dashboard cards,
+// FTUX hero, sheet sub-headers, and weekly-digest module subheadings —
+// what was historically written as `text-[10px]`/`text-[11px]` /
+// `text-2xs` raw className triplets.
 const sizeTokens: Record<SectionHeadingSize, string> = {
+  "2xs": "text-2xs uppercase tracking-wide",
   xs: "text-xs uppercase tracking-wider",
   sm: "text-xs uppercase tracking-widest",
   md: "text-sm",
@@ -50,12 +62,15 @@ const sizeTokens: Record<SectionHeadingSize, string> = {
 };
 
 const weightTokens: Record<SectionHeadingWeight, string> = {
+  normal: "font-normal",
+  medium: "font-medium",
   semibold: "font-semibold",
   bold: "font-bold",
   extrabold: "font-extrabold",
 };
 
 const defaultWeightForSize: Record<SectionHeadingSize, SectionHeadingWeight> = {
+  "2xs": "bold",
   xs: "bold",
   sm: "bold",
   md: "semibold",
@@ -85,6 +100,7 @@ const variants: Record<SectionHeadingVariant, string> = {
 // body-size headings default to the foreground text colour.
 const defaultVariantForSize: Record<SectionHeadingSize, SectionHeadingVariant> =
   {
+    "2xs": "subtle",
     xs: "subtle",
     sm: "subtle",
     md: "text",
