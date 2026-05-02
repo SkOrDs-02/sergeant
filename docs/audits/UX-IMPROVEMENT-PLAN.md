@@ -1,6 +1,6 @@
 # 🛠️ Технічний план покращення UI/UX
 
-> **Last validated:** 2026-05-02 by @Codex. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
 > **Status:** Active
 
 **Базується на:** UX-UI-AUDIT-2026.md  
@@ -15,22 +15,22 @@
 
 ## Актуальний стан за кодом (2026-05-02)
 
-| Напрям | Статус | Підтвердження в коді |
-| --- | --- | --- |
-| Dark mode + theme toggle | Done | `apps/mobile/src/core/theme/ColorSchemeBridge.tsx`, `GeneralSection.tsx` |
-| Unified BackButton | Done | `apps/mobile/src/components/ui/BackButton.tsx` |
-| Mobile Sheet gesture dismiss | Done | `Sheet.tsx` uses `react-native-gesture-handler` + Reanimated pan gesture |
-| Input helper icons | Done | `Input.tsx` has `showHelperIcon`, `AlertCircle`, `CheckCircle` |
-| EmptyState semantic UI | Done | `EmptyState.tsx` uses semantic text/surface classes without raw dark compatibility classes |
-| Toast safe area | Done | `Toast.tsx` uses `useSafeAreaInsets()` |
-| Settings grouping | Done | `HubSettingsPage.tsx` groups sections into system/modules/advanced |
-| Forgot password route | Done | `apps/mobile/app/(auth)/forgot-password.tsx` |
-| Tab badges | Done | `useTabBadges.ts`, `apps/mobile/app/(tabs)/_layout.tsx` |
-| Pull-to-refresh | Done | `HubDashboard.tsx` uses `RefreshControl` |
-| PageSkeleton / loading primitives | Done with audit follow-up | `PageSkeleton.tsx`, `LoadingOverlay.tsx`, `Skeleton.tsx` exist |
-| ModuleErrorBoundary UX | Done | `ModuleErrorBoundary.tsx` has retry/home actions and a11y labels |
-| E2E and device validation | Partial | `hub-ux-smoke.e2e.ts` added; needs current iOS/Android Detox execution |
-| Accessibility audit | Partial | Settings/theme/loading primitives improved; needs full screen-reader pass |
+| Напрям                            | Статус                    | Підтвердження в коді                                                                       |
+| --------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------ |
+| Dark mode + theme toggle          | Done                      | `apps/mobile/src/core/theme/ColorSchemeBridge.tsx`, `GeneralSection.tsx`                   |
+| Unified BackButton                | Done                      | `apps/mobile/src/components/ui/BackButton.tsx`                                             |
+| Mobile Sheet gesture dismiss      | Done                      | `Sheet.tsx` uses `react-native-gesture-handler` + Reanimated pan gesture                   |
+| Input helper icons                | Done                      | `Input.tsx` has `showHelperIcon`, `AlertCircle`, `CheckCircle`                             |
+| EmptyState semantic UI            | Done                      | `EmptyState.tsx` uses semantic text/surface classes without raw dark compatibility classes |
+| Toast safe area                   | Done                      | `Toast.tsx` uses `useSafeAreaInsets()`                                                     |
+| Settings grouping                 | Done                      | `HubSettingsPage.tsx` groups sections into system/modules/advanced                         |
+| Forgot password route             | Done                      | `apps/mobile/app/(auth)/forgot-password.tsx`                                               |
+| Tab badges                        | Done                      | `useTabBadges.ts`, `apps/mobile/app/(tabs)/_layout.tsx`                                    |
+| Pull-to-refresh                   | Done                      | `HubDashboard.tsx` uses `RefreshControl`                                                   |
+| PageSkeleton / loading primitives | Done with audit follow-up | `PageSkeleton.tsx`, `LoadingOverlay.tsx`, `Skeleton.tsx` exist                             |
+| ModuleErrorBoundary UX            | Done                      | `ModuleErrorBoundary.tsx` has retry/home actions and a11y labels                           |
+| E2E and device validation         | Partial                   | `hub-ux-smoke.e2e.ts` added; needs current iOS/Android Detox execution                     |
+| Accessibility audit               | Partial                   | Settings/theme/loading primitives improved; needs full screen-reader pass                  |
 
 ---
 

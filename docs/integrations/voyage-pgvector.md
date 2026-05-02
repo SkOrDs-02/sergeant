@@ -275,6 +275,20 @@ Threshold-и міграції на dedicated vector DB — у [ADR-0028 § scali
 
 Без Docker integration-test-и soft-skip-аються з warning-ом — local dev без Docker лишається зеленим.
 
+### CI Postgres image
+
+Міграція `025_ai_memories_pgvector.sql` робить `CREATE EXTENSION IF NOT EXISTS vector`, тому будь-який job, який запускає `pnpm --filter @sergeant/server db:migrate:dev` або підіймає server-test-suite, мусить мати pgvector у Postgres-сервісі. Стандартний `postgres:16-alpine` падає з `extension "vector" is not available` ще на boot-і.
+
+Усі CI-workflow-и Sergeant-а використовують `pgvector/pgvector:pg16` (multi-arch manifest, SHA-pinned для supply-chain hardening):
+
+| Workflow                                                                 | Job                 | Файл                                                                 |
+| ------------------------------------------------------------------------ | ------------------- | -------------------------------------------------------------------- |
+| [`ci.yml`](../../.github/workflows/ci.yml)                               | `Critical-flow E2E` | services.postgres.image = `pgvector/pgvector:pg16@sha256:7d400e34…`  |
+| [`extended-e2e.yml`](../../.github/workflows/extended-e2e.yml)           | `Extended-flow E2E` | той самий digest                                                     |
+| [`visual-regression.yml`](../../.github/workflows/visual-regression.yml) | `Visual regression` | той самий digest (workflow піднімає API сервер → міграції → preview) |
+
+Якщо додаєш новий CI-job, що чіпає server / БД — копіюй `services.postgres` блок з `ci.yml`. Локальний `docker-compose.yml` залишається на `postgres:16-alpine`, бо AI-memory feature-flag-нутий через `AI_MEMORY_ENABLED=false` за замовчуванням і dev-loop не виконує міграцію 025 без ручного flip-а; коли вмикаєш фічу локально — переключай на `pgvector/pgvector:pg16` точково.
+
 ## Зовнішні посилання
 
 - ADR-0028 — `docs/adr/0028-pgvector-ai-memory.md`

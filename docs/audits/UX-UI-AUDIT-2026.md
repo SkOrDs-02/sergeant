@@ -1,6 +1,6 @@
 # Генеральний аудит дизайну, UI/UX та користувацького досвіду
 
-> **Last validated:** 2026-05-02 by @Codex. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
 > **Status:** Active
 
 **Продукт:** Sergeant  
@@ -53,31 +53,31 @@
 
 ### Phase 3: Advanced Components & Theming
 
-| Покращення                   | Статус | Файли                           |
-| ---------------------------- | ------ | ------------------------------- |
+| Покращення                   | Статус | Файли                               |
+| ---------------------------- | ------ | ----------------------------------- |
 | Mobile theme extension       | Done   | `theme.ts`, `ColorSchemeBridge.tsx` |
-| chartColors semantic tokens  | Done   | `theme.ts`                      |
-| HabitHeatmap semantic colors | Done   | `HabitHeatmap.tsx`              |
-| MacroRing semantic colors    | Done   | `MacroRing.tsx`                 |
-| Shopping page Input fix      | Done   | `Shopping.tsx`                  |
-| FormField wrapper component  | Done   | `FormField.tsx` (новий)         |
-| ConfirmDialog enhanced       | Done   | `ConfirmDialog.tsx` (покращено) |
-| useConfirm imperative hook   | Done   | `ConfirmDialog.tsx`             |
-| SwipeableRow semantic colors | Done   | `SwipeableRow.tsx`              |
-| commonActions expanded       | Done   | `SwipeableRow.tsx`              |
-| ProgressIndicator component  | Done   | `ProgressIndicator.tsx` (новий) |
-| ProgressBar/Circle/Steps     | Done   | `ProgressIndicator.tsx`         |
-| Centralized haptics utility  | Done   | `lib/haptics.ts` (новий)        |
-| useHaptics hook              | Done   | `lib/haptics.ts`                |
+| chartColors semantic tokens  | Done   | `theme.ts`                          |
+| HabitHeatmap semantic colors | Done   | `HabitHeatmap.tsx`                  |
+| MacroRing semantic colors    | Done   | `MacroRing.tsx`                     |
+| Shopping page Input fix      | Done   | `Shopping.tsx`                      |
+| FormField wrapper component  | Done   | `FormField.tsx` (новий)             |
+| ConfirmDialog enhanced       | Done   | `ConfirmDialog.tsx` (покращено)     |
+| useConfirm imperative hook   | Done   | `ConfirmDialog.tsx`                 |
+| SwipeableRow semantic colors | Done   | `SwipeableRow.tsx`                  |
+| commonActions expanded       | Done   | `SwipeableRow.tsx`                  |
+| ProgressIndicator component  | Done   | `ProgressIndicator.tsx` (новий)     |
+| ProgressBar/Circle/Steps     | Done   | `ProgressIndicator.tsx`             |
+| Centralized haptics utility  | Done   | `lib/haptics.ts` (новий)            |
+| useHaptics hook              | Done   | `lib/haptics.ts`                    |
 
 ### Залишок після code-sync
 
-| Напрям | Статус | Чому не закрито |
-| --- | --- | --- |
-| iOS/Android manual validation | Pending | Потрібен свіжий прогін на реальних/емуляторних девайсах |
+| Напрям                            | Статус  | Чому не закрито                                                                      |
+| --------------------------------- | ------- | ------------------------------------------------------------------------------------ |
+| iOS/Android manual validation     | Pending | Потрібен свіжий прогін на реальних/емуляторних девайсах                              |
 | E2E для auth/theme/settings flows | Partial | Unit coverage for forgot-password + Detox Hub UX smoke added; needs device execution |
-| Full accessibility audit | Partial | Settings/theme/loading a11y improved; still needs screen-reader audit report |
-| Loading state audit всіх сторінок | Pending | Примітиви є, потрібна перевірка покриття сторінок |
+| Full accessibility audit          | Partial | Settings/theme/loading a11y improved; still needs screen-reader audit report         |
+| Loading state audit всіх сторінок | Pending | Примітиви є, потрібна перевірка покриття сторінок                                    |
 
 ### Статистика
 

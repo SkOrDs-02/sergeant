@@ -87,8 +87,11 @@ pnpm --filter @sergeant/mobile-shell open:android
 ## iOS
 
 `ios/` **не** закомічено — потрібен Mac з Xcode + CocoaPods для
-першого `pnpm --filter @sergeant/mobile-shell add:ios`. Після цього —
-`build:web` → `pnpm --filter @sergeant/mobile-shell sync ios` →
+першого `pnpm --filter @sergeant/mobile-shell add:ios`. `@capacitor/ios`
+лежить у `dependencies` поряд з `@capacitor/android` (без нього
+`cap add ios` падає `Could not find the ios platform`), тож на свіжій
+машині достатньо `pnpm install --frozen-lockfile` → `add:ios`. Після
+цього — `build:web` → `pnpm --filter @sergeant/mobile-shell sync ios` →
 `open:ios`. Той самий флоу крутиться на `macos-latest` у
 `.github/workflows/mobile-shell-ios.yml` (build-only,
 `CODE_SIGNING_ALLOWED=NO`). Release lane живе в

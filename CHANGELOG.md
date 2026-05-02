@@ -78,6 +78,8 @@ metrics/web-vitals}` — а API серверу не було, vite сипав
     реальний production-патерн (споживач Popover-у дає неінтерактивний
     зміст, аріа-семантику дає сам Popover).
 
+> > > > > > > origin/main
+
 - **Web: відновлено strict-pipeline (`tsc -p tsconfig.strict.json`) — два regression-блокери після PR #1330.**
   Pull-to-refresh feature злетів зі strict-null pipeline: 3 помилки на двох
   файлах ламали Phase 1–3 typecheck.

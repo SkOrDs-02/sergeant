@@ -1,6 +1,6 @@
 # Mobile-білди — команди для локальної розробки
 
-> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
 > **Status:** Active
 
 > Короткий operator-oriented довідник по Capacitor-shell-у (`@sergeant/mobile-shell`). Дизайн-обґрунтування, список плагінів і історію shell-а — див. [`apps/mobile-shell/README.md`](../../apps/mobile-shell/README.md). Для Expo / React Native застосунку (`@sergeant/mobile`) — див. [`apps/mobile/README.md`](../../apps/mobile/README.md) і [`overview.md`](./overview.md).
@@ -52,7 +52,7 @@ pnpm --filter @sergeant/mobile-shell open:android
 
 ## iOS — debug-білд для Simulator-а
 
-`apps/mobile-shell/ios/` свідомо **не** закомічено — він регенерується при першому запуску через `cap add ios` (який під капотом робить `pod install`). Потрібен macOS + Xcode + CocoaPods.
+`apps/mobile-shell/ios/` свідомо **не** закомічено — він регенерується при першому запуску через `cap add ios` (який під капотом робить `pod install`). Потрібен macOS + Xcode + CocoaPods. `@capacitor/ios` тримаємо у `apps/mobile-shell/package.json#dependencies` поряд з `@capacitor/android`, бо без нього `cap add ios` падає `Could not find the ios platform`.
 
 ```bash
 # з кореня репо
