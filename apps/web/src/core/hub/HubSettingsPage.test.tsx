@@ -48,7 +48,14 @@ describe("HubSettingsPage", () => {
         syncing={false}
         onSync={vi.fn()}
         onPull={vi.fn()}
-        user={{ id: "u1" }}
+        user={{
+          id: "u1",
+          email: null,
+          name: null,
+          image: null,
+          emailVerified: true,
+          createdAt: null,
+        }}
       />,
     );
 
@@ -69,7 +76,14 @@ describe("HubSettingsPage", () => {
         syncing={false}
         onSync={vi.fn()}
         onPull={vi.fn()}
-        user={{ id: "u1" }}
+        user={{
+          id: "u1",
+          email: null,
+          name: null,
+          image: null,
+          emailVerified: true,
+          createdAt: null,
+        }}
       />,
     );
 
