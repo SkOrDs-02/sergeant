@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-05-02 by @sonher468. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
 > **Status:** Active
 
 Аналіз кодової бази `apps/web/src` (434 source файли, 87k рядків).

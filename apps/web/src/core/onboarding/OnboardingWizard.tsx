@@ -10,6 +10,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { useCelebration } from "@shared/components/ui/CelebrationModal";
 import { BrandLogo } from "../app/BrandLogo";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
+import { OnboardingProgress } from "./OnboardingProgress";
 import {
   ALL_MODULES,
   markFirstActionPending,
@@ -277,6 +278,13 @@ function WelcomeOneScreen({
             />
           </div>
         ))}
+      </div>
+
+      <div className="w-full">
+        <OnboardingProgress
+          activeModules={picks}
+          totalModules={ALL_MODULES.length}
+        />
       </div>
 
       <Button

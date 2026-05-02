@@ -1,4 +1,11 @@
-import { useEffect, useCallback, useState } from "react";
+import {
+  useEffect,
+  useCallback,
+  useState,
+  useContext,
+  createContext,
+  useRef,
+} from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/cn";
 import { Icon } from "./Icon";
@@ -8,6 +15,87 @@ export interface KeyboardShortcut {
   keys: string[];
   description: string;
   category?: string;
+}
+
+// ─── Centralized shortcut registry ───────────────────────────────────────────
+// Modules call `useRegisterShortcuts(shortcuts)` to add their own entries.
+// The modal reads the merged list so module-specific shortcuts appear
+// alongside global ones without hard-coding them in DEFAULT_SHORTCUTS.
+
+interface ShortcutRegistryEntry {
+  id: string;
+  shortcuts: KeyboardShortcut[];
+}
+
+interface ShortcutRegistryContextValue {
+  register: (entry: ShortcutRegistryEntry) => void;
+  unregister: (id: string) => void;
+  getAll: () => KeyboardShortcut[];
+}
+
+export const ShortcutRegistryContext =
+  createContext<ShortcutRegistryContextValue | null>(null);
+
+/**
+ * Provider that collects shortcuts registered by modules/features.
+ * Wrap the app root (or the hub shell) with this once.
+ */
+export function ShortcutRegistryProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const entriesRef = useRef<Map<string, KeyboardShortcut[]>>(new Map());
+  const [, forceUpdate] = useState(0);
+
+  const register = useCallback((entry: ShortcutRegistryEntry) => {
+    entriesRef.current.set(entry.id, entry.shortcuts);
+    forceUpdate((n) => n + 1);
+  }, []);
+
+  const unregister = useCallback((id: string) => {
+    entriesRef.current.delete(id);
+    forceUpdate((n) => n + 1);
+  }, []);
+
+  const getAll = useCallback((): KeyboardShortcut[] => {
+    const all: KeyboardShortcut[] = [];
+    for (const shortcuts of entriesRef.current.values()) {
+      all.push(...shortcuts);
+    }
+    return all;
+  }, []);
+
+  return (
+    <ShortcutRegistryContext.Provider value={{ register, unregister, getAll }}>
+      {children}
+    </ShortcutRegistryContext.Provider>
+  );
+}
+
+/**
+ * Register module-specific shortcuts in the global modal.
+ * Shortcuts are automatically removed when the component unmounts.
+ *
+ * @example
+ * useRegisterShortcuts("finyk", [
+ *   { keys: ["N"], description: "Нова витрата", category: "Finyk" },
+ * ]);
+ */
+export function useRegisterShortcuts(
+  registrationId: string,
+  shortcuts: KeyboardShortcut[],
+) {
+  const registry = useContext(ShortcutRegistryContext);
+
+  useEffect(() => {
+    if (!registry || shortcuts.length === 0) return;
+    registry.register({ id: registrationId, shortcuts });
+    return () => registry.unregister(registrationId);
+    // Intentionally omit `shortcuts` from deps — callers typically pass
+    // an inline array; deep comparison would require JSON serialization.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [registry, registrationId]);
 }
 
 const DEFAULT_SHORTCUTS: KeyboardShortcut[] = [
@@ -65,7 +153,7 @@ function KeyBadge({ children }: { children: string }) {
     <kbd
       className={cn(
         "inline-flex items-center justify-center min-w-[24px] h-6 px-1.5",
-        "text-xs font-medium text-text",
+        "text-style-caption text-text",
         "bg-surface border border-line rounded-xl shadow-sm",
       )}
     >
@@ -80,9 +168,15 @@ export function KeyboardShortcutsModal({
   shortcuts = DEFAULT_SHORTCUTS,
 }: KeyboardShortcutsModalProps) {
   const modalRef = useFocusTrap<HTMLDivElement>(open, onClose);
+  const registry = useContext(ShortcutRegistryContext);
+
+  // Merge base shortcuts with any registered by modules
+  const mergedShortcuts = registry
+    ? [...shortcuts, ...registry.getAll()]
+    : shortcuts;
 
   // Group shortcuts by category
-  const grouped = shortcuts.reduce(
+  const grouped = mergedShortcuts.reduce(
     (acc, shortcut) => {
       const cat = shortcut.category || "Інше";
       if (!acc[cat]) acc[cat] = [];
@@ -123,7 +217,7 @@ export function KeyboardShortcutsModal({
         <div className="sticky top-0 flex items-center justify-between p-4 border-b border-line bg-panel/95 backdrop-blur-sm rounded-t-2xl">
           <h2
             id="keyboard-shortcuts-title"
-            className="text-lg font-semibold text-text"
+            className="text-style-title text-text"
           >
             Комбінації клавіш
           </h2>
@@ -141,9 +235,7 @@ export function KeyboardShortcutsModal({
         <div className="p-4 space-y-6">
           {Object.entries(grouped).map(([category, items]) => (
             <div key={category}>
-              <h3 className="text-sm font-medium text-muted mb-3">
-                {category}
-              </h3>
+              <h3 className="text-style-label text-muted mb-3">{category}</h3>
               <div className="space-y-2">
                 {items.map((shortcut, idx) => (
                   <div

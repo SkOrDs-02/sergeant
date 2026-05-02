@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Meal } from "@sergeant/nutrition-domain";
+import {
+  SkeletonMealCard,
+  SkeletonText,
+  Skeleton,
+} from "@shared/components/ui/Skeleton";
 import { NutritionHeader } from "./components/NutritionHeader";
 import { NutritionBottomNav } from "./components/NutritionBottomNav";
 import { SubTabs } from "./components/SubTabs";
@@ -374,11 +379,19 @@ export default function NutritionApp({
     ]);
   }, [queryClient]);
 
+  const handlePullRefreshError = useCallback(() => {
+    toast.error("Не вдалося оновити дані. Перевір з'єднання.");
+  }, [toast]);
+
   return (
     <ModuleAccentProvider module="nutrition" asShellRoot>
       <NutritionHeader busy={busy} onBackToHub={onBackToHub} />
 
-      <PullToRefresh onRefresh={handlePullRefresh} variant="nutrition">
+      <PullToRefresh
+        onRefresh={handlePullRefresh}
+        onError={handlePullRefreshError}
+        variant="nutrition"
+      >
         <div className="max-w-2xl mx-auto px-4 pt-4 pb-6 w-full">
           <NutritionPantrySelector pantry={pantry} busy={busy} />
 
@@ -581,7 +594,21 @@ export default function NutritionApp({
                       { id: "recipes", label: "Рецепти" },
                     ]}
                   />
-                  {menuSubTab === "plan" ? (
+                  {menuSubTab === "plan" && dayPlanBusy ? (
+                    <div className="space-y-3 motion-safe:animate-in motion-safe:fade-in">
+                      <div className="flex items-center justify-between px-1 pb-1">
+                        <SkeletonText shimmer className="w-32" />
+                        <Skeleton shimmer className="w-20 h-6 rounded-full" />
+                      </div>
+                      {[0, 1, 2].map((i) => (
+                        <SkeletonMealCard
+                          key={i}
+                          shimmer
+                          style={{ animationDelay: `${i * 60}ms` }}
+                        />
+                      ))}
+                    </div>
+                  ) : menuSubTab === "plan" ? (
                     <DailyPlanCard
                       prefs={prefs}
                       setPrefs={setPrefs}

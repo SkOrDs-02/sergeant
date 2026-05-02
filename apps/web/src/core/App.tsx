@@ -6,7 +6,10 @@ import { useDarkMode } from "@shared/hooks/useDarkMode";
 import { ToastProvider, useToast } from "@shared/hooks/useToast";
 import { ToastContainer } from "@shared/components/ui/Toast";
 import { ScreenReaderAnnouncerProvider } from "@shared/components/ui/ScreenReaderAnnouncer";
-import { useKeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
+import {
+  useKeyboardShortcutsModal,
+  ShortcutRegistryProvider,
+} from "@shared/components/ui/KeyboardShortcutsModal";
 
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { useCloudSync } from "./cloudSync/useCloudSync";
@@ -31,9 +34,10 @@ import { PageviewTracker } from "./observability/PageviewTracker";
 
 export default function App() {
   return (
-    <ToastProvider>
-      <ToastContainer />
-      {/*
+    <ShortcutRegistryProvider>
+      <ToastProvider>
+        <ToastContainer />
+        {/*
         Screen reader announcer: mounts two `aria-live` regions
         (polite + assertive) at the app root. Any descendant can call
         `useAnnounce()` to surface dynamic state changes (toggles,
@@ -41,26 +45,27 @@ export default function App() {
         tech. Lives outside ApiClientProvider/AuthProvider so even
         unauthenticated screens (sign-in, onboarding) can announce.
       */}
-      {/* Capacitor deep-link bridge: монтуємо ВСЕРЕДИНІ роутера (App
+        {/* Capacitor deep-link bridge: монтуємо ВСЕРЕДИНІ роутера (App
           рендериться під <BrowserRouter>), але поза AppInner, щоб
           bridge переживав ранні return-и в AppInner (/sign-in,
           /reset-password, /design тощо) — deep link може прилетіти у
           будь-який із цих станів. */}
-      <ShellDeepLinkBridge />
-      {/* PostHog `$pageview` tracker: монтуємо тут (всередині
+        <ShellDeepLinkBridge />
+        {/* PostHog `$pageview` tracker: монтуємо тут (всередині
           BrowserRouter, поза AuthProvider), щоб фіксувати pathname і
           в unauthenticated-шляхах (`/sign-in`, `/welcome`,
           `/reset-password`) — без цього onboarding / auth funnels
           у PostHog були б сліпими перед login-ом. */}
-      <PageviewTracker />
-      <ScreenReaderAnnouncerProvider>
-        <ApiClientProvider client={apiClient}>
-          <AuthProvider>
-            <AppInner />
-          </AuthProvider>
-        </ApiClientProvider>
-      </ScreenReaderAnnouncerProvider>
-    </ToastProvider>
+        <PageviewTracker />
+        <ScreenReaderAnnouncerProvider>
+          <ApiClientProvider client={apiClient}>
+            <AuthProvider>
+              <AppInner />
+            </AuthProvider>
+          </ApiClientProvider>
+        </ScreenReaderAnnouncerProvider>
+      </ToastProvider>
+    </ShortcutRegistryProvider>
   );
 }
 

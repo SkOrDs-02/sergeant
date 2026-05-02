@@ -1,6 +1,6 @@
 # OpenClaw — roadmap до v0 і далі
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Поетапний план побудови OpenClaw — AI-партнера для founder-а Sergeant-у.

@@ -13,6 +13,8 @@ export type PullToRefreshVariant = NonNullable<
 export interface PullToRefreshProps {
   /** Called when the user finishes a successful pull gesture. */
   onRefresh: () => Promise<void> | void;
+  /** Called when onRefresh throws. Use for error toasts / retry banners. */
+  onError?: (err: unknown) => void;
   /** Module accent for the indicator ring. */
   variant?: PullToRefreshVariant;
   /** Disable the gesture (e.g. when offline or while a sheet is open). */
@@ -67,6 +69,7 @@ export interface PullToRefreshProps {
  */
 export function PullToRefresh({
   onRefresh,
+  onError,
   variant = "default",
   enabled = true,
   as = "div",
@@ -97,6 +100,7 @@ export function PullToRefresh({
 
   const state = usePullToRefresh({
     onRefresh: handleRefresh,
+    onError,
     scrollRef,
     enabled,
     ...hookOptions,

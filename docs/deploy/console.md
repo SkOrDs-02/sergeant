@@ -1,7 +1,7 @@
 # Deploy `apps/console` (sergeant-hubchat)
 
 > **Status:** Active
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-08-02.
 > **Status:** Active
 > **Власник:** `sergeant-hubchat`.
 

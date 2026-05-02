@@ -26,6 +26,8 @@ export interface PullToRefreshState {
 export interface UsePullToRefreshOptions {
   /** Callback when refresh is triggered */
   onRefresh: () => Promise<void>;
+  /** Called when onRefresh throws. Use to show error UI (e.g. a toast). */
+  onError?: (err: unknown) => void;
   /** Pull distance required to trigger refresh (default: 80px) */
   pullThreshold?: number;
   /** Maximum pull distance (default: 120px) */
@@ -54,6 +56,7 @@ export function usePullToRefresh(
 ): PullToRefreshState {
   const {
     onRefresh,
+    onError,
     pullThreshold = 80,
     maxPullDistance = 120,
     resistance = 0.4,
@@ -153,6 +156,8 @@ export function usePullToRefresh(
 
       try {
         await onRefresh();
+      } catch (err) {
+        onError?.(err);
       } finally {
         // Animate out
         setState({
@@ -173,7 +178,14 @@ export function usePullToRefresh(
         canRefresh: false,
       });
     }
-  }, [enabled, state.canRefresh, state.isRefreshing, pullThreshold, onRefresh]);
+  }, [
+    enabled,
+    state.canRefresh,
+    state.isRefreshing,
+    pullThreshold,
+    onRefresh,
+    onError,
+  ]);
 
   useEffect(() => {
     const scrollElement = scrollRef.current;
