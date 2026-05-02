@@ -81,3 +81,20 @@ export function captureException(
     /* noop */
   }
 }
+
+/**
+ * Lazy-forward `Sentry.addBreadcrumb`. No-op when the SDK is not yet
+ * loaded so callers can leave breadcrumbs unconditionally without
+ * forcing the Sentry chunk to ship eagerly. Used by `core/db/sqlite.ts`
+ * to record VFS-fallback / COOP-COEP triage data.
+ */
+export function addSentryBreadcrumb(
+  breadcrumb: Parameters<SentryModule["addBreadcrumb"]>[0],
+): void {
+  if (!sentryModule) return;
+  try {
+    sentryModule.addBreadcrumb(breadcrumb);
+  } catch {
+    /* noop */
+  }
+}

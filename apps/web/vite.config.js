@@ -193,6 +193,18 @@ export default defineConfig(({ mode }) => {
               // `requestIdleCallback`, тож не повинен тягнутись у main.
               if (id.includes("/node_modules/web-vitals/"))
                 return "vendor-web-vitals";
+              // Ізольований chunk для sqlite-wasm + drizzle-orm —
+              // PR #015 storage roadmap. Пакет важкий (~700 KB brotli
+              // разом із .wasm) і потрібен лише фічам, які явно
+              // звертаються до клієнтської БД через `getSqliteDb()`.
+              // Без цього catch-all нижче загнав би його у головний
+              // `vendor`, який жадібно тягнеться головним bundle-ом
+              // (а sqlite-wasm зростив би його в 2× понад ліміт).
+              if (
+                id.includes("/node_modules/@sqlite.org/sqlite-wasm/") ||
+                id.includes("/node_modules/drizzle-orm/")
+              )
+                return "vendor-sqlite";
               return "vendor";
             }
           },

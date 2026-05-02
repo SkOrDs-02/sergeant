@@ -140,6 +140,7 @@
 - [@sinclair/typebox@0.27.10](https://github.com/sinclairzx81/typebox-legacy#readme) - MIT
 - [@sinonjs/commons@3.0.1](https://github.com/sinonjs/commons#readme) - BSD-3-Clause
 - [@sinonjs/fake-timers@10.3.0](https://github.com/sinonjs/fake-timers) - BSD-3-Clause
+- [@sqlite.org/sqlite-wasm@3.51.2-build9](https://github.com/sqlite/sqlite-wasm#readme) - Apache-2.0
 - [@standard-schema/spec@1.1.0](https://standardschema.dev) - MIT
 - [@tanstack/query-async-storage-persister@5.99.2](https://tanstack.com/query) - MIT
 - [@tanstack/query-core@5.99.2](https://tanstack.com/query) - MIT
