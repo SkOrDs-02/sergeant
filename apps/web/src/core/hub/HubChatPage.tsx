@@ -1,8 +1,9 @@
-import { Suspense, lazy, useCallback, useMemo } from "react";
+import { Suspense, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { PageLoader } from "../app/PageLoader";
+import { lazyDefault } from "../lib/lazyImport";
 
-const HubChat = lazy(() => import("./HubChat"));
+const HubChat = lazyDefault(() => import("./HubChat"));
 
 /**
  * @scaffolded

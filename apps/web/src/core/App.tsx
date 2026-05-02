@@ -1,10 +1,5 @@
-import {
-  useCallback,
-  useEffect,
-  lazy,
-  Suspense,
-  type ComponentType,
-} from "react";
+import { useCallback, useEffect, Suspense } from "react";
+import { lazyDefault, lazyImport } from "./lib/lazyImport";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@shared/lib/cn";
 import { safeWriteLS } from "@shared/lib/storage";
@@ -53,49 +48,34 @@ import {
 } from "@shared/components/ui/KeyboardShortcutsModal";
 import { prefetchCriticalModules } from "./lib/useRoutePrefetch";
 
-const AuthPage = lazy(() =>
-  import("./auth/AuthPage").then((m) => ({ default: m.AuthPage })),
+const AuthPage = lazyImport(() => import("./auth/AuthPage"), "AuthPage");
+const ResetPasswordPage = lazyImport(
+  () => import("./auth/ResetPasswordPage"),
+  "ResetPasswordPage",
 );
-const ResetPasswordPage = lazy(() =>
-  import("./auth/ResetPasswordPage").then((m) => ({
-    default: m.ResetPasswordPage,
-  })),
+const DesignShowcase = lazyImport(
+  () => import("./DesignShowcase"),
+  "DesignShowcase",
 );
-const DesignShowcase = lazy(() =>
-  import("./DesignShowcase").then((m) => ({ default: m.DesignShowcase })),
+const AssistantCataloguePage = lazyImport(
+  () => import("./AssistantCataloguePage"),
+  "AssistantCataloguePage",
 );
-const AssistantCataloguePage = lazy(() =>
-  import("./AssistantCataloguePage").then((m) => ({
-    default: m.AssistantCataloguePage,
-  })),
+const PricingPage = lazyImport(() => import("./PricingPage"), "PricingPage");
+const HubChatPage = lazyImport(
+  () => import("./hub/HubChatPage"),
+  "HubChatPage",
 );
-const PricingPage = lazy(() =>
-  import("./PricingPage").then((m) => ({ default: m.PricingPage })),
-);
-const HubChatPage = lazy(() =>
-  import("./hub/HubChatPage").then((m) => ({ default: m.HubChatPage })),
-);
-interface ModuleAppProps {
-  onBackToHub: () => void;
-  pwaAction: PwaAction | null;
-  onPwaActionConsumed: () => void;
-  onOpenModule?: (module: string) => void;
-}
-
-const FinykApp = lazy<ComponentType<ModuleAppProps>>(
-  () => import("../modules/finyk/FinykApp"),
-);
-const FizrukApp = lazy(() => import("../modules/fizruk/FizrukApp"));
-const NutritionApp = lazy<ComponentType<ModuleAppProps>>(
+const FinykApp = lazyDefault(() => import("../modules/finyk/FinykApp"));
+const FizrukApp = lazyDefault(() => import("../modules/fizruk/FizrukApp"));
+const NutritionApp = lazyDefault(
   () => import("../modules/nutrition/NutritionApp"),
 );
 // Routine раніше імпортувалось синхронно — це зобов'язувало тягнути
 // весь модуль у main chunk навіть для користувачів, що сидять у Фінікові.
 // Ліниве завантаження збігається з іншими модулями (Suspense fallback
 // та ModuleErrorBoundary уже огортають цей слот).
-const RoutineApp = lazy<ComponentType<ModuleAppProps>>(
-  () => import("../modules/routine/RoutineApp"),
-);
+const RoutineApp = lazyDefault(() => import("../modules/routine/RoutineApp"));
 
 export default function App() {
   return (

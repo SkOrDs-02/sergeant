@@ -1,5 +1,6 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
+import { lazyImport } from "../../../core/lib/lazyImport";
 import type { FizrukPage } from "./fizrukRoute";
 
 // Per-page lazy chunks. Previously this file eager-imported all nine
@@ -10,32 +11,20 @@ import type { FizrukPage } from "./fizrukRoute";
 // `prefetchModule("fizruk")` paths in `useRoutePrefetch.ts` continue to
 // warm the parent `FizrukApp` chunk, so subsequent page loads see warm
 // cache for whichever page the user is most likely to hit next.
-const Dashboard = lazy(() =>
-  import("../pages/Dashboard").then((m) => ({ default: m.Dashboard })),
+const Dashboard = lazyImport(() => import("../pages/Dashboard"), "Dashboard");
+const Atlas = lazyImport(() => import("../pages/Atlas"), "Atlas");
+const Exercise = lazyImport(() => import("../pages/Exercise"), "Exercise");
+const Workouts = lazyImport(() => import("../pages/Workouts"), "Workouts");
+const Progress = lazyImport(() => import("../pages/Progress"), "Progress");
+const Measurements = lazyImport(
+  () => import("../pages/Measurements"),
+  "Measurements",
 );
-const Atlas = lazy(() =>
-  import("../pages/Atlas").then((m) => ({ default: m.Atlas })),
-);
-const Exercise = lazy(() =>
-  import("../pages/Exercise").then((m) => ({ default: m.Exercise })),
-);
-const Workouts = lazy(() =>
-  import("../pages/Workouts").then((m) => ({ default: m.Workouts })),
-);
-const Progress = lazy(() =>
-  import("../pages/Progress").then((m) => ({ default: m.Progress })),
-);
-const Measurements = lazy(() =>
-  import("../pages/Measurements").then((m) => ({ default: m.Measurements })),
-);
-const Body = lazy(() =>
-  import("../pages/Body").then((m) => ({ default: m.Body })),
-);
-const Programs = lazy(() =>
-  import("../pages/Programs").then((m) => ({ default: m.Programs })),
-);
-const PlanCalendar = lazy(() =>
-  import("../pages/PlanCalendar").then((m) => ({ default: m.PlanCalendar })),
+const Body = lazyImport(() => import("../pages/Body"), "Body");
+const Programs = lazyImport(() => import("../pages/Programs"), "Programs");
+const PlanCalendar = lazyImport(
+  () => import("../pages/PlanCalendar"),
+  "PlanCalendar",
 );
 
 export interface FizrukRouterProps {

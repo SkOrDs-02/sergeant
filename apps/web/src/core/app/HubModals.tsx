@@ -1,10 +1,9 @@
-import { lazy, Suspense, useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { ErrorBoundary } from "../ErrorBoundary";
+import { lazyImport } from "../lib/lazyImport";
 import type { OpenModuleOptions } from "../hooks/useHubNavigation";
 
-const HubSearch = lazy(() =>
-  import("../hub/search").then((m) => ({ default: m.HubSearch })),
-);
+const HubSearch = lazyImport(() => import("../hub/search"), "HubSearch");
 
 // Коли модалка крешиться, `ErrorBoundary` рендерить `null`, але стан
 // `searchOpen` у `useHubUIState` лишається `true` — усі хендлери

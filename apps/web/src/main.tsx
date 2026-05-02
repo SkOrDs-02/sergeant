@@ -1,5 +1,6 @@
 /// <reference types="vite-plugin-pwa/client" />
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
+import { lazyImport } from "./core/lib/lazyImport";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
@@ -44,10 +45,9 @@ const persistOptions = createWebPersistOptions();
 // them out of the production bundle entirely — the tree-shaker can drop the
 // import expression when `import.meta.env.DEV` is statically `false`.
 const ReactQueryDevtools = import.meta.env.DEV
-  ? lazy(() =>
-      import("@tanstack/react-query-devtools").then((m) => ({
-        default: m.ReactQueryDevtools,
-      })),
+  ? lazyImport(
+      () => import("@tanstack/react-query-devtools"),
+      "ReactQueryDevtools",
     )
   : null;
 
