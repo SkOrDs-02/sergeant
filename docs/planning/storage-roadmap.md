@@ -293,7 +293,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   у реальному Chromium.
 - **Dep.** PR #014.
 
-#### **PR #016 — `feat(web): add COOP/COEP headers on app routes for OPFS cross-origin isolation`** IN PROGRESS — [#1353](https://github.com/Skords-01/Sergeant/pull/1353)
+#### **PR #016 — `feat(web): add COOP/COEP headers on app routes for OPFS cross-origin isolation`** IN PROGRESS — [#1354](https://github.com/Skords-01/Sergeant/pull/1354)
 
 - **Scope.** `vercel.json` — додати:
   ```json
