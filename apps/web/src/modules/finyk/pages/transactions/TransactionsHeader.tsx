@@ -10,17 +10,17 @@ export interface TransactionsHeaderProps {
   showHidden: boolean;
   setShowHidden: (updater: (v: boolean) => boolean) => void;
   hiddenCount: number;
-  refresh: () => void;
-  loading: boolean;
 }
 
 /**
  * Top header for the Transactions page: month switcher on the left,
- * action buttons (toggle-hidden / select-mode / refresh) on the right.
+ * action buttons (toggle-hidden / select-mode) on the right.
  *
  * The "select-mode" toggle replaces the action cluster with a single
  * "Скасувати" button while batch selection is active — the actions
- * only make sense outside of select-mode anyway.
+ * only make sense outside of select-mode anyway. Manual refresh lives in
+ * Hub → Налаштування → Фінік → Сервіс (mono webhook means data already
+ * refetches on focus / staleness; the manual button is a fallback).
  */
 export function TransactionsHeader({
   monthLabel,
@@ -32,8 +32,6 @@ export function TransactionsHeader({
   showHidden,
   setShowHidden,
   hiddenCount,
-  refresh,
-  loading,
 }: TransactionsHeaderProps) {
   return (
     <div className="flex items-center justify-between mb-3">
@@ -112,28 +110,6 @@ export function TransactionsHeader({
               >
                 <polyline points="9 11 12 14 22 4" />
                 <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-              </svg>
-            </button>
-            <button
-              onClick={refresh}
-              disabled={loading}
-              className="text-xs px-3 py-2 rounded-full border border-line text-subtle hover:text-text hover:border-muted transition-colors disabled:opacity-40 min-h-[36px]"
-              aria-label="Оновити"
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={loading ? "motion-safe:animate-spin" : ""}
-                aria-hidden
-              >
-                <polyline points="23 4 23 10 17 10" />
-                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
               </svg>
             </button>
           </>

@@ -47,7 +47,6 @@ export function Transactions({
     realTx,
     loadingTx,
     lastUpdated,
-    refresh,
     syncState,
     accounts,
     fetchMonth,
@@ -145,8 +144,6 @@ export function Transactions({
             showHidden={filters.showHidden}
             setShowHidden={filters.setShowHidden}
             hiddenCount={hiddenTxIds.length}
-            refresh={refresh}
-            loading={filters.activeLoading}
           />
           <TransactionSyncPill
             syncState={syncState}

@@ -218,6 +218,21 @@ export function FinykSection() {
     queryClient.invalidateQueries({ queryKey: finykKeys.monoSyncState });
   };
 
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshAllData = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: finykKeys.mono }),
+        queryClient.invalidateQueries({ queryKey: finykKeys.monoSyncState }),
+        queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") }),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const catInputClass =
     "input-focus-finyk flex-1 min-w-0 h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text";
 
@@ -408,9 +423,19 @@ export function FinykSection() {
 
       <SettingsSubGroup title="Сервіс">
         <p className="text-xs text-subtle leading-snug">
-          Якщо список операцій виглядає некоректно — очисти кеш і синхронізуй
-          знову.
+          Дані Monobank приходять автоматично через webhook та оновлюються при
+          поверненні у вкладку. Якщо потрібно примусово перепитати сервер —
+          натисни «Оновити дані». Якщо список операцій виглядає некоректно —
+          очисти кеш і синхронізуй знову.
         </p>
+        <Button
+          variant="ghost"
+          className="w-full h-11"
+          onClick={refreshAllData}
+          disabled={refreshing}
+        >
+          {refreshing ? "Оновлення…" : "🔄 Оновити дані"}
+        </Button>
         <Button
           variant="ghost"
           className="w-full h-11"
