@@ -3,6 +3,8 @@
 > **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
 > **Status:** Active
 
+> **Update 2026-05-02 (Phase 4 progress):** PR #1388 (sw.ts + presetApply.ts, −50) і PR #1391 (5 fizruk components, −99) обидва змерджені. Phase 4 baseline: **419 → 249 помилок у 43 файлах** (−170, ~41 % від початкового скоупу). Деталі — у §4 Спринт 1 / Завдання 1.1 нижче.
+
 > **Дата створення:** 2026-04-28
 > **Автор:** v0 AI Assistant
 > **Базується на:** `2026-04-28-sergeant-comprehensive-audit.md`, `2026-04-26-sergeant-audit-devin.md`
@@ -51,12 +53,12 @@
 
 ### 2.1. Критичні (P0) — блокують production-якість
 
-| ID       | Проблема                       | Файлів                                                    | Поточний Прогрес                                                                                                                            |
-| -------- | ------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| **P0-1** | `apps/web` strict: false       | ~374 TS errors (full `strict: true` baseline, 2026-05-02) | Phases 1–3.1 done (`tsconfig.strict.json` покриває `src/{shared,test,core/*,modules/*}`); Phase 4 (`strict: true` + зняти `allowJs`) — TODO |
-| **P0-2** | localStorage без safe wrappers | 52 файли                                                  | 3 файли мігровано                                                                                                                           |
-| **P0-3** | Mobile flaky tests             | 2 тести                                                   | 1 з 3 виправлено                                                                                                                            |
-| **P0-4** | Mobile APM відсутній           | 0% coverage                                               | Не почато                                                                                                                                   |
+| ID       | Проблема                       | Файлів                                                                       | Поточний Прогрес                                                                                                                                                                                  |
+| -------- | ------------------------------ | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P0-1** | `apps/web` strict: false       | 249 TS errors / 43 files (full `strict: true` baseline, 2026-05-02 post-PR2) | Phases 1–3.1 done; Phase 4 in progress: PR1 #1388 ✅ merged (−50), PR2 #1391 ✅ merged (−99); залишилось PR3 (fizruk pages + insights, ~52) і PR4 (решта + flip `strict: true` + зняти `allowJs`) |
+| **P0-2** | localStorage без safe wrappers | 52 файли                                                                     | 3 файли мігровано                                                                                                                                                                                 |
+| **P0-3** | Mobile flaky tests             | 2 тести                                                                      | 1 з 3 виправлено                                                                                                                                                                                  |
+| **P0-4** | Mobile APM відсутній           | 0% coverage                                                                  | Не почато                                                                                                                                                                                         |
 
 ### 2.2. Високі (P1) — значний tech-debt
 
@@ -134,41 +136,47 @@ Phase 3.1 — strictNullChecks: + core/{designShowcase,stories}             ✅ 
 Phase 4   — strict: true + remove allowJs (весь apps/web)              ⏳ todo
 ```
 
-**Заміряний скоуп Phase 4 (2026-05-02 re-measure через діагностичний `tsconfig.strict-full.json`):** **374 помилки в 46 файлах**.
+**Прогрес Phase 4 (2026-05-02, post-PR2):** baseline `419 → 249` помилок у 43 файлах (−170, ~41 %). Закрито через PR1 #1388 (`sw.ts` −27, `core/onboarding/presetApply` −23 = −50) і PR2 #1391 (5 fizruk components: `AddExerciseSheet` −21, `WorkoutTemplatesSection` −21, `WorkoutItemCard` −20, `WorkoutCatalogSection` −20, `ExerciseDetailSheet` −19 = −99 на стартовому baseline; на чистому main −101 завдяки знятому ripple-у).
 
 ```
-TS error breakdown:
-├── TS7006 parameter implicit-any         — 162
-├── TS7031 binding element implicit-any   — 114
-├── TS7053 element implicit-any           —  23
+TS error breakdown (post-PR2 main):
+├── TS7006 parameter implicit-any         — 111
+├── TS7031 binding element implicit-any   —  62
+├── TS7053 element implicit-any           —  20
 ├── TS2345 argument type                  —  17
-├── TS2339 property does not exist        —  15
-├── TS2322 type assignability             —  10
-├── TS7005 var without type               —   9
-├── TS2307 cannot find module             —   7
-└── інші                                  —  17
+├── TS7005 var without type               —  12
+├── TS2322 type assignability             —  12
+├── TS7034 var implicit-any               —   3
+├── TS2783, TS2722, TS2430, TS18048,
+│   TS18047 (по 2 кожен)                  —  10
+└── TS2352, TS2339                        —   2
 
-Top blockers (одиничний фікс розблокує найбільше):
-├── sw.ts                                                    — 27
-├── core/onboarding/presetApply.ts                           — 23
-├── modules/fizruk/components/workouts/AddExerciseSheet      — 21
-├── modules/fizruk/components/WorkoutTemplatesSection        — 21
-├── modules/fizruk/components/workouts/WorkoutItemCard       — 20
-├── modules/fizruk/components/workouts/WorkoutCatalogSection — 20
-├── modules/fizruk/components/workouts/ExerciseDetailSheet   — 19
-├── modules/fizruk/pages/Workouts                            — 18
+Top remaining blockers (post-PR2):
+├── modules/fizruk/pages/Workouts                            — 19
 ├── modules/fizruk/pages/Exercise                            — 18
-└── core/insights/WeeklyDigestCard                           — 15
+├── core/insights/WeeklyDigestCard                           — 15
+├── modules/fizruk/components/MiniLineChart                  — 13
+├── modules/fizruk/pages/Programs                            — 11
+├── modules/fizruk/pages/Body                                —  9
+├── modules/fizruk/components/workouts/WorkoutFinishSheets   —  9
+├── modules/fizruk/components/workouts/QuickStartSheet       —  9
+└── core/onboarding/PresetSheet                              —  9
+
+Closed top blockers:
+├── PR1 #1388 (merged): sw.ts (27), core/onboarding/presetApply (23)
+└── PR2 #1391 (merged): AddExerciseSheet (21), WorkoutTemplatesSection (21),
+                       WorkoutItemCard (20), WorkoutCatalogSection (20),
+                       ExerciseDetailSheet (19)
 ```
 
-**Виконання (орієнтовно):**
+**Виконання (orig. план + фактичний прогрес):**
 
-| Day | Задача                                                          | Файлів | Effort |
-| --- | --------------------------------------------------------------- | ------ | ------ |
-| 1   | sw.ts + core/onboarding/presetApply (top-2 blockers, 50 errors) | 2      | 4h     |
-| 2-3 | modules/fizruk top-7 (AddExerciseSheet, WorkoutItemCard, …)     | 7      | 10h    |
-| 4   | core/insights/WeeklyDigestCard + залишкові fizruk               | ~10    | 6h     |
-| 5   | Зріз `allowJs: true` + ввімкнути `strict: true` + cleanup       | ~27    | 6h     |
+| PR  | Скоуп                                                                                                                            | Файлів | Δ-errors | Статус                                                               |
+| --- | -------------------------------------------------------------------------------------------------------------------------------- | ------ | -------- | -------------------------------------------------------------------- |
+| PR1 | sw.ts + core/onboarding/presetApply (top-2 blockers)                                                                             | 2      | −50      | ✅ merged ([#1388](https://github.com/Skords-01/Sergeant/pull/1388)) |
+| PR2 | fizruk components batch (AddExerciseSheet, WorkoutTemplatesSection, WorkoutItemCard, WorkoutCatalogSection, ExerciseDetailSheet) | 5      | −99      | ✅ merged ([#1391](https://github.com/Skords-01/Sergeant/pull/1391)) |
+| PR3 | fizruk pages + insights (pages/Workouts, pages/Exercise, core/insights/WeeklyDigestCard)                                         | 3      | ~52      | ⏳ pending                                                           |
+| PR4 | решта (~38 файлів, lower-density) + flip `strict: true` + видалити `allowJs`                                                     | ~38    | ~197     | ⏳ pending                                                           |
 
 > **Чому Phase 4 не дробиться через `tsconfig.noimplicitany.json`-include:** TypeScript застосовує `noImplicitAny` ко всій програмі (всі transitively reached файли), не тільки до `include`-списку. Спроба додати `core/{lib,hub,insights,onboarding,settings,stories,designShowcase}` дає 801 помилку бо вони імпортують з `modules/{finyk,fizruk}`. Рухатись треба per-file (top blockers першими), без проміжної "Phase 3.2".
 
@@ -178,6 +186,8 @@ Top blockers (одиничний фікс розблокує найбільше)
 - [ ] `apps/web/tsconfig.json` не має `allowJs: true`
 - [ ] `pnpm typecheck` проходить без помилок
 - [ ] CI strict-coverage metric рапортує `apps/web` як strict
+
+**Поточний прогрес (2026-05-02, post-PR2):** [x] PR1 #1388 merged · [x] PR2 #1391 merged · [ ] PR3 pending · [ ] PR4 pending (включно з flip `strict: true` + зняття `allowJs`).
 
 ---
 
