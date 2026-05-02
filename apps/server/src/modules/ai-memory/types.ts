@@ -40,7 +40,7 @@ export type MemorySource = (typeof ALLOWED_MEMORY_SOURCES)[number];
 export interface EmbeddingMetadata {
   /** Провайдер (наприклад, "voyage"). */
   provider: string;
-  /** Конкретна модель (наприклад, "voyage-3-lite"). */
+  /** Конкретна модель (наприклад, "voyage-3.5-lite"). */
   model: string;
   /** Internal semver embedding-схеми (наприклад, "1"). */
   version: string;

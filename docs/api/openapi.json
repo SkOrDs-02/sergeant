@@ -113,6 +113,73 @@
         }
       }
     },
+    "/api/ai-memory/recall": {
+      "post": {
+        "summary": "Semantic-пошук у ai_memories за query (Voyage embed → pgvector ANN).",
+        "tags": [
+          "ai-memory"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecallMemoryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recall hits (масив може бути порожнім).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecallMemoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "AI memory вимкнено (`AI_MEMORY_ENABLED=false`) або провайдер ембеддингів недоступний.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/coach/memory": {
       "get": {
         "summary": "Зчитати збережений coach memory blob",
@@ -2443,6 +2510,42 @@
         },
         "description": "POST /api/chat — Anthropic-чат із tool-results і опційним streaming."
       },
+      "RecallMemoryRequest": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "topK": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "sources": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "chat",
+                "finyk",
+                "fizruk",
+                "nutrition",
+                "routine",
+                "journal",
+                "digest"
+              ]
+            }
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false,
+        "description": "POST /api/ai-memory/recall — semantic-search query body (query + optional topK/sources)."
+      },
       "CoachMemoryPost": {
         "type": "object",
         "properties": {
@@ -4510,6 +4613,79 @@
         ],
         "additionalProperties": false,
         "description": "Стандартна shape 400-помилки після `validateBody`."
+      },
+      "RecallMemoryResponse": {
+        "type": "object",
+        "properties": {
+          "memories": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "chat",
+                    "finyk",
+                    "fizruk",
+                    "nutrition",
+                    "routine",
+                    "journal",
+                    "digest"
+                  ]
+                },
+                "sourceRef": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "content": {
+                  "type": "string"
+                },
+                "score": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "metadata": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "required": [
+                "id",
+                "source",
+                "sourceRef",
+                "content",
+                "score",
+                "createdAt",
+                "metadata"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "memories"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь POST /api/ai-memory/recall — масив результатів (може бути порожнім)."
       },
       "PushSendSummary": {
         "type": "object",

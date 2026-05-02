@@ -202,16 +202,21 @@ export const env = {
   VOYAGE_API_KEY: process.env.VOYAGE_API_KEY || "",
 
   /**
-   * Voyage embedding model. `voyage-3-lite` — multilingual, дешевий
-   * (~$0.02/1M токенів), 1024-вимірний sweet-spot quality/розмір.
-   * Зміна моделі вимагає re-embedд'ингу всіх існуючих row-ів (vector
-   * spaces різних моделей не сумісні).
+   * Voyage embedding model. `voyage-3.5-lite` — multilingual lite-tier
+   * (~$0.02/1M токенів), нативно підтримує 1024-вимірний output.
+   *
+   * УВАГА: `voyage-3-lite` (попередник) повертає **тільки 512 dims**, що
+   * несумісно з нашою схемою `HALFVEC(1024)` у міграції 025. Для 1024d
+   * approved модельки: `voyage-3.5-lite` (default), `voyage-3`,
+   * `voyage-3.5`, `voyage-3-large`. Зміна моделі вимагає re-embedд'ингу
+   * всіх існуючих row-ів (vector spaces різних моделей не сумісні).
    */
-  VOYAGE_EMBEDDING_MODEL: process.env.VOYAGE_EMBEDDING_MODEL || "voyage-3-lite",
+  VOYAGE_EMBEDDING_MODEL:
+    process.env.VOYAGE_EMBEDDING_MODEL || "voyage-3.5-lite",
 
   /**
    * Розмірність embedding-вектора. Має співпадати з `HALFVEC(N)` у
-   * SQL-міграції `025_ai_memories_pgvector.sql`. Voyage `voyage-3-lite`
+   * SQL-міграції `025_ai_memories_pgvector.sql`. Voyage `voyage-3.5-lite`
    * вертає 1024 за замовчуванням.
    */
   VOYAGE_EMBEDDING_DIM: parseIntEnv("VOYAGE_EMBEDDING_DIM", 1024),
@@ -292,7 +297,7 @@ export const env = {
 
   /**
    * Max content-length у `MemoryIngestPayload.content` (символи). Voyage
-   * `voyage-3-lite` max input — ~32K токенів, але типовий memory-record
+   * `voyage-3.5-lite` max input — ~32K токенів, але типовий memory-record
    * (`"Витрата 100 ₴ Сільпо · продукти · 2026-01-15"`) — десятки символів.
    * 4_000 — generous-cap для digest-summaries; вище за нього content-text
    * обрізається на edge (`/api/ai-memory/ingest`) і у hooks-callsite-ах.

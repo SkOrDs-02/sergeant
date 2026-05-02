@@ -95,7 +95,12 @@ function makeFakeEmbeddings(): EmbeddingProvider & {
 } {
   let calls = 0;
   return {
-    meta: { provider: "voyage", model: "voyage-3-lite", version: "1", dim: 4 },
+    meta: {
+      provider: "voyage",
+      model: "voyage-3.5-lite",
+      version: "1",
+      dim: 4,
+    },
     get calls() {
       return calls;
     },
@@ -180,7 +185,7 @@ describe("AiMemoryService — enabled", () => {
     const embeddings: EmbeddingProvider = {
       meta: {
         provider: "voyage",
-        model: "voyage-3-lite",
+        model: "voyage-3.5-lite",
         version: "1",
         dim: 4,
       },
@@ -212,7 +217,7 @@ describe("AiMemoryService — enabled", () => {
         embedding: Float32Array.of(0.1, 0.2, 0.3, 0.4),
         embeddingMeta: {
           provider: "voyage",
-          model: "voyage-3-lite",
+          model: "voyage-3.5-lite",
           version: "1",
           dim: 4,
         },
@@ -256,7 +261,7 @@ describe("AiMemoryService — enabled", () => {
         embedding: Float32Array.of(0.1, 0.2, 0.3, 0.4),
         embeddingMeta: {
           provider: "voyage",
-          model: "voyage-3-lite",
+          model: "voyage-3.5-lite",
           version: "1",
           dim: 4,
         },
@@ -283,7 +288,7 @@ describe("AiMemoryService — enabled", () => {
         embedding: Float32Array.of(0.1, 0.2, 0.3, 0.4),
         embeddingMeta: {
           provider: "voyage",
-          model: "voyage-3-lite",
+          model: "voyage-3.5-lite",
           version: "1",
           dim: 4,
         },
@@ -296,7 +301,7 @@ describe("AiMemoryService — enabled", () => {
         embedding: Float32Array.of(0.1, 0.2, 0.3, 0.4),
         embeddingMeta: {
           provider: "voyage",
-          model: "voyage-3-lite",
+          model: "voyage-3.5-lite",
           version: "1",
           dim: 4,
         },
@@ -317,7 +322,7 @@ describe("AiMemoryService — enabled", () => {
     const embeddings: EmbeddingProvider = {
       meta: {
         provider: "voyage",
-        model: "voyage-3-lite",
+        model: "voyage-3.5-lite",
         version: "1",
         dim: 4,
       },

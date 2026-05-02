@@ -23,8 +23,10 @@
 -- 2. HALFVEC(1024) — half-precision (16-bit) floats замість float32 (4 байти).
 --    Економія −50% RAM для HNSW-індекса, recall-loss на embedding-задачах
 --    практично нуль (pgvector docs § "Half-precision indexing"). Розмір 1024
---    обраний під Voyage `voyage-3-lite` (multilingual, добре тримає
---    українську; Voyage пропонує 512/1024/2048 — 1024 = sweet-spot).
+--    обраний під Voyage `voyage-3.5-lite` (multilingual lite-tier, нативно
+--    1024d). УВАГА: попередник `voyage-3-lite` ВИДАЄ ТІЛЬКИ 512d → несумісно
+--    зі схемою. 1024d-сумісні моделі: `voyage-3.5-lite`, `voyage-3`,
+--    `voyage-3.5`, `voyage-3-large`.
 --
 -- 3. PARTITION BY HASH (user_id) на 32 партиції — pre-filter по тенанту.
 --    Без партиціонування HNSW-індекс — глобальний; topK-пошук для одного
@@ -149,7 +151,7 @@ COMMENT ON TABLE ai_memories IS
 COMMENT ON COLUMN ai_memories.embedding_provider IS
   'Vector provider tag (наприклад, ''voyage''). Дозволяє re-embed-ити row-и при зміні провайдера без втрати оригінального тексту.';
 COMMENT ON COLUMN ai_memories.embedding_model IS
-  'Конкретна модель (наприклад, ''voyage-3-lite''). Vector spaces різних моделей не сумісні — змішування ламає HNSW recall.';
+  'Конкретна модель (наприклад, ''voyage-3.5-lite''). Vector spaces різних моделей не сумісні — змішування ламає HNSW recall.';
 COMMENT ON COLUMN ai_memories.embedding_version IS
   'Internal semver нашої embedding-схеми (наприклад, ''v1''). Бампимо при зміні prompt-template для embedding-у.';
 COMMENT ON COLUMN ai_memories.source IS

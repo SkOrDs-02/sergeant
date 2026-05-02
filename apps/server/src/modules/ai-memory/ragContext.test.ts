@@ -159,7 +159,7 @@ describe("buildRagContext — happy path", () => {
         createdAt: new Date("2026-04-30T08:30:00Z"),
         embeddingMeta: {
           provider: "voyage",
-          model: "voyage-3-lite",
+          model: "voyage-3.5-lite",
           version: "1",
           dim: 1024,
         },
@@ -174,7 +174,7 @@ describe("buildRagContext — happy path", () => {
         createdAt: new Date("2026-04-29T10:00:00Z"),
         embeddingMeta: {
           provider: "voyage",
-          model: "voyage-3-lite",
+          model: "voyage-3.5-lite",
           version: "1",
           dim: 1024,
         },
@@ -215,7 +215,7 @@ describe("buildRagContext — happy path", () => {
         createdAt: new Date("2026-04-30T00:00:00Z"),
         embeddingMeta: {
           provider: "voyage",
-          model: "voyage-3-lite",
+          model: "voyage-3.5-lite",
           version: "1",
           dim: 1024,
         },
@@ -243,7 +243,7 @@ describe("buildRagContext — happy path", () => {
         createdAt: new Date("2026-04-30T00:00:00Z"),
         embeddingMeta: {
           provider: "voyage",
-          model: "voyage-3-lite",
+          model: "voyage-3.5-lite",
           version: "1",
           dim: 1024,
         },

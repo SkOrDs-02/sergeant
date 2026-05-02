@@ -16,6 +16,20 @@
 
 ### Fixed
 
+- **AI memory: default `VOYAGE_EMBEDDING_MODEL` переведено з `voyage-3-lite` на
+  `voyage-3.5-lite`.** Виявлено на activation 2026-05-02: Voyage API для
+  `voyage-3-lite` повертає **тільки 512-вимірні** embeddings, тоді як наша
+  схема `ai_memories.embedding HALFVEC(1024)` (міграція 025) і `VOYAGE_EMBEDDING_DIM=1024`
+  очікують 1024d → перший же `remember()` валився б на `400 — Value '1024' supplied
+for argument 'output_dimension' is not valid`. Воно не було помітно поки прапор
+  `AI_MEMORY_ENABLED=false`, але блокувало production rollout. Перевірив: 1024d
+  нативно підтримують `voyage-3.5-lite` (lite-наступник, той самий ціновий тір
+  ~$0.02/1M tokens), `voyage-3`, `voyage-3.5`, `voyage-3-large`. Default
+  переведено на `voyage-3.5-lite` у `apps/server/src/env.ts`, `.env.example`
+  отримав warning, ADR-0028 / integrations doc / runbook / SQL-коментарі / тести
+  оновлено. Production Railway env уже override-ить через `VOYAGE_EMBEDDING_MODEL=voyage-3.5-lite`
+  — цей PR робить дефолт self-consistent для свіжих deploy-ів і dev-environment-ів.
+
 - **CI: baseline-failures cluster (n8n / pgvector / Argos / iOS / Popover).** На
   main одночасно червоніли 5 чеків — жоден не блокувався gating-required, але
   усі ламали `git_pr_checks` для будь-якого PR.

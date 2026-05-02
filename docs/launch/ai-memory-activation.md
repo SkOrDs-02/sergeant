@@ -162,7 +162,7 @@ Master-flag `AI_MEMORY_ENABLED=true` сам по собі ще не почина
   `embeddings.ts` через `@typescript-eslint/no-restricted-imports` у
   `eslint-plugin-sergeant-design`. TODO зафіксований в [ADR-0028 § Compliance](../adr/0028-pgvector-ai-memory.md#compliance).
 - **Re-embed worker (PR2.1)** — batch-job для re-embed-у при зміні
-  `voyage-3-lite` / `embedding_version`.
+  `voyage-3.5-lite` / `embedding_version`.
 - **Prometheus dashboard** — рознести `ai_memory_*` і `voyage_external_http_*`
   у окрему Grafana-панель.
 - **PR4: hybrid hot/cold storage** — `user_memory_summaries` + pgvector

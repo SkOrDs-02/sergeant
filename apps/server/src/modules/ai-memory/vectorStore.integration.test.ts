@@ -38,7 +38,7 @@ const TIMEOUT_MS = 240_000;
 
 const META: EmbeddingMetadata = {
   provider: "voyage",
-  model: "voyage-3-lite",
+  model: "voyage-3.5-lite",
   version: "1",
   // Зменшений dim для тестів (full 1024 — overkill, halfvec приймає
   // довільну розмірність). Migration `HALFVEC(1024)` все ще перевіряє

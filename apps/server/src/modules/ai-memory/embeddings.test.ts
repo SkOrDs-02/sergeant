@@ -16,7 +16,7 @@ const savedEnv: Record<string, string | undefined> = {};
 beforeEach(() => {
   for (const k of ENV_VARS) savedEnv[k] = process.env[k];
   process.env.VOYAGE_API_KEY = "test-key";
-  process.env.VOYAGE_EMBEDDING_MODEL = "voyage-3-lite";
+  process.env.VOYAGE_EMBEDDING_MODEL = "voyage-3.5-lite";
   process.env.VOYAGE_EMBEDDING_DIM = "4"; // менший — простіше для тестів
   process.env.VOYAGE_TIMEOUT_MS = "1000";
   process.env.VOYAGE_MAX_RETRIES = "1";
@@ -61,7 +61,7 @@ function makeVoyageResponse(
   return new Response(
     JSON.stringify({
       data,
-      model: "voyage-3-lite",
+      model: "voyage-3.5-lite",
       usage: { total_tokens: 10 },
     }),
     { status: 200, headers: { "content-type": "application/json" } },
@@ -76,7 +76,7 @@ describe("createVoyageEmbeddings", () => {
     });
     expect(provider.meta).toEqual({
       provider: "voyage",
-      model: "voyage-3-lite",
+      model: "voyage-3.5-lite",
       version: "1",
       dim: 4,
     });
@@ -90,7 +90,7 @@ describe("createVoyageEmbeddings", () => {
       const headers = init?.headers as Record<string, string>;
       expect(headers.Authorization).toBe("Bearer test-key");
       const body = JSON.parse(String(init?.body));
-      expect(body.model).toBe("voyage-3-lite");
+      expect(body.model).toBe("voyage-3.5-lite");
       expect(body.output_dimension).toBe(4);
       expect(body.input).toEqual(["a", "b"]);
       return makeVoyageResponse([

@@ -325,7 +325,7 @@ describe("POST /api/ai-memory/recall — happy path", () => {
         content: "omelette + кава",
         embeddingMeta: {
           provider: "voyage",
-          model: "voyage-3-lite",
+          model: "voyage-3.5-lite",
           version: "1",
           dim: 1024,
         },
