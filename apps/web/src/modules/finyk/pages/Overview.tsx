@@ -346,11 +346,6 @@ export function Overview({ mono, storage, onNavigate, showBalance = true }) {
     expenseTarget - spent - recurringOutThisMonth + recurringInThisMonth;
   const dayBudget = expenseLeft / remainingDays;
 
-  const monthBalance = income - spent;
-  const spendPct = income > 0 ? (spent / income) * 100 : 0;
-  const spendBarPct = Math.min(100, spendPct);
-  const expenseFromIncomeBarClass =
-    spendPct > 75 ? "bg-danger" : spendPct > 50 ? "bg-warning" : "bg-success";
   const showMonthForecast = showBalance && daysPassed > 0 && projectedSpend > 0;
   const forecastTrendPct = showMonthForecast
     ? Math.min(100, Math.round((spent / projectedSpend) * 100))
@@ -365,10 +360,6 @@ export function Overview({ mono, storage, onNavigate, showBalance = true }) {
   const spendPlanRatio = expenseTarget > 0 ? spent / expenseTarget : 0;
   const hasExpensePlan = expenseTarget > 0;
 
-  const firstName =
-    clientInfo?.name?.split(" ")[1] ||
-    clientInfo?.name?.split(" ")[0] ||
-    "друже";
   const dateLabel = now.toLocaleDateString("uk-UA", {
     day: "numeric",
     month: "long",
@@ -401,37 +392,27 @@ export function Overview({ mono, storage, onNavigate, showBalance = true }) {
           networth={networth}
           monoTotal={monoTotal}
           totalDebt={totalDebt}
-          monthBalance={monthBalance}
-          firstName={firstName}
-          dateLabel={dateLabel}
-          showBalance={showBalance}
+          daysInMonth={daysInMonth}
+          daysPassed={daysPassed}
           dayBudget={dayBudget}
+          hasExpensePlan={hasExpensePlan}
           spendPlanRatio={spendPlanRatio}
+          showBalance={showBalance}
         />
-
-        <p className="text-xs text-subtle px-1 -mt-1 leading-relaxed">
-          Огляд, категорії та бюджети на цій сторінці — у гривні (UAH). Інші
-          валюти рахунків у загальному балансі не конвертуються автоматично.
-        </p>
 
         <MonthPulseCard
           dateLabel={dateLabel}
-          daysInMonth={daysInMonth}
           daysPassed={daysPassed}
           spent={spent}
           income={income}
           showBalance={showBalance}
           showMonthForecast={showMonthForecast}
           projectedSpend={projectedSpend}
-          spendPct={spendPct}
-          spendBarPct={spendBarPct}
-          expenseFromIncomeBarClass={expenseFromIncomeBarClass}
+          hasExpensePlan={hasExpensePlan}
+          spendPlanRatio={spendPlanRatio}
+          planExpense={planExpense}
           forecastTrendPct={forecastTrendPct}
           forecastBarClass={forecastBarClass}
-          dayBudget={dayBudget}
-          monthBalance={monthBalance}
-          spendPlanRatio={spendPlanRatio}
-          hasExpensePlan={hasExpensePlan}
           recurringOutThisMonth={recurringOutThisMonth}
           recurringInThisMonth={recurringInThisMonth}
           unknownOutCount={unknownOutCount}
