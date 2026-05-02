@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
 > **Status:** Active
 
 > Зріз: 2026-05-01. Базується на storage-аудиті + поточний стек:
@@ -337,7 +337,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 - **AC.** Detox e2e: insert/select/migrate.
 - **Dep.** PR #014.
 
-#### **PR #019 — `feat: schema migration runner (cross-platform)`**
+#### **PR #019 — `feat: schema migration runner (cross-platform)`** ✅ IN PROGRESS
 
 - **Scope.** `packages/db-schema/migrate.ts` — runner що читає
   `*.sql` з `migrations/` і застосовує послідовно з трекінгом у
