@@ -1,0 +1,92 @@
+# Мінімальний образ для apps/console (Telegram bot runtime).
+#
+# Розгортається як окремий Railway service `sergeant-hubchat`
+# (див. docs/architecture/service-catalog.md рядок про Console agents).
+# Хостить два long-poll grammy-боти у одному процесі:
+#   1. `@sergeant_console_bot` (ADR-0027) — multi-agent ops/marketing.
+#   2. `@OpenClaw_sergeant_bot` (ADR-0031) — DM-only co-founder bot.
+#
+# Збірка: docker build -f Dockerfile.console -t sergeant-console .
+FROM node:20.20.2-alpine AS builder
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
+
+# --- Залежності (кеш-шар) ---
+# `patches/` обов'язково ДО `pnpm install` (див. Dockerfile.api для деталей —
+# `pnpm.patchedDependencies` застосовується завжди, навіть з --ignore-scripts).
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY patches ./patches
+COPY packages/config/package.json ./packages/config/package.json
+COPY apps/console/package.json ./apps/console/package.json
+
+RUN pnpm install --frozen-lockfile --ignore-scripts \
+      --filter @sergeant/console... \
+      --filter @sergeant/config...
+
+# --- Джерела ---
+COPY packages/config ./packages/config
+COPY apps/console ./apps/console
+
+WORKDIR /app/apps/console
+ENV NODE_ENV=production
+
+RUN pnpm build
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Runtime image
+FROM node:20.20.2-alpine AS runtime
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
+
+# Install production deps only.
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY patches ./patches
+COPY packages/config/package.json ./packages/config/package.json
+COPY apps/console/package.json ./apps/console/package.json
+
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts \
+      --filter @sergeant/console...
+
+# App code + build output
+COPY apps/console ./apps/console
+COPY --from=builder /app/apps/console/dist ./apps/console/dist
+
+# Trim Trivy-flagged optional peers (vite/vitest/esbuild) — ми їх не виконуємо
+# у runtime, але `pnpm install --prod` тягне через peer-граф.
+RUN find node_modules -maxdepth 3 -type d \
+      \( -path 'node_modules/.pnpm/vite@*' \
+         -o -path 'node_modules/.pnpm/vitest@*' \
+         -o -path 'node_modules/.pnpm/vite-node@*' \
+         -o -path 'node_modules/.pnpm/@vitest+*' \
+         -o -path 'node_modules/.pnpm/esbuild@*' \
+         -o -path 'node_modules/.pnpm/@esbuild+*' \
+         -o -path 'node_modules/.pnpm/tsx@*' \
+         -o -path 'node_modules/.pnpm/rollup@*' \
+         -o -path 'node_modules/.pnpm/@rollup+*' \) \
+      -prune -exec rm -rf {} + \
+ && rm -rf /usr/local/lib/node_modules/corepack \
+           /usr/local/lib/node_modules/npm \
+           /usr/local/bin/corepack \
+           /usr/local/bin/npm \
+           /usr/local/bin/npx \
+           /usr/local/bin/yarn \
+           /usr/local/bin/yarnpkg \
+           /root/.local/share/pnpm \
+           /root/.cache
+
+# Non-root user (CIS Docker Benchmark, OWASP).
+RUN addgroup -S app && adduser -S app -G app
+USER app
+
+WORKDIR /app/apps/console
+
+# Long-poll grammy-боти не слухають HTTP. Healthcheck — наявність процесу
+# `node dist/index.js`. Railway автоматично рестартить crash-нутий контейнер.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD pgrep -f "node dist/index.js" >/dev/null || exit 1
+
+CMD ["node", "dist/index.js"]
