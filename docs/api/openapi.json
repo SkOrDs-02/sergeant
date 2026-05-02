@@ -2535,7 +2535,8 @@
                 "nutrition",
                 "routine",
                 "journal",
-                "digest"
+                "digest",
+                "cofounder"
               ]
             }
           }
@@ -4636,7 +4637,8 @@
                     "nutrition",
                     "routine",
                     "journal",
-                    "digest"
+                    "digest",
+                    "cofounder"
                   ]
                 },
                 "sourceRef": {
