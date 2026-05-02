@@ -9,5 +9,9 @@ export {
   type SyncOutcome,
   SYNC_MODULES,
   type SyncModule,
+  SYNC_OP_LOG_OPS,
+  type SyncOpLogOp,
+  SYNC_OP_LOG_STATUSES,
+  type SyncOpLogStatus,
   DEFAULT_WAITLIST_SOURCE,
 } from "./constants.js";

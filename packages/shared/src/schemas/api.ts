@@ -550,6 +550,85 @@ export const SyncPushAllSchema = z.object({
   ),
 });
 
+// ────────────────────── Sync v2 (op-log) ──────────────────────
+// Stage 2 / PR #021 із `docs/planning/storage-roadmap.md`. v2 — per-row
+// op-log замість whole-blob LWW v1. Ці схеми валідують HTTP-payload
+// до того, як handler звертається до `sync_op_log`. Серверний whitelist
+// дозволених `table` живе в `apps/server/src/modules/sync/syncV2.ts`
+// (`OP_LOG_TABLE_REGISTRY`); тут перевіряється тільки формат.
+
+/** Hard cap на op-payload, узгоджений із документацією PR #021. */
+export const SYNC_V2_MAX_OPS_PER_PUSH = 200;
+export const SYNC_V2_MAX_ROW_BYTES = 256 * 1024;
+export const SYNC_V2_MAX_TABLE_NAME_LEN = 64;
+export const SYNC_V2_MAX_IDEMPOTENCY_KEY_LEN = 64;
+export const SYNC_V2_PULL_DEFAULT_LIMIT = 100;
+export const SYNC_V2_PULL_MAX_LIMIT = 500;
+
+const SyncV2OpKindEnum = z.enum(["insert", "update", "delete"]);
+
+/**
+ * Один запис op-log-а. `row` — JSON-payload (PK + поля); серверний
+ * apply-шлях знає shape per-table і не валідує тут. Розмір payload-а
+ * обмежено окремим refine-ом (256 KB), щоб не платити за safeParse-инг
+ * мегабайтних об'єктів.
+ *
+ * `client_ts` приймається як ISO-8601 рядок з offset-ом; пізніше
+ * сервер відхилить значення з clock skew > 1 година.
+ */
+const SyncV2OpSchema = z.object({
+  table: z.string().trim().min(1).max(SYNC_V2_MAX_TABLE_NAME_LEN),
+  op: SyncV2OpKindEnum,
+  row: z.record(z.string(), z.unknown()).refine(
+    (v) => {
+      // Обмежуємо розмір per-row payload-а на серверному boundary.
+      // 256 KB — щедро для UI-row-у і захищає від PG `data too large`
+      // помилок усередині транзакції.
+      try {
+        return JSON.stringify(v).length <= SYNC_V2_MAX_ROW_BYTES;
+      } catch {
+        return false;
+      }
+    },
+    { message: "row_too_large" },
+  ),
+  client_ts: z.string().datetime({ offset: true }),
+  idempotency_key: z
+    .string()
+    .min(1)
+    .max(SYNC_V2_MAX_IDEMPOTENCY_KEY_LEN)
+    // ULID/UUID — alphanum + `-`/`_`. Тримаємо мінімально-вузький
+    // pattern, щоб клієнти могли використовувати власну схему ключів,
+    // але не leak-али шлях для smuggle через NULL/keep-alive.
+    .regex(/^[A-Za-z0-9_-]+$/, "invalid_idempotency_key"),
+});
+
+export const SyncV2PushSchema = z.object({
+  ops: z.array(SyncV2OpSchema).min(1).max(SYNC_V2_MAX_OPS_PER_PUSH),
+});
+export type SyncV2PushRequest = z.infer<typeof SyncV2PushSchema>;
+export type SyncV2Op = z.infer<typeof SyncV2OpSchema>;
+
+/**
+ * Pull — cursor-based по `id`. `since=0` означає "з самого початку";
+ * `limit` за замовчуванням 100, до 500.
+ *
+ * Query-парам-и приходять як рядки, тож використовуємо `z.coerce.number`
+ * — `.int().nonnegative()` і `.min(1).max(500)` уже після coerce,
+ * щоб `?since=foo` падав 400-кою на schema-етапі.
+ */
+export const SyncV2PullSchema = z.object({
+  since: z.coerce.number().int().nonnegative().optional().default(0),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(SYNC_V2_PULL_MAX_LIMIT)
+    .optional()
+    .default(SYNC_V2_PULL_DEFAULT_LIMIT),
+});
+export type SyncV2PullRequest = z.infer<typeof SyncV2PullSchema>;
+
 // ────────────────────── Bank proxies (query validation) ──────────────────────
 // `path` перевіряється ще raw-regex-ом в handler-ах (whitelist), тут тільки
 // формат: починається з `/`, без CRLF і розумна довжина.

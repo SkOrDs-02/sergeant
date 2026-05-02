@@ -49,3 +49,26 @@ export type SyncModule = (typeof SYNC_MODULES)[number];
 
 /** Default waitlist source when not specified. */
 export const DEFAULT_WAITLIST_SOURCE = "pricing_page" as const;
+
+/**
+ * Allowed `op` values for `sync_op_log` (migration 027). Mirrors the
+ * CHECK constraint on the column. v2 sync uses these to apply per-row
+ * mutations against module-specific tables (initial whitelist:
+ * `routine_entries`, `routine_streaks`).
+ */
+export const SYNC_OP_LOG_OPS = ["insert", "update", "delete"] as const;
+export type SyncOpLogOp = (typeof SYNC_OP_LOG_OPS)[number];
+
+/**
+ * Allowed `status` values for `sync_op_log` (migration 027).
+ * `applied` — row mutation succeeded.
+ * `duplicate` — replay of a previously-seen idempotency key.
+ * `rejected` — apply path refused the op (LWW conflict, table not
+ * allowed, FK violation, schema mismatch, …).
+ */
+export const SYNC_OP_LOG_STATUSES = [
+  "applied",
+  "duplicate",
+  "rejected",
+] as const;
+export type SyncOpLogStatus = (typeof SYNC_OP_LOG_STATUSES)[number];
