@@ -16,7 +16,7 @@ export interface Debt {
   totalAmount?: number;
   name?: string;
   emoji?: string;
-  dueDate?: string;
+  dueDate?: string | null;
   currency?: string;
   [extra: string]: unknown;
 }
@@ -27,7 +27,7 @@ export interface Receivable {
   linkedTxIds?: string[];
   name?: string;
   emoji?: string;
-  dueDate?: string;
+  dueDate?: string | null;
   currency?: string;
   [extra: string]: unknown;
 }
