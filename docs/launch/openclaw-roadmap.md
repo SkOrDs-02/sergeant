@@ -304,26 +304,49 @@ session кожні 2-3 дні.
   до ручного reset.
 - Конфігурабельно — `OPENCLAW_DAILY_USD_BUDGET=10` коли треба.
 
-### 4.3 Open questions — чекаємо рішень перед стартом
+### 4.3 Resolved decisions (2026-05-02 by @Skords-01)
 
-1. **Memory namespace strict isolation:** founder DM з OpenClaw читає тільки
-   `namespace='cofounder'` (default), чи може ще й читати end-user memory
-   (для product insight типу "що юзери питають")? Default — strict isolation;
-   product insight через aggregated PostHog/Stripe queries.
-2. **Decision log location:** `decisions` таблиця у Postgres + Telegram
-   broadcast у `⚙️ Контрол-план` (default), чи тільки git-comitted markdown
-   у `docs/decisions/`, чи обидва?
-3. **Strategy-docs ownership:** OpenClaw може автоматично committ-ити update
-   до `docs/strategy/` (Phase 4 з approval), чи завжди suggest-PR через
-   `record_decision` і founder сам merge-ає?
-4. **Cofounder tone calibration:** скільки "оспорювати" — конкретні приклади
-   стилю diplomatically/directly при первинному prompt-роботі (тест на 5
-   реальних діалогах перед фіналізацією).
-5. **Daily ritual time-zone:** 08:30 Kyiv hard-coded (current default), чи
-   парам через ENV?
-6. **Optional ops broadcast:** OpenClaw insights автоматично у супергрупу
-   (`📊 Дайджести`) для прозорості майбутньому team-у, чи тільки DM до
-   founder-а назавжди?
+Всі 6 open questions для Phase 1 закриті. Канонічна референція цих рішень —
+[ADR-0031](../adr/0031-openclaw-v0-telegram-cofounder.md). Реплікація сюди
+для self-contained roadmap-у.
+
+1. **Memory namespace — strict isolation.** OpenClaw читає / пише тільки
+   `source='cofounder'` у `ai_memories`. Product insight ("що юзери
+   питають у HubChat") дістається через aggregated PostHog/Stripe queries
+   — ніколи через прямий доступ до end-user memory. Реалізація: tool
+   `recall_memory` хардкодить `sources=['cofounder']`; будь-який intent
+   зачитати інший namespace → fail-closed з логом у
+   `openclaw_invocations.error_message`.
+2. **Decision log — Postgres + git markdown (обидва).** `record_decision`
+   tool виконує атомарно дві дії: (a) `INSERT` у `openclaw_decisions`
+   (operational query) + (b) suggest-PR з новим файлом
+   `docs/decisions/<YYYY-MM-DD>-<slug>.md` (audit-friendly, immutable).
+   Telegram broadcast у `⚙️ Контрол-план` — окремо за §6.
+3. **Strategy-docs ownership — завжди suggest-PR.** OpenClaw ніколи не
+   commit-ить напряму у `docs/strategy/` чи `docs/launch/`. У Phase 1
+   єдиний write-tool — `record_decision`, і він теж відкриває PR (не push
+   у main). Phase 4 може додати inline-button approval flow для авто-
+   commit, але це окремий ADR.
+4. **Cofounder tone — context-aware mixed.** System prompt інструктує
+   diplomatic-mode для product/strategy питань (`"я бачу інший варіант,
+варто розглянути X через Y"`) і direct-mode для ops/incidents
+   (`"це може провалитися через X. перевір Y перед тим як рухатись"`).
+   Селектор — heuristic на keyword-ах user-message-а (`"стратегія",
+"плани", "розглянути"` → diplomatic; `"5xx", "deploy", "down",
+"incident"` → direct). Каліброване на 5 реальних діалогах у Phase 1
+   stabilization window.
+5. **Daily ritual schedule — env-driven.** TZ-aware cron parsing:
+   `OPENCLAW_DAILY_MORNING_AT="08:30 Europe/Kyiv"` (default),
+   `OPENCLAW_WEEKLY_REVIEW_AT="Fri 18:00 Europe/Kyiv"`,
+   `OPENCLAW_MONTHLY_OKR_AT="1 09:00 Europe/Kyiv"`. Зміна без deploy. Phase 2
+   wires actual scheduler (BullMQ repeatable jobs); Phase 1 тільки фіксує env.
+6. **Ops broadcast — selective transparency.**
+   - Phase 2 weekly review + monthly OKR insights → авто-broadcast у
+     `📊 Дайджести` topic (`TELEGRAM_TOPIC_DIGEST`).
+   - Daily morning ritual + ad-hoc DM dialogue → DM до founder-а only
+     (privacy preserved).
+   - Конфігурабельно через `OPENCLAW_BROADCAST_MODE=dm|digest|all` (default
+     `digest` за цим рішенням).
 
 ---
 

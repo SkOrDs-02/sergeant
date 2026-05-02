@@ -27,6 +27,7 @@ vi.mock("react-virtuoso", () => ({
 }));
 
 import { ToastProvider } from "@shared/hooks/useToast";
+import type { Workout } from "@sergeant/fizruk-domain/domain";
 import { WorkoutJournalSection } from "./WorkoutJournalSection";
 
 // WorkoutJournalSection now calls `useToast()` to surface the
@@ -36,21 +37,10 @@ function renderWithToast(ui: React.ReactElement) {
   return render(<ToastProvider>{ui}</ToastProvider>);
 }
 
-interface BaseWorkout {
-  id: string;
-  startedAt: string;
-  endedAt: string | null;
-  items: unknown[];
-  groups: unknown[];
-  warmup: unknown;
-  cooldown: unknown;
-  note: string;
-}
-
 function baseProps(
-  overrides: { activeWorkout?: BaseWorkout } & Record<string, unknown> = {},
+  overrides: { activeWorkout?: Workout } & Record<string, unknown> = {},
 ) {
-  const active: BaseWorkout = overrides.activeWorkout ?? {
+  const active: Workout = overrides.activeWorkout ?? {
     id: "w-active",
     startedAt: new Date("2025-01-01T10:00:00Z").toISOString(),
     endedAt: null,
@@ -89,9 +79,8 @@ function baseProps(
     setDeleteWorkoutConfirm: vi.fn(),
     summarizeWorkoutForFinish: vi.fn(() => ({
       durationSec: 42,
-      exercises: 0,
-      setsDone: 0,
-      volumeKg: 0,
+      items: 0,
+      tonnageKg: 0,
     })),
     submitRetroWorkout: vi.fn(),
     deleteWorkout: vi.fn(),

@@ -11,8 +11,79 @@ import { useToast } from "@shared/hooks/useToast";
 import { hapticSuccess } from "@shared/lib/haptic";
 import { showUndoToast } from "@shared/lib/undoToast";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
+import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain/domain";
+import type { WorkoutFinishSummary } from "@sergeant/fizruk-domain";
+import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 
-function WorkoutRow({ w, activeWorkoutId, setActiveWorkoutId }) {
+/**
+ * Local view state used to drive the post-finish flash card. The shape merges
+ * the pure-domain `WorkoutFinishSummary` with UI bookkeeping (current step,
+ * collapsed flag, the workout id we are summarising, plus the wellbeing
+ * snapshot the user is editing). Mirrors the inline state initialised in
+ * `Workouts.tsx` and consumed by `WorkoutFinishSheets`.
+ */
+interface FinishFlashState extends WorkoutFinishSummary {
+  step: "wellbeing" | "summary";
+  collapsed: boolean;
+  workoutId: string;
+  energy: number | null;
+  mood: number | null;
+  savedWellbeing?: { energy?: number | null; mood?: number | null } | null;
+}
+
+type WorkoutsView = "home" | "catalog" | "log" | "templates";
+
+interface WorkoutRowProps {
+  w: Workout;
+  activeWorkoutId: string | null;
+  setActiveWorkoutId: (id: string | null) => void;
+}
+
+interface WorkoutJournalSectionProps {
+  activeWorkout: Workout | null;
+  activeDuration: string | null;
+  workouts: Workout[];
+  activeWorkoutId: string | null;
+  setActiveWorkoutId: (id: string | null) => void;
+  retroOpen: boolean;
+  setRetroOpen: (b: boolean) => void;
+  retroDate: string;
+  setRetroDate: (s: string) => void;
+  retroTime: string;
+  setRetroTime: (s: string) => void;
+  createWorkout: () => Workout;
+  setMode: (mode: WorkoutsView) => void;
+  musclesUk: Record<string, string>;
+  recBy: Record<string, unknown>;
+  lastByExerciseId: Record<string, unknown>;
+  setRestTimer: (s: RestTimerState | null) => void;
+  updateWorkout: (id: string, patch: Partial<Workout>) => void;
+  updateItem: (
+    workoutId: string,
+    itemId: string,
+    patch: Partial<WorkoutItem>,
+  ) => void;
+  removeItem: (workoutId: string, itemId: string) => void;
+  setFinishFlash: (
+    f:
+      | FinishFlashState
+      | null
+      | ((prev: FinishFlashState | null) => FinishFlashState | null),
+  ) => void;
+  endWorkout: (id: string) => Workout | null;
+  summarizeWorkoutForFinish: (
+    w: Workout | null | undefined,
+  ) => WorkoutFinishSummary | null;
+  submitRetroWorkout: () => void;
+  deleteWorkout: (id: string) => void;
+  restoreWorkout: (workout: Workout) => void;
+}
+
+function WorkoutRow({
+  w,
+  activeWorkoutId,
+  setActiveWorkoutId,
+}: WorkoutRowProps) {
   // An ended workout is always "Завершене" — even if it happens to be the
   // currently-selected row — so it no longer looks like it's "hanging in
   // active" after the user pressed «Завершити».
@@ -27,7 +98,7 @@ function WorkoutRow({ w, activeWorkoutId, setActiveWorkoutId }) {
       className={`w-full text-left px-4 py-3 border-b border-line last:border-0 hover:bg-panelHi transition-colors${isSelected ? " bg-text/5" : ""}`}
     >
       <div className="flex items-center justify-between gap-3">
-        <div className="text-sm font-semibold text-text">
+        <div className="text-style-label text-text">
           {new Date(w.startedAt).toLocaleDateString("uk-UA", {
             month: "short",
             day: "numeric",
@@ -91,13 +162,13 @@ export function WorkoutJournalSection({
   submitRetroWorkout,
   deleteWorkout,
   restoreWorkout,
-}) {
+}: WorkoutJournalSectionProps) {
   const toast = useToast();
   const { announce } = useAnnounce();
   const workoutList = workouts || [];
   const handleSwipeDelete = useCallback(
-    (id) => {
-      const snapshot = (workouts || []).find((w) => w.id === id);
+    (id: string) => {
+      const snapshot = (workouts || []).find((w: Workout) => w.id === id);
       if (!snapshot) return;
       deleteWorkout(id);
       showUndoToast(toast, {
@@ -120,7 +191,7 @@ export function WorkoutJournalSection({
     <div className="space-y-3">
       {!activeWorkout && (
         <Card radius="lg" padding="lg" className="text-center">
-          <div className="text-sm font-semibold text-text">
+          <div className="text-style-label text-text">
             Немає активного тренування
           </div>
           <div className="text-xs text-subtle mt-1">
@@ -329,7 +400,7 @@ export function WorkoutJournalSection({
               <SwipeToAction
                 key={w.id}
                 onSwipeLeft={
-                  deleteWorkout && w.id !== activeWorkoutId
+                  w.id !== activeWorkoutId
                     ? () => handleSwipeDelete(w.id)
                     : undefined
                 }

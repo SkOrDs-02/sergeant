@@ -37,6 +37,27 @@ describe("console agent router", () => {
     });
   });
 
+  it("routes dispatcher status commands", () => {
+    expect(parseCommand("/status agents")).toEqual({
+      agent: "dispatcher",
+      query: "status agents",
+    });
+  });
+
+  it("routes dispatcher assignment commands", () => {
+    expect(parseCommand("/assign web-ui improve budget screen")).toEqual({
+      agent: "dispatcher",
+      query: "assign web-ui improve budget screen",
+    });
+  });
+
+  it("routes approval commands through dispatcher", () => {
+    expect(parseCommand("/approve deploy railway")).toEqual({
+      agent: "dispatcher",
+      query: "approve deploy railway",
+    });
+  });
+
   it("classifies ops-related free text", () => {
     expect(parseCommand("сервер впав, помилка 500").agent).toBe("ops");
   });

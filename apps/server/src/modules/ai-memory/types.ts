@@ -27,6 +27,7 @@ export const ALLOWED_MEMORY_SOURCES = [
   "routine",
   "journal",
   "digest",
+  "cofounder",
 ] as const;
 
 export type MemorySource = (typeof ALLOWED_MEMORY_SOURCES)[number];

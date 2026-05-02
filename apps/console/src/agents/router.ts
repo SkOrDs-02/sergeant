@@ -1,8 +1,19 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { runOpsAgent } from "./ops.js";
 import { runMarketingAgent } from "./marketing.js";
+import {
+  buildDispatcherPayload,
+  dispatchToN8n,
+  formatApprovalPrompt,
+} from "./dispatcher.js";
 
-export type AgentType = "ops" | "marketing" | "help" | "unknown";
+export type AgentType = "ops" | "marketing" | "dispatcher" | "help" | "unknown";
+
+export interface TelegramDispatchContext {
+  telegramUserId: number;
+  telegramChatId: number;
+  messageId: number;
+}
 
 /**
  * Parses the Telegram message to determine which agent should handle it.
@@ -17,6 +28,27 @@ export function parseCommand(text: string): {
   // Explicit /help command
   if (trimmed === "/help" || trimmed === "/start") {
     return { agent: "help", query: "" };
+  }
+
+  const dispatcherCommands = [
+    "status",
+    "plan",
+    "assign",
+    "review",
+    "run",
+    "approve",
+    "cancel",
+    "logs",
+  ];
+  for (const command of dispatcherCommands) {
+    if (trimmed === `/${command}` || trimmed.startsWith(`/${command} `)) {
+      return {
+        agent: "dispatcher",
+        query: trimmed
+          .replace(new RegExp(`^/${command}\\s*`), `${command} `)
+          .trim(),
+      };
+    }
   }
 
   if (trimmed.startsWith("/ops ") || trimmed === "/ops") {
@@ -149,10 +181,26 @@ export async function dispatchToAgent(
   client: Anthropic,
   agent: AgentType,
   query: string,
+  context?: TelegramDispatchContext,
 ): Promise<string> {
   if (agent === "help") return HELP_TEXT;
   if (agent === "ops") return runOpsAgent(client, query);
   if (agent === "marketing") return runMarketingAgent(client, query);
+  if (agent === "dispatcher") {
+    if (!context) {
+      return "Dispatcher context is missing; cannot route this Telegram command.";
+    }
+    const payload = buildDispatcherPayload({
+      commandText: query,
+      telegramUserId: context.telegramUserId,
+      telegramChatId: context.telegramChatId,
+      messageId: context.messageId,
+    });
+    if (payload.requiresApproval && payload.action !== "approve") {
+      return formatApprovalPrompt(payload);
+    }
+    return dispatchToN8n(payload);
+  }
 
   // For ambiguous messages, try LLM classification before giving up
   const classified = await classifyWithLlm(client, query);

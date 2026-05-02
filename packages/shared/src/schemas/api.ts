@@ -74,6 +74,7 @@ const RECALL_MEMORY_SOURCES = [
   "routine",
   "journal",
   "digest",
+  "cofounder",
 ] as const;
 
 /** POST /api/ai-memory/recall — semantic memory retrieval. */

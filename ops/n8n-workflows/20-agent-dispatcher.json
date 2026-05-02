@@ -1,0 +1,80 @@
+{
+  "name": "20 - Telegram Agent Dispatcher (Console -> n8n -> specialist route)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agent-dispatcher",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "telegram-command-webhook",
+      "name": "Telegram command webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body ?? $json;\nconst action = String(body.action ?? 'plan');\nconst specialist = String(body.specialist ?? 'repo-architect');\nconst riskTier = String(body.riskTier ?? 'P2');\nconst mode = String(body.mode ?? 'read-only');\nconst commandText = String(body.commandText ?? '');\nconst taskId = `agent-${Date.now()}`;\nconst accepted = mode === 'read-only' || action === 'approve';\nconst status = accepted ? 'accepted' : 'approval_required';\nreturn [{ json: { taskId, status, action, specialist, riskTier, mode, commandText, message: accepted ? `Task ${taskId} accepted for ${specialist}.` : `Approval required before running ${action}.` } }];"
+      },
+      "id": "classify-agent-task",
+      "name": "Classify agent task",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "respond-to-console",
+      "name": "Respond to console",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [800, 300]
+    }
+  ],
+  "connections": {
+    "Telegram command webhook": {
+      "main": [
+        [
+          {
+            "node": "Classify agent task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify agent task": {
+      "main": [
+        [
+          {
+            "node": "Respond to console",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
+  },
+  "tags": [
+    {
+      "name": "sergeant"
+    },
+    {
+      "name": "agents"
+    },
+    {
+      "name": "telegram"
+    }
+  ],
+  "active": false
+}
