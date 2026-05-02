@@ -678,6 +678,23 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
+  "/api/mono/backfill-progress": {
+    get: {
+      summary: "Поточний стан per-user backfill job-а (для UI індикатора)",
+      tags: ["mono"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description:
+            "Snapshot поточного стану backfill-у (idle/running/completed/failed).",
+          content: {
+            "application/json": { schema: namedSchemas.MonoBackfillProgress },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+  },
 
   // ────────────────────── Waitlist (Phase 0 monetization) ───────────────────
   // Сервер монтує обидва префікси (`/api/waitlist` + `/api/v1/waitlist`), щоб
