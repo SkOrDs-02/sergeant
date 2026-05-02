@@ -359,19 +359,28 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 - **AC.** Backfill коректний на staging; spot-check на 100 юзерах.
 - **Dep.** PR #014, #019.
 
-#### **PR #021 — `feat(server): /v2/sync/push + /v2/sync/pull endpoints (op-log based)`**
+#### **PR #021 — `feat(server): /v2/sync/push + /v2/sync/pull endpoints (op-log based)`** 🚧 IN PROGRESS
 
 - **Scope.**
   - `POST /v2/sync/push` — приймає масив op-log entries
     `[{ table, op, row, client_ts, idempotency_key }]`. Apply у транзакції,
-    повертає `{ accepted, last_op_id }`.
+    повертає `{ accepted, last_op_id, results }`.
   - `GET /v2/sync/pull?since=<op_id>&limit=` — повертає op-log entries
-    від інших девайсів того ж юзера. Pagination.
+    від інших девайсів того ж юзера. Pagination через `next_cursor`.
   - Idempotency: `(user_id, idempotency_key)` UNIQUE, повторний push
-    повертає cached result.
-  - Метрики (rebuild на існуючому RED-наборі).
+    повертає cached result; повтор не виконує DML.
+  - Whitelist-таблиці на цьому етапі — `routine_entries`, `routine_streaks`
+    (`OP_LOG_TABLE_REGISTRY` у `apps/server/src/modules/sync/syncV2.ts`).
+  - LWW per-row через `client_ts` vs `updated_at` рядка; clock-skew
+    `client_ts > server+1h` reject-нуто з `reason='clock_skew'`.
+  - Метрики (`syncOperationsTotal{op="v2_push"|"v2_pull"}`) і
+    audit-log (`sync_audit_log{module='syncV2'}`) — без нових інфра-
+    компонентів, ділять існуючий RED-набір.
+  - Опціональний `X-Origin-Device-Id` хедер виключає ops того ж пристрою
+    при `pull` (replay-safety без додаткового state на клієнті).
 - **AC.** Replay-safe (one client пуляє pull → applies; potem той самий
-  push → no-op). Conflict-free на routine smoke test.
+  push → no-op). Conflict-free на routine smoke test. v1 sync без
+  регресій. Migration `027_sync_op_log.{sql,down.sql}` round-trip clean.
 - **Dep.** PR #019, #020.
 
 ---
