@@ -26,6 +26,10 @@
       "types": "./dist/migrate/index.d.ts",
       "import": "./dist/migrate/index.js"
     },
+    "./migrate/runner": {
+      "types": "./dist/migrate/runner.d.ts",
+      "import": "./dist/migrate/runner.js"
+    },
     "./migrate/pg": {
       "types": "./dist/migrate/pg.d.ts",
       "import": "./dist/migrate/pg.js"
