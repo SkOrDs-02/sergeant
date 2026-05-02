@@ -11,6 +11,7 @@
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { getTxStatAmount } from "../../modules/finyk/utils";
 import { safeReadLS, safeReadStringLS } from "@shared/lib/storage";
+import { loadRoutineState } from "../../modules/routine/lib/routineStorage";
 
 export interface Insight {
   id: string;
@@ -31,16 +32,6 @@ interface Transaction {
   time: number;
   description?: string;
   mcc?: number;
-}
-
-interface Habit {
-  id: string;
-  archived?: boolean;
-}
-
-interface RoutineState {
-  habits?: Habit[];
-  completions?: Record<string, string[]>;
 }
 
 interface NutritionDay {
@@ -224,8 +215,7 @@ function activeWeeksSpendingInsight(): Insight | null {
  * AND ≥ 4 distinct ISO weeks with any completion.
  */
 function bestHabitMonthInsight(): Insight | null {
-  const state = safeLS<RoutineState | null>(STORAGE_KEYS.ROUTINE, null);
-  if (!state) return null;
+  const state = loadRoutineState();
 
   const habits = (state.habits || []).filter((h) => !h.archived);
   const completions = state.completions || {};
@@ -340,10 +330,8 @@ function workoutKcalInsight(): Insight | null {
  * Requires ≥ 4 weeks with both habit and nutrition data.
  */
 function habitWeeksKcalInsight(): Insight | null {
-  const state = safeLS<RoutineState | null>(STORAGE_KEYS.ROUTINE, null);
+  const state = loadRoutineState();
   const log = safeLS<NutritionLog>(STORAGE_KEYS.NUTRITION_LOG, {});
-
-  if (!state) return null;
   const habits = (state.habits || []).filter((h) => !h.archived);
   const completions = state.completions || {};
   if (habits.length === 0) return null;

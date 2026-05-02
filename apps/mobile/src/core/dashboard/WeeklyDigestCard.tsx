@@ -16,6 +16,7 @@ import { getWeekKey } from "@sergeant/shared";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 
 import { useWeeklyDigest } from "./useWeeklyDigest";
 
@@ -192,10 +193,9 @@ export const WeeklyDigestCard = memo(function WeeklyDigestCard({
                   .overallRecommendations as unknown[]
               ).length > 0 ? (
                 <View className="mt-1 rounded-xl border border-brand-200/60 bg-brand-50/80 p-2.5">
-                  {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- card subheading */}
-                  <Text className="text-[10px] font-bold uppercase tracking-wide text-brand-700">
+                  <SectionHeading size="2xs" variant="accent">
                     Загальні рекомендації
-                  </Text>
+                  </SectionHeading>
                   {(
                     (digest as Record<string, unknown>)
                       .overallRecommendations as string[]

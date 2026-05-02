@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-02 by @sonher468. **Next review:** 2026-07-31.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -563,17 +563,32 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   — _м'яка_ залежність (за flag default off нічого в проді не
   активується).
 
-##### **PR #025 — `feat(routine): cut-over reads to SQLite, deprecate LS`**
+##### **PR #025 — `feat(routine): cut-over reads to SQLite, deprecate LS`** ✅ MERGED (#1407)
 
 - Read йде з SQLite. LS-write залишається на 2 тижні як safety net.
 - Sync `module_data.routine` blob більше не оновлюється з клієнта.
 - Server-side: backfill повторно для юзерів що не онлайн були під час
   rollout-у.
+- **Реалізовано:** `sqliteReader.ts`, `sqliteReadBoot.ts`, `useSqliteReadBoot.ts`,
+  feature flag `feature.routine.sqlite_v2.read_sqlite`, module sync exclusion,
+  `loadRoutineState()` overlay з SQLite completions.
 
-##### **PR #026 — `chore(routine): remove LS path, drop module_data.routine`**
+##### **PR #026 — `chore(routine): remove LS path, drop module_data.routine`** ✅ MERGED (#1412)
 
 - Видалити routine з `SYNC_MODULES`. Server: `DELETE FROM module_data WHERE module='routine'`.
 - ESLint guard проти reads з `STORAGE_KEYS.ROUTINE`.
+- **Реалізовано:** видалено routine з `SYNC_MODULES` (web + mobile), мігровано
+  `insightsEngine.ts` на `loadRoutineState()`, додано `no-restricted-syntax`
+  ESLint guard, оновлено `eslint-plugin-sergeant-design` tracked keys.
+
+> **Server-side migration (after client deploy):**
+>
+> ```sql
+> DELETE FROM module_data WHERE module = 'routine';
+> ```
+>
+> Run once after all clients have picked up PR #026. The blob is no
+> longer pushed from clients, so orphaned rows just waste storage.
 
 #### **Fizruk** (3 тижні) — PR #027–#030
 

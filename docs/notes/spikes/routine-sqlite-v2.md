@@ -1,6 +1,6 @@
 # SPIKE — Routine module on SQLite v2
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-05-16.
+> **Last validated:** 2026-05-02 by @sonher468. **Next review:** 2026-05-16.
 > **Status:** Active — automated gates PASS; awaiting hardware confirmation
 > (iOS Safari 16.4+, multi-device toggle).
 
@@ -396,6 +396,18 @@ etc.). Until then, treat the SPIKE as **conditionally GO**:
 > Stage 4 planning may proceed as long as the hardware gates have not
 > reported a fail. Production rollout (`feature.routine.sqlite_v2=on`
 > by default) MUST wait until all three hardware gates report PASS.
+
+### Stage 4 progress (routine module)
+
+| PR   | Title                                      | Status            |
+| ---- | ------------------------------------------ | ----------------- |
+| #024 | Dual-write LS↔SQLite                       | ✅ Merged         |
+| #025 | Cut-over reads to SQLite, deprecate LS     | ✅ Merged (#1407) |
+| #026 | Remove LS path, drop `module_data.routine` | ✅ Merged (#1412) |
+
+Routine module migration на SQLite завершена. Completions читаються
+з SQLite, LS blob більше не cloud-synced. Після deploy потрібно:
+`DELETE FROM module_data WHERE module = 'routine'` (server-side).
 
 ## If we decide STOP
 
