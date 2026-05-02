@@ -456,7 +456,8 @@ export const authMailQueueDepth = new client.Gauge({
 });
 
 // ───────────────── AI memory ingestion (BullMQ) ───────────────
-// Лічильники для PR2-черги `sergeant:ai-memory-ingest`. Дзеркалять
+// Лічильники для PR2-черги `ai-memory-ingest` (Redis-keys під префіксом
+// `sergeant:`). Дзеркалять
 // auth-mail-набір (enqueue / process / depth + duration), але з
 // додатковим лейблом `source`, щоб алерти могли біти по конкретному
 // домену (наприклад, finyk-spike при back-fill-і Monobank).

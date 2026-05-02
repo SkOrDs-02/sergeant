@@ -282,7 +282,8 @@ export const env = {
   //
   // Hooks у `mono/webhook.ts` (finyk), `digest/weekly-digest.ts` (digest) і
   // `POST /api/ai-memory/ingest` (nutrition / fizruk / journal / routine з
-  // клієнта) ставлять задачу у BullMQ-чергу `sergeant:ai-memory-ingest`.
+  // клієнта) ставлять задачу у BullMQ-чергу `ai-memory-ingest` (Redis-keys
+  // префікс `sergeant:`, див. `lib/jobs/connection.ts`).
   // Worker викликає `aiMemory.remember()`, який робить Voyage embedding +
   // pgvector upsert. Якщо `REDIS_URL` не заданий — fallback на in-process
   // direct dispatch (як у authMail).

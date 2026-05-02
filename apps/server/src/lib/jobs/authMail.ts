@@ -9,7 +9,11 @@ import {
   authMailQueueDepth,
 } from "../../obs/metrics.js";
 import { elapsedMs } from "../timing.js";
-import { AUTH_MAIL_QUEUE_NAME, createBullConnection } from "./connection.js";
+import {
+  AUTH_MAIL_QUEUE_NAME,
+  BULLMQ_QUEUE_PREFIX,
+  createBullConnection,
+} from "./connection.js";
 
 /**
  * BullMQ-based durable queue для транзакційних листів Better Auth
@@ -112,6 +116,7 @@ function getOrCreateAuthMailQueue(): Queue<AuthMailJobData> | null {
 
   state.queue = new Queue<AuthMailJobData>(AUTH_MAIL_QUEUE_NAME, {
     connection,
+    prefix: BULLMQ_QUEUE_PREFIX,
     defaultJobOptions: {
       // 5 спроб: миттєво → 5min → 30min → 2h → 6h. Сумарно ~9 годин.
       attempts: 5,
@@ -261,6 +266,7 @@ export function startAuthMailWorker(): StartedAuthMailWorker | null {
     processAuthMailJob,
     {
       connection,
+      prefix: BULLMQ_QUEUE_PREFIX,
       concurrency: 5,
       // Якщо job впав, BullMQ затримує наступну спробу за `backoff` policy
       // з `defaultJobOptions`.

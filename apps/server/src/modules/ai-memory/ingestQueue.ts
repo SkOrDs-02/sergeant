@@ -31,6 +31,7 @@ import type { Redis as IORedisClient } from "ioredis";
 import { env } from "../../env.js";
 import {
   AI_MEMORY_INGEST_QUEUE_NAME,
+  BULLMQ_QUEUE_PREFIX,
   createBullConnection,
 } from "../../lib/jobs/connection.js";
 import { logger, serializeError } from "../../obs/logger.js";
@@ -128,6 +129,7 @@ function getOrCreateMemoryIngestQueue(): Queue<MemoryIngestPayload> | null {
 
   state.queue = new Queue<MemoryIngestPayload>(AI_MEMORY_INGEST_QUEUE_NAME, {
     connection,
+    prefix: BULLMQ_QUEUE_PREFIX,
     defaultJobOptions: {
       attempts: env.AI_MEMORY_INGEST_ATTEMPTS,
       // Exponential: 30s → 2min → 8min → 32min → 2h. Сумарно ~2.5h —
@@ -385,6 +387,7 @@ export function startMemoryIngestWorker(): StartedMemoryIngestWorker | null {
     processMemoryIngestJob,
     {
       connection,
+      prefix: BULLMQ_QUEUE_PREFIX,
       concurrency: env.AI_MEMORY_INGEST_CONCURRENCY,
     },
   );

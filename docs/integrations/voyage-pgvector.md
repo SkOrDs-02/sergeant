@@ -104,7 +104,7 @@ PR3 (retrieval) — використовує `recall()` з двох сторін
 
 ## Ingestion (PR2)
 
-Producer-и → BullMQ-черга `sergeant:ai-memory-ingest` → worker → `aiMemory.remember()` → Voyage embed → pgvector upsert.
+Producer-и → BullMQ-черга `ai-memory-ingest` (Redis-keys під `sergeant:` prefix-ом) → worker → `aiMemory.remember()` → Voyage embed → pgvector upsert.
 
 ```
 ┌─ Server-side hooks ──────────────────┐    ┌─ Client-driven ──────────┐
@@ -118,7 +118,7 @@ Producer-и → BullMQ-черга `sergeant:ai-memory-ingest` → worker → `ai
                 ┌─────────────────┴─────────────────┐
                 ▼                                   ▼
        BullMQ (Redis-backed)              fallback (no Redis)
-       sergeant:ai-memory-ingest          in-process direct dispatch
+       ai-memory-ingest (sergeant:*)      in-process direct dispatch
                 │
                 ▼
        processMemoryIngestJob (Worker)

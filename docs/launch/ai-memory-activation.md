@@ -29,9 +29,10 @@ ADR — [`docs/adr/0028-pgvector-ai-memory.md`](../adr/0028-pgvector-ai-memory.m
 - [ ] **Anthropic prompt cache warm-up budget.** `SYSTEM_PROMPT_VERSION v6→v7`
       інвалідує cache на першому request-і кожного активного юзера після
       deploy. Очікуваний spike: ~5хв elevated cost (≈ $1–2 на 1k активних).
-- [ ] **Redis BullMQ доступний.** Ingestion-черга `sergeant:ai-memory-ingest`
-      потребує Redis. Якщо `REDIS_URL` відсутній — fallback на in-process
-      dispatch (працює, але без retry-семантики).
+- [ ] **Redis BullMQ доступний.** Ingestion-черга `ai-memory-ingest`
+      (Redis-keys під `sergeant:` prefix-ом) потребує Redis. Якщо
+      `REDIS_URL` відсутній — fallback на in-process dispatch (працює,
+      але без retry-семантики).
 - [ ] **Метрики dashboard.** Налаштувати Grafana panel-и для
       `ai_memory_ingest_*` (PR2) і `voyage_external_http_*` (PR1) метрик.
 

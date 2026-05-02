@@ -54,7 +54,7 @@ Anthropic-асистент (`/api/chat` + HubChat tools) не пам'ятає н
 7. **Service facade** (`AiMemoryService`) — єдиний entry-point: `remember(inputs)`, `recall(input)`, `forgetUser(userId)`, `forgetSource(...)`. Caller-и (PR2 ingestion, PR3 retrieval) ніколи не торкаються `embeddings.ts` / `vectorStore.ts` напряму.
 8. **Master-flag `AI_MEMORY_ENABLED=false`** у foundation-PR. `remember()` / `recall()` no-op-и, поки PR2 не вмикає прапор разом з ingestion-hook-ами. Foundation не зачіпає поточний `/api/chat` flow.
 
-**PR2 (ingestion)**: BullMQ queue `sergeant:ai-memory-ingest` + hooks з finyk/nutrition/fizruk/journal-domain-ів. Merged 2026-05-01.
+**PR2 (ingestion)**: BullMQ queue `ai-memory-ingest` (Redis-keys під `sergeant:` prefix-ом) + hooks з finyk/nutrition/fizruk/journal-domain-ів. Merged 2026-05-01.
 **PR3 (retrieval, landed 2026-05-02)**: інтеграція у `/api/chat` (RAG-injection через `ragContext.buildRagContext()`) + HubChat tool `recall_memory` (async client-executor через `ASYNC_CHAT_ACTION_NAMES` whitelist) + `POST /api/ai-memory/recall` route (sync read-path).
 
 ## Rationale
