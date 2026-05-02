@@ -315,6 +315,89 @@ export const env = {
    * НЕ блокує інших job-ів для того ж юзера.
    */
   AI_MEMORY_INGEST_ATTEMPTS: parseIntEnv("AI_MEMORY_INGEST_ATTEMPTS", 5),
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // OpenClaw v0 — Telegram-only co-founder bot (ADR-0031)
+  // ─────────────────────────────────────────────────────────────────────────
+  //
+  // Server-side env для OpenClaw модуля. Token + Telegram allowlist живуть у
+  // `apps/console` — це Telegram-bot частина. Сервер відповідає за:
+  //   - tool execution (memory recall, decision write, query_app_db, etc.)
+  //   - audit log у `openclaw_invocations`
+  //   - per-day cost cap (читається тут, enforce-иться у console pre-call)
+  //
+  // Strict isolation memory namespace ('cofounder') і table-allowlist для
+  // `query_app_db` — хардкоди у tools-модулі, не env. Не мінти runtime.
+
+  /**
+   * Better Auth user.id founder-а. Потрібен для join-ів з `ai_memories`
+   * (PARTITION BY HASH(user_id)) і запису `openclaw_invocations.founder_user_id`.
+   * Окремий від `OPENCLAW_FOUNDER_TG_USER_ID` — Telegram numeric id інший.
+   */
+  OPENCLAW_FOUNDER_USER_ID: process.env.OPENCLAW_FOUNDER_USER_ID || "",
+
+  /**
+   * Денний USD cap на Anthropic-token-и через OpenClaw. Pre-call check:
+   * `SUM(cost_usd) WHERE invoked_at >= today_kyiv` + estimated next-call
+   * cost; якщо > cap → fail-closed з reply
+   * `"OpenClaw quota exceeded for today. Resume tomorrow."`
+   *
+   * Dollar-string бо NUMERIC(10,4) у БД; parseFloat на read-side.
+   */
+  OPENCLAW_DAILY_USD_BUDGET: process.env.OPENCLAW_DAILY_USD_BUDGET || "5",
+
+  /**
+   * Hard cap на Plan→Act→Reflect ітерації у одному виклику. Reach → fail-closed
+   * з `status='iteration_cap'`.
+   */
+  OPENCLAW_MAX_ITERATIONS: parseIntEnv("OPENCLAW_MAX_ITERATIONS", 8),
+
+  /**
+   * Schedule env-и (TZ-aware human-readable strings). Phase 1 — лише
+   * фіксуємо values; Phase 2 wires actual BullMQ repeatable jobs з парсингом.
+   * Format: `"HH:MM TZ"` для daily / `"DOW HH:MM TZ"` для weekly /
+   * `"D HH:MM TZ"` для monthly (D = day-of-month).
+   */
+  OPENCLAW_DAILY_MORNING_AT:
+    process.env.OPENCLAW_DAILY_MORNING_AT || "08:30 Europe/Kyiv",
+  OPENCLAW_WEEKLY_REVIEW_AT:
+    process.env.OPENCLAW_WEEKLY_REVIEW_AT || "Fri 18:00 Europe/Kyiv",
+  OPENCLAW_MONTHLY_OKR_AT:
+    process.env.OPENCLAW_MONTHLY_OKR_AT || "1 09:00 Europe/Kyiv",
+
+  /**
+   * Broadcast policy.
+   *   - `dm`: всі insights — лише DM до founder-а.
+   *   - `digest`: weekly review + monthly OKR auto-broadcast у `📊 Дайджести`
+   *     topic; daily ritual + ad-hoc DM залишаються DM-only (default).
+   *   - `all`: усе у `📊 Дайджести` (для майбутньої team-у).
+   */
+  OPENCLAW_BROADCAST_MODE: (
+    process.env.OPENCLAW_BROADCAST_MODE || "digest"
+  ).toLowerCase() as "dm" | "digest" | "all",
+
+  /**
+   * GitHub PAT з `contents:write` для opening PR-ів з decision markdown
+   * у `docs/decisions/`. Якщо не задано — `record_decision` пише у
+   * `openclaw_decisions` з `git_pr_url=NULL` і логує warn — manual retry
+   * через admin endpoint у Phase 2.
+   */
+  OPENCLAW_GITHUB_PAT:
+    process.env.OPENCLAW_GITHUB_PAT || process.env.Git_PAT || "",
+
+  /**
+   * Repo target для decision PR-ів. Default — основний Sergeant repo.
+   * Override для тестів / fork-ів.
+   */
+  OPENCLAW_GITHUB_REPO:
+    process.env.OPENCLAW_GITHUB_REPO || "Skords-01/Sergeant",
+
+  /**
+   * Default branch у repo (для decision PR-ів). Якщо змінили на `main` /
+   * `master` / `develop` — переоверайдити тут.
+   */
+  OPENCLAW_GITHUB_BASE_BRANCH:
+    process.env.OPENCLAW_GITHUB_BASE_BRANCH || "main",
 } as const;
 
 export type Env = typeof env;

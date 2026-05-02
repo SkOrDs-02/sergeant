@@ -9,6 +9,17 @@ import {
   parseRateLimitPerMinute,
   splitTelegramMessage,
 } from "./security.js";
+import { attachOpenClawHandlers } from "./openclaw/index.js";
+
+const DEFAULT_OPENCLAW_MAX_ITERATIONS = 8;
+
+function parseOpenClawMaxIterations(value: string | undefined): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_OPENCLAW_MAX_ITERATIONS;
+  }
+  return Math.floor(parsed);
+}
 
 const HELP_TEXT = [
   "*Sergeant Console* - Telegram control surface for ops, marketing, and AI agents",
@@ -42,8 +53,8 @@ async function main() {
     process.exit(1);
   }
 
-  const bot = new Bot(botToken);
   const anthropic = new Anthropic({ apiKey: anthropicKey });
+  const bot = new Bot(botToken);
   const limiter = new FixedWindowRateLimiter(
     parseRateLimitPerMinute(process.env.CONSOLE_RATE_LIMIT_PER_MIN),
   );
@@ -102,7 +113,45 @@ async function main() {
   });
 
   console.log("Sergeant Console starting…");
-  await bot.start();
+  const consolePromise = bot.start();
+
+  // OpenClaw — DM-only co-founder bot (ADR-0031). Fail-closed якщо env-и не
+  // налаштовані — main bot стартує далі, OpenClaw тихо вимкнений з warning-ом.
+  const openclawToken = process.env.OPENCLAW_BOT_TOKEN;
+  const founderUserId = process.env.OPENCLAW_FOUNDER_USER_ID;
+  const serverUrl = process.env.SERVER_INTERNAL_URL ?? "http://localhost:3000";
+  const internalApiKey = process.env.INTERNAL_API_KEY ?? "";
+
+  let openclawPromise: Promise<void> | undefined;
+  if (!openclawToken) {
+    console.warn(
+      "OpenClaw not started: OPENCLAW_BOT_TOKEN is not set (Phase 1 fail-closed).",
+    );
+  } else if (!founderUserId) {
+    console.warn("OpenClaw not started: OPENCLAW_FOUNDER_USER_ID is not set.");
+  } else if (!internalApiKey) {
+    console.warn(
+      "OpenClaw not started: INTERNAL_API_KEY is not set (server tools unreachable).",
+    );
+  } else {
+    const openclawBot = new Bot(openclawToken);
+    attachOpenClawHandlers({
+      bot: openclawBot,
+      anthropic,
+      serverUrl,
+      internalApiKey,
+      founderUserId,
+      maxIterations: parseOpenClawMaxIterations(
+        process.env.OPENCLAW_MAX_ITERATIONS,
+      ),
+    });
+    console.log("OpenClaw starting…");
+    openclawPromise = openclawBot.start();
+  }
+
+  await (openclawPromise
+    ? Promise.all([consolePromise, openclawPromise])
+    : consolePromise);
 }
 
 main().catch((err) => {

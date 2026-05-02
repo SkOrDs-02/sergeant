@@ -12,6 +12,7 @@ import { createMarketingInternalRouter } from "./marketing.js";
 import { createEmailInternalRouter } from "./email.js";
 import { createUsersInternalRouter } from "./users.js";
 import { createGovernanceInternalRouter } from "./governance.js";
+import { createOpenClawInternalRouter } from "./openclaw.js";
 
 /**
  * Mounts all /api/internal/* routes behind a shared bearer-token guard.
@@ -55,6 +56,7 @@ export function createInternalRouter({ pool }: { pool: Pool }): Router {
   router.use(createEmailInternalRouter({ pool }));
   router.use(createUsersInternalRouter({ pool }));
   router.use(createGovernanceInternalRouter({ pool }));
+  router.use(createOpenClawInternalRouter({ pool }));
 
   return router;
 }
