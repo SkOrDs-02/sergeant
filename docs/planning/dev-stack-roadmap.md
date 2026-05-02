@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
 > **Status:** Active
 
-**Статус:** in progress. Створено 2026-04-25. Останнє оновлення: 2026-04-27 (13 з топ-15 закриті — PostHog інтегрований у web + server, Strict TS розщеплений на server/web; Sentry DSN-gated; деталі у колонці Статус нижче).
+**Статус:** in progress. Створено 2026-04-25. Останнє оновлення: 2026-05-02 (13 з топ-15 закриті — PostHog інтегрований у web + server, Strict TS web rollout у Phase 4 з 5 — фази 1–3.1 виконані, лишилось зняти `allowJs` + увімкнути повний `strict: true`; Sentry DSN-gated; деталі у колонці Статус нижче).
 
 **Скоуп:** інструменти, інтеграції, практики для покращення розробки, тестування, CI/CD, проду, безпеки, performance і команди. Specifically для стеку Sergeant: pnpm + Turborepo + Vite/React + Express + Postgres + Railway + Vercel + Expo.
 **Принцип:** не «впровадити все одразу», а **поетапно** — від найдешевших і найважливіших до інвестиційних. Кожен пункт — самостійний tool / practice з ціною, effort-ом, ROI і dep-ами.
@@ -19,7 +19,7 @@
 | 1   | **Sentry** для error tracking                     | 2 год     | $26/міс          | 🔥🔥🔥 | ✅ done — `SENTRY_DSN` (Railway server) + `VITE_SENTRY_DSN` (Vercel web) **активні**; `EXPO_PUBLIC_SENTRY_DSN` (Expo EAS mobile) — pending provisioning   |
 | 2   | **Knip + depcheck** — clean dead code             | 1 год     | $0               | 🔥🔥   | ✅ done [#716](https://github.com/Skords-01/Sergeant/pull/716)                                                                                            |
 | 3a  | **Strict TS — server**                            | —         | $0               | 🔥🔥🔥 | ✅ done (`apps/server/tsconfig.json` має `strict: true`)                                                                                                  |
-| 3b  | **Strict TS — web (incremental)**                 | 1-2 тижні | $0               | 🔥🔥🔥 | 🟡 in progress (Phase 1: `apps/web/tsconfig.strict.json` вмикає `strictNullChecks` для `src/shared/**`; Phase 2/3 — TODO; див. tech-debt/frontend.md §11) |
+| 3b  | **Strict TS — web (incremental)**                 | 1-2 тижні | $0               | 🔥🔥🔥 | 🟡 in progress (Phases 1–3.1 ✅: `apps/web/tsconfig.strict.json` покриває `strictNullChecks` для всього `src/{shared,test,core/*,modules/*}`; Phase 4 — повний `strict: true` + зняти `allowJs` (374 помилки в 46 файлах, виміряно 2026-05-02); див. tech-debt/frontend.md §11) |
 | 4   | **Testcontainers** для server tests               | 4 год     | $0               | 🔥🔥🔥 | ✅ done [#728](https://github.com/Skords-01/Sergeant/pull/728)                                                                                            |
 | 5   | **Vercel Pro plan** (рятує preview deploy)        | 5 хв      | $20/міс          | 🔥🔥   | 🟡 not started (потребує credit card мейнтейнера)                                                                                                         |
 | 6   | **Turbo remote cache**                            | 1 год     | $0 (Vercel free) | 🔥🔥   | ✅ done (CI wiring merged; needs secrets — see §1.1)                                                                                                      |
@@ -35,7 +35,7 @@
 
 **Сумарно:** ~3-5 робочих днів + ~$50/міс. Це 80% wins за 20% effort-у.
 
-**Прогрес (2026-05-02):** 13 / 15 закрито (з урахуванням розщеплення #3 на 3a/3b: 3a closed, 3b in progress). Закриті: #1 Sentry (інтеграція + DSN виставлено на Railway server + Vercel web; mobile `EXPO_PUBLIC_SENTRY_DSN` — pending EAS provisioning), #2 Knip+depcheck, #3a Strict TS server, #4 Testcontainers (#728), #6 Turbo remote cache, #7 Renovate, #8 AGENTS.md, #9 MSW (#729), #10 Snapshot tests, #11 Pino logging (#738), #12 Playwright E2E, #13 PostHog (web + server SDK, env-gated), #14 size-limit + bundle-analyzer (#740), #15 CONTRIBUTING.md (#726). Залишається: #3b (Strict TS web — Phase 2/3), #5 (Vercel Pro — credentials/credit card мейнтейнера).
+**Прогрес (2026-05-02):** 13 / 15 закрито (з урахуванням розщеплення #3 на 3a/3b: 3a closed, 3b in progress). Закриті: #1 Sentry (інтеграція + DSN виставлено на Railway server + Vercel web; mobile `EXPO_PUBLIC_SENTRY_DSN` — pending EAS provisioning), #2 Knip+depcheck, #3a Strict TS server, #4 Testcontainers (#728), #6 Turbo remote cache, #7 Renovate, #8 AGENTS.md, #9 MSW (#729), #10 Snapshot tests, #11 Pino logging (#738), #12 Playwright E2E, #13 PostHog (web + server SDK, env-gated), #14 size-limit + bundle-analyzer (#740), #15 CONTRIBUTING.md (#726). Залишається: #3b (Strict TS web — Phase 4: `strict: true` + зняти `allowJs`, ~374 помилки в 46 файлах; фази 1–3.1 виконані), #5 (Vercel Pro — credentials/credit card мейнтейнера).
 
 ---
 
@@ -589,6 +589,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 ### Тиждень 2 — type safety
 
 - [x] Strict TypeScript step 1: `strictNullChecks` для одного package — done у `apps/web/tsconfig.strict.json` (`src/shared/**`)
+- [x] Strict TypeScript phases 2–3.1: `strictNullChecks` розширено на весь `src/{test,core/*,modules/*}` (apps/web), плюс `tsconfig.noimplicitany.json` для частини core+modules (див. `docs/tech-debt/frontend.md` §11). Залишилась Phase 4 — повний `strict: true` у `apps/web/tsconfig.json`.
 - [ ] Snapshot tests на server serializers (з #711)
 - [ ] Custom ESLint rule `no-bigint-string`
 - [ ] zod-to-openapi proof-of-concept
