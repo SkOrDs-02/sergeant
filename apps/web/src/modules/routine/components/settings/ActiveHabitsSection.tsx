@@ -4,6 +4,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { RoutineEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { sortHabitsByOrder } from "../../lib/habitOrder";
 import {
   moveHabitInOrder,
@@ -77,7 +78,7 @@ export function ActiveHabitsSection({
       </p>
       {!hasActive && (
         <EmptyState
-          compact
+          icon={<RoutineEmptyIllustration size={72} />}
           title="Поки порожньо"
           description="Додай першу звичку формою вище."
           action={

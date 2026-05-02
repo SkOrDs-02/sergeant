@@ -1,4 +1,5 @@
 import {
+  memo,
   useEffect,
   useRef,
   type CSSProperties,
@@ -24,7 +25,7 @@ export interface ConfirmDialogProps {
 /**
  * Reusable confirmation dialog (bottom sheet style).
  */
-export function ConfirmDialog({
+export const ConfirmDialog = memo(function ConfirmDialog({
   open,
   title = "Підтвердити дію",
   description,
@@ -137,4 +138,4 @@ export function ConfirmDialog({
       </div>
     </div>
   );
-}
+});

@@ -294,7 +294,7 @@ export function FinykSection() {
                 key={c.id}
                 className="flex items-center justify-between gap-2 px-4 py-3 border-b border-line last:border-0"
               >
-                <span className="text-sm font-medium truncate">{c.label}</span>
+                <span className="text-style-label truncate">{c.label}</span>
                 <button
                   type="button"
                   onClick={() => removeCustomCategory(c.id)}
@@ -306,7 +306,8 @@ export function FinykSection() {
             ))}
           </ul>
         ) : (
-          <p className="text-xs text-subtle">Поки немає власних категорій.</p>
+          // eslint-disable-next-line sergeant-design/no-bare-empty-text
+          <p className="text-xs text-muted">Поки немає власних категорій.</p>
         )}
       </SettingsSubGroup>
 
@@ -335,7 +336,7 @@ export function FinykSection() {
                 )}
               />
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold">
+                <div className="text-style-label">
                   {webhookSyncState.status === "active"
                     ? "Webhook active"
                     : webhookSyncState.status === "pending"
@@ -465,7 +466,7 @@ export function FinykSection() {
                   🏦
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-text">
+                  <div className="text-style-label text-text">
                     ПриватБанк підключено
                   </div>
                   <div className="text-xs text-subtle mt-0.5 font-mono truncate">

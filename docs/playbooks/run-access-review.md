@@ -1,6 +1,6 @@
 # Playbook: Run Access Review
 
-> **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
 > **Status:** Active
 
 **Trigger:** periodic access review for Tier 0 and Tier 1 systems, or a governance sweep after staffing, vendor, or infra changes.

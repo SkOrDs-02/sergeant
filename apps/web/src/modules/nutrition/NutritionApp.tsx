@@ -44,6 +44,7 @@ import { fileToThumbnailBlob, saveMealThumbnail } from "./lib/mealPhotoStorage";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/undoToast";
 import { fmtMacro, todayISODate } from "./lib/nutritionFormat";
+import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 
 interface NutritionAppProps {
   onBackToHub?: () => void;
@@ -395,206 +396,226 @@ export default function NutritionApp({
 
           <div className="grid gap-4">
             {activePage === "start" && (
-              <>
-                <NutritionDashboard
-                  log={log.nutritionLog}
-                  prefs={prefs}
-                  onGoToLog={() => setActivePageAndHash("log")}
-                  onGoToDailyPlan={() => {
-                    setActivePageAndHash("menu");
-                  }}
-                  onFetchDayHint={fetchDayHint}
-                  dayHintText={dayHintText}
-                  dayHintBusy={dayHintBusy}
-                  onAddMeal={() => {
-                    log.setSelectedDate(todayISODate());
-                    setActivePageAndHash("log");
-                    scheduleTransient(() => {
-                      log.setAddMealPhotoResult(null);
-                      log.setAddMealSheetOpen(true);
-                    }, 80);
-                  }}
-                />
-                <details
-                  className="group"
-                  open={photoCardForceOpen || undefined}
-                  onToggle={(e) => {
-                    if (!e.currentTarget.open) setPhotoCardForceOpen(false);
-                  }}
-                >
-                  <summary className="flex items-center gap-2 cursor-pointer select-none py-2 px-1 text-style-label text-text">
-                    <Icon
-                      name="chevron-right"
-                      size={16}
-                      className="transition-transform group-open:rotate-90"
-                    />
-                    Аналіз фото страви
-                  </summary>
-                  <div className="pt-1">
-                    <PhotoAnalyzeCard
-                      busy={busy}
-                      analyzePhoto={photo.analyzePhoto}
-                      fileRef={photo.fileRef as React.Ref<HTMLInputElement>}
-                      onPickPhoto={photo.onPickPhoto}
-                      photoPreviewUrl={photo.photoPreviewUrl}
-                      photoResult={photo.photoResult}
-                      fmtMacro={fmtMacro}
-                      portionGrams={photo.portionGrams}
-                      setPortionGrams={photo.setPortionGrams}
-                      refinePhoto={photo.refinePhoto}
-                      answers={photo.answers}
-                      setAnswers={photo.setAnswers}
-                      onSaveToLog={
-                        photo.photoResult ? handleSaveToLog : undefined
-                      }
-                    />
-                  </div>
-                </details>
-              </>
+              <SectionErrorBoundary
+                key="page-start"
+                title="Не вдалось показати «Харчування»"
+              >
+                <>
+                  <NutritionDashboard
+                    log={log.nutritionLog}
+                    prefs={prefs}
+                    onGoToLog={() => setActivePageAndHash("log")}
+                    onGoToDailyPlan={() => {
+                      setActivePageAndHash("menu");
+                    }}
+                    onFetchDayHint={fetchDayHint}
+                    dayHintText={dayHintText}
+                    dayHintBusy={dayHintBusy}
+                    onAddMeal={() => {
+                      log.setSelectedDate(todayISODate());
+                      setActivePageAndHash("log");
+                      scheduleTransient(() => {
+                        log.setAddMealPhotoResult(null);
+                        log.setAddMealSheetOpen(true);
+                      }, 80);
+                    }}
+                  />
+                  <details
+                    className="group"
+                    open={photoCardForceOpen || undefined}
+                    onToggle={(e) => {
+                      if (!e.currentTarget.open) setPhotoCardForceOpen(false);
+                    }}
+                  >
+                    <summary className="flex items-center gap-2 cursor-pointer select-none py-2 px-1 text-style-label text-text">
+                      <Icon
+                        name="chevron-right"
+                        size={16}
+                        className="transition-transform group-open:rotate-90"
+                      />
+                      Аналіз фото страви
+                    </summary>
+                    <div className="pt-1">
+                      <PhotoAnalyzeCard
+                        busy={busy}
+                        analyzePhoto={photo.analyzePhoto}
+                        fileRef={photo.fileRef as React.Ref<HTMLInputElement>}
+                        onPickPhoto={photo.onPickPhoto}
+                        photoPreviewUrl={photo.photoPreviewUrl}
+                        photoResult={photo.photoResult}
+                        fmtMacro={fmtMacro}
+                        portionGrams={photo.portionGrams}
+                        setPortionGrams={photo.setPortionGrams}
+                        refinePhoto={photo.refinePhoto}
+                        answers={photo.answers}
+                        setAnswers={photo.setAnswers}
+                        onSaveToLog={
+                          photo.photoResult ? handleSaveToLog : undefined
+                        }
+                      />
+                    </div>
+                  </details>
+                </>
+              </SectionErrorBoundary>
             )}
 
             {activePage === "pantry" && (
-              <>
-                <SubTabs
-                  value={pantrySubTab}
-                  onChange={(id) => setPantrySubTab(id as PantrySubTab)}
-                  tabs={[
-                    { id: "items", label: "Склад" },
-                    { id: "shopping", label: "Покупки" },
-                  ]}
-                />
-                {pantrySubTab === "items" ? (
-                  <>
-                    <PantryCard
-                      busy={busy}
-                      parsePantry={pantry.parsePantry}
-                      newItemName={pantry.newItemName}
-                      setNewItemName={pantry.setNewItemName}
-                      upsertItem={pantry.upsertItem}
-                      pantryText={pantry.pantryText}
-                      setPantryText={pantry.setPantryText}
-                      effectiveItems={pantry.effectiveItems}
-                      editItemAt={pantry.editItemAt}
-                      removeItemAtOrByName={(idx, name) => {
-                        if (pantry.pantryItems.length > 0) {
-                          const removed = pantry.pantryItems[idx];
-                          pantry.removeItemAt(idx);
-                          if (removed) {
-                            showUndoToast(toast, {
-                              msg: `Прибрано «${removed.name}» з комори`,
-                              onUndo: () => pantry.upsertItem(removed),
-                            });
-                          }
-                        } else if (name) {
-                          pantry.removeItem(name);
-                        }
-                      }}
-                      pantryItemsLength={pantry.pantryItems.length}
-                      pantrySummary={pantry.pantrySummary}
-                      onScanBarcode={() => {
-                        setPantryScanStatus("");
-                        setPantryScannerOpen(true);
-                      }}
-                    />
-                    {pantryScanStatus && (
-                      <div className="text-xs text-subtle px-1">
-                        {pantryScanStatus}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <ShoppingListCard
-                    recipes={recipes}
-                    weekPlan={weekPlan}
-                    pantryItems={pantry.effectiveItems}
-                    shoppingList={shopping.shoppingList}
-                    shoppingBusy={shoppingBusy}
-                    onGenerate={generateShoppingList}
-                    onToggleItem={shopping.toggle}
-                    onClearChecked={shopping.clearChecked}
-                    onClearAll={shopping.clearAll}
-                    onAddCheckedToPantry={addCheckedItemsToPantry}
-                    checkedItems={shopping.checkedItems}
+              <SectionErrorBoundary
+                key="page-pantry"
+                title="Не вдалось показати «Комора»"
+              >
+                <>
+                  <SubTabs
+                    value={pantrySubTab}
+                    onChange={(id) => setPantrySubTab(id as PantrySubTab)}
+                    tabs={[
+                      { id: "items", label: "Склад" },
+                      { id: "shopping", label: "Покупки" },
+                    ]}
                   />
-                )}
-              </>
+                  {pantrySubTab === "items" ? (
+                    <>
+                      <PantryCard
+                        busy={busy}
+                        parsePantry={pantry.parsePantry}
+                        newItemName={pantry.newItemName}
+                        setNewItemName={pantry.setNewItemName}
+                        upsertItem={pantry.upsertItem}
+                        pantryText={pantry.pantryText}
+                        setPantryText={pantry.setPantryText}
+                        effectiveItems={pantry.effectiveItems}
+                        editItemAt={pantry.editItemAt}
+                        removeItemAtOrByName={(idx, name) => {
+                          if (pantry.pantryItems.length > 0) {
+                            const removed = pantry.pantryItems[idx];
+                            pantry.removeItemAt(idx);
+                            if (removed) {
+                              showUndoToast(toast, {
+                                msg: `Прибрано «${removed.name}» з комори`,
+                                onUndo: () => pantry.upsertItem(removed),
+                              });
+                            }
+                          } else if (name) {
+                            pantry.removeItem(name);
+                          }
+                        }}
+                        pantryItemsLength={pantry.pantryItems.length}
+                        pantrySummary={pantry.pantrySummary}
+                        onScanBarcode={() => {
+                          setPantryScanStatus("");
+                          setPantryScannerOpen(true);
+                        }}
+                      />
+                      {pantryScanStatus && (
+                        <div className="text-xs text-subtle px-1">
+                          {pantryScanStatus}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <ShoppingListCard
+                      recipes={recipes}
+                      weekPlan={weekPlan}
+                      pantryItems={pantry.effectiveItems}
+                      shoppingList={shopping.shoppingList}
+                      shoppingBusy={shoppingBusy}
+                      onGenerate={generateShoppingList}
+                      onToggleItem={shopping.toggle}
+                      onClearChecked={shopping.clearChecked}
+                      onClearAll={shopping.clearAll}
+                      onAddCheckedToPantry={addCheckedItemsToPantry}
+                      checkedItems={shopping.checkedItems}
+                    />
+                  )}
+                </>
+              </SectionErrorBoundary>
             )}
 
             {activePage === "log" && (
-              <LogCard
-                log={log.nutritionLog}
-                selectedDate={log.selectedDate}
-                setSelectedDate={log.setSelectedDate}
-                onAddMeal={() => {
-                  log.setAddMealPhotoResult(null);
-                  log.setAddMealSheetOpen(true);
-                }}
-                onAddMealFromSearch={(meal) => {
-                  const id = `meal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-                  log.handleAddMeal({ ...meal, id });
-                }}
-                onRemoveMeal={(date, meal) => {
-                  if (!meal?.id) return;
-                  log.handleRemoveMeal(date, meal);
-                  showUndoToast(toast, {
-                    msg: "Запис видалено",
-                    onUndo: () => log.handleRestoreMeal(date, meal),
-                  });
-                }}
-                onEditMeal={(date, meal) => {
-                  setEditingMeal({ date, ...meal });
-                  log.setAddMealPhotoResult(null);
-                  log.setAddMealSheetOpen(true);
-                }}
-                onDuplicateYesterday={log.duplicateYesterday}
-                onTrimLog={log.trimLogToLastDays}
-              />
+              <SectionErrorBoundary
+                key="page-log"
+                title="Не вдалось показати «Щоденник»"
+              >
+                <LogCard
+                  log={log.nutritionLog}
+                  selectedDate={log.selectedDate}
+                  setSelectedDate={log.setSelectedDate}
+                  onAddMeal={() => {
+                    log.setAddMealPhotoResult(null);
+                    log.setAddMealSheetOpen(true);
+                  }}
+                  onAddMealFromSearch={(meal) => {
+                    const id = `meal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                    log.handleAddMeal({ ...meal, id });
+                  }}
+                  onRemoveMeal={(date, meal) => {
+                    if (!meal?.id) return;
+                    log.handleRemoveMeal(date, meal);
+                    showUndoToast(toast, {
+                      msg: "Запис видалено",
+                      onUndo: () => log.handleRestoreMeal(date, meal),
+                    });
+                  }}
+                  onEditMeal={(date, meal) => {
+                    setEditingMeal({ date, ...meal });
+                    log.setAddMealPhotoResult(null);
+                    log.setAddMealSheetOpen(true);
+                  }}
+                  onDuplicateYesterday={log.duplicateYesterday}
+                  onTrimLog={log.trimLogToLastDays}
+                />
+              </SectionErrorBoundary>
             )}
 
             {activePage === "menu" && (
-              <>
-                <SubTabs
-                  value={menuSubTab}
-                  onChange={(id) => setMenuSubTab(id as MenuSubTab)}
-                  tabs={[
-                    { id: "plan", label: "План на день" },
-                    { id: "recipes", label: "Рецепти" },
-                  ]}
-                />
-                {menuSubTab === "plan" ? (
-                  <DailyPlanCard
-                    prefs={prefs}
-                    setPrefs={setPrefs}
-                    pantryItems={pantry.effectiveItems}
-                    busy={busy}
-                    dayPlan={dayPlan}
-                    dayPlanBusy={dayPlanBusy}
-                    fetchDayPlan={() => fetchDayPlan(null)}
-                    regenMeal={(mealType) => fetchDayPlan(mealType)}
-                    addMealToLog={addMealFromPlan}
-                    weekPlan={weekPlan}
-                    weekPlanRaw={weekPlanRaw}
-                    weekPlanBusy={weekPlanBusy}
-                    fetchWeekPlan={fetchWeekPlan}
+              <SectionErrorBoundary
+                key="page-menu"
+                title="Не вдалось показати «Меню»"
+              >
+                <>
+                  <SubTabs
+                    value={menuSubTab}
+                    onChange={(id) => setMenuSubTab(id as MenuSubTab)}
+                    tabs={[
+                      { id: "plan", label: "План на день" },
+                      { id: "recipes", label: "Рецепти" },
+                    ]}
                   />
-                ) : (
-                  <RecipesCard
-                    busy={busy}
-                    activePantry={pantry.activePantry}
-                    prefs={prefs}
-                    setPrefs={setPrefs}
-                    recommendRecipes={recommendRecipes}
-                    recipes={recipes}
-                    recipesTried={recipesTried}
-                    recipesRaw={recipesRaw}
-                    err={err}
-                    fmtMacro={fmtMacro}
-                    recipeCacheEntry={recipeCacheEntry}
-                    addMealToLog={wrappedSaveMeal}
-                    selectedDate={log.selectedDate}
-                  />
-                )}
-              </>
+                  {menuSubTab === "plan" ? (
+                    <DailyPlanCard
+                      prefs={prefs}
+                      setPrefs={setPrefs}
+                      pantryItems={pantry.effectiveItems}
+                      busy={busy}
+                      dayPlan={dayPlan}
+                      dayPlanBusy={dayPlanBusy}
+                      fetchDayPlan={() => fetchDayPlan(null)}
+                      regenMeal={(mealType) => fetchDayPlan(mealType)}
+                      addMealToLog={addMealFromPlan}
+                      weekPlan={weekPlan}
+                      weekPlanRaw={weekPlanRaw}
+                      weekPlanBusy={weekPlanBusy}
+                      fetchWeekPlan={fetchWeekPlan}
+                    />
+                  ) : (
+                    <RecipesCard
+                      busy={busy}
+                      activePantry={pantry.activePantry}
+                      prefs={prefs}
+                      setPrefs={setPrefs}
+                      recommendRecipes={recommendRecipes}
+                      recipes={recipes}
+                      recipesTried={recipesTried}
+                      recipesRaw={recipesRaw}
+                      err={err}
+                      fmtMacro={fmtMacro}
+                      recipeCacheEntry={recipeCacheEntry}
+                      addMealToLog={wrappedSaveMeal}
+                      selectedDate={log.selectedDate}
+                    />
+                  )}
+                </>
+              </SectionErrorBoundary>
             )}
           </div>
         </div>

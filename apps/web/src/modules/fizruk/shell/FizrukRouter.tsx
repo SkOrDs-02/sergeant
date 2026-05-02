@@ -1,7 +1,20 @@
 import { Suspense } from "react";
 import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
+import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { lazyImport } from "../../../core/lib/lazyImport";
 import type { FizrukPage } from "./fizrukRoute";
+
+const PAGE_ERROR_TITLES: Record<FizrukPage, string> = {
+  dashboard: "Не вдалось показати «Дашборд»",
+  plan: "Не вдалось показати «Планування»",
+  atlas: "Не вдалось показати «Атлас»",
+  workouts: "Не вдалось показати «Тренування»",
+  progress: "Не вдалось показати «Прогрес»",
+  measurements: "Не вдалось показати «Виміри»",
+  programs: "Не вдалось показати «Програми»",
+  body: "Не вдалось показати «Склад тіла»",
+  exercise: "Не вдалось показати вправу",
+};
 
 // Per-page lazy chunks. Previously this file eager-imported all nine
 // Fizruk pages, which forced the whole module subtree (Atlas exercise
@@ -110,7 +123,12 @@ function renderPage(props: FizrukRouterProps) {
 export function FizrukRouter(props: FizrukRouterProps) {
   return (
     <Suspense fallback={<ModulePageLoader module="fizruk" />}>
-      {renderPage(props)}
+      <SectionErrorBoundary
+        key={props.page}
+        title={PAGE_ERROR_TITLES[props.page] ?? "Не вдалось показати сторінку"}
+      >
+        {renderPage(props)}
+      </SectionErrorBoundary>
     </Suspense>
   );
 }

@@ -11,6 +11,7 @@ import {
   useVisualKeyboardInset,
 } from "@sergeant/shared";
 import { hapticSuccess } from "@shared/lib/haptic";
+import { formatMoney } from "@sergeant/shared";
 import {
   CANONICAL_TO_MANUAL_LABEL,
   type FrequentCategory,
@@ -365,8 +366,8 @@ export function ManualExpenseSheet({
                     }
                     aria-label={
                       personal
-                        ? `${value.toLocaleString("uk-UA")} ₴ — часта сума`
-                        : `${value.toLocaleString("uk-UA")} ₴`
+                        ? `${formatMoney(value)} — часта сума`
+                        : `${formatMoney(value)}`
                     }
                   >
                     {personal ? (
@@ -375,7 +376,7 @@ export function ManualExpenseSheet({
                         className="w-1.5 h-1.5 rounded-full bg-emerald-500"
                       />
                     ) : null}
-                    {value.toLocaleString("uk-UA")} ₴
+                    {formatMoney(value)}
                   </button>
                 ))}
               </div>
@@ -472,7 +473,7 @@ export function ManualExpenseSheet({
                     })
                   }
                   className="px-2.5 py-1 rounded-full text-style-caption bg-panelHi text-muted border border-line hover:border-muted/50 transition-colors"
-                  title={`${m.count} разів · ${m.total.toLocaleString("uk-UA")} ₴`}
+                  title={`${m.count} разів · ${formatMoney(m.total)}`}
                 >
                   {m.name}
                 </button>

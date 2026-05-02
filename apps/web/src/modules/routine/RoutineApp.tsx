@@ -7,6 +7,7 @@ import {
 } from "react";
 import { cn } from "@shared/lib/cn";
 import { Banner } from "@shared/components/ui/Banner";
+import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { requestCloudPull } from "@shared/lib/cloudPullRequest";
 import {
@@ -694,14 +695,18 @@ export default function RoutineApp({
                 ],
               )}
             >
-              <RoutineCalendarPanel hidden={mainTab !== "calendar"} />
+              <SectionErrorBoundary title="Не вдалось показати «Календар»">
+                <RoutineCalendarPanel hidden={mainTab !== "calendar"} />
+              </SectionErrorBoundary>
             </RoutineCalendarProvider>
 
-            <RoutineStatsPanel
-              routine={routine}
-              currentStreak={streakMax}
-              hidden={mainTab !== "stats"}
-            />
+            <SectionErrorBoundary title="Не вдалось показати «Статистика»">
+              <RoutineStatsPanel
+                routine={routine}
+                currentStreak={streakMax}
+                hidden={mainTab !== "stats"}
+              />
+            </SectionErrorBoundary>
           </div>
         </PullToRefresh>
       </div>

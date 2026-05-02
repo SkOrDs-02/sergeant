@@ -1,6 +1,6 @@
 # Telegram як control plane для Sergeant Ops
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-08-01.
 > **Status:** Active
 
 Це architectural review: **чи достатньо Telegram-бота, щоб масштабувати

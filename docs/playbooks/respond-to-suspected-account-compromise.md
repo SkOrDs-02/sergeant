@@ -1,6 +1,6 @@
 # Playbook: Respond to Suspected Account Compromise
 
-> **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
 > **Status:** Active
 
 **Trigger:** suspicious admin login, leaked maintainer session, suspicious vendor-console activity, or any sign that a privileged account or machine credential may be compromised.

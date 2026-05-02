@@ -258,7 +258,7 @@ export function TodayFocusCard({
               type="button"
               onClick={secondary.run}
               className={cn(
-                "text-xs font-medium text-muted hover:text-text",
+                "text-style-caption text-muted hover:text-text",
                 "px-2.5 py-1.5 rounded-xl hover:bg-panelHi transition-colors",
               )}
             >

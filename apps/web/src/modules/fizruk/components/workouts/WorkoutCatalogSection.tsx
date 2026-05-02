@@ -1,5 +1,6 @@
 import { Input } from "@shared/components/ui/Input";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { FizrukEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { cn } from "@shared/lib/cn";
 import { Card } from "@shared/components/ui/Card";
 
@@ -94,7 +95,7 @@ export function WorkoutCatalogSection({
       <Card radius="lg" padding="none" className="overflow-hidden">
         {grouped.length === 0 ? (
           <EmptyState
-            compact
+            icon={<FizrukEmptyIllustration size={72} />}
             title="Поки немає вправ"
             description="Додай першу через кнопку «+ Додати»."
           />
@@ -134,7 +135,7 @@ export function WorkoutCatalogSection({
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
-                                <div className="text-sm font-semibold text-text truncate flex items-center gap-2">
+                                <div className="text-style-label text-text truncate flex items-center gap-2">
                                   {ex?.name?.uk || ex?.name?.en}
                                   {catCf.hasWarning ? (
                                     <span

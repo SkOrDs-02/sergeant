@@ -80,6 +80,7 @@ const NutritionApp = lazyDefault(
 // Ліниве завантаження збігається з іншими модулями (Suspense fallback
 // та ModuleErrorBoundary уже огортають цей слот).
 const RoutineApp = lazyDefault(() => import("../modules/routine/RoutineApp"));
+const NotFoundPage = lazyImport(() => import("./NotFoundPage"), "NotFoundPage");
 
 export default function App() {
   return (
@@ -142,6 +143,20 @@ const CHAT_PATH = "/chat";
 const WELCOME_PATH = "/welcome";
 const RESET_PASSWORD_PATH = "/reset-password";
 const PROFILE_PATH = "/profile";
+
+// All URL paths the app handles. Anything outside this set gets a 404
+// instead of silently falling through to the dashboard.
+const KNOWN_PATHS = new Set([
+  "/",
+  SIGN_IN_PATH,
+  RESET_PASSWORD_PATH,
+  PROFILE_PATH,
+  "/design",
+  "/pricing",
+  ASSISTANT_PATH,
+  CHAT_PATH,
+  WELCOME_PATH,
+]);
 
 // Tiny effect-only component so the redirect is a declarative render,
 // not a `navigate()` call in the middle of AppInner — keeps the render
@@ -442,6 +457,15 @@ function AppInner() {
       return <RedirectTo to="/" />;
     }
     return <WelcomeScreen onDone={leaveWelcome} onOpenAuth={openAuth} />;
+  }
+
+  // Unknown paths get a 404 instead of silently showing the dashboard.
+  if (!KNOWN_PATHS.has(location.pathname)) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <NotFoundPage />
+      </Suspense>
+    );
   }
 
   // First-time visitors at `/` get redirected to `/welcome` so the

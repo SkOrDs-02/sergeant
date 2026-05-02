@@ -186,7 +186,7 @@ export function DashboardSection() {
               >
                 <span
                   className={cn(
-                    "block text-sm font-medium",
+                    "block text-style-label",
                     d === density ? "text-brand-strong" : "text-text",
                   )}
                 >

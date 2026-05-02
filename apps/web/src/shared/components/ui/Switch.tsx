@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { cn } from "@shared/lib/cn";
 import { hapticTap } from "@shared/lib/haptic";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
@@ -28,7 +29,7 @@ export interface SwitchProps {
  * Expects to be placed inside a `<label>` that already provides visible
  * accessible text (e.g. `ToggleRow`).
  */
-export function Switch({
+export const Switch = memo(function Switch({
   checked,
   onChange,
   disabled = false,
@@ -88,4 +89,4 @@ export function Switch({
       {label && <span className="text-sm text-text">{label}</span>}
     </label>
   );
-}
+});

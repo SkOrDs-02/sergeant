@@ -1,6 +1,6 @@
 # Voyage AI + pgvector — AI memory
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-08-01.
 > **Status:** Active (foundation + ingestion + retrieval; повний цикл готовий)
 
 AI memory підсистема. ADR — [`0028-pgvector-ai-memory.md`](../adr/0028-pgvector-ai-memory.md).

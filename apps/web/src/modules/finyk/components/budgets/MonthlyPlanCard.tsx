@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
+import { formatMoney } from "@sergeant/shared";
 
 type MonthlyPlanInput = {
   income?: number | string;
@@ -55,9 +56,9 @@ function MonthlyPlanCardComponent({
   const expenseDelta = totalExpenseFact - planExpense;
   const savingsDelta = factSavings - planSavings;
 
-  const fmt = (n: number) =>
-    n.toLocaleString("uk-UA", { maximumFractionDigits: 0 });
-  const fmtSigned = (n: number) => `${n >= 0 ? "+" : "−"}${fmt(Math.abs(n))} ₴`;
+  const fmt = (n: number) => formatMoney(n);
+  const fmtSigned = (n: number) =>
+    `${n >= 0 ? "+" : "−"}${formatMoney(Math.abs(n))}`;
 
   return (
     <div
@@ -87,10 +88,10 @@ function MonthlyPlanCardComponent({
               )}
             >
               {isOver
-                ? `−${(totalExpenseFact - planExpense).toLocaleString("uk-UA")} ₴`
+                ? `−${formatMoney(totalExpenseFact - planExpense)}`
                 : planExpense > 0
-                  ? `${pctExpense}% · ${remaining.toLocaleString("uk-UA")} ₴`
-                  : `+${planIncome.toLocaleString("uk-UA")} ₴`}
+                  ? `${pctExpense}% · ${formatMoney(remaining)}`
+                  : `+${formatMoney(planIncome)}`}
             </span>
           )}
           {!hasPlan && !open && (
@@ -200,13 +201,12 @@ function MonthlyPlanCardComponent({
                 <span>{pctExpense}% витрачено</span>
                 {safePerDay > 0 && daysLeft > 0 && !isOver && (
                   <span className="tabular-nums">
-                    {safePerDay.toLocaleString("uk-UA")} ₴/день · {daysLeft} дн.
+                    {formatMoney(safePerDay)}/день · {daysLeft} дн.
                   </span>
                 )}
                 {isOver && (
                   <span className="text-danger font-semibold tabular-nums">
-                    −{(totalExpenseFact - planExpense).toLocaleString("uk-UA")}{" "}
-                    ₴
+                    −{formatMoney(totalExpenseFact - planExpense)}
                   </span>
                 )}
               </div>

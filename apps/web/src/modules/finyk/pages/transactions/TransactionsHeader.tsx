@@ -42,7 +42,7 @@ export function TransactionsHeader({
         >
           ‹
         </button>
-        <span className="text-sm font-semibold text-text capitalize px-1">
+        <span className="text-style-label text-text capitalize px-1">
           {monthLabel}
         </span>
         <button

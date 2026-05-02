@@ -3,7 +3,7 @@ import { GroupedVirtuoso } from "react-virtuoso";
 import { TxListItem } from "../../components/TxListItem";
 import { SkeletonTransactionRow } from "@shared/components/ui/Skeleton";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { Icon } from "@shared/components/ui/Icon";
+import { FinykEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { cn } from "@shared/lib/cn";
 import { TransactionDayHeader } from "./TransactionDayHeader";
@@ -140,7 +140,7 @@ export function TransactionList({
       {filtered.length === 0 && !loading && (
         <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
           <EmptyState
-            icon={<Icon name="credit-card" size={20} strokeWidth={1.6} />}
+            icon={<FinykEmptyIllustration size={80} />}
             title="Немає транзакцій"
             description="Зміни місяць, фільтр або переключи «приховані», якщо вони є."
           />

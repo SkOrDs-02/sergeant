@@ -1,6 +1,6 @@
 # AI Memory — activation runbook
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-08-01.
 > **Status:** Active
 
 Як перевести pgvector AI memory підсистему з dormant у production-active після

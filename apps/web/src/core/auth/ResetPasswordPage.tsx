@@ -151,7 +151,7 @@ export function ResetPasswordPage() {
                       ? "reset-pw-error"
                       : undefined
                   }
-                  onBlur={passwordFieldProps.onBlur}
+                  {...pwValidation.getFieldProps("password")}
                 />
                 {pwValidation.fields.password.error && (
                   <p id="reset-pw-error" className="text-xs text-danger">
@@ -185,7 +185,7 @@ export function ResetPasswordPage() {
                       ? "reset-confirm-error"
                       : undefined
                   }
-                  onBlur={confirmFieldProps.onBlur}
+                  {...pwValidation.getFieldProps("confirm")}
                 />
                 {pwValidation.fields.confirm.error && (
                   <p id="reset-confirm-error" className="text-xs text-danger">
