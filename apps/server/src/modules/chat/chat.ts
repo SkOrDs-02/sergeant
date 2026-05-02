@@ -18,6 +18,8 @@ import { recordToolProposals, recordToolExecutions } from "./toolMetrics.js";
 import { truncateToolResults } from "./toolResultTruncation.js";
 import { als } from "../../obs/requestContext.js";
 import { ExternalServiceError } from "../../obs/errors.js";
+import { getSessionUser } from "../../auth.js";
+import { buildRagContext } from "../ai-memory/ragContext.js";
 
 type WithAnthropicKey = Request & { anthropicKey?: string };
 
@@ -410,6 +412,17 @@ export default async function handler(
     return;
   }
 
+  // RAG-injection: підмішуємо top-K схожих ai_memories у system context
+  // **тільки на першому турі** (тут), не на tool-result-турі вище. Sync
+  // за дизайном: блокуємо handler на ≤RAG_TIMEOUT_MS перш ніж дзвонити
+  // Anthropic. Failure-mode → no-op (повертає baseContext).
+  const sessionUserForRag = await getSessionUser(req).catch(() => null);
+  const augmentedContext = await buildRagContext({
+    userId: sessionUserForRag?.id ?? null,
+    baseContext: context,
+    messages: cleaned,
+  });
+
   let response, data;
   try {
     ({ response, data } = await callAnthropicWithContinuation(
@@ -422,7 +435,7 @@ export default async function handler(
       {
         model: "claude-sonnet-4-6",
         max_tokens: 1500,
-        system: buildSystem(context),
+        system: buildSystem(augmentedContext),
         tools: TOOLS_WITH_CACHE,
         messages: cleaned,
       },

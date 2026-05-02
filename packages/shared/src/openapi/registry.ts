@@ -33,6 +33,21 @@ const ChatRequest = schemas.ChatRequestSchema.meta({
   description:
     "POST /api/chat — Anthropic-чат із tool-results і опційним streaming.",
 });
+const RecallMemoryRequest = schemas.RecallMemoryRequestSchema.meta({
+  id: "RecallMemoryRequest",
+  description:
+    "POST /api/ai-memory/recall — semantic-search query body (query + optional topK/sources).",
+});
+const RecallMemoryResult = schemas.RecallMemoryResultSchema.meta({
+  id: "RecallMemoryResult",
+  description:
+    "Один результат semantic-search-у з ai_memories: id, score (cosine sim) і origin metadata.",
+});
+const RecallMemoryResponse = schemas.RecallMemoryResponseSchema.meta({
+  id: "RecallMemoryResponse",
+  description:
+    "Відповідь POST /api/ai-memory/recall — масив результатів (може бути порожнім).",
+});
 const AnalyzePhoto = schemas.AnalyzePhotoSchema.meta({
   id: "AnalyzePhoto",
   description: "POST /api/nutrition/analyze-photo — base64 фото страви.",
@@ -233,6 +248,9 @@ export const namedSchemas = {
   User,
   MeResponse,
   ChatRequest,
+  RecallMemoryRequest,
+  RecallMemoryResult,
+  RecallMemoryResponse,
   AnalyzePhoto,
   RefinePhoto,
   ParsePantry,

@@ -7,12 +7,16 @@ import {
   setModule,
 } from "../http/index.js";
 import { ingestMemoryHandler } from "../modules/ai-memory/ingestRoute.js";
+import { recallMemoryHandler } from "../modules/ai-memory/recallRoute.js";
 
 /**
  * `/api/ai-memory/*` — клієнт-driven ingestion для джерел, які живуть на
  * клієнті (RxDB-only): nutrition / fizruk / journal / routine. Server-side
  * sources (finyk, digest) енкьюїться з `mono/webhook.ts` та
  * `digest/weekly-digest.ts` напряму.
+ *
+ * Recall (PR3) — semantic retrieval через `recall_memory` HubChat-tool.
+ * Sync read-path, окремий від ingestion-черги.
  *
  * Rate-limit `30 req / 5min / IP` — fairly generous, бо клієнт може
  * бекфілитити багато entries при першому syncу (manual offline period).
@@ -35,6 +39,11 @@ export function createAiMemoryRouter(): Router {
     "/api/ai-memory/ingest",
     requireSession(),
     asyncHandler(ingestMemoryHandler),
+  );
+  r.post(
+    "/api/ai-memory/recall",
+    requireSession(),
+    asyncHandler(recallMemoryHandler),
   );
   return r;
 }

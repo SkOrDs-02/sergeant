@@ -60,6 +60,53 @@ export const ChatRequestSchema = z.object({
   stream: z.boolean().optional(),
 });
 
+/**
+ * Допустимі `source`-фільтри для `POST /api/ai-memory/recall`. Дзеркалить
+ * `ALLOWED_MEMORY_SOURCES` у server-side `types.ts`. Тримаємо строкові
+ * літерали тут (а не enum-import з server-only модуля), щоб
+ * `@sergeant/shared` лишився edge-runtime-friendly без deps на Postgres.
+ */
+const RECALL_MEMORY_SOURCES = [
+  "chat",
+  "finyk",
+  "fizruk",
+  "nutrition",
+  "routine",
+  "journal",
+  "digest",
+] as const;
+
+/** POST /api/ai-memory/recall — semantic memory retrieval. */
+export const RecallMemoryRequestSchema = z
+  .object({
+    query: z.string().min(1).max(1000),
+    topK: z.number().int().min(1).max(50).optional(),
+    sources: z.array(z.enum(RECALL_MEMORY_SOURCES)).max(10).optional(),
+  })
+  .strict();
+
+/** Один результат у відповіді `/api/ai-memory/recall`. */
+export const RecallMemoryResultSchema = z.object({
+  /** ID запису. Number, не bigint (rule #1, AGENTS.md). */
+  id: z.number().int(),
+  source: z.enum(RECALL_MEMORY_SOURCES),
+  sourceRef: z.string().nullable(),
+  content: z.string(),
+  /** Cosine similarity у [0, 1]. Більше — ближче. */
+  score: z.number().min(0).max(1),
+  /** ISO-8601 timestamp. */
+  createdAt: z.string(),
+  metadata: z.record(z.string(), z.unknown()),
+});
+
+/** Response для `POST /api/ai-memory/recall`. */
+export const RecallMemoryResponseSchema = z.object({
+  memories: z.array(RecallMemoryResultSchema),
+});
+export type RecallMemoryRequest = z.infer<typeof RecallMemoryRequestSchema>;
+export type RecallMemoryResult = z.infer<typeof RecallMemoryResultSchema>;
+export type RecallMemoryResponse = z.infer<typeof RecallMemoryResponseSchema>;
+
 /** /api/nutrition/analyze-photo */
 export const AnalyzePhotoSchema = z.object({
   image_base64: z

@@ -505,6 +505,15 @@ export interface MyProfileAction {
   input: { category?: string };
 }
 
+export interface RecallMemoryAction {
+  name: "recall_memory";
+  input: {
+    query: string;
+    top_k?: number | string;
+    sources?: string[];
+  };
+}
+
 export type ChatAction =
   | ChangeCategoryAction
   | FindTransactionAction
@@ -571,6 +580,7 @@ export type ChatAction =
   | RememberAction
   | ForgetAction
   | MyProfileAction
+  | RecallMemoryAction
   | { name: string; input: Record<string, unknown> };
 
 export interface BudgetLimit {

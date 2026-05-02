@@ -1,12 +1,12 @@
 # ADR-0028: pgvector + Voyage embeddings for AI semantic memory
 
 - **Status:** Accepted
-- **Date:** 2026-05-01
+- **Date:** 2026-05-01 (PR3 retrieval landed: 2026-05-02)
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
   - [`apps/server/src/migrations/025_ai_memories_pgvector.sql`](../../apps/server/src/migrations/025_ai_memories_pgvector.sql) — таблиця `ai_memories` (HALFVEC(1024) + HNSW + hash partitioning).
-  - [`apps/server/src/modules/ai-memory/`](../../apps/server/src/modules/ai-memory/) — `types.ts`, `vectorStore.ts`, `embeddings.ts`, `service.ts`, `bootstrap.ts`, `ingestQueue.ts` (PR2), `ingestRoute.ts` (PR2).
+  - [`apps/server/src/modules/ai-memory/`](../../apps/server/src/modules/ai-memory/) — `types.ts`, `vectorStore.ts`, `embeddings.ts`, `service.ts`, `bootstrap.ts`, `ingestQueue.ts` (PR2), `ingestRoute.ts` (PR2), `recallRoute.ts` (PR3), `ragContext.ts` (PR3).
   - [ADR-0021 — Memory Bank](./0021-memory-bank.md) — окрема (local-first) система user-fact-ів; pgvector — server-side **семантична** memory по транзакціях/тренуваннях/харчуванню.
   - [ADR-0014 — bigint→number policy](./0014-bigint-to-number-policy.md) — `BIGSERIAL` у `ai_memories.id` коерситься у `Number` у serializer.
   - [ADR-0016 — User deletion and PII handling](./0016-user-deletion-and-pii-handling.md) — `ON DELETE CASCADE` у foundation покриває GDPR-vector-deletion.
@@ -54,8 +54,8 @@ Anthropic-асистент (`/api/chat` + HubChat tools) не пам'ятає н
 7. **Service facade** (`AiMemoryService`) — єдиний entry-point: `remember(inputs)`, `recall(input)`, `forgetUser(userId)`, `forgetSource(...)`. Caller-и (PR2 ingestion, PR3 retrieval) ніколи не торкаються `embeddings.ts` / `vectorStore.ts` напряму.
 8. **Master-flag `AI_MEMORY_ENABLED=false`** у foundation-PR. `remember()` / `recall()` no-op-и, поки PR2 не вмикає прапор разом з ingestion-hook-ами. Foundation не зачіпає поточний `/api/chat` flow.
 
-**PR2 (ingestion, наступний крок)**: BullMQ queue `ai_memory_embed_queue` + hooks з finyk/nutrition/fizruk/journal-domain-ів.
-**PR3 (retrieval)**: інтеграція у `/api/chat` (query-paraphrasing + RAG-context), HubChat tool `recall_memory`.
+**PR2 (ingestion)**: BullMQ queue `sergeant:ai-memory-ingest` + hooks з finyk/nutrition/fizruk/journal-domain-ів. Merged 2026-05-01.
+**PR3 (retrieval, landed 2026-05-02)**: інтеграція у `/api/chat` (RAG-injection через `ragContext.buildRagContext()`) + HubChat tool `recall_memory` (async client-executor через `ASYNC_CHAT_ACTION_NAMES` whitelist) + `POST /api/ai-memory/recall` route (sync read-path).
 
 ## Rationale
 

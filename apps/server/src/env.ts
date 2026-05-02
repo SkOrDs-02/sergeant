@@ -259,6 +259,18 @@ export const env = {
    */
   AI_MEMORY_TOP_K: parseIntEnv("AI_MEMORY_TOP_K", 8),
 
+  /**
+   * Top-K для **автоматичного** RAG-інжекту в `/api/chat` (PR3). Менший
+   * за `AI_MEMORY_TOP_K`, бо RAG зливається у system context кожного
+   * чат-запиту: 4 × ~80 токенів ≈ 320 токенів — поміщається в кеш-block,
+   * не видно як "роздутий" prompt у Anthropic billing-ху. Явні виклики
+   * tool-у `recall_memory` юзають AI_MEMORY_TOP_K.
+   *
+   * 0 → RAG-injection повністю вимкнений (tool ще працює). Зручно для
+   * A/B-тесту cost-impact-у RAG.
+   */
+  AI_MEMORY_RAG_TOP_K: parseIntEnv("AI_MEMORY_RAG_TOP_K", 4),
+
   // ─────────────────────────────────────────────────────────────────────────
   // AI memory ingestion (PR2 — BullMQ async queue + hooks)
   // ─────────────────────────────────────────────────────────────────────────

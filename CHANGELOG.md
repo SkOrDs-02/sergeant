@@ -116,6 +116,27 @@ metrics/web-vitals}` — а API серверу не було, vite сипав
 
 ### Added
 
+- **AI memory: retrieval layer (PR3 of ADR-0028).** Завершує цикл pgvector
+  AI memory після foundation (PR1) і ingestion (PR2). Додає три entry-points:
+  (a) HubChat tool `recall_memory` — Anthropic-асистент може explicit-but
+  попросити top-K схожих memories через нову async-action гілку
+  (`ASYNC_CHAT_ACTION_NAMES` whitelist у
+  `apps/web/src/core/lib/chatActions/serverActions.ts` — щоб не ламати sync-tests
+  інших tool-ів). (b) `POST /api/ai-memory/recall` — sync read-path
+  (`apps/server/src/modules/ai-memory/recallRoute.ts`), 401 без сесії, 503 при
+  `AI_MEMORY_ENABLED=false` / `MissingVoyageApiKeyError` / `VoyageHttpError(5xx)`,
+  400 на невалідний payload (empty query, oversized, top_k>50, unknown source).
+  (c) RAG-injection у `/api/chat` (`ragContext.buildRagContext()`) — implicit
+  augmentation на першому турі (НЕ на tool-result-турі) з top-K
+  `AI_MEMORY_RAG_TOP_K=4`, timeout 1500ms, graceful no-op на будь-яку помилку
+  щоб Anthropic-call ніколи не валився через RAG. Master-flag `AI_MEMORY_ENABLED`
+  лишається керівником: при `false` обидві гілки no-op-лять без HTTP-викликів
+  до Voyage/БД. `recall_memory` додано у `ASSISTANT_CAPABILITIES` (єдиний
+  source-of-truth для tool-ів) → автоматично потрапляє у "Пам'ять"-список
+  SYSTEM_PROMPT, тому `SYSTEM_PROMPT_VERSION` піднято з `v6` до `v7`. Доку оновлено
+  у [`docs/integrations/voyage-pgvector.md`](./docs/integrations/voyage-pgvector.md)
+  і [`docs/adr/0028-pgvector-ai-memory.md`](./docs/adr/0028-pgvector-ai-memory.md).
+
 - **CI: container image scan (Trivy).** Новий workflow
   `.github/workflows/container-scan.yml` збирає `Dockerfile.api` і
   сканує отриманий образ на CVE рівнів CRITICAL/HIGH; SARIF

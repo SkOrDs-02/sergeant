@@ -3,6 +3,10 @@ import { handleFizrukAction } from "./chatActions/fizrukActions";
 import { handleRoutineAction } from "./chatActions/routineActions";
 import { handleNutritionAction } from "./chatActions/nutritionActions";
 import { handleCrossAction } from "./chatActions/crossActions";
+import {
+  handleAsyncChatAction,
+  ASYNC_CHAT_ACTION_NAMES,
+} from "./chatActions/serverActions";
 import type { ChatActionResult } from "./chatActions/types";
 
 export type { ChatAction, ChatActionResult } from "./chatActions/types";
@@ -51,8 +55,17 @@ function dispatch(action: ChatAction): ExecutedAction {
  * (множина), яка прокидає її далі у `HubChat.tsx → showUndoToast`. Тут
  * undo навмисно "проковтується" — single-tool path-у в продакшні нема,
  * а контракт `string` критичний для ~30+ існуючих юніт-тестів.
+ *
+ * **Async-tools** (`recall_memory` тощо, з whitelist `ASYNC_CHAT_ACTION_NAMES`)
+ * не можна виконати через цю sync-функцію — вони вимагають мережевого
+ * round-trip-у. Повертаємо явну помилку замість silent fallback-у на
+ * "Невідома дія", щоб прод-callers (`hubChatActions.executeActions`)
+ * та тести бачили однозначну інструкцію — використовувати async-API.
  */
 export function executeAction(action: ChatAction): string {
+  if (ASYNC_CHAT_ACTION_NAMES.has(action.name)) {
+    return `Tool ${action.name} вимагає async виконання — викличте executeActions().`;
+  }
   return dispatch(action).result;
 }
 
@@ -77,7 +90,30 @@ export async function executeActions(
 ): Promise<Array<{ name: string; result: string; undo?: () => void }>> {
   return Promise.all(
     actions.map(async (action) => {
-      const out = await Promise.resolve(dispatch(action));
+      // Async (server-side) tools проходять окремою гілкою — їхній результат
+      // — Promise<string>, який не вписується у sync-`dispatch(...)` ?? -чейн.
+      if (ASYNC_CHAT_ACTION_NAMES.has(action.name)) {
+        try {
+          const result = await handleAsyncChatAction(action);
+          if (typeof result === "string") {
+            return { name: action.name, result };
+          }
+          if (result) {
+            return {
+              name: action.name,
+              result: result.result,
+              undo: result.undo,
+            };
+          }
+          return { name: action.name, result: `Невідома дія: ${action.name}` };
+        } catch (e) {
+          return {
+            name: action.name,
+            result: `Помилка виконання: ${e instanceof Error ? e.message : String(e)}`,
+          };
+        }
+      }
+      const out = dispatch(action);
       return { name: action.name, ...out };
     }),
   );

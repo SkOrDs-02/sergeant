@@ -89,6 +89,42 @@ export const paths: ZodOpenApiPathsObject = {
     },
   },
 
+  // ────────────────────── /api/ai-memory/* ──────────────────────
+  "/api/ai-memory/recall": {
+    post: {
+      summary:
+        "Semantic-пошук у ai_memories за query (Voyage embed → pgvector ANN).",
+      tags: ["ai-memory"],
+      security: cookieOrBearer,
+      requestBody: {
+        content: {
+          "application/json": {
+            schema: namedSchemas.RecallMemoryRequest,
+          },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Recall hits (масив може бути порожнім).",
+          content: {
+            "application/json": {
+              schema: namedSchemas.RecallMemoryResponse,
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "503": {
+          description:
+            "AI memory вимкнено (`AI_MEMORY_ENABLED=false`) або провайдер ембеддингів недоступний.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+
   // ────────────────────── /api/coach/* ──────────────────────
   "/api/coach/memory": {
     get: {
