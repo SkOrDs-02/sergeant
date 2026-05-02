@@ -11,17 +11,23 @@ import {
 } from "./security.js";
 
 const HELP_TEXT = [
-  "*Sergeant Console* — твій AI-помічник по продукту",
+  "*Sergeant Console* - Telegram control surface for ops, marketing, and AI agents",
   "",
-  "*/ops* <питання> — запитати Ops-агента",
-  "  Приклади: /ops що там у проді? | /ops скільки нових юзерів сьогодні?",
+  "*/ops* <question> - ask the Ops agent",
+  "*/content* <topic> - ask the Marketing agent",
   "",
-  "*/content* <тема> — запитати Marketing-агента",
-  "  Приклади: /content пост про новий реліз | /content ідеї для X",
+  "*/status* <scope> - read-only agent/system status",
+  "*/plan* <task> - ask n8n to prepare a specialist-agent plan",
+  "*/assign* <specialist> <task> - request agent work; risky work needs approval",
+  "*/review* <target> - review PR, issue, CI, or workflow state",
+  "*/run* <check> - request a controlled check or automation",
+  "*/approve* <task-id|command> - approve a risky dispatcher action",
+  "*/cancel* <task-id> - cancel a queued dispatcher task",
+  "*/logs* <target> - fetch read-only logs or summaries",
   "",
-  "*Без команди* — я сам визначу агента за контекстом.",
+  "Free text still routes to ops or marketing by context.",
   "",
-  "_Версія: Phase 1 (Claude API + Telegram bot)_",
+  "_Version: Telegram control plane + n8n dispatcher_",
 ].join("\n");
 
 async function main() {
@@ -71,18 +77,21 @@ async function main() {
     const text = ctx.message.text;
     const { agent, query } = parseCommand(text);
 
-    // Send "typing..." indicator
     await ctx.replyWithChatAction("typing");
 
     try {
-      const reply = await dispatchToAgent(anthropic, agent, query);
+      const reply = await dispatchToAgent(anthropic, agent, query, {
+        telegramUserId: ctx.from?.id ?? 0,
+        telegramChatId: ctx.chat.id,
+        messageId: ctx.message.message_id,
+      });
       const safeReply = escapeTelegramMarkdownV2(reply);
       for (const chunk of splitTelegramMessage(safeReply)) {
         await ctx.reply(chunk, { parse_mode: "MarkdownV2" });
       }
     } catch (err) {
       console.error("Agent error:", err);
-      await ctx.reply("❌ Сталася помилка. Спробуй ще раз.");
+      await ctx.reply("Agent error. Try again.");
     }
   });
 
