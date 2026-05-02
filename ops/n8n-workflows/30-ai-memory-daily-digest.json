@@ -1,0 +1,127 @@
+{
+  "name": "30 — AI Memory Daily Digest (09:05 Kyiv → Telegram #digest)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "5 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-morning",
+      "name": "Cron 09:05 Kyiv",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  (SELECT COUNT(*) FROM ai_memories WHERE created_at >= NOW() - INTERVAL '24 hours') AS total_24h,\n  (SELECT COUNT(DISTINCT user_id) FROM ai_memories WHERE created_at >= NOW() - INTERVAL '24 hours') AS active_users_24h,\n  (SELECT COALESCE(SUM(LENGTH(content)), 0) FROM ai_memories WHERE created_at >= NOW() - INTERVAL '24 hours') AS total_chars_24h,\n  (SELECT COUNT(*) FROM ai_memories WHERE created_at >= NOW() - INTERVAL '7 days') AS total_7d,\n  (SELECT COUNT(*) FROM ai_memories) AS lifetime_total,\n  (SELECT COUNT(DISTINCT user_id) FROM ai_memories) AS lifetime_users,\n  COALESCE(\n    (SELECT json_agg(s ORDER BY s.cnt DESC)\n       FROM (\n         SELECT\n           source,\n           COUNT(*)::int AS cnt,\n           COUNT(DISTINCT user_id)::int AS users\n         FROM ai_memories\n         WHERE created_at >= NOW() - INTERVAL '24 hours'\n         GROUP BY source\n       ) s\n    ),\n    '[]'::json\n  ) AS by_source",
+        "options": {}
+      },
+      "id": "query-ai-memory",
+      "name": "AI memory aggregates (24h)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [460, 300],
+      "credentials": {
+        "postgres": {
+          "id": "pwwVNTLBw43PJgey",
+          "name": "Sergeant Postgres (sergeant-db)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format AI memory daily digest for Telegram. Parses single-row aggregates\n// from previous Postgres node and degrades gracefully on empty results.\n// Voyage cost estimate: ~chars/4 tokens × $0.02 / 1M tokens (voyage-3.5-lite).\nconst row = $input.first()?.json ?? {};\n\nconst toNum = (v) => Number(v ?? 0);\nconst total24h = toNum(row.total_24h);\nconst activeUsers24h = toNum(row.active_users_24h);\nconst totalChars24h = toNum(row.total_chars_24h);\nconst total7d = toNum(row.total_7d);\nconst lifetimeTotal = toNum(row.lifetime_total);\nconst lifetimeUsers = toNum(row.lifetime_users);\n\n// by_source from json_agg may arrive as array, JSON string, or null.\nlet bySource = row.by_source ?? [];\nif (typeof bySource === 'string') {\n  try { bySource = JSON.parse(bySource); } catch { bySource = []; }\n}\nif (!Array.isArray(bySource)) bySource = [];\n\nconst yesterday = new Date();\nyesterday.setDate(yesterday.getDate() - 1);\nconst dateStr = yesterday.toLocaleDateString('uk-UA', {\n  day: 'numeric',\n  month: 'long',\n  timeZone: 'Europe/Kyiv',\n});\n\n// Voyage cost estimate (rough): ~4 chars/token × $0.02 / 1M tokens.\nconst tokens = Math.round(totalChars24h / 4);\nconst costUsd = (tokens / 1_000_000) * 0.02;\nconst costStr = costUsd < 0.01 ? '< $0.01' : `$${costUsd.toFixed(4)}`;\n\nconst sourceLines = bySource.length\n  ? bySource\n      .map((s) => `  • \\`${s.source}\\`: ${s.cnt} (${s.users} 👤)`)\n      .join('\\n')\n  : '  _— нічого нового за добу —_';\n\nconst empty = total24h === 0;\nconst headline = empty\n  ? `🧠 *AI Memory — ${dateStr}*\\n\\n_За добу нічого не записано._`\n  : `🧠 *AI Memory — ${dateStr}*\\n\\n📦 *${total24h}* memories · 👥 *${activeUsers24h}* юзерів · 💸 ${costStr}`;\n\nconst body = empty\n  ? ''\n  : `\\n\\n*По джерелах:*\\n${sourceLines}\\n\\n*Lifetime:* ${lifetimeTotal} memories від ${lifetimeUsers} юзерів · *7d:* ${total7d}`;\n\nconst footer = `\\n\\n_Sergeant · ai\\\\_memories · pgvector_`;\n\nreturn [{ json: { text: headline + body + footer, total24h, activeUsers24h, empty } }];"
+      },
+      "id": "format-digest",
+      "name": "Format AI memory digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ALERT_CHAT_ID }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "message_thread_id": "={{ $env.TELEGRAM_TOPIC_DIGEST }}"
+        }
+      },
+      "id": "telegram-digest",
+      "name": "Telegram → #digest",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [900, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "ggxeCc1ALZKLuMPV",
+          "name": "Telegram (Sergeant_alert_bot)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Cron 09:05 Kyiv": {
+      "main": [
+        [
+          {
+            "node": "AI memory aggregates (24h)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI memory aggregates (24h)": {
+      "main": [
+        [
+          {
+            "node": "Format AI memory digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format AI memory digest": {
+      "main": [
+        [
+          {
+            "node": "Telegram → #digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Kyiv",
+    "errorWorkflow": "iC82EFJzqBny9kxI"
+  },
+  "tags": [
+    {
+      "name": "sergeant"
+    },
+    {
+      "name": "ai-memory"
+    },
+    {
+      "name": "digest"
+    },
+    {
+      "name": "metrics"
+    }
+  ],
+  "active": false
+}
