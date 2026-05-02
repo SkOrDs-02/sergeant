@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
 > **Status:** Active
 
 Аналіз кодової бази `apps/web/src` (434 source файли, 87k рядків).
@@ -286,7 +286,7 @@ filter-предикатів:
 
 ---
 
-### 11. Strict TypeScript rollout — Phases 1–3 complete, Phase 4 pending
+### 11. Strict TypeScript rollout — Phases 1–3.1 complete, Phase 4 sized
 
 **Контекст:** `apps/web/tsconfig.json` має `strict: false` + `allowJs: true`.
 Базовий `packages/config/tsconfig.base.json` — `strict: true`, але web-app
@@ -367,9 +367,45 @@ filter-предикатів:
   та non-null assertions (`!`) після `expect(...).toBeDefined()` guards.
 - Жодних `@ts-expect-error`, `as any`, або runtime-змін не додано.
 
-**Phase 4:** увімкнути `strict: true` у головному `tsconfig.json`, видалити
-`allowJs`, виправити всі залишкові помилки (основний ROI — на `noImplicitAny`,
-`strictPropertyInitialization`).
+**Phase 4 (TODO):** увімкнути `strict: true` у головному `tsconfig.json`,
+видалити `allowJs`, виправити всі залишкові помилки.
+
+- **Заміряний скоуп (2026-05-02):** **768 помилок у 69 файлах** (повний
+  `strict: true` + `allowJs: false` без жодних змін у коді). Розподіл
+  за кодами: `TS7006` (parameter implicitly any) — 431, `TS7031`
+  (binding element implicitly any) — 289, `TS7053` (element implicitly
+  any) — 21, `TS7005` (var without type) — 12, `TS18046` (`error` is
+  of type `unknown`) — 10, інші — 5.
+- **Топ-блокери** (одиничний фікс розблокує найбільше):
+  `modules/finyk/hooks/useStorage.ts` (71), `modules/fizruk/hooks/useWorkouts.ts`
+  (35), `modules/fizruk/components/workouts/WorkoutJournalSection.tsx` (31),
+  `modules/finyk/pages/AssetsTxPickerView.tsx` (30),
+  `modules/fizruk/components/workouts/ActiveWorkoutPanel.tsx` (29),
+  `modules/finyk/pages/AssetsTable.tsx` (26), `modules/finyk/hooks/usePrivatbank.ts`
+  (26). Решта помилок розпорошені по `~50` файлах finyk/fizruk/onboarding/insights.
+- **Чому Phase 4 не дробиться через `tsconfig.noimplicitany.json`-include:**
+  TypeScript застосовує `noImplicitAny` ко всій програмі (всі transitively
+  reached файли), не тільки до `include`-списку. Спроба додати
+  `core/{lib,hub,insights,onboarding,settings,stories,designShowcase}` в
+  `tsconfig.noimplicitany.json` дає **801 помилку**, бо ці директорії
+  імпортують з `modules/finyk` та `modules/fizruk`, які тягнуть всі їхні
+  implicit-any. Тобто **noImplicitAny scope-розширення без попереднього
+  fix-у `modules/{finyk,fizruk}` не зменшує scope** — це була б та сама
+  Phase 4. Висновок: рухатись треба per-file (починаючи з топ-блокерів),
+  без проміжного "Phase 3.2".
+
+**Strict-pipeline regression-фікси (2026-05-02):** Pull-to-refresh PR #1330
+вніс 3 strict-помилки, що ламали `tsc -p tsconfig.strict.json`. Виправлено
+in-place перед initiation Phase 4:
+
+- `shared/components/ui/PullToRefresh.tsx` — `useRef<HTMLDivElement>(null)`
+  робить `current` read-only; уточнено як `useRef<HTMLDivElement | null>(null)`.
+- `core/auth/ResetPasswordPage.tsx` — `{...pwValidation.getFieldProps(...)}`
+  після `className={INPUT_CLS}` клобрив `INPUT_CLS` (повертає `className:
+"border-danger …"`). Дістаємо `passwordFieldProps` / `confirmFieldProps`
+  явно, зливаємо через `cn()`, проброс `onBlur` окремо. Це і `TS2783`-фікс,
+  і реальний стилевий регрес — інпути пароля втрачали базові стилі при
+  validation-error.
 
 ---
 

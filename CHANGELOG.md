@@ -1,6 +1,6 @@
 # Changelog
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
 > **Status:** Active
 
 Усі помітні зміни проєкту документуються тут.
@@ -16,6 +16,23 @@
 
 ### Fixed
 
+- **Web: відновлено strict-pipeline (`tsc -p tsconfig.strict.json`) — два regression-блокери після PR #1330.**
+  Pull-to-refresh feature злетів зі strict-null pipeline: 3 помилки на двох
+  файлах ламали Phase 1–3 typecheck.
+  - `shared/components/ui/PullToRefresh.tsx:88` — `useRef<HTMLDivElement>(null)`
+    робить `current` read-only під strict; коли `setScrollEl` пробує
+    переприсвоїти ref, TypeScript падає з `TS2540`. Тип ref-а уточнено
+    як `useRef<HTMLDivElement | null>(null)` — runtime поведінка
+    незмінна, ref залишається mutable як і має бути для DOM-callback-у.
+  - `core/auth/ResetPasswordPage.tsx:139,170` — після `feat: useFormValidation`
+    spread `{...pwValidation.getFieldProps("password")}` опинявся **після**
+    `className={INPUT_CLS}` і клобрив явний клас (повертає
+    `{ error, className: "border-danger …", onBlur }`). На сторінці reset
+    password обидва інпути пароля втрачали `INPUT_CLS` стилі, як тільки
+    в полі з'являлась validation-помилка. Зафіксено: дістаємо
+    `passwordFieldProps` / `confirmFieldProps` явно, зливаємо
+    `INPUT_CLS` з `getFieldProps().className` через `cn()`, проброс
+    `onBlur` явно. Це і реальний стилевий баг, і прибирає `TS2783`.
 - **Railway: hub-api Docker-build падав на `Could not resolve "@sergeant/db-schema/pg"`.**
   Після того як `apps/server` отримав залежність від workspace-пакета
   `@sergeant/db-schema` (Drizzle ORM wiring), `Dockerfile.api` залишився

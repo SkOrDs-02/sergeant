@@ -2,6 +2,7 @@ import { useMemo, useState, useRef, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { cn } from "@shared/lib/cn";
 import { useToast } from "@shared/hooks/useToast";
 import { useFormValidation } from "@shared/hooks/useFormValidation";
 import { BrandLogo } from "../app/BrandLogo";
@@ -49,6 +50,9 @@ export function ResetPasswordPage() {
 
   const INPUT_CLS =
     "input-focus w-full min-h-[44px] px-4 py-3 rounded-xl bg-panel border border-line text-text text-[16px] md:text-sm placeholder:text-muted/50";
+
+  const passwordFieldProps = pwValidation.getFieldProps("password");
+  const confirmFieldProps = pwValidation.getFieldProps("confirm");
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -136,7 +140,7 @@ export function ResetPasswordPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={10}
-                  className={INPUT_CLS}
+                  className={cn(INPUT_CLS, passwordFieldProps.className)}
                   placeholder="Мінімум 10 символів"
                   autoComplete="new-password"
                   aria-invalid={
@@ -147,7 +151,7 @@ export function ResetPasswordPage() {
                       ? "reset-pw-error"
                       : undefined
                   }
-                  {...pwValidation.getFieldProps("password")}
+                  onBlur={passwordFieldProps.onBlur}
                 />
                 {pwValidation.fields.password.error && (
                   <p id="reset-pw-error" className="text-xs text-danger">
@@ -170,7 +174,7 @@ export function ResetPasswordPage() {
                   onChange={(e) => setConfirm(e.target.value)}
                   required
                   minLength={10}
-                  className={INPUT_CLS}
+                  className={cn(INPUT_CLS, confirmFieldProps.className)}
                   placeholder="Введи пароль ще раз"
                   autoComplete="new-password"
                   aria-invalid={
@@ -181,7 +185,7 @@ export function ResetPasswordPage() {
                       ? "reset-confirm-error"
                       : undefined
                   }
-                  {...pwValidation.getFieldProps("confirm")}
+                  onBlur={confirmFieldProps.onBlur}
                 />
                 {pwValidation.fields.confirm.error && (
                   <p id="reset-confirm-error" className="text-xs text-danger">

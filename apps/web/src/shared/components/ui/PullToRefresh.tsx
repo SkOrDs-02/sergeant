@@ -81,7 +81,7 @@ export function PullToRefresh({
   hookOptions,
   children,
 }: PullToRefreshProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const setScrollEl = useCallback(
     (el: HTMLDivElement | null) => {
