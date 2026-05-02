@@ -33,6 +33,10 @@
     "./migrate/sqlite": {
       "types": "./dist/migrate/sqlite.d.ts",
       "import": "./dist/migrate/sqlite.js"
+    },
+    "./sqlite/migrations": {
+      "types": "./dist/sqlite/migrations/index.d.ts",
+      "import": "./dist/sqlite/migrations/index.js"
     }
   },
   "scripts": {

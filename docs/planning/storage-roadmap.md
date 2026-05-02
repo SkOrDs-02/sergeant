@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -86,7 +86,7 @@
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------- | ---------- | --------------------------------------------------------------------- |
 | **0. Hygiene/P0**           | Закриває security-debt без перебудови. Цінне навіть якщо далі не йдемо.                                           | 2 тижні   | 0.5 FTE    | Можна зупинитись після Stage 0 — все ще +30% impact.                  |
 | **1. Consolidation**        | Один KVStore, один SYNC_MODULES, IDB consolidated, LS-burndown finished. Без SQLite.                              | 4 тижні   | 1 FTE      | Stop тут = просто чистіша поточна архітектура, ще без SQLite.         |
-| **2. Foundation** ✅         | Drizzle ORM, sqlite-wasm + expo-sqlite installed but не використовуються в фічах, schema runner, COOP/COEP infra. | 3 тижні   | 1 FTE      | Якщо OPFS bench не задовольняє — stop, повертаємось до Stage 1.       |
+| **2. Foundation** ✅        | Drizzle ORM, sqlite-wasm + expo-sqlite installed but не використовуються в фічах, schema runner, COOP/COEP infra. | 3 тижні   | 1 FTE      | Якщо OPFS bench не задовольняє — stop, повертаємось до Stage 1.       |
 | **3. SPIKE (routine)**      | Один модуль повністю на SQLite. Decision gate: gо/no-gо.                                                          | 2 тижні   | 1 FTE      | Якщо спайк fail-ить — fallback на Stage 1 + custom op-log без SQLite. |
 | **4. Per-module migration** | fizruk → nutrition → finyk на SQLite. Dual-write, потім cut-over.                                                 | 12 тижнів | 1 FTE      | Можна паузу на будь-якому модулі.                                     |
 | **5. Sync v2**              | Op-log persisted, idempotent push, real-time pull (SSE), CRDT для routine/nutrition.                              | 4 тижні   | 1 FTE      | Опційно — без CRDT system все ще працює (LWW), просто нижче UX.       |
@@ -390,7 +390,13 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 
 ### Stage 3 — SPIKE на routine
 
-#### **PR #022 — `feat(spike): routine module on SQLite — proof of concept`** (DRAFT, time-boxed 2 weeks)
+#### **PR #022 — `feat(spike): routine module on SQLite — proof of concept`** ⏳ IN-PROGRESS (DRAFT, time-boxed 2 weeks)
+
+> **Статус:** PR відкрито 2026-05-02 у гілці `devin/1777743313-spike-routine-sqlite-v2`.
+> Поточний стан — бібліотечний шар повністю готовий і покритий тестами,
+> dev-UI panel і інтеграція в `RoutineApp` лишилися як follow-up частина
+> цього ж SPIKE-у. Декізіон-гейт перевірятиметься після того, як UI
+> підключений хоча б одній платформі.
 
 - **Goal.** Один модуль повністю на SQLite на обох платформах. Demo:
   toggle звички з web + mobile паралельно → обидва девайси у sync без
@@ -401,6 +407,28 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   - Mobile: те саме через `expo-sqlite`.
   - Sync: client opens → pull → apply local; periodic push на background.
   - Feature flag `feature.routine.sqlite_v2 = false` за замовчуванням.
+- **Артефакти.**
+  - `packages/db-schema/src/sqlite/routine.ts` — Drizzle SQLite схема
+    (`routine_entries`, `routine_streaks`, `sync_op_outbox`,
+    `sync_op_cursor`).
+  - `packages/db-schema/src/sqlite/migrations/001_routine_spike.sql` +
+    `migrations/index.ts` — bundled клієнтська міграція + manifest, який
+    проганяє `runMigrations` із `@sergeant/db-schema/migrate`.
+  - `apps/web/src/modules/routine/lib/sqliteSpike/` — repo + sync engine
+    - sqlite-wasm adapter + types (15 vitest tests).
+  - `apps/mobile/src/modules/routine/lib/sqliteSpike/` — дзеркало
+    web-бібліотеки + expo-sqlite адаптер (6 jest tests; SPIKE
+    дублює ~500 рядків — буде винесено у спільний пакет на Stage 5).
+  - Web feature flag `feature.routine.sqlite_v2` зареєстровано у
+    `apps/web/src/core/lib/featureFlags.ts` (default: off, experimental).
+  - Документ `docs/notes/spikes/routine-sqlite-v2.md` — кваліфікаційний
+    нотатник із decision-gate замірами.
+- **Що ще треба для замикання SPIKE-у (наступний PR в цій гілці).**
+  - Web: невелика dev-only панель у Settings → Експериментальне, щоб
+    клацати «toggle entry / push / pull» і вимірювати latency.
+  - Mobile: аналогічна панель у DEV menu.
+  - Зняти заміри bundle (web) + first-open SQLite latency на iOS
+    Safari 16.4+ і опублікувати у `routine-sqlite-v2.md`.
 - **Decision gate (kill criteria).**
   | Метрика | Pass | Fail |
   |---|---|---|

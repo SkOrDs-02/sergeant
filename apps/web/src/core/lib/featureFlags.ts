@@ -51,6 +51,14 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     defaultValue: false,
     experimental: true,
   },
+  {
+    id: "feature.routine.sqlite_v2",
+    label: "Routine — SQLite SPIKE",
+    description:
+      "Локальний SQLite + op-log sync для модуля routine. Time-boxed SPIKE із PR #022 storage-roadmap. Якщо щось ламається — вимикай і пиши в #storage. Default: off.",
+    defaultValue: false,
+    experimental: true,
+  },
 ] as const;
 
 export type FlagId = (typeof FLAG_REGISTRY)[number]["id"];

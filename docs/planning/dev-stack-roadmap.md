@@ -1,6 +1,6 @@
 # Dev stack roadmap — інструменти і поради по всьому ЖЦ розробки
 
-> **Last validated:** 2026-04-30 by @Skords-01. **Next review:** 2026-07-29.
+> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
 > **Status:** Active
 
 **Статус:** in progress. Створено 2026-04-25. Останнє оновлення: 2026-04-27 (13 з топ-15 закриті — PostHog інтегрований у web + server, Strict TS розщеплений на server/web; Sentry DSN-gated; деталі у колонці Статус нижче).
