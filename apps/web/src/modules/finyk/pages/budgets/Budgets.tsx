@@ -28,6 +28,10 @@ import {
 import { BudgetsLimitsSection } from "./BudgetsLimitsSection";
 import { BudgetsGoalsSection } from "./BudgetsGoalsSection";
 import { useProactiveAdvice } from "./useProactiveAdvice";
+import type {
+  BudgetFormType,
+  NewBudgetDraft,
+} from "../../components/budgets/AddBudgetForm";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type LooseBag = any;
@@ -84,8 +88,8 @@ export function Budgets({
   const factIncome = monthlySummary.income;
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [formType, setFormType] = useState("limit");
-  const [newB, setNewB] = useState({
+  const [formType, setFormType] = useState<BudgetFormType>("limit");
+  const [newB, setNewB] = useState<NewBudgetDraft>({
     type: "limit",
     categoryId: "",
     limit: "",

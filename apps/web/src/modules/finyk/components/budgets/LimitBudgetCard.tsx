@@ -7,6 +7,32 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 
+interface LimitBudgetInput {
+  id: string;
+  type?: "limit" | "goal";
+  categoryId?: string;
+  limit: number;
+  [extra: string]: unknown;
+}
+
+interface LimitBudgetCardProps {
+  budget: LimitBudgetInput;
+  categoryLabel?: string | null;
+  spent: number;
+  pctRaw: number;
+  pctRounded: number;
+  remaining: number;
+  isEditing: boolean;
+  showProactiveAdvice: boolean;
+  proactiveText?: string | null;
+  proactiveLoading?: boolean;
+  onDismissAdvice?: (() => void) | null;
+  onBeginEdit: () => void;
+  onChangeLimit?: (next: number) => void;
+  onSave: () => void;
+  onDelete: () => void;
+}
+
 // Презентаційна картка ліміту бюджету. Усі дані приходять готовими пропсами,
 // тому memo потрібен, щоб картка не перемальовувалась при змінах сусідніх
 // бюджетів чи сторонніх станів Budgets.
@@ -26,7 +52,7 @@ function LimitBudgetCardComponent({
   onChangeLimit,
   onSave,
   onDelete,
-}) {
+}: LimitBudgetCardProps) {
   const overLimit = pctRaw >= 100;
   const warnLimit = pctRaw >= 80 && !overLimit;
   const [adviceOpen, setAdviceOpen] = useState(true);
@@ -59,9 +85,7 @@ function LimitBudgetCardComponent({
       ) : (
         <>
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-semibold">
-              {categoryLabel || "—"}
-            </span>
+            <span className="text-style-label">{categoryLabel || "—"}</span>
             <div className="flex items-center gap-2">
               <span
                 className={cn(

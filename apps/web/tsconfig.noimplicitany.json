@@ -6,6 +6,7 @@
   },
   "include": [
     "src/shared/**/*",
+    "src/modules/finyk/**/*",
     "src/modules/routine/**/*",
     "src/modules/nutrition/**/*",
     "src/core/auth/**/*",

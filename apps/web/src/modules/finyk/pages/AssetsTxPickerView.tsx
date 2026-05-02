@@ -1,4 +1,4 @@
-import { TxRow } from "../components/TxRow";
+import { TxRow, type TxRowTx } from "../components/TxRow";
 import { Card } from "@shared/components/ui/Card";
 import {
   getAccountLabel,
@@ -13,8 +13,49 @@ import {
 import {
   getDebtTxRole,
   getReceivableTxRole,
+  type Debt,
+  type Receivable,
 } from "@sergeant/finyk-domain/domain/debtEngine";
+import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
+import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import { cn } from "@shared/lib/cn";
+
+type Subscription = {
+  id: string;
+  name: string;
+  emoji?: string;
+  keyword?: string;
+  billingDay?: number;
+  currency?: string;
+  linkedTxId?: string;
+  [extra: string]: unknown;
+};
+
+type TxPickerState =
+  | { type: "monoDebt"; id: string }
+  | { type: "sub"; subId: string }
+  | { type: "debt"; id: string }
+  | { type: "recv"; id: string };
+
+interface AssetsTxPickerViewProps {
+  txPicker: TxPickerState;
+  setTxPicker: (next: TxPickerState | null) => void;
+  accounts: readonly MonoAccount[];
+  transactions: readonly TxRowTx[];
+  monoDebtLinkedTxIds: Record<string, string[]>;
+  toggleMonoDebtTx: (accountId: string, txId: string) => void;
+  subscriptions: readonly Subscription[];
+  updateSubscription: (subId: string, patch: Record<string, unknown>) => void;
+  manualDebts: readonly Debt[];
+  receivables: readonly Receivable[];
+  toggleLinkedTx: (
+    id: string,
+    txId: string,
+    type: "debt" | "receivable",
+  ) => void;
+  showBalance: boolean;
+  customCategories?: readonly CustomCategoryInput[];
+}
 
 /**
  * Sub-screen rendered by the Assets page when the user enters a
@@ -48,7 +89,7 @@ export function AssetsTxPickerView({
   toggleLinkedTx,
   showBalance,
   customCategories,
-}) {
+}: AssetsTxPickerViewProps) {
   if (txPicker.type === "monoDebt") {
     const account = accounts.find((a) => a.id === txPicker.id);
     const linkedIds = monoDebtLinkedTxIds[txPicker.id] || [];
@@ -59,7 +100,8 @@ export function AssetsTxPickerView({
     const total = paid + remaining;
     const label = getAccountLabel(account);
 
-    const isSuggested = (t) => t._accountId === txPicker.id && t.amount > 0;
+    const isSuggested = (t: TxRowTx) =>
+      t._accountId === txPicker.id && t.amount > 0;
 
     return (
       <div className="flex flex-col flex-1 overflow-hidden">
@@ -76,7 +118,7 @@ export function AssetsTxPickerView({
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
             <Card variant="flat" radius="md" className="mb-3">
               <div className="text-xs text-subtle mb-1">{label}</div>
-              <div className="text-2xl font-extrabold text-danger">
+              <div className="text-style-hero text-danger">
                 −
                 {remaining.toLocaleString("uk-UA", {
                   maximumFractionDigits: 0,
@@ -130,7 +172,9 @@ export function AssetsTxPickerView({
   }
 
   if (txPicker.type === "sub") {
-    const sub = subscriptions.find((s) => s.id === txPicker.subId);
+    const sub = subscriptions.find(
+      (s) => s.id === (txPicker as { subId: string }).subId,
+    );
     if (!sub) {
       return (
         <div className="flex flex-col flex-1 overflow-hidden">
@@ -149,6 +193,7 @@ export function AssetsTxPickerView({
     const linkedId = sub.linkedTxId;
     const expenses = transactions
       .filter((t) => t.amount < 0)
+      .slice()
       .sort((a, b) => (b.time || 0) - (a.time || 0));
     return (
       <div className="flex flex-col flex-1 overflow-hidden">
@@ -172,7 +217,7 @@ export function AssetsTxPickerView({
                 {linkedId && (
                   <button
                     type="button"
-                    className="block mt-2 text-sm font-semibold text-danger hover:underline"
+                    className="block mt-2 text-style-label text-danger hover:underline"
                     onClick={() => {
                       updateSubscription(sub.id, { linkedTxId: null });
                       setTxPicker(null);
@@ -216,19 +261,27 @@ export function AssetsTxPickerView({
 
   // --- Manual debt / receivable linking ---
   const isDebt = txPicker.type === "debt";
-  const items = isDebt ? manualDebts : receivables;
-  const item = items.find((d) => d.id === txPicker.id);
+  const items: readonly (Debt | Receivable)[] = isDebt
+    ? manualDebts
+    : receivables;
+  const item = items.find((d) => d.id === (txPicker as { id: string }).id);
   const linked = item?.linkedTxIds || [];
   const paid = isDebt
-    ? getDebtPaid(item, transactions)
-    : getRecvPaid(item, transactions);
+    ? getDebtPaid(item as Debt | undefined, transactions as TxRowTx[])
+    : getRecvPaid(item as Receivable | undefined, transactions as TxRowTx[]);
   const total = isDebt
-    ? getDebtEffectiveTotal(item, transactions)
-    : getReceivableEffectiveTotal(item, transactions);
+    ? getDebtEffectiveTotal(item as Debt | undefined, transactions as TxRowTx[])
+    : getReceivableEffectiveTotal(
+        item as Receivable | undefined,
+        transactions as TxRowTx[],
+      );
   const remaining = isDebt
-    ? calcDebtRemaining(item, transactions)
-    : calcReceivableRemaining(item, transactions);
-  const getTxRole = (tx) =>
+    ? calcDebtRemaining(item as Debt | undefined, transactions as TxRowTx[])
+    : calcReceivableRemaining(
+        item as Receivable | undefined,
+        transactions as TxRowTx[],
+      );
+  const getTxRole = (tx: TxRowTx) =>
     isDebt ? getDebtTxRole(tx) : getReceivableTxRole(tx);
 
   return (
@@ -252,7 +305,7 @@ export function AssetsTxPickerView({
             </div>
             <div
               className={cn(
-                "text-2xl font-extrabold mt-1",
+                "text-style-hero mt-1",
                 isDebt ? "text-danger" : "text-success",
               )}
             >
@@ -281,7 +334,11 @@ export function AssetsTxPickerView({
                   tx={t}
                   highlighted={isLinked}
                   onClick={() =>
-                    toggleLinkedTx(txPicker.id, t.id, txPicker.type)
+                    toggleLinkedTx(
+                      (txPicker as { id: string }).id,
+                      t.id,
+                      (txPicker as { type: "debt" | "receivable" }).type,
+                    )
                   }
                   hideAmount={!showBalance}
                   customCategories={customCategories}

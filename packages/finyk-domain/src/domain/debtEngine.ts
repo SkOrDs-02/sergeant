@@ -14,12 +14,22 @@ export interface Debt {
   amount: number;
   linkedTxIds?: string[];
   totalAmount?: number;
+  name?: string;
+  emoji?: string;
+  dueDate?: string;
+  currency?: string;
+  [extra: string]: unknown;
 }
 
 export interface Receivable {
   id: string;
   amount: number;
   linkedTxIds?: string[];
+  name?: string;
+  emoji?: string;
+  dueDate?: string;
+  currency?: string;
+  [extra: string]: unknown;
 }
 
 export interface Tx {
@@ -38,8 +48,8 @@ function toAmountUAH(tx: Tx): number {
 }
 
 function findLinkedTx(
-  linkedTxIds: string[] = [],
-  transactions: Tx[] = [],
+  linkedTxIds: readonly string[] = [],
+  transactions: readonly Tx[] = [],
 ): Tx[] {
   const index = new Map(transactions.map((tx) => [tx.id, tx]));
   return linkedTxIds
@@ -63,14 +73,20 @@ export function getReceivableTxRole(tx: Pick<Tx, "amount">): TxRole {
       };
 }
 
-export function getDebtPaid(debt: Debt, transactions: Tx[] = []): number {
+export function getDebtPaid(
+  debt: Debt,
+  transactions: readonly Tx[] = [],
+): number {
   const linked = findLinkedTx(debt?.linkedTxIds || [], transactions);
   return linked
     .filter((tx) => tx.amount < 0)
     .reduce((sum, tx) => sum + toAmountUAH(tx), 0);
 }
 
-export function getDebtOriginated(debt: Debt, transactions: Tx[] = []): number {
+export function getDebtOriginated(
+  debt: Debt,
+  transactions: readonly Tx[] = [],
+): number {
   const linked = findLinkedTx(debt?.linkedTxIds || [], transactions);
   return linked
     .filter((tx) => tx.amount > 0)
@@ -79,7 +95,7 @@ export function getDebtOriginated(debt: Debt, transactions: Tx[] = []): number {
 
 export function getReceivablePaid(
   receivable: Receivable,
-  transactions: Tx[] = [],
+  transactions: readonly Tx[] = [],
 ): number {
   const linked = findLinkedTx(receivable?.linkedTxIds || [], transactions);
   return linked
@@ -89,7 +105,7 @@ export function getReceivablePaid(
 
 export function getReceivableOriginated(
   receivable: Receivable,
-  transactions: Tx[] = [],
+  transactions: readonly Tx[] = [],
 ): number {
   const linked = findLinkedTx(receivable?.linkedTxIds || [], transactions);
   return linked
@@ -99,14 +115,14 @@ export function getReceivableOriginated(
 
 export function getDebtEffectiveTotal(
   debt: Debt,
-  transactions: Tx[] = [],
+  transactions: readonly Tx[] = [],
 ): number {
   return Number(debt?.totalAmount || 0) + getDebtOriginated(debt, transactions);
 }
 
 export function getReceivableEffectiveTotal(
   receivable: Receivable,
-  transactions: Tx[] = [],
+  transactions: readonly Tx[] = [],
 ): number {
   return (
     Number(receivable?.amount || 0) +
@@ -114,7 +130,10 @@ export function getReceivableEffectiveTotal(
   );
 }
 
-export function calcDebtRemaining(debt: Debt, transactions: Tx[] = []): number {
+export function calcDebtRemaining(
+  debt: Debt,
+  transactions: readonly Tx[] = [],
+): number {
   return Math.max(
     0,
     getDebtEffectiveTotal(debt, transactions) - getDebtPaid(debt, transactions),
@@ -123,7 +142,7 @@ export function calcDebtRemaining(debt: Debt, transactions: Tx[] = []): number {
 
 export function calcReceivableRemaining(
   receivable: Receivable,
-  transactions: Tx[] = [],
+  transactions: readonly Tx[] = [],
 ): number {
   return Math.max(
     0,

@@ -9,6 +9,33 @@ import {
   getLastTxForSubscription,
   getSubscriptionAmountMeta,
 } from "@sergeant/finyk-domain/domain/subscriptionUtils";
+import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+
+interface SubscriptionInput {
+  id: string;
+  name: string;
+  emoji?: string;
+  keyword?: string;
+  billingDay?: number | string;
+  currency?: string;
+  linkedTxId?: string;
+  [extra: string]: unknown;
+}
+
+interface SubCardProps {
+  sub: SubscriptionInput;
+  transactions: readonly Transaction[];
+  onDelete: () => void;
+  onEdit?: (patch: {
+    name: string;
+    emoji?: string;
+    keyword: string;
+    billingDay: number;
+    currency: string;
+  }) => void;
+  onLinkTransactions?: () => void;
+  showBalance?: boolean;
+}
 
 const EMOJI_OPTIONS = [
   "📱",
@@ -37,7 +64,7 @@ function SubCardComponent({
   onEdit,
   onLinkTransactions,
   showBalance = true,
-}) {
+}: SubCardProps) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     name: sub.name,
@@ -47,15 +74,23 @@ function SubCardComponent({
     currency: sub.currency || "UAH",
   });
 
-  const lastTx = getLastTxForSubscription(sub, transactions);
-  const { amount, currency } = getSubscriptionAmountMeta(sub, transactions);
-  const days = daysUntil(sub.billingDay);
+  const lastTx = getLastTxForSubscription(sub, [...transactions]);
+  const { amount, currency } = getSubscriptionAmountMeta(sub, [
+    ...transactions,
+  ]);
+  const days = daysUntil(Number(sub.billingDay) || 1);
   const veryClose = days <= 1;
   const soon = days <= 3;
 
   const saveEdit = () => {
     if (!form.name || !form.billingDay) return;
-    onEdit?.({ ...form, billingDay: Number(form.billingDay) });
+    onEdit?.({
+      name: form.name,
+      emoji: form.emoji,
+      keyword: form.keyword,
+      billingDay: Number(form.billingDay),
+      currency: form.currency,
+    });
     setEditing(false);
   };
 
@@ -161,7 +196,7 @@ function SubCardComponent({
     >
       <span className="text-2xl shrink-0 leading-none">{sub.emoji}</span>
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold truncate">{sub.name}</div>
+        <div className="text-style-label truncate">{sub.name}</div>
         <div
           className={cn(
             "text-xs mt-0.5",

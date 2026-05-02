@@ -6,9 +6,18 @@ import {
   statusColors,
 } from "@shared/charts/chartTheme";
 
+interface NetworthPoint {
+  month: string;
+  networth: number;
+}
+
+interface NetworthChartProps {
+  data?: readonly NetworthPoint[];
+}
+
 // SVG-графік нетворсу повністю детермінований вхідним `data`.
 // `memo` запобігає перерендеру при незв'язаних оновленнях стану Overview.
-function NetworthChartComponent({ data }) {
+function NetworthChartComponent({ data }: NetworthChartProps) {
   if (!data || data.length < 2) return null;
 
   const values = data.map((d) => d.networth);
@@ -22,8 +31,8 @@ function NetworthChartComponent({ data }) {
   const chartW = W - PAD.left - PAD.right;
   const chartH = H - PAD.top - PAD.bottom;
 
-  const px = (i) => PAD.left + (i / (data.length - 1)) * chartW;
-  const py = (v) => PAD.top + chartH - ((v - min) / range) * chartH;
+  const px = (i: number) => PAD.left + (i / (data.length - 1)) * chartW;
+  const py = (v: number) => PAD.top + chartH - ((v - min) / range) * chartH;
 
   const points = data.map((d, i) => `${px(i)},${py(d.networth)}`).join(" ");
   const areaPoints = [
@@ -35,7 +44,7 @@ function NetworthChartComponent({ data }) {
   const isPositive = values[values.length - 1] >= values[0];
   const color = isPositive ? statusColors.success : statusColors.danger;
 
-  const fmt = (v) => {
+  const fmt = (v: number) => {
     if (Math.abs(v) >= 1000) return `${Math.round(v / 1000)}к`;
     return `${Math.round(v)}`;
   };
@@ -54,7 +63,7 @@ function NetworthChartComponent({ data }) {
     "Лист",
     "Груд",
   ];
-  const monthLabel = (m) => {
+  const monthLabel = (m: string) => {
     const [, month] = m.split("-");
     return MONTH_UK[parseInt(month, 10) - 1] || m;
   };

@@ -4,6 +4,11 @@ import { Input } from "@shared/components/ui/Input";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseExpenseSpeech as parseExpenseVoice } from "@sergeant/shared";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
+import type {
+  Debt,
+  Receivable,
+} from "@sergeant/finyk-domain/domain/debtEngine";
+import type { ManualAsset, Subscription } from "../hooks/useStorage";
 
 // ---------------------------------------------------------------------------
 // Subscription form
@@ -22,7 +27,7 @@ export function SubscriptionForm({
     currency: string;
   };
   setNewSub: React.Dispatch<React.SetStateAction<typeof newSub>>;
-  setSubscriptions: (fn: (prev: unknown[]) => unknown[]) => void;
+  setSubscriptions: React.Dispatch<React.SetStateAction<Subscription[]>>;
   setShowSubForm: (v: boolean) => void;
 }) {
   return (
@@ -58,7 +63,11 @@ export function SubscriptionForm({
             if (newSub.name && newSub.billingDay) {
               setSubscriptions((ss) => [
                 ...ss,
-                { ...newSub, id: Date.now().toString() },
+                {
+                  ...newSub,
+                  id: Date.now().toString(),
+                  billingDay: Number(newSub.billingDay) || 0,
+                } as Subscription,
               ]);
               notifyFinykRoutineCalendarSync();
               setNewSub({
@@ -104,7 +113,7 @@ export function ReceivableForm({
     dueDate: string;
   };
   setNewRecv: React.Dispatch<React.SetStateAction<typeof newRecv>>;
-  setReceivables: (fn: (prev: unknown[]) => unknown[]) => void;
+  setReceivables: React.Dispatch<React.SetStateAction<Receivable[]>>;
   setShowRecvForm: (v: boolean) => void;
 }) {
   return (
@@ -143,7 +152,7 @@ export function ReceivableForm({
                   id: Date.now().toString(),
                   amount: Number(newRecv.amount),
                   linkedTxIds: [],
-                },
+                } as Receivable,
               ]);
               setNewRecv({
                 name: "",
@@ -184,7 +193,7 @@ export function AssetForm({
 }: {
   newAsset: { name: string; amount: string; currency: string; emoji: string };
   setNewAsset: React.Dispatch<React.SetStateAction<typeof newAsset>>;
-  setManualAssets: (fn: (prev: unknown[]) => unknown[]) => void;
+  setManualAssets: React.Dispatch<React.SetStateAction<ManualAsset[]>>;
   setShowAssetForm: (v: boolean) => void;
   assetFormRef: React.RefObject<HTMLElement | null>;
   assetNameInputRef: React.RefObject<HTMLInputElement | null>;
@@ -232,7 +241,14 @@ export function AssetForm({
           size="sm"
           onClick={() => {
             if (newAsset.name && newAsset.amount) {
-              setManualAssets((a) => [...a, newAsset]);
+              setManualAssets((a) => [
+                ...a,
+                {
+                  ...newAsset,
+                  id: Date.now().toString(),
+                  amount: Number(newAsset.amount),
+                } as ManualAsset,
+              ]);
               setNewAsset({
                 name: "",
                 amount: "",
@@ -276,7 +292,7 @@ export function DebtForm({
     dueDate: string;
   };
   setNewDebt: React.Dispatch<React.SetStateAction<typeof newDebt>>;
-  setManualDebts: (fn: (prev: unknown[]) => unknown[]) => void;
+  setManualDebts: React.Dispatch<React.SetStateAction<Debt[]>>;
   setShowDebtForm: (v: boolean) => void;
   debtFormRef: React.RefObject<HTMLElement | null>;
   debtNameInputRef: React.RefObject<HTMLInputElement | null>;
@@ -346,7 +362,7 @@ export function DebtForm({
                   id: Date.now().toString(),
                   totalAmount: Number(newDebt.totalAmount),
                   linkedTxIds: [],
-                },
+                } as Debt,
               ]);
               setNewDebt({
                 name: "",

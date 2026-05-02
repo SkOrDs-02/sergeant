@@ -10,6 +10,18 @@ import {
   calcFinykSpendingTotal,
   getMonoTotals,
 } from "../utils";
+import type { useStorage } from "../hooks/useStorage";
+import type { useUnifiedFinanceData } from "../hooks/useUnifiedFinanceData";
+
+type StorageLike = ReturnType<typeof useStorage>;
+type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
+
+interface OverviewProps {
+  mono: MergedMonoLike;
+  storage: StorageLike;
+  onNavigate?: (page: string) => void;
+  showBalance?: boolean;
+}
 
 import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
 import { getMonthlySummary } from "@sergeant/finyk-domain/domain/selectors";
@@ -31,17 +43,17 @@ import { NetworthSection } from "./overview/NetworthSection";
 import { BudgetAlertsList } from "./overview/BudgetAlertsList";
 import { PlannedFlowsCard } from "./overview/PlannedFlowsCard";
 
-const parseLocalDate = (isoDate) => {
+const parseLocalDate = (isoDate: string | null | undefined): Date => {
   const [y, m, d] = (isoDate || "").split("-").map(Number);
   return new Date(y, (m || 1) - 1, d || 1);
 };
-const formatDaysLeft = (days) => {
+const formatDaysLeft = (days: number): string => {
   if (days === 0) return "сьогодні";
   if (days === 1) return "завтра";
   if (days <= 3) return `через ${days} дн`;
   return `через ${days} дн`;
 };
-const getNextBillingDate = (billingDay, now) => {
+const getNextBillingDate = (billingDay: number, now: Date): Date => {
   const y = now.getFullYear(),
     m = now.getMonth();
   let d = new Date(y, m, Math.min(billingDay, new Date(y, m + 1, 0).getDate()));
@@ -54,7 +66,12 @@ const getNextBillingDate = (billingDay, now) => {
   return d;
 };
 
-export function Overview({ mono, storage, onNavigate, showBalance = true }) {
+export function Overview({
+  mono,
+  storage,
+  onNavigate,
+  showBalance = true,
+}: OverviewProps) {
   const {
     realTx,
     loadingTx,
@@ -106,20 +123,30 @@ export function Overview({ mono, storage, onNavigate, showBalance = true }) {
     daysPassed > 0 ? (spent / daysPassed) * daysInMonth : 0;
 
   const { balance: monoOnlyTotal, debt: monoTotalDebt } = useMemo(
-    () => getMonoTotals(accounts, hiddenAccounts),
+    () =>
+      getMonoTotals(
+        accounts.filter(
+          (a): a is Extract<typeof a, { _source: "monobank" }> =>
+            a._source === "monobank",
+        ),
+        hiddenAccounts,
+      ),
     [accounts, hiddenAccounts],
   );
   const monoTotal = monoOnlyTotal + privatTotal;
   const manualDebtTotal = useMemo(
     () =>
-      manualDebts.reduce((s, d) => s + calcDebtRemaining(d, transactions), 0),
+      manualDebts.reduce(
+        (s: number, d) => s + calcDebtRemaining(d, transactions),
+        0,
+      ),
     [manualDebts, transactions],
   );
   const totalDebt = monoTotalDebt + manualDebtTotal;
   const totalReceivable = useMemo(
     () =>
       receivables.reduce(
-        (s, r) => s + calcReceivableRemaining(r, transactions),
+        (s: number, r) => s + calcReceivableRemaining(r, transactions),
         0,
       ),
     [receivables, transactions],
@@ -128,7 +155,7 @@ export function Overview({ mono, storage, onNavigate, showBalance = true }) {
     () =>
       (manualAssets || [])
         .filter((a) => a.currency === "UAH")
-        .reduce((s, a) => s + Number(a.amount), 0),
+        .reduce((s: number, a) => s + Number(a.amount), 0),
     [manualAssets],
   );
   const networth = monoTotal + manualAssetTotal + totalReceivable - totalDebt;
@@ -212,7 +239,7 @@ export function Overview({ mono, storage, onNavigate, showBalance = true }) {
           sub,
           transactions,
         );
-        const dueDate = getNextBillingDate(sub.billingDay, now);
+        const dueDate = getNextBillingDate(Number(sub.billingDay) || 1, now);
         const daysLeft = Math.ceil(
           (dueDate.getTime() - todayStart.getTime()) / 86400000,
         );

@@ -99,7 +99,7 @@ const MonthNav = memo(function MonthNav({
     year: "numeric",
   });
 
-  const go = (delta) => {
+  const go = (delta: number) => {
     let m = month + delta;
     let y = year;
     if (m > 12) {
@@ -123,9 +123,7 @@ const MonthNav = memo(function MonthNav({
       >
         ‹
       </button>
-      <span className="text-sm font-semibold text-text capitalize">
-        {label}
-      </span>
+      <span className="text-style-label text-text capitalize">{label}</span>
       <button
         type="button"
         onClick={() => go(1)}
@@ -298,7 +296,7 @@ export function Analytics({ mono, storage }: AnalyticsProps) {
 
   // useCallback — передається у memo(MonthNav); стабільне посилання дозволяє
   // уникати перерендеру навігації при оновленні інших частин сторінки.
-  const handleMonthChange = useCallback((y, m) => {
+  const handleMonthChange = useCallback((y: number, m: number) => {
     setYear(y);
     setMonth(m);
   }, []);

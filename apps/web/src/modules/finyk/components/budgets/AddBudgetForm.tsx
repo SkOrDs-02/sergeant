@@ -1,9 +1,39 @@
 import { memo } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { cn } from "@shared/lib/cn";
 import { CategorySelector } from "../CategorySelector";
+
+export type BudgetFormType = "limit" | "goal";
+
+export type NewBudgetDraft = {
+  type: BudgetFormType;
+  categoryId?: string;
+  limit?: string;
+  emoji?: string;
+  name?: string;
+  targetAmount?: string;
+  savedAmount?: string;
+  targetDate?: string;
+};
+
+export interface ExpenseCategoryOption {
+  id: string;
+  label?: string;
+}
+
+interface AddBudgetFormProps {
+  formType: BudgetFormType;
+  newB: NewBudgetDraft;
+  onChangeFormType: (type: BudgetFormType) => void;
+  onChangeNewB: Dispatch<SetStateAction<NewBudgetDraft>>;
+  expenseCategoryList: readonly ExpenseCategoryOption[];
+  formError?: string | null;
+  onSubmit: () => void;
+  onCancel: () => void;
+}
 
 const GOAL_EMOJIS = [
   "🎯",
@@ -30,7 +60,7 @@ function AddBudgetFormComponent({
   formError,
   onSubmit,
   onCancel,
-}) {
+}: AddBudgetFormProps) {
   return (
     <Card radius="lg" padding="lg" className="space-y-3">
       <div className="flex gap-2">
@@ -40,7 +70,7 @@ function AddBudgetFormComponent({
             onChangeNewB((b) => ({ ...b, type: "limit" }));
           }}
           className={cn(
-            "flex-1 py-2 text-sm font-semibold rounded-xl border transition-colors",
+            "flex-1 py-2 text-style-label rounded-xl border transition-colors",
             formType === "limit"
               ? "bg-primary border-primary text-bg"
               : "border-line text-subtle",
@@ -54,7 +84,7 @@ function AddBudgetFormComponent({
             onChangeNewB((b) => ({ ...b, type: "goal" }));
           }}
           className={cn(
-            "flex-1 py-2 text-sm font-semibold rounded-xl border transition-colors",
+            "flex-1 py-2 text-style-label rounded-xl border transition-colors",
             formType === "goal"
               ? "bg-success-strong border-success-strong text-white"
               : "border-line text-subtle",

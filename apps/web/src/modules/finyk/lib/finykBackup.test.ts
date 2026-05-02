@@ -13,15 +13,15 @@ describe("normalizeFinykBackup", () => {
   });
 
   it("приймає повний v2", () => {
-    const full = {
+    const full: Record<string, unknown> = {
       version: FINYK_BACKUP_VERSION,
-      budgets: [],
-      subscriptions: [],
-      manualAssets: [],
-      manualDebts: [],
-      receivables: [],
-      hiddenAccounts: [],
-      hiddenTxIds: [],
+      budgets: [] as unknown[],
+      subscriptions: [] as unknown[],
+      manualAssets: [] as unknown[],
+      manualDebts: [] as unknown[],
+      receivables: [] as unknown[],
+      hiddenAccounts: [] as unknown[],
+      hiddenTxIds: [] as unknown[],
       monthlyPlan: { income: "", expense: "", savings: "" },
       txCategories: { a: "b" },
       txSplits: {},
@@ -45,13 +45,13 @@ describe("normalizeFinykBackup", () => {
 
 describe("normalizeFinykSyncPayload", () => {
   it("розгортає компактний v3 і валідує поля", () => {
-    const compact = {
+    const compact: Record<string, unknown> = {
       v: 3,
-      b: [],
-      s: [],
-      a: [],
-      d: [],
-      r: [],
+      b: [] as unknown[],
+      s: [] as unknown[],
+      a: [] as unknown[],
+      d: [] as unknown[],
+      r: [] as unknown[],
       mp: { income: "", expense: "", savings: "" },
       tc: { x: "y" },
       ts: {},

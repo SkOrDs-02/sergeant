@@ -3,7 +3,7 @@ import { cn } from "@shared/lib/cn";
 
 interface CategoryOption {
   id: string;
-  label: string;
+  label?: string;
 }
 
 interface CategorySelectorProps {

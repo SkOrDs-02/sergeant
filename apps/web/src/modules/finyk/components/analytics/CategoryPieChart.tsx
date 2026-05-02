@@ -3,7 +3,7 @@ import { chartHex } from "@sergeant/design-tokens/tokens";
 import { cn } from "@shared/lib/cn";
 
 // Convert a polar angle (0° = 12 o'clock, clockwise) to cartesian coordinates.
-function polarToXY(cx, cy, r, angleDeg) {
+function polarToXY(cx: number, cy: number, r: number, angleDeg: number) {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
 }
@@ -11,13 +11,20 @@ function polarToXY(cx, cy, r, angleDeg) {
 // Trim SVG path coordinates to 2 decimals. For a 160×160 viewBox this is
 // well below sub-pixel precision and keeps the inlined <path d="…"> data
 // compact (AGENTS.md §6.4).
-const f2 = (v) => v.toFixed(2);
+const f2 = (v: number) => v.toFixed(2);
 
 // Build a closed donut-sector path: outer arc (CW) + line to inner +
 // inner arc (CCW) + close. Using filled sectors avoids stroke-linecap
 // artifacts that make thick stroked arcs look polygonal at segment
 // boundaries.
-function describeSector(cx, cy, outerR, innerR, startDeg, endDeg) {
+function describeSector(
+  cx: number,
+  cy: number,
+  outerR: number,
+  innerR: number,
+  startDeg: number,
+  endDeg: number,
+) {
   const sweep = endDeg - startDeg;
   // Full ring: draw as two concentric circles via two half-sweeps so the
   // path is valid even when sweep === 360°.
@@ -205,7 +212,7 @@ function CategoryPieChartComponent({
                   </span>
                 );
               })()}
-              <span className="text-text tabular-nums text-xs font-medium shrink-0">
+              <span className="text-text tabular-nums text-style-caption shrink-0">
                 {arc.spent.toLocaleString("uk-UA")} ₴
               </span>
             </div>
@@ -219,7 +226,7 @@ function CategoryPieChartComponent({
             onClick={() => setShowAll((v) => !v)}
             aria-expanded={expanded}
             data-testid="finyk-analytics-donut-toggle"
-            className="px-3 py-1.5 rounded-full border border-line bg-panelHi text-xs font-medium text-text hover:border-muted/50 transition-colors"
+            className="px-3 py-1.5 rounded-full border border-line bg-panelHi text-style-caption text-text hover:border-muted/50 transition-colors"
           >
             {expanded ? "Згорнути ↑" : `Показати всі (${data.length}) ↓`}
           </button>

@@ -2,7 +2,30 @@ import { memo } from "react";
 import { cn } from "@shared/lib/cn";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { Icon } from "@shared/components/ui/Icon";
-import { TxRow } from "./TxRow";
+import { TxRow, type TxRowTx } from "./TxRow";
+import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
+import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
+import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
+
+interface TxListItemProps {
+  tx: TxRowTx;
+  rowIndex: number;
+  selectMode: boolean;
+  selected: boolean;
+  hidden: boolean;
+  overrideCatId?: string | null;
+  txSplits: TxSplitsMap;
+  accounts: readonly MonoAccount[];
+  hideAmount: boolean;
+  customCategories?: readonly CustomCategoryInput[];
+  onToggleSelect: (id: string) => void;
+  onSwipeHideTx?: (id: string) => void;
+  onSwipeDeleteManual?: (tx: TxRowTx) => void;
+  onEditManual?: (manualId?: string) => void;
+  onHideTx?: (id: string) => void;
+  onCatChange?: (id: string, categoryId: string) => void;
+  onSplitChange?: (id: string, splits: unknown) => void;
+}
 
 function TxListItemImpl({
   tx,
@@ -22,7 +45,7 @@ function TxListItemImpl({
   onHideTx,
   onCatChange,
   onSplitChange,
-}) {
+}: TxListItemProps) {
   const isManual = !!tx._manual;
   const canSwipeLeft = isManual
     ? typeof onSwipeDeleteManual === "function"

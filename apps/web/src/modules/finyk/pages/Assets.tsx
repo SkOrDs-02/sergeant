@@ -15,7 +15,7 @@ export function Assets({
       <AssetsTxPickerView
         txPicker={state.txPicker}
         setTxPicker={state.setTxPicker}
-        accounts={state.accounts}
+        accounts={state.accounts as never}
         transactions={state.transactions}
         monoDebtLinkedTxIds={state.monoDebtLinkedTxIds}
         toggleMonoDebtTx={state.toggleMonoDebtTx}

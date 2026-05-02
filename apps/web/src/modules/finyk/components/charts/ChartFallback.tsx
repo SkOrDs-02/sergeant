@@ -3,7 +3,7 @@ import { cn } from "@shared/lib/cn";
 
 // Shared skeleton block used as Suspense fallback while a lazy chart chunk
 // is being fetched. Keeps the dashboard layout stable during the load.
-export function ChartFallback({ className }) {
+export function ChartFallback({ className }: { className?: string }) {
   return (
     <Skeleton
       aria-hidden="true"

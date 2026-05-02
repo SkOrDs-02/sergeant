@@ -1,9 +1,13 @@
 import { useMemo, useState } from "react";
+import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/cn";
 import { Button } from "@shared/components/ui/Button";
 import { detectRecurring } from "@sergeant/finyk-domain/lib/recurringDetect";
 
-const CADENCE_LABEL = {
+type Cadence = "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
+type Confidence = "high" | "medium" | "low";
+
+const CADENCE_LABEL: Record<Cadence, string> = {
   weekly: "щотижня",
   biweekly: "раз на 2 тижні",
   monthly: "щомісяця",
@@ -11,19 +15,45 @@ const CADENCE_LABEL = {
   yearly: "щороку",
 };
 
-const CONFIDENCE_LABEL = {
+const CONFIDENCE_LABEL: Record<Confidence, string> = {
   high: "висока",
   medium: "середня",
   low: "низька",
 };
 
-const CONFIDENCE_DOT = {
+const CONFIDENCE_DOT: Record<Confidence, string> = {
   high: "bg-green-500",
   medium: "bg-amber-500",
   low: "bg-muted",
 };
 
-function fmtAmount(amount, currency) {
+type RecurringCandidate = {
+  key: string;
+  displayName?: string;
+  cadence: Cadence;
+  confidence: Confidence;
+  avgAmount: number;
+  currency?: string;
+  occurrences: number;
+  billingDay?: number;
+};
+
+type SubscriptionLite = {
+  id: string;
+  keyword?: string;
+  [extra: string]: unknown;
+};
+
+interface RecurringSuggestionsProps {
+  transactions?: readonly Transaction[];
+  subscriptions?: readonly SubscriptionLite[];
+  dismissedRecurring?: readonly string[];
+  excludedTxIds?: ReadonlySet<string> | readonly string[];
+  onAdd?: (candidate: RecurringCandidate) => void;
+  onDismiss?: (key: string) => void;
+}
+
+function fmtAmount(amount: number, currency: string | undefined) {
   const symbol = currency === "USD" ? "$" : "₴";
   const value = Math.round(amount * 100) / 100;
   return `${value.toLocaleString("uk-UA", { maximumFractionDigits: 2 })} ${symbol}`;
@@ -40,22 +70,22 @@ export function RecurringSuggestions({
   excludedTxIds,
   onAdd,
   onDismiss,
-}) {
+}: RecurringSuggestionsProps) {
   const [open, setOpen] = useState(false);
 
-  const candidates = useMemo(() => {
+  const candidates = useMemo<RecurringCandidate[]>(() => {
     if (!transactions || !transactions.length) return [];
-    const excluded =
+    const excluded: string[] =
       excludedTxIds instanceof Set
         ? Array.from(excludedTxIds)
         : Array.isArray(excludedTxIds)
-          ? excludedTxIds
+          ? [...excludedTxIds]
           : [];
-    return detectRecurring(transactions, {
-      subscriptions: subscriptions || [],
-      dismissedKeys: dismissedRecurring || [],
+    return detectRecurring(transactions as Transaction[], {
+      subscriptions: (subscriptions || []) as SubscriptionLite[],
+      dismissedKeys: (dismissedRecurring || []) as string[],
       excludedTxIds: excluded,
-    });
+    }) as RecurringCandidate[];
   }, [transactions, subscriptions, dismissedRecurring, excludedTxIds]);
 
   if (!candidates.length) return null;
@@ -71,7 +101,7 @@ export function RecurringSuggestions({
           <div>
             <div className="text-sm font-bold text-text">
               Можливі підписки
-              <span className="ml-2 text-xs font-normal text-muted">
+              <span className="ml-2 text-style-caption text-muted">
                 ({candidates.length})
               </span>
             </div>
@@ -102,7 +132,7 @@ export function RecurringSuggestions({
                       )}
                       title={`Впевненість: ${CONFIDENCE_LABEL[c.confidence]}`}
                     />
-                    <div className="text-sm font-semibold text-text truncate">
+                    <div className="text-style-label text-text truncate">
                       {c.displayName}
                     </div>
                   </div>

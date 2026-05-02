@@ -2,6 +2,11 @@ import { memo } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 
+interface FirstInsightBannerProps {
+  onSetBudget: () => void;
+  onDismiss: () => void;
+}
+
 /**
  * Одноразовий банер-підказка, що з'являється коли юзер вперше бачить Overview
  * з реальними даними (mono/manual-витрата). CTA веде у бюджети.
@@ -10,7 +15,7 @@ import { Icon } from "@shared/components/ui/Icon";
 const FirstInsightBannerImpl = function FirstInsightBanner({
   onSetBudget,
   onDismiss,
-}) {
+}: FirstInsightBannerProps) {
   return (
     <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 flex items-start gap-3">
       <div
@@ -20,7 +25,7 @@ const FirstInsightBannerImpl = function FirstInsightBanner({
         💡
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-semibold text-text">
+        <div className="text-style-label text-text">
           Ось куди йдуть твої гроші
         </div>
         <div className="text-xs text-muted mt-0.5">

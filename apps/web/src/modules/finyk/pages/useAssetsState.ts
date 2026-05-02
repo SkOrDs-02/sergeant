@@ -8,7 +8,7 @@ import {
 import { filterVisibleAccounts } from "@sergeant/finyk-domain/domain/assets/aggregates";
 import { computeFinykSchedule, startOfToday } from "../lib/upcomingSchedule";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
-import type { Tx } from "@sergeant/finyk-domain/domain/debtEngine";
+import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 
 // AI-NOTE: Props mirror the original Assets component signature from FinykApp.
 // The original component was untyped; we use loose structural types here to
@@ -40,8 +40,15 @@ type StorageSlice = Pick<
   | "customCategories"
 >;
 
+type AccountLike = Partial<MonoAccount> & {
+  id?: string;
+  balance?: number;
+  currencyCode?: number;
+  [extra: string]: unknown;
+};
+
 export type AssetsProps = {
-  mono: { accounts: MonoAccount[]; transactions: Tx[] };
+  mono: { accounts: AccountLike[]; transactions: readonly Transaction[] };
   storage: StorageSlice;
   showBalance?: boolean;
   initialOpenDebt?: boolean;
@@ -134,12 +141,13 @@ export function useAssetsState({
   const debtFormRef = useRef<HTMLElement | null>(null);
   const debtNameInputRef = useRef<HTMLInputElement | null>(null);
 
+  const monoAccounts = accounts as MonoAccount[];
   const { balance: monoTotal, debt: monoTotalDebt } = getMonoTotals(
-    accounts,
+    monoAccounts,
     hiddenAccounts,
   );
   const monoDebtAccounts = filterVisibleAccounts(
-    accounts,
+    monoAccounts,
     hiddenAccounts,
   ).filter((a) => isMonoDebt(a));
   const manualDebtTotal = manualDebts.reduce(
@@ -165,7 +173,7 @@ export function useAssetsState({
         subscriptions,
         manualDebts,
         receivables,
-        transactions,
+        transactions: [...transactions],
         todayStart,
       }),
     [subscriptions, manualDebts, receivables, transactions, todayStart],

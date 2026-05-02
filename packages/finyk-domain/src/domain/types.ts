@@ -65,7 +65,7 @@ export type BudgetType = "limit" | "goal";
 export interface Budget {
   id: string;
   type?: BudgetType;
-  limit: number;
+  limit?: number;
   categoryId?: string;
   label?: string;
   /** Для goal-бюджетів. */

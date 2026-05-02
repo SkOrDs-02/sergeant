@@ -35,7 +35,7 @@ function loadStoredCreds() {
   return { id, token };
 }
 
-function saveCreds(id, token, remember) {
+function saveCreds(id: string, token: string, remember: boolean) {
   if (remember) {
     writeRaw(PRIVAT_ID_KEY, id);
     writeRaw(PRIVAT_TOKEN_KEY, token);
@@ -76,7 +76,7 @@ function loadTxCache(): PrivatTxCache | null {
   return c;
 }
 
-function saveTxCache(txs) {
+function saveTxCache(txs: PrivatTx[]) {
   writeJSON(PRIVAT_CACHE_KEY, { txs, timestamp: Date.now() });
 }
 
@@ -91,18 +91,18 @@ function loadBalanceCache(): PrivatTx[] | null {
   return Array.isArray(c.accounts) ? c.accounts : null;
 }
 
-function saveBalanceCache(accounts) {
+function saveBalanceCache(accounts: PrivatTx[]) {
   writeJSON(PRIVAT_BALANCE_KEY, { accounts, timestamp: Date.now() });
 }
 
-function fmtDate(isoDate) {
+function fmtDate(isoDate: string) {
   if (!isoDate) return "";
   const [y, m, d] = isoDate.split("-");
   if (y && m && d) return `${d}-${m}-${y}`;
   return isoDate;
 }
 
-function toTimestamp(trandate, trantime) {
+function toTimestamp(trandate: string, trantime: string) {
   try {
     const [d, m, y] = (trandate || "").split(".");
     const dateStr = `${y}-${m}-${d}T${trantime || "00:00:00"}`;
@@ -112,10 +112,24 @@ function toTimestamp(trandate, trantime) {
   return Math.floor(Date.now() / 1000);
 }
 
-function normalizePrivatTransaction(row, accountId) {
-  const amountRaw = parseFloat(row.SUM) || 0;
+function normalizePrivatTransaction(
+  row: Record<string, unknown> & {
+    SUM?: string | number;
+    TRANDATE?: string;
+    TRANTIME?: string;
+    OSND?: string;
+    PRYZNACH?: string;
+    AUT_CNTR_NAM?: string;
+    REF?: string;
+    REFN?: string;
+    DOC_NUMBER?: string;
+    AUT_MY_ACC?: string;
+  },
+  accountId: string | null | undefined,
+) {
+  const amountRaw = parseFloat(String(row.SUM ?? "")) || 0;
   const amountKopecks = Math.round(amountRaw * 100);
-  const ts = toTimestamp(row.TRANDATE, row.TRANTIME);
+  const ts = toTimestamp(row.TRANDATE ?? "", row.TRANTIME ?? "");
   const description =
     row.OSND || row.PRYZNACH || row.AUT_CNTR_NAM || "Транзакція";
   const sourceId =
@@ -134,14 +148,25 @@ function normalizePrivatTransaction(row, accountId) {
   );
 }
 
-function normalizeAccount(raw) {
+function normalizeAccount(raw: Record<string, unknown>) {
+  const r = raw as {
+    acc?: string;
+    id?: string;
+    AUT_MY_ACC?: string;
+    balance?: string | number;
+    creditLimit?: string | number;
+    currency?: string;
+    alias?: string;
+  };
   return {
-    id: raw.acc || raw.id || raw.AUT_MY_ACC || "",
-    balance: Math.round((parseFloat(raw.balance) || 0) * 100),
-    creditLimit: Math.round((parseFloat(raw.creditLimit) || 0) * 100),
-    currency: raw.currency || "UAH",
+    id: r.acc || r.id || r.AUT_MY_ACC || "",
+    balance: Math.round((parseFloat(String(r.balance ?? "")) || 0) * 100),
+    creditLimit: Math.round(
+      (parseFloat(String(r.creditLimit ?? "")) || 0) * 100,
+    ),
+    currency: r.currency || "UAH",
     type: "privatbank",
-    alias: raw.alias || raw.acc || "",
+    alias: r.alias || r.acc || "",
     _source: "privatbank",
   };
 }
@@ -202,7 +227,11 @@ export function usePrivatbank(enabled = true) {
 
   const { id: storedId, token: storedToken } = credentials;
 
-  const fetchTransactions = async (merchantId, merchantToken, accs) => {
+  const fetchTransactions = async (
+    merchantId: string,
+    merchantToken: string,
+    accs: PrivatTx[],
+  ) => {
     setLoadingTx(true);
     setSyncState((s) => ({ ...s, status: "loading", source: "none" }));
     try {
@@ -230,18 +259,22 @@ export function usePrivatbank(enabled = true) {
             },
           );
 
-          const rows =
+          const rows: unknown[] =
             data?.StatementsResponse?.data ||
             data?.data ||
             (Array.isArray(data) ? (data as unknown[]) : []);
 
           const normalized = rows.map((r) =>
-            normalizePrivatTransaction(r, acc.id),
+            normalizePrivatTransaction(
+              r as Parameters<typeof normalizePrivatTransaction>[0],
+              acc.id,
+            ),
           );
           allTxs.push(...normalized);
         } catch (e) {
-          if (e.name === "AuthError") throw e;
-          console.warn(`[privat] failed for account ${acc.id}:`, e.message);
+          const err = e as { name?: string; message?: string };
+          if (err.name === "AuthError") throw e;
+          console.warn(`[privat] failed for account ${acc.id}:`, err.message);
         }
       }
 
@@ -260,14 +293,15 @@ export function usePrivatbank(enabled = true) {
         lastError: "",
       });
     } catch (e) {
-      if (e.name === "AuthError") {
+      const err = e as { name?: string; message?: string };
+      if (err.name === "AuthError") {
         setError(
           "Невірні credentials PrivatBank. Перевір Merchant ID та токен.",
         );
         setSyncState((s) => ({
           ...s,
           status: "error",
-          lastError: e.message,
+          lastError: err.message ?? "",
         }));
         return;
       }
@@ -279,23 +313,27 @@ export function usePrivatbank(enabled = true) {
           ...s,
           status: "partial",
           source: "cache",
-          lastError: e.message,
+          lastError: err.message ?? "",
         }));
       } else {
         setSyncState((s) => ({
           ...s,
           status: "error",
           source: "none",
-          lastError: e.message,
+          lastError: err.message ?? "",
         }));
       }
-      setError(e.message || "Помилка завантаження транзакцій PrivatBank");
+      setError(err.message || "Помилка завантаження транзакцій PrivatBank");
     } finally {
       setLoadingTx(false);
     }
   };
 
-  const connect = async (merchantId, merchantToken, remember = false) => {
+  const connect = async (
+    merchantId: string,
+    merchantToken: string,
+    remember = false,
+  ) => {
     setConnecting(true);
     setError("");
 
@@ -325,12 +363,14 @@ export function usePrivatbank(enabled = true) {
           },
         );
 
-        const rawAccs =
+        const rawAccs: unknown[] =
           data?.StatementsResponse?.data ||
           data?.data ||
           (Array.isArray(data) ? (data as unknown[]) : []);
 
-        accs = rawAccs.map(normalizeAccount);
+        accs = rawAccs.map((r) =>
+          normalizeAccount(r as Record<string, unknown>),
+        );
         saveBalanceCache(accs);
       }
 
@@ -353,12 +393,13 @@ export function usePrivatbank(enabled = true) {
         await fetchTransactions(cleanId, cleanToken, accs);
       }
     } catch (e) {
-      if (e.name === "AuthError") {
+      const err = e as { name?: string; message?: string };
+      if (err.name === "AuthError") {
         setError(
           "Невірні credentials PrivatBank. Перевір Merchant ID та токен.",
         );
       } else {
-        setError(e.message || "Помилка підключення до PrivatBank");
+        setError(err.message || "Помилка підключення до PrivatBank");
       }
     } finally {
       setConnecting(false);
@@ -377,16 +418,19 @@ export function usePrivatbank(enabled = true) {
           showRest: "true",
         },
       );
-      const rawAccs =
+      const rawAccs: unknown[] =
         data?.StatementsResponse?.data ||
         data?.data ||
-        (Array.isArray(data) ? data : []);
-      const accs = rawAccs.map(normalizeAccount);
+        (Array.isArray(data) ? (data as unknown[]) : []);
+      const accs = rawAccs.map((r) =>
+        normalizeAccount(r as Record<string, unknown>),
+      );
       setAccounts(accs);
       saveBalanceCache(accs);
       await fetchTransactions(storedId, storedToken, accs);
     } catch (e) {
-      setError(e.message || "Помилка оновлення PrivatBank");
+      const err = e as { message?: string };
+      setError(err.message || "Помилка оновлення PrivatBank");
     }
   };
 

@@ -44,7 +44,7 @@ describe("useMonoTransactions", () => {
   });
 
   it("fetches transactions from DB endpoint", async () => {
-    const txData = [
+    const txData: Array<Record<string, unknown>> = [
       {
         userId: "u1",
         monoAccountId: "acc1",
@@ -53,20 +53,20 @@ describe("useMonoTransactions", () => {
         amount: -1000,
         operationAmount: -1000,
         currencyCode: 980,
-        mcc: null,
-        originalMcc: null,
+        mcc: null as number | null,
+        originalMcc: null as number | null,
         hold: false,
         description: "test",
-        comment: null,
-        cashbackAmount: null,
-        commissionRate: null,
+        comment: null as string | null,
+        cashbackAmount: null as number | null,
+        commissionRate: null as number | null,
         balance: 100000,
-        receiptId: null,
-        invoiceId: null,
-        counterEdrpou: null,
-        counterIban: null,
-        counterName: null,
-        categorySlug: null,
+        receiptId: null as string | null,
+        invoiceId: null as string | null,
+        counterEdrpou: null as string | null,
+        counterIban: null as string | null,
+        counterName: null as string | null,
+        categorySlug: null as string | null,
         categoryOverridden: false,
         source: "webhook" as const,
         receivedAt: "2025-01-15T12:00:01Z",

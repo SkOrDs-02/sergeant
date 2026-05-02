@@ -1,38 +1,43 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useAssetsState } from "./useAssetsState";
+import { useAssetsState, type AssetsProps } from "./useAssetsState";
 
-function makeStorage(overrides = {}) {
-  return {
-    hiddenAccounts: [],
-    manualAssets: [],
+type StorageArg = AssetsProps["storage"];
+type MonoArg = AssetsProps["mono"];
+
+function makeStorage(overrides: Record<string, unknown> = {}): StorageArg {
+  const base = {
+    hiddenAccounts: [] as string[],
+    manualAssets: [] as Array<Record<string, unknown>>,
     setManualAssets: vi.fn(),
-    manualDebts: [],
+    manualDebts: [] as Array<Record<string, unknown>>,
     setManualDebts: vi.fn(),
-    receivables: [],
+    receivables: [] as Array<Record<string, unknown>>,
     setReceivables: vi.fn(),
     toggleLinkedTx: vi.fn(),
-    subscriptions: [],
+    subscriptions: [] as Array<Record<string, unknown>>,
     setSubscriptions: vi.fn(),
     updateSubscription: vi.fn(),
     addSubscriptionFromRecurring: vi.fn(),
-    dismissedRecurring: [],
+    dismissedRecurring: [] as string[],
     dismissRecurring: vi.fn(),
     excludedTxIds: new Set<string>(),
     monoDebtLinkedTxIds: {},
     toggleMonoDebtTx: vi.fn(),
-    customCategories: [],
+    customCategories: [] as Array<Record<string, unknown>>,
     ...overrides,
   };
+  return base as unknown as StorageArg;
 }
 
-function makeMono(overrides = {}) {
-  return {
-    accounts: [],
-    transactions: [],
+function makeMono(overrides: Record<string, unknown> = {}): MonoArg {
+  const base = {
+    accounts: [] as Array<Record<string, unknown>>,
+    transactions: [] as Array<Record<string, unknown>>,
     ...overrides,
   };
+  return base as unknown as MonoArg;
 }
 
 describe("useAssetsState", () => {

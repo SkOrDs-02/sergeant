@@ -260,10 +260,20 @@ export interface LimitFormInput {
   [k: string]: unknown;
 }
 
+export interface LimitFormNormalized extends LimitFormInput {
+  type: "limit";
+  limit: number;
+}
+
+export interface LimitFormResult {
+  error: string | null;
+  normalized: LimitFormNormalized | null;
+}
+
 export function validateLimitBudgetForm(
   form: LimitFormInput = {},
   existingBudgets: readonly Budget[] = [],
-) {
+): LimitFormResult {
   if (!form.categoryId) {
     return { error: "Оберіть категорію", normalized: null };
   }
@@ -291,7 +301,20 @@ export interface GoalFormInput {
   [k: string]: unknown;
 }
 
-export function validateGoalBudgetForm(form: GoalFormInput = {}) {
+export interface GoalFormNormalized extends GoalFormInput {
+  type: "goal";
+  targetAmount: number;
+  savedAmount: number;
+}
+
+export interface GoalFormResult {
+  error: string | null;
+  normalized: GoalFormNormalized | null;
+}
+
+export function validateGoalBudgetForm(
+  form: GoalFormInput = {},
+): GoalFormResult {
   if (!form.name || !String(form.name).trim()) {
     return { error: "Вкажіть назву цілі", normalized: null };
   }

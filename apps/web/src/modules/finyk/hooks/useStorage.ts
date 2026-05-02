@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { DEFAULT_SUBSCRIPTIONS, INTERNAL_TRANSFER_ID } from "../constants";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import {
@@ -9,7 +10,13 @@ import {
   normalizeFinykBackup,
   normalizeFinykSyncPayload,
   FINYK_BACKUP_VERSION,
+  type FinykBackup,
 } from "../lib/finykBackup";
+import type {
+  Debt,
+  Receivable,
+} from "@sergeant/finyk-domain/domain/debtEngine";
+import type { TxSplit, TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 import { downloadJson, toLocalISODate } from "@sergeant/shared";
 import {
   readJSON,
@@ -18,7 +25,62 @@ import {
   finykStorageManager,
 } from "../lib/finykStorage";
 
-function reportSilentError(scope, error) {
+export type Subscription = {
+  id: string;
+  name: string;
+  emoji: string;
+  keyword: string;
+  billingDay: number;
+  currency: string;
+  linkedTxId?: string;
+  [extra: string]: unknown;
+};
+type RecurringCandidate = {
+  key: string;
+  displayName?: string;
+  billingDay?: number;
+  currency?: string;
+  sampleTxIds?: string[];
+};
+type Budget = {
+  id: string;
+  type?: "limit" | "goal";
+  categoryId?: string;
+  [extra: string]: unknown;
+};
+export type ManualAsset = {
+  id: string;
+  amount: number;
+  emoji?: string;
+  name?: string;
+  currency?: string;
+  linkedTxIds?: string[];
+  [extra: string]: unknown;
+};
+type ManualExpense = {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  category: string;
+};
+type CustomCategory = {
+  id: string;
+  label: string;
+  color?: string;
+  icon?: string;
+  parentId?: string;
+};
+type TxCategoriesMap = Record<string, string | undefined>;
+type MonoDebtLinkedMap = Record<string, string[]>;
+type MonthlyPlan = {
+  income: string | number;
+  expense: string | number;
+  savings: string | number;
+};
+type NetworthEntry = { month: string; networth: number };
+
+function reportSilentError(scope: string, error: unknown) {
   console.warn(`[finyk] ${scope}`, error);
 }
 
@@ -31,7 +93,7 @@ try {
 // Це дозволяє тихо відкинути пошкоджений JSON у localStorage (наприклад,
 // коли ключ випадково був перезаписаний іншим модулем або ручною правкою)
 // і ввімкнути модуль з дефолтом, замість того щоб падати на мапах/фільтрах.
-function matchesShape(value, defaultVal) {
+function matchesShape(value: unknown, defaultVal: unknown): boolean {
   if (Array.isArray(defaultVal)) return Array.isArray(value);
   if (defaultVal && typeof defaultVal === "object") {
     return value != null && typeof value === "object" && !Array.isArray(value);
@@ -39,14 +101,17 @@ function matchesShape(value, defaultVal) {
   return true;
 }
 
-function usePersist(key, defaultVal) {
-  const [val, setVal] = useState(() => {
+function usePersist<T>(
+  key: string,
+  defaultVal: T,
+): [T, Dispatch<SetStateAction<T>>] {
+  const [val, setVal] = useState<T>(() => {
     const stored = readJSON(key, defaultVal);
     if (!matchesShape(stored, defaultVal)) {
       reportSilentError(`usePersist shape mismatch ("${key}")`, stored);
       return defaultVal;
     }
-    return stored;
+    return stored as T;
   });
   useEffect(() => {
     writeJSONDebounced(key, val);
@@ -68,44 +133,64 @@ export function useStorage({
     error: (msg: string) => number;
   };
 } = {}) {
-  const defaultMonthlyPlan = { income: "", expense: "", savings: "" };
-  const [hiddenAccounts, setHiddenAccounts] = usePersist("finyk_hidden", []);
-  const [budgets, setBudgets] = usePersist("finyk_budgets", []);
-  const [subscriptions, setSubscriptions] = usePersist(
-    "finyk_subs",
-    DEFAULT_SUBSCRIPTIONS,
+  const defaultMonthlyPlan: MonthlyPlan = {
+    income: "",
+    expense: "",
+    savings: "",
+  };
+  const [hiddenAccounts, setHiddenAccounts] = usePersist<string[]>(
+    "finyk_hidden",
+    [],
   );
-  const [manualAssets, setManualAssets] = usePersist("finyk_assets", []);
-  const [manualDebts, setManualDebts] = usePersist("finyk_debts", []);
-  const [receivables, setReceivables] = usePersist("finyk_recv", []);
-  const [hiddenTxIds, setHiddenTxIds] = usePersist("finyk_hidden_txs", []);
-  const [monthlyPlan, setMonthlyPlan] = usePersist(
+  const [budgets, setBudgets] = usePersist<Budget[]>("finyk_budgets", []);
+  const [subscriptions, setSubscriptions] = usePersist<Subscription[]>(
+    "finyk_subs",
+    DEFAULT_SUBSCRIPTIONS as Subscription[],
+  );
+  const [manualAssets, setManualAssets] = usePersist<ManualAsset[]>(
+    "finyk_assets",
+    [],
+  );
+  const [manualDebts, setManualDebts] = usePersist<Debt[]>("finyk_debts", []);
+  const [receivables, setReceivables] = usePersist<Receivable[]>(
+    "finyk_recv",
+    [],
+  );
+  const [hiddenTxIds, setHiddenTxIds] = usePersist<string[]>(
+    "finyk_hidden_txs",
+    [],
+  );
+  const [monthlyPlan, setMonthlyPlan] = usePersist<MonthlyPlan>(
     "finyk_monthly_plan",
     defaultMonthlyPlan,
   );
-  const [txCategories, setTxCategories] = usePersist("finyk_tx_cats", {});
-  const [monoDebtLinkedTxIds, setMonoDebtLinkedTxIds] = usePersist(
-    "finyk_mono_debt_linked",
+  const [txCategories, setTxCategories] = usePersist<TxCategoriesMap>(
+    "finyk_tx_cats",
     {},
   );
-  const [networthHistory, setNetworthHistory] = usePersist(
+  const [monoDebtLinkedTxIds, setMonoDebtLinkedTxIds] =
+    usePersist<MonoDebtLinkedMap>("finyk_mono_debt_linked", {});
+  const [networthHistory, setNetworthHistory] = usePersist<NetworthEntry[]>(
     "finyk_networth_history",
     [],
   );
-  const [txSplits, setTxSplits] = usePersist("finyk_tx_splits", {});
-  const [customCategories, setCustomCategories] = usePersist(
+  const [txSplits, setTxSplits] = usePersist<TxSplitsMap>(
+    "finyk_tx_splits",
+    {},
+  );
+  const [customCategories, setCustomCategories] = usePersist<CustomCategory[]>(
     "finyk_custom_cats_v1",
     [],
   );
-  const [manualExpenses, setManualExpenses] = usePersist(
+  const [manualExpenses, setManualExpenses] = usePersist<ManualExpense[]>(
     "finyk_manual_expenses_v1",
     [],
   );
-  const [excludedStatTxIds, setExcludedStatTxIds] = usePersist(
+  const [excludedStatTxIds, setExcludedStatTxIds] = usePersist<string[]>(
     "finyk_excluded_stat_txs",
     [],
   );
-  const [dismissedRecurring, setDismissedRecurring] = usePersist(
+  const [dismissedRecurring, setDismissedRecurring] = usePersist<string[]>(
     "finyk_rec_dismissed",
     [],
   );
@@ -117,8 +202,10 @@ export function useStorage({
     }) ?? { date: null, value: null },
   );
 
-  const addManualExpense = (expense) => {
-    const entry = {
+  const addManualExpense = (
+    expense: Partial<ManualExpense> & { id?: unknown },
+  ) => {
+    const entry: ManualExpense = {
       id: expense?.id != null ? String(expense.id) : Date.now().toString(),
       date: expense.date || new Date().toISOString(),
       description: expense.description || "",
@@ -150,12 +237,15 @@ export function useStorage({
     return entry;
   };
 
-  const removeManualExpense = (id) => {
+  const removeManualExpense = (id: string) => {
     setManualExpenses((prev) => prev.filter((e) => e.id !== id));
     trackEvent(ANALYTICS_EVENTS.EXPENSE_DELETED, { source: "manual" });
   };
 
-  const editManualExpense = (id, patch) => {
+  const editManualExpense = (
+    id: string,
+    patch: Partial<ManualExpense> | null | undefined,
+  ) => {
     const pid = String(id);
     setManualExpenses((prev) =>
       (prev || []).map((e) => {
@@ -172,12 +262,12 @@ export function useStorage({
     );
   };
 
-  const toggleHideAccount = (id) =>
+  const toggleHideAccount = (id: string) =>
     setHiddenAccounts((h) =>
       h.includes(id) ? h.filter((x) => x !== id) : [...h, id],
     );
 
-  const toggleMonoDebtTx = (accountId, txId) => {
+  const toggleMonoDebtTx = (accountId: string, txId: string) => {
     setMonoDebtLinkedTxIds((prev) => {
       const linked = prev[accountId] || [];
       return {
@@ -189,33 +279,51 @@ export function useStorage({
     });
   };
 
-  const toggleLinkedTx = (id, txId, type) => {
-    const setter = type === "debt" ? setManualDebts : setReceivables;
-    setter((items) =>
-      items.map((d) => {
-        if (d.id !== id) return d;
-        const linked = d.linkedTxIds || [];
-        return {
-          ...d,
-          linkedTxIds: linked.includes(txId)
-            ? linked.filter((x) => x !== txId)
-            : [...linked, txId],
-        };
-      }),
-    );
+  const toggleLinkedTx = (
+    id: string,
+    txId: string,
+    type: "debt" | "receivable",
+  ) => {
+    if (type === "debt") {
+      setManualDebts((items) =>
+        items.map((d) => {
+          if (d.id !== id) return d;
+          const linked = d.linkedTxIds || [];
+          return {
+            ...d,
+            linkedTxIds: linked.includes(txId)
+              ? linked.filter((x) => x !== txId)
+              : [...linked, txId],
+          };
+        }),
+      );
+    } else {
+      setReceivables((items) =>
+        items.map((r) => {
+          if (r.id !== id) return r;
+          const linked = r.linkedTxIds || [];
+          return {
+            ...r,
+            linkedTxIds: linked.includes(txId)
+              ? linked.filter((x) => x !== txId)
+              : [...linked, txId],
+          };
+        }),
+      );
+    }
   };
 
-  const hideTx = (id) =>
+  const hideTx = (id: string) =>
     setHiddenTxIds((ids) =>
       ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id],
     );
 
-  const toggleExcludeFromStats = (id) =>
+  const toggleExcludeFromStats = (id: string) =>
     setExcludedStatTxIds((ids) =>
       ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id],
     );
 
-  const setSplitTx = (txId, splits) => {
+  const setSplitTx = (txId: string, splits: TxSplit[] | null | undefined) => {
     setTxSplits((prev) =>
       splits && splits.length >= 2
         ? { ...prev, [txId]: splits }
@@ -223,7 +331,7 @@ export function useStorage({
     );
   };
 
-  const dismissRecurring = (key) => {
+  const dismissRecurring = (key: string) => {
     const trimmed = String(key || "").trim();
     if (!trimmed) return;
     setDismissedRecurring((prev) =>
@@ -231,7 +339,7 @@ export function useStorage({
     );
   };
 
-  const restoreDismissedRecurring = (key) => {
+  const restoreDismissedRecurring = (key: string | null | undefined) => {
     if (!key) {
       setDismissedRecurring([]);
       return;
@@ -243,7 +351,9 @@ export function useStorage({
    * Створити підписку з кандидата автодетекції. Повертає новий sub.
    * @param {object} candidate — елемент з detectRecurring(...)
    */
-  const addSubscriptionFromRecurring = (candidate) => {
+  const addSubscriptionFromRecurring = (
+    candidate: RecurringCandidate | null | undefined,
+  ) => {
     if (!candidate || !candidate.key) return null;
     const id = `auto_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
     const sub: {
@@ -273,11 +383,14 @@ export function useStorage({
     return sub;
   };
 
-  const updateSubscription = (subId, patch) => {
+  const updateSubscription = (
+    subId: string,
+    patch: Record<string, unknown>,
+  ) => {
     setSubscriptions((subs) =>
       subs.map((s) => {
         if (s.id !== subId) return s;
-        const next = { ...s };
+        const next: Subscription = { ...s };
         for (const [k, v] of Object.entries(patch)) {
           if (v === null || v === undefined) delete next[k];
           else next[k] = v;
@@ -288,7 +401,7 @@ export function useStorage({
     notifyFinykRoutineCalendarSync();
   };
 
-  const overrideCategory = (txId, catId) => {
+  const overrideCategory = (txId: string, catId: string | null | undefined) => {
     setTxCategories((prev) =>
       catId
         ? { ...prev, [txId]: catId }
@@ -325,7 +438,7 @@ export function useStorage({
     });
   };
 
-  const editCustomCategory = (id, patch) => {
+  const editCustomCategory = (id: string, patch: Partial<CustomCategory>) => {
     setCustomCategories((prev) =>
       prev.map((c) => {
         if (c.id !== id) return c;
@@ -341,7 +454,7 @@ export function useStorage({
     );
   };
 
-  const removeCustomCategory = (id) => {
+  const removeCustomCategory = (id: string) => {
     setCustomCategories((prev) => prev.filter((c) => c.id !== id));
     setTxCategories((prev) => {
       const next = { ...prev };
@@ -351,15 +464,15 @@ export function useStorage({
       return next;
     });
     setTxSplits((prev) => {
-      const out = { ...prev };
+      const out: TxSplitsMap = { ...prev };
       for (const txId of Object.keys(out)) {
         const splits = out[txId];
         if (!Array.isArray(splits)) continue;
-        const nextSplits = splits.map((s) =>
+        const nextSplits: TxSplit[] = splits.map((s) =>
           s.categoryId === id ? { ...s, categoryId: "other" } : s,
         );
         const multi = nextSplits.filter(
-          (s) => s.categoryId && (parseFloat(s.amount) || 0) > 0,
+          (s) => s.categoryId && (Number(s.amount) || 0) > 0,
         );
         if (multi.length >= 2) out[txId] = nextSplits;
         else delete out[txId];
@@ -371,22 +484,27 @@ export function useStorage({
     );
   };
 
-  const applyData = (data) => {
-    if (data.budgets) setBudgets(data.budgets);
-    if (data.subscriptions) setSubscriptions(data.subscriptions);
-    if (data.manualAssets) setManualAssets(data.manualAssets);
-    if (data.manualDebts) setManualDebts(data.manualDebts);
-    if (data.receivables) setReceivables(data.receivables);
-    if (data.hiddenAccounts) setHiddenAccounts(data.hiddenAccounts);
-    if (data.hiddenTxIds) setHiddenTxIds(data.hiddenTxIds);
-    if (data.monthlyPlan) setMonthlyPlan(data.monthlyPlan);
-    if (data.txCategories) setTxCategories(data.txCategories);
-    if (data.txSplits) setTxSplits(data.txSplits);
+  const applyData = (data: FinykBackup) => {
+    if (data.budgets) setBudgets(data.budgets as Budget[]);
+    if (data.subscriptions)
+      setSubscriptions(data.subscriptions as Subscription[]);
+    if (data.manualAssets) setManualAssets(data.manualAssets as ManualAsset[]);
+    if (data.manualDebts) setManualDebts(data.manualDebts as Debt[]);
+    if (data.receivables) setReceivables(data.receivables as Receivable[]);
+    if (data.hiddenAccounts) setHiddenAccounts(data.hiddenAccounts as string[]);
+    if (data.hiddenTxIds) setHiddenTxIds(data.hiddenTxIds as string[]);
+    if (data.monthlyPlan) setMonthlyPlan(data.monthlyPlan as MonthlyPlan);
+    if (data.txCategories)
+      setTxCategories(data.txCategories as TxCategoriesMap);
+    if (data.txSplits) setTxSplits(data.txSplits as TxSplitsMap);
     if (data.monoDebtLinkedTxIds)
-      setMonoDebtLinkedTxIds(data.monoDebtLinkedTxIds);
-    if (data.networthHistory) setNetworthHistory(data.networthHistory);
-    if (data.customCategories) setCustomCategories(data.customCategories);
-    if (data.dismissedRecurring) setDismissedRecurring(data.dismissedRecurring);
+      setMonoDebtLinkedTxIds(data.monoDebtLinkedTxIds as MonoDebtLinkedMap);
+    if (data.networthHistory)
+      setNetworthHistory(data.networthHistory as NetworthEntry[]);
+    if (data.customCategories)
+      setCustomCategories(data.customCategories as CustomCategory[]);
+    if (data.dismissedRecurring)
+      setDismissedRecurring(data.dismissedRecurring as string[]);
     notifyFinykRoutineCalendarSync();
   };
 
@@ -412,8 +530,8 @@ export function useStorage({
   };
 
   /** @returns {Promise<boolean>} */
-  const importData = (file) =>
-    new Promise((resolve) => {
+  const importData = (file: Blob): Promise<boolean> =>
+    new Promise<boolean>((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
@@ -482,13 +600,13 @@ export function useStorage({
 
   // ID транзакцій прив'язаних до пасивів — для відстеження погашення в Assets
   // НЕ виключаємо зі статистики, щоб вони відображались у категорії "Борги та кредити"
-  const debtLinkedTxIds = new Set([
+  const debtLinkedTxIds = new Set<string>([
     ...manualDebts.flatMap((d) => d.linkedTxIds || []),
     ...Object.values(monoDebtLinkedTxIds).flat(),
   ]);
 
   // Зі статистики виключаємо: приховані, внутрішні перекази, дебіторку (щоб повернення боргу не рахувалось як дохід)
-  const excludedTxIds = new Set([
+  const excludedTxIds = new Set<string>([
     ...hiddenTxIds,
     ...transferTxIds,
     ...receivables.flatMap((r) => r.linkedTxIds || []),
@@ -537,7 +655,7 @@ export function useStorage({
     toggleMonoDebtTx,
     debtLinkedTxIds,
     networthHistory,
-    saveNetworthSnapshot: (networth) => {
+    saveNetworthSnapshot: (networth: number) => {
       const today = toLocalISODate();
       const rounded = Math.round(networth);
       const snap = networthSnapshotRef.current;

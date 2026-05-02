@@ -1,6 +1,24 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/cn";
 import { calcCategorySpent, resolveExpenseCategoryMeta } from "../../utils";
+import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
+import type {
+  TxSplitsMap,
+  Transaction,
+} from "@sergeant/finyk-domain/domain/types";
+
+interface BudgetAlertsListProps {
+  budgetAlerts: ReadonlyArray<{
+    id: string;
+    categoryId: string;
+    limit: number;
+    [extra: string]: unknown;
+  }>;
+  statTx: readonly Transaction[];
+  txCategories: Record<string, string | undefined>;
+  txSplits: TxSplitsMap;
+  customCategories?: readonly CustomCategoryInput[];
+}
 
 /**
  * Список плашок-алертів про перевищення 60%/100% ліміту бюджету.
@@ -12,7 +30,7 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
   txCategories,
   txSplits,
   customCategories,
-}) {
+}: BudgetAlertsListProps) {
   if (budgetAlerts.length === 0) return null;
 
   return (
@@ -37,7 +55,7 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
                 : "bg-warning/8 border-warning/20",
             )}
           >
-            <span className="text-sm font-medium">
+            <span className="text-style-label">
               {cat?.label || b.categoryId}
             </span>
             <span

@@ -7,11 +7,17 @@
  * Повертає об'єкт зі стабільними Tailwind-класами. Змінювати лейбли/класи —
  * тільки тут.
  */
+interface ComputePulseStyleArgs {
+  hasExpensePlan: boolean;
+  spendPlanRatio: number;
+  dayBudget: number;
+}
+
 export function computePulseStyle({
   hasExpensePlan,
   spendPlanRatio,
   dayBudget,
-}) {
+}: ComputePulseStyleArgs) {
   if (hasExpensePlan) {
     if (spendPlanRatio > 0.75) {
       return {

@@ -1,7 +1,21 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/cn";
 
-function formatTs(ts) {
+interface SyncStateLike {
+  status?: "idle" | "loading" | "success" | "error" | "partial" | string;
+  lastError?: string;
+  [extra: string]: unknown;
+}
+
+interface SyncStatusBadgeProps {
+  syncState?: SyncStateLike | null;
+  lastUpdated?: string | number | Date | null;
+  error?: string | null;
+  onRetry?: () => void;
+  loading?: boolean;
+}
+
+function formatTs(ts: SyncStatusBadgeProps["lastUpdated"]) {
   if (!ts) return null;
   const d = new Date(ts);
   if (Number.isNaN(d.getTime())) return null;
@@ -18,7 +32,7 @@ function SyncStatusBadgeComponent({
   error,
   onRetry,
   loading,
-}) {
+}: SyncStatusBadgeProps) {
   const status = syncState?.status || "idle";
   const isError = status === "error";
   const isPartial = status === "partial";

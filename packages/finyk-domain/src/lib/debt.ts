@@ -19,7 +19,10 @@ export {
 
 // Скільки сплачено по боргу (я винен):
 // тільки від'ємні транзакції (витрати) = погашення боргу
-export function getDebtPaid(debt: Debt, transactions: DebtTx[] = []): number {
+export function getDebtPaid(
+  debt: Debt,
+  transactions: readonly DebtTx[] = [],
+): number {
   return debtEngineGetDebtPaid(debt, transactions);
 }
 
@@ -27,7 +30,7 @@ export function getDebtPaid(debt: Debt, transactions: DebtTx[] = []): number {
 // тільки позитивні транзакції (надходження) = погашення боргу
 export function getRecvPaid(
   recv: Receivable,
-  transactions: DebtTx[] = [],
+  transactions: readonly DebtTx[] = [],
 ): number {
   return getReceivablePaid(recv, transactions);
 }

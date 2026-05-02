@@ -3,11 +3,17 @@ import { Card } from "@shared/components/ui/Card";
 import { NetworthChart } from "../../components/charts/lazy";
 import { ChartFallback } from "../../components/charts/ChartFallback";
 
+interface NetworthSectionProps {
+  networthHistory: ReadonlyArray<{ month: string; networth: number }>;
+}
+
 /**
  * Секція графіка нетворсу. Показує графік якщо історія містить ≥2 точки,
  * інакше — placeholder-картку з підказкою.
  */
-const NetworthSectionImpl = function NetworthSection({ networthHistory }) {
+const NetworthSectionImpl = function NetworthSection({
+  networthHistory,
+}: NetworthSectionProps) {
   if (networthHistory.length >= 2) {
     return (
       <Card
@@ -17,7 +23,7 @@ const NetworthSectionImpl = function NetworthSection({ networthHistory }) {
         className="px-5 pt-4 pb-3"
       >
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-medium text-subtle">
+          <span className="text-style-caption text-subtle">
             Динаміка нетворсу
           </span>
           <span className="text-xs text-muted">

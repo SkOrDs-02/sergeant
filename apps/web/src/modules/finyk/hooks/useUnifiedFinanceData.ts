@@ -1,7 +1,20 @@
 import { useMemo, useCallback } from "react";
 import { dedupeAndSortTransactions } from "@sergeant/finyk-domain/domain/transactions";
+import type { useMonobank } from "./useMonobank";
+import type { usePrivatbank } from "./usePrivatbank";
 
-export function useUnifiedFinanceData({ mono, privat }) {
+type MonoLike = ReturnType<typeof useMonobank>;
+type PrivatLike = ReturnType<typeof usePrivatbank>;
+
+interface UseUnifiedFinanceDataArgs {
+  mono: MonoLike;
+  privat: PrivatLike;
+}
+
+export function useUnifiedFinanceData({
+  mono,
+  privat,
+}: UseUnifiedFinanceDataArgs) {
   const mergedRefresh = useCallback(async () => {
     const tasks = [mono.refresh()];
     if (privat.connected) tasks.push(privat.refresh());
@@ -13,17 +26,25 @@ export function useUnifiedFinanceData({ mono, privat }) {
     const monoTxs = mono.realTx || [];
     const combined = dedupeAndSortTransactions([...monoTxs, ...privatTxs]);
     const privatTotal = (privat.accounts || [])
-      .filter((a) => a.currency === "UAH" || a.currency === "980")
-      .reduce((s, a) => s + (a.balance || 0) / 100, 0);
+      .filter(
+        (a: { currency?: string | number }) =>
+          a.currency === "UAH" || a.currency === "980",
+      )
+      .reduce(
+        (s: number, a: { balance?: number }) => s + (a.balance || 0) / 100,
+        0,
+      );
 
     const monoAccounts = (mono.accounts || []).map((a) => ({
       ...a,
-      _source: "monobank",
+      _source: "monobank" as const,
     }));
-    const privatAccounts = (privat.accounts || []).map((a) => ({
-      ...a,
-      _source: "privatbank",
-    }));
+    const privatAccounts = (privat.accounts || []).map(
+      (a: Record<string, unknown>) => ({
+        ...a,
+        _source: "privatbank" as const,
+      }),
+    );
     const allAccounts = [...monoAccounts, ...privatAccounts];
 
     const hasPrivatError = !!privat.error;
@@ -48,13 +69,15 @@ export function useUnifiedFinanceData({ mono, privat }) {
       lastError: combinedError,
     };
 
+    const monoWithBalance = mono as MonoLike & { totalBalance?: number };
     return {
       ...mono,
       refresh: mergedRefresh,
       realTx: combined,
       transactions: combined,
       accounts: allAccounts,
-      totalBalance: (mono.totalBalance || 0) + privatTotal,
+      totalBalance: (monoWithBalance.totalBalance || 0) + privatTotal,
+      privatTotal,
       error: combinedError,
       syncState: combinedSyncState,
       loadingTx: mono.loadingTx || privat.loadingTx,

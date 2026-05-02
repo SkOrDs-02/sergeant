@@ -2,6 +2,18 @@ import { memo } from "react";
 import { cn } from "@shared/lib/cn";
 import { computePulseStyle } from "./pulseStyle";
 
+interface HeroCardProps {
+  networth: number;
+  monoTotal: number;
+  totalDebt: number;
+  daysInMonth: number;
+  daysPassed: number;
+  dayBudget?: number;
+  hasExpensePlan?: boolean;
+  spendPlanRatio?: number;
+  showBalance?: boolean;
+}
+
 /**
  * Top hero of the Огляд page. Двоповерхова: компактний рядок з нетворсом
  * та розбивкою (картки/борги) зверху, велике число денного бюджету знизу
@@ -20,7 +32,7 @@ const HeroCardImpl = function HeroCard({
   hasExpensePlan = false,
   spendPlanRatio = 0,
   showBalance = true,
-}) {
+}: HeroCardProps) {
   const { accentLeft, color, statusText } = computePulseStyle({
     hasExpensePlan,
     spendPlanRatio,

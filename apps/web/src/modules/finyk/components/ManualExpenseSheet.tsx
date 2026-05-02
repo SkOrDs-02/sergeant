@@ -42,7 +42,7 @@ const DEFAULT_CATEGORY = "🏷 інше";
 // "їжа". When loaded for edit, we upgrade the string to its emoji
 // counterpart so the picker highlights it; saved value still round-trips
 // through `MANUAL_CATEGORY_ID_MAP` for personalization/analytics.
-const LEGACY_CATEGORY_UPGRADE = {
+const LEGACY_CATEGORY_UPGRADE: Record<string, string> = {
   їжа: "🍴 їжа",
   транспорт: "🚗 транспорт",
   розваги: "🎮 розваги",
@@ -53,7 +53,7 @@ const LEGACY_CATEGORY_UPGRADE = {
   інше: "🏷 інше",
 };
 
-function upgradeCategory(raw) {
+function upgradeCategory(raw: string | null | undefined) {
   if (!raw) return DEFAULT_CATEGORY;
   if (CATEGORIES.includes(raw)) return raw;
   const up = LEGACY_CATEGORY_UPGRADE[raw];
@@ -64,7 +64,7 @@ function upgradeCategory(raw) {
 // fallback description when the user leaves the name empty. We accept any
 // run of non-letter / non-digit grapheme chunks so compound emoji (zwj
 // sequences, variation selectors) all get peeled off.
-function stripEmoji(label) {
+function stripEmoji(label: string) {
   const str = String(label || "");
   let i = 0;
   while (i < str.length && !/[\p{L}\p{N}]/u.test(str[i])) i++;
@@ -106,7 +106,7 @@ function sortCategoriesByFrequency(
   // Перетворюємо частотну статистику на індекс manual-label → rank.
   // Для canonical id беремо відповідний manual-label; для custom / невідомих —
   // використовуємо original manualLabel, якщо він є у списку кнопок.
-  const rank = new Map();
+  const rank = new Map<string, number>();
   frequentCategories.forEach((cat, idx) => {
     const label =
       cat.manualLabel && CATEGORIES.includes(cat.manualLabel)
@@ -118,7 +118,7 @@ function sortCategoriesByFrequency(
   });
   const withRank = CATEGORIES.map((c, originalIdx) => ({
     label: c,
-    rank: rank.has(c) ? rank.get(c) : Infinity,
+    rank: rank.has(c) ? (rank.get(c) ?? Infinity) : Infinity,
     originalIdx,
   }));
   withRank.sort((a, b) => {

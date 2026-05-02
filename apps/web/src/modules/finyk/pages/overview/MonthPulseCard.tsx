@@ -4,6 +4,24 @@ import { Tooltip } from "@shared/components/ui/Tooltip";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/cn";
 
+interface MonthPulseCardProps {
+  dateLabel: string;
+  daysPassed: number;
+  spent: number;
+  income: number;
+  showBalance: boolean;
+  showMonthForecast: boolean;
+  projectedSpend: number;
+  hasExpensePlan: boolean;
+  spendPlanRatio: number;
+  planExpense: number;
+  forecastTrendPct: number;
+  forecastBarClass: string;
+  recurringOutThisMonth: number;
+  recurringInThisMonth: number;
+  unknownOutCount: number;
+}
+
 /**
  * Картка «Місяць» — пара Витрати/Дохід + опційно один progress-bar
  * (плану або прогнозу) + примітка про планові потоки. Денний бюджет і
@@ -25,7 +43,7 @@ const MonthPulseCardImpl = function MonthPulseCard({
   recurringOutThisMonth,
   recurringInThisMonth,
   unknownOutCount,
-}) {
+}: MonthPulseCardProps) {
   const planPct = Math.min(100, Math.max(0, Math.round(spendPlanRatio * 100)));
   const planBarClass =
     spendPlanRatio > 0.75
@@ -42,7 +60,7 @@ const MonthPulseCardImpl = function MonthPulseCard({
     <Card variant="default" radius="lg" padding="lg">
       <div className="flex items-baseline justify-between gap-3 mb-4">
         <div className="flex items-baseline gap-2 min-w-0">
-          <span className="text-xs font-medium text-subtle">Місяць</span>
+          <span className="text-style-caption text-subtle">Місяць</span>
           <span className="text-xs text-muted capitalize truncate">
             {dateLabel}
           </span>
@@ -51,7 +69,7 @@ const MonthPulseCardImpl = function MonthPulseCard({
 
       <div className="flex justify-between items-start gap-4">
         <div>
-          <div className="flex items-center gap-1 text-xs text-subtle font-medium">
+          <div className="flex items-center gap-1 text-style-caption text-subtle">
             <span>Витрати</span>
             <Tooltip
               content="Огляд, категорії та бюджети — у гривні (UAH). Інші валюти рахунків у загальному балансі не конвертуються автоматично."
@@ -76,7 +94,7 @@ const MonthPulseCardImpl = function MonthPulseCard({
           </div>
         </div>
         <div className="text-right">
-          <div className="text-xs text-subtle font-medium">Дохід</div>
+          <div className="text-style-caption text-subtle">Дохід</div>
           <div className="text-hero font-bold tabular-nums mt-1 leading-tight text-success">
             {showBalance ? (
               <>
