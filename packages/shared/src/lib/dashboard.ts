@@ -66,6 +66,17 @@ export const DASHBOARD_DENSITY_SPACING: Record<
   spacious: { cardGap: 4, cardPadding: 5, sectionGap: 6 },
 };
 
+/**
+ * Custom DOM event name that the Settings → Дашборд density picker
+ * dispatches on `window` so that an already-mounted Hub dashboard re-renders
+ * with the new spacing without waiting for the next remount or storage event.
+ *
+ * Same-window `localStorage` writes do NOT fire `storage` events, so the
+ * picker has to nudge listeners explicitly. Cross-tab updates are still
+ * picked up via the standard `storage` event in parallel.
+ */
+export const DASHBOARD_DENSITY_EVENT = "sergeant:dashboard-density-changed";
+
 export function isDashboardDensity(value: unknown): value is DashboardDensity {
   return (
     typeof value === "string" &&
