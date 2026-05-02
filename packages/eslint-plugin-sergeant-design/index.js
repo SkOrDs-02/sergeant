@@ -2425,6 +2425,89 @@ const preferTextStyle = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────────────
+// `no-arbitrary-text-size` — ban Tailwind arbitrary `text-[Npx]` / `text-[Nrem]`
+// ─────────────────────────────────────────────────────────────────────────
+//
+// The Sergeant typography scale is defined in `apps/web/src/index.css`
+// (`.text-display`, `.text-h1..h3`, `.text-body`, `.text-body-sm`,
+// `.text-caption`, `.text-eyebrow`, `.text-meta`, `.text-micro`,
+// `.text-display-stat`, `.text-display-hero`, `.text-style-{hero,title,
+// body,label,caption,overline}`, `.text-celebration`, `.text-xp`).
+//
+// Hand-rolled `text-[12px]` / `text-[14px]` strings bypass the scale —
+// they create vertical-rhythm drift, often land below WCAG-comfort
+// (8 px in PushupsWidget, 10 px in stats badges), and don't move with
+// design-token updates. Forbid them and route every author to a named
+// utility instead. Stage-one rollout is `warn`, then `error` once
+// migrations land.
+
+const NO_ARBITRARY_TEXT_SIZE_MESSAGE =
+  "Arbitrary `{{cls}}` bypasses the Sergeant typography scale. " +
+  "Use a named utility from index.css (`text-display`, `text-h1..h3`, " +
+  "`text-body`, `text-body-sm`, `text-caption`, `text-eyebrow`, " +
+  "`text-meta`, `text-micro`, `text-display-stat`, `text-display-hero`, " +
+  "`text-style-*`) or a Tailwind preset size (`text-xs..text-5xl`). " +
+  "See docs/design/design-system.md § Typography.";
+
+const RX_ARBITRARY_TEXT_SIZE = /text-\[\d+(?:\.\d+)?(?:px|rem|em)\]/g;
+
+// Files that legitimately encode raw size literals: the tokens / scale
+// are defined here, so they must spell out the px values. Everything
+// else routes through the named utilities.
+const NO_ARBITRARY_TEXT_SIZE_EXEMPT_RX = [
+  /shared[\\/]components[\\/]ui[\\/](?:Button|SectionHeading|Label|Badge|Stat|Input|Tabs|Segmented|Toast|Skeleton)\.tsx?$/,
+  /\.(test|spec)\.[jt]sx?$/,
+  /__tests__[\\/]/,
+];
+
+const noArbitraryTextSize = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Disallow Tailwind arbitrary `text-[Npx]` / `text-[Nrem]` text-size values; use a named typography utility from index.css.",
+    },
+    schema: [],
+    messages: { ban: NO_ARBITRARY_TEXT_SIZE_MESSAGE },
+  },
+  create(context) {
+    const filename =
+      (context.filename != null ? context.filename : context.getFilename()) ||
+      "";
+    if (NO_ARBITRARY_TEXT_SIZE_EXEMPT_RX.some((rx) => rx.test(filename))) {
+      return {};
+    }
+
+    function report(node, value) {
+      if (typeof value !== "string") return;
+      const matches = value.match(RX_ARBITRARY_TEXT_SIZE);
+      if (!matches) return;
+      // Report once per literal even if multiple hits — the message
+      // already shows the offending class.
+      const seen = new Set();
+      for (const cls of matches) {
+        if (seen.has(cls)) continue;
+        seen.add(cls);
+        context.report({
+          node,
+          messageId: "ban",
+          data: { cls },
+        });
+      }
+    }
+    return {
+      Literal(node) {
+        if (typeof node.value === "string") report(node, node.value);
+      },
+      TemplateElement(node) {
+        const cooked = node.value && node.value.cooked;
+        if (typeof cooked === "string") report(node, cooked);
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
@@ -2446,6 +2529,7 @@ const plugin = {
     "no-rounded-lg": noRoundedLg,
     "no-bare-empty-text": noBareEmptyText,
     "prefer-text-style": preferTextStyle,
+    "no-arbitrary-text-size": noArbitraryTextSize,
   },
 };
 
@@ -2473,6 +2557,7 @@ export {
   NO_BARE_EMPTY_TEXT_MESSAGE,
   PREFER_TEXT_STYLE_MESSAGE,
   TEXT_STYLE_MAPPINGS,
+  NO_ARBITRARY_TEXT_SIZE_MESSAGE,
 };
 
 export default plugin;

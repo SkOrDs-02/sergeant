@@ -498,6 +498,36 @@
     @apply text-[0.6875rem] leading-none font-semibold tracking-[0.08em] uppercase;
   }
 
+  /* Meta — compact lowercase labels (KPI hints, badges, "Monobank", "USD",
+     histogram axis ticks). 11px/medium with optional `tabular-nums` for
+     numeric companions. NOT uppercase — that is `text-eyebrow`'s job. */
+  .text-meta {
+    @apply text-[0.6875rem] leading-snug font-medium;
+  }
+
+  /* Micro — 10px aux glyph labels: icon-overlay numbers (mic levels, push-up
+     reps, progress-ring hints). Floor is 10px; nothing below ships in
+     prose. Use only inside controls where surrounding affordance carries
+     the meaning, never for running text. */
+  .text-micro {
+    @apply text-[0.625rem] leading-tight font-medium;
+  }
+
+  /* Display Stat — the single most prominent number on a screen:
+     Finyk HeroCard amount, AssetsTable asset value. 40px / bold /
+     tabular-nums / leading-tight so multi-line wraps don't push other
+     hero rows. */
+  .text-display-stat {
+    @apply text-[2.5rem] leading-tight font-bold tracking-tight tabular-nums;
+  }
+
+  /* Display Hero — full-screen "celebration" stat (story slides, weekly
+     digest take-aways). 44px / black / tabular-nums / leading-none for
+     the largest single-line number. */
+  .text-display-hero {
+    @apply text-[2.75rem] leading-none font-black tracking-tight tabular-nums;
+  }
+
   /* ── Semantic text-style utilities (design-system.md § Typography) ──────
      Owned shorthand classes: each bundles size + weight (+ optional
      tracking) so design-token changes propagate automatically.
@@ -579,12 +609,12 @@
      TOUCH INPUTS — iOS zoom prevention (min 16px)
      ═══════════════════════════════════════════════════════════════════════ */
   .routine-touch-field {
-    @apply min-h-[44px] text-[16px] leading-normal md:text-sm;
+    @apply min-h-[44px] text-base leading-normal md:text-sm;
   }
 
   .routine-touch-select {
     @apply min-h-[44px] w-full rounded-2xl border border-line bg-panelHi px-3 outline-none
-           text-[16px] leading-normal md:text-sm
+           text-base leading-normal md:text-sm
            transition-colors duration-150
            focus-visible:border-routine/60 focus-visible:ring-2 focus-visible:ring-routine/20;
   }

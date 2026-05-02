@@ -46,12 +46,12 @@ function Tile({ label, value, hint, tone = "default" }: TileProps) {
         {label}
       </SectionHeading>
       <p
-        className={`mt-1 text-lg font-bold leading-tight truncate ${TONE_CLASS[tone]}`}
+        className={`mt-1 text-style-title leading-tight truncate ${TONE_CLASS[tone]}`}
       >
         {value}
       </p>
       {hint ? (
-        <p className="mt-0.5 text-[11px] text-subtle truncate">{hint}</p>
+        <p className="mt-0.5 text-meta text-subtle truncate">{hint}</p>
       ) : null}
     </div>
   );

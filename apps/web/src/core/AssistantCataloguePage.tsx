@@ -155,7 +155,7 @@ export function AssistantCataloguePage({
               <Icon name="sparkles" size={20} />
             </span>
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-bold text-text leading-tight">
+              <h1 className="text-style-title text-text leading-tight">
                 Можливості асистента
               </h1>
               <p className="text-sm text-subtle mt-1 leading-relaxed">
@@ -366,9 +366,7 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
       </span>
       <span className="flex-1 min-w-0">
         <span className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-semibold text-text">
-            {capability.label}
-          </span>
+          <span className="text-style-label text-text">{capability.label}</span>
           {capability.isNew && (
             <BadgeChip
               tone="success"
@@ -453,7 +451,8 @@ function BadgeChip({ tone, icon, label, title }: BadgeChipProps) {
     <span
       title={title}
       className={cn(
-        "inline-flex items-center gap-1 text-[10px] uppercase tracking-wide font-bold",
+        // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- BadgeChip is an intentional pill-overlay typography (status badge with border + icon)
+        "inline-flex items-center gap-1 text-micro uppercase tracking-wide font-bold",
         "border rounded-full px-1.5 py-0.5",
         cls,
       )}

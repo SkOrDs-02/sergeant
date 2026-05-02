@@ -80,7 +80,7 @@ export function RecentWorkoutsSection({
           className="rounded-2xl border border-dashed border-line p-6 flex flex-col items-center text-center"
           data-testid="fizruk-dashboard-recent-empty"
         >
-          <p className="text-sm font-semibold text-text">
+          <p className="text-style-label text-text">
             Ще жодного завершеного тренування
           </p>
           <p className="text-xs text-subtle mt-1">
@@ -95,10 +95,10 @@ export function RecentWorkoutsSection({
               className="rounded-2xl border border-line bg-bg p-3 flex items-center justify-between gap-3"
             >
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-text truncate">
+                <p className="text-style-label text-text truncate">
                   {row.label}
                 </p>
-                <p className="text-[11px] text-subtle mt-0.5">
+                <p className="text-meta text-subtle mt-0.5">
                   {formatDateShort(row.endedAt)} ·{" "}
                   {formatDuration(row.durationSec)}
                 </p>
@@ -107,7 +107,7 @@ export function RecentWorkoutsSection({
                 <span className="text-sm font-bold text-fizruk-strong">
                   {formatTonnage(row.tonnageKg)}
                 </span>
-                <span className="text-[10px] text-subtle">тоннаж</span>
+                <span className="text-micro text-subtle">тоннаж</span>
               </div>
             </li>
           ))}

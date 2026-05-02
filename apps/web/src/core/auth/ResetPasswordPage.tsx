@@ -49,7 +49,7 @@ export function ResetPasswordPage() {
   });
 
   const INPUT_CLS =
-    "input-focus w-full min-h-[44px] px-4 py-3 rounded-xl bg-panel border border-line text-text text-[16px] md:text-sm placeholder:text-muted/50";
+    "input-focus w-full min-h-[44px] px-4 py-3 rounded-xl bg-panel border border-line text-text text-base md:text-sm placeholder:text-muted/50";
 
   const passwordFieldProps = pwValidation.getFieldProps("password");
   const confirmFieldProps = pwValidation.getFieldProps("confirm");

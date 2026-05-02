@@ -65,7 +65,7 @@ export function WorkoutsHome({
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-surface p-4 text-center">
-          <div className="text-sm font-semibold text-text">
+          <div className="text-style-label text-text">
             Немає активного тренування
           </div>
           <div className="text-xs text-subtle mt-1">
@@ -88,9 +88,7 @@ export function WorkoutsHome({
 
       <Card as="section" radius="lg" aria-label="Останні тренування">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-text">
-            Останні тренування
-          </h2>
+          <h2 className="text-style-label text-text">Останні тренування</h2>
           {recentWorkouts.length > 0 ? (
             <button
               type="button"
@@ -127,7 +125,7 @@ export function WorkoutsHome({
       </Card>
 
       <Card as="section" radius="lg" aria-label="Довідники">
-        <h2 className="text-sm font-semibold text-text mb-3">Довідники</h2>
+        <h2 className="text-style-label text-text mb-3">Довідники</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <button
             type="button"
@@ -139,9 +137,7 @@ export function WorkoutsHome({
                 📚
               </span>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-text">
-                  Каталог вправ
-                </div>
+                <div className="text-style-label text-text">Каталог вправ</div>
                 <div className="text-xs text-subtle mt-0.5">
                   Пошук · групи м&apos;язів · своя вправа
                 </div>
@@ -161,7 +157,7 @@ export function WorkoutsHome({
                 📋
               </span>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-text">Шаблони</div>
+                <div className="text-style-label text-text">Шаблони</div>
                 <div className="text-xs text-subtle mt-0.5">
                   Збережені набори вправ на швидкий старт
                 </div>
@@ -203,9 +199,9 @@ export function RecentWorkoutSummary({ workout }: RecentWorkoutSummaryProps) {
   return (
     <div className="flex-1 pr-2">
       <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-text">{dateLabel}</span>
+        <span className="text-style-label text-text">{dateLabel}</span>
         {!summary.isFinished ? (
-          <span className="text-[10px] uppercase font-bold text-amber-700 bg-amber-500/15 px-2 py-0.5 rounded-full">
+          <span className="text-micro uppercase font-bold text-amber-700 bg-amber-500/15 px-2 py-0.5 rounded-full">
             Чернетка
           </span>
         ) : null}

@@ -321,7 +321,7 @@ export function HabitDetailSheet({
               <div
                 key={dk}
                 className={cn(
-                  "aspect-square flex items-center justify-center rounded-xl text-xs font-medium transition-colors",
+                  "aspect-square flex items-center justify-center rounded-xl text-style-caption transition-colors",
                   done
                     ? "bg-routine-surface2 dark:bg-routine-surface-dark/15 text-routine-strong dark:text-routine border border-routine-ring/40 dark:border-routine-border-dark/30 font-bold"
                     : scheduled
@@ -364,7 +364,7 @@ export function HabitDetailSheet({
             {notes.map((n) => (
               <li
                 key={n.date}
-                className="text-[12px] bg-panelHi/50 border border-line/40 rounded-xl px-3 py-2"
+                className="text-caption bg-panelHi/50 border border-line/40 rounded-xl px-3 py-2"
               >
                 <span className="text-subtle">{n.date}:</span>{" "}
                 <span className="text-text">{n.text}</span>

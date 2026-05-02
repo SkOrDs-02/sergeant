@@ -52,7 +52,7 @@ export function StatTile({
   );
   const inner = (
     <>
-      <div className="flex items-center gap-2 text-[11px] text-muted">
+      <div className="flex items-center gap-2 text-meta text-muted">
         <span className={cn("inline-flex", toneClass(iconTone))} aria-hidden>
           <Icon name={iconName} size={14} />
         </span>
@@ -60,7 +60,7 @@ export function StatTile({
       </div>
       <div className="text-sm font-bold text-text mt-1 truncate">{value}</div>
       {hint && (
-        <div className="text-[11px] text-subtle mt-0.5 truncate">{hint}</div>
+        <div className="text-meta text-subtle mt-0.5 truncate">{hint}</div>
       )}
     </>
   );

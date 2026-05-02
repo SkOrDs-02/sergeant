@@ -157,9 +157,7 @@ export function QuickStartSheet({
                 📋
               </span>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-text">
-                  За шаблоном
-                </div>
+                <div className="text-style-label text-text">За шаблоном</div>
                 <div className="text-xs text-subtle mt-0.5">
                   Готовий набір вправ — старт із заповненим списком.
                 </div>
@@ -180,7 +178,7 @@ export function QuickStartSheet({
                 💪
               </span>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-text">
+                <div className="text-style-label text-text">
                   Підібрати вправи
                 </div>
                 <div className="text-xs text-subtle mt-0.5">
@@ -275,7 +273,7 @@ export function QuickStartSheet({
                   variant="subtle"
                   className="px-1 mb-1.5"
                   action={
-                    <span className="text-[11px] text-muted normal-case tracking-normal font-normal">
+                    <span className="text-meta text-muted normal-case tracking-normal font-normal">
                       {g.items.length}
                     </span>
                   }
@@ -302,7 +300,7 @@ export function QuickStartSheet({
                         >
                           <span
                             className={cn(
-                              "shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full border text-[11px] font-bold",
+                              "shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full border text-meta font-bold",
                               active
                                 ? "bg-brand-strong border-brand-strong text-white"
                                 : "border-line text-subtle",

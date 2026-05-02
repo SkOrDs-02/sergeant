@@ -47,7 +47,7 @@ export function AssetsLiabilitiesBar({
           style={{ width: `${liabilitiesPct}%` }}
         />
       </div>
-      <div className="flex justify-between text-[11px] text-muted mt-2 tabular-nums">
+      <div className="flex justify-between text-meta text-muted mt-2 tabular-nums">
         <span className="inline-flex items-center gap-1.5">
           <span
             className="inline-block h-1.5 w-1.5 rounded-full bg-finyk-strong"

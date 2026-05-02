@@ -2,7 +2,7 @@
  * WeeklyDigestStories is an Instagram-style full-screen narrative overlay,
  * not a regular page. The uppercase+tracking+text eyebrow treatment is
  * repeated across every card variant (recap of Finyk / Fizruk / Nutrition
- * / Routine stats) at bespoke text sizes (`text-[13px]`, `text-2xs`,
+ * / Routine stats) at bespoke text sizes (`text-sm`, `text-2xs`,
  * `tracking-[0.3em]`) that don't map cleanly onto <SectionHeading>'s
  * canonical xs/sm tokens. Disabling the design-system rule file-wide
  * keeps the narrative typography intact without scattering 11 local

@@ -14,17 +14,15 @@ export function FinykSlide({ slide }: { slide: FinykSlideData }) {
 
   return (
     <StoryShell slide={slide}>
-      <p className="text-[12px] uppercase tracking-[0.3em] text-white/70 font-bold mb-2">
+      <p className="text-xs uppercase tracking-[0.3em] text-white/70 font-bold mb-2">
         Фінанси · ФІНІК
       </p>
       <div className="mb-6">
-        <div className="text-[12px] text-white/70 font-semibold">
-          Витрати тижня
-        </div>
-        <div className="text-[44px] leading-none font-black tabular-nums mt-1">
+        <div className="text-xs text-white/70 font-semibold">Витрати тижня</div>
+        <div className="text-display-hero leading-none font-black tabular-nums mt-1">
           {fmtUah(agg?.totalSpent)}
         </div>
-        <div className="mt-2 text-[13px] text-white/80">
+        <div className="mt-2 text-sm text-white/80">
           {agg?.txCount || 0} транзакцій · дохід {fmtUah(agg?.totalIncome)}
         </div>
       </div>
@@ -38,7 +36,7 @@ export function FinykSlide({ slide }: { slide: FinykSlideData }) {
             const pct = Math.max(6, Math.round((c.amount / maxCat) * 100));
             return (
               <div key={c.name} className="space-y-1">
-                <div className="flex items-baseline justify-between text-[13px]">
+                <div className="flex items-baseline justify-between text-sm">
                   <span className="font-semibold text-white/95 truncate pr-2">
                     {c.name}
                   </span>
@@ -68,9 +66,9 @@ export function FinykSlide({ slide }: { slide: FinykSlideData }) {
 
       {ai?.summary && (
         <div className="mt-auto rounded-2xl bg-white/15 backdrop-blur-sm px-4 py-3 border border-white/20">
-          <p className="text-[14px] font-semibold leading-snug">{ai.summary}</p>
+          <p className="text-style-label leading-snug">{ai.summary}</p>
           {ai.comment && (
-            <p className="text-[12.5px] text-white/85 mt-2 leading-relaxed">
+            <p className="text-xs text-white/85 mt-2 leading-relaxed">
               {ai.comment}
             </p>
           )}

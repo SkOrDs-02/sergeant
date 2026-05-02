@@ -132,7 +132,7 @@ function GoalSlider({
         onChange={(e) => onChange(Number(e.target.value))}
         className="w-full accent-brand-500"
       />
-      <div className="flex justify-between text-[11px] text-muted">
+      <div className="flex justify-between text-meta text-muted">
         <span>
           {s.min.toLocaleString("uk-UA")}
           {s.unit}

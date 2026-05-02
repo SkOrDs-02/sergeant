@@ -128,7 +128,7 @@ export function ModuleHeader({
                 </span>
               ) : null}
               {title ? (
-                <span className="text-[16px] font-semibold tracking-wide text-text leading-tight flex items-center gap-2">
+                <span className="text-base font-semibold tracking-wide text-text leading-tight flex items-center gap-2">
                   {mt ? (
                     <span
                       aria-hidden
@@ -249,7 +249,7 @@ export function ModuleHeaderBackButton({
       >
         <path d="M15 18l-6-6 6-6" />
       </svg>
-      {label ? <span className="text-sm font-semibold">{label}</span> : null}
+      {label ? <span className="text-style-label">{label}</span> : null}
     </button>
   );
 }

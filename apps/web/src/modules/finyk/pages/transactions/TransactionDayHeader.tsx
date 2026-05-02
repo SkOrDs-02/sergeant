@@ -57,7 +57,7 @@ export function TransactionDayHeader({
           <polyline points="6 9 12 15 18 9" />
         </svg>
         <span className="truncate">{label}</span>
-        <span className="shrink-0 text-[10px] font-semibold text-muted normal-case tabular-nums">
+        <span className="shrink-0 text-micro font-semibold text-muted normal-case tabular-nums">
           · {summary.count}
         </span>
       </span>

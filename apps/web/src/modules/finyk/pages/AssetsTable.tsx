@@ -62,7 +62,7 @@ export function AssetsNetworthCard({
         </p>
         <div
           className={cn(
-            "text-[40px] font-bold tracking-tight leading-tight mt-2 tabular-nums",
+            "text-display-stat mt-2",
             isNegative
               ? "text-danger-strong dark:text-danger"
               : "text-finyk-strong dark:text-finyk",
@@ -255,7 +255,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                 </span>
                 <div className="min-w-0">
                   <div className="text-style-label truncate">{visual.name}</div>
-                  <div className="text-[11px] text-subtle mt-0.5">Monobank</div>
+                  <div className="text-meta text-subtle mt-0.5">Monobank</div>
                 </div>
               </div>
               <div className="text-right shrink-0">
@@ -344,7 +344,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
             ].map((chip) => (
               <span
                 key={chip}
-                className="inline-flex items-center text-[11px] text-muted bg-panelHi border border-line rounded-full px-2 py-0.5"
+                className="inline-flex items-center text-meta text-muted bg-panelHi border border-line rounded-full px-2 py-0.5"
               >
                 {chip}
               </span>
@@ -383,7 +383,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
             </span>
             <div className="min-w-0">
               <div className="text-style-label truncate">{a.name}</div>
-              <div className="text-[11px] text-subtle mt-0.5">{a.currency}</div>
+              <div className="text-meta text-subtle mt-0.5">{a.currency}</div>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -467,7 +467,7 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
             ].map((chip) => (
               <span
                 key={chip}
-                className="inline-flex items-center text-[11px] text-muted bg-panelHi border border-line rounded-full px-2 py-0.5"
+                className="inline-flex items-center text-meta text-muted bg-panelHi border border-line rounded-full px-2 py-0.5"
               >
                 {chip}
               </span>

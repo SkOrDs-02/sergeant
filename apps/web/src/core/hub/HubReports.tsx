@@ -115,7 +115,7 @@ function BarChart({
   return (
     <div>
       {selected !== null && (
-        <div className="text-xs text-center text-text font-medium mb-1 h-4">
+        <div className="text-style-caption text-center text-text mb-1 h-4">
           {formatTooltip(dates[selected], vals[selected])}
         </div>
       )}
@@ -157,7 +157,7 @@ function BarChart({
             <span
               key={d}
               className={cn(
-                "flex-1 text-center text-[10px] leading-tight",
+                "flex-1 text-center text-micro leading-tight",
                 selected === i ? "text-text font-medium" : "text-muted",
               )}
             >
@@ -186,7 +186,7 @@ function Delta({ cur, prev, higherIsBetter = true }: DeltaProps) {
   return (
     <span
       className={cn(
-        "text-xs font-medium",
+        "text-style-caption",
         positive ? "text-success" : "text-danger",
       )}
     >
@@ -287,7 +287,7 @@ function StatCard({
       {!collapsed && (
         <>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-text">
+            <span className="text-style-hero text-text">
               {formattedCurrent}
               {unit}
             </span>
@@ -324,7 +324,7 @@ function InsightCard({ emoji, title, stat, detail }: InsightCardProps) {
       <div className="min-w-0 flex-1 space-y-1">
         <p className="text-sm text-text leading-snug">{title}</p>
         <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-lg font-bold text-brand-strong dark:text-brand">
+          <span className="text-style-title text-brand-strong dark:text-brand">
             {stat}
           </span>
           {detail && (
@@ -360,7 +360,7 @@ export function HubReports() {
                 setOffset(0);
               }}
               className={cn(
-                "px-3 py-1.5 text-xs font-medium transition-colors",
+                "px-3 py-1.5 text-style-caption transition-colors",
                 period === p
                   ? "bg-brand-strong text-white"
                   : "text-muted hover:text-text hover:bg-panelHi",

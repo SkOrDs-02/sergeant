@@ -64,7 +64,7 @@ const sizePx: Record<ProgressRingSize, number> = {
 };
 
 const labelTextSize: Record<ProgressRingSize, string> = {
-  xs: "text-[10px]",
+  xs: "text-micro",
   sm: "text-xs",
   md: "text-sm",
   lg: "text-lg",

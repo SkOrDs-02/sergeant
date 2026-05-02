@@ -97,7 +97,7 @@ export function HubChatHistoryDrawer({
             >
               <Icon name="sparkle" size={15} className="text-brand-500" />
             </div>
-            <div className="text-[15px] font-bold text-text">Бесіди</div>
+            <div className="text-base font-bold text-text">Бесіди</div>
           </div>
           <button
             type="button"
@@ -115,7 +115,7 @@ export function HubChatHistoryDrawer({
             onClick={() => {
               onCreate();
             }}
-            className="w-full flex items-center justify-center gap-2 h-11 rounded-2xl border border-dashed border-line text-text hover:bg-panelHi hover:border-brand-500/40 hover:text-brand-strong transition-colors text-sm font-semibold"
+            className="w-full flex items-center justify-center gap-2 h-11 rounded-2xl border border-dashed border-line text-text hover:bg-panelHi hover:border-brand-500/40 hover:text-brand-strong transition-colors text-style-label"
           >
             <Icon name="plus" size={15} />
             Нова бесіда
@@ -131,6 +131,7 @@ export function HubChatHistoryDrawer({
               >
                 <Icon name="sparkle" size={20} className="text-subtle" />
               </div>
+              {/* eslint-disable-next-line sergeant-design/no-bare-empty-text -- drawer-internal mini empty state inside scrollable list, full <EmptyState> tier would be visually too heavy here */}
               <div>Поки немає інших бесід.</div>
             </div>
           ) : (
@@ -158,9 +159,7 @@ export function HubChatHistoryDrawer({
                   }}
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">
-                      {s.title}
-                    </div>
+                    <div className="text-style-label truncate">{s.title}</div>
                     <div className="text-2xs text-muted mt-0.5 flex items-center gap-1.5">
                       <span>{formatStamp(s.updatedAt)}</span>
                       <span className="text-line" aria-hidden>

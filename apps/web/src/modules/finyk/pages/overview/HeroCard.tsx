@@ -51,10 +51,10 @@ const HeroCardImpl = function HeroCard({
       <div className="px-5 pt-4 pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs text-subtle font-medium">Нетворс</p>
+            <p className="text-style-caption text-subtle">Нетворс</p>
             <p
               className={cn(
-                "text-base sm:text-lg font-bold tabular-nums leading-tight mt-0.5",
+                "text-base sm:text-style-title tabular-nums leading-tight mt-0.5",
                 networth < 0
                   ? "text-danger-strong dark:text-danger"
                   : "text-text",
@@ -100,7 +100,7 @@ const HeroCardImpl = function HeroCard({
       <div className="border-t border-finyk/20 px-5 py-4">
         <div
           className={cn(
-            "text-[40px] font-bold tracking-tight leading-tight tabular-nums",
+            "text-display-stat",
             color,
             !showBalance && "tracking-widest",
           )}

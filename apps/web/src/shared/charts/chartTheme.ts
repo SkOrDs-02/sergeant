@@ -68,7 +68,7 @@ export const chartAxis = {
   },
   /** Axis label (e.g. "₴ за місяць"). */
   label: {
-    className: "fill-muted text-[11px] font-medium tabular-nums",
+    className: "fill-muted text-meta tabular-nums",
   },
 } as const;
 
@@ -88,7 +88,7 @@ export const chartGrid = {
 
 /** Tick label styling (numbers beside axes). */
 export const chartTick = {
-  className: "fill-muted text-[10px] tabular-nums",
+  className: "fill-muted text-micro tabular-nums",
   textAnchor: "middle" as const,
 } as const;
 

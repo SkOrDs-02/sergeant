@@ -32,7 +32,7 @@ function PasswordStrengthBar({ password }: { password: string }) {
           )}
         />
       </div>
-      <p className={cn("text-[11px] font-medium", labelColors[level])}>
+      <p className={cn("text-meta font-medium", labelColors[level])}>
         {labels[level]}
       </p>
     </div>
@@ -144,7 +144,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
             className="space-y-5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300"
           >
             <div className="text-center">
-              <h2 className="text-lg font-bold text-text">
+              <h2 className="text-style-title text-text">
                 {mode === "login" ? "Вхід в акаунт" : "Створення акаунту"}
               </h2>
               <p className="text-xs text-subtle mt-1">
@@ -159,7 +159,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
                 <div>
                   <label
                     htmlFor="auth-name"
-                    className="block text-xs font-medium text-muted mb-1.5"
+                    className="block text-style-caption text-muted mb-1.5"
                   >
                     Ім{"'"}я
                   </label>
@@ -177,7 +177,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               <div>
                 <label
                   htmlFor="auth-email"
-                  className="block text-xs font-medium text-muted mb-1.5"
+                  className="block text-style-caption text-muted mb-1.5"
                 >
                   Email
                 </label>
@@ -196,7 +196,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
                 <div className="flex items-center justify-between mb-1.5">
                   <label
                     htmlFor="auth-password"
-                    className="block text-xs font-medium text-muted"
+                    className="block text-style-caption text-muted"
                   >
                     Пароль
                   </label>
@@ -296,7 +296,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
                       </p>
                       <label
                         htmlFor="auth-forgot-email"
-                        className="block text-xs font-medium text-muted"
+                        className="block text-style-caption text-muted"
                       >
                         Email для скидання
                       </label>

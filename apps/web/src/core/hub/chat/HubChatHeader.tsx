@@ -76,7 +76,7 @@ export function HubChatHeader({
             <span className="flex items-center gap-1 min-w-0">
               <span
                 id="hub-chat-title"
-                className="text-[15px] font-bold text-text leading-snug truncate"
+                className="text-base font-bold text-text leading-snug truncate"
               >
                 Асистент
               </span>

@@ -194,6 +194,16 @@ export default [
       // Replace (text-sm font-medium) with text-style-label etc.
       // See docs/design/design-system.md § Typography.
       "sergeant-design/prefer-text-style": "warn",
+      // `no-arbitrary-text-size` — ban Tailwind arbitrary `text-[Npx]` /
+      // `text-[Nrem]` literals; route every call-site through a named
+      // utility from index.css (`text-display`, `text-h1..h3`,
+      // `text-body`, `text-body-sm`, `text-caption`, `text-eyebrow`,
+      // `text-meta`, `text-micro`, `text-display-stat`,
+      // `text-display-hero`, `text-style-*`) or a Tailwind preset
+      // (`text-xs..text-5xl`). Closes the vertical-rhythm drift +
+      // sub-WCAG 8 px regression family.
+      // See docs/design/design-system.md § Typography.
+      "sergeant-design/no-arbitrary-text-size": "error",
     },
   },
   // DS primitives that legitimately define the eyebrow treatment.
@@ -239,6 +249,7 @@ export default [
       "sergeant-design/no-rounded-lg": "off",
       "sergeant-design/no-bare-empty-text": "off",
       "sergeant-design/prefer-text-style": "off",
+      "sergeant-design/no-arbitrary-text-size": "off",
     },
   },
   // Jest setup / test files need jest globals.

@@ -103,7 +103,7 @@ export function InputDialog({
       >
         <h2
           id={titleId}
-          className="text-[17px] font-bold text-text mb-1 leading-snug"
+          className="text-style-title text-text mb-1 leading-snug"
         >
           {title}
         </h2>

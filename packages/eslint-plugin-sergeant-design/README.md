@@ -269,6 +269,14 @@ const z: SpecificType = value;
 const el = document.getElementById("foo") as HTMLDivElement;
 ```
 
+### `sergeant-design/prefer-text-style`
+
+Пропонує семантичні `text-style-*`-утиліти замість руками-сплетеної пари `(text-{size}, font-{weight})`. Дивись `docs/design/design-system.md § Typography`. Severity: **warn**.
+
+### `sergeant-design/no-arbitrary-text-size`
+
+Забороняє Tailwind arbitrary-size-літерали виду `text-[Npx]` / `text-[Nrem]` / `text-[Nem]`. Усі шрифтові розміри мають проходити через канонічну шкалу (`text-display`, `text-h1..h3`, `text-body`, `text-body-sm`, `text-caption`, `text-eyebrow`, `text-meta`, `text-micro`, `text-display-stat`, `text-display-hero`, `text-style-*`) або preset-розміри Tailwind (`text-xs..text-5xl`). Закриває vertical-rhythm-drift і регресії підпорогових (≤8px) міток. Severity: **error**. DS-примітиви (`Button`, `Input`, `Badge`, `Stat`, `SectionHeading`, `Label`, `Toast`, `Skeleton`, `Tabs`, `Segmented`, `Card`) звільнено — вони володіють raw-px-токенами.
+
 ## Запуск тестів
 
 ```sh

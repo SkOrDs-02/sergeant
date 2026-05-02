@@ -234,7 +234,7 @@ export function ModuleChecklist({
             </svg>
             <span
               className={cn(
-                "absolute inset-0 flex items-center justify-center text-[10px] font-bold tabular-nums",
+                "absolute inset-0 flex items-center justify-center text-micro font-bold tabular-nums",
                 styles.accent,
               )}
             >

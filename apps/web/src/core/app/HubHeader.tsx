@@ -104,7 +104,7 @@ export function HubHeader({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <BrandLogo as="span" size="lg" variant="mark" />
-          <h1 className="text-[22px] leading-none font-extrabold tracking-tight text-text select-none">
+          <h1 className="text-xl leading-none font-extrabold tracking-tight text-text select-none">
             Sergeant
           </h1>
         </div>
@@ -158,7 +158,7 @@ export function HubHeader({
       {/* брендовий шум, який забирав вертикальний простір. */}
       <p
         className={cn(
-          "mt-1.5 ml-[3px] text-[13px] leading-snug text-muted truncate",
+          "mt-1.5 ml-[3px] text-sm leading-snug text-muted truncate",
           "transition-all duration-300",
           isShrunk && "opacity-0 h-0 mt-0 overflow-hidden",
         )}

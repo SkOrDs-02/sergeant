@@ -185,12 +185,12 @@ function ModuleRow({
               <span className="block text-xs text-muted mt-0.5 leading-snug">
                 {card.description}
               </span>
-              <span className="block text-[11px] text-subtle mt-1 leading-tight">
+              <span className="block text-meta text-subtle mt-1 leading-tight">
                 {card.teaser}
               </span>
             </>
           ) : (
-            <span className="block text-[11px] text-subtle mt-0.5 leading-tight">
+            <span className="block text-meta text-subtle mt-0.5 leading-tight">
               {card.teaser}
             </span>
           )}
