@@ -8,11 +8,12 @@
 > **Оновлено 2026-05-02.** Sync з реальним станом коду після кількох wave-ів decomposition:
 > Розділ 2 (localStorage burndown) — TODO-allowlist у `eslint.config.js` скорочено з 41 до **17 файлів**
 > (нові хвилі міграцій у `routine`/`finyk`/`onboarding`/`chatActions`/`insights`/`recommendations`).
-> Розділ 4 (великі файли) — у `apps/web/src` залишилось **21 файл >600 LOC** (раніше 22);
+> Розділ 4 (великі файли) — у `apps/web/src` залишилось **20 файлів >600 LOC** (раніше 22);
 > декомпозовано `Transactions.tsx`, `HubSearch.tsx`, `Budgets.tsx`, `Overview.tsx`, `DesignShowcase.tsx`,
 > `ActiveWorkoutPanel.tsx`, `core/App.tsx` (645 → 224 LOC, винесено
-> `app/{appPaths,RedirectTo,useAppEffects,StandaloneRoutes,HubHomeView,ActiveModuleView}.{ts,tsx}`);
-> водночас виросли нові: `VoiceMicButton.tsx` (852).
+> `app/{appPaths,RedirectTo,useAppEffects,StandaloneRoutes,HubHomeView,ActiveModuleView}.{ts,tsx}`),
+> `shared/components/ui/VoiceMicButton.tsx` (852 → 256 LOC, винесено
+> `voice/{useVoiceInput,useGroqVoiceInput,PendingVoiceChip,resolveVoiceProvider}.{ts,tsx}`).
 > Розділ 9 (`any` типи) — production тепер містить **10 файлів** із `: any`
 > (7 у finyk sub-pages + `BudgetsGoalsSection.tsx` + 2 нові у fizruk після decomposition).
 > `no-strict-bypass` — allowlist на 9 production-файлів **обнулено**: усі call-сайти мігровані,
@@ -159,6 +160,16 @@ Codemod ідемпотентний: повторний запуск дасть `
 > (132 — active-module shell з лінивими `FinykApp`/`FizrukApp`/`RoutineApp`/
 > `NutritionApp`). Усі < 200 LOC. Count 22 → 21.
 >
+> `shared/components/ui/VoiceMicButton.tsx` (раніше 852 рядків) декомпозовано на
+> `VoiceMicButton.tsx` (256 — публічний компонент + re-export `useVoiceInput`/
+> `UseVoiceInputOptions`/`UseVoiceInputReturn` для backward-compat),
+> `voice/useVoiceInput.ts` (139 — Web Speech API hook + типи),
+> `voice/useGroqVoiceInput.ts` (270 — Groq Whisper recorder hook через
+> `/api/transcribe` + утиліти `pickRecorderMimeType`/`isGroqSupported`),
+> `voice/PendingVoiceChip.tsx` (188 — 3-сек preview/undo чип з countdown
+> ring + portal-positioning), `voice/resolveVoiceProvider.ts` (12 — env-flag
+> resolver `auto`/`groq`/`webspeech`). Count 21 → 20.
+>
 > **Скоуп таблиці нижче** — лише `apps/web/src`. Mobile (`apps/mobile/src/modules/finyk/pages/Transactions/TransactionsPage.tsx` 1215),
 > packages (`packages/shared/src/lib/assistantCatalogue.ts` 1133, `schemas/api.ts` 986,
 > `openapi/routes.ts` 837), server (`modules/chat/chat.ts` 783) — трекаються окремо
@@ -167,7 +178,6 @@ Codemod ідемпотентний: повторний запуск дасть `
 | Рядків | Файл                                                  |
 | ------ | ----------------------------------------------------- |
 | 897    | `core/onboarding/seedDemoData.ts`                     |
-| 852    | `shared/components/ui/VoiceMicButton.tsx`             |
 | 788    | `core/lib/chatActions/crossActions.ts`                |
 | 774    | `modules/fizruk/pages/Body.tsx`                       |
 | 758    | `core/lib/chatActions/finykActions.ts`                |
