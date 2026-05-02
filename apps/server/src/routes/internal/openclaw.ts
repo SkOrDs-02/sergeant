@@ -44,6 +44,12 @@ import {
   recallCofounderMemory,
   recordDecision,
   OpenClawAllowlistError,
+  // ADR-0032: ops/marketing tools ported from Sergeant Console agents.
+  getStripeMetrics,
+  getSentryIssues,
+  getServerStats,
+  getPostHogStats,
+  getGithubReleases,
 } from "../../modules/openclaw/index.js";
 import type {
   OpenClawStatus,
@@ -159,6 +165,31 @@ const ListBody = z.object({
   founderUserId: z.string().min(1),
   limit: z.number().int().min(1).max(100).optional(),
 });
+
+// ADR-0032: ports of Sergeant Console (ADR-0027) ops/marketing tool I/O
+// schemas. Validation is intentionally loose — the upstream APIs (Stripe,
+// Sentry, PostHog, GitHub) define richer responses than we need; we keep
+// only fields LLM and the slash-command formatters consume.
+
+const StripeMetricsBody = z.object({
+  days: z.number().int().min(1).max(90).optional(),
+});
+
+const SentryIssuesBody = z.object({
+  level: z.enum(["fatal", "error", "warning"]).optional(),
+  limit: z.number().int().min(1).max(50).optional(),
+});
+
+const PostHogStatsBody = z.object({
+  days: z.number().int().min(1).max(180).optional(),
+});
+
+const GithubReleasesBody = z.object({
+  limit: z.number().int().min(1).max(20).optional(),
+  repo: z.string().optional(),
+});
+
+const ServerStatsBody = z.object({}).strict();
 
 // ─────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -353,6 +384,67 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         metadataPatch: parsed.data.metadataPatch,
       });
       res.json({ ok: true });
+    }),
+  );
+
+  // ---- get_stripe_metrics (ADR-0032) ----
+  r.post(
+    "/api/internal/openclaw/metrics/stripe",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(StripeMetricsBody, req, res);
+      if (!parsed.ok) return;
+      const result = await getStripeMetrics({ days: parsed.data.days });
+      res.json(result);
+    }),
+  );
+
+  // ---- get_sentry_issues (ADR-0032) ----
+  r.post(
+    "/api/internal/openclaw/metrics/sentry",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(SentryIssuesBody, req, res);
+      if (!parsed.ok) return;
+      const result = await getSentryIssues({
+        level: parsed.data.level,
+        limit: parsed.data.limit,
+      });
+      res.json(result);
+    }),
+  );
+
+  // ---- get_server_stats (ADR-0032) ----
+  r.post(
+    "/api/internal/openclaw/metrics/server",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(ServerStatsBody, req, res);
+      if (!parsed.ok) return;
+      const result = await getServerStats();
+      res.json(result);
+    }),
+  );
+
+  // ---- get_posthog_stats (ADR-0032) ----
+  r.post(
+    "/api/internal/openclaw/metrics/posthog",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(PostHogStatsBody, req, res);
+      if (!parsed.ok) return;
+      const result = await getPostHogStats({ days: parsed.data.days });
+      res.json(result);
+    }),
+  );
+
+  // ---- get_github_releases (ADR-0032) ----
+  r.post(
+    "/api/internal/openclaw/github/releases",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(GithubReleasesBody, req, res);
+      if (!parsed.ok) return;
+      const result = await getGithubReleases({
+        limit: parsed.data.limit,
+        repo: parsed.data.repo,
+      });
+      res.json(result);
     }),
   );
 

@@ -16,6 +16,9 @@
 > Пов'язане: [ADR-0027](../adr/0027-openclaw-console-mcp-policy.md) (політика console / MCP),
 > [ADR-0028](../adr/0028-pgvector-ai-memory.md) (pgvector AI memory),
 > [ADR-0030](../adr/0030-telegram-reporting-channel-structure.md) (forum-mode роутинг),
+> [ADR-0031](../adr/0031-openclaw-v0-telegram-cofounder.md) (OpenClaw v0 baseline),
+> [ADR-0032](../adr/0032-console-consolidated-into-openclaw.md) (Sergeant Console
+> consolidated into OpenClaw — slash-commands + ops/marketing tools live в OpenClaw),
 > [05 — Operations and Automation](./05-operations-and-automation.md) (узагальнена картина
 > n8n + OpenClaw).
 
@@ -158,6 +161,55 @@ cross-domain знання продукту. Це робить його _парт
 - Strategic templates (plan-mode, OKR-mode) — Phase 3.
 - Write-tools (mute alerts, pause workflow, commit до strategy) — Phase 4.
 
+### Phase 1.5 — Console consolidation (Sprint 0, ADR-0032, ≈ 1 PR)
+
+**Ціль:** OpenClaw поглинає everything-good з legacy `@sergeant_console_bot`
+(ADR-0027). Один surface — DM до `@OpenClaw_sergeant_bot` — і він уміє і
+говорити, і виконувати ops/marketing команди, і бачити метрики.
+
+**Scope (зроблено):**
+
+- 5 нових read-only tools у `apps/server/src/modules/openclaw/tools.ts`:
+  - `get_stripe_metrics` — Stripe charges/MRR/refunds за вікно днів.
+  - `get_sentry_issues` — open issues per severity з Sentry org.
+  - `get_server_stats` — `apps/server` /healthz proxy (DB / Redis / queue).
+  - `get_posthog_stats` — PostHog WAU + funnel events за період.
+  - `get_github_releases` — recent merged releases з `Skords-01/Sergeant`.
+    Всі — fail-soft: відсутній secret → `notConfigured: true`, не throw.
+- 5 нових internal HTTP routes (`/api/internal/openclaw/metrics/{stripe,
+sentry,server,posthog}` + `/api/internal/openclaw/github/releases`) з
+  Zod-схемами, bearer-key, audit-логом.
+- Tool definitions у `apps/console/src/agents/openclaw.ts` (тільки server-
+  side виклики через `SERVER_INTERNAL_URL`, ніяких прямих SDK у боті).
+- 5 нових slash-команд у DM (синтаксичний цукор поверх agent-loop):
+  - `/status` — operational health (server + Sentry + Stripe).
+  - `/metrics` — детальний product/revenue зріз.
+  - `/digest` — daily growth-digest у тоні weekly review.
+  - `/logs` — n8n workflow logs (через існуючий `read_workflow_logs`).
+  - `/review` — recent merged PRs / releases / open code todos.
+    Кожна команда префіл-ить prompt і йде через звичайний agent-turn з
+    audit + budget cap.
+- `runAgentTurn` helper у handler-і — DRY для DM і slash-команд.
+- `CONSOLE_BOT_TOKEN` зроблений optional (warn-and-skip), legacy console
+  гілка більше не блокує boot OpenClaw.
+
+**Acceptance:**
+
+- DM `/status` → одна цифра з кожного джерела + 1-line синтез.
+- DM `/metrics` за тиждень → MRR-delta + WAU-delta + новий churn / signups.
+- Group message → silent ignore (per ADR-0031 §2).
+- Non-founder TG ID → `Access denied` + audit row.
+- `audit `openclaw*invocations`має новий рядок з`tool_calls=['get*\*']`
+  для кожного успішного виклику slash-команди.
+
+**НЕ робимо у Phase 1.5:**
+
+- Specialist personas (`/ops`, `/growth`, `/eng`, `/finance`, `/council`)
+  — Phase 2.5 нижче.
+- Write-tools (`/run`, `/approve`, `/cancel`, `/assign` heavy) — Phase 4.
+- Окреме розгортання console — назавжди deprecated за ADR-0032; revisit
+  тільки коли team scales beyond solo founder.
+
 ### Phase 2 — Proactive ритми + cofounder memory (≈ 2 PRs, ≈ 3 дні)
 
 **Ціль:** OpenClaw перестає бути reactive. Сам ініціює діалог за розкладом
@@ -192,6 +244,57 @@ cross-domain знання продукту. Це робить його _парт
 - П'ятниця 18:00 — DM weekly review.
 - 1-го червня 09:00 — DM monthly OKR review.
 - Запит "що ми вирішили 2 тижні тому по pricing-у" → relevant recall.
+
+### Phase 2.5 — Specialist personas + "round-table" (≈ 1 PR, ≈ 2 дні)
+
+**Ціль:** OpenClaw перестає бути одним голосом. Founder може гукнути
+конкретного спеціаліста (`/ops`, `/growth`, `/eng`, `/finance`) або
+зібрати "нараду" з кількох голосів за одне питання (`/council`).
+
+Це досі **один Node-процес** і **той самий OpenClaw bot** — змінюються
+тільки persona-prompt + filtered toolset за командою. n8n тут не задіяний;
+агенти не екстерналізуються (це за дизайном — Anthropic sub-agents pattern).
+
+**Personas:**
+
+| Persona     | System prompt focus                         | Toolset (filtered)                                                                                   |
+| ----------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `cofounder` | default — синтез, опонент, holds priorities | весь tool-set                                                                                        |
+| `ops`       | reliability/incidents/n8n health            | `read_workflow_logs`, `get_sentry_issues`, `get_server_stats`, `get_stripe_metrics` (refunds/failed) |
+| `growth`    | activation, retention, funnels, content     | `get_posthog_stats`, `get_github_releases`, `read_strategy_docs`                                     |
+| `eng`       | code review, PR queue, tech-debt            | `read_github`, `query_app_db`, `read_telegram_topic_history` (engineering)                           |
+| `finance`   | MRR, runway, cofounder-budget memory        | `get_stripe_metrics`, `recall_memory`, `record_decision`                                             |
+
+**Routing:**
+
+- `/ops <q>` → primer "ти ops-engineer..." + ops-toolset → один agent-turn.
+- `@growth <q>` (inline-tag) — те саме без slash, "більш природно у DM".
+- `/council <q>` — round-table режим:
+  1. Послідовно проганяємо `/ops`, `/growth`, `/eng`, `/finance` з тим
+     самим prompt-ом (cap 3 ітерації кожен).
+  2. Один "facilitator" (cofounder persona) синтезує 4 голоси у
+     final-recommendation з explicit trade-offs.
+  3. Audit row має `tool_calls=['council:ops','council:growth',...]`.
+  4. Cost cap — `OPENCLAW_COUNCIL_USD_BUDGET=2` (окремо від щоденного $5,
+     щоб одна нарада не з'їла весь день).
+
+**Acceptance:**
+
+- `/ops чого Sentry почав сипати?` → відповідь у тоні reliability-eng з
+  Sentry-перевіркою.
+- `/council варто запускати B2B-pilot чи поки рано?` → 4 голоси + 1
+  синтез у одному message thread (4 reply-message + 1 final).
+- Switch persona в межах сесії не leak-ає toolset (eng не бачить Stripe
+  refunds).
+- Audit row для кожного `council:*` зберігає окремий cost.
+
+**НЕ робимо у Phase 2.5:**
+
+- Persona-specific memory namespaces — лишаємо `cofounder` для всіх,
+  фільтрація на rendering-time. Окремі namespace = окремий ADR.
+- Concurrency у council (паралельні запити) — sequential для cost
+  predictability у Phase 2.5; розглядаємо паралелізацію у Phase 4 коли є
+  budget telemetry.
 
 ### Phase 3 — Strategic mode (≈ 3 PRs, ≈ 5 днів)
 

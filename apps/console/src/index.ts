@@ -42,78 +42,87 @@ const HELP_TEXT = [
 ].join("\n");
 
 async function main() {
-  const botToken = process.env.CONSOLE_BOT_TOKEN;
-  if (!botToken) {
-    console.error("CONSOLE_BOT_TOKEN is not set");
-    process.exit(1);
-  }
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicKey) {
     console.error("ANTHROPIC_API_KEY is not set");
     process.exit(1);
   }
-
   const anthropic = new Anthropic({ apiKey: anthropicKey });
-  const bot = new Bot(botToken);
-  const limiter = new FixedWindowRateLimiter(
-    parseRateLimitPerMinute(process.env.CONSOLE_RATE_LIMIT_PER_MIN),
-  );
-  const checkAuth = (userId: number | undefined) =>
-    isUserAllowed(userId, process.env);
 
-  bot.command("start", async (ctx) => {
-    if (!checkAuth(ctx.from?.id)) {
-      await ctx.reply("Access denied.");
-      return;
-    }
-    await ctx.reply(HELP_TEXT, { parse_mode: "Markdown" });
-  });
+  // ADR-0032: Sergeant Console (ADR-0027) consolidated into OpenClaw. The
+  // legacy console bot is kept dormant in this process so we can revive it
+  // once team scales beyond a solo founder; until then, missing
+  // CONSOLE_BOT_TOKEN is the *expected* state, not a fatal error. Match the
+  // OpenClaw fail-closed pattern: warn + skip, keep the process alive for
+  // whichever bot is actually configured.
+  const botToken = process.env.CONSOLE_BOT_TOKEN;
+  let consolePromise: Promise<void> | undefined;
+  if (!botToken) {
+    console.warn(
+      "Sergeant Console not started: CONSOLE_BOT_TOKEN is not set (ADR-0032: dormant; OpenClaw is the active surface).",
+    );
+  } else {
+    const bot = new Bot(botToken);
+    const limiter = new FixedWindowRateLimiter(
+      parseRateLimitPerMinute(process.env.CONSOLE_RATE_LIMIT_PER_MIN),
+    );
+    const checkAuth = (userId: number | undefined) =>
+      isUserAllowed(userId, process.env);
 
-  bot.command("help", async (ctx) => {
-    if (!checkAuth(ctx.from?.id)) return;
-    await ctx.reply(HELP_TEXT, { parse_mode: "Markdown" });
-  });
-
-  bot.on("message:text", async (ctx) => {
-    if (!checkAuth(ctx.from?.id)) {
-      await ctx.reply("Access denied.");
-      return;
-    }
-    const rateLimitKey = String(ctx.from?.id ?? ctx.chat.id);
-    if (!limiter.allow(rateLimitKey)) {
-      await ctx.reply("Rate limit exceeded. Try again in a minute.");
-      return;
-    }
-
-    const text = ctx.message.text;
-    const { agent, query } = parseCommand(text);
-
-    await ctx.replyWithChatAction("typing");
-
-    try {
-      const reply = await dispatchToAgent(anthropic, agent, query, {
-        telegramUserId: ctx.from?.id ?? 0,
-        telegramChatId: ctx.chat.id,
-        messageId: ctx.message.message_id,
-      });
-      const safeReply = escapeTelegramMarkdownV2(reply);
-      for (const chunk of splitTelegramMessage(safeReply)) {
-        await ctx.reply(chunk, { parse_mode: "MarkdownV2" });
+    bot.command("start", async (ctx) => {
+      if (!checkAuth(ctx.from?.id)) {
+        await ctx.reply("Access denied.");
+        return;
       }
-    } catch (err) {
-      console.error("Agent error:", err);
-      await ctx.reply("Agent error. Try again.");
-    }
-  });
-
-  bot.catch((err) => {
-    console.error("Bot error:", err.error, {
-      updateId: err.ctx?.update?.update_id,
+      await ctx.reply(HELP_TEXT, { parse_mode: "Markdown" });
     });
-  });
 
-  console.log("Sergeant Console starting…");
-  const consolePromise = bot.start();
+    bot.command("help", async (ctx) => {
+      if (!checkAuth(ctx.from?.id)) return;
+      await ctx.reply(HELP_TEXT, { parse_mode: "Markdown" });
+    });
+
+    bot.on("message:text", async (ctx) => {
+      if (!checkAuth(ctx.from?.id)) {
+        await ctx.reply("Access denied.");
+        return;
+      }
+      const rateLimitKey = String(ctx.from?.id ?? ctx.chat.id);
+      if (!limiter.allow(rateLimitKey)) {
+        await ctx.reply("Rate limit exceeded. Try again in a minute.");
+        return;
+      }
+
+      const text = ctx.message.text;
+      const { agent, query } = parseCommand(text);
+
+      await ctx.replyWithChatAction("typing");
+
+      try {
+        const reply = await dispatchToAgent(anthropic, agent, query, {
+          telegramUserId: ctx.from?.id ?? 0,
+          telegramChatId: ctx.chat.id,
+          messageId: ctx.message.message_id,
+        });
+        const safeReply = escapeTelegramMarkdownV2(reply);
+        for (const chunk of splitTelegramMessage(safeReply)) {
+          await ctx.reply(chunk, { parse_mode: "MarkdownV2" });
+        }
+      } catch (err) {
+        console.error("Agent error:", err);
+        await ctx.reply("Agent error. Try again.");
+      }
+    });
+
+    bot.catch((err) => {
+      console.error("Bot error:", err.error, {
+        updateId: err.ctx?.update?.update_id,
+      });
+    });
+
+    console.log("Sergeant Console starting…");
+    consolePromise = bot.start();
+  }
 
   // OpenClaw — DM-only co-founder bot (ADR-0031). Fail-closed якщо env-и не
   // налаштовані — main bot стартує далі, OpenClaw тихо вимкнений з warning-ом.
@@ -149,9 +158,20 @@ async function main() {
     openclawPromise = openclawBot.start();
   }
 
-  await (openclawPromise
-    ? Promise.all([consolePromise, openclawPromise])
-    : consolePromise);
+  // Sanity: if neither bot is configured, the process has nothing to do.
+  // Exit non-zero so platform restart-loops or operators notice the misconfig
+  // (otherwise we'd silently sleep forever holding a Railway slot).
+  if (!consolePromise && !openclawPromise) {
+    console.error(
+      "No bots started: set OPENCLAW_BOT_TOKEN (and friends) or CONSOLE_BOT_TOKEN.",
+    );
+    process.exit(1);
+  }
+
+  const promises: Array<Promise<void>> = [];
+  if (consolePromise) promises.push(consolePromise);
+  if (openclawPromise) promises.push(openclawPromise);
+  await Promise.all(promises);
 }
 
 main().catch((err) => {

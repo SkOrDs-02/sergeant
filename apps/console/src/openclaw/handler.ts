@@ -36,16 +36,56 @@ import { OpenClawSessionStore } from "./session.js";
 const HELP_TEXT = [
   "*OpenClaw* — твій co-founder bot.",
   "",
-  "Я аналізую дані Sergeant (PG, GitHub, n8n logs, strategy docs)",
+  "Я аналізую дані Sergeant (PG, Stripe, Sentry, PostHog, GitHub, n8n logs, strategy docs)",
   "і даю advisory-думку. Я не пишу в продакшн.",
   "",
+  "*Швидкі команди:*",
+  "/status — короткий ops-зріз (Stripe + Sentry + healthz)",
+  "/metrics — детальні метрики за тиждень",
+  "/digest — growth-дайджест (PostHog + GitHub releases + n8n)",
+  "/logs — останні n8n executions з помилками",
+  "/review — recent PRs / merges за тиждень",
   "/decisions — останні зафіксовані рішення",
   "/budget — поточний денний spend",
   "/reset — почати нову сесію",
   "/help — ця довідка",
   "",
-  "_Phase 1, ADR-0031._",
+  "_Phase 1, ADR-0031 + ADR-0032._",
 ].join("\n");
+
+// ADR-0032: команди типу /status — це prefilled-message, який запускає той
+// самий agent-loop, що і вільний DM-текст. Так LLM зможе при потребі смикати
+// додаткові tools (recall, decisions) для контексту, а tone-modes/audit/budget
+// guardrails застосовуються однаково.
+const COMMAND_PROMPTS: Record<string, string> = {
+  status: [
+    "Дай короткий operational status зараз: Stripe charges за останні 7 днів,",
+    "Sentry unresolved issues (level=error), і /healthz сервера.",
+    "Формат — bullet-list, без зайвих коментарів.",
+  ].join(" "),
+  metrics: [
+    "Детальний metrics-зріз за останні 7 днів:",
+    "1) Stripe (success/failed/gross),",
+    "2) PostHog (pageview trend),",
+    "3) Sentry (по severity).",
+    "Покажи аномалії, якщо побачив.",
+  ].join(" "),
+  digest: [
+    "Growth-дайджест за тиждень:",
+    "PostHog pageviews trend,",
+    "найновіші GitHub releases (5 шт),",
+    "плюс топ-3 n8n workflow executions.",
+    "Дай 3 highlights і 1 ризик/блокер.",
+  ].join(" "),
+  logs: [
+    "Покажи останні n8n executions, фокус на failed/error.",
+    "Якщо є патерн — назви який workflow повторюється.",
+  ].join(" "),
+  review: [
+    "Recent GitHub releases (5) + recent PRs (issue_type=pr, is:closed) за тиждень.",
+    "Виділи: що merged, що warrants review, ризики deploy-у.",
+  ].join(" "),
+};
 
 export interface OpenClawBotConfig {
   bot: Bot;
@@ -191,31 +231,19 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     await ctx.reply(lines.join("\n"));
   });
 
-  bot.on("message:text", async (ctx) => {
-    // 1) DM-only.
-    if (!isPrivateChat(ctx.chat?.type)) return; // silent ignore
-
-    // 2) Allowlist.
+  /**
+   * Runs one OpenClaw agent turn (used by both free-form DM messages and
+   * slash-command shortcuts like `/status`, `/metrics`).
+   *
+   * Returns void; errors are logged and surfaced to the user. Caller
+   * already handled DM-only + allowlist + rate-limit gates.
+   */
+  async function runAgentTurn(
+    ctx: Context,
+    userMessage: string,
+    trigger: "dm" | "morning_ritual" | "weekly_review" | "monthly_okr",
+  ): Promise<void> {
     const userId = ctx.from?.id;
-    if (!isFounderAllowed(userId, process.env)) {
-      // Reply only if message addressed bot напряму — щоб не leak-нути
-      // bot info рандомним юзерам, які знайшли handle. У DM-у завжди
-      // адресовано.
-      await ctx.reply("Access denied.");
-      return;
-    }
-
-    // 3) Rate limit per-minute (anti-spam, окреме від budget).
-    if (!rateLimiter.allow(String(userId))) {
-      await ctx.reply("Rate limit exceeded. Спробуй за хвилину.");
-      return;
-    }
-
-    const userMessage = ctx.message.text.trim();
-    if (!userMessage) return;
-    // /commands handled outside; ось ми лише message-text-handler.
-    if (userMessage.startsWith("/")) return;
-
     const founderTgUserId = parseFounderTgUserId(
       process.env.OPENCLAW_FOUNDER_TG_USER_ID,
     );
@@ -224,21 +252,21 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
       return;
     }
 
-    // 4) Open invocation row у audit-log (status=success, потім finalize-имо).
+    // 1) Open invocation row у audit-log (status=success, потім finalize-имо).
     const openRes = await postJson<OpenInvocationResponse>(
       `${serverUrl}/api/internal/openclaw/invocations/open`,
       internalApiKey,
       {
         founderUserId,
         founderTgUserId,
-        trigger: "dm",
+        trigger,
         userMessage,
         metadata: { telegramChatId: ctx.chat?.id },
       },
     );
     const invocationId = openRes.data?.invocationId;
 
-    // 5) Budget pre-check.
+    // 2) Budget pre-check.
     const budget = await postJson<BudgetResponse>(
       `${serverUrl}/api/internal/openclaw/budget`,
       internalApiKey,
@@ -265,7 +293,7 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
       return;
     }
 
-    // 6) Run agent loop.
+    // 3) Run agent loop.
     await ctx.replyWithChatAction("typing");
     const startedAt = Date.now();
     try {
@@ -275,7 +303,7 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
         founderHandle: ctx.from?.username
           ? `@${ctx.from.username}`
           : `id:${userId}`,
-        trigger: "dm",
+        trigger,
         maxIterations,
         deps: { ...deps, invocationId },
       });
@@ -292,7 +320,7 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
 
       if (invocationId) {
         // Phase 1 не парсить cost з Anthropic-response (run-agent-loop не
-        // поверrtaє usage). Залишаємо 0 — Phase 2 wires precise accounting
+        // повертає usage). Залишаємо 0 — Phase 2 wires precise accounting
         // через intercept-у `runAgentLoop` або custom client wrapper.
         await postJson(
           `${serverUrl}/api/internal/openclaw/invocations/finalize`,
@@ -310,7 +338,7 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
       const durationMs = Date.now() - startedAt;
       const message = err instanceof Error ? err.message : String(err);
       console.error("OpenClaw agent error:", message);
-      await ctx.reply("❌ Помилка під час обробки. Спробуй ще раз.");
+      await ctx.reply("Помилка під час обробки. Спробуй ще раз.");
       if (invocationId) {
         await postJson(
           `${serverUrl}/api/internal/openclaw/invocations/finalize`,
@@ -324,6 +352,50 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
         );
       }
     }
+  }
+
+  // ADR-0032: Sergeant Console (ADR-0027) slash-команди (/ops, /content, …)
+  // зливаються в OpenClaw як preset-prompts через той самий agent-turn loop.
+  // Тригер ідентифікує запит у audit-log-у (`openclaw_invocations.trigger`).
+  for (const [cmd, preset] of Object.entries(COMMAND_PROMPTS)) {
+    bot.command(cmd, async (ctx) => {
+      if (!isAllowedDmContext(ctx)) return;
+      const userId = ctx.from?.id;
+      if (!userId) return;
+      if (!rateLimiter.allow(String(userId))) {
+        await ctx.reply("Rate limit exceeded. Спробуй за хвилину.");
+        return;
+      }
+      await runAgentTurn(ctx, preset, "dm");
+    });
+  }
+
+  bot.on("message:text", async (ctx) => {
+    // 1) DM-only.
+    if (!isPrivateChat(ctx.chat?.type)) return; // silent ignore
+
+    // 2) Allowlist.
+    const userId = ctx.from?.id;
+    if (!isFounderAllowed(userId, process.env)) {
+      // Reply only if message addressed bot напряму — щоб не leak-нути
+      // bot info рандомним юзерам, які знайшли handle. У DM-у завжди
+      // адресовано.
+      await ctx.reply("Access denied.");
+      return;
+    }
+
+    // 3) Rate limit per-minute (anti-spam, окреме від budget).
+    if (!rateLimiter.allow(String(userId))) {
+      await ctx.reply("Rate limit exceeded. Спробуй за хвилину.");
+      return;
+    }
+
+    const userMessage = ctx.message.text.trim();
+    if (!userMessage) return;
+    // /commands handled outside; ось ми лише message-text-handler.
+    if (userMessage.startsWith("/")) return;
+
+    await runAgentTurn(ctx, userMessage, "dm");
   });
 
   bot.catch((err) => {
