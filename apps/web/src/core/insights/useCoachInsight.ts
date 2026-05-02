@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { coachApi, isApiError } from "@shared/api";
 import { coachKeys } from "@shared/lib/queryKeys";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
 
@@ -9,16 +10,6 @@ const CACHE_KEY = "hub_coach_insight_cache_v1";
 
 function localDateKey(d = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function safeParseLS<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    return (JSON.parse(raw) as T) ?? fallback;
-  } catch {
-    return fallback;
-  }
 }
 
 interface CategoryAmount {
@@ -138,9 +129,8 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
 
   let fizruk: FizrukSnapshot | null = null;
   try {
-    const raw = localStorage.getItem("fizruk_workouts_v1");
-    if (raw) {
-      const p = JSON.parse(raw) as unknown;
+    const p = safeReadLS<unknown>("fizruk_workouts_v1", null);
+    if (p) {
       const allWorkouts: Array<{
         endedAt?: string;
         startedAt: string;
@@ -190,13 +180,14 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
 
   let nutrition: NutritionSnapshot | null = null;
   try {
-    const log = safeParseLS<
-      Record<
-        string,
-        { meals?: Array<{ macros?: { kcal?: number; protein_g?: number } }> }
-      >
-    >("nutrition_log_v1", {});
-    const prefs = safeParseLS<{ dailyTargetKcal?: number } | null>(
+    const log =
+      safeReadLS<
+        Record<
+          string,
+          { meals?: Array<{ macros?: { kcal?: number; protein_g?: number } }> }
+        >
+      >("nutrition_log_v1", {}) ?? {};
+    const prefs = safeReadLS<{ dailyTargetKcal?: number } | null>(
       "nutrition_prefs_v1",
       null,
     );
@@ -230,7 +221,7 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
 
   let routine: RoutineSnapshot | null = null;
   try {
-    const state = safeParseLS<{
+    const state = safeReadLS<{
       habits?: Array<{ id: string; archived?: boolean }>;
       completions?: Record<string, string[]>;
     } | null>("hub_routine_v1", null);
@@ -283,7 +274,7 @@ const coachInsightQueryKey = (todayKey = localDateKey()) =>
   coachKeys.insight(todayKey);
 
 function loadInitialInsight(todayKey: string): string | undefined {
-  const cached = safeParseLS<{ date?: string; text?: string } | null>(
+  const cached = safeReadLS<{ date?: string; text?: string } | null>(
     CACHE_KEY,
     null,
   );
@@ -312,7 +303,7 @@ export function useCoachInsight(): UseCoachInsightResult {
     gcTime: 24 * 60 * 60_000,
     initialData: () => loadInitialInsight(todayKey),
     initialDataUpdatedAt: () => {
-      const cached = safeParseLS<{ date?: string } | null>(CACHE_KEY, null);
+      const cached = safeReadLS<{ date?: string } | null>(CACHE_KEY, null);
       if (cached?.date !== todayKey) return undefined;
       return Date.now();
     },
@@ -323,19 +314,12 @@ export function useCoachInsight(): UseCoachInsightResult {
     query.data.length > 0 &&
     !query.isFetching
   ) {
-    try {
-      const cached = safeParseLS<{ date?: string; text?: string } | null>(
-        CACHE_KEY,
-        null,
-      );
-      if (cached?.date !== todayKey || cached?.text !== query.data) {
-        localStorage.setItem(
-          CACHE_KEY,
-          JSON.stringify({ date: todayKey, text: query.data }),
-        );
-      }
-    } catch {
-      /* non-fatal */
+    const cached = safeReadLS<{ date?: string; text?: string } | null>(
+      CACHE_KEY,
+      null,
+    );
+    if (cached?.date !== todayKey || cached?.text !== query.data) {
+      safeWriteLS(CACHE_KEY, { date: todayKey, text: query.data });
     }
   }
 
