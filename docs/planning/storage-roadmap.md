@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
 > **Status:** Active
 
-> Зріз: 2026-05-01. Базується на storage-аудиті + поточний стек:
+> Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
 > Vercel (web), Railway (Postgres+API), Expo SDK 52 + RN 0.76.9 (mobile),
 > Capacitor (mobile-shell WebView), pnpm 9.15 + Turbo, Vite 6.4, Better Auth,
 > TanStack Query 5.99.
@@ -86,7 +86,7 @@
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------- | ---------- | --------------------------------------------------------------------- |
 | **0. Hygiene/P0**           | Закриває security-debt без перебудови. Цінне навіть якщо далі не йдемо.                                           | 2 тижні   | 0.5 FTE    | Можна зупинитись після Stage 0 — все ще +30% impact.                  |
 | **1. Consolidation**        | Один KVStore, один SYNC_MODULES, IDB consolidated, LS-burndown finished. Без SQLite.                              | 4 тижні   | 1 FTE      | Stop тут = просто чистіша поточна архітектура, ще без SQLite.         |
-| **2. Foundation**           | Drizzle ORM, sqlite-wasm + expo-sqlite installed but не використовуються в фічах, schema runner, COOP/COEP infra. | 3 тижні   | 1 FTE      | Якщо OPFS bench не задовольняє — stop, повертаємось до Stage 1.       |
+| **2. Foundation** ✅         | Drizzle ORM, sqlite-wasm + expo-sqlite installed but не використовуються в фічах, schema runner, COOP/COEP infra. | 3 тижні   | 1 FTE      | Якщо OPFS bench не задовольняє — stop, повертаємось до Stage 1.       |
 | **3. SPIKE (routine)**      | Один модуль повністю на SQLite. Decision gate: gо/no-gо.                                                          | 2 тижні   | 1 FTE      | Якщо спайк fail-ить — fallback на Stage 1 + custom op-log без SQLite. |
 | **4. Per-module migration** | fizruk → nutrition → finyk на SQLite. Dual-write, потім cut-over.                                                 | 12 тижнів | 1 FTE      | Можна паузу на будь-якому модулі.                                     |
 | **5. Sync v2**              | Op-log persisted, idempotent push, real-time pull (SSE), CRDT для routine/nutrition.                              | 4 тижні   | 1 FTE      | Опційно — без CRDT system все ще працює (LWW), просто нижче UX.       |
@@ -258,7 +258,10 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 
 ---
 
-### Stage 2 — Foundation для SQLite
+### Stage 2 — Foundation для SQLite ✅ COMPLETE
+
+> **Статус:** Усі 8 PR-ів (#014–#021) зленділи станом на 2026-05-02.
+> Наступний крок — Stage 3 SPIKE (decision gate: go/no-go для SQLite).
 
 #### **PR #014 — `feat: add Drizzle ORM as cross-platform schema source of truth`** ✅ LANDED — [#1290](https://github.com/Skords-01/Sergeant/pull/1290)
 
@@ -592,8 +595,9 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   IDB-консолідовано, LS-burndown done. **Можна зупинитись на Stage 1**
   якщо ризик SQLite-міграції здається завеликим. Все ще приблизно 60% impact
   від повного roadmap.
-- **Після Stage 2 (тиждень 9):** review — Drizzle працює, sqlite-wasm
-  ленді, OPFS infra на Vercel налаштована. Decision: чи йдемо у SPIKE.
+- **Після Stage 2 (тиждень 9):** ✅ **PASSED (2026-05-02).** Drizzle працює,
+  sqlite-wasm ленді, OPFS infra на Vercel налаштована, op-log sync v2
+  ендпоінти задеплоєні. **Decision: чи йдемо у SPIKE — PENDING.**
 - **Після Stage 3 SPIKE (тиждень 11):** **HARD GATE.** Якщо SPIKE fail-ить
   pass-criteria — STOP. Документуємо learnings, повертаємось до Stage 1+
   без SQLite. Якщо pass — full GO.
@@ -622,16 +626,16 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 
 Якщо план approve — починаємо так:
 
-1. **Тиждень 1:** PR #001 (MMKV encryption) + PR #002 (FINYK_TOKEN cleanup) +
-   PR #004 (query-cache excludes). Це security-quick-wins, низький ризик.
-2. **Тиждень 2:** PR #003 (webhook rotation) + PR #005 (sync_audit) +
-   review Stage 0.
-3. **Тиждень 3-6:** Stage 1 (Consolidation). PR #006 → #013.
-4. **Тиждень 7:** Перший draft RFC у `docs/rfcs/2026-q3-sqlite-migration.md`
-   з фіксованими decision criteria для SPIKE.
-5. **Тиждень 8-9:** Stage 2 (Foundation) — найризикованіша частина в плані
-   bundle/CORP/iOS-compat.
-6. **Тиждень 10-11:** SPIKE. Hard decision gate.
+1. ~~**Тиждень 1:** PR #001 (MMKV encryption) + PR #002 (FINYK_TOKEN cleanup) +
+   PR #004 (query-cache excludes). Це security-quick-wins, низький ризик.~~
+2. ~~**Тиждень 2:** PR #003 (webhook rotation) + PR #005 (sync_audit) +
+   review Stage 0.~~
+3. ~~**Тиждень 3-6:** Stage 1 (Consolidation). PR #006 → #013.~~
+4. ~~**Тиждень 7:** Перший draft RFC у `docs/rfcs/2026-q3-sqlite-migration.md`
+   з фіксованими decision criteria для SPIKE.~~
+5. ~~**Тиждень 8-9:** Stage 2 (Foundation) — найризикованіша частина в плані
+   bundle/CORP/iOS-compat.~~ ✅ **Stage 2 завершено (2026-05-02).** Усі 8 PR-ів (#014–#021) landed.
+6. **Тиждень 10-11:** SPIKE. Hard decision gate. ← **НАСТУПНИЙ КРОК**
 
 ---
 
