@@ -62,6 +62,18 @@ describe("dispatcher command payloads", () => {
     });
   });
 
+  it("can mark OpenClaw as the dispatcher source", () => {
+    expect(
+      buildDispatcherPayload({
+        source: "openclaw",
+        commandText: "review ci",
+        telegramUserId: 42,
+        telegramChatId: 42,
+        messageId: 78,
+      }).source,
+    ).toBe("openclaw");
+  });
+
   it("treats production writes as approval-gated", () => {
     expect(requiresApproval("run db migration")).toBe(true);
     expect(requiresApproval("logs railway api")).toBe(false);

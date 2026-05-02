@@ -33,7 +33,7 @@ export interface DispatcherClassification {
 }
 
 export interface DispatcherPayload extends DispatcherClassification {
-  source: "telegram-console";
+  source: "telegram-console" | "openclaw";
   commandText: string;
   telegram: {
     userId: number;
@@ -124,6 +124,13 @@ function chooseSpecialist(commandText: string): SpecialistAgent {
     return "growth-marketing";
   }
   if (
+    normalized.includes("ci") ||
+    normalized.includes("test") ||
+    normalized.includes("check")
+  ) {
+    return "qa-release";
+  }
+  if (
     normalized.includes("security") ||
     normalized.includes("secret") ||
     normalized.includes("credential") ||
@@ -182,13 +189,14 @@ export function classifyDispatcherCommand(
 }
 
 export function buildDispatcherPayload(input: {
+  source?: DispatcherPayload["source"];
   commandText: string;
   telegramUserId: number;
   telegramChatId: number;
   messageId: number;
 }): DispatcherPayload {
   return {
-    source: "telegram-console",
+    source: input.source ?? "telegram-console",
     commandText: input.commandText,
     ...classifyDispatcherCommand(input.commandText),
     telegram: {
@@ -203,6 +211,7 @@ export function formatApprovalPrompt(payload: DispatcherPayload): string {
   return [
     "Approval required.",
     "",
+    `Source: ${payload.source}`,
     `Action: ${payload.action}`,
     `Specialist: ${payload.specialist}`,
     `Risk: ${payload.riskTier}`,
