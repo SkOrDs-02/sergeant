@@ -1,6 +1,6 @@
 # Sergeant Design System
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
 > **Status:** Active
 
 Єдина візуальна мова для хаба з 4 модулями: **ФІНІК**, **ФІЗРУК**, **Рутина**,
@@ -254,15 +254,51 @@ import {
 
 ### Card
 
-- **Variants**: `default` · `interactive` · `flat` · `elevated` · `ghost`
-  - модульні (`finyk`/`fizruk`/`routine`/`nutrition` + soft-версії).
-- **Radius**: `md` / `lg` / `xl` (дефолт 2xl для плоских, 3xl для hero).
+`Card` має дві ортогональні осі рішень:
+
+1. **Identity** (`module?: 'finyk'|'fizruk'|'routine'|'nutrition'`) — чи
+   ця картка брендована для конкретного модуля.
+2. **Prominence** (`prominence?`) — наскільки голосно картка має звучати
+   на сторінці:
+   - `hero` — повний насичений brand surface (`bg-hero-{module}` у світлій,
+     `bg-{module}-soft` у темній). Для module dashboard hero / first
+     screen.
+   - `soft` — module surface на панелі, без `/50`-washout. Підкартки
+     всередині module screen.
+   - `tinted` — нейтральна panel + module-tinted hairline. Найтихіше
+     module identity — модуль належить, але контент важливіший.
+   - `flat` / `elevated` / `interactive` / `ghost` / `default` — neutral
+     surfaces без module-tint (працюють і самі, і в парі з `module` для
+     module-tinted hairline).
+
+- **Radius** (`radius?: 'md'|'lg'|'xl'`) — дефолт `xl` (rounded-3xl);
+  для legacy-варіантів `*-soft` зберігається історичний дефолт `lg`
+  (rounded-2xl) щоб не ламати call-сайти. **Radius проп завжди виграє** —
+  попередній footgun «module-варіанти мовчки запікали `rounded-3xl`»
+  закритий.
+- **Dark-mode parity**: module surfaces резолвлять tint через
+  `--c-{module}-soft*` з `apps/web/src/index.css`. У світлій темі це
+  `-50/-200`-сім'я; у темній — `-900/-800`. Module identity лишається
+  присутньою через перемикання теми — light-картки більше не колапсують
+  у нейтральний panel у dark.
 - **Padding**: `none` / `sm` / `md` / `lg` / `xl`.
 - **Subcomponents**: `CardHeader`, `CardTitle`, `CardDescription`,
   `CardContent`, `CardFooter`. Використовуй їх замість ручного
   `<div className="p-4 flex items-center justify-between">`.
-- `interactive` — hover-lift + active scale, правильний focus ring для
-  клік-карток.
+- **Legacy `variant` prop**: рядкова union (`default` / `interactive` /
+  `flat` / `elevated` / `ghost` / `finyk` / `finyk-soft` / …) лишається
+  робочою — module-стрічки внутрішньо мапляться у `(module, prominence)`.
+  У новому коді **обирай orthogonal API**.
+
+```tsx
+// Нова форма (preferred)
+<Card module="finyk" prominence="hero" radius="xl">…</Card>
+<Card module="finyk" prominence="soft" radius="lg">…</Card>
+<Card module="nutrition" prominence="tinted">…</Card>
+
+// Legacy (досі працює)
+<Card variant="finyk-soft">…</Card>
+```
 
 ### Input / Textarea / Select
 

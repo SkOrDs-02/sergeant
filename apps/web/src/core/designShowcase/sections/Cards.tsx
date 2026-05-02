@@ -28,28 +28,60 @@ export function CardsSection() {
         </div>
       </Group>
 
-      <Group label="Module hero cards">
+      <Group label="Module hero (prominence='hero')">
         <div className="grid grid-cols-2 gap-4">
           {(["finyk", "fizruk", "routine", "nutrition"] as const).map(
-            (variant) => (
-              <Card key={variant} variant={variant} padding="lg">
-                <div className="text-sm font-bold">{variant}</div>
-                <div className="text-2xs text-muted mt-1">Module hero</div>
+            (module) => (
+              <Card key={module} module={module} prominence="hero" padding="lg">
+                <div className="text-sm font-bold">{module}</div>
+                <div className="text-2xs text-muted mt-1">
+                  module=&quot;{module}&quot; prominence=&quot;hero&quot;
+                </div>
               </Card>
             ),
           )}
-          {(
-            [
-              "finyk-soft",
-              "fizruk-soft",
-              "routine-soft",
-              "nutrition-soft",
-            ] as const
-          ).map((variant) => (
-            <Card key={variant} variant={variant} padding="md">
-              <div className="text-xs font-semibold text-text">{variant}</div>
-            </Card>
-          ))}
+        </div>
+      </Group>
+
+      <Group label="Module soft (prominence='soft')">
+        <div className="grid grid-cols-2 gap-4">
+          {(["finyk", "fizruk", "routine", "nutrition"] as const).map(
+            (module) => (
+              <Card
+                key={module}
+                module={module}
+                prominence="soft"
+                radius="lg"
+                padding="md"
+              >
+                <div className="text-xs font-semibold text-text">{module}</div>
+                <div className="text-2xs text-muted mt-1">
+                  module=&quot;{module}&quot; prominence=&quot;soft&quot;
+                </div>
+              </Card>
+            ),
+          )}
+        </div>
+      </Group>
+
+      <Group label="Module tinted (prominence='tinted') — quietest identity">
+        <div className="grid grid-cols-2 gap-4">
+          {(["finyk", "fizruk", "routine", "nutrition"] as const).map(
+            (module) => (
+              <Card
+                key={module}
+                module={module}
+                prominence="tinted"
+                radius="lg"
+                padding="md"
+              >
+                <div className="text-xs font-semibold text-text">{module}</div>
+                <div className="text-2xs text-muted mt-1">
+                  module=&quot;{module}&quot; prominence=&quot;tinted&quot;
+                </div>
+              </Card>
+            ),
+          )}
         </div>
       </Group>
 
