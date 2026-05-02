@@ -28,6 +28,31 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    services:
+      # pgvector/pgvector:pg16 — Postgres 16 + the `vector` extension
+      # required by migration 025_ai_memories_pgvector.sql (plain
+      # postgres:16-alpine breaks `db:migrate:dev` at boot).
+      postgres:
+        image: pgvector/pgvector:pg16@sha256:7d400e340efb42f4d8c9c12c6427adb253f726881a9985d2a471bf0eed824dff
+        env:
+          POSTGRES_USER: hub
+          POSTGRES_PASSWORD: hub
+          POSTGRES_DB: hub
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hub -d hub"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://hub:hub@127.0.0.1:5432/hub
+      BETTER_AUTH_SECRET: smoke_test_better_auth_secret_32_chars_min
+      AI_QUOTA_DISABLED: "1"
+      VITE_API_BASE_URL: http://127.0.0.1:3000
+      ALLOWED_ORIGINS: http://127.0.0.1:4173
+
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -47,15 +72,42 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm --filter @sergeant/web exec playwright install --with-deps chromium
 
+      - name: Run database migrations
+        run: pnpm --filter @sergeant/server db:migrate:dev
+
       - name: Build web app
         run: pnpm --filter @sergeant/web build
+
+      - name: Start API server
+        # Surfaces under test (welcome, hub, finyk, fizruk, …) issue
+        # `/api/v1/*` calls during render. Without an upstream the vite
+        # preview proxy emits ECONNREFUSED noise that drags page-load past
+        # the networkidle timeout and produces flaky screenshots. We
+        # background the server here and wait for /health below — same
+        # pattern as the critical-flow job in ci.yml.
+        run: pnpm --filter @sergeant/server dev &
+
+      - name: Start Vite preview server
+        run: pnpm --filter @sergeant/web preview -- --port 4173 --host 127.0.0.1 &
+
+      - name: Wait for servers
+        run: |
+          echo "Waiting for API server on :3000…"
+          timeout 60 bash -c 'until curl -sf http://127.0.0.1:3000/health >/dev/null 2>&1; do sleep 2; done'
+          echo "Waiting for preview server on :4173…"
+          timeout 60 bash -c 'until curl -sf http://127.0.0.1:4173 >/dev/null 2>&1; do sleep 2; done'
+          echo "Both servers ready."
 
       - name: Run visual regression screenshots
         run: pnpm --filter @sergeant/web test:visual
         env:
           CI: "true"
-          # PW_SKIP_WEBSERVER: playwright.visual.config.ts uses `vite preview`
-          # which needs the built output. The webServer block handles it.
+          # PW_SKIP_WEBSERVER: skip the `vite preview` block in
+          # playwright.visual.config.ts — we start it explicitly above so
+          # the API server is online before the preview proxy first
+          # forwards `/api/v1/*` requests.
+          PW_SKIP_WEBSERVER: "1"
+          PW_BASE_URL: http://127.0.0.1:4173
           ARGOS_TOKEN: ${{ secrets.ARGOS_TOKEN }}
 
       - name: Upload screenshots as artifact (fallback when ARGOS_TOKEN absent)

@@ -14,11 +14,17 @@ afterEach(cleanup);
 describe("Popover", () => {
   it("renders trigger and hides panel when closed", () => {
     const { getByRole, queryByRole } = render(
-      <Popover trigger={<button>Open</button>}>
+      <Popover trigger={<span>Open</span>}>
         <button>Item</button>
       </Popover>,
     );
-    // Trigger is visible
+    // Trigger is visible. The Popover wraps the trigger in a
+    // `<div role="button">` so we look up by the wrapper's accessible
+    // name (derived from its child text). Passing a `<button>` as the
+    // trigger would nest a real button inside the wrapper button — DOM
+    // contract says only one of them can be the focusable trigger, so
+    // we use a `<span>` here to mirror the production pattern (consumers
+    // pass non-interactive content; the Popover provides the role).
     expect(getByRole("button", { name: "Open" })).toBeTruthy();
     // Panel not rendered when closed
     expect(queryByRole("menu")).toBeNull();
