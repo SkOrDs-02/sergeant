@@ -10,6 +10,11 @@ import {
   serializeWorkoutsToStorage,
   WORKOUTS_STORAGE_KEY,
 } from "../lib/fizrukStorage";
+import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
+import {
+  useFizrukSqliteReadFlag,
+  useFizrukSqliteReadTick,
+} from "../lib/sqliteReadGate";
 
 /**
  * Window event fired when persisting workouts to `localStorage` throws
@@ -120,6 +125,8 @@ export function makeDefaultCooldown(): ChecklistItem[] {
 export function useWorkouts() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const sqliteReadEnabled = useFizrukSqliteReadFlag();
+  const sqliteCacheTick = useFizrukSqliteReadTick();
 
   useEffect(() => {
     try {
@@ -133,6 +140,16 @@ export function useWorkouts() {
     } catch {}
     setLoaded(true);
   }, []);
+
+  // Stage 4 PR #029: under `feature.fizruk.sqlite_v2.read_sqlite`, overlay
+  // workouts from the local SQLite cache once it's warm. LS reads above stay
+  // as a synchronous fallback so the first paint never blocks on SQLite.
+  useEffect(() => {
+    if (!sqliteReadEnabled) return;
+    const cache = getCachedFizrukSqliteState();
+    if (cache.refreshedAt === null) return;
+    setWorkouts(cache.workouts);
+  }, [sqliteReadEnabled, sqliteCacheTick]);
 
   /**
    * Persist an updated workouts array to localStorage.

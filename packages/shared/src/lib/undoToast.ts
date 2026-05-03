@@ -6,7 +6,7 @@
  * API differs (web's `useToast` exposes `show(msg, type, duration, action)`
  * with `onClick`; React Native uses `onPress`). Both implementations import
  * these constants so wording and timing stay in sync — see
- * `apps/web/src/shared/lib/undoToast.tsx`.
+ * `apps/web/src/shared/lib/ui/undoToast.tsx`.
  */
 
 /** Default visible duration in ms (5 sec, matching the original product brief). */

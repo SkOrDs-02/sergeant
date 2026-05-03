@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import type { InlineAiState } from "./useInlineAiRail";
 
 export interface InlineAiRailProps {

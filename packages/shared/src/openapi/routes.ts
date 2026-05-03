@@ -339,14 +339,17 @@ export const paths: ZodOpenApiPathsObject = {
     post: {
       summary: "Отримати останній зашифрований backup nutrition-blob",
       description:
-        "Token-authenticated через header `x-token`. Повертає 404, якщо " +
-        "для наданого токена бекапів ще немає. Роут під `requireSession()` — " +
-        "потрібна активна сесія ЧИ Bearer-токен НА ДОДАЧУ до запитуваного `x-token`.",
+        "Роут під `requireSession()` — потрібна активна сесія або " +
+        "Bearer-токен. Storage key bind-иться до `req.user.id` через " +
+        "HMAC-SHA256(`NUTRITION_BACKUP_KEY_SECRET`, `userId|x-token`), " +
+        "тому `x-token` лише namespace-ить кілька бекапів одного юзера " +
+        "(наприклад, по пристроях) і НЕ використовується для авторизації. " +
+        "Повертає 404, якщо для пари (userId, x-token) бекапів ще немає.",
       tags: ["nutrition"],
       security: cookieOrBearer,
       requestParams: {
-        // `x-token` формує ключ для пошуку бекап-файлу в файловій сховищі сервера
-        // (див. `apps/server/src/modules/nutrition/backup-download.ts:safeKeyFromToken`).
+        // `x-token` формує namespace для бекап-файлу в межах одного юзера
+        // (див. `apps/server/src/lib/backupKey.ts:safeBackupKeyFromToken`).
         // Без цього хедера в контракті generated-клієнти і люди-читачі не можуть
         // виявити який вхід потрібен для отримання бекапу.
         header: z.object({
@@ -354,7 +357,8 @@ export const paths: ZodOpenApiPathsObject = {
             .string()
             .min(1)
             .describe(
-              "Опаковий токен, який хешується для формування імені файлу бекапу.",
+              "Опаковий namespace-токен для розрізнення кількох бекапів " +
+                "одного юзера (наприклад, per device).",
             ),
         }),
       },

@@ -66,7 +66,7 @@ describe("applyFizrukDualWriteOps", () => {
     expect(result.applied).toBe(1);
 
     // Verify workout row
-    const workouts = handle.client.all<Record<string, unknown>>(
+    const workouts = await handle.client.all<Record<string, unknown>>(
       "SELECT * FROM fizruk_workouts WHERE id = ?",
       ["w1"],
     );
@@ -76,7 +76,7 @@ describe("applyFizrukDualWriteOps", () => {
     expect(workouts[0].deleted_at).toBeNull();
 
     // Verify item row
-    const items = handle.client.all<Record<string, unknown>>(
+    const items = await handle.client.all<Record<string, unknown>>(
       "SELECT * FROM fizruk_workout_items WHERE workout_id = ?",
       ["w1"],
     );
@@ -85,7 +85,7 @@ describe("applyFizrukDualWriteOps", () => {
     expect(items[0].name_uk).toBe("Жим лежачи");
 
     // Verify set rows
-    const sets = handle.client.all<Record<string, unknown>>(
+    const sets = await handle.client.all<Record<string, unknown>>(
       "SELECT * FROM fizruk_workout_sets WHERE workout_item_id = ? ORDER BY sort_order",
       ["i1"],
     );
@@ -142,21 +142,21 @@ describe("applyFizrukDualWriteOps", () => {
     expect(result.applied).toBe(1);
 
     // Workout should be soft-deleted
-    const workouts = handle.client.all<Record<string, unknown>>(
+    const workouts = await handle.client.all<Record<string, unknown>>(
       "SELECT deleted_at FROM fizruk_workouts WHERE id = ?",
       ["w1"],
     );
     expect(workouts[0].deleted_at).toBe(TS2);
 
     // Items should be soft-deleted too
-    const items = handle.client.all<Record<string, unknown>>(
+    const items = await handle.client.all<Record<string, unknown>>(
       "SELECT deleted_at FROM fizruk_workout_items WHERE workout_id = ?",
       ["w1"],
     );
     expect(items[0].deleted_at).toBe(TS2);
 
     // Sets should be soft-deleted too
-    const sets = handle.client.all<Record<string, unknown>>(
+    const sets = await handle.client.all<Record<string, unknown>>(
       "SELECT deleted_at FROM fizruk_workout_sets WHERE workout_item_id = ?",
       ["i1"],
     );
@@ -208,7 +208,7 @@ describe("applyFizrukDualWriteOps", () => {
       logger: silentLogger,
     });
 
-    const workouts = handle.client.all<Record<string, unknown>>(
+    const workouts = await handle.client.all<Record<string, unknown>>(
       "SELECT note FROM fizruk_workouts WHERE id = ?",
       ["w1"],
     );
@@ -231,7 +231,7 @@ describe("applyFizrukDualWriteOps", () => {
     });
     expect(result.applied).toBe(1);
 
-    const rows = handle.client.all<Record<string, unknown>>(
+    const rows = await handle.client.all<Record<string, unknown>>(
       "SELECT * FROM fizruk_custom_exercises WHERE id = ?",
       ["cex1"],
     );
@@ -251,7 +251,7 @@ describe("applyFizrukDualWriteOps", () => {
       logger: silentLogger,
     });
 
-    const after = handle.client.all<Record<string, unknown>>(
+    const after = await handle.client.all<Record<string, unknown>>(
       "SELECT deleted_at FROM fizruk_custom_exercises WHERE id = ?",
       ["cex1"],
     );
@@ -279,7 +279,7 @@ describe("applyFizrukDualWriteOps", () => {
     });
     expect(result.applied).toBe(1);
 
-    const rows = handle.client.all<Record<string, unknown>>(
+    const rows = await handle.client.all<Record<string, unknown>>(
       "SELECT * FROM fizruk_measurements WHERE id = ?",
       ["m1"],
     );
@@ -297,7 +297,7 @@ describe("applyFizrukDualWriteOps", () => {
       logger: silentLogger,
     });
 
-    const after = handle.client.all<Record<string, unknown>>(
+    const after = await handle.client.all<Record<string, unknown>>(
       "SELECT deleted_at FROM fizruk_measurements WHERE id = ?",
       ["m1"],
     );

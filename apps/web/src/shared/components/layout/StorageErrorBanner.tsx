@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Banner } from "@shared/components/ui/Banner";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 /**
  * Persistent storage-error banner shared by Sergeant modules.

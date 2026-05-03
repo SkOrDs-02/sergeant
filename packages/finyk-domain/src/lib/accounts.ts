@@ -2,7 +2,11 @@ import { CURRENCY } from "../constants";
 
 export interface MonoAccount {
   id?: string;
-  balance: number;
+  // The Mono webhook may surface accounts before balance has propagated
+  // (and the privatbank merge in `useUnifiedFinanceData` reuses this
+  // shape with optional balance), so this field is optional. Helpers
+  // below treat a missing balance as `0`.
+  balance?: number;
   creditLimit?: number;
   currencyCode?: number;
   type?: string;
@@ -10,19 +14,21 @@ export interface MonoAccount {
 
 export function getMonoDebt(acc: MonoAccount): number {
   const creditLimit = acc.creditLimit ?? 0;
-  if (creditLimit > 0) return Math.max(0, (creditLimit - acc.balance) / 100);
-  if (acc.balance < 0) return Math.abs(acc.balance) / 100;
+  const balance = acc.balance ?? 0;
+  if (creditLimit > 0) return Math.max(0, (creditLimit - balance) / 100);
+  if (balance < 0) return Math.abs(balance) / 100;
   return 0;
 }
 
 export function isMonoDebt(acc: MonoAccount): boolean {
   const creditLimit = acc.creditLimit ?? 0;
-  if (creditLimit > 0) return creditLimit - acc.balance > 0;
+  const balance = acc.balance ?? 0;
+  if (creditLimit > 0) return creditLimit - balance > 0;
   // Дебетова картка у мінусі (овердрафт / реверс комісії) — теж борг.
   // До фіксу ця гілка `getMonoDebt` була недосяжна з `getMonoTotals`,
   // бо `isMonoDebt` вимагав `creditLimit > 0`, і від'ємні дебетові
   // баланси мовчки не йшли у networth.
-  return acc.balance < 0;
+  return balance < 0;
 }
 
 export function daysUntil(day: number): number {
@@ -47,11 +53,11 @@ export function getMonoTotals(
   const balance = visible
     .filter(
       (a) =>
-        a.balance > 0 &&
+        (a.balance ?? 0) > 0 &&
         !a.creditLimit &&
         a.currencyCode === (CURRENCY.UAH as number),
     )
-    .reduce((sum, a) => sum + a.balance / 100, 0);
+    .reduce((sum, a) => sum + (a.balance ?? 0) / 100, 0);
   // Приховані рахунки виключаємо і з balance, і з debt —
   // інакше при схованій кредитці `networth = balance - debt` займає
   // її борг, а сама кредитка не видна у списку.

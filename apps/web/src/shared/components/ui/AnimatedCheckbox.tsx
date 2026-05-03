@@ -1,6 +1,6 @@
 import { memo, useState, useCallback, useRef, useEffect } from "react";
-import { cn } from "../../lib/cn";
-import { hapticTap, hapticSuccess } from "../../lib/haptic";
+import { cn } from "../../lib/ui/cn";
+import { hapticTap, hapticSuccess } from "../../lib/adapters/haptic";
 import { Icon } from "./Icon";
 
 /**
@@ -253,7 +253,7 @@ export const HabitCheckbox = memo(function HabitCheckbox({
       <div className="flex-1 min-w-0">
         <span
           className={cn(
-            "text-sm font-semibold text-text transition-all duration-300",
+            "text-style-label text-text transition-all duration-300",
             checked && "line-through text-muted",
           )}
         >

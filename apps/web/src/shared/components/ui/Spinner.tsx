@@ -1,5 +1,5 @@
 import type { SVGAttributes } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 /**
  * Sergeant Design System — Spinner

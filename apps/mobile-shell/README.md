@@ -20,7 +20,7 @@ React Native). Співіснують навмисно: `applicationId` у shell
 | Status bar + splash + keyboard + deep links   | `@capacitor/{status-bar,splash-screen,keyboard,app}` — [#506](https://github.com/Skords-01/Sergeant/pull/506)                                                                                                                                                                                               |
 | Android hardware Back → web-history traversal | `@capacitor/app#backButton` — `canGoBack` → `window.history.back()`, інакше `App.exitApp()`                                                                                                                                                                                                                 |
 | Android native проєкт (закомічено)            | `android/` (з `cap add android`)                                                                                                                                                                                                                                                                            |
-| Push у shell — лише нативний (FCM/APNs)       | `@capacitor/push-notifications` через `@shared/lib/pushNative`. Web Push (VAPID + `PushManager.subscribe`) повністю виключений з shell-бандла через `VITE_TARGET=capacitor` + dynamic `import()` → [#524](https://github.com/Skords-01/Sergeant/pull/524)                                                   |
+| Push у shell — лише нативний (FCM/APNs)       | `@capacitor/push-notifications` через `@shared/lib/adapters/pushNative`. Web Push (VAPID + `PushManager.subscribe`) повністю виключений з shell-бандла через `VITE_TARGET=capacitor` + dynamic `import()` → [#524](https://github.com/Skords-01/Sergeant/pull/524)                                          |
 | Android debug-APK у CI                        | [`.github/workflows/mobile-shell-android.yml`](../../.github/workflows/mobile-shell-android.yml) → артефакт `sergeant-shell-debug-apk`                                                                                                                                                                      |
 | Android release-signing + ProGuard/R8         | `signingConfigs.release` у `android/app/build.gradle` читає `SERGEANT_RELEASE_*` з env/`gradle.properties`; `minifyEnabled true` + `shrinkResources true` + Capacitor keep-rules у `android/app/proguard-rules.pro`                                                                                         |
 | Android release pipeline (AAB + APK у CI)     | [`.github/workflows/mobile-shell-android-release.yml`](../../.github/workflows/mobile-shell-android-release.yml) → `sergeant-shell-release-aab` (Play) + `sergeant-shell-release-apk` (sideload); setup-інструкція — [`docs/mobile/shell.md#release--android`](../../docs/mobile/shell.md#release--android) |
@@ -35,7 +35,7 @@ Web-side інтеграції:
 - `apps/web/src/shared/lib/platform.ts` → `isCapacitor()` — runtime-guard
   **без compile-time залежності** від `@capacitor/core`. Всі native-import-и
   у web йдуть за цим guard-ом через dynamic `import()`.
-- `apps/web/src/shared/lib/bearerToken.ts` — єдина точка читання/запису
+- `apps/web/src/shared/lib/api/bearerToken.ts` — єдина точка читання/запису
   bearer-токена з `@sergeant/mobile-shell/auth-storage`.
 - `apps/web/vite.config.js#manualChunks` навмисно виключає
   `/node_modules/@capacitor/` з `vendor`, щоб Capacitor-плагіни їхали

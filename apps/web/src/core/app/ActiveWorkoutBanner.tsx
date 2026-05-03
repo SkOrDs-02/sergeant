@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
-import { openHubModule } from "@shared/lib/hubNav";
+import { openHubModule } from "@shared/lib/modules/hubNav";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
 
 /**
@@ -68,7 +68,7 @@ export function ActiveWorkoutBanner({ hidden = false }: { hidden?: boolean }) {
           <Icon name="dumbbell" size={16} strokeWidth={2.25} />
           <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success ring-2 ring-fizruk-strong motion-safe:animate-pulse" />
         </span>
-        <span className="text-sm font-semibold whitespace-nowrap">{label}</span>
+        <span className="text-style-label whitespace-nowrap">{label}</span>
       </button>
     </div>
   );

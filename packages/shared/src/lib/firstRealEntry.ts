@@ -19,7 +19,7 @@ import {
   markFirstRealEntryDone,
   saveTimeToValueMs,
 } from "./vibePicks";
-import { readJSON, type KVStore } from "./kvStore";
+import { readJSON, type KVStore } from "../storage/kv";
 
 // Storage keys inspected by `hasAnyRealEntry`. Centralised here so
 // the web and mobile adapters don't drift.

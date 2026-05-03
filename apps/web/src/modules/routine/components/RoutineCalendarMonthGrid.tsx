@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { ROUTINE_THEME as C } from "../lib/routineConstants";
@@ -61,7 +61,7 @@ export function RoutineCalendarMonthGrid({
           >
             ‹
           </button>
-          <span className="text-sm font-semibold capitalize flex-1 text-center">
+          <span className="text-style-label capitalize flex-1 text-center">
             {monthTitle}
           </span>
           <button
@@ -118,7 +118,7 @@ export function RoutineCalendarMonthGrid({
                 aria-label={aria}
                 aria-pressed={sel}
                 className={cn(
-                  "aspect-square min-h-[40px] rounded-xl text-sm font-semibold flex flex-col items-center justify-center gap-0.5 transition-colors",
+                  "text-style-label aspect-square min-h-[40px] rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors",
                   sel
                     ? C.monthSel
                     : "hover:bg-panelHi border border-transparent",
@@ -151,7 +151,7 @@ export function RoutineCalendarMonthGrid({
           <button
             type="button"
             onClick={() => onPlanFizruk(selectedDay)}
-            className="mt-2 w-full rounded-xl border border-sky-400/30 bg-sky-500/5 hover:bg-sky-500/10 px-3 py-2 text-xs font-medium text-info-strong dark:text-info transition-colors text-center"
+            className="text-style-caption mt-2 w-full rounded-xl border border-sky-400/30 bg-sky-500/5 hover:bg-sky-500/10 px-3 py-2 text-info-strong dark:text-info transition-colors text-center"
           >
             Планувати тренування
           </button>
@@ -201,7 +201,7 @@ export function RoutineCalendarMonthGrid({
                           : C.dot,
                     )}
                   />
-                  <span className="flex-1 min-w-0 text-sm font-medium text-text truncate">
+                  <span className="text-style-label flex-1 min-w-0 text-text truncate">
                     {e.title}
                   </span>
                   <span className="text-2xs text-subtle shrink-0">

@@ -44,14 +44,14 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
     <Card radius="lg" padding="none" className="overflow-hidden">
       <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
         <Icon name="lock" size={16} className="text-muted" />
-        <span className="text-sm font-semibold text-text">Пароль</span>
+        <span className="text-style-label text-text">Пароль</span>
       </div>
 
       <form onSubmit={handleSubmit} className="px-4 py-4 space-y-3">
         <div className="space-y-1.5">
           <label
             htmlFor="profile-current-pw"
-            className="block text-xs font-medium text-muted"
+            className="block text-style-caption text-muted"
           >
             Поточний пароль
           </label>
@@ -66,7 +66,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
         <div className="space-y-1.5">
           <label
             htmlFor="profile-new-pw"
-            className="block text-xs font-medium text-muted"
+            className="block text-style-caption text-muted"
           >
             Новий пароль
           </label>
@@ -88,7 +88,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
         <div className="space-y-1.5">
           <label
             htmlFor="profile-confirm-pw"
-            className="block text-xs font-medium text-muted"
+            className="block text-style-caption text-muted"
           >
             Підтвердити пароль
           </label>

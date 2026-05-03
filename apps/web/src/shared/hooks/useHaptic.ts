@@ -17,7 +17,7 @@ import {
   hapticSuccess,
   hapticWarning,
   hapticError,
-} from "@shared/lib/haptic";
+} from "@shared/lib/adapters/haptic";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HELPERS

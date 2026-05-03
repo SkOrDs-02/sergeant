@@ -6,10 +6,14 @@ import {
   type ReactNode,
   type CSSProperties,
 } from "react";
-import { cn } from "../../lib/cn";
-import { safeReadStringLS, safeWriteLS, safeRemoveLS } from "../../lib/storage";
+import { cn } from "../../lib/ui/cn";
+import {
+  safeReadStringLS,
+  safeWriteLS,
+  safeRemoveLS,
+} from "../../lib/storage/storage";
 import { Button } from "./Button";
-import { hapticTap } from "../../lib/haptic";
+import { hapticTap } from "../../lib/adapters/haptic";
 import { useSpotlightQueue } from "./SpotlightQueue";
 
 /**

@@ -36,7 +36,10 @@ describe("buildSystemPrompt", () => {
       trigger: "dm",
     });
     expect(p).toContain("source='cofounder'");
-    expect(p).toContain("subscriptions");
+    // `users` — sentinel allowlisted table guaranteed to exist у схемі. До
+    // цього перевіряли `subscriptions`, але та таблиця aspirational і її
+    // прибрано з allowlist-у щоб не плодити Sentry-fatal-ів на read-time.
+    expect(p).toContain("users");
     expect(p).toContain("docs/strategy/");
     expect(p).toContain("docs/decisions/");
     expect(p).toContain("FOUNDER: @founder");

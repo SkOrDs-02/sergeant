@@ -3,7 +3,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { useVisualKeyboardInset } from "@sergeant/shared";
-import { hapticSuccess } from "@shared/lib/haptic";
+import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import type {
   Meal,
   MealTemplate,

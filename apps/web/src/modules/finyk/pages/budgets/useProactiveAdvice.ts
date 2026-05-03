@@ -4,6 +4,7 @@ import {
   shouldShowProactiveAdvice,
   getCurrentMonthContext,
 } from "@sergeant/finyk-domain/domain/budget";
+import type { Budget, Category } from "@sergeant/finyk-domain/domain/types";
 import { resolveExpenseCategoryMeta } from "../../utils";
 import {
   fetchProactiveAdvice,
@@ -14,12 +15,9 @@ import {
 } from "./budgetsLib";
 
 export interface UseProactiveAdviceParams {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  limitBudgets: any[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  calcSpent: (budget: any) => number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  customCategories: any;
+  limitBudgets: Budget[];
+  calcSpent: (budget: Budget) => number;
+  customCategories: Category[] | undefined;
   now: Date;
 }
 
@@ -54,19 +52,22 @@ export function useProactiveAdvice({
     const monthKey = `${ms.getFullYear()}-${String(ms.getMonth() + 1).padStart(2, "0")}`;
     const items: ProactiveItem[] = [];
     for (const b of limitBudgets) {
+      const limit = Number(b.limit) || 0;
+      const categoryId = b.categoryId ?? "";
+      if (!categoryId) continue;
       const spent = calcSpent(b);
-      const pctRaw = b.limit > 0 ? (spent / b.limit) * 100 : 0;
+      const pctRaw = limit > 0 ? (spent / limit) * 100 : 0;
       if (!shouldShowProactiveAdvice({ pctRaw }, null)) continue;
-      const cat = resolveExpenseCategoryMeta(b.categoryId, customCategories);
-      const catLabel = cat?.label || b.categoryId;
-      const remaining = Math.max(0, b.limit - spent);
-      const pct = b.limit > 0 ? Math.round((spent / b.limit) * 100) : 0;
+      const cat = resolveExpenseCategoryMeta(categoryId, customCategories);
+      const catLabel = cat?.label || categoryId;
+      const remaining = Math.max(0, limit - spent);
+      const pct = limit > 0 ? Math.round((spent / limit) * 100) : 0;
       items.push({
-        categoryId: b.categoryId,
+        categoryId,
         monthKey,
         catLabel,
         spent,
-        limit: b.limit,
+        limit,
         remaining,
         pct,
         daysRemaining,

@@ -6,7 +6,7 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
 import { useFocusTrap } from "@shared/hooks/useFocusTrap";
@@ -230,9 +230,7 @@ export const CelebrationModal = memo(function CelebrationModal({
         <span className="text-4xl font-black text-text tabular-nums animate-tick-up">
           {value}
         </span>
-        {unit && (
-          <span className="text-lg font-semibold text-muted">{unit}</span>
-        )}
+        {unit && <span className="text-style-title text-muted">{unit}</span>}
       </div>
     );
   };
@@ -283,9 +281,7 @@ export const CelebrationModal = memo(function CelebrationModal({
             style={{ animationDelay: `${idx * 100 + 200}ms` }}
           >
             <span className="text-lg">{reward.icon}</span>
-            <span className="text-sm font-medium text-text">
-              {reward.label}
-            </span>
+            <span className="text-style-label text-text">{reward.label}</span>
           </div>
         ))}
       </div>
@@ -365,7 +361,7 @@ export const CelebrationModal = memo(function CelebrationModal({
           {/* Title */}
           <h2
             id="celebration-title"
-            className="text-xl font-bold text-text text-center text-balance"
+            className="text-style-title text-text text-center text-balance"
           >
             {title}
           </h2>
@@ -588,7 +584,7 @@ export const MiniSuccess = memo(function MiniSuccess({
             className="animate-check-draw"
           />
         </span>
-        <span className="text-sm font-semibold">{message}</span>
+        <span className="text-style-label">{message}</span>
       </div>
     </div>
   );

@@ -14,7 +14,7 @@
 
 import type { DashboardModuleId } from "./dashboard";
 import { DASHBOARD_MODULE_IDS } from "./dashboard";
-import { readJSON, type KVStore, writeJSON } from "./kvStore";
+import { readJSON, type KVStore, writeJSON } from "../storage/kv";
 
 /** localStorage / MMKV keys used by the onboarding funnel. */
 export const VIBE_PICKS_KEY = "hub_onboarding_vibes_v1";

@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
-import { safeReadLS, safeReadStringLS } from "@shared/lib/storage";
+import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
 import { generateInsights } from "../lib/insightsEngine";
 import {
   getFinykExcludedTxIdsFromStorage,

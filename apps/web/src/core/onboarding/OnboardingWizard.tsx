@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import {
   safeReadStringLS,
   safeWriteLS,
   safeRemoveLS,
-} from "@shared/lib/storage";
+} from "@shared/lib/storage/storage";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { useCelebration } from "@shared/components/ui/CelebrationModal";
@@ -21,7 +21,7 @@ import {
   markOnboardingDone,
   shouldShowOnboarding as sharedShouldShowOnboarding,
 } from "./onboardingGate";
-import { MODULE_LABELS } from "@shared/lib/moduleLabels";
+import { MODULE_LABELS } from "@shared/lib/modules/moduleLabels";
 import {
   ONBOARDING_MODULE_DESCRIPTIONS,
   ONBOARDING_VIBE_ICONS,

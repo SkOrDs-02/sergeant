@@ -83,7 +83,7 @@ const preset = {
         // fills behind `text-white`. Outside the provider both vars
         // are undefined and the utility falls back to `rgb()` with
         // empty channels (effectively transparent); only use inside a
-        // module subtree. See docs/design/MODULE-ACCENT.md.
+        // module subtree. See docs/design/module-accent.md.
         "module-accent": "rgb(var(--module-accent-rgb) / <alpha-value>)",
         "module-accent-strong":
           "rgb(var(--module-accent-strong-rgb) / <alpha-value>)",
@@ -129,7 +129,7 @@ const preset = {
         // Brand soft tint trio (Wave 1b). Theme-adaptive via `--c-brand-soft*`
         // in `apps/web/src/index.css`. Call-sites that previously wrote
         // `bg-brand-50 dark:bg-brand-500/15` collapse to a single
-        // `bg-brand-soft` (see docs/design/DARK-MODE-AUDIT.md).
+        // `bg-brand-soft` (see docs/design/dark-mode-audit.md).
         "brand-soft": "rgb(var(--c-brand-soft) / <alpha-value>)",
         "brand-soft-border": "rgb(var(--c-brand-soft-border) / <alpha-value>)",
         "brand-soft-hover": "rgb(var(--c-brand-soft-hover) / <alpha-value>)",
@@ -283,7 +283,7 @@ const preset = {
       },
 
       // ═══════════════════════════════════════════════════════════════════
-      // BORDER RADIUS — 3 semantic tiers (see docs/design/RADIUS-RHYTHM.md)
+      // BORDER RADIUS — 3 semantic tiers (see docs/design/radius-rhythm.md)
       //
       //   CONTROL  (12 px, rounded-xl)   — buttons, inputs, badges, chips,
       //                                    icon-buttons, segmented controls

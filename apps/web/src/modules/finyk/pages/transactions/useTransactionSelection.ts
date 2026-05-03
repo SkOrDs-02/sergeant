@@ -1,6 +1,12 @@
 import { useCallback, useRef, useState } from "react";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { useToast } from "@shared/hooks/useToast";
+import type {
+  Transaction,
+  TxCategoriesMap,
+  TxSplit,
+} from "@sergeant/finyk-domain/domain/types";
+import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 
 // Ukrainian 1 / 2-4 / 5+ noun plural for "операція" (operation/transaction).
 // Inline because the only consumers are the batch-undo toasts below — if a
@@ -17,15 +23,13 @@ function pluralizeOps(n: number): string {
 export interface UseTransactionSelectionParams {
   hiddenTxIds: string[];
   excludedStatTxIds: string[] | undefined;
-  txCategories: Record<string, string>;
+  txCategories: TxCategoriesMap;
   hideTx: (id: string) => void;
   toggleExcludeFromStats: (id: string) => void;
   overrideCategory: (id: string, catId: string | null) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setSplitTx: (id: string, splits: any) => void;
+  setSplitTx: (id: string, splits: TxSplit[]) => void;
   removeManualExpense: ((id: string) => void) | undefined;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  addManualExpense: ((expense: any) => void) | undefined;
+  addManualExpense: ((expense: ManualExpense) => void) | undefined;
   onEditManualExpense: ((id: string) => void) | undefined;
   toast: ReturnType<typeof useToast>;
 }
@@ -44,8 +48,7 @@ export interface UseTransactionSelectionResult {
   /** Stable handler: TxRow → swipe-hide on real (non-manual) transactions. */
   stableSwipeHideTx: (id: string) => void;
   /** Stable handler: TxRow → swipe-delete on a manual expense. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  stableSwipeDeleteManual: (tx: any) => void;
+  stableSwipeDeleteManual: (tx: Transaction) => void;
   /** Stable handler: TxRow → "edit manual" inline action. */
   stableOnEditManual: (manualId?: string) => void;
   /** Stable handler: TxRow → "hide" inline action. */
@@ -53,8 +56,7 @@ export interface UseTransactionSelectionResult {
   /** Stable handler: TxRow → category override picker. */
   stableOverrideCategory: (id: string, catId: string | null) => void;
   /** Stable handler: TxRow → split editor confirm. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  stableSetSplitTx: (id: string, splits: any) => void;
+  stableSetSplitTx: (id: string, splits: TxSplit[]) => void;
 }
 
 /**
@@ -126,8 +128,8 @@ export function useTransactionSelection({
     [],
   );
   const stableSetSplitTx = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (id: string, splits: any) => handlersRef.current.setSplitTx?.(id, splits),
+    (id: string, splits: TxSplit[]) =>
+      handlersRef.current.setSplitTx?.(id, splits),
     [],
   );
   const stableOnEditManual = useCallback((manualId?: string) => {
@@ -138,21 +140,27 @@ export function useTransactionSelection({
     (id: string) => handlersRef.current.hideTx(id),
     [],
   );
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const stableSwipeDeleteManual = useCallback((tx: any) => {
+  const stableSwipeDeleteManual = useCallback((tx: Transaction) => {
     const { removeManualExpense, addManualExpense, toast } =
       handlersRef.current;
     if (!removeManualExpense || !addManualExpense) return;
-    const snapshot = {
-      id: String(tx._manualId),
+    const manualId = tx.manualId ?? tx._manualId;
+    if (!manualId) return;
+    // `_category` is a legacy back-compat field surfaced by the
+    // `manual: true` row in `manualExpenseToTransaction`. It is not on
+    // the canonical `Transaction` interface but the runtime payload may
+    // still carry it — read it through an unknown cast for the snapshot.
+    const legacyCategory = (tx as { _category?: unknown })._category;
+    const snapshot: ManualExpense = {
+      id: String(manualId),
       date: tx.time
         ? new Date(tx.time * 1000).toISOString()
         : new Date().toISOString(),
       description: String(tx.description || ""),
       amount: Math.abs(Number(tx.amount || 0) / 100),
-      category: String(tx._category || "інше"),
+      category: String(legacyCategory || "інше"),
     };
-    removeManualExpense(tx._manualId);
+    removeManualExpense(String(manualId));
     showUndoToast(toast, {
       msg: "Витрату видалено",
       onUndo: () => addManualExpense(snapshot),

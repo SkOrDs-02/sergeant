@@ -4,12 +4,12 @@ import { usePushRegister, usePushUnregister } from "@sergeant/api-client/react";
 import type { PushRegisterRequest } from "@sergeant/api-client";
 import { getPlatform, isCapacitor } from "@sergeant/shared";
 import { isApiError, pushApi } from "@shared/api";
-import { pushKeys } from "@shared/lib/queryKeys";
+import { pushKeys } from "@shared/lib/api/queryKeys";
 import {
   getStoredNativePushToken,
   subscribeNativePush,
   unsubscribeNativePush,
-} from "@shared/lib/pushNative";
+} from "@shared/lib/adapters/pushNative";
 
 const PUSH_SUB_KEY = "hub_push_subscribed";
 

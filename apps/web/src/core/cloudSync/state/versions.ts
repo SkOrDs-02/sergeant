@@ -1,4 +1,4 @@
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { SYNC_VERSION_KEY } from "../config";
 
 type VersionMap = Record<string, Record<string, number>>;

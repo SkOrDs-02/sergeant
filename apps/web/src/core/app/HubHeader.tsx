@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { useScrollHeader } from "@shared/hooks/useScrollHeader";

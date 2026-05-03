@@ -17,6 +17,9 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
 import { enqueueChange } from "@/sync/enqueue";
 
+import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
+import { useFizrukSqliteReadGate } from "../lib/sqliteReadGate";
+
 const STORAGE_KEY = STORAGE_KEYS.FIZRUK_CUSTOM_EXERCISES;
 
 export interface CustomExercise {
@@ -66,6 +69,30 @@ export function useCustomExercises(): UseCustomExercisesResult {
     });
     return () => sub.remove();
   }, []);
+
+  // Stage 4 PR #029a: under `feature.fizruk.sqlite_v2.read_sqlite`,
+  // overlay custom exercises from the local SQLite cache once it's
+  // warm. The MMKV first-paint read above stays as a synchronous
+  // fallback so the first paint never blocks on SQLite.
+  const { enabled: sqliteReadEnabled, tick: sqliteCacheTick } =
+    useFizrukSqliteReadGate();
+  useEffect(() => {
+    if (!sqliteReadEnabled) return;
+    const cache = getCachedFizrukSqliteState();
+    if (cache.refreshedAt === null) return;
+    // `cache.customExercises` is `RawExerciseDef[]` from
+    // `@sergeant/fizruk-domain`; translate to the loose mobile
+    // `CustomExercise` shape consumed by `useExerciseCatalog`.
+    const overlay: CustomExercise[] = cache.customExercises.map((ex) => ({
+      id: ex.id,
+      nameUk: ex.name?.uk ?? "",
+      primaryGroup: ex.primaryGroup ?? "",
+      musclesPrimary: ex.muscles?.primary ?? [],
+      musclesSecondary: ex.muscles?.secondary ?? [],
+    }));
+    stateRef.current = overlay;
+    setExercises(overlay);
+  }, [sqliteReadEnabled, sqliteCacheTick]);
 
   const persist = useCallback(
     (updater: (prev: CustomExercise[]) => CustomExercise[]) => {

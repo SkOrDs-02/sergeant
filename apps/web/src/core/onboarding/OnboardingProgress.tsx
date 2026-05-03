@@ -45,7 +45,7 @@ export function OnboardingProgress({
           style={{ width: `${percent}%` }}
         />
       </div>
-      <span className="text-xs text-muted font-medium whitespace-nowrap">
+      <span className="text-style-caption text-muted whitespace-nowrap">
         {count}/{totalModules} модулів
       </span>
     </div>

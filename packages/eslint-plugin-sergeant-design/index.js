@@ -147,11 +147,11 @@ const noEllipsisDots = {
 // ----------
 // On mobile, MMKV writes bypass JS, so a hook that calls raw
 // `useLocalStorage` with a key registered in
-// `apps/mobile/src/sync/config.ts → SYNC_MODULES` will silently break
-// cloud sync — the exact regression that bit Finyk and Fizruk before
-// `useSyncedStorage` was introduced. The warning in
-// `apps/mobile/src/lib/storage.ts` is documentary; this rule makes the
-// safety mechanical.
+// `packages/shared/src/sync/modules.ts → SYNC_MODULES` will silently
+// break cloud sync — the exact regression that bit Finyk and Fizruk
+// before `useSyncedStorage` was introduced. The warning in
+// `apps/mobile/src/lib/storage.ts` is documentary; this rule makes
+// the safety mechanical.
 //
 // The rule fires when:
 //   - the callee is `useLocalStorage` (identifier, regardless of import
@@ -162,12 +162,12 @@ const noEllipsisDots = {
 //     listed in `SYNC_MODULES`.
 //
 // Tracked names + values are mirrored verbatim from
-// `apps/mobile/src/sync/config.ts` and
-// `packages/shared/src/lib/storageKeys.ts`. The companion test
-// `__tests__/no-raw-tracked-storage.parity.test.mjs` reads both source
-// files and fails CI if the rule's set drifts from them, so a new
-// tracked key cannot be added to `SYNC_MODULES` without updating the
-// rule (or vice versa).
+// `packages/shared/src/sync/modules.ts` (the cross-platform registry,
+// PR #007) and `packages/shared/src/lib/storageKeys.ts`. The companion
+// test `__tests__/no-raw-tracked-storage.parity.test.mjs` reads both
+// source files and fails CI if the rule's set drifts from them, so a
+// new tracked key cannot be added to `SYNC_MODULES` without updating
+// the rule (or vice versa).
 
 const TRACKED_STORAGE_KEY_NAMES = new Set([
   // finyk
@@ -215,6 +215,10 @@ const TRACKED_STORAGE_KEY_NAMES = new Set([
   "NUTRITION_ACTIVE_PANTRY",
   "NUTRITION_PREFS",
   "NUTRITION_SAVED_RECIPES",
+  // profile (web-only payload — `USER_PROFILE` does not exist in MMKV,
+  // but listing it here keeps the cross-platform registry symmetric so
+  // mobile sync no longer null-overwrites the server blob).
+  "USER_PROFILE",
 ]);
 
 const TRACKED_STORAGE_KEY_VALUES = new Set([
@@ -259,10 +263,12 @@ const TRACKED_STORAGE_KEY_VALUES = new Set([
   "nutrition_active_pantry_v1",
   "nutrition_prefs_v1",
   "nutrition_recipe_book_v1",
+  // profile (see USER_PROFILE comment above).
+  "hub_user_profile_v1",
 ]);
 
 const RAW_TRACKED_STORAGE_MESSAGE =
-  "`useLocalStorage` was called with a key tracked in `apps/mobile/src/sync/config.ts → SYNC_MODULES`. Raw MMKV writes bypass cloud-sync wiring; use `useSyncedStorage` from `@/sync/useSyncedStorage` instead so the change is enqueued automatically.";
+  "`useLocalStorage` was called with a key tracked in `packages/shared/src/sync/modules.ts → SYNC_MODULES`. Raw MMKV writes bypass cloud-sync wiring; use `useSyncedStorage` from `@/sync/useSyncedStorage` instead so the change is enqueued automatically.";
 
 function isTrackedKeyArgument(arg) {
   if (!arg) return false;
@@ -587,7 +593,7 @@ const validTailwindOpacity = {
 //
 // Forbid the saturated brand-fill + `text-white` combination on light
 // surfaces. The full rationale, decision matrix, and contrast measurements
-// live in `docs/design/BRANDBOOK.md` → "WCAG-AA `-strong` Tier" and
+// live in `docs/design/brandbook.md` → "WCAG-AA `-strong` Tier" and
 // `docs/design/brand-palette-wcag-aa-proposal.md`.
 //
 // Quick recap: every saturated brand colour ships with a `-strong`
@@ -648,7 +654,7 @@ const RX_SATURATED_BG = new RegExp(
 const RX_TEXT_WHITE = /(?<!\S)text-white(?=\s|$)/;
 
 const LOW_CONTRAST_MESSAGE =
-  "`{{utility}}` + `text-white` fails WCAG AA (~2.4–2.8 : 1). Use `bg-{{family}}-strong` instead — see docs/design/BRANDBOOK.md → 'WCAG-AA `-strong` Tier'.";
+  "`{{utility}}` + `text-white` fails WCAG AA (~2.4–2.8 : 1). Use `bg-{{family}}-strong` instead — see docs/design/brandbook.md → 'WCAG-AA `-strong` Tier'.";
 
 function findLowContrastFills(value) {
   if (typeof value !== "string" || value.length === 0) return [];
@@ -968,7 +974,7 @@ const noBigintString = {
 // ─── rq-keys-only-from-factory ──────────────────────────────────────────
 //
 // AGENTS.md hard rule #2 — all React Query keys must come from the
-// centralized factory in `apps/web/src/shared/lib/queryKeys.ts`.
+// centralized factory in `apps/web/src/shared/lib/api/queryKeys.ts`.
 // Inline array literals (`queryKey: ['something', id]`) drift from the
 // factory, break bulk invalidation, and let typos compile silently.
 //
@@ -1015,7 +1021,7 @@ const QC_DIRECT_KEY_METHODS = new Set([
   "ensureQueryData",
 ]);
 
-const DEFAULT_FACTORY_PATH = "apps/web/src/shared/lib/queryKeys.ts";
+const DEFAULT_FACTORY_PATH = "apps/web/src/shared/lib/api/queryKeys.ts";
 
 const RQ_KEYS_MESSAGE =
   "Inline array literal for `{{prop}}` — use a factory from `queryKeys.ts` instead (AGENTS.md rule #2). Inline keys drift from the factory, break bulk invalidation, and let typos compile.";
@@ -1639,7 +1645,7 @@ const noForeignModuleAccent = {
 // `no-raw-dark-palette` — forbid the raw-palette light/dark anti-pattern
 // ─────────────────────────────────────────────────────────────────────────
 //
-// The dark-mode audit (`docs/design/DARK-MODE-AUDIT.md`) catalogues a
+// The dark-mode audit (`docs/design/dark-mode-audit.md`) catalogues a
 // recurring shape: a className that encodes both themes by hand by
 // pairing a raw Tailwind palette utility on the light side with a
 // `dark:` raw-palette override —
@@ -1688,7 +1694,7 @@ const noForeignModuleAccent = {
 //     `-strong` companion scale, not raw-palette pairs.
 //
 // Promotion path: this rule ships at `error` level once the audit's
-// inventory hits zero (Wave 2c of `docs/design/DARK-MODE-AUDIT.md`).
+// inventory hits zero (Wave 2c of `docs/design/dark-mode-audit.md`).
 // Any future violation must be intentional — either extend the token
 // layer in `packages/design-tokens/tailwind-preset.js` or, in the rare
 // case where an inline raw-palette override is justified (e.g. a
@@ -1727,7 +1733,7 @@ const RAW_DARK_PALETTE_FAMILIES = [
 const RAW_DARK_PALETTE_UTILITIES = ["bg", "text", "border"];
 
 const RAW_DARK_PALETTE_MESSAGE =
-  "Raw-palette light/dark pair (`{{light}}` + `{{dark}}`) — the call-site encodes both themes by hand. Use a single semantic utility (e.g. `bg-{family}-soft`, `bg-{module}-surface`, `border-{module}-soft-border`, `text-{status}-strong`) so the preset owns the light/dark swap. See `docs/design/DARK-MODE-AUDIT.md` for the migration recipe.";
+  "Raw-palette light/dark pair (`{{light}}` + `{{dark}}`) — the call-site encodes both themes by hand. Use a single semantic utility (e.g. `bg-{family}-soft`, `bg-{module}-surface`, `border-{module}-soft-border`, `text-{status}-strong`) so the preset owns the light/dark swap. See `docs/design/dark-mode-audit.md` for the migration recipe.";
 
 // Match `<utility>-<palette>-<step>[/<opacity>]` where step is numeric
 // (so `brand-soft`, `brand-strong`, `coral-soft-border` do NOT match).
@@ -2151,7 +2157,7 @@ const noFinykTokenInStorage = {
 // `no-rounded-lg` — prevent border-radius drift back to the 8 px tier
 // ─────────────────────────────────────────────────────────────────────────
 //
-// Sergeant uses a size-driven radius scale (docs/design/RADIUS-RHYTHM.md):
+// Sergeant uses a size-driven radius scale (docs/design/radius-rhythm.md):
 //   Swatch   rounded-sm  (2 px)   — heatmap cells, chart legend dots
 //   Marker   rounded-md  (6 px)   — chips, badges, checkboxes ≤6 px
 //   Control  rounded-xl  (12 px)  — buttons xs/sm, icon-buttons ≤40 px
@@ -2172,7 +2178,7 @@ const NO_ROUNDED_LG_MESSAGE =
   "Avoid `rounded-lg` (8 px) — it sits between Marker and Control without a semantic role. " +
   "Use `rounded-md` (6 px, Marker tier) for chips / badges / inline pills, or " +
   "`rounded-xl` (12 px, Control tier) for buttons ≤40 px and icon-buttons. " +
-  "See docs/design/RADIUS-RHYTHM.md for the full scale.";
+  "See docs/design/radius-rhythm.md for the full scale.";
 
 const RX_ROUNDED_LG = /(?:^|\s)(?:[\w-]+:)*rounded-lg(?:\s|$)/;
 
@@ -2226,7 +2232,7 @@ const noRoundedLg = {
 // `no-bare-empty-text` — enforce empty-state tier discipline
 // ─────────────────────────────────────────────────────────────────────────
 //
-// docs/design/EMPTY-STATES.md defines three tiers:
+// docs/design/empty-states.md defines three tiers:
 //   Tier 1 — Full-screen: <ModuleEmptyState> or <EmptyState> (no compact)
 //   Tier 2 — Compact card: <EmptyState compact>
 //   Tier 3 — Inline text: one muted line (text-xs text-muted)
@@ -2245,7 +2251,7 @@ const NO_BARE_EMPTY_TEXT_MESSAGE =
   "Use the <EmptyState> component (or <ModuleEmptyState>) instead of bare text for empty states. " +
   "Choose the right tier: full-screen → no `compact`, card-internal → `compact`, " +
   "mini stat (< 120 px tall) → `text-xs text-muted` is OK. " +
-  "See docs/design/EMPTY-STATES.md for tier guidance.";
+  "See docs/design/empty-states.md for tier guidance.";
 
 // Phrases that signal an empty-state message in Ukrainian product copy.
 const RX_EMPTY_SIGNAL =
@@ -2509,6 +2515,128 @@ const noArbitraryTextSize = {
   },
 };
 
+// ── no-flat-shared-lib ──────────────────────────────────────────────────
+//
+// Prevent regressing `apps/web/src/shared/lib/` back to a flat layout. After
+// the 2026-05-03 reorg (PR #1479), every utility lives in one of five
+// thematic subdirs (`api/`, `storage/`, `modules/`, `adapters/`, `ui/`).
+// Any import that resolves to a *top-level* file inside `shared/lib/`
+// (other than the barrel `index`) is forbidden — the dev should either
+// place the new file inside the right subdir or import it via
+// `@shared/lib` (the canonical barrel).
+//
+// Resolution covers both `@shared/lib/<x>` (alias) and relative imports
+// (`./lib/<x>`, `../lib/<x>`, `../../lib/<x>`, …) anchored from the file
+// being linted, so the rule survives any future refactor of import
+// styles.
+//
+// Exempt: the rule itself only fires on files inside `apps/web/src/`;
+// other apps and packages have their own `lib/` directories with
+// independent layouts.
+
+const NO_FLAT_SHARED_LIB_ALLOWED_TOP = new Set([
+  "index",
+  "api",
+  "storage",
+  "modules",
+  "adapters",
+  "ui",
+]);
+
+const NO_FLAT_SHARED_LIB_MESSAGE =
+  "Import resolves to a flat file at `apps/web/src/shared/lib/{{name}}` — that namespace is now organized into subdirs (`api/`, `storage/`, `modules/`, `adapters/`, `ui/`). Move the new file into the right subdir, or import it via the `@shared/lib` barrel.";
+
+// Resolve relative `..` segments without bringing in `node:path` (ESM
+// constraint inside this plugin). Operates on forward-slashed strings.
+function joinResolvePosix(base, rel) {
+  const segments = (base + "/" + rel).split("/").filter(Boolean);
+  const out = [];
+  for (const seg of segments) {
+    if (seg === ".") continue;
+    if (seg === "..") {
+      out.pop();
+    } else {
+      out.push(seg);
+    }
+  }
+  // Preserve leading slash if base was absolute.
+  return (base.startsWith("/") ? "/" : "") + out.join("/");
+}
+
+function resolveImportTarget(filename, importValue) {
+  if (typeof importValue !== "string" || !importValue) return null;
+  // Normalise to forward slashes throughout — Windows-friendly.
+  const fwd = filename.replace(/\\/g, "/");
+  if (importValue.startsWith("@shared/")) {
+    const rest = importValue.slice("@shared/".length);
+    const idx = fwd.indexOf("/apps/web/src/");
+    if (idx === -1) return null;
+    const root = fwd.slice(0, idx) + "/apps/web/src/shared";
+    return joinResolvePosix(root, rest);
+  }
+  if (importValue.startsWith(".")) {
+    const lastSlash = fwd.lastIndexOf("/");
+    const dir = lastSlash >= 0 ? fwd.slice(0, lastSlash) : ".";
+    return joinResolvePosix(dir, importValue);
+  }
+  return null;
+}
+
+function flatSharedLibName(absPath) {
+  if (!absPath) return null;
+  // Normalise to forward slashes so the regex is OS-agnostic in tests.
+  const norm = absPath.replace(/\\/g, "/");
+  const m = norm.match(/\/apps\/web\/src\/shared\/lib\/([^/]+)$/);
+  if (!m) return null;
+  const last = m[1];
+  const stem = last.replace(/\.(ts|tsx|js|jsx|mjs|cjs)$/, "");
+  if (NO_FLAT_SHARED_LIB_ALLOWED_TOP.has(stem)) return null;
+  return stem;
+}
+
+const noFlatSharedLib = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid imports that resolve to top-level flat files in `apps/web/src/shared/lib/`. After the 2026-05-03 reorg, every util lives in one of five subdirs (api/, storage/, modules/, adapters/, ui/) — new top-level files would re-flatten the namespace.",
+    },
+    schema: [],
+    messages: { flat: NO_FLAT_SHARED_LIB_MESSAGE },
+  },
+  create(context) {
+    const filename =
+      (context.filename != null ? context.filename : context.getFilename()) ||
+      "";
+    // Only enforce inside apps/web/src — other apps have their own libs.
+    const fwd = filename.replace(/\\/g, "/");
+    if (!/\/apps\/web\/src\//.test(fwd)) return {};
+
+    function check(node) {
+      if (!node || !node.source || typeof node.source.value !== "string") {
+        return;
+      }
+      const target = resolveImportTarget(filename, node.source.value);
+      const stem = flatSharedLibName(target);
+      if (!stem) return;
+      context.report({
+        node: node.source,
+        messageId: "flat",
+        data: { name: stem },
+      });
+    }
+
+    return {
+      ImportDeclaration: check,
+      ExportNamedDeclaration(node) {
+        // Only re-exports have a source.
+        if (node.source) check(node);
+      },
+      ExportAllDeclaration: check,
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
@@ -2531,6 +2659,7 @@ const plugin = {
     "no-bare-empty-text": noBareEmptyText,
     "prefer-text-style": preferTextStyle,
     "no-arbitrary-text-size": noArbitraryTextSize,
+    "no-flat-shared-lib": noFlatSharedLib,
   },
 };
 
@@ -2559,6 +2688,8 @@ export {
   PREFER_TEXT_STYLE_MESSAGE,
   TEXT_STYLE_MAPPINGS,
   NO_ARBITRARY_TEXT_SIZE_MESSAGE,
+  NO_FLAT_SHARED_LIB_MESSAGE,
+  NO_FLAT_SHARED_LIB_ALLOWED_TOP,
 };
 
 export default plugin;

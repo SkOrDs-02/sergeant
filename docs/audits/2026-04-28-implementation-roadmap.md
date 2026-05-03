@@ -1,6 +1,6 @@
 # Sergeant - Детальний План Реалізації Покращень
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > **Update 2026-05-02 (Phase 4 progress):** PR #1388 (sw.ts + presetApply.ts, −50) і PR #1391 (5 fizruk components, −99) обидва змерджені. Phase 4 baseline: **419 → 249 помилок у 43 файлах** (−170, ~41 % від початкового скоупу). Деталі — у §4 Спринт 1 / Завдання 1.1 нижче.
@@ -171,23 +171,23 @@ Closed top blockers:
 
 **Виконання (orig. план + фактичний прогрес):**
 
-| PR  | Скоуп                                                                                                                            | Файлів | Δ-errors | Статус                                                               |
-| --- | -------------------------------------------------------------------------------------------------------------------------------- | ------ | -------- | -------------------------------------------------------------------- |
-| PR1 | sw.ts + core/onboarding/presetApply (top-2 blockers)                                                                             | 2      | −50      | ✅ merged ([#1388](https://github.com/Skords-01/Sergeant/pull/1388)) |
-| PR2 | fizruk components batch (AddExerciseSheet, WorkoutTemplatesSection, WorkoutItemCard, WorkoutCatalogSection, ExerciseDetailSheet) | 5      | −99      | ✅ merged ([#1391](https://github.com/Skords-01/Sergeant/pull/1391)) |
-| PR3 | fizruk pages + insights (pages/Workouts, pages/Exercise, core/insights/WeeklyDigestCard)                                         | 3      | ~52      | ⏳ pending                                                           |
-| PR4 | решта (~38 файлів, lower-density) + flip `strict: true` + видалити `allowJs`                                                     | ~38    | ~197     | ⏳ pending                                                           |
+| PR  | Скоуп                                                                                                                            | Файлів | Δ-errors | Статус                                                                       |
+| --- | -------------------------------------------------------------------------------------------------------------------------------- | ------ | -------- | ---------------------------------------------------------------------------- |
+| PR1 | sw.ts + core/onboarding/presetApply (top-2 blockers)                                                                             | 2      | −50      | ✅ merged ([#1388](https://github.com/Skords-01/Sergeant/pull/1388))         |
+| PR2 | fizruk components batch (AddExerciseSheet, WorkoutTemplatesSection, WorkoutItemCard, WorkoutCatalogSection, ExerciseDetailSheet) | 5      | −99      | ✅ merged ([#1391](https://github.com/Skords-01/Sergeant/pull/1391))         |
+| PR3 | fizruk pages + insights (pages/Workouts, pages/Exercise, core/insights/WeeklyDigestCard)                                         | 3      | −55      | ✅ merged ([#1402](https://github.com/Skords-01/Sergeant/pull/1402) / #1404) |
+| PR4 | решта (~38 файлів, lower-density) + flip `strict: true` + видалити `allowJs`                                                     | ~38    | −194     | ✅ merged ([#1420](https://github.com/Skords-01/Sergeant/pull/1420))         |
 
-> **Чому Phase 4 не дробиться через `tsconfig.noimplicitany.json`-include:** TypeScript застосовує `noImplicitAny` ко всій програмі (всі transitively reached файли), не тільки до `include`-списку. Спроба додати `core/{lib,hub,insights,onboarding,settings,stories,designShowcase}` дає 801 помилку бо вони імпортують з `modules/{finyk,fizruk}`. Рухатись треба per-file (top blockers першими), без проміжної "Phase 3.2".
+> **Чому Phase 4 не дробиться через `tsconfig.noimplicitany.json`-include:** TypeScript застосовує `noImplicitAny` ко всій програмі (всі transitively reached файли), не тільки до `include`-списку. Спроба додати `core/{lib,hub,insights,onboarding,settings,stories,designShowcase}` дає 801 помилку бо вони імпортують з `modules/{finyk,fizruk}`. Рухатись треба per-file (top blockers першими), без проміжної "Phase 3.2". Після Phase 4 + Phase 5 cleanup-у (2026-05-03) діагностичний `tsconfig.noimplicitany.json` видалено — `noImplicitAny` уже ввімкнений на весь web через base `strict: true`.
 
 **Definition of Done:**
 
-- [ ] `apps/web/tsconfig.json` має `"strict": true`
-- [ ] `apps/web/tsconfig.json` не має `allowJs: true`
-- [ ] `pnpm typecheck` проходить без помилок
-- [ ] CI strict-coverage metric рапортує `apps/web` як strict
+- [x] `apps/web/tsconfig.json` має `"strict": true`
+- [x] `apps/web/tsconfig.json` не має `allowJs: true`
+- [x] `pnpm typecheck` проходить без помилок
+- [x] CI strict-coverage metric рапортує `apps/web` як strict (13/13 пакетів = 100%)
 
-**Поточний прогрес (2026-05-02, post-PR2):** [x] PR1 #1388 merged · [x] PR2 #1391 merged · [ ] PR3 pending · [ ] PR4 pending (включно з flip `strict: true` + зняття `allowJs`).
+**Поточний прогрес (2026-05-03, post-Phase 5 cleanup):** [x] PR1 #1388 · [x] PR2 #1391 · [x] PR3 #1402/#1404 · [x] PR4 #1420 · [x] Phase 5 cleanup `a7a31703` (`noImplicitOverride: true` у base + видалено redundant `tsconfig.strict.json` / `tsconfig.noimplicitany.json`).
 
 ---
 

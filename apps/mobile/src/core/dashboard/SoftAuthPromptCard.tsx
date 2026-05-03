@@ -19,40 +19,10 @@
 import { useEffect } from "react";
 import { Pressable, Text, View } from "react-native";
 
-import { dismissSoftAuth, hapticTap, type KVStore } from "@sergeant/shared";
+import { dismissSoftAuth, hapticTap } from "@sergeant/shared";
 
 import { Button } from "@/components/ui/Button";
-import {
-  safeReadLS as mmkvGet,
-  safeRemoveLS as mmkvRemove,
-  safeWriteLS as mmkvWrite,
-} from "@/lib/storage";
-
-const mmkvStore: KVStore = {
-  getString(key) {
-    try {
-      const raw = mmkvGet<unknown>(key, null);
-      if (raw === null || raw === undefined) return null;
-      return typeof raw === "string" ? raw : JSON.stringify(raw);
-    } catch {
-      return null;
-    }
-  },
-  setString(key, value) {
-    try {
-      mmkvWrite(key, value);
-    } catch {
-      /* noop */
-    }
-  },
-  remove(key) {
-    try {
-      mmkvRemove(key);
-    } catch {
-      /* noop */
-    }
-  },
-};
+import { mobileKVStore } from "@/lib/storage";
 
 export interface SoftAuthPromptCardProps {
   /** Called when the user taps "Створити акаунт". Caller is
@@ -91,7 +61,7 @@ export function SoftAuthPromptCard({
 
   const handleDismiss = () => {
     onDismissed?.();
-    dismissSoftAuth(mmkvStore);
+    dismissSoftAuth(mobileKVStore);
     onDismiss?.();
   };
 

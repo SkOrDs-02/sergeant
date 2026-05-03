@@ -3,7 +3,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { useMonthlyPlan } from "../../fizruk/hooks/useMonthlyPlan";
 import { useWorkoutTemplates } from "../../fizruk/hooks/useWorkoutTemplates";
 import { useExerciseCatalog } from "../../fizruk/hooks/useExerciseCatalog";
@@ -147,6 +147,7 @@ export function FizrukDayPlanSheet({
               {currentTemplate ? "Змінити шаблон" : "Обрати шаблон"}
             </SectionHeading>
             {templates.length === 0 ? (
+              // eslint-disable-next-line sergeant-design/no-bare-empty-text -- pre-existing tech debt; tracked in docs/tech-debt/frontend.md
               <p className="text-xs text-subtle">
                 Шаблонів поки немає. Створи їх у Фізруку → Тренування.
               </p>
@@ -172,7 +173,7 @@ export function FizrukDayPlanSheet({
                     >
                       <p
                         className={cn(
-                          "text-sm font-medium truncate",
+                          "text-style-label truncate",
                           isActive
                             ? "text-info-strong dark:text-info"
                             : "text-text",

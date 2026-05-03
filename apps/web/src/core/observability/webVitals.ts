@@ -1,4 +1,4 @@
-import { apiUrl } from "@shared/lib/apiUrl";
+import { apiUrl } from "@shared/lib/api/apiUrl";
 import {
   isCapacitor,
   type WebVitalsMetricName,

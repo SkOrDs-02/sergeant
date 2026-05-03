@@ -4,7 +4,7 @@ import {
   safeReadStringLS,
   safeWriteLS,
   safeRemoveLS,
-} from "@shared/lib/storage";
+} from "@shared/lib/storage/storage";
 
 const ACTIVE_PROGRAM_KEY = "fizruk_active_program_id_v1";
 

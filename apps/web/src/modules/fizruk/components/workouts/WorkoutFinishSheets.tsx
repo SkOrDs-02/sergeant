@@ -1,13 +1,13 @@
 import { useRef, type Dispatch, type SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
-import { openHubModule } from "@shared/lib/hubNav";
+import { openHubModule } from "@shared/lib/modules/hubNav";
 import {
   isCrossModulePromptSuppressed,
   recordCrossModulePromptAccepted,
-} from "@shared/lib/crossModulePrompt";
+} from "@shared/lib/modules/crossModulePrompt";
 import {
   formatDurShort,
   type WorkoutFinishSummary,
@@ -241,7 +241,7 @@ export function WorkoutFinishSheets({
                   to suggest. Snoozed for 12 h after acceptance so a
                   user who logged a post-workout meal once today doesn't
                   see this on a second workout the same evening. See
-                  docs/design/CROSS-MODULE-PROMPTS.md. */}
+                  docs/design/cross-module-prompts.md. */}
               {!isCrossModulePromptSuppressed("fizruk-finish-to-meal") && (
                 <button
                   type="button"

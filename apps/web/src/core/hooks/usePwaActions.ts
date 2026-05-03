@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { safeWriteLS } from "@shared/lib/storage";
+import { safeWriteLS } from "@shared/lib/storage/storage";
 import { PWA_ACTION_KEY, consumePwaAction } from "../app/pwaAction";
 
 export type PwaAction =

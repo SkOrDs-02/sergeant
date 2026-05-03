@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 export interface SkipLinkProps {
   /** Fragment target without the leading `#`. Defaults to `main`. */

@@ -1,4 +1,4 @@
-import { safeReadStringLS, safeRemoveLS } from "@shared/lib/storage";
+import { safeReadStringLS, safeRemoveLS } from "@shared/lib/storage/storage";
 
 export const PWA_ACTION_KEY = "pwa_pending_action";
 

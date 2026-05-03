@@ -15,7 +15,7 @@
 
 import { useSyncExternalStore } from "react";
 import { z } from "zod";
-import { createTypedStore } from "../../shared/lib/typedStore";
+import { createTypedStore } from "../../shared/lib/storage/typedStore";
 
 export interface FlagDefinition {
   id: string;
@@ -72,6 +72,14 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     label: "Fizruk — dual-write LS↔SQLite",
     description:
       "Кожен write у localStorage Фізрука додатково мирорить у локальну SQLite (`fizruk_workouts`, `fizruk_custom_exercises`, `fizruk_measurements`). Reads ще беруться з LS. Stage 4 PR #028 storage-roadmap. Best-effort: помилка SQLite-запису не ламає LS. Default: off.",
+    defaultValue: false,
+    experimental: true,
+  },
+  {
+    id: "feature.fizruk.sqlite_v2.read_sqlite",
+    label: "Fizruk — read from SQLite",
+    description:
+      "Workouts / custom exercises / measurements читаються з локальної SQLite (`fizruk_*`) замість LS. LS-write залишається як safety net. Stage 4 PR #029 storage-roadmap. Потребує увімкненого dual-write. Default: off.",
     defaultValue: false,
     experimental: true,
   },

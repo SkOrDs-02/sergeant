@@ -3,7 +3,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tooltip } from "@shared/components/ui/Tooltip";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { groupItemsByCategory } from "../lib/foodCategories";
 import type { FoodCategory } from "../lib/foodCategories";
 import type { PantryItem } from "../lib/pantryTextParser";
@@ -57,7 +57,7 @@ function ItemRow({
         className="flex-1 min-w-0 flex items-baseline gap-1.5 text-left"
         aria-label={`Редагувати ${item?.name || "продукт"}`}
       >
-        <span className="text-sm font-medium text-text truncate">
+        <span className="text-style-label text-text truncate">
           {item?.name || "—"}
         </span>
         {(item?.qty != null || item?.unit) && (
@@ -115,11 +115,11 @@ function CategorySection({
           <span className="text-sm" aria-hidden>
             {cat.emoji}
           </span>
-          <span className="text-sm font-semibold text-text truncate">
+          <span className="text-style-label text-text truncate">
             {cat.label}
           </span>
         </span>
-        <span className="text-xs text-subtle font-medium shrink-0">
+        <span className="text-style-caption text-subtle shrink-0">
           {items.length}
         </span>
       </button>
@@ -187,8 +187,8 @@ function InventoryCard({
       >
         <div className="flex items-center gap-2 min-w-0">
           <ChevronIcon open={mainOpen} />
-          <span className="text-sm font-semibold text-text">Мій склад</span>
-          <span className="text-xs text-subtle font-medium">
+          <span className="text-style-label text-text">Мій склад</span>
+          <span className="text-style-caption text-subtle">
             ({pantryItemsLength})
           </span>
         </div>
@@ -254,9 +254,7 @@ export function PantryCard({
       <Card className="p-4">
         <div className="flex items-center justify-between gap-3 mb-3">
           <div className="min-w-0">
-            <div className="text-sm font-semibold text-text">
-              Додати продукти
-            </div>
+            <div className="text-style-label text-text">Додати продукти</div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {typeof onScanBarcode === "function" && (
@@ -314,7 +312,7 @@ export function PantryCard({
               }}
               disabled={busy || !newItemName.trim()}
               className={cn(
-                "px-4 h-11 rounded-2xl text-sm font-semibold shrink-0",
+                "text-style-label px-4 h-11 rounded-2xl shrink-0",
                 "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
               )}
             >
@@ -335,7 +333,7 @@ export function PantryCard({
               onClick={parsePantry}
               disabled={busy || !pantryText.trim()}
               className={cn(
-                "shrink-0 px-4 h-11 rounded-2xl text-sm font-semibold mt-0.5",
+                "text-style-label shrink-0 px-4 h-11 rounded-2xl mt-0.5",
                 "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
               )}
             >

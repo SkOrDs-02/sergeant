@@ -10,6 +10,7 @@
   - [ADR-0031 — OpenClaw v0 Telegram co-founder bot](./0031-openclaw-v0-telegram-cofounder.md)
   - [ADR-0032 — Console consolidated into OpenClaw](./0032-console-consolidated-into-openclaw.md)
   - [ADR-0033 — OpenClaw multi-personas + `/council`](./0033-openclaw-multi-personas-and-council.md)
+  - [ADR-0037 — OpenClaw write-audit persistence (Phase 4.5)](./0037-openclaw-write-audit-persistence.md) — closes the audit-trail debt from §4 below.
   - [`docs/launch/openclaw-roadmap.md`](../launch/openclaw-roadmap.md) — Phase 4 section.
 
 ---
@@ -30,6 +31,11 @@ Phase 4 у roadmap-і явно перерахував цей набір: 5 write
 ## Decision
 
 OpenClaw отримує **5 side-effecting tools** і **inline-keyboard approval flow** як композицію над поточним agent-loop-ом і audit pipeline-ом. Жоден write-tool не виконується автоматично — кожен LLM-tool-call перетворюється на pending-approval-record + Telegram-кнопки, які founder натискає вручну.
+
+WF-20 hybrid agent network не замінює цей execution path. Dispatcher може
+повернути `proposedWriteTool` для задачі, але фактичний side effect все одно
+йде через цей ADR-0036 approval flow: approval-card у Telegram → console-side
+callback → `/api/internal/openclaw/write/*`.
 
 ### 1. Tool registry (server side, `apps/server/src/modules/openclaw/write-tools.ts`)
 
@@ -130,8 +136,8 @@ Persona-tool-filter (ADR-0033) extend-нутий per-tool:
 ### 4. Audit-trail
 
 - **LLM-турн audit-row** (`openclaw_invocations.tool_calls`) уже містить write-tool-call як один із tool-call-ів turn-у — нічого не змінюємо.
-- **Approve / Reject — окремий console-side log** через `console.log("[openclaw] write-tool executed/rejected", { tool, id, ok, status, founderTgUserId, invocationId })`. Phase 4.5 wires цей сигнал у DB-таблицю `openclaw_write_audit` (не зараз — щоб не coupling deploy-у з міграцією).
-- **HTTP response-body** від write-endpoint-у показується founder-у відразу після Approve (≤3500 chars, code-block format). Founder одразу бачить URL відкритого PR-у / GitHub issue / Sentry issue ID.
+- **Approve / Reject — DB-persistent log** у таблиці `openclaw_write_audit` (ADR-0037, Phase 4.5). Console callback handler пише `approved` / `executed` / `rejected` row-у через `POST /api/internal/openclaw/write-audit/log` на кожну transition. Founder query-ить через `/audit` slash-команду. Console-side `console.log("[openclaw] write-tool executed/rejected", …)` ще лишається — duplicates DB-row, але дешева страховка для on-call grep-у Railway-логу.
+- **HTTP response-body** від write-endpoint-у показується founder-у відразу після Approve (≤3500 chars, code-block format). Founder одразу бачить URL відкритого PR-у / GitHub issue / Sentry issue ID. Той самий response truncated до 4 KB і кладеться у `openclaw_write_audit.response_excerpt` для post-mortem queries.
 
 ### 5. Що НЕ міняється
 
@@ -154,7 +160,7 @@ Persona-tool-filter (ADR-0033) extend-нутий per-tool:
 
 ### Negative / debt
 
-- **Approvals в-пам'яті — крихкі до рестарту.** Console restart посеред `pending` approval-у → founder reissue-ить request. **Mitigation:** OK для single-founder-flow; Phase 4.5 wires DB-persistence коли team зростатиме.
+- **Approvals в-пам'яті — крихкі до рестарту.** Console restart посеред `pending` approval-у → founder reissue-ить request. **Mitigation:** OK для single-founder-flow. ADR-0037 (Phase 4.5) переносить approval-history (вже-resolved transitions) у DB, але самі pending approvals лишаються in-memory — DB-перенос pending-state-у потребує і-pending-row + restart-policy, що деferred у Phase 5 (multi-operator).
 - **Telegram inline-keyboard — UI-debt.** Кнопки після 10 min "тухнуть" — founder натискає → answer-callback "expired". У теорії можна edit-ити message щоб прибрати кнопки після TTL. **Mitigation:** TTL-edit deferred — мала проблема, founder клікне без feedback-у і отримає friendly error.
 - **No batch-approve.** 3 write-tool-call-и у одному turn-і → 3 окремі inline-keyboard-карти. Founder клацає 3 рази. **Mitigation:** прийнято свідомо — кожна дія — explicit consent. Якщо 3 кнопки стане annoy-ом, Phase 4.5 додасть "Approve all" мета-кнопку.
 - **Allowlist drift.** GitHub-PR на `docs/strategy/` тільки — а раптом founder захоче `docs/launch/`? Доведеться оновлювати server-allowlist + redeploy. **Mitigation:** intentional friction; allowlist — explicit decision-point.
@@ -211,7 +217,7 @@ Server тримає approval-state у DB; callback від Telegram — на serv
 
 1. **Sprint 1 (this PR):** server endpoints + approval-store + executor интерцепція + handler callback-логіка + persona-allowlist update + ADR-0036 + roadmap update + tests.
 2. **Acceptance:** founder DM `"Створи issue про X"` у `@OpenClaw_sergeant_bot` → бачить approval-card → натискає Approve → бачить URL відкритого issue-у.
-3. **Phase 4.5:** wire `openclaw_write_audit` table + persistent approval-store; add "Approve all" / per-tool TTL якщо buttons UX-friction-нуть.
+3. **Phase 4.5 (shipped — ADR-0037):** `openclaw_write_audit` table + console-callback wiring + `/audit` slash-команда. "Approve all" / per-tool TTL — deferred як окрема follow-up якщо buttons UX-friction-нуть.
 4. **Phase 5:** multi-operator (require N approvals), або per-tool RBAC.
 
 ## Compliance

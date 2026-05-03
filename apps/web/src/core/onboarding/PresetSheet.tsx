@@ -1,8 +1,8 @@
 import { useEffect, useMemo } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { openHubModuleWithAction } from "@shared/lib/hubNav";
+import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { applyPreset, type ModuleId, type ModulePreset } from "./presetApply";
 import { writePresetPrefill } from "./presetPrefill";

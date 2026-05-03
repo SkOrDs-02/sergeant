@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { Skeleton, SkeletonBudgetBar } from "@shared/components/ui/Skeleton";
 import { calcCategorySpent } from "../../utils";
 import { computeFinykSchedule, startOfToday } from "../../lib/upcomingSchedule";
@@ -32,13 +33,56 @@ import type {
   BudgetFormType,
   NewBudgetDraft,
 } from "../../components/budgets/AddBudgetForm";
+import type {
+  Budget,
+  Category,
+  Transaction,
+  TxCategoriesMap,
+  TxSplitsMap,
+} from "@sergeant/finyk-domain/domain/types";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type LooseBag = any;
+// Mirrors `useStorage`'s MonthlyPlan shape (required income/expense/
+// savings, each a raw input value). Replicated inline here to avoid
+// importing the storage hook just for a type and to keep the slice
+// interface decoupled from the hook's internal name.
+type MonthlyPlan = {
+  income: number | string;
+  expense: number | string;
+  savings: number | string;
+};
+
+/**
+ * Slice of `useMonobank` (after `useUnifiedFinanceData` merging) that the
+ * Budgets page reads. Defined inline to avoid a circular type import on
+ * the lazy-loaded page module.
+ */
+export interface BudgetsMonoSlice {
+  realTx: Transaction[];
+  loadingTx: boolean;
+  transactions?: Transaction[];
+}
+
+/**
+ * Slice of `useStorage` that the Budgets page reads. Defined inline for
+ * the same reason as {@link BudgetsMonoSlice}.
+ */
+export interface BudgetsStorageSlice {
+  budgets: Budget[];
+  setBudgets: Dispatch<SetStateAction<Budget[]>>;
+  excludedTxIds: Set<string>;
+  monthlyPlan: MonthlyPlan | null | undefined;
+  setMonthlyPlan: Dispatch<SetStateAction<MonthlyPlan>>;
+  txCategories: TxCategoriesMap;
+  txSplits: TxSplitsMap;
+  customCategories: Category[] | undefined;
+  subscriptions?: readonly unknown[];
+  manualDebts?: readonly unknown[];
+  receivables?: readonly unknown[];
+}
 
 export interface BudgetsProps {
-  mono: LooseBag;
-  storage: LooseBag;
+  mono: BudgetsMonoSlice;
+  storage: BudgetsStorageSlice;
   showBalance?: boolean;
   focusLimitCategoryId?: string | null;
 }
@@ -107,11 +151,10 @@ export function Budgets({
     [customCategories],
   );
   const calcSpent = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (budget: any) =>
+    (budget: Budget) =>
       calcCategorySpent(
         statTx,
-        budget.categoryId,
+        budget.categoryId ?? "",
         txCategories,
         txSplits,
         customCategories,
@@ -252,10 +295,7 @@ export function Budgets({
       setFormError(error || "Помилка валідації");
       return;
     }
-    setBudgets(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (b: any[]) => [...b, { ...normalized, id: crypto.randomUUID() }],
-    );
+    setBudgets((b) => [...b, { ...normalized, id: crypto.randomUUID() }]);
     trackEvent(
       ANALYTICS_EVENTS.BUDGET_SET,
       normalized.type === "limit"

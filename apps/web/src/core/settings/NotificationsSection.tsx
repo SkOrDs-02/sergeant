@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { useToast } from "@shared/hooks/useToast";
 import { requestRoutineNotificationPermission } from "../../modules/routine/hooks/useRoutineReminders";
@@ -126,8 +126,8 @@ export function NotificationsSection() {
     <SettingsGroup title="Сповіщення" emoji="🔔">
       <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-bg border border-line">
         <div>
-          <p className="text-sm font-semibold text-text">Push-сповіщення</p>
-          <p className={cn("text-xs mt-0.5 font-medium", permColor)}>
+          <p className="text-style-label text-text">Push-сповіщення</p>
+          <p className={cn("text-style-caption mt-0.5", permColor)}>
             {permLabel}
           </p>
         </div>

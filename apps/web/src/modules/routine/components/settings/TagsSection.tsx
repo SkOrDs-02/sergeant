@@ -4,7 +4,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { createTag, deleteTag, updateTag } from "../../lib/routineStorage";
 import type { RoutineState } from "../../lib/types";
 
@@ -63,7 +63,7 @@ export function TagsSection({
         {routine.tags.map((t) => (
           <li
             key={t.id}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-panelHi text-xs border border-line font-medium"
+            className="text-style-caption inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-panelHi border border-line"
           >
             {editingTagId === t.id ? (
               <form

@@ -2,7 +2,7 @@ import { useMemo, useState, useRef, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { useToast } from "@shared/hooks/useToast";
 import { useFormValidation } from "@shared/hooks/useFormValidation";
 import { BrandLogo } from "../app/BrandLogo";

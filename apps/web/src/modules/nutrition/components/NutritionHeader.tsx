@@ -2,7 +2,7 @@ import {
   ModuleHeader,
   ModuleHeaderBackButton,
 } from "@shared/components/layout";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 function AppleBadge() {
   return (

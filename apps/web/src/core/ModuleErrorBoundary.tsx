@@ -45,7 +45,7 @@ export default class ModuleErrorBoundary extends Component<
     this.props.onBackToHub();
   };
 
-  render() {
+  override render() {
     if (this.state.error) {
       return (
         <div className="min-h-dvh bg-bg flex flex-col items-center justify-center p-6 text-text safe-area-pt-pb">
@@ -76,7 +76,7 @@ export default class ModuleErrorBoundary extends Component<
             <button
               type="button"
               onClick={this.handleRetry}
-              className="flex-1 px-5 py-2.5 rounded-2xl bg-primary text-bg text-sm font-semibold shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="flex-1 px-5 py-2.5 rounded-2xl bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
               aria-label="Спробувати ще раз"
             >
               Спробувати ще
@@ -84,7 +84,7 @@ export default class ModuleErrorBoundary extends Component<
             <button
               type="button"
               onClick={this.handleBack}
-              className="flex-1 px-5 py-2.5 rounded-2xl bg-panel border border-line text-text text-sm font-medium shadow-card hover:shadow-float transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+              className="flex-1 px-5 py-2.5 rounded-2xl bg-panel border border-line text-text text-style-label shadow-card hover:shadow-float transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
             >
               До вибору модуля
             </button>

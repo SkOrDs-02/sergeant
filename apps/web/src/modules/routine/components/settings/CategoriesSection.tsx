@@ -1,11 +1,11 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import {
   createCategory,
   updateCategory,
@@ -115,7 +115,7 @@ export function CategoriesSection({
                   )}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm font-medium truncate">
+                    <span className="text-style-label truncate">
                       {c.emoji ? `${c.emoji} ` : ""}
                       {c.name}
                     </span>

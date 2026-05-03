@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { cn } from "../../lib/cn";
+import { cn } from "../../lib/ui/cn";
 import { Icon } from "./Icon";
 
 /**
@@ -188,7 +188,7 @@ export const StreakBadge = memo(function StreakBadge({
       className={cn(
         "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full",
         "bg-panel-hi border border-line",
-        "text-sm font-semibold",
+        "text-style-label",
         intensity.color,
         className,
       )}
@@ -197,7 +197,7 @@ export const StreakBadge = memo(function StreakBadge({
     >
       <Icon name="zap" size={14} strokeWidth={2.5} />
       <span className="tabular-nums">{streak}</span>
-      {label && <span className="text-muted text-xs font-medium">{label}</span>}
+      {label && <span className="text-style-caption text-muted">{label}</span>}
     </span>
   );
 });

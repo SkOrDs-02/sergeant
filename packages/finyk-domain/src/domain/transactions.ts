@@ -44,7 +44,7 @@ type RawTxInput = {
   _manualId?: string | number;
   accountId?: string | null;
   _accountId?: string | null;
-  raw?: { category?: string } & Record<string, unknown>;
+  raw?: unknown;
 } & Record<string, unknown>;
 
 // Внутрішні category ids, які трактуються як переказ між власними рахунками.
@@ -128,7 +128,10 @@ function resolveCategoryId(input: RawTxInput | null | undefined): string {
     return input.categoryId;
   }
   // manual-транзакції зберігають id категорії у raw.category або в полі category.
-  const raw = input.raw && typeof input.raw === "object" ? input.raw : null;
+  const raw =
+    input.raw && typeof input.raw === "object"
+      ? (input.raw as Record<string, unknown>)
+      : null;
   const fromRaw = raw && typeof raw.category === "string" ? raw.category : "";
   const fromInput = typeof input.category === "string" ? input.category : "";
   return fromRaw || fromInput || "";
@@ -274,7 +277,12 @@ export function filterStatTransactions(
 // унікальність за стабільним id. Остання транзакція з тим же id виграє —
 // це важливо для merge між cache + network, коли сервер повернув свіжу копію.
 export function dedupeAndSortTransactions(
-  items: readonly RawTxInput[] | null | undefined,
+  items:
+    | readonly RawTxInput[]
+    | readonly Transaction[]
+    | readonly (RawTxInput | Transaction)[]
+    | null
+    | undefined,
 ): Transaction[] {
   if (!Array.isArray(items)) return [];
   const safe = items.filter(

@@ -6,10 +6,10 @@
  */
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
-import { hapticTap } from "@shared/lib/haptic";
+import { hapticTap } from "@shared/lib/adapters/haptic";
 
 interface ConfettiParticle {
   id: number;
@@ -196,7 +196,7 @@ export function CelebrationModal({
 
         {/* Headline */}
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-text">{headline}</h2>
+          <h2 className="text-style-hero text-text">{headline}</h2>
           <p className="text-sm text-muted">{subtext}</p>
         </div>
 

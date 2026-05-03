@@ -1,4 +1,4 @@
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { MAX_OFFLINE_QUEUE, OFFLINE_QUEUE_KEY } from "../config";
 import { emitStatusEvent } from "../state/events";
 import type { QueueEntry, QueuePushEntry } from "../types";

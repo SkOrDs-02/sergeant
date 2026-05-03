@@ -91,6 +91,38 @@ describe("scanStrictCoverage", () => {
     }
   });
 
+  test("resolves @sergeant/config workspace alias without node_modules", () => {
+    // Regression for the case where `pnpm install` has not yet populated
+    // `node_modules` (cold dev clones, isolated CI stages): the script
+    // must still inherit `strict: true` through the workspace alias the
+    // way `tools/tsconfig-guard/check.mjs` does.
+    const root = createTmpRepo({
+      "packages/config/tsconfig.base.json": {
+        compilerOptions: { strict: true },
+      },
+      "packages/shared/tsconfig.json": {
+        extends: "@sergeant/config/tsconfig.base.json",
+        compilerOptions: {},
+      },
+      "apps/web/tsconfig.json": {
+        extends: "@sergeant/config/tsconfig.base.json",
+        compilerOptions: { strict: true },
+      },
+    });
+
+    try {
+      const result = scanStrictCoverage(root);
+      const shared = result.packages.find((p) => p.name === "packages/shared");
+      assert.equal(shared.strict, true);
+      assert.equal(shared.strictNullChecks, true);
+      assert.equal(shared.noImplicitAny, true);
+      assert.equal(result.summary.strictCount, 2);
+      assert.equal(result.summary.total, 2);
+    } finally {
+      rmSync(root, { recursive: true });
+    }
+  });
+
   test("explicit sub-flag override takes precedence over strict: true", () => {
     const root = createTmpRepo({
       "apps/api/tsconfig.json": {

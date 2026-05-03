@@ -9,7 +9,7 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { WorkoutTemplate } from "../hooks/useWorkoutTemplates";
 
 type GroupType = "superset" | "circuit";

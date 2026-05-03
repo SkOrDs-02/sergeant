@@ -1,6 +1,6 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import type { StatusColor } from "@sergeant/design-tokens";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 export type BannerVariant = StatusColor;
 

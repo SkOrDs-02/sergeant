@@ -1,6 +1,6 @@
 # Sergeant — doc-hygiene аудит (2026-05-02)
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Аудит виконано 2026-05-02 проти `main @ b7c629dd`. Стиль: прохід зверху-вниз, без правок коду. Фікси (ADR-0029-gap rule, audit lifecycle, agent file unification) реалізовані у PR `docs(hygiene): close audit findings — ADR gap rule, audits lifecycle, agent files`.
@@ -114,12 +114,14 @@ Knip-команда `dead-code:files` (по правилам `knip.json` + scaff
 
 ### 3.2 Скрипти зі статусом «використовуються лише вручну»
 
-`scripts/strip-js-extensions.mjs` — codemod (одноразовий міграційний інструмент). Згадується тільки в `docs/tech-debt/frontend.md`. Не дзвонять з `package.json` чи CI.
+`strip-js-extensions` codemod (одноразовий міграційний інструмент, був у `scripts/`). Згадується тільки в `docs/tech-debt/frontend.md`. Не дзвонять з `package.json` чи CI.
 
 **Опції:**
 
 - (a) Перенести у `scripts/codemods/` з README.md в директорії.
 - (b) Видалити, якщо codemod вже виконано (треба перевірити `frontend.md`).
+
+> **Виконано (PR follow-up до цього аудиту):** обрано опцію (a). Codemod перенесено в [`scripts/codemods/strip-js-extensions/script.mjs`](../../scripts/codemods/strip-js-extensions/script.mjs); додано директорійний README та каталог [`scripts/codemods/README.md`](../../scripts/codemods/README.md), який описує конвенцію для майбутніх codemod-ів.
 
 `scripts/vitest.mjs` — wrapper навколо vitest, який strip-ить `--max-old-space-size` з NODE_OPTIONS. Теж не пов'язано з `package.json` scripts напряму.
 

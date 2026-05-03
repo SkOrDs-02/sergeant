@@ -9,7 +9,7 @@
  * Rendering is platform-specific (toast / coachmark / sheet). This file
  * only decides "can we show X now?" and records user interactions.
  */
-import { readJSON, writeJSON, type KVStore } from "./kvStore";
+import { readJSON, writeJSON, type KVStore } from "../storage/kv";
 
 export type HintId =
   | "ftux_open_search"

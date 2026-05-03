@@ -9,8 +9,8 @@ import {
   type HintId,
 } from "@sergeant/shared";
 import { useToast } from "@shared/hooks/useToast";
-import { webKVStore } from "@shared/lib/storage";
-import { emitHubBus } from "@shared/lib/hubBus";
+import { webKVStore } from "@shared/lib/storage/storage";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 import { useHubPref } from "../settings/hubPrefs";
 

@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 import { chartHex } from "@sergeant/design-tokens/tokens";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 // Convert a polar angle (0° = 12 o'clock, clockwise) to cartesian coordinates.
 function polarToXY(cx: number, cy: number, r: number, angleDeg: number) {

@@ -3,7 +3,7 @@ import {
   safeReadStringLS,
   safeRemoveLS,
   safeWriteLS,
-} from "@shared/lib/storage";
+} from "@shared/lib/storage/storage";
 import { normalizeStoredMessages, type ChatMessage } from "../lib/hubChatUtils";
 
 export const SESSIONS_STORAGE_KEY = "hub_chat_sessions_v1";

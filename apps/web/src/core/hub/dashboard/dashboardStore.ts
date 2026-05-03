@@ -1,14 +1,10 @@
 import {
   safeReadLS,
-  safeReadStringLS,
   safeRemoveLS,
   safeWriteLS,
-} from "@shared/lib/storage";
-import {
-  STORAGE_KEYS,
-  normalizeDashboardOrder,
-  type KVStore,
-} from "@sergeant/shared";
+  webKVStore,
+} from "@shared/lib/storage/storage";
+import { STORAGE_KEYS, normalizeDashboardOrder } from "@sergeant/shared";
 
 /**
  * `KVStore` adapter backed by `window.localStorage`. Used by shared
@@ -16,19 +12,12 @@ import {
  * `recordLastActiveDate`, `shouldShowReengagement`) that are agnostic to
  * the storage backend (web LS vs. mobile MMKV).
  *
- * Goes through `safeReadStringLS` / `safeWriteLS` / `safeRemoveLS` so the
- * adapter inherits the same private-browsing / quota-exceeded handling
- * as the rest of the app and stays compliant with `no-raw-local-storage`.
+ * Re-exported under the legacy name for callers that imported the
+ * adapter from this module before the `@sergeant/shared/storage/kv`
+ * unification (PR #006). New code should import `webKVStore` directly
+ * from `@shared/lib/storage`.
  */
-export const localStorageStore: KVStore = {
-  getString: (k) => safeReadStringLS(k, null),
-  setString: (k, v) => {
-    safeWriteLS(k, v);
-  },
-  remove: (k) => {
-    safeRemoveLS(k);
-  },
-};
+export const localStorageStore = webKVStore;
 
 const DASHBOARD_ORDER_KEY = STORAGE_KEYS.DASHBOARD_ORDER;
 

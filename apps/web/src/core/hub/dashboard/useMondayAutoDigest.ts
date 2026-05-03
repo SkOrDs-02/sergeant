@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { safeReadLS } from "@shared/lib/storage";
+import { safeReadLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import {
   getWeekKey,

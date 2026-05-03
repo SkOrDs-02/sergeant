@@ -13,8 +13,8 @@
  */
 import { createApiClient } from "@sergeant/api-client";
 
-import { apiUrl, getApiPrefix } from "@shared/lib/apiUrl";
-import { getBearerToken } from "@shared/lib/bearerToken";
+import { apiUrl, getApiPrefix } from "@shared/lib/api/apiUrl";
+import { getBearerToken } from "@shared/lib/api/bearerToken";
 
 export const apiClient = createApiClient({
   baseUrl: apiUrl(""),

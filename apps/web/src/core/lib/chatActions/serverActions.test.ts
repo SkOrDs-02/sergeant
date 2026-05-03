@@ -23,7 +23,7 @@ import type { ChatAction } from "./types";
  */
 
 const apiUrlMock = vi.fn((p: string) => `https://srv.test${p}`);
-vi.mock("../../../shared/lib/apiUrl", () => ({
+vi.mock("../../../shared/lib/api/apiUrl", () => ({
   apiUrl: (p: string) => apiUrlMock(p),
 }));
 

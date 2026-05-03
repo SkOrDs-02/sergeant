@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { calcCategorySpent, resolveExpenseCategoryMeta } from "../../utils";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type {

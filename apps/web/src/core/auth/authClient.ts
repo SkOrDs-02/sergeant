@@ -1,10 +1,10 @@
 import { createAuthClient } from "better-auth/react";
-import { apiUrl } from "@shared/lib/apiUrl";
+import { apiUrl } from "@shared/lib/api/apiUrl";
 import {
   clearBearerToken,
   getBearerToken,
   setBearerToken,
-} from "@shared/lib/bearerToken";
+} from "@shared/lib/api/bearerToken";
 import { isCapacitor } from "@sergeant/shared";
 
 function getAuthBaseURL(): string {

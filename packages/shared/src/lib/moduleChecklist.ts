@@ -8,7 +8,7 @@
  */
 
 import type { DashboardModuleId } from "./dashboard";
-import { readJSON, writeJSON, type KVStore } from "./kvStore";
+import { readJSON, writeJSON, type KVStore } from "../storage/kv";
 
 // ---------------------------------------------------------------------------
 // Types

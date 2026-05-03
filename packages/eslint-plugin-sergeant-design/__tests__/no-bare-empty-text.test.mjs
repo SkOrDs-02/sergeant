@@ -5,7 +5,7 @@
  * Ukrainian empty-state phrases ("Поки немає", "ще немає", etc.) outside
  * an <EmptyState> or <ModuleEmptyState> component.
  *
- * See docs/design/EMPTY-STATES.md for the three-tier system.
+ * See docs/design/empty-states.md for the three-tier system.
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";

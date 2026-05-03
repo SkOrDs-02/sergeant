@@ -7,11 +7,11 @@
  * `bg-hero-teal` summary header; dark = white wash on the dark panel
  * gradient). Replaces the `bg-teal-800/10 dark:bg-white/10 …` className
  * soup that used to be hand-rolled at three sibling call-sites in
- * `WorkoutFinishSheets`. See `docs/design/DARK-MODE-AUDIT.md` →
+ * `WorkoutFinishSheets`. See `docs/design/dark-mode-audit.md` →
  * "→ new `WorkoutStatTile` primitive (WorkoutFinishSheets)".
  */
 import { type ReactNode } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 export interface WorkoutStatTileProps {
   label: ReactNode;

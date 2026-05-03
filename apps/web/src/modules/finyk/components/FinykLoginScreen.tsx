@@ -1,6 +1,6 @@
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import type { ToastApi } from "@shared/hooks/useToast";
 
 export interface FinykLoginScreenProps {
@@ -70,7 +70,7 @@ export function FinykLoginScreen({
               <line x1="3" y1="12" x2="21" y2="12" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-text">ФІНІК</h1>
+          <h1 className="text-style-hero text-text">ФІНІК</h1>
           <p className="text-sm text-muted mt-1">
             Персональний фінансовий менеджер
           </p>

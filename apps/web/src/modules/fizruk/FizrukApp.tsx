@@ -4,6 +4,7 @@ import { useHashRoute } from "@shared/hooks/useHashRoute";
 import { usePwaAction } from "@shared/hooks/usePwaAction";
 import { useExerciseCatalog } from "./hooks/useExerciseCatalog";
 import { useFizrukProgramStart } from "./hooks/useFizrukProgramStart";
+import { useFizrukSqliteReadBoot } from "./hooks/useFizrukSqliteReadBoot";
 import { useFizrukWorkoutReminder } from "./hooks/useFizrukWorkoutReminder";
 import { useMonthlyPlan } from "./hooks/useMonthlyPlan";
 import { useTrainingProgram } from "./hooks/useTrainingProgram";
@@ -35,6 +36,11 @@ export default function FizrukApp({
   });
   const exerciseId =
     page === "exercise" && segments[0] ? segments[0] : undefined;
+
+  // Stage 4 PR #029: boot the SQLite read path. When
+  // `feature.fizruk.sqlite_v2.read_sqlite` is on, hooks below overlay
+  // their state from the local fizruk_* tables instead of LS.
+  useFizrukSqliteReadBoot();
 
   const monthlyPlan = useMonthlyPlan();
   const {

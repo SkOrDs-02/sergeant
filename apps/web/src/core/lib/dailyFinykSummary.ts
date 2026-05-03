@@ -17,7 +17,7 @@
  */
 
 import { MCC_CATEGORIES, INCOME_CATEGORIES } from "@finyk/constants";
-import { safeReadLS } from "@shared/lib/storage";
+import { safeReadLS } from "@shared/lib/storage/storage";
 
 interface Category {
   id: string;

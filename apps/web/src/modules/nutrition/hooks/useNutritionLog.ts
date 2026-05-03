@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@shared/hooks/useToast";
-import { coachKeys, digestKeys } from "@shared/lib/queryKeys";
+import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
 import {
   NUTRITION_LOG_KEY,
   loadNutritionLog,
@@ -170,22 +170,27 @@ export function useNutritionLog() {
    * @param {string} text - JSON string of a full `NutritionLog`.
    * @returns {boolean}
    */
-  const replaceLogFromJsonText = useCallback((text: string) => {
-    let parsed;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      toast.error("Не вдалося завантажити лог харчування — невалідний формат JSON.");
-      return false;
-    }
-    setNutritionLog((_prev) => {
-      const next = normalizeNutritionLog(parsed);
-      const keep = collectMealIds(next);
-      void gcMealThumbnails(keep, { maxDeletes: 2000 });
-      return next;
-    });
-    return true;
-  }, []);
+  const replaceLogFromJsonText = useCallback(
+    (text: string) => {
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        toast.error(
+          "Не вдалося завантажити лог харчування — невалідний формат JSON.",
+        );
+        return false;
+      }
+      setNutritionLog((_prev) => {
+        const next = normalizeNutritionLog(parsed);
+        const keep = collectMealIds(next);
+        void gcMealThumbnails(keep, { maxDeletes: 2000 });
+        return next;
+      });
+      return true;
+    },
+    [toast],
+  );
 
   /**
    * Merge data from a JSON string into the existing log.
@@ -194,17 +199,22 @@ export function useNutritionLog() {
    * @param {string} text - JSON string of a `NutritionLog` to merge.
    * @returns {boolean}
    */
-  const mergeLogFromJsonText = useCallback((text: string) => {
-    let parsed;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      toast.error("Не вдалося об'єднати лог харчування — невалідний формат JSON.");
-      return false;
-    }
-    setNutritionLog((log) => mergeNutritionLogs(log, parsed));
-    return true;
-  }, []);
+  const mergeLogFromJsonText = useCallback(
+    (text: string) => {
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        toast.error(
+          "Не вдалося об'єднати лог харчування — невалідний формат JSON.",
+        );
+        return false;
+      }
+      setNutritionLog((log) => mergeNutritionLogs(log, parsed));
+      return true;
+    },
+    [toast],
+  );
 
   /**
    * Trim the log to the most recent `keepDays` calendar days.

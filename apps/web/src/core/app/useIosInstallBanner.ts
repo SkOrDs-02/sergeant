@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 const IOS_BANNER_DISMISSED_KEY = "ios_install_banner_dismissed";
 

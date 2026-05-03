@@ -72,7 +72,7 @@ function normalizeApiPrefix(prefix: string): string {
 /**
  * Переписує шляхи виду `/api/<rest>` на `${prefix}/<rest>`.
  *
- * Правила (консистентно з `apps/web/src/shared/lib/apiUrl.ts`):
+ * Правила (консистентно з `apps/web/src/shared/lib/api/apiUrl.ts`):
  *   - не починається з `/api/` → повертаємо як є (fully-qualified URL, asset, ...);
  *   - `/api/auth` або `/api/auth/...` → як є (Better Auth basePath);
  *   - уже починається з `prefix/` або дорівнює `prefix` → як є (ідемпотентність);

@@ -44,6 +44,7 @@ import {
   recallCofounderMemory,
   recordDecision,
   OpenClawAllowlistError,
+  OpenClawNotFoundError,
   // ADR-0032: ops/marketing tools ported from Sergeant Console agents.
   getStripeMetrics,
   getSentryIssues,
@@ -58,6 +59,9 @@ import {
   muteSentryAlert,
   OpenClawWriteAllowlistError,
   POST_TO_TOPIC_ALLOWLIST,
+  // ADR-0037 (Phase 4.5): persistent write-audit log helpers.
+  recordWriteAudit,
+  listRecentWriteAudits,
 } from "../../modules/openclaw/index.js";
 import type {
   OpenClawStatus,
@@ -233,6 +237,46 @@ const MuteAlertBody = z.object({
   untilIso: z.string().datetime({ offset: true }).optional(),
 });
 
+// ADR-0037 (Phase 4.5): write-audit log endpoints. Console writes a row
+// per approve/reject/executed transition; the same id pairs `approved` +
+// `executed` so latency is reconstructable.
+
+const WRITE_AUDIT_ACTIONS = ["approved", "executed", "rejected"] as const;
+
+const WriteAuditLogBody = z
+  .object({
+    approvalId: z.string().min(1).max(64),
+    tool: z.string().min(1).max(100),
+    founderUserId: z.string().min(1),
+    founderTgUserId: z.number().int(),
+    invocationId: z.number().int().positive().optional().nullable(),
+    action: z.enum(WRITE_AUDIT_ACTIONS),
+    input: z.record(z.string(), z.unknown()).optional(),
+    httpStatus: z.number().int().min(0).max(599).optional().nullable(),
+    ok: z.boolean().optional().nullable(),
+    responseExcerpt: z.string().max(8_192).optional().nullable(),
+    persona: z.string().min(1).max(50).optional().nullable(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
+  })
+  .strict();
+
+const WriteAuditListBody = z
+  .object({
+    founderUserId: z.string().min(1),
+    limit: z.number().int().min(1).max(100).optional(),
+    tool: z.string().min(1).max(100).optional(),
+    action: z.enum(WRITE_AUDIT_ACTIONS).optional(),
+    persona: z.string().min(1).max(50).optional(),
+    /**
+     * Lower-bound on `recorded_at` (inclusive, ISO-8601 with offset). Driven
+     * by the `/audit since=<dur>` slash-command — console computes
+     * `Date.now() - dur` and forwards as ISO. Server parses with the
+     * standard `Date` ctor (rejects NaN as 400).
+     */
+    recordedAfterIso: z.string().datetime({ offset: true }).optional(),
+  })
+  .strict();
+
 // ─────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────
@@ -243,6 +287,11 @@ function asAllowlistFailure(
 ): void {
   const message = err instanceof Error ? err.message : String(err);
   res.status(400).json({ error: "allowlist_fail", message });
+}
+
+function asNotFound(res: import("express").Response, err: unknown): void {
+  const message = err instanceof Error ? err.message : String(err);
+  res.status(404).json({ error: "not_found", message });
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -278,6 +327,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
       } catch (err) {
         if (err instanceof OpenClawAllowlistError) {
           return asAllowlistFailure(res, err);
+        }
+        if (err instanceof OpenClawNotFoundError) {
+          return asNotFound(res, err);
         }
         throw err;
       }
@@ -583,6 +635,59 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         untilIso: parsed.data.untilIso,
       });
       res.json(result);
+    }),
+  );
+
+  // ---- ADR-0037 (Phase 4.5): write-audit log ----
+  //
+  // One row per Approve / Reject / Executed transition. Pairing
+  // `approved` + `executed` per `approval_id` reconstructs lifecycle
+  // latency and exposes "approved but never executed" failures.
+
+  // ---- write-audit/log ----
+  r.post(
+    "/api/internal/openclaw/write-audit/log",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(WriteAuditLogBody, req, res);
+      if (!parsed.ok) return;
+      const id = await recordWriteAudit(pool, {
+        approvalId: parsed.data.approvalId,
+        tool: parsed.data.tool,
+        founderUserId: parsed.data.founderUserId,
+        founderTgUserId: parsed.data.founderTgUserId,
+        invocationId: parsed.data.invocationId ?? null,
+        action: parsed.data.action,
+        input: parsed.data.input,
+        httpStatus: parsed.data.httpStatus ?? null,
+        ok: parsed.data.ok ?? null,
+        responseExcerpt: parsed.data.responseExcerpt ?? null,
+        persona: parsed.data.persona ?? null,
+        metadata: parsed.data.metadata,
+      });
+      res.json({ ok: true, id });
+    }),
+  );
+
+  // ---- write-audit/list ----
+  r.post(
+    "/api/internal/openclaw/write-audit/list",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(WriteAuditListBody, req, res);
+      if (!parsed.ok) return;
+      // Zod's `.datetime({ offset: true })` validator already rejects any
+      // non-ISO input with 400 above, so `new Date(...)` is safe to call
+      // unguarded here. Coerce inline to keep this branch shallow.
+      const audits = await listRecentWriteAudits(pool, {
+        founderUserId: parsed.data.founderUserId,
+        limit: parsed.data.limit,
+        tool: parsed.data.tool,
+        action: parsed.data.action,
+        persona: parsed.data.persona,
+        recordedAfter: parsed.data.recordedAfterIso
+          ? new Date(parsed.data.recordedAfterIso)
+          : undefined,
+      });
+      res.json({ audits });
     }),
   );
 

@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-03 by Devin (sync Stage 4 Fizruk progress: PR #027 schema + bundled SQLite migration, PR #028 dual-write LS/MMKV↔SQLite, PR #029 cut-over reads + server `applyFizruk*` apply-функції та PR #029a mobile fizruk read overlay — усі на main; лишається PR #030 LS cleanup і відкладений boot-wiring follow-up для `register{Routine,Fizruk}DualWriteContext`). **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -101,7 +101,7 @@
 
 ### Stage 0 — Security hygiene (P0)
 
-#### **PR #001 — `chore(mobile): MMKV encryption with SecureStore-derived key`**
+#### **PR #001 — `chore(mobile): MMKV encryption with SecureStore-derived key`** ✅ LANDED — [#1272](https://github.com/Skords-01/Sergeant/pull/1272)
 
 - **Scope.** `apps/mobile/src/lib/storage.ts`: при першому запуску
   згенерувати random 32-byte key, зберегти в `expo-secure-store`,
@@ -118,7 +118,7 @@
   виживають reinstall (з SecureStore key).
 - **Dep.** None.
 
-#### **PR #002 — `feat(server): rotate Mono PAT to backend-only flow, drop FINYK_TOKEN from sync keys`**
+#### **PR #002 — `feat(server): rotate Mono PAT to backend-only flow, drop FINYK_TOKEN from sync keys`** ✅ LANDED — [#1280](https://github.com/Skords-01/Sergeant/pull/1280)
 
 - **Scope.** Видалити `FINYK_TOKEN` з `SYNC_MODULES.finyk.keys` у `core/cloudSync/config.ts`
   (web) і `apps/mobile/src/sync/config.ts`. PAT уже зберігається в
@@ -140,9 +140,9 @@
 - **AC.** Unit-test ротації; integration-test mono-mock.
 - **Dep.** None.
 
-#### **PR #004 — `feat(web): exclude sensitive query keys from IDB persister`**
+#### **PR #004 — `feat(web): exclude sensitive query keys from IDB persister`** ✅ LANDED — [#1283](https://github.com/Skords-01/Sergeant/pull/1283)
 
-- **Scope.** `apps/web/src/shared/lib/queryClientPersister.ts`:
+- **Scope.** `apps/web/src/shared/lib/api/queryClientPersister.ts`:
   додати `dehydrateOptions.shouldDehydrateQuery` exclude list для
   `/api/coach/*`, `/api/me/finance/balance`, `/api/sync/*`, `/api/auth/*`.
 - **Mirror.** Ті самі exclusions у `apps/mobile/src/sync/persister/mmkvPersister.ts`.
@@ -498,10 +498,9 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   prod routine module ще читає з LS і ці схеми залишаються off-path до
   PR #024.
 
-##### **PR #024 — `feat(routine-domain): dual-write LS↔SQLite behind feature flag`** ⏳ IN-PROGRESS
+##### **PR #024 — `feat(routine-domain): dual-write LS↔SQLite behind feature flag`** ✅ MERGED
 
-> **Статус (2026-05-02):** PR відкрито у гілці
-> `devin/1777758771-routine-sqlite-pr-024-dual-write`. Скоп — додає
+> **Статус (2026-05-03):** залендили (merge `3f41e7f6`). Скоп — додає
 > новий feature flag `feature.routine.sqlite_v2.dual_write` (web +
 > mobile, default: off, experimental: true) і дзеркальний шар
 > `apps/{web,mobile}/src/modules/routine/lib/dualWrite/` з трьох
@@ -518,8 +517,13 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 > через `triggerRoutineDualWrite(prev, next)` fire-and-forget;
 > `peekRoutineDualWritePrev()` повертає `null` коли контекст не
 > зареєстровано — нульовий overhead на off-flag шляху. Boot wiring
-> (web `main.tsx` + mobile entry) **відкладено окремим follow-up
-> PR-ом** щоб тримати цей PR pure mechanism.
+> (web `main.tsx` + mobile entry, виклик
+> `registerRoutineDualWriteContext(...)` з реальними auth/sqlite
+> singleton-ами) **відкладено окремим follow-up PR-ом** і станом на
+> 2026-05-03 ще не зроблено — тому за умови ввімкнених flag-ів
+> dual-write шар у проді поки не активний (`isRoutineDualWriteRegistered()`
+> повертає `false`), і будь-який real-world rollout вимагає спочатку
+> приземлити цей boot-wiring PR.
 
 - **Артефакти.**
   - `apps/{web,mobile}/src/core/lib/featureFlags.ts` — нова
@@ -591,6 +595,140 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 > longer pushed from clients, so orphaned rows just waste storage.
 
 #### **Fizruk** (3 тижні) — PR #027–#030
+
+##### **PR #027 — `feat(fizruk): postgres + sqlite normalized tables`** ✅ MERGED
+
+- **Реалізовано (server).** `apps/server/src/migrations/029_fizruk_tables.sql`
+  створює `fizruk_workouts`, `fizruk_workout_items`, `fizruk_workout_sets`,
+  `fizruk_custom_exercises`, `fizruk_measurements` з індексами
+  `(user_id, started_at DESC)` / `(user_id, deleted_at) WHERE deleted_at IS NULL`
+  / `(workout_id, sort_order)` / `(workout_item_id, sort_order)` /
+  `(user_id, measured_at DESC)` і soft-delete колонкою `deleted_at`.
+  `down.sql` чистить таблиці у зворотньому FK-порядку.
+- **Реалізовано (shared schema).** `packages/db-schema/src/pg/fizruk.ts`
+  - `packages/db-schema/src/sqlite/fizruk.ts` дають Drizzle ORM-схеми для
+    PG і SQLite (паралельні шейпи з суфіксом `_lite` для індексів). Snapshot
+    тести у `packages/db-schema/src/__tests__/{pg,sqlite}-fizruk-snapshot.test.ts`
+    ловлять drift між драйверами.
+- **Реалізовано (client).** `packages/db-schema/src/sqlite/migrations/index.ts`
+  експортує `FIZRUK_CLIENT_MIGRATIONS` з власним ledger-ом
+  `__fizruk_migrations` (окремий від routine SPIKE-ledger-у). Клієнтський
+  раннер `apps/{web,mobile}/src/modules/fizruk/lib/clientMigrate.ts`
+  застосовує bundled migrations при першому write-і.
+- **Дзеркальний test.** `apps/server/src/migrations/__tests__` snapshot-и
+  - `packages/db-schema` PG/SQLite парність — нові колонки/індекси не
+    поїдуть на server без оновлення client schema.
+
+##### **PR #028 — `feat(fizruk): dual-write LS/MMKV↔SQLite (best-effort)`** ✅ MERGED
+
+- **Scope.** Кожен write у Fizruk LS-blob-и
+  (`fizruk_workouts_v1`, `fizruk_custom_exercises_v1`, `fizruk_measurements_v1`)
+  додатково мирорить у локальну SQLite. Reads ще беруться з LS — це чистий
+  shadow-write для validation.
+- **Реалізовано (web).** `apps/web/src/modules/fizruk/lib/dualWrite/`:
+  `diff.ts` рахує `FizrukDualWriteOp[]` з `prev → next` snapshot-у,
+  `adapter.ts` — async best-effort upsert у `fizruk_workouts` /
+  `fizruk_workout_items` / `fizruk_workout_sets` /
+  `fizruk_custom_exercises` / `fizruk_measurements` з LWW-guardом
+  на `updated_at`, `index.ts` — orchestrator з registration-pattern-ом
+  (gating через `feature.fizruk.sqlite_v2.dual_write`, fail-soft на
+  no-userId / sqlite-unavailable). Mirror у
+  `apps/mobile/src/modules/fizruk/lib/dualWrite/` для expo-sqlite.
+- **Feature flag.** `feature.fizruk.sqlite_v2.dual_write` (default off)
+  у `apps/web/src/core/lib/featureFlags.ts` + `apps/mobile/src/core/lib/featureFlags.ts`.
+  Kill switch — toggle off у flag UI, dual-write припиняється, LS лишається
+  єдиним write target.
+- **Не входить.** Outbox / `/v2/sync/push` для `fizruk_*` — ще немає.
+  `OP_LOG_TABLE_REGISTRY` у `apps/server/src/modules/sync/syncV2.ts` поки
+  whitelist-ить тільки `routine_entries` / `routine_streaks`. Server-side
+  apply-функції для `fizruk_*` поїдуть разом із PR #029 (split на
+  `applyFizrukWorkouts` / `applyFizrukItems` / `applyFizrukSets` /
+  `applyFizrukCustomExercises` / `applyFizrukMeasurements`).
+- **Dep.** PR #027 (schema + client migration runner).
+
+##### **PR #029 — `feat(fizruk): cut-over reads to SQLite, server apply-fns`** ✅ MERGED
+
+- **Реалізовано (server).** `apps/server/src/modules/sync/syncV2.ts` —
+  5 split apply-функцій (`applyFizrukWorkouts`, `applyFizrukItems`,
+  `applyFizrukSets`, `applyFizrukCustomExercises`,
+  `applyFizrukMeasurements`) додано у `OP_LOG_TABLE_REGISTRY`. Кожна з них
+  валідує `id`, перевіряє ownership (`user_id`), застосовує LWW-guard
+  (`existing.updated_at < clientTs`), підтримує soft-delete
+  (`UPDATE deleted_at = clientTs` замість DELETE) і парсить опціональні
+  числові/JSON поля (helper-и `parseRequiredDate` / `parseOptionalNumber`
+  / `parseOptionalInt` / `toJsonbParam`). FK-violation на parent
+  (`workout_id` / `workout_item_id`) ловиться SAVEPOINT-ом
+  `syncV2Push`-у і повертається як `apply_failed`.
+- **Реалізовано (web).** `apps/web/src/modules/fizruk/lib/sqliteReader.ts`
+  тримає кеш `{ workouts, customExercises, measurements }`. Бутстрап
+  через `sqliteReadBoot.ts` + `useFizrukSqliteReadBoot` (idempotent,
+  fire-and-forget, fail-soft). `useWorkouts` / `useMeasurements` /
+  `useExerciseCatalog` overlay-ять зі SQLite-кешу під фічфлаґом
+  `feature.fizruk.sqlite_v2.read_sqlite` (LS читає лишається як перша
+  paint synchronous-fallback, ніколи не блокується на SQLite).
+  Pub-sub нотифікація між хуками — `sqliteReadGate.ts` (`useSyncExternalStore`
+  - tick counter, refresh by `notifyFizrukSqliteCacheRefresh`).
+- **Реалізовано (mobile).** `apps/mobile/src/modules/fizruk/lib/sqliteReader.ts`
+  — паритет shape-а кешу для майбутнього read cutover; UI overlay у
+  mobile хуках додано окремим follow-up PR #029a (див. нижче). FK /
+  soft-delete / LWW семантика повністю мирорить web.
+- **Тести.**
+  `apps/server/src/modules/sync/syncV2.integration.test.ts` — 5 нових
+  describe-кейсів: insert→update, LWW reject, soft-delete, parent-then-child
+  FK у одному push-батчі, `invalid_measured_at`-валідація.
+  `apps/web/src/modules/fizruk/lib/sqliteReader.test.ts` — 7 unit-тестів
+  на refresh / filter by user / soft-delete exclude / hydrate
+  custom-exercises + measurements / cached state.
+- **Feature flag.** `feature.fizruk.sqlite_v2.read_sqlite` (default off)
+  — потребує увімкненого `dual_write`. Toggle off → reads повертаються
+  на LS path; SQLite дані лишаються (нічого не дропається).
+- **Не входить.** Outbox / cloudsync push з `fizruk_*` через `/v2/sync/push`
+  (web/mobile pull/push pipeline), backfill `module_data.fizruk` →
+  `fizruk_*` per-user. Mobile UI overlay рознесений у PR #029a (вже
+  залендили), сам LS cleanup і drop `module_data.fizruk` — у PR #030.
+- **Dep.** PR #027 (schema), PR #028 (dual-write).
+
+##### **PR #029a — `feat(mobile): fizruk read overlay from SQLite under feature flag`** ✅ MERGED
+
+> **Статус (2026-05-03):** залендили (merge `8746145d`). Скоп —
+> mobile-частина PR #029, яка винесена окремо щоб тримати web cut-over
+>
+> - server apply-fns одним PR-ом. Додає `feature.fizruk.sqlite_v2.read_sqlite`
+>   у `apps/mobile/src/core/lib/featureFlags.ts`, mobile bootstrap
+>   `apps/mobile/src/modules/fizruk/lib/sqliteReadBoot.ts` +
+>   `useFizrukSqliteReadBoot` хук, та `sqliteReadGate.ts` pub-sub між
+>   `useFizrukWorkouts` / `useCustomExercises` / `useMeasurements`. Reads
+>   overlay-ять зі SQLite-кешу під фічфлаґом, MMKV-write залишається як
+>   синхронний first-paint fallback.
+
+- **Артефакти.**
+  - `apps/mobile/src/core/lib/featureFlags.ts` — нова
+    `feature.fizruk.sqlite_v2.read_sqlite` (default off, experimental).
+  - `apps/mobile/src/modules/fizruk/lib/{sqliteReadBoot,sqliteReadGate}.ts`
+    - парні `__tests__/{sqliteReadBoot,sqliteReadGate}.test.ts`.
+  - `apps/mobile/src/modules/fizruk/hooks/{useFizrukSqliteReadBoot,useFizrukWorkouts,useCustomExercises,useMeasurements}.ts`
+    — overlay reads із SQLite cache.
+  - `apps/mobile/src/modules/fizruk/pages/Dashboard.tsx` —
+    `useFizrukSqliteReadBoot()` виклик у бутстрапі модуля.
+- **Тести.**
+  `apps/mobile/src/modules/fizruk/__tests__/Dashboard.test.tsx` +
+  `apps/mobile/src/modules/fizruk/hooks/__tests__/useFizrukWorkouts.sqliteOverlay.test.tsx`
+  - `apps/mobile/src/modules/fizruk/lib/__tests__/sqliteRead{Boot,Gate}.test.ts`.
+- **Не входить.** Outbox / cloudsync push з `fizruk_*` (PR #030+).
+  Backfill `module_data.fizruk` → `fizruk_*` per-user (PR #030).
+- **Dep.** PR #029 (web cut-over + server apply-fns).
+
+##### **PR #030 — `chore(fizruk): remove LS path, drop module_data.fizruk`** ⏳ PENDING
+
+- **Scope.** Видалити `fizruk` з `SYNC_MODULES` (web + mobile).
+  ESLint guard проти reads з `STORAGE_KEYS.FIZRUK_*`. Server: одноразова
+  міграція `DELETE FROM module_data WHERE module='fizruk'` після того, як
+  PR #029 + PR #029a розкочено на 100% юзерів і backfill завершено.
+  Перед видаленням LS path — приземлити boot-wiring follow-up для
+  `registerFizrukDualWriteContext` (інакше rollout dual-write флага
+  лишається no-op, як і у routine).
+- **Dep.** PR #029 (web cut-over + server apply-fns), PR #029a (mobile
+  read overlay), boot-wiring follow-up (`register{Routine,Fizruk}DualWriteContext`).
 
 #### **Nutrition** (3 тижні) — PR #031–#034
 

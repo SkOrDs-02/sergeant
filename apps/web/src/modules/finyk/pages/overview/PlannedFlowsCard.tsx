@@ -22,7 +22,7 @@ const PlannedFlowsCardImpl = function PlannedFlowsCard({
   return (
     <Card radius="lg" padding="none" className="overflow-hidden">
       <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-        <span className="text-xs font-medium text-subtle">
+        <span className="text-style-caption text-subtle">
           Найближчі платежі
         </span>
         <button

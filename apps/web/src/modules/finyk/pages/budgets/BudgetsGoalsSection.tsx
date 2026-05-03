@@ -2,24 +2,22 @@ import type { Dispatch, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import {
   calculateGoalProgress,
   getGoalMonthlyLabel,
 } from "@sergeant/finyk-domain/domain/budget";
+import type { Budget } from "@sergeant/finyk-domain/domain/types";
 import { GoalBudgetCard } from "../../components/budgets/GoalBudgetCard";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { useToast } from "@shared/hooks/useToast";
 
 export interface BudgetsGoalsSectionProps {
   goalsOpen: boolean;
   toggleGoals: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  goalBudgets: any[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  budgets: any[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setBudgets: Dispatch<SetStateAction<any[]>>;
+  goalBudgets: Budget[];
+  budgets: Budget[];
+  setBudgets: Dispatch<SetStateAction<Budget[]>>;
   editIdx: number | null;
   setEditIdx: Dispatch<SetStateAction<number | null>>;
   now: Date;
@@ -103,13 +101,39 @@ export function BudgetsGoalsSection({
       )}
       {goalsOpen &&
         goalBudgets.map((b, i) => {
-          const progress = calculateGoalProgress(b, now);
+          // Goal-specific fields live on the `[extra: string]: unknown`
+          // index of `Budget` (the canonical Budget shape captures
+          // limit-style fields). Read them through unknown casts so the
+          // card / progress helper get the concrete numeric/string
+          // values they require.
+          const targetAmount = Number(
+            (b as { targetAmount?: unknown }).targetAmount ?? 0,
+          );
+          const savedAmount = Number(
+            (b as { savedAmount?: unknown }).savedAmount ?? 0,
+          );
+          const targetDate = (b as { targetDate?: unknown }).targetDate;
+          const goalInput = {
+            targetAmount,
+            savedAmount,
+            targetDate: typeof targetDate === "string" ? targetDate : undefined,
+          };
+          const cardBudget = {
+            id: b.id,
+            type: b.type === "goal" ? ("goal" as const) : ("limit" as const),
+            emoji: (b as { emoji?: unknown }).emoji as string | undefined,
+            name: (b as { name?: unknown }).name as string | undefined,
+            targetAmount,
+            savedAmount,
+            targetDate: typeof targetDate === "string" ? targetDate : undefined,
+          };
+          const progress = calculateGoalProgress(goalInput, now);
           const globalIdx = budgets.indexOf(b);
           const isEditing = editIdx === globalIdx;
           return (
             <GoalBudgetCard
               key={b.id || i}
-              budget={b}
+              budget={cardBudget}
               saved={progress.saved}
               pct={progress.pct}
               daysLeft={progress.daysLeft}

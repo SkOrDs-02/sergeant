@@ -1,5 +1,5 @@
 import { chatApi } from "@shared/api";
-import { finykKeys } from "@shared/lib/queryKeys";
+import { finykKeys } from "@shared/lib/api/queryKeys";
 import { readJSON, writeJSON } from "../../lib/finykStorage";
 
 // ─── React Query integration for AI chat lookups ──────────────────────────

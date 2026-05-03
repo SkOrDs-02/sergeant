@@ -1,4 +1,4 @@
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { MIGRATION_DONE_KEY } from "../config";
 
 type MigrationMap = Record<string, string>;

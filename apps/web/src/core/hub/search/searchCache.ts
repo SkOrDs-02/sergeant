@@ -1,4 +1,4 @@
-import { safeReadStringLS } from "@shared/lib/storage";
+import { safeReadStringLS } from "@shared/lib/storage/storage";
 
 // Module-level cache for parsed localStorage payloads. HubSearch runs
 // `performSearch` on every debounced keystroke (2+ chars), which means

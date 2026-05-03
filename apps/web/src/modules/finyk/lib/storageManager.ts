@@ -1,4 +1,4 @@
-import { storageManager as baseStorageManager } from "@shared/lib/storageManager";
+import { storageManager as baseStorageManager } from "@shared/lib/storage/storageManager";
 
 const STORAGE_PREFIX = "finyk_";
 

@@ -52,7 +52,7 @@ const FIXTURE = {
       enforced_by: [
         {
           kind: "convention",
-          ref: "apps/web/src/shared/lib/queryKeys.ts (single source of truth)",
+          ref: "apps/web/src/shared/lib/api/queryKeys.ts (single source of truth)",
         },
       ],
       links: [{ type: "agents", ref: "#2" }],

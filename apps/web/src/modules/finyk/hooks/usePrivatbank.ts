@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { privatApi, isApiError } from "@shared/api";
 import { normalizeTransaction } from "@sergeant/finyk-domain/domain/transactions";
+import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import {
   readRaw,
   writeRaw,
@@ -8,6 +9,41 @@ import {
   readJSON,
   writeJSON,
 } from "../lib/finykStorage";
+
+// Сирий рядок із PrivatBank Statements API. PrivatBank віддає скорочений
+// payload із багатьма опційними полями, тому всі поля мітимо optional, а
+// решту залишаємо у `Record<string, unknown>` — щоб не злякалися нових
+// ключів, але мати точну сигнатуру для тих, які реально читаємо.
+export type PrivatTxApiRow = Record<string, unknown> & {
+  SUM?: string | number;
+  TRANDATE?: string;
+  TRANTIME?: string;
+  OSND?: string;
+  PRYZNACH?: string;
+  AUT_CNTR_NAM?: string;
+  REF?: string;
+  REFN?: string;
+  DOC_NUMBER?: string;
+  AUT_MY_ACC?: string;
+};
+
+// Транзакція PrivatBank у домен-нормалізованому вигляді — той самий
+// канонічний `Transaction`, що і для monobank / manual / AI-import. Всі
+// списки в hook-у тримаємо у нормалізованій формі (її повертає
+// `normalizePrivatTransaction(...)`).
+export type PrivatTransaction = Transaction;
+
+// Денормалізований акаунт PrivatBank — повертає `normalizeAccount(...)`.
+// Сума — у minor units (копійках) для сумісності з рештою фініку.
+export interface PrivatAccount {
+  id: string;
+  balance: number;
+  creditLimit: number;
+  currency: string;
+  type: "privatbank";
+  alias: string;
+  _source: "privatbank";
+}
 
 const PRIVAT_ID_KEY = "finyk_privat_id";
 const PRIVAT_TOKEN_KEY = "finyk_privat_token";
@@ -62,10 +98,8 @@ function clearCreds() {
   } catch {}
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type PrivatTx = any;
 interface PrivatTxCache {
-  txs: PrivatTx[];
+  txs: PrivatTransaction[];
   timestamp: number;
 }
 function loadTxCache(): PrivatTxCache | null {
@@ -76,22 +110,22 @@ function loadTxCache(): PrivatTxCache | null {
   return c;
 }
 
-function saveTxCache(txs: PrivatTx[]) {
+function saveTxCache(txs: PrivatTransaction[]) {
   writeJSON(PRIVAT_CACHE_KEY, { txs, timestamp: Date.now() });
 }
 
 interface PrivatBalanceCache {
-  accounts: PrivatTx[];
+  accounts: PrivatAccount[];
   timestamp: number;
 }
-function loadBalanceCache(): PrivatTx[] | null {
+function loadBalanceCache(): PrivatAccount[] | null {
   const c = readJSON<PrivatBalanceCache | null>(PRIVAT_BALANCE_KEY, null);
   if (!c || typeof c !== "object") return null;
   if (!c.timestamp || Date.now() - c.timestamp > PRIVAT_CACHE_TTL) return null;
   return Array.isArray(c.accounts) ? c.accounts : null;
 }
 
-function saveBalanceCache(accounts: PrivatTx[]) {
+function saveBalanceCache(accounts: PrivatAccount[]) {
   writeJSON(PRIVAT_BALANCE_KEY, { accounts, timestamp: Date.now() });
 }
 
@@ -113,20 +147,9 @@ function toTimestamp(trandate: string, trantime: string) {
 }
 
 function normalizePrivatTransaction(
-  row: Record<string, unknown> & {
-    SUM?: string | number;
-    TRANDATE?: string;
-    TRANTIME?: string;
-    OSND?: string;
-    PRYZNACH?: string;
-    AUT_CNTR_NAM?: string;
-    REF?: string;
-    REFN?: string;
-    DOC_NUMBER?: string;
-    AUT_MY_ACC?: string;
-  },
+  row: PrivatTxApiRow,
   accountId: string | null | undefined,
-) {
+): PrivatTransaction {
   const amountRaw = parseFloat(String(row.SUM ?? "")) || 0;
   const amountKopecks = Math.round(amountRaw * 100);
   const ts = toTimestamp(row.TRANDATE ?? "", row.TRANTIME ?? "");
@@ -148,7 +171,7 @@ function normalizePrivatTransaction(
   );
 }
 
-function normalizeAccount(raw: Record<string, unknown>) {
+function normalizeAccount(raw: Record<string, unknown>): PrivatAccount {
   const r = raw as {
     acc?: string;
     id?: string;
@@ -206,8 +229,8 @@ export function usePrivatbank(enabled = true) {
   const [credentials, setCredentials] = useState(() =>
     enabled ? loadStoredCreds() : { id: "", token: "" },
   );
-  const [accounts, setAccounts] = useState<PrivatTx[]>([]);
-  const [transactions, setTransactions] = useState<PrivatTx[]>([]);
+  const [accounts, setAccounts] = useState<PrivatAccount[]>([]);
+  const [transactions, setTransactions] = useState<PrivatTransaction[]>([]);
   const [connecting, setConnecting] = useState(false);
   const [loadingTx, setLoadingTx] = useState(false);
   const [error, setError] = useState("");
@@ -230,7 +253,7 @@ export function usePrivatbank(enabled = true) {
   const fetchTransactions = async (
     merchantId: string,
     merchantToken: string,
-    accs: PrivatTx[],
+    accs: PrivatAccount[],
   ) => {
     setLoadingTx(true);
     setSyncState((s) => ({ ...s, status: "loading", source: "none" }));
@@ -243,7 +266,7 @@ export function usePrivatbank(enabled = true) {
         `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`,
       );
 
-      const allTxs: PrivatTx[] = [];
+      const allTxs: PrivatTransaction[] = [];
       for (const acc of accs) {
         try {
           const data = await apiFetch(

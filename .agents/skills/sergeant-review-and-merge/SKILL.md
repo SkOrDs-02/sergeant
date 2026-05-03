@@ -23,7 +23,7 @@ Pay extra attention when the diff touches:
 
 - `apps/server/src/migrations/**`
 - `apps/server/src/modules/**` with `packages/api-client/**`
-- `apps/web/src/shared/lib/queryKeys.ts`
+- `apps/web/src/shared/lib/api/queryKeys.ts`
 - `apps/web/src/core/lib/hubChat*`
 - auth wiring, env docs, or deploy docs
 - `.agents/**`, `docs/superpowers/**`, `.github/**`

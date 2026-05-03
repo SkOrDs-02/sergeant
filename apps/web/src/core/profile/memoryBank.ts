@@ -1,5 +1,5 @@
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { notifySyncDirty } from "../cloudSync/useCloudSync";
 import type { MemoryEntry } from "./types";
 

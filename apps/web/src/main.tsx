@@ -7,18 +7,18 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { Analytics } from "@vercel/analytics/react";
 import App from "./core/App";
 import "./index.css";
-import { storageManager } from "@shared/lib/storageManager.js";
-import { createAppQueryClient } from "@shared/lib/queryClient.js";
-import { createWebPersistOptions } from "@shared/lib/queryClientPersister.js";
+import { storageManager } from "@shared/lib/storage/storageManager";
+import { createAppQueryClient } from "@shared/lib/api/queryClient";
+import { createWebPersistOptions } from "@shared/lib/api/queryClientPersister";
 // Registers the web `navigator.vibrate`-based adapter on the shared
 // haptic contract (`@sergeant/shared`). Import for side effects only.
-import "@shared/lib/haptic";
+import "@shared/lib/adapters/haptic";
 // Registers the web Blob + <a download>-based adapter on the shared
 // file-download contract (`@sergeant/shared`). Import for side effects only.
-import "@shared/lib/fileDownload";
+import "@shared/lib/adapters/fileDownload";
 // Registers the web <input type="file">-based adapter on the shared
 // file-import contract (`@sergeant/shared`). Import for side effects only.
-import "@shared/lib/fileImport";
+import "@shared/lib/adapters/fileImport";
 // Registers the web `window.visualViewport`-based adapter on the shared
 // visual-keyboard-inset contract (`@sergeant/shared`). Import for side
 // effects only.

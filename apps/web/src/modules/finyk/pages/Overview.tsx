@@ -32,8 +32,8 @@ import {
 } from "@sergeant/finyk-domain/domain/budget";
 import { filterStatTransactions } from "@sergeant/finyk-domain/domain/transactions";
 import { Skeleton } from "@shared/components/ui/Skeleton";
-import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage";
-import { THEME_HEX } from "@shared/lib/themeHex";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { THEME_HEX } from "@shared/lib/ui/themeHex";
 import { SyncStatusBadge } from "../components/SyncStatusBadge";
 
 import { FirstInsightBanner } from "./overview/FirstInsightBanner";

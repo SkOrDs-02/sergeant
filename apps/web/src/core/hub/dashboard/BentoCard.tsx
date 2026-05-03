@@ -1,7 +1,7 @@
 import { memo, useCallback, useMemo } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { getModulePrefetchProps } from "../../lib/intentPrefetch";
 import {
@@ -184,7 +184,7 @@ export const BentoCard = memo(function BentoCard({
         ) : hasData ? (
           <>
             {preview.main && (
-              <span className="text-lg font-bold text-text tabular-nums mt-1 truncate">
+              <span className="text-style-title text-text tabular-nums mt-1 truncate">
                 {preview.main}
               </span>
             )}

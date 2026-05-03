@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/undoToast";
-import { perfMark, perfEnd } from "@shared/lib/perf";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
+import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import {
   createSession,
   deleteSession as deleteSessionFn,

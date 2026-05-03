@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 function formatDueDate(dueDate: string | null | undefined) {
   if (!dueDate) return null;
@@ -57,7 +57,7 @@ function DebtCardComponent({
   return (
     <div className="bg-panel border border-line rounded-xl p-4 mb-3">
       <div className="flex items-start justify-between mb-3">
-        <span className="text-sm font-semibold leading-snug">
+        <span className="text-style-label leading-snug">
           {emoji ? `${emoji} ` : ""}
           {name}
         </span>

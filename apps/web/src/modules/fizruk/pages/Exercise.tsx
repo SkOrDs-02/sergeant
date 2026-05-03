@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";

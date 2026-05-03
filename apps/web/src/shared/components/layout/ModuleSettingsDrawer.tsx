@@ -2,7 +2,7 @@ import { useId, useRef, type CSSProperties, type ReactNode } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useSwipeToDismiss } from "@shared/hooks/useSwipeToDismiss";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 /**
  * Right-side settings drawer for module "cog" overlays.

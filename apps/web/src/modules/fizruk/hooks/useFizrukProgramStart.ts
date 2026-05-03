@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { ACTIVE_WORKOUT_KEY } from "@sergeant/fizruk-domain";
 import type { WorkoutItem } from "@sergeant/fizruk-domain/domain";
-import { safeWriteLS } from "@shared/lib/storage";
+import { safeWriteLS } from "@shared/lib/storage/storage";
 
 interface Exercise {
   id: string;

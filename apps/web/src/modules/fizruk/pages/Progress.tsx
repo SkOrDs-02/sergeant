@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
-import { safeRemoveLS } from "@shared/lib/storage";
+import { safeRemoveLS } from "@shared/lib/storage/storage";
 import { downloadJson } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useMeasurements } from "../hooks/useMeasurements";
 import { usePushupActivity } from "../hooks/usePushupActivity";

@@ -7,9 +7,9 @@ import {
   type ReactNode,
   type TouchEvent,
 } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 const SWIPE_THRESHOLD = 60;
 const MAX_SWIPE = 100;
@@ -196,7 +196,7 @@ function SwipeToActionImpl({
       {showLeft && (
         <div
           className={cn(
-            "absolute inset-y-0 right-0 flex items-center justify-center px-5 text-white font-semibold text-sm",
+            "text-style-label absolute inset-y-0 right-0 flex items-center justify-center px-5 text-white",
             rightColor,
           )}
           style={{ width: Math.abs(offset) }}
@@ -215,7 +215,7 @@ function SwipeToActionImpl({
       {showRight && (
         <div
           className={cn(
-            "absolute inset-y-0 left-0 flex items-center justify-center px-5 text-white font-semibold text-sm",
+            "text-style-label absolute inset-y-0 left-0 flex items-center justify-center px-5 text-white",
             leftColor,
           )}
           style={{ width: Math.abs(offset) }}

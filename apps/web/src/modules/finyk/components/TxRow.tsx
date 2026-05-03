@@ -11,7 +11,7 @@ import {
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { TxSplit, TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 
@@ -176,7 +176,7 @@ function TxRowImpl({
       <div className="min-w-0">
         <div
           className={cn(
-            "text-sm font-medium text-text truncate",
+            "text-style-label text-text truncate",
             hidden && "line-through",
           )}
         >
@@ -256,7 +256,7 @@ function TxRowImpl({
           <div className="text-right">
             <div
               className={cn(
-                "text-sm font-semibold tabular-nums",
+                "text-style-label tabular-nums",
                 tx.amount > 0 ? "text-success" : "text-text",
               )}
             >
@@ -360,7 +360,7 @@ function TxRowImpl({
       {/* Split editor */}
       {splitEditor && onSplitChange && (
         <div className="pb-3 px-2 space-y-2">
-          <div className="text-xs text-subtle font-medium">
+          <div className="text-style-caption text-subtle">
             Розподіл · {formatMoney(totalAmt, { minFractionDigits: 2 })} всього
           </div>
           {draftSplits.map((sp, i) => (

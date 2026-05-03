@@ -8,7 +8,7 @@
 
 import { detectFirstRealEntry as sharedDetectFirstRealEntry } from "@sergeant/shared";
 import { hasAnyRealEntry as sharedHasAnyRealEntry } from "@sergeant/shared";
-import { webKVStore } from "@shared/lib/storage";
+import { webKVStore } from "@shared/lib/storage/storage";
 import { trackEvent } from "../observability/analytics";
 
 /**

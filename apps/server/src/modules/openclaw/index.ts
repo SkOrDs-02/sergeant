@@ -12,7 +12,11 @@ export {
   attachDecisionPrUrl,
   listRecentDecisions,
   listRecentInvocations,
+  // Phase 4.5 (ADR-0037): write-audit log helpers.
+  recordWriteAudit,
+  listRecentWriteAudits,
 } from "./store.js";
+export type { RecordWriteAuditInput, ListWriteAuditFilters } from "./store.js";
 export { checkDailyBudget, estimateClaudeSonnetCostUsd } from "./budget.js";
 export {
   recallCofounderMemory,
@@ -24,6 +28,7 @@ export {
   recordDecision,
   extractSqlTables,
   OpenClawAllowlistError,
+  OpenClawNotFoundError,
   // ADR-0032: tools ported from Sergeant Console agents (ops + marketing)
   // into OpenClaw. They go through the same `/api/internal/openclaw/*`
   // surface so allowlist + audit semantics still apply.

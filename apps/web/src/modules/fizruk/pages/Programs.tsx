@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import {
   BUILTIN_PROGRAMS,

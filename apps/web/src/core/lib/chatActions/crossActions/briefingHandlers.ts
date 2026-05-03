@@ -1,5 +1,5 @@
 import { ls } from "../../hubChatUtils";
-import { safeReadLS } from "@shared/lib/storage";
+import { safeReadLS } from "@shared/lib/storage/storage";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
 import type { HabitState, NutritionDay, Workout } from "../types";
 

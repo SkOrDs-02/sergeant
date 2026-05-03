@@ -24,7 +24,7 @@ export function FoodHitRow({ p, badge, onPick }: FoodHitRowProps) {
         onClick={onPick}
       >
         <div className="flex items-center justify-between gap-2">
-          <div className="text-sm text-text font-semibold truncate">
+          <div className="text-style-label text-text truncate">
             {[p.name, p.brand].filter(Boolean).join(" · ")}
             {badge && (
               <span className="ml-1 text-2xs text-subtle">{badge}</span>

@@ -8,7 +8,7 @@
  * The shared helpers own the parsing, Monday-based week-key
  * calculation, 48h freshness window, and error-swallowing semantics
  * so this file stays a thin wiring shim — web has the matching
- * adapter at `apps/web/src/shared/lib/weeklyDigestStorage.ts`.
+ * adapter at `apps/web/src/shared/lib/storage/weeklyDigestStorage.ts`.
  */
 
 import {

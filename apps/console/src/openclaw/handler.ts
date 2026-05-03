@@ -16,7 +16,13 @@
 
 import type Anthropic from "@anthropic-ai/sdk";
 import type { Bot, Context } from "grammy";
-import { InlineKeyboard } from "grammy";
+import { InlineKeyboard, InputFile } from "grammy";
+import {
+  buildDispatcherPayload,
+  dispatchToN8n,
+  formatApprovalPrompt,
+  shouldDelegateOpenClawToAgentNetwork,
+} from "../agents/dispatcher.js";
 import {
   runOpenClawAgent,
   writeToolRoute,
@@ -34,6 +40,8 @@ import {
   type ApprovalRecord,
   type WriteToolName,
 } from "./approval-store.js";
+import { buildAuditCsvFilename, renderWriteAuditCsv } from "./audit-csv.js";
+import { parseDuration } from "./duration.js";
 import {
   isFounderAllowed,
   isPrivateChat,
@@ -122,12 +130,13 @@ const HELP_TEXT = [
   "Я аналізую дані Sergeant (PG, Stripe, Sentry, PostHog, GitHub, n8n logs, strategy docs)",
   "і даю advisory-думку. Я не пишу в продакшн.",
   "",
-  "*Швидкі команди (preset-prompts):*",
-  "/status — короткий ops-зріз (Stripe + Sentry + healthz)",
+  "*Agent network (WF-20):*",
+  "/status, /plan, /assign, /review, /run, /approve, /cancel, /logs",
+  "Free-text execution запити про CI/PR/GitHub/n8n/security теж підуть у WF-20.",
+  "",
+  "*Швидкі cofounder prompts:*",
   "/metrics — детальні метрики за тиждень",
   "/digest — growth-дайджест (PostHog + GitHub releases + n8n)",
-  "/logs — останні n8n executions з помилками",
-  "/review — recent PRs / merges за тиждень",
   "",
   "*Personas (ADR-0033, Phase 2.5):*",
   "/ops <q> — reliability фокус (Sentry + n8n + healthz)",
@@ -139,6 +148,8 @@ const HELP_TEXT = [
   "",
   "*Службові:*",
   "/decisions — останні зафіксовані рішення",
+  "/audit [tool] [action] [since=24h|7d|30m] [csv] — write-actions журнал;",
+  "       `since=` фільтрує по recorded_at (max 30d), `csv` шле документ.",
   "/budget — поточний денний spend",
   "/reset — почати нову сесію",
   "/help — ця довідка",
@@ -146,16 +157,10 @@ const HELP_TEXT = [
   "_Phase 1, ADR-0031 + ADR-0032 + ADR-0033._",
 ].join("\n");
 
-// ADR-0032: команди типу /status — це prefilled-message, який запускає той
-// самий agent-loop, що і вільний DM-текст. Так LLM зможе при потребі смикати
-// додаткові tools (recall, decisions) для контексту, а tone-modes/audit/budget
-// guardrails застосовуються однаково.
+// ADR-0032: локальні cofounder prompts, які лишаються в OpenClaw loop. Команди
+// agent-network (`/status`, `/review`, `/run`, ...) реєструються нижче окремо і
+// йдуть у WF-20.
 const COMMAND_PROMPTS: Record<string, string> = {
-  status: [
-    "Дай короткий operational status зараз: Stripe charges за останні 7 днів,",
-    "Sentry unresolved issues (level=error), і /healthz сервера.",
-    "Формат — bullet-list, без зайвих коментарів.",
-  ].join(" "),
   metrics: [
     "Детальний metrics-зріз за останні 7 днів:",
     "1) Stripe (success/failed/gross),",
@@ -169,14 +174,6 @@ const COMMAND_PROMPTS: Record<string, string> = {
     "найновіші GitHub releases (5 шт),",
     "плюс топ-3 n8n workflow executions.",
     "Дай 3 highlights і 1 ризик/блокер.",
-  ].join(" "),
-  logs: [
-    "Покажи останні n8n executions, фокус на failed/error.",
-    "Якщо є патерн — назви який workflow повторюється.",
-  ].join(" "),
-  review: [
-    "Recent GitHub releases (5) + recent PRs (issue_type=pr, is:closed) за тиждень.",
-    "Виділи: що merged, що warrants review, ризики deploy-у.",
   ].join(" "),
 };
 
@@ -199,6 +196,44 @@ interface BudgetResponse {
 
 interface OpenInvocationResponse {
   invocationId: number;
+}
+
+// ADR-0037 (Phase 4.5): write-audit log payload sent to
+// `/api/internal/openclaw/write-audit/log` on every approve/reject/executed.
+// `responseExcerpt` is truncated client-side as a defence-in-depth even
+// though the server also caps at 4 KB — keeps the network payload bounded.
+const RESPONSE_EXCERPT_MAX_BYTES = 4_000;
+
+interface WriteAuditLogBody {
+  approvalId: string;
+  tool: string;
+  founderUserId: string;
+  founderTgUserId: number;
+  invocationId?: number | null;
+  action: "approved" | "executed" | "rejected";
+  input?: Record<string, unknown>;
+  httpStatus?: number | null;
+  ok?: boolean | null;
+  responseExcerpt?: string | null;
+  persona?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+interface WriteAuditListItem {
+  id: number;
+  recorded_at: string;
+  approval_id: string;
+  tool: string;
+  founder_user_id: string;
+  founder_tg_user_id: number;
+  invocation_id: number | null;
+  action: "approved" | "executed" | "rejected";
+  input: Record<string, unknown>;
+  http_status: number | null;
+  ok: boolean | null;
+  response_excerpt: string | null;
+  persona: string | null;
+  metadata: Record<string, unknown>;
 }
 
 async function postJson<T>(
@@ -255,6 +290,44 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
   // turns in this process. Per-turn `PendingApprovalsCollector` is created
   // inside `runAgentTurn` and drained afterwards.
   const approvalStore = new ApprovalStore();
+
+  /**
+   * ADR-0037 (Phase 4.5): fire-and-forget log of one write-audit row.
+   *
+   * Fail-soft: a 5xx / network error MUST NOT block the user-visible
+   * Approve/Reject feedback. We only `console.warn` on failure so the
+   * Railway log still surfaces persistence problems.
+   */
+  async function logWriteAudit(body: WriteAuditLogBody): Promise<void> {
+    const truncatedExcerpt =
+      body.responseExcerpt == null
+        ? body.responseExcerpt
+        : body.responseExcerpt.length > RESPONSE_EXCERPT_MAX_BYTES
+          ? body.responseExcerpt.slice(0, RESPONSE_EXCERPT_MAX_BYTES)
+          : body.responseExcerpt;
+    try {
+      const r = await postJson<{ ok: boolean; id?: number }>(
+        `${serverUrl}/api/internal/openclaw/write-audit/log`,
+        internalApiKey,
+        { ...body, responseExcerpt: truncatedExcerpt },
+      );
+      if (!r.ok) {
+        console.warn("[openclaw] write-audit log failed", {
+          status: r.status,
+          tool: body.tool,
+          action: body.action,
+          approvalId: body.approvalId,
+        });
+      }
+    } catch (err) {
+      console.warn("[openclaw] write-audit log error", {
+        error: err instanceof Error ? err.message : String(err),
+        tool: body.tool,
+        action: body.action,
+        approvalId: body.approvalId,
+      });
+    }
+  }
 
   const baseDeps: OpenClawAgentDeps = {
     serverUrl,
@@ -330,6 +403,142 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
       return `• ${date} #${d.id} ${d.topic}${pr}`;
     });
     await ctx.reply(lines.join("\n"));
+  });
+
+  // ADR-0037 (Phase 4.5): `/audit` — last N write-actions з опційними
+  // фільтрами. Syntax:
+  //   /audit [tool] [action] [limit] [since=<dur>] [csv]
+  // Argument-order is permissive — `since=` and `csv` tokens are matched
+  // first, the remaining positional tokens fall back to the historical
+  // tool/action/limit parsing (unknown → tool filter so typos still
+  // surface something useful).
+  //
+  // Defaults:
+  //   - no `since=`, no `csv`  → 20 rows (legacy behaviour)
+  //   - `since=<dur>`           → 100 rows (full ADR-0037 cap)
+  //   - `csv` only              → 20 rows, sent as document
+  //   - explicit numeric token  → caller-provided limit (capped at 100)
+  bot.command("audit", async (ctx) => {
+    if (!isAllowedDmContext(ctx)) return;
+    if (!rateLimiter.allow(String(ctx.from?.id))) {
+      await ctx.reply("Rate limit exceeded. Спробуй за хвилину.");
+      return;
+    }
+
+    const argument = (ctx.match ?? "").toString().trim();
+    const tokens = argument ? argument.split(/\s+/) : [];
+
+    let toolFilter: string | undefined;
+    let actionFilter: "approved" | "executed" | "rejected" | undefined;
+    let limit: number | undefined;
+    let recordedAfterIso: string | undefined;
+    let sinceLabel: string | undefined;
+    let asCsv = false;
+
+    const ACTIONS = new Set(["approved", "executed", "rejected"] as const);
+    for (const tok of tokens) {
+      const lower = tok.toLowerCase();
+      if (lower === "csv") {
+        asCsv = true;
+        continue;
+      }
+      if (lower.startsWith("since=")) {
+        const raw = tok.slice("since=".length);
+        const durMs = parseDuration(raw);
+        if (durMs == null) {
+          await ctx.reply(
+            "Невалідний `since=` параметр. Приклади: `since=30m`, " +
+              "`since=24h`, `since=7d`. Max 30d.",
+          );
+          return;
+        }
+        recordedAfterIso = new Date(Date.now() - durMs).toISOString();
+        sinceLabel = raw;
+        continue;
+      }
+      const n = Number(tok);
+      if (Number.isFinite(n) && n > 0 && Number.isInteger(n)) {
+        limit = Math.min(100, n);
+        continue;
+      }
+      if (ACTIONS.has(tok as "approved" | "executed" | "rejected")) {
+        actionFilter = tok as "approved" | "executed" | "rejected";
+        continue;
+      }
+      // Unknown token → treat as tool name (last write wins on duplicate).
+      toolFilter = tok;
+    }
+
+    const effectiveLimit = limit ?? (recordedAfterIso ? 100 : 20);
+
+    const r = await postJson<{ audits: WriteAuditListItem[] }>(
+      `${serverUrl}/api/internal/openclaw/write-audit/list`,
+      internalApiKey,
+      {
+        founderUserId,
+        limit: effectiveLimit,
+        ...(toolFilter ? { tool: toolFilter } : {}),
+        ...(actionFilter ? { action: actionFilter } : {}),
+        ...(recordedAfterIso ? { recordedAfterIso } : {}),
+      },
+    );
+    if (!r.ok || !r.data) {
+      await ctx.reply(`Не зміг прочитати write-audit (HTTP ${r.status}).`);
+      return;
+    }
+    if (r.data.audits.length === 0) {
+      await ctx.reply("Жодних write-actions у журналі.");
+      return;
+    }
+
+    if (asCsv) {
+      // CSV-export branch: `replyWithDocument` with an in-memory Buffer.
+      // Keep the column-set tight (per roadmap §3.3) so the file is safe
+      // to forward — no full input/response payloads.
+      const csv = renderWriteAuditCsv(
+        r.data.audits.map((a) => ({
+          recorded_at: a.recorded_at,
+          tool: a.tool,
+          action: a.action,
+          persona: a.persona,
+          http_status: a.http_status,
+          approval_id: a.approval_id,
+        })),
+      );
+      const filename = buildAuditCsvFilename();
+      const captionParts: string[] = [`${r.data.audits.length} write-actions`];
+      if (sinceLabel) captionParts.push(`за ${sinceLabel}`);
+      if (toolFilter) captionParts.push(`tool=${toolFilter}`);
+      if (actionFilter) captionParts.push(`action=${actionFilter}`);
+      await ctx.replyWithDocument(
+        new InputFile(Buffer.from(csv, "utf8"), filename),
+        { caption: captionParts.join(", ") },
+      );
+      return;
+    }
+
+    const ACTION_GLYPH: Record<string, string> = {
+      approved: "✅",
+      executed: "▶️",
+      rejected: "❌",
+    };
+    // Format: `HH:MM glyph tool [persona] (id=…)` — newest first. We
+    // intentionally show only time-of-day (date contained in the
+    // grouping/timezone of the answer); LLM never reads this output, so
+    // pure plaintext is fine.
+    const lines = r.data.audits.map((a) => {
+      const t = a.recorded_at.slice(11, 16);
+      const glyph = ACTION_GLYPH[a.action] ?? "•";
+      const persona = a.persona ? ` [${a.persona}]` : "";
+      const status =
+        a.action === "executed" && a.http_status != null
+          ? ` (HTTP ${a.http_status}${a.ok ? "" : " ⚠"})`
+          : "";
+      return `${t} ${glyph} ${a.tool}${persona}${status} (id=${a.approval_id})`;
+    });
+    const headerWindow = sinceLabel ? ` (since=${sinceLabel})` : "";
+    const header = `Останні ${r.data.audits.length} write-actions${headerWindow}:`;
+    await ctx.reply([header, ...lines].join("\n"));
   });
 
   /**
@@ -595,9 +804,80 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     }
   }
 
+  async function dispatchOpenClawAgentTask(
+    ctx: Context,
+    commandText: string,
+  ): Promise<void> {
+    const userId = ctx.from?.id;
+    const chatId = ctx.chat?.id;
+    const messageId =
+      ctx.message?.message_id ?? ctx.callbackQuery?.message?.message_id;
+    if (!userId || !chatId || !messageId) {
+      await ctx.reply("Dispatcher context is missing; cannot route this task.");
+      return;
+    }
+
+    const previewPayload = buildDispatcherPayload({
+      source: "openclaw",
+      commandText,
+      telegramUserId: userId,
+      telegramChatId: chatId,
+      messageId,
+      statusCallbackWebhookUrl: process.env.OPENCLAW_AGENT_STATUS_CALLBACK_URL,
+    });
+
+    if (
+      previewPayload.requiresApproval &&
+      previewPayload.action !== "approve"
+    ) {
+      const approvalPayload = buildDispatcherPayload({
+        source: "openclaw",
+        taskId: previewPayload.taskId,
+        approvalId: `dispatch-${previewPayload.taskId}`,
+        commandText,
+        telegramUserId: userId,
+        telegramChatId: chatId,
+        messageId,
+        statusCallbackWebhookUrl:
+          process.env.OPENCLAW_AGENT_STATUS_CALLBACK_URL,
+      });
+      await ctx.reply(formatApprovalPrompt(approvalPayload));
+      return;
+    }
+
+    const response = await dispatchToN8n(previewPayload);
+    await ctx.reply(response);
+  }
+
   // ADR-0032: Sergeant Console (ADR-0027) slash-команди (/ops, /content, …)
   // зливаються в OpenClaw як preset-prompts через той самий agent-turn loop.
   // Тригер ідентифікує запит у audit-log-у (`openclaw_invocations.trigger`).
+  const DISPATCHER_COMMANDS = [
+    "status",
+    "plan",
+    "assign",
+    "review",
+    "run",
+    "approve",
+    "cancel",
+    "logs",
+  ];
+
+  for (const cmd of DISPATCHER_COMMANDS) {
+    bot.command(cmd, async (ctx) => {
+      if (!isAllowedDmContext(ctx)) return;
+      const userId = ctx.from?.id;
+      if (!userId) return;
+      if (!rateLimiter.allow(String(userId))) {
+        await ctx.reply("Rate limit exceeded. Спробуй за хвилину.");
+        return;
+      }
+      const argument = (ctx.match ?? "").toString().trim();
+      const commandText = argument ? `${cmd} ${argument}` : cmd;
+      await dispatchOpenClawAgentTask(ctx, commandText);
+    });
+  }
+
   for (const [cmd, preset] of Object.entries(COMMAND_PROMPTS)) {
     bot.command(cmd, async (ctx) => {
       if (!isAllowedDmContext(ctx)) return;
@@ -775,6 +1055,11 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     // /commands handled outside; ось ми лише message-text-handler.
     if (userMessage.startsWith("/")) return;
 
+    if (shouldDelegateOpenClawToAgentNetwork(userMessage)) {
+      await dispatchOpenClawAgentTask(ctx, userMessage);
+      return;
+    }
+
     await runAgentTurn(ctx, userMessage, "dm");
   });
 
@@ -830,6 +1115,18 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
         founderTgUserId: ctx.from?.id,
         invocationId: record.invocationId,
       });
+      // ADR-0037 (Phase 4.5): persist the rejection so post-mortems
+      // survive a console restart. Fire-and-forget, fail-soft.
+      void logWriteAudit({
+        approvalId: record.id,
+        tool: record.tool,
+        founderUserId: record.founderUserId,
+        founderTgUserId: record.founderTgUserId,
+        invocationId: record.invocationId ?? null,
+        action: "rejected",
+        input: record.input,
+        persona: record.persona ?? null,
+      });
       return;
     }
 
@@ -842,6 +1139,21 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     } catch {
       // Best-effort; we still post the result below.
     }
+
+    // ADR-0037 (Phase 4.5): write `approved` row BEFORE the HTTP call.
+    // Pairing this with the later `executed` row by `approval_id` lets
+    // us measure approve-to-executed latency AND detect "approved but
+    // never executed" failures (executor crashed mid-flight).
+    void logWriteAudit({
+      approvalId: record.id,
+      tool: record.tool,
+      founderUserId: record.founderUserId,
+      founderTgUserId: record.founderTgUserId,
+      invocationId: record.invocationId ?? null,
+      action: "approved",
+      input: record.input,
+      persona: record.persona ?? null,
+    });
 
     const result = await executeApprovedWriteTool(record);
     const headline = result.ok
@@ -860,6 +1172,22 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
       status: result.status,
       founderTgUserId: ctx.from?.id,
       invocationId: record.invocationId,
+    });
+    // ADR-0037 (Phase 4.5): pair-row to the `approved` above. Carries
+    // upstream HTTP status + truncated response excerpt so post-mortems
+    // see exactly what the API returned.
+    void logWriteAudit({
+      approvalId: record.id,
+      tool: record.tool,
+      founderUserId: record.founderUserId,
+      founderTgUserId: record.founderTgUserId,
+      invocationId: record.invocationId ?? null,
+      action: "executed",
+      input: record.input,
+      httpStatus: result.status,
+      ok: result.ok,
+      responseExcerpt: result.bodyText,
+      persona: record.persona ?? null,
     });
   });
 

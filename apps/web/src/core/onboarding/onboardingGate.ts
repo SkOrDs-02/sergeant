@@ -15,7 +15,7 @@ import {
   markOnboardingDone as sharedMarkOnboardingDone,
   shouldShowOnboarding as sharedShouldShowOnboarding,
 } from "@sergeant/shared";
-import { webKVStore } from "@shared/lib/storage";
+import { webKVStore } from "@shared/lib/storage/storage";
 
 /**
  * True when the onboarding splash should render on this cold start.

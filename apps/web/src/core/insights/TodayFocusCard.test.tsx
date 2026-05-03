@@ -30,7 +30,7 @@ vi.mock("../lib/recommendationEngine", () => ({
 
 // Mock hubNav so we can verify dispatches without real DOM events
 const openHubModuleWithActionMock = vi.fn();
-vi.mock("@shared/lib/hubNav", () => ({
+vi.mock("@shared/lib/modules/hubNav", () => ({
   openHubModule: vi.fn(),
   openHubModuleWithAction: (...args: unknown[]) =>
     openHubModuleWithActionMock(...args),
@@ -38,7 +38,7 @@ vi.mock("@shared/lib/hubNav", () => ({
 }));
 
 // Mock moduleQuickActions
-vi.mock("@shared/lib/moduleQuickActions", () => ({
+vi.mock("@shared/lib/modules/moduleQuickActions", () => ({
   MODULE_PRIMARY_ACTION: {
     finyk: {
       label: "Додати витрату",

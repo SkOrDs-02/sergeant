@@ -3,7 +3,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import type { Pantry } from "@sergeant/nutrition-domain";
 
 /**
@@ -75,7 +75,7 @@ export function PantryManagerSheet({
               aria-pressed={active}
             >
               <div className="flex items-center justify-between gap-3">
-                <div className="text-sm font-semibold text-text truncate">
+                <div className="text-style-label text-text truncate">
                   {p.name || "Склад"}
                 </div>
                 {active ? (

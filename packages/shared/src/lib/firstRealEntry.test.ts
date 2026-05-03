@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createMemoryKVStore } from "./kvStore";
+import { createMemoryKVStore } from "../storage/kv";
 import {
   FIRST_ACTION_STARTED_AT_KEY,
   FIRST_REAL_ENTRY_EVENTS,

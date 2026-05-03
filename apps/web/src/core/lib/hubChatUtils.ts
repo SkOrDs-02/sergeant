@@ -1,6 +1,6 @@
 // Utility functions shared across HubChat modules
 
-import { friendlyApiError as baseFriendlyApiError } from "@shared/lib/friendlyApiError";
+import { friendlyApiError as baseFriendlyApiError } from "@shared/lib/api/friendlyApiError";
 import type { CapabilityModule } from "@sergeant/shared";
 import type { ChatActionCard } from "./hubChatActionCards";
 
@@ -150,7 +150,7 @@ export function normalizeStoredMessages(raw: unknown): ChatMessage[] {
 // Thin adapters over the canonical safe-storage helpers.
 // Callers import `ls`/`lsSet` for backward-compat; new code should prefer
 // `safeReadLS`/`safeWriteLS` from `@shared/lib/storage` directly.
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 export function ls<T>(key: string, fallback: T): T {
   return (safeReadLS<T>(key) as T | null) ?? fallback;

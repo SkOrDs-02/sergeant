@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Skeleton, SkeletonText } from "@shared/components/ui/Skeleton";
 import { Tooltip } from "@shared/components/ui/Tooltip";
@@ -15,7 +15,7 @@ import { WeeklyDigestStories } from "./WeeklyDigestStories";
 // the shared helper to `localStorage`. We re-export it from here so that
 // existing call-sites (`HubDashboard`, tests) keep their historical import
 // path without touching either module.
-export { hasLiveWeeklyDigest } from "@shared/lib/weeklyDigestStorage";
+export { hasLiveWeeklyDigest } from "@shared/lib/storage/weeklyDigestStorage";
 
 // Wave 1b: `bgClass` / `borderClass` consolidated onto the
 // `{module}-soft` / `{module}-soft-border` token family (preset-owned

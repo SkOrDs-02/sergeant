@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createMemoryKVStore } from "./kvStore";
+import { createMemoryKVStore } from "../storage/kv";
 import {
   ALL_MODULES,
   FIRST_ACTION_PENDING_KEY,

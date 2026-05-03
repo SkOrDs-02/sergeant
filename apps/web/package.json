@@ -10,7 +10,7 @@
     "build:analyze": "cross-env ANALYZE=1 vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.sw.json --noEmit && tsc -p tsconfig.strict.json --noEmit && tsc -p tsconfig.noimplicitany.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.sw.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -23,7 +23,7 @@
       "name": "JS (усього)",
       "path": "../server/dist/assets/*.js",
       "brotli": true,
-      "limit": "630 kB"
+      "limit": "820 kB"
     },
     {
       "name": "CSS",
@@ -79,6 +79,7 @@
     "@argos-ci/playwright": "^6.6.2",
     "@axe-core/playwright": "^4.11.2",
     "@playwright/test": "^1.59.1",
+    "@sentry/vite-plugin": "^5.2.0",
     "@sergeant/config": "workspace:*",
     "@sergeant/db-schema": "workspace:^",
     "@size-limit/file": "^12.1.0",

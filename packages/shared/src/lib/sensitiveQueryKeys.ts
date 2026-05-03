@@ -2,7 +2,7 @@
  * Sensitive query-key policy for React Query persisters.
  *
  * Stage 0 / PR #004 from `docs/planning/storage-roadmap.md`. The
- * web (`apps/web/src/shared/lib/queryClientPersister.ts`) and mobile
+ * web (`apps/web/src/shared/lib/api/queryClientPersister.ts`) and mobile
  * (`apps/mobile/src/sync/persister/mmkvPersister.ts`) persisters
  * dehydrate a snapshot of the React Query cache to disk on every
  * cache mutation so cold-start can warm-rehydrate. That snapshot is
@@ -29,7 +29,7 @@
  * and we'd rather over-exclude than over-persist.
  *
  * Adding to the list:
- *   1. The query-key factory in `apps/web/src/shared/lib/queryKeys.ts`
+ *   1. The query-key factory in `apps/web/src/shared/lib/api/queryKeys.ts`
  *      or `packages/api-client/src/react/queryKeys.ts` defines the
  *      first segment.
  *   2. Pick the narrowest match: a top-level namespace (`coach`),

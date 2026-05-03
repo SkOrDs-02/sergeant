@@ -219,7 +219,7 @@ Query keys тримаємо в `src/shared/lib/queryKeys.ts` і імпортує
 Коли для конкретної query треба трохи інший retry-бюджет, ніж глобальний дефолт, використовуй фабрику замість інлайн-предиката:
 
 ```ts
-import { authAwareRetry } from "@shared/lib/queryClient";
+import { authAwareRetry } from "@shared/lib/api/queryClient";
 
 useQuery({
   queryKey: monoKeys.statements(month),
@@ -241,7 +241,7 @@ useQuery({
 Замість розкиданого по мутаціях патерну `setErr(err?.message || "Fallback")` — який ігнорує `kind === "aborted"`, не розрізняє offline/parse, і показує в тості "HTTP 503" — використовуй:
 
 ```ts
-import { formatApiError } from "@shared/lib/apiErrorFormat";
+import { formatApiError } from "@shared/lib/api/apiErrorFormat";
 
 useMutation({
   mutationFn: () => weeklyDigestApi.generate(),
@@ -267,7 +267,7 @@ useMutation({
 ```ts
 import { useQuery } from "@tanstack/react-query";
 import { nutritionApi } from "@shared/api";
-import { nutritionKeys } from "@shared/lib/queryKeys";
+import { nutritionKeys } from "@shared/lib/api/queryKeys";
 
 export function useDayPlan(date: string) {
   return useQuery({

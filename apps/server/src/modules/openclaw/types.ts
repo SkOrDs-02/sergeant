@@ -93,15 +93,57 @@ export interface OpenClawInvocationRecord {
 }
 
 /**
+ * Lifecycle action for a write-tool approval (ADR-0037, Phase 4.5).
+ *
+ * - `approved` — founder clicked Approve, BEFORE the upstream HTTP call.
+ * - `executed` — same `approval_id`, AFTER the HTTP call (with
+ *   `http_status`/`ok`/`response_excerpt`).
+ * - `rejected` — founder clicked Reject. Single row, no `executed`
+ *   follow-up.
+ */
+export type OpenClawWriteAuditAction = "approved" | "executed" | "rejected";
+
+/**
+ * Запис у `openclaw_write_audit` (мапа 1:1 на колонки). ADR-0037, Phase
+ * 4.5. Append-only — кожен transition створює нову row; повний lifecycle
+ * одного approval-id reconstructed через `WHERE approval_id = $1
+ * ORDER BY recorded_at`.
+ */
+export interface OpenClawWriteAuditRecord {
+  id: number;
+  recorded_at: string;
+  approval_id: string;
+  tool: string;
+  founder_user_id: string;
+  founder_tg_user_id: number;
+  invocation_id: number | null;
+  action: OpenClawWriteAuditAction;
+  input: Record<string, unknown>;
+  http_status: number | null;
+  ok: boolean | null;
+  response_excerpt: string | null;
+  persona: string | null;
+  metadata: Record<string, unknown>;
+}
+
+/**
  * Дозволені таблиці у `query_app_db`. Хардкод — ні в якому разі
  * не env-driven, бо кожне додавання повинно бути reviewed у PR.
+ *
+ * Усі таблиці тут МАЮТЬ існувати у поточній схемі (див. `apps/server/src/
+ * migrations/`). Allowlist-рекорди для ще-не-створених таблиць призводять
+ * до 5xx у `query_app_db` (LLM формує SELECT за allowlist-ом → Postgres
+ * → `relation "X" does not exist` → asyncHandler → Sentry fatal).
+ *
+ * Раніше тут були `subscriptions` і `payments` — це aspirational stubs
+ * для майбутнього Stripe billing-модуля. Жодна міграція їх не створювала
+ * (в схемі лише `push_subscriptions`), тож вони генерували Sentry-noise
+ * на проді. Повертати лише разом із міграцією, що CREATE TABLE-ить їх.
  *
  * Forbidden: auth_*, ai_usage_daily, ai_memories, sync_op_log,
  * sync_audit_log, anything containing PII у raw form.
  */
 export const QUERY_APP_DB_TABLE_ALLOWLIST = new Set<string>([
-  "subscriptions",
-  "payments",
   "users",
   "digest_runs",
   "n8n_errors",
@@ -110,6 +152,11 @@ export const QUERY_APP_DB_TABLE_ALLOWLIST = new Set<string>([
   "nutrition_entries",
   "openclaw_decisions",
   "openclaw_invocations",
+  // ADR-0038 (Wave 3 §3.2): accountability trail for Sergeant_alert_bot
+  // broadcasts. Allows OpenClaw to answer ad-hoc questions like "TTA
+  // distribution last 7 days" or "P0 alerts unacked > 30 min" without
+  // a dedicated endpoint per query.
+  "tg_alert_acks",
 ]);
 
 /**

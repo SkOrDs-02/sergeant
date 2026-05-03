@@ -86,6 +86,26 @@ describe("ApprovalStore — create + get lifecycle", () => {
     expect(r.invocationId).toBe(7);
   });
 
+  it("ADR-0037: forwards optional persona onto the created record", () => {
+    const { store } = makeStore();
+    const withPersona = store.create({
+      tool: "pause_workflow",
+      input: { workflowId: "WF-15" },
+      founderUserId: "u",
+      founderTgUserId: 1,
+      persona: "ops",
+    });
+    expect(withPersona.persona).toBe("ops");
+
+    const withoutPersona = store.create({
+      tool: "pause_workflow",
+      input: { workflowId: "WF-16" },
+      founderUserId: "u",
+      founderTgUserId: 1,
+    });
+    expect(withoutPersona.persona).toBeUndefined();
+  });
+
   it("get returns the record while pending and not expired", () => {
     const { store } = makeStore();
     const r = store.create({

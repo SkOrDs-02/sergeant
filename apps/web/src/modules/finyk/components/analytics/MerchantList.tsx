@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 interface MerchantStat {
   name: string;
@@ -36,7 +36,7 @@ function MerchantListComponent({
                 <span className="text-sm text-text truncate pr-2">
                   {m.name}
                 </span>
-                <span className="text-sm font-semibold tabular-nums text-text shrink-0">
+                <span className="text-style-label tabular-nums text-text shrink-0">
                   {m.total.toLocaleString("uk-UA")} ₴
                 </span>
               </div>

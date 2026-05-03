@@ -2,7 +2,7 @@
   "extends": "@sergeant/config/tsconfig.node.json",
   "compilerOptions": {
     "strict": true,
-    "allowJs": true,
+    "allowJs": false,
     "checkJs": false,
     "paths": {
       "@sergeant/shared": ["../../packages/shared/src/index.ts"],

@@ -87,7 +87,7 @@ export async function runMigrations(
  */
 export class MigrationFailedError extends Error {
   readonly migration: string;
-  readonly cause: Error;
+  override readonly cause: Error;
   constructor(migration: string, cause: Error) {
     super(`Migration "${migration}" failed: ${cause.message}`);
     this.name = "MigrationFailedError";

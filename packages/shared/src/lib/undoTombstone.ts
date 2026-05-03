@@ -30,7 +30,7 @@
  * mount of the host that owns the tombstone bucket.
  */
 
-import { readJSON, writeJSON, type KVStore } from "./kvStore";
+import { readJSON, writeJSON, type KVStore } from "../storage/kv";
 
 /** Default tombstone window — slightly longer than the 5 s toast so
  *  reload-mid-toast still has a chance to call undo. */

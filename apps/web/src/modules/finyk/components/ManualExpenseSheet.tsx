@@ -10,7 +10,7 @@ import {
   toLocalISODate,
   useVisualKeyboardInset,
 } from "@sergeant/shared";
-import { hapticSuccess } from "@shared/lib/haptic";
+import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { formatMoney } from "@sergeant/shared";
 import {
   CANONICAL_TO_MANUAL_LABEL,

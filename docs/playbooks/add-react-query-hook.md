@@ -9,7 +9,7 @@
 
 ## Контекст
 
-Усі RQ-ключі в Sergeant централізовані в `apps/web/src/shared/lib/queryKeys.ts` (AGENTS.md hard rule #2). Це гарантує, що `invalidateQueries({ queryKey: xxxKeys.all })` дійсно знижує всі дочірні запити, і що ключі type-safe. **Hardcoded keys заборонені** — ESLint ще не ловить, але код-рев'ю ловить.
+Усі RQ-ключі в Sergeant централізовані в `apps/web/src/shared/lib/api/queryKeys.ts` (AGENTS.md hard rule #2). Це гарантує, що `invalidateQueries({ queryKey: xxxKeys.all })` дійсно знижує всі дочірні запити, і що ключі type-safe. **Hardcoded keys заборонені** — ESLint ще не ловить, але код-рев'ю ловить.
 
 ---
 
@@ -17,10 +17,10 @@
 
 ### 1. Зареєструвати ключ у factory
 
-Знайти або створити factory у `apps/web/src/shared/lib/queryKeys.ts`. Конвенція: `[domain, resource, ...params] as const`, домен = назва модуля.
+Знайти або створити factory у `apps/web/src/shared/lib/api/queryKeys.ts`. Конвенція: `[domain, resource, ...params] as const`, домен = назва модуля.
 
 ```ts
-// apps/web/src/shared/lib/queryKeys.ts
+// apps/web/src/shared/lib/api/queryKeys.ts
 export const finykKeys = {
   all: ["finyk"] as const,
 
@@ -68,7 +68,7 @@ Pешта endpoint-у (handler, route, zod-schema) — див. [add-api-endpoint
 // apps/web/src/modules/finyk/hooks/useMonoBudgetForecast.ts
 import { useQuery } from "@tanstack/react-query";
 import { getMonoBudgetForecast } from "@sergeant/api-client";
-import { finykKeys } from "@shared/lib/queryKeys";
+import { finykKeys } from "@shared/lib/api/queryKeys";
 
 export function useMonoBudgetForecast(monthKey: string) {
   return useQuery({
@@ -191,5 +191,5 @@ feat(web): add useMonoBudgetForecast hook
 
 - [add-api-endpoint.md](add-api-endpoint.md) — як зробити endpoint, який потім тягне цей хук
 - [AGENTS.md](../../AGENTS.md) — hard rule #2 (RQ keys), rule #3 (API contract)
-- `apps/web/src/shared/lib/queryKeys.ts` — приклади existing factories
+- `apps/web/src/shared/lib/api/queryKeys.ts` — приклади existing factories
 - [#729](https://github.com/Skords-01/Sergeant/pull/729) — MSW setup

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { safeWriteLS } from "@shared/lib/storage";
+import { safeWriteLS } from "@shared/lib/storage/storage";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";

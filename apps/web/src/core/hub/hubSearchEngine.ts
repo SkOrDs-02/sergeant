@@ -8,7 +8,11 @@
  * НЕ переносяться у пакет: `@sergeant/insights` має бути DOM-free.
  */
 
-import { safeReadLS, safeWriteLS, safeRemoveLS } from "@shared/lib/storage";
+import {
+  safeReadLS,
+  safeWriteLS,
+  safeRemoveLS,
+} from "@shared/lib/storage/storage";
 
 export {
   normalize,

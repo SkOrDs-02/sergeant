@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { hapticTap } from "@shared/lib/haptic";
+import { hapticTap } from "@shared/lib/adapters/haptic";
 
 /* -------------------------------------------------------------------------- *
  *  Confirm chip — 3-сек preview/undo після успішного STT.

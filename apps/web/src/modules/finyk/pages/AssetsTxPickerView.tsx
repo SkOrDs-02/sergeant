@@ -18,7 +18,7 @@ import {
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 type Subscription = {
   id: string;

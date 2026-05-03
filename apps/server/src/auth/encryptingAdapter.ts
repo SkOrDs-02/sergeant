@@ -1,16 +1,15 @@
-import { Kysely, PostgresDialect } from "kysely";
-import { kyselyAdapter } from "@better-auth/kysely-adapter";
-import type { Pool } from "pg";
+import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import type { BetterAuthOptions } from "better-auth";
 import type {
   DBAdapter,
   DBAdapterInstance,
 } from "@better-auth/core/db/adapter";
+import { db } from "../drizzle.js";
 import { decryptString, encryptString, isEncrypted } from "./tokenCrypto.js";
 import { logger } from "../obs/logger.js";
 
 /**
- * Wraps the built-in Better Auth Kysely adapter so that the OAuth token
+ * Wraps the built-in Better Auth Drizzle adapter so that the OAuth token
  * fields on the `account` model are stored encrypted at rest. Plaintext
  * `accessToken` / `refreshToken` / `idToken` columns are the C1 issue from
  * the security review (`migrations/003_baseline_schema.sql:30-34`).
@@ -84,17 +83,17 @@ function decryptTokenFields<T>(row: T, hexKey: string): T {
 /**
  * Build a Better Auth `DBAdapterInstance` (factory) that encrypts OAuth
  * token columns at rest. Hands off all heavy lifting to the upstream
- * Kysely adapter — the wrapper only intercepts the four methods that
+ * Drizzle adapter — the wrapper only intercepts the four methods that
  * touch `account` rows.
+ *
+ * Schema lookup:
+ *   The Drizzle instance imported from `../drizzle.js` is constructed
+ *   with `{ schema: pgSchema }`, so `db._.fullSchema` already exposes
+ *   `user` / `session` / `account` / `verification` table objects. The
+ *   adapter walks those by `model` name — no extra wiring needed.
  */
-export function createEncryptingAdapter(
-  pool: Pool,
-  hexKey: string,
-): DBAdapterInstance {
-  const kysely = new Kysely<Record<string, unknown>>({
-    dialect: new PostgresDialect({ pool }),
-  });
-  const inner = kyselyAdapter(kysely, { type: "postgres" });
+export function createEncryptingAdapter(hexKey: string): DBAdapterInstance {
+  const inner = drizzleAdapter(db, { provider: "pg" });
 
   return (options: BetterAuthOptions): DBAdapter => {
     const base = inner(options);

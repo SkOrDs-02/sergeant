@@ -58,6 +58,7 @@ const dbQuery = _query as unknown as Mock;
 interface TestResBody {
   ok?: boolean;
   error?: string;
+  code?: string;
   status?: string;
   accountsCount?: number;
   webhookActive?: boolean;
@@ -144,6 +145,10 @@ describe("connectHandler", () => {
     await connectHandler(makeReq({ token: "bad_token_12345" }), res);
     expect(res.statusCode).toBe(401);
     expect(res.body.error).toBe("Invalid Monobank token");
+    expect(res.body.code).toBe("MONO_TOKEN_INVALID");
+    // Upstream body не має витікати до клієнта (може містити internal
+    // details upstream-сервісу) — тільки нормалізований error/code.
+    expect(res.body.upstream).toBeUndefined();
   });
 
   it("connects successfully: calls Monobank, upserts connection + accounts", async () => {
@@ -199,6 +204,9 @@ describe("connectHandler", () => {
     await connectHandler(makeReq({ token: "valid_personal_token_12345" }), res);
     expect(res.statusCode).toBe(502);
     expect(res.body.error).toMatch(/register webhook/i);
+    expect(res.body.code).toBe("MONO_UPSTREAM_ERROR");
+    // Сирий upstream-боді ("Internal Server Error") не повертаємо клієнту.
+    expect(res.body.upstream).toBeUndefined();
   });
 
   it("returns 504 when client-info fetch times out", async () => {

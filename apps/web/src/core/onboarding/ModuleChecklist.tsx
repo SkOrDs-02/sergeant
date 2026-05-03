@@ -7,11 +7,11 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { AnimatedCheckbox } from "@shared/components/ui/AnimatedCheckbox";
-import { hapticTap } from "@shared/lib/haptic";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { hapticTap } from "@shared/lib/adapters/haptic";
+import { webKVStore as localStorageStore } from "@shared/lib/storage/storage";
 import { useToast } from "@shared/hooks/useToast";
 import {
   MODULE_CHECKLISTS,
@@ -21,20 +21,7 @@ import {
   isChecklistVisible,
   saveChecklistState,
   type DashboardModuleId,
-  type KVStore,
 } from "@sergeant/shared";
-
-const localStorageStore: KVStore = {
-  getString(key) {
-    return safeReadLS(key);
-  },
-  setString(key, value) {
-    safeWriteLS(key, value);
-  },
-  remove(key) {
-    safeWriteLS(key, null);
-  },
-};
 
 const MODULE_STYLES: Record<
   DashboardModuleId,

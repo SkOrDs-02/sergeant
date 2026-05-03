@@ -53,7 +53,6 @@ import {
   isSoftAuthDismissed,
   setHideInactiveModules,
   type DashboardModuleId,
-  type KVStore,
 } from "@sergeant/shared";
 
 import { DraggableDashboard } from "./DraggableDashboard";
@@ -73,37 +72,7 @@ import { useMondayAutoDigest } from "./useMondayAutoDigest";
 import { useWeeklyDigest } from "./useWeeklyDigest";
 import { WeeklyDigestFooter } from "./WeeklyDigestFooter";
 import { useHints } from "../hints/useHints";
-import {
-  safeReadLS as mmkvGet,
-  safeRemoveLS as mmkvRemove,
-  safeWriteLS as mmkvWrite,
-} from "@/lib/storage";
-
-const mmkvStore: KVStore = {
-  getString(key) {
-    try {
-      const raw = mmkvGet<unknown>(key, null);
-      if (raw === null || raw === undefined) return null;
-      return typeof raw === "string" ? raw : JSON.stringify(raw);
-    } catch {
-      return null;
-    }
-  },
-  setString(key, value) {
-    try {
-      mmkvWrite(key, value);
-    } catch {
-      /* noop */
-    }
-  },
-  remove(key) {
-    try {
-      mmkvRemove(key);
-    } catch {
-      /* noop */
-    }
-  },
-};
+import { mobileKVStore as mmkvStore } from "@/lib/storage";
 
 /**
  * AssistantFab — floating action button with pulse glow animation.

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 const LAST_KEY = "fizruk_last_reminder_notif_day";
 

@@ -1,9 +1,13 @@
 import { useCallback, useState } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { useToast } from "@shared/hooks/useToast";
-import { safeReadStringLS, safeWriteLS, webKVStore } from "@shared/lib/storage";
+import {
+  safeReadStringLS,
+  safeWriteLS,
+  webKVStore,
+} from "@shared/lib/storage/storage";
 import {
   ALL_MODULES,
   DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS,

@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { cn } from "../../lib/cn";
+import { cn } from "../../lib/ui/cn";
 
 /**
  * Sergeant Design System — Stat

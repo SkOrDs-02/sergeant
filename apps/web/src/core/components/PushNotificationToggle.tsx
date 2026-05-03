@@ -1,5 +1,5 @@
 import { usePushNotifications } from "@shared/hooks/usePushNotifications";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 interface PushNotificationToggleProps {
   className?: string;
@@ -18,7 +18,7 @@ export function PushNotificationToggle({
   return (
     <div className={cn("flex items-center justify-between gap-3", className)}>
       <div className="min-w-0">
-        <div className="text-sm font-medium text-text">Push-сповіщення</div>
+        <div className="text-style-label text-text">Push-сповіщення</div>
         <div className="text-xs text-subtle mt-0.5">
           {blocked
             ? "Заблоковано в налаштуваннях браузера"

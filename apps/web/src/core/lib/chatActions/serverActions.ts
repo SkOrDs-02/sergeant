@@ -16,7 +16,7 @@
  * бо truncation вже відбулась on-write. Достатньо красивого формату.
  */
 
-import { apiUrl } from "../../../shared/lib/apiUrl";
+import { apiUrl } from "../../../shared/lib/api/apiUrl";
 import type {
   RecallMemoryRequest,
   RecallMemoryResponse,

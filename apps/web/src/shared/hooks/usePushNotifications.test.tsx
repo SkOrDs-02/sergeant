@@ -49,7 +49,7 @@ vi.mock("@sergeant/shared", async () => {
 
 // Mock native push gate — у юніт-тестах не тягнемо `@sergeant/mobile-shell`
 // (workspace-лінк є, але плагін сам кине "not implemented" у jsdom).
-vi.mock("@shared/lib/pushNative", () => ({
+vi.mock("@shared/lib/adapters/pushNative", () => ({
   subscribeNativePush: vi.fn(),
   unsubscribeNativePush: vi.fn(),
   getStoredNativePushToken: vi.fn(),
@@ -62,7 +62,7 @@ import {
   getStoredNativePushToken,
   subscribeNativePush,
   unsubscribeNativePush,
-} from "@shared/lib/pushNative";
+} from "@shared/lib/adapters/pushNative";
 
 const isCapacitorMock = isCapacitor as unknown as ReturnType<typeof vi.fn>;
 const getPlatformMock = getPlatform as unknown as ReturnType<typeof vi.fn>;

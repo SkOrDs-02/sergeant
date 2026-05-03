@@ -1,6 +1,6 @@
 import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { hapticSuccess } from "@shared/lib/haptic";
+import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { nutritionApi } from "@shared/api";
 import { toLocalISODate } from "@sergeant/shared";
 import type {

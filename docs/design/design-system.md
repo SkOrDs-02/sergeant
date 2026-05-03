@@ -26,14 +26,14 @@
 2. **Темна тема — first-class.** Всі токени живуть у CSS-змінних
    `:root` та `.dark`; теми перемикаються класом без перезапису стилів.
    Парні `dark:` override з сирою палітрою (`bg-teal-100 dark:bg-teal-900/30`)
-   — заборонений анти-патерн. [`DARK-MODE-AUDIT.md`](./DARK-MODE-AUDIT.md)
+   — заборонений анти-патерн. [`dark-mode-audit.md`](./dark-mode-audit.md)
    збережений як історія міграції; поточний guardrail —
    `sergeant-design/no-raw-dark-palette` на рівні `error` для `apps/web`.
 3. **Модулі діляться токенами, а не стилями.** `bg-finyk-surface`,
    `text-fizruk`, `border-routine/30` — це семантичні аксенти; вся базова
    типографіка, spacing, радіуси одні для всіх. Всередині
    `apps/<app>/src/modules/<X>/` дозволені лише акценти модуля `<X>` —
-   див. `AGENTS.md` hard rule #12 + [`MODULE-ACCENT.md`](./MODULE-ACCENT.md),
+   див. `AGENTS.md` hard rule #12 + [`module-accent.md`](./module-accent.md),
    enforced by `sergeant-design/no-foreign-module-accent` (`error`).
 4. **Accessibility не опція.** Клавіатурний фокус завжди видимий
    (`focus-visible:ring-2 ring-brand-500/45`), touch-targets ≥44×44 px,

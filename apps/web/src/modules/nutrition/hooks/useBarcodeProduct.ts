@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiError, isApiError } from "@shared/api";
 import { barcodeApi, type BarcodeProduct } from "@shared/api";
-import { nutritionKeys } from "@shared/lib/queryKeys";
+import { nutritionKeys } from "@shared/lib/api/queryKeys";
 
 /**
  * Shared React Query–backed barcode lookup.

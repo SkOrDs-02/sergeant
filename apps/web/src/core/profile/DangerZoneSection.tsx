@@ -62,9 +62,7 @@ export function DangerZoneSection({
       >
         <div className="px-4 py-3.5 flex items-center gap-2 border-b border-danger/20">
           <Icon name="alert" size={18} className="text-danger" />
-          <span className="text-sm font-semibold text-danger">
-            Небезпечна зона
-          </span>
+          <span className="text-style-label text-danger">Небезпечна зона</span>
         </div>
 
         <div className="p-4 space-y-3">

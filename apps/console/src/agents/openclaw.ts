@@ -571,6 +571,13 @@ export interface OpenClawAgentDeps {
    */
   approvalStore?: ApprovalStore;
   pendingCollector?: PendingApprovalsCollector;
+  /**
+   * ADR-0037 (Phase 4.5): persona that initiated the agent turn. Stamped
+   * onto every queued approval-record so the persistent audit-log can
+   * answer "show me all `pause_workflow` calls emitted by `ops` last
+   * week".
+   */
+  persona?: string;
 }
 
 /**
@@ -656,6 +663,7 @@ export function createOpenClawToolExecutor(
         founderUserId: deps.founderUserId,
         founderTgUserId,
         invocationId: deps.invocationId,
+        persona: deps.persona,
       });
       deps.pendingCollector.add(record);
       return WRITE_TOOL_QUEUED_LITERAL;
@@ -735,7 +743,9 @@ export async function runOpenClawAgent(input: RunOpenClawAgentInput): Promise<{
     maxTokens: MAX_TOKENS,
     systemPrompt,
     tools,
-    executeTool: createOpenClawToolExecutor(input.deps),
+    // ADR-0037 (Phase 4.5): forward persona into the executor so queued
+    // approval-records carry the persona that emitted them.
+    executeTool: createOpenClawToolExecutor({ ...input.deps, persona }),
     maxIterations: input.maxIterations,
   });
 

@@ -67,8 +67,21 @@ function parseTsconfig(filePath) {
 }
 
 /**
+ * Workspace package aliases — resolved directly to the package's source
+ * directory inside the monorepo so the script works without
+ * `pnpm install` populating `node_modules`. Mirrors the alias map in
+ * `tools/tsconfig-guard/check.mjs`; both must stay in sync.
+ */
+function getPackageAliasMap(rootDir) {
+  return {
+    "@sergeant/config": join(rootDir, "packages/config"),
+  };
+}
+
+/**
  * Resolve `extends` to a file path.
- * Handles relative paths and package references.
+ * Handles relative paths, workspace aliases (`@sergeant/*`), and
+ * `node_modules` package references.
  */
 function resolveExtends(extendsValue, fromDir, rootDir) {
   if (extendsValue.startsWith(".")) {
@@ -76,6 +89,23 @@ function resolveExtends(extendsValue, fromDir, rootDir) {
     if (existsSync(resolved)) return resolved;
     if (existsSync(resolved + ".json")) return resolved + ".json";
     return null;
+  }
+
+  // Workspace alias resolution — independent of node_modules state.
+  const aliasMap = getPackageAliasMap(rootDir);
+  for (const [alias, target] of Object.entries(aliasMap)) {
+    if (extendsValue === alias) {
+      const candidate = join(target, "tsconfig.json");
+      if (existsSync(candidate)) return candidate;
+    }
+    if (extendsValue.startsWith(alias + "/")) {
+      const rest = extendsValue.slice(alias.length + 1);
+      const candidate = join(target, rest);
+      if (existsSync(candidate)) return candidate;
+      if (!candidate.endsWith(".json") && existsSync(candidate + ".json")) {
+        return candidate + ".json";
+      }
+    }
   }
 
   // Package reference — try node_modules resolution

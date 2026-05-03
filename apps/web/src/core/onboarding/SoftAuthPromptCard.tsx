@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
@@ -47,7 +47,7 @@ export function SoftAuthPromptCard({
           <Icon name="cloud-check" size={20} aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-text">
+          <p className="text-style-label text-text">
             Зберегти на всіх пристроях?
           </p>
           <p className="text-xs text-muted mt-1 leading-relaxed">

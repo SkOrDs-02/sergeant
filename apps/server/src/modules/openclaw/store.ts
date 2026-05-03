@@ -18,6 +18,8 @@ import type {
   OpenClawToneMode,
   OpenClawToolCall,
   OpenClawTrigger,
+  OpenClawWriteAuditAction,
+  OpenClawWriteAuditRecord,
 } from "./types.js";
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -290,5 +292,164 @@ export async function listRecentInvocations(
     duration_ms: Number(r.duration_ms ?? 0),
     iterations: Number(r.iterations ?? 0),
     tone_mode: r.tone_mode,
+  }));
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Write-audit (ADR-0037, Phase 4.5)
+// ─────────────────────────────────────────────────────────────────────────
+
+/** Server-side cap для `response_excerpt` — захищає від випадкового pushing
+ *  гіганських response-body-ів (e.g. failed Sentry HTML error page) у БД. */
+const RESPONSE_EXCERPT_MAX_BYTES = 4_096;
+
+export interface RecordWriteAuditInput {
+  approvalId: string;
+  tool: string;
+  founderUserId: string;
+  founderTgUserId: number;
+  invocationId?: number | null;
+  action: OpenClawWriteAuditAction;
+  input?: Record<string, unknown>;
+  /** Populated for `executed` rows; ignored for `approved`/`rejected`. */
+  httpStatus?: number | null;
+  /** Populated for `executed` rows. */
+  ok?: boolean | null;
+  /** Populated for `executed` rows. Truncated to `RESPONSE_EXCERPT_MAX_BYTES`. */
+  responseExcerpt?: string | null;
+  /** Persona that emitted the write-tool call. */
+  persona?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * INSERT-ить одну row у `openclaw_write_audit` (append-only за дизайном).
+ * Caller — `apps/console` callback handler через
+ * `POST /api/internal/openclaw/write-audit/log` endpoint.
+ *
+ * Чому без UPDATE-flow-у: lifecycle reconstructed by reading rows за
+ * `approval_id` + `recorded_at`. Mutable row втратив би `approved_at` як
+ * standalone-event і ускладнив би concurrent-write-и (rejected double-click,
+ * race-у `markExecuted`/`markRejected` у in-memory store).
+ *
+ * Повертає id новоствореної row-и (BIGSERIAL → coerced to number per
+ * AGENTS hard-rule #1).
+ */
+export async function recordWriteAudit(
+  pool: Pool,
+  input: RecordWriteAuditInput,
+): Promise<number> {
+  const responseExcerpt =
+    input.responseExcerpt == null
+      ? null
+      : input.responseExcerpt.length > RESPONSE_EXCERPT_MAX_BYTES
+        ? input.responseExcerpt.slice(0, RESPONSE_EXCERPT_MAX_BYTES)
+        : input.responseExcerpt;
+
+  const result = await pool.query<{ id: string }>(
+    `INSERT INTO openclaw_write_audit (
+       approval_id, tool, founder_user_id, founder_tg_user_id,
+       invocation_id, action, input, http_status, ok,
+       response_excerpt, persona, metadata
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11, $12::jsonb)
+     RETURNING id`,
+    [
+      input.approvalId,
+      input.tool,
+      input.founderUserId,
+      input.founderTgUserId,
+      input.invocationId ?? null,
+      input.action,
+      JSON.stringify(input.input ?? {}),
+      input.httpStatus ?? null,
+      input.ok ?? null,
+      responseExcerpt,
+      input.persona ?? null,
+      JSON.stringify(input.metadata ?? {}),
+    ],
+  );
+  return Number(result.rows[0]?.id ?? 0);
+}
+
+export interface ListWriteAuditFilters {
+  founderUserId: string;
+  limit?: number;
+  /** Filter by tool name (e.g. `pause_workflow`). */
+  tool?: string;
+  /** Filter by lifecycle action. */
+  action?: OpenClawWriteAuditAction;
+  /** Filter by persona that emitted the call. */
+  persona?: string;
+  /**
+   * Lower-bound on `recorded_at` (inclusive). Drives the `/audit since=<dur>`
+   * time-window query — the console parses `since=24h` / `7d` / `30m` into
+   * a wall-clock cutoff and forwards it as ISO. Inclusive `>=` so a row
+   * recorded exactly at the cutoff is still returned.
+   */
+  recordedAfter?: Date;
+}
+
+/**
+ * Останні N write-audit row-ів для founder-а (newest-first), з опційними
+ * фільтрами. Використовується `/audit` slash-командою у DM. Не exposed
+ * через `query_app_db` — це ergonomic shape, не raw-SQL.
+ */
+export async function listRecentWriteAudits(
+  pool: Pool,
+  filters: ListWriteAuditFilters,
+): Promise<OpenClawWriteAuditRecord[]> {
+  const conditions: string[] = ["founder_user_id = $1"];
+  const params: unknown[] = [filters.founderUserId];
+
+  if (filters.tool) {
+    params.push(filters.tool);
+    conditions.push(`tool = $${params.length}`);
+  }
+  if (filters.action) {
+    params.push(filters.action);
+    conditions.push(`action = $${params.length}`);
+  }
+  if (filters.persona) {
+    params.push(filters.persona);
+    conditions.push(`persona = $${params.length}`);
+  }
+  if (filters.recordedAfter) {
+    params.push(filters.recordedAfter);
+    conditions.push(`recorded_at >= $${params.length}`);
+  }
+
+  const limit = Math.max(1, Math.min(100, filters.limit ?? 20));
+  params.push(limit);
+
+  const result = await pool.query(
+    `SELECT id, recorded_at, approval_id, tool, founder_user_id,
+            founder_tg_user_id, invocation_id, action, input,
+            http_status, ok, response_excerpt, persona, metadata
+       FROM openclaw_write_audit
+      WHERE ${conditions.join(" AND ")}
+      ORDER BY recorded_at DESC
+      LIMIT $${params.length}`,
+    params,
+  );
+
+  return result.rows.map((r) => ({
+    id: Number(r.id),
+    recorded_at:
+      r.recorded_at instanceof Date
+        ? r.recorded_at.toISOString()
+        : r.recorded_at,
+    approval_id: String(r.approval_id),
+    tool: String(r.tool),
+    founder_user_id: String(r.founder_user_id),
+    founder_tg_user_id: Number(r.founder_tg_user_id),
+    invocation_id: r.invocation_id == null ? null : Number(r.invocation_id),
+    action: r.action as OpenClawWriteAuditAction,
+    input: (r.input as Record<string, unknown>) ?? {},
+    http_status: r.http_status == null ? null : Number(r.http_status),
+    ok: r.ok == null ? null : Boolean(r.ok),
+    response_excerpt: r.response_excerpt ?? null,
+    persona: r.persona ?? null,
+    metadata: (r.metadata as Record<string, unknown>) ?? {},
   }));
 }

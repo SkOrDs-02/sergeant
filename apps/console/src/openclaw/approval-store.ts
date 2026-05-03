@@ -54,6 +54,13 @@ export interface ApprovalRecord {
   founderTgUserId: number;
   /** Optional invocation id (audit-log linkage). */
   invocationId?: number;
+  /**
+   * ADR-0037 (Phase 4.5): persona that emitted the write-tool call.
+   * Optional because write-tools may be queued from contexts that don't
+   * track persona (legacy or non-persona-routed turns). Surfaced into
+   * `openclaw_write_audit.persona` for filterable post-mortem queries.
+   */
+  persona?: string;
   createdAt: number;
   expiresAt: number;
   status: ApprovalStatus;
@@ -65,6 +72,7 @@ export interface ApprovalCreateInput {
   founderUserId: string;
   founderTgUserId: number;
   invocationId?: number;
+  persona?: string;
 }
 
 export interface ApprovalStoreOptions {
@@ -100,6 +108,7 @@ export class ApprovalStore {
       founderUserId: input.founderUserId,
       founderTgUserId: input.founderTgUserId,
       invocationId: input.invocationId,
+      persona: input.persona,
       createdAt: t,
       expiresAt: t + this.ttlMs,
       status: "pending",

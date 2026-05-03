@@ -1,5 +1,5 @@
 import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { OnboardingWizard } from "../onboarding/OnboardingWizard";
 
 // Static preview of the populated hub that sits behind the splash card on
@@ -122,7 +122,7 @@ function PeekBackdrop() {
                 <span className="text-xs font-semibold text-text">
                   {card.label}
                 </span>
-                <span className="text-lg font-bold text-text tabular-nums mt-1">
+                <span className="text-style-title text-text tabular-nums mt-1">
                   {card.metric}
                 </span>
                 <span className="text-2xs text-muted mt-0.5">{card.sub}</span>
@@ -168,7 +168,7 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
             className={cn(
               "w-full flex items-center justify-center gap-2",
               "h-11 min-h-[44px] rounded-2xl border border-line bg-panel/60",
-              "text-sm font-semibold text-text",
+              "text-style-label text-text",
               "hover:bg-panelHi hover:border-brand-500/40 transition-colors",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
             )}

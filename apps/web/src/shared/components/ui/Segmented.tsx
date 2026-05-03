@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { cn } from "@shared/lib/cn";
-import { hapticTap } from "@shared/lib/haptic";
+import { cn } from "@shared/lib/ui/cn";
+import { hapticTap } from "@shared/lib/adapters/haptic";
 
 /**
  * Sergeant Design System — Segmented

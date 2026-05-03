@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import {
   privatApi,
@@ -12,8 +12,8 @@ import {
   safeReadStringLS,
   safeWriteLS,
   safeRemoveLS,
-} from "@shared/lib/storage";
-import { finykKeys, hubKeys } from "@shared/lib/queryKeys";
+} from "@shared/lib/storage/storage";
+import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { useStorage as useFinykStorage } from "../../modules/finyk/hooks/useStorage";
 import { useMonoBackfillProgress } from "../../modules/finyk/hooks/useMonoBackfillProgress";
 import { BackfillProgressPill } from "../../modules/finyk/components/BackfillProgressPill";

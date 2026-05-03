@@ -12,7 +12,7 @@ import { getCategorySpendList } from "@sergeant/finyk-domain/domain/categories";
 import type { TxSplitsLike } from "@sergeant/finyk-domain/lib/transactions";
 import { manualCategoryToCanonicalId } from "@sergeant/finyk-domain/domain/personalization";
 import { Recommendations } from "@sergeant/insights";
-import { safeReadLS } from "@shared/lib/storage";
+import { safeReadLS } from "@shared/lib/storage/storage";
 
 type FinanceContext = Recommendations.FinanceContext;
 type Transaction = Recommendations.Transaction;

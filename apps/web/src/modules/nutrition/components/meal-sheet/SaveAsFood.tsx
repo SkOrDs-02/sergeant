@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@shared/components/ui/Button";
-import { nutritionKeys } from "@shared/lib/queryKeys";
+import { nutritionKeys } from "@shared/lib/api/queryKeys";
 import { upsertFood } from "../../lib/foodDb/foodDb";
 import type { PickedFood } from "./FoodPickerSection";
 import type { MealFormState } from "./mealFormUtils";

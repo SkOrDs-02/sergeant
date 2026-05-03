@@ -35,7 +35,7 @@ export function ProfilePage() {
       {!online && (
         <div className="flex items-center gap-2 rounded-xl bg-warning/10 border border-warning/30 px-4 py-3 mb-2">
           <Icon name="wifi-off" size={16} className="text-warning shrink-0" />
-          <p className="text-sm text-warning font-medium">
+          <p className="text-style-label text-warning">
             Ви офлайн — редагування профілю тимчасово недоступне
           </p>
         </div>

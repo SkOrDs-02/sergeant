@@ -19,6 +19,7 @@
 | [`2026-04-28-sergeant-comprehensive-audit.md`](./2026-04-28-sergeant-comprehensive-audit.md) | Комплексний генеральний аудит                       | Closed   |
 | [`2026-04-28-implementation-roadmap.md`](./2026-04-28-implementation-roadmap.md)             | План реалізації покращень                           | Active   |
 | [`2026-05-02-doc-hygiene-audit.md`](./2026-05-02-doc-hygiene-audit.md)                       | Doc-hygiene аудит — структура, freshness, dead code | Active   |
+| [`2026-05-03-readme-gap-analysis.md`](./2026-05-03-readme-gap-analysis.md)                   | README gap analysis — що відсутнє у root README     | Active   |
 | [`UX-UI-AUDIT-2026.md`](./UX-UI-AUDIT-2026.md)                                               | UX/UI аудит 2026                                    | Closed   |
 | [`UX-IMPROVEMENT-PLAN.md`](./UX-IMPROVEMENT-PLAN.md)                                         | Технічний план покращення UX                        | Active   |
 | [`typography-2026-04-audit.md`](./typography-2026-04-audit.md)                               | Typography reference audit для Hard Rule #16        | Active   |

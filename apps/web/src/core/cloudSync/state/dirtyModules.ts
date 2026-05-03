@@ -1,4 +1,4 @@
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { DIRTY_MODULES_KEY, MODULE_MODIFIED_KEY } from "../config";
 import { emitStatusEvent } from "./events";
 

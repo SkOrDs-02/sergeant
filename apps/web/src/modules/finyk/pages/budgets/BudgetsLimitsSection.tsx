@@ -2,14 +2,15 @@ import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import {
   calculateLimitUsage,
   shouldShowProactiveAdvice,
 } from "@sergeant/finyk-domain/domain/budget";
+import type { Budget, Category } from "@sergeant/finyk-domain/domain/types";
 import { LimitBudgetCard } from "../../components/budgets/LimitBudgetCard";
 import { resolveExpenseCategoryMeta } from "../../utils";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { useToast } from "@shared/hooks/useToast";
 import type { ProactiveItem } from "./budgetsLib";
 
@@ -17,18 +18,13 @@ export interface BudgetsLimitsSectionProps {
   limitsOpen: boolean;
   toggleLimits: () => void;
   monthStart: Date;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  limitBudgets: any[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  budgets: any[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setBudgets: Dispatch<SetStateAction<any[]>>;
+  limitBudgets: Budget[];
+  budgets: Budget[];
+  setBudgets: Dispatch<SetStateAction<Budget[]>>;
   editIdx: number | null;
   setEditIdx: Dispatch<SetStateAction<number | null>>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  customCategories: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  calcSpent: (b: any) => number;
+  customCategories: Category[] | undefined;
+  calcSpent: (b: Budget) => number;
   proactiveItems: ProactiveItem[];
   proactiveAdvice: Record<string, string | null>;
   proactiveLoading: Record<string, boolean>;
@@ -126,22 +122,20 @@ export function BudgetsLimitsSection({
       )}
       {limitsOpen &&
         limitBudgets.map((b, i) => {
-          const cat = resolveExpenseCategoryMeta(
-            b.categoryId,
-            customCategories,
-          );
+          const categoryId = b.categoryId ?? "";
+          const cat = resolveExpenseCategoryMeta(categoryId, customCategories);
           const bspent = calcSpent(b);
           const usage = calculateLimitUsage(b, bspent);
           const globalIdx = budgets.indexOf(b);
           const showAdvice = shouldShowProactiveAdvice(usage, null);
           const isEditing = editIdx === globalIdx;
           const catLabel = cat?.label || "—";
-          const isHighlighted = highlightedCategoryId === b.categoryId;
-          const adviceText = proactiveAdvice[b.categoryId];
+          const isHighlighted = highlightedCategoryId === categoryId;
+          const adviceText = proactiveAdvice[categoryId];
           const monthKey =
-            proactiveItems.find((it) => it.categoryId === b.categoryId)
+            proactiveItems.find((it) => it.categoryId === categoryId)
               ?.monthKey ?? "";
-          const dismissedKey = `${monthKey}_${b.categoryId}`;
+          const dismissedKey = `${monthKey}_${categoryId}`;
           const isDismissed =
             adviceText && dismissedAdvice[dismissedKey] === adviceText;
           return (
@@ -149,9 +143,9 @@ export function BudgetsLimitsSection({
               key={b.id || i}
               ref={(node) => {
                 if (node) {
-                  limitCardRefs.current.set(b.categoryId, node);
+                  limitCardRefs.current.set(categoryId, node);
                 } else {
-                  limitCardRefs.current.delete(b.categoryId);
+                  limitCardRefs.current.delete(categoryId);
                 }
               }}
               className={cn(
@@ -161,7 +155,13 @@ export function BudgetsLimitsSection({
               )}
             >
               <LimitBudgetCard
-                budget={b}
+                budget={{
+                  id: b.id,
+                  type:
+                    b.type === "goal" ? ("goal" as const) : ("limit" as const),
+                  categoryId,
+                  limit: typeof b.limit === "number" ? b.limit : 0,
+                }}
                 categoryLabel={catLabel}
                 spent={usage.spent}
                 pctRaw={usage.pctRaw}
@@ -169,13 +169,13 @@ export function BudgetsLimitsSection({
                 remaining={usage.remaining}
                 isEditing={isEditing}
                 showProactiveAdvice={showAdvice}
-                proactiveLoading={proactiveLoading[b.categoryId]}
+                proactiveLoading={proactiveLoading[categoryId]}
                 proactiveText={isDismissed ? null : adviceText}
                 onDismissAdvice={
                   adviceText
                     ? () => {
                         if (monthKey) {
-                          dismissAdvice(b.categoryId, monthKey, adviceText);
+                          dismissAdvice(categoryId, monthKey, adviceText);
                         }
                       }
                     : undefined

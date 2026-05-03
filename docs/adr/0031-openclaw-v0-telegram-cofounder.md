@@ -149,6 +149,35 @@ nutrition | routine | journal | digest`).
 | `read_telegram_topic_history` | read           | Telegram Bot API          | limited capability (Bot API не дає історію) — у v0 stub з clear error |
 | `record_decision`             | write (narrow) | Postgres + GitHub PR      | INSERT + open PR з markdown                                           |
 
+### Dispatcher compatibility
+
+OpenClaw v0 не замінює n8n dispatcher і не виконує production mutations
+самостійно. Для сумісності з Telegram-controlled agent dispatcher payload має
+явне поле `source`, яке може бути:
+
+- `telegram-console` — команди з основного Sergeant Console bot-а;
+- `openclaw` — founder-DM / OpenClaw-originated task envelope.
+
+Це дає n8n WF-20 і downstream specialist-agent workflows змогу відрізняти
+людську console-команду від OpenClaw-originated запиту без зміни решти contract:
+`commandText`, `action`, `specialist`, `riskTier`, `mode`, `requiresApproval`,
+`telegram.userId`, `telegram.chatId`, `telegram.messageId`.
+
+Hybrid agent-network contract розширює envelope полями `taskId`, `actor`,
+`intent`, `approvalId`, `statusCallback` і `artifacts`. OpenClaw використовує
+цей contract як conductor: execution-like DM запити (CI/PR/GitHub/n8n/security)
+йдуть у WF-20, а стратегічний cofounder dialogue лишається в OpenClaw loop.
+
+У v0 OpenClaw лишається read-only co-founder bot-ом. Для поточного main важливо
+не змішувати два execution paths: WF-20 покриває dispatcher-envelope /
+specialist-agent routing, а Phase 4 write-tools описані в ADR-0036 і виконуються
+через console-side approval + `/api/internal/openclaw/write/*` endpoints.
+
+Інваріант один для обох шляхів: будь-яка mutating дія повинна пройти explicit
+founder approval у Telegram, мати audit trail, і тільки після цього може
+продовжити execution. `source="openclaw"` є audit/routing metadata, а не
+дозволом на silent writes.
+
 `query_app_db` table-allowlist (read-only role, parameterized only):
 
 - `subscriptions`, `payments`, `users`, `digest_runs`, `n8n_errors`,

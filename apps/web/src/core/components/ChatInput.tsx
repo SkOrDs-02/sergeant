@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { stopSpeaking, unlockTTS } from "../lib/hubChatSpeech";
 import { useSpeech } from "../hooks/useSpeech";

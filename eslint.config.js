@@ -112,7 +112,7 @@ export default [
       // WCAG-AA `-strong` tier guardrail — every saturated brand `bg-*`
       // utility paired with `text-white` regresses to ~2.4–2.8 : 1
       // contrast (the bug class fixed in PRs #854 / #855). The fix is
-      // `bg-{family}-strong text-white`. See docs/design/BRANDBOOK.md →
+      // `bg-{family}-strong text-white`. See docs/design/brandbook.md →
       // "WCAG-AA `-strong` Tier" for the full mapping. Promoted from
       // "warn" to "error" once the cleanup PR migrated the last 28
       // call-sites — the codebase is now clean against this rule, and
@@ -178,7 +178,7 @@ export default [
   // layer (`bg-success-soft`, `bg-finyk-surface`,
   // `border-routine-soft-border`, …). Shipped at "error" once the
   // dark-mode audit's inventory closed (Wave 2c of
-  // docs/design/DARK-MODE-AUDIT.md) — every existing pair has
+  // docs/design/dark-mode-audit.md) — every existing pair has
   // been migrated, so any new violation is intentional and must
   // be opted out with an `eslint-disable-next-line` + comment.
   //
@@ -204,11 +204,11 @@ export default [
       // `no-rounded-lg` — prevent border-radius drift back to the 8 px tier.
       // `rounded-lg` sits between Marker (6 px) and Control (12 px) without a
       // semantic role; use `rounded-md` or `rounded-xl` instead.
-      // See docs/design/RADIUS-RHYTHM.md.
+      // See docs/design/radius-rhythm.md.
       "sergeant-design/no-rounded-lg": "warn",
       // `no-bare-empty-text` — enforce empty-state tier discipline.
       // Bare JSX text with Ukrainian "Поки немає" / "ще немає" phrases must
-      // use <EmptyState> / <ModuleEmptyState> — see docs/design/EMPTY-STATES.md.
+      // use <EmptyState> / <ModuleEmptyState> — see docs/design/empty-states.md.
       "sergeant-design/no-bare-empty-text": "warn",
       // `prefer-text-style` — semantic typography over hand-rolled combos.
       // Replace (text-sm font-medium) with text-style-label etc.
@@ -224,6 +224,15 @@ export default [
       // sub-WCAG 8 px regression family.
       // See docs/design/design-system.md § Typography.
       "sergeant-design/no-arbitrary-text-size": "error",
+      // `no-flat-shared-lib` — guard the 2026-05-03 reorg
+      // (PR #1479): `apps/web/src/shared/lib/` is now organized into
+      // five thematic subdirs (`api/`, `storage/`, `modules/`,
+      // `adapters/`, `ui/`). New top-level flat files would re-flatten
+      // the namespace and erase the grouping. The rule resolves both
+      // `@shared/lib/<x>` (alias) and relative imports, so it survives
+      // future import-style refactors. Place new utils in the right
+      // subdir, or import via the `@shared/lib` barrel.
+      "sergeant-design/no-flat-shared-lib": "error",
     },
   },
   // Import-extension hygiene — bans `.js`/`.jsx`/`.ts`/`.tsx`/`.mjs`/`.cjs`
@@ -319,10 +328,11 @@ export default [
     },
   },
   // Mobile cloud-sync guardrail — `useLocalStorage` must not be called
-  // with a key tracked in `apps/mobile/src/sync/config.ts → SYNC_MODULES`,
-  // because MMKV writes bypass JS and would silently break cloud sync.
-  // The fix is to call `useSyncedStorage` from `@/sync/useSyncedStorage`
-  // instead, which mirrors the write into the sync queue.
+  // with a key tracked in `packages/shared/src/sync/modules.ts → SYNC_MODULES`
+  // (the cross-platform registry, PR #007), because MMKV writes bypass
+  // JS and would silently break cloud sync. The fix is to call
+  // `useSyncedStorage` from `@/sync/useSyncedStorage` instead, which
+  // mirrors the write into the sync queue.
   {
     files: ["apps/mobile/**/*.{js,jsx,ts,tsx}"],
     ignores: [
@@ -354,13 +364,13 @@ export default [
       "apps/web/src/**/__tests__/**",
       // Storage primitives — these are the wrappers everyone else
       // should call into.
-      "apps/web/src/shared/lib/storage.ts",
-      "apps/web/src/shared/lib/storageManager.ts",
-      "apps/web/src/shared/lib/storageQuota.ts",
-      "apps/web/src/shared/lib/typedStore.ts",
-      "apps/web/src/shared/lib/createModuleStorage.ts",
-      "apps/web/src/shared/lib/weeklyDigestStorage.ts",
-      "apps/web/src/shared/lib/perf.ts",
+      "apps/web/src/shared/lib/storage/storage.ts",
+      "apps/web/src/shared/lib/storage/storageManager.ts",
+      "apps/web/src/shared/lib/storage/storageQuota.ts",
+      "apps/web/src/shared/lib/storage/typedStore.ts",
+      "apps/web/src/shared/lib/storage/createModuleStorage.ts",
+      "apps/web/src/shared/lib/storage/weeklyDigestStorage.ts",
+      "apps/web/src/shared/lib/ui/perf.ts",
       "apps/web/src/shared/hooks/useLocalStorageState.ts",
       "apps/web/src/shared/hooks/useDarkMode.ts",
       "apps/web/src/shared/hooks/usePushNotifications.ts",
@@ -500,13 +510,13 @@ export default [
   },
   // React Query keys factory guardrail — AGENTS.md hard rule #2: all
   // `queryKey` / `mutationKey` values must come from the centralized
-  // factory in `apps/web/src/shared/lib/queryKeys.ts`. Inline array
+  // factory in `apps/web/src/shared/lib/api/queryKeys.ts`. Inline array
   // literals break bulk invalidation and let typos compile silently.
   // The factory file itself is exempt (it defines the arrays).
   {
     files: ["apps/web/src/**/*.{ts,tsx}"],
     ignores: [
-      "apps/web/src/shared/lib/queryKeys.ts",
+      "apps/web/src/shared/lib/api/queryKeys.ts",
       "apps/web/src/**/*.test.{ts,tsx}",
       "apps/web/src/**/__tests__/**",
     ],

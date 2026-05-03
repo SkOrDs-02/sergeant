@@ -1,7 +1,7 @@
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { hapticTap } from "@shared/lib/haptic";
-import { openHubModuleWithAction } from "@shared/lib/hubNav";
+import { hapticTap } from "@shared/lib/adapters/haptic";
+import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import {
   clearRecentQueries,
   getRecentQueries,

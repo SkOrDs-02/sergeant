@@ -2,7 +2,7 @@ import { memo } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 interface MonthPulseCardProps {
   dateLabel: string;

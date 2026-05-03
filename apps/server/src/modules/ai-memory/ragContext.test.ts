@@ -28,6 +28,12 @@ const { recallMock, aiMemoryMock, envMock, loggerMock } = vi.hoisted(() => {
     AI_MEMORY_ENABLED: true,
     AI_MEMORY_RAG_TOP_K: 4,
     AI_MEMORY_TOP_K: 8,
+    // RAG_TIMEOUT_MS читається з env на module-load. Без значення
+    // setTimeout(undefined,…) у Node.js кидає ERR_INVALID_ARG_TYPE
+    // (`The "delay" argument must be of type number`), і всі тести
+    // падають ще до happy-path-логіки. 1500мс — production default
+    // з env.ts, тому беремо те ж саме.
+    AI_MEMORY_RAG_TIMEOUT_MS: 1_500,
   };
   const loggerMock = {
     info: vi.fn(),

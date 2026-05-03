@@ -153,7 +153,7 @@ export function RecoveryFocusCard({
               {focus.map((m) => (
                 <span
                   key={m.id}
-                  className="px-2.5 py-1 bg-success/10 text-success text-xs rounded-full font-medium border border-success/15"
+                  className="px-2.5 py-1 bg-success/10 text-success text-style-caption rounded-full border border-success/15"
                 >
                   {m.label}
                   {m.daysSince == null ? "" : ` · ${m.daysSince}д без`}

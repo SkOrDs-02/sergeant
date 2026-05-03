@@ -22,10 +22,14 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain/domain";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
 import { enqueueChange } from "@/sync/enqueue";
+
+import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
+import { useFizrukSqliteReadGate } from "../lib/sqliteReadGate";
 
 const STORAGE_KEY = STORAGE_KEYS.FIZRUK_WORKOUTS;
 
@@ -74,6 +78,47 @@ function readWorkouts(): FizrukWorkout[] {
   return Array.isArray(raw) ? (raw as FizrukWorkout[]) : [];
 }
 
+/**
+ * Project a domain `WorkoutItem` (from `@sergeant/fizruk-domain`) onto
+ * the loose mobile `FizrukWorkoutItem` shape used by the screen +
+ * selectors. The two shapes overlap on every required field — the
+ * mobile type is intentionally permissive (every field optional, plus
+ * an index signature) so the projection is a 1:1 copy.
+ */
+function projectWorkoutItem(item: WorkoutItem): FizrukWorkoutItem {
+  const out: FizrukWorkoutItem = { id: item.id };
+  if (item.exerciseId) out.exerciseId = item.exerciseId;
+  if (item.nameUk) out.nameUk = item.nameUk;
+  if (item.primaryGroup) out.primaryGroup = item.primaryGroup;
+  if (item.musclesPrimary) out.musclesPrimary = item.musclesPrimary;
+  if (item.musclesSecondary) out.musclesSecondary = item.musclesSecondary;
+  if (item.type) out.type = item.type;
+  if (item.sets) {
+    out.sets = item.sets.map((s) => ({ weightKg: s.weightKg, reps: s.reps }));
+  }
+  if (item.durationSec != null) out.durationSec = item.durationSec;
+  if (item.distanceM != null) out.distanceM = item.distanceM;
+  return out;
+}
+
+/**
+ * Project a domain `Workout` onto the mobile `FizrukWorkout` shape.
+ * Used to overlay the SQLite-backed cache values into a hook surface
+ * shaped like the existing MMKV blob.
+ */
+function projectWorkout(workout: Workout): FizrukWorkout {
+  return {
+    id: workout.id,
+    startedAt: workout.startedAt,
+    endedAt: workout.endedAt,
+    note: workout.note ?? "",
+    items: workout.items.map(projectWorkoutItem),
+    groups: workout.groups,
+    warmup: workout.warmup,
+    cooldown: workout.cooldown,
+  };
+}
+
 export interface UseFizrukWorkoutsResult {
   /** Workouts sorted by `startedAt` descending (most recent first). */
   workouts: readonly FizrukWorkout[];
@@ -115,6 +160,21 @@ export function useFizrukWorkouts(): UseFizrukWorkoutsResult {
     });
     return () => sub.remove();
   }, []);
+
+  // Stage 4 PR #029a: under `feature.fizruk.sqlite_v2.read_sqlite`,
+  // overlay workouts from the local SQLite cache once it's warm. The
+  // MMKV first-paint read above stays as a synchronous fallback so the
+  // first paint never blocks on SQLite.
+  const { enabled: sqliteReadEnabled, tick: sqliteCacheTick } =
+    useFizrukSqliteReadGate();
+  useEffect(() => {
+    if (!sqliteReadEnabled) return;
+    const cache = getCachedFizrukSqliteState();
+    if (cache.refreshedAt === null) return;
+    const overlay = cache.workouts.map(projectWorkout);
+    stateRef.current = overlay;
+    setWorkouts(overlay);
+  }, [sqliteReadEnabled, sqliteCacheTick]);
 
   const persist = useCallback(
     (updater: (prev: FizrukWorkout[]) => FizrukWorkout[]) => {

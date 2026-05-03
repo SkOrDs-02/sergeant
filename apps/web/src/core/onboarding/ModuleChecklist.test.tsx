@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { ModuleChecklist } from "./ModuleChecklist";
 
-vi.mock("@shared/lib/haptic", () => ({
+vi.mock("@shared/lib/adapters/haptic", () => ({
   hapticTap: vi.fn(),
   hapticSuccess: vi.fn(),
 }));

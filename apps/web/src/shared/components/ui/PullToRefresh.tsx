@@ -1,5 +1,5 @@
 import { useCallback, useRef, type ReactNode, type CSSProperties } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import {
   usePullToRefresh,
   type UsePullToRefreshOptions,

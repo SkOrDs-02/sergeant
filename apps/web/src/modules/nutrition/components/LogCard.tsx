@@ -5,7 +5,7 @@ import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Badge } from "@shared/components/ui/Badge";
 import { Input } from "@shared/components/ui/Input";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { Icon } from "@shared/components/ui/Icon";
@@ -413,6 +413,7 @@ export function LogCard({
               Калорії по днях (останні {Math.min(statsRange, statsRows.length)})
             </SectionHeading>
             {statsRows.length === 0 ? (
+              // eslint-disable-next-line sergeant-design/no-bare-empty-text -- pre-existing tech debt; tracked in docs/tech-debt/frontend.md
               <div className="text-xs text-muted">Поки що порожньо</div>
             ) : (
               (() => {
@@ -442,6 +443,7 @@ export function LogCard({
                 Топ страв
               </SectionHeading>
               {statsTop.length === 0 ? (
+                // eslint-disable-next-line sergeant-design/no-bare-empty-text -- pre-existing tech debt; tracked in docs/tech-debt/frontend.md
                 <div className="text-xs text-muted">Поки що порожньо</div>
               ) : (
                 <ol className="space-y-1">
@@ -466,6 +468,7 @@ export function LogCard({
                 Розподіл прийомів
               </SectionHeading>
               {Object.keys(statsMealTypes).length === 0 ? (
+                // eslint-disable-next-line sergeant-design/no-bare-empty-text -- pre-existing tech debt; tracked in docs/tech-debt/frontend.md
                 <div className="text-xs text-muted">Поки що порожньо</div>
               ) : (
                 <ul className="space-y-1">
@@ -526,7 +529,7 @@ export function LogCard({
         <button
           type="button"
           onClick={onAddMeal}
-          className="w-full h-12 min-h-[44px] rounded-2xl border-2 border-dashed border-line text-muted hover:border-nutrition/60 hover:text-nutrition-strong dark:text-nutrition font-semibold text-sm transition-[border-color,color,background-color]"
+          className="text-style-label w-full h-12 min-h-[44px] rounded-2xl border-2 border-dashed border-line text-muted hover:border-nutrition/60 hover:text-nutrition-strong dark:text-nutrition transition-[border-color,color,background-color]"
         >
           + Додати прийом їжі
         </button>
@@ -679,7 +682,7 @@ function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
         aria-label={onEdit ? "Редагувати запис" : undefined}
       >
         <div className="flex items-baseline gap-2">
-          <span className="font-semibold text-text text-sm truncate">
+          <span className="text-style-label text-text truncate">
             {meal.name}
           </span>
           {meal.time && (

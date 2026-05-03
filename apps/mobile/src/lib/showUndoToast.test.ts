@@ -1,5 +1,5 @@
 /**
- * Mirror of `apps/web/src/shared/lib/undoToast.test.tsx` for the mobile
+ * Mirror of `apps/web/src/shared/lib/ui/undoToast.test.tsx` for the mobile
  * helper. We mock the haptic adapter so the test stays platform-pure
  * (no `expo-haptics` import is needed in the jest jsdom env).
  */

@@ -13,7 +13,7 @@ import {
   normalizePantries,
   persistPantries,
 } from "./nutritionStorage";
-import { storageManager } from "@shared/lib/storageManager";
+import { storageManager } from "@shared/lib/storage/storageManager";
 
 function createLocalStorageMock() {
   const store = new Map<string, string>();

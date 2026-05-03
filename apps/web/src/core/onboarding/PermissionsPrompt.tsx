@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 
 /**
@@ -168,7 +168,7 @@ export function PermissionsPrompt({
   return (
     <div className="flex flex-col items-center text-center space-y-4">
       <div className="space-y-1">
-        <h2 className="text-xl font-bold text-text">Дозволи</h2>
+        <h2 className="text-style-title text-text">Дозволи</h2>
         <p className="text-xs text-muted leading-relaxed max-w-xs mx-auto">
           Щоб усе працювало, Sergeant може попросити кілька дозволів браузера.
           Можна пропустити — увімкнеш у налаштуваннях, коли знадобиться.
@@ -187,9 +187,7 @@ export function PermissionsPrompt({
                 {row.icon}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold text-text">
-                  {row.title}
-                </div>
+                <div className="text-style-label text-text">{row.title}</div>
                 <div className="text-xs text-muted mt-0.5 leading-snug">
                   {row.reason}
                 </div>
