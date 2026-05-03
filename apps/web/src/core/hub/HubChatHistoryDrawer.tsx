@@ -173,7 +173,7 @@ export function HubChatHistoryDrawer({
                   <button
                     type="button"
                     onClick={(e) => handleDelete(e, s.id)}
-                    className="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl text-subtle/60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 hover:text-danger hover:bg-danger/10 transition-[color,background-color,opacity]"
+                    className="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl text-subtle/60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10 transition-[color,background-color,opacity]"
                     aria-label={`Видалити бесіду ${s.title}`}
                     title="Видалити"
                   >

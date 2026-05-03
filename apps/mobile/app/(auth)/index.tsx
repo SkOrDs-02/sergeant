@@ -1,13 +1,13 @@
 import { useRouter } from "expo-router";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { colors, spacing, radius } from "@/theme";
+import { colors, spacing, radius, moduleColors } from "@/theme";
 
 const modules = [
-  { label: "Фінанси", color: "#7c6af7" },
-  { label: "Фітнес", color: "#0d9488" },
-  { label: "Рутина", color: "#dc5e5e" },
-  { label: "Харчування", color: "#84cc16" },
+  { label: "Фінанси", color: moduleColors.finyk.primary },
+  { label: "Фітнес", color: moduleColors.fizruk.primary },
+  { label: "Рутина", color: moduleColors.routine.primary },
+  { label: "Харчування", color: moduleColors.nutrition.primary },
 ];
 
 export default function WelcomeScreen() {
@@ -75,7 +75,7 @@ const s = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 24,
-    backgroundColor: "#7c6af7",
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -106,12 +106,12 @@ const s = StyleSheet.create({
   chipText: { fontSize: 12, fontWeight: "600" },
   actions: { gap: spacing.md, paddingBottom: spacing.xl },
   primaryBtn: {
-    backgroundColor: "#7c6af7",
+    backgroundColor: colors.accent,
     borderRadius: radius.md,
     paddingVertical: 16,
     alignItems: "center",
   },
   primaryBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   signInLink: { color: colors.textMuted, fontSize: 14, textAlign: "center" },
-  signInLinkBold: { color: "#7c6af7", fontWeight: "600" },
+  signInLinkBold: { color: colors.accent, fontWeight: "600" },
 });

@@ -74,7 +74,7 @@ function ItemRow({
         type="button"
         onClick={() => removeItemAtOrByName(idx, item?.name)}
         disabled={busy}
-        className="w-6 h-6 rounded-xl flex items-center justify-center text-subtle/60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 hover:text-danger hover:bg-danger/10 transition-[color,background-color,opacity] text-sm leading-none shrink-0"
+        className="w-6 h-6 rounded-xl flex items-center justify-center text-subtle/60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10 transition-[color,background-color,opacity] text-sm leading-none shrink-0"
         aria-label={`Прибрати ${item?.name || "продукт"}`}
         title="Прибрати"
       >
