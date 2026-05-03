@@ -1,7 +1,8 @@
 /**
  * IDB-backed durable store for cloud-sync bookkeeping (offline queue,
  * sync versions, dirty modules, last-modified timestamps). PR #009
- * from `docs/planning/storage-roadmap.md`.
+ * from `docs/planning/storage-roadmap.md`; consolidated into the
+ * shared `sergeant-db` connection by PR #010.
  *
  * Why IDB instead of localStorage:
  *   - LS has a 5–10 MB per-origin cap; with `MAX_OFFLINE_QUEUE` raised
@@ -28,20 +29,18 @@
  *
  * Key naming: keys live in a private namespace (`SYNC_META_*`) so
  * future additions don't collide with the wider `STORAGE_KEYS`
- * registry. The DB name is intentionally distinct from
- * `sergeant-rq-cache` (React Query persister) and from the upcoming
- * unified `sergeant` DB (PR #010) — keeping them separate while #010
- * is in flight isolates failure modes.
+ * registry. The data lives in the `sync_meta` object store of the
+ * shared `sergeant-db` (PR #010); the legacy `sergeant-sync-meta`
+ * database is migrated lazily on the first read/write of this
+ * session and then dropped.
  */
 import {
-  createStore,
-  get as idbGet,
-  set as idbSet,
-  del as idbDel,
-} from "idb-keyval";
-
-const DB_NAME = "sergeant-sync-meta";
-const STORE_NAME = "v1";
+  SERGEANT_STORE,
+  dbDel,
+  dbGet,
+  dbSet,
+  migrateLegacyDbOnce,
+} from "../../../shared/lib/idb/sergeantDb";
 
 export const SYNC_META_KEYS = {
   OFFLINE_QUEUE: "offline_queue",
@@ -52,55 +51,70 @@ export const SYNC_META_KEYS = {
 
 export type SyncMetaKey = (typeof SYNC_META_KEYS)[keyof typeof SYNC_META_KEYS];
 
-// Lazy `Store` — `createStore` does NOT open the DB; the open happens
-// on the first get/set/del call. This keeps SSR / unit-test bootstrap
-// fast and lets us avoid wrapping every test in fake-indexeddb when we
-// only need to mock the four exported functions below.
-let store: ReturnType<typeof createStore> | null = null;
-function getStore(): ReturnType<typeof createStore> {
-  if (!store) store = createStore(DB_NAME, STORE_NAME);
-  return store;
-}
+const LEGACY_DB_NAME = "sergeant-sync-meta";
+const LEGACY_STORE_NAME = "v1";
 
-/**
- * `true` when the runtime exposes IndexedDB (browsers, Electron). In
- * Node-based unit tests under jsdom we may run without IDB; in Safari
- * Private Browsing on older versions IDB is also stubbed out. In both
- * cases we short-circuit get/set/del so the caller's `await` resolves
- * to `undefined` instead of leaking unhandled rejections / pending
- * IndexedDB transactions across the test runner heap.
- */
-function idbAvailable(): boolean {
-  return (
-    typeof globalThis !== "undefined" &&
-    typeof (globalThis as { indexedDB?: unknown }).indexedDB !== "undefined"
-  );
-}
+const ensureMigrated = (): Promise<void> =>
+  migrateLegacyDbOnce({
+    legacyDbName: LEGACY_DB_NAME,
+    copy: async (legacyDb, sergeantDb) => {
+      if (!legacyDb.objectStoreNames.contains(LEGACY_STORE_NAME)) return;
+      const tx = legacyDb.transaction(LEGACY_STORE_NAME, "readonly");
+      const store = tx.objectStore(LEGACY_STORE_NAME);
+      const keys = await new Promise<IDBValidKey[]>((resolve, reject) => {
+        const r = store.getAllKeys();
+        r.onsuccess = () => resolve(Array.isArray(r.result) ? r.result : []);
+        r.onerror = () => reject(r.error);
+      });
+      const values = await new Promise<unknown[]>((resolve, reject) => {
+        const r = store.getAll();
+        r.onsuccess = () => resolve(Array.isArray(r.result) ? r.result : []);
+        r.onerror = () => reject(r.error);
+      });
+      const writeTx = sergeantDb.transaction(
+        SERGEANT_STORE.SYNC_META,
+        "readwrite",
+      );
+      const writeStore = writeTx.objectStore(SERGEANT_STORE.SYNC_META);
+      for (let i = 0; i < keys.length; i++) {
+        writeStore.put(values[i], keys[i]);
+      }
+      await new Promise<void>((resolve, reject) => {
+        writeTx.oncomplete = () => resolve();
+        writeTx.onerror = () => reject(writeTx.error);
+        writeTx.onabort = () => reject(writeTx.error);
+      });
+    },
+  });
 
 export async function getSyncMeta<T>(key: SyncMetaKey): Promise<T | undefined> {
-  if (!idbAvailable()) return undefined;
-  return idbGet<T>(key, getStore());
+  await ensureMigrated();
+  return dbGet<T>(SERGEANT_STORE.SYNC_META, key);
 }
 
 export async function setSyncMeta<T>(
   key: SyncMetaKey,
   value: T,
 ): Promise<void> {
-  if (!idbAvailable()) return;
-  await idbSet(key, value, getStore());
+  await ensureMigrated();
+  await dbSet(SERGEANT_STORE.SYNC_META, key, value);
 }
 
 export async function delSyncMeta(key: SyncMetaKey): Promise<void> {
-  if (!idbAvailable()) return;
-  await idbDel(key, getStore());
+  await ensureMigrated();
+  await dbDel(SERGEANT_STORE.SYNC_META, key);
 }
 
 /**
- * Test-only reset of the cached store handle. Vitest reuses module
- * instances across describe blocks; this lets a test that mocks
- * `idb-keyval` swap the implementation cleanly without retaining a
- * stale `Store` from a previous suite.
+ * Test-only reset of any module-scoped state. Vitest reuses module
+ * instances across describe blocks; tests that mock `sergeantDb`
+ * mid-suite call this to drop any cached handles.
+ *
+ * Currently a no-op — the shared sergeant-db connection itself
+ * exposes `__resetSergeantDbForTests()` and that is the source of
+ * truth. We keep this stub for backwards-compatible imports from
+ * tests written against the pre-PR-#010 module layout.
  */
 export function __resetSyncMetaStoreForTests(): void {
-  store = null;
+  /* no-op — see docstring above */
 }

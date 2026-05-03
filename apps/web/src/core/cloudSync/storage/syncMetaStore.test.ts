@@ -1,36 +1,59 @@
 // @vitest-environment jsdom
 /**
  * Unit tests for the IDB-backed sync metadata store and the
- * `hydrateOfflineQueueFromDisk()` migration glue. PR #009 in
- * `docs/planning/storage-roadmap.md`.
+ * `hydrateOfflineQueueFromDisk()` migration glue.  PR #009 in
+ * `docs/planning/storage-roadmap.md` introduced syncMetaStore as a
+ * dedicated `sergeant-sync-meta` IDB; PR #010 consolidates it into the
+ * shared `sergeant-db` connection.
  *
- * jsdom does NOT ship IndexedDB, so we mock `idb-keyval` with an
- * in-memory map. That gives us deterministic get/set/del semantics
- * without pulling `fake-indexeddb` into the dependency graph; the
- * store wrapper itself is thin enough that exercising it through the
- * mock catches the real bugs (key naming, IDB-unavailable fallback,
- * LS migration handoff).
+ * jsdom does NOT ship IndexedDB.  We mock the shared sergeant-db
+ * module directly with an in-memory map keyed by
+ * `${storeName}:${key}`, so the wrapper's get/set/del paths run end
+ * to end without `fake-indexeddb`.  The mock keeps the same shape as
+ * the real module (`dbGet/dbSet/dbDel/openSergeantDb/migrateLegacyDbOnce`)
+ * so the production module under test is exercised unchanged.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const idbStore = new Map<string, unknown>();
-const idbGetMock = vi.fn(async (key: string) => idbStore.get(key));
-const idbSetMock = vi.fn(async (key: string, value: unknown) => {
-  idbStore.set(key, value);
-});
-const idbDelMock = vi.fn(async (key: string) => {
-  idbStore.delete(key);
-});
-const idbCreateStoreMock = vi.fn(
-  (..._args: unknown[]) => ({ __mock: true }) as unknown,
-);
+const sharedStore = new Map<string, unknown>();
+const cellKey = (storeName: string, key: IDBValidKey): string =>
+  `${storeName}:${String(key)}`;
 
-vi.mock("idb-keyval", () => ({
-  createStore: (dbName: string, storeName: string) =>
-    idbCreateStoreMock(dbName, storeName),
-  get: (key: string, _store: unknown) => idbGetMock(key),
-  set: (key: string, value: unknown, _store: unknown) => idbSetMock(key, value),
-  del: (key: string, _store: unknown) => idbDelMock(key),
+const dbGetMock = vi.fn(async (storeName: string, key: IDBValidKey) =>
+  sharedStore.get(cellKey(storeName, key)),
+);
+const dbSetMock = vi.fn(
+  async (storeName: string, key: IDBValidKey, value: unknown) => {
+    sharedStore.set(cellKey(storeName, key), value);
+  },
+);
+const dbDelMock = vi.fn(async (storeName: string, key: IDBValidKey) => {
+  sharedStore.delete(cellKey(storeName, key));
+});
+const migrateLegacyDbOnceMock = vi.fn(async (_opts: unknown) => {
+  /* no-op — tests that need migration semantics override this */
+});
+const openSergeantDbMock = vi.fn(async () => null);
+
+vi.mock("../../../shared/lib/idb/sergeantDb", () => ({
+  SERGEANT_STORE: {
+    RQ_CACHE: "rq_cache",
+    SYNC_META: "sync_meta",
+    NUTRITION_RECIPES: "nutrition_recipes",
+    NUTRITION_FOODS: "nutrition_foods",
+    NUTRITION_BARCODES: "nutrition_barcodes",
+    NUTRITION_MEAL_THUMBS: "nutrition_meal_thumbs",
+    MIGRATION_META: "migration_meta",
+  },
+  dbGet: (storeName: string, key: IDBValidKey) => dbGetMock(storeName, key),
+  dbSet: (storeName: string, key: IDBValidKey, value: unknown) =>
+    dbSetMock(storeName, key, value),
+  dbDel: (storeName: string, key: IDBValidKey) => dbDelMock(storeName, key),
+  migrateLegacyDbOnce: (opts: unknown) => migrateLegacyDbOnceMock(opts),
+  openSergeantDb: () => openSergeantDbMock(),
+  __resetSergeantDbForTests: () => {
+    /* mock-only no-op */
+  },
 }));
 
 import { OFFLINE_QUEUE_KEY } from "../config";
@@ -50,49 +73,56 @@ import {
 } from "./syncMetaStore";
 
 beforeEach(() => {
-  // Reset shared mutable state before every test.
-  idbStore.clear();
-  idbGetMock.mockClear();
-  idbSetMock.mockClear();
-  idbDelMock.mockClear();
-  idbCreateStoreMock.mockClear();
+  sharedStore.clear();
+  dbGetMock.mockClear();
+  dbSetMock.mockClear();
+  dbDelMock.mockClear();
+  migrateLegacyDbOnceMock.mockClear();
+  openSergeantDbMock.mockClear();
+  // Restore default mock implementations in case a test overrode
+  // them with mockRejectedValueOnce / mockReturnValueOnce.
+  dbGetMock.mockImplementation(async (storeName, key) =>
+    sharedStore.get(cellKey(storeName, key)),
+  );
+  dbSetMock.mockImplementation(async (storeName, key, value) => {
+    sharedStore.set(cellKey(storeName, key), value);
+  });
+  dbDelMock.mockImplementation(async (storeName, key) => {
+    sharedStore.delete(cellKey(storeName, key));
+  });
+  migrateLegacyDbOnceMock.mockImplementation(async () => {});
   localStorage.clear();
   __resetOfflineQueueCacheForTests();
   __resetSyncMetaStoreForTests();
-
-  // jsdom doesn't ship IndexedDB. Provide a stub so the
-  // `idbAvailable()` short-circuit in syncMetaStore.ts treats the env
-  // as IDB-capable and routes to our `idb-keyval` mock above.
-  (globalThis as { indexedDB?: unknown }).indexedDB = {};
 });
 afterEach(() => {
-  delete (globalThis as { indexedDB?: unknown }).indexedDB;
+  localStorage.clear();
 });
 
 describe("syncMetaStore", () => {
-  it("get/set/del roundtrip uses the dedicated 'sergeant-sync-meta' DB and 'v1' store", async () => {
+  it("get/set/del roundtrip routes through the shared sergeant-db 'sync_meta' store", async () => {
     await setSyncMeta(SYNC_META_KEYS.OFFLINE_QUEUE, [{ a: 1 }]);
-    expect(idbCreateStoreMock).toHaveBeenCalledWith("sergeant-sync-meta", "v1");
-    expect(idbSetMock).toHaveBeenCalledWith("offline_queue", [{ a: 1 }]);
+    expect(dbSetMock).toHaveBeenCalledWith("sync_meta", "offline_queue", [
+      { a: 1 },
+    ]);
     expect(await getSyncMeta(SYNC_META_KEYS.OFFLINE_QUEUE)).toEqual([{ a: 1 }]);
 
     await delSyncMeta(SYNC_META_KEYS.OFFLINE_QUEUE);
-    expect(idbDelMock).toHaveBeenCalledWith("offline_queue");
+    expect(dbDelMock).toHaveBeenCalledWith("sync_meta", "offline_queue");
     expect(await getSyncMeta(SYNC_META_KEYS.OFFLINE_QUEUE)).toBeUndefined();
   });
 
-  it("get returns undefined and set/del are no-ops when IndexedDB is unavailable", async () => {
-    delete (globalThis as { indexedDB?: unknown }).indexedDB;
-
-    expect(await getSyncMeta(SYNC_META_KEYS.OFFLINE_QUEUE)).toBeUndefined();
-    await setSyncMeta(SYNC_META_KEYS.OFFLINE_QUEUE, [{ a: 1 }]);
-    await delSyncMeta(SYNC_META_KEYS.OFFLINE_QUEUE);
-
-    // None of the underlying idb-keyval helpers should have been
-    // touched — short-circuit kicked in at the wrapper level.
-    expect(idbGetMock).not.toHaveBeenCalled();
-    expect(idbSetMock).not.toHaveBeenCalled();
-    expect(idbDelMock).not.toHaveBeenCalled();
+  it("invokes the lazy LS→IDB migration once per call before touching the store", async () => {
+    await getSyncMeta(SYNC_META_KEYS.VERSIONS);
+    await setSyncMeta(SYNC_META_KEYS.VERSIONS, { finyk: 1 });
+    await delSyncMeta(SYNC_META_KEYS.VERSIONS);
+    expect(migrateLegacyDbOnceMock).toHaveBeenCalledTimes(3);
+    // Migration descriptor names the legacy DB so the shim knows
+    // which connection to drain.
+    const firstArg = migrateLegacyDbOnceMock.mock.calls[0]?.[0] as
+      | { legacyDbName?: string }
+      | undefined;
+    expect(firstArg?.legacyDbName).toBe("sergeant-sync-meta");
   });
 
   it("exposes the four documented keys (offline queue + 3 sync-meta slots)", () => {
@@ -116,7 +146,7 @@ describe("hydrateOfflineQueueFromDisk", () => {
         ts: "2026-04-01T00:00:00.000Z",
       },
     ];
-    idbStore.set(SYNC_META_KEYS.OFFLINE_QUEUE, idbQueue);
+    sharedStore.set(cellKey("sync_meta", "offline_queue"), idbQueue);
 
     await hydrateOfflineQueueFromDisk();
     expect(getOfflineQueue()).toEqual(idbQueue);
@@ -138,8 +168,14 @@ describe("hydrateOfflineQueueFromDisk", () => {
     expect(getOfflineQueue()).toEqual(lsQueue);
     // ...and IDB should have been populated as a one-shot migration
     // so future cold-boots no longer depend on LS.
-    expect(idbStore.get(SYNC_META_KEYS.OFFLINE_QUEUE)).toEqual(lsQueue);
-    expect(idbSetMock).toHaveBeenCalledWith("offline_queue", lsQueue);
+    expect(sharedStore.get(cellKey("sync_meta", "offline_queue"))).toEqual(
+      lsQueue,
+    );
+    expect(dbSetMock).toHaveBeenCalledWith(
+      "sync_meta",
+      "offline_queue",
+      lsQueue,
+    );
   });
 
   it("hydrates to an empty queue when neither IDB nor LS have data", async () => {
@@ -148,7 +184,7 @@ describe("hydrateOfflineQueueFromDisk", () => {
   });
 
   it("is robust to IDB throwing (Safari Private Browsing, quota) — falls back to LS", async () => {
-    idbGetMock.mockRejectedValueOnce(new Error("quota exceeded"));
+    dbGetMock.mockRejectedValueOnce(new Error("quota exceeded"));
     const lsQueue = [{ type: "evt", payload: 1, ts: "2026-04-01T00:00:00Z" }];
     localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(lsQueue));
 
@@ -158,25 +194,29 @@ describe("hydrateOfflineQueueFromDisk", () => {
 });
 
 describe("offline queue end-to-end with IDB", () => {
-  it("addToOfflineQueue dual-writes to IDB while the queue is small", () => {
+  it("addToOfflineQueue dual-writes to IDB while the queue is small", async () => {
     addToOfflineQueue({
       type: "push",
       modules: { finyk: { data: { v: 1 } } },
     } as never);
 
-    // IDB write is fire-and-forget but with awaited mocks it fires
-    // synchronously enough that the call is observable.
-    expect(idbSetMock).toHaveBeenCalled();
-    const lastCall = idbSetMock.mock.calls.at(-1);
-    expect(lastCall?.[0]).toBe(SYNC_META_KEYS.OFFLINE_QUEUE);
-    expect((lastCall?.[1] as { type: string }[])[0]?.type).toBe("push");
+    // IDB write is fire-and-forget (`void setSyncMeta(…)`).  The mock
+    // pipeline crosses several microtask boundaries (ensureMigrated
+    // → dbSet), so we need to flush the queue before asserting.
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(dbSetMock).toHaveBeenCalled();
+    const lastCall = dbSetMock.mock.calls.at(-1);
+    expect(lastCall?.[0]).toBe("sync_meta");
+    expect(lastCall?.[1]).toBe(SYNC_META_KEYS.OFFLINE_QUEUE);
+    expect((lastCall?.[2] as { type: string }[])[0]?.type).toBe("push");
 
     // LS dual-write also happens for small queues.
     const lsRaw = localStorage.getItem(OFFLINE_QUEUE_KEY);
     expect(lsRaw).not.toBeNull();
   });
 
-  it("clearOfflineQueue removes the row from IDB AND localStorage", () => {
+  it("clearOfflineQueue removes the row from IDB AND localStorage", async () => {
     addToOfflineQueue({
       type: "push",
       modules: { finyk: { data: { v: 1 } } },
@@ -184,8 +224,11 @@ describe("offline queue end-to-end with IDB", () => {
     expect(getOfflineQueue()).toHaveLength(1);
 
     clearOfflineQueue();
+    // `delSyncMeta` is also fire-and-forget — flush microtasks.
+    await new Promise((r) => setTimeout(r, 0));
+
     expect(getOfflineQueue()).toEqual([]);
-    expect(idbDelMock).toHaveBeenCalledWith(SYNC_META_KEYS.OFFLINE_QUEUE);
+    expect(dbDelMock).toHaveBeenCalledWith("sync_meta", "offline_queue");
     expect(localStorage.getItem(OFFLINE_QUEUE_KEY)).toBeNull();
   });
 });

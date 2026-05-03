@@ -70,14 +70,15 @@
  */
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import type { AsyncStorage } from "@tanstack/query-persist-client-core";
-import {
-  createStore,
-  get as idbGet,
-  set as idbSet,
-  del as idbDel,
-} from "idb-keyval";
 import type { Query } from "@tanstack/react-query";
 import { STORAGE_KEYS, isSensitiveQueryKey } from "@sergeant/shared";
+import {
+  SERGEANT_STORE,
+  dbDel,
+  dbGet,
+  dbSet,
+  migrateLegacyDbOnce,
+} from "../idb/sergeantDb";
 
 declare const __APP_BUILD_ID__: string;
 
@@ -101,40 +102,72 @@ function getBuildBuster(): string {
 }
 
 /**
- * idb-keyval `Store` обмежений на одну DB/store пару. Ім'я DB
- * ("sergeant-rq-cache") і store ("v1") навмисно стабільні: якщо ми
- * колись захочемо змінити схему IDB, краще буде створити нову DB
- * (`sergeant-rq-cache-v2`) і дропнути стару, ніж ламати
- * `idb-keyval`-сесії в льоту.
+ * Pre-PR-#010 the persister lived in its own DB ("sergeant-rq-cache",
+ * store "v1"). PR #010 folds it into the shared `sergeant-db` so the
+ * browser only has to keep one connection warm and DevTools shows
+ * one row instead of five — see `apps/web/src/shared/lib/idb/sergeantDb.ts`.
+ *
+ * The `sergeant-rq-cache` legacy DB is migrated lazily on the first
+ * `getItem`/`setItem` of this app session and then dropped. If
+ * migration is interrupted, the next session retries.
  */
-const RQ_DB_NAME = "sergeant-rq-cache";
-const RQ_STORE_NAME = "v1";
+const LEGACY_RQ_DB_NAME = "sergeant-rq-cache";
+const LEGACY_RQ_STORE_NAME = "v1";
+
+const ensureMigrated = (): Promise<void> =>
+  migrateLegacyDbOnce({
+    legacyDbName: LEGACY_RQ_DB_NAME,
+    copy: async (legacyDb, sergeantDb) => {
+      // Legacy DB has a single store keyed by the persister's key;
+      // copy every key as-is into the shared `rq_cache` store.
+      if (!legacyDb.objectStoreNames.contains(LEGACY_RQ_STORE_NAME)) return;
+      const tx = legacyDb.transaction(LEGACY_RQ_STORE_NAME, "readonly");
+      const store = tx.objectStore(LEGACY_RQ_STORE_NAME);
+      const keys = await new Promise<IDBValidKey[]>((resolve, reject) => {
+        const r = store.getAllKeys();
+        r.onsuccess = () => resolve(Array.isArray(r.result) ? r.result : []);
+        r.onerror = () => reject(r.error);
+      });
+      const values = await new Promise<unknown[]>((resolve, reject) => {
+        const r = store.getAll();
+        r.onsuccess = () => resolve(Array.isArray(r.result) ? r.result : []);
+        r.onerror = () => reject(r.error);
+      });
+      const writeTx = sergeantDb.transaction(
+        SERGEANT_STORE.RQ_CACHE,
+        "readwrite",
+      );
+      const writeStore = writeTx.objectStore(SERGEANT_STORE.RQ_CACHE);
+      for (let i = 0; i < keys.length; i++) {
+        writeStore.put(values[i], keys[i]);
+      }
+      await new Promise<void>((resolve, reject) => {
+        writeTx.oncomplete = () => resolve();
+        writeTx.onerror = () => reject(writeTx.error);
+        writeTx.onabort = () => reject(writeTx.error);
+      });
+    },
+  });
 
 /**
- * Окремий `Store` робить `get`/`set` 100% незалежними від глобальної
- * default-store, яку могли б створити інші бібліотеки на тій же
- * сторінці. Це pure: створення store не відкриває IDB — IDB
- * відкривається лише при першому доступі.
- */
-const idbStore = createStore(RQ_DB_NAME, RQ_STORE_NAME);
-
-/**
- * Тонкий адаптер `idb-keyval` → `AsyncStorage`-контракт TanStack.
- * `getItem`/`setItem`/`removeItem` приймають один ключ — той, що ми
- * передамо у `createAsyncStoragePersister`. Решта ключів у store
- * можуть жити паралельно (на майбутнє: feature flags / локальні
- * snapshot-и інших систем).
+ * AsyncStorage adapter over the shared sergeant-db `rq_cache` store.
+ * `getItem`/`setItem`/`removeItem` each await the lazy LS→IDB
+ * migration so the very first cold-boot read still sees data
+ * persisted by the previous (pre-PR-#010) version of the app.
  */
 export const idbKeyvalStorage: AsyncStorage<string> = {
   getItem: async (key) => {
-    const value = await idbGet<string>(key, idbStore);
+    await ensureMigrated();
+    const value = await dbGet<string>(SERGEANT_STORE.RQ_CACHE, key);
     return value ?? null;
   },
   setItem: async (key, value) => {
-    await idbSet(key, value, idbStore);
+    await ensureMigrated();
+    await dbSet(SERGEANT_STORE.RQ_CACHE, key, value);
   },
   removeItem: async (key) => {
-    await idbDel(key, idbStore);
+    await ensureMigrated();
+    await dbDel(SERGEANT_STORE.RQ_CACHE, key);
   },
 };
 

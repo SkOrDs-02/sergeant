@@ -1,8 +1,21 @@
 import type { NullableMacros } from "./macros";
+import {
+  SERGEANT_STORE,
+  migrateLegacyDbOnce,
+  openSergeantDb,
+} from "../../../shared/lib/idb/sergeantDb";
 
-const DB_NAME = "hub_nutrition_recipe_book";
-const DB_VERSION = 1;
-const STORE = "recipes";
+/**
+ * Pre-PR-#010 saved recipes lived in a dedicated `hub_nutrition_recipe_book`
+ * IndexedDB. PR #010 folds them into the shared `sergeant-db` under the
+ * `nutrition_recipes` object store (same schema: keyPath="id",
+ * index="by_updatedAt"). The legacy DB is migrated lazily on the
+ * first read/write of this app session and then dropped — see
+ * `apps/web/src/shared/lib/idb/sergeantDb.ts`.
+ */
+const LEGACY_DB_NAME = "hub_nutrition_recipe_book";
+const LEGACY_STORE_NAME = "recipes";
+const STORE = SERGEANT_STORE.NUTRITION_RECIPES;
 
 export interface SavedRecipe {
   id: string;
@@ -21,20 +34,25 @@ export type SaveRecipeResult =
   | { ok: true; recipe: SavedRecipe }
   | { ok: false; error: string };
 
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onerror = () => reject(req.error);
-    req.onsuccess = () => resolve(req.result);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        const s = db.createObjectStore(STORE, { keyPath: "id" });
-        s.createIndex("by_updatedAt", "updatedAt", { unique: false });
-      }
-    };
+const ensureMigrated = (): Promise<void> =>
+  migrateLegacyDbOnce({
+    legacyDbName: LEGACY_DB_NAME,
+    copy: async (legacyDb, sergeantDb) => {
+      if (!legacyDb.objectStoreNames.contains(LEGACY_STORE_NAME)) return;
+      const tx = legacyDb.transaction(LEGACY_STORE_NAME, "readonly");
+      const store = tx.objectStore(LEGACY_STORE_NAME);
+      const all = await new Promise<SavedRecipe[]>((resolve, reject) => {
+        const r = store.getAll();
+        r.onsuccess = () =>
+          resolve(Array.isArray(r.result) ? (r.result as SavedRecipe[]) : []);
+        r.onerror = () => reject(r.error);
+      });
+      const writeTx = sergeantDb.transaction(STORE, "readwrite");
+      const writeStore = writeTx.objectStore(STORE);
+      for (const recipe of all) writeStore.put(recipe);
+      await txDone(writeTx);
+    },
   });
-}
 
 function txDone(tx: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -100,8 +118,10 @@ export function normalizeRecipeForSave(r: unknown): SavedRecipe {
 
 export async function listSavedRecipes(limit = 200): Promise<SavedRecipe[]> {
   try {
-    const db = await openDb();
-    const tx = db.transaction([STORE], "readonly");
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return [];
+    const tx = db.transaction(STORE, "readonly");
     const store = tx.objectStore(STORE);
     const all = await new Promise<SavedRecipe[]>((resolve, reject) => {
       const r = store.getAll();
@@ -110,7 +130,6 @@ export async function listSavedRecipes(limit = 200): Promise<SavedRecipe[]> {
       r.onerror = () => reject(r.error);
     });
     await txDone(tx);
-    db.close();
     return all
       .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
       .slice(0, Math.max(1, Number(limit) || 200));
@@ -125,11 +144,12 @@ export async function saveRecipeToBook(
   const r = normalizeRecipeForSave(recipe);
   if (!r.title) return { ok: false, error: "Порожня назва рецепту" };
   try {
-    const db = await openDb();
-    const tx = db.transaction([STORE], "readwrite");
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return { ok: false, error: "Не вдалося зберегти рецепт" };
+    const tx = db.transaction(STORE, "readwrite");
     tx.objectStore(STORE).put(r);
     await txDone(tx);
-    db.close();
     return { ok: true, recipe: r };
   } catch {
     return { ok: false, error: "Не вдалося зберегти рецепт" };
@@ -140,11 +160,12 @@ export async function deleteSavedRecipe(id: unknown): Promise<boolean> {
   const key = String(id || "").trim();
   if (!key) return false;
   try {
-    const db = await openDb();
-    const tx = db.transaction([STORE], "readwrite");
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return false;
+    const tx = db.transaction(STORE, "readwrite");
     tx.objectStore(STORE).delete(key);
     await txDone(tx);
-    db.close();
     return true;
   } catch {
     return false;
