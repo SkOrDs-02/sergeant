@@ -4,6 +4,7 @@
     "strict": true,
     "allowJs": false,
     "checkJs": false,
+    "noUncheckedIndexedAccess": false,
     "jsx": "react-jsx",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,

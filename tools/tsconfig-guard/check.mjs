@@ -18,7 +18,12 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "../..");
 
-const GUARDED_OPTIONS = ["strict", "noImplicitAny", "strictNullChecks"];
+const GUARDED_OPTIONS = [
+  "strict",
+  "noImplicitAny",
+  "strictNullChecks",
+  "noUncheckedIndexedAccess",
+];
 
 const PACKAGE_ALIAS_MAP = {
   "@sergeant/config": join(ROOT, "packages/config"),

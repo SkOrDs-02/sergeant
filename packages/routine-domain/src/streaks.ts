@@ -67,9 +67,12 @@ export function maxStreakAllTime(
   // зберігається), оскільки для пропущених днів користувач сам вирішує, чи вони повинні збивати стрік.
   let best = 1;
   let cur = 1;
-  let prev = sorted[0];
-  for (let i = 1; i < sorted.length; i++) {
-    const key = sorted[i];
+  let prev: string | null = null;
+  for (const key of sorted) {
+    if (prev === null) {
+      prev = key;
+      continue;
+    }
     let gap = false;
     const d = parseDateKey(prev);
     d.setDate(d.getDate() + 1);

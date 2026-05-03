@@ -232,8 +232,8 @@ export function snapshotHabit(
   const notes: Record<string, string> = {};
   const prefix = `${id}__`;
   const rawNotes = state.completionNotes || {};
-  for (const k of Object.keys(rawNotes)) {
-    if (k.startsWith(prefix)) notes[k] = rawNotes[k];
+  for (const [k, v] of Object.entries(rawNotes)) {
+    if (k.startsWith(prefix)) notes[k] = v;
   }
   const order = Array.isArray(state.habitOrder) ? state.habitOrder : [];
   const orderIndex = order.indexOf(id);
@@ -306,7 +306,12 @@ export function applyMoveHabitInOrder(
   const j = i + delta;
   if (j < 0 || j >= order.length) return state;
   const copy = [...order];
-  [copy[i], copy[j]] = [copy[j], copy[i]];
+  const a = copy[i];
+  const b = copy[j];
+  if (a !== undefined && b !== undefined) {
+    copy[i] = b;
+    copy[j] = a;
+  }
   return { ...state, habitOrder: copy };
 }
 

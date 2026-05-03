@@ -156,6 +156,7 @@ describe("formatMarkdown", () => {
           strict: false,
           strictNullChecks: true,
           noImplicitAny: false,
+          noUncheckedIndexedAccess: false,
           allowJs: true,
         },
         {
@@ -164,10 +165,17 @@ describe("formatMarkdown", () => {
           strict: true,
           strictNullChecks: true,
           noImplicitAny: true,
+          noUncheckedIndexedAccess: true,
           allowJs: false,
         },
       ],
-      summary: { total: 2, strictCount: 1, pct: 50 },
+      summary: {
+        total: 2,
+        strictCount: 1,
+        pct: 50,
+        noUncheckedIndexedAccessCount: 1,
+        noUncheckedIndexedAccessPct: 50,
+      },
     };
 
     const md = formatMarkdown(result);
@@ -176,5 +184,59 @@ describe("formatMarkdown", () => {
     assert.ok(md.includes("50%"));
     assert.ok(md.includes("| apps/web |"));
     assert.ok(md.includes("| packages/shared |"));
+    assert.ok(md.includes("noUncheckedIndexedAccess"));
+    assert.ok(md.includes("Phase 6a"));
+  });
+});
+
+describe("scanStrictCoverage — Phase 6a noUncheckedIndexedAccess", () => {
+  test("detects noUncheckedIndexedAccess when set to true", () => {
+    const root = createTmpRepo({
+      "packages/config/tsconfig.base.json": {
+        compilerOptions: {
+          strict: true,
+          noUncheckedIndexedAccess: true,
+        },
+      },
+      "packages/routine-domain/tsconfig.json": {
+        extends: "@sergeant/config/tsconfig.base.json",
+        compilerOptions: {},
+      },
+      "apps/web/tsconfig.json": {
+        extends: "@sergeant/config/tsconfig.base.json",
+        compilerOptions: { noUncheckedIndexedAccess: false },
+      },
+    });
+
+    try {
+      const result = scanStrictCoverage(root);
+      const routine = result.packages.find(
+        (p) => p.name === "packages/routine-domain",
+      );
+      const web = result.packages.find((p) => p.name === "apps/web");
+      assert.equal(routine.noUncheckedIndexedAccess, true);
+      assert.equal(web.noUncheckedIndexedAccess, false);
+      assert.equal(result.summary.noUncheckedIndexedAccessCount, 1);
+      assert.equal(result.summary.noUncheckedIndexedAccessPct, 50);
+    } finally {
+      rmSync(root, { recursive: true });
+    }
+  });
+
+  test("noUncheckedIndexedAccess defaults to false when unset", () => {
+    const root = createTmpRepo({
+      "packages/shared/tsconfig.json": {
+        compilerOptions: { strict: true },
+      },
+    });
+
+    try {
+      const result = scanStrictCoverage(root);
+      const shared = result.packages.find((p) => p.name === "packages/shared");
+      assert.equal(shared.noUncheckedIndexedAccess, false);
+      assert.equal(result.summary.noUncheckedIndexedAccessCount, 0);
+    } finally {
+      rmSync(root, { recursive: true });
+    }
   });
 });

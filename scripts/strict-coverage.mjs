@@ -171,7 +171,7 @@ function findFilesInSubdirs(baseDir, filename) {
 /**
  * Scan the repo and return strict coverage info.
  * @param {string} rootDir - repo root
- * @returns {{ packages: Array<{name: string, path: string, strict: boolean, strictNullChecks: boolean, noImplicitAny: boolean, allowJs: boolean}>, summary: {total: number, strictCount: number, pct: number} }}
+ * @returns {{ packages: Array<{name: string, path: string, strict: boolean, strictNullChecks: boolean, noImplicitAny: boolean, noUncheckedIndexedAccess: boolean, allowJs: boolean}>, summary: {total: number, strictCount: number, pct: number, noUncheckedIndexedAccessCount: number, noUncheckedIndexedAccessPct: number} }}
  */
 export function scanStrictCoverage(rootDir) {
   const tsconfigPaths = [
@@ -193,6 +193,7 @@ export function scanStrictCoverage(rootDir) {
         : strict;
     const noImplicitAny =
       opts.noImplicitAny !== undefined ? opts.noImplicitAny === true : strict;
+    const noUncheckedIndexedAccess = opts.noUncheckedIndexedAccess === true;
     const allowJs = opts.allowJs === true;
 
     packages.push({
@@ -201,6 +202,7 @@ export function scanStrictCoverage(rootDir) {
       strict,
       strictNullChecks,
       noImplicitAny,
+      noUncheckedIndexedAccess,
       allowJs,
     });
   }
@@ -208,8 +210,22 @@ export function scanStrictCoverage(rootDir) {
   const total = packages.length;
   const strictCount = packages.filter((p) => p.strict).length;
   const pct = total > 0 ? Math.round((strictCount / total) * 100) : 0;
+  const noUncheckedIndexedAccessCount = packages.filter(
+    (p) => p.noUncheckedIndexedAccess,
+  ).length;
+  const noUncheckedIndexedAccessPct =
+    total > 0 ? Math.round((noUncheckedIndexedAccessCount / total) * 100) : 0;
 
-  return { packages, summary: { total, strictCount, pct } };
+  return {
+    packages,
+    summary: {
+      total,
+      strictCount,
+      pct,
+      noUncheckedIndexedAccessCount,
+      noUncheckedIndexedAccessPct,
+    },
+  };
 }
 
 /** Format results as a markdown table. */
@@ -224,10 +240,14 @@ export function formatMarkdown(result) {
   );
   lines.push("");
   lines.push(
-    "| Package | strict | strictNullChecks | noImplicitAny | allowJs |",
+    `**Phase 6a:** ${summary.noUncheckedIndexedAccessCount} / ${summary.total} packages have \`noUncheckedIndexedAccess: true\` (${summary.noUncheckedIndexedAccessPct}%)`,
+  );
+  lines.push("");
+  lines.push(
+    "| Package | strict | strictNullChecks | noImplicitAny | noUncheckedIndexedAccess | allowJs |",
   );
   lines.push(
-    "| ------- | ------ | ---------------- | ------------- | ------- |",
+    "| ------- | ------ | ---------------- | ------------- | ------------------------ | ------- |",
   );
 
   for (const pkg of packages) {
@@ -236,6 +256,7 @@ export function formatMarkdown(result) {
       pkg.strict ? "✅" : "❌",
       pkg.strictNullChecks ? "✅" : "❌",
       pkg.noImplicitAny ? "✅" : "❌",
+      pkg.noUncheckedIndexedAccess ? "✅" : "❌",
       pkg.allowJs ? "⚠️" : "—",
     ];
     lines.push(`| ${row.join(" | ")} |`);
@@ -244,6 +265,9 @@ export function formatMarkdown(result) {
   lines.push("");
   lines.push(
     `> strict TS coverage: ${summary.strictCount} / ${summary.total} packages (${summary.pct}%)`,
+  );
+  lines.push(
+    `> noUncheckedIndexedAccess coverage: ${summary.noUncheckedIndexedAccessCount} / ${summary.total} packages (${summary.noUncheckedIndexedAccessPct}%)`,
   );
 
   return lines.join("\n");
