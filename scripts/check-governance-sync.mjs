@@ -189,6 +189,13 @@ function checkDanglingRefs() {
   function isAspirational(relPath) {
     if (relPath.startsWith("docs/launch/")) return true;
     if (relPath.startsWith("docs/planning/")) return true;
+    // `docs/diagnostics/` describe deep-dive recommendations — refs to
+    // suggested-but-not-yet-created files (`scripts/<new>.mjs`,
+    // `apps/web/tests/integration/<new>.test.ts`, etc.) are part of the
+    // recommendation surface, not Hard Rule #15 violations. Diagnostic
+    // docs are graduated into trackers in `docs/audits/` /
+    // `docs/tech-debt/` once accepted.
+    if (relPath.startsWith("docs/diagnostics/")) return true;
     if (
       relPath.startsWith("docs/integrations/") &&
       relPath.endsWith("-roadmap.md")

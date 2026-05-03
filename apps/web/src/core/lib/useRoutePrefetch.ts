@@ -14,9 +14,21 @@
  * populate below. The split exists so that strict-scope hub files
  * can call `getModulePrefetchProps` without transitively pulling
  * `import("../../modules/fizruk/...")` into their type-check program.
+ *
+ * Bandwidth respect.
+ *  - All idle/hover/focus prefetches are gated on
+ *    {@link shouldPrefetchOnConnection} — Save-Data + 2G/slow-2G
+ *    sessions skip prefetch entirely. The user's *current* navigation
+ *    is the priority budget.
+ *  - `prefetchCriticalModules` walks recently-opened modules
+ *    ({@link getRecentModules}) before falling back to a hard-coded
+ *    priority. A user who lives in Finyk does not pay the parse cost
+ *    of three modules they never reach.
  */
 
+import { shouldPrefetchOnConnection } from "./connectionGate";
 import { setModulePrefetcher } from "./intentPrefetch";
+import { getRecentModules } from "./recentModules";
 
 type ModuleKey = "finyk" | "fizruk" | "routine" | "nutrition";
 type PageKey =
@@ -48,10 +60,16 @@ const pageImports: Record<PageKey, () => Promise<unknown>> = {
 const prefetchedChunks = new Set<string>();
 
 /**
- * Prefetch a module chunk by key
+ * Prefetch a module chunk by key.
+ *
+ * Skips silently on Save-Data / 2G sessions — see
+ * {@link shouldPrefetchOnConnection}. The chunk is *not* marked as
+ * prefetched in that case, so a future call from a fast network
+ * still has a chance to run.
  */
 export function prefetchModule(module: ModuleKey): void {
   if (prefetchedChunks.has(`module:${module}`)) return;
+  if (!shouldPrefetchOnConnection()) return;
 
   const importFn = moduleImports[module];
   if (!importFn) return;
@@ -80,10 +98,12 @@ export function prefetchModule(module: ModuleKey): void {
 }
 
 /**
- * Prefetch a page chunk by key
+ * Prefetch a page chunk by key. Skips on Save-Data / 2G sessions
+ * (see {@link shouldPrefetchOnConnection}).
  */
 export function prefetchPage(page: PageKey): void {
   if (prefetchedChunks.has(`page:${page}`)) return;
+  if (!shouldPrefetchOnConnection()) return;
 
   const importFn = pageImports[page];
   if (!importFn) return;
@@ -128,9 +148,43 @@ export function prefetchPage(page: PageKey): void {
  * under the previous 2 s envelope while still draining the queue
  * eagerly when nothing else is happening.
  */
+// Hard-coded fallback when nothing has been opened in the recent
+// window — covers first-run and post-clear-data sessions. Order
+// reflects long-term usage probability (Finyk is the highest-traffic
+// module, Nutrition the lowest).
+const DEFAULT_PRIORITY: readonly ModuleKey[] = [
+  "finyk",
+  "routine",
+  "fizruk",
+  "nutrition",
+];
+
+/**
+ * Build the module prefetch order: recently-opened modules first
+ * (most-recent → least-recent within last 7 days), then any modules
+ * the user hasn't touched recently in `DEFAULT_PRIORITY` order. Each
+ * module appears exactly once.
+ */
+function buildPrefetchOrder(): ModuleKey[] {
+  const recent = getRecentModules();
+  const seen = new Set<ModuleKey>();
+  const out: ModuleKey[] = [];
+  for (const id of recent) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  for (const id of DEFAULT_PRIORITY) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
 export function prefetchCriticalModules(): void {
-  // Order by usage probability
-  const priority: ModuleKey[] = ["finyk", "routine", "fizruk", "nutrition"];
+  if (!shouldPrefetchOnConnection()) return;
+  const priority = buildPrefetchOrder();
 
   if ("requestIdleCallback" in window) {
     priority.forEach((module) => {

@@ -74,11 +74,14 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
 1. Додати **endpoint-registry test**: snapshot `app._router.stack` → порівнюємо з ожиданим. Будь-яка змінa у порядку всплине у diff.
 
    ```ts
-   it('routes registry — order matches snapshot', async () => {
+   it("routes registry — order matches snapshot", async () => {
      const app = createApp();
      const stack = app._router.stack
-       .filter(l => l.route)
-       .map(l => `${Object.keys(l.route.methods)[0].toUpperCase()} ${l.route.path}`);
+       .filter((l) => l.route)
+       .map(
+         (l) =>
+           `${Object.keys(l.route.methods)[0].toUpperCase()} ${l.route.path}`,
+       );
      expect(stack).toMatchSnapshot();
    });
    ```
@@ -90,7 +93,9 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
 
 ---
 
-## 4.4 [Good, але underused] `errorHandler` з `requestId` у відповіді
+## 4.4 [Good, але underused → Done] `errorHandler` з `requestId` у відповіді
+
+> **Status update (2026-05-03):** requestId тепер додається тегом до всіх Sentry-подій (з ALS-контексту в `apps/server/src/sentry.ts:beforeSend`), а ErrorBoundary показує його з кнопкою «копіювати» на 5xx/network/parse — у [#1551](https://github.com/Skords-01/Sergeant/pull/1551). Кореляція Sentry↔logs↔UI працює end-to-end.
 
 **Що бачу.** `apps/server/src/http/errorHandler.ts:72-88` — `requestId` повертається в JSON body, що дозволяє юзеру вставити його в support-ticket.
 
@@ -104,8 +109,8 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
 1. У `requestIdMiddleware`:
 
    ```ts
-   import * as Sentry from '@sentry/node';
-   Sentry.getCurrentScope().setTag('requestId', req.requestId);
+   import * as Sentry from "@sentry/node";
+   Sentry.getCurrentScope().setTag("requestId", req.requestId);
    ```
 
    Тоді в Sentry filter `requestId:abc-123` миттєво знаходить event.
@@ -116,9 +121,11 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
    toast.error(
      <>
        Помилка сервера. ID запиту: <code>{requestId}</code>
-       <Button onClick={() => navigator.clipboard.writeText(requestId)}>Скопіювати</Button>
+       <Button onClick={() => navigator.clipboard.writeText(requestId)}>
+         Скопіювати
+       </Button>
      </>,
-     { duration: 0 } // sticky
+     { duration: 0 }, // sticky
    );
    ```
 
@@ -169,10 +176,10 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
 1. Додати тест:
 
    ```ts
-   it('shutdown completes even if Sentry.flush hangs forever', async () => {
+   it("shutdown completes even if Sentry.flush hangs forever", async () => {
      mockSentryFlush(() => new Promise(() => {})); // never resolves
-     const exit = vi.spyOn(process, 'exit').mockImplementation(() => {});
-     await shutdown('test', 0);
+     const exit = vi.spyOn(process, "exit").mockImplementation(() => {});
+     await shutdown("test", 0);
      expect(exit).toHaveBeenCalledWithin(3000); // hardTimer = 3s
    });
    ```
@@ -225,7 +232,9 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
 
 ---
 
-## 5.2 [Bad] Великі lazy-loaded модулі = довгий FCP при first module open
+## 5.2 [Bad → Done (idle prefetch + connection gate)] Великі lazy-loaded модулі = довгий FCP при first module open
+
+> **Status update (2026-05-03):** Hover/focus prefetch уже був із PR-ів, що передували діагностиці (`apps/web/src/core/lib/intentPrefetch.ts` + `useRoutePrefetch.ts`). Цей PR закриває idle-частину: `prefetchCriticalModules()` тепер пріоритезує **recently-opened modules** (LS, 7-day window) перед дефолтним списком, плюс єдиний `shouldPrefetchOnConnection()` гард на `prefetchModule` / `prefetchPage` / `prefetchCriticalModules` — Save-Data і `effectiveType in {"slow-2g","2g"}` блокуються. Залишилось (окрема метрика-PR): `module.first_open.duration_ms` з/без prefetch.
 
 **Що бачу.** `ActiveModuleView` лазить `FinykApp` / `FizrukApp` / `RoutineApp` / `NutritionApp`. Це правильно, code-splitting працює. Але:
 
@@ -238,9 +247,9 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
 
    ```tsx
    <Tab
-     onMouseEnter={() => prefetchChunk('finyk')}
-     onTouchStart={() => prefetchChunk('finyk')}
-     onClick={() => navigate('/hub/finyk')}
+     onMouseEnter={() => prefetchChunk("finyk")}
+     onTouchStart={() => prefetchChunk("finyk")}
+     onClick={() => navigate("/hub/finyk")}
    />
    ```
 
@@ -324,7 +333,9 @@ SW теж потрапив у «великі файли». `routine` / `fizruk` 
 
 ---
 
-## 10.4 [Mixed] `processIdle prefetch` у `useAppEffects` — без перевірки connection
+## 10.4 [Mixed → Done] `processIdle prefetch` у `useAppEffects` — без перевірки connection
+
+> **Status update (2026-05-03):** Реалізовано як єдиний `shouldPrefetchOnConnection()` у `apps/web/src/core/lib/connectionGate.ts` — викликається з `prefetchModule`, `prefetchPage` і `prefetchCriticalModules`. Save-Data блокує prefetch, `effectiveType in {"slow-2g","2g"}` теж; 3G/4G/wifi пускається; Safari/відсутній `navigator.connection` — fail-open (відсутність даних не повинна вимикати prefetch для більшості користувачів). Закрито разом з §5.2.
 
 **Що бачу.** Не бачу, що prefetch-ить тільки на швидкому з'єднанні (`navigator.connection`).
 
@@ -332,7 +343,7 @@ SW теж потрапив у «великі файли». `routine` / `fizruk` 
 
 ```ts
 if (navigator.connection?.saveData) return;
-if (navigator.connection?.effectiveType !== '4g') return;
+if (navigator.connection?.effectiveType !== "4g") return;
 ```
 
 Це частина того ж fix-у, що §5.2.
@@ -341,15 +352,15 @@ if (navigator.connection?.effectiveType !== '4g') return;
 
 ## Прив'язка до roadmap (00-overview)
 
-| Item у roadmap | Section тут |
-| --- | --- |
-| Sentry tag `requestId` + UI shows requestId on 5xx | §4.4 |
-| Routes registry test | §4.3 |
-| OpenAPI generation + typed client | §4.7 |
-| Rate-limiter `cost`-multiplier | §4.5 |
-| Module prefetch on hover + on-idle | §5.2 |
-| Per-route bundle budget (size-limit) | §5.1 |
-| SW `notifiedKeys` TTL prune | §5.3 |
-| `createReminderHandler` factory | §5.4 / §10.1 |
+| Item у roadmap                                     | Section тут  |
+| -------------------------------------------------- | ------------ |
+| Sentry tag `requestId` + UI shows requestId on 5xx | §4.4         |
+| Routes registry test                               | §4.3         |
+| OpenAPI generation + typed client                  | §4.7         |
+| Rate-limiter `cost`-multiplier                     | §4.5         |
+| Module prefetch on hover + on-idle                 | §5.2         |
+| Per-route bundle budget (size-limit)               | §5.1         |
+| SW `notifiedKeys` TTL prune                        | §5.3         |
+| `createReminderHandler` factory                    | §5.4 / §10.1 |
 
 > **Tracker hook.** Перформанс-частина (§5.x) добре лягає у `docs/performance/web-budget.md`. Backend-частина — у `docs/api/`. Спостережуваність (`requestId`) пов'язана з `04-security-observability-testing-devx.md` §6.5.
