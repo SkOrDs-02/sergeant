@@ -145,7 +145,7 @@ export function HabitQuickCreateDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center"
+      className="fixed inset-0 z-200 flex items-end justify-center sm:items-center"
       role="presentation"
     >
       <div

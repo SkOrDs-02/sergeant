@@ -291,7 +291,7 @@ export const CelebrationModal = memo(function CelebrationModal({
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[9999] flex items-center justify-center p-4",
+        "fixed inset-0 z-9999 flex items-center justify-center p-4",
         isExiting ? "animate-fade-out" : "animate-fade-in",
       )}
       role="dialog"
@@ -345,7 +345,7 @@ export const CelebrationModal = memo(function CelebrationModal({
         {/* Gradient background accent */}
         <div
           className={cn(
-            "absolute inset-0 bg-gradient-to-br pointer-events-none",
+            "absolute inset-0 bg-linear-to-br pointer-events-none",
             MODULE_GRADIENTS[theme],
           )}
         />
@@ -566,7 +566,7 @@ export const MiniSuccess = memo(function MiniSuccess({
     <div
       className={cn(
         "fixed top-[max(1.5rem,env(safe-area-inset-top)+0.75rem)] left-1/2 -translate-x-1/2",
-        "z-[9999] pointer-events-none",
+        "z-9999 pointer-events-none",
       )}
     >
       <div

@@ -21,7 +21,7 @@ export function DesignShowcase() {
   return (
     <div className="min-h-dvh bg-bg">
       {/* ── Sticky nav ──────────────────────────────────────────── */}
-      <header className="sticky top-0 z-[100] bg-panel/90 backdrop-blur-md border-b border-line">
+      <header className="sticky top-0 z-100 bg-panel/90 backdrop-blur-md border-b border-line">
         <div className="max-w-3xl mx-auto px-5 h-12 flex items-center gap-4">
           <h1 className="font-extrabold text-text text-sm shrink-0">
             Design System

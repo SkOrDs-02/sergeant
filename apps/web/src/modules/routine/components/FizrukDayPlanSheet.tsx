@@ -96,7 +96,7 @@ export function FizrukDayPlanSheet({
                   type="button"
                   size="sm"
                   variant="ghost"
-                  className="!text-xs border border-line shrink-0"
+                  className="text-xs! border border-line shrink-0"
                   onClick={() => handleAssign(null)}
                 >
                   Зняти

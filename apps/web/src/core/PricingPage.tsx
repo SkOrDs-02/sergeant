@@ -149,11 +149,11 @@ export function PricingPage() {
               className={cn(
                 "rounded-3xl border p-6 flex flex-col gap-4",
                 "transition-all duration-300 ease-out",
-                "[@media(pointer:fine)]:hover:shadow-float [@media(pointer:fine)]:hover:-translate-y-1",
+                "pointer-fine:hover:shadow-float pointer-fine:hover:-translate-y-1",
                 "motion-safe:animate-stagger-in",
                 tier.highlight
                   ? "border-brand-500 bg-panel shadow-glow"
-                  : "border-line bg-panel [@media(pointer:fine)]:hover:border-brand-200/50",
+                  : "border-line bg-panel pointer-fine:hover:border-brand-200/50",
               )}
               style={{ animationDelay: `${idx * 100}ms` }}
             >

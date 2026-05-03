@@ -208,7 +208,7 @@ export function WeeklyDigestFooter({
       <span
         className={cn(
           "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
-          "bg-gradient-to-br from-brand-100 to-teal-100",
+          "bg-linear-to-br from-brand-100 to-teal-100",
           "dark:from-brand-900/40 dark:to-teal-900/30",
         )}
       >

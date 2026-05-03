@@ -74,7 +74,7 @@ export function HubChatHistoryDrawer({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex safe-area-pt-pb"
+      className="fixed inset-0 z-60 flex safe-area-pt-pb"
       role="dialog"
       aria-modal="true"
       aria-label="Історія чатів"

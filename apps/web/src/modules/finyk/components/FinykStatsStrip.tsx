@@ -45,7 +45,7 @@ export function StatTile({
   onClick,
 }: StatTileProps) {
   const base = cn(
-    "flex-1 min-w-[9.5rem] shrink-0 text-left px-3 py-2.5",
+    "flex-1 min-w-38 shrink-0 text-left px-3 py-2.5",
     "bg-panelHi border border-line rounded-2xl",
     "transition-colors",
     onClick && "hover:border-muted/50 active:scale-[0.99]",

@@ -428,7 +428,7 @@ export function OnboardingWizard({
     <>
       {CelebrationComponent}
       <div
-        className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-4 pb-safe"
+        className="fixed inset-0 z-500 flex items-end sm:items-center justify-center p-4 pb-safe"
         role="dialog"
         aria-modal="true"
         aria-label="Вітальний екран"

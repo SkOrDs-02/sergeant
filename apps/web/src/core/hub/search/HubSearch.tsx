@@ -28,7 +28,7 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex flex-col bg-bg safe-area-pt-pb page-enter"
+      className="fixed inset-0 z-200 flex flex-col bg-bg safe-area-pt-pb page-enter"
       role="dialog"
       aria-modal="true"
       aria-label="Глобальний пошук"

@@ -154,8 +154,8 @@ export function VoiceMicButton({
 
   const sizeMap: Record<VoiceMicButtonSize, string> = {
     // sm/md visual size stays compact; coarse-pointer min 44×44 is applied below.
-    sm: "w-8 h-8 [@media(pointer:coarse)]:min-h-[44px] [@media(pointer:coarse)]:min-w-[44px]",
-    md: "w-10 h-10 [@media(pointer:coarse)]:min-h-[44px] [@media(pointer:coarse)]:min-w-[44px]",
+    sm: "w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]",
+    md: "w-10 h-10 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]",
     lg: "w-12 h-12",
   };
   const iconSize = size === "sm" ? 14 : size === "lg" ? 20 : 16;

@@ -38,7 +38,7 @@ export function SoftAuthPromptCard({
     <div
       className={cn(
         "relative overflow-hidden rounded-2xl border border-brand-500/30",
-        "bg-gradient-to-br from-brand-500/10 via-panel to-panel p-4",
+        "bg-linear-to-br from-brand-500/10 via-panel to-panel p-4",
         "shadow-card",
       )}
     >

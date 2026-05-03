@@ -135,7 +135,7 @@ export const StreakCelebration = memo(function StreakCelebration({
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none",
+        "fixed inset-0 z-9999 flex items-center justify-center pointer-events-none",
         className,
       )}
       aria-live="polite"

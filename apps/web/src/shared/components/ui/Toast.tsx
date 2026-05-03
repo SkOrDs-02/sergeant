@@ -30,7 +30,7 @@ export function ToastContainer() {
 
   return (
     <div
-      className="fixed top-[max(1.25rem,env(safe-area-inset-top,0px)+0.75rem)] left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2 pointer-events-none w-[min(92vw,24rem)]"
+      className="fixed top-[max(1.25rem,env(safe-area-inset-top,0px)+0.75rem)] left-1/2 -translate-x-1/2 z-9999 flex flex-col items-center gap-2 pointer-events-none w-[min(92vw,24rem)]"
       aria-live="polite"
       role="status"
     >

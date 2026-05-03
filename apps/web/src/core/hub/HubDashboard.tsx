@@ -517,7 +517,7 @@ export function HubDashboard({
       <StaggerChild index={1}>
         <section className="space-y-2">
           <div className="flex items-center justify-between gap-2 px-0.5">
-            <SectionHeading as="h2" size="xs" className="!px-0">
+            <SectionHeading as="h2" size="xs" className="px-0!">
               Модулі
             </SectionHeading>
             {/* Edit affordance — icon-only when idle so it stops competing

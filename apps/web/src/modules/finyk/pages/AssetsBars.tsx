@@ -39,11 +39,11 @@ export function AssetsLiabilitiesBar({
         aria-label={`Активи ${assetsPct}% · Пасиви ${liabilitiesPct}%`}
       >
         <div
-          className="bg-gradient-to-r from-finyk to-finyk-strong"
+          className="bg-linear-to-r from-finyk to-finyk-strong"
           style={{ width: `${assetsPct}%` }}
         />
         <div
-          className="bg-gradient-to-r from-danger to-danger-strong"
+          className="bg-linear-to-r from-danger to-danger-strong"
           style={{ width: `${liabilitiesPct}%` }}
         />
       </div>

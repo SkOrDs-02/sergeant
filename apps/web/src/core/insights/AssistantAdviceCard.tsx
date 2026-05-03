@@ -52,7 +52,7 @@ export function AssistantAdviceCard({
       className={cn(
         "rounded-2xl overflow-hidden",
         "transition-all duration-200",
-        "p-[1px] bg-gradient-to-br from-brand-300/40 via-line to-teal-300/40",
+        "p-px bg-linear-to-br from-brand-300/40 via-line to-teal-300/40",
       )}
     >
       <div className="rounded-[15px] bg-panel overflow-hidden">

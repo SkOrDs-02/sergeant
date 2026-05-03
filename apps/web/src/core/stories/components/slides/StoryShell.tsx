@@ -18,7 +18,7 @@ interface Props {
 export function StoryShell({ slide, children }: Props) {
   return (
     <div
-      className={cn("absolute inset-0 bg-gradient-to-br text-white", slide.bg)}
+      className={cn("absolute inset-0 bg-linear-to-br text-white", slide.bg)}
     >
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.25),transparent_60%)]" />
       <div

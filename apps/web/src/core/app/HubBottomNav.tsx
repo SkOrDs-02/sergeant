@@ -67,8 +67,8 @@ function HubBottomNavTab({
       onClick={onClick}
       className={cn(
         "relative flex-1 flex flex-col items-center justify-center gap-1",
-        "transition-all duration-200 min-h-[48px] [@media(pointer:coarse)]:min-h-[52px]",
-        "active:scale-95 [@media(pointer:coarse)]:active:bg-panelHi/50",
+        "transition-all duration-200 min-h-[48px] pointer-coarse:min-h-[52px]",
+        "active:scale-95 pointer-coarse:active:bg-panelHi/50",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
         active ? "text-text" : "text-muted hover:text-text/70",
         className,
@@ -233,7 +233,7 @@ export function HubBottomNav({
     >
       <div
         role="tablist"
-        className="relative flex h-[60px] [@media(pointer:coarse)]:h-[64px]"
+        className="relative flex h-[60px] pointer-coarse:h-[64px]"
       >
         {activeIndex >= 0 && (
           <span
@@ -242,7 +242,7 @@ export function HubBottomNav({
               "absolute top-0 h-1 w-10 rounded-full shadow-sm pointer-events-none",
               "transition-[left] duration-200 ease-out",
               // Brand accent (hub is module-agnostic — never module-colored).
-              "bg-gradient-to-r from-brand-400 to-brand-500",
+              "bg-linear-to-r from-brand-400 to-brand-500",
             )}
             style={{
               left: `calc(${activeIndex} * (100% / ${tabs.length}) + (100% / ${tabs.length} - 2.5rem) / 2)`,

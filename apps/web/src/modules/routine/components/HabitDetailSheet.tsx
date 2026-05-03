@@ -289,7 +289,7 @@ export function HabitDetailSheet({
             >
               ‹
             </button>
-            <span className="text-xs font-semibold text-text min-w-[7rem] text-center capitalize">
+            <span className="text-xs font-semibold text-text min-w-28 text-center capitalize">
               {calMonthTitle}
             </span>
             <button

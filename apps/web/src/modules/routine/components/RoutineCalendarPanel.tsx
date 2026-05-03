@@ -513,7 +513,7 @@ export function RoutineCalendarPanel({
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="!h-9 !px-3 !text-xs border border-sky-400/30 bg-sky-500/5"
+                              className="h-9! px-3! text-xs! border border-sky-400/30 bg-sky-500/5"
                               type="button"
                               onClick={() => setFizrukPlanDateKey(e.date)}
                             >
@@ -524,7 +524,7 @@ export function RoutineCalendarPanel({
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="!h-9 !px-3 !text-xs border border-emerald-500/25 bg-emerald-500/5"
+                              className="h-9! px-3! text-xs! border border-emerald-500/25 bg-emerald-500/5"
                               type="button"
                               onClick={() =>
                                 onOpenModule("finyk", { hash: "assets" })

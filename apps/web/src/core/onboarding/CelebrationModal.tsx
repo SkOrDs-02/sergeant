@@ -127,7 +127,7 @@ export function CelebrationModal({
     <div
       ref={backdropRef}
       className={cn(
-        "fixed inset-0 z-[9999] flex items-center justify-center",
+        "fixed inset-0 z-9999 flex items-center justify-center",
         "bg-bg/85 backdrop-blur-md",
         animateOut
           ? "motion-safe:animate-fade-out"
