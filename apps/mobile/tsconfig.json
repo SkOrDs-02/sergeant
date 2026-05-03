@@ -2,6 +2,8 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "allowJs": false,
+    "checkJs": false,
     "jsx": "react-jsx",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
@@ -24,6 +26,12 @@
       "@sergeant/db-schema": ["../../packages/db-schema/src/index.ts"],
       "@sergeant/db-schema/*": ["../../packages/db-schema/src/*/index.ts"],
       "@sergeant/design-tokens": ["../../packages/design-tokens/index.d.ts"],
+      "@sergeant/design-tokens/tokens": [
+        "../../packages/design-tokens/index.d.ts"
+      ],
+      "@sergeant/design-tokens/mobile": [
+        "../../packages/design-tokens/mobile.d.ts"
+      ],
       "@sergeant/design-tokens/*": ["../../packages/design-tokens/*"]
     }
   },
