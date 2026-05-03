@@ -35,6 +35,11 @@ import {
   splitTelegramMessage,
 } from "../security.js";
 import {
+  formatPendingReply,
+  parseAlertsCommand,
+  type PendingAlertItem,
+} from "./alerts-format.js";
+import {
   ApprovalStore,
   PendingApprovalsCollector,
   type ApprovalRecord,
@@ -150,6 +155,8 @@ const HELP_TEXT = [
   "/decisions — останні зафіксовані рішення",
   "/audit [tool] [action] [since=24h|7d|30m] [csv] — write-actions журнал;",
   "       `since=` фільтрує по recorded_at (max 30d), `csv` шле документ.",
+  "/alerts pending [p0|p1] [topic] [since=15m] — unacked Sergeant_alert_bot броадкасти;",
+  "       без аргументів — топ-20 unacked, newest-first.",
   "/budget — поточний денний spend",
   "/reset — почати нову сесію",
   "/help — ця довідка",
@@ -539,6 +546,74 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     const headerWindow = sinceLabel ? ` (since=${sinceLabel})` : "";
     const header = `Останні ${r.data.audits.length} write-actions${headerWindow}:`;
     await ctx.reply([header, ...lines].join("\n"));
+  });
+
+  // ADR-0038 (Wave 3 §3.2 PR-3): `/alerts pending` — unacked broadcast
+  // queue from `Sergeant_alert_bot`. Reads from `tg_alert_acks` via
+  // `/api/internal/alerts/pending`. No `notYetEscalated` filter — the
+  // founder wants to see *everything* still un-acked, including rows
+  // that WF-103 already DM-pinged about (we mark those with `⚠️esc`).
+  // Syntax:
+  //   /alerts pending [p0|p1|p2|p3] [topic] [N] [since=<dur>]
+  bot.command("alerts", async (ctx) => {
+    if (!isAllowedDmContext(ctx)) return;
+    if (!rateLimiter.allow(String(ctx.from?.id))) {
+      await ctx.reply("Rate limit exceeded. Спробуй за хвилину.");
+      return;
+    }
+
+    const argument = (ctx.match ?? "").toString();
+    const parsed = parseAlertsCommand(argument);
+
+    if (parsed.subcommand === "help") {
+      await ctx.reply(
+        [
+          "*Usage:* `/alerts pending [filters]`",
+          "",
+          "Filters:",
+          "  • `p0`/`p1`/`p2`/`p3` — severity",
+          "  • `since=15m|24h|7d` — лише старші за вказаний інтервал",
+          "  • число (1..50) — limit (default 20)",
+          "  • будь-який інший токен — topic-key",
+        ].join("\n"),
+        { parse_mode: "Markdown" },
+      );
+      return;
+    }
+    if (parsed.subcommand === "unknown") {
+      await ctx.reply(parsed.error ?? "Невідома підкоманда.");
+      return;
+    }
+    if (parsed.error) {
+      await ctx.reply(parsed.error);
+      return;
+    }
+
+    const r = await postJson<{ alerts: PendingAlertItem[] }>(
+      `${serverUrl}/api/internal/alerts/pending`,
+      internalApiKey,
+      {
+        ...(parsed.filters.topic ? { topic: parsed.filters.topic } : {}),
+        ...(parsed.filters.severity
+          ? { severity: parsed.filters.severity }
+          : {}),
+        ...(parsed.filters.olderThanMinutes
+          ? { olderThanMinutes: parsed.filters.olderThanMinutes }
+          : {}),
+        ...(parsed.filters.limit ? { limit: parsed.filters.limit } : {}),
+      },
+    );
+    if (!r.ok || !r.data) {
+      await ctx.reply(`Не зміг прочитати alerts (HTTP ${r.status}).`);
+      return;
+    }
+
+    const reply = formatPendingReply(r.data.alerts, {
+      now: new Date(),
+      sinceLabel: parsed.sinceLabel,
+      filters: parsed.filters,
+    });
+    await ctx.reply(reply);
   });
 
   /**
