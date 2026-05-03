@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-03 by Devin — **Stage 1 COMPLETE.** PR #008 storagePatch removal (`ff217246` on main — `syncedKV` + `createSyncedKVStore` replacement, `storagePatch.ts` deleted, `__hubSyncPatched` global gone, codemod at `scripts/codemods/syncedKV/`). PR #010 IDB consolidation ([#1543](https://github.com/Skords-01/Sergeant/pull/1543)) merged. PR #013 localStorage burndown landed via 4 sub-PRs ([#1344](https://github.com/Skords-01/Sergeant/pull/1344), [#1345](https://github.com/Skords-01/Sergeant/pull/1345), [#1350](https://github.com/Skords-01/Sergeant/pull/1350), [#1520](https://github.com/Skords-01/Sergeant/pull/1520)). All 8/8 Stage 1 PRs now landed. Stage 4 Fizruk усе ще на main з відкладеним boot-wiring follow-up для `register{Routine,Fizruk}DualWriteContext`. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-03 by Devin — **Stage 1 COMPLETE, Stage 4 Nutrition in progress.** Stage 1: all 8/8 PRs landed (PR #008 `ff217246`, PR #010 [#1543](https://github.com/Skords-01/Sergeant/pull/1543), PR #013 via 4 sub-PRs). Stage 4 Fizruk: 5/5 PRs merged (PR #027–#030 + #029a). Stage 4 Nutrition: PR #031 LANDED (schema `17644bef` + server apply-fns in `OP_LOG_TABLE_REGISTRY`), PR #032 LANDED ([#1528](https://github.com/Skords-01/Sergeant/pull/1528) dual-write), PR #033 IN PROGRESS (read-overlay files implemented for web + mobile in [#1574](https://github.com/Skords-01/Sergeant/pull/1574), UI overlay hooks pending). Boot-wiring follow-up для `register{Routine,Fizruk,Nutrition}DualWriteContext` ще не залендили. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -873,14 +873,47 @@ module='fizruk'` — окремий ops-PR після того, як PR #029 + P
   PR #1491 для routine + fizruk.
 - **Dep.** PR #031.
 
-##### **PR #033 — `feat(nutrition-domain): cut-over reads to SQLite under feature flag`** ⏳ IN PROGRESS
+##### **PR #033 — `feat(nutrition-domain): cut-over reads to SQLite under feature flag`** ⏳ IN PROGRESS — [#1574](https://github.com/Skords-01/Sergeant/pull/1574)
+
+> **Статус (2026-05-03):** read-overlay library files implemented for
+> both web and mobile (6 new files). UI overlay hooks (wiring into
+> existing nutrition hooks under feature flag
+> `feature.nutrition.sqlite_v2.read_sqlite`) — pending next PR.
 
 - Mirror PR #029 + PR #029a (web + mobile fizruk read overlay) для
   nutrition. Feature flag `feature.nutrition.sqlite_v2.read_sqlite`,
   default off. LS/MMKV-write залишається safety net.
-- Read-overlay files: `sqliteReader.ts` (cache + refresh),
-  `sqliteReadBoot.ts` (idempotent boot with flag check),
-  `sqliteReadGate.ts` (pub-sub notification) for both web and mobile.
+- **Реалізовано (web).** `apps/web/src/modules/nutrition/lib/sqliteReader.ts`
+  тримає кеш `SqliteNutritionCache` з `{ log, pantries, activePantryId,
+prefs, recipes, refreshedAt }`. `refreshNutritionSqliteState(client,
+userId)` запитує 5 SQLite таблиць (`nutrition_meals`,
+  `nutrition_pantries`, `nutrition_pantry_items`, `nutrition_prefs`,
+  `nutrition_recipes`), фільтрує `deleted_at IS NULL`, трансформує
+  рядки у domain типи (`Meal`, `Pantry`, `NutritionPrefs`, `Recipe`),
+  будує nested maps (items-by-pantry). Helpers: `safeParseJson`,
+  `toDateKey`, `toTimeStr`, `rowToMeal`, `rowToPantry`, `rowToRecipe`.
+  `sqliteReadBoot.ts` — idempotent boot з перевіркою feature flag
+  `feature.nutrition.sqlite_v2.read_sqlite`, запуском міграцій через
+  `migrateNutrition(client)`, початковим refresh кешу. Fail-soft
+  (catch + console.warn). `sqliteReadGate.ts` — pub-sub notification
+  через `useSyncExternalStore` (cacheTick counter + listeners Set);
+  `useNutritionSqliteReadTick()`, `useNutritionSqliteReadFlag()`,
+  `notifyNutritionSqliteCacheRefresh()`.
+- **Реалізовано (mobile).** `apps/mobile/src/modules/nutrition/lib/`
+  — паритет shape-а кешу і refresh logic з web. `sqliteReader.ts`
+  використовує `@sergeant/nutrition-domain` типи і `@sergeant/shared`
+  `NullableMacros`. `sqliteReadBoot.ts` читає flag з MMKV через
+  `safeReadLS` + `FLAGS_KEY`, використовує `getSqliteMigrationClient()`
+  замість `getSqliteDb()`. `sqliteReadGate.ts` додає combined hook
+  `useNutritionSqliteReadGate()` що повертає `{ enabled, tick }`.
+- **Що ще треба (наступний PR).**
+  - Web: UI overlay у nutrition хуках (`useMeals`, `usePantries`,
+    `useNutritionPrefs`, `useRecipes`) під feature flag — аналог
+    fizruk `useFizrukWorkouts` / `useCustomExercises` overlay.
+  - Mobile: аналогічний UI overlay + `useNutritionSqliteReadBoot`
+    виклик у Dashboard/module entry.
+  - Feature flag `feature.nutrition.sqlite_v2.read_sqlite` реєстрація
+    у `apps/{web,mobile}/src/core/lib/featureFlags.ts`.
 - **Dep.** PR #032.
 
 ##### **PR #034 — `chore(nutrition-domain): drop module_data.nutrition cloud-sync wiring + ESLint guard`** ⏳ DRAFT
