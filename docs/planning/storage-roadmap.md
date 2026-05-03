@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-03 by Devin (sync Stage 4 Fizruk progress: PR #027 schema + bundled SQLite migration, PR #028 dual-write LS/MMKV↔SQLite, PR #029 cut-over reads + server `applyFizruk*` apply-функції та PR #029a mobile fizruk read overlay — усі на main; лишається PR #030 LS cleanup і відкладений boot-wiring follow-up для `register{Routine,Fizruk}DualWriteContext`). **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-03 by Devin (sync Stage 4 Fizruk progress: PR #027 schema + bundled SQLite migration, PR #028 dual-write LS/MMKV↔SQLite, PR #029 cut-over reads + server `applyFizruk*` apply-функції та PR #029a mobile fizruk read overlay — усі на main; лишається PR #030 LS cleanup і відкладений boot-wiring follow-up для `register{Routine,Fizruk}DualWriteContext`. Також синхронізовано Stage 0/1: PR #005/#006/#007/#012 уже зленділи; PR #014 виправлено посилання з помилкового #1290 на правильний #1298; PR #013 переведено в IN-PROGRESS зі списком 3-х sub-PR-ів. Лишаються: #003 webhook rotation, #008 storagePatch removal, #009 sync-meta → IDB, #010 IDB consolidation, #011 Postgres rate-limit, фінальний sub-PR #013 для allowlist→0). **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -150,7 +150,7 @@
   `coach`/`balance` query-keys. CI gate.
 - **Dep.** None.
 
-#### **PR #005 — `feat(server): sync_audit_log table + admin-only viewer`**
+#### **PR #005 — `feat(server): sync_audit_log table + admin-only viewer`** ✅ LANDED — [#1284](https://github.com/Skords-01/Sergeant/pull/1284)
 
 - **Scope.** Нова таблиця `sync_audit_log (id, user_id, op_type, module,
 payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
@@ -164,7 +164,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 
 ### Stage 1 — Consolidation
 
-#### **PR #006 — `refactor(shared): unified KVStore with platform adapters`**
+#### **PR #006 — `refactor(shared): unified KVStore with platform adapters`** ✅ LANDED — [#1467](https://github.com/Skords-01/Sergeant/pull/1467)
 
 - **Scope.** `packages/shared/src/storage/kv.ts`:
 
@@ -185,7 +185,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   старих шляхів як deprecated alias, codemod скриптом.
 - **Dep.** None.
 
-#### **PR #007 — `refactor(shared): single SYNC_MODULES registry`**
+#### **PR #007 — `refactor(shared): single SYNC_MODULES registry`** ✅ LANDED — [#1474](https://github.com/Skords-01/Sergeant/pull/1474)
 
 - **Scope.** Винести `SYNC_MODULES` з `apps/web/src/core/cloudSync/config.ts`
   - `apps/mobile/src/sync/config.ts` у `packages/shared/src/sync/modules.ts`.
@@ -239,7 +239,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   Horizontal-scale тест на 2 інстанціях Railway.
 - **Dep.** None.
 
-#### **PR #012 — `feat(server): add CHECK constraint on module_data.module + soft-delete columns`**
+#### **PR #012 — `feat(server): add CHECK constraint on module_data.module + soft-delete columns`** ✅ LANDED — [#1290](https://github.com/Skords-01/Sergeant/pull/1290)
 
 - **Scope.** Додати `CHECK (module IN ('finyk','fizruk','routine','nutrition','profile'))`
   на `module_data`. Додати `deleted_at TIMESTAMPTZ` на high-volume tables
@@ -248,13 +248,17 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 - **AC.** Bad-data test: insert невідомого модуля → reject.
 - **Dep.** None.
 
-#### **PR #013 — `chore: complete localStorage burndown to 0 raw uses`**
+#### **PR #013 — `chore: complete localStorage burndown to 0 raw uses`** ⏳ IN-PROGRESS — partial coverage у [#1344](https://github.com/Skords-01/Sergeant/pull/1344), [#1345](https://github.com/Skords-01/Sergeant/pull/1345), [#1350](https://github.com/Skords-01/Sergeant/pull/1350)
 
 - **Scope.** Останні ~46 файлів з allowlist у `eslint.config.js`. Перевести
   через `useSyncedKVStore` або `safeReadLS/safeWriteLS`. Allowlist → empty.
 - **Risk.** Великий діф. Mitigation: розбити на 3 sub-PR-и по доменах.
 - **AC.** ESLint `no-raw-local-storage` без exceptions, CI green.
 - **Dep.** PR #006-#008.
+- **Done so far.** `safeReadStringLS` migration на hub/search ([#1344](https://github.com/Skords-01/Sergeant/pull/1344)),
+  presetApply ([#1345](https://github.com/Skords-01/Sergeant/pull/1345)) і modules raw-LS
+  ([#1350](https://github.com/Skords-01/Sergeant/pull/1350)). Лишається фінальний sub-PR
+  з очищенням allowlist до 0 — точну цифру треба перерахувати.
 
 ---
 
@@ -263,7 +267,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 > **Статус:** Усі 8 PR-ів (#014–#021) зленділи станом на 2026-05-02.
 > Наступний крок — Stage 3 SPIKE (decision gate: go/no-go для SQLite).
 
-#### **PR #014 — `feat: add Drizzle ORM as cross-platform schema source of truth`** ✅ LANDED — [#1290](https://github.com/Skords-01/Sergeant/pull/1290)
+#### **PR #014 — `feat: add Drizzle ORM as cross-platform schema source of truth`** ✅ LANDED — [#1298](https://github.com/Skords-01/Sergeant/pull/1298)
 
 - **Scope.**
   - `packages/db-schema/` — новий package, експортує Drizzle table definitions.
