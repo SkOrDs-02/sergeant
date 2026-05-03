@@ -1,6 +1,6 @@
 # Status-матриця apps і packages
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-27.
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > **Last revalidated: 2026-05-02** (ADR-0032 console consolidation).

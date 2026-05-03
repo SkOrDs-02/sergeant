@@ -107,10 +107,9 @@ describe("notifySyncDirty", () => {
   it("декілька викликів для різних модулів накопичуються в dirty map", () => {
     localStorage.setItem(STORAGE_KEYS.SYNC_DIRTY_MODULES, "{}");
     notifySyncDirty(STORAGE_KEYS.FINYK_BUDGETS);
-    notifySyncDirty(STORAGE_KEYS.ROUTINE);
     notifySyncDirty(STORAGE_KEYS.NUTRITION_LOG);
     const d = getDirtyModules();
-    expect(Object.keys(d).sort()).toEqual(["finyk", "nutrition", "routine"]);
+    expect(Object.keys(d).sort()).toEqual(["finyk", "nutrition"]);
   });
 
   it("диспатчить SYNC_STATUS_EVENT для tracked ключа", () => {
@@ -129,8 +128,8 @@ describe("notifySyncDirty edge cases", () => {
   it("для tracked ключа позначає відповідний модуль брудним", () => {
     // Reset dirty state
     localStorage.setItem(STORAGE_KEYS.SYNC_DIRTY_MODULES, "{}");
-    notifySyncDirty(STORAGE_KEYS.ROUTINE);
-    expect(getDirtyModules().routine).toBe(true);
+    notifySyncDirty(STORAGE_KEYS.FIZRUK_WORKOUTS);
+    expect(getDirtyModules().fizruk).toBe(true);
   });
 
   it("для untracked ключа не мутує dirty мапу", () => {

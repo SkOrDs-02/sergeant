@@ -981,6 +981,33 @@ export const MonoBackfillResponseSchema = z.object({
 });
 export type MonoBackfillResponse = z.infer<typeof MonoBackfillResponseSchema>;
 
+/**
+ * Response of `GET /api/mono/backfill-progress`. Reports the current state
+ * of the per-user backfill job started by `POST /api/mono/backfill`.
+ *
+ * - `idle`: no backfill ever started (or the in-memory record was cleared
+ *   by a server restart). Counters are zero, `startedAt`/`completedAt` are null.
+ * - `running`: backfill is in flight. UI should poll while in this state.
+ * - `completed`: last backfill finished successfully. `completedAt` is set
+ *   and `accountsProcessed === accountsTotal`. UI may show a toast then drop
+ *   the polling.
+ * - `failed`: last backfill threw. `lastError` carries a short message.
+ *
+ * Numbers are coerced from internal counters via `Number()` per Hard Rule #1
+ * even though they originate as JS numbers, to keep the contract explicit.
+ */
+export const MonoBackfillProgressSchema = z.object({
+  status: z.enum(["idle", "running", "completed", "failed"]),
+  startedAt: z.string().nullable(),
+  completedAt: z.string().nullable(),
+  accountsTotal: z.number().int().nonnegative(),
+  accountsProcessed: z.number().int().nonnegative(),
+  currentAccountId: z.string().nullable(),
+  transactionsProcessed: z.number().int().nonnegative(),
+  lastError: z.string().nullable(),
+});
+export type MonoBackfillProgress = z.infer<typeof MonoBackfillProgressSchema>;
+
 // ────────────────────── Waitlist (Phase 0 monetization rails) ───────────────
 // Простий sign-up для майбутнього Pro-тіру. Валідується тут, щоб і клієнт
 // (через `@sergeant/api-client`) і сервер (через `validateBody`) мали одне

@@ -32,6 +32,7 @@ import { useState, type ReactNode } from "react";
 import { Pressable, Switch, Text, View } from "react-native";
 
 import { Card } from "@/components/ui/Card";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 
 function cx(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(" ");
@@ -167,10 +168,9 @@ export function SettingsSubGroup({ title, children }: SettingsSubGroupProps) {
       {title ? (
         <View className="flex-row items-center gap-2 pb-1.5 mb-1 border-b border-cream-200 dark:border-cream-700">
           <View className="w-1 h-3.5 rounded-full bg-brand/60" />
-          {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift */}
-          <Text className="text-xs font-semibold text-fg-muted uppercase tracking-wide">
+          <SectionHeading size="xs" weight="semibold" variant="muted">
             {title}
-          </Text>
+          </SectionHeading>
         </View>
       ) : null}
       <View className="gap-3">{children}</View>

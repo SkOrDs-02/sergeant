@@ -1,6 +1,7 @@
 import js from "@eslint/js";
 import eslintConfigPrettier from "eslint-config-prettier";
 import globals from "globals";
+import importPlugin from "eslint-plugin-import";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
@@ -44,10 +45,29 @@ export default [
     },
     settings: {
       react: { version: "detect" },
+      // TypeScript-aware resolver lets `import/extensions` see through
+      // multi-dot filenames (`hubReports.aggregation.ts`,
+      // `hubPrefs.schema.ts`, `webpushSend.webpush.ts`) and through
+      // path aliases (`@shared/*` → `./src/shared/*`) so the rule
+      // checks the resolved file's real extension instead of the
+      // text-suffix after the last dot.
+      "import/resolver": {
+        typescript: {
+          alwaysTryTypes: true,
+          project: [
+            "apps/web/tsconfig.json",
+            "apps/console/tsconfig.json",
+            "apps/mobile/tsconfig.json",
+            "apps/mobile-shell/tsconfig.json",
+          ],
+        },
+        node: true,
+      },
     },
     plugins: {
       "react-hooks": reactHooks,
       "sergeant-design": sergeantDesign,
+      import: importPlugin,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
@@ -206,16 +226,50 @@ export default [
       "sergeant-design/no-arbitrary-text-size": "error",
     },
   },
+  // Import-extension hygiene — bans `.js`/`.jsx`/`.ts`/`.tsx`/`.mjs`/`.cjs`
+  // suffixes in import specifiers for the bundler-fed frontend apps. Codemod
+  // #3 stripped 436 historical extension-suffixed imports in `apps/web/src`
+  // (see `docs/tech-debt/frontend.md` §"Уже закрито"); without an enforcing
+  // rule, new code silently re-introduces the suffix and the
+  // `tsc --moduleResolution bundler` / `vite` / `vitest` triple disagrees
+  // about resolution again.
+  //
+  // Scope is intentionally limited to the four bundler-fed apps. The server
+  // (`apps/server`) is built by esbuild for Node ESM where the `.js`
+  // extension on relative imports is the canonical NodeNext-style pattern;
+  // the workspace packages (`packages/*/src`) are consumed by both Node and
+  // Vite via their `./src/*.ts` exports map and use the same NodeNext-style
+  // `.js` imports today. Migrating those is out of scope of the rule's
+  // original codemod.
+  //
+  // `ignorePackages` keeps node-builtin / npm-package specifiers free; non-
+  // code asset extensions (`.css`, `.svg`, `.png`, `.json`, …) keep their
+  // suffix as before.
+  {
+    files: [
+      "apps/web/src/**/*.{ts,tsx,js,jsx}",
+      "apps/console/src/**/*.{ts,tsx,js,jsx}",
+      "apps/mobile/src/**/*.{ts,tsx,js,jsx}",
+      "apps/mobile/app/**/*.{ts,tsx,js,jsx}",
+      "apps/mobile-shell/src/**/*.{ts,tsx,js,jsx}",
+    ],
+    rules: {
+      "import/extensions": ["error", "never"],
+    },
+  },
   // DS primitives that legitimately define the eyebrow treatment.
   // SectionHeading owns the uppercase+tracking+text size tokens, Label
   // owns the field-label eyebrow variant, and chartTheme defines the
   // tooltip label token — all three are the single source-of-truth
-  // callers should import from.
+  // callers should import from. Mobile mirrors the same primitive at
+  // `apps/mobile/src/components/ui/SectionHeading.tsx`; treat both
+  // platforms' source-of-truth files identically.
   {
     files: [
       "apps/web/src/shared/components/ui/SectionHeading.tsx",
       "apps/web/src/shared/components/ui/FormField.tsx",
       "apps/web/src/shared/charts/chartTheme.ts",
+      "apps/mobile/src/components/ui/SectionHeading.tsx",
     ],
     rules: {
       "sergeant-design/no-eyebrow-drift": "off",
@@ -535,6 +589,60 @@ export default [
     ],
     rules: {
       "sergeant-design/no-strict-bypass": "error",
+    },
+  },
+  // Routine cloud-sync retirement guard (PR #026, storage-roadmap Stage 4).
+  // `STORAGE_KEYS.ROUTINE` was the single LS key that held the entire
+  // routine blob pushed to `module_data.routine` via cloud sync.  Now that
+  // completions are read from SQLite and the module has been removed from
+  // `SYNC_MODULES`, new code must NOT read/write that key directly —
+  // use `loadRoutineState()` / `saveRoutineState()` from
+  // `apps/web/src/modules/routine/lib/routineStorage.ts` instead (they
+  // handle the SQLite overlay transparently).
+  //
+  // The selector matches the exact property access `STORAGE_KEYS.ROUTINE`
+  // but NOT `STORAGE_KEYS.ROUTINE_MAIN_TAB` or `STORAGE_KEYS.ROUTINE_QUICK_STATS`.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}", "apps/mobile/src/**/*.{ts,tsx}"],
+    ignores: [
+      // Tests can reference the key freely as fixtures.
+      "apps/web/src/**/*.test.{ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      // The routine module storage wrappers — they are the canonical
+      // read/write entry-points that everyone else should call.
+      "apps/web/src/modules/routine/lib/routineStorage.ts",
+      "apps/mobile/src/modules/routine/lib/routineStore.ts",
+      // Mobile backup still reads ROUTINE for full-state export/import
+      // (migration planned for a future PR).
+      "apps/mobile/src/core/hub/hubBackup.ts",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        // Inherit the legacy palette selectors from the top-level block so
+        // this scoped override doesn't accidentally drop them.
+        {
+          selector:
+            "Literal[value=/\\b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-\\d+)(?:\\/\\d+)?\\b/]",
+          message:
+            "Legacy `forest` / tonal `accent-NNN` retired — use semantic `accent`, `brand-500`, `fizruk`, `routine`, `nutrition`, or `finyk` instead.",
+        },
+        {
+          selector:
+            "TemplateElement[value.raw=/\\b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-\\d+)(?:\\/\\d+)?\\b/]",
+          message:
+            "Legacy `forest` / tonal `accent-NNN` retired — use semantic `accent`, `brand-500`, `fizruk`, `routine`, `nutrition`, or `finyk` instead.",
+        },
+        // PR #026 — routine cloud-sync retirement.
+        {
+          selector:
+            "MemberExpression[object.name='STORAGE_KEYS'][property.name='ROUTINE']",
+          message:
+            "Direct access to STORAGE_KEYS.ROUTINE is retired (PR #026, storage-roadmap). Use loadRoutineState() / saveRoutineState() from the routine module instead — they handle the SQLite overlay transparently.",
+        },
+      ],
     },
   },
   eslintConfigPrettier,

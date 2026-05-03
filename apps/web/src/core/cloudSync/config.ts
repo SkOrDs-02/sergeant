@@ -45,9 +45,6 @@ export const SYNC_MODULES = {
       STORAGE_KEYS.FIZRUK_WELLBEING,
     ],
   },
-  routine: {
-    keys: [STORAGE_KEYS.ROUTINE],
-  },
   nutrition: {
     keys: [
       STORAGE_KEYS.NUTRITION_LOG,
@@ -89,4 +86,24 @@ export function keyToModule(key: string): ModuleName | null {
     }
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Module exclusion (PR #025). When the SQLite read-path is active for a
+// module the client stops pushing its LS blob to the server. The boot
+// wiring registers which modules are excluded; the push/upload engine
+// consults `isModuleSyncExcluded` before collecting LS data.
+// ---------------------------------------------------------------------------
+const excludedModules = new Set<ModuleName>();
+
+export function setModuleSyncExcluded(
+  mod: ModuleName,
+  excluded: boolean,
+): void {
+  if (excluded) excludedModules.add(mod);
+  else excludedModules.delete(mod);
+}
+
+export function isModuleSyncExcluded(mod: string): boolean {
+  return excludedModules.has(mod as ModuleName);
 }

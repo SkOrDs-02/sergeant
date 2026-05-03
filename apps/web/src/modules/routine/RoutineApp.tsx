@@ -25,6 +25,7 @@ import {
   ROUTINE_EVENT,
   ROUTINE_STORAGE_ERROR,
 } from "./lib/routineStorage";
+import { useSqliteReadBoot } from "./hooks/useSqliteReadBoot";
 import { addDays, startOfIsoWeek } from "./lib/weekUtils";
 import { maxActiveStreak, completionRateForRange } from "./lib/streaks";
 import { useRoutineReminders } from "./hooks/useRoutineReminders";
@@ -171,6 +172,7 @@ export default function RoutineApp({
   onPwaActionConsumed,
 }: RoutineAppProps = {}) {
   const toast = useToast();
+  useSqliteReadBoot();
   const [routine, setRoutine] = useRoutineState();
   // Low-priority transition for habit toggles: the checkbox haptic fires
   // instantly while React defers the heavier re-render (full list + persist)

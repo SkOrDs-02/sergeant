@@ -141,6 +141,32 @@ describe("createMonoWebhookEndpoints", () => {
     expect(init.method).toBe("POST");
   });
 
+  it("backfillProgress calls GET /api/mono/backfill-progress", async () => {
+    const fetchMock: FetchMock = vi.fn();
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const snapshot = {
+      status: "running",
+      startedAt: "2026-04-01T10:00:00.000Z",
+      completedAt: null,
+      accountsTotal: 5,
+      accountsProcessed: 2,
+      currentAccountId: "acc_3",
+      transactionsProcessed: 423,
+      lastError: null,
+    };
+    fetchMock.mockResolvedValueOnce(jsonResponse(snapshot));
+
+    const endpoints = createMonoWebhookEndpoints(createHttpClient());
+    const result = await endpoints.backfillProgress();
+
+    expect(result).toEqual(snapshot);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/mono/backfill-progress");
+    // HttpClient defaults GET to no `method` field; explicit POSTs set it.
+    expect(init.method ?? "GET").toBe("GET");
+  });
+
   it("connect calls POST /api/mono/connect with token", async () => {
     const fetchMock: FetchMock = vi.fn();
     globalThis.fetch = fetchMock as unknown as typeof fetch;
