@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-03 by Devin (sync Stage 4 Fizruk progress: PR #027 schema + bundled SQLite migration і PR #028 dual-write LS/MMKV↔SQLite вже на main; PR #029 cut-over reads + PR #030 LS cleanup ще попереду). **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -591,6 +591,80 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 > longer pushed from clients, so orphaned rows just waste storage.
 
 #### **Fizruk** (3 тижні) — PR #027–#030
+
+##### **PR #027 — `feat(fizruk): postgres + sqlite normalized tables`** ✅ MERGED
+
+- **Реалізовано (server).** `apps/server/src/migrations/029_fizruk_tables.sql`
+  створює `fizruk_workouts`, `fizruk_workout_items`, `fizruk_workout_sets`,
+  `fizruk_custom_exercises`, `fizruk_measurements` з індексами
+  `(user_id, started_at DESC)` / `(user_id, deleted_at) WHERE deleted_at IS NULL`
+  / `(workout_id, sort_order)` / `(workout_item_id, sort_order)` /
+  `(user_id, measured_at DESC)` і soft-delete колонкою `deleted_at`.
+  `down.sql` чистить таблиці у зворотньому FK-порядку.
+- **Реалізовано (shared schema).** `packages/db-schema/src/pg/fizruk.ts`
+  - `packages/db-schema/src/sqlite/fizruk.ts` дають Drizzle ORM-схеми для
+    PG і SQLite (паралельні шейпи з суфіксом `_lite` для індексів). Snapshot
+    тести у `packages/db-schema/src/__tests__/{pg,sqlite}-fizruk-snapshot.test.ts`
+    ловлять drift між драйверами.
+- **Реалізовано (client).** `packages/db-schema/src/sqlite/migrations/index.ts`
+  експортує `FIZRUK_CLIENT_MIGRATIONS` з власним ledger-ом
+  `__fizruk_migrations` (окремий від routine SPIKE-ledger-у). Клієнтський
+  раннер `apps/{web,mobile}/src/modules/fizruk/lib/clientMigrate.ts`
+  застосовує bundled migrations при першому write-і.
+- **Дзеркальний test.** `apps/server/src/migrations/__tests__` snapshot-и
+  - `packages/db-schema` PG/SQLite парність — нові колонки/індекси не
+    поїдуть на server без оновлення client schema.
+
+##### **PR #028 — `feat(fizruk): dual-write LS/MMKV↔SQLite (best-effort)`** ✅ MERGED
+
+- **Scope.** Кожен write у Fizruk LS-blob-и
+  (`fizruk_workouts_v1`, `fizruk_custom_exercises_v1`, `fizruk_measurements_v1`)
+  додатково мирорить у локальну SQLite. Reads ще беруться з LS — це чистий
+  shadow-write для validation.
+- **Реалізовано (web).** `apps/web/src/modules/fizruk/lib/dualWrite/`:
+  `diff.ts` рахує `FizrukDualWriteOp[]` з `prev → next` snapshot-у,
+  `adapter.ts` — async best-effort upsert у `fizruk_workouts` /
+  `fizruk_workout_items` / `fizruk_workout_sets` /
+  `fizruk_custom_exercises` / `fizruk_measurements` з LWW-guardом
+  на `updated_at`, `index.ts` — orchestrator з registration-pattern-ом
+  (gating через `feature.fizruk.sqlite_v2.dual_write`, fail-soft на
+  no-userId / sqlite-unavailable). Mirror у
+  `apps/mobile/src/modules/fizruk/lib/dualWrite/` для expo-sqlite.
+- **Feature flag.** `feature.fizruk.sqlite_v2.dual_write` (default off)
+  у `apps/web/src/core/lib/featureFlags.ts` + `apps/mobile/src/core/lib/featureFlags.ts`.
+  Kill switch — toggle off у flag UI, dual-write припиняється, LS лишається
+  єдиним write target.
+- **Не входить.** Outbox / `/v2/sync/push` для `fizruk_*` — ще немає.
+  `OP_LOG_TABLE_REGISTRY` у `apps/server/src/modules/sync/syncV2.ts` поки
+  whitelist-ить тільки `routine_entries` / `routine_streaks`. Server-side
+  apply-функції для `fizruk_*` поїдуть разом із PR #029 (split на
+  `applyFizrukWorkouts` / `applyFizrukItems` / `applyFizrukSets` /
+  `applyFizrukCustomExercises` / `applyFizrukMeasurements`).
+- **Dep.** PR #027 (schema + client migration runner).
+
+##### **PR #029 — `feat(fizruk): cut-over reads to SQLite, deprecate LS`** ⏳ PENDING
+
+- **Scope.** Reads ідуть з SQLite через `fizruk` sqliteReader (mirror з
+  `apps/web/src/modules/routine/lib/sqliteReader.ts`). LS-write залишається
+  на ~2 тижні як safety net. Sync `module_data.fizruk` blob більше не
+  оновлюється з клієнта (`fizruk` виключається з `SYNC_MODULES`).
+- **Server-side apply.** Додати `applyFizrukWorkouts` /
+  `applyFizrukItems` / `applyFizrukSets` / `applyFizrukCustomExercises` /
+  `applyFizrukMeasurements` у `OP_LOG_TABLE_REGISTRY`. Бекфіл через
+  `module_data.fizruk` → `fizruk_*` per-user під feature-flag
+  адміністратора.
+- **Feature flag.** `feature.fizruk.sqlite_v2.read_sqlite` (default off)
+  — потребує увімкненого `dual_write`. Toggle off → reads повертаються
+  на LS path; SQLite дані лишаються.
+- **Dep.** PR #027 (schema), PR #028 (dual-write).
+
+##### **PR #030 — `chore(fizruk): remove LS path, drop module_data.fizruk`** ⏳ PENDING
+
+- **Scope.** Видалити `fizruk` з `SYNC_MODULES` (web + mobile).
+  ESLint guard проти reads з `STORAGE_KEYS.FIZRUK_*`. Server: одноразова
+  міграція `DELETE FROM module_data WHERE module='fizruk'` після того, як
+  PR #029 розкочено на 100% юзерів і backfill завершено.
+- **Dep.** PR #029 (cut-over reads).
 
 #### **Nutrition** (3 тижні) — PR #031–#034
 
