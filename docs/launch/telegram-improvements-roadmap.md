@@ -192,20 +192,18 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 ### 3.4. WF-15 Bad request — payload-schema fix
 
-**Status:** known issue (live звіт 2026-05-03).
+**Status:** **shipped** (Wave 1, PR за цим розділом). Root-cause був НЕ schema-drift, а Telegram Markdown-parser, що ламається на `*` / `_` / `` ` `` у commit-message-і — `parse_mode: Markdown` (legacy) не підтримує backslash-escape. Switched to `parse_mode: HTML` + `htmlEscape()` у parser-node.
 **Pain закриває:** P3.
 **ADR-кандидат:** none (bug-fix у workflow JSON).
 
-**Що:** витягти останній failed-execution payload з `n8n_API` (`/api/v1/executions?status=error&workflowId=<WF-15>`) → знайти changed-field у Railway webhook v2 → оновити WF-15 JSON.
+**Що зроблено:** витягнули останні 5 failed executions з `n8n_API` (`/api/v1/executions?status=error&workflowId=CygZ4vLxTm2ltuRW`) → у всіх Telegram повертав `Bad Request: can't parse entities: Can't find end of the entity starting at byte offset N` (наприклад на commit-message-і `feat(...): cut over fizruk reads to SQLite, add server applyFizruk* (#1449)` — unmatched `*`). Перевели `15-railway-deployment-notify.json` на HTML-mode + `<b>`/`<code>` шаблон, додали `*Html` варіанти у `Parse Railway payload` node.
 
-**Чому:** 3+ false-alarms/добу зараз. Класичний "крик вовка" — справжній alert пропустиш бо звик ігнорувати noise.
-
-**Effort:** S (~1 день): debug + n8n PR через `ops:n8n` flow.
+**Effort:** S (~½ дня): debug + workflow JSON edit + `15-railway-deployment-notify.README.md` payload-schema doc.
 
 **Acceptance:**
 
-- 0 `Bad request` errors у WF-15 за 7-day window після merge.
-- Railway webhook payload-schema задокументовано у `ops/n8n-workflows/WF-15/README.md`.
+- 0 `Bad request` errors у WF-15 за 7-day window після merge — track через `n8n_API` `/executions?status=error&workflowId=CygZ4vLxTm2ltuRW`.
+- Railway webhook payload-schema задокументовано у [`ops/n8n-workflows/15-railway-deployment-notify.README.md`](../../ops/n8n-workflows/15-railway-deployment-notify.README.md).
 
 **Bundle з §3.7 alert dedup** для повного fix story (без dedup нова правильна версія може теж spam-нути).
 
