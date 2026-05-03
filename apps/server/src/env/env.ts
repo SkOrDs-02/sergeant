@@ -54,7 +54,14 @@ const envSchema = z.object({
    */
   BETTER_AUTH_TOKEN_ENC_KEY: z.string().optional(),
   MIN_PASSWORD_LENGTH: coerceInt.positive().default(10),
-  MAX_PASSWORD_LENGTH: coerceInt.positive().default(128),
+  /**
+   * Hard-capped at 72 because bcrypt silently truncates input beyond 72 bytes.
+   * `.max(72)` makes the policy explicit at startup — an operator who tries to
+   * raise the cap via env gets a fail-fast `Invalid environment variables`
+   * error rather than a silently-degraded security guarantee. Migration path
+   * (sha256 pre-hash or Argon2id) is tracked in ADR-0042.
+   */
+  MAX_PASSWORD_LENGTH: coerceInt.positive().max(72).default(72),
 
   // ── CORS / Origins ──────────────────────────────────────────────────
   /** Comma-separated allowed origins (e.g. `https://app.example.com`). */

@@ -49,8 +49,15 @@ export const env = {
   /** Min password length (NIST SP 800-63B recommends ≥8; 10 is the project default). */
   MIN_PASSWORD_LENGTH: parseIntEnv("MIN_PASSWORD_LENGTH", 10),
 
-  /** Max password length — guards against DoS via oversized bcrypt payloads. */
-  MAX_PASSWORD_LENGTH: parseIntEnv("MAX_PASSWORD_LENGTH", 128),
+  /**
+   * Max password length — hard-capped at 72 because bcrypt **silently** truncates
+   * input beyond 72 bytes. Allowing >72 advertises false security: passwords
+   * `"a".repeat(72) + "X"` and `"a".repeat(72) + "Y"` produce identical hashes
+   * and authenticate each other. We clamp the env-supplied value so an operator
+   * cannot accidentally raise the cap; the proper fix (sha256 pre-hash or
+   * Argon2id migration) is tracked in ADR-0042.
+   */
+  MAX_PASSWORD_LENGTH: Math.min(72, parseIntEnv("MAX_PASSWORD_LENGTH", 72)),
 
   /** PG pool size */
   PG_POOL_SIZE: parseIntEnv("PG_POOL_SIZE", 10),
