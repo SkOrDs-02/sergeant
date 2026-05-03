@@ -283,6 +283,53 @@ describe("listRecentWriteAudits", () => {
     expect(r.metadata).toEqual({});
   });
 
+  it("appends recordedAfter as `recorded_at >= $N` and shifts limit-position", async () => {
+    const { pool, calls } = makeFakePool([]);
+    const cutoff = new Date("2026-05-01T00:00:00.000Z");
+    await listRecentWriteAudits(pool, {
+      founderUserId: "u",
+      recordedAfter: cutoff,
+      limit: 50,
+    });
+    // params: [u, cutoff, 50]
+    expect(calls[0]?.text).toMatch(/recorded_at >= \$2/);
+    expect(calls[0]?.text).toMatch(/LIMIT \$3/);
+    expect(calls[0]?.values).toEqual(["u", cutoff, 50]);
+  });
+
+  it("composes recordedAfter with tool/action/persona filters", async () => {
+    const { pool, calls } = makeFakePool([]);
+    const cutoff = new Date("2026-05-01T00:00:00.000Z");
+    await listRecentWriteAudits(pool, {
+      founderUserId: "u",
+      tool: "post_to_topic",
+      action: "executed",
+      persona: "ops",
+      recordedAfter: cutoff,
+      limit: 7,
+    });
+    // params: [u, post_to_topic, executed, ops, cutoff, 7]
+    expect(calls[0]?.text).toMatch(/tool = \$2/);
+    expect(calls[0]?.text).toMatch(/action = \$3/);
+    expect(calls[0]?.text).toMatch(/persona = \$4/);
+    expect(calls[0]?.text).toMatch(/recorded_at >= \$5/);
+    expect(calls[0]?.text).toMatch(/LIMIT \$6/);
+    expect(calls[0]?.values).toEqual([
+      "u",
+      "post_to_topic",
+      "executed",
+      "ops",
+      cutoff,
+      7,
+    ]);
+  });
+
+  it("omits recordedAfter clause when filter is undefined", async () => {
+    const { pool, calls } = makeFakePool([]);
+    await listRecentWriteAudits(pool, { founderUserId: "u" });
+    expect(calls[0]?.text).not.toMatch(/recorded_at >=/);
+  });
+
   it("preserves nulls for invocation_id/http_status/ok/response_excerpt/persona", async () => {
     const { pool } = makeFakePool([
       {

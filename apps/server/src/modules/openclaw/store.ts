@@ -381,6 +381,13 @@ export interface ListWriteAuditFilters {
   action?: OpenClawWriteAuditAction;
   /** Filter by persona that emitted the call. */
   persona?: string;
+  /**
+   * Lower-bound on `recorded_at` (inclusive). Drives the `/audit since=<dur>`
+   * time-window query — the console parses `since=24h` / `7d` / `30m` into
+   * a wall-clock cutoff and forwards it as ISO. Inclusive `>=` so a row
+   * recorded exactly at the cutoff is still returned.
+   */
+  recordedAfter?: Date;
 }
 
 /**
@@ -406,6 +413,10 @@ export async function listRecentWriteAudits(
   if (filters.persona) {
     params.push(filters.persona);
     conditions.push(`persona = $${params.length}`);
+  }
+  if (filters.recordedAfter) {
+    params.push(filters.recordedAfter);
+    conditions.push(`recorded_at >= $${params.length}`);
   }
 
   const limit = Math.max(1, Math.min(100, filters.limit ?? 20));

@@ -266,6 +266,13 @@ const WriteAuditListBody = z
     tool: z.string().min(1).max(100).optional(),
     action: z.enum(WRITE_AUDIT_ACTIONS).optional(),
     persona: z.string().min(1).max(50).optional(),
+    /**
+     * Lower-bound on `recorded_at` (inclusive, ISO-8601 with offset). Driven
+     * by the `/audit since=<dur>` slash-command — console computes
+     * `Date.now() - dur` and forwards as ISO. Server parses with the
+     * standard `Date` ctor (rejects NaN as 400).
+     */
+    recordedAfterIso: z.string().datetime({ offset: true }).optional(),
   })
   .strict();
 
@@ -658,12 +665,18 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
     asyncHandler(async (req, res) => {
       const parsed = validateBody(WriteAuditListBody, req, res);
       if (!parsed.ok) return;
+      // Zod's `.datetime({ offset: true })` validator already rejects any
+      // non-ISO input with 400 above, so `new Date(...)` is safe to call
+      // unguarded here. Coerce inline to keep this branch shallow.
       const audits = await listRecentWriteAudits(pool, {
         founderUserId: parsed.data.founderUserId,
         limit: parsed.data.limit,
         tool: parsed.data.tool,
         action: parsed.data.action,
         persona: parsed.data.persona,
+        recordedAfter: parsed.data.recordedAfterIso
+          ? new Date(parsed.data.recordedAfterIso)
+          : undefined,
       });
       res.json({ audits });
     }),

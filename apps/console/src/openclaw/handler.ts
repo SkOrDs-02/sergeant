@@ -16,7 +16,7 @@
 
 import type Anthropic from "@anthropic-ai/sdk";
 import type { Bot, Context } from "grammy";
-import { InlineKeyboard } from "grammy";
+import { InlineKeyboard, InputFile } from "grammy";
 import {
   buildDispatcherPayload,
   dispatchToN8n,
@@ -40,6 +40,8 @@ import {
   type ApprovalRecord,
   type WriteToolName,
 } from "./approval-store.js";
+import { buildAuditCsvFilename, renderWriteAuditCsv } from "./audit-csv.js";
+import { parseDuration } from "./duration.js";
 import {
   isFounderAllowed,
   isPrivateChat,
@@ -146,7 +148,8 @@ const HELP_TEXT = [
   "",
   "*Службові:*",
   "/decisions — останні зафіксовані рішення",
-  "/audit — останні write-actions (approve/reject/executed)",
+  "/audit [tool] [action] [since=24h|7d|30m] [csv] — write-actions журнал;",
+  "       `since=` фільтрує по recorded_at (max 30d), `csv` шле документ.",
   "/budget — поточний денний spend",
   "/reset — почати нову сесію",
   "/help — ця довідка",
@@ -403,9 +406,18 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
   });
 
   // ADR-0037 (Phase 4.5): `/audit` — last N write-actions з опційними
-  // фільтрами. Syntax: `/audit [tool] [action] [limit]`. Argument-order
-  // is fixed (positional), parsed permissively — unknown values become
-  // `tool` filter so a typo still surfaces something useful.
+  // фільтрами. Syntax:
+  //   /audit [tool] [action] [limit] [since=<dur>] [csv]
+  // Argument-order is permissive — `since=` and `csv` tokens are matched
+  // first, the remaining positional tokens fall back to the historical
+  // tool/action/limit parsing (unknown → tool filter so typos still
+  // surface something useful).
+  //
+  // Defaults:
+  //   - no `since=`, no `csv`  → 20 rows (legacy behaviour)
+  //   - `since=<dur>`           → 100 rows (full ADR-0037 cap)
+  //   - `csv` only              → 20 rows, sent as document
+  //   - explicit numeric token  → caller-provided limit (capped at 100)
   bot.command("audit", async (ctx) => {
     if (!isAllowedDmContext(ctx)) return;
     if (!rateLimiter.allow(String(ctx.from?.id))) {
@@ -419,9 +431,31 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     let toolFilter: string | undefined;
     let actionFilter: "approved" | "executed" | "rejected" | undefined;
     let limit: number | undefined;
+    let recordedAfterIso: string | undefined;
+    let sinceLabel: string | undefined;
+    let asCsv = false;
 
     const ACTIONS = new Set(["approved", "executed", "rejected"] as const);
     for (const tok of tokens) {
+      const lower = tok.toLowerCase();
+      if (lower === "csv") {
+        asCsv = true;
+        continue;
+      }
+      if (lower.startsWith("since=")) {
+        const raw = tok.slice("since=".length);
+        const durMs = parseDuration(raw);
+        if (durMs == null) {
+          await ctx.reply(
+            "Невалідний `since=` параметр. Приклади: `since=30m`, " +
+              "`since=24h`, `since=7d`. Max 30d.",
+          );
+          return;
+        }
+        recordedAfterIso = new Date(Date.now() - durMs).toISOString();
+        sinceLabel = raw;
+        continue;
+      }
       const n = Number(tok);
       if (Number.isFinite(n) && n > 0 && Number.isInteger(n)) {
         limit = Math.min(100, n);
@@ -435,14 +469,17 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
       toolFilter = tok;
     }
 
+    const effectiveLimit = limit ?? (recordedAfterIso ? 100 : 20);
+
     const r = await postJson<{ audits: WriteAuditListItem[] }>(
       `${serverUrl}/api/internal/openclaw/write-audit/list`,
       internalApiKey,
       {
         founderUserId,
-        limit: limit ?? 20,
+        limit: effectiveLimit,
         ...(toolFilter ? { tool: toolFilter } : {}),
         ...(actionFilter ? { action: actionFilter } : {}),
+        ...(recordedAfterIso ? { recordedAfterIso } : {}),
       },
     );
     if (!r.ok || !r.data) {
@@ -451,6 +488,32 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     }
     if (r.data.audits.length === 0) {
       await ctx.reply("Жодних write-actions у журналі.");
+      return;
+    }
+
+    if (asCsv) {
+      // CSV-export branch: `replyWithDocument` with an in-memory Buffer.
+      // Keep the column-set tight (per roadmap §3.3) so the file is safe
+      // to forward — no full input/response payloads.
+      const csv = renderWriteAuditCsv(
+        r.data.audits.map((a) => ({
+          recorded_at: a.recorded_at,
+          tool: a.tool,
+          action: a.action,
+          persona: a.persona,
+          http_status: a.http_status,
+          approval_id: a.approval_id,
+        })),
+      );
+      const filename = buildAuditCsvFilename();
+      const captionParts: string[] = [`${r.data.audits.length} write-actions`];
+      if (sinceLabel) captionParts.push(`за ${sinceLabel}`);
+      if (toolFilter) captionParts.push(`tool=${toolFilter}`);
+      if (actionFilter) captionParts.push(`action=${actionFilter}`);
+      await ctx.replyWithDocument(
+        new InputFile(Buffer.from(csv, "utf8"), filename),
+        { caption: captionParts.join(", ") },
+      );
       return;
     }
 
@@ -473,7 +536,8 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
           : "";
       return `${t} ${glyph} ${a.tool}${persona}${status} (id=${a.approval_id})`;
     });
-    const header = `Останні ${r.data.audits.length} write-actions:`;
+    const headerWindow = sinceLabel ? ` (since=${sinceLabel})` : "";
+    const header = `Останні ${r.data.audits.length} write-actions${headerWindow}:`;
     await ctx.reply([header, ...lines].join("\n"));
   });
 
