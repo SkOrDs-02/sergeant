@@ -23,8 +23,14 @@ Main documentation index for Sergeant.
 | [`adr/`](./adr/README.md)                     | Architectural decisions and tradeoffs                        |
 | [`api/`](./api/README.md)                     | OpenAPI, API contracts, generated artifacts                  |
 | [`architecture/`](./architecture/README.md)   | Repo map, runtime surfaces, platform architecture            |
+| [`audits/`](./audits/README.md)               | Code, architecture, and UX audits with lifecycle status      |
+| [`deploy/`](./deploy/README.md)               | Deploy walkthroughs (Railway, Vercel, console, etc.)         |
+| [`design/`](./design/README.md)               | Design system, brand, accents, dark mode, UI patterns        |
 | [`governance/`](./governance/README.md)       | Hard rules registry, review checklists, policy docs          |
+| [`integrations/`](./integrations/README.md)   | Third-party integrations (Monobank, Voyage, Renovate, …)     |
+| [`launch/`](./launch/README.md)               | Go-to-market, monetization, ops, and product roadmaps        |
 | [`mobile/`](./mobile/README.md)               | Expo/mobile strategy and migration docs                      |
+| [`notes/`](./notes/README.md)                 | Design spikes and exploratory engineering notes              |
 | [`observability/`](./observability/README.md) | Alerts, SLOs, logs, engineering metrics                      |
 | [`planning/`](./planning/README.md)           | Roadmaps, infra plans, staged improvements                   |
 | [`playbooks/`](./playbooks/README.md)         | Canonical execution recipes for repeatable tasks             |
