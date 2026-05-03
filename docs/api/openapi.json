@@ -929,7 +929,7 @@
     "/api/nutrition/backup-download": {
       "post": {
         "summary": "Отримати останній зашифрований backup nutrition-blob",
-        "description": "Token-authenticated через header `x-token`. Повертає 404, якщо для наданого токена бекапів ще немає. Роут під `requireSession()` — потрібна активна сесія ЧИ Bearer-токен НА ДОДАЧУ до запитуваного `x-token`.",
+        "description": "Роут під `requireSession()` — потрібна активна сесія або Bearer-токен. Storage key bind-иться до `req.user.id` через HMAC-SHA256(`NUTRITION_BACKUP_KEY_SECRET`, `userId|x-token`), тому `x-token` лише namespace-ить кілька бекапів одного юзера (наприклад, по пристроях) і НЕ використовується для авторизації. Повертає 404, якщо для пари (userId, x-token) бекапів ще немає.",
         "tags": [
           "nutrition"
         ],
@@ -948,10 +948,10 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "description": "Опаковий токен, який хешується для формування імені файлу бекапу."
+              "description": "Опаковий namespace-токен для розрізнення кількох бекапів одного юзера (наприклад, per device)."
             },
             "required": true,
-            "description": "Опаковий токен, який хешується для формування імені файлу бекапу."
+            "description": "Опаковий namespace-токен для розрізнення кількох бекапів одного юзера (наприклад, per device)."
           }
         ],
         "responses": {

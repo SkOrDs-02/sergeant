@@ -166,6 +166,18 @@ const envSchema = z.object({
   /** Публічна базова URL API (Railway) для реєстрації webhook у Monobank. */
   PUBLIC_API_BASE_URL: z.string().optional(),
 
+  // ── Nutrition backups ──────────────────────────────────────────────
+  /**
+   * Серверний секрет для HMAC-SHA256, що формує ім'я файлу
+   * nutrition-backup на диску. Без секрету `safeBackupKeyFromToken`
+   * кидає помилку, тому `/api/nutrition/backup-{upload,download}`
+   * повертають 503 і не торкаються файлової системи.
+   *
+   * У production обов'язковий — інакше ключ можна перебрати, як це
+   * було з 32-bit FNV-1a (IDOR). Згенеруй: `openssl rand -hex 32`.
+   */
+  NUTRITION_BACKUP_KEY_SECRET: z.string().optional(),
+
   // ── External APIs ──────────────────────────────────────────────────
   /** USDA FoodData Central API key. Fallback: `DEMO_KEY`. */
   USDA_API_KEY: z.string().optional(),
@@ -236,6 +248,16 @@ export function assertStartupEnv(): void {
   if (isProduction && !env.METRICS_TOKEN) {
     warnings.push(
       "METRICS_TOKEN is not set — /metrics endpoint is unprotected.",
+    );
+  }
+
+  if (isProduction && !env.NUTRITION_BACKUP_KEY_SECRET) {
+    throw new Error(
+      "NUTRITION_BACKUP_KEY_SECRET is required in production. Without it nutrition backup file paths are derivable per-user and brute-forceable. Generate one with `openssl rand -hex 32`.",
+    );
+  } else if (!env.NUTRITION_BACKUP_KEY_SECRET) {
+    warnings.push(
+      "NUTRITION_BACKUP_KEY_SECRET is not set — /api/nutrition/backup-{upload,download} will return 503.",
     );
   }
 
