@@ -1,9 +1,33 @@
 # Mobile-білди — команди для локальної розробки
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
-> **Status:** Active
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Status:** Active. Shell під deprecation — див. § [Sunset](#sunset).
 
 > Короткий operator-oriented довідник по Capacitor-shell-у (`@sergeant/mobile-shell`). Дизайн-обґрунтування, список плагінів і історію shell-а — див. [`apps/mobile-shell/README.md`](../../apps/mobile-shell/README.md). Для Expo / React Native застосунку (`@sergeant/mobile`) — див. [`apps/mobile/README.md`](../../apps/mobile/README.md) і [`overview.md`](./overview.md).
+
+## Sunset
+
+> Capacitor shell — **тимчасова поверхня**. ADR-0010 (status `accepted-with-sunset`) фіксує дедлайн зняття shell-у з продакшну на користь RN-клієнта. Цей розділ — короткий operator-cheatsheet; повний контекст — у [ADR-0010 § Sunset schedule](../adr/0010-mobile-dual-track-capacitor-expo.md#sunset-schedule) та ініціативі [`docs/initiatives/0002-mobile-platform-decision.md`](../initiatives/0002-mobile-platform-decision.md).
+
+| Маркер | Дата       | Що робить мейнтейнер shell-у                                                                                                                                                            |
+| ------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **T₀** | 2026-09-01 | Shell freeze. Тільки bug-fix і deprecation banner; lint `sergeant-design/forbid-shell-only-feature` уже блокує net-new файли в `apps/mobile-shell/src/**` із 2026-05-03.                |
+| **T₁** | 2026-11-30 | Remove-from-store. `mobile-shell-android-release.yml` / `mobile-shell-ios-release.yml` припиняють upload на internal-track. Бета-канал — in-app banner з deep-link на RN-store-listing. |
+| **T₂** | 2026-12-30 | `apps/mobile-shell/` видаляється з репо разом із Android/iOS pipeline-ами (T₁ + 30 днів). Sentry shell-проєкт архівується.                                                              |
+
+**Що це означає для вашого PR-у:**
+
+- **Net-new module у `apps/mobile-shell/src/**`** → блок: ESLint падає на `pnpm lint`із посиланням на ініціативу. Перенесіть фічу в`apps/mobile/src/**`(RN) або`apps/web/src/**`(web). Якщо це справді shell-glue (новий Capacitor-плагін shim), додайте файл у`SHELL_GLUE_ALLOWLIST` у [`packages/eslint-plugin-sergeant-design/index.js`](../../packages/eslint-plugin-sergeant-design/index.js) тим самим PR-ом і прокоментуйте у тілі PR посилання на ADR-0010.
+- **Bug-fix у наявному shell-glue** (наприклад, `auth-storage.ts`, `pushNative.ts`) → ок, ці файли в allowlist; модифікації не блокуються.
+- **Тести** (`*.test.ts`, `*.spec.ts`, `__tests__/**`) у `apps/mobile-shell/src/**` → не блокуються, allowlist не потрібен.
+
+**Shell-tax check** (хто платить підтримку):
+
+```sh
+node scripts/report-shell-tax.mjs --since 90 days ago
+```
+
+Скрипт друкує кількість шелл-touch-ed коммітів і файлів за останні 90 днів. Раз на спринт мейнтейнер постить summary у `#mobile-channel`. Cron-сетап — у роадмапі ініціативи 0002 (Фаза 3, PR `ci-shell-tax-report`).
 
 Capacitor-shell обгортає існуючий Vite-бандл `@sergeant/web` як нативний Android/iOS-застосунок. Web-бандл лягає в `apps/server/dist` — shell читає його звідти через `webDir: "../server/dist"` у [`apps/mobile-shell/capacitor.config.ts`](../../apps/mobile-shell/capacitor.config.ts).
 

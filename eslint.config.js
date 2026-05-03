@@ -235,6 +235,24 @@ export default [
       "sergeant-design/no-flat-shared-lib": "error",
     },
   },
+  // Mobile-shell sunset guardrail — initiative 0002 (mobile platform
+  // decision). `apps/mobile-shell/` is on the locked-in deprecation
+  // schedule defined in ADR-0010 § Sunset schedule (T₀ 2026-09-01,
+  // T₁ 2026-11-30, T₂ 2026-12-30). To make that deprecation real,
+  // we forbid net-new files in `apps/mobile-shell/src/**` — any new
+  // feature should grow inside `apps/mobile/src/**` (RN) or
+  // `apps/web/src/**` (web) instead. The rule itself owns the
+  // allowlist of existing shell-glue files (snapshot 2026-05-03);
+  // adding a *legitimate* new shim requires updating the
+  // SHELL_GLUE_ALLOWLIST in
+  // `packages/eslint-plugin-sergeant-design/index.js` together with
+  // an ADR-0010 / initiative 0002 outcome reference.
+  {
+    files: ["apps/mobile-shell/src/**/*.{ts,tsx}"],
+    rules: {
+      "sergeant-design/forbid-shell-only-feature": "error",
+    },
+  },
   // Import-extension hygiene — bans `.js`/`.jsx`/`.ts`/`.tsx`/`.mjs`/`.cjs`
   // suffixes in import specifiers for the bundler-fed frontend apps. Codemod
   // #3 stripped 436 historical extension-suffixed imports in `apps/web/src`
