@@ -1,25 +1,54 @@
 /**
  * Мініатюри страв у IndexedDB (окремо від localStorage).
  * Ключ — id запису їжі.
+ *
+ * Pre-PR-#010 lived in a dedicated `hub_nutrition_meal_photos` IndexedDB.
+ * PR #010 folds the thumbnails into the shared `sergeant-db` under the
+ * `nutrition_meal_thumbs` object store — the legacy DB is migrated
+ * lazily on the first read/write of this app session and then dropped.
  */
+import {
+  SERGEANT_STORE,
+  migrateLegacyDbOnce,
+  openSergeantDb,
+} from "../../../shared/lib/idb/sergeantDb";
 
-const DB_NAME = "hub_nutrition_meal_photos";
-const STORE = "thumbs";
-const DB_VERSION = 1;
+const LEGACY_DB_NAME = "hub_nutrition_meal_photos";
+const LEGACY_STORE_NAME = "thumbs";
+const STORE = SERGEANT_STORE.NUTRITION_MEAL_THUMBS;
 
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onerror = () => reject(req.error);
-    req.onsuccess = () => resolve(req.result);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        db.createObjectStore(STORE);
+const ensureMigrated = (): Promise<void> =>
+  migrateLegacyDbOnce({
+    legacyDbName: LEGACY_DB_NAME,
+    copy: async (legacyDb, sergeantDb) => {
+      if (!legacyDb.objectStoreNames.contains(LEGACY_STORE_NAME)) return;
+      const tx = legacyDb.transaction(LEGACY_STORE_NAME, "readonly");
+      const store = tx.objectStore(LEGACY_STORE_NAME);
+      const keys = await new Promise<IDBValidKey[]>((resolve, reject) => {
+        const r = store.getAllKeys();
+        r.onsuccess = () => resolve(Array.isArray(r.result) ? r.result : []);
+        r.onerror = () => reject(r.error);
+      });
+      const values = await new Promise<unknown[]>((resolve, reject) => {
+        const r = store.getAll();
+        r.onsuccess = () => resolve(Array.isArray(r.result) ? r.result : []);
+        r.onerror = () => reject(r.error);
+      });
+      const writeTx = sergeantDb.transaction(STORE, "readwrite");
+      const writeStore = writeTx.objectStore(STORE);
+      for (let i = 0; i < keys.length; i++) {
+        // Preserve thumbnail Blob payloads as-is — IDB stores blobs
+        // by structured clone, so a put() with the original value
+        // round-trips losslessly across DBs.
+        writeStore.put(values[i], keys[i]);
       }
-    };
+      await new Promise<void>((resolve, reject) => {
+        writeTx.oncomplete = () => resolve();
+        writeTx.onerror = () => reject(writeTx.error);
+        writeTx.onabort = () => reject(writeTx.error);
+      });
+    },
   });
-}
 
 export async function saveMealThumbnail(
   mealId: string | null | undefined,
@@ -27,14 +56,15 @@ export async function saveMealThumbnail(
 ): Promise<boolean> {
   if (!mealId || !blob) return false;
   try {
-    const db = await openDb();
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return false;
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE, "readwrite");
       tx.objectStore(STORE).put(blob, mealId);
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
-    db.close();
     return true;
   } catch {
     return false;
@@ -46,14 +76,15 @@ export async function getMealThumbnailBlob(
 ): Promise<Blob | null> {
   if (!mealId) return null;
   try {
-    const db = await openDb();
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return null;
     const blob = await new Promise<unknown>((resolve, reject) => {
       const tx = db.transaction(STORE, "readonly");
       const req = tx.objectStore(STORE).get(mealId);
       req.onsuccess = () => resolve(req.result || null);
       req.onerror = () => reject(req.error);
     });
-    db.close();
     return blob instanceof Blob ? blob : null;
   } catch {
     return null;
@@ -65,14 +96,15 @@ export async function deleteMealThumbnail(
 ): Promise<void> {
   if (!mealId) return;
   try {
-    const db = await openDb();
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return;
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE, "readwrite");
       tx.objectStore(STORE).delete(mealId);
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
-    db.close();
   } catch {
     /* ignore */
   }
@@ -93,7 +125,9 @@ export async function gcMealThumbnails(
           Array.isArray(validMealIds) ? (validMealIds as string[]) : [],
         );
   try {
-    const db = await openDb();
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return { ok: false, deleted: 0 };
     const tx = db.transaction(STORE, "readwrite");
     const store = tx.objectStore(STORE);
     const keys = await new Promise<string[]>((resolve, reject) => {
@@ -114,7 +148,6 @@ export async function gcMealThumbnails(
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
-    db.close();
     return { ok: true, deleted };
   } catch {
     return { ok: false, deleted: 0 };

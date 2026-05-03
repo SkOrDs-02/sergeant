@@ -1,5 +1,10 @@
 import type { Macros } from "../macros";
 import type { SeedFood } from "./seedFoodsUk";
+import {
+  SERGEANT_STORE,
+  migrateLegacyDbOnce,
+  openSergeantDb,
+} from "../../../../shared/lib/idb/sergeantDb";
 
 /**
  * Lazy-loader для 1600+ seed-продуктів. Статичний import затягував весь
@@ -12,10 +17,19 @@ async function loadSeedFoods(): Promise<readonly SeedFood[]> {
   return mod.SEED_FOODS_UK;
 }
 
-const DB_NAME = "hub_nutrition_food_db";
-const DB_VERSION = 1;
-const STORE_PRODUCTS = "products";
-const STORE_BARCODES = "barcodes";
+/**
+ * Pre-PR-#010 the food catalogue + barcode lookup lived in a dedicated
+ * `hub_nutrition_food_db` IndexedDB. PR #010 folds them into the shared
+ * `sergeant-db` under the `nutrition_foods` (keyPath="id",
+ * index="by_norm") and `nutrition_barcodes` (out-of-line) object stores.
+ * Both old stores are migrated lazily on the first read/write of this
+ * app session and the legacy DB is then dropped.
+ */
+const LEGACY_DB_NAME = "hub_nutrition_food_db";
+const LEGACY_STORE_PRODUCTS = "products";
+const LEGACY_STORE_BARCODES = "barcodes";
+const STORE_PRODUCTS = SERGEANT_STORE.NUTRITION_FOODS;
+const STORE_BARCODES = SERGEANT_STORE.NUTRITION_BARCODES;
 
 export interface FoodProduct {
   id: string;
@@ -67,23 +81,49 @@ function normalizeMacros(per100: unknown): Macros {
   };
 }
 
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onerror = () => reject(req.error);
-    req.onsuccess = () => resolve(req.result);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE_PRODUCTS)) {
-        const s = db.createObjectStore(STORE_PRODUCTS, { keyPath: "id" });
-        s.createIndex("by_norm", "norm", { unique: false });
+const ensureMigrated = (): Promise<void> =>
+  migrateLegacyDbOnce({
+    legacyDbName: LEGACY_DB_NAME,
+    copy: async (legacyDb, sergeantDb) => {
+      // Products store: keyPath="id" — entries carry their own keys, so
+      // we just put() them as-is into the new keyPath store.
+      if (legacyDb.objectStoreNames.contains(LEGACY_STORE_PRODUCTS)) {
+        const tx = legacyDb.transaction(LEGACY_STORE_PRODUCTS, "readonly");
+        const all = await new Promise<FoodProduct[]>((resolve, reject) => {
+          const r = tx.objectStore(LEGACY_STORE_PRODUCTS).getAll();
+          r.onsuccess = () =>
+            resolve(Array.isArray(r.result) ? (r.result as FoodProduct[]) : []);
+          r.onerror = () => reject(r.error);
+        });
+        const writeTx = sergeantDb.transaction(STORE_PRODUCTS, "readwrite");
+        const writeStore = writeTx.objectStore(STORE_PRODUCTS);
+        for (const product of all) writeStore.put(product);
+        await txDone(writeTx);
       }
-      if (!db.objectStoreNames.contains(STORE_BARCODES)) {
-        db.createObjectStore(STORE_BARCODES);
+      // Barcodes store: out-of-line keys (the barcode string is the
+      // key, the food id is the value), so copy keys+values together.
+      if (legacyDb.objectStoreNames.contains(LEGACY_STORE_BARCODES)) {
+        const tx = legacyDb.transaction(LEGACY_STORE_BARCODES, "readonly");
+        const store = tx.objectStore(LEGACY_STORE_BARCODES);
+        const keys = await new Promise<IDBValidKey[]>((resolve, reject) => {
+          const r = store.getAllKeys();
+          r.onsuccess = () => resolve(Array.isArray(r.result) ? r.result : []);
+          r.onerror = () => reject(r.error);
+        });
+        const values = await new Promise<unknown[]>((resolve, reject) => {
+          const r = store.getAll();
+          r.onsuccess = () => resolve(Array.isArray(r.result) ? r.result : []);
+          r.onerror = () => reject(r.error);
+        });
+        const writeTx = sergeantDb.transaction(STORE_BARCODES, "readwrite");
+        const writeStore = writeTx.objectStore(STORE_BARCODES);
+        for (let i = 0; i < keys.length; i++) {
+          writeStore.put(values[i], keys[i]);
+        }
+        await txDone(writeTx);
       }
-    };
+    },
   });
-}
 
 function txDone(tx: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -119,15 +159,16 @@ export function makeFoodProduct(partial: unknown): FoodProduct {
 
 export async function ensureSeedFoods(): Promise<boolean> {
   try {
-    const db = await openDb();
-    const tx = db.transaction([STORE_PRODUCTS], "readonly");
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return false;
+    const tx = db.transaction(STORE_PRODUCTS, "readonly");
     const store = tx.objectStore(STORE_PRODUCTS);
     const count = await new Promise<number>((resolve, reject) => {
       const r = store.count();
       r.onsuccess = () => resolve(r.result || 0);
       r.onerror = () => reject(r.error);
     });
-    db.close();
 
     const seeds = await loadSeedFoods();
 
@@ -156,8 +197,10 @@ export async function ensureSeedFoods(): Promise<boolean> {
 
 export async function listFoods(limit = 500): Promise<FoodProduct[]> {
   try {
-    const db = await openDb();
-    const tx = db.transaction([STORE_PRODUCTS], "readonly");
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return [];
+    const tx = db.transaction(STORE_PRODUCTS, "readonly");
     const store = tx.objectStore(STORE_PRODUCTS);
     const items = await new Promise<FoodProduct[]>((resolve, reject) => {
       const r = store.getAll();
@@ -166,7 +209,6 @@ export async function listFoods(limit = 500): Promise<FoodProduct[]> {
       r.onerror = () => reject(r.error);
     });
     await txDone(tx);
-    db.close();
     return items
       .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
       .slice(0, Math.max(1, Number(limit) || 500));
@@ -207,11 +249,12 @@ export async function upsertFood(product: unknown): Promise<UpsertFoodResult> {
   const p = makeFoodProduct(product);
   if (!p.name) return { ok: false, error: "Назва продукту порожня" };
   try {
-    const db = await openDb();
-    const tx = db.transaction([STORE_PRODUCTS], "readwrite");
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return { ok: false, error: "Не вдалося зберегти продукт" };
+    const tx = db.transaction(STORE_PRODUCTS, "readwrite");
     tx.objectStore(STORE_PRODUCTS).put(p);
     await txDone(tx);
-    db.close();
     return { ok: true, product: p };
   } catch {
     return { ok: false, error: "Не вдалося зберегти продукт" };
@@ -239,11 +282,12 @@ export async function bindBarcodeToFood(
   if (!bc || !id) return false;
   if (!/^\d{8,14}$/.test(bc)) return false;
   try {
-    const db = await openDb();
-    const tx = db.transaction([STORE_BARCODES], "readwrite");
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return false;
+    const tx = db.transaction(STORE_BARCODES, "readwrite");
     tx.objectStore(STORE_BARCODES).put(id, bc);
     await txDone(tx);
-    db.close();
     return true;
   } catch {
     return false;
@@ -256,7 +300,9 @@ export async function lookupFoodByBarcode(
   const bc = String(barcode || "").trim();
   if (!/^\d{8,14}$/.test(bc)) return null;
   try {
-    const db = await openDb();
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return null;
     const tx = db.transaction([STORE_BARCODES, STORE_PRODUCTS], "readonly");
     const id = await new Promise<string>((resolve, reject) => {
       const r = tx.objectStore(STORE_BARCODES).get(bc);
@@ -264,7 +310,6 @@ export async function lookupFoodByBarcode(
       r.onerror = () => reject(r.error);
     });
     if (!id) {
-      db.close();
       return null;
     }
     const product = await new Promise<FoodProduct | null>((resolve, reject) => {
@@ -273,7 +318,6 @@ export async function lookupFoodByBarcode(
       r.onerror = () => reject(r.error);
     });
     await txDone(tx);
-    db.close();
     return product || null;
   } catch {
     return null;
@@ -285,14 +329,15 @@ export async function replaceAllFoodsFromList(list: unknown): Promise<boolean> {
     const foods = Array.isArray(list)
       ? (list as unknown[]).map((x) => makeFoodProduct(x)).filter((x) => x.name)
       : [];
-    const db = await openDb();
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return false;
     const tx = db.transaction([STORE_PRODUCTS, STORE_BARCODES], "readwrite");
     const s = tx.objectStore(STORE_PRODUCTS);
     s.clear();
     for (const p of foods) s.put(p);
     tx.objectStore(STORE_BARCODES).clear();
     await txDone(tx);
-    db.close();
     return true;
   } catch {
     return false;
