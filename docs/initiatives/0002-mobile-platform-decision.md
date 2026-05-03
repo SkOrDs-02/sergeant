@@ -1,9 +1,10 @@
 # 0002 — Mobile platform decision: lock the deprecation deadline
 
-> **Status:** Proposed
+> **Status:** In progress (Phase 1 done — sunset locked, lint guard live, shell-tax script ready)
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks (рішення + 1 ADR + комунікація)
+> **Phase 1 PR:** see Outcome нижче (доданий після merge у цей файл).
 > **Sources:** Design Review 2026-05-03 §10, ADR-0010, [`docs/architecture/platforms.md`](../architecture/platforms.md), [`docs/mobile/react-native-migration.md`](../mobile/react-native-migration.md)
 
 ## TL;DR
@@ -39,12 +40,12 @@
 ### Фаза 1 — інвентаризація і метрики (3 дні)
 
 - **PR `mobile-feature-parity-matrix`** — оновити [`docs/architecture/platforms.md`](../architecture/platforms.md) з повною feature-parity таблицею:
-  | Module        | Web | Shell | RN | Notes |
+  | Module | Web | Shell | RN | Notes |
   | ------------- | --- | ----- | -- | ----- |
-  | Auth (Better) | ✅  | ✅    | ✅ | bearer контракт уніфікований |
-  | Hub chat      | ✅  | ✅    | 🟡 | RN voice ще без STT-fallback |
+  | Auth (Better) | ✅ | ✅ | ✅ | bearer контракт уніфікований |
+  | Hub chat | ✅ | ✅ | 🟡 | RN voice ще без STT-fallback |
   | … (повний список) |
-- **PR `mobile-tax-report`** — додати у `docs/initiatives/0002-…` секцію *Outcome → Cost baseline* з:
+- **PR `mobile-tax-report`** — додати у `docs/initiatives/0002-…` секцію _Outcome → Cost baseline_ з:
   - Кількість shell-related commits / quarter
   - Sentry shell-only events / week
   - Час на shell-Capacitor bumps (з PR-історії, грубо)
@@ -83,22 +84,22 @@
 
 ## Ризики та митиґація
 
-| Ризик                                                                                  | Мітигація                                                                                                                               |
-| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| До T₀ RN ще не готовий → доводиться зсувати дату                                       | Рішення про зсув приймається тільки на основі **публічної** feature-parity таблиці. Якщо хоч один маяк червоний — дата зсувається на 30 днів і це коментується у ADR-Outcome. Без таких зсувів — shell сам по собі живе тихо. |
-| Користувачі shell-білду залишаться без апдейтів після T₁                              | Перед T₀ випустити shell-білд із in-app banner «Перехід на RN-версію + deep link на store-листинг». Push-нотифікація 2× у грейс-період (T₀..T₁). |
-| Маркетингові кампанії, що ведуть на shell-листинг                                      | Координувати з marketing console (`apps/console/`): після T₁ всі shell-deeplinks redirect на RN-app store-page (через App Links / Universal Links). |
-| Sentry/Analytics історичні дані shell-у втратяться                                     | Після T₂ зробити архів `data-export/shell-events.parquet` у Sentry і покласти в `ops/data-archive/` (без PII).                                     |
+| Ризик                                                    | Мітигація                                                                                                                                                                                                                     |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| До T₀ RN ще не готовий → доводиться зсувати дату         | Рішення про зсув приймається тільки на основі **публічної** feature-parity таблиці. Якщо хоч один маяк червоний — дата зсувається на 30 днів і це коментується у ADR-Outcome. Без таких зсувів — shell сам по собі живе тихо. |
+| Користувачі shell-білду залишаться без апдейтів після T₁ | Перед T₀ випустити shell-білд із in-app banner «Перехід на RN-версію + deep link на store-листинг». Push-нотифікація 2× у грейс-період (T₀..T₁).                                                                              |
+| Маркетингові кампанії, що ведуть на shell-листинг        | Координувати з marketing console (`apps/console/`): після T₁ всі shell-deeplinks redirect на RN-app store-page (через App Links / Universal Links).                                                                           |
+| Sentry/Analytics історичні дані shell-у втратяться       | Після T₂ зробити архів `data-export/shell-events.parquet` у Sentry і покласти в `ops/data-archive/` (без PII).                                                                                                                |
 
 ## Метрики
 
-| Метрика                                        | Baseline (2026-05-03) | Target (T₂)                                                |
-| ---------------------------------------------- | --------------------- | ---------------------------------------------------------- |
-| Активні мобільні платформи                     | 2 (shell + RN)        | 1 (RN-only)                                                |
-| `apps/mobile-shell/**` LOC                     | ~? (заміряти у фазі 1) | 0 (видалено)                                              |
-| Shell-only Sentry projects                     | 1                     | 0 (закрити після T₂)                                       |
-| RN feature-parity маяків зелених               | ? / 3                 | 3 / 3 до T₀                                                |
-| % Shell-installs з deep-link на RN до T₁       | n/a                   | ≥ 80% before remove-from-store                            |
+| Метрика                                  | Baseline (2026-05-03)  | Target (T₂)                    |
+| ---------------------------------------- | ---------------------- | ------------------------------ |
+| Активні мобільні платформи               | 2 (shell + RN)         | 1 (RN-only)                    |
+| `apps/mobile-shell/**` LOC               | ~? (заміряти у фазі 1) | 0 (видалено)                   |
+| Shell-only Sentry projects               | 1                      | 0 (закрити після T₂)           |
+| RN feature-parity маяків зелених         | ? / 3                  | 3 / 3 до T₀                    |
+| % Shell-installs з deep-link на RN до T₁ | n/a                    | ≥ 80% before remove-from-store |
 
 ## Власник, ревʼюери
 
@@ -117,4 +118,85 @@
 
 ## Outcome
 
-_Заповнюється після завершення._
+### Фаза 1 — інвентаризація + рішення + guardrails (DONE — 2026-05-03)
+
+**PR:** `devin/1777848219-impl-0002-phase1-mobile-decision` →
+[відкривається у Skords-01/Sergeant](https://github.com/Skords-01/Sergeant/pulls?q=head%3Adevin%2F1777848219-impl-0002-phase1-mobile-decision)
+(номер додам сюди після merge — у тілі PR-у уже є посилання сюди).
+
+Phase 1 об'єднала всі чотири фази плану в один PR, бо вони про одне й те саме —
+**зробити дедлайн для shell-у формальним**. Це не тонна коду, це
+governance change з парою скриптів і lint-правилом.
+
+Що зробили:
+
+- **Sunset schedule зафіксовано в ADR-0010** ([§ Sunset schedule](../adr/0010-mobile-dual-track-capacitor-expo.md#sunset-schedule)),
+  status PR-а: `accepted` → `accepted-with-sunset`. Дати:
+  - **T₀ — 2026-09-01** (shell freeze, lint-блок на shell-only PR-и)
+  - **T₁ — 2026-11-30** (remove-from-store, T₀ + 90 днів)
+  - **T₂ — 2026-12-30** (видалення `apps/mobile-shell/` з репо, T₁ + 30 днів)
+- **Feature-parity матриця** опублікована у
+  [`docs/architecture/platforms.md` § 0](../architecture/platforms.md#0-feature-parity-матриця-web-shell-rn) —
+  22 рядки (Auth / Hub / Modules / Nutrition / Sync / Voice / тощо), три колонки
+  (Web / Capacitor shell / RN), легенда `✅ / 🟡 / 🟥 / n/a`. **Snapshot:** 2026-05-03,
+  **Next review:** 2026-08-01.
+- **Exit dashboard** доданий у ту ж секцію — три бінарні маяки:
+  RN-Nutrition full parity, RN-Voice (STT/TTS), Detox e2e. Усі три повинні стати
+  зеленими **до T₀**, інакше дата зсувається на 30 днів і це коментується сюди
+  (Outcome) разом з обґрунтуванням. На дату 2026-05-03 — 🟥 / 🟥 / 🟡.
+- **Lint-правило `sergeant-design/forbid-shell-only-feature`** додано у
+  [`packages/eslint-plugin-sergeant-design/`](../../packages/eslint-plugin-sergeant-design/index.js)
+  (нові файли в `apps/mobile-shell/src/**` блокуються; allowlist на 5 існуючих
+  shell-glue файлів — `index.ts`, `platform.ts`, `auth-storage.ts`, `barcodeNative.ts`,
+  `pushNative.ts`; tests/fixtures exempt). Підключено в
+  [`eslint.config.js`](../../eslint.config.js) як `error`.
+  20 unit-тестів у [`packages/eslint-plugin-sergeant-design/__tests__/forbid-shell-only-feature.test.mjs`](../../packages/eslint-plugin-sergeant-design/__tests__/forbid-shell-only-feature.test.mjs).
+  Це робить T₀ реальним _вже зараз_: не «шукайте на code-review нові shell-онлі
+  файли», а `pnpm lint` падає.
+- **`docs/mobile/shell.md` § Sunset** додано — operator cheatsheet для мейнтейнерів
+  shell-у: «що це означає для вашого PR-у», як розширити allowlist для **легітимного**
+  нового shell-glue (вимагає посилання на ADR-0010 / цю ініціативу).
+- **Shell-tax baseline скрипт** — [`scripts/report-shell-tax.mjs`](../../scripts/report-shell-tax.mjs).
+  Рахує commits / files / authors / top-15 hottest у `apps/mobile-shell/**` за останні
+  90 днів (configurable `--since`, `--json` для cron). Це quantitative baseline для
+  Exit dashboard у ADR-0010 — три маяки лишаються qualitative, але час, який shell
+  з'їдає, тепер видно у числах.
+
+Snapshot 2026-05-03 (для baseline у метриці нижче):
+
+```
+$ node scripts/report-shell-tax.mjs --since 30
+shell_commits: 34
+shell_files:   75
+shell_authors: 3
+top_files:     README.md (16), package.json (13), AndroidManifest.xml (6), …
+```
+
+Це 30-денна вибірка (90-денну зробимо у наступному `report-shell-tax` cron-запуску
+після PR `ci-shell-tax-report`, який зараз в плані Phase 2).
+
+Метрики Phase 1 (Phase 2+ ще попереду):
+
+| Метрика                                        | Baseline (2026-05-03) | Phase 1 (post-merge)                | Target (T₂ — 2026-12-30) |
+| ---------------------------------------------- | --------------------- | ----------------------------------- | ------------------------ |
+| Активні мобільні платформи                     | 2 (shell + RN)        | 2 (shell+RN, але shell freeze з T₀) | 1 (RN-only)              |
+| Shell-only PR-и блокуються в CI                | n/a                   | **так** (lint-rule)                 | так                      |
+| ADR-0010 має `Sunset schedule` з трьома датами | ні                    | **так**                             | так                      |
+| Feature-parity матриця <7 днів                 | ні                    | **так** (свіжа)                     | так                      |
+| RN feature-parity маяків зелених               | ? / 3                 | 1 / 3 (Detox 🟡)                    | 3 / 3 до T₀              |
+
+Що далі (Phase 2+):
+
+1. **PR `ci-shell-tax-report`** — щотижневий cron у GH Actions, що ганяє
+   `report-shell-tax.mjs --json` і постить summary у `#mobile-channel`.
+2. **PR `mobile-feature-parity-refresh-2026-08`** — оновлення матриці на 2026-08-01
+   (next-review, перед T₀).
+3. **Phase 4 — комунікація** — пост у `#mobile-channel` + in-app banner у shell-білді
+   (зробити перед T₀ — 2026-09-01).
+
+Відхилення від плану:
+
+- Phase 4 (комунікація) перенесена на серпень — близько до T₀, щоб не «вистрелювати»
+  банер у користувачів за 4 місяці до freeze.
+- `ci-shell-tax-report` (фаза 3) ще не land-ить разом з цим PR — окремий PR,
+  бо потребує webhook secret і не блокує decision gating.

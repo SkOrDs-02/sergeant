@@ -2623,6 +2623,100 @@ const noFlatSharedLib = {
   },
 };
 
+// ─── forbid-shell-only-feature ──────────────────────────────────────────
+//
+// Sergeant runs *two* mobile clients at once (see ADR-0010 and
+// `docs/initiatives/0002-mobile-platform-decision.md`):
+//   1. `apps/mobile-shell` — Capacitor WebView wrapper around `apps/web`,
+//      kept around as the fast-time-to-store surface.
+//   2. `apps/mobile` — the Expo/React Native client we're investing in
+//      long-term.
+// `apps/mobile-shell` is on a sunset schedule (T₀ / T₁ / T₂ defined in
+// ADR-0010). To keep the deprecation real, we forbid net-new files from
+// landing in `apps/mobile-shell/src/**` — any new feature should grow
+// inside `apps/mobile/src/**` (RN) or `apps/web/src/**` (web), not
+// inside the shell, which is supposed to be a thin glue layer.
+//
+// Mechanism: explicit allowlist of the existing shell-glue files
+// (snapshot at the start of the initiative). When a file is linted
+// whose path matches `apps/mobile-shell/src/**` AND whose
+// repo-relative path is NOT in the allowlist, the rule reports an
+// error pointing at the initiative.
+//
+// Adding a *legitimate* new shell-glue file (e.g. another Capacitor
+// plugin shim) requires explicit governance: open a PR that updates
+// both the allowlist below AND ADR-0010 / the initiative outcome.
+// That review pressure is the entire point of this rule.
+
+const SHELL_FORBID_MESSAGE =
+  "`apps/mobile-shell/src` is on a sunset schedule (ADR-0010 + initiative 0002-mobile-platform-decision). Net-new files in this tree are blocked: build new features in `apps/mobile/src/**` (RN) or `apps/web/src/**` (web). To allow a legitimate new shell-glue file, add it to the SHELL_GLUE_ALLOWLIST in packages/eslint-plugin-sergeant-design/index.js *and* update ADR-0010.";
+
+// Repo-relative paths (POSIX separators) of files that may live in
+// `apps/mobile-shell/src/**`. Snapshot of 2026-05-03. Tests
+// (`*.test.ts`, `__tests__/**`) are exempt at the matcher level — not
+// listed here.
+const SHELL_GLUE_ALLOWLIST = new Set([
+  "apps/mobile-shell/src/index.ts",
+  "apps/mobile-shell/src/platform.ts",
+  "apps/mobile-shell/src/auth-storage.ts",
+  "apps/mobile-shell/src/barcodeNative.ts",
+  "apps/mobile-shell/src/pushNative.ts",
+]);
+
+const SHELL_PATH_RE = /(?:^|\/)apps\/mobile-shell\/src\//;
+const SHELL_TEST_RE =
+  /(?:^|\/)apps\/mobile-shell\/src\/(?:.*\/)?__tests__\/|\.test\.tsx?$|\.spec\.tsx?$/;
+
+function toRepoRelativePosixPath(filename) {
+  if (!filename) return "";
+  const norm = filename.replace(/\\/g, "/");
+  const idx = norm.indexOf("/apps/mobile-shell/src/");
+  if (idx === -1) return norm.replace(/^\/+/, "");
+  return norm.slice(idx + 1);
+}
+
+const forbidShellOnlyFeature = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid net-new feature files inside `apps/mobile-shell/src/**`. The Capacitor shell is on a sunset schedule (ADR-0010, initiative 0002); new features belong to `apps/mobile/**` (RN) or `apps/web/**` (web).",
+    },
+    schema: [
+      {
+        type: "object",
+        properties: {
+          allowlist: {
+            type: "array",
+            items: { type: "string" },
+            uniqueItems: true,
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
+    messages: { forbid: SHELL_FORBID_MESSAGE },
+  },
+  create(context) {
+    const filename = context.filename ?? context.getFilename?.() ?? "";
+    const norm = filename.replace(/\\/g, "/");
+    if (!SHELL_PATH_RE.test(norm)) return {};
+    if (SHELL_TEST_RE.test(norm)) return {};
+    const rel = toRepoRelativePosixPath(filename);
+    const opts = context.options[0] ?? {};
+    const allowlist = new Set([
+      ...SHELL_GLUE_ALLOWLIST,
+      ...(Array.isArray(opts.allowlist) ? opts.allowlist : []),
+    ]);
+    if (allowlist.has(rel)) return {};
+    return {
+      Program(node) {
+        context.report({ node, messageId: "forbid" });
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
@@ -2646,6 +2740,7 @@ const plugin = {
     "prefer-text-style": preferTextStyle,
     "no-arbitrary-text-size": noArbitraryTextSize,
     "no-flat-shared-lib": noFlatSharedLib,
+    "forbid-shell-only-feature": forbidShellOnlyFeature,
   },
 };
 

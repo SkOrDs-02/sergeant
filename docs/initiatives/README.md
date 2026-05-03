@@ -15,29 +15,29 @@
 
 Кожен файл має префікс `NNNN-` за порядком створення (як у ADR), стабільний slug і таку саму структуру:
 
-| Секція             | Призначення                                          |
-| ------------------ | ---------------------------------------------------- |
-| **TL;DR**          | 3–4 речення. Що робимо і чому зараз.                 |
-| **Чому зараз**     | Контекст, тригер, ризик зволікання.                  |
-| **Скоуп**          | In / Out — щоб не розпливалось.                      |
-| **План змін**      | Розбито на фази / PR-и з конкретними файлами.        |
-| **Критерії DONE**  | Метрики, гарди в CI, видимі ефекти.                  |
-| **Ризики**         | Що може піти не так і як митиґуємо.                  |
-| **Власник / ETA**  | Хто веде та орієнтовний дедлайн.                     |
-| **Посилання**      | Аудит-сорс, ADR, tech-debt, релевантні PR-и, issues. |
+| Секція            | Призначення                                          |
+| ----------------- | ---------------------------------------------------- |
+| **TL;DR**         | 3–4 речення. Що робимо і чому зараз.                 |
+| **Чому зараз**    | Контекст, тригер, ризик зволікання.                  |
+| **Скоуп**         | In / Out — щоб не розпливалось.                      |
+| **План змін**     | Розбито на фази / PR-и з конкретними файлами.        |
+| **Критерії DONE** | Метрики, гарди в CI, видимі ефекти.                  |
+| **Ризики**        | Що може піти не так і як митиґуємо.                  |
+| **Власник / ETA** | Хто веде та орієнтовний дедлайн.                     |
+| **Посилання**     | Аудит-сорс, ADR, tech-debt, релевантні PR-и, issues. |
 
 ## Активні ініціативи (травень 2026)
 
-| #    | Назва                                                                            | Пріоритет | Власник      | ETA              | Статус   |
-| ---- | -------------------------------------------------------------------------------- | --------- | ------------ | ---------------- | -------- |
-| 0001 | [Module decomposition + `max-lines` guard](./0001-module-decomposition.md)       | P0        | `@Skords-01` | Sprint 1 (2 wk)  | Proposed |
-| 0002 | [Mobile platform decision](./0002-mobile-platform-decision.md)                   | P0        | `@Skords-01` | Sprint 1 (2 wk)  | Proposed |
-| 0003 | [Sync v2 rollout & v1 sunset](./0003-sync-v2-rollout-and-v1-sunset.md)           | P0        | `@Skords-01` | Sprint 1–2       | Proposed |
-| 0004 | [Server observability (Sentry + OTel)](./0004-server-observability.md)           | P0        | `@Skords-01` | Sprint 1 (1 wk)  | Proposed |
-| 0005 | [AI cost optimisation (prompt cache)](./0005-ai-cost-and-prompt-cache.md)        | P0        | `@Skords-01` | Sprint 1 (3 dni) | Proposed |
-| 0006 | [Frontend routing & code-split](./0006-frontend-routing-and-code-split.md)       | P1        | `@Skords-01` | Sprint 2 (2 wk)  | Proposed |
-| 0007 | [Design-system tooling (Storybook + VR)](./0007-design-system-tooling.md)        | P1        | `@Skords-01` | Sprint 2 (2 wk)  | Proposed |
-| 0008 | [Platform hardening (rate-limit, health)](./0008-platform-hardening.md)          | P1        | `@Skords-01` | Sprint 2 (1 wk)  | Proposed |
+| #    | Назва                                                                      | Пріоритет | Власник      | ETA              | Статус                                                                                  |
+| ---- | -------------------------------------------------------------------------- | --------- | ------------ | ---------------- | --------------------------------------------------------------------------------------- |
+| 0001 | [Module decomposition + `max-lines` guard](./0001-module-decomposition.md) | P0        | `@Skords-01` | Sprint 1 (2 wk)  | In progress (Phase 1 — [#1555](https://github.com/Skords-01/Sergeant/pull/1555) merged) |
+| 0002 | [Mobile platform decision](./0002-mobile-platform-decision.md)             | P0        | `@Skords-01` | Sprint 1 (2 wk)  | In progress (Phase 1 — sunset locked, lint guard live, PR open)                         |
+| 0003 | [Sync v2 rollout & v1 sunset](./0003-sync-v2-rollout-and-v1-sunset.md)     | P0        | `@Skords-01` | Sprint 1–2       | Proposed                                                                                |
+| 0004 | [Server observability (Sentry + OTel)](./0004-server-observability.md)     | P0        | `@Skords-01` | Sprint 1 (1 wk)  | Proposed                                                                                |
+| 0005 | [AI cost optimisation (prompt cache)](./0005-ai-cost-and-prompt-cache.md)  | P0        | `@Skords-01` | Sprint 1 (3 dni) | Proposed                                                                                |
+| 0006 | [Frontend routing & code-split](./0006-frontend-routing-and-code-split.md) | P1        | `@Skords-01` | Sprint 2 (2 wk)  | Proposed                                                                                |
+| 0007 | [Design-system tooling (Storybook + VR)](./0007-design-system-tooling.md)  | P1        | `@Skords-01` | Sprint 2 (2 wk)  | Proposed                                                                                |
+| 0008 | [Platform hardening (rate-limit, health)](./0008-platform-hardening.md)    | P1        | `@Skords-01` | Sprint 2 (1 wk)  | Proposed                                                                                |
 
 ## Статуси
 

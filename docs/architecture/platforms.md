@@ -1,17 +1,64 @@
 # Статус трьох поверхонь — web / native / capacitor-shell
 
-> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
-> **Status:** Active
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Status:** Active. Capacitor shell — `accepted-with-sunset`, dates у [ADR-0010 § Sunset schedule](../adr/0010-mobile-dual-track-capacitor-expo.md#sunset-schedule).
+> **Initiative:** [`docs/initiatives/0002-mobile-platform-decision.md`](../initiatives/0002-mobile-platform-decision.md).
 
 Короткий репорт «що готово до запуску, що треба доробити» по трьох
 варіантах Sergeant-а. Живе поруч з `docs/mobile/overview.md` (API-контракт) і
 `docs/mobile/react-native-migration.md` (роадмап порту web → RN).
 
-| Поверхня                       | Де живе             | Технології                 | Реліз-готовність                                                             |
-| ------------------------------ | ------------------- | -------------------------- | ---------------------------------------------------------------------------- |
-| **Web / PWA** (канонічна апка) | `apps/web`          | React 18 + Vite + PWA      | **Production** (live)                                                        |
-| **Native RN** (iOS / Android)  | `apps/mobile`       | Expo SDK 52 + Expo Router  | **Internal dev-client**                                                      |
-| **Capacitor shell** (WebView)  | `apps/mobile-shell` | Capacitor 7 + Android Java | **MVP** (Android closer; iOS release scaffold landed, pending Apple secrets) |
+| Поверхня                       | Де живе             | Технології                 | Реліз-готовність                                                     |
+| ------------------------------ | ------------------- | -------------------------- | -------------------------------------------------------------------- |
+| **Web / PWA** (канонічна апка) | `apps/web`          | React 18 + Vite + PWA      | **Production** (live)                                                |
+| **Native RN** (iOS / Android)  | `apps/mobile`       | Expo SDK 52 + Expo Router  | **Internal dev-client** — цільовий клієнт після T₀                   |
+| **Capacitor shell** (WebView)  | `apps/mobile-shell` | Capacitor 7 + Android Java | **MVP — sunset T₀ = 2026-09-01 / T₁ = 2026-11-30 / T₂ = 2026-12-30** |
+
+## 0. Feature-parity матриця (web ↔ shell ↔ RN)
+
+> **Snapshot:** 2026-05-03. Колонки відображають _функціональну_ parity
+> (юзер може зробити цю дію), не code-parity (різна реалізація допустима).
+> Легенда: `✅` — повна parity; `🟡` — часткова / smoke-only / без edge-cases;
+> `🟥` — не реалізовано; `n/a` — поза скоупом цієї поверхні.
+>
+> Таблиця оновлюється на кожен Phase-2 PR ініціативи 0002 і повинна бути
+> «свіжою» в межах 7 днів — це **gating сигнал** для рішення про зсув T₀
+> (див. [`docs/initiatives/0002-mobile-platform-decision.md` § Ризики](../initiatives/0002-mobile-platform-decision.md#ризики-та-митиґація)).
+
+| Capability / module             | Web (`apps/web`) | Capacitor shell (`apps/mobile-shell`) | RN (`apps/mobile`) | Notes                                                                                                                 |
+| ------------------------------- | ---------------- | ------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Auth (Better) — sign in/out     | ✅               | ✅                                    | ✅                 | Bearer-контракт уніфікований; web — cookies, native + shell — bearer у secure storage.                                |
+| Auth — Google OAuth             | ✅               | ✅                                    | ✅                 | Shell і RN ходять через ASWebAuthenticationSession / Custom Tabs.                                                     |
+| Hub dashboard                   | ✅               | ✅                                    | ✅                 | RN-варіант — `apps/mobile/src/core/dashboard/`; порядок модулів синхронізований.                                      |
+| Hub chat (text)                 | ✅               | ✅                                    | ✅                 | Один `/api/v1/coach/*` контракт для всіх трьох.                                                                       |
+| Hub voice (STT + TTS)           | ✅               | 🟡                                    | 🟥                 | Shell успадковує web (Web Speech API працює тільки в WKWebView ≥ iOS 17). RN — Phase 7+.                              |
+| Hub search                      | ✅               | ✅                                    | ✅                 | RN — `apps/mobile/src/core/hub/search/`.                                                                              |
+| OnboardingWizard                | ✅               | ✅                                    | 🟡                 | RN-stack має скорочений wizard; повний крок «AI-customization» — TBD.                                                 |
+| WeeklyDigestCard                | ✅               | ✅                                    | ✅                 | Усі три тримають `getWeeklyDigest()` через api-client.                                                                |
+| Push (web-push VAPID)           | ✅               | 🟡                                    | n/a                | Shell-WebView push працює тільки на iOS ≥ 16.4; Android Chrome WebView — ок.                                          |
+| Push (native APNs/FCM)          | n/a              | ✅                                    | ✅                 | Shell — `@capacitor/push-notifications` (PR #512); RN — `expo-notifications`.                                         |
+| Deep links (custom scheme)      | ✅               | ✅                                    | ✅                 | `parseDeepLink()` ідентичний; shell диспатчить через `window.__sergeantShellNavigate`.                                |
+| Universal / App Links (HTTPS)   | ✅               | ✅                                    | 🟡                 | RN — налаштовано в `app.config.ts`, але `apple-app-site-association` host-prefix TBD.                                 |
+| Offline / sync (CloudSync)      | ✅               | ✅                                    | ✅                 | Один `useCloudSync` контракт; shell — те саме що web.                                                                 |
+| Фінік — Overview/Tx/Budgets     | ✅               | ✅                                    | ✅                 | RN — `apps/mobile/src/modules/finyk/`.                                                                                |
+| Фізрук — Workouts/Programs      | ✅               | ✅                                    | ✅                 | RN — `apps/mobile/src/modules/fizruk/`.                                                                               |
+| Рутина — Habits/Heatmap         | ✅               | ✅                                    | ✅                 | RN — `apps/mobile/src/modules/routine/`.                                                                              |
+| Харчування — log/water/log-meal | ✅               | ✅                                    | 🟡                 | RN: `AddMealSheet` + сканер + журнал готові; рецепти / photo-AI / day-plan — Phase 7+.                                |
+| Харчування — barcode scan       | ✅               | ✅                                    | ✅                 | Web — ZXing/native BarcodeDetector; shell — `@capacitor-mlkit/barcode-scanning`; RN — `expo-camera` + `/api/barcode`. |
+| Харчування — pantry             | ✅               | ✅                                    | ✅                 | RN: `useNutritionPantries` + `pages/Pantry`, stack `pantry`.                                                          |
+| Харчування — shopping list      | ✅               | ✅                                    | 🟡                 | RN: ручний список; AI-генерація з рецептів / тижневого плану — TBD.                                                   |
+| Харчування — recipes (AI)       | ✅               | ✅                                    | 🟥                 | RN: `recipe/[id].tsx` — заглушка.                                                                                     |
+| Харчування — photo-AI           | ✅               | ✅                                    | 🟥                 | RN — Phase 7+ (camera-input → `/api/v1/nutrition/photo`).                                                             |
+| Detox / e2e on CI               | n/a              | n/a                                   | 🟡                 | `detox-ios.yml` / `detox-android.yml` — поки smoke-build; реальні сценарії TBD.                                       |
+| Native UX (haptics, sheets)     | 🟡               | 🟡                                    | ✅                 | Web — обмежено (`navigator.vibrate`); shell — Capacitor Haptics; RN — нативно.                                        |
+
+**Сигнал Exit dashboard (для ADR-0010 § Sunset schedule):**
+
+- 🟥 **RN-Nutrition full parity** — `recipe/[id]`, photo-AI, AI-shopping. Зеленіє коли всі три рядки таблиці позначені `✅`.
+- 🟥 **RN-Voice (STT/TTS)** — Phase 7+. Зеленіє коли «Hub voice» у RN-колонці = `✅`.
+- 🟡 **Detox real e2e** — sign-in → module → sign-out × 4 модулі. Зеленіє коли «Detox / e2e on CI» = `✅`.
+
+Усі три маяки повинні бути зеленими **до T₀ — 2026-09-01** (інакше дата зсувається на 30 днів і це коментується у ADR-0010 Outcome). Pure-shell-only фічі після T₀ блокуються lint-правилом `sergeant-design/forbid-shell-only-feature` (див. [`docs/initiatives/0002-mobile-platform-decision.md` § Фаза 3](../initiatives/0002-mobile-platform-decision.md#фаза-3--guardrails-12-дні)).
 
 Сервер (`apps/server`) — спільний для всіх трьох, деплой на Railway,
 `/api/v1/*` з Better Auth (cookies для web, bearer для native/shell).
