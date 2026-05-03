@@ -10,7 +10,7 @@ import { decryptToken, tokenFingerprint, webhookSecretHash } from "./crypto.js";
  * — the secret in the URL we register stays valid until we replace it.
  * That makes a silent leak (proxy access-log, screenshot, packet capture)
  * a forge-anyone's-statements primitive forever, so we age the secret out
- * on a fixed schedule. Migration 032 added `webhook_secret_rotated_at` to
+ * on a fixed schedule. Migration 033 added `webhook_secret_rotated_at` to
  * `mono_connection`; this module owns the actual rotation flow.
  *
  * One rotation = (1) decrypt the user's persisted Monobank token, (2)
