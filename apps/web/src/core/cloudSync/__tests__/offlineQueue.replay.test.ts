@@ -92,6 +92,9 @@ afterEach(() => {
 // =========================================================================
 describe("Offline → many writes → coalesce", () => {
   it("consecutive pushDirty-style enqueues coalesce into a single push entry with merged modules", () => {
+    // PR #026 retired 'routine' and PR #030 retired 'fizruk' from
+    // SYNC_MODULES; the queue helper itself accepts any string but
+    // we keep the fixture aligned with the post-retirement registry.
     addToOfflineQueue({
       type: "push",
       modules: {
@@ -104,8 +107,8 @@ describe("Offline → many writes → coalesce", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
-        fizruk: {
-          data: { workouts: ["bench"] },
+        nutrition: {
+          data: { log: ["lunch"] },
           clientUpdatedAt: "2025-01-01T00:01:00.000Z",
         },
       },
@@ -113,8 +116,8 @@ describe("Offline → many writes → coalesce", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
-        routine: {
-          data: { habits: ["read"] },
+        profile: {
+          data: { displayName: "sergeant" },
           clientUpdatedAt: "2025-01-01T00:02:00.000Z",
         },
       },
@@ -125,12 +128,12 @@ describe("Offline → many writes → coalesce", () => {
     expect(q[0].type).toBe("push");
     expect(Object.keys(q[0].modules).sort()).toEqual([
       "finyk",
-      "fizruk",
-      "routine",
+      "nutrition",
+      "profile",
     ]);
     expect(q[0].modules.finyk.data).toEqual({ budgets: [100] });
-    expect(q[0].modules.fizruk.data).toEqual({ workouts: ["bench"] });
-    expect(q[0].modules.routine.data).toEqual({ habits: ["read"] });
+    expect(q[0].modules.nutrition.data).toEqual({ log: ["lunch"] });
+    expect(q[0].modules.profile.data).toEqual({ displayName: "sergeant" });
   });
 
   it("later write for the same module overwrites the earlier payload", () => {
@@ -196,7 +199,7 @@ describe("Offline → many writes → coalesce", () => {
       addToOfflineQueue({
         type: "push",
         modules: {
-          fizruk: {
+          nutrition: {
             data: { b: 2 },
             clientUpdatedAt: "2025-01-01T00:01:00.000Z",
           },
@@ -216,7 +219,9 @@ describe("Offline → many writes → coalesce", () => {
 describe("Reconnect replay (happy path)", () => {
   it("drains the queue and calls syncApi.pushAll with collected modules", async () => {
     const replayOfflineQueue = await freshReplay();
-    // Seed the queue with a pre-populated entry
+    // Seed the queue with a pre-populated entry. PR #030 retired
+    // 'fizruk' from SYNC_MODULES, so we use 'nutrition' as the
+    // second module here.
     addToOfflineQueue({
       type: "push",
       modules: {
@@ -224,8 +229,8 @@ describe("Reconnect replay (happy path)", () => {
           data: { budgets: [100] },
           clientUpdatedAt: "2025-01-01T00:00:00.000Z",
         },
-        fizruk: {
-          data: { workouts: ["squat"] },
+        nutrition: {
+          data: { log: ["breakfast"] },
           clientUpdatedAt: "2025-01-01T00:01:00.000Z",
         },
       },
@@ -233,7 +238,7 @@ describe("Reconnect replay (happy path)", () => {
     expect(getOfflineQueue()).toHaveLength(1);
 
     mockedPushAll.mockResolvedValueOnce({
-      results: { finyk: { ok: true }, fizruk: { ok: true } },
+      results: { finyk: { ok: true }, nutrition: { ok: true } },
     });
 
     await replayOfflineQueue();
@@ -241,7 +246,7 @@ describe("Reconnect replay (happy path)", () => {
     expect(mockedPushAll).toHaveBeenCalledTimes(1);
     const pushed = mockedPushAll.mock.calls[0][0];
     expect(pushed).toHaveProperty("finyk");
-    expect(pushed).toHaveProperty("fizruk");
+    expect(pushed).toHaveProperty("nutrition");
     // Queue should be cleared after successful push
     expect(getOfflineQueue()).toEqual([]);
   });
@@ -260,9 +265,10 @@ describe("Reconnect replay (happy path)", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
-        // PR #026 видалив 'routine' з SYNC_MODULES (тепер це SQLite-only
-        // модуль). Тут лишилися 'finyk' / 'nutrition' / 'profile' як
-        // три валідні модулі для перевірки cross-module coalescing.
+        // PR #026 видалив 'routine' і PR #030 — 'fizruk' з
+        // SYNC_MODULES (обидва тепер SQLite-only модулі). Тут
+        // лишилися 'finyk' / 'nutrition' / 'profile' як три валідні
+        // модулі для перевірки cross-module coalescing.
         profile: {
           data: { v: 2 },
           clientUpdatedAt: "2025-01-01T00:02:00.000Z",
@@ -358,8 +364,9 @@ describe("Reconnect replay (server error)", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
-        fizruk: {
-          data: { w: ["deadlift"] },
+        // PR #030 — 'fizruk' retired; substitute 'nutrition'.
+        nutrition: {
+          data: { log: ["snack"] },
           clientUpdatedAt: "2025-01-01T00:00:00.000Z",
         },
       },
@@ -377,7 +384,7 @@ describe("Reconnect replay (server error)", () => {
 
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].modules.fizruk.data).toEqual({ w: ["deadlift"] });
+    expect(q[0].modules.nutrition.data).toEqual({ log: ["snack"] });
   });
 
   it("preserves the queue on a 503 Service Unavailable", async () => {
@@ -385,9 +392,10 @@ describe("Reconnect replay (server error)", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
-        // PR #026 видалив 'routine' з SYNC_MODULES; для цього
-        // 'queue must survive 503' тесту достатньо будь-якого
-        // валідного модуля — використовую 'profile'.
+        // PR #026 видалив 'routine' і PR #030 — 'fizruk' з
+        // SYNC_MODULES; для цього 'queue must survive 503' тесту
+        // достатньо будь-якого валідного модуля — використовую
+        // 'profile'.
         profile: {
           data: { habits: ["meditate"] },
           clientUpdatedAt: "2025-01-01T00:00:00.000Z",

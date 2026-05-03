@@ -139,7 +139,7 @@ export function StreakProtection({
         <div className="flex items-start gap-3">
           <div
             className={cn(
-              "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center",
+              "shrink-0 w-10 h-10 rounded-full flex items-center justify-center",
               urgencyLevel === "critical" && "bg-danger/20 text-danger",
               urgencyLevel === "warning" && "bg-warning/20 text-warning",
               urgencyLevel === "info" && "bg-accent/20 text-accent",
@@ -172,7 +172,7 @@ export function StreakProtection({
           <button
             type="button"
             onClick={handleDismiss}
-            className="flex-shrink-0 p-1 rounded-xl text-muted hover:text-text hover:bg-surface transition-colors"
+            className="shrink-0 p-1 rounded-xl text-muted hover:text-text hover:bg-surface transition-colors"
             aria-label="Закрити"
           >
             <Icon name="x" size={16} />

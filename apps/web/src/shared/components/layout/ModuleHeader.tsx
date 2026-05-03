@@ -109,12 +109,7 @@ export function ModuleHeader({
       className={cn(
         "shrink-0 backdrop-blur-md z-40 relative safe-area-pt",
         mt
-          ? cn(
-              "bg-gradient-to-b to-panel/95",
-              mt.gradient,
-              mt.border,
-              "border-b",
-            )
+          ? cn("bg-linear-to-b to-panel/95", mt.gradient, mt.border, "border-b")
           : "bg-panel/95 border-b border-line",
         className,
       )}
@@ -409,7 +404,7 @@ export function ModuleSwitcher({ active, className }: ModuleSwitcherProps) {
               openHubModule(id);
             }}
             className={cn(
-              "flex-1 inline-flex items-center justify-center gap-1.5 h-8 [@media(pointer:coarse)]:h-9 px-2 rounded-xl text-2xs font-semibold tracking-wide transition-colors",
+              "flex-1 inline-flex items-center justify-center gap-1.5 h-8 pointer-coarse:h-9 px-2 rounded-xl text-2xs font-semibold tracking-wide transition-colors",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
               isActive ? tokens.active : tokens.inactive,
               tokens.ring,

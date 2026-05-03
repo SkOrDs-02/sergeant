@@ -47,7 +47,7 @@ export function FinykLoginScreen({
           <div
             className={cn(
               "w-20 h-20 mx-auto rounded-3xl flex items-center justify-center mb-4",
-              "bg-gradient-to-br from-brand-100 to-brand-200",
+              "bg-linear-to-br from-brand-100 to-brand-200",
               "dark:from-brand-900/40 dark:to-brand-800/30",
               "border border-brand-soft-border/60",
               "shadow-card",
@@ -201,7 +201,7 @@ export function FinykLoginScreen({
             type="button"
             className={cn(
               "mt-4 w-full h-12 min-h-[48px] text-base border-0",
-              "bg-gradient-to-r from-brand-600 to-brand-700",
+              "bg-linear-to-r from-brand-600 to-brand-700",
               "hover:from-brand-700 hover:to-brand-800",
               "text-white font-semibold",
               "shadow-md hover:shadow-glow",

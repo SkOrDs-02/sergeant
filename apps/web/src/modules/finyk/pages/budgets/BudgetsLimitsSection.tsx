@@ -77,7 +77,7 @@ export function BudgetsLimitsSection({
           <SectionHeading
             as="span"
             size="sm"
-            className="!mb-0 normal-case tracking-normal"
+            className="mb-0! normal-case tracking-normal"
           >
             Ліміти · {monthStart.toLocaleDateString("uk-UA", { month: "long" })}
             {limitBudgets.length > 0 && (

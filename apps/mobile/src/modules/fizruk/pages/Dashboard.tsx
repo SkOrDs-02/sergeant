@@ -54,6 +54,7 @@ import {
   fizrukDashboardQuickLinkCoverage,
 } from "../components/dashboard";
 import { useActiveFizrukWorkout } from "../hooks/useActiveFizrukWorkout";
+import { useFizrukDualWriteBoot } from "../hooks/useFizrukDualWriteBoot";
 import { useFizrukSqliteReadBoot } from "../hooks/useFizrukSqliteReadBoot";
 import { useFizrukWorkouts } from "../hooks/useFizrukWorkouts";
 import { useMeasurements } from "../hooks/useMeasurements";
@@ -124,6 +125,12 @@ export interface DashboardProps {
 export function Dashboard({
   testID = "fizruk-dashboard",
 }: DashboardProps = {}) {
+  // Stage 4 PR #028 follow-up: install the dual-write context once the
+  // user is known and the flag is on. Without this the
+  // `triggerFizrukDualWrite` calls inside the Fizruk MMKV-write hooks
+  // short-circuit at the `isFizrukDualWriteRegistered()` check and
+  // SQLite stays empty even with the flag flipped.
+  useFizrukDualWriteBoot();
   // Boot the SQLite read overlay (PR #029a). Fire-and-forget — when the
   // `feature.fizruk.sqlite_v2.read_sqlite` flag is on this warms the
   // local cache so subsequent reads in `useFizrukWorkouts` /

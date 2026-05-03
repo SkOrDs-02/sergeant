@@ -185,7 +185,7 @@ function LimitBudgetCardComponent({
                   </>
                 ) : (
                   <div
-                    className="px-3 py-2.5 space-y-1.5 min-h-[3.5rem]"
+                    className="px-3 py-2.5 space-y-1.5 min-h-14"
                     aria-busy="true"
                   >
                     <Skeleton className="h-3 w-full rounded" />

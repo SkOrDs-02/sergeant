@@ -84,7 +84,7 @@ export function CollapsibleSection({
           type="button"
           onClick={toggle}
           aria-expanded={open}
-          className="flex items-center gap-1.5 w-full text-left touch-target [@media(pointer:coarse)]:py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-xl -ml-0.5 pl-0.5"
+          className="flex items-center gap-1.5 w-full text-left touch-target pointer-coarse:py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded-xl -ml-0.5 pl-0.5"
         >
           <Icon
             name="chevron-down"
@@ -93,7 +93,7 @@ export function CollapsibleSection({
             className="text-subtle"
             aria-hidden
           />
-          <SectionHeading as="span" size={headingSize} className="!px-0">
+          <SectionHeading as="span" size={headingSize} className="px-0!">
             {title}
           </SectionHeading>
         </button>

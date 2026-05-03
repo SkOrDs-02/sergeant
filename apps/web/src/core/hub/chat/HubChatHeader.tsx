@@ -44,7 +44,7 @@ export function HubChatHeader({
         open={detailsOpen}
         onOpenChange={onDetailsOpenChange}
         wrapperClassName="min-w-0 flex-1"
-        className="!min-w-[280px] p-1.5"
+        className="min-w-[280px]! p-1.5"
         trigger={
           <span
             aria-label="Деталі асистента"

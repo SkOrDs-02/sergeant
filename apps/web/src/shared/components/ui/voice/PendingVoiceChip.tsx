@@ -163,7 +163,7 @@ export function PendingVoiceChip({
           hapticTap();
           onCancel();
         }}
-        className="shrink-0 w-7 h-7 rounded-full bg-line/30 text-muted hover:text-error hover:bg-error/15 flex items-center justify-center [@media(pointer:coarse)]:min-h-[44px] [@media(pointer:coarse)]:min-w-[44px]"
+        className="shrink-0 w-7 h-7 rounded-full bg-line/30 text-muted hover:text-error hover:bg-error/15 flex items-center justify-center pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]"
         aria-label="Скасувати"
         title="Скасувати"
       >

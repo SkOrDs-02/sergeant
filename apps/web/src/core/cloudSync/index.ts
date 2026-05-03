@@ -1,19 +1,20 @@
 // Public barrel. The original `src/core/useCloudSync.js` re-exports from
 // here so existing imports and tests continue to work unchanged.
 //
-// Importing this barrel also triggers the localStorage patch at module load
-// time (via ./storagePatch), which preserves the historical behavior where
-// writes to tracked keys auto-mark the corresponding module dirty.
-
-// Side-effect import: install the localStorage patch eagerly.
-import "./storagePatch";
+// Until PR #008 this barrel installed a one-time `localStorage.setItem`
+// monkey-patch (`./storagePatch.ts`) that auto-fired `enqueueChange`
+// for any write to a tracked sync key. The patch was removed in
+// PR #008 — explicit writes go through `syncedKV` (see
+// `apps/web/src/shared/lib/storage/syncedKV.ts`) and call
+// {@link enqueueChange} themselves. The barrel now has no side
+// effects beyond the module evaluations its re-exports trigger.
 
 export { SYNC_EVENT, SYNC_STATUS_EVENT } from "./config";
 
 export { getDirtyModules } from "./state/dirtyModules";
 export { getOfflineQueue } from "./queue/offlineQueue";
 
-export { enqueueChange, notifySyncDirty } from "./storagePatch";
+export { enqueueChange, notifySyncDirty } from "./enqueue";
 
 export { useCloudSync } from "./hook/useCloudSync";
 export { useCloudSyncDebug } from "./hook/useCloudSyncDebug";

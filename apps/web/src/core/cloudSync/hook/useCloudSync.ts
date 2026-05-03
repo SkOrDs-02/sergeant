@@ -13,9 +13,13 @@ import { useSyncRetry } from "./useSyncRetry";
  * Cloud-sync orchestrator. Three clearly-separated layers, read top-down:
  *
  *   1. Queue (where changes accumulate)
- *      Handled outside this hook — the patched `localStorage` in
- *      `storagePatch.ts` calls `enqueueChange` on every write to a tracked
- *      key. That writes the dirty map and dispatches `SYNC_EVENT`.
+ *      Handled outside this hook — explicit writes through `syncedKV`
+ *      (see `apps/web/src/shared/lib/storage/syncedKV.ts`) call
+ *      `enqueueChange` after every write to a tracked key. That writes
+ *      the dirty map and dispatches `SYNC_EVENT`. Until PR #008 the
+ *      same plumbing was implemented as a one-time `localStorage.setItem`
+ *      monkey-patch in `./storagePatch.ts`; the patch was removed in
+ *      favor of the explicit hook.
  *
  *   2. Scheduler (when to run a sync)
  *      `useSyncRetry` wires three triggers — online / change-event /

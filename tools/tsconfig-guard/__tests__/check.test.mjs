@@ -176,4 +176,61 @@ describe("tsconfig-guard", () => {
     const code = run({ rootDir, guardDir });
     expect(code).toBe(1);
   });
+
+  it("detects noUncheckedIndexedAccess drift when base sets it true", () => {
+    const { rootDir, guardDir } = scaffold(
+      {
+        web: {
+          extends: "../../packages/config/tsconfig.base.json",
+          compilerOptions: { noUncheckedIndexedAccess: false },
+        },
+      },
+      {
+        base: {
+          compilerOptions: {
+            strict: true,
+            noImplicitAny: true,
+            strictNullChecks: true,
+            noUncheckedIndexedAccess: true,
+          },
+        },
+      },
+    );
+
+    const code = run({ rootDir, guardDir });
+    expect(code).toBe(1);
+  });
+
+  it("passes noUncheckedIndexedAccess override with valid allowlist entry", () => {
+    const { rootDir, guardDir } = scaffold(
+      {
+        web: {
+          extends: "../../packages/config/tsconfig.base.json",
+          compilerOptions: { noUncheckedIndexedAccess: false },
+        },
+      },
+      {
+        base: {
+          compilerOptions: {
+            strict: true,
+            noImplicitAny: true,
+            strictNullChecks: true,
+            noUncheckedIndexedAccess: true,
+          },
+        },
+        allowlist: [
+          {
+            path: "apps/web",
+            option: "noUncheckedIndexedAccess",
+            value: false,
+            reason: "Phase 6a per-module rollout — see frontend.md §11.1",
+            expires: "2099-12-31",
+          },
+        ],
+      },
+    );
+
+    const code = run({ rootDir, guardDir });
+    expect(code).toBe(0);
+  });
 });

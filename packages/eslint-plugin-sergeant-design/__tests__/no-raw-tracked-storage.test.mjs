@@ -44,10 +44,26 @@ describe("no-raw-tracked-storage", () => {
     const messages = lint(
       `import { useLocalStorage } from "@/lib/storage";
        import { STORAGE_KEYS } from "@sergeant/shared";
-       useLocalStorage(STORAGE_KEYS.FIZRUK_WORKOUTS, []);`,
+       useLocalStorage(STORAGE_KEYS.FINYK_BUDGETS, []);`,
     );
     assert.equal(messages.length, 1);
     assert.equal(messages[0].ruleId, RULE_ID);
+  });
+
+  it("does NOT flag useLocalStorage with the retired fizruk keys", () => {
+    // PR #030 (storage-roadmap Stage 4): the eleven historical
+    // `module_data.fizruk` LS/MMKV keys (`fizruk_workouts_v1`, etc.)
+    // were removed from SYNC_MODULES — cross-device sync moved to the
+    // per-table `fizruk_*` SQLite mirror plus the op-log. Direct
+    // access is now guarded by the dedicated `no-restricted-syntax`
+    // rule in `eslint.config.js`, not by `no-raw-tracked-storage`.
+    const messages = lint(
+      `import { useLocalStorage } from "@/lib/storage";
+       import { STORAGE_KEYS } from "@sergeant/shared";
+       useLocalStorage(STORAGE_KEYS.FIZRUK_WORKOUTS, []);
+       useLocalStorage("fizruk_measurements_v1", []);`,
+    );
+    assert.deepEqual(messages, []);
   });
 
   it("flags useLocalStorage with STORAGE_KEYS['<TRACKED>'] bracket form", () => {

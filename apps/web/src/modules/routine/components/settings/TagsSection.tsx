@@ -74,7 +74,7 @@ export function TagsSection({
                 }}
               >
                 <Input
-                  className="!h-7 !px-1.5 !text-xs w-24"
+                  className="h-7! px-1.5! text-xs! w-24"
                   value={editingTagName}
                   onChange={(e) => setEditingTagName(e.target.value)}
                   onBlur={() => commitEdit(t.id)}

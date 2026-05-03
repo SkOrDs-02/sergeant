@@ -53,21 +53,18 @@ export const SYNC_MODULES = {
       // see `no-finyk-token-in-storage` ESLint rule and PR #002.
     ],
   },
-  fizruk: {
-    keys: [
-      STORAGE_KEYS.FIZRUK_WORKOUTS,
-      STORAGE_KEYS.FIZRUK_CUSTOM_EXERCISES,
-      STORAGE_KEYS.FIZRUK_MEASUREMENTS,
-      STORAGE_KEYS.FIZRUK_TEMPLATES,
-      STORAGE_KEYS.FIZRUK_SELECTED_TEMPLATE,
-      STORAGE_KEYS.FIZRUK_ACTIVE_WORKOUT,
-      STORAGE_KEYS.FIZRUK_ACTIVE_PROGRAM,
-      STORAGE_KEYS.FIZRUK_PLAN_TEMPLATE,
-      STORAGE_KEYS.FIZRUK_MONTHLY_PLAN,
-      STORAGE_KEYS.FIZRUK_WELLBEING,
-      STORAGE_KEYS.FIZRUK_DAILY_LOG,
-    ],
-  },
+  // fizruk — removed from SYNC_MODULES in PR #030 (storage-roadmap
+  // Stage 4). The eleven `fizruk_*_v1` LS/MMKV keys are no longer
+  // pushed to / pulled from `module_data.fizruk`; cross-device sync
+  // moved to the per-table `fizruk_*` SQLite mirror plus the op-log
+  // pipeline (PR #027 schema, PR #028 dual-write, PR #029 web reads,
+  // PR #029a mobile reads). The dedicated `no-restricted-syntax`
+  // guard in `eslint.config.js` blocks new direct reads of the
+  // eleven tracked fizruk-prefixed STORAGE_KEYS entries (workouts,
+  // custom_exercises, measurements, templates, selected_template,
+  // active_workout, active_program, plan_template, monthly_plan,
+  // wellbeing, daily_log) outside the canonical fizruk module
+  // wrappers, mirroring the routine retirement in PR #026.
   nutrition: {
     keys: [
       STORAGE_KEYS.NUTRITION_LOG,

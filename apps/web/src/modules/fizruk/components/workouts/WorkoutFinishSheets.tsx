@@ -50,7 +50,7 @@ export function WorkoutFinishSheets({
   if (!finishFlash) return null;
   return (
     <div
-      className="fixed left-0 right-0 z-[100] px-4 pointer-events-none fizruk-above-tabbar"
+      className="fixed left-0 right-0 z-100 px-4 pointer-events-none fizruk-above-tabbar"
       role="region"
       aria-label="Підсумок тренування"
     >

@@ -67,6 +67,27 @@ describe("replayOfflineQueue", () => {
   });
 
   it("flushes queued modules via syncApi.pushAll and clears on success", async () => {
+    // PR #030 retired 'fizruk' from SYNC_MODULES, so
+    // collectQueuedModules drops fizruk entries before they reach
+    // pushAll. Use 'nutrition' as the second module here.
+    mockPushAll.mockResolvedValue({
+      results: { finyk: { ok: true }, nutrition: { ok: true } },
+    });
+    addToOfflineQueue({ type: "push", modules: modules("finyk", 1) });
+    addToOfflineQueue({ type: "push", modules: modules("nutrition", 2) });
+
+    await replayOfflineQueue();
+
+    expect(mockPushAll).toHaveBeenCalledTimes(1);
+    const payload = mockPushAll.mock.calls[0][0] as Record<
+      string,
+      ModulePayload
+    >;
+    expect(Object.keys(payload).sort()).toEqual(["finyk", "nutrition"]);
+    expect(getOfflineQueue()).toEqual([]);
+  });
+
+  it("drops the retired fizruk module entries before push (PR #030)", async () => {
     mockPushAll.mockResolvedValue({ results: { finyk: { ok: true } } });
     addToOfflineQueue({ type: "push", modules: modules("finyk", 1) });
     addToOfflineQueue({ type: "push", modules: modules("fizruk", 2) });
@@ -78,7 +99,8 @@ describe("replayOfflineQueue", () => {
       string,
       ModulePayload
     >;
-    expect(Object.keys(payload).sort()).toEqual(["finyk", "fizruk"]);
+    expect(Object.keys(payload)).toEqual(["finyk"]);
+    expect(payload).not.toHaveProperty("fizruk");
     expect(getOfflineQueue()).toEqual([]);
   });
 

@@ -81,7 +81,7 @@ function ActionCard({ card }: { card: ChatActionCard }) {
           <>
             <div
               className={cn(
-                "text-2xs text-subtle mt-0.5 break-words",
+                "text-2xs text-subtle mt-0.5 wrap-break-word",
                 !expanded && "line-clamp-2",
               )}
             >
@@ -146,7 +146,7 @@ function ConfirmCard({ card }: { card: ChatActionCard }) {
       </div>
       {/* Summary */}
       {card.summary && (
-        <p className="px-3 py-2 text-2xs text-subtle leading-relaxed break-words">
+        <p className="px-3 py-2 text-2xs text-subtle leading-relaxed wrap-break-word">
           {card.summary}
         </p>
       )}

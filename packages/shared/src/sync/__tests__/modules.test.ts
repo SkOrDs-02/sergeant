@@ -13,9 +13,11 @@ import {
 
 describe("SYNC_MODULES registry", () => {
   it("exposes the expected module names", () => {
+    // PR #030 (storage-roadmap Stage 4) — `fizruk` retired from the
+    // cross-platform `module_data` cloud-sync registry. Per-table
+    // SQLite mirror + op-log carry workouts/measurements/etc. now.
     expect(Object.keys(SYNC_MODULES).sort()).toEqual([
       "finyk",
-      "fizruk",
       "nutrition",
       "profile",
     ]);
@@ -45,8 +47,10 @@ describe("SYNC_MODULES registry", () => {
     ]);
   });
 
-  it("snapshot of fizruk keys (closes drift bug — every key must be listed)", () => {
-    expect(SYNC_MODULES.fizruk.keys).toEqual([
+  it("does NOT include the retired fizruk module keys (PR #030)", () => {
+    // PR #030 retirement guard — none of the eleven historical
+    // `module_data.fizruk` LS/MMKV keys are tracked any more.
+    const fizrukKeys = [
       STORAGE_KEYS.FIZRUK_WORKOUTS,
       STORAGE_KEYS.FIZRUK_CUSTOM_EXERCISES,
       STORAGE_KEYS.FIZRUK_MEASUREMENTS,
@@ -58,7 +62,11 @@ describe("SYNC_MODULES registry", () => {
       STORAGE_KEYS.FIZRUK_MONTHLY_PLAN,
       STORAGE_KEYS.FIZRUK_WELLBEING,
       STORAGE_KEYS.FIZRUK_DAILY_LOG,
-    ]);
+    ];
+    for (const key of fizrukKeys) {
+      expect(ALL_TRACKED_KEYS.has(key)).toBe(false);
+      expect(keyToModule(key)).toBeNull();
+    }
   });
 
   it("snapshot of nutrition keys", () => {
@@ -109,15 +117,18 @@ describe("SYNC_MODULES registry", () => {
   describe("keyToModule", () => {
     it("returns the owning module for tracked keys", () => {
       expect(keyToModule(STORAGE_KEYS.FINYK_BUDGETS)).toBe("finyk");
-      expect(keyToModule(STORAGE_KEYS.FIZRUK_DAILY_LOG)).toBe("fizruk");
       expect(keyToModule(STORAGE_KEYS.NUTRITION_SAVED_RECIPES)).toBe(
         "nutrition",
       );
       expect(keyToModule(STORAGE_KEYS.USER_PROFILE)).toBe("profile");
     });
 
-    it("returns null for unknown keys", () => {
+    it("returns null for unknown / retired keys", () => {
+      // routine — retired in PR #026 (storage-roadmap Stage 4).
       expect(keyToModule("hub_routine_v1")).toBeNull();
+      // fizruk — retired in PR #030 (storage-roadmap Stage 4).
+      expect(keyToModule(STORAGE_KEYS.FIZRUK_DAILY_LOG)).toBeNull();
+      expect(keyToModule(STORAGE_KEYS.FIZRUK_WORKOUTS)).toBeNull();
       expect(keyToModule("totally_made_up_key")).toBeNull();
       expect(keyToModule("")).toBeNull();
     });
@@ -132,12 +143,8 @@ describe("SYNC_MODULES registry", () => {
       // Compile-time check that the type stays in sync with the
       // value. If a module is added to SYNC_MODULES but the type is
       // not regenerated, this assignment would fail to typecheck.
-      const allModules: ModuleName[] = [
-        "finyk",
-        "fizruk",
-        "nutrition",
-        "profile",
-      ];
+      // PR #030 — `fizruk` retired alongside `routine` (PR #026).
+      const allModules: ModuleName[] = ["finyk", "nutrition", "profile"];
       expect(allModules.sort()).toEqual(Object.keys(SYNC_MODULES).sort());
     });
   });

@@ -234,7 +234,7 @@ export function RecipesCard({
                         >
                           <ChevronIcon open={isOpen} />
                           <span className="min-w-0">
-                            <span className="text-style-label block text-text break-words">
+                            <span className="text-style-label block text-text wrap-break-word">
                               {r.title}
                             </span>
                             <span className="block text-xs text-subtle mt-0.5">
@@ -289,7 +289,7 @@ export function RecipesCard({
                         <div className="mt-3 pt-3 border-t border-line/40 space-y-3">
                           {Array.isArray(r.ingredients) &&
                             r.ingredients.length > 0 && (
-                              <div className="text-sm text-text break-words">
+                              <div className="text-sm text-text wrap-break-word">
                                 <div className="text-xs text-subtle mb-1">
                                   Інгредієнти
                                 </div>
@@ -453,7 +453,7 @@ export function RecipesCard({
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0 flex-1 basis-full sm:basis-auto">
-                      <div className="text-style-label text-text break-words">
+                      <div className="text-style-label text-text wrap-break-word">
                         {r.title || `Рецепт ${idx + 1}`}
                       </div>
                       <div className="text-xs text-subtle mt-1">
@@ -497,7 +497,7 @@ export function RecipesCard({
                   </div>
 
                   {Array.isArray(r.ingredients) && r.ingredients.length > 0 && (
-                    <div className="mt-3 text-sm text-text break-words">
+                    <div className="mt-3 text-sm text-text wrap-break-word">
                       <div className="text-xs text-subtle mb-1">
                         Інгредієнти
                       </div>

@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-03 by Devin (sync Stage 4 Fizruk progress: PR #027 schema + bundled SQLite migration, PR #028 dual-write LS/MMKV↔SQLite, PR #029 cut-over reads + server `applyFizruk*` apply-функції та PR #029a mobile fizruk read overlay — усі на main; лишається PR #030 LS cleanup і відкладений boot-wiring follow-up для `register{Routine,Fizruk}DualWriteContext`). **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-03 by Devin (sync Stage 4 Fizruk progress: PR #027 schema + bundled SQLite migration, PR #028 dual-write LS/MMKV↔SQLite, PR #029 cut-over reads + server `applyFizruk*` apply-функції та PR #029a mobile fizruk read overlay — усі на main; лишається PR #030 LS cleanup і відкладений boot-wiring follow-up для `register{Routine,Fizruk}DualWriteContext`. Також синхронізовано Stage 0/1: PR #005/#006/#007/#012 уже зленділи; PR #014 виправлено посилання з помилкового #1290 на правильний #1298; PR #013 переведено в IN-PROGRESS зі списком 3-х sub-PR-ів. Лишаються: #003 webhook rotation, #008 storagePatch removal, #009 sync-meta → IDB, #010 IDB consolidation, #011 Postgres rate-limit, фінальний sub-PR #013 для allowlist→0). **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -150,7 +150,7 @@
   `coach`/`balance` query-keys. CI gate.
 - **Dep.** None.
 
-#### **PR #005 — `feat(server): sync_audit_log table + admin-only viewer`**
+#### **PR #005 — `feat(server): sync_audit_log table + admin-only viewer`** ✅ LANDED — [#1284](https://github.com/Skords-01/Sergeant/pull/1284)
 
 - **Scope.** Нова таблиця `sync_audit_log (id, user_id, op_type, module,
 payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
@@ -164,7 +164,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 
 ### Stage 1 — Consolidation
 
-#### **PR #006 — `refactor(shared): unified KVStore with platform adapters`**
+#### **PR #006 — `refactor(shared): unified KVStore with platform adapters`** ✅ LANDED — [#1467](https://github.com/Skords-01/Sergeant/pull/1467)
 
 - **Scope.** `packages/shared/src/storage/kv.ts`:
 
@@ -185,7 +185,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   старих шляхів як deprecated alias, codemod скриптом.
 - **Dep.** None.
 
-#### **PR #007 — `refactor(shared): single SYNC_MODULES registry`**
+#### **PR #007 — `refactor(shared): single SYNC_MODULES registry`** ✅ LANDED — [#1474](https://github.com/Skords-01/Sergeant/pull/1474)
 
 - **Scope.** Винести `SYNC_MODULES` з `apps/web/src/core/cloudSync/config.ts`
   - `apps/mobile/src/sync/config.ts` у `packages/shared/src/sync/modules.ts`.
@@ -239,7 +239,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   Horizontal-scale тест на 2 інстанціях Railway.
 - **Dep.** None.
 
-#### **PR #012 — `feat(server): add CHECK constraint on module_data.module + soft-delete columns`**
+#### **PR #012 — `feat(server): add CHECK constraint on module_data.module + soft-delete columns`** ✅ LANDED — [#1290](https://github.com/Skords-01/Sergeant/pull/1290)
 
 - **Scope.** Додати `CHECK (module IN ('finyk','fizruk','routine','nutrition','profile'))`
   на `module_data`. Додати `deleted_at TIMESTAMPTZ` на high-volume tables
@@ -248,13 +248,17 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 - **AC.** Bad-data test: insert невідомого модуля → reject.
 - **Dep.** None.
 
-#### **PR #013 — `chore: complete localStorage burndown to 0 raw uses`**
+#### **PR #013 — `chore: complete localStorage burndown to 0 raw uses`** ⏳ IN-PROGRESS — partial coverage у [#1344](https://github.com/Skords-01/Sergeant/pull/1344), [#1345](https://github.com/Skords-01/Sergeant/pull/1345), [#1350](https://github.com/Skords-01/Sergeant/pull/1350)
 
 - **Scope.** Останні ~46 файлів з allowlist у `eslint.config.js`. Перевести
   через `useSyncedKVStore` або `safeReadLS/safeWriteLS`. Allowlist → empty.
 - **Risk.** Великий діф. Mitigation: розбити на 3 sub-PR-и по доменах.
 - **AC.** ESLint `no-raw-local-storage` без exceptions, CI green.
 - **Dep.** PR #006-#008.
+- **Done so far.** `safeReadStringLS` migration на hub/search ([#1344](https://github.com/Skords-01/Sergeant/pull/1344)),
+  presetApply ([#1345](https://github.com/Skords-01/Sergeant/pull/1345)) і modules raw-LS
+  ([#1350](https://github.com/Skords-01/Sergeant/pull/1350)). Лишається фінальний sub-PR
+  з очищенням allowlist до 0 — точну цифру треба перерахувати.
 
 ---
 
@@ -263,7 +267,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 > **Статус:** Усі 8 PR-ів (#014–#021) зленділи станом на 2026-05-02.
 > Наступний крок — Stage 3 SPIKE (decision gate: go/no-go для SQLite).
 
-#### **PR #014 — `feat: add Drizzle ORM as cross-platform schema source of truth`** ✅ LANDED — [#1290](https://github.com/Skords-01/Sergeant/pull/1290)
+#### **PR #014 — `feat: add Drizzle ORM as cross-platform schema source of truth`** ✅ LANDED — [#1298](https://github.com/Skords-01/Sergeant/pull/1298)
 
 - **Scope.**
   - `packages/db-schema/` — новий package, експортує Drizzle table definitions.
@@ -718,19 +722,144 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   Backfill `module_data.fizruk` → `fizruk_*` per-user (PR #030).
 - **Dep.** PR #029 (web cut-over + server apply-fns).
 
-##### **PR #030 — `chore(fizruk): remove LS path, drop module_data.fizruk`** ⏳ PENDING
+##### **PR #030 — `chore(fizruk): drop module_data.fizruk cloud-sync wiring, ESLint guard`** ✅ MERGED
 
-- **Scope.** Видалити `fizruk` з `SYNC_MODULES` (web + mobile).
-  ESLint guard проти reads з `STORAGE_KEYS.FIZRUK_*`. Server: одноразова
-  міграція `DELETE FROM module_data WHERE module='fizruk'` після того, як
-  PR #029 + PR #029a розкочено на 100% юзерів і backfill завершено.
-  Перед видаленням LS path — приземлити boot-wiring follow-up для
-  `registerFizrukDualWriteContext` (інакше rollout dual-write флага
-  лишається no-op, як і у routine).
+> На відміну від routine PR #026, fizruk LS read-fallback залишався у
+> модульних хуках уже після PR #029 / PR #029a (web/mobile read overlay) —
+> вони читають LS першим джерелом і overlay-ять зі SQLite під флагом.
+> Цей PR обмежений до cloud-sync wiring і ESLint guard-у, бо власне
+> повний LS write cut-over — окрема робота (write cut-over PR після
+> 100% rollout dual-write + read_sqlite + server-side backfill).
+
+- **Реалізовано (shared).** `packages/shared/src/sync/modules.ts` —
+  знятий блок `fizruk` з `SYNC_MODULES`; від тепер cloud-sync пайплайн
+  ігнорує ВСІ 11 LS/MMKV-ключів `fizruk_*_v1` для push/pull (один
+  source of truth, реекспортний у web/mobile cloudSync config).
+- **Реалізовано (eslint-plugin).**
+  `packages/eslint-plugin-sergeant-design/index.js` — знято 11 fizruk-
+  ентрі з `TRACKED_STORAGE_KEY_NAMES` / `TRACKED_STORAGE_KEY_VALUES`
+  з коментом-надгробком (mirroring routine PR #026 pattern).
+- **Реалізовано (eslint config).** `eslint.config.js` додає
+  `no-restricted-syntax` guard проти прямих `STORAGE_KEYS.FIZRUK_<key>`
+  доступів поза канонічними fizruk-хуками з `ignores`-лістом для
+  тестів, fizruk module wrappers, `insightsEngine.ts` (cross-module
+  insights), `hubBackup.ts` (mobile backup).
+- **Тести.** `packages/shared/src/sync/__tests__/modules.test.ts`
+  оновлений (зняв fizruk snapshot, додав explicit "module не існує"
+  assertion); `packages/eslint-plugin-sergeant-design/__tests__/no-raw-tracked-storage.test.mjs`
+  flipнутий (fizruk LS keys не повинні тригерити правило); web + mobile
+  cloudSync test fixtures (`buildPayload.test.ts`,
+  `useCloudSync.{behavior,hardening}.test.ts`,
+  `state/{moduleData,dirtyModules,versions}.test.ts`,
+  `__tests__/{resolver,offlineQueue.replay}.test.ts`,
+  `apps/mobile/src/sync/__tests__/{replay,offlineQueue}.test.ts`)
+  оновлено: де fizruk був "ще один валідний модуль" — підставлено
+  `nutrition` / `profile`; додано explicit "drops the retired fizruk
+  module" assertions.
+- **Не входить.** Server-side runbook `DELETE FROM module_data WHERE
+module='fizruk'` — окремий ops-PR після того, як PR #029 + PR #029a
+  - dual-write flag розкочено на 100% юзерів і backfill `module_data.fizruk`
+    → `fizruk_*` per-user завершено. LS write cut-over (повне видалення
+    MMKV/LS write-path у fizruk-хуках) — окремий follow-up PR (потребує
+    100% rollout `feature.fizruk.sqlite_v2.{dual_write,read_sqlite}`).
+- **Deploy gate.** Після merge cloud-sync перестає
+  пушити/пуллити `module_data.fizruk` для ВСІХ юзерів. Юзери з
+  вимкненим `feature.fizruk.sqlite_v2.dual_write` теряють cross-device
+  sync fizruk-даних. Розкатувати тільки після 100% rollout
+  dual-write + read*sqlite + server-side backfill `module_data.fizruk`
+  → `fizruk*\*` per-user.
 - **Dep.** PR #029 (web cut-over + server apply-fns), PR #029a (mobile
-  read overlay), boot-wiring follow-up (`register{Routine,Fizruk}DualWriteContext`).
+  read overlay), boot-wiring follow-up #1491 (`register{Routine,Fizruk}DualWriteContext`).
 
 #### **Nutrition** (3 тижні) — PR #031–#034
+
+##### **PR #031 — `feat(nutrition-domain): Drizzle SQLite + Postgres normalized tables + server apply-fns`**
+
+> **Status:** ⏳ NEXT — schema-only PR. PR #030 cloud-sync drop
+> приземлений на main (PR #1500), тож можна стартувати. Аналог PR #027
+> (Fizruk schema) — ніщо в проді не активується, просто землемо
+> паралельні Drizzle-схеми + bundled client migration + server
+> apply-функції під feature flag default off.
+
+- **Scope.** Створити нормалізовані таблиці на PG і SQLite під 5 LS/MMKV
+  ключів модуля (`NUTRITION_LOG`, `NUTRITION_PANTRIES`,
+  `NUTRITION_ACTIVE_PANTRY`, `NUTRITION_PREFS`, `NUTRITION_SAVED_RECIPES`).
+  Цільові таблиці (фінальний шейп уточнити у PR — нижче — concept):
+  `nutrition_meal_log` (per-row append-only лог їжі з кількістю /
+  калоріями / макросами), `nutrition_pantries` (контейнер + sort_order),
+  `nutrition_pantry_items` (food_id, quantity, expires_at,
+  pantry_id FK), `nutrition_recipes` (рецепти з jsonb-ingredients і
+  макросами), `nutrition_prefs` (singleton-row per-user — KV-store
+  для smart defaults). Усі — soft-delete через `deleted_at`,
+  `(user_id, updated_at DESC)` index, FK + cascades для pantry_items.
+- **Артефакти.**
+  - `apps/server/src/migrations/030_nutrition_tables.{sql,down.sql}` —
+    DDL з індексами і FK; `down.sql` чистить у зворотньому FK-порядку.
+  - `packages/db-schema/src/pg/nutrition.ts` +
+    `packages/db-schema/src/sqlite/nutrition.ts` — паралельні Drizzle
+    ORM-схеми (PG і SQLite) з `_lite` суфіксами для індексів.
+  - `packages/db-schema/src/__tests__/{pg,sqlite}-nutrition-snapshot.test.ts`
+    - snapshot drift-guard між драйверами.
+  - `packages/db-schema/src/sqlite/migrations/index.ts` додає
+    `NUTRITION_CLIENT_MIGRATIONS` з власним ledger-ом
+    `__nutrition_migrations` (separate від `__routine_migrations` /
+    `__fizruk_migrations`).
+  - `apps/{web,mobile}/src/modules/nutrition/lib/clientMigrate.ts` —
+    клієнтський runner (lazy, idempotent, pre-write).
+  - `apps/server/src/modules/sync/syncV2.ts` — split apply-функції
+    `applyNutritionMealLog`, `applyNutritionPantries`,
+    `applyNutritionPantryItems`, `applyNutritionRecipes`,
+    `applyNutritionPrefs` додано у `OP_LOG_TABLE_REGISTRY`. Кожна
+    валідує `id` + ownership (`user_id`), застосовує LWW
+    (`existing.updated_at < clientTs`), soft-delete
+    (`UPDATE deleted_at` замість DELETE), парсить
+    `parseRequiredDate` / `parseOptionalNumber` / `toJsonbParam`.
+- **AC.**
+  - `pnpm --filter @sergeant/db-schema test` — snapshot тести проходять,
+    дрифт між PG і SQLite виявляється.
+  - `apps/server/src/modules/sync/syncV2.integration.test.ts` — нові
+    describe-кейси на 5 nutrition apply-функцій (insert→update,
+    LWW reject, soft-delete, parent-then-child FK для pantry_items,
+    invalid timestamp validation).
+  - `pnpm -w lint` clean (без нових STORAGE_KEYS guards — це PR #034).
+- **Не входить.**
+  - Dual-write шар (`apps/{web,mobile}/src/modules/nutrition/lib/dualWrite/`)
+    — це PR #032.
+  - Cut-over reads (UI читає з SQLite під фічфлаґом) — PR #033.
+  - Drop `module_data.nutrition` з `SYNC_MODULES` + ESLint guard — PR #034.
+- **Dep.** PR #027 (схема pattern), PR #029 (server apply-fns pattern),
+  PR #030 (cloud-sync drop pattern).
+- **Risk.** Schema-only — нульовий risk на проді (default-off flag і
+  наявних писань у нові таблиці нема). Snapshot тести ловлять drift.
+
+##### **PR #032 — `feat(nutrition-domain): dual-write LS/MMKV↔SQLite`** ⏳ DRAFT
+
+- Mirror PR #028 (fizruk dual-write) для nutrition. Feature flag
+  `feature.nutrition.sqlite_v2.dual_write`, default off, experimental.
+- Реєстрація через registration-pattern, fail-soft на no-userId /
+  sqlite-unavailable. Boot-wiring у follow-up за тим же шаблоном що
+  PR #1491 для routine + fizruk.
+- **Dep.** PR #031.
+
+##### **PR #033 — `feat(nutrition-domain): cut-over reads to SQLite under feature flag`** ⏳ DRAFT
+
+- Mirror PR #029 + PR #029a (web + mobile fizruk read overlay) для
+  nutrition. Feature flag `feature.nutrition.sqlite_v2.read_sqlite`,
+  default off. LS/MMKV-write залишається safety net.
+- **Dep.** PR #032.
+
+##### **PR #034 — `chore(nutrition-domain): drop module_data.nutrition cloud-sync wiring + ESLint guard`** ⏳ DRAFT
+
+- Mirror PR #030 (fizruk cloud-sync drop). Знімає `nutrition` з
+  `SYNC_MODULES`, прибирає 5 NUTRITION\_\* ентрі з
+  `eslint-plugin-sergeant-design` tracked sets, додає
+  `no-restricted-syntax` guard у `eslint.config.js`. Server-side
+  `DELETE FROM module_data WHERE module='nutrition'` — окремий
+  runbook ops PR.
+- **Deploy gate.** Як і PR #030: розкатувати тільки після 100% rollout
+  `feature.nutrition.sqlite_v2.{dual_write,read_sqlite}` + server
+  backfill `module_data.nutrition` → `nutrition_*` per-user.
+- **Dep.** PR #033 (read overlay у проді).
 
 #### **Finyk** (4 тижні) — PR #035–#039 (один extra PR на Mono mirror на клієнті)
 

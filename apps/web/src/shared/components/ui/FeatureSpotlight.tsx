@@ -320,7 +320,7 @@ export function FeatureSpotlight({
       {target}
       {/* Portal to body ensures highest stacking context */}
       <div
-        className="fixed inset-0 z-[9999] pointer-events-none"
+        className="fixed inset-0 z-9999 pointer-events-none"
         role="dialog"
         aria-modal="true"
         aria-labelledby={`spotlight-title-${id}`}

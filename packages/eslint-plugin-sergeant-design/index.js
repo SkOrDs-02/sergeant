@@ -193,18 +193,13 @@ const TRACKED_STORAGE_KEY_NAMES = new Set([
   // banned by the dedicated `no-finyk-token-in-storage` rule.
   "FINYK_MANUAL_EXPENSES",
   "FINYK_TX_FILTERS",
-  // fizruk
-  "FIZRUK_WORKOUTS",
-  "FIZRUK_CUSTOM_EXERCISES",
-  "FIZRUK_MEASUREMENTS",
-  "FIZRUK_TEMPLATES",
-  "FIZRUK_SELECTED_TEMPLATE",
-  "FIZRUK_ACTIVE_WORKOUT",
-  "FIZRUK_ACTIVE_PROGRAM",
-  "FIZRUK_PLAN_TEMPLATE",
-  "FIZRUK_MONTHLY_PLAN",
-  "FIZRUK_WELLBEING",
-  "FIZRUK_DAILY_LOG",
+  // fizruk — removed from SYNC_MODULES in PR #030 (storage-roadmap
+  // Stage 4). The eleven `fizruk_*_v1` LS/MMKV keys are no longer
+  // cloud-synced through `module_data.fizruk`; the per-table
+  // `fizruk_*` SQLite mirror plus the op-log carry workouts /
+  // measurements / templates / wellbeing / daily-log instead. The
+  // dedicated `no-restricted-syntax` guard in `eslint.config.js`
+  // prevents new direct reads of `STORAGE_KEYS.FIZRUK_<key>`.
   // routine — removed from SYNC_MODULES in PR #026 (storage-roadmap
   // Stage 4). Completions now live in SQLite; the LS blob is no longer
   // cloud-synced. The dedicated ESLint guard in eslint.config.js
@@ -244,19 +239,10 @@ const TRACKED_STORAGE_KEY_VALUES = new Set([
   // `no-finyk-token-in-storage` rule.
   "finyk_manual_expenses_v1",
   "finyk_tx_filters_v1",
-  // fizruk
-  "fizruk_workouts_v1",
-  "fizruk_custom_exercises_v1",
-  "fizruk_measurements_v1",
-  "fizruk_workout_templates_v1",
-  "fizruk_selected_template_id_v1",
-  "fizruk_active_workout_id_v1",
-  "fizruk_active_program_id_v1",
-  "fizruk_plan_template_v1",
-  "fizruk_monthly_plan_v1",
-  "fizruk_wellbeing_v1",
-  "fizruk_daily_log_v1",
-  // routine — see TRACKED_STORAGE_KEY_NAMES comment above.
+  // fizruk — see TRACKED_STORAGE_KEY_NAMES comment above (retired in
+  // PR #030).
+  // routine — see TRACKED_STORAGE_KEY_NAMES comment above (retired in
+  // PR #026).
   // nutrition
   "nutrition_log_v1",
   "nutrition_pantries_v1",

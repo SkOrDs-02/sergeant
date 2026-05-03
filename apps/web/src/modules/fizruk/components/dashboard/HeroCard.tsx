@@ -96,7 +96,7 @@ export interface HeroCardProps {
 }
 
 const HERO_CARD_CLASS =
-  "rounded-3xl p-6 overflow-hidden bg-hero-teal dark:bg-panel dark:border dark:border-teal-800/30 dark:[background-image:linear-gradient(135deg,rgba(20,184,166,0.18)_0%,rgba(20,184,166,0.05)_100%)]";
+  "rounded-3xl p-6 overflow-hidden bg-hero-teal dark:bg-panel dark:border dark:border-teal-800/30 dark:bg-[linear-gradient(135deg,rgba(20,184,166,0.18)_0%,rgba(20,184,166,0.05)_100%)]";
 
 function formatElapsed(sec: number): string {
   if (!Number.isFinite(sec) || sec <= 0) return "0:00";

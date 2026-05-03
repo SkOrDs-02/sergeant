@@ -389,12 +389,16 @@ export function OnboardingWizard({
 
     confetti("Готово!", "Твій Sergeant налаштовано. Час діяти!", "high");
 
+    // Hold the celebration on screen long enough for the user to read the
+    // copy and enjoy the confetti before the wizard unmounts and the modal
+    // disappears with it. The CelebrationModal's own `autoCloseMs` (11s) is
+    // bounded by this timer because the modal lives inside the wizard tree.
     setTimeout(() => {
       onDone(null, {
         intent: hadEmptyPicks ? "vibe_empty" : "vibe_picked",
         picks: chosen,
       });
-    }, 800);
+    }, 3500);
   }, [picks, onDone, confetti]);
 
   const content = useMemo(
@@ -428,7 +432,7 @@ export function OnboardingWizard({
     <>
       {CelebrationComponent}
       <div
-        className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-4 pb-safe"
+        className="fixed inset-0 z-500 flex items-end sm:items-center justify-center p-4 pb-safe"
         role="dialog"
         aria-modal="true"
         aria-label="Вітальний екран"

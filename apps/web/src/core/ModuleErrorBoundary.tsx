@@ -69,7 +69,7 @@ export default class ModuleErrorBoundary extends Component<
           <p className="text-sm text-muted mb-2 text-center">
             Помилка в модулі
           </p>
-          <pre className="text-xs text-danger mb-6 max-w-lg w-full overflow-auto whitespace-pre-wrap break-words">
+          <pre className="text-xs text-danger mb-6 max-w-lg w-full overflow-auto whitespace-pre-wrap wrap-break-word">
             {this.state.error.message}
           </pre>
           <div className="flex flex-col sm:flex-row gap-2 w-full max-w-xs">

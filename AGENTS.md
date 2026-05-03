@@ -89,7 +89,7 @@ All `useQuery`/`useMutation` keys come from `apps/web/src/shared/lib/api/queryKe
 useQuery({ queryKey: ["finyk", "transactions", accountId], ... });
 
 // ✅ GOOD — typed factory, supports bulk invalidate via `finykKeys.all`
-import { finykKeys } from "@shared/lib/queryKeys";
+import { finykKeys } from "@shared/lib/api/queryKeys";
 useQuery({
   queryKey: finykKeys.monoTransactionsDb(from, to, accountId),
   ...

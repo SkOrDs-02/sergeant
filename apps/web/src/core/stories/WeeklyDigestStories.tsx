@@ -92,7 +92,7 @@ export function WeeklyDigestStories({
   // short-circuits all of that and makes z-index globally meaningful again.
   const overlay = (
     <div
-      className="fixed inset-0 z-[600] select-none"
+      className="fixed inset-0 z-600 select-none"
       role="dialog"
       aria-modal="true"
       aria-label="Щотижневий дайджест — сторіс"

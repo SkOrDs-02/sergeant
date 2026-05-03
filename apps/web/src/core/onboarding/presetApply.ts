@@ -1,4 +1,5 @@
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { safeWriteSyncedLS } from "@shared/lib/storage/syncedKV";
 
 // Writes a single preset entry directly into the matching module's
 // localStorage key. This is how the FTUX PresetSheet turns "tap a tile"
@@ -158,11 +159,13 @@ function applyFinykPreset(preset: FinykPreset) {
     amount: preset.amount,
     category: preset.category,
   };
-  safeWriteLS(FINYK_MANUAL_EXPENSES_KEY, [entry, ...list]);
+  // Tracked sync key (finyk module) — go through `syncedKV`.
+  safeWriteSyncedLS(FINYK_MANUAL_EXPENSES_KEY, [entry, ...list]);
   // Keep the user out of the Monobank login gate — mirrors what
   // `enableFinykManualOnly()` does on the «Далі без банку» path.
   // `safeWriteLS` keeps raw strings as-is (no JSON.stringify) so the
   // stored value matches the legacy `localStorage.setItem(_, "1")` shape.
+  // (Untracked key — keep using `safeWriteLS`.)
   safeWriteLS(FINYK_MANUAL_ONLY_KEY, "1");
 }
 
@@ -281,7 +284,8 @@ function applyNutritionPreset(preset: NutritionPreset) {
   });
   day.meals = meals;
   base[today] = day;
-  safeWriteLS(NUTRITION_LOG_KEY, base);
+  // Tracked sync key (nutrition module) — go through `syncedKV`.
+  safeWriteSyncedLS(NUTRITION_LOG_KEY, base);
   dispatch(NUTRITION_LOG_EVENT);
 }
 

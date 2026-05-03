@@ -375,12 +375,18 @@ export default [
       "apps/web/src/shared/hooks/useDarkMode.ts",
       "apps/web/src/shared/hooks/usePushNotifications.ts",
       "apps/web/src/shared/hooks/useActiveFizrukWorkout.ts",
-      // Cloud-sync internals — the queue / patcher / state writer all
+      // Cloud-sync internals — the queue / enqueue / state writer all
       // need direct access; users should call the cloud-sync API.
       "apps/web/src/core/cloudSync/logger.ts",
       "apps/web/src/core/cloudSync/queue/offlineQueue.ts",
       "apps/web/src/core/cloudSync/state/moduleData.ts",
-      "apps/web/src/core/cloudSync/storagePatch.ts",
+      // PR #008 split the old `storagePatch.ts` (monkey-patch removed)
+      // into `enqueue.ts` (the explicit dirty-marking entry point) and
+      // `syncedKV.ts` (the wrapper). `enqueue.ts` keeps a `rawRemoveItem`
+      // handle so `clearSyncManagedData` can wipe a previous user's
+      // slice without re-firing `enqueueChange` for every key it deletes
+      // — that is the only direct `localStorage` access here.
+      "apps/web/src/core/cloudSync/enqueue.ts",
       // Module storage wrappers (legitimate primitives in their own
       // namespace).
       "apps/web/src/modules/finyk/hooks/useStorage.ts",
@@ -651,6 +657,71 @@ export default [
             "MemberExpression[object.name='STORAGE_KEYS'][property.name='ROUTINE']",
           message:
             "Direct access to STORAGE_KEYS.ROUTINE is retired (PR #026, storage-roadmap). Use loadRoutineState() / saveRoutineState() from the routine module instead — they handle the SQLite overlay transparently.",
+        },
+      ],
+    },
+  },
+  // Fizruk cloud-sync retirement guard (PR #030, storage-roadmap Stage 4).
+  // The eleven `STORAGE_KEYS.FIZRUK_{WORKOUTS, CUSTOM_EXERCISES,
+  // MEASUREMENTS, TEMPLATES, SELECTED_TEMPLATE, ACTIVE_WORKOUT,
+  // ACTIVE_PROGRAM, PLAN_TEMPLATE, MONTHLY_PLAN, WELLBEING, DAILY_LOG}`
+  // keys backed the legacy `module_data.fizruk` blob that cloud-sync
+  // pushed/pulled. Those rows are retired now that PR #027 (schema),
+  // PR #028 (dual-write), PR #029 (web reads) and PR #029a (mobile
+  // reads) ship the per-table `fizruk_*` SQLite mirror plus op-log
+  // sync. New code outside the canonical fizruk module wrappers must
+  // not reach for these keys directly — read from SQLite via the
+  // module's hooks (`useFizrukWorkouts`, `useMeasurements`, …) or the
+  // server APIs instead.
+  //
+  // The selector matches the eleven retired property names but NOT
+  // ancillary fizruk LS keys that remain local-only (e.g.
+  // `STORAGE_KEYS.FIZRUK_QUICK_STATS`, `FIZRUK_REST_SETTINGS`,
+  // `FIZRUK_PROGRAM_PLANS_*`).
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}", "apps/mobile/src/**/*.{ts,tsx}"],
+    ignores: [
+      // Tests can reference the keys freely as fixtures.
+      "apps/web/src/**/*.test.{ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      // Canonical fizruk module wrappers — the official read/write
+      // entry-points everyone else should call.
+      "apps/web/src/modules/fizruk/**",
+      "apps/mobile/src/modules/fizruk/**",
+      // Cross-module insights still reads FIZRUK_WORKOUTS as a
+      // best-effort local heuristic (insights do not need cloud-sync
+      // round-tripping). Migration to the SQLite reader is tracked in
+      // a follow-up under storage-roadmap Stage 5.
+      "apps/web/src/core/lib/insightsEngine.ts",
+      // Mobile backup still reads the fizruk LS keys for full-state
+      // export/import (parity with hubBackup ROUTINE carve-out).
+      "apps/mobile/src/core/hub/hubBackup.ts",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        // Inherit the legacy palette selectors from the top-level block so
+        // this scoped override doesn't accidentally drop them.
+        {
+          selector:
+            "Literal[value=/\\b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-\\d+)(?:\\/\\d+)?\\b/]",
+          message:
+            "Legacy `forest` / tonal `accent-NNN` retired — use semantic `accent`, `brand-500`, `fizruk`, `routine`, `nutrition`, or `finyk` instead.",
+        },
+        {
+          selector:
+            "TemplateElement[value.raw=/\\b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-\\d+)(?:\\/\\d+)?\\b/]",
+          message:
+            "Legacy `forest` / tonal `accent-NNN` retired — use semantic `accent`, `brand-500`, `fizruk`, `routine`, `nutrition`, or `finyk` instead.",
+        },
+        // PR #030 — fizruk cloud-sync retirement.
+        {
+          selector:
+            "MemberExpression[object.name='STORAGE_KEYS'][property.name=/^FIZRUK_(?:WORKOUTS|CUSTOM_EXERCISES|MEASUREMENTS|TEMPLATES|SELECTED_TEMPLATE|ACTIVE_WORKOUT|ACTIVE_PROGRAM|PLAN_TEMPLATE|MONTHLY_PLAN|WELLBEING|DAILY_LOG)$/]",
+          message:
+            "Direct access to the retired `STORAGE_KEYS.FIZRUK_*` cloud-sync keys is forbidden (PR #030, storage-roadmap). Use the canonical fizruk hooks (`useFizrukWorkouts`, `useMeasurements`, `useWorkoutTemplates`, …) from `apps/{web,mobile}/src/modules/fizruk/hooks` — they handle the SQLite overlay transparently.",
         },
       ],
     },

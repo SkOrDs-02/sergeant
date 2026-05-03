@@ -44,7 +44,9 @@ export interface HabitHeatmapProps {
 
 export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
   const [selected, setSelected] = useState<string | null>(null);
+  const [focusedKey, setFocusedKey] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const cellRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
   useEffect(() => {
     if (!selected) return;
@@ -121,9 +123,52 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
     return { weeks, monthMarkers };
   }, [activeHabits, completions]);
 
+  // key → (w, d) lookup for O(1) arrow-key navigation
+  const cellPositions = useMemo(() => {
+    const map = new Map<string, { w: number; d: number }>();
+    weeks.forEach((week, w) =>
+      week.forEach((cell, d) => map.set(cell.key, { w, d })),
+    );
+    return map;
+  }, [weeks]);
+
+  // Roving tabIndex: most-recently focused > selected > first non-future cell
+  const rovingKey = useMemo(() => {
+    if (focusedKey && cellPositions.has(focusedKey)) return focusedKey;
+    if (selected && cellPositions.has(selected)) return selected;
+    for (const week of weeks) {
+      for (const cell of week) {
+        if (!cell.isFuture) return cell.key;
+      }
+    }
+    return weeks[0]?.[0]?.key ?? null;
+  }, [focusedKey, selected, weeks, cellPositions]);
+
   const handleClick = useCallback((key: string) => {
     setSelected((prev) => (prev === key ? null : key));
+    setFocusedKey(key);
   }, []);
+
+  const handleCellKeyDown = useCallback(
+    (e: React.KeyboardEvent, key: string) => {
+      if (!["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp"].includes(e.key))
+        return;
+      e.preventDefault();
+      const pos = cellPositions.get(key);
+      if (!pos) return;
+      let { w, d } = pos;
+      if (e.key === "ArrowRight") w = Math.min(w + 1, weeks.length - 1);
+      else if (e.key === "ArrowLeft") w = Math.max(w - 1, 0);
+      else if (e.key === "ArrowDown") d = Math.min(d + 1, DAYS - 1);
+      else if (e.key === "ArrowUp") d = Math.max(d - 1, 0);
+      const nextCell = weeks[w]?.[d];
+      if (nextCell) {
+        setFocusedKey(nextCell.key);
+        cellRefs.current.get(nextCell.key)?.focus();
+      }
+    },
+    [weeks, cellPositions],
+  );
 
   const selectedCell = useMemo(() => {
     if (!selected) return null;
@@ -144,6 +189,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
       <div className="overflow-x-auto -mx-1 px-1 pb-1">
         <div style={{ display: "flex", gap: 0, alignItems: "flex-start" }}>
           <div
+            aria-hidden="true"
             style={{
               display: "flex",
               flexDirection: "column",
@@ -163,13 +209,18 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
             ))}
           </div>
 
-          <div style={{ display: "flex", gap: 2 }}>
+          <div
+            role="group"
+            aria-label="Теплова карта активності за рік"
+            style={{ display: "flex", gap: 2 }}
+          >
             {weeks.map((week, w) => (
               <div
                 key={w}
                 style={{ display: "flex", flexDirection: "column", gap: 2 }}
               >
                 <div
+                  aria-hidden="true"
                   style={{
                     height: 14,
                     fontSize: 8,
@@ -183,8 +234,15 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
                 {week.map((cell) => (
                   <button
                     key={cell.key}
+                    ref={(el) => {
+                      if (el) cellRefs.current.set(cell.key, el);
+                      else cellRefs.current.delete(cell.key);
+                    }}
                     type="button"
+                    tabIndex={rovingKey === cell.key ? 0 : -1}
+                    data-cell-key={cell.key}
                     onClick={() => handleClick(cell.key)}
+                    onKeyDown={(e) => handleCellKeyDown(e, cell.key)}
                     aria-label={`${cell.key}: ${cell.cnt} з ${cell.total} звичок`}
                     aria-pressed={cell.key === selected}
                     className={cn(
@@ -203,37 +261,46 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
         </div>
       </div>
 
-      {selectedCell ? (
-        <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-line bg-bg px-3 py-2 text-xs">
-          <span className="text-subtle truncate">
-            {selectedCell.dt.toLocaleDateString("uk-UA", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </span>
-          <span className="font-semibold text-text shrink-0">
-            {selectedCell.isFuture
-              ? "ще не настало"
-              : selectedCell.total === 0
-                ? "немає звичок"
-                : `${selectedCell.cnt} з ${selectedCell.total} звичок виконано`}
-          </span>
-        </div>
-      ) : (
-        <div className="mt-3 flex items-center gap-2 text-2xs text-subtle/70 select-none">
-          <span>менше</span>
-          {HEATMAP.levels.map((c, i) => (
-            <span
-              key={i}
-              className={cn("rounded-sm inline-block flex-shrink-0", c)}
-              style={{ width: 10, height: 10 }}
-            />
-          ))}
-          <span>більше</span>
-        </div>
-      )}
+      {/* Persistent aria-live region: SR announces when a cell is selected */}
+      <div aria-live="polite" aria-atomic="true" className="mt-3">
+        {selectedCell ? (
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-line bg-bg px-3 py-2 text-xs">
+            <span className="text-subtle truncate">
+              {selectedCell.dt.toLocaleDateString("uk-UA", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </span>
+            <span className="font-semibold text-text shrink-0">
+              {selectedCell.isFuture
+                ? "ще не настало"
+                : selectedCell.total === 0
+                  ? "немає звичок"
+                  : `${selectedCell.cnt} з ${selectedCell.total} звичок виконано`}
+            </span>
+          </div>
+        ) : (
+          <div
+            role="group"
+            aria-label="Легенда заповнення"
+            className="flex items-center gap-2 text-2xs text-subtle/70 select-none"
+          >
+            <span>менше</span>
+            {HEATMAP.levels.map((c, i) => (
+              <span
+                key={i}
+                role="img"
+                aria-label={`Рівень ${i + 1}`}
+                className={cn("rounded-sm inline-block shrink-0", c)}
+                style={{ width: 10, height: 10 }}
+              />
+            ))}
+            <span>більше</span>
+          </div>
+        )}
+      </div>
     </Card>
   );
 }

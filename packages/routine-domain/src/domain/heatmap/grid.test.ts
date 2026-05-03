@@ -120,8 +120,8 @@ describe("buildHeatmapGrid", () => {
     expect(grid.todayKey).toBe("2025-01-15");
     const todayCells = grid.weeks.flat().filter((c) => c.isToday);
     expect(todayCells).toHaveLength(1);
-    expect(todayCells[0].dateKey).toBe("2025-01-15");
-    expect(todayCells[0].weekday).toBe(2); // Mon=0 → Wed=2
+    expect(todayCells[0]?.dateKey).toBe("2025-01-15");
+    expect(todayCells[0]?.weekday).toBe(2); // Mon=0 → Wed=2
   });
 
   it("marks every cell after today as future with intensity='future'", () => {
@@ -162,9 +162,9 @@ describe("buildHeatmapGrid", () => {
     const grid = buildHeatmapGrid([], {}, TODAY);
     // Wed 2025-01-15's ISO week ends Sun 2025-01-19.
     expect(grid.endKey).toBe("2025-01-19");
-    const lastWeek = grid.weeks[grid.weeks.length - 1];
-    expect(lastWeek[lastWeek.length - 1].dateKey).toBe("2025-01-19");
-    expect(lastWeek[0].weekday).toBe(0); // Monday
+    const lastWeek = grid.weeks.at(-1);
+    expect(lastWeek?.at(-1)?.dateKey).toBe("2025-01-19");
+    expect(lastWeek?.[0]?.weekday).toBe(0); // Monday
   });
 
   it("flags a month marker for every month present in the window", () => {
@@ -173,9 +173,11 @@ describe("buildHeatmapGrid", () => {
     expect(grid.monthMarkers.length).toBeGreaterThanOrEqual(13);
     // Markers appear in ascending week order.
     for (let i = 1; i < grid.monthMarkers.length; i++) {
-      expect(grid.monthMarkers[i].weekIdx).toBeGreaterThanOrEqual(
-        grid.monthMarkers[i - 1].weekIdx,
-      );
+      const cur = grid.monthMarkers[i];
+      const prev = grid.monthMarkers[i - 1];
+      expect(cur).toBeDefined();
+      expect(prev).toBeDefined();
+      expect(cur?.weekIdx ?? 0).toBeGreaterThanOrEqual(prev?.weekIdx ?? 0);
     }
   });
 

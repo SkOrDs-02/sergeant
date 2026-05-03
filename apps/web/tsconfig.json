@@ -4,6 +4,7 @@
     "strict": true,
     "allowJs": false,
     "checkJs": false,
+    "noUncheckedIndexedAccess": false,
     "types": ["vite/client"],
     "paths": {
       "@sergeant/shared": ["../../packages/shared/src/index.ts"],

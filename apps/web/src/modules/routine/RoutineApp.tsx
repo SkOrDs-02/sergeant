@@ -25,6 +25,7 @@ import {
   ROUTINE_EVENT,
   ROUTINE_STORAGE_ERROR,
 } from "./lib/routineStorage";
+import { useRoutineDualWriteBoot } from "./hooks/useRoutineDualWriteBoot";
 import { useSqliteReadBoot } from "./hooks/useSqliteReadBoot";
 import { addDays, startOfIsoWeek } from "./lib/weekUtils";
 import { maxActiveStreak, completionRateForRange } from "./lib/streaks";
@@ -173,6 +174,7 @@ export default function RoutineApp({
 }: RoutineAppProps = {}) {
   const toast = useToast();
   useSqliteReadBoot();
+  useRoutineDualWriteBoot();
   const [routine, setRoutine] = useRoutineState();
   // Low-priority transition for habit toggles: the checkbox haptic fires
   // instantly while React defers the heavier re-render (full list + persist)

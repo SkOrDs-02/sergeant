@@ -1,4 +1,5 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { lazyImport } from "../../core/lib/lazyImport";
 import { useSwipeNavigation } from "@shared/hooks/useSwipeNavigation";
 import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
@@ -23,18 +24,18 @@ import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
 // time shows the finyk-branded ModulePageLoader skeleton instead of a
 // blank flash. Overview stays eager because it is the landing page and
 // must not add a waterfall to cold module navigation.
-const Transactions = lazy(() =>
-  import("./pages/transactions").then((m) => ({ default: m.Transactions })),
+//
+// `lazyImport` (instead of bare `React.lazy()`) keeps Suspense from
+// crashing when `chunkReload.ts` swallows a `vite:preloadError` after a
+// fresh Vercel deploy — same Sentry-noise pattern that hit AuthPage as
+// `e.AuthPage` (issue 116945546). See core/lib/lazyImport.ts.
+const Transactions = lazyImport(
+  () => import("./pages/transactions"),
+  "Transactions",
 );
-const Budgets = lazy(() =>
-  import("./pages/budgets").then((m) => ({ default: m.Budgets })),
-);
-const Assets = lazy(() =>
-  import("./pages/Assets").then((m) => ({ default: m.Assets })),
-);
-const Analytics = lazy(() =>
-  import("./pages/Analytics").then((m) => ({ default: m.Analytics })),
-);
+const Budgets = lazyImport(() => import("./pages/budgets"), "Budgets");
+const Assets = lazyImport(() => import("./pages/Assets"), "Assets");
+const Analytics = lazyImport(() => import("./pages/Analytics"), "Analytics");
 import { ManualExpenseSheet } from "./components/ManualExpenseSheet";
 import { FinykLoginScreen } from "./components/FinykLoginScreen";
 import { NAV_ICONS, NAV_IDS, NAV_ITEMS } from "./components/finykNav";
@@ -448,7 +449,7 @@ export default function App({
             setEditingManualExpenseId(null);
             setShowExpenseSheet(true);
           }}
-          className="fixed bottom-[calc(60px+env(safe-area-inset-bottom,0px)+16px)] right-4 w-12 h-12 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-float flex items-center justify-center text-2xl hover:from-brand-500 hover:to-brand-700 hover:shadow-glow hover:scale-105 active:scale-95 transition-[background-color,box-shadow,opacity,transform] duration-200 ease-smooth z-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+          className="fixed bottom-[calc(60px+env(safe-area-inset-bottom,0)+16px)] right-4 w-12 h-12 rounded-full bg-linear-to-br from-brand-400 to-brand-600 text-white shadow-float flex items-center justify-center text-2xl hover:from-brand-500 hover:to-brand-700 hover:shadow-glow hover:scale-105 active:scale-95 transition-[background-color,box-shadow,opacity,transform] duration-200 ease-smooth z-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
           aria-label="Додати витрату"
         >
           +
@@ -456,7 +457,7 @@ export default function App({
       )}
 
       {mono.authError && (
-        <div className="fixed top-[calc(56px+env(safe-area-inset-top,0px)+8px)] left-4 right-4 z-50 max-w-lg mx-auto">
+        <div className="fixed top-[calc(56px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto">
           <div className="bg-warning/15 border border-warning/40 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-card">
             <span className="text-lg shrink-0 mt-0.5">⚠️</span>
             <div className="flex-1 min-w-0">

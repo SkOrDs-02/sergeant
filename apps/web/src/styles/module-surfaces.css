@@ -5,27 +5,27 @@
 
 /* ── Module card base ────────────────────────────────────────────────── */
 
-.module-card {
+@utility module-card {
   @apply relative rounded-3xl p-5 border overflow-hidden
          transition-interactive;
-}
 
-.module-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
 
-.module-card:hover::before {
-  opacity: 1;
+  &:hover::before {
+    opacity: 1;
+  }
 }
 
 /* ── Finyk (emerald) ─────────────────────────────────────────────────── */
 
 .module-card-finyk {
-  @apply module-card bg-gradient-to-br from-emerald-50 via-teal-50/50 to-white;
+  @apply module-card bg-linear-to-br from-emerald-50 via-teal-50/50 to-white;
   border-color: rgba(167, 243, 208, 0.6);
 }
 
@@ -50,7 +50,7 @@
 /* ── Fizruk (teal) ───────────────────────────────────────────────────── */
 
 .module-card-fizruk {
-  @apply module-card bg-gradient-to-br from-teal-50 via-cyan-50/50 to-white;
+  @apply module-card bg-linear-to-br from-teal-50 via-cyan-50/50 to-white;
   border-color: rgba(153, 246, 228, 0.6);
 }
 
@@ -75,7 +75,7 @@
 /* ── Routine (coral) ─────────────────────────────────────────────────── */
 
 .module-card-routine {
-  @apply module-card bg-gradient-to-br from-coral-50/80 via-orange-50/30 to-white;
+  @apply module-card bg-linear-to-br from-coral-50/80 via-orange-50/30 to-white;
   border-color: rgba(255, 212, 203, 0.6);
 }
 
@@ -136,7 +136,7 @@
 /* ── Nutrition (lime) ────────────────────────────────────────────────── */
 
 .module-card-nutrition {
-  @apply module-card bg-gradient-to-br from-lime-50 via-green-50/30 to-white;
+  @apply module-card bg-linear-to-br from-lime-50 via-green-50/30 to-white;
   border-color: rgba(217, 249, 157, 0.6);
 }
 

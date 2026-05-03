@@ -66,7 +66,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center"
+      className="fixed inset-0 z-200 flex items-end justify-center sm:items-center"
       role="presentation"
     >
       {/* Scrim — real <button> keeps dismiss reachable by keyboard & AT. */}

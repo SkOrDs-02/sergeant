@@ -2,8 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 // TODO: import your DTO type
 // import { type {{name}}Dto } from "@shared/api";
 // TODO: import your query key factory
-// import { {{module}}Keys } from "@shared/lib/queryKeys";
-import { authAwareRetry } from "@shared/lib/queryClient";
+// import { {{module}}Keys } from "@shared/lib/api/queryKeys";
+import { authAwareRetry } from "@shared/lib/api/queryClient";
 
 const STALE_TIME = 30_000;
 const GC_TIME = 5 * 60_000;

@@ -11,7 +11,7 @@ export function IntroSlide({ slide }: { slide: Slide }) {
         <h2 className="text-display-stat leading-[1.05] font-black mb-4">
           Твій тиждень
         </h2>
-        <p className="text-base text-white/85 leading-relaxed max-w-[22rem]">
+        <p className="text-base text-white/85 leading-relaxed max-w-88">
           Коротке зведення по всіх модулях. Тапай праворуч, щоб гортати далі,
           ліворуч — назад. Утримуй, щоб зупинити.
         </p>

@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "path": "apps/web",
+    "option": "noUncheckedIndexedAccess",
+    "value": false,
+    "reason": "Phase 6a baseline-experiment — 625 errors / 147 files; per-module rollout planned in docs/tech-debt/frontend.md §11.1",
+    "expires": "2026-09-30"
+  },
+  {
+    "path": "apps/server",
+    "option": "noUncheckedIndexedAccess",
+    "value": false,
+    "reason": "Phase 6a baseline-experiment — 335 errors / 57 files; per-module rollout planned in docs/tech-debt/frontend.md §11.1",
+    "expires": "2026-09-30"
+  }
+]

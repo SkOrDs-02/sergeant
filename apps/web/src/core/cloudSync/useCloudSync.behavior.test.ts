@@ -2,16 +2,24 @@
 /**
  * Behavioral tests for useCloudSync module.
  *
- * The module patches globalThis.localStorage at import time so that writes to
- * tracked keys automatically mark the corresponding sync module dirty and
- * dispatch SYNC_EVENT / SYNC_STATUS_EVENT. These tests exercise that plumbing
- * as well as the pure exports (getDirtyModules, getOfflineQueue,
- * notifySyncDirty).
+ * Until PR #008 the module patched `globalThis.localStorage` at import
+ * time so that writes to tracked keys would automatically mark the
+ * corresponding sync module dirty and dispatch
+ * `SYNC_EVENT`/`SYNC_STATUS_EVENT`. PR #008 dropped the patch — the
+ * dirty-marking plumbing is now reached through the explicit
+ * `syncedKV` wrapper (see
+ * `apps/web/src/shared/lib/storage/syncedKV.ts`) or, for callers that
+ * mutate state through other means, through the public
+ * `notifySyncDirty(key)` helper. These tests exercise the pure
+ * exports (`getDirtyModules`, `getOfflineQueue`, `notifySyncDirty`)
+ * plus the dirty-tracking codepath through `notifySyncDirty`, which
+ * shares its `markModuleDirty` core with the syncedKV write path.
  *
- * We do NOT test the `useCloudSync` React hook itself here — that would
- * require @testing-library/react plus network mocks. The business-critical
- * logic the hook delegates to (collect/apply/push-flow, offline queue) is
- * covered in cloudSyncHelpers.test.js or below via pure function flows.
+ * We do NOT test the `useCloudSync` React hook itself here — that
+ * would require @testing-library/react plus network mocks. The
+ * business-critical logic the hook delegates to (collect/apply/push
+ * flow, offline queue) is covered in `cloudSyncHelpers.test.js` and
+ * the engine-level tests in `engine/__tests__`.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
@@ -67,12 +75,12 @@ describe("getOfflineQueue", () => {
   });
 });
 
-// NOTE: The module also patches localStorage.setItem/removeItem at import time
-// to auto-mark dirty modules on writes to tracked keys. That patching works in
-// production browsers but cannot be tested in jsdom (Storage methods can't be
-// shadowed as own properties in jsdom's implementation). The equivalent dirty-
-// tracking codepath is exercised via notifySyncDirty below, which calls the
-// same internal markModuleDirty.
+// NOTE: PR #008 dropped the historical `localStorage.setItem` monkey-patch
+// in favor of the explicit `syncedKV` wrapper. The dirty-tracking
+// codepath is now reached through `notifySyncDirty` (called below) and
+// through `safeWriteSyncedLS` (covered in
+// `apps/web/src/shared/lib/storage/syncedKV.test.ts`). Both share the
+// same internal `markModuleDirty`.
 
 describe("notifySyncDirty", () => {
   it("для tracked ключа finyk позначає модуль finyk брудним", () => {
@@ -81,10 +89,14 @@ describe("notifySyncDirty", () => {
     expect(getDirtyModules().finyk).toBe(true);
   });
 
-  it("для tracked ключа fizruk позначає модуль fizruk брудним", () => {
+  it("для ретиреного fizruk ключа не маркує жоден модуль брудним (PR #030)", () => {
+    // PR #030 (storage-roadmap Stage 4) — `fizruk` retired from
+    // SYNC_MODULES. Writes to legacy `fizruk_*_v1` LS keys are now
+    // untracked, so notifySyncDirty must NOT mark anything dirty.
     localStorage.setItem(STORAGE_KEYS.SYNC_DIRTY_MODULES, "{}");
     notifySyncDirty(STORAGE_KEYS.FIZRUK_WORKOUTS);
-    expect(getDirtyModules().fizruk).toBe(true);
+    notifySyncDirty(STORAGE_KEYS.FIZRUK_DAILY_LOG);
+    expect(getDirtyModules()).toEqual({});
   });
 
   it("для tracked ключа nutrition позначає модуль nutrition брудним", () => {
@@ -128,8 +140,8 @@ describe("notifySyncDirty edge cases", () => {
   it("для tracked ключа позначає відповідний модуль брудним", () => {
     // Reset dirty state
     localStorage.setItem(STORAGE_KEYS.SYNC_DIRTY_MODULES, "{}");
-    notifySyncDirty(STORAGE_KEYS.FIZRUK_WORKOUTS);
-    expect(getDirtyModules().fizruk).toBe(true);
+    notifySyncDirty(STORAGE_KEYS.NUTRITION_LOG);
+    expect(getDirtyModules().nutrition).toBe(true);
   });
 
   it("для untracked ключа не мутує dirty мапу", () => {

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
+import { rawRemoveItem } from "../enqueue";
 import { clearSyncManagedData } from "../state/moduleData";
-import { rawRemoveItem } from "../storagePatch";
 import type { CurrentUser } from "../types";
 
 /**

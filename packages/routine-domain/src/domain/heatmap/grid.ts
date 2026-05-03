@@ -253,7 +253,7 @@ export function currentCompletionStreak(grid: HeatmapGrid): number {
   let streak = 0;
   for (let i = flat.length - 1; i >= 0; i--) {
     const cell = flat[i];
-    if (cell.isFuture) continue;
+    if (!cell || cell.isFuture) continue;
     if (cell.cnt > 0) {
       streak += 1;
     } else {
