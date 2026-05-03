@@ -91,7 +91,7 @@ export const BentoCard = memo(function BentoCard({
   return (
     <div
       className={cn(
-        "relative",
+        "relative h-full",
         isDragging && "opacity-70 z-50",
         inactive && "opacity-60",
         // Edit-mode wiggle. Suppressed while a card is being dragged so
@@ -111,7 +111,7 @@ export const BentoCard = memo(function BentoCard({
         }
         data-inactive={inactive ? "true" : undefined}
         className={cn(
-          "group relative flex flex-col w-full rounded-3xl border border-line",
+          "group relative flex flex-col w-full h-full rounded-3xl border border-line",
           "p-3.5 pointer-coarse:p-4",
           "min-h-[120px] pointer-coarse:min-h-[132px]",
           "shadow-card transition-interactive text-left",
@@ -194,12 +194,16 @@ export const BentoCard = memo(function BentoCard({
               </span>
             )}
           </>
-        ) : onQuickAdd && !editMode ? (
+        ) : !editMode ? (
           // Empty-state CTA — promoted from a single inline pill (icon + label
           // glyph) to a two-row layout with a tinted leading icon-box and an
           // explicit «Натисни, щоб почати» helper. The richer treatment makes
           // the card read as an *invitation* (clear affordance + verb) instead
           // of a generic «+ Почни тут →» eyebrow that the eye skipped past.
+          // Rendered for every empty card (with or without a quick-add
+          // affordance) so the bento grid does not visibly mix two empty-
+          // state heights — the previous split between rich/simple variants
+          // produced the uneven row the IA pass is fixing.
           <div className="mt-1.5 flex flex-col gap-1">
             <div className="flex items-center gap-1.5">
               <span
@@ -379,7 +383,7 @@ export const SortableCard = memo(function SortableCard({
   if (!cfg) return null;
 
   return (
-    <div ref={setNodeRef} style={style} className="min-w-0">
+    <div ref={setNodeRef} style={style} className="min-w-0 h-full">
       <BentoCard
         config={cfg}
         onClick={handleClick}
