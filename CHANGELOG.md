@@ -161,6 +161,36 @@ metrics/web-vitals}` — а API серверу не було, vite сипав
 
 ### Changed
 
+- **Workspace: strict TS rollout — Phase 5c (`allowJs` flip).** Базовий
+  `packages/config/tsconfig.base.json` переведено з `allowJs: true` на
+  `allowJs: false`, плюс додано explicit `allowJs: false` +
+  `checkJs: false` на всі 12 app/package tsconfig-и
+  (`apps/server` з `true → false`; `apps/mobile`, `apps/mobile-shell`,
+  `packages/{api-client,shared,db-schema,insights,finyk-domain,fizruk-domain,
+nutrition-domain,routine-domain}` — explicit override). Після фліпу
+  `pnpm strict:coverage` показує `allowJs: —` для всіх 13 пакетів
+  (раніше було `⚠️` для 11). Сторонній фікс в `apps/mobile/tsconfig.json`:
+  додано 2 експліцитні `paths` mappings для
+  `@sergeant/design-tokens/{tokens,mobile}` → відповідні `*.d.ts` —
+  раніше legacy glob мапив їх на runtime `*.js`-файли, які під
+  `allowJs: true` мовчки типувалися як `any`. Деталі —
+  `docs/tech-debt/frontend.md` §11 (`Phase 5c — allowJs workspace-wide flip`)
+  - §11.1 (`Що ще лишилось до «ідеального» стрікту`).
+
+- **Workspace: strict TS rollout — Phase 5b (`: any` в finyk-pages).** PR
+  [#1452](https://github.com/Skords-01/Sergeant/pull/1452): в 9 файлах
+  `apps/web/src/modules/finyk/pages/{transactions,budgets}/**` замінено
+  `: any` на канонічні finyk-domain типи (`Transaction`, `TxSplit`,
+  `TxSplitsMap`, `TxCategoriesMap`, `ManualExpense`, `Budget`, `Category`,
+  `MonoAccount`). Для розв’язання circular-імпортів опакових
+  mono/storage об’єктів додано slice-інтерфейси
+  (`TransactionsMonoSlice`/`StorageSlice` + budget-аналоги). Побічна
+  зміна у `packages/finyk-domain`: `MonoAccount.balance` вирівняно
+  до реального webhook-output як `number | undefined` (helper-и трактують
+  відсутнє як `0`). `TxAccount` інтерфейс для Mono+Privat merge
+  `_source`-тегів; `PillStatus` type guard для нароуження
+  `syncState.status` з `string` в вужчий union.
+
 - **Web: strict TS rollout — Phase 5 cleanup (видалено діагностичні
   tsconfig-и).** Після Phase 4 final flip
   ([#1420](https://github.com/Skords-01/Sergeant/pull/1420)) і Phase 5
