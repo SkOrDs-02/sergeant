@@ -148,9 +148,9 @@ describe("queryAppDb security boundaries", () => {
   it("admits a multi-table allowlisted JOIN", async () => {
     const { pool, calls } = makeFakePool();
     const result = await queryAppDb(pool, {
-      sql: "SELECT u.id FROM users u JOIN mono_transactions m ON u.id = m.user_id",
+      sql: "SELECT u.id FROM users u JOIN mono_transaction m ON u.id = m.user_id",
     });
-    expect(result.tablesUsed.sort()).toEqual(["mono_transactions", "users"]);
+    expect(result.tablesUsed.sort()).toEqual(["mono_transaction", "users"]);
     expect(calls).toHaveLength(1);
   });
 
@@ -173,6 +173,74 @@ describe("queryAppDb security boundaries", () => {
       queryAppDb(pool, { sql: "SELECT * FROM payments" }),
     ).rejects.toThrow(/payments/);
     expect(calls).toHaveLength(0);
+  });
+
+  // Друга чистка allowlist-у: записи, що або не існують у схемі
+  // (`digest_runs`, `nutrition_entries`), або названі неправильно
+  // (`n8n_errors`, `mono_transactions`, `routines` — без відповідних
+  // міграцій). Кожен раніше валив прод 5xx-ом, бо проходив allowlist-чек
+  // і Postgres скидав `relation "X" does not exist`. Тепер fail-closed
+  // на pre-DB-check.
+
+  it("rejects allowlist-stale 'digest_runs' table", async () => {
+    const { pool, calls } = makeFakePool();
+    await expect(
+      queryAppDb(pool, { sql: "SELECT * FROM digest_runs" }),
+    ).rejects.toThrow(/digest_runs/);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("rejects allowlist-stale 'nutrition_entries' table", async () => {
+    const { pool, calls } = makeFakePool();
+    await expect(
+      queryAppDb(pool, { sql: "SELECT * FROM nutrition_entries" }),
+    ).rejects.toThrow(/nutrition_entries/);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("rejects 'n8n_errors' (real table is `n8n_failure_events`)", async () => {
+    const { pool, calls } = makeFakePool();
+    await expect(
+      queryAppDb(pool, { sql: "SELECT * FROM n8n_errors" }),
+    ).rejects.toThrow(/n8n_errors/);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("rejects 'mono_transactions' (real table is `mono_transaction` singular)", async () => {
+    const { pool, calls } = makeFakePool();
+    await expect(
+      queryAppDb(pool, { sql: "SELECT * FROM mono_transactions" }),
+    ).rejects.toThrow(/mono_transactions/);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("rejects 'routines' (real tables are `routine_entries` / `routine_streaks`)", async () => {
+    const { pool, calls } = makeFakePool();
+    await expect(
+      queryAppDb(pool, { sql: "SELECT * FROM routines" }),
+    ).rejects.toThrow(/routines/);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("admits the corrected `n8n_failure_events` table", async () => {
+    const { pool, calls } = makeFakePool();
+    const result = await queryAppDb(pool, {
+      sql: "SELECT id FROM n8n_failure_events",
+    });
+    expect(result.tablesUsed).toEqual(["n8n_failure_events"]);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("admits the corrected `routine_entries` and `routine_streaks` tables", async () => {
+    const { pool, calls } = makeFakePool();
+    const result = await queryAppDb(pool, {
+      sql: "SELECT e.id FROM routine_entries e JOIN routine_streaks s ON e.routine_id = s.routine_id",
+    });
+    expect(result.tablesUsed.sort()).toEqual([
+      "routine_entries",
+      "routine_streaks",
+    ]);
+    expect(calls).toHaveLength(1);
   });
 
   it("clamps LIMIT to <=1000", async () => {

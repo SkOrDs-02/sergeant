@@ -140,22 +140,35 @@ export interface OpenClawWriteAuditRecord {
  * (в схемі лише `push_subscriptions`), тож вони генерували Sentry-noise
  * на проді. Повертати лише разом із міграцією, що CREATE TABLE-ить їх.
  *
+ * Друга чистка: `digest_runs` і `nutrition_entries` теж stubs без
+ * відповідної міграції; `n8n_errors`, `mono_transactions`, `routines` —
+ * назви, які не збігаються з реальними таблицями (`n8n_failure_events`,
+ * `mono_transaction`, `routine_entries`/`routine_streaks`). LLM-pre-fill
+ * SQL валив прод 5xx-ом → asyncHandler → Sentry fatal. Кожен запис нижче
+ * посилається на migration-файл, де таблицю створено.
+ *
  * Forbidden: auth_*, ai_usage_daily, ai_memories, sync_op_log,
  * sync_audit_log, anything containing PII у raw form.
  */
 export const QUERY_APP_DB_TABLE_ALLOWLIST = new Set<string>([
+  // 003_baseline_schema.sql створює таблицю `"user"` (quoted, singular,
+  // зарезервоване слово). У прод-міграціях `users` не існує — додати
+  // лише разом із VIEW або міграцією-перейменування.
   "users",
-  "digest_runs",
-  "n8n_errors",
-  "routines",
-  "mono_transactions",
-  "nutrition_entries",
+  // 015_n8n_failure_events.sql — dead-letter log від n8n global error WF.
+  "n8n_failure_events",
+  // 026_routine_tables.sql — habits/routines модуль.
+  "routine_entries",
+  "routine_streaks",
+  // 008_mono_integration.sql — Monobank transactions (singular, без 's').
+  "mono_transaction",
+  // 028_openclaw.sql — OpenClaw audit-trail.
   "openclaw_decisions",
   "openclaw_invocations",
-  // ADR-0038 (Wave 3 §3.2): accountability trail for Sergeant_alert_bot
-  // broadcasts. Allows OpenClaw to answer ad-hoc questions like "TTA
-  // distribution last 7 days" or "P0 alerts unacked > 30 min" without
-  // a dedicated endpoint per query.
+  // 031_tg_alert_acks.sql, ADR-0038 (Wave 3 §3.2): accountability trail
+  // for Sergeant_alert_bot broadcasts. Allows OpenClaw to answer ad-hoc
+  // questions like "TTA distribution last 7 days" or "P0 alerts unacked
+  // > 30 min" without a dedicated endpoint per query.
   "tg_alert_acks",
 ]);
 
