@@ -148,10 +148,10 @@ describe("OpenClaw personas — tool filtering", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────
-// ADR-0034 (Phase 4) — write-tool persona allowlists
+// ADR-0036 (Phase 4) — write-tool persona allowlists
 // ─────────────────────────────────────────────────────────────────────────
 
-describe("OpenClaw personas — write-tool allowlist (ADR-0034)", () => {
+describe("OpenClaw personas — write-tool allowlist (ADR-0036)", () => {
   it("cofounder sees all 5 write-tools (sentinel null filter)", () => {
     const filtered = filterToolsForPersona(openClawTools, "cofounder");
     const names = filtered.map((t) => t.name);

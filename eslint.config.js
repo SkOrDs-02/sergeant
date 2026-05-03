@@ -261,12 +261,15 @@ export default [
   // SectionHeading owns the uppercase+tracking+text size tokens, Label
   // owns the field-label eyebrow variant, and chartTheme defines the
   // tooltip label token — all three are the single source-of-truth
-  // callers should import from.
+  // callers should import from. Mobile mirrors the same primitive at
+  // `apps/mobile/src/components/ui/SectionHeading.tsx`; treat both
+  // platforms' source-of-truth files identically.
   {
     files: [
       "apps/web/src/shared/components/ui/SectionHeading.tsx",
       "apps/web/src/shared/components/ui/FormField.tsx",
       "apps/web/src/shared/charts/chartTheme.ts",
+      "apps/mobile/src/components/ui/SectionHeading.tsx",
     ],
     rules: {
       "sergeant-design/no-eyebrow-drift": "off",

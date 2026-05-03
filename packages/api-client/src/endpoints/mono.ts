@@ -7,6 +7,7 @@ import type {
   MonoConnectResponse as SharedMonoConnectResponse,
   MonoDisconnectResponse as SharedMonoDisconnectResponse,
   MonoBackfillResponse as SharedMonoBackfillResponse,
+  MonoBackfillProgress as SharedMonoBackfillProgress,
 } from "@sergeant/shared/schemas";
 import type { HttpClient } from "../httpClient";
 
@@ -37,6 +38,7 @@ export type MonoTransactionsPage = SharedMonoTransactionsPage;
 export type MonoConnectResponse = SharedMonoConnectResponse;
 export type MonoDisconnectResponse = SharedMonoDisconnectResponse;
 export type MonoBackfillResponse = SharedMonoBackfillResponse;
+export type MonoBackfillProgress = SharedMonoBackfillProgress;
 
 export interface MonoAccount {
   id: string;
@@ -95,6 +97,9 @@ export interface MonoWebhookEndpoints {
     opts?: { signal?: AbortSignal },
   ) => Promise<MonoTransactionsPage>;
   backfill: (opts?: { signal?: AbortSignal }) => Promise<MonoBackfillResponse>;
+  backfillProgress: (opts?: {
+    signal?: AbortSignal;
+  }) => Promise<MonoBackfillProgress>;
 }
 
 export function createMonoWebhookEndpoints(
@@ -126,6 +131,10 @@ export function createMonoWebhookEndpoints(
       }),
     backfill: (opts) =>
       http.post<MonoBackfillResponse>("/api/mono/backfill", undefined, {
+        signal: opts?.signal,
+      }),
+    backfillProgress: (opts) =>
+      http.get<MonoBackfillProgress>("/api/mono/backfill-progress", {
         signal: opts?.signal,
       }),
   };

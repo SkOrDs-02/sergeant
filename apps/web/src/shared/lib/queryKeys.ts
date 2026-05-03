@@ -66,6 +66,7 @@ export const finykKeys = {
 
   // DB-backed webhook endpoints (Track B + Track C)
   monoSyncState: ["finyk", "mono", "sync-state"] as const,
+  monoBackfillProgress: ["finyk", "mono", "backfill-progress"] as const,
   monoAccounts: ["finyk", "mono", "accounts"] as const,
   monoTransactionsDb: (
     from: string | undefined,

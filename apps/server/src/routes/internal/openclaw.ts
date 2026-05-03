@@ -50,7 +50,7 @@ import {
   getServerStats,
   getPostHogStats,
   getGithubReleases,
-  // ADR-0034 (Phase 4): write-tools — invoked only after console-side approval.
+  // ADR-0036 (Phase 4): write-tools — invoked only after console-side approval.
   commitToStrategyDoc,
   createGithubIssue,
   postToTopic,
@@ -199,7 +199,7 @@ const GithubReleasesBody = z.object({
 
 const ServerStatsBody = z.object({}).strict();
 
-// ADR-0034 (Phase 4): write-tool body schemas. The console invokes these
+// ADR-0036 (Phase 4): write-tool body schemas. The console invokes these
 // endpoints ONLY after the founder explicitly approved the corresponding
 // write-tool call via inline-keyboard in Telegram. Validation is intentionally
 // strict — we'd rather 400-fail than silently relax invariants.
@@ -490,7 +490,7 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
     }),
   );
 
-  // ---- ADR-0034 (Phase 4): write-tools ----
+  // ---- ADR-0036 (Phase 4): write-tools ----
   //
   // Side-effecting operations. Console approves with the founder via
   // inline-keyboard before invoking these. Each endpoint performs exactly

@@ -13,6 +13,7 @@ exports[`registerRoutes > mounts the stable set of /api/* endpoints (snapshot) 1
   "GET /api/internal/users/cohort",
   "GET /api/me",
   "GET /api/mono/accounts",
+  "GET /api/mono/backfill-progress",
   "GET /api/mono/sync-state",
   "GET /api/mono/transactions",
   "GET /api/push/vapid-public",

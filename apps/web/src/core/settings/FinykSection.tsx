@@ -15,6 +15,8 @@ import {
 } from "@shared/lib/storage";
 import { finykKeys, hubKeys } from "@shared/lib/queryKeys";
 import { useStorage as useFinykStorage } from "../../modules/finyk/hooks/useStorage";
+import { useMonoBackfillProgress } from "../../modules/finyk/hooks/useMonoBackfillProgress";
+import { BackfillProgressPill } from "../../modules/finyk/components/BackfillProgressPill";
 import {
   ConfirmModal,
   SettingsGroup,
@@ -145,6 +147,12 @@ export function FinykSection() {
   const webhookConnected =
     webhookSyncState != null && webhookSyncState.status !== "disconnected";
 
+  // Backfill progress: only worth polling once Monobank is connected. The
+  // hook itself decides when to stop polling (server flips out of `running`).
+  const { progress: backfillProgress } = useMonoBackfillProgress({
+    enabled: webhookConnected,
+  });
+
   const connectWebhook = async () => {
     const clean = webhookTokenInput.trim();
     if (!clean) {
@@ -198,9 +206,15 @@ export function FinykSection() {
   const triggerBackfill = async () => {
     try {
       await monoWebhookApi.backfill();
-      await queryClient.invalidateQueries({
-        queryKey: finykKeys.monoSyncState,
-      });
+      // Refresh sync-state and progress simultaneously: progress flips to
+      // `running` server-side the moment we get a 200 back, so kicking the
+      // poller now means the pill animates in within the next render.
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: finykKeys.monoSyncState }),
+        queryClient.invalidateQueries({
+          queryKey: finykKeys.monoBackfillProgress,
+        }),
+      ]);
     } catch (e) {
       setWebhookError(
         e instanceof Error && e.message ? e.message : "Помилка re-sync",
@@ -367,8 +381,11 @@ export function FinykSection() {
                 variant="ghost"
                 className="flex-1 h-11"
                 onClick={triggerBackfill}
+                disabled={backfillProgress?.status === "running"}
               >
-                Re-sync (backfill)
+                {backfillProgress?.status === "running"
+                  ? "Re-sync…"
+                  : "Re-sync (backfill)"}
               </Button>
               <Button
                 variant="danger"
@@ -378,6 +395,7 @@ export function FinykSection() {
                 Від{"'"}єднати
               </Button>
             </div>
+            <BackfillProgressPill progress={backfillProgress} />
           </div>
         ) : (
           <div className="space-y-3">

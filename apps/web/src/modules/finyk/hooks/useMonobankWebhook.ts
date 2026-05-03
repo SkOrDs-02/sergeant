@@ -336,9 +336,19 @@ export function useMonobankWebhook({
   const backfill = useCallback(async () => {
     try {
       await monoWebhookApi.backfill();
-      await queryClient.invalidateQueries({
-        queryKey: finykKeys.monoSyncState,
-      });
+      // Refresh sync-state and progress simultaneously: the latter goes
+      // from `idle`/`completed` to `running` server-side as soon as the
+      // POST returns, so kicking the cache here lets the progress pill
+      // animate in within the next render rather than after the next 30 s
+      // sync-state refetch.
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: finykKeys.monoSyncState,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: finykKeys.monoBackfillProgress,
+        }),
+      ]);
     } catch (e) {
       const msg =
         e instanceof Error && e.message ? e.message : "Помилка backfill";

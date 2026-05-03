@@ -35,7 +35,7 @@ export {
 } from "./tools.js";
 export { selectToneMode, buildSystemPrompt } from "./prompts.js";
 
-// Phase 4 (ADR-0034): write-tools (approval-gated on console side).
+// Phase 4 (ADR-0036): write-tools (approval-gated on console side).
 export {
   commitToStrategyDoc,
   createGithubIssue,

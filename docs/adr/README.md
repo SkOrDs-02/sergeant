@@ -101,12 +101,14 @@ pnpm gen:adr
 | 0031 | OpenClaw v0 — Telegram-only co-founder bot      | accepted | 2026-05-02 | Окремий @OpenClaw_sergeant_bot (DM-only, allowlist) з 7 read-only tools, strict memory isolation, $5/day cap.         |
 | 0032 | Console consolidated into OpenClaw              | accepted | 2026-05-02 | OpenClaw (ADR-0031) поглинає функції @sergeant_console_bot (ADR-0027); legacy console dormant до team-scale.          |
 | 0033 | OpenClaw multi-personas + `/council`            | accepted | 2026-05-02 | 5 personas (cofounder/ops/growth/eng/finance) + sequential `/council` round-table; persona-filtered toolsets.         |
-| 0034 | OpenClaw write-tools with approval flow         | accepted | 2026-05-03 | 5 write-tools (strategy doc PR / GH issue / TG topic post / n8n pause / Sentry mute) gated by inline-button approval. |
+| 0034 | Visual regression testing                       | accepted | 2026-05-03 | Argos + Playwright з 56 screenshot-ів; non-blocking Argos status-check; формалізація вже-існуючої CI-конфіги.         |
+| 0035 | Distributed tracing — OpenTelemetry             | proposed | 2026-05-03 | OTel web→server, Honeycomb backend, sample 10%/5%; вимкнення Sentry browserTracing.                                   |
+| 0036 | OpenClaw write-tools with approval flow         | accepted | 2026-05-03 | 5 write-tools (strategy doc PR / GH issue / TG topic post / n8n pause / Sentry mute) gated by inline-button approval. |
 
-> **Note on next ADR:** наступний номер — **`0035`**.
+> **Note on next ADR:** наступний номер — **`0037`**.
 
 > **Note on numbering 0016–0022 jump:** ADRs `0016`–`0022` — це retroactive batch, що був написаний паралельно з `0006`–`0012`. Через паралельне виконання Devin-сесій виникли колізії номерів `0003`–`0012`. Розв'язано через PR `docs(adr): resolve numbering collisions` — same-topic дублі (refund, anthropic, PII) видалено, late-comers перенумеровано в `0016`+.
 
-> **Note on missing 0029:** Номер `0029` зарезервований під ADR, що не дійшов до merge — паралельні Devin-сесії на 2026-05-02 створили `0030` (Telegram reporting) і `0031` (OpenClaw v0) майже одночасно, а 0029-кандидат (proposed: per-source AI-memory ingestion gating) був згорнутий в ADR-0028 під час рев'ю замість окремого документа. ADR-и не нумеруються заднім числом, тому `0029` лишається як **відомий gap** — задокументований у `KNOWN_NUMBERING_GAPS` в `scripts/docs/check-adr-graph.mjs` і whitelisted у gap-rule. Наступний ADR — **`0033`** (`pnpm gen:adr` обчислює `max + 1` через `nextAdrNumber()` у `plopfile.mjs`).
+> **Note on missing 0029:** Номер `0029` зарезервований під ADR, що не дійшов до merge — паралельні Devin-сесії на 2026-05-02 створили `0030` (Telegram reporting) і `0031` (OpenClaw v0) майже одночасно, а 0029-кандидат (proposed: per-source AI-memory ingestion gating) був згорнутий в ADR-0028 під час рев'ю замість окремого документа. ADR-и не нумеруються заднім числом, тому `0029` лишається як **відомий gap** — задокументований у `KNOWN_NUMBERING_GAPS` в `scripts/docs/check-adr-graph.mjs` і whitelisted у gap-rule. Наступний ADR — **`0036`** (`pnpm gen:adr` обчислює `max + 1` через `nextAdrNumber()` у `plopfile.mjs`).
 
 > **Graph integrity:** Парсинг метаданих ADR (`Status:` / `Supersedes:`, з підтримкою англо- та україномовних назв полів — див. ADR-0026/0027) і перевірка індексу + бідіректіонального supersede-зв'язку автоматизовані: `node scripts/docs/check-adr-graph.mjs` (CI gate в `docs-automation.yml`).

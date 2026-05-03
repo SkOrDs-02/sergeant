@@ -338,12 +338,12 @@ sentry,server,posthog}` + `/api/internal/openclaw/github/releases`) з
   `docs/postmortems/<date>-signups-drop.md`.
 - `/okr` → дашборд з 3 OKR і прогресом.
 
-### Phase 4 — Write-tools з approval flow (ADR-0034, **shipped**)
+### Phase 4 — Write-tools з approval flow (ADR-0036, **shipped**)
 
 **Ціль:** OpenClaw може діяти, не тільки думати — кожна mutating дія
-потребує human-approval inline (per ADR-0027 + ADR-0034).
+потребує human-approval inline (per ADR-0027 + ADR-0036).
 
-**Архітектура:** [ADR-0034](../adr/0034-openclaw-write-tools-with-approval.md) — server-side
+**Архітектура:** [ADR-0036](../adr/0036-openclaw-write-tools-with-approval.md) — server-side
 endpoints + console-side `ApprovalStore` (in-memory, 10-min TTL) + executor
 interception (`createOpenClawToolExecutor` детектить write-tool name → queue
 до `PendingApprovalsCollector` → handler `drain()` після turn-у → пост inline-keyboard

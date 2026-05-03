@@ -64,7 +64,7 @@ const PERSONA_LABEL: Record<OpenClawPersona, string> = {
   finance: "Finance",
 };
 
-// ADR-0034 (Phase 4): callback_data prefix for inline-keyboard buttons.
+// ADR-0036 (Phase 4): callback_data prefix for inline-keyboard buttons.
 // `oc:approve:<id>` / `oc:reject:<id>`. Telegram caps callback_data at 64
 // bytes; with an 8-char id we land at 19 bytes — comfortable headroom.
 const APPROVAL_PREFIX = "oc:";
@@ -251,7 +251,7 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     process.env.OPENCLAW_COUNCIL_USD_BUDGET,
   );
 
-  // ADR-0034 (Phase 4): single approval-store shared across all agent
+  // ADR-0036 (Phase 4): single approval-store shared across all agent
   // turns in this process. Per-turn `PendingApprovalsCollector` is created
   // inside `runAgentTurn` and drained afterwards.
   const approvalStore = new ApprovalStore();
@@ -415,7 +415,7 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     if (!options?.silent) await ctx.replyWithChatAction("typing");
     const startedAt = Date.now();
 
-    // ADR-0034 (Phase 4): per-turn collector. The agent executor pushes
+    // ADR-0036 (Phase 4): per-turn collector. The agent executor pushes
     // approval-records into this whenever the LLM emits a write-tool
     // call. After the turn finishes we drain it and post inline-keyboard
     // buttons.
@@ -456,7 +456,7 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
         }
       }
 
-      // ADR-0034 (Phase 4): drain queued approvals and post inline-
+      // ADR-0036 (Phase 4): drain queued approvals and post inline-
       // keyboard cards. We do this AFTER the narrative reply so the
       // founder sees both the LLM's reasoning and the proposed action.
       // We drain even when silent=true (council sub-turns): if a
@@ -509,7 +509,7 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
   }
 
   /**
-   * ADR-0034 (Phase 4): post an inline-keyboard card summarising a
+   * ADR-0036 (Phase 4): post an inline-keyboard card summarising a
    * pending write-tool approval. Card shows tool label + summary; two
    * buttons (Approve / Reject) carry the approval-id in callback_data.
    *
@@ -778,7 +778,7 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     await runAgentTurn(ctx, userMessage, "dm");
   });
 
-  // ADR-0034 (Phase 4): inline-keyboard callback handler — approves
+  // ADR-0036 (Phase 4): inline-keyboard callback handler — approves
   // or rejects a pending write-tool. Fail-closed: only the founder
   // may resolve approvals; expired / unknown ids return a friendly
   // "expired" answer-callback rather than executing.

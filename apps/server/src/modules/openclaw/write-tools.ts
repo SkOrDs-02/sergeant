@@ -1,5 +1,5 @@
 /**
- * OpenClaw write-tools (Phase 4, ADR-0034).
+ * OpenClaw write-tools (Phase 4, ADR-0036).
  *
  * Each function performs a single side-effecting action against an
  * external system (GitHub, Telegram supergroup, n8n, Sentry). Approval
@@ -189,7 +189,7 @@ export async function commitToStrategyDoc(
       head: branch,
       base: baseBranch,
       body: [
-        `Strategy doc update from OpenClaw (Phase 4, ADR-0034).`,
+        `Strategy doc update from OpenClaw (Phase 4, ADR-0036).`,
         ``,
         `**File:** \`${filePath}\``,
         ``,
@@ -256,7 +256,7 @@ export async function createGithubIssue(
         input.body,
         "",
         "---",
-        "_Issue opened automatically by OpenClaw (Phase 4, ADR-0034) after founder approval._",
+        "_Issue opened automatically by OpenClaw (Phase 4, ADR-0036) after founder approval._",
       ].join("\n"),
       labels: input.labels,
     }),

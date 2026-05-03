@@ -1,5 +1,5 @@
 /**
- * Approval store for OpenClaw write-tools (Phase 4, ADR-0034).
+ * Approval store for OpenClaw write-tools (Phase 4, ADR-0036).
  *
  * Lifecycle:
  *   1. LLM emits a write-tool call (`commit_to_strategy_doc`, etc).

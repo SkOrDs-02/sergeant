@@ -133,6 +133,7 @@ export {
   createMonoWebhookEndpoints,
   type MonoAccount,
   type MonoAccountDto,
+  type MonoBackfillProgress,
   type MonoBackfillResponse,
   type MonoCashbackType,
   type MonoClientInfo,

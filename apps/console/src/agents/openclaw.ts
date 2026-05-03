@@ -425,7 +425,7 @@ export const openClawTools: Tool[] = [
       required: [],
     },
   },
-  // ──── ADR-0034 (Phase 4): write-tools (approval-gated) ────
+  // ──── ADR-0036 (Phase 4): write-tools (approval-gated) ────
   // Console intercepts these calls — instead of executing, it queues an
   // approval-record and posts an inline-keyboard to the founder. Only after
   // an explicit `Approve` click does the tool actually run via
@@ -564,7 +564,7 @@ export interface OpenClawAgentDeps {
   /** Optional: invocation id for audit trail. */
   invocationId?: number;
   /**
-   * ADR-0034 (Phase 4): if both `approvalStore` and `pendingCollector`
+   * ADR-0036 (Phase 4): if both `approvalStore` and `pendingCollector`
    * are provided, write-tool calls (commit_to_strategy_doc, …) are
    * intercepted and queued for approval instead of executed. Without
    * either, write-tools return a hard refusal to the LLM (fail-closed).
@@ -607,7 +607,7 @@ const TOOL_ROUTE: Record<string, string> = {
   get_server_stats: "/api/internal/openclaw/metrics/server",
   get_posthog_stats: "/api/internal/openclaw/metrics/posthog",
   get_github_releases: "/api/internal/openclaw/github/releases",
-  // ADR-0034 (Phase 4): write-tools — invoked ONLY after explicit
+  // ADR-0036 (Phase 4): write-tools — invoked ONLY after explicit
   // founder approval. The executor below intercepts these names and
   // routes them through the approval-store instead of fetch-ing.
   commit_to_strategy_doc: "/api/internal/openclaw/write/strategy-doc",
@@ -632,7 +632,7 @@ export function writeToolRoute(name: string): string | undefined {
  * JSON-string output-у (LLM-у). Якщо HTTP-call fail — повертає error
  * message як строку (так LLM зрозуміє і зможе adapt-нутись).
  *
- * ADR-0034 (Phase 4): for the 5 write-tool names, the executor does NOT
+ * ADR-0036 (Phase 4): for the 5 write-tool names, the executor does NOT
  * fetch — it queues an approval-record and returns
  * `WRITE_TOOL_QUEUED_LITERAL` to the LLM. The handler later (after the
  * agent turn completes) drains the collector and posts inline-keyboard
@@ -643,7 +643,7 @@ export function createOpenClawToolExecutor(
   deps: OpenClawAgentDeps,
 ): (name: string, input: Record<string, unknown>) => Promise<string> {
   return async (name, input) => {
-    // ADR-0034: write-tool interception. Fail-closed if approval
+    // ADR-0036: write-tool interception. Fail-closed if approval
     // infrastructure not provided — we never auto-execute side effects.
     if (isWriteToolName(name)) {
       if (!deps.approvalStore || !deps.pendingCollector) {

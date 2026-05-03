@@ -175,7 +175,7 @@ describe("OpenClaw buildSystemPromptInline", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────
-// ADR-0034 (Phase 4): write-tool routes + executor interception
+// ADR-0036 (Phase 4): write-tool routes + executor interception
 // ─────────────────────────────────────────────────────────────────────────
 
 describe("OpenClaw writeToolRoute", () => {
@@ -209,7 +209,7 @@ describe("OpenClaw writeToolRoute", () => {
   });
 });
 
-describe("OpenClaw executor — write-tool interception (ADR-0034)", () => {
+describe("OpenClaw executor — write-tool interception (ADR-0036)", () => {
   function makeDeps(
     overrides: {
       approvalStore?: ApprovalStore;

@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/superpowers/agent-skills-catalog.md`.
@@ -24,34 +24,35 @@ Repo policy lives here in `AGENTS.md`. Platform-specific wrappers such as `CLAUD
   - `apps/mobile` — Expo 52 + React Native 0.76.
   - `apps/mobile-shell` — Capacitor wrapper for the web app.
   - `apps/console` — Telegram bot (grammy + Anthropic), internal ops/marketing.
-- **Packages** (10): `@sergeant/shared`, `@sergeant/api-client`, `@sergeant/config`, `@sergeant/design-tokens`, `@sergeant/insights`, `eslint-plugin-sergeant-design`, and 4 domain packages (`@sergeant/finyk-domain`, `@sergeant/fizruk-domain`, `@sergeant/nutrition-domain`, `@sergeant/routine-domain`).
+- **Packages** (11): `@sergeant/shared`, `@sergeant/api-client`, `@sergeant/config`, `@sergeant/db-schema`, `@sergeant/design-tokens`, `@sergeant/insights`, `eslint-plugin-sergeant-design`, and 4 domain packages (`@sergeant/finyk-domain`, `@sergeant/fizruk-domain`, `@sergeant/nutrition-domain`, `@sergeant/routine-domain`).
 - Pre-commit: **Husky** runs `lint-staged` (ESLint --fix + Prettier).
 
 ## Module ownership map
 
 Quick lookup before editing: which path uses which test stack and which conventions are mandatory.
 
-| Path                                                  | Owner        | Test stack                              | RQ keys factory                       | Notes                                                                                                                                                           |
-| ----------------------------------------------------- | ------------ | --------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web/src/modules/finyk/**`                       | `@Skords-01` | Vitest + MSW + RTL                      | `finykKeys`                           | Tailwind, localStorage. Mono webhooks → `monoWebhook*` keys.                                                                                                    |
-| `apps/web/src/modules/fizruk/**`                      | `@Skords-01` | Vitest + MSW + RTL                      | (none yet — local-first via MMKV-web) | Workouts/sets are local-first. Cloud sync via `cloudsync` queue.                                                                                                |
-| `apps/web/src/modules/nutrition/**`                   | `@Skords-01` | Vitest + MSW + RTL                      | `nutritionKeys`                       | OFF = OpenFoodFacts; barcode scans share cache key with meal-sheet.                                                                                             |
-| `apps/web/src/modules/routine/**`                     | `@Skords-01` | Vitest + RTL                            | (local-first)                         | Habits + streaks; rely on Kyiv-day boundary (see Domain invariants).                                                                                            |
-| `apps/web/src/core/**`                                | `@Skords-01` | Vitest + RTL + (MSW for fetch)          | `hubKeys`, `coachKeys`, `digestKeys`  | HubChat, OnboardingWizard, dashboard. Quick actions registry lives here.                                                                                        |
-| `apps/web/src/core/lib/chatActions/**`                | `@Skords-01` | Vitest + RTL                            | n/a                                   | HubChat tool handlers. Повертають `string` для `tool_result`. Пишуть у localStorage тільки через `ls`/`lsSet`. Тест: happy path + error path кожного handler-а. |
-| `apps/web/src/shared/**`                              | `@Skords-01` | Vitest                                  | factories defined here                | Pure utils. No React.                                                                                                                                           |
-| `apps/server/src/modules/**`                          | `@Skords-01` | Vitest + Testcontainers (real Postgres) | n/a                                   | Always coerce bigint→number in serializers (rule #1). Update `api-client` types.                                                                                |
-| `apps/server/src/modules/chat/**`                     | `@Skords-01` | Vitest                                  | n/a                                   | Anthropic tool defs split per domain in `toolDefs/`. See Architecture section.                                                                                  |
-| `apps/server/src/migrations/**`                       | `@Skords-01` | n/a                                     | n/a                                   | Sequential `NNN_*.sql` (currently 001–021). No gaps. Two-phase for DROP — see rule #4.                                                                          |
-| `apps/mobile/src/core/**`                             | `@Skords-01` | Jest                                    | (mobile RQ uses module-local keys)    | NativeWind (not Tailwind). MMKV (not localStorage). No DOM.                                                                                                     |
-| `apps/mobile/app/**`                                  | `@Skords-01` | Jest                                    | n/a                                   | Expo Router routes. Each `_layout.tsx` is a navigator.                                                                                                          |
-| `apps/mobile-shell/**`                                | `@Skords-01` | none                                    | n/a                                   | Capacitor wrapper around `apps/web`. No app code lives here, only build glue.                                                                                   |
-| `apps/console/**`                                     | `@Skords-01` | Vitest                                  | n/a                                   | Telegram bot (grammy + Anthropic). Multi-agent: ops + marketing. Internal only.                                                                                 |
-| `packages/shared/**`                                  | `@Skords-01` | Vitest                                  | n/a                                   | Zod schemas, types, business logic. Used by all apps — change with care.                                                                                        |
-| `packages/api-client/**`                              | `@Skords-01` | Vitest                                  | n/a                                   | HTTP clients + types. Must mirror `apps/server/src/modules/*` response shapes.                                                                                  |
-| `packages/insights/**`                                | `@Skords-01` | Vitest                                  | n/a                                   | Cross-module analytics. Pure functions over normalized data.                                                                                                    |
-| `packages/{finyk,fizruk,nutrition,routine}-domain/**` | `@Skords-01` | Vitest                                  | n/a                                   | Domain logic shared web ↔ mobile (e.g., kcal math, budget computations).                                                                                        |
-| `packages/eslint-plugin-sergeant-design/**`           | `@Skords-01` | `node --test` (`__tests__/*.mjs`)       | n/a                                   | Custom ESLint rules. Run via `pnpm lint:plugins`.                                                                                                               |
+| Path                                                  | Owner        | Test stack                              | RQ keys factory                       | Notes                                                                                                                                                                  |
+| ----------------------------------------------------- | ------------ | --------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web/src/modules/finyk/**`                       | `@Skords-01` | Vitest + MSW + RTL                      | `finykKeys`                           | Tailwind, localStorage. Mono webhooks → `monoWebhook*` keys.                                                                                                           |
+| `apps/web/src/modules/fizruk/**`                      | `@Skords-01` | Vitest + MSW + RTL                      | (none yet — local-first via MMKV-web) | Workouts/sets are local-first. Cloud sync via `cloudsync` queue.                                                                                                       |
+| `apps/web/src/modules/nutrition/**`                   | `@Skords-01` | Vitest + MSW + RTL                      | `nutritionKeys`                       | OFF = OpenFoodFacts; barcode scans share cache key with meal-sheet.                                                                                                    |
+| `apps/web/src/modules/routine/**`                     | `@Skords-01` | Vitest + RTL                            | (local-first)                         | Habits + streaks; rely on Kyiv-day boundary (see Domain invariants).                                                                                                   |
+| `apps/web/src/core/**`                                | `@Skords-01` | Vitest + RTL + (MSW for fetch)          | `hubKeys`, `coachKeys`, `digestKeys`  | HubChat, OnboardingWizard, dashboard. Quick actions registry lives here.                                                                                               |
+| `apps/web/src/core/lib/chatActions/**`                | `@Skords-01` | Vitest + RTL                            | n/a                                   | HubChat tool handlers. Повертають `string` для `tool_result`. Пишуть у localStorage тільки через `ls`/`lsSet`. Тест: happy path + error path кожного handler-а.        |
+| `apps/web/src/shared/**`                              | `@Skords-01` | Vitest                                  | factories defined here                | Pure utils. No React.                                                                                                                                                  |
+| `apps/server/src/modules/**`                          | `@Skords-01` | Vitest + Testcontainers (real Postgres) | n/a                                   | Always coerce bigint→number in serializers (rule #1). Update `api-client` types.                                                                                       |
+| `apps/server/src/modules/chat/**`                     | `@Skords-01` | Vitest                                  | n/a                                   | Anthropic tool defs split per domain in `toolDefs/`. See Architecture section.                                                                                         |
+| `apps/server/src/migrations/**`                       | `@Skords-01` | n/a                                     | n/a                                   | Sequential `NNN_*.sql` (currently 001–028). No gaps. Two-phase for DROP — see rule #4.                                                                                 |
+| `apps/mobile/src/core/**`                             | `@Skords-01` | Jest                                    | (mobile RQ uses module-local keys)    | NativeWind (not Tailwind). MMKV (not localStorage). No DOM.                                                                                                            |
+| `apps/mobile/app/**`                                  | `@Skords-01` | Jest                                    | n/a                                   | Expo Router routes. Each `_layout.tsx` is a navigator.                                                                                                                 |
+| `apps/mobile-shell/**`                                | `@Skords-01` | none                                    | n/a                                   | Capacitor wrapper around `apps/web`. No app code lives here, only build glue.                                                                                          |
+| `apps/console/**`                                     | `@Skords-01` | Vitest                                  | n/a                                   | Telegram bot (grammy + Anthropic). Multi-agent: ops + marketing. Internal only.                                                                                        |
+| `packages/shared/**`                                  | `@Skords-01` | Vitest                                  | n/a                                   | Zod schemas, types, business logic. Used by all apps — change with care.                                                                                               |
+| `packages/api-client/**`                              | `@Skords-01` | Vitest                                  | n/a                                   | HTTP clients + types. Must mirror `apps/server/src/modules/*` response shapes.                                                                                         |
+| `packages/insights/**`                                | `@Skords-01` | Vitest                                  | n/a                                   | Cross-module analytics. Pure functions over normalized data.                                                                                                           |
+| `packages/{finyk,fizruk,nutrition,routine}-domain/**` | `@Skords-01` | Vitest                                  | n/a                                   | Domain logic shared web ↔ mobile (e.g., kcal math, budget computations).                                                                                               |
+| `packages/db-schema/**`                               | `@Skords-01` | Vitest                                  | n/a                                   | Drizzle ORM schemas (Postgres + SQLite) and the migration runner used by `apps/server`. Schema changes pair with a new SQL migration in `apps/server/src/migrations/`. |
+| `packages/eslint-plugin-sergeant-design/**`           | `@Skords-01` | `node --test` (`__tests__/*.mjs`)       | n/a                                   | Custom ESLint rules. Run via `pnpm lint:plugins`.                                                                                                                      |
 
 > Owner is the GitHub handle responsible for review and incident escalation (L2 on-call). All modules currently roll up to `@Skords-01`; per-module delegation will be tracked here when sub-owners are introduced.
 
@@ -134,7 +135,9 @@ If you change only one — CI will pass but consumers break. Always do all three
 
 ### 4. SQL migrations: sequential, no gaps, two-phase for DROP
 
-Files in `apps/server/src/migrations/` use the pattern `NNN_description.sql` (currently 001–021). Pre-deploy: `pnpm db:migrate` (Railway, runs `apps/server/migrate.mjs`). The build step copies them via `apps/server/build.mjs` (fixed in [#704](https://github.com/Skords-01/Sergeant/issues/704)).
+Files in `apps/server/src/migrations/` use the pattern `NNN_description.sql` (currently 001–028). Pre-deploy: `pnpm db:migrate` (Railway, runs `apps/server/migrate.mjs`). The build step copies them via `apps/server/build.mjs` (fixed in [#704](https://github.com/Skords-01/Sergeant/issues/704)).
+
+> **Local Postgres image:** `docker-compose.yml` uses `pgvector/pgvector:pg16`, not stock `postgres:16-alpine`. Migration `025_ai_memories_pgvector.sql` runs `CREATE EXTENSION IF NOT EXISTS vector;` and the alpine image does not ship the extension — `pnpm db:up` would fail at migrate-time. CI workflows (`ci.yml`, `extended-e2e.yml`, `visual-regression.yml`) already pin the same image.
 
 - **Adding a column:** single file `NNN_add_foo.sql`. Make it `NULL`-able or `DEFAULT`-ed so old code keeps working.
 - **Renaming/removing a column:** **two phases**, deployed **separately**:
@@ -175,6 +178,7 @@ Format: `<type>(<scope>): <subject>`. Allowed types: `feat`, `fix`, `docs`, `cho
 | `insights`         | `packages/insights/**`                                             |
 | `design-tokens`    | `packages/design-tokens/**`                                        |
 | `config`           | `packages/config/**`                                               |
+| `db-schema`        | `packages/db-schema/**`                                            |
 | `eslint-plugins`   | `packages/eslint-plugin-sergeant-design/**`                        |
 | `migrations`       | `apps/server/src/migrations/**` only                               |
 | `agents`           | `.agents/**`, `apps/console/src/agents/**`, `ops/n8n-workflows/**` |
@@ -514,6 +518,26 @@ If a reviewer sees a new prose paragraph or table cell in English in a doc that'
 
 The `.text-style-overline` utility is the canonical way to render kickers; module-headers that need `text-brand-700` may keep the hand-rolled span (with the existing `// eslint-disable-next-line sergeant-design/no-eyebrow-drift` justification) until SectionHeading exposes a brand-tinted variant.
 
+### 17. Animation budget — max 2 concurrent, 3 tiers
+
+> Why a hard rule? Unconstrained animations create visual noise and harm users with vestibular disorders. Past audits found confetti firing on every checkbox tick and stagger delays compounding to 350 ms+, both violating the WCAG 2.3 (Animation from Interactions) guideline.
+
+Three animation tiers — every animation in the codebase belongs to exactly one:
+
+| Tier          | Examples                                                       | Constraint                                                                                            |
+| ------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **AMBIENT**   | `shimmer`, `pulse-soft`, `wiggle`                              | Looped; always behind `motion-safe:`; `prefers-reduced-motion` collapses to opacity-only              |
+| **RESPONSE**  | `fade-in`, `slide-up`, `scale-in`, `press-scale`, `hover-lift` | One-shot, 150–300 ms, `ease-out`; fires once per user action                                          |
+| **CELEBRATE** | `check-pop`, `bounce-in`, `success-pulse`, confetti burst      | Milestones only: first entry, streak 7/30/100/365, weekly goal hit. **Not** every checkbox completion |
+
+Rules:
+
+- Max **1 AMBIENT + 1 RESPONSE** running simultaneously on screen.
+- A stagger group counts as **1 RESPONSE** regardless of child count.
+- Stagger timing: **max 30 ms between children**, total delay cap **≤ 150 ms** (`Math.min(index * 30, 150)`).
+- Never wrap a component that has its own internal entry animation in `StaggerChild` (double-animation).
+- `showConfetti` on `AnimatedCheckbox` / `HabitCheckbox` must only be `true` at streak milestones (7, 30, 100, 365) — never on every tick.
+
 ## Touch targets
 
 All interactive elements must clear **WCAG 2.5.5** / Apple HIG **≥44×44px** on touch devices (`@media (pointer: coarse)`). Three layers cooperate:
@@ -534,26 +558,6 @@ All interactive elements must clear **WCAG 2.5.5** / Apple HIG **≥44×44px** o
 ```
 
 The `Button` component handles the common case automatically; reach for `touch-target` only when you cannot use `Button` (e.g. absolutely-positioned siblings, drag activators, custom-styled toggles). Refer to `BentoCard` for the canonical "small visible glyph + 44 px hit area" pattern.
-
-### 17. Animation budget — max 2 concurrent, 3 tiers
-
-> Why a hard rule? Unconstrained animations create visual noise and harm users with vestibular disorders. Past audits found confetti firing on every checkbox tick and stagger delays compounding to 350 ms+, both violating the WCAG 2.3 (Animation from Interactions) guideline.
-
-Three animation tiers — every animation in the codebase belongs to exactly one:
-
-| Tier          | Examples                                                       | Constraint                                                                                            |
-| ------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| **AMBIENT**   | `shimmer`, `pulse-soft`, `wiggle`                              | Looped; always behind `motion-safe:`; `prefers-reduced-motion` collapses to opacity-only              |
-| **RESPONSE**  | `fade-in`, `slide-up`, `scale-in`, `press-scale`, `hover-lift` | One-shot, 150–300 ms, `ease-out`; fires once per user action                                          |
-| **CELEBRATE** | `check-pop`, `bounce-in`, `success-pulse`, confetti burst      | Milestones only: first entry, streak 7/30/100/365, weekly goal hit. **Not** every checkbox completion |
-
-Rules:
-
-- Max **1 AMBIENT + 1 RESPONSE** running simultaneously on screen.
-- A stagger group counts as **1 RESPONSE** regardless of child count.
-- Stagger timing: **max 30 ms between children**, total delay cap **≤ 150 ms** (`Math.min(index * 30, 150)`).
-- Never wrap a component that has its own internal entry animation in `StaggerChild` (double-animation).
-- `showConfetti` on `AnimatedCheckbox` / `HabitCheckbox` must only be `true` at streak milestones (7, 30, 100, 365) — never on every tick.
 
 ## AI markers
 

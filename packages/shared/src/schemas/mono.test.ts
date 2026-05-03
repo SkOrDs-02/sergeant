@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   MonoAccountDtoSchema,
   MonoAccountsResponseSchema,
+  MonoBackfillProgressSchema,
   MonoBackfillResponseSchema,
   MonoConnectResponseSchema,
   MonoConnectionStatusSchema,
@@ -293,6 +294,69 @@ describe("MonoBackfillResponseSchema", () => {
       MonoBackfillResponseSchema.parse({
         status: "complete",
         accountsCount: 0,
+      }),
+    ).toThrow();
+  });
+});
+
+describe("MonoBackfillProgressSchema", () => {
+  it("accepts the idle snapshot a fresh process emits", () => {
+    const parsed = MonoBackfillProgressSchema.parse({
+      status: "idle",
+      startedAt: null,
+      completedAt: null,
+      accountsTotal: 0,
+      accountsProcessed: 0,
+      currentAccountId: null,
+      transactionsProcessed: 0,
+      lastError: null,
+    });
+    expect(parsed.status).toBe("idle");
+    expect(parsed.lastError).toBeNull();
+  });
+
+  it("accepts a running snapshot mid-flight", () => {
+    const parsed = MonoBackfillProgressSchema.parse({
+      status: "running",
+      startedAt: "2026-04-01T10:00:00.000Z",
+      completedAt: null,
+      accountsTotal: 5,
+      accountsProcessed: 2,
+      currentAccountId: "acc_3",
+      transactionsProcessed: 423,
+      lastError: null,
+    });
+    expect(parsed.status).toBe("running");
+    expect(parsed.accountsProcessed).toBe(2);
+    expect(parsed.currentAccountId).toBe("acc_3");
+  });
+
+  it("rejects unknown status values", () => {
+    expect(() =>
+      MonoBackfillProgressSchema.parse({
+        status: "stopping",
+        startedAt: null,
+        completedAt: null,
+        accountsTotal: 0,
+        accountsProcessed: 0,
+        currentAccountId: null,
+        transactionsProcessed: 0,
+        lastError: null,
+      }),
+    ).toThrow();
+  });
+
+  it("rejects negative counters (numeric guards)", () => {
+    expect(() =>
+      MonoBackfillProgressSchema.parse({
+        status: "idle",
+        startedAt: null,
+        completedAt: null,
+        accountsTotal: -1,
+        accountsProcessed: 0,
+        currentAccountId: null,
+        transactionsProcessed: 0,
+        lastError: null,
       }),
     ).toThrow();
   });

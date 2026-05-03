@@ -194,6 +194,11 @@ const MonoBackfillResponse = schemas.MonoBackfillResponseSchema.meta({
   description:
     "Відповідь POST /api/mono/backfill — `status: 'started'` literal.",
 });
+const MonoBackfillProgress = schemas.MonoBackfillProgressSchema.meta({
+  id: "MonoBackfillProgress",
+  description:
+    "Відповідь GET /api/mono/backfill-progress — поточний стан per-user backfill job.",
+});
 const Pagination = schemas.PaginationSchema.meta({
   id: "Pagination",
   description:
@@ -286,6 +291,7 @@ export const namedSchemas = {
   MonoConnectResponse,
   MonoDisconnectResponse,
   MonoBackfillResponse,
+  MonoBackfillProgress,
   Pagination,
   WaitlistSubmit,
   WaitlistSubmitResponse,

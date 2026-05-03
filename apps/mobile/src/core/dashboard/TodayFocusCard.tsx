@@ -20,6 +20,8 @@ import { Pressable, Text, View } from "react-native";
 
 import { hapticTap, type Rec } from "@sergeant/shared";
 
+import { SectionHeading } from "@/components/ui/SectionHeading";
+
 const MODULE_ACCENT_CLASS = {
   finyk: "bg-finyk",
   fizruk: "bg-fizruk",
@@ -84,10 +86,9 @@ export function TodayFocusCard({
 
       <View className="pl-3">
         <View className="mb-1 flex-row items-center justify-between gap-3">
-          {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- intentional narrative eyebrow, mirrors web TodayFocusCard */}
-          <Text className="text-[11px] font-semibold uppercase tracking-wide text-fg-muted">
+          <SectionHeading size="2xs" weight="semibold" variant="muted">
             Зараз
-          </Text>
+          </SectionHeading>
         </View>
 
         <Text className="text-base font-bold leading-snug text-fg">
