@@ -130,8 +130,8 @@ export const auth = betterAuth({
     // NIST SP 800-63B рекомендує мінімум 8 символів; 10 — розумний trade-off,
     // що блокує атаки брут-форсом через словники без UX-пенальті для юзера.
     // maxPasswordLength захищає від DoS через надто довгі bcrypt-пейлоади.
-    minPasswordLength: Number(process.env.MIN_PASSWORD_LENGTH) || 10,
-    maxPasswordLength: Number(process.env.MAX_PASSWORD_LENGTH) || 128,
+    minPasswordLength: env.MIN_PASSWORD_LENGTH,
+    maxPasswordLength: env.MAX_PASSWORD_LENGTH,
     // Не await-имо відправку — зменшує ризик timing enumeration (див. Better Auth docs).
     sendResetPassword: async ({ user, url }) => {
       queueAuthTransactionalEmail({

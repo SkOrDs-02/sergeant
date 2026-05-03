@@ -31,10 +31,26 @@ export const env = {
   /** Enable response compression (gzip/br) */
   COMPRESSION_ENABLED: parseBoolEnv("COMPRESSION_ENABLED", true),
 
+  /** Graceful shutdown: max wait for in-flight requests to finish (ms). */
+  SHUTDOWN_GRACE_MS: parseIntEnv("SHUTDOWN_GRACE_MS", 15_000),
+
+  /** Graceful shutdown: hard-kill timeout — process.exit fires after this (ms). */
+  SHUTDOWN_HARD_TIMEOUT_MS: parseIntEnv("SHUTDOWN_HARD_TIMEOUT_MS", 25_000),
+
   // ─────────────────────────────────────────────────────────────────────────
   // Database
   // ─────────────────────────────────────────────────────────────────────────
   DATABASE_URL: process.env.DATABASE_URL || "",
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Auth
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /** Min password length (NIST SP 800-63B recommends ≥8; 10 is the project default). */
+  MIN_PASSWORD_LENGTH: parseIntEnv("MIN_PASSWORD_LENGTH", 10),
+
+  /** Max password length — guards against DoS via oversized bcrypt payloads. */
+  MAX_PASSWORD_LENGTH: parseIntEnv("MAX_PASSWORD_LENGTH", 128),
 
   /** PG pool size */
   PG_POOL_SIZE: parseIntEnv("PG_POOL_SIZE", 10),
@@ -85,6 +101,12 @@ export const env = {
 
   /** Max AI retries on transient errors */
   AI_MAX_RETRIES: parseIntEnv("AI_MAX_RETRIES", 2),
+
+  /** Max auto-continuation loops before stopping mid-stream (see AGENTS.md). */
+  CHAT_MAX_TEXT_CONTINUATIONS: parseIntEnv("CHAT_MAX_TEXT_CONTINUATIONS", 3),
+
+  /** SSE keep-alive heartbeat interval (ms). */
+  SSE_HEARTBEAT_MS: parseIntEnv("SSE_HEARTBEAT_MS", 15_000),
 
   /** Circuit breaker: failures before opening */
   AI_CIRCUIT_BREAKER_THRESHOLD: parseIntEnv("AI_CIRCUIT_BREAKER_THRESHOLD", 5),
@@ -275,6 +297,12 @@ export const env = {
    * A/B-тесту cost-impact-у RAG.
    */
   AI_MEMORY_RAG_TOP_K: parseIntEnv("AI_MEMORY_RAG_TOP_K", 4),
+
+  /**
+   * Hard timeout for the RAG Voyage + pgvector round-trip (мс). Перевищення —
+   * silent skip; чат продовжується без памʼяті (fail-open).
+   */
+  AI_MEMORY_RAG_TIMEOUT_MS: parseIntEnv("AI_MEMORY_RAG_TIMEOUT_MS", 1_500),
 
   // ─────────────────────────────────────────────────────────────────────────
   // AI memory ingestion (PR2 — BullMQ async queue + hooks)

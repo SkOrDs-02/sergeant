@@ -15,7 +15,6 @@ import { NotificationsSection } from "../settings/NotificationsSection";
 import { NutritionSection } from "../settings/NutritionSection";
 import { PWASection } from "../settings/PWASection";
 import { RoutineSection } from "../settings/RoutineSection";
-import { RoutineSpikeSection } from "../settings/RoutineSpikeSection";
 
 interface SettingsSection {
   id: string;
@@ -41,7 +40,7 @@ const GROUPS = [
   {
     id: "advanced",
     label: "Додатково",
-    sections: ["pwa", "dataExport", "experimental", "routineSpike"],
+    sections: ["pwa", "dataExport", "experimental"],
   },
 ] as const;
 
@@ -173,13 +172,6 @@ export function HubSettingsPage({
         title: "Експериментальні",
         keywords: "experimental lab beta debug розробка розробник developer",
         render: () => <ExperimentalSection />,
-      },
-      {
-        id: "routineSpike",
-        title: "Routine SPIKE — dev panel",
-        keywords:
-          "routine sqlite spike dev panel панель розробка debug op-log sync v2 latency бенч bench latencies storage roadmap",
-        render: () => <RoutineSpikeSection />,
       },
     ],
     [syncing, onSync, onPull, user],

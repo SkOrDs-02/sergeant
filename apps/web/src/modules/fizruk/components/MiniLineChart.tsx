@@ -1,12 +1,34 @@
 import { EmptyState } from "@shared/components/ui/EmptyState";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Point = any;
+export interface MiniLineChartDataPoint {
+  value: number | null | undefined;
+  label: string;
+}
+
+interface MappedPoint {
+  x: number;
+  y: number | null;
+  v: number | null;
+  label: string;
+}
+
+interface MiniLineChartProps {
+  data: MiniLineChartDataPoint[];
+  unit: string;
+  color: string;
+  metricLabel?: string;
+}
 
 /** SVG line chart for measurement trends (weight, body fat %). */
-export function MiniLineChart({ data, unit, color, metricLabel = "показник" }) {
+export function MiniLineChart({
+  data,
+  unit,
+  color,
+  metricLabel = "показник",
+}: MiniLineChartProps) {
   const valid = (data || []).filter(
-    (d) => d.value != null && Number.isFinite(Number(d.value)),
+    (d: MiniLineChartDataPoint) =>
+      d.value != null && Number.isFinite(Number(d.value)),
   );
   if (valid.length === 0) {
     return (
@@ -29,7 +51,7 @@ export function MiniLineChart({ data, unit, color, metricLabel = "показни
     );
   }
 
-  const vals = valid.map((d) => Number(d.value));
+  const vals = valid.map((d: MiniLineChartDataPoint) => Number(d.value));
   const minVal = Math.min(...vals);
   const maxVal = Math.max(...vals);
   const range = maxVal - minVal || 1;
@@ -46,18 +68,20 @@ export function MiniLineChart({ data, unit, color, metricLabel = "показни
   const step = innerW / (n - 1 || 1);
 
   // Map each data point to x,y (null points get x position but no y)
-  const points = data.map((d, i) => {
-    const x = padL + i * step;
-    if (d.value == null || !Number.isFinite(Number(d.value)))
-      return { x, y: null, v: null, label: d.label };
-    const pct = (Number(d.value) - minVal) / range;
-    const y = padT + innerH - pct * innerH;
-    return { x, y, v: Number(d.value), label: d.label };
-  });
+  const points: MappedPoint[] = data.map(
+    (d: MiniLineChartDataPoint, i: number) => {
+      const x = padL + i * step;
+      if (d.value == null || !Number.isFinite(Number(d.value)))
+        return { x, y: null, v: null, label: d.label };
+      const pct = (Number(d.value) - minVal) / range;
+      const y = padT + innerH - pct * innerH;
+      return { x, y, v: Number(d.value), label: d.label };
+    },
+  );
 
   // Build line path segments (skip nulls, start new M for each gap)
-  const lineSegments: Point[][] = [];
-  let segment: Point[] = [];
+  const lineSegments: MappedPoint[][] = [];
+  let segment: MappedPoint[] = [];
   for (const p of points) {
     if (p.y == null) {
       if (segment.length >= 2) lineSegments.push(segment);
@@ -69,21 +93,23 @@ export function MiniLineChart({ data, unit, color, metricLabel = "показни
   if (segment.length >= 2) lineSegments.push(segment);
 
   const lineD = lineSegments
-    .map((seg) =>
+    .map((seg: MappedPoint[]) =>
       seg
         .map(
-          (p, i) =>
-            `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`,
+          (p: MappedPoint, i: number) =>
+            `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${(p.y as number).toFixed(1)}`,
         )
         .join(" "),
     )
     .join(" ");
 
   // Area fill: use first complete segment
-  const mainSeg = lineSegments[0] || [];
+  const mainSeg: MappedPoint[] = lineSegments[0] || [];
+  const lastMainSeg = mainSeg[mainSeg.length - 1];
+  const firstMainSeg = mainSeg[0];
   const areaD =
-    mainSeg.length >= 2
-      ? `${mainSeg.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ")} L ${mainSeg[mainSeg.length - 1].x.toFixed(1)} ${(padT + innerH).toFixed(1)} L ${mainSeg[0].x.toFixed(1)} ${(padT + innerH).toFixed(1)} Z`
+    mainSeg.length >= 2 && lastMainSeg && firstMainSeg
+      ? `${mainSeg.map((p: MappedPoint, i: number) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${(p.y as number).toFixed(1)}`).join(" ")} L ${lastMainSeg.x.toFixed(1)} ${(padT + innerH).toFixed(1)} L ${firstMainSeg.x.toFixed(1)} ${(padT + innerH).toFixed(1)} Z`
       : "";
 
   const yTicks = [0, 0.5, 1].map((fr) => ({
@@ -91,13 +117,13 @@ export function MiniLineChart({ data, unit, color, metricLabel = "показни
     lab: formatVal(minVal + fr * range, unit),
   }));
 
-  const lastValid = [...valid].pop();
-  const firstValid = valid[0];
-  const delta = lastValid.value - firstValid.value;
+  const lastValid = [...valid].pop() as MiniLineChartDataPoint;
+  const firstValid = valid[0] as MiniLineChartDataPoint;
+  const delta = Number(lastValid.value) - Number(firstValid.value);
   const gradId = `mlcFill${color.replace(/[^a-zA-Z0-9]/g, "")}`;
 
   // Show last few labels (max 4 evenly spread)
-  const labelIndices = new Set();
+  const labelIndices = new Set<number>();
   if (n <= 4) {
     for (let i = 0; i < n; i++) labelIndices.add(i);
   } else {
@@ -158,7 +184,7 @@ export function MiniLineChart({ data, unit, color, metricLabel = "показни
           />
         )}
 
-        {points.map((p, i) => {
+        {points.map((p: MappedPoint, i: number) => {
           if (p.y == null) return null;
           return (
             <circle
@@ -173,7 +199,7 @@ export function MiniLineChart({ data, unit, color, metricLabel = "показни
           );
         })}
 
-        {points.map((p, i) => {
+        {points.map((p: MappedPoint, i: number) => {
           if (!labelIndices.has(i)) return null;
           return (
             <text
@@ -207,7 +233,7 @@ export function MiniLineChart({ data, unit, color, metricLabel = "показни
   );
 }
 
-function formatVal(v, unit) {
+function formatVal(v: number, unit: string): string {
   const n = Number(v) || 0;
   if (unit === "%" || Math.abs(n) < 100) return n.toFixed(1);
   return String(Math.round(n));

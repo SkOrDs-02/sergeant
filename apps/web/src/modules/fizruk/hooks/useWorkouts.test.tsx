@@ -6,8 +6,13 @@ import {
   WORKOUTS_STORAGE_KEY,
   serializeWorkoutsToStorage,
 } from "../lib/fizrukStorage";
+import type { Workout } from "@sergeant/fizruk-domain";
 
-function seedWorkouts(workouts) {
+type CreatedWorkout = ReturnType<
+  ReturnType<typeof useWorkouts>["createWorkout"]
+>;
+
+function seedWorkouts(workouts: Workout[]) {
   localStorage.setItem(
     WORKOUTS_STORAGE_KEY,
     serializeWorkoutsToStorage(workouts),
@@ -29,31 +34,31 @@ describe("useWorkouts – finish flow edge cases", () => {
     const { result } = renderHook(() => useWorkouts());
     await waitFor(() => expect(result.current.loaded).toBe(true));
 
-    let created;
+    let created: CreatedWorkout | undefined;
     act(() => {
       created = result.current.createWorkout();
     });
     await waitFor(() =>
-      expect(result.current.workouts.map((w) => w.id)).toContain(created.id),
+      expect(result.current.workouts.map((w) => w.id)).toContain(created!.id),
     );
 
     act(() => {
-      result.current.endWorkout(created.id);
+      result.current.endWorkout(created!.id);
     });
     await waitFor(() =>
       expect(
-        result.current.workouts.find((w) => w.id === created.id)?.endedAt,
+        result.current.workouts.find((w) => w.id === created!.id)?.endedAt,
       ).toBeTruthy(),
     );
     const firstEndedAt = result.current.workouts.find(
-      (w) => w.id === created.id,
+      (w) => w.id === created!.id,
     )?.endedAt;
 
     // Re-ending must NOT bump endedAt: the workout is already ended.
     act(() => {
-      result.current.endWorkout(created.id);
+      result.current.endWorkout(created!.id);
     });
-    const after = result.current.workouts.find((w) => w.id === created.id);
+    const after = result.current.workouts.find((w) => w.id === created!.id);
     expect(after?.endedAt).toBe(firstEndedAt);
   });
 
@@ -68,7 +73,7 @@ describe("useWorkouts – finish flow edge cases", () => {
   });
 
   it("loads existing workouts from storage and re-ending them is idempotent", async () => {
-    const existing = {
+    const existing: Workout = {
       id: "pre-existing",
       startedAt: new Date("2025-01-01T10:00:00Z").toISOString(),
       endedAt: null,

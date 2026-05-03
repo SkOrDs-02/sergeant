@@ -66,6 +66,8 @@ export type {
   ModulePushPayload,
   ModulePushResult,
   MonoAccount,
+  MonoBackfillProgress,
+  MonoBackfillResponse,
   MonoCashbackType,
   MonoClientInfo,
   MonoAccountDto,

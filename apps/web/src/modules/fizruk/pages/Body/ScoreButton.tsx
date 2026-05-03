@@ -17,7 +17,19 @@ export const MOOD_LABELS = [
   "Чудовий",
 ];
 
-export function ScoreButton({ value, selected, onClick, label }) {
+export interface ScoreButtonProps {
+  value: number;
+  selected: boolean;
+  onClick: (value: number) => void;
+  label: string;
+}
+
+export function ScoreButton({
+  value,
+  selected,
+  onClick,
+  label,
+}: ScoreButtonProps) {
   return (
     <button
       type="button"
@@ -34,7 +46,7 @@ export function ScoreButton({ value, selected, onClick, label }) {
       <span className="text-base leading-none">{value}</span>
       <span
         className={cn(
-          "text-2xs leading-none truncate max-w-full px-1",
+          "text-xs leading-none truncate max-w-full px-1",
           selected ? "text-white/80" : "text-muted",
         )}
       >

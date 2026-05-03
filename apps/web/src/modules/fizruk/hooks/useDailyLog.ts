@@ -1,44 +1,51 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
+import type { DailyLogEntry as DomainDailyLogEntry } from "@sergeant/fizruk-domain";
 
 const KEY = STORAGE_KEYS.FIZRUK_DAILY_LOG;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type DailyLogEntry = any;
+/**
+ * Daily log entry schema. Extends the domain `DailyLogEntry` (used by
+ * `computeWellbeingMultiplier` / `computeRecoveryBy`) with the local
+ * `moodScore` field that historically lived only on the web side. The
+ * domain's `[key: string]: unknown` index signature lets the extra field
+ * pass through `Partial<DomainDailyLogEntry>` parameters cleanly.
+ */
+export interface DailyLogEntry extends DomainDailyLogEntry {
+  weightKg: number | null;
+  sleepHours: number | null;
+  energyLevel: number | null;
+  moodScore: number | null;
+  note: string;
+}
+
+export type DailyLogNumericField =
+  | "weightKg"
+  | "sleepHours"
+  | "energyLevel"
+  | "moodScore";
 
 function uid() {
   return `dl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/**
- * Daily log entry schema:
- * {
- *   id: string,
- *   at: ISO string (date of the entry),
- *   weightKg: number | null,
- *   sleepHours: number | null,
- *   energyLevel: 1-5 | null,
- *   moodScore: 1-5 | null,
- *   note: string,
- * }
- */
 export function useDailyLog() {
   const [entries, setEntries] = useState<DailyLogEntry[]>([]);
 
   useEffect(() => {
-    const loaded = safeReadLS(KEY, []);
+    const loaded = safeReadLS<DailyLogEntry[]>(KEY, []);
     if (Array.isArray(loaded)) setEntries(loaded);
   }, []);
 
-  const persist = useCallback((next) => {
+  const persist = useCallback((next: DailyLogEntry[]) => {
     setEntries(next);
     safeWriteLS(KEY, next);
   }, []);
 
   const addEntry = useCallback(
-    (data) => {
-      const e = {
+    (data: Partial<DailyLogEntry>) => {
+      const e: DailyLogEntry = {
         id: uid(),
         at: new Date().toISOString(),
         weightKg: null,
@@ -55,7 +62,7 @@ export function useDailyLog() {
   );
 
   const deleteEntry = useCallback(
-    (id) => {
+    (id: string) => {
       persist(entries.filter((e) => e.id !== id));
     },
     [entries, persist],
@@ -66,7 +73,7 @@ export function useDailyLog() {
    * `at` timestamp and field values. Used by undo flows after `deleteEntry`.
    */
   const restoreEntry = useCallback(
-    (entry) => {
+    (entry: DailyLogEntry | null | undefined) => {
       if (!entry || !entry.id) return;
       persist(
         entries.some((e) => e.id === entry.id) ? entries : [entry, ...entries],
@@ -82,10 +89,8 @@ export function useDailyLog() {
 
   /** Last N entries with a given field filled. */
   const recentWith = useCallback(
-    (field, limit = 30) => {
-      return sorted
-        .filter((e) => e[field] != null && e[field] !== "")
-        .slice(0, limit);
+    (field: DailyLogNumericField, limit = 30): DailyLogEntry[] => {
+      return sorted.filter((e) => e[field] != null).slice(0, limit);
     },
     [sorted],
   );

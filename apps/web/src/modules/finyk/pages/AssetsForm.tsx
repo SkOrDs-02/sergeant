@@ -360,9 +360,10 @@ export function DebtForm({
                 {
                   ...newDebt,
                   id: Date.now().toString(),
+                  amount: Number(newDebt.totalAmount),
                   totalAmount: Number(newDebt.totalAmount),
                   linkedTxIds: [],
-                } as Debt,
+                } satisfies Debt,
               ]);
               setNewDebt({
                 name: "",

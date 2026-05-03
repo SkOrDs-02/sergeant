@@ -23,7 +23,7 @@ interface TxListItemProps {
   onSwipeDeleteManual?: (tx: TxRowTx) => void;
   onEditManual?: (manualId?: string) => void;
   onHideTx?: (id: string) => void;
-  onCatChange?: (id: string, categoryId: string) => void;
+  onCatChange?: (id: string, categoryId: string | null) => void;
   onSplitChange?: (id: string, splits: unknown) => void;
 }
 
@@ -91,8 +91,8 @@ function TxListItemImpl({
           onSwipeLeft={
             canSwipeLeft
               ? isManual
-                ? () => onSwipeDeleteManual(tx)
-                : () => onSwipeHideTx(tx.id)
+                ? () => onSwipeDeleteManual?.(tx)
+                : () => onSwipeHideTx?.(tx.id)
               : undefined
           }
           onSwipeRight={undefined}

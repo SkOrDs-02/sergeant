@@ -13,11 +13,11 @@ export function uid(prefix = "id") {
  * `<input type="datetime-local">`. Returns "" on invalid input so the
  * input renders empty rather than `Invalid Date`.
  */
-export function isoToDatetimeLocalValue(iso) {
+export function isoToDatetimeLocalValue(iso: string | null | undefined) {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  const pad = (n) => String(n).padStart(2, "0");
+  const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
@@ -25,7 +25,7 @@ export function isoToDatetimeLocalValue(iso) {
  * Inverse of `isoToDatetimeLocalValue`. Returns null when the input is
  * empty or unparseable so callers can short-circuit and skip an update.
  */
-export function datetimeLocalValueToIso(value) {
+export function datetimeLocalValueToIso(value: string | null | undefined) {
   if (!value) return null;
   const t = Date.parse(value);
   return Number.isNaN(t) ? null : new Date(t).toISOString();
@@ -36,7 +36,10 @@ export function datetimeLocalValueToIso(value) {
  * Returns null if either distance or duration is non-positive — the UI
  * relies on null to hide the metrics row.
  */
-export function calcCardioMetrics(distanceM, durationSec) {
+export function calcCardioMetrics(
+  distanceM: number | null | undefined,
+  durationSec: number | null | undefined,
+) {
   const dist = Number(distanceM) || 0;
   const dur = Number(durationSec) || 0;
   if (dist <= 0 || dur <= 0) return null;

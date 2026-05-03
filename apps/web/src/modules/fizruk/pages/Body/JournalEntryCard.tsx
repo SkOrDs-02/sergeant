@@ -72,7 +72,7 @@ export function JournalEntryCard({
         <button
           type="button"
           onClick={() => onDelete(entry.id)}
-          className="shrink-0 w-8 h-8 m-1 flex items-center justify-center rounded-xl text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+          className="touch-target shrink-0 m-1 flex items-center justify-center rounded-xl text-muted hover:text-danger hover:bg-danger/10 transition-colors"
           aria-label="Видалити запис"
         >
           <svg

@@ -6,7 +6,10 @@ import {
   syncStateHandler,
 } from "../modules/mono/connection.js";
 import { accountsHandler, transactionsHandler } from "../modules/mono/read.js";
-import { backfillHandler } from "../modules/mono/backfill.js";
+import {
+  backfillHandler,
+  backfillProgressHandler,
+} from "../modules/mono/backfill.js";
 import { webhookHandler } from "../modules/mono/webhook.js";
 
 /**
@@ -27,6 +30,7 @@ export function createMonoWebhookRouter(): Router {
   r.use("/api/mono/accounts", setModule("finyk"));
   r.use("/api/mono/transactions", setModule("finyk"));
   r.use("/api/mono/backfill", setModule("finyk"));
+  r.use("/api/mono/backfill-progress", setModule("finyk"));
 
   // Webhook — публічний, без auth
   r.post("/api/mono/webhook/:secret", asyncHandler(webhookHandler));
@@ -50,6 +54,11 @@ export function createMonoWebhookRouter(): Router {
     asyncHandler(transactionsHandler),
   );
   r.post("/api/mono/backfill", requireSession(), asyncHandler(backfillHandler));
+  r.get(
+    "/api/mono/backfill-progress",
+    requireSession(),
+    asyncHandler(backfillProgressHandler),
+  );
 
   return r;
 }

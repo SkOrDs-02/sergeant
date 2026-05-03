@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Bot } from "grammy";
+import { Bot, GrammyError } from "grammy";
 import Anthropic from "@anthropic-ai/sdk";
 import { parseCommand, dispatchToAgent } from "./agents/router.js";
 import {
@@ -12,6 +12,49 @@ import {
 import { attachOpenClawHandlers } from "./openclaw/index.js";
 
 const DEFAULT_OPENCLAW_MAX_ITERATIONS = 8;
+
+const STARTUP_409_MAX_ATTEMPTS = 12;
+const STARTUP_409_BASE_DELAY_MS = 2_000;
+const STARTUP_409_MAX_DELAY_MS = 30_000;
+
+/**
+ * Telegram allows only ONE long-poll consumer per bot token. When Railway
+ * (or any platform) restarts a container faster than Telegram drops the
+ * previous consumer's slot (~30-60s), the new instance hits a 409 Conflict
+ * on its very first `getUpdates`, crashes, and Railway restarts it again —
+ * a self-induced restart loop that never recovers without operator action.
+ *
+ * Mitigate by retrying the bot startup on 409 with exponential backoff up
+ * to ~6 minutes total. Any other error (network, auth, etc.) is fatal as
+ * before. We wait *before* the retry so Telegram's previous slot expires.
+ */
+async function startBotWithConflictRetry(
+  bot: Bot,
+  label: string,
+): Promise<void> {
+  let attempt = 0;
+  while (true) {
+    try {
+      await bot.start({ drop_pending_updates: false });
+      return;
+    } catch (err) {
+      const isConflict = err instanceof GrammyError && err.error_code === 409;
+      attempt += 1;
+      if (!isConflict || attempt >= STARTUP_409_MAX_ATTEMPTS) {
+        throw err;
+      }
+      const delayMs = Math.min(
+        STARTUP_409_BASE_DELAY_MS * 2 ** (attempt - 1),
+        STARTUP_409_MAX_DELAY_MS,
+      );
+      console.warn(
+        `[${label}] Telegram 409 on getUpdates (attempt ${attempt}/${STARTUP_409_MAX_ATTEMPTS}); waiting ${delayMs}ms before retry. ` +
+          "Likely a previous container instance still holds the long-poll slot.",
+      );
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+}
 
 function parseOpenClawMaxIterations(value: string | undefined): number {
   const parsed = Number(value);
@@ -121,7 +164,7 @@ async function main() {
     });
 
     console.log("Sergeant Console starting…");
-    consolePromise = bot.start();
+    consolePromise = startBotWithConflictRetry(bot, "console");
   }
 
   // OpenClaw — DM-only co-founder bot (ADR-0031). Fail-closed якщо env-и не
@@ -155,7 +198,7 @@ async function main() {
       ),
     });
     console.log("OpenClaw starting…");
-    openclawPromise = openclawBot.start();
+    openclawPromise = startBotWithConflictRetry(openclawBot, "openclaw");
   }
 
   // Sanity: if neither bot is configured, the process has nothing to do.

@@ -1,6 +1,6 @@
 # Changelog
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
 Усі помітні зміни проєкту документуються тут.
@@ -77,8 +77,6 @@ metrics/web-vitals}` — а API серверу не було, vite сипав
     `<span>Open</span>`, як і у решті тестів цього файлу — це й
     реальний production-патерн (споживач Popover-у дає неінтерактивний
     зміст, аріа-семантику дає сам Popover).
-
-> > > > > > > origin/main
 
 - **Web: відновлено strict-pipeline (`tsc -p tsconfig.strict.json`) — два regression-блокери після PR #1330.**
   Pull-to-refresh feature злетів зі strict-null pipeline: 3 помилки на двох

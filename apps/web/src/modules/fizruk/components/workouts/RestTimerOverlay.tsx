@@ -2,7 +2,20 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { formatRestClock } from "@sergeant/fizruk-domain";
 
-export function RestTimerOverlay({ restTimer, onCancel }) {
+interface RestTimerState {
+  remaining: number;
+  total: number;
+}
+
+interface RestTimerOverlayProps {
+  restTimer: RestTimerState | null | undefined;
+  onCancel: () => void;
+}
+
+export function RestTimerOverlay({
+  restTimer,
+  onCancel,
+}: RestTimerOverlayProps) {
   if (!restTimer) return null;
 
   const pct = restTimer.total > 0 ? restTimer.remaining / restTimer.total : 0;
@@ -53,7 +66,7 @@ export function RestTimerOverlay({ restTimer, onCancel }) {
             </SectionHeading>
             <div
               className={
-                "text-3xl font-extrabold tabular-nums leading-tight " +
+                "text-style-hero tabular-nums leading-tight " +
                 (urgent ? "text-warning" : "text-text")
               }
             >

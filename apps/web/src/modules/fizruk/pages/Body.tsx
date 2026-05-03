@@ -33,12 +33,24 @@ import { firstValidValue, lastValidValue } from "./Body/trendUtils";
  * date + a short metric summary are shown until tapped; persisted
  * under `fizruk:body:journal-entry-open:<id>`).
  */
-export function Body({ onOpenMeasurements }) {
+interface BodyProps {
+  onOpenMeasurements?: () => void;
+}
+
+interface BodyForm {
+  weightKg: string;
+  sleepHours: string;
+  energyLevel: number | null;
+  moodScore: number | null;
+  note: string;
+}
+
+export function Body({ onOpenMeasurements }: BodyProps) {
   const { entries, addEntry, deleteEntry, restoreEntry, recentWith } =
     useDailyLog();
   const toast = useToast();
   const handleDeleteJournalEntry = useCallback(
-    (id) => {
+    (id: string) => {
       const snapshot = entries.find((e) => e.id === id);
       if (!snapshot) return;
       deleteEntry(id);
@@ -50,7 +62,7 @@ export function Body({ onOpenMeasurements }) {
     [entries, deleteEntry, restoreEntry, toast],
   );
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<BodyForm>({
     weightKg: "",
     sleepHours: "",
     energyLevel: null,
@@ -71,7 +83,7 @@ export function Body({ onOpenMeasurements }) {
     };
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const entry = {
       weightKg: form.weightKg !== "" ? Number(form.weightKg) : null,
@@ -202,7 +214,7 @@ export function Body({ onOpenMeasurements }) {
                 variant="secondary"
                 size="sm"
                 onClick={onOpenMeasurements}
-                className="text-xs font-semibold text-subtle hover:text-text"
+                className="text-style-caption text-subtle hover:text-text"
               >
                 Виміри
               </Button>
@@ -267,8 +279,8 @@ export function Body({ onOpenMeasurements }) {
                     value={v}
                     label={ENERGY_LABELS[v]}
                     selected={form.energyLevel === v}
-                    onClick={(val) =>
-                      setForm((f) => ({
+                    onClick={(val: number) =>
+                      setForm((f: BodyForm) => ({
                         ...f,
                         energyLevel: f.energyLevel === val ? null : val,
                       }))
@@ -289,8 +301,8 @@ export function Body({ onOpenMeasurements }) {
                     value={v}
                     label={MOOD_LABELS[v]}
                     selected={form.moodScore === v}
-                    onClick={(val) =>
-                      setForm((f) => ({
+                    onClick={(val: number) =>
+                      setForm((f: BodyForm) => ({
                         ...f,
                         moodScore: f.moodScore === val ? null : val,
                       }))

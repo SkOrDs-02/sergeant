@@ -229,7 +229,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         </span>
       </SectionHeading>
       {accounts
-        .filter((a) => !hiddenAccounts.includes(a.id))
+        .filter((a) => !hiddenAccounts.includes(a.id ?? ""))
         .map((a, i) => {
           const visual = getAccountVisual(a);
           const currencySymbol =
@@ -261,7 +261,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
               <div className="text-right shrink-0">
                 <div className="text-sm font-bold tabular-nums text-text">
                   {showBalance
-                    ? `${(a.balance / 100).toLocaleString("uk-UA", {
+                    ? `${((a.balance ?? 0) / 100).toLocaleString("uk-UA", {
                         minimumFractionDigits: 2,
                       })} ${currencySymbol}`
                     : "\u2022\u2022\u2022\u2022"}
@@ -286,8 +286,8 @@ export function AssetsAssetsSection({ state }: { state: State }) {
       {receivables.map((r) => (
         <DebtCard
           key={r.id}
-          name={r.name}
-          emoji={r.emoji}
+          name={r.name ?? ""}
+          emoji={r.emoji ?? ""}
           remaining={calcReceivableRemaining(r, transactions)}
           paid={getRecvPaid(r, transactions)}
           total={getReceivableEffectiveTotal(r, transactions)}
@@ -517,8 +517,8 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
       {manualDebts.map((d) => (
         <DebtCard
           key={d.id}
-          name={d.name}
-          emoji={d.emoji}
+          name={d.name ?? ""}
+          emoji={d.emoji ?? ""}
           remaining={calcDebtRemaining(d, transactions)}
           paid={getDebtPaid(d, transactions)}
           total={getDebtEffectiveTotal(d, transactions)}

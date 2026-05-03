@@ -112,12 +112,23 @@ export const PERSONA_TOOL_FILTER: Record<
     "get_server_stats",
     "get_stripe_metrics",
     "recall_memory",
+    // ADR-0036 (Phase 4): write-tools relevant for ops persona — pause
+    // a misbehaving n8n workflow, mute a Sentry false-positive, broadcast
+    // an incident note. All gated by founder approval.
+    "pause_workflow",
+    "mute_alert",
+    "post_to_topic",
   ]),
   growth: new Set([
     "get_posthog_stats",
     "get_github_releases",
     "read_strategy_docs",
     "recall_memory",
+    // ADR-0036: growth can propose strategy-doc updates, file follow-up
+    // issues, and post growth-experiment outcomes to the team topic.
+    "commit_to_strategy_doc",
+    "create_github_issue",
+    "post_to_topic",
   ]),
   eng: new Set([
     "read_github",
@@ -125,12 +136,19 @@ export const PERSONA_TOOL_FILTER: Record<
     "read_telegram_topic_history",
     "get_github_releases",
     "recall_memory",
+    // ADR-0036: eng can file tech-debt issues and post engineering
+    // updates to the team topic.
+    "create_github_issue",
+    "post_to_topic",
   ]),
   finance: new Set([
     "get_stripe_metrics",
     "recall_memory",
     "record_decision",
     "query_app_db",
+    // ADR-0036: finance can commit budget / runway updates to a
+    // strategy doc (founder reviews PR before merge).
+    "commit_to_strategy_doc",
   ]),
 };
 

@@ -134,3 +134,125 @@ export const ROUTINE_SPIKE_CLIENT_MIGRATIONS = ROUTINE_CLIENT_MIGRATIONS;
  * Kept for the same reason as {@link ROUTINE_SPIKE_CLIENT_MIGRATIONS}.
  */
 export const ROUTINE_SPIKE_MIGRATIONS_TABLE = ROUTINE_MIGRATIONS_TABLE;
+
+// ---------------------------------------------------------------------------
+// Fizruk module — Stage 4 / PR #027
+// ---------------------------------------------------------------------------
+
+const FIZRUK_001_SQL = `
+CREATE TABLE IF NOT EXISTS fizruk_workouts (
+  id              TEXT PRIMARY KEY,
+  user_id         TEXT NOT NULL,
+  started_at      TEXT NOT NULL,
+  ended_at        TEXT,
+  note            TEXT NOT NULL DEFAULT '',
+  groups_json     TEXT NOT NULL DEFAULT '[]',
+  warmup_json     TEXT,
+  cooldown_json   TEXT,
+  wellbeing_json  TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at      TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_workouts_user_started_idx_lite
+  ON fizruk_workouts (user_id, started_at DESC);
+
+CREATE INDEX IF NOT EXISTS fizruk_workouts_user_active_idx_lite
+  ON fizruk_workouts (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS fizruk_workout_items (
+  id                 TEXT PRIMARY KEY,
+  workout_id         TEXT NOT NULL,
+  user_id            TEXT NOT NULL,
+  exercise_id        TEXT NOT NULL,
+  name_uk            TEXT NOT NULL,
+  primary_group      TEXT NOT NULL DEFAULT '',
+  muscles_primary    TEXT NOT NULL DEFAULT '[]',
+  muscles_secondary  TEXT NOT NULL DEFAULT '[]',
+  type               TEXT NOT NULL DEFAULT 'strength',
+  duration_sec       INTEGER,
+  distance_m         INTEGER,
+  sort_order         INTEGER NOT NULL DEFAULT 0,
+  created_at         TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at         TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at         TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_workout_items_workout_idx_lite
+  ON fizruk_workout_items (workout_id, sort_order);
+
+CREATE INDEX IF NOT EXISTS fizruk_workout_items_user_idx_lite
+  ON fizruk_workout_items (user_id);
+
+CREATE TABLE IF NOT EXISTS fizruk_workout_sets (
+  id               TEXT PRIMARY KEY,
+  workout_item_id  TEXT NOT NULL,
+  user_id          TEXT NOT NULL,
+  weight_kg        INTEGER NOT NULL DEFAULT 0,
+  reps             INTEGER NOT NULL DEFAULT 0,
+  rpe              INTEGER,
+  sort_order       INTEGER NOT NULL DEFAULT 0,
+  created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at       TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_workout_sets_item_idx_lite
+  ON fizruk_workout_sets (workout_item_id, sort_order);
+
+CREATE TABLE IF NOT EXISTS fizruk_custom_exercises (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_custom_exercises_user_idx_lite
+  ON fizruk_custom_exercises (user_id)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS fizruk_measurements (
+  id            TEXT PRIMARY KEY,
+  user_id       TEXT NOT NULL,
+  measured_at   TEXT NOT NULL,
+  weight_kg     INTEGER,
+  waist_cm      INTEGER,
+  chest_cm      INTEGER,
+  hips_cm       INTEGER,
+  bicep_cm      INTEGER,
+  sleep_hours   INTEGER,
+  energy_level  INTEGER,
+  mood          INTEGER,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at    TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_measurements_user_date_idx_lite
+  ON fizruk_measurements (user_id, measured_at DESC);
+`;
+
+/**
+ * Ordered list of bundled client migrations for the Fizruk module on
+ * SQLite. Pass this directly to `runMigrations` from
+ * `@sergeant/db-schema/migrate`.
+ *
+ * The Fizruk module uses a separate ledger table (`__fizruk_migrations`)
+ * so that routine and fizruk migrations are independent — each module
+ * can be migrated, rolled out, and rolled back without affecting the
+ * other.
+ */
+export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
+  { name: "001_fizruk_tables.sql", sql: FIZRUK_001_SQL },
+] as const;
+
+/**
+ * Stable ledger table name used by the Fizruk SQLite module. Separate
+ * from routine's `__migrations` so the two modules' migration histories
+ * don't collide.
+ */
+export const FIZRUK_MIGRATIONS_TABLE = "__fizruk_migrations";

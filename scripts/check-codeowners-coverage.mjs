@@ -80,10 +80,58 @@ const MUST_BE_OWNED = [
     reason: "architecture decision records",
   },
   {
+    path: "docs/architecture",
+    kind: "tree",
+    match: /\.md$/,
+    reason: "architecture overview, platforms, status matrix",
+  },
+  {
+    path: "docs/observability",
+    kind: "tree",
+    match: /\.md$/,
+    reason: "SLOs, runbooks, on-call procedures",
+  },
+  {
     path: "docs/security",
     kind: "tree",
     match: /\.md$/,
     reason: "threat model & SLA",
+  },
+  {
+    path: "docs/superpowers",
+    kind: "tree",
+    match: /\.md$/,
+    reason: "agent skill catalog & workflow decision trees",
+  },
+  {
+    path: "docs/postmortems",
+    kind: "tree",
+    match: /\.md$/,
+    reason: "incident postmortems",
+  },
+  {
+    path: "docs/api",
+    kind: "tree",
+    match: /\.md$/,
+    reason: "external API contracts (Hard Rule #3 surface)",
+  },
+  {
+    path: "docs/design",
+    kind: "tree",
+    match: /\.md$/,
+    reason: "brandbook, design tokens, design-system rules",
+  },
+  {
+    path: "docs/integrations",
+    kind: "tree",
+    match: /\.md$/,
+    reason: "third-party integration contracts (Mono, Voyage, Anthropic, etc.)",
+  },
+  {
+    path: "docs/tech-debt",
+    kind: "tree",
+    match: /\.md$/,
+    reason: "tracked tech debt with explicit freshness cadence",
   },
 
   // CI / tooling
@@ -123,6 +171,68 @@ const MUST_BE_OWNED = [
     kind: "tree",
     match: /\.(js|mjs|cjs|json)$/,
     reason: "custom lint rules enforce hard rules",
+  },
+
+  // Shared packages — contract surfaces consumed by every app
+  {
+    path: "packages/shared",
+    kind: "tree",
+    match: /\.(ts|tsx)$/,
+    reason: "Zod schemas + types shared by web/mobile/server",
+  },
+  {
+    path: "packages/api-client",
+    kind: "tree",
+    match: /\.(ts|tsx)$/,
+    reason: "HTTP contract types (Hard Rule #3 triplet)",
+  },
+  {
+    path: "packages/db-schema",
+    kind: "tree",
+    match: /\.(ts|tsx)$/,
+    reason: "Drizzle ORM schemas + migration runner (pairs with Hard Rule #4)",
+  },
+  {
+    path: "packages/design-tokens",
+    kind: "tree",
+    match: /\.(ts|tsx|js|mjs)$/,
+    reason: "Tailwind preset + brand tokens (Hard Rules #8, #9, #11, #16)",
+  },
+  {
+    path: "packages/config",
+    kind: "tree",
+    match: /\.(ts|tsx|json)$/,
+    reason: "shared tsconfig/eslint base (Hard Rule #15 governance surface)",
+  },
+  {
+    path: "packages/insights",
+    kind: "tree",
+    match: /\.(ts|tsx)$/,
+    reason: "weekly-digest / coach-insight pure-TS engine (server + client)",
+  },
+  {
+    path: "packages/finyk-domain",
+    kind: "tree",
+    match: /\.(ts|tsx)$/,
+    reason: "finance domain logic shared web ↔ mobile",
+  },
+  {
+    path: "packages/fizruk-domain",
+    kind: "tree",
+    match: /\.(ts|tsx)$/,
+    reason: "fitness domain logic shared web ↔ mobile",
+  },
+  {
+    path: "packages/nutrition-domain",
+    kind: "tree",
+    match: /\.(ts|tsx)$/,
+    reason: "nutrition domain logic shared web ↔ mobile",
+  },
+  {
+    path: "packages/routine-domain",
+    kind: "tree",
+    match: /\.(ts|tsx)$/,
+    reason: "habit/streak domain logic shared web ↔ mobile",
   },
 
   // Telegram bot agents — system prompts + routing logic

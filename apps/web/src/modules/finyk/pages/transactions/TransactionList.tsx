@@ -44,7 +44,7 @@ export interface TransactionListProps {
   onSwipeHideTx: (id: string) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSwipeDeleteManual: (tx: any) => void;
-  onEditManual: (manualId: string) => void;
+  onEditManual: (manualId?: string) => void;
   onHideTx: (id: string) => void;
   onCatChange: (id: string, catId: string | null) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -190,7 +190,7 @@ export function TransactionList({
                   hidden={hiddenTxIdSet.has(t.id)}
                   overrideCatId={txCategories[t.id]}
                   txSplits={txSplits}
-                  accounts={accounts}
+                  accounts={accounts ?? []}
                   hideAmount={!showBalance}
                   customCategories={customCategories}
                   onToggleSelect={onToggleSelect}

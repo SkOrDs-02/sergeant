@@ -17,12 +17,25 @@ function buildDataFromStatuses(
   return out;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type BodyHighlighterInstance = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Selected = any;
+interface BodyHighlighterInstance {
+  destroy?: () => void;
+}
+interface Selected {
+  muscle: string;
+  frequency?: number;
+}
 
-export function BodyAtlas({ statusByMuscle, height = 320, showLegend = true }) {
+interface BodyAtlasProps {
+  statusByMuscle: Record<string, string> | null | undefined;
+  height?: number;
+  showLegend?: boolean;
+}
+
+export function BodyAtlas({
+  statusByMuscle,
+  height = 320,
+  showLegend = true,
+}: BodyAtlasProps) {
   const [view, setView] = useState("anterior"); // anterior | posterior
   const [selected, setSelected] = useState<Selected | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -36,7 +49,7 @@ export function BodyAtlas({ statusByMuscle, height = 320, showLegend = true }) {
   useEffect(() => {
     if (!containerRef.current) return;
     if (instRef.current) {
-      instRef.current.destroy();
+      instRef.current.destroy?.();
       instRef.current = null;
     }
     const inst = createBodyHighlighter({

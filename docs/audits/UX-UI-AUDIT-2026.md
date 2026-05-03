@@ -1,6 +1,6 @@
 # Генеральний аудит дизайну, UI/UX та користувацького досвіду
 
-> **Last validated:** 2026-05-02 by @sonher468. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 > **Initial audit date:** 2026-04-28 (історичний — секція "Виявлені проблеми").
 

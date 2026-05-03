@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, type Dispatch, type SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/cn";
@@ -8,15 +8,41 @@ import {
   isCrossModulePromptSuppressed,
   recordCrossModulePromptAccepted,
 } from "@shared/lib/crossModulePrompt";
-import { formatDurShort } from "@sergeant/fizruk-domain";
+import {
+  formatDurShort,
+  type WorkoutFinishSummary,
+} from "@sergeant/fizruk-domain";
 import { WorkoutStatTile } from "./WorkoutStatTile";
+
+/**
+ * Mirrors `FinishFlashState` in `Workouts.tsx` /
+ * `WorkoutJournalSection.tsx`; kept locally so this component does not
+ * import a sibling page just to read the shape.
+ */
+export interface FinishFlashState extends WorkoutFinishSummary {
+  step: "wellbeing" | "summary";
+  collapsed: boolean;
+  workoutId: string;
+  energy: number | null;
+  mood: number | null;
+  savedWellbeing?: { energy?: number | null; mood?: number | null } | null;
+}
+
+interface WorkoutFinishSheetsProps {
+  finishFlash: FinishFlashState | null;
+  setFinishFlash: Dispatch<SetStateAction<FinishFlashState | null>>;
+  updateWorkout: (
+    id: string,
+    patch: { wellbeing?: { energy?: number; mood?: number } },
+  ) => void;
+}
 
 export function WorkoutFinishSheets({
   finishFlash,
   setFinishFlash,
   updateWorkout,
-}) {
-  const trapRef = useRef(null);
+}: WorkoutFinishSheetsProps) {
+  const trapRef = useRef<HTMLDivElement | null>(null);
   useDialogFocusTrap(!!finishFlash, trapRef, {
     onEscape: () => setFinishFlash(null),
   });
@@ -58,7 +84,7 @@ export function WorkoutFinishSheets({
                     key={`e${n}`}
                     type="button"
                     className={cn(
-                      "min-w-[44px] min-h-[44px] rounded-xl border text-sm font-semibold transition-colors",
+                      "min-w-[44px] min-h-[44px] rounded-xl border text-style-label transition-colors",
                       finishFlash.energy === n
                         ? "bg-text text-bg border-text"
                         : "border-line bg-bg text-muted hover:border-muted",
@@ -83,7 +109,7 @@ export function WorkoutFinishSheets({
                     key={`m${n}`}
                     type="button"
                     className={cn(
-                      "min-w-[44px] min-h-[44px] rounded-xl border text-sm font-semibold transition-colors",
+                      "min-w-[44px] min-h-[44px] rounded-xl border text-style-label transition-colors",
                       finishFlash.mood === n
                         ? "bg-text text-bg border-text"
                         : "border-line bg-bg text-muted hover:border-muted",
@@ -149,9 +175,7 @@ export function WorkoutFinishSheets({
               setFinishFlash((f) => f && { ...f, collapsed: false })
             }
           >
-            <span className="text-sm font-semibold text-text">
-              ✓ Результати
-            </span>
+            <span className="text-style-label text-text">✓ Результати</span>
             <span className="text-xs text-subtle tabular-nums">
               {formatDurShort(finishFlash.durationSec)}
             </span>

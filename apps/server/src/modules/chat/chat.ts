@@ -4,6 +4,7 @@ import type { Request, Response } from "express";
 // експортує тип з ім'ям `Response`. Розрізняємо явно через alias, інакше TS
 // підставляє Express-type у віддалені від HTTP-ендпоінту місця.
 type FetchResponse = globalThis.Response;
+import { env } from "../../env.js";
 import { validateBody } from "../../http/validate.js";
 import { ChatRequestSchema } from "../../http/schemas.js";
 import {
@@ -157,8 +158,7 @@ interface StreamEvent {
  * на нескінченний stream. 3 × 1.5–2.5k ≈ 5–7k токенів виходу — це вже повний брифінг
  * + великий weekly digest. Env-override — для тестів.
  */
-const MAX_TEXT_CONTINUATIONS =
-  Number(process.env.CHAT_MAX_TEXT_CONTINUATIONS) || 3;
+const MAX_TEXT_CONTINUATIONS = env.CHAT_MAX_TEXT_CONTINUATIONS;
 
 /**
  * Викликає `anthropicMessages` у циклі: якщо відповідь обірвалася на max_tokens
@@ -494,7 +494,7 @@ export default async function handler(
  *
  * Env-override `SSE_HEARTBEAT_MS` — для тестів і тюнінгу під конкретний proxy.
  */
-const SSE_HEARTBEAT_MS = Number(process.env.SSE_HEARTBEAT_MS) || 15_000;
+const SSE_HEARTBEAT_MS = env.SSE_HEARTBEAT_MS;
 
 interface StreamIterationResult {
   outcome: "ok" | "error";

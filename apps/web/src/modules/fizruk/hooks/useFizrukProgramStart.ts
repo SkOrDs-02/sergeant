@@ -11,7 +11,7 @@ interface Exercise {
 }
 
 interface Session {
-  exerciseIds?: string[];
+  exerciseIds?: readonly string[];
   progressionKg?: number;
 }
 
