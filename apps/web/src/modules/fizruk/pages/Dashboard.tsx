@@ -20,15 +20,34 @@ import {
   getNextPlanSession,
   listRecentCompletedWorkouts,
 } from "@sergeant/fizruk-domain/domain";
+import type {
+  ProgramSessionDef,
+  TrainingProgramDef,
+} from "@sergeant/fizruk-domain/domain";
 import { Card } from "@shared/components/ui/Card";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
+
+interface DashboardTodaySession {
+  sessionKey: string;
+  name: string;
+}
+
+interface DashboardProps {
+  onOpenPrograms?: () => void;
+  activeProgram: TrainingProgramDef | null;
+  todaySession: DashboardTodaySession | null;
+  onStartProgramWorkout?: (
+    session: ProgramSessionDef,
+    program: TrainingProgramDef,
+  ) => void;
+}
 
 export function Dashboard({
   onOpenPrograms,
   activeProgram,
   todaySession,
   onStartProgramWorkout,
-}) {
+}: DashboardProps) {
   const today = new Date().toLocaleDateString("uk-UA", {
     weekday: "long",
     day: "numeric",
@@ -42,8 +61,7 @@ export function Dashboard({
   const { entries: measurements } = useMeasurements();
 
   const [planConfirmOpen, setPlanConfirmOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [pendingPicks, setPendingPicks] = useState<any[] | null>(null);
+  const [pendingPicks, setPendingPicks] = useState<unknown[] | null>(null);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(
     null,
   );
@@ -68,9 +86,17 @@ export function Dashboard({
     return "Доброго вечора";
   }, []);
 
-  const startWorkoutFromPlan = (picks, templateId) => {
+  const startWorkoutFromPlan = (
+    picks: unknown[],
+    templateId?: string | null,
+  ) => {
     const w = createWorkout();
-    for (const ex of picks) {
+    for (const ex of picks as Array<{
+      id: string;
+      primaryGroup?: string;
+      name?: { uk?: string; en?: string };
+      muscles?: { primary?: string[]; secondary?: string[] };
+    }>) {
       const isCardio = ex.primaryGroup === "cardio";
       addItem(w.id, {
         exerciseId: ex.id,
@@ -135,7 +161,7 @@ export function Dashboard({
       if (tpl) {
         const picks = (tpl.exerciseIds || [])
           .map((id) => exercises.find((e) => e.id === id))
-          .filter(Boolean);
+          .filter((e): e is NonNullable<typeof e> => Boolean(e));
         if (picks.length > 0) {
           let hint: string | null = null;
           if (monthlyPlan.todayTemplateId === tpl.id) {
@@ -340,7 +366,7 @@ export function Dashboard({
                           </svg>
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm font-semibold text-text truncate">
+                          <div className="text-style-label text-text truncate">
                             {tpl.name}
                           </div>
                           <div className="text-xs text-subtle mt-0.5">
@@ -365,7 +391,7 @@ export function Dashboard({
                   Програма: {activeProgram.name}
                 </SectionHeading>
                 {todaySession ? (
-                  <p className="text-sm font-semibold text-text mt-0.5">
+                  <p className="text-style-label text-text mt-0.5">
                     {todaySession.name}
                   </p>
                 ) : (
@@ -376,7 +402,7 @@ export function Dashboard({
               </div>
               <button
                 type="button"
-                className="text-xs font-semibold text-success hover:underline shrink-0"
+                className="text-style-caption text-success hover:underline shrink-0"
                 onClick={() => onOpenPrograms?.()}
               >
                 Програми →
@@ -385,7 +411,7 @@ export function Dashboard({
             {todaySession && (
               <button
                 type="button"
-                className="w-full py-3 rounded-xl bg-fizruk-strong text-white font-semibold text-sm transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98]"
+                className="w-full py-3 rounded-xl bg-fizruk-strong text-white text-style-label transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98]"
                 onClick={() => {
                   const session =
                     activeProgram.sessions?.[todaySession.sessionKey];

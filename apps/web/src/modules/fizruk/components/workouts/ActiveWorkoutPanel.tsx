@@ -181,25 +181,28 @@ export function ActiveWorkoutPanel({
   }, [activeWorkout, updateWorkout]);
 
   const renderItem = useCallback(
-    (it: WorkoutItem) => (
-      <WorkoutItemCard
-        key={it.id}
-        it={it}
-        activeWorkout={activeWorkout}
-        group={itemIdToGroup.get(it.id)}
-        groupSelectMode={groupSelectMode}
-        isSelected={groupSelected.has(it.id)}
-        isReadOnly={isReadOnly}
-        lastByExerciseId={lastByExerciseId}
-        musclesUk={musclesUk}
-        recBy={recBy}
-        onToggleGroupSelect={handleToggleGroupSelect}
-        removeItem={removeItem}
-        updateItem={updateItem}
-        setRestTimer={setRestTimer}
-        getDefaultForGroup={getDefaultForGroup}
-      />
-    ),
+    (it: WorkoutItem) => {
+      if (!activeWorkout) return null;
+      return (
+        <WorkoutItemCard
+          key={it.id}
+          it={it}
+          activeWorkout={activeWorkout}
+          group={itemIdToGroup.get(it.id)}
+          groupSelectMode={groupSelectMode}
+          isSelected={groupSelected.has(it.id)}
+          isReadOnly={isReadOnly}
+          lastByExerciseId={lastByExerciseId}
+          musclesUk={musclesUk}
+          recBy={recBy}
+          onToggleGroupSelect={handleToggleGroupSelect}
+          removeItem={removeItem}
+          updateItem={updateItem}
+          setRestTimer={setRestTimer}
+          getDefaultForGroup={getDefaultForGroup}
+        />
+      );
+    },
     [
       activeWorkout,
       getDefaultForGroup,

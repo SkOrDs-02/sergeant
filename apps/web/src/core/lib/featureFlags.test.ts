@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 function makeLS() {
-  const map = new Map();
+  const map = new Map<string, string>();
   return {
-    getItem: (k) => (map.has(k) ? map.get(k) : null),
-    setItem: (k, v) => map.set(k, String(v)),
-    removeItem: (k) => map.delete(k),
+    getItem: (k: string) => (map.has(k) ? (map.get(k) ?? null) : null),
+    setItem: (k: string, v: string) => map.set(k, String(v)),
+    removeItem: (k: string) => map.delete(k),
     clear: () => map.clear(),
-    key: (i) => Array.from(map.keys())[i] ?? null,
+    key: (i: number) => Array.from(map.keys())[i] ?? null,
     get length() {
       return map.size;
     },
@@ -17,13 +17,13 @@ function makeLS() {
 async function loadFresh() {
   // Чистимо кеш модулів + LS, щоб кожен кейс отримав свіжий store.
   vi.resetModules();
-  globalThis.localStorage = makeLS();
+  globalThis.localStorage = makeLS() as unknown as Storage;
   return await import("./featureFlags");
 }
 
 describe("featureFlags", () => {
   beforeEach(() => {
-    globalThis.localStorage = makeLS();
+    globalThis.localStorage = makeLS() as unknown as Storage;
   });
 
   it("повертає defaultValue з реєстру, якщо флаг не встановлено", async () => {

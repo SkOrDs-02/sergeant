@@ -5,6 +5,27 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/cn";
 import { useVisualKeyboardInset } from "@sergeant/shared";
+import type { FizrukData } from "@sergeant/fizruk-domain";
+
+type RawExerciseDef = FizrukData.RawExerciseDef;
+
+interface QuickStartGroup {
+  id: string;
+  label: string;
+  items: RawExerciseDef[];
+}
+
+interface QuickStartSheetProps {
+  open: boolean;
+  onClose: () => void;
+  exercises: RawExerciseDef[];
+  search: (q: string) => RawExerciseDef[];
+  primaryGroupsUk?: Record<string, string>;
+  onPickTemplate: () => void;
+  onConfirmExercises: (picks: RawExerciseDef[]) => void;
+}
+
+type Step = "choose" | "pick";
 
 /**
  * Two-step launcher for a new workout. Replaces the old standalone
@@ -56,10 +77,12 @@ export function QuickStartSheet({
   primaryGroupsUk,
   onPickTemplate,
   onConfirmExercises,
-}) {
-  const [step, setStep] = useState("choose");
+}: QuickStartSheetProps) {
+  const [step, setStep] = useState<Step>("choose");
   const [q, setQ] = useState("");
-  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    () => new Set<string>(),
+  );
   const kbInsetPx = useVisualKeyboardInset(open && step === "pick");
 
   // Reset to the chooser whenever the sheet is reopened.
@@ -71,14 +94,15 @@ export function QuickStartSheet({
     }
   }, [open]);
 
-  const groups = useMemo(() => {
+  const groups: QuickStartGroup[] = useMemo(() => {
     if (step !== "pick") return [];
     const filtered = search(q);
-    const m = new Map();
+    const m = new Map<string, RawExerciseDef[]>();
     for (const ex of filtered) {
       const gid = ex?.primaryGroup || "full_body";
-      if (!m.has(gid)) m.set(gid, []);
-      m.get(gid).push(ex);
+      const bucket = m.get(gid);
+      if (bucket) bucket.push(ex);
+      else m.set(gid, [ex]);
     }
     return Array.from(m.entries())
       .sort((a, b) => {
@@ -102,7 +126,7 @@ export function QuickStartSheet({
   );
 
   const byId = useMemo(() => {
-    const m = new Map();
+    const m = new Map<string, RawExerciseDef>();
     for (const ex of exercises || []) {
       if (ex?.id) m.set(ex.id, ex);
     }
@@ -111,8 +135,8 @@ export function QuickStartSheet({
 
   const selectedCount = selectedIds.size;
 
-  const toggle = (id) => {
-    setSelectedIds((prev) => {
+  const toggle = (id: string) => {
+    setSelectedIds((prev: Set<string>) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -122,8 +146,7 @@ export function QuickStartSheet({
 
   const handleConfirm = () => {
     if (selectedCount === 0) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const picks: any[] = [];
+    const picks: RawExerciseDef[] = [];
     for (const id of selectedIds) {
       const ex = byId.get(id);
       if (ex) picks.push(ex);
@@ -281,7 +304,7 @@ export function QuickStartSheet({
                   {g.label}
                 </SectionHeading>
                 <ul className="space-y-1.5">
-                  {g.items.map((ex) => {
+                  {g.items.map((ex: RawExerciseDef) => {
                     const id = ex.id;
                     const active = selectedIds.has(id);
                     const name = ex?.name?.uk || ex?.name?.en || id;

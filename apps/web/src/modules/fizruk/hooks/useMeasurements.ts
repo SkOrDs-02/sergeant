@@ -4,8 +4,27 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 
 const KEY = STORAGE_KEYS.FIZRUK_MEASUREMENTS;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type MeasurementEntry = any;
+export type MeasurementFieldId =
+  | "weightKg"
+  | "bodyFatPct"
+  | "neckCm"
+  | "chestCm"
+  | "waistCm"
+  | "hipsCm"
+  | "bicepLCm"
+  | "bicepRCm"
+  | "forearmLCm"
+  | "forearmRCm"
+  | "thighLCm"
+  | "thighRCm"
+  | "calfLCm"
+  | "calfRCm";
+
+export interface MeasurementEntry {
+  id: string;
+  at: string;
+  [field: string]: number | string | undefined;
+}
 
 function uid() {
   return `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -36,14 +55,18 @@ export function useMeasurements() {
     if (Array.isArray(parsed)) setEntries(parsed);
   }, []);
 
-  const persist = useCallback((next) => {
+  const persist = useCallback((next: MeasurementEntry[]) => {
     setEntries(next);
     safeWriteLS(KEY, next);
   }, []);
 
   const addEntry = useCallback(
-    (entry) => {
-      const e = { id: uid(), at: new Date().toISOString(), ...entry };
+    (entry: Partial<MeasurementEntry>): MeasurementEntry => {
+      const e: MeasurementEntry = {
+        ...entry,
+        id: uid(),
+        at: new Date().toISOString(),
+      };
       persist([e, ...entries]);
       return e;
     },
@@ -51,7 +74,7 @@ export function useMeasurements() {
   );
 
   const deleteEntry = useCallback(
-    (id) => {
+    (id: string) => {
       persist(entries.filter((e) => e.id !== id));
     },
     [persist, entries],
@@ -62,7 +85,7 @@ export function useMeasurements() {
    * `id` and `at` timestamp. Used by undo flows after `deleteEntry`.
    */
   const restoreEntry = useCallback(
-    (entry) => {
+    (entry: MeasurementEntry | null | undefined) => {
       if (!entry || !entry.id) return;
       persist(
         entries.some((e) => e.id === entry.id) ? entries : [entry, ...entries],

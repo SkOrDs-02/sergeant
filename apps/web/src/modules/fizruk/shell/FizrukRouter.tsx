@@ -3,6 +3,15 @@ import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { lazyImport } from "../../../core/lib/lazyImport";
 import type { FizrukPage } from "./fizrukRoute";
+import type {
+  TrainingProgramDef,
+  ProgramSessionDef,
+} from "@sergeant/fizruk-domain/domain";
+
+interface RouterTodaySession {
+  sessionKey: string;
+  name: string;
+}
 
 const PAGE_ERROR_TITLES: Record<FizrukPage, string> = {
   dashboard: "Не вдалось показати «Дашборд»",
@@ -44,12 +53,15 @@ export interface FizrukRouterProps {
   page: FizrukPage;
   exerciseId?: string;
   activeProgramId: string | null;
-  activeProgram: unknown;
-  activateProgram: (id: string | null) => void;
+  activeProgram: TrainingProgramDef | null;
+  activateProgram: (id: string) => void;
   deactivateProgram: () => void;
-  todaySession: unknown;
+  todaySession: RouterTodaySession | null;
   onNavigate: (page: FizrukPage) => void;
-  onStartProgramWorkout: (session: unknown, program: unknown) => void;
+  onStartProgramWorkout: (
+    session: ProgramSessionDef,
+    program: TrainingProgramDef,
+  ) => void;
   onOpenModule?: (moduleId: string, opts?: { hash?: string }) => void;
 }
 
@@ -107,7 +119,7 @@ function renderPage(props: FizrukRouterProps) {
     case "body":
       return <Body onOpenMeasurements={() => onNavigate("measurements")} />;
     case "exercise":
-      return <Exercise exerciseId={exerciseId} />;
+      return <Exercise exerciseId={exerciseId ?? ""} />;
     default:
       return null;
   }

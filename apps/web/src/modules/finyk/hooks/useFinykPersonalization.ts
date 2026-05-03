@@ -17,7 +17,7 @@ interface PersonalizationOptions {
   storage?: {
     manualExpenses?: readonly ManualExpense[];
     customCategories?: Category[];
-    txCategories?: Record<string, string>;
+    txCategories?: Readonly<Record<string, string | undefined>>;
     excludedTxIds?: Set<string>;
   };
   now?: Date;

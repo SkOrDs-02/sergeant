@@ -119,7 +119,7 @@ function CollapsibleTrendCard({
         </div>
         {latestValue != null && (
           <div className="flex items-baseline gap-2 shrink-0">
-            <span className="text-sm font-semibold tabular-nums text-text">
+            <span className="text-style-label tabular-nums text-text">
               {latestValue} {latestUnit}
             </span>
             {delta != null && delta !== 0 && (
@@ -370,7 +370,14 @@ const MOOD_LABELS = [
   "Чудовий",
 ];
 
-function ScoreButton({ value, selected, onClick, label }) {
+interface ScoreButtonProps {
+  value: number;
+  selected: boolean;
+  onClick: (value: number) => void;
+  label: string;
+}
+
+function ScoreButton({ value, selected, onClick, label }: ScoreButtonProps) {
   return (
     <button
       type="button"
@@ -397,12 +404,24 @@ function ScoreButton({ value, selected, onClick, label }) {
   );
 }
 
-export function Body({ onOpenMeasurements }) {
+interface BodyProps {
+  onOpenMeasurements?: () => void;
+}
+
+interface BodyForm {
+  weightKg: string;
+  sleepHours: string;
+  energyLevel: number | null;
+  moodScore: number | null;
+  note: string;
+}
+
+export function Body({ onOpenMeasurements }: BodyProps) {
   const { entries, addEntry, deleteEntry, restoreEntry, recentWith } =
     useDailyLog();
   const toast = useToast();
   const handleDeleteJournalEntry = useCallback(
-    (id) => {
+    (id: string) => {
       const snapshot = entries.find((e) => e.id === id);
       if (!snapshot) return;
       deleteEntry(id);
@@ -414,7 +433,7 @@ export function Body({ onOpenMeasurements }) {
     [entries, deleteEntry, restoreEntry, toast],
   );
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<BodyForm>({
     weightKg: "",
     sleepHours: "",
     energyLevel: null,
@@ -435,7 +454,7 @@ export function Body({ onOpenMeasurements }) {
     };
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const entry = {
       weightKg: form.weightKg !== "" ? Number(form.weightKg) : null,
@@ -541,7 +560,7 @@ export function Body({ onOpenMeasurements }) {
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-text">Тіло</h1>
+            <h1 className="text-style-title text-text">Тіло</h1>
             <p className="text-xs text-subtle mt-0.5">
               Вага · сон · самопочуття
             </p>
@@ -566,7 +585,7 @@ export function Body({ onOpenMeasurements }) {
                 variant="secondary"
                 size="sm"
                 onClick={onOpenMeasurements}
-                className="text-xs font-semibold text-subtle hover:text-text"
+                className="text-style-caption text-subtle hover:text-text"
               >
                 Виміри
               </Button>
@@ -631,8 +650,8 @@ export function Body({ onOpenMeasurements }) {
                     value={v}
                     label={ENERGY_LABELS[v]}
                     selected={form.energyLevel === v}
-                    onClick={(val) =>
-                      setForm((f) => ({
+                    onClick={(val: number) =>
+                      setForm((f: BodyForm) => ({
                         ...f,
                         energyLevel: f.energyLevel === val ? null : val,
                       }))
@@ -653,8 +672,8 @@ export function Body({ onOpenMeasurements }) {
                     value={v}
                     label={MOOD_LABELS[v]}
                     selected={form.moodScore === v}
-                    onClick={(val) =>
-                      setForm((f) => ({
+                    onClick={(val: number) =>
+                      setForm((f: BodyForm) => ({
                         ...f,
                         moodScore: f.moodScore === val ? null : val,
                       }))
@@ -684,7 +703,7 @@ export function Body({ onOpenMeasurements }) {
             <button
               type="submit"
               className={cn(
-                "focus-ring w-full py-3 rounded-xl font-semibold text-sm transition-[background-color,box-shadow,opacity,transform]",
+                "focus-ring w-full py-3 rounded-xl text-style-label transition-[background-color,box-shadow,opacity,transform]",
                 submitSuccess
                   ? "bg-success-strong text-white"
                   : "bg-success-strong text-white active:scale-[0.98]",

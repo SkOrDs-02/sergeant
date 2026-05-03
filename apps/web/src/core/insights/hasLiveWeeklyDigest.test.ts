@@ -6,7 +6,7 @@ import { getWeekKey } from "./useWeeklyDigest";
 
 const PREFIX = STORAGE_KEYS.WEEKLY_DIGEST_PREFIX;
 
-function setDigest(weekKey, data) {
+function setDigest(weekKey: string, data: unknown) {
   localStorage.setItem(`${PREFIX}${weekKey}`, JSON.stringify(data));
 }
 

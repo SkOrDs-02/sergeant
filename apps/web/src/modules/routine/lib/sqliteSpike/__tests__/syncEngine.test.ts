@@ -175,18 +175,20 @@ describe("routine SQLite SPIKE sync engine", () => {
   it("pushPendingOutbox marks rejected rows but keeps them for triage", async () => {
     let call = 0;
     const reject: SyncV2Endpoints = {
-      pushV2: vi.fn(async (ops): Promise<SyncV2PushResponse> => {
-        call++;
-        return {
-          accepted: 0,
-          last_op_id: 0,
-          results: ops.map((op) => ({
-            idempotency_key: op.idempotency_key,
-            status: "rejected",
-            reason: "validation_failed",
-          })),
-        };
-      }),
+      pushV2: vi.fn(
+        async (ops: SyncV2PushOp[]): Promise<SyncV2PushResponse> => {
+          call++;
+          return {
+            accepted: 0,
+            last_op_id: 0,
+            results: ops.map((op) => ({
+              idempotency_key: op.idempotency_key,
+              status: "rejected",
+              reason: "validation_failed",
+            })),
+          };
+        },
+      ),
       pullV2: vi.fn(),
     };
 

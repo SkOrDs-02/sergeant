@@ -54,7 +54,16 @@ export function buildFizrukBackupPayload() {
   };
 }
 
-export function applyFizrukBackupPayload(data, { replace = false } = {}) {
+interface FizrukBackupPayload {
+  kind?: string;
+  workouts?: unknown;
+  customExercises?: unknown;
+}
+
+export function applyFizrukBackupPayload(
+  data: FizrukBackupPayload | null | undefined,
+  { replace = false }: { replace?: boolean } = {},
+) {
   if (!data || data.kind !== "fizruk-backup")
     throw new Error("Невірний формат файлу");
   const w = Array.isArray(data.workouts) ? data.workouts : [];
@@ -88,7 +97,7 @@ export function applyFizrukBackupPayload(data, { replace = false } = {}) {
  * Сумісний з попереднім форматом `{ schemaVersion, exportedAt, data }`.
  */
 export function buildFizrukFullBackupPayload() {
-  const data = {};
+  const data: Record<string, string | null> = {};
   for (const k of FIZRUK_FULL_BACKUP_KEYS) {
     data[k] = storage.readRaw(k, null);
   }
@@ -103,11 +112,14 @@ export function buildFizrukFullBackupPayload() {
 /**
  * Імпорт повного бекапу (той самий формат, що buildFizrukFullBackupPayload, або legacy без `kind`).
  */
-export function applyFizrukFullBackupPayload(parsed) {
-  const d = parsed?.data;
+export function applyFizrukFullBackupPayload(parsed: unknown) {
+  if (!parsed || typeof parsed !== "object")
+    throw new Error("Невірний формат файлу");
+  const d = (parsed as { data?: unknown }).data;
   if (!d || typeof d !== "object") throw new Error("Невірний формат файлу");
+  const dataObj = d as Record<string, unknown>;
   for (const k of FIZRUK_FULL_BACKUP_KEYS) {
-    const v = d[k];
+    const v = dataObj[k];
     if (typeof v === "string") storage.writeRaw(k, v);
   }
 }
