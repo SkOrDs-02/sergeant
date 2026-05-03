@@ -3,7 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { coachApi, weeklyDigestApi } from "@shared/api";
 import type { WeeklyDigestReport } from "@shared/api";
 import { STORAGE_KEYS, getWeekKey as sharedGetWeekKey } from "@sergeant/shared";
-import { safeReadLS } from "@shared/lib/storage/storage";
+import {
+  safeListLSKeys,
+  safeReadLS,
+  safeWriteLS,
+} from "@shared/lib/storage/storage";
 import { loadDigest as sharedLoadDigest } from "@shared/lib/storage/weeklyDigestStorage";
 import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
 import { formatApiError } from "@shared/lib/api/apiErrorFormat";
@@ -87,31 +91,21 @@ interface DigestHistoryEntry {
 
 function listDigestHistory(): DigestHistoryEntry[] {
   const results: DigestHistoryEntry[] = [];
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith(DIGEST_PREFIX)) {
-        const wk = key.slice(DIGEST_PREFIX.length);
-        if (/^\d{4}-\d{2}-\d{2}$/.test(wk)) {
-          results.push({
-            weekKey: wk,
-            weekRange: getWeekRange(new Date(wk + "T12:00:00")),
-          });
-        }
-      }
+  for (const key of safeListLSKeys()) {
+    if (!key.startsWith(DIGEST_PREFIX)) continue;
+    const wk = key.slice(DIGEST_PREFIX.length);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(wk)) {
+      results.push({
+        weekKey: wk,
+        weekRange: getWeekRange(new Date(wk + "T12:00:00")),
+      });
     }
-  } catch {
-    /* non-fatal */
   }
   return results.sort((a, b) => b.weekKey.localeCompare(a.weekKey));
 }
 
 function saveDigest(weekKey: string, data: unknown): void {
-  try {
-    localStorage.setItem(`${DIGEST_PREFIX}${weekKey}`, JSON.stringify(data));
-  } catch {
-    /* non-fatal */
-  }
+  safeWriteLS(`${DIGEST_PREFIX}${weekKey}`, data);
 }
 
 export interface FinykAggregate {

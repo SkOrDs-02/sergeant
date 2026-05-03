@@ -392,25 +392,6 @@ export default [
       "apps/web/src/modules/finyk/hooks/useStorage.ts",
       "apps/web/src/modules/finyk/lib/storageManager.ts",
       "apps/web/src/modules/nutrition/domain/nutritionBackup.ts",
-      // Files that haven't been migrated yet — TODO: convert each to
-      // `safeReadLS` / `useLocalStorageState` / `createModuleStorage`
-      // and remove the entry below.
-      "apps/web/src/core/insights/AssistantAdviceCard.tsx",
-      "apps/web/src/core/insights/TodayFocusCard.tsx",
-      "apps/web/src/core/observability/analytics.ts",
-
-      "apps/web/src/core/hints/HintsOrchestrator.tsx",
-      // HubSearch was split into apps/web/src/core/hub/search/* — the
-      // localStorage parsers (`safeParseLS` + the Fizruk parsers) live
-      // in `searchCache.ts` and are called from `searchSources.ts`.
-      // Both inherit the original ignore until the migration to
-      // `safeReadLS` lands.
-      "apps/web/src/core/hub/search/searchCache.ts",
-      "apps/web/src/core/hub/search/searchSources.ts",
-
-      "apps/web/src/core/hub/hubBackup.ts",
-      "apps/web/src/core/hub/hubSearchEngine.ts",
-      "apps/web/src/core/insights/useWeeklyDigest.ts",
       // useWorkouts.ts: intentional direct-storage access — dispatches
       // FIZRUK_WORKOUTS_STORAGE_ERROR custom event on quota failure so the
       // UI can show a banner. safeWriteLS swallows the error silently.
