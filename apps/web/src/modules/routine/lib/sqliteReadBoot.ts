@@ -17,7 +17,7 @@
 
 import { getFlag } from "../../../core/lib/featureFlags.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
-import { migrateRoutineSpike } from "./sqliteSpike/clientMigrate.js";
+import { migrateRoutine } from "./clientMigrate.js";
 import { setSqliteReadEnabled } from "./routineStorage.js";
 import { refreshSqliteCompletions } from "./sqliteReader.js";
 
@@ -46,7 +46,7 @@ export async function bootSqliteReadPath(
   try {
     const handle = await getSqliteDb();
     const client = handle.migrationClient();
-    await migrateRoutineSpike(client);
+    await migrateRoutine(client);
     await refreshSqliteCompletions(client, userId);
 
     setSqliteReadEnabled(true);

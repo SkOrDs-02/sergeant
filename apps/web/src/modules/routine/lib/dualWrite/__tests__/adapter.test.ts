@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { applyRoutineDualWriteOps, type DualWriteLogger } from "../adapter.js";
-import { createTestSqlite } from "../../sqliteSpike/__tests__/testSqlite.js";
+import { createTestSqlite } from "./testSqlite.js";
 
 interface RoutineEntryRowRaw extends Record<string, unknown> {
   id: string;

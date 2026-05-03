@@ -36,9 +36,8 @@ export type FlagValues = Record<string, boolean>;
 
 /**
  * Single source of truth for experimental flag definitions on mobile.
- * `ExperimentalSection` renders these as toggle rows;
- * feature-specific gates (`RoutineSpikeSection`, …) consume the same
- * defaults via `useFlag()`.
+ * `ExperimentalSection` renders these as toggle rows; feature-specific
+ * gates consume the same defaults via `useFlag()`.
  */
 export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
   {
@@ -53,13 +52,6 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
     label: "Command Palette (Ctrl/⌘+K)",
     description:
       "Глобальний пошук і дії через клавіатуру. Ранній preview — може не працювати у деяких PWA-кейсах.",
-    defaultValue: false,
-  },
-  {
-    id: "feature.routine.sqlite_v2",
-    label: "Routine SPIKE — локальна SQLite + sync v2",
-    description:
-      "Вмикає dev-only панель у блоці «Акаунт» для зняття замірів decision-gate. Без флагу панель не монтує SPIKE-бібліотеку (нульовий runtime-cost).",
     defaultValue: false,
   },
   {

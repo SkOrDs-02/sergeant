@@ -1,8 +1,8 @@
 # SPIKE — Routine module on SQLite v2
 
-> **Last validated:** 2026-05-02 by @sonher468. **Next review:** 2026-05-16.
-> **Status:** Active — automated gates PASS; awaiting hardware confirmation
-> (iOS Safari 16.4+, multi-device toggle).
+> **Last validated:** 2026-05-02. **Archived:** 2026-05-02.
+> **Status:** Completed & archived — SPIKE code removed, production files
+> promoted. See cleanup PR.
 
 > **Owner:** @Skords-01 · **Created:** 2026-05-02 ·
 > **Roadmap reference:** [`docs/planning/storage-roadmap.md` PR #022](../../planning/storage-roadmap.md#stage-3--spike-на-routine) ·
