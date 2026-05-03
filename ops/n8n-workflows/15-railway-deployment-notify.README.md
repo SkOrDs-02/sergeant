@@ -1,5 +1,7 @@
 # WF-15 — Railway Deployment Notify
 
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-03.
+
 > Webhook (`POST /webhook/railway-deploy`) → Telegram message in
 > `Sergeant_ops` (`⚙️ Контрол-план` topic, success → ops; failure →
 > incidents).
