@@ -139,6 +139,7 @@ const HELP_TEXT = [
   "",
   "*Службові:*",
   "/decisions — останні зафіксовані рішення",
+  "/audit — останні write-actions (approve/reject/executed)",
   "/budget — поточний денний spend",
   "/reset — почати нову сесію",
   "/help — ця довідка",
@@ -201,6 +202,44 @@ interface OpenInvocationResponse {
   invocationId: number;
 }
 
+// ADR-0037 (Phase 4.5): write-audit log payload sent to
+// `/api/internal/openclaw/write-audit/log` on every approve/reject/executed.
+// `responseExcerpt` is truncated client-side as a defence-in-depth even
+// though the server also caps at 4 KB — keeps the network payload bounded.
+const RESPONSE_EXCERPT_MAX_BYTES = 4_000;
+
+interface WriteAuditLogBody {
+  approvalId: string;
+  tool: string;
+  founderUserId: string;
+  founderTgUserId: number;
+  invocationId?: number | null;
+  action: "approved" | "executed" | "rejected";
+  input?: Record<string, unknown>;
+  httpStatus?: number | null;
+  ok?: boolean | null;
+  responseExcerpt?: string | null;
+  persona?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+interface WriteAuditListItem {
+  id: number;
+  recorded_at: string;
+  approval_id: string;
+  tool: string;
+  founder_user_id: string;
+  founder_tg_user_id: number;
+  invocation_id: number | null;
+  action: "approved" | "executed" | "rejected";
+  input: Record<string, unknown>;
+  http_status: number | null;
+  ok: boolean | null;
+  response_excerpt: string | null;
+  persona: string | null;
+  metadata: Record<string, unknown>;
+}
+
 async function postJson<T>(
   url: string,
   apiKey: string,
@@ -255,6 +294,44 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
   // turns in this process. Per-turn `PendingApprovalsCollector` is created
   // inside `runAgentTurn` and drained afterwards.
   const approvalStore = new ApprovalStore();
+
+  /**
+   * ADR-0037 (Phase 4.5): fire-and-forget log of one write-audit row.
+   *
+   * Fail-soft: a 5xx / network error MUST NOT block the user-visible
+   * Approve/Reject feedback. We only `console.warn` on failure so the
+   * Railway log still surfaces persistence problems.
+   */
+  async function logWriteAudit(body: WriteAuditLogBody): Promise<void> {
+    const truncatedExcerpt =
+      body.responseExcerpt == null
+        ? body.responseExcerpt
+        : body.responseExcerpt.length > RESPONSE_EXCERPT_MAX_BYTES
+          ? body.responseExcerpt.slice(0, RESPONSE_EXCERPT_MAX_BYTES)
+          : body.responseExcerpt;
+    try {
+      const r = await postJson<{ ok: boolean; id?: number }>(
+        `${serverUrl}/api/internal/openclaw/write-audit/log`,
+        internalApiKey,
+        { ...body, responseExcerpt: truncatedExcerpt },
+      );
+      if (!r.ok) {
+        console.warn("[openclaw] write-audit log failed", {
+          status: r.status,
+          tool: body.tool,
+          action: body.action,
+          approvalId: body.approvalId,
+        });
+      }
+    } catch (err) {
+      console.warn("[openclaw] write-audit log error", {
+        error: err instanceof Error ? err.message : String(err),
+        tool: body.tool,
+        action: body.action,
+        approvalId: body.approvalId,
+      });
+    }
+  }
 
   const baseDeps: OpenClawAgentDeps = {
     serverUrl,
@@ -330,6 +407,81 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
       return `• ${date} #${d.id} ${d.topic}${pr}`;
     });
     await ctx.reply(lines.join("\n"));
+  });
+
+  // ADR-0037 (Phase 4.5): `/audit` — last N write-actions з опційними
+  // фільтрами. Syntax: `/audit [tool] [action] [limit]`. Argument-order
+  // is fixed (positional), parsed permissively — unknown values become
+  // `tool` filter so a typo still surfaces something useful.
+  bot.command("audit", async (ctx) => {
+    if (!isAllowedDmContext(ctx)) return;
+    if (!rateLimiter.allow(String(ctx.from?.id))) {
+      await ctx.reply("Rate limit exceeded. Спробуй за хвилину.");
+      return;
+    }
+
+    const argument = (ctx.match ?? "").toString().trim();
+    const tokens = argument ? argument.split(/\s+/) : [];
+
+    let toolFilter: string | undefined;
+    let actionFilter: "approved" | "executed" | "rejected" | undefined;
+    let limit: number | undefined;
+
+    const ACTIONS = new Set(["approved", "executed", "rejected"] as const);
+    for (const tok of tokens) {
+      const n = Number(tok);
+      if (Number.isFinite(n) && n > 0 && Number.isInteger(n)) {
+        limit = Math.min(100, n);
+        continue;
+      }
+      if (ACTIONS.has(tok as "approved" | "executed" | "rejected")) {
+        actionFilter = tok as "approved" | "executed" | "rejected";
+        continue;
+      }
+      // Unknown token → treat as tool name (last write wins on duplicate).
+      toolFilter = tok;
+    }
+
+    const r = await postJson<{ audits: WriteAuditListItem[] }>(
+      `${serverUrl}/api/internal/openclaw/write-audit/list`,
+      internalApiKey,
+      {
+        founderUserId,
+        limit: limit ?? 20,
+        ...(toolFilter ? { tool: toolFilter } : {}),
+        ...(actionFilter ? { action: actionFilter } : {}),
+      },
+    );
+    if (!r.ok || !r.data) {
+      await ctx.reply(`Не зміг прочитати write-audit (HTTP ${r.status}).`);
+      return;
+    }
+    if (r.data.audits.length === 0) {
+      await ctx.reply("Жодних write-actions у журналі.");
+      return;
+    }
+
+    const ACTION_GLYPH: Record<string, string> = {
+      approved: "✅",
+      executed: "▶️",
+      rejected: "❌",
+    };
+    // Format: `HH:MM glyph tool [persona] (id=…)` — newest first. We
+    // intentionally show only time-of-day (date contained in the
+    // grouping/timezone of the answer); LLM never reads this output, so
+    // pure plaintext is fine.
+    const lines = r.data.audits.map((a) => {
+      const t = a.recorded_at.slice(11, 16);
+      const glyph = ACTION_GLYPH[a.action] ?? "•";
+      const persona = a.persona ? ` [${a.persona}]` : "";
+      const status =
+        a.action === "executed" && a.http_status != null
+          ? ` (HTTP ${a.http_status}${a.ok ? "" : " ⚠"})`
+          : "";
+      return `${t} ${glyph} ${a.tool}${persona}${status} (id=${a.approval_id})`;
+    });
+    const header = `Останні ${r.data.audits.length} write-actions:`;
+    await ctx.reply([header, ...lines].join("\n"));
   });
 
   /**
@@ -830,6 +982,18 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
         founderTgUserId: ctx.from?.id,
         invocationId: record.invocationId,
       });
+      // ADR-0037 (Phase 4.5): persist the rejection so post-mortems
+      // survive a console restart. Fire-and-forget, fail-soft.
+      void logWriteAudit({
+        approvalId: record.id,
+        tool: record.tool,
+        founderUserId: record.founderUserId,
+        founderTgUserId: record.founderTgUserId,
+        invocationId: record.invocationId ?? null,
+        action: "rejected",
+        input: record.input,
+        persona: record.persona ?? null,
+      });
       return;
     }
 
@@ -842,6 +1006,21 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     } catch {
       // Best-effort; we still post the result below.
     }
+
+    // ADR-0037 (Phase 4.5): write `approved` row BEFORE the HTTP call.
+    // Pairing this with the later `executed` row by `approval_id` lets
+    // us measure approve-to-executed latency AND detect "approved but
+    // never executed" failures (executor crashed mid-flight).
+    void logWriteAudit({
+      approvalId: record.id,
+      tool: record.tool,
+      founderUserId: record.founderUserId,
+      founderTgUserId: record.founderTgUserId,
+      invocationId: record.invocationId ?? null,
+      action: "approved",
+      input: record.input,
+      persona: record.persona ?? null,
+    });
 
     const result = await executeApprovedWriteTool(record);
     const headline = result.ok
@@ -860,6 +1039,22 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
       status: result.status,
       founderTgUserId: ctx.from?.id,
       invocationId: record.invocationId,
+    });
+    // ADR-0037 (Phase 4.5): pair-row to the `approved` above. Carries
+    // upstream HTTP status + truncated response excerpt so post-mortems
+    // see exactly what the API returned.
+    void logWriteAudit({
+      approvalId: record.id,
+      tool: record.tool,
+      founderUserId: record.founderUserId,
+      founderTgUserId: record.founderTgUserId,
+      invocationId: record.invocationId ?? null,
+      action: "executed",
+      input: record.input,
+      httpStatus: result.status,
+      ok: result.ok,
+      responseExcerpt: result.bodyText,
+      persona: record.persona ?? null,
     });
   });
 

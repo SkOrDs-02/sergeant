@@ -12,6 +12,13 @@ export {
   attachDecisionPrUrl,
   listRecentDecisions,
   listRecentInvocations,
+  // Phase 4.5 (ADR-0037): write-audit log helpers.
+  recordWriteAudit,
+  listRecentWriteAudits,
+} from "./store.js";
+export type {
+  RecordWriteAuditInput,
+  ListWriteAuditFilters,
 } from "./store.js";
 export { checkDailyBudget, estimateClaudeSonnetCostUsd } from "./budget.js";
 export {

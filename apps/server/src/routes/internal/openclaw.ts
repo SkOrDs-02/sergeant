@@ -58,6 +58,9 @@ import {
   muteSentryAlert,
   OpenClawWriteAllowlistError,
   POST_TO_TOPIC_ALLOWLIST,
+  // ADR-0037 (Phase 4.5): persistent write-audit log helpers.
+  recordWriteAudit,
+  listRecentWriteAudits,
 } from "../../modules/openclaw/index.js";
 import type {
   OpenClawStatus,
@@ -232,6 +235,39 @@ const MuteAlertBody = z.object({
   issueId: z.string().min(1).max(200),
   untilIso: z.string().datetime({ offset: true }).optional(),
 });
+
+// ADR-0037 (Phase 4.5): write-audit log endpoints. Console writes a row
+// per approve/reject/executed transition; the same id pairs `approved` +
+// `executed` so latency is reconstructable.
+
+const WRITE_AUDIT_ACTIONS = ["approved", "executed", "rejected"] as const;
+
+const WriteAuditLogBody = z
+  .object({
+    approvalId: z.string().min(1).max(64),
+    tool: z.string().min(1).max(100),
+    founderUserId: z.string().min(1),
+    founderTgUserId: z.number().int(),
+    invocationId: z.number().int().positive().optional().nullable(),
+    action: z.enum(WRITE_AUDIT_ACTIONS),
+    input: z.record(z.string(), z.unknown()).optional(),
+    httpStatus: z.number().int().min(0).max(599).optional().nullable(),
+    ok: z.boolean().optional().nullable(),
+    responseExcerpt: z.string().max(8_192).optional().nullable(),
+    persona: z.string().min(1).max(50).optional().nullable(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
+  })
+  .strict();
+
+const WriteAuditListBody = z
+  .object({
+    founderUserId: z.string().min(1),
+    limit: z.number().int().min(1).max(100).optional(),
+    tool: z.string().min(1).max(100).optional(),
+    action: z.enum(WRITE_AUDIT_ACTIONS).optional(),
+    persona: z.string().min(1).max(50).optional(),
+  })
+  .strict();
 
 // ─────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -583,6 +619,53 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
         untilIso: parsed.data.untilIso,
       });
       res.json(result);
+    }),
+  );
+
+  // ---- ADR-0037 (Phase 4.5): write-audit log ----
+  //
+  // One row per Approve / Reject / Executed transition. Pairing
+  // `approved` + `executed` per `approval_id` reconstructs lifecycle
+  // latency and exposes "approved but never executed" failures.
+
+  // ---- write-audit/log ----
+  r.post(
+    "/api/internal/openclaw/write-audit/log",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(WriteAuditLogBody, req, res);
+      if (!parsed.ok) return;
+      const id = await recordWriteAudit(pool, {
+        approvalId: parsed.data.approvalId,
+        tool: parsed.data.tool,
+        founderUserId: parsed.data.founderUserId,
+        founderTgUserId: parsed.data.founderTgUserId,
+        invocationId: parsed.data.invocationId ?? null,
+        action: parsed.data.action,
+        input: parsed.data.input,
+        httpStatus: parsed.data.httpStatus ?? null,
+        ok: parsed.data.ok ?? null,
+        responseExcerpt: parsed.data.responseExcerpt ?? null,
+        persona: parsed.data.persona ?? null,
+        metadata: parsed.data.metadata,
+      });
+      res.json({ ok: true, id });
+    }),
+  );
+
+  // ---- write-audit/list ----
+  r.post(
+    "/api/internal/openclaw/write-audit/list",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(WriteAuditListBody, req, res);
+      if (!parsed.ok) return;
+      const audits = await listRecentWriteAudits(pool, {
+        founderUserId: parsed.data.founderUserId,
+        limit: parsed.data.limit,
+        tool: parsed.data.tool,
+        action: parsed.data.action,
+        persona: parsed.data.persona,
+      });
+      res.json({ audits });
     }),
   );
 

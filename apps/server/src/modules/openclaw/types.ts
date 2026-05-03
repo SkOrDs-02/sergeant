@@ -93,6 +93,40 @@ export interface OpenClawInvocationRecord {
 }
 
 /**
+ * Lifecycle action for a write-tool approval (ADR-0037, Phase 4.5).
+ *
+ * - `approved` — founder clicked Approve, BEFORE the upstream HTTP call.
+ * - `executed` — same `approval_id`, AFTER the HTTP call (with
+ *   `http_status`/`ok`/`response_excerpt`).
+ * - `rejected` — founder clicked Reject. Single row, no `executed`
+ *   follow-up.
+ */
+export type OpenClawWriteAuditAction = "approved" | "executed" | "rejected";
+
+/**
+ * Запис у `openclaw_write_audit` (мапа 1:1 на колонки). ADR-0037, Phase
+ * 4.5. Append-only — кожен transition створює нову row; повний lifecycle
+ * одного approval-id reconstructed через `WHERE approval_id = $1
+ * ORDER BY recorded_at`.
+ */
+export interface OpenClawWriteAuditRecord {
+  id: number;
+  recorded_at: string;
+  approval_id: string;
+  tool: string;
+  founder_user_id: string;
+  founder_tg_user_id: number;
+  invocation_id: number | null;
+  action: OpenClawWriteAuditAction;
+  input: Record<string, unknown>;
+  http_status: number | null;
+  ok: boolean | null;
+  response_excerpt: string | null;
+  persona: string | null;
+  metadata: Record<string, unknown>;
+}
+
+/**
  * Дозволені таблиці у `query_app_db`. Хардкод — ні в якому разі
  * не env-driven, бо кожне додавання повинно бути reviewed у PR.
  *
