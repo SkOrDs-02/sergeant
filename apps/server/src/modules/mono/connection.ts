@@ -109,18 +109,26 @@ export async function connectHandler(
     return;
   }
   if (!clientInfoRes.ok) {
+    // Upstream body може містити внутрішні деталі Monobank (стек/чужі
+    // header-и в HTML, ID запиту тощо) — фронту воно ні до чого і часто
+    // мінливе, тож логуємо в server-only warn і повертаємо лише наш
+    // нормалізований error/code.
     const body = await clientInfoRes.text();
     logger.warn({
       msg: "mono_connect_client_info_failed",
       status: clientInfoRes.status,
       fingerprint: tokenFingerprint(token),
+      upstreamBody: body,
     });
     res.status(clientInfoRes.status === 401 ? 401 : 502).json({
       error:
         clientInfoRes.status === 401
           ? "Invalid Monobank token"
           : "Failed to reach Monobank API",
-      upstream: body,
+      code:
+        clientInfoRes.status === 401
+          ? "MONO_TOKEN_INVALID"
+          : "MONO_UPSTREAM_ERROR",
     });
     return;
   }
@@ -161,10 +169,11 @@ export async function connectHandler(
       msg: "mono_webhook_register_failed",
       status: registerRes.status,
       fingerprint: tokenFingerprint(token),
+      upstreamBody: body,
     });
     res.status(502).json({
       error: "Failed to register webhook with Monobank",
-      upstream: body,
+      code: "MONO_UPSTREAM_ERROR",
     });
     return;
   }
