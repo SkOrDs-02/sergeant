@@ -51,7 +51,10 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
           txSplits,
           customCategories,
         );
-        const pct = b.limit > 0 ? Math.round((s / b.limit) * 100) : 0;
+        // Budget.limit є optional (нові бюджети без cap), тому coerce до 0
+        // — pct=0 відобразиться так само як "ще нічого не витрачено".
+        const limit = b.limit ?? 0;
+        const pct = limit > 0 ? Math.round((s / limit) * 100) : 0;
         const over = pct >= 100;
         return (
           <View
