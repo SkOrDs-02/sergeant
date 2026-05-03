@@ -35,9 +35,14 @@
       "riskTier": "P1",
       "telegramTopic": "incidents",
       "audienceTier": "P1",
-      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID", "TELEGRAM_TOPIC_INCIDENTS"],
+      "requiredEnv": [
+        "TELEGRAM_ALERT_CHAT_ID",
+        "TELEGRAM_TOPIC_INCIDENTS",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY"
+      ],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "Sentry webhook → severity filter → fatal/warning → Telegram."
+      "notes": "Sentry webhook → severity filter → fatal (P0) / warning (P1) → tg_alert_acks idempotent row + 3-button ack-keyboard (ADR-0038 W3 §3.2)."
     },
     "04-daily-backup-verification.json": {
       "owner": "ops",
@@ -193,10 +198,12 @@
       "requiredEnv": [
         "GITHUB_PAT",
         "TELEGRAM_ALERT_CHAT_ID",
-        "TELEGRAM_TOPIC_INCIDENTS"
+        "TELEGRAM_TOPIC_INCIDENTS",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY"
       ],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "Nightly security audit status report. Active; cron fires daily 04:00 UTC against the .github/workflows/nightly-audit.yml run history; alerts only if latest conclusion is failure/cancelled."
+      "notes": "Nightly security audit status report. Cron fires daily 04:00 UTC against the .github/workflows/nightly-audit.yml run history; alerts only if latest conclusion is failure/cancelled, post-ADR-0038 W3 §3.2 also writes idempotent tg_alert_acks row + renders 3-button ack-keyboard."
     },
     "19-db-health-report.json": {
       "owner": "ops",

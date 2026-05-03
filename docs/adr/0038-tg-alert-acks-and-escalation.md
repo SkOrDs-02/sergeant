@@ -243,7 +243,7 @@ Response: `{ ok: true, alreadyEscalated: boolean }`.
 ### Negative
 
 - **+1 nullable BIGINT FK у Phase 5.** Коли додамо multi-operator + `tg_operator_allowlist`, міграція 03X_alert_acks_v2 буде ALTER TABLE з validation. Не критично, але ADR-flag-ну для майбутнього.
-- **17 broadcast-workflows ще не wired.** WF-04 — reference impl у W3 PR-2; WF-03/15/18/22/решта повертатимуть до старого "no ack" patterns поки не дотягнемо їх mechanically. Кожен — окремий S sub-PR (~30 LOC + smoke). Trade-off за швидший merge: alert-fatigue closure буде incremental, не big-bang.
+- **17 broadcast-workflows ще не wired.** WF-04 — reference impl у W3 PR-2; **WF-03 + WF-18** wired у W3 PR-3-batch1; WF-15/01/02/05/06/08/16/17/19/30/60/63/98/99 повертатимуть до старого "no ack" patterns поки не дотягнемо їх mechanically. Кожен — окремий S sub-PR (~30 LOC + smoke). Trade-off за швидший merge: alert-fatigue closure буде incremental, не big-bang.
 - **DB-таблиця ще одна.** Sergeant прод already 31 таблицю (post-merge цієї міграції). Кожна нова — +5 sec до ROLLBACK-test cycle у CI. Не ризик, але треба не забувати про bound-check у `apps/server/src/migrations/__tests__/rollback-sanity.test.ts`.
 
 ### Neutral
