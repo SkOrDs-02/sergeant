@@ -7,6 +7,8 @@
  * this module is the single source of truth.
  */
 
+import { createMemoryKVStore, createWebKVStore } from "@sergeant/shared";
+import type { KVStore } from "@sergeant/shared";
 import type { z } from "zod";
 
 /**
@@ -128,17 +130,23 @@ export function safeListLSKeys(): string[] {
 }
 
 /**
- * KVStore adapter for @sergeant/shared functions.
- * Allows shared pure functions to work with web localStorage.
+ * KVStore adapter for `@sergeant/shared` functions. Wraps
+ * `window.localStorage` via {@link createWebKVStore} so cross-tab
+ * `onChange` propagation comes for free via the DOM `storage` event.
+ *
+ * Falls back to an in-memory store in non-browser environments
+ * (server-side render, headless test bootstrap before jsdom is
+ * installed). The flat `safe*LS` helpers above keep their existing
+ * direct-`localStorage` semantics — call them when you only need
+ * scalar reads/writes without the `KVStore` contract.
  */
-import type { KVStore } from "@sergeant/shared";
+function resolveWebKVStore(): KVStore {
+  if (typeof window === "undefined") return createMemoryKVStore();
+  try {
+    return createWebKVStore(window.localStorage, window);
+  } catch {
+    return createMemoryKVStore();
+  }
+}
 
-export const webKVStore: KVStore = {
-  getString: safeReadStringLS,
-  setString: (k, v) => {
-    safeWriteLS(k, v);
-  },
-  remove: (k) => {
-    safeRemoveLS(k);
-  },
-};
+export const webKVStore: KVStore = resolveWebKVStore();

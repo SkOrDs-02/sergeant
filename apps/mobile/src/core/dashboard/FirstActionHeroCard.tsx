@@ -29,49 +29,12 @@ import {
   getVibePicks,
   hapticTap,
   type DashboardModuleId,
-  type KVStore,
 } from "@sergeant/shared";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import {
-  safeReadLS as mmkvGet,
-  safeRemoveLS as mmkvRemove,
-  safeWriteLS as mmkvWrite,
-} from "@/lib/storage";
-
-// MMKV-backed `KVStore` that delegates through the thin helpers in
-// `@/lib/storage`. `vibePicks` only needs string I/O, so the shared
-// helpers' JSON wrappers are sidestepped by storing strings directly.
-const mmkvStore: KVStore = {
-  getString(key) {
-    try {
-      // `safeReadLS` JSON-parses; but `vibePicks` writes raw strings
-      // (`"1"`, `"2025-01-15"`, comma/JSON payloads). Read as a
-      // permissive `unknown` and coerce back to string.
-      const raw = mmkvGet<unknown>(key, null);
-      if (raw === null || raw === undefined) return null;
-      return typeof raw === "string" ? raw : JSON.stringify(raw);
-    } catch {
-      return null;
-    }
-  },
-  setString(key, value) {
-    try {
-      mmkvWrite(key, value);
-    } catch {
-      /* noop */
-    }
-  },
-  remove(key) {
-    try {
-      mmkvRemove(key);
-    } catch {
-      /* noop */
-    }
-  },
-};
+import { mobileKVStore as mmkvStore } from "@/lib/storage";
 
 interface ActionSpec {
   title: string;

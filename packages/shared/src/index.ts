@@ -22,9 +22,12 @@ export * from "./lib/dashboard";
 // quick actions, the catalogue UI, and (PR 2) the system-prompt tool list.
 export * from "./lib/assistantCatalogue";
 
-// Platform-agnostic key/value store contract consumed by shared helpers
-// below (web → localStorage adapter, mobile → MMKV adapter).
-export * from "./lib/kvStore";
+// Platform-agnostic key/value store contract + factories. See
+// `docs/planning/storage-roadmap.md` → PR #006.
+//   - `createMemoryKVStore()` for vitest/jest suites.
+//   - `createWebKVStore(localStorage, window)` on web.
+//   - `createMmkvKVStore(() => activeMmkv)` on mobile.
+export * from "./storage/kv";
 
 // Onboarding "vibe picks" state + FTUX time-to-value helpers.
 export * from "./lib/vibePicks";

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { createMemoryKVStore } from "./kvStore";
+import { createMemoryKVStore } from "../storage/kv";
 import {
   MODULE_CHECKLISTS,
   getChecklistState,

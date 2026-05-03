@@ -37,6 +37,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MMKV } from "react-native-mmkv";
 
+import { createMmkvKVStore } from "@sergeant/shared";
+import type { KVStore } from "@sergeant/shared";
+
 /**
  * Shared MMKV instance for the whole mobile app. The `id` is versioned
  * so we can cut a clean break in the future without colliding with old
@@ -75,6 +78,18 @@ export function _getMMKVInstance(): MMKV {
 export function _setMMKVInstance(next: MMKV): void {
   activeMmkv = next;
 }
+
+/**
+ * KVStore adapter for `@sergeant/shared` functions. Wraps the active
+ * MMKV instance via a thunk so the encrypted-bootstrap swap (see
+ * `_setMMKVInstance`) is transparent to callers. Cross-write
+ * notification is wired to MMKV's `addOnValueChangedListener`.
+ *
+ * Use this when porting a shared helper from `@sergeant/shared/lib/*`
+ * that takes a `KVStore`. For module-scoped storage with debounced
+ * writes, prefer `createModuleStorage()` below.
+ */
+export const mobileKVStore: KVStore = createMmkvKVStore(() => activeMmkv);
 
 function readString(key: string): string | null {
   try {

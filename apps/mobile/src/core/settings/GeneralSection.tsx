@@ -65,7 +65,6 @@ import {
   STORAGE_KEYS,
   type DashboardDensity,
   type DashboardModuleId,
-  type KVStore,
 } from "@sergeant/shared";
 
 import { Card } from "@/components/ui/Card";
@@ -77,12 +76,7 @@ import {
   buildHubBackupPayload,
   applyHubBackupPayload,
 } from "@/core/hub/hubBackup";
-import {
-  safeReadLS as mmkvGet,
-  safeRemoveLS as mmkvRemove,
-  safeWriteLS as mmkvWrite,
-  useLocalStorage,
-} from "@/lib/storage";
+import { mobileKVStore, useLocalStorage } from "@/lib/storage";
 
 import {
   SettingsGroup,
@@ -100,32 +94,6 @@ interface HubPrefs {
 // single slice across platforms. See
 // `apps/web/src/core/settings/hubPrefs.ts`.
 const HUB_PREFS_KEY = STORAGE_KEYS.HUB_PREFS;
-
-const mmkvStore: KVStore = {
-  getString(key) {
-    try {
-      const raw = mmkvGet<unknown>(key, null);
-      if (raw === null || raw === undefined) return null;
-      return typeof raw === "string" ? raw : JSON.stringify(raw);
-    } catch {
-      return null;
-    }
-  },
-  setString(key, value) {
-    try {
-      mmkvWrite(key, value);
-    } catch {
-      /* noop */
-    }
-  },
-  remove(key) {
-    try {
-      mmkvRemove(key);
-    } catch {
-      /* noop */
-    }
-  },
-};
 
 function DeferredNotice({ children }: { children: string }) {
   return (
@@ -269,10 +237,10 @@ export function GeneralSection() {
   const handleDensityChange = (d: DashboardDensity) => setDensityState(d);
 
   const [activeModules, setActiveModulesState] = useState<DashboardModuleId[]>(
-    () => getActiveModules(mmkvStore),
+    () => getActiveModules(mobileKVStore),
   );
   const [hideInactive, setHideInactiveState] = useState(() =>
-    getHideInactiveModules(mmkvStore),
+    getHideInactiveModules(mobileKVStore),
   );
   const toggleActive = (id: DashboardModuleId) => {
     setActiveModulesState((prev) => {
@@ -284,13 +252,13 @@ export function GeneralSection() {
       const next = isActive
         ? prev.filter((x) => x !== id)
         : ALL_MODULES.filter((x) => prev.includes(x) || x === id);
-      setActiveModules(mmkvStore, next);
+      setActiveModules(mobileKVStore, next);
       return next;
     });
   };
   const toggleHideInactive = (next: boolean) => {
     setHideInactiveState(next);
-    setHideInactiveModules(mmkvStore, next);
+    setHideInactiveModules(mobileKVStore, next);
   };
 
   const handleExport = async () => {
@@ -389,7 +357,7 @@ export function GeneralSection() {
           size="sm"
           variant="secondary"
           onPress={() => {
-            resetOnboardingState(mmkvStore);
+            resetOnboardingState(mobileKVStore);
             DeviceEventEmitter.emit("hub:onboardingReset");
           }}
           testID="general-restart-onboarding"

@@ -5,7 +5,7 @@
  * remove domain data (finyk/nutrition/etc). It only clears gates and
  * funnel flags so the welcome flow + first-action guidance can re-run.
  */
-import { type KVStore } from "./kvStore";
+import { type KVStore } from "../storage/kv";
 import { clearOnboardingDone } from "./onboarding";
 import { ONBOARDING_GOALS_KEY } from "./onboardingGoals";
 import {

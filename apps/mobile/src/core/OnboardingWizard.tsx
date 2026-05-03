@@ -48,42 +48,12 @@ import {
   type OnboardingGoals,
 } from "@sergeant/shared";
 
-import {
-  safeReadLS as mmkvGet,
-  safeRemoveLS as mmkvRemove,
-  safeWriteLS as mmkvWrite,
-} from "@/lib/storage";
+import { mobileKVStore } from "@/lib/storage";
 
 import { Button } from "@/components/ui/Button";
 
-const mmkvStore: KVStore = {
-  getString(key) {
-    try {
-      const raw = mmkvGet<unknown>(key, null);
-      if (raw === null || raw === undefined) return null;
-      return typeof raw === "string" ? raw : JSON.stringify(raw);
-    } catch {
-      return null;
-    }
-  },
-  setString(key, value) {
-    try {
-      mmkvWrite(key, value);
-    } catch {
-      /* noop */
-    }
-  },
-  remove(key) {
-    try {
-      mmkvRemove(key);
-    } catch {
-      /* noop */
-    }
-  },
-};
-
 export function getOnboardingStore(): KVStore {
-  return mmkvStore;
+  return mobileKVStore;
 }
 
 export interface OnboardingFinishOptions {
@@ -527,22 +497,22 @@ export function OnboardingWizard({
 
   const finish = useCallback(() => {
     const chosen = buildFinalPicks(state.picks, ALL_MODULES);
-    saveVibePicks(mmkvStore, chosen);
-    saveOnboardingGoals(mmkvStore, state.goals);
-    markFirstActionStartedAt(mmkvStore);
-    markFirstActionPending(mmkvStore);
-    markOnboardingDone(mmkvStore);
+    saveVibePicks(mobileKVStore, chosen);
+    saveOnboardingGoals(mobileKVStore, state.goals);
+    markFirstActionStartedAt(mobileKVStore);
+    markFirstActionPending(mobileKVStore);
+    markOnboardingDone(mobileKVStore);
     hapticSuccess();
     onDone(null, { intent: "vibe_empty", picks: chosen });
   }, [onDone, state.picks, state.goals]);
 
   const skipOnboarding = useCallback(() => {
     // Skip with all modules enabled and empty goals
-    saveVibePicks(mmkvStore, [...ALL_MODULES]);
-    saveOnboardingGoals(mmkvStore, { ...EMPTY_GOALS });
-    markFirstActionStartedAt(mmkvStore);
-    markFirstActionPending(mmkvStore);
-    markOnboardingDone(mmkvStore);
+    saveVibePicks(mobileKVStore, [...ALL_MODULES]);
+    saveOnboardingGoals(mobileKVStore, { ...EMPTY_GOALS });
+    markFirstActionStartedAt(mobileKVStore);
+    markFirstActionPending(mobileKVStore);
+    markOnboardingDone(mobileKVStore);
     hapticTap();
     onDone(null, { intent: "vibe_empty", picks: [...ALL_MODULES] });
   }, [onDone]);

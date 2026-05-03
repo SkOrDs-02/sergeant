@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createMemoryKVStore } from "./kvStore";
+import { createMemoryKVStore } from "../storage/kv";
 import {
   EMPTY_GOALS,
   ONBOARDING_GOALS_KEY,

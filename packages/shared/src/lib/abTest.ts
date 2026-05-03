@@ -11,7 +11,7 @@
  *   if (variant === "day3") { ... }
  */
 
-import { readJSON, writeJSON, type KVStore } from "./kvStore";
+import { readJSON, writeJSON, type KVStore } from "../storage/kv";
 
 // ---------------------------------------------------------------------------
 // Types

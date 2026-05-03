@@ -17,7 +17,7 @@
  */
 
 import { type DashboardModuleId, DASHBOARD_MODULE_IDS } from "./dashboard";
-import { readJSON, type KVStore } from "./kvStore";
+import { readJSON, type KVStore } from "../storage/kv";
 import { ALL_MODULES, sanitizePicks } from "./vibePicks";
 
 // ---------------------------------------------------------------------------

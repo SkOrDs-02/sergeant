@@ -24,7 +24,7 @@
  */
 
 import { type DashboardModuleId } from "./dashboard";
-import { type KVStore } from "./kvStore";
+import { type KVStore } from "../storage/kv";
 import { ALL_MODULES, getVibePicks, saveVibePicks } from "./vibePicks";
 
 /**
