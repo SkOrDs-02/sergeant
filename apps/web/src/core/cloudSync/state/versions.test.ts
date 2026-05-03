@@ -28,10 +28,12 @@ describe("setModuleVersion / getModuleVersion", () => {
   });
 
   it("isolates versions per module within the same user", () => {
+    // PR #030 — `fizruk` retired from SYNC_MODULES; use `nutrition`
+    // as the second valid module here.
     setModuleVersion("u1", "finyk", 3);
-    setModuleVersion("u1", "fizruk", 11);
+    setModuleVersion("u1", "nutrition", 11);
     expect(getModuleVersion("u1", "finyk")).toBe(3);
-    expect(getModuleVersion("u1", "fizruk")).toBe(11);
+    expect(getModuleVersion("u1", "nutrition")).toBe(11);
   });
 
   it("overwrites the previous version on update", () => {
@@ -42,12 +44,12 @@ describe("setModuleVersion / getModuleVersion", () => {
 
   it("persists the nested map under SYNC_VERSION_KEY", () => {
     setModuleVersion("u1", "finyk", 4);
-    setModuleVersion("u1", "fizruk", 6);
+    setModuleVersion("u1", "nutrition", 6);
     setModuleVersion("u2", "finyk", 8);
     const raw = localStorage.getItem(SYNC_VERSION_KEY);
     expect(raw).not.toBeNull();
     expect(JSON.parse(raw as string)).toEqual({
-      u1: { finyk: 4, fizruk: 6 },
+      u1: { finyk: 4, nutrition: 6 },
       u2: { finyk: 8 },
     });
   });

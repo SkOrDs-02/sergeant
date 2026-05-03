@@ -1,6 +1,6 @@
 # Data exchange & storage audit
 
-> **Last validated:** 2026-05-03 by Devin (sync з Stage 4 progress: routine SPIKE промоутено у production, Fizruk dual-write LS/MMKV↔SQLite + cut-over reads (web PR #029, mobile read overlay PR #029a) вже на main; реліз лишається за dual-write feature flag-ом, бо boot-wiring follow-up для `register{Routine,Fizruk}DualWriteContext` ще не приземлено). **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-03 by Devin (sync з Stage 4 progress: routine SPIKE промоутено у production, Fizruk dual-write LS/MMKV↔SQLite + cut-over reads (web PR #029, mobile read overlay PR #029a), boot-wiring follow-up #1491 (`register{Routine,Fizruk}DualWriteContext`) і PR #030 cloud-sync drop `module_data.fizruk` + ESLint guard — усі на main; LS write cut-over для fizruk-хуків і server-side `DELETE FROM module_data WHERE module='fizruk'` runbook все ще pending). **Next review:** 2026-07-31.
 > **Status:** Active
 
 Зріз поточного стану: як у Sergeant рухаються і зберігаються дані, де слабкі місця, і який практичний напрям розвитку варто тримати.
@@ -11,7 +11,7 @@ Sergeant зараз має гібридну data-архітектуру:
 
 - **Server-first для централізованих і чутливих речей:** Better Auth, Monobank, AI usage, push devices, sync audit, AI memory, normalized Routine tables зберігаються у PostgreSQL.
 - **Local-first для продуктового стану модулів:** web пише у `localStorage`, mobile — у MMKV; cloud sync переносить знімки модулів у Postgres `module_data`.
-- **Поступовий перехід від blob-sync до row-level sync:** поточний v1 sync — whole-blob last-write-wins; v2 sync — operation log з idempotency keys і per-row apply, у production для routine (`routine_entries` / `routine_streaks`) та Fizruk (`fizruk_workouts`, `fizruk_workout_items`, `fizruk_workout_sets`, `fizruk_custom_exercises`, `fizruk_measurements` — apply-функції в `OP_LOG_TABLE_REGISTRY` з PR #029); web і mobile reads cut-over під фічфлаґом `feature.fizruk.sqlite_v2.read_sqlite` (web — PR #029, mobile read overlay — PR #029a; LS/MMKV-write лишається safety net) (див. `docs/planning/storage-roadmap.md` Stage 4).
+- **Поступовий перехід від blob-sync до row-level sync:** поточний v1 sync — whole-blob last-write-wins; v2 sync — operation log з idempotency keys і per-row apply, у production для routine (`routine_entries` / `routine_streaks`) та Fizruk (`fizruk_workouts`, `fizruk_workout_items`, `fizruk_workout_sets`, `fizruk_custom_exercises`, `fizruk_measurements` — apply-функції в `OP_LOG_TABLE_REGISTRY` з PR #029); web і mobile reads cut-over під фічфлаґом `feature.fizruk.sqlite_v2.read_sqlite` (web — PR #029, mobile read overlay — PR #029a; LS/MMKV-write лишається safety net). Stage 4 PR #030 (на main) знімає `fizruk` із `SYNC_MODULES`, тож v1 cloud-sync більше не пушить/пуллить `module_data.fizruk` blob-и — fizruk дані тепер їздять виключно через v2 op-log; LS write-path у fizruk-хуках і server-side runbook `DELETE FROM module_data WHERE module='fizruk'` ще лишаються (див. `docs/planning/storage-roadmap.md` Stage 4).
 - **Кеші окремо від source-of-truth:** React Query cache на web персиститься в IndexedDB, mobile — в MMKV; Service Worker кешує навігацію та частину GET `/api/*`, але не sync/auth.
 
 Головний ризик: частина важливих доменних даних усе ще живе як великі JSON/blob-и. Тому multi-device конфлікти, quota, schema drift і partial recovery залишаються слабкими місцями. Найправильніша перспектива — завершити roadmap: normalized tables, dual-write, cut-over і op-log sync для high-value модулів.
@@ -31,7 +31,7 @@ Sergeant зараз має гібридну data-архітектуру:
 
 1. Модулі пишуть state у `localStorage`.
 2. `storagePatch.ts` monkey-patch-ить `localStorage.setItem/removeItem`, визначає module за ключем, ставить dirty flag і емiтить sync event (`apps/web/src/core/cloudSync/storagePatch.ts`).
-3. `SYNC_MODULES` визначає, які ключі входять у `finyk`, `fizruk`, `routine`, `nutrition`, `profile` (`apps/web/src/core/cloudSync/config.ts`).
+3. `SYNC_MODULES` визначає, які ключі входять у `finyk`, `nutrition`, `profile` (`packages/shared/src/sync/modules.ts`, реекспортний у `apps/web/src/core/cloudSync/config.ts`). Routine знятий у PR #026 (Stage 4 cleanup), Fizruk — у PR #030; обидва модулі тепер їздять виключно через v2 op-log.
 4. `pushDirty()` збирає dirty modules, робить `syncApi.pushAll(modules)`, а якщо offline/error — додає payload в offline queue (`apps/web/src/core/cloudSync/engine/push.ts`).
 5. Offline queue коалесить послідовні push-и і має hard cap `MAX_OFFLINE_QUEUE = 50` (`apps/web/src/core/cloudSync/queue/offlineQueue.ts`).
 6. Server пише module payload в `module_data` як JSONB blob з `version`, `client_updated_at`, `server_updated_at` (`apps/server/src/migrations/003_baseline_schema.sql`).
@@ -42,7 +42,7 @@ Sergeant зараз має гібридну data-архітектуру:
 
 Mobile дзеркалить web-підхід, але замість `localStorage` має MMKV:
 
-- `SYNC_MODULES` на mobile має `finyk`, `fizruk`, `routine`, `nutrition` і не включає `profile` (`apps/mobile/src/sync/config.ts`).
+- `SYNC_MODULES` на mobile реекспортує той самий shared registry (`packages/shared/src/sync/modules.ts`) — після PR #026 / PR #030 cleanup це `finyk`, `nutrition`, `profile`; routine та fizruk вже зняті з v1 cloud-sync (`apps/mobile/src/sync/config.ts`).
 - Mobile API seam реекспортує `apiClient.sync` як `syncApi`, щоб engine-и читались як web (`apps/mobile/src/sync/api.ts`).
 - Через MMKV немає глобального patch як у web, тому tracked writes мають явно викликати `enqueueChange`; для цього додали `useSyncedStorage()` як safer wrapper (`apps/mobile/src/sync/useSyncedStorage.ts`).
 
@@ -148,7 +148,7 @@ Offline queue має cap 50 і коалесинг, але це захищає в
 
 ### 4.4. v2 sync ще не загальний
 
-`sync_op_log` і Routine + Fizruk normalized tables уже є, server-side `OP_LOG_TABLE_REGISTRY` whitelist-ить `routine_entries` / `routine_streaks` (Stage 4 PR #024–#026, vector merged) та всі п'ять `fizruk_*` таблиць (Stage 4 PR #029, а mobile read overlay — PR #029a). Web і mobile fizruk reads cut-over під `feature.fizruk.sqlite_v2.read_sqlite`. При цьому dual-write (як routine, так і fizruk) у prod фактично dormant: `register{Routine,Fizruk}DualWriteContext` ще не викликається з boot wiring (`apps/{web,mobile}/src/main.tsx` або module entry), тож `triggerRoutineDualWrite` / `triggerFizrukDualWrite` ранньо повертаються без SQLite write-у — реальний rollout вимагає приземлити boot-wiring follow-up перед PR #030 / Stage 4 cleanup. Nutrition і Finyk — ще повністю на v1 blob sync.
+`sync_op_log` і Routine + Fizruk normalized tables уже є, server-side `OP_LOG_TABLE_REGISTRY` whitelist-ить `routine_entries` / `routine_streaks` (Stage 4 PR #024–#026, vector merged) та всі п'ять `fizruk_*` таблиць (Stage 4 PR #029, а mobile read overlay — PR #029a). Web і mobile fizruk reads cut-over під `feature.fizruk.sqlite_v2.read_sqlite`. Boot-wiring follow-up #1491 (`register{Routine,Fizruk}DualWriteContext` з module roots) залендений, тож після увімкнення dual-write флага `triggerRoutineDualWrite` / `triggerFizrukDualWrite` реально мирорять writes у SQLite. Stage 4 PR #030 (cloud-sync drop `module_data.fizruk` + ESLint guard) також на main; LS write cut-over і server-side `DELETE FROM module_data WHERE module='fizruk'` runbook ще лишаються. Nutrition і Finyk — ще повністю на v1 blob sync.
 
 Також `sync_op_log` append-only; без retention/partition ростиме операційне навантаження.
 

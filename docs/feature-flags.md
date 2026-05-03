@@ -1,6 +1,6 @@
 # Feature Flags Registry
 
-> **Last validated:** 2026-05-03 by Devin (sync з `apps/{web,mobile}/src/core/lib/featureFlags.ts`: додано Stage 4 PR #029 `feature.fizruk.sqlite_v2.read_sqlite`). **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-03 by Devin (sync з `apps/{web,mobile}/src/core/lib/featureFlags.ts`: Stage 4 PR #030 (cloud-sync drop `module_data.fizruk` + ESLint guard) залендений; обидва fizruk-флаги `dual_write` / `read_sqlite` лишаються активними до завершення write cut-over runbook-у — після видалення LS write-path їх можна тоді знести разом з ентрі тут). **Next review:** 2026-08-01.
 > **Status:** Active
 
 Operational registry for release toggles, experiments, and kill switches in Sergeant. Code remains the executable source of truth; this file is the human-readable operating registry for rollout and cleanup.

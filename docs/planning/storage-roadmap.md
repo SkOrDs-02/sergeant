@@ -722,17 +722,54 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   Backfill `module_data.fizruk` → `fizruk_*` per-user (PR #030).
 - **Dep.** PR #029 (web cut-over + server apply-fns).
 
-##### **PR #030 — `chore(fizruk): remove LS path, drop module_data.fizruk`** ⏳ PENDING
+##### **PR #030 — `chore(fizruk): drop module_data.fizruk cloud-sync wiring, ESLint guard`** ✅ MERGED
 
-- **Scope.** Видалити `fizruk` з `SYNC_MODULES` (web + mobile).
-  ESLint guard проти reads з `STORAGE_KEYS.FIZRUK_*`. Server: одноразова
-  міграція `DELETE FROM module_data WHERE module='fizruk'` після того, як
-  PR #029 + PR #029a розкочено на 100% юзерів і backfill завершено.
-  Перед видаленням LS path — приземлити boot-wiring follow-up для
-  `registerFizrukDualWriteContext` (інакше rollout dual-write флага
-  лишається no-op, як і у routine).
+> На відміну від routine PR #026, fizruk LS read-fallback залишався у
+> модульних хуках уже після PR #029 / PR #029a (web/mobile read overlay) —
+> вони читають LS першим джерелом і overlay-ять зі SQLite під флагом.
+> Цей PR обмежений до cloud-sync wiring і ESLint guard-у, бо власне
+> повний LS write cut-over — окрема робота (write cut-over PR після
+> 100% rollout dual-write + read_sqlite + server-side backfill).
+
+- **Реалізовано (shared).** `packages/shared/src/sync/modules.ts` —
+  знятий блок `fizruk` з `SYNC_MODULES`; від тепер cloud-sync пайплайн
+  ігнорує ВСІ 11 LS/MMKV-ключів `fizruk_*_v1` для push/pull (один
+  source of truth, реекспортний у web/mobile cloudSync config).
+- **Реалізовано (eslint-plugin).**
+  `packages/eslint-plugin-sergeant-design/index.js` — знято 11 fizruk-
+  ентрі з `TRACKED_STORAGE_KEY_NAMES` / `TRACKED_STORAGE_KEY_VALUES`
+  з коментом-надгробком (mirroring routine PR #026 pattern).
+- **Реалізовано (eslint config).** `eslint.config.js` додає
+  `no-restricted-syntax` guard проти прямих `STORAGE_KEYS.FIZRUK_<key>`
+  доступів поза канонічними fizruk-хуками з `ignores`-лістом для
+  тестів, fizruk module wrappers, `insightsEngine.ts` (cross-module
+  insights), `hubBackup.ts` (mobile backup).
+- **Тести.** `packages/shared/src/sync/__tests__/modules.test.ts`
+  оновлений (зняв fizruk snapshot, додав explicit "module не існує"
+  assertion); `packages/eslint-plugin-sergeant-design/__tests__/no-raw-tracked-storage.test.mjs`
+  flipнутий (fizruk LS keys не повинні тригерити правило); web + mobile
+  cloudSync test fixtures (`buildPayload.test.ts`,
+  `useCloudSync.{behavior,hardening}.test.ts`,
+  `state/{moduleData,dirtyModules,versions}.test.ts`,
+  `__tests__/{resolver,offlineQueue.replay}.test.ts`,
+  `apps/mobile/src/sync/__tests__/{replay,offlineQueue}.test.ts`)
+  оновлено: де fizruk був "ще один валідний модуль" — підставлено
+  `nutrition` / `profile`; додано explicit "drops the retired fizruk
+  module" assertions.
+- **Не входить.** Server-side runbook `DELETE FROM module_data WHERE
+module='fizruk'` — окремий ops-PR після того, як PR #029 + PR #029a
+  - dual-write flag розкочено на 100% юзерів і backfill `module_data.fizruk`
+    → `fizruk_*` per-user завершено. LS write cut-over (повне видалення
+    MMKV/LS write-path у fizruk-хуках) — окремий follow-up PR (потребує
+    100% rollout `feature.fizruk.sqlite_v2.{dual_write,read_sqlite}`).
+- **Deploy gate.** Після merge cloud-sync перестає
+  пушити/пуллити `module_data.fizruk` для ВСІХ юзерів. Юзери з
+  вимкненим `feature.fizruk.sqlite_v2.dual_write` теряють cross-device
+  sync fizruk-даних. Розкатувати тільки після 100% rollout
+  dual-write + read*sqlite + server-side backfill `module_data.fizruk`
+  → `fizruk*\*` per-user.
 - **Dep.** PR #029 (web cut-over + server apply-fns), PR #029a (mobile
-  read overlay), boot-wiring follow-up (`register{Routine,Fizruk}DualWriteContext`).
+  read overlay), boot-wiring follow-up #1491 (`register{Routine,Fizruk}DualWriteContext`).
 
 #### **Nutrition** (3 тижні) — PR #031–#034
 

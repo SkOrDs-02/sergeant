@@ -59,9 +59,12 @@ describe("resolveInitialSync", () => {
   });
 
   it("merges when both sides have data — cloud wins on newer serverUpdatedAt", () => {
+    // PR #030 — `fizruk` retired from SYNC_MODULES; the resolver
+    // itself doesn't validate module names but using the
+    // post-retirement set keeps the fixture honest.
     const plan = resolveInitialSync({
       cloud: {
-        fizruk: {
+        nutrition: {
           data: { w: 1 },
           version: 5,
           serverUpdatedAt: "2024-06-01T00:00:00.000Z",
@@ -70,20 +73,20 @@ describe("resolveInitialSync", () => {
       hasAnyLocalData: true,
       migrated: true,
       userId: "u1",
-      modifiedTimes: { fizruk: "2024-01-01T00:00:00.000Z" },
+      modifiedTimes: { nutrition: "2024-01-01T00:00:00.000Z" },
       getLocalVersion: () => 5,
       dirtyModules: {},
     });
     expect(plan.kind).toBe("merge");
     if (plan.kind === "merge") {
-      expect(plan.applyModules).toEqual([{ mod: "fizruk", data: { w: 1 } }]);
+      expect(plan.applyModules).toEqual([{ mod: "nutrition", data: { w: 1 } }]);
     }
   });
 
   it("merges but does not apply when local is newer than cloud", () => {
     const plan = resolveInitialSync({
       cloud: {
-        fizruk: {
+        nutrition: {
           data: { w: 1 },
           version: 5,
           serverUpdatedAt: "2024-01-01T00:00:00.000Z",
@@ -92,14 +95,14 @@ describe("resolveInitialSync", () => {
       hasAnyLocalData: true,
       migrated: true,
       userId: "u1",
-      modifiedTimes: { fizruk: "2024-06-01T00:00:00.000Z" },
+      modifiedTimes: { nutrition: "2024-06-01T00:00:00.000Z" },
       getLocalVersion: () => 5,
       dirtyModules: {},
     });
     expect(plan.kind).toBe("merge");
     if (plan.kind === "merge") {
       expect(plan.applyModules).toEqual([]);
-      expect(plan.setVersions).toEqual([{ mod: "fizruk", version: 5 }]);
+      expect(plan.setVersions).toEqual([{ mod: "nutrition", version: 5 }]);
     }
   });
 

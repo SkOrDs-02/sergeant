@@ -75,15 +75,18 @@ describe("offlineQueue — enqueue", () => {
 
 describe("offlineQueue — dedup / coalescing", () => {
   it("coalesces consecutive push rows into one", () => {
+    // PR #030 — fizruk retired; the queue itself accepts any string
+    // module name, but collectQueuedModules will later drop fizruk
+    // entries. Use the post-retirement set here.
     addToOfflineQueue({ type: "push", modules: makeModules("finyk", 1) });
-    addToOfflineQueue({ type: "push", modules: makeModules("fizruk", 2) });
+    addToOfflineQueue({ type: "push", modules: makeModules("profile", 2) });
     addToOfflineQueue({ type: "push", modules: makeModules("nutrition", 3) });
 
     const queue = getOfflineQueue();
     expect(queue).toHaveLength(1);
     expect(queue[0].modules).toMatchObject({
       finyk: expect.any(Object),
-      fizruk: expect.any(Object),
+      profile: expect.any(Object),
       nutrition: expect.any(Object),
     });
   });
@@ -101,11 +104,20 @@ describe("offlineQueue — dedup / coalescing", () => {
   it("collectQueuedModules picks the last payload per module", () => {
     addToOfflineQueue({ type: "push", modules: makeModules("finyk", 1) });
     addToOfflineQueue({ type: "push", modules: makeModules("finyk", 2) });
-    addToOfflineQueue({ type: "push", modules: makeModules("fizruk", 3) });
+    addToOfflineQueue({ type: "push", modules: makeModules("nutrition", 3) });
 
     const collected = collectQueuedModules(getOfflineQueue());
-    expect(Object.keys(collected).sort()).toEqual(["finyk", "fizruk"]);
+    expect(Object.keys(collected).sort()).toEqual(["finyk", "nutrition"]);
     expect((collected.finyk.data as { finyk_key: number }).finyk_key).toBe(2);
+  });
+
+  it("collectQueuedModules drops the retired fizruk module (PR #030)", () => {
+    addToOfflineQueue({ type: "push", modules: makeModules("finyk", 1) });
+    addToOfflineQueue({ type: "push", modules: makeModules("fizruk", 9) });
+
+    const collected = collectQueuedModules(getOfflineQueue());
+    expect(Object.keys(collected)).toEqual(["finyk"]);
+    expect(collected).not.toHaveProperty("fizruk");
   });
 
   it("collectQueuedModules drops unknown modules and corrupted entries", () => {

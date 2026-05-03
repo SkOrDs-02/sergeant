@@ -24,6 +24,11 @@ jest.mock("@/sync/enqueue", () => ({
 
 import { useSyncedStorage } from "../useSyncedStorage";
 
+// `useSyncedStorage` is a generic key/value hook that doesn't validate
+// against SYNC_MODULES — picking any string LS key works. We use the
+// retired `fizruk_measurements_v1` slot here on purpose to assert that
+// PR #030 cleanup did NOT regress the underlying read/write/remove
+// pipeline for legacy MMKV keys still living on user devices.
 const KEY = "fizruk_measurements_v1";
 
 beforeEach(() => {

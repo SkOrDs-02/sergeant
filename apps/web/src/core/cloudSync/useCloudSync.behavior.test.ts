@@ -81,10 +81,14 @@ describe("notifySyncDirty", () => {
     expect(getDirtyModules().finyk).toBe(true);
   });
 
-  it("для tracked ключа fizruk позначає модуль fizruk брудним", () => {
+  it("для ретиреного fizruk ключа не маркує жоден модуль брудним (PR #030)", () => {
+    // PR #030 (storage-roadmap Stage 4) — `fizruk` retired from
+    // SYNC_MODULES. Writes to legacy `fizruk_*_v1` LS keys are now
+    // untracked, so notifySyncDirty must NOT mark anything dirty.
     localStorage.setItem(STORAGE_KEYS.SYNC_DIRTY_MODULES, "{}");
     notifySyncDirty(STORAGE_KEYS.FIZRUK_WORKOUTS);
-    expect(getDirtyModules().fizruk).toBe(true);
+    notifySyncDirty(STORAGE_KEYS.FIZRUK_DAILY_LOG);
+    expect(getDirtyModules()).toEqual({});
   });
 
   it("для tracked ключа nutrition позначає модуль nutrition брудним", () => {
@@ -128,8 +132,8 @@ describe("notifySyncDirty edge cases", () => {
   it("для tracked ключа позначає відповідний модуль брудним", () => {
     // Reset dirty state
     localStorage.setItem(STORAGE_KEYS.SYNC_DIRTY_MODULES, "{}");
-    notifySyncDirty(STORAGE_KEYS.FIZRUK_WORKOUTS);
-    expect(getDirtyModules().fizruk).toBe(true);
+    notifySyncDirty(STORAGE_KEYS.NUTRITION_LOG);
+    expect(getDirtyModules().nutrition).toBe(true);
   });
 
   it("для untracked ключа не мутує dirty мапу", () => {

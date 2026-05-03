@@ -97,14 +97,19 @@ describe("applyModuleData", () => {
   });
 
   it("writes only keys that belong to the module", () => {
+    // PR #030 — `STORAGE_KEYS.FIZRUK_WORKOUTS` is no longer tracked by
+    // any module, so applyModuleData("finyk", …) must skip it the same
+    // way it skips truly unrelated keys.
     applyModuleData("finyk", {
       [STORAGE_KEYS.FINYK_BUDGETS]: [{ id: 1 }],
-      [STORAGE_KEYS.FIZRUK_WORKOUTS]: ["leak"],
+      [STORAGE_KEYS.NUTRITION_LOG]: { leak: true },
+      [STORAGE_KEYS.FIZRUK_WORKOUTS]: ["retired"],
       unrelated: { x: 1 },
     });
     expect(localStorage.getItem(STORAGE_KEYS.FINYK_BUDGETS)).toBe(
       JSON.stringify([{ id: 1 }]),
     );
+    expect(localStorage.getItem(STORAGE_KEYS.NUTRITION_LOG)).toBeNull();
     expect(localStorage.getItem(STORAGE_KEYS.FIZRUK_WORKOUTS)).toBeNull();
     expect(localStorage.getItem("unrelated")).toBeNull();
   });
@@ -133,7 +138,12 @@ describe("applyModuleData", () => {
 
 describe("clearSyncManagedData", () => {
   it("calls the supplied raw remover for every tracked module key", () => {
+    // PR #030 — fizruk LS keys are no longer tracked, so any rows
+    // still living under `fizruk_*_v1` (legacy data from before the
+    // cut-over) must NOT be removed by clearSyncManagedData; the
+    // sweep is restricted to the currently-tracked modules.
     localStorage.setItem(STORAGE_KEYS.FINYK_BUDGETS, "[]");
+    localStorage.setItem(STORAGE_KEYS.NUTRITION_LOG, "{}");
     localStorage.setItem(STORAGE_KEYS.FIZRUK_WORKOUTS, "[]");
     localStorage.setItem(DIRTY_MODULES_KEY, "{}");
     localStorage.setItem(OFFLINE_QUEUE_KEY, "[]");
@@ -146,9 +156,11 @@ describe("clearSyncManagedData", () => {
     expect(removed).toEqual(
       expect.arrayContaining([
         STORAGE_KEYS.FINYK_BUDGETS,
-        STORAGE_KEYS.FIZRUK_WORKOUTS,
+        STORAGE_KEYS.NUTRITION_LOG,
       ]),
     );
+    expect(removed).not.toContain(STORAGE_KEYS.FIZRUK_WORKOUTS);
+    expect(localStorage.getItem(STORAGE_KEYS.FIZRUK_WORKOUTS)).toBe("[]");
     // Sync-internal bookkeeping is wiped via the standard removeItem.
     expect(localStorage.getItem(DIRTY_MODULES_KEY)).toBeNull();
     expect(localStorage.getItem(OFFLINE_QUEUE_KEY)).toBeNull();
