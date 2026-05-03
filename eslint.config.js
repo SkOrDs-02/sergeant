@@ -224,6 +224,15 @@ export default [
       // sub-WCAG 8 px regression family.
       // See docs/design/design-system.md § Typography.
       "sergeant-design/no-arbitrary-text-size": "error",
+      // `no-flat-shared-lib` — guard the 2026-05-03 reorg
+      // (PR #1479): `apps/web/src/shared/lib/` is now organized into
+      // five thematic subdirs (`api/`, `storage/`, `modules/`,
+      // `adapters/`, `ui/`). New top-level flat files would re-flatten
+      // the namespace and erase the grouping. The rule resolves both
+      // `@shared/lib/<x>` (alias) and relative imports, so it survives
+      // future import-style refactors. Place new utils in the right
+      // subdir, or import via the `@shared/lib` barrel.
+      "sergeant-design/no-flat-shared-lib": "error",
     },
   },
   // Import-extension hygiene — bans `.js`/`.jsx`/`.ts`/`.tsx`/`.mjs`/`.cjs`

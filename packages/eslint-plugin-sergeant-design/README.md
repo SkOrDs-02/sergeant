@@ -277,6 +277,10 @@ const el = document.getElementById("foo") as HTMLDivElement;
 
 Забороняє Tailwind arbitrary-size-літерали виду `text-[Npx]` / `text-[Nrem]` / `text-[Nem]`. Усі шрифтові розміри мають проходити через канонічну шкалу (`text-display`, `text-h1..h3`, `text-body`, `text-body-sm`, `text-caption`, `text-eyebrow`, `text-meta`, `text-micro`, `text-display-stat`, `text-display-hero`, `text-style-*`) або preset-розміри Tailwind (`text-xs..text-5xl`). Закриває vertical-rhythm-drift і регресії підпорогових (≤8px) міток. Severity: **error**. DS-примітиви (`Button`, `Input`, `Badge`, `Stat`, `SectionHeading`, `Label`, `Toast`, `Skeleton`, `Tabs`, `Segmented`, `Card`) звільнено — вони володіють raw-px-токенами.
 
+### `sergeant-design/no-flat-shared-lib`
+
+Блокує imports, що резолвляться у top-level flat-файл усередині `apps/web/src/shared/lib/`. Після reorg-у (PR #1479) утиліти живуть у п'яти тематичних піддиректоріях (`api/`, `storage/`, `modules/`, `adapters/`, `ui/`) — будь-який новий top-level файл re-flattens namespace і стирає grouping. Правило резолвить як `@shared/lib/<x>` (alias), так і відносні `./lib/<x>` / `../lib/<x>` / `../../shared/lib/<x>`, тож воно переживає будь-який майбутній рефактор стилів імпортів. Дозволені top-level імена: `index` (barrel), `api`, `storage`, `modules`, `adapters`, `ui` (subdirs themselves). Scope: тільки `apps/web/src/**`. Severity: **error**.
+
 ## Запуск тестів
 
 ```sh

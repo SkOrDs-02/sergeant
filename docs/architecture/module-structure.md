@@ -58,7 +58,8 @@ apps/<web|mobile>/src/modules/<domain>/
 - **Modules не імпортують один одного напряму.** Cross-module комунікація — через `apps/<web|mobile>/src/core/lib/hubBus.ts` (event bus) або через спільні `packages/<X>-domain/` (тільки чиста логіка, без React).
 - **`packages/*` не імпортує з `apps/*`** (Hard rule, [ADR-0024](../adr/0024-monorepo-apps-packages-split.md)).
 - **Module Quick Actions** (HubChat) — реєструються через `apps/web/src/shared/lib/modules/moduleQuickActions.ts`; кожен модуль експонує свій action-set через `apps/web/src/core/lib/chatActions/<module>Actions.ts`.
-- **Storage** — кожен модуль використовує свій namespace через `createModuleStorage(moduleName)` з `@shared/lib/createModuleStorage` (web) / MMKV-bound еквівалент (mobile).
+- **Storage** — кожен модуль використовує свій namespace через `createModuleStorage(moduleName)` з `@shared/lib/storage/createModuleStorage` (web) / MMKV-bound еквівалент (mobile).
+- **`apps/web/src/shared/lib/` layout** — після reorg-у (PR #1479) утиліти живуть у п'яти thematic піддиректоріях: `api/` (HTTP, RQ, errors, auth), `storage/` (localStorage / IndexedDB primitives), `modules/` (cross-module communication, navigation, registry), `adapters/` (web shims for `@sergeant/shared` contracts) і `ui/` (rendering / styling helpers). Гард `sergeant-design/no-flat-shared-lib` блокує будь-який import, що резолвиться у top-level flat-файл під `apps/web/src/shared/lib/` — нові утиліти кладуться у відповідний subdir, або імпортуються через `@shared/lib` barrel.
 
 ---
 

@@ -2515,6 +2515,128 @@ const noArbitraryTextSize = {
   },
 };
 
+// ── no-flat-shared-lib ──────────────────────────────────────────────────
+//
+// Prevent regressing `apps/web/src/shared/lib/` back to a flat layout. After
+// the 2026-05-03 reorg (PR #1479), every utility lives in one of five
+// thematic subdirs (`api/`, `storage/`, `modules/`, `adapters/`, `ui/`).
+// Any import that resolves to a *top-level* file inside `shared/lib/`
+// (other than the barrel `index`) is forbidden — the dev should either
+// place the new file inside the right subdir or import it via
+// `@shared/lib` (the canonical barrel).
+//
+// Resolution covers both `@shared/lib/<x>` (alias) and relative imports
+// (`./lib/<x>`, `../lib/<x>`, `../../lib/<x>`, …) anchored from the file
+// being linted, so the rule survives any future refactor of import
+// styles.
+//
+// Exempt: the rule itself only fires on files inside `apps/web/src/`;
+// other apps and packages have their own `lib/` directories with
+// independent layouts.
+
+const NO_FLAT_SHARED_LIB_ALLOWED_TOP = new Set([
+  "index",
+  "api",
+  "storage",
+  "modules",
+  "adapters",
+  "ui",
+]);
+
+const NO_FLAT_SHARED_LIB_MESSAGE =
+  "Import resolves to a flat file at `apps/web/src/shared/lib/{{name}}` — that namespace is now organized into subdirs (`api/`, `storage/`, `modules/`, `adapters/`, `ui/`). Move the new file into the right subdir, or import it via the `@shared/lib` barrel.";
+
+// Resolve relative `..` segments without bringing in `node:path` (ESM
+// constraint inside this plugin). Operates on forward-slashed strings.
+function joinResolvePosix(base, rel) {
+  const segments = (base + "/" + rel).split("/").filter(Boolean);
+  const out = [];
+  for (const seg of segments) {
+    if (seg === ".") continue;
+    if (seg === "..") {
+      out.pop();
+    } else {
+      out.push(seg);
+    }
+  }
+  // Preserve leading slash if base was absolute.
+  return (base.startsWith("/") ? "/" : "") + out.join("/");
+}
+
+function resolveImportTarget(filename, importValue) {
+  if (typeof importValue !== "string" || !importValue) return null;
+  // Normalise to forward slashes throughout — Windows-friendly.
+  const fwd = filename.replace(/\\/g, "/");
+  if (importValue.startsWith("@shared/")) {
+    const rest = importValue.slice("@shared/".length);
+    const idx = fwd.indexOf("/apps/web/src/");
+    if (idx === -1) return null;
+    const root = fwd.slice(0, idx) + "/apps/web/src/shared";
+    return joinResolvePosix(root, rest);
+  }
+  if (importValue.startsWith(".")) {
+    const lastSlash = fwd.lastIndexOf("/");
+    const dir = lastSlash >= 0 ? fwd.slice(0, lastSlash) : ".";
+    return joinResolvePosix(dir, importValue);
+  }
+  return null;
+}
+
+function flatSharedLibName(absPath) {
+  if (!absPath) return null;
+  // Normalise to forward slashes so the regex is OS-agnostic in tests.
+  const norm = absPath.replace(/\\/g, "/");
+  const m = norm.match(/\/apps\/web\/src\/shared\/lib\/([^/]+)$/);
+  if (!m) return null;
+  const last = m[1];
+  const stem = last.replace(/\.(ts|tsx|js|jsx|mjs|cjs)$/, "");
+  if (NO_FLAT_SHARED_LIB_ALLOWED_TOP.has(stem)) return null;
+  return stem;
+}
+
+const noFlatSharedLib = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid imports that resolve to top-level flat files in `apps/web/src/shared/lib/`. After the 2026-05-03 reorg, every util lives in one of five subdirs (api/, storage/, modules/, adapters/, ui/) — new top-level files would re-flatten the namespace.",
+    },
+    schema: [],
+    messages: { flat: NO_FLAT_SHARED_LIB_MESSAGE },
+  },
+  create(context) {
+    const filename =
+      (context.filename != null ? context.filename : context.getFilename()) ||
+      "";
+    // Only enforce inside apps/web/src — other apps have their own libs.
+    const fwd = filename.replace(/\\/g, "/");
+    if (!/\/apps\/web\/src\//.test(fwd)) return {};
+
+    function check(node) {
+      if (!node || !node.source || typeof node.source.value !== "string") {
+        return;
+      }
+      const target = resolveImportTarget(filename, node.source.value);
+      const stem = flatSharedLibName(target);
+      if (!stem) return;
+      context.report({
+        node: node.source,
+        messageId: "flat",
+        data: { name: stem },
+      });
+    }
+
+    return {
+      ImportDeclaration: check,
+      ExportNamedDeclaration(node) {
+        // Only re-exports have a source.
+        if (node.source) check(node);
+      },
+      ExportAllDeclaration: check,
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
@@ -2537,6 +2659,7 @@ const plugin = {
     "no-bare-empty-text": noBareEmptyText,
     "prefer-text-style": preferTextStyle,
     "no-arbitrary-text-size": noArbitraryTextSize,
+    "no-flat-shared-lib": noFlatSharedLib,
   },
 };
 
@@ -2565,6 +2688,8 @@ export {
   PREFER_TEXT_STYLE_MESSAGE,
   TEXT_STYLE_MAPPINGS,
   NO_ARBITRARY_TEXT_SIZE_MESSAGE,
+  NO_FLAT_SHARED_LIB_MESSAGE,
+  NO_FLAT_SHARED_LIB_ALLOWED_TOP,
 };
 
 export default plugin;
