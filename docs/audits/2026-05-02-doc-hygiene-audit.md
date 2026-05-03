@@ -1,6 +1,6 @@
 # Sergeant — doc-hygiene аудит (2026-05-02)
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Аудит виконано 2026-05-02 проти `main @ b7c629dd`. Стиль: прохід зверху-вниз, без правок коду. Фікси (ADR-0029-gap rule, audit lifecycle, agent file unification) реалізовані у PR `docs(hygiene): close audit findings — ADR gap rule, audits lifecycle, agent files`.
@@ -114,7 +114,7 @@ Knip-команда `dead-code:files` (по правилам `knip.json` + scaff
 
 ### 3.2 Скрипти зі статусом «використовуються лише вручну»
 
-`scripts/strip-js-extensions.mjs` — codemod (одноразовий міграційний інструмент). Згадується тільки в `docs/tech-debt/frontend.md`. Не дзвонять з `package.json` чи CI.
+`strip-js-extensions` codemod (одноразовий міграційний інструмент, був у `scripts/`). Згадується тільки в `docs/tech-debt/frontend.md`. Не дзвонять з `package.json` чи CI.
 
 **Опції:**
 
