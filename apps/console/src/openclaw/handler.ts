@@ -342,9 +342,49 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     founderUserId,
   };
 
+  /**
+   * Diagnostic warn-log on silent rejection. Без цього оператор бачить лише
+   * "/help мовчить" і має гадати між (a) webhook-race, (b) DM-only check,
+   * (c) `OPENCLAW_FOUNDER_TG_USER_ID` mismatch, (d) bot crashed mid-handler.
+   * Тут (b) і (c) стають очевидними з Railway логів.
+   *
+   * Rate-limit per (user, chat_type, reason) tuple щоб флуд від групи з
+   * багатьма юзерами / botом, який зациклився на одному /команді, не
+   * поховав журнал.
+   */
+  const recentRejectionLogs = new Map<string, number>();
+  const REJECTION_LOG_TTL_MS = 60_000;
+  const logRejection = (reason: string, ctx: Context): void => {
+    const userId = ctx.from?.id ?? 0;
+    const chatType = ctx.chat?.type ?? "unknown";
+    const message = ctx.message;
+    const text =
+      message && "text" in message && typeof message.text === "string"
+        ? message.text
+        : "";
+    const firstToken = text.split(/\s+/)[0] ?? "";
+    const key = `${userId}|${chatType}|${reason}`;
+    const now = Date.now();
+    const last = recentRejectionLogs.get(key);
+    if (last !== undefined && now - last < REJECTION_LOG_TTL_MS) return;
+    recentRejectionLogs.set(key, now);
+    console.warn(
+      `[openclaw] silently rejected update: reason=${reason} ` +
+        `chat_type=${chatType} from_user_id=${userId} ` +
+        `command=${firstToken || "<non-command>"} ` +
+        `(check OPENCLAW_FOUNDER_TG_USER_ID + ensure DM)`,
+    );
+  };
+
   const isAllowedDmContext = (ctx: Context): boolean => {
-    if (!isPrivateChat(ctx.chat?.type)) return false;
-    if (!isFounderAllowed(ctx.from?.id, process.env)) return false;
+    if (!isPrivateChat(ctx.chat?.type)) {
+      logRejection("non-private-chat", ctx);
+      return false;
+    }
+    if (!isFounderAllowed(ctx.from?.id, process.env)) {
+      logRejection("non-founder", ctx);
+      return false;
+    }
     return true;
   };
 
