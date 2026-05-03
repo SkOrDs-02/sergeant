@@ -5,7 +5,7 @@
 
 Аналіз кодової бази `apps/web/src` (649 source файлів, ~102k рядків — без тестів і `__tests__/`; 2026-05-03 re-audit).
 
-> **Оновлено 2026-05-02.** Sync з реальним станом коду після кількох wave-ів decomposition:
+> **Оновлено 2026-05-03.** Sync з реальним станом коду після кількох wave-ів decomposition:
 > Розділ 2 (localStorage burndown) — TODO-allowlist у `eslint.config.js` скорочено з 41 до **17 файлів**
 > (нові хвилі міграцій у `routine`/`finyk`/`onboarding`/`chatActions`/`insights`/`recommendations`).
 > Розділ 4 (великі файли) — у `apps/web/src` залишилось **17 файлів >600 LOC** (раніше 22);
@@ -281,9 +281,9 @@ PR на кожен файл; великі data-файли (`seedFoodsUk.ts`) —
 
 ---
 
-### 6. Тестове покриття — 160 test файлів на 649 source
+### 6. Тестове покриття — 174 test файлів на 649 source
 
-~25% файлів мають тести (re-audit 2026-05-03). Критичні модулі без тестів / з тонким покриттям
+~27% файлів мають тести (re-audit 2026-05-03 → інкремент). Критичні модулі без тестів / з тонким покриттям
 (актуально):
 
 - `HubReports.tsx` (638 рядків, складна агрегація)
@@ -294,8 +294,17 @@ PR на кожен файл; великі data-файли (`seedFoodsUk.ts`) —
 (`HubDashboard.test.tsx`: module previews / empty states, inactive modules,
 quick actions, callback routing, weekly digest footer).
 
-**Fix:** пріоритетно додати тести на recommendation engine, reports
-aggregation, cloud sync flows.
+**Зроблено 2026-05-03:** додано unit-тести для cloud-sync pure utilities
+(`errorNormalizer`, `conflict/parseDate`, `conflict/pushSuccess`,
+`engine/buildPayload`, `engine/retryAsync`, `queue/collectQueued`,
+`state/{versions,migration,events,moduleData}`) і для
+`recommendations/financeContext` (LS shapes, `thisMonthTx` filtering,
+`categorySpend` legacy + canonical, manual expenses, splits, budgets/limits).
++88 cloud-sync + 21 financeContext = +109 тестів у 11 нових файлах.
+
+**Fix:** додати тести на reports aggregation (`HubReports.tsx` UI),
+залишок recommendation engine (`useCoachInsight`, `useWeeklyDigest`),
+а також engine/{pull,upload,replay} cloud-sync wrappers.
 
 ---
 
