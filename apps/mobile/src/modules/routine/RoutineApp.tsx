@@ -63,6 +63,7 @@ import {
   RoutineBottomNav,
   type RoutineMainTab,
 } from "./components/RoutineBottomNav";
+import { useRoutineDualWriteBoot } from "./hooks/useRoutineDualWriteBoot";
 import { useRoutineReminders } from "./hooks/useRoutineReminders";
 import { useRoutineStore } from "./lib/routineStore";
 import { Calendar } from "./pages/Calendar";
@@ -110,6 +111,13 @@ function RoutineShell() {
   const [mainTab, setMainTab] = useState<RoutineMainTab>(readPersistedTab);
   // Track previous tab to remount TabPanel only on actual tab change
   const prevTab = useRef(mainTab);
+
+  // Stage 4 PR #024 follow-up: install the dual-write context once
+  // the user is known and the flag is on. Without this the
+  // `triggerRoutineDualWrite` calls in `routineStore.ts` short-circuit
+  // at the `isRoutineDualWriteRegistered()` check and SQLite stays
+  // empty even with the flag flipped.
+  useRoutineDualWriteBoot();
 
   // Subscribe to the routine store so the reminder scheduler sees
   // live habit edits without us re-reading MMKV on every change.

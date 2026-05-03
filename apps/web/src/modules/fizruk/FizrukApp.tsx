@@ -4,6 +4,7 @@ import { useHashRoute } from "@shared/hooks/useHashRoute";
 import { usePwaAction } from "@shared/hooks/usePwaAction";
 import { useExerciseCatalog } from "./hooks/useExerciseCatalog";
 import { useFizrukProgramStart } from "./hooks/useFizrukProgramStart";
+import { useFizrukDualWriteBoot } from "./hooks/useFizrukDualWriteBoot";
 import { useFizrukSqliteReadBoot } from "./hooks/useFizrukSqliteReadBoot";
 import { useFizrukWorkoutReminder } from "./hooks/useFizrukWorkoutReminder";
 import { useMonthlyPlan } from "./hooks/useMonthlyPlan";
@@ -37,6 +38,11 @@ export default function FizrukApp({
   const exerciseId =
     page === "exercise" && segments[0] ? segments[0] : undefined;
 
+  // Stage 4 PR #028 follow-up: install the dual-write context once the
+  // user is known and the flag is on. Without this the `triggerFizrukDualWrite`
+  // calls in the hooks below would early-out at the
+  // `isFizrukDualWriteRegistered()` check, leaving SQLite empty.
+  useFizrukDualWriteBoot();
   // Stage 4 PR #029: boot the SQLite read path. When
   // `feature.fizruk.sqlite_v2.read_sqlite` is on, hooks below overlay
   // their state from the local fizruk_* tables instead of LS.
