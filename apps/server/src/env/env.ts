@@ -116,8 +116,25 @@ const envSchema = z.object({
    * якістю українською. Альтернатива: `whisper-large-v3`.
    */
   GROQ_TRANSCRIBE_MODEL: z.string().default("whisper-large-v3-turbo"),
-  /** `"1"` — повністю вимкнути AI-квоту (fail-open без перевірки). */
-  AI_QUOTA_DISABLED: z.string().optional(),
+  /**
+   * Killer-switch для AI-квоти: при `true` `assertAiQuota()` стає no-op і всі
+   * AI-роути проходять без декременту лічильника `ai_usage_daily`. Призначений
+   * **виключно** для CI/test середовищ, де e2e ганяють реальний Anthropic API
+   * без burning-у user-quota (див. `.github/workflows/extended-e2e.yml`).
+   *
+   * У production цей flag є fail-open kill-switch для billing-а: якщо випадково
+   * виставити `1` у Railway env (copy-paste зі staging, або помилка у helm-у),
+   * жоден per-user / per-IP ліміт більше не працює — користувачі можуть
+   * burn-нути unlimited Anthropic budget. Тому `assertStartupEnv()` хард-блокує
+   * production-startup, якщо одночасно `NODE_ENV=production` (або Railway env)
+   * і цей flag truthy.
+   *
+   * Default: `false`. Приймається як `true|false|1|0`.
+   */
+  AI_QUOTA_DISABLED: z
+    .enum(["true", "false", "1", "0", ""])
+    .default("false")
+    .transform((v) => v === "true" || v === "1"),
   /** Денний ліміт AI-запитів для автентифікованого юзера. */
   AI_DAILY_USER_LIMIT: coerceInt.nonnegative().optional(),
   /** Денний ліміт AI-запитів для анонімного юзера. */
@@ -288,6 +305,18 @@ export function assertStartupEnv(): void {
   } else if (!env.NUTRITION_BACKUP_KEY_SECRET) {
     warnings.push(
       "NUTRITION_BACKUP_KEY_SECRET is not set — /api/nutrition/backup-{upload,download} will return 503.",
+    );
+  }
+
+  // H9: AI_QUOTA_DISABLED is a billing kill-switch — fine in CI/test where e2e
+  // hammers real Anthropic without burning user quota, catastrophic in
+  // production where it disables every per-user / per-IP cap. The advisory
+  // module-load `logger.warn` in aiQuota.ts was easy to miss; this fail-fast
+  // check refuses to start the server at all so the misconfig is caught at
+  // boot instead of at the next billing cycle.
+  if (isProduction && env.AI_QUOTA_DISABLED) {
+    throw new Error(
+      "AI_QUOTA_DISABLED MUST NOT be set in production. It disables every per-user / per-IP AI cap and lets clients burn the entire Anthropic budget. If you really need this in production (e.g. emergency disable of the quota subsystem itself), unset NODE_ENV / RAILWAY_ENVIRONMENT for that run, document the reason in the runbook, and remove the override immediately after.",
     );
   }
 

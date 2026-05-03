@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-03 by Devin (Stage 1 хвости закрито: PR #013 final sub-PR ([#1520](https://github.com/Skords-01/Sergeant/pull/1520)), PR #011 Postgres rate-limit ([#1521](https://github.com/Skords-01/Sergeant/pull/1521)) і tiny `format:check` фікс на main ([#1524](https://github.com/Skords-01/Sergeant/pull/1524)) уже мерджнуті; PR #009 offline queue → IDB ([#1526](https://github.com/Skords-01/Sergeant/pull/1526)) теж landed — `MAX_OFFLINE_QUEUE` піднято з 50 до 10 000; PR #010 консолідація 5 IDB баз у `sergeant-db` ([#1543](https://github.com/Skords-01/Sergeant/pull/1543)) відкрито, CI in-flight. Зі Stage 1 лишається лише PR #008 storagePatch removal. Stage 4 Fizruk усе ще на main з відкладеним boot-wiring follow-up для `register{Routine,Fizruk}DualWriteContext`. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-03 by Devin — **Stage 1 COMPLETE.** PR #008 storagePatch removal (`ff217246` on main — `syncedKV` + `createSyncedKVStore` replacement, `storagePatch.ts` deleted, `__hubSyncPatched` global gone, codemod at `scripts/codemods/syncedKV/`). PR #010 IDB consolidation ([#1543](https://github.com/Skords-01/Sergeant/pull/1543)) merged. PR #013 localStorage burndown landed via 4 sub-PRs ([#1344](https://github.com/Skords-01/Sergeant/pull/1344), [#1345](https://github.com/Skords-01/Sergeant/pull/1345), [#1350](https://github.com/Skords-01/Sergeant/pull/1350), [#1520](https://github.com/Skords-01/Sergeant/pull/1520)). All 8/8 Stage 1 PRs now landed. Stage 4 Fizruk усе ще на main з відкладеним boot-wiring follow-up для `register{Routine,Fizruk}DualWriteContext`. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -85,7 +85,7 @@
 | Stage                       | Що дає                                                                                                            | Calendar  | Eng-effort | Off-ramp                                                              |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------- | ---------- | --------------------------------------------------------------------- |
 | **0. Hygiene/P0**           | Закриває security-debt без перебудови. Цінне навіть якщо далі не йдемо.                                           | 2 тижні   | 0.5 FTE    | Можна зупинитись після Stage 0 — все ще +30% impact.                  |
-| **1. Consolidation**        | Один KVStore, один SYNC_MODULES, IDB consolidated, LS-burndown finished. Без SQLite.                              | 4 тижні   | 1 FTE      | Stop тут = просто чистіша поточна архітектура, ще без SQLite.         |
+| **1. Consolidation** ✅     | Один KVStore, один SYNC_MODULES, IDB consolidated, LS-burndown finished. Без SQLite.                              | 4 тижні   | 1 FTE      | Stop тут = просто чистіша поточна архітектура, ще без SQLite.         |
 | **2. Foundation** ✅        | Drizzle ORM, sqlite-wasm + expo-sqlite installed but не використовуються в фічах, schema runner, COOP/COEP infra. | 3 тижні   | 1 FTE      | Якщо OPFS bench не задовольняє — stop, повертаємось до Stage 1.       |
 | **3. SPIKE (routine)**      | Один модуль повністю на SQLite. Decision gate: gо/no-gо.                                                          | 2 тижні   | 1 FTE      | Якщо спайк fail-ить — fallback на Stage 1 + custom op-log без SQLite. |
 | **4. Per-module migration** | fizruk → nutrition → finyk на SQLite. Dual-write, потім cut-over.                                                 | 12 тижнів | 1 FTE      | Можна паузу на будь-якому модулі.                                     |
@@ -194,7 +194,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 - **AC.** Snapshot test що web і mobile bundle мають однакові keys per module.
 - **Dep.** PR #006.
 
-#### **PR #008 — `refactor(web): replace localStorage.setItem monkey-patch with explicit writeAndEnqueue`**
+#### **PR #008 — `refactor(web): replace localStorage.setItem monkey-patch with explicit writeAndEnqueue`** ✅ LANDED — `ff217246` on main
 
 - **Scope.** Замість `storagePatch.ts` — explicit hook `useSyncedKVStore`
   у `packages/shared`. Усі writes у sync-tracked keys йдуть через нього.
@@ -226,7 +226,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   тестів на новий механізм. (E2E-тест на 200 op-ів — у TODO Stage 5.)
 - **Dep.** PR #007, #008.
 
-#### **PR #010 — `refactor(web): consolidate 5 IDB databases into 1 sergeant-db`** ⏳ OPEN — [#1543](https://github.com/Skords-01/Sergeant/pull/1543)
+#### **PR #010 — `refactor(web): consolidate 5 IDB databases into 1 sergeant-db`** ✅ LANDED — [#1543](https://github.com/Skords-01/Sergeant/pull/1543)
 
 - **Scope.** Після PR #009 на клієнті стало 5 IDB баз: `sergeant-rq-cache`,
   `sergeant-sync-meta`, `hub_nutrition_recipe_book`,

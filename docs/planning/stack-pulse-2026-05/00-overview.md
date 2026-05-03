@@ -36,29 +36,29 @@
 
 ### Critical (PR-01..06)
 
-| ID  | Заголовок                                                           | PR-план                                             |
-| --- | ------------------------------------------------------------------- | --------------------------------------------------- |
-| C1  | Подвійна env-система (`env.ts` + `env/env.ts` + `betterAuthEnv.ts`) | [PR-01](./pr-01-unify-env-modules.md)               |
-| C2  | Rate-limit in-memory fallback при відмові Redis                     | [PR-02](./pr-02-rate-limit-fail-closed.md)          |
-| C3  | bcrypt + `MAX_PASSWORD_LENGTH=128` (silent 72-byte cap)             | [PR-03](./pr-03-bcrypt-password-limit.md)           |
-| C4  | Bus factor = 1 (єдиний `@Skords-01` owner усього)                   | [PR-04](./pr-04-bus-factor-secondary-owners.md)     |
-| C5  | TypeScript 6.0.3 + `@types/node@25.6` на Node 20                    | [PR-05](./pr-05-typescript-types-node-downgrade.md) |
-| C6  | OpenClaw plain `Git_PAT` з `contents:write`                         | [PR-06](./pr-06-openclaw-github-app.md)             |
+| ID  | Заголовок                                                           | PR-план                                             | Статус                                                                |
+| --- | ------------------------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------- |
+| C1  | Подвійна env-система (`env.ts` + `env/env.ts` + `betterAuthEnv.ts`) | [PR-01](./pr-01-unify-env-modules.md)               | Planned                                                               |
+| C2  | Rate-limit in-memory fallback при відмові Redis                     | [PR-02](./pr-02-rate-limit-fail-closed.md)          | **Merged** ([#1552](https://github.com/Skords-01/Sergeant/pull/1552)) |
+| C3  | bcrypt + `MAX_PASSWORD_LENGTH=128` (silent 72-byte cap)             | [PR-03](./pr-03-bcrypt-password-limit.md)           | **Merged** ([#1550](https://github.com/Skords-01/Sergeant/pull/1550)) |
+| C4  | Bus factor = 1 (єдиний `@Skords-01` owner усього)                   | [PR-04](./pr-04-bus-factor-secondary-owners.md)     | Planned                                                               |
+| C5  | TypeScript 6.0.3 + `@types/node@25.6` на Node 20                    | [PR-05](./pr-05-typescript-types-node-downgrade.md) | Planned                                                               |
+| C6  | OpenClaw plain `Git_PAT` з `contents:write`                         | [PR-06](./pr-06-openclaw-github-app.md)             | Planned                                                               |
 
 ### High (PR-07..16)
 
-| ID  | Заголовок                                        | PR-план                                          |
-| --- | ------------------------------------------------ | ------------------------------------------------ |
-| H1  | Body-size policy order-dependent                 | [PR-07](./pr-07-body-size-declarative-policy.md) |
-| H2  | API-version rewrite committed to v1 forever      | [PR-08](./pr-08-api-versioning-consolidation.md) |
-| H3  | `@parse/node-apn` non-canonical maintainer       | [PR-09](./pr-09-apns-library-adr.md)             |
-| H4  | Better Auth security review (own-crypto adapter) | [PR-10](./pr-10-better-auth-security-review.md)  |
-| H5  | Drizzle schema ↔ SQL drift untracked             | [PR-11](./pr-11-drizzle-schema-drift-ci.md)      |
-| H6  | Sentry tracesSampleRate static 0.1               | [PR-12](./pr-12-sentry-traces-sampler.md)        |
-| H7  | PG pool size 10 — undersized для AI ingestion    | [PR-13](./pr-13-postgres-pool-sizing.md)         |
-| H8  | Vercel COEP `require-corp` — broad blast radius  | [PR-14](./pr-14-vercel-coep-review.md)           |
-| H9  | `AI_QUOTA_DISABLED=1` ризик у production         | [PR-15](./pr-15-ai-quota-disabled-hardblock.md)  |
-| H10 | Pino без enforced redaction policy               | [PR-16](./pr-16-pino-redaction-policy.md)        |
+| ID  | Заголовок                                        | PR-план                                          | Статус                                                                   |
+| --- | ------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------ |
+| H1  | Body-size policy order-dependent                 | [PR-07](./pr-07-body-size-declarative-policy.md) | Planned                                                                  |
+| H2  | API-version rewrite committed to v1 forever      | [PR-08](./pr-08-api-versioning-consolidation.md) | Planned                                                                  |
+| H3  | `@parse/node-apn` non-canonical maintainer       | [PR-09](./pr-09-apns-library-adr.md)             | Planned                                                                  |
+| H4  | Better Auth security review (own-crypto adapter) | [PR-10](./pr-10-better-auth-security-review.md)  | Planned                                                                  |
+| H5  | Drizzle schema ↔ SQL drift untracked             | [PR-11](./pr-11-drizzle-schema-drift-ci.md)      | Planned                                                                  |
+| H6  | Sentry tracesSampleRate static 0.1               | [PR-12](./pr-12-sentry-traces-sampler.md)        | Planned                                                                  |
+| H7  | PG pool size 10 — undersized для AI ingestion    | [PR-13](./pr-13-postgres-pool-sizing.md)         | Planned                                                                  |
+| H8  | Vercel COEP `require-corp` — broad blast radius  | [PR-14](./pr-14-vercel-coep-review.md)           | Planned                                                                  |
+| H9  | `AI_QUOTA_DISABLED=1` ризик у production         | [PR-15](./pr-15-ai-quota-disabled-hardblock.md)  | **In review** ([#1567](https://github.com/Skords-01/Sergeant/pull/1567)) |
+| H10 | Pino без enforced redaction policy               | [PR-16](./pr-16-pino-redaction-policy.md)        | Planned                                                                  |
 
 ### Medium (без окремих PR-плані поки не призначений owner)
 
