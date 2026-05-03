@@ -53,7 +53,7 @@ Mobile дзеркалить web-підхід, але замість `localStorag
 - Server має whitelist таблиць: `routine_entries`, `routine_streaks` (`apps/server/src/modules/sync/syncV2.ts`).
 - `sync_op_log` зберігає append-only stream: `user_id`, `idempotency_key`, `table_name`, `op`, `row`, `client_ts`, `server_ts`, `origin_device_id`, `status` (`apps/server/src/migrations/027_sync_op_log.sql`).
 - Unique `(user_id, idempotency_key)` захищає від повторного застосування offline replay.
-- Mobile Routine SPIKE має локальний outbox, пушить FIFO batch-и, видаляє applied/duplicate, rejected лишає для triage (`apps/mobile/src/modules/routine/lib/sqliteSpike/syncEngine.ts`).
+- Web Routine SPIKE мав локальний outbox + sync engine із FIFO batch push, applied/duplicate cleanup і triage rejected ops; код був архівований після завершення гейту — див. [`docs/notes/spikes/routine-sqlite-v2.md`](../notes/spikes/routine-sqlite-v2.md). Mobile-сторона на v2 ще не промочена.
 
 Це правильний напрям: per-row conflict handling, `pull?since=<op_id>` курсори і multi-device convergence без перетирання цілого blob-а.
 

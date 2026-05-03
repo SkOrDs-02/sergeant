@@ -137,12 +137,20 @@ layer below the typed Drizzle client.
 
 ## Tests (this PR)
 
-| Suite                                                                                | Count | Coverage                                                                                                                                   |
-| ------------------------------------------------------------------------------------ | ----- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `packages/db-schema` schema-roundtrip (vitest)                                       | 3     | Migration runs idempotently; tables present; outbox UNIQUE on `idempotency_key`.                                                           |
-| `apps/web/src/modules/routine/lib/sqliteSpike/__tests__/repo.test.ts` (vitest)       | 9     | upsert / soft-delete / list lifecycle, outbox enqueue+pop+reject, cursor, LWW conflict guard, malformed payload rejection.                 |
-| `apps/web/src/modules/routine/lib/sqliteSpike/__tests__/syncEngine.test.ts` (vitest) | 6     | push drain, push reject triage, pull apply + cursor persist, origin-device echo filter, multi-device end-to-end, LWW with stale pulled op. |
-| `apps/mobile/src/modules/routine/lib/sqliteSpike/__tests__/repo.test.ts` (jest)      | 6     | Mirror of the web repo tests + the `createExpoSqliteRawClient` adapter forwarder.                                                          |
+| Suite | Count | Coverage |
+| ----- | ----- | -------- |
+
+> **Note (archive):** the file paths below pointed at SPIKE-only code
+> that was deleted at archive time (2026-05-02, see [#1421](https://github.com/Skords-01/Sergeant/pull/1421)). They are
+> intentionally written without backticks so the governance-sync linter
+> ignores them as historical references.
+
+| Suite                                                                                  | Count | Coverage                                                                                                                                   |
+| -------------------------------------------------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `packages/db-schema` schema-roundtrip (vitest)                                         | 3     | Migration runs idempotently; tables present; outbox UNIQUE on `idempotency_key`.                                                           |
+| apps/web/src/modules/routine/lib/sqliteSpike/\_\_tests\_\_/repo.test.ts (vitest)       | 9     | upsert / soft-delete / list lifecycle, outbox enqueue+pop+reject, cursor, LWW conflict guard, malformed payload rejection.                 |
+| apps/web/src/modules/routine/lib/sqliteSpike/\_\_tests\_\_/syncEngine.test.ts (vitest) | 6     | push drain, push reject triage, pull apply + cursor persist, origin-device echo filter, multi-device end-to-end, LWW with stale pulled op. |
+| apps/mobile/src/modules/routine/lib/sqliteSpike/\_\_tests\_\_/repo.test.ts (jest)      | 6     | Mirror of the web repo tests + the `createExpoSqliteRawClient` adapter forwarder.                                                          |
 
 All 24 tests pass locally on Node 22.12 / pnpm 9.15. Total runtime
 ≈3.5 s.
