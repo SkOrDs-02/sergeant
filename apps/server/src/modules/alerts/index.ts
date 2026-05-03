@@ -1,5 +1,5 @@
 /**
- * Public exports for the alerts module (ADR-0040). Callers (HTTP routes,
+ * Public exports for the alerts module (ADR-0038). Callers (HTTP routes,
  * tests) import from here so internal file layout stays free to evolve.
  */
 

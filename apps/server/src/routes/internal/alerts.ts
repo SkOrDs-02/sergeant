@@ -1,6 +1,6 @@
 /**
  * `/api/internal/alerts/*` — accountability surface for
- * `Sergeant_alert_bot` broadcasts (ADR-0040, Wave 3 §3.2).
+ * `Sergeant_alert_bot` broadcasts (ADR-0038, Wave 3 §3.2).
  *
  * Architecture:
  *

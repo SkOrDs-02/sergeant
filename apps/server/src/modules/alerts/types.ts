@@ -1,5 +1,5 @@
 /**
- * Shared types for the `tg_alert_acks` accountability surface (ADR-0040).
+ * Shared types for the `tg_alert_acks` accountability surface (ADR-0038).
  *
  * Kept in a leaf file to avoid circular imports between `store.ts` (DB
  * helpers) and `routes/internal/alerts.ts` (HTTP route + Zod schemas).

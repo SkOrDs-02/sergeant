@@ -1,5 +1,5 @@
 /**
- * DB helpers for `tg_alert_acks` (ADR-0040, Wave 3 §3.2).
+ * DB helpers for `tg_alert_acks` (ADR-0038, Wave 3 §3.2).
  *
  * Pure functions over a `pg.Pool`. No caching, no singletons. Caller
  * brings its own pool — same pattern as `modules/openclaw/store.ts`.

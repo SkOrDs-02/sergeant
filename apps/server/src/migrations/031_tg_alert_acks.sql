@@ -1,7 +1,7 @@
 -- 031: tg_alert_acks — accountability trail for Sergeant_alert_bot
 -- broadcasts (P0..P3 alerts in the `Sergeant_ops` supergroup).
 --
--- ADR-0040, Wave 3 §3.2. Closes pain P2 (alerts without accountability:
+-- ADR-0038, Wave 3 §3.2. Closes pain P2 (alerts without accountability:
 -- nobody knows who saw what when). Each n8n alert workflow now POSTs to
 -- /api/internal/alerts/post BEFORE sendMessage; the inline-keyboard
 -- callback (WF-104, deferred to follow-up PR) UPDATEs `ack_at` when a
@@ -9,7 +9,7 @@
 -- (cron, also follow-up PR) selects un-acked P0 rows older than 15 min
 -- and DM-escalates via @OpenClaw_sergeant_bot.
 --
--- Mutable per-row (not append-only — ADR-0040 §Considered Options):
+-- Mutable per-row (not append-only — ADR-0038 §Considered Options):
 --
 --   * INSERT on alert posted (`posted_at` set, NULL ack/escalated).
 --   * UPDATE on user click (`ack_at` set, idempotent via WHERE ack_at IS NULL).
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS tg_alert_acks (
   -- because new topics ship without a schema migration.
   topic              TEXT NOT NULL,
 
-  -- Severity tier. CHECK because P0..P3 contract is fixed (ADR-0040 §1).
+  -- Severity tier. CHECK because P0..P3 contract is fixed (ADR-0038 §1).
   severity           TEXT NOT NULL
     CHECK (severity IN ('P0','P1','P2','P3')),
 
@@ -78,7 +78,7 @@ CREATE INDEX IF NOT EXISTS tg_alert_acks_posted_idx
   ON tg_alert_acks (posted_at DESC);
 
 COMMENT ON TABLE tg_alert_acks IS
-  'Accountability trail for Sergeant_alert_bot broadcasts: one row per posted alert, mutable on ack/escalation. ADR-0040, Wave 3 §3.2.';
+  'Accountability trail for Sergeant_alert_bot broadcasts: one row per posted alert, mutable on ack/escalation. ADR-0038, Wave 3 §3.2.';
 
 COMMENT ON COLUMN tg_alert_acks.alert_id IS
   'Stable id (n8n workflow:execution OR topic:sha256). UNIQUE — n8n retries are no-ops.';

@@ -80,7 +80,7 @@
 
 **Status:** roadmapped (Phase 2.A в [openclaw-roadmap.md §3 Phase 2](./openclaw-roadmap.md)).
 **Pain закриває:** P1.
-**ADR-кандидат:** ADR-0038 ("OpenClaw proactive cron-rituals").
+**ADR-кандидат:** ADR-0039 ("OpenClaw proactive cron-rituals").
 
 **Що:** новий cron (Railway scheduler або n8n WF-101) → `POST /api/internal/openclaw/ritual/morning` → console DM-постить 5-8 рядків:
 
@@ -110,12 +110,12 @@
 
 ### 3.2. Acknowledge-кнопка на P0/P1 alert-ах + 15-min escalation
 
-**Status:** **foundation shipped** (Wave 3 PR-1) — ADR-0040 + table
+**Status:** **foundation shipped** (Wave 3 PR-1) — ADR-0038 + table
 `tg_alert_acks` + 4 endpoint-и (`/api/internal/alerts/{post,ack,pending,
 escalate}`) live на server. n8n inline-keyboard wiring + WF-103/WF-104 +
 OpenClaw `/alerts pending` slash — окремі follow-up PR-у (W3 PR-2/PR-3).
 **Pain закриває:** P2.
-**ADR-кандидат:** [ADR-0040](../adr/0040-tg-alert-acks-and-escalation.md) ("Alert acknowledgement + escalation").
+**ADR-кандидат:** [ADR-0038](../adr/0038-tg-alert-acks-and-escalation.md) ("Alert acknowledgement + escalation").
 
 **Що:** WF-03 / WF-15 / WF-18 / WF-22 шлють alert у топік → `@Sergeant_alert_bot` додає inline-keyboard:
 
@@ -243,8 +243,8 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 | ID   | Ідея                                                               | Pain | Effort | ADR  | Wave  |
 | ---- | ------------------------------------------------------------------ | ---- | ------ | ---- | ----- |
-| A.1  | Phase 2.B: Friday weekly + monthly OKR (бродкаст у `📊 Дайджести`) | P1   | M      | 0038 | W3    |
-| A.2  | Phase 3: `/plan`, `/analyze`, `/okr` strategic primitives          | —    | L      | 0039 | Later |
+| A.1  | Phase 2.B: Friday weekly + monthly OKR (бродкаст у `📊 Дайджести`) | P1   | M      | 0039 | W3    |
+| A.2  | Phase 3: `/plan`, `/analyze`, `/okr` strategic primitives          | —    | L      | 0040 | Later |
 | A.3  | "Approve all" мета-кнопка для batch-turn approvals                 | —    | M      | —    | Later |
 | A.4  | Diff-preview для `commit_to_strategy_doc`                          | —    | M      | —    | Later |
 | A.5  | Voice notes input (Whisper transcription)                          | —    | M      | —    | Later |
@@ -288,18 +288,18 @@ CREATE INDEX idx_tg_alert_acks_unacked
 | ----- | --- | --------------------------------------------------------- | ------ | --------- |
 | W1    | (a) | §3.3 (`/audit since=` + `--csv`)                          | S      | —         |
 | W1    | (b) | §3.4 (WF-15 Bad request fix)                              | S      | —         |
-| W2    | (c) | §3.1 (Phase 2.A morning ritual)                           | M      | 0038      |
+| W2    | (c) | §3.1 (Phase 2.A morning ritual)                           | M      | 0039      |
 | W2    | (d) | C.2 (Sentry breadcrumbs у tool-calls)                     | XS     | —         |
-| W3    | (e) | §3.2 (alert ack-button + escalation) — foundation shipped | M      | 0040      |
-| W3    | (f) | A.1 (Phase 2.B Friday weekly + OKR)                       | M      | 0038      |
+| W3    | (e) | §3.2 (alert ack-button + escalation) — foundation shipped | M      | 0038      |
+| W3    | (f) | A.1 (Phase 2.B Friday weekly + OKR)                       | M      | 0039      |
 | W3    | (g) | B.1 (alert dedup / occurrence-counter)                    | M      | —         |
 | W4    | (h) | §3.5 (webhook delivery)                                   | M      | 0041      |
 | W4    | (i) | A.6 + A.7 (`/help` + persona quick-row)                   | S      | —         |
-| Later | …   | A.2 (Phase 3), A.3, A.4, A.5, A.8, A.10, A.11, A.12, A.13 | varies | 0039+     |
+| Later | …   | A.2 (Phase 3), A.3, A.4, A.5, A.8, A.10, A.11, A.12, A.13 | varies | 0040+     |
 | Later | …   | B.2..B.8                                                  | varies | varies    |
 | Later | …   | C.1, C.3, C.4, C.5                                        | varies | 0042/0043 |
 
-**Total для топ-4 хвиль:** ~12 робочих днів, 9 PR-ів, 3 нові ADR-и (0038, 0040, 0041).
+**Total для топ-4 хвиль:** ~12 робочих днів, 9 PR-ів, 3 нові ADR-и (0038, 0039, 0041).
 
 ---
 

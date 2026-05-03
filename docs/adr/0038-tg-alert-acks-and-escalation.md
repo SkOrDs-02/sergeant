@@ -1,4 +1,4 @@
-# ADR-0040: Telegram alert acknowledgement + 15-min escalation
+# ADR-0038: Telegram alert acknowledgement + 15-min escalation
 
 - **Status:** Accepted
 - **Date:** 2026-05-03

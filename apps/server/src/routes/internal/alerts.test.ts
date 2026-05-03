@@ -1,5 +1,5 @@
 /**
- * Route-level coverage for `/api/internal/alerts/*` (ADR-0040).
+ * Route-level coverage for `/api/internal/alerts/*` (ADR-0038).
  *
  * Same pattern as `routes/internal/openclaw.test.ts`: we mock the store
  * helpers (not pool.query) so this file stays focused on schema-validation
