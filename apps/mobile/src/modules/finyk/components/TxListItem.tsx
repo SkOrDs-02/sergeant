@@ -18,18 +18,15 @@ import { View } from "react-native";
 
 import { SwipeToAction } from "@/components/ui/SwipeToAction";
 
-import { TxRow, type TxRowProps } from "./TxRow";
+import { TxRow, type TxRowProps, type TxRowTx } from "./TxRow";
 
-// Legacy untyped shapes — see `TxRow.tsx` for details.
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface TxListItemProps extends Omit<TxRowProps, "onPress"> {
   rowIndex?: number;
-  onPressManual?: (tx: any) => void;
+  onPressManual?: (tx: TxRowTx) => void;
   onSwipeHideTx?: (id: string) => void;
-  onSwipeDeleteManual?: (tx: any) => void;
+  onSwipeDeleteManual?: (tx: TxRowTx) => void;
   onSwipeUnhideTx?: (id: string) => void;
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 function TxListItemImpl({
   tx,
