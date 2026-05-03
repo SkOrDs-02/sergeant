@@ -110,9 +110,12 @@
 
 ### 3.2. Acknowledge-кнопка на P0/P1 alert-ах + 15-min escalation
 
-**Status:** new (не в roadmap-і).
+**Status:** **foundation shipped** (Wave 3 PR-1) — ADR-0040 + table
+`tg_alert_acks` + 4 endpoint-и (`/api/internal/alerts/{post,ack,pending,
+escalate}`) live на server. n8n inline-keyboard wiring + WF-103/WF-104 +
+OpenClaw `/alerts pending` slash — окремі follow-up PR-у (W3 PR-2/PR-3).
 **Pain закриває:** P2.
-**ADR-кандидат:** ADR-0040 ("Alert acknowledgement + escalation").
+**ADR-кандидат:** [ADR-0040](../adr/0040-tg-alert-acks-and-escalation.md) ("Alert acknowledgement + escalation").
 
 **Що:** WF-03 / WF-15 / WF-18 / WF-22 шлють alert у топік → `@Sergeant_alert_bot` додає inline-keyboard:
 
@@ -287,7 +290,7 @@ CREATE INDEX idx_tg_alert_acks_unacked
 | W1    | (b) | §3.4 (WF-15 Bad request fix)                              | S      | —         |
 | W2    | (c) | §3.1 (Phase 2.A morning ritual)                           | M      | 0038      |
 | W2    | (d) | C.2 (Sentry breadcrumbs у tool-calls)                     | XS     | —         |
-| W3    | (e) | §3.2 (alert ack-button + escalation)                      | M      | 0040      |
+| W3    | (e) | §3.2 (alert ack-button + escalation) — foundation shipped | M      | 0040      |
 | W3    | (f) | A.1 (Phase 2.B Friday weekly + OKR)                       | M      | 0038      |
 | W3    | (g) | B.1 (alert dedup / occurrence-counter)                    | M      | —         |
 | W4    | (h) | §3.5 (webhook delivery)                                   | M      | 0041      |

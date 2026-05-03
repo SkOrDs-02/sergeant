@@ -152,6 +152,11 @@ export const QUERY_APP_DB_TABLE_ALLOWLIST = new Set<string>([
   "nutrition_entries",
   "openclaw_decisions",
   "openclaw_invocations",
+  // ADR-0040 (Wave 3 §3.2): accountability trail for Sergeant_alert_bot
+  // broadcasts. Allows OpenClaw to answer ad-hoc questions like "TTA
+  // distribution last 7 days" or "P0 alerts unacked > 30 min" without
+  // a dedicated endpoint per query.
+  "tg_alert_acks",
 ]);
 
 /**
