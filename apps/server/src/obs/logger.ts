@@ -21,11 +21,13 @@ const level = process.env.LOG_LEVEL || (isDev ? "debug" : "info");
 // — навіть у вкладених user-об'єктах; усі типові варіанти токенів і secret.
 // Якщо треба додати новий шлях — додавай тут, а НЕ робиш `logger.info({...})`
 // з плейнтекстовим email, обходячи редакцію.
-export const redactPaths = [
-  "req.headers.authorization",
-  "req.headers.cookie",
-  'req.headers["x-api-key"]',
-  'req.headers["x-token"]',
+//
+// Контракт (для пов'язаного `Sentry.beforeSend` PII-скрабера в `sentry.ts`):
+//   - `redactKeyNames` — імена полів, які потрібно маскувати на будь-якій
+//     глибині. Sentry-скрабер ходить рекурсивно і маскує ці ключі у
+//     `extra/contexts/breadcrumbs.data`. Це доповнення до Pino-redaction,
+//     бо Sentry не використовує pino, а будує власний payload.
+export const redactKeyNames = [
   "password",
   "newPassword",
   "currentPassword",
@@ -33,9 +35,66 @@ export const redactPaths = [
   "accessToken",
   "refreshToken",
   "idToken",
+  "sessionToken",
   "apiKey",
   "secret",
   "clientSecret",
+  "privateKey",
+  "signature",
+  "dsn",
+  "connectionString",
+  "authorization",
+  "cookie",
+  "set-cookie",
+  "x-api-key",
+  "x-token",
+  "x-csrf-token",
+  // PII — на будь-якій глибині.
+  "email",
+  "phone",
+];
+
+export const redactPaths = [
+  "req.headers.authorization",
+  "req.headers.cookie",
+  'req.headers["x-api-key"]',
+  'req.headers["x-token"]',
+  'req.headers["x-csrf-token"]',
+  'res.headers["set-cookie"]',
+  "password",
+  "newPassword",
+  "currentPassword",
+  "token",
+  "accessToken",
+  "refreshToken",
+  "idToken",
+  "sessionToken",
+  "session.token",
+  "apiKey",
+  "secret",
+  "clientSecret",
+  "privateKey",
+  "signature",
+  "dsn",
+  "connectionString",
+  // Wildcard-шляхи для типових 1-2 рівнів вкладеності (pino redact матчить
+  // wildcard рівно на одну глибину, тому потрібно явно прописати обидва).
+  // Ширша редакція (будь-яка глибина) робиться у `sentry.ts:scrubPII()`
+  // через `redactKeyNames`.
+  "*.password",
+  "*.token",
+  "*.apiKey",
+  "*.secret",
+  "*.clientSecret",
+  "*.privateKey",
+  "*.dsn",
+  "*.connectionString",
+  "*.*.password",
+  "*.*.token",
+  "*.*.apiKey",
+  "*.*.secret",
+  "*.*.clientSecret",
+  "*.*.privateKey",
   // PII — емейл/телефон в корені і всередині `user`/`body`.
   "email",
   "phone",

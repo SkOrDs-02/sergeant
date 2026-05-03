@@ -1,11 +1,51 @@
 import * as Sentry from "@sentry/node";
 import type { Express } from "express";
 import { als } from "./obs/requestContext.js";
+import { redactKeyNames } from "./obs/logger.js";
 
 function parseRate(val: string | undefined, fallback: number): number {
   if (val == null || val === "") return fallback;
   const n = Number(val);
   return Number.isFinite(n) ? n : fallback;
+}
+
+/**
+ * Рекурсивно ходить по об'єкту і маскує значення для ключів з
+ * `redactKeyNames` (case-insensitive). Контракт синхронізований з
+ * Pino-redaction (`logger.ts`): один список — два енфорсера.
+ *
+ * Sentry-payload-и можуть бути nested як завгодно (`event.contexts.runtime`,
+ * `event.extra.user.profile.email`), тому regex-pino-paths не працюють.
+ * Беремо ім'я ключа замість шляху.
+ *
+ * Цикли об'єктів захищені через WeakSet (Sentry payload не повинен
+ * містити їх, але Error.cause і подібні самопосилання — можливі).
+ */
+const REDACT_KEY_SET = new Set(redactKeyNames.map((k) => k.toLowerCase()));
+const PII_REDACTED = "[redacted]";
+
+export function scrubPII(
+  value: unknown,
+  seen: WeakSet<object> = new WeakSet(),
+): void {
+  if (value == null || typeof value !== "object") return;
+  if (seen.has(value as object)) return;
+  seen.add(value as object);
+
+  if (Array.isArray(value)) {
+    for (const item of value) scrubPII(item, seen);
+    return;
+  }
+
+  const obj = value as Record<string, unknown>;
+  for (const key of Object.keys(obj)) {
+    if (REDACT_KEY_SET.has(key.toLowerCase())) {
+      // Зберігаємо тип (string vs object) щоб Sentry UI не падав.
+      obj[key] = typeof obj[key] === "object" ? null : PII_REDACTED;
+      continue;
+    }
+    scrubPII(obj[key], seen);
+  }
 }
 
 const dsn = process.env.SENTRY_DSN;
@@ -32,6 +72,37 @@ if (dsn) {
     beforeSend(event) {
       if (event.request?.data) delete event.request.data;
       if (event.request?.cookies) delete event.request.cookies;
+      if (event.request?.headers) {
+        // Headers можуть містити Authorization/Cookie/X-Csrf-Token.
+        scrubPII(event.request.headers);
+      }
+      // Глибокий рекурсивний скраб PII з extra/contexts/breadcrumbs.
+      // Ловимо випадки, коли user-payload потрапив у `event.extra` через
+      // `Sentry.setExtra('payload', req.body)` або `Sentry.captureException(e, { extra })`.
+      if (event.extra) scrubPII(event.extra);
+      if (event.contexts) scrubPII(event.contexts);
+      if (event.breadcrumbs) {
+        for (const bc of event.breadcrumbs) {
+          if (bc.data) scrubPII(bc.data);
+          if (bc.message) {
+            // Re-use breadcrumb.message (рядок) — нічого скрабити, але
+            // якщо там email — ми не парсимо (occurance rate низький, і
+            // false-positive шкідливий).
+          }
+        }
+      }
+      // user.email/phone не пускаємо — лишаємо тільки id (sendDefaultPii=false
+      // вже це робить, але duplicate-захист дешевий).
+      if (event.user) {
+        const safe: { id?: string | number; ip_address?: string } = {};
+        if (
+          typeof event.user.id === "string" ||
+          typeof event.user.id === "number"
+        ) {
+          safe.id = event.user.id;
+        }
+        event.user = safe;
+      }
       // Підмішуємо контекст із ALS, якщо подія народилася в рамках запиту.
       const ctx = als.getStore();
       if (ctx) {
@@ -51,6 +122,7 @@ if (dsn) {
       if (breadcrumb?.category === "http" && breadcrumb.data) {
         delete breadcrumb.data.request_body_size;
         delete breadcrumb.data.response_body_size;
+        scrubPII(breadcrumb.data);
       }
       return breadcrumb;
     },
