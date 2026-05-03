@@ -1,9 +1,10 @@
 # 0001 — Module decomposition + `max-lines` guard
 
-> **Status:** Proposed
+> **Status:** In progress (Phase 1 done — guard live, allowlist locked)
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks (5 PRs)
+> **Phase 1 PR:** [#1555](https://github.com/Skords-01/Sergeant/pull/1555) — merged 2026-05-03
 > **Sources:** Design Review 2026-05-03 §2.1, §3.1, §12; [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md)
 
 ## TL;DR
@@ -45,15 +46,15 @@
 
 ### Фаза 2 — Top-7 декомпозиція (5 PR-ів, по 1–2 файли)
 
-| # | Файл                                                                                         | LOC | Розкладається на                                                                                                                       | Trigger PR    |
-| - | -------------------------------------------------------------------------------------------- | --- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| 1 | [`apps/web/src/modules/routine/RoutineApp.tsx`](../../apps/web/src/modules/routine/RoutineApp.tsx) | 745 | `useRoutineAppState.ts` (state-machine), `RoutineHeader.tsx`, `RoutineTimeline.tsx`, `RoutineActions.tsx`                              | PR `decomp-routine-app` |
-| 2 | [`apps/web/src/modules/finyk/hooks/useStorage.ts`](../../apps/web/src/modules/finyk/hooks/useStorage.ts) | 685 | `useFinykStorageReader.ts`, `useFinykStorageWriter.ts`, `useFinykMigration.ts`, `useFinykBackupSync.ts` (≤200 LOC each)                | PR `decomp-finyk-storage` |
-| 3 | [`apps/web/src/core/lib/chatActions/types.ts`](../../apps/web/src/core/lib/chatActions/types.ts) | 672 | core лишає тільки `ChatActionDefinition`, `ChatActionRegistry`, `ChatActionResult`. Domain-types → `modules/{finyk,fizruk,...}/chatActions/types.ts` | PR `decomp-chat-actions-types` |
-| 4 | [`apps/web/src/sw.ts`](../../apps/web/src/sw.ts)                                            | 643 | `sw/precache.ts`, `sw/notifications.ts`, `sw/scheduler.ts`, `sw/idb.ts`. Entry `sw.ts` ≤ 60 LOC.                                       | PR `decomp-sw`             |
-| 5 | [`apps/web/src/shared/components/ui/Icon.tsx`](../../apps/web/src/shared/components/ui/Icon.tsx) | 660 | `Icon.tsx` (registry + типи) + per-icon файли в `shared/components/ui/icons/*.tsx`; tree-shake-friendly. Деталі в [0007](./0007-design-system-tooling.md). | PR `decomp-icon`           |
-| 6 | [`apps/web/src/modules/finyk/FinykApp.tsx`](../../apps/web/src/modules/finyk/FinykApp.tsx)   | 559 | `useFinykAppState.ts` (xstate / `useReducer`) + `FinykAppLayout.tsx`. Більшість `useEffect` (12!) → переходи стейт-машини.             | PR `decomp-finyk-app`      |
-| 7 | [`apps/web/src/modules/fizruk/components/Workouts.tsx`](../../apps/web/src/modules/fizruk/components/Workouts.tsx) (~605) + `LogCard.tsx` (~580) | ~1185 | `useWorkoutSession.ts`, `WorkoutTimer.tsx`, `WorkoutSetList.tsx`, `WorkoutSummary.tsx`. `LogCard` → split per workout-type.              | PR `decomp-fizruk-workouts` |
+| #   | Файл                                                                                                                                             | LOC   | Розкладається на                                                                                                                                           | Trigger PR                     |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| 1   | [`apps/web/src/modules/routine/RoutineApp.tsx`](../../apps/web/src/modules/routine/RoutineApp.tsx)                                               | 745   | `useRoutineAppState.ts` (state-machine), `RoutineHeader.tsx`, `RoutineTimeline.tsx`, `RoutineActions.tsx`                                                  | PR `decomp-routine-app`        |
+| 2   | [`apps/web/src/modules/finyk/hooks/useStorage.ts`](../../apps/web/src/modules/finyk/hooks/useStorage.ts)                                         | 685   | `useFinykStorageReader.ts`, `useFinykStorageWriter.ts`, `useFinykMigration.ts`, `useFinykBackupSync.ts` (≤200 LOC each)                                    | PR `decomp-finyk-storage`      |
+| 3   | [`apps/web/src/core/lib/chatActions/types.ts`](../../apps/web/src/core/lib/chatActions/types.ts)                                                 | 672   | core лишає тільки `ChatActionDefinition`, `ChatActionRegistry`, `ChatActionResult`. Domain-types → `modules/{finyk,fizruk,...}/chatActions/types.ts`       | PR `decomp-chat-actions-types` |
+| 4   | [`apps/web/src/sw.ts`](../../apps/web/src/sw.ts)                                                                                                 | 643   | `sw/precache.ts`, `sw/notifications.ts`, `sw/scheduler.ts`, `sw/idb.ts`. Entry `sw.ts` ≤ 60 LOC.                                                           | PR `decomp-sw`                 |
+| 5   | [`apps/web/src/shared/components/ui/Icon.tsx`](../../apps/web/src/shared/components/ui/Icon.tsx)                                                 | 660   | `Icon.tsx` (registry + типи) + per-icon файли в `shared/components/ui/icons/*.tsx`; tree-shake-friendly. Деталі в [0007](./0007-design-system-tooling.md). | PR `decomp-icon`               |
+| 6   | [`apps/web/src/modules/finyk/FinykApp.tsx`](../../apps/web/src/modules/finyk/FinykApp.tsx)                                                       | 559   | `useFinykAppState.ts` (xstate / `useReducer`) + `FinykAppLayout.tsx`. Більшість `useEffect` (12!) → переходи стейт-машини.                                 | PR `decomp-finyk-app`          |
+| 7   | [`apps/web/src/modules/fizruk/components/Workouts.tsx`](../../apps/web/src/modules/fizruk/components/Workouts.tsx) (~605) + `LogCard.tsx` (~580) | ~1185 | `useWorkoutSession.ts`, `WorkoutTimer.tsx`, `WorkoutSetList.tsx`, `WorkoutSummary.tsx`. `LogCard` → split per workout-type.                                | PR `decomp-fizruk-workouts`    |
 
 ### Фаза 3 — закрити allowlist (1 PR)
 
@@ -72,19 +73,19 @@
 
 ## Ризики та митиґація
 
-| Ризик                                                                            | Мітигація                                                                                                                                                                                          |
-| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Регресія у `RoutineApp` / `FinykApp` через зміну порядку effects                | Перед декомпозицією зафіксувати `screen.test.tsx` happy-path (RTL + MSW). Кожен PR проганяє ці тести перед merge.                                                                                  |
-| Конфлікти з паралельними feature-PR-ами в `modules/finyk/`                       | Запланувати декомпозицію `finyk` після `routine` (менш активний модуль). У час фази 2 для `finyk` повідомити в `#dev-channel`, заморозити cosmetic PR-и в FinykApp на 1 sprint.                    |
-| Великий `chatActions/types.ts` має transitive consumers поза модулями            | Перенести типи поетапно з `re-export shim` в core (1 PR — додати shim, 1 PR — рухати імпорти, 1 PR — видалити shim). Гард: `lint:imports` перевірить, що нові імпорти йдуть з модульних шляхів.    |
-| Вибух bundle-розміру при tree-shake icons (lazy-import per icon = багато chunks) | Використати `vite`-у `manualChunks` для core-icon-set (часто-використовувані 30 іконок) — лишити в одному chunk-і. Решта tree-shake. Перевірити Lighthouse perf на головних сторінках.             |
-| Allowlist залишиться «назавжди»                                                  | Кожен запис в allowlist має `TODO(0001-…): deadline YYYY-MM-DD`. CI job `lint:todo-freshness` падає, коли deadline пройшов.                                                                       |
+| Ризик                                                                            | Мітигація                                                                                                                                                                                       |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Регресія у `RoutineApp` / `FinykApp` через зміну порядку effects                 | Перед декомпозицією зафіксувати `screen.test.tsx` happy-path (RTL + MSW). Кожен PR проганяє ці тести перед merge.                                                                               |
+| Конфлікти з паралельними feature-PR-ами в `modules/finyk/`                       | Запланувати декомпозицію `finyk` після `routine` (менш активний модуль). У час фази 2 для `finyk` повідомити в `#dev-channel`, заморозити cosmetic PR-и в FinykApp на 1 sprint.                 |
+| Великий `chatActions/types.ts` має transitive consumers поза модулями            | Перенести типи поетапно з `re-export shim` в core (1 PR — додати shim, 1 PR — рухати імпорти, 1 PR — видалити shim). Гард: `lint:imports` перевірить, що нові імпорти йдуть з модульних шляхів. |
+| Вибух bundle-розміру при tree-shake icons (lazy-import per icon = багато chunks) | Використати `vite`-у `manualChunks` для core-icon-set (часто-використовувані 30 іконок) — лишити в одному chunk-і. Решта tree-shake. Перевірити Lighthouse perf на головних сторінках.          |
+| Allowlist залишиться «назавжди»                                                  | Кожен запис в allowlist має `TODO(0001-…): deadline YYYY-MM-DD`. CI job `lint:todo-freshness` падає, коли deadline пройшов.                                                                     |
 
 ## Метрики
 
 | Метрика                                                                | Baseline (2026-05-03) | Target (2026-06-15) |
 | ---------------------------------------------------------------------- | --------------------- | ------------------- |
-| Файлів `apps/web/src/**` ≥600 LOC                                     | 16                    | ≤ 2                 |
+| Файлів `apps/web/src/**` ≥600 LOC                                      | 16                    | ≤ 2                 |
 | Найбільший файл                                                        | 745 LOC               | ≤ 600 LOC           |
 | Bundle `shared` chunk (brotli)                                         | 92 KB                 | ≤ 75 KB             |
 | Сумарний LOC у Top-15 порушниках                                       | ~12 200               | ≤ 7 500             |
@@ -106,4 +107,47 @@
 
 ## Outcome
 
-_Заповнюється після завершення._
+### Фаза 1 — guard rail (DONE — 2026-05-03)
+
+**PR:** [#1555 — `docs(docs): initiative 0001 phase 1 — max-lines guard for apps/web`](https://github.com/Skords-01/Sergeant/pull/1555) (merged 2026-05-03).
+
+Що увімкнули:
+
+- **`max-lines: [error, 600]`** для `apps/web/src/**/*.{ts,tsx}` у [`eslint.config.js`](../../eslint.config.js)
+  (`skipBlankLines: true`, `skipComments: true`, `max: 600`). Тести й Storybook-and-fixtures-стек
+  виключено окремою конфіг-секцією — вони можуть бути довшими і це нормально.
+- **Allowlist** з 7 файлів-моноліттів (kept в одному `overrides` блоці з заголовним
+  коментарем `// TODO(0001-module-decomposition): deadline 2026-06-15`). Кожен файл там
+  явно перелічений — не glob — щоб новий ≥600-LOC файл не «пролазив» через широкий патерн.
+  Список збігається з табличкою «Фаза 2 — Top-7 декомпозиція» вище.
+- **Hard Rule #18** додано у [`AGENTS.md`](../../AGENTS.md), [`CONTRIBUTING.md`](../../CONTRIBUTING.md)
+  та [`docs/governance/hard-rules.json`](../governance/hard-rules.json) одночасно (Hard Rule #15
+  тримає ці три файли синхронізованими — `pnpm lint:hard-rules-registry` падає при дрейфі).
+  Текст правила: _“У `apps/web/src/**` не може з'явитися новий файл ≥600 LOC. Декомпонуйте
+  по доменах перед merge — або додавайте до allowlist у `eslint.config.js` із deadline-коментарем
+  і посиланням на цю ініціативу.”_
+- **`docs/tech-debt/frontend.md` § LARGE_FILES** перенесено зі стану _Watching_ у
+  _In progress_, з посиланням сюди. `pnpm lint:tech-debt-freshness` тепер питає
+  оновлення цієї секції, поки allowlist не порожній.
+
+Метрики Phase 1 (Phase 2 ще попереду):
+
+| Метрика                                        | Baseline (2026-05-03) | Phase 1 (post-#1555)                | Target (2026-06-15) |
+| ---------------------------------------------- | --------------------- | ----------------------------------- | ------------------- |
+| Файлів `apps/web/src/**` ≥600 LOC (CI-видимих) | 16                    | **0** (всі в allowlist із deadline) | ≤ 2                 |
+| Найбільший файл                                | 745 LOC               | 745 LOC (поки в allowlist)          | ≤ 600 LOC           |
+| Net-new ≥600-LOC файлів дозволяється у CI      | n/a (без правила)     | **0**                               | 0                   |
+
+Що далі (Phase 2, окремі PR-и за табличкою «Top-7 декомпозиція»):
+
+1. PR `decomp-routine-app` (RoutineApp.tsx 745 → ≤200 LOC по компонентах)
+2. PR `decomp-finyk-storage` (useStorage.ts 685 → 4 hooks по ≤200 LOC)
+3. PR `decomp-chat-actions-types` (672 → core-only лишаються base-types, domain-types у модулях)
+4. PR `decomp-sw` (sw.ts 643 → entry ≤60 LOC, інше у `sw/*.ts`)
+5. PR `decomp-icon` (Icon.tsx 660 → tree-shake-friendly, lazy per icon)
+
+Phase 3 (закриття allowlist) запланована після останнього PR Phase 2 — об’єднаний
+PR `decomp-finalize` видаляє `overrides` allowlist цілком і закриває цю ініціативу
+як **Done**.
+
+Відхилення від плану: жодних — Phase 1 пройшла рівно за описом, без зсувів.
