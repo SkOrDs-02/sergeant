@@ -223,6 +223,27 @@ export const rateLimitHitsTotal = new client.Counter({
   registers: [register],
 });
 
+/**
+ * Counts how often the rate-limit middleware was forced into degraded
+ * mode (both Redis AND Postgres unreachable, leaving only the per-process
+ * in-memory bucket). `mode` records what the middleware did from there:
+ *   - `inmem`  — `failMode === "open"`: served via in-memory bucket
+ *     (per-replica, NOT global — sustained `inmem` on multi-replica deploys
+ *     means the effective limit is `N×limit`).
+ *   - `closed` — `failMode === "closed"`: refused with 503 because the
+ *     route was tagged security-sensitive (e.g. `/api/auth/*`).
+ *
+ * Alert when `rate(rate_limit_degraded_total{mode="inmem"}[5m]) > 0`
+ * sustained — a degraded production limiter is **always** an obs event,
+ * not a steady-state.
+ */
+export const rateLimitDegradedTotal = new client.Counter({
+  name: "rate_limit_degraded_total",
+  help: "Rate-limit middleware fell through to in-memory or refused (503) because Redis+Postgres were unavailable",
+  labelNames: ["key", "mode"], // mode=inmem|closed
+  registers: [register],
+});
+
 // ───────────────────────── Circuit Breaker ────────────────────
 export const circuitBreakerState = new client.Gauge({
   name: "circuit_breaker_state",

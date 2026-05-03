@@ -91,6 +91,30 @@ export const env = {
     3_000,
   ),
 
+  /**
+   * Fail-mode for rate-limit middleware on security-sensitive endpoints
+   * (`/api/auth/*`). When BOTH Redis and Postgres are unreachable (i.e. the
+   * limiter is forced into the per-process in-memory bucket), the middleware
+   * returns 503 instead of letting the request through.
+   *
+   * Rationale: in-memory buckets are per-replica state. On Railway with 3
+   * replicas an attacker effectively gets `3×limit` requests/window because
+   * each replica counts independently. For credential-stuffing this turns a
+   * 5-attempts-per-15-min limit into 15. Fail-closed stops the degradation
+   * — the user sees 503 + Retry-After, and the attacker cannot accumulate
+   * attempts while the backend recovers.
+   *
+   * Defaults to `true`. Disable only if you observe false-positive 503s in
+   * production (e.g. Redis blips routinely take Postgres down with them).
+   * Non-auth routes (`/api/health`, public read APIs) stay fail-open
+   * regardless of this flag — for them the cost-of-blocking outweighs the
+   * abuse-amplification risk.
+   */
+  RATE_LIMIT_FAIL_CLOSED_AUTH: parseBoolEnv(
+    "RATE_LIMIT_FAIL_CLOSED_AUTH",
+    true,
+  ),
+
   // ─────────────────────────────────────────────────────────────────────────
   // Internal API (machine-to-machine, used by n8n workflows)
   // ─────────────────────────────────────────────────────────────────────────

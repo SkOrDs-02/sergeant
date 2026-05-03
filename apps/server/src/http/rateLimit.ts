@@ -2,7 +2,7 @@ import type { Request, RequestHandler } from "express";
 import type Redis from "ioredis";
 import { pool } from "../db.js";
 import { logger } from "../obs/logger.js";
-import { rateLimitHitsTotal } from "../obs/metrics.js";
+import { rateLimitDegradedTotal, rateLimitHitsTotal } from "../obs/metrics.js";
 import { getRedis } from "../lib/redis.js";
 
 type Outcome = "allowed" | "blocked";
@@ -10,6 +10,14 @@ type Outcome = "allowed" | "blocked";
 function recordRateLimit(key: string, outcome: Outcome): void {
   try {
     rateLimitHitsTotal.inc({ key, outcome });
+  } catch {
+    /* metrics must never break a request */
+  }
+}
+
+function recordRateLimitDegraded(key: string, mode: "inmem" | "closed"): void {
+  try {
+    rateLimitDegradedTotal.inc({ key, mode });
   } catch {
     /* metrics must never break a request */
   }
@@ -57,6 +65,26 @@ export interface RateLimitOptions {
   key: string;
   limit: number;
   windowMs: number;
+  /**
+   * What to do when the limiter is forced into degraded mode (i.e. **both**
+   * Redis and Postgres are unreachable, leaving only the per-process
+   * in-memory bucket).
+   *
+   * - `"open"` (default) — serve via the in-memory bucket. Caveat: each
+   *   replica has its own `Map`, so on a multi-replica deploy the effective
+   *   limit becomes `N×limit` until Redis or Postgres recovers. Pick this
+   *   for routes where the cost-of-blocking outweighs the abuse-amplification
+   *   risk (e.g. `/api/health`, public read APIs).
+   * - `"closed"` — refuse the request with `503 Service Unavailable` +
+   *   `Retry-After`. Pick this for security-sensitive routes (`/api/auth/*`)
+   *   where letting `N×limit` requests through would meaningfully accelerate
+   *   credential-stuffing or password-reset abuse.
+   *
+   * Either way, the degraded transition is recorded on `rateLimitDegradedTotal`
+   * with `mode=inmem` (open) or `mode=closed` (closed) so dashboards can alert
+   * on a degraded production limiter.
+   */
+  failMode?: "open" | "closed";
 }
 
 export interface RateLimitResult {
@@ -266,10 +294,23 @@ function pgErr(err: unknown): PgErrorLike {
   return err && typeof err === "object" ? (err as PgErrorLike) : {};
 }
 
-async function checkRateLimitPgWithFallback(
+/**
+ * Tries the Postgres-backed limiter and returns `null` on **any** error
+ * (table missing, connection refused, pool exhausted, …). Returning a
+ * sentinel rather than falling through to in-memory lets the caller decide
+ * whether to degrade open or closed — necessary for security-sensitive
+ * routes where the in-memory bucket is per-replica and would amount to a
+ * silent `N×limit` bypass on multi-replica deploys.
+ *
+ * Side effect: emits a one-shot `rate_limit_pg_table_missing` warn for
+ * SQLSTATE `42P01` (migration not applied yet). Subsequent failures fall
+ * through silently — the warn is enough to flag the degraded state in obs
+ * without spamming on every request.
+ */
+async function tryCheckRateLimitPg(
   req: Request,
   options: RateLimitOptions,
-): Promise<RateLimitResult> {
+): Promise<RateLimitResult | null> {
   try {
     return await checkRateLimitPg(req, options);
   } catch (err) {
@@ -281,8 +322,16 @@ async function checkRateLimitPgWithFallback(
         hint: "apply migration 035_rate_limit_buckets.sql; falling back to in-memory limiter",
       });
     }
-    return checkRateLimit(req, options);
+    return null;
   }
+}
+
+async function checkRateLimitPgWithFallback(
+  req: Request,
+  options: RateLimitOptions,
+): Promise<RateLimitResult> {
+  const pg = await tryCheckRateLimitPg(req, options);
+  return pg ?? checkRateLimit(req, options);
 }
 
 async function maybeSweepPgBuckets(maxWindowMs: number): Promise<void> {
@@ -349,22 +398,54 @@ export function rateLimitExpress({
   key,
   limit,
   windowMs,
+  failMode = "open",
 }: RateLimitOptions): RequestHandler {
   return async (req, res, next) => {
     const redis = getRedis();
-    let rl: RateLimitResult;
+    let rl: RateLimitResult | null = null;
+
     if (redis) {
       try {
         rl = await checkRateLimitRedis(redis, req, { key, limit, windowMs });
       } catch {
-        // Redis unavailable — fall back to Postgres (horizontally
-        // consistent across replicas), and only to in-memory if even
-        // Postgres is broken (test bootstrap, migration not applied).
-        rl = await checkRateLimitPgWithFallback(req, { key, limit, windowMs });
+        // Redis unavailable — try Postgres next.
+        rl = await tryCheckRateLimitPg(req, { key, limit, windowMs });
       }
     } else {
-      rl = await checkRateLimitPgWithFallback(req, { key, limit, windowMs });
+      rl = await tryCheckRateLimitPg(req, { key, limit, windowMs });
     }
+
+    // Both Redis and Postgres failed (or weren't available). Decide what to
+    // do based on `failMode`: degrade to per-process in-memory bucket
+    // (`open`) or refuse with 503 (`closed`). Either way the transition is
+    // recorded on `rateLimitDegradedTotal` so a sustained degraded limiter
+    // is alertable.
+    if (!rl) {
+      if (failMode === "closed") {
+        recordRateLimitDegraded(key, "closed");
+        try {
+          // 5s is a deliberate floor: long enough that retries don't
+          // hammer a recovering Redis/Postgres, short enough that real
+          // users with a transient network blip don't see a 30s wall.
+          res.setHeader("Retry-After", "5");
+        } catch {
+          /* ignore */
+        }
+        const requestId = (req as Request & { requestId?: string }).requestId;
+        const message =
+          "Сервіс тимчасово недоступний. Спробуй за кілька секунд.";
+        res.status(503).json({
+          error: message,
+          message,
+          code: "RATE_LIMIT_UNAVAILABLE",
+          ...(requestId ? { requestId } : {}),
+        });
+        return;
+      }
+      recordRateLimitDegraded(key, "inmem");
+      rl = checkRateLimit(req, { key, limit, windowMs });
+    }
+
     // Best-effort sweep of stale rows; runs ~1/256 calls so the table
     // doesn't grow under churning IPs. No-op when Postgres is degraded.
     void maybeSweepPgBuckets(windowMs);

@@ -1,10 +1,21 @@
 import type { NextFunction, Request, Response } from "express";
 import { createHash } from "crypto";
 import { rateLimitExpress } from "./rateLimit.js";
+import { env } from "../env.js";
 import { logger } from "../obs/logger.js";
 import { authAttemptsTotal } from "../obs/metrics.js";
 
-/** Жорсткіший ліміт на sign-in / sign-up / reset (POST). */
+/**
+ * Жорсткіший ліміт на sign-in / sign-up / reset (POST).
+ *
+ * Fail-closed (controlled by `RATE_LIMIT_FAIL_CLOSED_AUTH`, default `true`):
+ * якщо і Redis, і Postgres недоступні, middleware повертає 503 замість
+ * того, щоб пускати запит через per-process in-memory bucket. На
+ * multi-replica deploy in-memory bucket = `N×limit` ефективно, що
+ * прискорює credential-stuffing у `N×`. Fail-closed зупиняє цю
+ * амплифікацію — атакер не може накручувати спроби, поки backend не
+ * відновиться.
+ */
 export function authSensitiveRateLimit(
   req: Request,
   res: Response,
@@ -25,6 +36,7 @@ export function authSensitiveRateLimit(
     key: "api:auth:sensitive",
     limit: 20,
     windowMs: 60_000,
+    failMode: env.RATE_LIMIT_FAIL_CLOSED_AUTH ? "closed" : "open",
   })(req, res, next);
 }
 

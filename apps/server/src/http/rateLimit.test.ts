@@ -609,3 +609,164 @@ describe("rateLimitExpress — Postgres path", () => {
     expect(loggerWarnMock).not.toHaveBeenCalled();
   });
 });
+
+describe("rateLimitExpress — fail-closed mode", () => {
+  // Fail-closed is the safety guarantee for `/api/auth/*`: when both Redis
+  // AND Postgres are unreachable, in-memory bucketing is per-replica and
+  // would otherwise let `N×limit` requests through. Refusing with 503 stops
+  // credential-stuffing amplification while the backend recovers.
+  function makeReq(ip: string): Request {
+    return { ip, headers: {} } as unknown as Request;
+  }
+
+  function makeRes(): {
+    res: never;
+    json: ReturnType<typeof vi.fn>;
+    setHeader: ReturnType<typeof vi.fn>;
+    status: ReturnType<typeof vi.fn>;
+  } {
+    const json = vi.fn();
+    const setHeader = vi.fn();
+    const status = vi.fn().mockReturnThis();
+    const res = {
+      setHeader,
+      status,
+      json,
+    } as never;
+    return { res, json, setHeader, status };
+  }
+
+  beforeEach(() => {
+    vi.mocked(getRedis).mockReturnValue(null);
+    redisEvalMock.mockReset();
+    pgQueryMock.mockReset();
+    loggerWarnMock.mockReset();
+    __resetRateLimitPgWarnForTests();
+  });
+
+  it("refuses with 503 + Retry-After when Redis is null and Postgres is unavailable", async () => {
+    pgQueryMock.mockRejectedValue(pgUndefinedTableError());
+
+    const middleware = rateLimitExpress({
+      key: "mw:auth:closed",
+      limit: 20,
+      windowMs: 60_000,
+      failMode: "closed",
+    });
+    const { res, json, setHeader, status } = makeRes();
+    const next = vi.fn();
+    await middleware(makeReq("10.0.0.40"), res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(status).toHaveBeenCalledWith(503);
+    expect(setHeader).toHaveBeenCalledWith("Retry-After", "5");
+    const body = json.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(body).toEqual(
+      expect.objectContaining({
+        code: "RATE_LIMIT_UNAVAILABLE",
+      }),
+    );
+    // Both `error` and `message` populated for better-fetch / direct
+    // fetch callers — same contract as the 429 path.
+    expect(typeof body?.error).toBe("string");
+    expect(typeof body?.message).toBe("string");
+  });
+
+  it("refuses with 503 when Redis throws AND Postgres is unavailable", async () => {
+    const fakeRedis = {
+      eval: redisEvalMock.mockRejectedValue(new Error("ECONNREFUSED")),
+    };
+    vi.mocked(getRedis).mockReturnValue(fakeRedis as never);
+    pgQueryMock.mockRejectedValue(pgUndefinedTableError());
+
+    const middleware = rateLimitExpress({
+      key: "mw:auth:closed-2",
+      limit: 20,
+      windowMs: 60_000,
+      failMode: "closed",
+    });
+    const { res, status } = makeRes();
+    const next = vi.fn();
+    await middleware(makeReq("10.0.0.41"), res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(status).toHaveBeenCalledWith(503);
+  });
+
+  it("DOES NOT refuse when Redis works — fail-closed only activates on degraded backend", async () => {
+    const fakeRedis = { eval: redisEvalMock.mockResolvedValue([1, 60_000]) };
+    vi.mocked(getRedis).mockReturnValue(fakeRedis as never);
+
+    const middleware = rateLimitExpress({
+      key: "mw:auth:closed-redis-ok",
+      limit: 20,
+      windowMs: 60_000,
+      failMode: "closed",
+    });
+    const { res, status } = makeRes();
+    const next = vi.fn();
+    await middleware(makeReq("10.0.0.42"), res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(status).not.toHaveBeenCalledWith(503);
+  });
+
+  it("DOES NOT refuse when Postgres works — fail-closed only activates on degraded backend", async () => {
+    pgQueryMock.mockResolvedValue({
+      rows: [{ count: 1, elapsed_ms: "0" }],
+    });
+
+    const middleware = rateLimitExpress({
+      key: "mw:auth:closed-pg-ok",
+      limit: 20,
+      windowMs: 60_000,
+      failMode: "closed",
+    });
+    const { res, status } = makeRes();
+    const next = vi.fn();
+    await middleware(makeReq("10.0.0.43"), res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(status).not.toHaveBeenCalledWith(503);
+  });
+
+  it("still 429-blocks when Redis returns over-limit (failMode does not affect normal limit hits)", async () => {
+    // Regression guard: a fail-closed route should still surface the
+    // canonical 429 for legitimate rate-limit hits, NOT 503. 503 is
+    // reserved for the degraded-backend path.
+    const fakeRedis = { eval: redisEvalMock.mockResolvedValue([21, 30_000]) };
+    vi.mocked(getRedis).mockReturnValue(fakeRedis as never);
+
+    const middleware = rateLimitExpress({
+      key: "mw:auth:closed-blocked",
+      limit: 20,
+      windowMs: 60_000,
+      failMode: "closed",
+    });
+    const { res, status } = makeRes();
+    const next = vi.fn();
+    await middleware(makeReq("10.0.0.44"), res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(status).toHaveBeenCalledWith(429);
+    expect(status).not.toHaveBeenCalledWith(503);
+  });
+
+  it("default failMode is 'open' — preserves backward compat for non-auth routes", async () => {
+    pgQueryMock.mockRejectedValue(pgUndefinedTableError());
+
+    // No explicit `failMode` — should behave exactly like before this
+    // change: degrade to in-memory and serve the request.
+    const middleware = rateLimitExpress({
+      key: "mw:public:default",
+      limit: 100,
+      windowMs: 60_000,
+    });
+    const { res, status } = makeRes();
+    const next = vi.fn();
+    await middleware(makeReq("10.0.0.50"), res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(status).not.toHaveBeenCalledWith(503);
+  });
+});

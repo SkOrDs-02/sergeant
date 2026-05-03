@@ -40,6 +40,29 @@ const envSchema = z.object({
   /** Redis URL для глобального rate-limit. Fallback — in-memory per-process. */
   REDIS_URL: z.string().optional(),
 
+  // ── Rate limit ──────────────────────────────────────────────────────
+  /**
+   * Fail-mode для rate-limit middleware на security-sensitive ендпоінтах
+   * (`/api/auth/*`). При відмові і Redis, **і** Postgres (тобто fallback
+   * виявився в per-process in-memory limiter), middleware повертає 503
+   * замість того, щоб пускати запит через локальний bucket.
+   *
+   * Чому: in-memory bucket — це per-replica state. На Railway з 3 replicas
+   * атакер ефективно отримує `3×limit` запитів/вікно. Для credential-stuffing
+   * це прискорює атаку у 3×. Fail-closed для `/api/auth/*` зупиняє цю
+   * деградацію — користувач бачить 503 + Retry-After, а атакер не може
+   * накручувати спроби, поки backend не відновиться.
+   *
+   * Default `true`. Можна вимкнути у разі неочікуваних 503-issues у
+   * production (наприклад, Redis-blip-и трактуватимуться як fail-closed).
+   * Інші маршрути (`/api/health`, public read APIs) лишаються fail-open
+   * незалежно від цього flag-а — для них cost-of-blocking вищий за ризик.
+   */
+  RATE_LIMIT_FAIL_CLOSED_AUTH: z
+    .enum(["true", "false", "1", "0", ""])
+    .default("true")
+    .transform((v) => v === "" || v === "true" || v === "1"),
+
   // ── Auth (Better Auth) ──────────────────────────────────────────────
   BETTER_AUTH_URL: z.string().url().optional(),
   BETTER_AUTH_SECRET: z.string().optional(),
