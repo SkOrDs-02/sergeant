@@ -215,26 +215,46 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 ### 3.5. Webhook замість long-poll для OpenClaw bot
 
-**Status:** shipped (foundation), default-off until Railway env flip.
+**Status:** ✅ shipped і live in production (з 2026-05-03 21:26 UTC). Local dev лишається на long-poll (env-default-off).
 **Pain закриває:** P4.
-**ADR:** [ADR-0041 — OpenClaw Telegram delivery via webhook](../adr/0041-openclaw-telegram-webhook.md).
+**ADR:** [ADR-0041 — OpenClaw Telegram delivery via webhook](../adr/0041-openclaw-telegram-webhook.md) §5 (production rollout) + race-condition note.
 
-**Що:** додати feature-flag webhook-режим у `apps/console`. Замість Express в `apps/server` хостимо `node:http`-listener в самому console-процесі (там же де `ApprovalStore`/agent-loop) і використовуємо grammy `webhookCallback("http", { secretToken })`. Long-poll лишається дефолтом для local dev (`pnpm console:dev`); Railway вмикається через `OPENCLAW_USE_WEBHOOK=true` + `OPENCLAW_WEBHOOK_URL` + `OPENCLAW_WEBHOOK_SECRET`. `Sergeant_alert_bot` лишається long-poll (broadcast-only, без callback latency-issue).
+**Що зроблено:** feature-flag webhook-режим у `apps/console`. Замість Express в `apps/server` хостимо `node:http`-listener в самому console-процесі (там же де `ApprovalStore`/agent-loop) і використовуємо grammy `webhookCallback("http", { secretToken })`. Long-poll лишається дефолтом для local dev (`pnpm console:dev`); production Railway env має `OPENCLAW_USE_WEBHOOK=true` + `OPENCLAW_WEBHOOK_URL=https://sergeant-hubchat-production.up.railway.app/webhook/openclaw` + `OPENCLAW_WEBHOOK_SECRET=<48-char hex>`. `Sergeant_alert_bot` лишається long-poll (broadcast-only, без callback latency-issue).
 
 **Чому:** callback-кнопки (Phase 4 approval, §3.2 ack-button) latency 1-3с. Webhook → <500ms. UX-помітно.
 
-**Effort:** M (~2 дні + ADR).
+**Effort:** M (~2 дні + ADR + Railway flip).
 
-**Risks:**
+**Risks (mitigated):**
 
-- TLS-cert на Railway — already provided via Railway custom domain.
+- TLS-cert на Railway — already provided via Railway edge.
 - Telegram retry-contract: must respond 200 за <60s, ідеально <1s. Mitigation: grammy `webhookCallback("http")` повертає 200 одразу після диспатчу update-у в bot middleware (`ApprovalStore` writes — fire-and-forget).
 - Single-active-webhook constraint: тільки один URL за токеном; на long-poll-фолбек boot робить `deleteWebhook` defensively.
+- **Initial migration race (one-shot):** при першому переході long-poll → webhook старий контейнер у graceful-shutdown зробив один `getUpdates`, який неявно очистив webhook на Telegram-side, попри те що новий контейнер вже відзвітував успішний `setWebhook`. Workaround — повторний `setWebhook` curl-ом + redeploy. Подальші webhook → webhook redeploy-и стабільні. Деталі — ADR-0041 §5. Hardening винесений у W4.1 нижче.
+
+**Acceptance (verified):**
+
+- Approval-кнопка від click до DB-INSERT у `openclaw_write_audit` < 800ms (target; e2e smoke-test чекає на користувацький tap).
+- Telegram `getWebhookInfo` повертає очікуваний URL + secret_token + `allowed_updates=[message, callback_query]`. ✅
+- `GET /healthz` → 200 ok; `POST /webhook/openclaw` без секрету → 401; з вірним секретом → 200. ✅
+- Backout — unset `OPENCLAW_USE_WEBHOOK` + redeploy → console робить `deleteWebhook` і повертається у long-poll за один redeploy (healthcheck path also revert до `pgrep`).
+
+### 3.5.1. W4.1 — bootstrap setWebhook poll-and-retry hardening
+
+**Status:** new (backlog, пост-W4 hardening на основі race-condition зі §3.5).
+**Pain закриває:** P4 follow-up — щоб майбутні long-poll → webhook міграції інших ботів (або accidental re-activation long-poll) не вимагали ручного curl-у.
+
+**Що:** у `apps/console/src/openclaw/bootstrap.ts:registerOpenClawWebhook` після `bot.api.setWebhook(...)` зробити `getWebhookInfo`, перевіряти що повернений `url === expected`, при mismatch ще раз викликати `setWebhook` з backoff (max 3 спроби, 1s/2s/4s). Лог-повідомлення про recovery, щоб у Sentry було видно що race спрацював.
+
+**Чому:** ADR-0041 §5 описує race ("getUpdates у старому контейнері перетирає webhook-state на Telegram-стороні"). Поточний код викликає `setWebhook` оптимістично і не перевіряє кінцевий стан → race потребує operator manual-fix. Поточний обхід — окремий `serviceInstanceRedeploy` після того, як впевнились що старий контейнер уже мертвий.
+
+**Effort:** XS (½ дня; ~30 LOC + 2 нові тести в `bootstrap.test.ts`).
 
 **Acceptance:**
 
-- Approval-кнопка від click до DB-INSERT у `openclaw_write_audit` < 800ms (зараз ~2-3s).
-- Backout — unset `OPENCLAW_USE_WEBHOOK` + redeploy → console робить `deleteWebhook` і повертається у long-poll за один redeploy.
+- Unit test покриває mismatch-on-first-attempt → recovery-on-second.
+- Sentry breadcrumb `[openclaw] webhook recovered after race` при retry-успіху.
+- Smoke: вимкнути `OPENCLAW_USE_WEBHOOK`, redeploy, потім знову увімкнути + redeploy → `getWebhookInfo` має повернути правильну URL без manual curl-у.
 
 ---
 
@@ -285,24 +305,25 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 ## 5. Wave-based PR plan
 
-| Wave  | PR  | Item(s)                                                                | Effort | ADR       | Status                                                                                                                                           |
-| ----- | --- | ---------------------------------------------------------------------- | ------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| W1    | (a) | §3.3 (`/audit since=` + `--csv`)                                       | S      | —         | ✅ [#1462](https://github.com/Skords-01/Sergeant/pull/1462)                                                                                      |
-| W1    | (b) | §3.4 (WF-15 Bad request fix)                                           | S      | —         | ✅ [#1469](https://github.com/Skords-01/Sergeant/pull/1469)                                                                                      |
-| W2    | (c) | §3.1 (Phase 2.A morning ritual)                                        | M      | 0039      | planned                                                                                                                                          |
-| W2    | (d) | C.2 (Sentry breadcrumbs у tool-calls)                                  | XS     | —         | planned                                                                                                                                          |
-| W3    | (e) | §3.2 (alert ack-button + escalation) — foundation + WF-04/103/104 live | M      | 0038      | ✅ PR-1 [#1473](https://github.com/Skords-01/Sergeant/pull/1473) + PR-2 [#1480](https://github.com/Skords-01/Sergeant/pull/1480); 17 wirings TBD |
-| W3    | (f) | A.1 (Phase 2.B Friday weekly + OKR)                                    | M      | 0039      | planned                                                                                                                                          |
-| W3    | (g) | B.1 (alert dedup / occurrence-counter)                                 | M      | —         | planned                                                                                                                                          |
-| W4    | (h) | §3.5 (webhook delivery)                                                | M      | 0041      | planned                                                                                                                                          |
-| W4    | (i) | A.6 + A.7 (`/help` + persona quick-row)                                | S      | —         | planned                                                                                                                                          |
-| Later | …   | A.2 (Phase 3), A.3, A.4, A.5, A.8, A.10, A.11, A.12, A.13              | varies | 0040+     | backlog                                                                                                                                          |
-| Later | …   | B.2..B.8                                                               | varies | varies    | backlog                                                                                                                                          |
-| Later | …   | C.1, C.3, C.4, C.5                                                     | varies | 0042/0043 | backlog                                                                                                                                          |
+| Wave  | PR  | Item(s)                                                                | Effort | ADR       | Status                                                                                                                                                                            |
+| ----- | --- | ---------------------------------------------------------------------- | ------ | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W1    | (a) | §3.3 (`/audit since=` + `--csv`)                                       | S      | —         | ✅ [#1462](https://github.com/Skords-01/Sergeant/pull/1462)                                                                                                                       |
+| W1    | (b) | §3.4 (WF-15 Bad request fix)                                           | S      | —         | ✅ [#1469](https://github.com/Skords-01/Sergeant/pull/1469)                                                                                                                       |
+| W2    | (c) | §3.1 (Phase 2.A morning ritual)                                        | M      | 0039      | planned                                                                                                                                                                           |
+| W2    | (d) | C.2 (Sentry breadcrumbs у tool-calls)                                  | XS     | —         | planned                                                                                                                                                                           |
+| W3    | (e) | §3.2 (alert ack-button + escalation) — foundation + WF-04/103/104 live | M      | 0038      | ✅ PR-1 [#1473](https://github.com/Skords-01/Sergeant/pull/1473) + PR-2 [#1480](https://github.com/Skords-01/Sergeant/pull/1480); 17 wirings TBD                                  |
+| W3    | (f) | A.1 (Phase 2.B Friday weekly + OKR)                                    | M      | 0039      | planned                                                                                                                                                                           |
+| W3    | (g) | B.1 (alert dedup / occurrence-counter)                                 | M      | —         | planned                                                                                                                                                                           |
+| W4    | (h) | §3.5 (webhook delivery)                                                | M      | 0041      | ✅ [#1514](https://github.com/Skords-01/Sergeant/pull/1514) (code) + Railway flip 2026-05-03 21:26 UTC. Index/whitelist [#1517](https://github.com/Skords-01/Sergeant/pull/1517). |
+| W4    | (j) | §3.5.1 (W4.1 bootstrap setWebhook poll-and-retry hardening)            | XS     | —         | planned (post-W4 hardening for race noted in ADR-0041 §5)                                                                                                                         |
+| W4    | (i) | A.6 + A.7 (`/help` + persona quick-row)                                | S      | —         | planned                                                                                                                                                                           |
+| Later | …   | A.2 (Phase 3), A.3, A.4, A.5, A.8, A.10, A.11, A.12, A.13              | varies | 0040+     | backlog                                                                                                                                                                           |
+| Later | …   | B.2..B.8                                                               | varies | varies    | backlog                                                                                                                                                                           |
+| Later | …   | C.1, C.3, C.4, C.5                                                     | varies | 0042/0043 | backlog                                                                                                                                                                           |
 
 **Total для топ-4 хвиль:** ~12 робочих днів, 9 PR-ів, 3 нові ADR-и (0038, 0039, 0041).
 
-**Де-факто завершено (2026-05-03):** W1 (a)+(b) + W3 (e) — 4 merged PR всього.
+**Де-факто завершено (2026-05-03):** W1 (a)+(b) + W3 (e) + W4 (h) — 5 merged PR + 1 production env-flip всього.
 
 ---
 

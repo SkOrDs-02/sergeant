@@ -82,7 +82,40 @@ Long-poll path is byte-for-byte identical to before, plus a defensive `deleteWeb
 - Set Railway env vars on `sergeant-hubchat` service (per `docs/deploy/console.md`).
 - Redeploy → `setWebhook` runs once → bot delivers via webhook.
 - Verify approval-button p95 latency in PostHog / manual smoke (<500 ms).
-- **Backout:** unset `OPENCLAW_USE_WEBHOOK` and redeploy. `unregisterOpenClawWebhook` runs idempotently and bot is back on long-poll.
+- **Backout:** unset `OPENCLAW_USE_WEBHOOK` and redeploy. `unregisterOpenClawWebhook` runs idempotently and bot is back on long-poll. Healthcheck path must also be reverted from `/healthz` to the `pgrep` command, otherwise the long-poll container fails healthcheck and Railway kills it.
+
+### 5. Production rollout (2026-05-03 21:26 UTC)
+
+Activated on Railway service `sergeant-hubchat` (project `humorous-eagerness`, environment `production`):
+
+- `serviceDomainCreate` → `sergeant-hubchat-production.up.railway.app:8080` (no domain previously since long-poll did not need one).
+- `variableUpsert × 3` → `OPENCLAW_USE_WEBHOOK=true`, `OPENCLAW_WEBHOOK_URL=https://sergeant-hubchat-production.up.railway.app/webhook/openclaw`, `OPENCLAW_WEBHOOK_SECRET=<48-char hex>`.
+- `serviceInstanceUpdate` → `healthcheckPath=/healthz`.
+- `serviceInstanceRedeploy` (explicit, to migrate state cleanly).
+
+Verification matrix (all green at 21:30 UTC):
+
+| Check                                                          | Result                                                                                                                                                               |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Railway deploy `74e6148c`                                      | SUCCESS                                                                                                                                                              |
+| Bot logs                                                       | `OpenClaw starting in webhook mode on :8080/webhook/openclaw…` + `[openclaw] webhook registered with Telegram`                                                       |
+| Telegram `getWebhookInfo`                                      | `url=https://sergeant-hubchat-production.up.railway.app/webhook/openclaw`, `secret_token` set, `allowed_updates=[message, callback_query]`, `pending_update_count=0` |
+| `GET /healthz`                                                 | `200 ok`                                                                                                                                                             |
+| `POST /webhook/openclaw` без `X-Telegram-Bot-Api-Secret-Token` | `401 secret token is wrong`                                                                                                                                          |
+| `POST /webhook/openclaw` з вірним секретом                     | `200`                                                                                                                                                                |
+| `GET /foo`                                                     | `404`                                                                                                                                                                |
+
+#### Initial long-poll → webhook race (one-shot)
+
+First activation hit a one-time race:
+
+1. New container booted in webhook mode → `setWebhook` succeeded (visible in logs).
+2. Old long-poll container, mid-graceful-shutdown, made one final `getUpdates` call. Telegram treats `getUpdates` as an implicit "I am polling, drop the webhook" signal — it cleared the registered URL server-side.
+3. `getWebhookInfo` returned `url=""` despite logs claiming success.
+
+**Workaround applied:** after the `OPENCLAW_USE_WEBHOOK=true` redeploy reported SUCCESS, manually re-issued `setWebhook` via Bot API curl, then triggered a follow-up `serviceInstanceRedeploy`. Subsequent webhook → webhook redeploys are stable because the new webhook-mode container never calls `getUpdates`, so Telegram-side state is preserved across deploys.
+
+**W4.1 hardening (backlog):** add a poll-and-retry loop in `registerOpenClawWebhook` — after `setWebhook` succeeds, call `getWebhookInfo`, compare `url` against the configured one, and re-`setWebhook` with backoff (max 3 attempts) on mismatch. Eliminates the manual step on future long-poll → webhook migrations of other bots and on accidental re-activations of long-poll behaviour.
 
 ## Rationale
 
