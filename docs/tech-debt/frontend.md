@@ -17,7 +17,9 @@
 > `core/lib/chatActions/finykActions.ts` (758 → 96 LOC, винесено 7 модулів
 > у `finykActions/` — search/transactions/debts/budgets/assets/monobank/report),
 > `core/lib/chatActions/crossActions.ts` (788 → 78 LOC, винесено
-> `crossActions/{helpers,briefingHandlers,goalAndUtility,financeAnalytics,noteHandlers,memoryHandlers,exportHandler,compareWeeksHandler}.ts`).
+> `crossActions/{helpers,briefingHandlers,goalAndUtility,financeAnalytics,noteHandlers,memoryHandlers,exportHandler,compareWeeksHandler}.ts`),
+> `modules/fizruk/pages/Body.tsx` (774 → 414 LOC, винесено
+> `Body/{storage,trendUtils,ScoreButton,CollapsibleTrendCard,JournalEntryCard,JournalSection}`).
 > Розділ 9 (`any` типи) — production тепер містить **10 файлів** із `: any`
 > (7 у finyk sub-pages + `BudgetsGoalsSection.tsx` + 2 нові у fizruk після decomposition).
 > `no-strict-bypass` — allowlist на 9 production-файлів **обнулено**: усі call-сайти мігровані,
@@ -129,7 +131,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 
 ---
 
-### 4. Великі файли (>600 рядків) — 19 файлів (тільки `apps/web/src`)
+### 4. Великі файли (>600 рядків) — 18 файлів (тільки `apps/web/src`)
 
 > `finyk/pages/Assets.tsx` (раніше 1147 рядків) декомпозовано на
 > `useAssetsState.ts` (259), `AssetsForm.tsx` (376), `AssetsTable.tsx` (511),
@@ -202,6 +204,19 @@ Codemod ідемпотентний: повторний запуск дасть `
 > per-module switch), `crossActions/compareWeeksHandler.ts` (121 — `compare_weeks`
 > з 4 module-секціями). Усі < 200 LOC. Count 19 → 18.
 >
+> `modules/fizruk/pages/Body.tsx` (раніше 774 рядків) декомпозовано на
+> `Body.tsx` (414 — публічний `Body` компонент: форма + конфігурація графіків +
+> композиція), `Body/storage.ts` (33 — `TREND_STORAGE_PREFIX`/
+> `JOURNAL_OPEN_STORAGE_KEY`/`JOURNAL_ENTRY_OPEN_PREFIX` константи +
+> `JournalEntry` тип + `readTrendOpen`/`readPersistedOpen`/
+> `writePersistedOpen` обгортки), `Body/trendUtils.ts` (19 —
+> `lastValidValue`/`firstValidValue` для даних графіків), `Body/ScoreButton.tsx`
+> (45 — energy/mood 1–5 кнопки + `ENERGY_LABELS`/`MOOD_LABELS`),
+> `Body/CollapsibleTrendCard.tsx` (95 — collapsible картка графіка зі
+> збереженим станом відкриття), `Body/JournalEntryCard.tsx` (126 — окремий
+> щоденниковий запис із міткою дати + підсумком + видаленням), `Body/JournalSection.tsx`
+> (78 — обгортка для журналу зі згортанням верхнього рівня). Усі < 200 LOC. Count 19 → 18.
+>
 > **Скоуп таблиці нижче** — лише `apps/web/src`. Mobile (`apps/mobile/src/modules/finyk/pages/Transactions/TransactionsPage.tsx` 1215),
 > packages (`packages/shared/src/lib/assistantCatalogue.ts` 1133, `schemas/api.ts` 986,
 > `openapi/routes.ts` 837), server (`modules/chat/chat.ts` 783) — трекаються окремо
@@ -210,7 +225,6 @@ Codemod ідемпотентний: повторний запуск дасть `
 | Рядків | Файл                                                  |
 | ------ | ----------------------------------------------------- |
 | 897    | `core/onboarding/seedDemoData.ts`                     |
-| 774    | `modules/fizruk/pages/Body.tsx`                       |
 | 733    | `modules/nutrition/components/LogCard.tsx`            |
 | 732    | `modules/routine/RoutineApp.tsx`                      |
 | 697    | `modules/fizruk/pages/Progress.tsx`                   |

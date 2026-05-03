@@ -38,8 +38,7 @@ async function startBotWithConflictRetry(
       await bot.start({ drop_pending_updates: false });
       return;
     } catch (err) {
-      const isConflict =
-        err instanceof GrammyError && err.error_code === 409;
+      const isConflict = err instanceof GrammyError && err.error_code === 409;
       attempt += 1;
       if (!isConflict || attempt >= STARTUP_409_MAX_ATTEMPTS) {
         throw err;
