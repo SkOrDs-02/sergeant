@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR) — реєстр рішень
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Архітектурні рішення Sergeant. Кожен ADR фіксує **рішення з контекстом і альтернативами**, щоб через рік не довелось гадати «чому ми тут зробили так, а не інакше».
@@ -67,39 +67,43 @@ pnpm gen:adr
 
 ## Поточні ADR
 
-| #    | Назва                                           | Статус   | Створено   | Контекст                                                                                                      |
-| ---- | ----------------------------------------------- | -------- | ---------- | ------------------------------------------------------------------------------------------------------------- |
-| 0001 | Monetization architecture                       | proposed | 2026-04-27 | 11 рішень перед стартом monetization-MVP (provider, cache, trial, tax, cancel, ...)                           |
-| 0002 | AI tool lifecycle                               | accepted | 2026-04-27 | 4-фазний процес для Anthropic tools: Proposal → Safety → Rollout → KPIs.                                      |
-| 0003 | Refund and dispute handling                     | proposed | 2026-04-27 | Stripe refund/dispute flow + fraud_blocklist; 90-day window; повернення Pro-status.                           |
-| 0004 | CloudSync LWW conflict resolution               | accepted | 2026-04-27 | Last-Write-Wins на module-рівні + offline queue + Phase 4 tie-breaker.                                        |
-| 0005 | Anthropic model selection and prompt caching    | accepted | 2026-04-27 | Claude 3.5 Sonnet primary, Haiku fallback; prompt-cache strategy + cache-hit metrics.                         |
-| 0006 | RQ keys via centralized factory                 | accepted | 2026-04-27 | `queryKeys.ts` factories + ESLint rule `rq-keys-only-from-factory`.                                           |
-| 0007 | Tailwind opacity scale + WCAG-AA `-strong` tier | accepted | 2026-04-27 | Підтримуваний opacity-набір 5/10/15/...; saturated brand-fill behind `text-white` → `-strong` companion.      |
-| 0008 | Feature flags                                   | accepted | 2026-04-27 | Client-only registry поверх `typedStore`; немає сервер-сайд гейтінгу на MVP.                                  |
-| 0009 | Hosting split Railway + Vercel                  | accepted | 2026-04-27 | API + Postgres на Railway, web + edge-proxy на Vercel; single-origin cookie boundary.                         |
-| 0010 | Mobile dual-track (Capacitor+Expo)              | accepted | 2026-04-27 | Shell + RN паралельно, окремі bundle-ID, спільний API та domain-пакети.                                       |
-| 0011 | Local-first storage                             | accepted | 2026-04-27 | Клієнт — primary, сервер — LWW-реплікатор на module-рівні; offline queue.                                     |
-| 0012 | RLS as authz boundary                           | proposed | 2026-04-27 | Цільова модель RLS + `withUserContext`; поточно — app-enforced `WHERE user_id`.                               |
-| 0013 | DB migrations conventions                       | accepted | 2026-04-27 | Sequential `NNN_*.sql`, forward-only, two-phase DROP, idempotent, tests first.                                |
-| 0014 | bigint → number policy                          | accepted | 2026-04-27 | Серіалізатори коерсять `BIGINT` → JS `number`; snapshot-тести лочать contract.                                |
-| 0015 | Observability stack                             | accepted | 2026-04-27 | Pino (logs) + Prometheus (metrics) + Sentry (errors); SLO-first burn-rate alerts.                             |
-| 0016 | User deletion and PII handling                  | proposed | 2026-04-27 | GDPR delete-flow, fraud_blocklist retention, IP-cron 90-day window.                                           |
-| 0017 | Better Auth choice and session model            | accepted | 2026-04-27 | Better Auth (OSS, $0); cookie + bearer dual-channel; 30-day session; expo plugin.                             |
-| 0018 | API versioning policy (`/api/v1`)               | accepted | 2026-04-27 | `/api/v1/*` для domain endpoints; `/api/auth/*` без versioning; rewrite-middleware.                           |
-| 0019 | Push notifications                              | accepted | 2026-04-27 | Server-driven fan-out (web Push API + APNs + FCM); subscription lifecycle.                                    |
-| 0020 | Testing pyramid                                 | accepted | 2026-04-27 | Unit / integration / a11y / smoke-e2e — частки, owners, CI gating.                                            |
-| 0021 | Memory Bank                                     | accepted | 2026-04-27 | Local-first AI user-fact store; `key/value`-схема + Anthropic-tool integration.                               |
-| 0022 | Atomic SQL daily quotas                         | accepted | 2026-04-27 | `INSERT ... ON CONFLICT DO UPDATE WHERE` для idempotent quota counters.                                       |
-| 0023 | Turborepo as monorepo task runner               | accepted | 2026-04-27 | `turbo@2` поверх pnpm-workspace; task-граф у `turbo.json`; remote-cache opt-in через `TURBO_TOKEN`.           |
-| 0024 | Monorepo split — `apps/*` + `packages/*`        | accepted | 2026-04-27 | Деплоюються `apps/*`, перевикористовуються `packages/*`; `packages/*` ніколи не імпортує з `apps/*`.          |
-| 0025 | OpenAPI 3.1 spec — generated from zod-схем      | accepted | 2026-04-27 | `docs/api/openapi.json` згенеровано з canonical zod-схем; freshness-скрипт ловить drift у rule #3.            |
-| 0026 | n8n — джерело істини для воркфлоу               | accepted | 2026-04-27 | Git — джерело істини для n8n; JSON у `ops/n8n-workflows/` + manifest з owner / risk / secrets.                |
-| 0027 | Політика OpenClaw, Console та MCP               | accepted | 2026-04-27 | `apps/console` як internal admin; allowlist по Telegram user-id; вивід агента — untrusted.                    |
-| 0028 | pgvector + AI memory                            | accepted | 2026-05-01 | Voyage embeddings → `halfvec(1024)` у Postgres з HNSW + hash-партиціонуванням; vector-store-agnostic API.     |
-| 0030 | Telegram reporting channel structure            | accepted | 2026-05-02 | Single supergroup + Forum mode (8 канонічних топіків) + P0/P1/P2 escalation hierarchy + WF-98 fan-out.        |
-| 0031 | OpenClaw v0 — Telegram-only co-founder bot      | accepted | 2026-05-02 | Окремий @OpenClaw_sergeant_bot (DM-only, allowlist) з 7 read-only tools, strict memory isolation, $5/day cap. |
-| 0032 | Console consolidated into OpenClaw              | accepted | 2026-05-02 | OpenClaw (ADR-0031) поглинає функції @sergeant_console_bot (ADR-0027); legacy console dormant до team-scale.  |
+| #    | Назва                                           | Статус   | Створено   | Контекст                                                                                                              |
+| ---- | ----------------------------------------------- | -------- | ---------- | --------------------------------------------------------------------------------------------------------------------- |
+| 0001 | Monetization architecture                       | proposed | 2026-04-27 | 11 рішень перед стартом monetization-MVP (provider, cache, trial, tax, cancel, ...)                                   |
+| 0002 | AI tool lifecycle                               | accepted | 2026-04-27 | 4-фазний процес для Anthropic tools: Proposal → Safety → Rollout → KPIs.                                              |
+| 0003 | Refund and dispute handling                     | proposed | 2026-04-27 | Stripe refund/dispute flow + fraud_blocklist; 90-day window; повернення Pro-status.                                   |
+| 0004 | CloudSync LWW conflict resolution               | accepted | 2026-04-27 | Last-Write-Wins на module-рівні + offline queue + Phase 4 tie-breaker.                                                |
+| 0005 | Anthropic model selection and prompt caching    | accepted | 2026-04-27 | Claude 3.5 Sonnet primary, Haiku fallback; prompt-cache strategy + cache-hit metrics.                                 |
+| 0006 | RQ keys via centralized factory                 | accepted | 2026-04-27 | `queryKeys.ts` factories + ESLint rule `rq-keys-only-from-factory`.                                                   |
+| 0007 | Tailwind opacity scale + WCAG-AA `-strong` tier | accepted | 2026-04-27 | Підтримуваний opacity-набір 5/10/15/...; saturated brand-fill behind `text-white` → `-strong` companion.              |
+| 0008 | Feature flags                                   | accepted | 2026-04-27 | Client-only registry поверх `typedStore`; немає сервер-сайд гейтінгу на MVP.                                          |
+| 0009 | Hosting split Railway + Vercel                  | accepted | 2026-04-27 | API + Postgres на Railway, web + edge-proxy на Vercel; single-origin cookie boundary.                                 |
+| 0010 | Mobile dual-track (Capacitor+Expo)              | accepted | 2026-04-27 | Shell + RN паралельно, окремі bundle-ID, спільний API та domain-пакети.                                               |
+| 0011 | Local-first storage                             | accepted | 2026-04-27 | Клієнт — primary, сервер — LWW-реплікатор на module-рівні; offline queue.                                             |
+| 0012 | RLS as authz boundary                           | proposed | 2026-04-27 | Цільова модель RLS + `withUserContext`; поточно — app-enforced `WHERE user_id`.                                       |
+| 0013 | DB migrations conventions                       | accepted | 2026-04-27 | Sequential `NNN_*.sql`, forward-only, two-phase DROP, idempotent, tests first.                                        |
+| 0014 | bigint → number policy                          | accepted | 2026-04-27 | Серіалізатори коерсять `BIGINT` → JS `number`; snapshot-тести лочать contract.                                        |
+| 0015 | Observability stack                             | accepted | 2026-04-27 | Pino (logs) + Prometheus (metrics) + Sentry (errors); SLO-first burn-rate alerts.                                     |
+| 0016 | User deletion and PII handling                  | proposed | 2026-04-27 | GDPR delete-flow, fraud_blocklist retention, IP-cron 90-day window.                                                   |
+| 0017 | Better Auth choice and session model            | accepted | 2026-04-27 | Better Auth (OSS, $0); cookie + bearer dual-channel; 30-day session; expo plugin.                                     |
+| 0018 | API versioning policy (`/api/v1`)               | accepted | 2026-04-27 | `/api/v1/*` для domain endpoints; `/api/auth/*` без versioning; rewrite-middleware.                                   |
+| 0019 | Push notifications                              | accepted | 2026-04-27 | Server-driven fan-out (web Push API + APNs + FCM); subscription lifecycle.                                            |
+| 0020 | Testing pyramid                                 | accepted | 2026-04-27 | Unit / integration / a11y / smoke-e2e — частки, owners, CI gating.                                                    |
+| 0021 | Memory Bank                                     | accepted | 2026-04-27 | Local-first AI user-fact store; `key/value`-схема + Anthropic-tool integration.                                       |
+| 0022 | Atomic SQL daily quotas                         | accepted | 2026-04-27 | `INSERT ... ON CONFLICT DO UPDATE WHERE` для idempotent quota counters.                                               |
+| 0023 | Turborepo as monorepo task runner               | accepted | 2026-04-27 | `turbo@2` поверх pnpm-workspace; task-граф у `turbo.json`; remote-cache opt-in через `TURBO_TOKEN`.                   |
+| 0024 | Monorepo split — `apps/*` + `packages/*`        | accepted | 2026-04-27 | Деплоюються `apps/*`, перевикористовуються `packages/*`; `packages/*` ніколи не імпортує з `apps/*`.                  |
+| 0025 | OpenAPI 3.1 spec — generated from zod-схем      | accepted | 2026-04-27 | `docs/api/openapi.json` згенеровано з canonical zod-схем; freshness-скрипт ловить drift у rule #3.                    |
+| 0026 | n8n — джерело істини для воркфлоу               | accepted | 2026-04-27 | Git — джерело істини для n8n; JSON у `ops/n8n-workflows/` + manifest з owner / risk / secrets.                        |
+| 0027 | Політика OpenClaw, Console та MCP               | accepted | 2026-04-27 | `apps/console` як internal admin; allowlist по Telegram user-id; вивід агента — untrusted.                            |
+| 0028 | pgvector + AI memory                            | accepted | 2026-05-01 | Voyage embeddings → `halfvec(1024)` у Postgres з HNSW + hash-партиціонуванням; vector-store-agnostic API.             |
+| 0030 | Telegram reporting channel structure            | accepted | 2026-05-02 | Single supergroup + Forum mode (8 канонічних топіків) + P0/P1/P2 escalation hierarchy + WF-98 fan-out.                |
+| 0031 | OpenClaw v0 — Telegram-only co-founder bot      | accepted | 2026-05-02 | Окремий @OpenClaw_sergeant_bot (DM-only, allowlist) з 7 read-only tools, strict memory isolation, $5/day cap.         |
+| 0032 | Console consolidated into OpenClaw              | accepted | 2026-05-02 | OpenClaw (ADR-0031) поглинає функції @sergeant_console_bot (ADR-0027); legacy console dormant до team-scale.          |
+| 0033 | OpenClaw multi-personas + `/council`            | accepted | 2026-05-02 | 5 personas (cofounder/ops/growth/eng/finance) + sequential `/council` round-table; persona-filtered toolsets.         |
+| 0034 | OpenClaw write-tools with approval flow         | accepted | 2026-05-03 | 5 write-tools (strategy doc PR / GH issue / TG topic post / n8n pause / Sentry mute) gated by inline-button approval. |
+
+> **Note on next ADR:** наступний номер — **`0035`**.
 
 > **Note on numbering 0016–0022 jump:** ADRs `0016`–`0022` — це retroactive batch, що був написаний паралельно з `0006`–`0012`. Через паралельне виконання Devin-сесій виникли колізії номерів `0003`–`0012`. Розв'язано через PR `docs(adr): resolve numbering collisions` — same-topic дублі (refund, anthropic, PII) видалено, late-comers перенумеровано в `0016`+.
 

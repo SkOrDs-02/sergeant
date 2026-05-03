@@ -16,6 +16,11 @@
 
 import type Anthropic from "@anthropic-ai/sdk";
 import {
+  type ApprovalStore,
+  type PendingApprovalsCollector,
+  isWriteToolName,
+} from "../openclaw/approval-store.js";
+import {
   DEFAULT_PERSONA,
   filterToolsForPersona,
   personaPrimer,
@@ -420,6 +425,127 @@ export const openClawTools: Tool[] = [
       required: [],
     },
   },
+  // ──── ADR-0034 (Phase 4): write-tools (approval-gated) ────
+  // Console intercepts these calls — instead of executing, it queues an
+  // approval-record and posts an inline-keyboard to the founder. Only after
+  // an explicit `Approve` click does the tool actually run via
+  // /api/internal/openclaw/write/*.
+  //
+  // System prompt warns the LLM that these tools require founder approval
+  // and might be rejected; the LLM should phrase its proposed action
+  // narratively in the same turn so the founder has context.
+  {
+    name: "commit_to_strategy_doc",
+    description:
+      "Open a GitHub PR that updates a markdown file under docs/strategy/. Returns a PR link only — never auto-merges. REQUIRES FOUNDER APPROVAL via inline-keyboard before execution.",
+    input_schema: {
+      type: "object",
+      properties: {
+        path: {
+          type: "string",
+          description:
+            "Repo-relative path under docs/strategy/, e.g. 'docs/strategy/positioning.md'.",
+        },
+        content: {
+          type: "string",
+          description:
+            "Full new file content (markdown). The PR replaces the file contents with this string.",
+        },
+        message: {
+          type: "string",
+          description: "Commit subject (≤200 chars).",
+        },
+        repo: {
+          type: "string",
+          description:
+            "owner/repo. Defaults to OPENCLAW_GITHUB_REPO if omitted.",
+        },
+      },
+      required: ["path", "content", "message"],
+    },
+  },
+  {
+    name: "create_github_issue",
+    description:
+      "Open a GitHub issue with title and body. REQUIRES FOUNDER APPROVAL. Use for tracking work the founder should review (e.g. tech-debt, follow-ups from /council).",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Issue title (≤200 chars)." },
+        body: {
+          type: "string",
+          description: "Markdown body explaining the issue.",
+        },
+        labels: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional labels (max 10).",
+        },
+        repo: {
+          type: "string",
+          description:
+            "owner/repo. Defaults to OPENCLAW_GITHUB_REPO if omitted.",
+        },
+      },
+      required: ["title", "body"],
+    },
+  },
+  {
+    name: "post_to_topic",
+    description:
+      "Post a message to a Sergeant Ops supergroup topic. Allowlist: ops, engineering, growth. REQUIRES FOUNDER APPROVAL. Use for cross-posting decisions / playbooks the team needs to see.",
+    input_schema: {
+      type: "object",
+      properties: {
+        topic: {
+          type: "string",
+          description:
+            "Topic key — one of: 'ops', 'engineering', 'growth'. Other topics are NOT allowed.",
+        },
+        text: {
+          type: "string",
+          description: "Plain-text message body (≤4000 chars).",
+        },
+      },
+      required: ["topic", "text"],
+    },
+  },
+  {
+    name: "pause_workflow",
+    description:
+      "Deactivate (pause) an n8n workflow by id. REQUIRES FOUNDER APPROVAL. Use during incidents to stop a misbehaving workflow.",
+    input_schema: {
+      type: "object",
+      properties: {
+        workflowId: {
+          type: "string",
+          description: "n8n workflow id (numeric string).",
+        },
+        reason: {
+          type: "string",
+          description: "Why we're pausing (logged in audit-trail).",
+        },
+      },
+      required: ["workflowId"],
+    },
+  },
+  {
+    name: "mute_alert",
+    description:
+      "Resolve / snooze a Sentry issue by id. REQUIRES FOUNDER APPROVAL. Use when an alert is false-positive or already-being-fixed.",
+    input_schema: {
+      type: "object",
+      properties: {
+        issueId: { type: "string", description: "Sentry issue id." },
+        untilIso: {
+          type: "string",
+          description:
+            "Optional ISO-8601 timestamp until which to snooze. Omit to mark resolved permanently.",
+        },
+      },
+      required: ["issueId"],
+    },
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -433,9 +559,35 @@ export interface OpenClawAgentDeps {
   internalApiKey: string;
   /** Better Auth user.id of the founder. */
   founderUserId: string;
+  /** Telegram user-id of the founder (used to scope approval records). */
+  founderTgUserId?: number;
   /** Optional: invocation id for audit trail. */
   invocationId?: number;
+  /**
+   * ADR-0034 (Phase 4): if both `approvalStore` and `pendingCollector`
+   * are provided, write-tool calls (commit_to_strategy_doc, …) are
+   * intercepted and queued for approval instead of executed. Without
+   * either, write-tools return a hard refusal to the LLM (fail-closed).
+   */
+  approvalStore?: ApprovalStore;
+  pendingCollector?: PendingApprovalsCollector;
 }
+
+/**
+ * Stable text returned to the LLM whenever a write-tool is queued for
+ * approval. Phrased so the LLM keeps composing its narrative reply
+ * (the founder will see both the narrative AND the inline-keyboard
+ * buttons posted by the handler after the agent turn ends).
+ */
+const WRITE_TOOL_QUEUED_LITERAL = JSON.stringify({
+  status: "queued_for_approval",
+  note: "The action has been queued. The founder must approve or reject via inline-keyboard before it actually runs. Continue your narrative reply explaining what you proposed and why; do NOT attempt to call this tool again.",
+});
+
+const WRITE_TOOL_REJECTED_LITERAL = JSON.stringify({
+  status: "rejected",
+  note: "Write-tools are not configured for this OpenClaw deploy (missing approval-store). Cannot execute side-effecting actions.",
+});
 
 /**
  * Maps tool name → server endpoint path. Single source of truth — змінюючи
@@ -455,17 +607,60 @@ const TOOL_ROUTE: Record<string, string> = {
   get_server_stats: "/api/internal/openclaw/metrics/server",
   get_posthog_stats: "/api/internal/openclaw/metrics/posthog",
   get_github_releases: "/api/internal/openclaw/github/releases",
+  // ADR-0034 (Phase 4): write-tools — invoked ONLY after explicit
+  // founder approval. The executor below intercepts these names and
+  // routes them through the approval-store instead of fetch-ing.
+  commit_to_strategy_doc: "/api/internal/openclaw/write/strategy-doc",
+  create_github_issue: "/api/internal/openclaw/write/github-issue",
+  post_to_topic: "/api/internal/openclaw/write/post-to-topic",
+  pause_workflow: "/api/internal/openclaw/write/pause-workflow",
+  mute_alert: "/api/internal/openclaw/write/mute-alert",
 };
+
+/**
+ * Resolve a write-tool route by name. Re-exported for the callback
+ * handler so it does not need to duplicate the mapping. Returns
+ * `undefined` for non-write tools (intentionally — the callback handler
+ * should never reach a non-write route).
+ */
+export function writeToolRoute(name: string): string | undefined {
+  return isWriteToolName(name) ? TOOL_ROUTE[name] : undefined;
+}
 
 /**
  * Передається в `runAgentLoop` як `executeTool`. Повертає сирий
  * JSON-string output-у (LLM-у). Якщо HTTP-call fail — повертає error
  * message як строку (так LLM зрозуміє і зможе adapt-нутись).
+ *
+ * ADR-0034 (Phase 4): for the 5 write-tool names, the executor does NOT
+ * fetch — it queues an approval-record and returns
+ * `WRITE_TOOL_QUEUED_LITERAL` to the LLM. The handler later (after the
+ * agent turn completes) drains the collector and posts inline-keyboard
+ * buttons to the founder; on Approve it invokes the corresponding
+ * `/api/internal/openclaw/write/*` endpoint.
  */
 export function createOpenClawToolExecutor(
   deps: OpenClawAgentDeps,
 ): (name: string, input: Record<string, unknown>) => Promise<string> {
   return async (name, input) => {
+    // ADR-0034: write-tool interception. Fail-closed if approval
+    // infrastructure not provided — we never auto-execute side effects.
+    if (isWriteToolName(name)) {
+      if (!deps.approvalStore || !deps.pendingCollector) {
+        return WRITE_TOOL_REJECTED_LITERAL;
+      }
+      const founderTgUserId = deps.founderTgUserId ?? 0;
+      const record = deps.approvalStore.create({
+        tool: name,
+        input: { ...input },
+        founderUserId: deps.founderUserId,
+        founderTgUserId,
+        invocationId: deps.invocationId,
+      });
+      deps.pendingCollector.add(record);
+      return WRITE_TOOL_QUEUED_LITERAL;
+    }
+
     const route = TOOL_ROUTE[name];
     if (!route) return `Unknown OpenClaw tool: ${name}`;
 

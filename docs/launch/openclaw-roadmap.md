@@ -1,6 +1,6 @@
 # OpenClaw — roadmap до v0 і далі
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Поетапний план побудови OpenClaw — AI-партнера для founder-а Sergeant-у.
@@ -338,38 +338,61 @@ sentry,server,posthog}` + `/api/internal/openclaw/github/releases`) з
   `docs/postmortems/<date>-signups-drop.md`.
 - `/okr` → дашборд з 3 OKR і прогресом.
 
-### Phase 4 — Write-tools з approval flow (≈ 5 днів)
+### Phase 4 — Write-tools з approval flow (ADR-0034, **shipped**)
 
 **Ціль:** OpenClaw може діяти, не тільки думати — кожна mutating дія
-потребує human-approval inline (per ADR-0027).
+потребує human-approval inline (per ADR-0027 + ADR-0034).
 
-**Scope:**
+**Архітектура:** [ADR-0034](../adr/0034-openclaw-write-tools-with-approval.md) — server-side
+endpoints + console-side `ApprovalStore` (in-memory, 10-min TTL) + executor
+interception (`createOpenClawToolExecutor` детектить write-tool name → queue
+до `PendingApprovalsCollector` → handler `drain()` після turn-у → пост inline-keyboard
+кар-ток з `oc:approve:<id>` / `oc:reject:<id>` callback-data) +
+`bot.on("callback_query:data")` handler з founder-allowlist-перевіркою.
 
-- Розширити tool-set:
-  - PostHog (events, funnels, retention) — read.
-  - Stripe (revenue, churn, MRR breakdown) — read.
-  - Sentry (issue history, regression detection) — read.
-  - Mono (transactions, cashflow) — read для founder-контексту.
-  - Railway (deploy status, env, restart) — write з approval.
-- Write-tools з inline-button approval flow:
-  - `commit_to_strategy_doc` — комітити update до `docs/strategy/` через
-    GitHub API (PR з 1 файлом).
-  - `create_github_issue` — для action items з postmortems.
-  - `mute_alert <workflow_id> <duration>` — пауза WF на N годин у n8n.
-  - `pause_workflow <workflow_id>` — деактивація через `n8n_API`.
-  - `post_to_topic <topic> <message>` — broadcast у супергрупу
-    (`📊 Дайджести` / `⚙️ Контрол-план`).
-- Кожен write-tool — Telegram message з 2 inline-buttons "Approve" /
-  "Reject" → callback handler у `apps/console`.
+**Scope (shipped):**
+
+- 5 write-tools з founder-approval gate-ом:
+  - `commit_to_strategy_doc` — open GitHub PR з оновленням файлу у
+    `docs/strategy/**` (path allowlist на server-стороні).
+  - `create_github_issue` — open GitHub issue з title / body / labels.
+  - `post_to_topic` — broadcast у Telegram supergroup forum-topic
+    (alias allowlist: `ops`, `engineering`, `growth`, `incidents`,
+    `revenue`, `meta`, `digest`).
+  - `pause_workflow` — deactivate n8n workflow через REST API.
+  - `mute_alert` — Sentry issue → ignored status.
+- Server endpoints `/api/internal/openclaw/write/*` (5 routes), захищені
+  `INTERNAL_API_KEY` Bearer + Zod-валідацією; fail-soft на missing
+  creds (`status: "not_configured"` замість 500).
+- Persona-tool-filter extend-нутий per-write-tool: `cofounder` бачить
+  усі 5; `ops` — `pause_workflow` + `mute_alert` + `post_to_topic`;
+  `growth` — `commit_to_strategy_doc` + `create_github_issue` +
+  `post_to_topic`; `eng` — `create_github_issue` + `post_to_topic`;
+  `finance` — `commit_to_strategy_doc`.
 
 **Acceptance:**
 
-- OpenClaw запропонував "паузнути WF-15 на 2h через high error rate" → у DM
-  приходить approval-message → founder натискає Approve → workflow
-  деактивовано → audit-log + broadcast у `🔴 Інциденти`.
-- OpenClaw в `plan-mode` пропонує commit до `docs/strategy/q3-okr.md` →
-  approval → PR створюється автоматично.
-- Без user-click нічого мутуючого не відбувається (fail-closed).
+- OpenClaw запропонував "паузнути WF-15" → у DM приходить approval-card
+  з підсумком input-у і кнопками `✅ Approve` / `✋ Reject` → founder
+  натискає Approve → console робить POST `/api/internal/openclaw/write/pause-workflow`
+  → відповідь posted у DM (workflow deactivated).
+- OpenClaw в free-text DM пропонує `commit_to_strategy_doc` →
+  approval-card → Approve → server відкриває GitHub PR → URL у DM.
+- Без user-click нічого мутуючого не відбувається (`createOpenClawToolExecutor`
+  fail-closed: якщо `approvalStore` / `pendingCollector` не передані у `deps` —
+  executor повертає `WRITE_TOOL_REJECTED_LITERAL`, ніколи не виконує
+  HTTP-call).
+- Approval expired (>10 min) / unknown id → callback handler відповідає
+  "Approval expired or unknown" і видаляє кнопки.
+
+**Phase 4.5 (deferred):**
+
+- DB-persistent `openclaw_write_audit` table — щоб approve/reject не
+  зник при рестарті console-у. Зараз — `console.log("[openclaw]
+write-tool executed/rejected", ...)` як audit-trail.
+- "Approve all" мета-кнопка для batch-approval-у одного turn-у.
+- Diff-preview для `commit_to_strategy_doc` (зараз — тільки path + summary
+  у card-body).
 
 ---
 

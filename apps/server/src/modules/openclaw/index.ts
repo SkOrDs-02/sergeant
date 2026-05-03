@@ -34,3 +34,29 @@ export {
   getGithubReleases,
 } from "./tools.js";
 export { selectToneMode, buildSystemPrompt } from "./prompts.js";
+
+// Phase 4 (ADR-0034): write-tools (approval-gated on console side).
+export {
+  commitToStrategyDoc,
+  createGithubIssue,
+  postToTopic,
+  pauseWorkflow,
+  muteSentryAlert,
+  assertStrategyDocPath,
+  OpenClawWriteAllowlistError,
+  OPENCLAW_WRITE_TOOL_NAMES,
+  COMMIT_STRATEGY_DOC_ALLOWED_PREFIX,
+  POST_TO_TOPIC_ALLOWLIST,
+} from "./write-tools.js";
+export type {
+  CommitStrategyDocInput,
+  CommitStrategyDocOutput,
+  CreateGithubIssueInput,
+  CreateGithubIssueOutput,
+  PostToTopicInput,
+  PostToTopicOutput,
+  PauseWorkflowInput,
+  PauseWorkflowOutput,
+  MuteAlertInput,
+  MuteAlertOutput,
+} from "./write-tools.js";

@@ -16,8 +16,10 @@
 
 import type Anthropic from "@anthropic-ai/sdk";
 import type { Bot, Context } from "grammy";
+import { InlineKeyboard } from "grammy";
 import {
   runOpenClawAgent,
+  writeToolRoute,
   type OpenClawAgentDeps,
 } from "../agents/openclaw.js";
 import { COUNCIL_PERSONAS, type OpenClawPersona } from "../agents/personas.js";
@@ -26,6 +28,12 @@ import {
   FixedWindowRateLimiter,
   splitTelegramMessage,
 } from "../security.js";
+import {
+  ApprovalStore,
+  PendingApprovalsCollector,
+  type ApprovalRecord,
+  type WriteToolName,
+} from "./approval-store.js";
 import {
   isFounderAllowed,
   isPrivateChat,
@@ -55,6 +63,58 @@ const PERSONA_LABEL: Record<OpenClawPersona, string> = {
   eng: "Eng",
   finance: "Finance",
 };
+
+// ADR-0034 (Phase 4): callback_data prefix for inline-keyboard buttons.
+// `oc:approve:<id>` / `oc:reject:<id>`. Telegram caps callback_data at 64
+// bytes; with an 8-char id we land at 19 bytes — comfortable headroom.
+const APPROVAL_PREFIX = "oc:";
+const APPROVAL_APPROVE = `${APPROVAL_PREFIX}approve:`;
+const APPROVAL_REJECT = `${APPROVAL_PREFIX}reject:`;
+
+const WRITE_TOOL_LABEL: Record<WriteToolName, string> = {
+  commit_to_strategy_doc: "Commit strategy doc PR",
+  create_github_issue: "Create GitHub issue",
+  post_to_topic: "Post to topic",
+  pause_workflow: "Pause n8n workflow",
+  mute_alert: "Mute Sentry issue",
+};
+
+/**
+ * Build a single-line summary of a write-tool's input for the approval
+ * card. Avoids dumping huge file contents — for `commit_to_strategy_doc`
+ * we show only the path + commit message (the LLM's narrative reply
+ * already includes context for what's changing).
+ */
+function summariseWriteInput(record: ApprovalRecord): string {
+  const inp = record.input as Record<string, unknown>;
+  switch (record.tool) {
+    case "commit_to_strategy_doc": {
+      const path = String(inp.path ?? "?");
+      const message = String(inp.message ?? "?");
+      return `\`${path}\` — ${message}`;
+    }
+    case "create_github_issue": {
+      const title = String(inp.title ?? "?");
+      return `«${title}»`;
+    }
+    case "post_to_topic": {
+      const topic = String(inp.topic ?? "?");
+      const text = String(inp.text ?? "");
+      const preview = text.length > 80 ? `${text.slice(0, 77)}…` : text;
+      return `topic=${topic}: ${preview}`;
+    }
+    case "pause_workflow": {
+      const wid = String(inp.workflowId ?? "?");
+      const reason = inp.reason ? ` (${String(inp.reason)})` : "";
+      return `workflow=${wid}${reason}`;
+    }
+    case "mute_alert": {
+      const issue = String(inp.issueId ?? "?");
+      const until = inp.untilIso ? ` until ${String(inp.untilIso)}` : "";
+      return `issue=${issue}${until}`;
+    }
+  }
+}
 
 const HELP_TEXT = [
   "*OpenClaw* — твій co-founder bot.",
@@ -191,7 +251,12 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     process.env.OPENCLAW_COUNCIL_USD_BUDGET,
   );
 
-  const deps: OpenClawAgentDeps = {
+  // ADR-0034 (Phase 4): single approval-store shared across all agent
+  // turns in this process. Per-turn `PendingApprovalsCollector` is created
+  // inside `runAgentTurn` and drained afterwards.
+  const approvalStore = new ApprovalStore();
+
+  const baseDeps: OpenClawAgentDeps = {
     serverUrl,
     internalApiKey,
     founderUserId,
@@ -349,6 +414,13 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     // 3) Run agent loop.
     if (!options?.silent) await ctx.replyWithChatAction("typing");
     const startedAt = Date.now();
+
+    // ADR-0034 (Phase 4): per-turn collector. The agent executor pushes
+    // approval-records into this whenever the LLM emits a write-tool
+    // call. After the turn finishes we drain it and post inline-keyboard
+    // buttons.
+    const pendingCollector = new PendingApprovalsCollector();
+
     try {
       const {
         reply,
@@ -363,7 +435,13 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
         trigger,
         maxIterations: options?.maxIterationsOverride ?? maxIterations,
         persona,
-        deps: { ...deps, invocationId },
+        deps: {
+          ...baseDeps,
+          founderTgUserId,
+          invocationId,
+          approvalStore,
+          pendingCollector,
+        },
       });
       const durationMs = Date.now() - startedAt;
       sessions.recordTurn(userId, {
@@ -376,6 +454,17 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
         for (const chunk of splitTelegramMessage(safe)) {
           await ctx.reply(chunk, { parse_mode: "MarkdownV2" });
         }
+      }
+
+      // ADR-0034 (Phase 4): drain queued approvals and post inline-
+      // keyboard cards. We do this AFTER the narrative reply so the
+      // founder sees both the LLM's reasoning and the proposed action.
+      // We drain even when silent=true (council sub-turns): if a
+      // specialist persona proposed a write-action, founder still needs
+      // to be able to approve/reject it.
+      const queued = pendingCollector.drain();
+      for (const record of queued) {
+        await postApprovalCard(ctx, record);
       }
 
       if (invocationId) {
@@ -416,6 +505,93 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
         );
       }
       return { reply: "", ok: false };
+    }
+  }
+
+  /**
+   * ADR-0034 (Phase 4): post an inline-keyboard card summarising a
+   * pending write-tool approval. Card shows tool label + summary; two
+   * buttons (Approve / Reject) carry the approval-id in callback_data.
+   *
+   * Telegram strips MarkdownV2 tags from button text — only the body
+   * uses MarkdownV2. We escape carefully to keep the inline `path` /
+   * `topic` chunks readable while staying valid.
+   */
+  async function postApprovalCard(
+    ctx: Context,
+    record: ApprovalRecord,
+  ): Promise<void> {
+    const label = WRITE_TOOL_LABEL[record.tool];
+    const summary = summariseWriteInput(record);
+    const body = [
+      `*${label}*`,
+      "",
+      summary,
+      "",
+      `_id: \`${record.id}\` · expires in 10 min_`,
+    ].join("\n");
+
+    const keyboard = new InlineKeyboard()
+      .text("✅ Approve", `${APPROVAL_APPROVE}${record.id}`)
+      .text("✋ Reject", `${APPROVAL_REJECT}${record.id}`);
+
+    const safe = escapeTelegramMarkdownV2(body);
+    await ctx.reply(safe, {
+      parse_mode: "MarkdownV2",
+      reply_markup: keyboard,
+    });
+  }
+
+  /**
+   * Resolve the approval record + decide approve/reject from the
+   * callback_query.data string. Returns `null` if data is malformed,
+   * unknown, or the record is missing/expired/already-resolved (we
+   * answer the callback in caller with a friendly message).
+   */
+  function parseApprovalCallback(
+    data: string,
+  ): { kind: "approve" | "reject"; id: string } | null {
+    if (data.startsWith(APPROVAL_APPROVE)) {
+      return { kind: "approve", id: data.slice(APPROVAL_APPROVE.length) };
+    }
+    if (data.startsWith(APPROVAL_REJECT)) {
+      return { kind: "reject", id: data.slice(APPROVAL_REJECT.length) };
+    }
+    return null;
+  }
+
+  /**
+   * Execute an approved write-tool. Resolves the route via the shared
+   * registry on the agent module and posts to the corresponding
+   * `/api/internal/openclaw/write/*` endpoint. Returns the raw response
+   * body (string) which the caller surfaces to the founder so that PR
+   * URLs / error messages are visible.
+   */
+  async function executeApprovedWriteTool(
+    record: ApprovalRecord,
+  ): Promise<{ ok: boolean; status: number; bodyText: string }> {
+    const route = writeToolRoute(record.tool);
+    if (!route) {
+      return {
+        ok: false,
+        status: 0,
+        bodyText: `Unknown write-tool route for ${record.tool}.`,
+      };
+    }
+    try {
+      const res = await fetch(`${serverUrl}${route}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${internalApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(record.input),
+      });
+      const bodyText = await res.text();
+      return { ok: res.ok, status: res.status, bodyText };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { ok: false, status: 0, bodyText: `Network error: ${message}` };
     }
   }
 
@@ -600,6 +776,91 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     if (userMessage.startsWith("/")) return;
 
     await runAgentTurn(ctx, userMessage, "dm");
+  });
+
+  // ADR-0034 (Phase 4): inline-keyboard callback handler — approves
+  // or rejects a pending write-tool. Fail-closed: only the founder
+  // may resolve approvals; expired / unknown ids return a friendly
+  // "expired" answer-callback rather than executing.
+  bot.on("callback_query:data", async (ctx) => {
+    const data = ctx.callbackQuery.data;
+    const parsed = parseApprovalCallback(data);
+    if (!parsed) {
+      // Not ours — answer empty so the spinner stops, but otherwise
+      // ignore (other features may add their own callbacks later).
+      await ctx.answerCallbackQuery();
+      return;
+    }
+
+    if (!isFounderAllowed(ctx.from?.id, process.env)) {
+      await ctx.answerCallbackQuery({
+        text: "Access denied.",
+        show_alert: true,
+      });
+      return;
+    }
+
+    const record = approvalStore.get(parsed.id);
+    if (!record) {
+      await ctx.answerCallbackQuery({
+        text: "Approval expired or unknown. Спробуй ще раз.",
+        show_alert: true,
+      });
+      try {
+        await ctx.editMessageReplyMarkup({});
+      } catch {
+        // Old card may already be edited / removed; not fatal.
+      }
+      return;
+    }
+
+    if (parsed.kind === "reject") {
+      approvalStore.markRejected(parsed.id);
+      await ctx.answerCallbackQuery({ text: "Rejected." });
+      try {
+        await ctx.editMessageReplyMarkup({});
+      } catch {
+        // Card may have been edited concurrently — best-effort UI cleanup.
+      }
+      const note = `❌ Rejected: ${WRITE_TOOL_LABEL[record.tool]} (id ${record.id}).`;
+      await ctx.reply(note);
+      console.log("[openclaw] write-tool rejected", {
+        tool: record.tool,
+        id: record.id,
+        founderTgUserId: ctx.from?.id,
+        invocationId: record.invocationId,
+      });
+      return;
+    }
+
+    // Approve path — mark first so a double-click can't double-execute,
+    // then call the write endpoint.
+    approvalStore.markExecuted(parsed.id);
+    await ctx.answerCallbackQuery({ text: "Executing…" });
+    try {
+      await ctx.editMessageReplyMarkup({});
+    } catch {
+      // Best-effort; we still post the result below.
+    }
+
+    const result = await executeApprovedWriteTool(record);
+    const headline = result.ok
+      ? `✅ Executed: ${WRITE_TOOL_LABEL[record.tool]}`
+      : `⚠️ Failed: ${WRITE_TOOL_LABEL[record.tool]} (HTTP ${result.status})`;
+    const safe = escapeTelegramMarkdownV2(
+      [headline, "", "```", result.bodyText.slice(0, 3500), "```"].join("\n"),
+    );
+    for (const chunk of splitTelegramMessage(safe)) {
+      await ctx.reply(chunk, { parse_mode: "MarkdownV2" });
+    }
+    console.log("[openclaw] write-tool executed", {
+      tool: record.tool,
+      id: record.id,
+      ok: result.ok,
+      status: result.status,
+      founderTgUserId: ctx.from?.id,
+      invocationId: record.invocationId,
+    });
   });
 
   bot.catch((err) => {
