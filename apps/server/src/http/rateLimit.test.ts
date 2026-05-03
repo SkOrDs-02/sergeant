@@ -16,13 +16,48 @@ vi.mock("../lib/redis.js", () => ({
   getRedis: vi.fn(() => null),
 }));
 
+// Postgres mock — `checkRateLimitPg` and the periodic sweep query the
+// pool. By default behave as if the migration hasn't been applied
+// (SQLSTATE 42P01) so the middleware falls through to the in-memory
+// limiter; individual tests opt in to specific row payloads.
+const pgQueryMock = vi.fn();
+vi.mock("../db.js", () => ({
+  pool: {
+    query: (...args: unknown[]) => pgQueryMock(...args),
+  },
+}));
+
+const loggerWarnMock = vi.fn();
+vi.mock("../obs/logger.js", () => ({
+  logger: {
+    warn: (...args: unknown[]) => loggerWarnMock(...args),
+    error: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
 import {
   getIp,
   checkRateLimit,
   checkRateLimitRedis,
+  checkRateLimitPg,
   rateLimitExpress,
+  __resetRateLimitPgWarnForTests,
 } from "./rateLimit.js";
 import { getRedis } from "../lib/redis.js";
+
+function pgUndefinedTableError(): Error & { code: string } {
+  // Mirrors the `pg` driver's shape for SQLSTATE 42P01 — the
+  // `checkRateLimitPgWithFallback` branch keys on `err.code`.
+  const err = new Error(
+    'relation "rate_limit_buckets" does not exist',
+  ) as Error & {
+    code: string;
+  };
+  err.code = "42P01";
+  return err;
+}
 
 function asReq(partial: Partial<Request> & Record<string, unknown>): Request {
   return partial as unknown as Request;
@@ -264,6 +299,13 @@ describe("rateLimitExpress — Redis path", () => {
   beforeEach(() => {
     vi.mocked(getRedis).mockReturnValue(null);
     redisEvalMock.mockReset();
+    // Default to "Postgres unreachable" so the middleware falls all the
+    // way through to the in-memory limiter — keeps these tests focused
+    // on Redis-vs-fallback rather than the Postgres branch (covered in
+    // its own describe block).
+    pgQueryMock.mockReset();
+    pgQueryMock.mockRejectedValue(pgUndefinedTableError());
+    loggerWarnMock.mockReset();
   });
 
   it("uses Redis when getRedis() returns a client", async () => {
@@ -372,5 +414,198 @@ describe("rateLimitExpress — Redis path", () => {
         code: "RATE_LIMIT",
       }),
     );
+  });
+});
+
+describe("checkRateLimitPg", () => {
+  function makeReq(ip: string): Request {
+    return { ip, headers: {} } as unknown as Request;
+  }
+
+  beforeEach(() => {
+    pgQueryMock.mockReset();
+  });
+
+  it("allows when count is within limit and reports remaining", async () => {
+    pgQueryMock.mockResolvedValueOnce({
+      rows: [{ count: 3, elapsed_ms: "200" }],
+    });
+    const result = await checkRateLimitPg(makeReq("203.0.113.10"), {
+      key: "pg:allow",
+      limit: 5,
+      windowMs: 5_000,
+    });
+    expect(result.ok).toBe(true);
+    expect(result.remaining).toBe(2);
+    expect(result.resetMs).toBe(4_800);
+    // INSERT … ON CONFLICT … RETURNING — windowMs flows through as a
+    // string so the bigint cast in SQL is unambiguous.
+    expect(pgQueryMock).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO rate_limit_buckets"),
+      ["pg:allow", expect.any(String), "5000"],
+    );
+  });
+
+  it("blocks once count exceeds limit", async () => {
+    pgQueryMock.mockResolvedValueOnce({
+      rows: [{ count: 6, elapsed_ms: "2000" }],
+    });
+    const result = await checkRateLimitPg(makeReq("203.0.113.11"), {
+      key: "pg:block",
+      limit: 5,
+      windowMs: 5_000,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.remaining).toBe(0);
+    expect(result.resetMs).toBe(3_000);
+  });
+
+  it("clamps retryAfterSec to a 1s floor for tiny windows", async () => {
+    // Same regression as the Redis path: better-fetch / Better Auth
+    // refuse `Retry-After: 0` and surface a generic error to the user.
+    pgQueryMock.mockResolvedValueOnce({
+      rows: [{ count: 2, elapsed_ms: "50" }],
+    });
+    const result = await checkRateLimitPg(makeReq("203.0.113.12"), {
+      key: "pg:retry",
+      limit: 1,
+      windowMs: 100,
+    });
+    expect(result.retryAfterSec).toBeGreaterThanOrEqual(1);
+  });
+
+  it("treats a fresh-bucket return (count=1) as allowed when limit > 1", async () => {
+    // Mirrors the SQL `INSERT VALUES (..., 1, NOW())` path on first hit
+    // — the row is returned with `count=1` and elapsed_ms=0.
+    pgQueryMock.mockResolvedValueOnce({
+      rows: [{ count: 1, elapsed_ms: "0" }],
+    });
+    const result = await checkRateLimitPg(makeReq("203.0.113.13"), {
+      key: "pg:fresh",
+      limit: 5,
+      windowMs: 60_000,
+    });
+    expect(result.ok).toBe(true);
+    expect(result.remaining).toBe(4);
+    expect(result.resetMs).toBe(60_000);
+  });
+
+  it("clamps remaining at 0 when count somehow lands above limit", async () => {
+    // Defensive: a concurrent over-write could in theory return a count
+    // above the limit. The contract still reports `remaining=0` rather
+    // than negative, so downstream `X-RateLimit-Remaining` stays valid.
+    pgQueryMock.mockResolvedValueOnce({
+      rows: [{ count: 10, elapsed_ms: "100" }],
+    });
+    const result = await checkRateLimitPg(makeReq("203.0.113.14"), {
+      key: "pg:over",
+      limit: 5,
+      windowMs: 5_000,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.remaining).toBe(0);
+  });
+});
+
+describe("rateLimitExpress — Postgres path", () => {
+  function makeReq(ip: string): Request {
+    return { ip, headers: {} } as unknown as Request;
+  }
+
+  function makeRes(): {
+    res: never;
+    json: ReturnType<typeof vi.fn>;
+    setHeader: ReturnType<typeof vi.fn>;
+  } {
+    const json = vi.fn();
+    const setHeader = vi.fn();
+    const res = {
+      setHeader,
+      status: vi.fn().mockReturnThis(),
+      json,
+    } as never;
+    return { res, json, setHeader };
+  }
+
+  beforeEach(() => {
+    vi.mocked(getRedis).mockReturnValue(null);
+    redisEvalMock.mockReset();
+    pgQueryMock.mockReset();
+    loggerWarnMock.mockReset();
+    // Reset the once-per-process degraded-limiter warn flag so the
+    // "warns once" assertion below isn't pre-tripped by earlier tests
+    // in this file.
+    __resetRateLimitPgWarnForTests();
+  });
+
+  it("uses Postgres when Redis is unavailable", async () => {
+    pgQueryMock.mockResolvedValue({
+      rows: [{ count: 1, elapsed_ms: "0" }],
+    });
+
+    const middleware = rateLimitExpress({
+      key: "mw:pg",
+      limit: 5,
+      windowMs: 5_000,
+    });
+    const { res } = makeRes();
+    const next = vi.fn();
+    await middleware(makeReq("10.0.0.10"), res, next);
+
+    // First call is the limiter INSERT/UPDATE; sweeps fire only ~1/256
+    // and are best-effort — assert the limiter call landed.
+    expect(pgQueryMock).toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO rate_limit_buckets"),
+      expect.any(Array),
+    );
+    expect(next).toHaveBeenCalledOnce();
+  });
+
+  it("falls back to in-memory when Postgres table is missing and warns once", async () => {
+    pgQueryMock.mockRejectedValue(pgUndefinedTableError());
+
+    const middleware = rateLimitExpress({
+      key: "mw:pg-missing",
+      limit: 5,
+      windowMs: 5_000,
+    });
+
+    // Two calls — only the first should emit the missing-table warn so
+    // a degraded production limiter doesn't flood obs on every request.
+    const a = makeRes();
+    const b = makeRes();
+    const next = vi.fn();
+    await middleware(makeReq("10.0.0.20"), a.res, next);
+    await middleware(makeReq("10.0.0.20"), b.res, next);
+
+    expect(next).toHaveBeenCalledTimes(2);
+    expect(loggerWarnMock).toHaveBeenCalledTimes(1);
+    expect(loggerWarnMock).toHaveBeenCalledWith(
+      expect.objectContaining({ msg: "rate_limit_pg_table_missing" }),
+    );
+  });
+
+  it("falls back to in-memory and still serves when Postgres rejects with a transient error", async () => {
+    // Connection refused / pool exhaustion shouldn't take the limiter
+    // offline — just degrade to per-process counting until Postgres
+    // recovers.
+    const transient = new Error("connection terminated") as Error & {
+      code: string;
+    };
+    transient.code = "08006";
+    pgQueryMock.mockRejectedValue(transient);
+
+    const middleware = rateLimitExpress({
+      key: "mw:pg-transient",
+      limit: 5,
+      windowMs: 5_000,
+    });
+    const { res } = makeRes();
+    const next = vi.fn();
+    await middleware(makeReq("10.0.0.30"), res, next);
+    expect(next).toHaveBeenCalledOnce();
+    // Transient errors don't trip the missing-table warn — they're a
+    // pool/network problem, not a schema mismatch.
+    expect(loggerWarnMock).not.toHaveBeenCalled();
   });
 });
