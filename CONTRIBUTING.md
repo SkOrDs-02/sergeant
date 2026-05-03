@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last validated:** 2026-05-01 by @dmytro.s.stakhov. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/playbooks/README.md](./docs/playbooks/README.md).
@@ -122,6 +122,7 @@ Reviewer checklist живе в [docs/governance/review-checklist.md](./docs/gove
 15. **Read governance before coding; update docs alongside code; internal docs in Ukrainian**
 16. **Typography scale — semantic styles + 12px floor**
 17. **Animation budget — max 2 concurrent, 3 tiers**
+18. **Module-size discipline — `max-lines: 600` for web TS/TSX**
 
 Джерела істини:
 

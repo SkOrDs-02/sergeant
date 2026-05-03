@@ -286,6 +286,29 @@
         },
         { "type": "agents", "ref": "#17" }
       ]
+    },
+    {
+      "id": 18,
+      "title": "Module-size discipline — `max-lines: 600` for web TS/TSX",
+      "scope": ["apps/web/src/**"],
+      "severity": "blocker",
+      "enforced_by": [
+        {
+          "kind": "convention",
+          "ref": "eslint.config.js → max-lines: [error, { max: 600, skipBlankLines: true, skipComments: true }] (scoped to apps/web/src/**/*.{ts,tsx}; tests, __tests__, and apps/web/src/generated/** exempt; explicit allowlist for legacy monoliths)"
+        },
+        {
+          "kind": "doc",
+          "ref": "docs/initiatives/0001-module-decomposition.md (allowlist + Phase 2 decomposition queue)"
+        }
+      ],
+      "links": [
+        {
+          "type": "doc",
+          "ref": "docs/initiatives/0001-module-decomposition.md"
+        },
+        { "type": "agents", "ref": "#18" }
+      ]
     }
   ]
 }

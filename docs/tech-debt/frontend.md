@@ -139,7 +139,24 @@ Codemod ідемпотентний: повторний запуск дасть `
 
 ---
 
-### 4. Великі файли (>600 рядків) — 16 файлів (тільки `apps/web/src`)
+### 4. Великі файли (>600 рядків) — 16 файлів (тільки `apps/web/src`) — **In progress (Initiative 0001)**
+
+> **Status (2026-05-03):** Переведено в активну роботу через
+> [`docs/initiatives/0001-module-decomposition.md`](../initiatives/0001-module-decomposition.md).
+> Phase 1 (lint guard + allowlist) — додано Hard Rule #18 в `AGENTS.md`,
+> правило `max-lines: [error, 600]` для `apps/web/src/**/*.{ts,tsx}` в
+> `eslint.config.js` + явний allowlist по 16 файлах нижче. Будь-який новий
+> файл `apps/web/src/**` ≥ 600 LOC падає на `pnpm lint`.
+>
+> Phase 2 (декомпозиція top-7) — заплановано: `RoutineApp.tsx`,
+> `useStorage.ts`, `chatActions/types.ts`, `sw.ts`, `Icon.tsx`,
+> `HubDashboard.tsx`, `Workouts.tsx`. Кожна декомпозиція = окремий PR і
+> видалення відповідного рядка з allowlist в `eslint.config.js`. Метрика
+> успіху: 16 → ≤ 2 файлів `apps/web/src/**` ≥ 600 LOC до 2026-06-15.
+>
+> Свіжість таблиці нижче — на 2026-05-03; перерахунок виконується вручну
+> через `find apps/web/src -type f \( -name '*.ts' -o -name '*.tsx' \) -exec wc -l {} +`
+> (см. також `pnpm lint` — `max-lines` правило точне джерело істини).
 
 > `finyk/pages/Assets.tsx` (раніше 1147 рядків) декомпозовано на
 > `useAssetsState.ts` (259), `AssetsForm.tsx` (376), `AssetsTable.tsx` (511),
