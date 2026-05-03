@@ -9,20 +9,22 @@ import {
   selectCategoryDistributionFromIndex,
   type MonthlyHistoryEntry,
 } from "@sergeant/finyk-domain/domain/selectors";
+import type {
+  Category,
+  Transaction,
+  TxSplitsMap,
+} from "@sergeant/finyk-domain/domain/types";
 
 interface UseAnalyticsArgs {
-  mono: { realTx?: AnyTx[]; loadingTx?: boolean };
+  mono: { realTx?: readonly Transaction[]; loadingTx?: boolean };
   storage: {
     excludedTxIds?: Set<string> | Iterable<string> | null;
     txCategories?: Record<string, string | undefined>;
-    txSplits?: AnyTx;
-    customCategories?: AnyTx[];
+    txSplits?: TxSplitsMap;
+    customCategories?: Category[];
   };
   monthlyHistory?: readonly MonthlyHistoryEntry[];
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyTx = any;
 
 // Central analytics hook for Finyk. All derived views are memoized so a
 // re-render that does not change transactions or any filter leaves the
