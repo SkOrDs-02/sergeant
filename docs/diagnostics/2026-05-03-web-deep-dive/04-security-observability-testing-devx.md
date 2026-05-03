@@ -45,8 +45,10 @@
 2. Додати у `package.json` postinstall step, який вилогує warning, якщо Better Auth version бампнувся вище за tested-against version:
 
    ```js
-   if (semver.gt(betterAuthVersion, '8.x.y')) {
-     console.warn('⚠️  Re-validate apps/server/src/auth/secondaryStorage.ts workaround');
+   if (semver.gt(betterAuthVersion, "8.x.y")) {
+     console.warn(
+       "⚠️  Re-validate apps/server/src/auth/secondaryStorage.ts workaround",
+     );
    }
    ```
 
@@ -54,7 +56,9 @@
 
 ---
 
-## 6.4 [Bad] No CSP / no SRI / no Permissions-Policy on Vercel
+## 6.4 [Bad → Partially Done] No CSP / no SRI / no Permissions-Policy on Vercel
+
+> **Status update (2026-05-03):** CSP **report-only** + розширений `Permissions-Policy` приземлено у [#1551](https://github.com/Skords-01/Sergeant/pull/1551). Залишилось: 1-2 тижні моніторингу Sentry-репортів → narrow rules → enforcing; SRI для third-party scripts (поки нема — додамо в lint, якщо з'являться).
 
 **Що бачу.** `apps/web/vercel.json` (або `vercel.config.ts`) — є security headers (X-Frame-Options тощо), але **повноцінного CSP немає**. Для PWA з inline-styles від Tailwind / framer-motion це норма (CSP-level-3 з `'unsafe-inline'` уже не виглядає страшно), але **ці headers не задані взагалі**.
 
@@ -81,7 +85,9 @@
 
 ---
 
-## 6.5 [Bad] PII у логах: `Pino` без redact, `requestId` корелюється тільки за timestamp
+## 6.5 [Bad → Done] PII у логах: `Pino` без redact, `requestId` корелюється тільки за timestamp
+
+> **Status update (2026-05-03):** Pino redact list розширено до 50+ paths (req/res headers, root tokens, 1-2 рівні wildcard, email/phone), Sentry `beforeSend` тепер робить рекурсивний `scrubPII()` через спільний `redactKeyNames` контракт, requestId додається тегом до всіх Sentry-подій з ALS-контексту, ErrorBoundary показує requestId з кнопкою «копіювати» на 5xx/network/parse — у [#1551](https://github.com/Skords-01/Sergeant/pull/1551). Залишилось (окремі PR-и): `docs/security/pii-handling.md` зі списком заборонених полів і ESLint-правило проти `console.log` з email-rg.
 
 **Що бачу.** Я не побачив у Pino-конфігурації `redact: ['email', 'phone', 'password', '*.user.email', ...]`. Якщо на Sentry приходять exceptions з body — там може бути PII.
 
@@ -95,21 +101,21 @@
    const logger = pino({
      redact: {
        paths: [
-         'req.body.password',
-         'req.body.email',
-         'req.body.phone',
-         'req.headers.authorization',
-         'req.headers.cookie',
-         'res.body.email',
-         'res.body.phone',
-         'user.email',
-         'user.phone',
-         '*.email',
-         '*.phone',
-         '*.password',
-         'x-csrf-token',
+         "req.body.password",
+         "req.body.email",
+         "req.body.phone",
+         "req.headers.authorization",
+         "req.headers.cookie",
+         "res.body.email",
+         "res.body.phone",
+         "user.email",
+         "user.phone",
+         "*.email",
+         "*.phone",
+         "*.password",
+         "x-csrf-token",
        ],
-       censor: '[REDACTED]',
+       censor: "[REDACTED]",
      },
    });
    ```
@@ -332,11 +338,11 @@ OK.
 
 1. У `docs/audits/README.md` — таблиця:
 
-   | File | Date | Status | Implemented Items | Outstanding |
-   | --- | --- | --- | --- | --- |
-   | `2026-04-28-sergeant-comprehensive-audit.md` | 2026-04-28 | Partially Implemented | 12/18 | 6 |
-   | `2026-04-28-implementation-roadmap.md` | 2026-04-28 | Active | — | — |
-   | ... | ... | ... | ... | ... |
+   | File                                         | Date       | Status                | Implemented Items | Outstanding |
+   | -------------------------------------------- | ---------- | --------------------- | ----------------- | ----------- |
+   | `2026-04-28-sergeant-comprehensive-audit.md` | 2026-04-28 | Partially Implemented | 12/18             | 6           |
+   | `2026-04-28-implementation-roadmap.md`       | 2026-04-28 | Active                | —                 | —           |
+   | ...                                          | ...        | ...                   | ...               | ...         |
 
 2. CI-freshness gate (§7.1) — позначати «stale» через 180 днів без оновлення status.
 3. При implementation item-у — оновлювати «Outstanding» count.
@@ -345,19 +351,19 @@ OK.
 
 ## Прив'язка до roadmap (00-overview)
 
-| Item у roadmap | Section тут |
-| --- | --- |
-| Pino redact для PII (top ROI 5.00) | §6.5 |
-| Sentry tag `requestId` (ROI 3.00) | §6.5 + §4.4 у 03-backend-and-performance |
-| CSP report-only (ROI 3.00) | §6.4 |
-| `docs/audits/README.md` status table (ROI 2.00) | §11 |
-| Better Auth contract test | §6.3 |
-| Mutation testing on CloudSync | §7.3 |
-| Contract tests web↔server | §7.4 |
-| Storybook (75+ UI components) | §8.6 |
-| Agent onboarding `start-here.md` | §8.5 |
-| C4 diagrams | §9.2 |
-| CHANGELOG / release notes | §9.3 |
-| Pre-commit i18n / CSP validators | §8.4 |
+| Item у roadmap                                  | Section тут                              |
+| ----------------------------------------------- | ---------------------------------------- |
+| Pino redact для PII (top ROI 5.00)              | §6.5                                     |
+| Sentry tag `requestId` (ROI 3.00)               | §6.5 + §4.4 у 03-backend-and-performance |
+| CSP report-only (ROI 3.00)                      | §6.4                                     |
+| `docs/audits/README.md` status table (ROI 2.00) | §11                                      |
+| Better Auth contract test                       | §6.3                                     |
+| Mutation testing on CloudSync                   | §7.3                                     |
+| Contract tests web↔server                       | §7.4                                     |
+| Storybook (75+ UI components)                   | §8.6                                     |
+| Agent onboarding `start-here.md`                | §8.5                                     |
+| C4 diagrams                                     | §9.2                                     |
+| CHANGELOG / release notes                       | §9.3                                     |
+| Pre-commit i18n / CSP validators                | §8.4                                     |
 
 > **Tracker hook.** Security items (§6.x) → `docs/security/`. Observability (§4.4 reuse, requestId) → `docs/observability/`. Testing (§7.x) → `docs/testing/`. DevX (§8.x) і docs (§9.x, §11) → `docs/agents/` і `docs/audits/`.

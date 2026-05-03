@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { recordModuleOpen } from "../lib/recentModules";
 
 const VALID_MODULES = new Set(["finyk", "fizruk", "routine", "nutrition"]);
 
@@ -63,6 +64,10 @@ export function useHubNavigation(): HubNavigation {
 
       setModuleAnimClass("module-enter");
       setActiveModule(typedId);
+      // Best-effort tracker for `prefetchCriticalModules` priority —
+      // see `core/lib/recentModules.ts`. Storage failures are swallowed
+      // there; nothing here cares about the result.
+      recordModuleOpen(typedId);
       navigate(`/?module=${typedId}${hashStr}`, { replace: false });
     },
     [activeModule, navigate],
