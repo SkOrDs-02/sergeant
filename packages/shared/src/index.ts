@@ -35,6 +35,12 @@ export * from "./storage/kv";
 // `docs/planning/storage-roadmap.md`.
 export * from "./sync/modules";
 
+// Cross-platform "wrap a KVStore so writes to tracked keys auto-fire
+// `enqueueChange`" factory — explicit replacement for the web
+// `localStorage.setItem` monkey-patch. See PR #008 in
+// `docs/planning/storage-roadmap.md`.
+export * from "./sync/syncedKV";
+
 // Onboarding "vibe picks" state + FTUX time-to-value helpers.
 export * from "./lib/vibePicks";
 

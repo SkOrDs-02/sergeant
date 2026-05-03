@@ -12,6 +12,7 @@ import {
   safeWriteLS,
   safeRemoveLS,
 } from "@shared/lib/storage/storage";
+import { safeWriteSyncedLS } from "@shared/lib/storage/syncedKV";
 
 const CLEANUP_DONE_KEY = "hub_demo_cleanup_v1_done";
 const LEGACY_SEEDED_FLAG_KEY = "hub_demo_seeded_v1";
@@ -34,7 +35,9 @@ function cleanFinyk(): void {
   if (!Array.isArray(list)) return;
   const next = stripDemoArray(list);
   if (next.length === list.length) return;
-  safeWriteLS(FINYK_MANUAL_EXPENSES_KEY, next);
+  // Tracked sync key (finyk module) — go through `syncedKV` so the sync
+  // engine sees the change without relying on the old monkey-patch.
+  safeWriteSyncedLS(FINYK_MANUAL_EXPENSES_KEY, next);
 }
 
 function cleanFizruk(): void {
@@ -99,7 +102,8 @@ function cleanNutrition(): void {
     if (meals.length > 0) next[dateKey] = { ...day, meals };
     else touched = true;
   }
-  if (touched) safeWriteLS(NUTRITION_LOG_KEY, next);
+  // Tracked sync key (nutrition module) — go through `syncedKV`.
+  if (touched) safeWriteSyncedLS(NUTRITION_LOG_KEY, next);
 }
 
 /**

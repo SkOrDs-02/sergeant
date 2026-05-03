@@ -1,6 +1,6 @@
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
-import { notifySyncDirty } from "../cloudSync/useCloudSync";
+import { safeReadLS } from "@shared/lib/storage/storage";
+import { safeWriteSyncedLS } from "@shared/lib/storage/syncedKV";
 import type { MemoryEntry } from "./types";
 
 export const PROFILE_KEY = STORAGE_KEYS.USER_PROFILE;
@@ -55,10 +55,13 @@ export function readMemoryEntries(): MemoryEntry[] {
 }
 
 export function writeMemoryEntries(entries: MemoryEntry[]): void {
-  if (!safeWriteLS(PROFILE_KEY, entries)) {
+  // `safeWriteSyncedLS` writes through `syncedKV`, which auto-fires
+  // `enqueueChange(PROFILE_KEY)` — no separate `notifySyncDirty` call
+  // needed (the explicit follow-up was a workaround for the old monkey-
+  // patch's weak invariants and is redundant now).
+  if (!safeWriteSyncedLS(PROFILE_KEY, entries)) {
     throw new Error("Не вдалося зберегти пам'ять профілю");
   }
-  notifySyncDirty(PROFILE_KEY);
 }
 
 export function groupMemoryEntries(

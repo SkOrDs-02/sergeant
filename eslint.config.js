@@ -375,12 +375,18 @@ export default [
       "apps/web/src/shared/hooks/useDarkMode.ts",
       "apps/web/src/shared/hooks/usePushNotifications.ts",
       "apps/web/src/shared/hooks/useActiveFizrukWorkout.ts",
-      // Cloud-sync internals — the queue / patcher / state writer all
+      // Cloud-sync internals — the queue / enqueue / state writer all
       // need direct access; users should call the cloud-sync API.
       "apps/web/src/core/cloudSync/logger.ts",
       "apps/web/src/core/cloudSync/queue/offlineQueue.ts",
       "apps/web/src/core/cloudSync/state/moduleData.ts",
-      "apps/web/src/core/cloudSync/storagePatch.ts",
+      // PR #008 split the old `storagePatch.ts` (monkey-patch removed)
+      // into `enqueue.ts` (the explicit dirty-marking entry point) and
+      // `syncedKV.ts` (the wrapper). `enqueue.ts` keeps a `rawRemoveItem`
+      // handle so `clearSyncManagedData` can wipe a previous user's
+      // slice without re-firing `enqueueChange` for every key it deletes
+      // — that is the only direct `localStorage` access here.
+      "apps/web/src/core/cloudSync/enqueue.ts",
       // Module storage wrappers (legitimate primitives in their own
       // namespace).
       "apps/web/src/modules/finyk/hooks/useStorage.ts",
