@@ -148,13 +148,21 @@ export function HubHomeView(props: HubHomeViewProps) {
           single CTA on screen. Replaces the sparkle icon that briefly
           lived in HubHeader (#1507) — bringing back the original FAB
           chrome the team had pre-#1357 keeps the assistant a one-tap
-          target without crowding the header. */}
+          target without crowding the header.
+
+          The `bottom-[…]` override lifts the FAB above `HubBottomNav`
+          (60 px / 64 px on coarse pointer + safe-area-pb). Without it
+          the default `bottom: 1.5rem` lands the FAB on top of the
+          «Налаштування» tab. Offset mirrors `ActiveWorkoutBanner`
+          (5.25rem + safe-area-inset-bottom) so all hub-level floating
+          chrome rises in lockstep above the same nav rail. */}
       {ui.hubView === "dashboard" && !inFtuxSession && (
         <FloatingActionButton
           icon="sparkle"
           onClick={() => navigate(CHAT_PATH)}
           aria-label="Відкрити AI-асистента"
           hideOnScroll
+          className="bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))]"
         />
       )}
     </div>

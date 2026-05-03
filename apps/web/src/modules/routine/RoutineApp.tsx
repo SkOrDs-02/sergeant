@@ -572,23 +572,7 @@ export default function RoutineApp({
         }
         title="РУТИНА"
         subtitle="Звички · план Фізрука · один розклад"
-        right={
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => applyTimeMode("today")}
-              className={cn(
-                "shrink-0 min-h-[40px] px-3 rounded-xl text-xs font-bold border transition-colors",
-                C.chipOn,
-              )}
-              title="Перейти до сьогоднішнього дня"
-              aria-label="Перейти на сьогоднішній день"
-            >
-              Сьогодні
-            </button>
-            <ModuleHeaderAssistantButton />
-          </div>
-        }
+        right={<ModuleHeaderAssistantButton />}
       />
 
       <div className="flex-1 overflow-hidden flex flex-col min-h-0">
