@@ -449,7 +449,7 @@ export default function App({
             setEditingManualExpenseId(null);
             setShowExpenseSheet(true);
           }}
-          className="fixed bottom-[calc(60px+env(safe-area-inset-bottom,0px)+16px)] right-4 w-12 h-12 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-float flex items-center justify-center text-2xl hover:from-brand-500 hover:to-brand-700 hover:shadow-glow hover:scale-105 active:scale-95 transition-[background-color,box-shadow,opacity,transform] duration-200 ease-smooth z-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+          className="fixed bottom-[calc(60px+env(safe-area-inset-bottom,0)+16px)] right-4 w-12 h-12 rounded-full bg-linear-to-br from-brand-400 to-brand-600 text-white shadow-float flex items-center justify-center text-2xl hover:from-brand-500 hover:to-brand-700 hover:shadow-glow hover:scale-105 active:scale-95 transition-[background-color,box-shadow,opacity,transform] duration-200 ease-smooth z-20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
           aria-label="Додати витрату"
         >
           +
@@ -457,7 +457,7 @@ export default function App({
       )}
 
       {mono.authError && (
-        <div className="fixed top-[calc(56px+env(safe-area-inset-top,0px)+8px)] left-4 right-4 z-50 max-w-lg mx-auto">
+        <div className="fixed top-[calc(56px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto">
           <div className="bg-warning/15 border border-warning/40 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-card">
             <span className="text-lg shrink-0 mt-0.5">⚠️</span>
             <div className="flex-1 min-w-0">

@@ -58,7 +58,7 @@ export function BudgetsGoalsSection({
           <SectionHeading
             as="span"
             size="sm"
-            className="!mb-0 normal-case tracking-normal"
+            className="mb-0! normal-case tracking-normal"
           >
             Цілі накопичення
             {goalBudgets.length > 0 && (

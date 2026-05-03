@@ -291,7 +291,7 @@ export function WorkoutTemplatesSection({
                       {groupSelectMode && (
                         <button
                           type="button"
-                          className={`w-5 h-5 rounded-xl border flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? "bg-success-strong border-success-strong text-white" : "border-line bg-bg"}`}
+                          className={`w-5 h-5 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${isSelected ? "bg-success-strong border-success-strong text-white" : "border-line bg-bg"}`}
                           onClick={() => handleToggleGroupSelect(id)}
                         >
                           {isSelected && (

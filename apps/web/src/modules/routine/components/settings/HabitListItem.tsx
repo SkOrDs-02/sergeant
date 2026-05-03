@@ -94,7 +94,7 @@ export const HabitListItem = memo(function HabitListItem({
             type="button"
             variant="ghost"
             size="sm"
-            className="!h-9 !px-3 !text-xs border border-routine-line/60 dark:border-routine-border-dark/25 bg-routine-surface/40 dark:bg-routine-surface-dark/10"
+            className="h-9! px-3! text-xs! border border-routine-line/60 dark:border-routine-border-dark/25 bg-routine-surface/40 dark:bg-routine-surface-dark/10"
             onClick={onOpenDetails}
           >
             Деталі
@@ -103,7 +103,7 @@ export const HabitListItem = memo(function HabitListItem({
             type="button"
             variant="ghost"
             size="sm"
-            className="!h-9 !px-3 !text-xs border border-line"
+            className="h-9! px-3! text-xs! border border-line"
             onClick={onStartEdit}
           >
             Змінити
@@ -112,7 +112,7 @@ export const HabitListItem = memo(function HabitListItem({
             type="button"
             variant="ghost"
             size="sm"
-            className="!h-9 !px-3 !text-xs border border-line"
+            className="h-9! px-3! text-xs! border border-line"
             onClick={onArchive}
           >
             В архів
@@ -121,7 +121,7 @@ export const HabitListItem = memo(function HabitListItem({
             type="button"
             variant="ghost"
             size="sm"
-            className="!h-9 !px-3 !text-xs text-danger border border-danger/25"
+            className="h-9! px-3! text-xs! text-danger border border-danger/25"
             onClick={onRequestDelete}
           >
             Видалити

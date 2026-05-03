@@ -293,7 +293,7 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
                 key={i}
                 role="img"
                 aria-label={`Рівень ${i + 1}`}
-                className={cn("rounded-sm inline-block flex-shrink-0", c)}
+                className={cn("rounded-sm inline-block shrink-0", c)}
                 style={{ width: 10, height: 10 }}
               />
             ))}

@@ -46,7 +46,7 @@ export function ArchivedHabitsSection({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="!h-9 !px-3 !text-xs border border-line"
+                className="h-9! px-3! text-xs! border border-line"
                 onClick={() =>
                   setRoutine((s) => setHabitArchived(s, h.id, false))
                 }
@@ -57,7 +57,7 @@ export function ArchivedHabitsSection({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="!h-9 !px-3 !text-xs text-danger border border-danger/25"
+                className="h-9! px-3! text-xs! text-danger border border-danger/25"
                 onClick={() =>
                   onRequestDelete({ id: h.id, name: h.name, archived: true })
                 }

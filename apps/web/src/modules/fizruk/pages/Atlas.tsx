@@ -78,7 +78,7 @@ export function Atlas() {
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3">
         <section
-          className="rounded-3xl p-5 border border-line/20 bg-hero-teal dark:border-teal-800/30 dark:bg-panel dark:[background-image:linear-gradient(135deg,rgba(20,184,166,0.18)_0%,rgba(20,184,166,0.05)_100%)]"
+          className="rounded-3xl p-5 border border-line/20 bg-hero-teal dark:border-teal-800/30 dark:bg-panel dark:bg-[linear-gradient(135deg,rgba(20,184,166,0.18)_0%,rgba(20,184,166,0.05)_100%)]"
           aria-label="Атлас мʼязів"
         >
           <SectionHeading size="sm" variant="fizruk" as="p">

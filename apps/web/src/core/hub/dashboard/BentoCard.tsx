@@ -112,14 +112,14 @@ export const BentoCard = memo(function BentoCard({
         data-inactive={inactive ? "true" : undefined}
         className={cn(
           "group relative flex flex-col w-full rounded-3xl border border-line",
-          "p-3.5 [@media(pointer:coarse)]:p-4",
-          "min-h-[120px] [@media(pointer:coarse)]:min-h-[132px]",
+          "p-3.5 pointer-coarse:p-4",
+          "min-h-[120px] pointer-coarse:min-h-[132px]",
           "shadow-card transition-interactive text-left",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2",
           // Hover effect for desktop - lift and glow
-          "[@media(pointer:fine)]:hover:shadow-float [@media(pointer:fine)]:hover:-translate-y-0.5",
-          "[@media(pointer:fine)]:hover:border-brand-200/50 dark:[@media(pointer:fine)]:hover:border-line/80",
-          "active:scale-[0.98] [@media(pointer:coarse)]:active:scale-[0.97]",
+          "pointer-fine:hover:shadow-float pointer-fine:hover:-translate-y-0.5",
+          "pointer-fine:hover:border-brand-200/50 dark:pointer-fine:hover:border-line/80",
+          "active:scale-[0.98] pointer-coarse:active:scale-[0.97]",
           inactive ? "bg-panel grayscale" : config.cardBg,
           isDragging && "shadow-float cursor-grabbing",
         )}
@@ -252,7 +252,7 @@ export const BentoCard = memo(function BentoCard({
           aria-label={onQuickAdd.label}
           title={onQuickAdd.label}
           className={cn(
-            "absolute top-3.5 right-3.5 [@media(pointer:coarse)]:top-4 [@media(pointer:coarse)]:right-4",
+            "absolute top-3.5 right-3.5 pointer-coarse:top-4 pointer-coarse:right-4",
             // WCAG 2.5.5 / HIG: ≥44×44 on coarse pointers. The visual
             // glyph stays at 28 px on desktop; a `touch-target` floor
             // expands the hit area to 44×44 on touch without bumping
@@ -280,7 +280,7 @@ export const BentoCard = memo(function BentoCard({
           aria-label={`Перетягнути ${config.label}`}
           title="Перетягнути для зміни порядку"
           className={cn(
-            "absolute top-3.5 right-3.5 [@media(pointer:coarse)]:top-4 [@media(pointer:coarse)]:right-4",
+            "absolute top-3.5 right-3.5 pointer-coarse:top-4 pointer-coarse:right-4",
             // Match the quick-add affordance: visible 28 px glyph,
             // 44×44 hit area on coarse pointers via `touch-target`.
             "w-7 h-7 touch-target",

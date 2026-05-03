@@ -93,7 +93,7 @@ function WebBarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[130] flex items-end">
+    <div className="fixed inset-0 z-130 flex items-end">
       <button
         type="button"
         className="absolute inset-0 bg-black/70"

@@ -34,7 +34,7 @@ export function SkipLink({
         // When focused: promote to a pinned top-left pill that sits
         // above every surface in the app (modals, sheets, toasts all
         // live ≤ z-[200]).
-        "focus:fixed focus:top-3 focus:left-3 focus:z-[300]",
+        "focus:fixed focus:top-3 focus:left-3 focus:z-300",
         "focus:px-4 focus:py-2 focus:rounded-xl",
         "focus:border focus-visible:bg-panel focus-visible:text-text focus-visible:shadow-float focus-visible:border-line",
         "focus:text-sm focus:font-semibold",

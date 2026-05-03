@@ -56,7 +56,7 @@ const HeroCardImpl = function HeroCard({
       className={cn(
         "rounded-3xl bg-finyk/[.06] dark:bg-finyk-surface-dark/10",
         "border border-finyk/[.14] dark:border-finyk-border-dark/20",
-        "border-l-[4px] shadow-card",
+        "border-l-4 shadow-card",
         accentLeft,
       )}
     >
@@ -145,9 +145,9 @@ const HeroCardImpl = function HeroCard({
               {Math.round(monthProgressPct)}%
             </span>
           </div>
-          <div className="h-1 rounded-full bg-finyk/[.15] overflow-hidden">
+          <div className="h-1 rounded-full bg-finyk/15 overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-brand-400 to-brand-500 transition-[width] duration-500"
+              className="h-full rounded-full bg-linear-to-r from-brand-400 to-brand-500 transition-[width] duration-500"
               style={{ width: `${monthProgressPct}%` }}
             />
           </div>

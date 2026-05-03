@@ -57,7 +57,7 @@ export function CategoriesSection({
               <Button
                 type="button"
                 variant="ghost"
-                className="min-h-[44px] min-w-0 border border-line sm:min-w-[7rem]"
+                className="min-h-[44px] min-w-0 border border-line sm:min-w-28"
                 onClick={() => {
                   setRoutine((s) =>
                     updateCategory(s, editingCatId, {
@@ -87,7 +87,7 @@ export function CategoriesSection({
             <Button
               type="button"
               variant="ghost"
-              className="min-h-[44px] w-full min-w-0 border border-line sm:w-auto sm:min-w-[7rem]"
+              className="min-h-[44px] w-full min-w-0 border border-line sm:w-auto sm:min-w-28"
               onClick={() => {
                 setRoutine((s) =>
                   createCategory(s, catDraft.name, catDraft.emoji),

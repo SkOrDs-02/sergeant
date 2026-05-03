@@ -98,7 +98,7 @@ export class ErrorBoundary extends Component<
           <p className="text-sm text-muted mb-4 text-center max-w-xs">
             Виникла непередбачена помилка. Спробуй перезавантажити сторінку.
           </p>
-          <pre className="text-xs text-danger/80 mb-6 max-w-lg w-full overflow-auto whitespace-pre-wrap break-words bg-panel rounded-xl p-3 border border-line">
+          <pre className="text-xs text-danger/80 mb-6 max-w-lg w-full overflow-auto whitespace-pre-wrap wrap-break-word bg-panel rounded-xl p-3 border border-line">
             {error.message}
           </pre>
           <div className="flex flex-col sm:flex-row gap-2 w-full max-w-xs">

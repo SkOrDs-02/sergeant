@@ -40,7 +40,7 @@ export function OfflineBanner() {
         aria-live="polite"
         data-testid="offline-banner"
         data-state="offline"
-        className="fixed top-3 right-3 z-[300] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-line text-muted text-style-caption shadow-soft backdrop-blur-sm safe-area-pt motion-safe:animate-fade-in"
+        className="fixed top-3 right-3 z-300 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-line text-muted text-style-caption shadow-soft backdrop-blur-sm safe-area-pt motion-safe:animate-fade-in"
       >
         <Icon name="wifi-off" size={12} strokeWidth={2.5} aria-hidden />
         <span>{label}</span>
@@ -55,7 +55,7 @@ export function OfflineBanner() {
       aria-live="polite"
       data-testid="offline-banner"
       data-state="syncing"
-      className="fixed top-3 right-3 z-[300] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-line text-muted text-style-caption shadow-soft backdrop-blur-sm safe-area-pt motion-safe:animate-fade-in"
+      className="fixed top-3 right-3 z-300 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-line text-muted text-style-caption shadow-soft backdrop-blur-sm safe-area-pt motion-safe:animate-fade-in"
     >
       <Icon
         name="refresh-cw"

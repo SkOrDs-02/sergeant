@@ -59,25 +59,25 @@ type ColorTokens = {
 const COLORS: Record<ModuleNavColor, ColorTokens> = {
   finyk: {
     text: "text-finyk",
-    pill: "bg-gradient-to-r from-brand-400 to-brand-500",
+    pill: "bg-linear-to-r from-brand-400 to-brand-500",
     glow: "drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]",
     badge: "bg-finyk",
   },
   fizruk: {
     text: "text-fizruk",
-    pill: "bg-gradient-to-r from-teal-400 to-teal-500",
+    pill: "bg-linear-to-r from-teal-400 to-teal-500",
     glow: "drop-shadow-[0_0_8px_rgba(20,184,166,0.3)]",
     badge: "bg-fizruk",
   },
   routine: {
     text: "text-routine",
-    pill: "bg-gradient-to-r from-coral-400 to-coral-500",
+    pill: "bg-linear-to-r from-coral-400 to-coral-500",
     glow: "drop-shadow-[0_0_8px_rgba(249,112,102,0.3)]",
     badge: "bg-routine",
   },
   nutrition: {
     text: "text-nutrition",
-    pill: "bg-gradient-to-r from-lime-400 to-lime-500",
+    pill: "bg-linear-to-r from-lime-400 to-lime-500",
     glow: "drop-shadow-[0_0_8px_rgba(132,204,22,0.3)]",
     badge: "bg-nutrition",
   },
@@ -107,7 +107,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
       aria-label={ariaLabel}
     >
       <div
-        className="relative flex h-[60px] [@media(pointer:coarse)]:h-[64px]"
+        className="relative flex h-[60px] pointer-coarse:h-[64px]"
         role={isTablist ? "tablist" : undefined}
       >
         {/* Sliding pill indicator — single element that translates to active tab */}
@@ -142,8 +142,8 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
               onClick={() => onChange(item.id)}
               className={cn(
                 "relative flex-1 flex flex-col items-center justify-center gap-1",
-                "transition-all duration-200 min-h-[48px] [@media(pointer:coarse)]:min-h-[52px]",
-                "active:scale-95 [@media(pointer:coarse)]:active:bg-panelHi/50",
+                "transition-all duration-200 min-h-[48px] pointer-coarse:min-h-[52px]",
+                "active:scale-95 pointer-coarse:active:bg-panelHi/50",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
                 active ? "text-text" : "text-muted hover:text-text/70",
               )}

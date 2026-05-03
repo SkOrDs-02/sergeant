@@ -23,7 +23,7 @@ export function RestTimerOverlay({
 
   return (
     <div
-      className="fixed left-0 right-0 z-[55] px-4 pointer-events-none fizruk-above-tabbar"
+      className="fixed left-0 right-0 z-55 px-4 pointer-events-none fizruk-above-tabbar"
       role="timer"
       aria-live="polite"
       aria-label={`Відпочинок, залишилось ${restTimer.remaining} секунд`}

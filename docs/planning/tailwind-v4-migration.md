@@ -1,7 +1,7 @@
 # Міграція Tailwind CSS v3 → v4
 
 > **Last validated:** 2026-05-03. **Next review:** 2026-08-01.
-> **Status:** Planned — не розпочато.
+> **Status:** Phase 1 (web) — in progress (PR open). Phase 2–4 — не розпочато.
 > **Owner:** @Skords-01
 > **Пріоритет:** Medium — запланувати на Q3–Q4 2026.
 > **Estimated effort:** 2–3 дні (з automated upgrade tool).

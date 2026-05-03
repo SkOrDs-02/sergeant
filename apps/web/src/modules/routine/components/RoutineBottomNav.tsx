@@ -88,7 +88,7 @@ export function RoutineBottomNav({
           className={[
             "absolute left-1/2 -translate-x-1/2 -top-6",
             "w-14 h-14 rounded-full z-40",
-            "bg-gradient-to-br from-coral-400 to-coral-500 text-white",
+            "bg-linear-to-br from-coral-400 to-coral-500 text-white",
             "shadow-float border-4 border-bg",
             "flex items-center justify-center",
             "transition-transform duration-150 active:scale-95 hover:scale-[1.04]",

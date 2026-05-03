@@ -33,7 +33,7 @@ export function Skeleton({ className, shimmer = false, style }: SkeletonProps) {
     >
       {shimmer && (
         <div
-          className="absolute inset-0 -translate-x-full motion-safe:animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"
+          className="absolute inset-0 -translate-x-full motion-safe:animate-shimmer bg-linear-to-r from-transparent via-white/10 to-transparent"
           aria-hidden="true"
         />
       )}
@@ -58,7 +58,7 @@ export function SkeletonText({
     >
       {shimmer && (
         <div
-          className="absolute inset-0 -translate-x-full motion-safe:animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"
+          className="absolute inset-0 -translate-x-full motion-safe:animate-shimmer bg-linear-to-r from-transparent via-white/10 to-transparent"
           aria-hidden="true"
         />
       )}
@@ -113,7 +113,7 @@ export function SkeletonTransactionRow({
       >
         {shimmer && (
           <div
-            className="absolute inset-0 -translate-x-full motion-safe:animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent"
+            className="absolute inset-0 -translate-x-full motion-safe:animate-shimmer bg-linear-to-r from-transparent via-white/10 to-transparent"
             aria-hidden="true"
           />
         )}
@@ -159,7 +159,7 @@ export function SkeletonBudgetBar({
         >
           {shimmer && (
             <div
-              className="absolute inset-0 -translate-x-full motion-safe:animate-shimmer bg-gradient-to-r from-transparent via-white/15 to-transparent"
+              className="absolute inset-0 -translate-x-full motion-safe:animate-shimmer bg-linear-to-r from-transparent via-white/15 to-transparent"
               aria-hidden="true"
             />
           )}

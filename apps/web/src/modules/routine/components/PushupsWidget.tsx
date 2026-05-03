@@ -8,7 +8,7 @@ import { useRoutinePushups } from "../hooks/useRoutinePushups";
 import { dateKeyFromDate } from "../lib/hubCalendarAggregate";
 
 const C = {
-  primary: "!bg-routine hover:!bg-routine-hover !text-white border-0",
+  primary: "bg-routine! hover:bg-routine-hover! text-white! border-0",
   barToday: "bg-routine",
   barOther: "bg-routine/35",
 };
@@ -148,7 +148,7 @@ export function PushupsWidget() {
           <button
             type="button"
             className={cn(
-              "min-h-[48px] w-full shrink-0 rounded-2xl px-6 text-base font-bold disabled:opacity-40 sm:w-auto sm:min-w-[7rem]",
+              "min-h-[48px] w-full shrink-0 rounded-2xl px-6 text-base font-bold disabled:opacity-40 sm:w-auto sm:min-w-28",
               C.primary,
             )}
             disabled={!input || Number(input) <= 0}

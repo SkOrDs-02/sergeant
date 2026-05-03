@@ -57,7 +57,7 @@ function PeekBackdrop() {
         className={cn(
           "absolute inset-0",
           // Soft brand wash so the backdrop never looks empty on cold load.
-          "bg-gradient-to-b from-brand-500/5 via-transparent to-transparent",
+          "bg-linear-to-b from-brand-500/5 via-transparent to-transparent",
         )}
       />
       {/* Animated floating shapes for visual interest */}

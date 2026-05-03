@@ -77,7 +77,7 @@ export function InputDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center"
+      className="fixed inset-0 z-200 flex items-end justify-center sm:items-center"
       role="presentation"
     >
       <button
@@ -129,7 +129,7 @@ export function InputDialog({
         <div className="flex flex-col gap-2">
           <Button
             type="submit"
-            className="w-full h-12 !bg-primary !text-bg border-0"
+            className="w-full h-12 bg-primary! text-bg! border-0"
           >
             {confirmLabel}
           </Button>
