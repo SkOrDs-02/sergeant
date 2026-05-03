@@ -1,5 +1,7 @@
 # WF-15 — Railway Deployment Notify
 
+> **Status:** Active. Live since 2026-05-03 (parse_mode=HTML cutover, Wave 1 §3.4) — production n8n workflow `CygZ4vLxTm2ltuRW`.
+
 > **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-03.
 
 > Webhook (`POST /webhook/railway-deploy`) → Telegram message in
