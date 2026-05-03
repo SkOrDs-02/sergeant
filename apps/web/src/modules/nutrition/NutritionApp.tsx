@@ -30,6 +30,7 @@ import {
 } from "./lib/nutritionStorage";
 import { useNutritionPantries } from "./hooks/useNutritionPantries";
 import { useNutritionLog } from "./hooks/useNutritionLog";
+import { useNutritionDualWriteBoot } from "./hooks/useNutritionDualWriteBoot";
 import { usePhotoAnalysis } from "./hooks/usePhotoAnalysis";
 import { useShoppingList } from "./hooks/useShoppingList";
 import { useNutritionUiState } from "./hooks/useNutritionUiState";
@@ -66,6 +67,12 @@ export default function NutritionApp({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [statusText, setStatusText] = useState("");
+
+  // Stage 4 PR #032: install the dual-write context once the user is
+  // known and the flag is on. Without this the `triggerNutritionDualWrite`
+  // calls from `nutritionStorage.ts` early-out at the
+  // `isNutritionDualWriteRegistered()` gate, leaving SQLite empty.
+  useNutritionDualWriteBoot();
 
   const {
     activePage,

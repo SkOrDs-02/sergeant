@@ -82,6 +82,13 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
       "Workouts / measurements / custom exercises читаються з локальної SQLite (`fizruk_*` таблиці) замість MMKV blob. MMKV-write залишається як safety net. Stage 4 PR #029 storage-roadmap. Потребує увімкненого dual-write. Default: off.",
     defaultValue: false,
   },
+  {
+    id: "feature.nutrition.sqlite_v2.dual_write",
+    label: "Nutrition — dual-write MMKV↔SQLite",
+    description:
+      "Кожен write у MMKV Харчування додатково мирорить у локальну SQLite (`nutrition_meals`, `nutrition_pantries`, `nutrition_pantry_items`, `nutrition_prefs`, `nutrition_recipes`). Reads ще беруться з MMKV. Stage 4 PR #032 storage-roadmap. Best-effort: помилка SQLite-запису не ламає MMKV. Default: off.",
+    defaultValue: false,
+  },
 ] as const;
 
 const DEFAULTS: FlagValues = Object.freeze(

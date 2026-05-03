@@ -10,6 +10,9 @@ import {
 import { enqueueChange } from "@/sync/enqueue";
 import { safeReadLS, safeWriteLS } from "@/lib/storage";
 
+import { triggerNutritionDualWrite } from "./dualWrite";
+import { peekNutritionDualWriteState } from "./dualWriteState";
+
 export interface SavedRecipe {
   id: string;
   title: string;
@@ -96,8 +99,13 @@ export function getRecipeById(id: string): SavedRecipe | undefined {
 }
 
 export function saveRecipeBook(recipes: readonly SavedRecipe[]): boolean {
+  const prev = peekNutritionDualWriteState();
   const book: RecipeBookV1 = { recipes: [...recipes] };
-  return safeWriteLS(STORAGE_KEYS.NUTRITION_SAVED_RECIPES, book);
+  const ok = safeWriteLS(STORAGE_KEYS.NUTRITION_SAVED_RECIPES, book);
+  if (ok && prev !== null) {
+    triggerNutritionDualWrite(prev, peekNutritionDualWriteState() ?? prev);
+  }
+  return ok;
 }
 
 /** Оновити або додати рецепт (для майбутнього збереження з UI / AI). */

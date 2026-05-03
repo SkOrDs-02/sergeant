@@ -45,6 +45,8 @@ import {
 } from "@sergeant/nutrition-domain";
 
 import { safeReadLS, safeReadStringLS, safeWriteLS } from "@/lib/storage";
+import { triggerNutritionDualWrite } from "./dualWrite";
+import { peekNutritionDualWriteState } from "./dualWriteState";
 
 // ── Log ─────────────────────────────────────────────────────────────
 
@@ -55,7 +57,12 @@ export function loadNutritionLog(): NutritionLog {
 export function saveNutritionLog(
   log: NutritionLog | null | undefined,
 ): boolean {
-  return safeWriteLS(NUTRITION_LOG_KEY, log || {});
+  const prev = peekNutritionDualWriteState();
+  const ok = safeWriteLS(NUTRITION_LOG_KEY, log || {});
+  if (ok && prev !== null) {
+    triggerNutritionDualWrite(prev, peekNutritionDualWriteState() ?? prev);
+  }
+  return ok;
 }
 
 // ── Prefs ───────────────────────────────────────────────────────────
@@ -69,7 +76,12 @@ export function loadNutritionPrefs(): NutritionPrefs {
 export function saveNutritionPrefs(
   prefs: NutritionPrefs | null | undefined,
 ): boolean {
-  return safeWriteLS(NUTRITION_PREFS_KEY, prefs || defaultNutritionPrefs());
+  const prev = peekNutritionDualWriteState();
+  const ok = safeWriteLS(NUTRITION_PREFS_KEY, prefs || defaultNutritionPrefs());
+  if (ok && prev !== null) {
+    triggerNutritionDualWrite(prev, peekNutritionDualWriteState() ?? prev);
+  }
+  return ok;
 }
 
 // ── Pantries ────────────────────────────────────────────────────────
@@ -100,6 +112,7 @@ export function savePantries(
   pantries: Pantry[] | null | undefined,
   activeId?: string | null,
 ): boolean {
+  const prev = peekNutritionDualWriteState();
   const a = safeWriteLS(
     NUTRITION_PANTRIES_KEY,
     Array.isArray(pantries) ? pantries : [],
@@ -107,7 +120,11 @@ export function savePantries(
   const b = activeId
     ? safeWriteLS(NUTRITION_ACTIVE_PANTRY_KEY, String(activeId))
     : true;
-  return a && b;
+  const ok = a && b;
+  if (ok && prev !== null) {
+    triggerNutritionDualWrite(prev, peekNutritionDualWriteState() ?? prev);
+  }
+  return ok;
 }
 
 // ── Water ───────────────────────────────────────────────────────────

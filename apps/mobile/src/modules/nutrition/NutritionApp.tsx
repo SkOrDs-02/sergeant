@@ -24,6 +24,7 @@ import {
   NutritionBottomNav,
   type NutritionMainTab,
 } from "./components/NutritionBottomNav";
+import { useNutritionDualWriteBoot } from "./hooks/useNutritionDualWriteBoot";
 import { Dashboard } from "./pages/Dashboard";
 import { Log } from "./pages/Log";
 import { Shopping } from "./pages/Shopping";
@@ -47,6 +48,12 @@ function readPersistedTab(): NutritionMainTab {
 
 function NutritionShell() {
   const [mainTab, setMainTab] = useState<NutritionMainTab>(readPersistedTab);
+
+  // Stage 4 PR #032: install the dual-write context once the user is
+  // known and the flag is on. Without this the `triggerNutritionDualWrite`
+  // calls from `nutritionStore.ts` and `recipeBookStore.ts` early-out at
+  // the `isNutritionDualWriteRegistered()` gate, leaving SQLite empty.
+  useNutritionDualWriteBoot();
 
   const handleSelectTab = useCallback((next: NutritionMainTab) => {
     setMainTab(next);

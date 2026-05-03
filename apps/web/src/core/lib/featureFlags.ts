@@ -83,6 +83,14 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     defaultValue: false,
     experimental: true,
   },
+  {
+    id: "feature.nutrition.sqlite_v2.dual_write",
+    label: "Nutrition — dual-write LS↔SQLite",
+    description:
+      "Кожен write у localStorage Харчування додатково мирорить у локальну SQLite (`nutrition_meals`, `nutrition_pantries`, `nutrition_pantry_items`, `nutrition_prefs`, `nutrition_recipes`). Reads ще беруться з LS/IDB. Stage 4 PR #032 storage-roadmap. Best-effort: помилка SQLite-запису не ламає LS. Default: off.",
+    defaultValue: false,
+    experimental: true,
+  },
 ] as const;
 
 export type FlagId = (typeof FLAG_REGISTRY)[number]["id"];
