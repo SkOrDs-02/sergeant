@@ -418,7 +418,7 @@ production surface. Phase 4 (PR4) флипнув `strict: true` і видали�
 
 **Phase 1 деталі (PR-6.A):**
 
-- Додано `apps/web/tsconfig.strict.json` — extends основний tsconfig,
+- Додано `tsconfig.strict.json` у `apps/web/` — extends основний tsconfig,
   додає `strictNullChecks: true`, includes тільки `src/shared/**`.
 - Typecheck script оновлено: `tsc -p tsconfig.strict.json --noEmit` додано
   до pipeline.
@@ -632,7 +632,7 @@ nutrition-domain,routine-domain}`). Для `apps/server` — це flip з
 
 **Phase 5 cleanup — діагностичні tsconfig-и видалено (2026-05-03):**
 
-- `apps/web/tsconfig.strict.json` і `apps/web/tsconfig.noimplicitany.json` —
+- `tsconfig.strict.json` і `tsconfig.noimplicitany.json` (обидва у `apps/web/`) —
   обидва extends-или main `tsconfig.json` (який тепер уже `strict: true`)
   і додавали `strictNullChecks: true` / `noImplicitAny: true` лише на
   суб-набір директорій. Після Phase 4 ці прапори вже глобально активні
