@@ -54,6 +54,7 @@ import {
   fizrukDashboardQuickLinkCoverage,
 } from "../components/dashboard";
 import { useActiveFizrukWorkout } from "../hooks/useActiveFizrukWorkout";
+import { useFizrukSqliteReadBoot } from "../hooks/useFizrukSqliteReadBoot";
 import { useFizrukWorkouts } from "../hooks/useFizrukWorkouts";
 import { useMeasurements } from "../hooks/useMeasurements";
 import { useMonthlyPlan } from "../hooks/useMonthlyPlan";
@@ -123,6 +124,13 @@ export interface DashboardProps {
 export function Dashboard({
   testID = "fizruk-dashboard",
 }: DashboardProps = {}) {
+  // Boot the SQLite read overlay (PR #029a). Fire-and-forget — when the
+  // `feature.fizruk.sqlite_v2.read_sqlite` flag is on this warms the
+  // local cache so subsequent reads in `useFizrukWorkouts` /
+  // `useMeasurements` / `useExerciseCatalog` overlay from SQLite. With
+  // the flag off this is a no-op and the page keeps reading from MMKV.
+  useFizrukSqliteReadBoot();
+
   const { workouts } = useFizrukWorkouts();
   const { entries: measurements } = useMeasurements();
   const { state: planState } = useMonthlyPlan();

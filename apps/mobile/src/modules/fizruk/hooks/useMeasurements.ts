@@ -18,7 +18,7 @@
  * Scope note: photo progress (`BodyPhoto`) is explicitly out of scope
  * for the Phase 6 migration, so this hook only owns numeric entries.
  */
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   normaliseMeasurementDraft,
@@ -32,12 +32,65 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { useSyncedStorage } from "@/sync/useSyncedStorage";
 
+import {
+  getCachedFizrukSqliteState,
+  type FizrukMeasurementEntry,
+} from "../lib/sqliteReader";
+import { useFizrukSqliteReadGate } from "../lib/sqliteReadGate";
+
 const STORAGE_KEY = STORAGE_KEYS.FIZRUK_MEASUREMENTS;
 
 const EMPTY: readonly MobileMeasurementEntry[] = [];
 
 function makeId(): string {
   return `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function numericOrUndef(
+  value: number | string | undefined,
+): number | undefined {
+  return typeof value === "number" ? value : undefined;
+}
+
+/**
+ * Project a `FizrukMeasurementEntry` (the loose shape held by the
+ * SQLite cache, mirrored 1:1 from web) onto the strict mobile
+ * `MobileMeasurementEntry` shape used by the screen + selectors.
+ *
+ * The cache reader fans `bicep_cm` out into both `bicepLCm` and
+ * `bicepRCm` for web parity; mobile collapses them back into a single
+ * `bicepCm` here so the form / list / selectors keep working unchanged.
+ */
+function projectMeasurementForMobile(
+  entry: FizrukMeasurementEntry,
+): MobileMeasurementEntry {
+  const bicepCm =
+    numericOrUndef(entry.bicepCm) ??
+    numericOrUndef(entry.bicepLCm) ??
+    numericOrUndef(entry.bicepRCm);
+
+  const result: {
+    -readonly [K in keyof MobileMeasurementEntry]: MobileMeasurementEntry[K];
+  } = {
+    id: entry.id,
+    at: entry.at,
+  };
+  const weightKg = numericOrUndef(entry.weightKg);
+  if (weightKg !== undefined) result.weightKg = weightKg;
+  const waistCm = numericOrUndef(entry.waistCm);
+  if (waistCm !== undefined) result.waistCm = waistCm;
+  const chestCm = numericOrUndef(entry.chestCm);
+  if (chestCm !== undefined) result.chestCm = chestCm;
+  const hipsCm = numericOrUndef(entry.hipsCm);
+  if (hipsCm !== undefined) result.hipsCm = hipsCm;
+  if (bicepCm !== undefined) result.bicepCm = bicepCm;
+  const sleepHours = numericOrUndef(entry.sleepHours);
+  if (sleepHours !== undefined) result.sleepHours = sleepHours;
+  const energyLevel = numericOrUndef(entry.energyLevel);
+  if (energyLevel !== undefined) result.energyLevel = energyLevel;
+  const mood = numericOrUndef(entry.mood);
+  if (mood !== undefined) result.mood = mood;
+  return result;
 }
 
 export interface UseMeasurementsResult {
@@ -80,10 +133,35 @@ export function useMeasurements(): UseMeasurementsResult {
     readonly MobileMeasurementEntry[]
   >(STORAGE_KEY, EMPTY);
 
-  const entries = useMemo(
-    () => sortMeasurementsDesc(Array.isArray(raw) ? raw : []),
-    [raw],
-  );
+  // Stage 4 PR #029a: under `feature.fizruk.sqlite_v2.read_sqlite`,
+  // overlay measurements from the local SQLite cache once it's warm.
+  // The MMKV-backed `useSyncedStorage` read above stays as the
+  // synchronous fallback so the first paint never blocks on SQLite.
+  // Writes still go through `setRaw` / `removeRaw` exactly as today —
+  // PR #029a does NOT change the write path.
+  const { enabled: sqliteReadEnabled, tick: sqliteCacheTick } =
+    useFizrukSqliteReadGate();
+  const [overlay, setOverlay] = useState<
+    readonly MobileMeasurementEntry[] | null
+  >(null);
+
+  useEffect(() => {
+    if (!sqliteReadEnabled) {
+      // Flag flipped off — drop the overlay so we fall back to MMKV
+      // without waiting for a remount.
+      setOverlay((prev) => (prev === null ? prev : null));
+      return;
+    }
+    const cache = getCachedFizrukSqliteState();
+    if (cache.refreshedAt === null) return;
+    setOverlay(cache.measurements.map(projectMeasurementForMobile));
+  }, [sqliteReadEnabled, sqliteCacheTick]);
+
+  const entries = useMemo(() => {
+    const source: readonly MobileMeasurementEntry[] =
+      overlay !== null ? overlay : Array.isArray(raw) ? raw : [];
+    return sortMeasurementsDesc(source);
+  }, [overlay, raw]);
 
   const add = useCallback<UseMeasurementsResult["add"]>(
     (draft) => {

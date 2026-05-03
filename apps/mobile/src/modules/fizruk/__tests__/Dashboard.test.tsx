@@ -65,6 +65,15 @@ jest.mock("../hooks/useWorkoutTemplates", () => ({
 jest.mock("../hooks/useActiveFizrukWorkout", () => ({
   useActiveFizrukWorkout: jest.fn(),
 }));
+// PR #029a wires `useFizrukSqliteReadBoot()` at the top of `Dashboard`
+// to warm the SQLite read overlay when the feature flag is on. The
+// hook reaches into `useUser()` from `@sergeant/api-client/react`,
+// which requires an `ApiClientProvider` ancestor — not present in
+// these render-smoke tests. Stub it out so the mounting path stays
+// the same as before the read overlay landed.
+jest.mock("../hooks/useFizrukSqliteReadBoot", () => ({
+  useFizrukSqliteReadBoot: jest.fn(),
+}));
 
 import { router } from "expo-router";
 
