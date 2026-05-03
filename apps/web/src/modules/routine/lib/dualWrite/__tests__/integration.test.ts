@@ -7,7 +7,7 @@ import {
   registerRoutineDualWriteContext,
   type RoutineDualWriteContext,
 } from "../index.js";
-import { createTestSqlite } from "../../sqliteSpike/__tests__/testSqlite.js";
+import { createTestSqlite } from "./testSqlite.js";
 
 interface RoutineEntryRowRaw extends Record<string, unknown> {
   id: string;

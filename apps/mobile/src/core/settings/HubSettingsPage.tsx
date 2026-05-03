@@ -40,7 +40,6 @@ import { FizrukSection } from "./FizrukSection";
 import { GeneralSection } from "./GeneralSection";
 import { NotificationsSection } from "./NotificationsSection";
 import { RoutineSection } from "./RoutineSection";
-import { RoutineSpikeSection } from "./RoutineSpikeSection";
 
 function cx(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(" ");
@@ -76,7 +75,7 @@ const SETTING_GROUPS: SettingGroup[] = [
     id: "account",
     title: "Акаунт",
     icon: "user",
-    sections: [ExperimentalSection, RoutineSpikeSection, AccountSection],
+    sections: [ExperimentalSection, AccountSection],
   },
 ];
 

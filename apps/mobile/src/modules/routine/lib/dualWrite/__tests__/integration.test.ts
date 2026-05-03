@@ -8,7 +8,7 @@
 import Database from "better-sqlite3";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
-import { migrateRoutineSpike } from "../../sqliteSpike/clientMigrate";
+import { migrateRoutine } from "../../clientMigrate";
 import {
   __clearRoutineDualWriteContextForTests,
   dualWriteRoutineState,
@@ -73,7 +73,7 @@ describe("dualWriteRoutineState orchestrator (mobile)", () => {
   beforeEach(async () => {
     db = new Database(":memory:");
     client = syncClient(db);
-    await migrateRoutineSpike(client);
+    await migrateRoutine(client);
     logger = jest.fn();
   });
 

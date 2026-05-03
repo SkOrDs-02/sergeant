@@ -1,24 +1,15 @@
 /**
- * Tiny shared helper for SPIKE-library unit tests.
+ * Shared test helper: in-memory SQLite with routine migrations applied.
  *
- * Wraps an in-process `better-sqlite3` engine in the same
- * `SqliteMigrationClient` (`{exec, run, all}`) interface that the
- * SPIKE library accepts at runtime, then runs the bundled SPIKE
- * migrations on it. The result is a freshly-migrated SQLite database
- * ready for repo / sync-engine assertions — no jsdom, no sqlite-wasm,
- * no async timing surprises.
- *
- * `better-sqlite3` is resolvable from `apps/web` through the hoisted
- * workspace node_modules (it's a devDep of `@sergeant/db-schema`).
- * The require is therefore safe in Node-side vitest runs and never
- * lands in the production bundle since this file lives under
- * `__tests__/`.
+ * Wraps `better-sqlite3` in a `SqliteMigrationClient` and runs the
+ * bundled routine migrations. The result is a freshly-migrated SQLite
+ * database ready for dual-write / adapter assertions.
  */
 
 import { createRequire } from "node:module";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
-import { migrateRoutineSpike } from "../clientMigrate.js";
+import { migrateRoutine } from "../../clientMigrate.js";
 
 // Resolve via createRequire so the test file stays ESM-friendly.
 const require = createRequire(import.meta.url);
@@ -63,7 +54,7 @@ export async function createTestSqlite(): Promise<TestSqliteHandle> {
       return result as R[];
     },
   };
-  await migrateRoutineSpike(client);
+  await migrateRoutine(client);
   return {
     db,
     client,

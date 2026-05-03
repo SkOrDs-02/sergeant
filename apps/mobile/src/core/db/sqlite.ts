@@ -36,7 +36,7 @@ import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import {
   createExpoSqliteRawClient,
   type ExpoSqliteAsyncHandle,
-} from "../../modules/routine/lib/sqliteSpike/expoSqliteAdapter.js";
+} from "./expoSqliteAdapter.js";
 
 /**
  * Filename of the on-device SQLite database. expo-sqlite stores it at
@@ -80,8 +80,8 @@ let dbInstance: SqliteDb | null = null;
  *
  * Re-opening would force expo-sqlite to acquire a second handle on
  * the same DB, which deadlocks under WAL on iOS — see
- * `apps/mobile/src/modules/routine/lib/sqliteSpike/expoSqliteAdapter.ts`
- * for the wrapper that turns this handle into the raw-SQL client.
+ * `apps/mobile/src/core/db/expoSqliteAdapter.ts` for the wrapper
+ * that turns this handle into the raw-SQL client.
  */
 let nativeInstance: ExpoSQLite.SQLiteDatabase | null = null;
 
@@ -147,10 +147,9 @@ export async function getSqliteMigrationClient(): Promise<SqliteMigrationClient>
   }
   // expo-sqlite's `SQLiteDatabase` declares `runAsync` / `getAllAsync`
   // as overload sets, which structurally do not unify with our minimal
-  // `ExpoSqliteAsyncHandle`. Cherry-pick the methods so the SPIKE
-  // adapter sees the simple `(sql, params) => Promise<…>` shape it
-  // expects, without bypassing the type system. Same pattern as
-  // `apps/mobile/src/modules/routine/components/RoutineSpikeDevPanel.tsx`.
+  // `ExpoSqliteAsyncHandle`. Cherry-pick the methods so the adapter
+  // sees the simple `(sql, params) => Promise<…>` shape it expects,
+  // without bypassing the type system.
   const native = nativeInstance;
   const handle: ExpoSqliteAsyncHandle = {
     execAsync: (sql) => native.execAsync(sql),

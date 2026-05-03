@@ -1970,6 +1970,44 @@
         }
       }
     },
+    "/api/mono/backfill-progress": {
+      "get": {
+        "summary": "Поточний стан per-user backfill job-а (для UI індикатора)",
+        "tags": [
+          "mono"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Snapshot поточного стану backfill-у (idle/running/completed/failed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonoBackfillProgress"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/waitlist": {
       "post": {
         "summary": "Sign-up на waitlist для майбутнього Pro-тіру (анонімний)",
@@ -5275,6 +5313,87 @@
         ],
         "additionalProperties": false,
         "description": "Відповідь POST /api/mono/backfill — `status: 'started'` literal."
+      },
+      "MonoBackfillProgress": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "idle",
+              "running",
+              "completed",
+              "failed"
+            ]
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "accountsTotal": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "accountsProcessed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "currentAccountId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transactionsProcessed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "lastError": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "startedAt",
+          "completedAt",
+          "accountsTotal",
+          "accountsProcessed",
+          "currentAccountId",
+          "transactionsProcessed",
+          "lastError"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь GET /api/mono/backfill-progress — поточний стан per-user backfill job."
       },
       "WaitlistSubmitResponse": {
         "type": "object",

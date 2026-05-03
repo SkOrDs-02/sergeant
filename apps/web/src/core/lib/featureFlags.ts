@@ -52,14 +52,6 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     experimental: true,
   },
   {
-    id: "feature.routine.sqlite_v2",
-    label: "Routine — SQLite SPIKE",
-    description:
-      "Локальний SQLite + op-log sync для модуля routine. Time-boxed SPIKE із PR #022 storage-roadmap. Якщо щось ламається — вимикай і пиши в #storage. Default: off.",
-    defaultValue: false,
-    experimental: true,
-  },
-  {
     id: "feature.routine.sqlite_v2.dual_write",
     label: "Routine — dual-write LS↔SQLite",
     description:

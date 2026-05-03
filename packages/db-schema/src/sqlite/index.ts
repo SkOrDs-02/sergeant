@@ -18,4 +18,13 @@ export {
   ROUTINE_MIGRATIONS_TABLE,
   ROUTINE_SPIKE_CLIENT_MIGRATIONS,
   ROUTINE_SPIKE_MIGRATIONS_TABLE,
+  FIZRUK_CLIENT_MIGRATIONS,
+  FIZRUK_MIGRATIONS_TABLE,
 } from "./migrations/index.js";
+export {
+  fizrukWorkouts,
+  fizrukWorkoutItems,
+  fizrukWorkoutSets,
+  fizrukCustomExercises,
+  fizrukMeasurements,
+} from "./fizruk.js";
