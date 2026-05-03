@@ -1,7 +1,7 @@
 # ORM: Drizzle vs Kysely — що це і яку обрати
 
 > **Last validated:** 2026-05-03. **Next review:** 2026-08-01.
-> **Status:** Рекомендація підготовлена.
+> **Status:** ✅ Виконано — Kysely прибрано, Drizzle єдиний ORM/query builder. Залишено для історичного контексту й щоб майбутні агенти не пропонували повернутися до Kysely.
 > **Owner:** @Skords-01
 
 ## Що таке ORM
@@ -39,30 +39,30 @@ const transactions = await db
 
 ## Що зараз в Sergeant
 
-У нас **два** query builder-и одночасно:
+**Drizzle ORM (`drizzle-orm: ^0.45.2`)** — єдиний query builder у проєкті:
 
-### Drizzle ORM (`drizzle-orm: ^0.45.2`)
-
-- Використовується як **основний ORM** для бізнес-логіки
-- Схема визначена в `packages/db-schema/` — type-safe таблиці
+- Бізнес-логіка, міграції, схема — все на Drizzle
+- Схема визначена в `packages/db-schema/` (включно з Better Auth таблицями
+  `user` / `session` / `account` / `verification` — додані в
+  `packages/db-schema/src/pg/auth.ts`)
 - Міграції генеруються через `drizzle-kit`
-- Файли: `apps/server/src/drizzle.ts`, бізнес-логіка в `apps/server/src/modules/`
+- Файли: `apps/server/src/drizzle.ts`, бізнес-логіка в `apps/server/src/modules/`,
+  Better Auth адаптер в `apps/server/src/auth/encryptingAdapter.ts`
 
-### Kysely (`kysely: ^0.28.14`)
+**Kysely** — більше не використовується (видалено разом з
+`@better-auth/kysely-adapter`).
 
-- Використовується **тільки** для Better Auth адаптера
-- Один файл: `apps/server/src/auth/encryptingAdapter.ts`
-- Причина: `@better-auth/kysely-adapter` — офіційний адаптер Better Auth для PostgreSQL
-- Kysely створює окремий connection через `PostgresDialect` (свій пул з'єднань)
-
-## Проблема
+## Проблема (історично, до міграції)
 
 Два query builder-и в одному проєкті:
 
 1. **Когнітивне навантаження** — треба знати два різних API
-2. **Два connection pool-и** — Drizzle і Kysely кожен тримають свій пул з'єднань до PostgreSQL
-3. **Різна типізація** — Drizzle та Kysely по-різному визначають типи таблиць
+2. **Два connection pool-и** — Drizzle і Kysely кожен тримав свій пул з'єднань до PostgreSQL
+3. **Різна типізація** — Drizzle та Kysely по-різному визначали типи таблиць
 4. **Залежності** — два великих пакети в `node_modules` замість одного
+
+Усе це закрила міграція — нижче зберіг план для історії та як reference, якщо
+доведеться виконати схожу заміну адаптера в інший напрямок.
 
 ## Порівняння
 
@@ -88,7 +88,14 @@ const transactions = await db
 4. **Активний розвиток** — часті релізи, зростаюча спільнота
 5. **Better Auth** — має офіційний `@better-auth/drizzle-adapter` (існує!)
 
-## План міграції Kysely → Drizzle
+## План міграції Kysely → Drizzle (виконано)
+
+> Виконано в гілці `devin/*-remove-kysely-use-drizzle` 2026-05-03.
+> Реальні зміни відрізняються від ескізу нижче лише одним пунктом:
+> для `@better-auth/drizzle-adapter` довелося додати Drizzle-схему
+> Better Auth таблиць (`packages/db-schema/src/pg/auth.ts`), щоб
+> адаптер міг резолвити моделі через `db._.fullSchema`. Раніше Kysely
+> працював без схеми, бо це query builder без знання структури.
 
 ### Крок 1: Замінити Better Auth адаптер
 
