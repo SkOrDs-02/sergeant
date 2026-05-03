@@ -1,6 +1,6 @@
 # Security
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
 Security policy, vulnerability response, audits, and recovery discipline.
@@ -15,3 +15,4 @@ Security policy, vulnerability response, audits, and recovery discipline.
 | [`nightly-audit.md`](./nightly-audit.md)                         | Nightly dependency and audit triage                    |
 | [`disaster-recovery.md`](./disaster-recovery.md)                 | Disaster classes, RPO/RTO targets, restore discipline  |
 | [`vulnerability-sla.md`](./vulnerability-sla.md)                 | Response and remediation SLA                           |
+| [`hardening/`](./hardening/README.md)                            | Living security hardening backlog (per-finding cards)  |
