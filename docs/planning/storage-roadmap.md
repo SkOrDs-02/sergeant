@@ -773,6 +773,94 @@ module='fizruk'` — окремий ops-PR після того, як PR #029 + P
 
 #### **Nutrition** (3 тижні) — PR #031–#034
 
+##### **PR #031 — `feat(nutrition-domain): Drizzle SQLite + Postgres normalized tables + server apply-fns`**
+
+> **Status:** ⏳ NEXT — schema-only PR. PR #030 cloud-sync drop
+> приземлений на main (PR #1500), тож можна стартувати. Аналог PR #027
+> (Fizruk schema) — ніщо в проді не активується, просто землемо
+> паралельні Drizzle-схеми + bundled client migration + server
+> apply-функції під feature flag default off.
+
+- **Scope.** Створити нормалізовані таблиці на PG і SQLite під 5 LS/MMKV
+  ключів модуля (`NUTRITION_LOG`, `NUTRITION_PANTRIES`,
+  `NUTRITION_ACTIVE_PANTRY`, `NUTRITION_PREFS`, `NUTRITION_SAVED_RECIPES`).
+  Цільові таблиці (фінальний шейп уточнити у PR — нижче — concept):
+  `nutrition_meal_log` (per-row append-only лог їжі з кількістю /
+  калоріями / макросами), `nutrition_pantries` (контейнер + sort_order),
+  `nutrition_pantry_items` (food_id, quantity, expires_at,
+  pantry_id FK), `nutrition_recipes` (рецепти з jsonb-ingredients і
+  макросами), `nutrition_prefs` (singleton-row per-user — KV-store
+  для smart defaults). Усі — soft-delete через `deleted_at`,
+  `(user_id, updated_at DESC)` index, FK + cascades для pantry_items.
+- **Артефакти.**
+  - `apps/server/src/migrations/030_nutrition_tables.{sql,down.sql}` —
+    DDL з індексами і FK; `down.sql` чистить у зворотньому FK-порядку.
+  - `packages/db-schema/src/pg/nutrition.ts` +
+    `packages/db-schema/src/sqlite/nutrition.ts` — паралельні Drizzle
+    ORM-схеми (PG і SQLite) з `_lite` суфіксами для індексів.
+  - `packages/db-schema/src/__tests__/{pg,sqlite}-nutrition-snapshot.test.ts`
+    - snapshot drift-guard між драйверами.
+  - `packages/db-schema/src/sqlite/migrations/index.ts` додає
+    `NUTRITION_CLIENT_MIGRATIONS` з власним ledger-ом
+    `__nutrition_migrations` (separate від `__routine_migrations` /
+    `__fizruk_migrations`).
+  - `apps/{web,mobile}/src/modules/nutrition/lib/clientMigrate.ts` —
+    клієнтський runner (lazy, idempotent, pre-write).
+  - `apps/server/src/modules/sync/syncV2.ts` — split apply-функції
+    `applyNutritionMealLog`, `applyNutritionPantries`,
+    `applyNutritionPantryItems`, `applyNutritionRecipes`,
+    `applyNutritionPrefs` додано у `OP_LOG_TABLE_REGISTRY`. Кожна
+    валідує `id` + ownership (`user_id`), застосовує LWW
+    (`existing.updated_at < clientTs`), soft-delete
+    (`UPDATE deleted_at` замість DELETE), парсить
+    `parseRequiredDate` / `parseOptionalNumber` / `toJsonbParam`.
+- **AC.**
+  - `pnpm --filter @sergeant/db-schema test` — snapshot тести проходять,
+    дрифт між PG і SQLite виявляється.
+  - `apps/server/src/modules/sync/syncV2.integration.test.ts` — нові
+    describe-кейси на 5 nutrition apply-функцій (insert→update,
+    LWW reject, soft-delete, parent-then-child FK для pantry_items,
+    invalid timestamp validation).
+  - `pnpm -w lint` clean (без нових STORAGE_KEYS guards — це PR #034).
+- **Не входить.**
+  - Dual-write шар (`apps/{web,mobile}/src/modules/nutrition/lib/dualWrite/`)
+    — це PR #032.
+  - Cut-over reads (UI читає з SQLite під фічфлаґом) — PR #033.
+  - Drop `module_data.nutrition` з `SYNC_MODULES` + ESLint guard — PR #034.
+- **Dep.** PR #027 (схема pattern), PR #029 (server apply-fns pattern),
+  PR #030 (cloud-sync drop pattern).
+- **Risk.** Schema-only — нульовий risk на проді (default-off flag і
+  наявних писань у нові таблиці нема). Snapshot тести ловлять drift.
+
+##### **PR #032 — `feat(nutrition-domain): dual-write LS/MMKV↔SQLite`** ⏳ DRAFT
+
+- Mirror PR #028 (fizruk dual-write) для nutrition. Feature flag
+  `feature.nutrition.sqlite_v2.dual_write`, default off, experimental.
+- Реєстрація через registration-pattern, fail-soft на no-userId /
+  sqlite-unavailable. Boot-wiring у follow-up за тим же шаблоном що
+  PR #1491 для routine + fizruk.
+- **Dep.** PR #031.
+
+##### **PR #033 — `feat(nutrition-domain): cut-over reads to SQLite under feature flag`** ⏳ DRAFT
+
+- Mirror PR #029 + PR #029a (web + mobile fizruk read overlay) для
+  nutrition. Feature flag `feature.nutrition.sqlite_v2.read_sqlite`,
+  default off. LS/MMKV-write залишається safety net.
+- **Dep.** PR #032.
+
+##### **PR #034 — `chore(nutrition-domain): drop module_data.nutrition cloud-sync wiring + ESLint guard`** ⏳ DRAFT
+
+- Mirror PR #030 (fizruk cloud-sync drop). Знімає `nutrition` з
+  `SYNC_MODULES`, прибирає 5 NUTRITION\_\* ентрі з
+  `eslint-plugin-sergeant-design` tracked sets, додає
+  `no-restricted-syntax` guard у `eslint.config.js`. Server-side
+  `DELETE FROM module_data WHERE module='nutrition'` — окремий
+  runbook ops PR.
+- **Deploy gate.** Як і PR #030: розкатувати тільки після 100% rollout
+  `feature.nutrition.sqlite_v2.{dual_write,read_sqlite}` + server
+  backfill `module_data.nutrition` → `nutrition_*` per-user.
+- **Dep.** PR #033 (read overlay у проді).
+
 #### **Finyk** (4 тижні) — PR #035–#039 (один extra PR на Mono mirror на клієнті)
 
 ---
