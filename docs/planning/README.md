@@ -10,3 +10,4 @@ Roadmap-и та плани розвитку.
 | [`dev-stack-roadmap.md`](./dev-stack-roadmap.md)           | Технічний roadmap стеку                                      |
 | [`ai-coding-improvements.md`](./ai-coding-improvements.md) | План покращення AI-coding workflow                           |
 | [`storage-roadmap.md`](./storage-roadmap.md)               | Storage & Sync roadmap до production-ready (SQLite + op-log) |
+| [`stack-pulse-2026-05/`](./stack-pulse-2026-05/README.md)  | Серія PR-планів зі зрізу стеку 2026-05 (16 PR-ів)            |
