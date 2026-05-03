@@ -32,6 +32,11 @@ Phase 4 у roadmap-і явно перерахував цей набір: 5 write
 
 OpenClaw отримує **5 side-effecting tools** і **inline-keyboard approval flow** як композицію над поточним agent-loop-ом і audit pipeline-ом. Жоден write-tool не виконується автоматично — кожен LLM-tool-call перетворюється на pending-approval-record + Telegram-кнопки, які founder натискає вручну.
 
+WF-20 hybrid agent network не замінює цей execution path. Dispatcher може
+повернути `proposedWriteTool` для задачі, але фактичний side effect все одно
+йде через цей ADR-0036 approval flow: approval-card у Telegram → console-side
+callback → `/api/internal/openclaw/write/*`.
+
 ### 1. Tool registry (server side, `apps/server/src/modules/openclaw/write-tools.ts`)
 
 | Tool                     | Effect                                                              | Endpoint                                      | Required env                                   |

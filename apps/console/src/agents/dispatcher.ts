@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 export type DispatcherAction =
   | "status"
   | "plan"
@@ -32,18 +34,51 @@ export interface DispatcherClassification {
   requiresApproval: boolean;
 }
 
-export interface DispatcherPayload extends DispatcherClassification {
+export interface AgentTaskActor {
+  type: "telegram";
+  telegramUserId: number;
+}
+
+export interface AgentTaskIntent {
+  rawText: string;
+  normalizedText: string;
+}
+
+export interface AgentStatusCallback {
+  channel: "telegram-chat" | "telegram-dm";
+  chatId: number;
+  messageId: number;
+  webhookUrl?: string;
+}
+
+export interface AgentTaskArtifact {
+  type: "github_issue" | "github_pr" | "report" | "n8n_execution" | "log";
+  url?: string;
+  id?: string;
+  title?: string;
+}
+
+export interface AgentTaskEnvelope extends DispatcherClassification {
+  taskId: string;
   source: "telegram-console" | "openclaw";
   commandText: string;
+  intent: AgentTaskIntent;
+  actor: AgentTaskActor;
+  approvalId?: string;
   telegram: {
     userId: number;
     chatId: number;
     messageId: number;
   };
+  statusCallback: AgentStatusCallback;
+  artifacts: AgentTaskArtifact[];
 }
+
+export type DispatcherPayload = AgentTaskEnvelope;
 
 const READ_ONLY_ACTIONS = new Set<DispatcherAction>([
   "status",
+  "plan",
   "review",
   "logs",
 ]);
@@ -62,7 +97,6 @@ const MUTATION_KEYWORDS = [
   "secret",
   "write",
   "merge",
-  "release",
   "production",
 ];
 
@@ -189,21 +223,50 @@ export function classifyDispatcherCommand(
 }
 
 export function buildDispatcherPayload(input: {
+  taskId?: string;
   source?: DispatcherPayload["source"];
+  approvalId?: string;
+  statusCallbackWebhookUrl?: string;
   commandText: string;
   telegramUserId: number;
   telegramChatId: number;
   messageId: number;
 }): DispatcherPayload {
+  const source = input.source ?? "telegram-console";
+  const taskId =
+    input.taskId ?? `agent-${Date.now()}-${randomUUID().slice(0, 8)}`;
+  const normalizedText = input.commandText.trim().toLowerCase();
   return {
-    source: input.source ?? "telegram-console",
+    taskId,
+    source,
     commandText: input.commandText,
+    intent: {
+      rawText: input.commandText,
+      normalizedText,
+    },
     ...classifyDispatcherCommand(input.commandText),
+    actor: {
+      type: "telegram",
+      telegramUserId: input.telegramUserId,
+    },
+    ...(input.approvalId ? { approvalId: input.approvalId } : {}),
     telegram: {
       userId: input.telegramUserId,
       chatId: input.telegramChatId,
       messageId: input.messageId,
     },
+    statusCallback: {
+      channel:
+        source === "openclaw" && input.telegramChatId === input.telegramUserId
+          ? "telegram-dm"
+          : "telegram-chat",
+      chatId: input.telegramChatId,
+      messageId: input.messageId,
+      ...(input.statusCallbackWebhookUrl
+        ? { webhookUrl: input.statusCallbackWebhookUrl }
+        : {}),
+    },
+    artifacts: [],
   };
 }
 
@@ -211,13 +274,59 @@ export function formatApprovalPrompt(payload: DispatcherPayload): string {
   return [
     "Approval required.",
     "",
+    `Task: ${payload.taskId}`,
     `Source: ${payload.source}`,
+    ...(payload.approvalId ? [`Approval: ${payload.approvalId}`] : []),
     `Action: ${payload.action}`,
     `Specialist: ${payload.specialist}`,
     `Risk: ${payload.riskTier}`,
     "",
     `Run /approve ${payload.commandText} to continue.`,
   ].join("\n");
+}
+
+const OPENCLAW_AGENT_NETWORK_KEYWORDS = [
+  "agent",
+  "ci",
+  "test",
+  "check",
+  "pr ",
+  " pr",
+  "pull request",
+  "github",
+  "issue",
+  "branch",
+  "review",
+  "repo",
+  "n8n",
+  "workflow",
+  "security",
+  "secret",
+  "credential",
+  "deploy",
+  "migration",
+  "migrate",
+  "railway",
+  "sentry",
+  "перевір",
+  "перевiр",
+  "гітхаб",
+  "гiтхаб",
+  "воркфлоу",
+  "деплой",
+  "міграц",
+  "мiграц",
+  "секрет",
+];
+
+export function shouldDelegateOpenClawToAgentNetwork(
+  commandText: string,
+): boolean {
+  const normalized = ` ${commandText.trim().toLowerCase()} `;
+  if (!normalized.trim()) return false;
+  return OPENCLAW_AGENT_NETWORK_KEYWORDS.some((keyword) =>
+    normalized.includes(keyword),
+  );
 }
 
 export async function dispatchToN8n(

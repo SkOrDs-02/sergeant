@@ -18,6 +18,12 @@ import type Anthropic from "@anthropic-ai/sdk";
 import type { Bot, Context } from "grammy";
 import { InlineKeyboard } from "grammy";
 import {
+  buildDispatcherPayload,
+  dispatchToN8n,
+  formatApprovalPrompt,
+  shouldDelegateOpenClawToAgentNetwork,
+} from "../agents/dispatcher.js";
+import {
   runOpenClawAgent,
   writeToolRoute,
   type OpenClawAgentDeps,
@@ -122,12 +128,13 @@ const HELP_TEXT = [
   "Я аналізую дані Sergeant (PG, Stripe, Sentry, PostHog, GitHub, n8n logs, strategy docs)",
   "і даю advisory-думку. Я не пишу в продакшн.",
   "",
-  "*Швидкі команди (preset-prompts):*",
-  "/status — короткий ops-зріз (Stripe + Sentry + healthz)",
+  "*Agent network (WF-20):*",
+  "/status, /plan, /assign, /review, /run, /approve, /cancel, /logs",
+  "Free-text execution запити про CI/PR/GitHub/n8n/security теж підуть у WF-20.",
+  "",
+  "*Швидкі cofounder prompts:*",
   "/metrics — детальні метрики за тиждень",
   "/digest — growth-дайджест (PostHog + GitHub releases + n8n)",
-  "/logs — останні n8n executions з помилками",
-  "/review — recent PRs / merges за тиждень",
   "",
   "*Personas (ADR-0033, Phase 2.5):*",
   "/ops <q> — reliability фокус (Sentry + n8n + healthz)",
@@ -147,16 +154,10 @@ const HELP_TEXT = [
   "_Phase 1, ADR-0031 + ADR-0032 + ADR-0033._",
 ].join("\n");
 
-// ADR-0032: команди типу /status — це prefilled-message, який запускає той
-// самий agent-loop, що і вільний DM-текст. Так LLM зможе при потребі смикати
-// додаткові tools (recall, decisions) для контексту, а tone-modes/audit/budget
-// guardrails застосовуються однаково.
+// ADR-0032: локальні cofounder prompts, які лишаються в OpenClaw loop. Команди
+// agent-network (`/status`, `/review`, `/run`, ...) реєструються нижче окремо і
+// йдуть у WF-20.
 const COMMAND_PROMPTS: Record<string, string> = {
-  status: [
-    "Дай короткий operational status зараз: Stripe charges за останні 7 днів,",
-    "Sentry unresolved issues (level=error), і /healthz сервера.",
-    "Формат — bullet-list, без зайвих коментарів.",
-  ].join(" "),
   metrics: [
     "Детальний metrics-зріз за останні 7 днів:",
     "1) Stripe (success/failed/gross),",
@@ -170,14 +171,6 @@ const COMMAND_PROMPTS: Record<string, string> = {
     "найновіші GitHub releases (5 шт),",
     "плюс топ-3 n8n workflow executions.",
     "Дай 3 highlights і 1 ризик/блокер.",
-  ].join(" "),
-  logs: [
-    "Покажи останні n8n executions, фокус на failed/error.",
-    "Якщо є патерн — назви який workflow повторюється.",
-  ].join(" "),
-  review: [
-    "Recent GitHub releases (5) + recent PRs (issue_type=pr, is:closed) за тиждень.",
-    "Виділи: що merged, що warrants review, ризики deploy-у.",
   ].join(" "),
 };
 
@@ -747,9 +740,80 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     }
   }
 
+  async function dispatchOpenClawAgentTask(
+    ctx: Context,
+    commandText: string,
+  ): Promise<void> {
+    const userId = ctx.from?.id;
+    const chatId = ctx.chat?.id;
+    const messageId =
+      ctx.message?.message_id ?? ctx.callbackQuery?.message?.message_id;
+    if (!userId || !chatId || !messageId) {
+      await ctx.reply("Dispatcher context is missing; cannot route this task.");
+      return;
+    }
+
+    const previewPayload = buildDispatcherPayload({
+      source: "openclaw",
+      commandText,
+      telegramUserId: userId,
+      telegramChatId: chatId,
+      messageId,
+      statusCallbackWebhookUrl: process.env.OPENCLAW_AGENT_STATUS_CALLBACK_URL,
+    });
+
+    if (
+      previewPayload.requiresApproval &&
+      previewPayload.action !== "approve"
+    ) {
+      const approvalPayload = buildDispatcherPayload({
+        source: "openclaw",
+        taskId: previewPayload.taskId,
+        approvalId: `dispatch-${previewPayload.taskId}`,
+        commandText,
+        telegramUserId: userId,
+        telegramChatId: chatId,
+        messageId,
+        statusCallbackWebhookUrl:
+          process.env.OPENCLAW_AGENT_STATUS_CALLBACK_URL,
+      });
+      await ctx.reply(formatApprovalPrompt(approvalPayload));
+      return;
+    }
+
+    const response = await dispatchToN8n(previewPayload);
+    await ctx.reply(response);
+  }
+
   // ADR-0032: Sergeant Console (ADR-0027) slash-команди (/ops, /content, …)
   // зливаються в OpenClaw як preset-prompts через той самий agent-turn loop.
   // Тригер ідентифікує запит у audit-log-у (`openclaw_invocations.trigger`).
+  const DISPATCHER_COMMANDS = [
+    "status",
+    "plan",
+    "assign",
+    "review",
+    "run",
+    "approve",
+    "cancel",
+    "logs",
+  ];
+
+  for (const cmd of DISPATCHER_COMMANDS) {
+    bot.command(cmd, async (ctx) => {
+      if (!isAllowedDmContext(ctx)) return;
+      const userId = ctx.from?.id;
+      if (!userId) return;
+      if (!rateLimiter.allow(String(userId))) {
+        await ctx.reply("Rate limit exceeded. Спробуй за хвилину.");
+        return;
+      }
+      const argument = (ctx.match ?? "").toString().trim();
+      const commandText = argument ? `${cmd} ${argument}` : cmd;
+      await dispatchOpenClawAgentTask(ctx, commandText);
+    });
+  }
+
   for (const [cmd, preset] of Object.entries(COMMAND_PROMPTS)) {
     bot.command(cmd, async (ctx) => {
       if (!isAllowedDmContext(ctx)) return;
@@ -926,6 +990,11 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     if (!userMessage) return;
     // /commands handled outside; ось ми лише message-text-handler.
     if (userMessage.startsWith("/")) return;
+
+    if (shouldDelegateOpenClawToAgentNetwork(userMessage)) {
+      await dispatchOpenClawAgentTask(ctx, userMessage);
+      return;
+    }
 
     await runAgentTurn(ctx, userMessage, "dm");
   });

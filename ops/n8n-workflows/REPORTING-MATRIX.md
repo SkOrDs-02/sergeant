@@ -95,10 +95,12 @@ $env.TELEGRAM_TOPIC_INCIDENTS }}`). Вкажи обидва топіки в env 
 
 ⁽³⁾ WF-18 шле в `#incidents` тільки коли GitHub Actions audit job має `conclusion=failure`. Success runs мовчать.
 
-⁽⁴⁾ WF-20 приймає dispatcher contract і від `source="telegram-console"`, і
-від `source="openclaw"` для dispatcher-envelope / specialist-agent flows. Поточні
-OpenClaw Phase 4 write-tools не виконуються через WF-20: вони йдуть ADR-0036
-path через console-side approval і `/api/internal/openclaw/write/*` endpoints.
+⁽⁴⁾ WF-20 приймає hybrid agent-network envelope і від
+`source="telegram-console"`, і від `source="openclaw"`. Envelope містить
+`taskId`, `actor`, `intent`, `statusCallback`, `artifacts` і маршрутизується у
+specialist lane. Поточні OpenClaw Phase 4 write-tools не виконуються через
+WF-20: dispatcher може повернути `proposedWriteTool`, але side effect іде
+ADR-0036 path через console-side approval і `/api/internal/openclaw/write/*`.
 Поле `source` — лише audit/routing metadata; mutating actions завжди потребують
 explicit Telegram approval. CI/test/check задачі маршрутизуються в specialist
 lane `qa-release`.
@@ -186,6 +188,12 @@ lane `qa-release`.
   [`docs/observability/telegram-control-plane.md`](../../docs/observability/telegram-control-plane.md)
   ("When to migrate"), піднімати ADR-0031 на повноцінний control plane (Slack
   - on-call rotations).
+- **Hybrid agent specialist lanes.** WF-20 уже є validation/router foundation
+  для `source="openclaw"` і `source="telegram-console"`. Наступний automation
+  крок — додати реальні lane workflows: `qa-release` генерує CI/PR report,
+  `repo-architect` створює GitHub issue або review report, `n8n-automation`
+  готує workflow proposal, `security` повертає audit report, а n8n шле final
+  callback назад у OpenClaw DM через `statusCallback`.
 
 ## Related
 

@@ -153,6 +153,23 @@ cross-domain знання продукту. Це робить його _парт
   server write endpoints; WF-20 не замінює цей path. CI/test/check задачі
   маршрутизуються до `qa-release`, щоб запити на перевірку PR/CI не падали в
   generic architect lane.
+- Hybrid agent network — OpenClaw free-text DM запити з execution-сигналами
+  (`CI`, `PR`, `GitHub`, `n8n`, `workflow`, `security`, `deploy`) конвертуються
+  у `source="openclaw"` envelope з `taskId`, `actor`, `intent`,
+  `statusCallback`, `artifacts` і йдуть у WF-20. Стратегічний dialogue без
+  execution-сигналів лишається в OpenClaw cofounder loop.
+
+**Hybrid agent network status (PR #1446):**
+
+- **Зроблено:** foundation/control-plane — unified envelope, OpenClaw conductor
+  routing, WF-20 validation + specialist-lane assignment, approval boundaries,
+  `statusCallback` contract, `proposedWriteTool` recommendation hook.
+- **Не зроблено навмисно:** повна autonomous execution у кожному specialist
+  lane. WF-20 v1 маршрутизує і повертає status/nextStep; specialist workflows ще
+  не створюють end-to-end PR/issue/report самостійно.
+- **Наступний етап:** оживити specialist lanes: `qa-release` → CI/PR report,
+  `repo-architect` → GitHub issue/review report, `n8n-automation` → workflow
+  proposal, `security` → audit report, і n8n → OpenClaw DM final callback.
 
 **Acceptance:**
 
