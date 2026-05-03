@@ -17,7 +17,7 @@ This is the mandatory entrypoint for Sergeant. First orient in the repo, then ro
 
 - Coerce Postgres `bigint` fields to `number` in server serializers.
 - Move API response shape changes together: server serializer, `packages/api-client`, and contract test.
-- Use React Query key factories from `apps/web/src/shared/lib/queryKeys.ts`; never invent inline keys.
+- Use React Query key factories from `apps/web/src/shared/lib/api/queryKeys.ts`; never invent inline keys.
 - Use sequential migrations and two-phase DROP.
 - Do not skip Husky with `--no-verify`.
 - Use allowed commit scopes from `AGENTS.md`.
