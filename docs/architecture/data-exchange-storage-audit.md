@@ -29,8 +29,8 @@ Sergeant зараз має гібридну data-архітектуру:
 
 Поточний основний cloud-sync шлях:
 
-1. Модулі пишуть state у `localStorage`.
-2. `storagePatch.ts` monkey-patch-ить `localStorage.setItem/removeItem`, визначає module за ключем, ставить dirty flag і емiтить sync event (`apps/web/src/core/cloudSync/storagePatch.ts`).
+1. Модулі пишуть state у `localStorage` через `safeWriteSyncedLS` / `syncedKV.setString` (`apps/web/src/shared/lib/storage/syncedKV.ts`) — тонкий wrapper навколо `webKVStore`, що вшитий через `createSyncedKVStore` із `@sergeant/shared` (`packages/shared/src/sync/syncedKV.ts`).
+2. На кожен write до tracked-key wrapper кличе `enqueueChange(key)` (`apps/web/src/core/cloudSync/enqueue.ts`): визначає module за ключем, ставить dirty flag і емiтить sync event. До PR #008 цю роль грав `storagePatch.ts` через monkey-patch `localStorage.setItem/removeItem` + `__hubSyncPatched` global; тепер opt-in явний — тільки writes через `syncedKV` маркують модулі брудними.
 3. `SYNC_MODULES` визначає, які ключі входять у `finyk`, `nutrition`, `profile` (`packages/shared/src/sync/modules.ts`, реекспортний у `apps/web/src/core/cloudSync/config.ts`). Routine знятий у PR #026 (Stage 4 cleanup), Fizruk — у PR #030; обидва модулі тепер їздять виключно через v2 op-log.
 4. `pushDirty()` збирає dirty modules, робить `syncApi.pushAll(modules)`, а якщо offline/error — додає payload в offline queue (`apps/web/src/core/cloudSync/engine/push.ts`).
 5. Offline queue коалесить послідовні push-и і має hard cap `MAX_OFFLINE_QUEUE = 50` (`apps/web/src/core/cloudSync/queue/offlineQueue.ts`).
