@@ -5,7 +5,7 @@ import { safeReadLS, safeRemoveLS, safeWriteLS } from "./storage";
 /**
  * Cross-module nudges — small, dismissible toast prompts that suggest a
  * follow-up action in another module after the user does something in
- * the current module. See `docs/design/CROSS-MODULE-PROMPTS.md` for the
+ * the current module. See `docs/design/cross-module-prompts.md` for the
  * full pattern + decision table.
  *
  * Examples:

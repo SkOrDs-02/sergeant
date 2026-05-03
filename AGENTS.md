@@ -222,7 +222,7 @@ Enforced by `sergeant-design/valid-tailwind-opacity` (`error`). To add a new ste
 
 ### 9. Saturated brand fills behind `text-white` must use the `-strong` companion
 
-Every saturated brand colour (`brand`, `accent`, `success`, `warning`, `danger`, `info`, `finyk`, `fizruk`, `routine`, `nutrition`) ships with a `-strong` companion (typically the `-700` step; `nutrition` uses `-800`) that clears WCAG 2.1 AA 4.5 : 1 against `text-white`. The saturated `-500` shades regress to ~2.4–2.8 : 1 against white — see `docs/design/BRANDBOOK.md` → "WCAG-AA `-strong` Tier" for the full per-family contrast table and `docs/design/brand-palette-wcag-aa-proposal.md` for the migration history (PRs [#854](https://github.com/Skords-01/Sergeant/pull/854) / [#855](https://github.com/Skords-01/Sergeant/pull/855) / [#857](https://github.com/Skords-01/Sergeant/pull/857)).
+Every saturated brand colour (`brand`, `accent`, `success`, `warning`, `danger`, `info`, `finyk`, `fizruk`, `routine`, `nutrition`) ships with a `-strong` companion (typically the `-700` step; `nutrition` uses `-800`) that clears WCAG 2.1 AA 4.5 : 1 against `text-white`. The saturated `-500` shades regress to ~2.4–2.8 : 1 against white — see `docs/design/brandbook.md` → "WCAG-AA `-strong` Tier" for the full per-family contrast table and `docs/design/brand-palette-wcag-aa-proposal.md` for the migration history (PRs [#854](https://github.com/Skords-01/Sergeant/pull/854) / [#855](https://github.com/Skords-01/Sergeant/pull/855) / [#857](https://github.com/Skords-01/Sergeant/pull/857)).
 
 ```tsx
 // ❌ BAD — saturated brand fill behind white text fails WCAG AA at body sizes.
@@ -341,11 +341,11 @@ The rule handles variant prefixes (`dark:`, `hover:`, `lg:`), shade suffixes (`-
 - `apps/*/src/modules/shared/**` (non-canonical module folder — a cross-module utility, not an accent owner)
 - `__tests__/*.{ts,tsx,mjs}` — test fixtures naturally reference all four for coverage.
 
-Enforced by `sergeant-design/no-foreign-module-accent` (`error`). See `docs/design/MODULE-ACCENT.md` for the "one accent = one module" design principle.
+Enforced by `sergeant-design/no-foreign-module-accent` (`error`). See `docs/design/module-accent.md` for the "one accent = one module" design principle.
 
 ### 13. No raw-palette light/dark `className` pairs
 
-A `className` that pairs a raw-palette light utility with a `dark:` raw-palette override encodes both themes by hand at the call-site. The next palette migration (or the next opacity-step renaming — bug [#814](https://github.com/Skords-01/Sergeant/pull/814)) silently drops one half and the surrounding override falls through to the wrong colour. Lift the (light, dark) pair into the design-system token layer (`bg-success-soft`, `bg-finyk-surface`, `text-brand-strong`, `border-routine-soft-border`, …) so the preset owns the swap and the call-site keeps zero `dark:` palette overrides. The full migration history (Wave 1b → 2a → 2b → 2c) lives in [`docs/design/DARK-MODE-AUDIT.md`](docs/design/DARK-MODE-AUDIT.md).
+A `className` that pairs a raw-palette light utility with a `dark:` raw-palette override encodes both themes by hand at the call-site. The next palette migration (or the next opacity-step renaming — bug [#814](https://github.com/Skords-01/Sergeant/pull/814)) silently drops one half and the surrounding override falls through to the wrong colour. Lift the (light, dark) pair into the design-system token layer (`bg-success-soft`, `bg-finyk-surface`, `text-brand-strong`, `border-routine-soft-border`, …) so the preset owns the swap and the call-site keeps zero `dark:` palette overrides. The full migration history (Wave 1b → 2a → 2b → 2c) lives in [`docs/design/dark-mode-audit.md`](docs/design/dark-mode-audit.md).
 
 ```tsx
 // ❌ BAD — both halves are raw `brand-*` palette steps; the next
@@ -444,7 +444,7 @@ Documentation is part of the change set, not a follow-up. Treat any of the follo
 | New SQL migration                                 | `apps/server/src/migrations/README.md` (if present), and any ER-diagram in `docs/architecture/`.                                                                       |
 | New / removed npm script                          | `CONTRIBUTING.md § Everyday Commands`, `CLAUDE.md § Quick commands`.                                                                                                   |
 | New Hard Rule, lint rule, or convention           | `AGENTS.md` § Hard Rules (the canonical entry) **+** mirror summary in `CONTRIBUTING.md § Hard rules`. PR template's "AGENTS.md updated?" checkbox **must** be ticked. |
-| New design token, palette, or component           | `docs/design/design-system.md`, `docs/design/BRANDBOOK.md`, and the relevant audit (`docs/audits/*-audit-*.md`) if it changes status.                                  |
+| New design token, palette, or component           | `docs/design/design-system.md`, `docs/design/brandbook.md`, and the relevant audit (`docs/audits/*-audit-*.md`) if it changes status.                                  |
 | Deprecating a behaviour                           | Add `@deprecated` JSDoc with `@removeBy YYYY-MM-DD` (Hard Rule #10) **+** update the consuming doc to mark the section `> **Status:** Deprecated`.                     |
 | New playbook trigger or HubChat tool              | `docs/playbooks/<name>.md` (or update the existing playbook). Cross-link from `CLAUDE.md § Before you write code` if it's a frequent trigger.                          |
 | Anything that invalidates an existing doc's claim | Update the doc in the same PR, or move it to `docs/<area>/archive/` with a `> **Status:** Archived` badge if the claim is no longer relevant.                          |

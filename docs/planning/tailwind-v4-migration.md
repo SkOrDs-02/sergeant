@@ -172,7 +172,7 @@ export default {
 
 1. Вирішити: JS preset (`@config`) чи CSS-first (`@theme`)
    - **Рекомендація:** зберегти JS preset через `@config` — простіше підтримувати shared tokens між web і mobile
-2. Оновити документацію: `docs/design/MODULE-ACCENT.md`
+2. Оновити документацію: `docs/design/module-accent.md`
 3. Перевірити що `brand`, `module-accent`, `status-*` кольори працюють
 
 ### Фаза 4: Cleanup — 0.5 дня

@@ -241,7 +241,7 @@ export function WorkoutFinishSheets({
                   to suggest. Snoozed for 12 h after acceptance so a
                   user who logged a post-workout meal once today doesn't
                   see this on a second workout the same evening. See
-                  docs/design/CROSS-MODULE-PROMPTS.md. */}
+                  docs/design/cross-module-prompts.md. */}
               {!isCrossModulePromptSuppressed("fizruk-finish-to-meal") && (
                 <button
                   type="button"

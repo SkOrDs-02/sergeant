@@ -516,7 +516,7 @@ export default function App({
           // After a Кафе/Ресторан/Продукти save, suggest logging the
           // matching meal in Nutrition. Suppressed automatically after
           // ≥3 dismissals in 14 days or 12 h after the user accepts —
-          // see `docs/design/CROSS-MODULE-PROMPTS.md`.
+          // see `docs/design/cross-module-prompts.md`.
           const cat = String(expense?.category || "");
           const promptId =
             cat === "restaurant"

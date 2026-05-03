@@ -6,7 +6,7 @@ import type { Hit } from "./searchTypes";
 // `--c-{m}-soft` CSS var trio that flips per-theme; `text-{m}-strong`
 // is the WCAG-AA companion at body sizes; `dark:text-{m}` falls back
 // to the saturated DEFAULT step on dark panels). Equivalent to the
-// Wave 1b token-swap recipe in `docs/design/DARK-MODE-AUDIT.md`.
+// Wave 1b token-swap recipe in `docs/design/dark-mode-audit.md`.
 //
 // Settings + Assistant pseudo-modules share the neutral panel-tinted
 // swatch so they read as "system" surfaces rather than competing for

@@ -6,7 +6,7 @@
  * `bg-*` utility paired with `text-white` is a regression to the
  * pre-PR-#854 era when CTAs only cleared ~2.4–2.8 : 1 contrast. The
  * fix is `bg-{family}-strong text-white`, which clears 5.0–7.0 : 1.
- * See `docs/design/BRANDBOOK.md` → "WCAG-AA `-strong` Tier".
+ * See `docs/design/brandbook.md` → "WCAG-AA `-strong` Tier".
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";

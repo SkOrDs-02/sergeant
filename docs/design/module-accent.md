@@ -61,7 +61,7 @@
 
 2. **`bg-module-accent*` працює лише всередині `ModuleAccentProvider` або `ModuleShell` із пропом `module`.** Поза цим — `--module-accent-rgb` не визначений і утиліта розреш-литься у `rgb( )` — фактично прозоро. Якщо ви робите компонент, який може рендеритись standalone (наприклад, Storybook, hub-level page-loader), лишіть явний `module`-проп + `bg-{module}/10`-fallback.
 
-3. **`-strong` — під `text-white`.** Сатуровані `-500`-shade-и регресують до ~2.4–2.8 : 1 проти білого. Див. [`docs/design/BRANDBOOK.md`](./BRANDBOOK.md) § WCAG-AA `-strong` Tier — повна per-family-таблиця контрасту.
+3. **`-strong` — під `text-white`.** Сатуровані `-500`-shade-и регресують до ~2.4–2.8 : 1 проти білого. Див. [`docs/design/brandbook.md`](./brandbook.md) § WCAG-AA `-strong` Tier — повна per-family-таблиця контрасту.
 
 4. **Hub-chrome лишається нейтральним.** `HubHeader`, `HubTabs`, `HubDashboard`, HubChat, дашборди з усіма 4 модулями поряд — мають тримати токени `bg-brand-*` (нейтральна палітра Sergeant) або мікс-тити per-module-токени за іменем. НЕ використовуйте `bg-module-accent*` тут — немає ambient-модуля.
 
@@ -206,11 +206,11 @@ it("публікує --module-accent-rgb + strong для finyk", () => {
 
 ## Пов'язані доки
 
-- [`docs/design/BRANDBOOK.md`](./BRANDBOOK.md) — WCAG-AA `-strong` Tier
+- [`docs/design/brandbook.md`](./brandbook.md) — WCAG-AA `-strong` Tier
   - повна per-family-таблиця контрасту.
 - [`docs/design/brand-palette-wcag-aa-proposal.md`](./brand-palette-wcag-aa-proposal.md) — migration-історія (PR-и #854 / #855 / #857).
 - `AGENTS.md` hard rule #8 — Tailwind opacity scale.
 - `AGENTS.md` hard rule #9 — `-strong`-companion під `text-white`.
 - `AGENTS.md` hard rule #11 — no arbitrary hex colors in `className`.
 - `AGENTS.md` hard rule #12 — module-accent containment.
-- [`docs/design/DARK-MODE-AUDIT.md`](./DARK-MODE-AUDIT.md) — pending міграційний план із 28 raw-palette `dark:`-патчів у семантичні токени (`bg-{module}-surface`, `bg-{status}-soft`, і Wave-1b target-токени `bg-brand-soft` / `border-brand-soft-border` / `-soft-hover`, які увійдуть у preset одночасно з міграцією).
+- [`docs/design/dark-mode-audit.md`](./dark-mode-audit.md) — pending міграційний план із 28 raw-palette `dark:`-патчів у семантичні токени (`bg-{module}-surface`, `bg-{status}-soft`, і Wave-1b target-токени `bg-brand-soft` / `border-brand-soft-border` / `-soft-hover`, які увійдуть у preset одночасно з міграцією).

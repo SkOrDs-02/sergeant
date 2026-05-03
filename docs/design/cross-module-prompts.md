@@ -225,5 +225,5 @@ acceptance reset, suppression, CTA-tap → onAccept, auto-dismiss → counter.
 - [`apps/web/src/shared/lib/crossModulePrompt.ts`](../../apps/web/src/shared/lib/crossModulePrompt.ts) — implementation.
 - [`apps/web/src/shared/lib/crossModulePrompt.test.ts`](../../apps/web/src/shared/lib/crossModulePrompt.test.ts) — contract tests.
 - [`apps/web/src/shared/lib/hubNav.ts`](../../apps/web/src/shared/lib/hubNav.ts) — `openHubModule` / `openHubModuleWithAction` (cross-module navigation primitive).
-- [`docs/design/UNDO-PATTERN.md`](./UNDO-PATTERN.md) — sister doc для destructive actions.
+- [`docs/design/undo-pattern.md`](./undo-pattern.md) — sister doc для destructive actions.
 - `AGENTS.md` § Soft rules — "Cross-module nudges".

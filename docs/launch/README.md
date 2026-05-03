@@ -22,6 +22,8 @@ docs/launch/
 └── telegram-improvements-roadmap.md  Telegram-surfaces (DM + supergroup) — 4-wave PR-план
 ```
 
+> **Конвенція файлів:** `01-..-06-` — це **послідовний launch-milestone sequence** (бізнес-модель → GTM → стек → readiness → ops → архітектура paywall-у). Файли **без числового префіксу** — це **independent roadmaps** окремих ініціатив (AI-memory, OpenClaw, Telegram), які не вкладаються в milestone-послідовність і живуть власним темпом. Вони навмисно лишаються без префіксу, щоб (а) сигналізувати незалежність і (б) не ламати посилання з 5 ADR-ів та `docs/feature-flags.md`. Якщо колись ці roadmap-и завершаться або злиються в milestone — тоді префікс додасться разом з оновленням всіх крос-лінків.
+
 ## Як читати
 
 | Питання                                                           | Документ                                                                                 |

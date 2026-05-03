@@ -112,7 +112,7 @@ export default [
       // WCAG-AA `-strong` tier guardrail — every saturated brand `bg-*`
       // utility paired with `text-white` regresses to ~2.4–2.8 : 1
       // contrast (the bug class fixed in PRs #854 / #855). The fix is
-      // `bg-{family}-strong text-white`. See docs/design/BRANDBOOK.md →
+      // `bg-{family}-strong text-white`. See docs/design/brandbook.md →
       // "WCAG-AA `-strong` Tier" for the full mapping. Promoted from
       // "warn" to "error" once the cleanup PR migrated the last 28
       // call-sites — the codebase is now clean against this rule, and
@@ -178,7 +178,7 @@ export default [
   // layer (`bg-success-soft`, `bg-finyk-surface`,
   // `border-routine-soft-border`, …). Shipped at "error" once the
   // dark-mode audit's inventory closed (Wave 2c of
-  // docs/design/DARK-MODE-AUDIT.md) — every existing pair has
+  // docs/design/dark-mode-audit.md) — every existing pair has
   // been migrated, so any new violation is intentional and must
   // be opted out with an `eslint-disable-next-line` + comment.
   //
@@ -204,11 +204,11 @@ export default [
       // `no-rounded-lg` — prevent border-radius drift back to the 8 px tier.
       // `rounded-lg` sits between Marker (6 px) and Control (12 px) without a
       // semantic role; use `rounded-md` or `rounded-xl` instead.
-      // See docs/design/RADIUS-RHYTHM.md.
+      // See docs/design/radius-rhythm.md.
       "sergeant-design/no-rounded-lg": "warn",
       // `no-bare-empty-text` — enforce empty-state tier discipline.
       // Bare JSX text with Ukrainian "Поки немає" / "ще немає" phrases must
-      // use <EmptyState> / <ModuleEmptyState> — see docs/design/EMPTY-STATES.md.
+      // use <EmptyState> / <ModuleEmptyState> — see docs/design/empty-states.md.
       "sergeant-design/no-bare-empty-text": "warn",
       // `prefer-text-style` — semantic typography over hand-rolled combos.
       // Replace (text-sm font-medium) with text-style-label etc.

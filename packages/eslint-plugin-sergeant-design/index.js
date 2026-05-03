@@ -587,7 +587,7 @@ const validTailwindOpacity = {
 //
 // Forbid the saturated brand-fill + `text-white` combination on light
 // surfaces. The full rationale, decision matrix, and contrast measurements
-// live in `docs/design/BRANDBOOK.md` → "WCAG-AA `-strong` Tier" and
+// live in `docs/design/brandbook.md` → "WCAG-AA `-strong` Tier" and
 // `docs/design/brand-palette-wcag-aa-proposal.md`.
 //
 // Quick recap: every saturated brand colour ships with a `-strong`
@@ -648,7 +648,7 @@ const RX_SATURATED_BG = new RegExp(
 const RX_TEXT_WHITE = /(?<!\S)text-white(?=\s|$)/;
 
 const LOW_CONTRAST_MESSAGE =
-  "`{{utility}}` + `text-white` fails WCAG AA (~2.4–2.8 : 1). Use `bg-{{family}}-strong` instead — see docs/design/BRANDBOOK.md → 'WCAG-AA `-strong` Tier'.";
+  "`{{utility}}` + `text-white` fails WCAG AA (~2.4–2.8 : 1). Use `bg-{{family}}-strong` instead — see docs/design/brandbook.md → 'WCAG-AA `-strong` Tier'.";
 
 function findLowContrastFills(value) {
   if (typeof value !== "string" || value.length === 0) return [];
@@ -1639,7 +1639,7 @@ const noForeignModuleAccent = {
 // `no-raw-dark-palette` — forbid the raw-palette light/dark anti-pattern
 // ─────────────────────────────────────────────────────────────────────────
 //
-// The dark-mode audit (`docs/design/DARK-MODE-AUDIT.md`) catalogues a
+// The dark-mode audit (`docs/design/dark-mode-audit.md`) catalogues a
 // recurring shape: a className that encodes both themes by hand by
 // pairing a raw Tailwind palette utility on the light side with a
 // `dark:` raw-palette override —
@@ -1688,7 +1688,7 @@ const noForeignModuleAccent = {
 //     `-strong` companion scale, not raw-palette pairs.
 //
 // Promotion path: this rule ships at `error` level once the audit's
-// inventory hits zero (Wave 2c of `docs/design/DARK-MODE-AUDIT.md`).
+// inventory hits zero (Wave 2c of `docs/design/dark-mode-audit.md`).
 // Any future violation must be intentional — either extend the token
 // layer in `packages/design-tokens/tailwind-preset.js` or, in the rare
 // case where an inline raw-palette override is justified (e.g. a
@@ -1727,7 +1727,7 @@ const RAW_DARK_PALETTE_FAMILIES = [
 const RAW_DARK_PALETTE_UTILITIES = ["bg", "text", "border"];
 
 const RAW_DARK_PALETTE_MESSAGE =
-  "Raw-palette light/dark pair (`{{light}}` + `{{dark}}`) — the call-site encodes both themes by hand. Use a single semantic utility (e.g. `bg-{family}-soft`, `bg-{module}-surface`, `border-{module}-soft-border`, `text-{status}-strong`) so the preset owns the light/dark swap. See `docs/design/DARK-MODE-AUDIT.md` for the migration recipe.";
+  "Raw-palette light/dark pair (`{{light}}` + `{{dark}}`) — the call-site encodes both themes by hand. Use a single semantic utility (e.g. `bg-{family}-soft`, `bg-{module}-surface`, `border-{module}-soft-border`, `text-{status}-strong`) so the preset owns the light/dark swap. See `docs/design/dark-mode-audit.md` for the migration recipe.";
 
 // Match `<utility>-<palette>-<step>[/<opacity>]` where step is numeric
 // (so `brand-soft`, `brand-strong`, `coral-soft-border` do NOT match).
@@ -2151,7 +2151,7 @@ const noFinykTokenInStorage = {
 // `no-rounded-lg` — prevent border-radius drift back to the 8 px tier
 // ─────────────────────────────────────────────────────────────────────────
 //
-// Sergeant uses a size-driven radius scale (docs/design/RADIUS-RHYTHM.md):
+// Sergeant uses a size-driven radius scale (docs/design/radius-rhythm.md):
 //   Swatch   rounded-sm  (2 px)   — heatmap cells, chart legend dots
 //   Marker   rounded-md  (6 px)   — chips, badges, checkboxes ≤6 px
 //   Control  rounded-xl  (12 px)  — buttons xs/sm, icon-buttons ≤40 px
@@ -2172,7 +2172,7 @@ const NO_ROUNDED_LG_MESSAGE =
   "Avoid `rounded-lg` (8 px) — it sits between Marker and Control without a semantic role. " +
   "Use `rounded-md` (6 px, Marker tier) for chips / badges / inline pills, or " +
   "`rounded-xl` (12 px, Control tier) for buttons ≤40 px and icon-buttons. " +
-  "See docs/design/RADIUS-RHYTHM.md for the full scale.";
+  "See docs/design/radius-rhythm.md for the full scale.";
 
 const RX_ROUNDED_LG = /(?:^|\s)(?:[\w-]+:)*rounded-lg(?:\s|$)/;
 
@@ -2226,7 +2226,7 @@ const noRoundedLg = {
 // `no-bare-empty-text` — enforce empty-state tier discipline
 // ─────────────────────────────────────────────────────────────────────────
 //
-// docs/design/EMPTY-STATES.md defines three tiers:
+// docs/design/empty-states.md defines three tiers:
 //   Tier 1 — Full-screen: <ModuleEmptyState> or <EmptyState> (no compact)
 //   Tier 2 — Compact card: <EmptyState compact>
 //   Tier 3 — Inline text: one muted line (text-xs text-muted)
@@ -2245,7 +2245,7 @@ const NO_BARE_EMPTY_TEXT_MESSAGE =
   "Use the <EmptyState> component (or <ModuleEmptyState>) instead of bare text for empty states. " +
   "Choose the right tier: full-screen → no `compact`, card-internal → `compact`, " +
   "mini stat (< 120 px tall) → `text-xs text-muted` is OK. " +
-  "See docs/design/EMPTY-STATES.md for tier guidance.";
+  "See docs/design/empty-states.md for tier guidance.";
 
 // Phrases that signal an empty-state message in Ukrainian product copy.
 const RX_EMPTY_SIGNAL =

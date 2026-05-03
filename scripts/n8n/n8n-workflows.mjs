@@ -99,7 +99,7 @@ if (command === "import") await importWorkflows();
 else if (command === "export") await exportWorkflows();
 else {
   console.error(
-    "Usage: node scripts/ops/n8n-workflows.mjs <import|export> [--dry-run]",
+    "Usage: node scripts/n8n/n8n-workflows.mjs <import|export> [--dry-run]",
   );
   process.exit(1);
 }

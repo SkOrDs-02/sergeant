@@ -152,7 +152,7 @@
        `dark:bg-{family}-500/15` gymnastics. Used by `Segmented`, `Tabs`,
        `Button[variant=soft]`, `Badge`, `Banner`, `Card[variant=tint]`,
        `WeeklyDigestCard`, `AssistantAdviceCard`, etc.
-       See docs/design/DARK-MODE-AUDIT.md for the migration targets.
+       See docs/design/dark-mode-audit.md for the migration targets.
        ─────────────────────────────────────────────────────────────────── */
     --c-brand-soft: 236 253 245; /* emerald-50 — matches legacy `bg-brand-50` */
     --c-brand-soft-border: 167 243 208; /* emerald-200 — matches legacy ring */

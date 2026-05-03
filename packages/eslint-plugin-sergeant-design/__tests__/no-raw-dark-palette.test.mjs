@@ -3,7 +3,7 @@
  *
  * The rule fires on a className that pairs a raw Tailwind palette
  * utility on the light side with a `dark:` raw-palette override —
- * the anti-pattern catalogued in `docs/design/DARK-MODE-AUDIT.md`.
+ * the anti-pattern catalogued in `docs/design/dark-mode-audit.md`.
  * Both halves must be present; a dark-side-only "patch" on a
  * semantic light token (e.g. `text-success-strong dark:text-emerald-100`)
  * is intentionally NOT flagged because the light side already lives

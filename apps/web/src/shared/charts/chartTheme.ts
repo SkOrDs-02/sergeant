@@ -108,7 +108,7 @@ export const chartHeatmap = {
      * Level scale (0 → 3). Levels 1–3 reference theme-aware CSS classes
      * defined in `apps/web/src/styles/module-surfaces.css` so this module
      * does not carry `dark:` overrides for chart palette pairs (Wave 2b
-     * of the dark-mode audit; see `docs/design/DARK-MODE-AUDIT.md` →
+     * of the dark-mode audit; see `docs/design/dark-mode-audit.md` →
      * "→ chart-palette refactor (chartTheme)").
      */
     levels: [

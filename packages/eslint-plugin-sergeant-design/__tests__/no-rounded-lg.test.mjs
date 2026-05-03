@@ -4,7 +4,7 @@
  * The rule warns against `rounded-lg` (8 px) in className strings because
  * it sits between the Marker (6 px) and Control (12 px) tiers without a
  * clear semantic role. Developers should use `rounded-md` (Marker) or
- * `rounded-xl` (Control sm) instead — see docs/design/RADIUS-RHYTHM.md.
+ * `rounded-xl` (Control sm) instead — see docs/design/radius-rhythm.md.
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";

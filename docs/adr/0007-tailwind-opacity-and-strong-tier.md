@@ -8,7 +8,7 @@
   - [`AGENTS.md`](../../AGENTS.md) — hard rules #8 (`valid-tailwind-opacity`) і #9 (`no-low-contrast-text-on-fill`).
   - [`packages/design-tokens/tailwind-preset.js`](../../packages/design-tokens/tailwind-preset.js) — реєстрація `theme.opacity` + `-strong` шейдів.
   - [`packages/eslint-plugin-sergeant-design/index.js`](../../packages/eslint-plugin-sergeant-design/index.js) — правила `valid-tailwind-opacity` та `no-low-contrast-text-on-fill`.
-  - [`docs/design/BRANDBOOK.md`](../design/BRANDBOOK.md) — секція WCAG-AA `-strong` Tier (per-family contrast table, decision matrix).
+  - [`docs/design/brandbook.md`](../design/brandbook.md) — секція WCAG-AA `-strong` Tier (per-family contrast table, decision matrix).
   - [`docs/design/brand-palette-wcag-aa-proposal.md`](../design/brand-palette-wcag-aa-proposal.md).
   - PR-historія: [#814](https://github.com/Skords-01/Sergeant/pull/814) (opacity-scale fix), [#854](https://github.com/Skords-01/Sergeant/pull/854) / [#855](https://github.com/Skords-01/Sergeant/pull/855) / [#857](https://github.com/Skords-01/Sergeant/pull/857) (strong-tier rollout).
 
@@ -118,7 +118,7 @@ Saturated brand colors (`brand`/`accent`/`success`/`warning`/`danger`/`info`/`fi
    | routine   | `#f97066`                          | `bg-routine-strong`   | `#c23a3a` | 5.30 : 1        |
    | nutrition | `#92cc17`                          | `bg-nutrition-strong` | `#466212` | 6.96 : 1        |
 
-   Повна таблиця — у `docs/design/BRANDBOOK.md` → "WCAG-AA `-strong` Tier".
+   Повна таблиця — у `docs/design/brandbook.md` → "WCAG-AA `-strong` Tier".
 
 2. **ESLint `no-low-contrast-text-on-fill` (`error`)** ловить порушення:
 
@@ -139,7 +139,7 @@ Saturated brand colors (`brand`/`accent`/`success`/`warning`/`danger`/`info`/`fi
    - `dark:bg-{family} text-white` — на темних поверхнях `-500` проти white вже clears 5.4 : 1; `-strong` тут regress-ить.
    - `hover:bg-{family} text-white` — hover-only saturated bg якщо base state ОК.
 
-4. **Decision matrix** для primitives зафіксована у `BRANDBOOK.md` — кожен Button / Badge / Tabs / Stat / Banner / Segmented / SectionHeading / FormField має визначений map "tier per role".
+4. **Decision matrix** для primitives зафіксована у `brandbook.md` — кожен Button / Badge / Tabs / Stat / Banner / Segmented / SectionHeading / FormField має визначений map "tier per role".
 
 ### Consequences
 
@@ -209,7 +209,7 @@ accepted.
 - ✅ `bg-{family}-strong` / `text-{family}-strong` для всіх 10 saturated families у `tailwind-preset.js` + `tokens.js`.
 - ✅ ESLint `valid-tailwind-opacity` (`error`).
 - ✅ ESLint `no-low-contrast-text-on-fill` (`error`).
-- ✅ `BRANDBOOK.md` → WCAG-AA `-strong` Tier (per-family table + decision matrix).
+- ✅ `brandbook.md` → WCAG-AA `-strong` Tier (per-family table + decision matrix).
 - ✅ `brand-palette-wcag-aa-proposal.md` — історія міграції (#854/#855/#857).
 - ✅ Unit-тести drift palette ↔ ESLint у `packages/eslint-plugin-sergeant-design/__tests__/`.
 

@@ -113,9 +113,9 @@ PR 5.2 видалив `HubTabs.tsx`. Якщо якийсь сторонній к
 
 ## Related docs
 
-- `docs/design/MODULE-ACCENT.md` — `--module-accent` CSS var, як модулі
+- `docs/design/module-accent.md` — `--module-accent` CSS var, як модулі
   оголошують свій ambient brand color.
-- `docs/design/BRANDBOOK.md` — WCAG `-strong` tier, чому активні таби
+- `docs/design/brandbook.md` — WCAG `-strong` tier, чому активні таби
   використовують `brand-strong` (а не `brand-500`).
 - `apps/web/src/shared/components/ui/ModuleBottomNav.tsx` — sibling
   nav для модулів.
