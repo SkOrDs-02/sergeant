@@ -36,7 +36,7 @@ import { getAiMemory } from "./bootstrap.js";
  * Anthropic timeout-у `/api/chat` (30с), щоб RAG ніколи не "зїв" увесь
  * SLA. Перевищення — мовчазний skip без помилки клієнту.
  */
-const RAG_TIMEOUT_MS = Number(process.env.AI_MEMORY_RAG_TIMEOUT_MS) || 1500;
+const RAG_TIMEOUT_MS = env.AI_MEMORY_RAG_TIMEOUT_MS;
 
 /** Найкоротший user query, для якого має сенс шукати в памʼяті. */
 const MIN_QUERY_LEN = 6;

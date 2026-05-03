@@ -120,9 +120,7 @@ const memoryIngestWorker: StartedMemoryIngestWorker | null =
 // бути з пошкодженого state-у.
 // ──────────────────────────────────────────────────────────────────────────────
 
-const SHUTDOWN_GRACE_MS = Number(process.env.SHUTDOWN_GRACE_MS) || 15_000;
-const SHUTDOWN_HARD_TIMEOUT_MS =
-  Number(process.env.SHUTDOWN_HARD_TIMEOUT_MS) || 25_000;
+const { SHUTDOWN_GRACE_MS, SHUTDOWN_HARD_TIMEOUT_MS } = env;
 
 let httpServer: Server | null = null;
 let shuttingDown = false;
