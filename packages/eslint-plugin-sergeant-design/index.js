@@ -147,11 +147,11 @@ const noEllipsisDots = {
 // ----------
 // On mobile, MMKV writes bypass JS, so a hook that calls raw
 // `useLocalStorage` with a key registered in
-// `apps/mobile/src/sync/config.ts → SYNC_MODULES` will silently break
-// cloud sync — the exact regression that bit Finyk and Fizruk before
-// `useSyncedStorage` was introduced. The warning in
-// `apps/mobile/src/lib/storage.ts` is documentary; this rule makes the
-// safety mechanical.
+// `packages/shared/src/sync/modules.ts → SYNC_MODULES` will silently
+// break cloud sync — the exact regression that bit Finyk and Fizruk
+// before `useSyncedStorage` was introduced. The warning in
+// `apps/mobile/src/lib/storage.ts` is documentary; this rule makes
+// the safety mechanical.
 //
 // The rule fires when:
 //   - the callee is `useLocalStorage` (identifier, regardless of import
@@ -162,12 +162,12 @@ const noEllipsisDots = {
 //     listed in `SYNC_MODULES`.
 //
 // Tracked names + values are mirrored verbatim from
-// `apps/mobile/src/sync/config.ts` and
-// `packages/shared/src/lib/storageKeys.ts`. The companion test
-// `__tests__/no-raw-tracked-storage.parity.test.mjs` reads both source
-// files and fails CI if the rule's set drifts from them, so a new
-// tracked key cannot be added to `SYNC_MODULES` without updating the
-// rule (or vice versa).
+// `packages/shared/src/sync/modules.ts` (the cross-platform registry,
+// PR #007) and `packages/shared/src/lib/storageKeys.ts`. The companion
+// test `__tests__/no-raw-tracked-storage.parity.test.mjs` reads both
+// source files and fails CI if the rule's set drifts from them, so a
+// new tracked key cannot be added to `SYNC_MODULES` without updating
+// the rule (or vice versa).
 
 const TRACKED_STORAGE_KEY_NAMES = new Set([
   // finyk
@@ -215,6 +215,10 @@ const TRACKED_STORAGE_KEY_NAMES = new Set([
   "NUTRITION_ACTIVE_PANTRY",
   "NUTRITION_PREFS",
   "NUTRITION_SAVED_RECIPES",
+  // profile (web-only payload — `USER_PROFILE` does not exist in MMKV,
+  // but listing it here keeps the cross-platform registry symmetric so
+  // mobile sync no longer null-overwrites the server blob).
+  "USER_PROFILE",
 ]);
 
 const TRACKED_STORAGE_KEY_VALUES = new Set([
@@ -259,10 +263,12 @@ const TRACKED_STORAGE_KEY_VALUES = new Set([
   "nutrition_active_pantry_v1",
   "nutrition_prefs_v1",
   "nutrition_recipe_book_v1",
+  // profile (see USER_PROFILE comment above).
+  "hub_user_profile_v1",
 ]);
 
 const RAW_TRACKED_STORAGE_MESSAGE =
-  "`useLocalStorage` was called with a key tracked in `apps/mobile/src/sync/config.ts → SYNC_MODULES`. Raw MMKV writes bypass cloud-sync wiring; use `useSyncedStorage` from `@/sync/useSyncedStorage` instead so the change is enqueued automatically.";
+  "`useLocalStorage` was called with a key tracked in `packages/shared/src/sync/modules.ts → SYNC_MODULES`. Raw MMKV writes bypass cloud-sync wiring; use `useSyncedStorage` from `@/sync/useSyncedStorage` instead so the change is enqueued automatically.";
 
 function isTrackedKeyArgument(arg) {
   if (!arg) return false;

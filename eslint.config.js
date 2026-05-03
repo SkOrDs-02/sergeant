@@ -319,10 +319,11 @@ export default [
     },
   },
   // Mobile cloud-sync guardrail — `useLocalStorage` must not be called
-  // with a key tracked in `apps/mobile/src/sync/config.ts → SYNC_MODULES`,
-  // because MMKV writes bypass JS and would silently break cloud sync.
-  // The fix is to call `useSyncedStorage` from `@/sync/useSyncedStorage`
-  // instead, which mirrors the write into the sync queue.
+  // with a key tracked in `packages/shared/src/sync/modules.ts → SYNC_MODULES`
+  // (the cross-platform registry, PR #007), because MMKV writes bypass
+  // JS and would silently break cloud sync. The fix is to call
+  // `useSyncedStorage` from `@/sync/useSyncedStorage` instead, which
+  // mirrors the write into the sync queue.
   {
     files: ["apps/mobile/**/*.{js,jsx,ts,tsx}"],
     ignores: [

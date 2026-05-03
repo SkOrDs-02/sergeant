@@ -29,6 +29,12 @@ export * from "./lib/assistantCatalogue";
 //   - `createMmkvKVStore(() => activeMmkv)` on mobile.
 export * from "./storage/kv";
 
+// Cross-platform cloud-sync module registry. Single source of truth
+// for which `STORAGE_KEYS.*` belong to which sync module on web
+// (localStorage) and mobile (MMKV). See PR #007 in
+// `docs/planning/storage-roadmap.md`.
+export * from "./sync/modules";
+
 // Onboarding "vibe picks" state + FTUX time-to-value helpers.
 export * from "./lib/vibePicks";
 

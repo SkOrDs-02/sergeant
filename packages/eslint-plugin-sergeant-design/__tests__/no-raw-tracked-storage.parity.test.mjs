@@ -4,8 +4,9 @@
  * The rule maintains its own copy of the tracked-key NAMES and
  * VALUES so it does not have to load TypeScript at lint time. This
  * test is the safety net: it parses
- *   - `apps/mobile/src/sync/config.ts` for `STORAGE_KEYS.<NAME>`
- *     references inside `SYNC_MODULES`, and
+ *   - `packages/shared/src/sync/modules.ts` for `STORAGE_KEYS.<NAME>`
+ *     references inside `SYNC_MODULES` (the cross-platform registry
+ *     introduced in PR #007), and
  *   - `packages/shared/src/lib/storageKeys.ts` for the
  *     `<NAME>: "<value>"` pairs.
  * Then it asserts the rule's two sets are exactly the union of those
@@ -33,10 +34,10 @@ function read(rel) {
 
 function extractTrackedNamesFromConfig(source) {
   // Slice out the SYNC_MODULES literal first, then pull every
-  // `STORAGE_KEYS.<NAME>` token from within it. The file also
-  // references `STORAGE_KEYS.MOBILE_*` outside the literal (for the
-  // sync-subsystem metadata keys), and those are intentionally NOT
-  // tracked for cloud-sync wiring — they are the bookkeeping store.
+  // `STORAGE_KEYS.<NAME>` token from within it. Anything outside the
+  // literal (e.g. mobile-only `STORAGE_KEYS.MOBILE_*` bookkeeping
+  // keys exported from `apps/mobile/src/sync/config.ts`) is not
+  // payload and stays out of the parity check.
   const m = source.match(/export\s+const\s+SYNC_MODULES\s*=\s*\{/);
   if (!m) return new Set();
   const openBrace = m.index + m[0].length - 1;
@@ -73,7 +74,7 @@ function extractStorageKeyValueMap(source) {
 }
 
 describe("no-raw-tracked-storage parity with SYNC_MODULES", () => {
-  const configSrc = read("apps/mobile/src/sync/config.ts");
+  const configSrc = read("packages/shared/src/sync/modules.ts");
   const keysSrc = read("packages/shared/src/lib/storageKeys.ts");
 
   const expectedNames = extractTrackedNamesFromConfig(configSrc);
