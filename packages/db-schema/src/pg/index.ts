@@ -12,3 +12,10 @@ export {
   fizrukCustomExercises,
   fizrukMeasurements,
 } from "./fizruk.js";
+export {
+  nutritionMeals,
+  nutritionPantries,
+  nutritionPantryItems,
+  nutritionPrefs,
+  nutritionRecipes,
+} from "./nutrition.js";

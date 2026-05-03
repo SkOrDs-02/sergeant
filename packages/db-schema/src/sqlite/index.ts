@@ -20,6 +20,8 @@ export {
   ROUTINE_SPIKE_MIGRATIONS_TABLE,
   FIZRUK_CLIENT_MIGRATIONS,
   FIZRUK_MIGRATIONS_TABLE,
+  NUTRITION_CLIENT_MIGRATIONS,
+  NUTRITION_MIGRATIONS_TABLE,
 } from "./migrations/index.js";
 export {
   fizrukWorkouts,
@@ -28,3 +30,10 @@ export {
   fizrukCustomExercises,
   fizrukMeasurements,
 } from "./fizruk.js";
+export {
+  nutritionMeals,
+  nutritionPantries,
+  nutritionPantryItems,
+  nutritionPrefs,
+  nutritionRecipes,
+} from "./nutrition.js";

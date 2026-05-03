@@ -256,3 +256,116 @@ export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
  * don't collide.
  */
 export const FIZRUK_MIGRATIONS_TABLE = "__fizruk_migrations";
+
+// ---------------------------------------------------------------------------
+// Nutrition module — Stage 4 / PR #031
+// ---------------------------------------------------------------------------
+
+const NUTRITION_001_SQL = `
+CREATE TABLE IF NOT EXISTS nutrition_meals (
+  id              TEXT PRIMARY KEY,
+  user_id         TEXT NOT NULL,
+  eaten_at        TEXT NOT NULL,
+  meal_type       TEXT NOT NULL DEFAULT 'snack',
+  name            TEXT NOT NULL DEFAULT '',
+  label           TEXT NOT NULL DEFAULT '',
+  kcal            INTEGER,
+  protein_g       REAL,
+  fat_g           REAL,
+  carbs_g         REAL,
+  source          TEXT NOT NULL DEFAULT 'manual',
+  macro_source    TEXT NOT NULL DEFAULT 'manual',
+  amount_g        REAL,
+  food_id         TEXT,
+  is_demo         INTEGER NOT NULL DEFAULT 0,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at      TEXT
+);
+
+CREATE INDEX IF NOT EXISTS nutrition_meals_user_eaten_idx_lite
+  ON nutrition_meals (user_id, eaten_at DESC);
+
+CREATE INDEX IF NOT EXISTS nutrition_meals_user_active_idx_lite
+  ON nutrition_meals (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS nutrition_pantries (
+  id              TEXT PRIMARY KEY,
+  user_id         TEXT NOT NULL,
+  name            TEXT NOT NULL DEFAULT '',
+  text            TEXT NOT NULL DEFAULT '',
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at      TEXT
+);
+
+CREATE INDEX IF NOT EXISTS nutrition_pantries_user_active_idx_lite
+  ON nutrition_pantries (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS nutrition_pantry_items (
+  id              TEXT PRIMARY KEY,
+  pantry_id       TEXT NOT NULL,
+  user_id         TEXT NOT NULL,
+  name            TEXT NOT NULL DEFAULT '',
+  qty             REAL,
+  unit            TEXT,
+  notes           TEXT,
+  sort_order      INTEGER NOT NULL DEFAULT 0,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at      TEXT
+);
+
+CREATE INDEX IF NOT EXISTS nutrition_pantry_items_pantry_idx_lite
+  ON nutrition_pantry_items (pantry_id, sort_order);
+
+CREATE INDEX IF NOT EXISTS nutrition_pantry_items_user_active_idx_lite
+  ON nutrition_pantry_items (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS nutrition_prefs (
+  user_id           TEXT PRIMARY KEY,
+  prefs_json        TEXT NOT NULL DEFAULT '{}',
+  active_pantry_id  TEXT,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS nutrition_recipes (
+  id              TEXT PRIMARY KEY,
+  user_id         TEXT NOT NULL,
+  name            TEXT NOT NULL DEFAULT '',
+  data_json       TEXT NOT NULL DEFAULT '{}',
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at      TEXT
+);
+
+CREATE INDEX IF NOT EXISTS nutrition_recipes_user_active_idx_lite
+  ON nutrition_recipes (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+`;
+
+/**
+ * Ordered list of bundled client migrations for the Nutrition module on
+ * SQLite. Pass this directly to `runMigrations` from
+ * `@sergeant/db-schema/migrate`.
+ *
+ * The Nutrition module uses a separate ledger table
+ * (`__nutrition_migrations`) so that routine, fizruk, and nutrition
+ * migrations are independent — each module can be migrated, rolled
+ * out, and rolled back without affecting the others. Same rationale
+ * as fizruk's split from routine in PR #027.
+ */
+export const NUTRITION_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
+  { name: "001_nutrition_tables.sql", sql: NUTRITION_001_SQL },
+] as const;
+
+/**
+ * Stable ledger table name used by the Nutrition SQLite module.
+ * Separate from `__migrations` (routine) and `__fizruk_migrations`
+ * (fizruk) so the three modules' migration histories don't collide.
+ */
+export const NUTRITION_MIGRATIONS_TABLE = "__nutrition_migrations";
