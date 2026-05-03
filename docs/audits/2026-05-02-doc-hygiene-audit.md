@@ -121,6 +121,8 @@ Knip-команда `dead-code:files` (по правилам `knip.json` + scaff
 - (a) Перенести у `scripts/codemods/` з README.md в директорії.
 - (b) Видалити, якщо codemod вже виконано (треба перевірити `frontend.md`).
 
+> **Виконано (PR follow-up до цього аудиту):** обрано опцію (a). Codemod перенесено в [`scripts/codemods/strip-js-extensions/script.mjs`](../../scripts/codemods/strip-js-extensions/script.mjs); додано директорійний README та каталог [`scripts/codemods/README.md`](../../scripts/codemods/README.md), який описує конвенцію для майбутніх codemod-ів.
+
 `scripts/vitest.mjs` — wrapper навколо vitest, який strip-ить `--max-old-space-size` з NODE_OPTIONS. Теж не пов'язано з `package.json` scripts напряму.
 
 **Опції:** (a) переконатись, що це використовується через якийсь VSCode workspace task / .replit / external runner, або (b) видалити якщо мертвий.

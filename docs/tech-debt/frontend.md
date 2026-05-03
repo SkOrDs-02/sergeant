@@ -116,7 +116,7 @@ greppable в одному місці.
 плутало IDE auto-imports і нових контриб'юторів.
 
 **Зараз:** виконано codemod
-[`scripts/strip-js-extensions.mjs`](../../scripts/strip-js-extensions.mjs) —
+[`scripts/codemods/strip-js-extensions/script.mjs`](../../scripts/codemods/strip-js-extensions/script.mjs) —
 видалив `.js`/`.jsx` з 436 first-party-імпортів у 180 файлах. Зачіпає тільки
 шляхи, що починаються з `.`, `@shared/`, `@finyk/`, `@fizruk/`, `@routine/`,
 `@nutrition/` або `@sergeant/`. Зовнішні пакети (`@zxing/...`) спеціально
