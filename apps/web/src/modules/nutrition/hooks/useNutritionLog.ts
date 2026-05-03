@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@shared/hooks/useToast";
 import { coachKeys, digestKeys } from "@shared/lib/queryKeys";
 import {
   NUTRITION_LOG_KEY,
@@ -40,6 +41,7 @@ function collectMealIds(log: NutritionLog): Set<string> {
  */
 export function useNutritionLog() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [nutritionLog, setNutritionLog] = useState<NutritionLog>(() =>
     loadNutritionLog(NUTRITION_LOG_KEY),
   );
@@ -172,8 +174,8 @@ export function useNutritionLog() {
     let parsed;
     try {
       parsed = JSON.parse(text);
-    } catch (err) {
-      console.error("[nutrition] replaceLogFromJsonText: invalid JSON", err);
+    } catch {
+      toast.error("Не вдалося завантажити лог харчування — невалідний формат JSON.");
       return false;
     }
     setNutritionLog((_prev) => {
@@ -196,8 +198,8 @@ export function useNutritionLog() {
     let parsed;
     try {
       parsed = JSON.parse(text);
-    } catch (err) {
-      console.error("[nutrition] mergeLogFromJsonText: invalid JSON", err);
+    } catch {
+      toast.error("Не вдалося об'єднати лог харчування — невалідний формат JSON.");
       return false;
     }
     setNutritionLog((log) => mergeNutritionLogs(log, parsed));

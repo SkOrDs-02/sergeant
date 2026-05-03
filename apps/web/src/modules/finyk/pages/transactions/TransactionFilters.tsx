@@ -44,8 +44,10 @@ export function TransactionFilters({
             key={f.id}
             data-compact
             onClick={() => onChangeFilter(f.id)}
+            aria-pressed={filter === f.id}
             className={cn(
               "shrink-0 inline-flex items-center h-7 px-3 text-style-caption font-medium rounded-full border transition-colors",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-finyk/50 focus-visible:ring-offset-1",
               filter === f.id
                 ? "bg-primary border-primary text-bg shadow-sm"
                 : "bg-panelHi border-line text-text hover:border-muted",

@@ -723,7 +723,7 @@ function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
       <button
         type="button"
         onClick={onRemove}
-        className="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-danger hover:bg-danger/10 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+        className="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-danger hover:bg-danger/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
         aria-label="Видалити запис"
       >
         ✕

@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import type { MockInstance } from "vitest";
 import { useNutritionLog } from "./useNutritionLog";
 import { NUTRITION_LOG_KEY } from "../lib/nutritionStorage";
+import { ToastProvider } from "@shared/hooks/useToast";
 
 function makeWrapper() {
   const client = new QueryClient({
@@ -13,21 +13,16 @@ function makeWrapper() {
   });
   return function Wrapper({ children }: { children: ReactNode }) {
     return (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      <ToastProvider>
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      </ToastProvider>
     );
   };
 }
 
 describe("useNutritionLog – defensive imports", () => {
-  let errorSpy: MockInstance;
-
   beforeEach(() => {
     localStorage.clear();
-    errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    errorSpy.mockRestore();
   });
 
   it("replaceLogFromJsonText returns false and does not throw on malformed JSON", () => {
@@ -39,7 +34,6 @@ describe("useNutritionLog – defensive imports", () => {
       ok = result.current.replaceLogFromJsonText("{not: valid json");
     });
     expect(ok).toBe(false);
-    expect(errorSpy).toHaveBeenCalled();
     // previous state preserved (empty log)
     expect(result.current.nutritionLog).toEqual({});
   });
@@ -77,7 +71,6 @@ describe("useNutritionLog – defensive imports", () => {
       ok = result.current.mergeLogFromJsonText("not json at all");
     });
     expect(ok).toBe(false);
-    expect(errorSpy).toHaveBeenCalled();
     expect(result.current.nutritionLog["2025-01-01"].meals).toHaveLength(1);
   });
 

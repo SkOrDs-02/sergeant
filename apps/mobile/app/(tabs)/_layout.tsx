@@ -14,7 +14,7 @@ import { useUser } from "@sergeant/api-client/react";
 import { shouldShowOnboarding } from "@sergeant/shared";
 import { OnboardingWizard, getOnboardingStore } from "@/core/OnboardingWizard";
 import { useTabBadges } from "@/hooks/useTabBadges";
-import { colors } from "@/theme";
+import { colors, moduleColors } from "@/theme";
 
 type TabIconProps = {
   color: string;
@@ -124,6 +124,7 @@ export default function TabsLayout() {
             tabBarIcon: createTabIcon(CheckSquare),
             tabBarButtonTestID: "tab-routine",
             tabBarBadge: badges.routine,
+            tabBarBadgeStyle: { backgroundColor: moduleColors.routine.primary },
           }}
         />
         <Tabs.Screen
