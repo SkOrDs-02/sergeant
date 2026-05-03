@@ -12,6 +12,10 @@
 > [`docs/launch/01-monetization-and-pricing.md`](../launch/01-monetization-and-pricing.md) — activation funnel & aha-moment hypotheses ·
 > [`docs/design/empty-states.md`](../design/empty-states.md) — 3-tier empty states.
 
+> ### Errata (2026-05-03 21:53 UTC)
+>
+> Початкова проджарка стверджувала, що «PostHog не підключений (analytics — stub з localStorage)». **Це неточно.** Перевірив код у `main` після спроби взяти S0.1 і виявив, що web-частину analytics уже зроблено: PostHog SDK lazy-mounted з [`apps/web/src/core/observability/posthog.ts`](../../apps/web/src/core/observability/posthog.ts), `initPostHog()` викликається з `main.tsx`, `identify`/`reset` з `AuthContext`, `<PageviewTracker />` змонтований у `App.tsx`, `posthog-js@^1.372.3` в deps. `.env.example` (root) уже має `VITE_POSTHOG_KEY` / `VITE_POSTHOG_HOST` коментовані; setup задокументований у [`docs/observability/frontend.md`](../observability/frontend.md). Реальні гепи лишаються: (а) mobile parity (apps/mobile = console-only stub без `posthog-js`), (б) ~9 канонічних подій з `ANALYTICS_EVENTS` визначені, але не fired у `trackEvent` call-sites — серед них `CELEBRATION_SHOWN`, `FIRST_REAL_ENTRY`, `FTUX_TIME_TO_VALUE`, `MODULE_CHECKLIST_*`, `ONBOARDING_STEP_VIEWED/COMPLETED/SKIPPED`, `BUDGET_SET`, `HINT_DISMISSED/COMPLETED`, `STREAK_MILESTONE_REACHED`, (в) PostHog FTUX dashboards docs не існує. Деталі — у [`ftux-sprint-plan.md` §2 «Status check»](../launch/ftux-sprint-plan.md#status-check-verified-2026-05-03). Висновки самої прожарки (P0–P3 рекомендації) лишаються в силі — вони про emotional design, не про transport.
+
 ---
 
 ## Bottom line

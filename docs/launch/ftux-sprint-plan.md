@@ -1,6 +1,6 @@
 # FTUX sprint plan — від прожарки до PR-ів
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-03 by @Skords-01 (статус-калібрація S0). **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Implementation roadmap для 22 рекомендацій з [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md).
@@ -18,7 +18,7 @@
 
 ## 0. Передумови
 
-1. **Sprint 0 не пропускати.** Без PostHog (або еквівалента) усі наступні зміни — це сліпі гіпотези.
+1. **Sprint 0 не пропускати.** Без PostHog (або еквівалента) усі наступні зміни — це сліпі гіпотези. _Update 2026-05-03: основна частина S0 уже зроблена (S0.1, S0.2). Реальна робота — S0.3 (mobile parity), S0.4 (9 unfired canonical events), S0.5 (dashboards docs); деталі — у §2._
 2. **One change per sprint cluster.** Не правити одразу 18 пунктів P0/P1/P2 — це вб'є фокус і не дасть зрозуміти що саме спрацювало.
 3. **PR-cap 300 LOC** (не рахуючи snapshot-тестів і копій). Більший — ділиться.
 4. **Кожен помітний UX-зсув йде під feature-flag.** Поки немає feature-flag-сервісу — `localStorage.experiment.<name>=on/off` + URL-параметр для QA. Після S0 → PostHog feature flags.
@@ -49,23 +49,43 @@
 
 **Чому окремо:** одне інженерне завдання, не змішане з UX. Зробити швидко, не плутати з copy-роботою.
 
+### Status check (verified 2026-05-03)
+
+Перевірив код у `main` після перших спроб взяти S0.1 — частина S0 уже зроблена попередніми PR-ами. Рекалібрував статус нижче, щоб не дублювати роботу:
+
+- **PostHog SDK уже вмонтовано** у web ([`apps/web/src/core/observability/posthog.ts`](../../apps/web/src/core/observability/posthog.ts)) з lazy `import("posthog-js")`, queue до завершення init, `sanitize_properties`, `identified_only` profiles, EU host default.
+- `posthog-js@^1.372.3` у `apps/web/package.json`, `initPostHog()` викликається з [`apps/web/src/main.tsx`](../../apps/web/src/main.tsx) через `requestIdleCallback`.
+- `identifyPostHogUser` / `resetPostHog` викликаються з [`AuthContext.tsx`](../../apps/web/src/core/auth/AuthContext.tsx) на login/logout з `buildIdentifyTraits` (`vibe`, `plan`, `locale`, `signup_date`).
+- Super-properties (`platform`, `is_capacitor`) реєструються через `posthog.register` всередині `initPostHog`.
+- `<PageviewTracker />` змонтований у [`App.tsx`](../../apps/web/src/core/App.tsx) з `sanitizeUrl()` для magic-link токенів.
+- `.env.example` (root) має закоментовані `VITE_POSTHOG_KEY` / `VITE_POSTHOG_HOST`; setup задокументований у [`docs/observability/frontend.md`](../observability/frontend.md).
+- CI workflow `.github/workflows/posthog-release-annotation.yml` уже постить annotation на release.
+
+Що реально лишилось ⇒ див. колонку `Status` у таблиці нижче.
+
 ### PR-розбивка
 
-| PR-id    | Назва                                             | LOC  | Files (≈)                                                                                                                        | Deps      | AC                                                                                                                        |
-| -------- | ------------------------------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------- |
-| **S0.1** | feat(analytics): swap stub for PostHog SDK (web)  | ~120 | `apps/web/src/core/observability/analytics.ts` · `apps/web/src/main.tsx` · `apps/web/.env.example` · `apps/web/package.json`     | —         | `ONBOARDING_STARTED` бачимо в PostHog UI ≤5 хв · stub лишається як fallback при missing key                               |
-| **S0.2** | feat(analytics): identify + super-properties      | ~80  | `apps/web/src/core/observability/analytics.ts` · `apps/web/src/core/onboarding/storage.ts`                                       | S0.1      | Funnel "wizard_started → wizard_completed → first_real_entry → day1_return" з proper user IDs                             |
-| **S0.3** | feat(analytics): mobile parity (Expo + Capacitor) | ~150 | `apps/mobile/src/observability/analytics.ts` · `apps/mobile-shell/src/...`                                                       | S0.1      | Mobile FTUX events у тому ж funnel, source-prop ("web" / "mobile-expo" / "mobile-capacitor")                              |
-| **S0.4** | feat(analytics): add 5 missing events             | ~60  | `apps/web/src/core/onboarding/CelebrationModal.tsx` · `FirstActionSheet.tsx` · `ModuleFirstRunGoalSheet.tsx` · `PresetSheet.tsx` | S0.1      | `FIRST_REAL_ENTRY`, `CELEBRATION_SHOWN`, `GOAL_SHEET_DISMISSED`, `PRESET_SHEET_OPENED_EMPTY`, `WIZARD_RAGE_QUIT` пишуться |
-| **S0.5** | docs(observability): PostHog FTUX dashboards      | 0    | `docs/observability/posthog-ftux-dashboards.md` (новий)                                                                          | S0.1–S0.4 | 5 saved insights + screenshot links; runbook як добавити нові                                                             |
+| PR-id    | Назва                                                                                | LOC  | Files (≈)                                                                                                                                  | Deps      | Status (2026-05-03)                                                                                                                                                                                                                                                                                                                                                                                            | AC                                                                                                                                                                                                                       |
+| -------- | ------------------------------------------------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **S0.1** | feat(analytics): swap stub for PostHog SDK (web)                                     | ~120 | `apps/web/src/core/observability/posthog.ts` · `apps/web/src/main.tsx` · `apps/web/package.json` · root `.env.example`                     | —         | ✅ **DONE in main** (попередні PR-и). Лишилось тільки виставити `VITE_POSTHOG_KEY` в Vercel + локальному `apps/web/.env.local` (founder-task). Stub fallback працює для CI без ключа.                                                                                                                                                                                                                          | `ONBOARDING_STARTED` бачимо в PostHog UI ≤5 хв · stub лишається як fallback при missing key                                                                                                                              |
+| **S0.2** | feat(analytics): identify + super-properties                                         | ~80  | `apps/web/src/core/observability/posthog.ts` · `apps/web/src/core/observability/identifyTraits.ts` · `apps/web/src/core/auth/AuthContext.tsx` | S0.1      | ✅ **DONE in main**. `buildIdentifyTraits` шле `vibe` / `plan` / `locale` / `signup_date`; `posthog.register` виставляє `platform` / `is_capacitor` як super-properties. Залишається верифікація: чи distinctIds анонімних не зливаються з identified — це чисто PostHog dashboard-перевірка після першого live-tour.                                                                                       | Funnel "wizard_started → wizard_completed → first_real_entry → day1_return" з proper user IDs                                                                                                                            |
+| **S0.3** | feat(analytics): mobile parity (Expo + Capacitor)                                    | ~150 | `apps/mobile/src/lib/analytics.ts` (расширити) · новий `apps/mobile/src/observability/posthog.ts` · `apps/mobile-shell/src/...`            | S0.1      | ❌ **TODO**. Сьогодні `apps/mobile/src/lib/analytics.ts` — console-only stub, у `apps/mobile/package.json` нема `posthog-js`. Викликається лише з `useHints.ts` / `FirstActionHeroCard.tsx` / `SoftAuthPromptCard.tsx` (3 події). Жоден FTUX-event не пишеться у спільний funnel. Потрібен mobile-варіант `posthog.ts` (через `posthog-react-native` або CDP API), `source: "mobile-expo" / "mobile-capacitor"`. | Mobile FTUX events у тому ж funnel, source-prop ("web" / "mobile-expo" / "mobile-capacitor")                                                                                                                             |
+| **S0.4** | feat(analytics): fire missing canonical events                                       | ~80  | `apps/web/src/core/onboarding/CelebrationModal.tsx` · `OnboardingWizard.tsx` · `HubDashboard.tsx` · `ModuleChecklist.tsx` · finyk hooks    | S0.1      | ❌ **TODO** (gap більший, ніж початкова оцінка). Перевірив `ANALYTICS_EVENTS` vs grep `trackEvent(ANALYTICS_EVENTS.…)`: **9 канонічних подій визначено, але не fired нікуди у web** (без урахування billing/HUBCHAT placeholders): `CELEBRATION_SHOWN`, `FIRST_REAL_ENTRY`, `FTUX_TIME_TO_VALUE`, `MODULE_CHECKLIST_SHOWN/STEP_DONE/DISMISSED`, `ONBOARDING_STEP_VIEWED/COMPLETED/SKIPPED`, `BUDGET_SET`, `HINT_DISMISSED/COMPLETED`, `STREAK_MILESTONE_REACHED`. Без них wizard-funnel і celebration-funnel зеленіють криво. | Усі 9 канонічних подій fired (з відповідним payload contract); funnel `started → step_viewed → step_completed → vibe_picked → first_action_picked → ftux_preset_picked → first_real_entry → celebration_shown` без gap-ів |
+| **S0.5** | docs(observability): PostHog FTUX dashboards                                         | 0    | `docs/observability/posthog-ftux-dashboards.md` (новий)                                                                                    | S0.1–S0.4 | ❌ **TODO**. Файл не існує. Потрібен runbook: 5 saved insights (activation funnel, TTV histogram, vibe→first-entry per module, D1/D7 retention by signup-cohort, celebration drop-off) + alert thresholds + screenshot-links з UI.                                                                                                                                                                              | 5 saved insights + screenshot links; runbook як добавити нові                                                                                                                                                            |
+
+**Скоригований обсяг S0:** ~230 LOC коду (S0.3 + S0.4) + docs (S0.5). S0.1 / S0.2 = тільки provisioning credentials (founder-task ~10 хв) і dashboard-верифікація (founder-task ~15 хв).
+
+**Порядок взяття:** S0.5 (docs) → S0.4 (web events) → S0.3 (mobile). S0.5 першим — щоб контракти dashboard-ів продиктували, як саме fired payload для S0.4. S0.3 останнім — після того як web payload устаткувався.
 
 **Hosted vs self-hosted:** для S0 — hosted Cloud EU (10k events/month free). Self-host пізніше, якщо знадобиться (privacy / GDPR).
 
 **Risks:**
 
-- 2FA / SSO для PostHog account (founder-task — robotic note: створити acc заздалегідь).
+- 2FA / SSO для PostHog account (founder-task — robotic note: створити acc заздалегідь). _Update 2026-05-03: account уже існує, ключ уже на Vercel._
 - iOS App Tracking Transparency для mobile — пропустити, бо internal-only трекаємо.
-- Stub-режим має лишитись як fallback (CI без `VITE_POSTHOG_KEY` не падає).
+- Stub-режим має лишитись як fallback (CI без `VITE_POSTHOG_KEY` не падає). _Уже так працює — `posthog.ts` no-ops без ключа._
+- Mobile parity (S0.3) має не дублювати web `analytics.ts` — спільні рядки винести в `packages/shared` або шарити транспорт через `@sergeant/shared`. Інакше дріфт між web і mobile невпинно.
+- S0.4 `FIRST_REAL_ENTRY` потребує single source of truth що рахується «реальним entry». Сьогодні це imply-нуто через `firstActionTakenAt` у onboarding storage — треба зафіксувати у `packages/shared` як helper, щоб web і mobile не розійшлися.
 
 **Out of scope для S0:** A/B testing infrastructure (S2/S5), email events (драйп-стек ще не існує).
 
