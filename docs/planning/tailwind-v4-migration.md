@@ -1,7 +1,7 @@
 # Міграція Tailwind CSS v3 → v4
 
 > **Last validated:** 2026-05-03. **Next review:** 2026-08-01.
-> **Status:** Phase 1 (web) — in progress (PR open). Phase 2–4 — не розпочато.
+> **Status:** Phase 1 (web) — ✅ done ([#1495](https://github.com/Skords-01/Sergeant/pull/1495), follow-up [#1499](https://github.com/Skords-01/Sergeant/pull/1499)). Phase 2 (mobile/NativeWind) — blocked, чекаємо NativeWind 5. Phase 3–4 — не розпочато.
 > **Owner:** @Skords-01
 > **Пріоритет:** Medium — запланувати на Q3–Q4 2026.
 > **Estimated effort:** 2–3 дні (з automated upgrade tool).
@@ -139,26 +139,19 @@ export default {
 - [ ] Зробити git tag поточного стану: `git tag pre-tailwind-v4-migration`
 - [ ] Переконатися що всі CI чеки зелені
 
-### Фаза 1: Web app (apps/web) — 1 день
+### Фаза 1: Web app (apps/web) — ✅ done
 
-1. Створити фічер-бранч: `feat/tailwind-v4-web`
-2. Запустити automated upgrade tool:
-   ```bash
-   cd apps/web
-   npx @tailwindcss/upgrade
-   ```
-3. Перевірити зміни вручну:
-   - `postcss.config.mjs` — `@tailwindcss/postcss` замість `tailwindcss` + `autoprefixer`
-   - `index.css` — `@import "tailwindcss"` замість `@tailwind` директив
-   - `tailwind.config.ts` — перевірити чи preset правильно імпортується
-4. Оновити `packages/design-tokens/tailwind-preset.ts`:
-   - Перевести `theme.extend` у `@theme` CSS синтаксис
-   - Або зберегти JS config через `@config` директиву (простіше для shared preset)
-5. Перевірити alpha-value синтаксис для CSS variable кольорів
-6. Пройтися по всіх перейменованих утилітах (shadow, ring, rounded, border color)
-7. Запустити: `pnpm dev:web` — візуально перевірити всі модулі
-8. Запустити: `pnpm lint && pnpm typecheck && pnpm test && pnpm build`
-9. Запустити Argos visual regression — порівняти скріншоти
+Закрита у [#1495](https://github.com/Skords-01/Sergeant/pull/1495) (`feat(web): migrate Tailwind CSS v3 → v4`) + follow-up [#1499](https://github.com/Skords-01/Sergeant/pull/1499) (`chore(deps): regenerate THIRD_PARTY_LICENSES after Tailwind v4 migration`). Кроки, які реально виконано:
+
+1. ✅ Створено фічер-бранч і запущено automated upgrade tool: `npx @tailwindcss/upgrade` у `apps/web`
+2. ✅ `postcss.config.mjs` переведено на `@tailwindcss/postcss` (замість `tailwindcss` + `autoprefixer`)
+3. ✅ `index.css` тепер використовує `@import "tailwindcss"` замість `@tailwind` директив
+4. ✅ `packages/design-tokens/tailwind-preset.ts` залишено через `@config` директиву (shared preset між web/mobile)
+5. ✅ Alpha-value синтаксис для CSS variable кольорів перевірено
+6. ✅ Перейменовані утиліти (shadow, ring, rounded, border color) пройдено
+7. ✅ `pnpm dev:web` візуально пройдено
+8. ✅ `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — green
+9. ✅ Argos visual regression — порівняння до/після пройдено
 
 ### Фаза 2: Mobile app (apps/mobile) — 1 день
 
@@ -177,11 +170,11 @@ export default {
 
 ### Фаза 4: Cleanup — 0.5 дня
 
-1. Видалити `autoprefixer` з `devDependencies`
+1. Видалити `autoprefixer` з `devDependencies` (частково в #1495)
 2. Видалити `postcss-import` якщо є
 3. Оновити `.browserslistrc` (Tailwind 4 підтримує Safari 16.4+, Chrome 111+, Firefox 128+)
 4. Оновити CI: перевірити що build/test проходять
-5. Оновити цей документ: статус → Completed
+5. Оновити цей документ: статус → Completed (після завершення Phase 2–3)
 
 ## Ризики
 
