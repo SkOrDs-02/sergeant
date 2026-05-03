@@ -18,6 +18,7 @@ docs/launch/
 ├── 05-operations-and-automation.md  6 зон, n8n + OpenClaw, ритуали
 ├── 06-monetization-architecture.md  технічний скелетон, 10 PR-ів, ADR, risk register
 ├── ai-memory-activation.md          ADR-0028 rollout: pgvector, Voyage, recall flows
+├── ftux-sprint-plan.md               FTUX onboarding roast → 5-спринт-плану (S0…S5) з PR-розбивкою
 ├── openclaw-roadmap.md               OpenClaw v0 → v1 поетапний план у 4 фази
 └── telegram-improvements-roadmap.md  Telegram-surfaces (DM + supergroup) — 4-wave PR-план
 ```
@@ -41,6 +42,7 @@ docs/launch/
 | Як налаштувати n8n + OpenClaw?                                    | [05 — Автоматизація](./05-operations-and-automation.md#6-зона-6-у-деталях-n8n--openclaw) |
 | Як поетапно побудувати OpenClaw v0 → v1?                          | [openclaw-roadmap](./openclaw-roadmap.md)                                                |
 | Які покращення Telegram-сурфейсів заплановано?                    | [telegram-improvements-roadmap](./telegram-improvements-roadmap.md)                      |
+| Як виправляти FTUX-онбординг (5 спринтів, PR-розбивка)?           | [ftux-sprint-plan](./ftux-sprint-plan.md)                                                |
 | Як реалізувати paywall технічно (DB schema, webhook, plan-cache)? | [06 — Архітектура](./06-monetization-architecture.md#5-уточнена-розбивка-pr-10-шт)       |
 | Що може піти не так у monetization rollout?                       | [06 — Risk register](./06-monetization-architecture.md#7-risk-register)                  |
 

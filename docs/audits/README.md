@@ -22,5 +22,6 @@
 | [`2026-05-03-readme-gap-analysis.md`](./2026-05-03-readme-gap-analysis.md)                   | README gap analysis — що відсутнє у root README     | Active   |
 | [`UX-UI-AUDIT-2026.md`](./UX-UI-AUDIT-2026.md)                                               | UX/UI аудит 2026                                    | Closed   |
 | [`UX-IMPROVEMENT-PLAN.md`](./UX-IMPROVEMENT-PLAN.md)                                         | Технічний план покращення UX                        | Active   |
+| [`2026-05-03-ftux-onboarding-roast.md`](./2026-05-03-ftux-onboarding-roast.md)               | Web FTUX onboarding roast — 6 P0 + 22 рекомендацій  | Active   |
 | [`typography-2026-04-audit.md`](./typography-2026-04-audit.md)                               | Typography reference audit для Hard Rule #16        | Active   |
 | [`archive/ux-audit-2025.md`](./archive/ux-audit-2025.md)                                     | UX-аудит 2025                                       | Archived |
