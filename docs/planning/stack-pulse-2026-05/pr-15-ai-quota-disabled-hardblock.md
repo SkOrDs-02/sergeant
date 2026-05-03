@@ -1,15 +1,16 @@
 # PR-15: `AI_QUOTA_DISABLED=1` hard-block у production
 
 > **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
-> **Status:** In review (PR pending)
+> **Status:** In review — [PR #1567](https://github.com/Skords-01/Sergeant/pull/1567)
 
-|              |                                        |
-| ------------ | -------------------------------------- |
-| **Severity** | High (H9)                              |
-| **Owner**    | Devin (security pass)                  |
-| **Effort**   | 0.5 дня                                |
-| **Risk**     | Low                                    |
-| **Touches**  | `apps/server/src/env*`, AI-quota guard |
+|              |                                                            |
+| ------------ | ---------------------------------------------------------- |
+| **Severity** | High (H9)                                                  |
+| **Owner**    | Devin (security pass)                                      |
+| **Effort**   | 0.5 дня                                                    |
+| **Risk**     | Low                                                        |
+| **Touches**  | `apps/server/src/env*`, AI-quota guard, `extended-e2e.yml` |
+| **PR**       | [#1567](https://github.com/Skords-01/Sergeant/pull/1567)   |
 
 ## Контекст
 
