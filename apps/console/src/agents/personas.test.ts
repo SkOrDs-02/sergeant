@@ -146,3 +146,74 @@ describe("OpenClaw personas — tool filtering", () => {
     expect(filterToolsForPersona(openClawTools, fake)).toEqual([]);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// ADR-0036 (Phase 4) — write-tool persona allowlists
+// ─────────────────────────────────────────────────────────────────────────
+
+describe("OpenClaw personas — write-tool allowlist (ADR-0036)", () => {
+  it("cofounder sees all 5 write-tools (sentinel null filter)", () => {
+    const filtered = filterToolsForPersona(openClawTools, "cofounder");
+    const names = filtered.map((t) => t.name);
+    for (const w of [
+      "commit_to_strategy_doc",
+      "create_github_issue",
+      "post_to_topic",
+      "pause_workflow",
+      "mute_alert",
+    ]) {
+      expect(names).toContain(w);
+    }
+  });
+
+  it("ops sees pause_workflow + mute_alert + post_to_topic; not strategy/PRs", () => {
+    const filtered = filterToolsForPersona(openClawTools, "ops");
+    const names = filtered.map((t) => t.name);
+    expect(names).toContain("pause_workflow");
+    expect(names).toContain("mute_alert");
+    expect(names).toContain("post_to_topic");
+    expect(names).not.toContain("commit_to_strategy_doc");
+    expect(names).not.toContain("create_github_issue");
+  });
+
+  it("growth sees commit_to_strategy_doc + create_github_issue + post_to_topic", () => {
+    const filtered = filterToolsForPersona(openClawTools, "growth");
+    const names = filtered.map((t) => t.name);
+    expect(names).toContain("commit_to_strategy_doc");
+    expect(names).toContain("create_github_issue");
+    expect(names).toContain("post_to_topic");
+    expect(names).not.toContain("pause_workflow");
+    expect(names).not.toContain("mute_alert");
+  });
+
+  it("eng sees create_github_issue + post_to_topic only (no strategy/n8n/sentry)", () => {
+    const filtered = filterToolsForPersona(openClawTools, "eng");
+    const names = filtered.map((t) => t.name);
+    expect(names).toContain("create_github_issue");
+    expect(names).toContain("post_to_topic");
+    expect(names).not.toContain("commit_to_strategy_doc");
+    expect(names).not.toContain("pause_workflow");
+    expect(names).not.toContain("mute_alert");
+  });
+
+  it("finance sees only commit_to_strategy_doc (budget/runway updates)", () => {
+    const filtered = filterToolsForPersona(openClawTools, "finance");
+    const names = filtered.map((t) => t.name);
+    expect(names).toContain("commit_to_strategy_doc");
+    expect(names).not.toContain("create_github_issue");
+    expect(names).not.toContain("post_to_topic");
+    expect(names).not.toContain("pause_workflow");
+    expect(names).not.toContain("mute_alert");
+  });
+
+  it("write-tool entries in allowlists reference real tool names", () => {
+    const allNames = new Set(openClawTools.map((t) => t.name));
+    for (const persona of ["ops", "growth", "eng", "finance"] as const) {
+      const allowlist = PERSONA_TOOL_FILTER[persona];
+      expect(allowlist).not.toBeNull();
+      for (const name of allowlist!) {
+        expect(allNames.has(name)).toBe(true);
+      }
+    }
+  });
+});

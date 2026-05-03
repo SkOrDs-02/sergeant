@@ -50,6 +50,14 @@ import {
   getServerStats,
   getPostHogStats,
   getGithubReleases,
+  // ADR-0036 (Phase 4): write-tools — invoked only after console-side approval.
+  commitToStrategyDoc,
+  createGithubIssue,
+  postToTopic,
+  pauseWorkflow,
+  muteSentryAlert,
+  OpenClawWriteAllowlistError,
+  POST_TO_TOPIC_ALLOWLIST,
 } from "../../modules/openclaw/index.js";
 import type {
   OpenClawStatus,
@@ -190,6 +198,40 @@ const GithubReleasesBody = z.object({
 });
 
 const ServerStatsBody = z.object({}).strict();
+
+// ADR-0036 (Phase 4): write-tool body schemas. The console invokes these
+// endpoints ONLY after the founder explicitly approved the corresponding
+// write-tool call via inline-keyboard in Telegram. Validation is intentionally
+// strict — we'd rather 400-fail than silently relax invariants.
+
+const CommitStrategyDocBody = z.object({
+  path: z.string().min(1).max(500),
+  content: z.string().min(1).max(80_000),
+  message: z.string().min(1).max(200),
+  repo: z.string().optional(),
+});
+
+const CreateGithubIssueBody = z.object({
+  title: z.string().min(1).max(200),
+  body: z.string().min(1).max(20_000),
+  labels: z.array(z.string().min(1).max(50)).max(10).optional(),
+  repo: z.string().optional(),
+});
+
+const PostToTopicBody = z.object({
+  topic: z.string().min(1),
+  text: z.string().min(1).max(4000),
+});
+
+const PauseWorkflowBody = z.object({
+  workflowId: z.string().min(1).max(100),
+  reason: z.string().max(1000).optional(),
+});
+
+const MuteAlertBody = z.object({
+  issueId: z.string().min(1).max(200),
+  untilIso: z.string().datetime({ offset: true }).optional(),
+});
 
 // ─────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -447,6 +489,106 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
       res.json(result);
     }),
   );
+
+  // ---- ADR-0036 (Phase 4): write-tools ----
+  //
+  // Side-effecting operations. Console approves with the founder via
+  // inline-keyboard before invoking these. Each endpoint performs exactly
+  // ONE upstream call; on missing credentials they return
+  // `{ status: 'not_configured' }` so the audit-log captures the attempt
+  // without throwing 5xx.
+
+  // ---- write/strategy-doc → commit_to_strategy_doc ----
+  r.post(
+    "/api/internal/openclaw/write/strategy-doc",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(CommitStrategyDocBody, req, res);
+      if (!parsed.ok) return;
+      try {
+        const result = await commitToStrategyDoc({
+          path: parsed.data.path,
+          content: parsed.data.content,
+          message: parsed.data.message,
+          repo: parsed.data.repo,
+        });
+        res.json(result);
+      } catch (err) {
+        if (err instanceof OpenClawWriteAllowlistError) {
+          return asAllowlistFailure(res, err);
+        }
+        throw err;
+      }
+    }),
+  );
+
+  // ---- write/github-issue → create_github_issue ----
+  r.post(
+    "/api/internal/openclaw/write/github-issue",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(CreateGithubIssueBody, req, res);
+      if (!parsed.ok) return;
+      const result = await createGithubIssue({
+        title: parsed.data.title,
+        body: parsed.data.body,
+        labels: parsed.data.labels,
+        repo: parsed.data.repo,
+      });
+      res.json(result);
+    }),
+  );
+
+  // ---- write/post-to-topic → post_to_topic ----
+  r.post(
+    "/api/internal/openclaw/write/post-to-topic",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(PostToTopicBody, req, res);
+      if (!parsed.ok) return;
+      try {
+        const result = await postToTopic({
+          topic: parsed.data.topic,
+          text: parsed.data.text,
+        });
+        res.json(result);
+      } catch (err) {
+        if (err instanceof OpenClawWriteAllowlistError) {
+          return asAllowlistFailure(res, err);
+        }
+        throw err;
+      }
+    }),
+  );
+
+  // ---- write/pause-workflow → pause_workflow ----
+  r.post(
+    "/api/internal/openclaw/write/pause-workflow",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(PauseWorkflowBody, req, res);
+      if (!parsed.ok) return;
+      const result = await pauseWorkflow({
+        workflowId: parsed.data.workflowId,
+        reason: parsed.data.reason,
+      });
+      res.json(result);
+    }),
+  );
+
+  // ---- write/mute-alert → mute_alert ----
+  r.post(
+    "/api/internal/openclaw/write/mute-alert",
+    asyncHandler(async (req, res) => {
+      const parsed = validateBody(MuteAlertBody, req, res);
+      if (!parsed.ok) return;
+      const result = await muteSentryAlert({
+        issueId: parsed.data.issueId,
+        untilIso: parsed.data.untilIso,
+      });
+      res.json(result);
+    }),
+  );
+
+  // Sanity touch — keep `POST_TO_TOPIC_ALLOWLIST` import live (it's also used
+  // for documentation in the OpenAPI exporter, kept here for tree-shake).
+  void POST_TO_TOPIC_ALLOWLIST;
 
   // ---- invocations: list (observability) ----
   r.post(
