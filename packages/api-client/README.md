@@ -1,6 +1,6 @@
-# `@shared/api`
+# `@sergeant/api-client`
 
-Єдиний HTTP-шар застосунку. Усі запити до нашого бекенду (`/api/*`) **мають** іти через цей модуль, щоб:
+Єдиний HTTP-шар застосунку. Усі запити до нашого бекенду (`/api/*`) **мають** іти через цей пакет або через web-legacy барел `@shared/api`, який реекспортує `@sergeant/api-client`, щоб:
 
 - ми мали **один** fetch-враппер з узгодженою поведінкою (credentials, timeout, парсинг, helper-методи);
 - усі помилки приходили в одному форматі (`ApiError`), з яким уміють працювати React Query, UI-тости й offline-черга;
@@ -17,7 +17,7 @@
 3. [ApiError](#apierror)
 4. [Конвенція ендпоінтів](#конвенція-ендпоінтів)
 5. [Інтеграція з React Query](#інтеграція-з-react-query)
-6. [Винятки (де можна не ходити через `@shared/api`)](#винятки)
+6. [Винятки (де можна не ходити через `@sergeant/api-client` / `@shared/api`)](#винятки)
 7. [Додаємо новий ендпоінт: чек-лист](#додаємо-новий-ендпоінт-чек-лист)
 
 ---
@@ -25,22 +25,35 @@
 ## Архітектура
 
 ```
-src/shared/api/
+packages/api-client/src/
 ├── ApiError.ts        — клас помилки + type-guard isApiError
-├── httpClient.ts      — request<T>() і http.{get,post,put,patch,del,raw}
+├── createApiClient.ts — збирає endpoint groups у один `ApiClient`
+├── httpClient.ts      — createHttpClient(...) і http.{get,post,put,patch,del,raw}
 ├── types.ts           — RequestOptions / HttpMethod / ParseMode / QueryValue
-├── index.ts           — публічний bar-rel: http, request, ApiError, *Api, типи
+├── index.ts           — публічний barrel: createApiClient, ApiError, endpoint factories, типи
+├── react/
+│   ├── context.tsx    — ApiClientProvider / useApiClient
+│   ├── hooks.ts       — React Query hooks поверх ApiClient
+│   ├── queryKeys.ts   — apiQueryKeys / apiMutationKeys для package hooks
+│   └── index.ts       — `@sergeant/api-client/react`
 └── endpoints/
     ├── barcode.ts
     ├── chat.ts
     ├── coach.ts
     ├── foodSearch.ts
+    ├── me.ts
     ├── mono.ts
     ├── nutrition.ts
     ├── privat.ts
     ├── push.ts
     ├── sync.ts
+    ├── syncV2.ts
+    ├── transcribe.ts
+    ├── waitlist.ts
+    ├── webVitals.ts
     └── weeklyDigest.ts
+
+apps/web/src/shared/api/index.ts — legacy web barrel `@shared/api`
 ```
 
 Потік запиту:
@@ -49,13 +62,13 @@ src/shared/api/
 component / hook
       │
       ▼
-useQuery / useMutation   ← key з src/shared/lib/queryKeys.ts
+useQuery / useMutation   ← key з @sergeant/api-client/react або apps/web shared factories
       │
       ▼
-nutritionApi.getDayPlan(...)   ← endpoints/*.ts
+api.nutrition.dayPlan(...) / nutritionApi.dayPlan(...)   ← endpoints/*.ts
       │
       ▼
-http.get<T>("/api/...") / http.raw(...) / request<T>(...)
+HttpClient.get<T>("/api/...") / HttpClient.raw(...) / HttpClient.request<T>(...)
       │
       ▼
 fetch(...) + uniform error → ApiError
@@ -63,48 +76,55 @@ fetch(...) + uniform error → ApiError
 
 Правила:
 
-- Компоненти **не** імпортують `http`/`request` напряму. Вони викликають методи з `endpoints/*.ts` (`nutritionApi.foo`, `monoApi.bar`).
+- Компоненти **не** імпортують `http`/`request` напряму. Вони викликають методи з `ApiClient` (`api.nutrition.dayPlan`, `api.monoWebhook.connect`) або legacy web aliases з `@shared/api` (`nutritionApi.dayPlan`, `monoWebhookApi.connect`).
 - Ендпоінти **не** імпортують `fetch`/axios. Лише `http` / `request` з `../httpClient`.
-- Усі ключі запитів живуть у `src/shared/lib/queryKeys.ts`. Інлайнові ключі в хуках — ні.
+- Package React-хуки використовують `packages/api-client/src/react/queryKeys.ts`; web module hooks використовують `apps/web/src/shared/lib/api/queryKeys.ts`. Інлайнові ключі в хуках — ні.
 
 ---
 
 ## HTTP-клієнт
 
-Файл: `httpClient.ts`. Експортує дві речі:
+Файл: `httpClient.ts`. Експортує `createHttpClient(config)`, `applyApiPrefix`, `parseRetryAfterMs`, `DEFAULT_API_PREFIX` і типи `HttpClient` / `HttpClientConfig`.
 
-### `request<T>(path, opts): Promise<T>`
+### `HttpClient.request<T>(path, opts): Promise<T>`
 
-Низькорівнева точка входу. Усе, що роблять обгортки `http.*`, під капотом проходить саме через `request`.
+Низькорівнева точка входу повернутого `HttpClient`. Усе, що роблять обгортки `http.*`, під капотом проходить саме через `request`.
 
-Ключові дефолти:
+Ключові дефолти `createHttpClient()`:
 
-| Опція          | Дефолт                              | Коментар                                                   |
-| -------------- | ----------------------------------- | ---------------------------------------------------------- |
-| `credentials`  | `"include"`                         | потрібно для better-auth cookie                            |
-| `method`       | `"GET"`, або `"POST"` якщо є `body` |                                                            |
-| `parse`        | `"json"`                            | `"text"` / `"raw"` доступні окремо                         |
-| `timeoutMs`    | відсутній                           | свідомо — щоб не ламати SSE-стріми                         |
-| `Accept`       | `application/json`                  | завжди                                                     |
-| `Content-Type` | `application/json` якщо body-об'єкт | для `FormData`/`Blob` не ставиться — браузер виставить сам |
+| Опція                | Дефолт                              | Коментар                                                   |
+| -------------------- | ----------------------------------- | ---------------------------------------------------------- |
+| `baseUrl`            | `""`                                | web ходить відносно origin; mobile може передати API URL   |
+| `apiPrefix`          | `"/api/v1"`                         | `/api/*` переписується у `/api/v1/*`, крім `/api/auth/*`   |
+| `defaultCredentials` | `"include"`                         | потрібно для better-auth cookie у web                      |
+| `method`             | `"GET"`, або `"POST"` якщо є `body` |                                                            |
+| `parse`              | `"json"`                            | `"text"` / `"raw"` доступні окремо                         |
+| `timeoutMs`          | відсутній                           | свідомо — щоб не ламати SSE-стріми                         |
+| `Accept`             | `application/json`                  | завжди                                                     |
+| `Content-Type`       | `application/json` якщо body-об'єкт | для `FormData`/`Blob` не ставиться — браузер виставить сам |
 
 Допоміжні трюки:
 
 - `query?: Record<string, QueryValue>` автоматично сереалізується в query-string; `undefined`/`null` значення відкидаються.
 - `body` — plain object → `JSON.stringify`; `FormData`/`Blob`/`ArrayBuffer`/`ReadableStream`/`string` → передаються як є.
+- `getToken` додає `Authorization: Bearer <token>` до кожного запиту, якщо повернув токен.
 - `signal` + `timeoutMs` об'єднуються в один `AbortSignal`; скасування `abort()` приходить з правильною причиною.
-- `parse: "raw"` повертає `Response` без споживання body — використовується для SSE-стрімінгу (наприклад, `chatApi.stream`).
+- `parse: "raw"` повертає `Response` без споживання body — використовується для SSE-стрімінгу (наприклад, `api.chat.stream`).
 
 ### `http.{get, post, put, patch, del, raw}`
 
-Тонкі шорткати над `request`:
+Тонкі шорткати над `request` на інстансі `HttpClient`:
 
 ```ts
-http.get<User>("/api/me");
-http.post<Created>("/api/tasks", { title });
-http.patch<Updated>("/api/tasks/42", { done: true });
-http.del("/api/tasks/42");
-http.raw("/api/chat", { method: "POST", body: payload }); // SSE
+import { createHttpClient } from "@sergeant/api-client";
+
+const http = createHttpClient({ baseUrl, getToken });
+
+await http.get<User>("/api/me");
+await http.post<Created>("/api/tasks", { title });
+await http.patch<Updated>("/api/tasks/42", { done: true });
+await http.del("/api/tasks/42");
+await http.raw("/api/chat", { method: "POST", body: payload }); // SSE
 ```
 
 `http.raw` — єдиний спосіб отримати сирий `Response`, усі інші методи вже розпарсили JSON і повернули типізоване значення або кинули `ApiError`.
@@ -113,7 +133,7 @@ http.raw("/api/chat", { method: "POST", body: payload }); // SSE
 
 ## ApiError
 
-Файл: `ApiError.ts`. Усі запити через `@shared/api` кидають `ApiError`, нічого іншого.
+Файл: `ApiError.ts`. Усі запити через `@sergeant/api-client` або web-барел `@shared/api` кидають `ApiError`, нічого іншого.
 
 ```ts
 class ApiError extends Error {
@@ -141,10 +161,12 @@ class ApiError extends Error {
 Type-guard:
 
 ```ts
-import { isApiError } from "@shared/api";
+import { createApiClient, isApiError } from "@sergeant/api-client";
+
+const api = createApiClient();
 
 try {
-  await nutritionApi.foo();
+  await api.nutrition.dayPlan({ date: "2026-05-03" });
 } catch (e) {
   if (isApiError(e) && e.isAuth) {
     // redirect to login
@@ -157,33 +179,32 @@ try {
 
 ## Конвенція ендпоінтів
 
-Файли в `endpoints/*.ts` експортують один об'єкт на домен, наприклад:
+Файли в `endpoints/*.ts` експортують фабрику на домен, наприклад:
 
 ```ts
 // endpoints/nutrition.ts
-import { http } from "../httpClient";
+import type { HttpClient } from "../httpClient";
 
-export interface NutritionMacros {
+export interface NutritionDayPlanResponse {
   /* ... */
 }
 
-export const nutritionApi = {
-  getDayPlan: (date: string) =>
-    http.get<NutritionDayPlanResponse>("/api/nutrition/day", {
-      query: { date },
-    }),
+export interface NutritionEndpoints {
+  dayPlan: (body: unknown) => Promise<NutritionDayPlanResponse>;
+}
 
-  saveMeal: (payload: SaveMealPayload) =>
-    http.post<NutritionMealResponse>("/api/nutrition/meal", payload),
-
-  // ...
-};
+export function createNutritionEndpoints(http: HttpClient): NutritionEndpoints {
+  return {
+    dayPlan: (body) =>
+      http.post<NutritionDayPlanResponse>("/api/nutrition/day-plan", body),
+  };
+}
 ```
 
 Правила, яких просимо дотримуватись:
 
-- Один об'єкт `<domain>Api` на файл, експортується з `index.ts`.
-- Усі типи **запиту/відповіді** — в тому ж файлі, експортуються поіменно з `index.ts`.
+- Одна фабрика `create<Domain>Endpoints(http)` на файл, підключена в `createApiClient.ts`.
+- Усі типи **запиту/відповіді** — в тому ж файлі, експортуються поіменно з `packages/api-client/src/index.ts`.
 - Методи повертають `Promise<T>` з типом, який реально повертає бекенд. Якщо бекенд повертає щось "сирі-сирі" (SSE) — тип `Promise<Response>` через `http.raw`.
 - Не треба власного try/catch "щоб показати зрозумілу помилку" — `ApiError.serverMessage` уже містить `body.error`. Якщо дуже треба — вертай **`ApiError`** далі, не `new Error(msg)` (інакше втрачається `status`, `kind`).
 
@@ -191,7 +212,7 @@ export const nutritionApi = {
 
 ## Інтеграція з React Query
 
-Спільний `QueryClient` живе в `src/shared/lib/queryClient.ts`. Важливі дефолти для цього проєкту:
+У web-додатку спільний `QueryClient` живе в `apps/web/src/shared/lib/api/queryClient.ts`. Важливі дефолти для цього проєкту:
 
 ```ts
 queries: {
@@ -212,7 +233,7 @@ mutations: { retry: false }, // AI-виклики дорогі
 
 Саме тому критично, щоб ендпоінти кидали `ApiError` (який має `.status`), а не `new Error(msg)` — інакше React Query не зможе прийняти правильне рішення про retry.
 
-Query keys тримаємо в `src/shared/lib/queryKeys.ts` і імпортуємо звідти. Не інлайни.
+Query keys тримаємо у `packages/api-client/src/react/queryKeys.ts` для package hooks і в `apps/web/src/shared/lib/api/queryKeys.ts` для web module hooks. Не інлайни.
 
 ### `authAwareRetry(maxAttempts?)` — retry, що поважає 401/403
 
@@ -266,13 +287,14 @@ useMutation({
 
 ```ts
 import { useQuery } from "@tanstack/react-query";
-import { nutritionApi } from "@shared/api";
+import { foodSearchApi } from "@shared/api";
 import { nutritionKeys } from "@shared/lib/api/queryKeys";
 
-export function useDayPlan(date: string) {
+export function useFoodSearch(query: string) {
   return useQuery({
-    queryKey: [...nutritionKeys.all, "day", date] as const,
-    queryFn: () => nutritionApi.getDayPlan(date),
+    queryKey: nutritionKeys.foodSearchLocal(query),
+    queryFn: () => foodSearchApi.search(query),
+    enabled: query.trim().length > 0,
   });
 }
 ```
@@ -281,20 +303,20 @@ export function useDayPlan(date: string) {
 
 ## Винятки
 
-Є рівно два місця в коді, де ми **свідомо** не ходимо через `@shared/api`. Будь ласка, не "виправляйте" їх — вони існують з технічних причин, і кожне з них задокументоване на місці.
+Є рівно два місця в web-коді, де ми **свідомо** не ходимо через `@sergeant/api-client` / `@shared/api`. Будь ласка, не "виправляйте" їх — вони існують з технічних причин, і кожне з них задокументоване на місці.
 
-### 1. `src/core/observability/webVitals.js` — Core Web Vitals
+### 1. `apps/web/src/core/observability/webVitals.ts` — Core Web Vitals
 
 - Відправляє батч метрик на `POST /api/metrics/web-vitals`.
 - Використовує `navigator.sendBeacon(...)` з fallback на `fetch({ keepalive: true })`.
-- **Чому не `http.post`:** `sendBeacon` — єдиний надійний спосіб доставити метрики на `visibilitychange=hidden` / `pagehide`. `http.post` з базовими `credentials: "include"` + без `keepalive` на unload не буде доставлено. Додавати це в `@shared/api` лише заради одного виклику — надмірна абстракція.
+- **Чому не `http.post`:** `sendBeacon` — єдиний надійний спосіб доставити метрики на `visibilitychange=hidden` / `pagehide`. `http.post` з базовими `credentials: "include"` + без `keepalive` на unload не буде доставлено. Додавати це в `@sergeant/api-client` / `@shared/api` лише заради одного виклику — надмірна абстракція.
 - Телеметрія не повинна ламати UX: модуль свідомо ковтає всі помилки.
 
-### 2. `src/core/auth/authClient.js` — better-auth
+### 2. `apps/web/src/core/auth/authClient.ts` — better-auth
 
 - Імпортує `createAuthClient` з `better-auth/react`.
 - Викликає `signIn`, `signUp`, `signOut`, `useSession`.
-- **Чому не через `@shared/api`:** `better-auth` володіє власним транспортним шаром (cookies, PKCE, CSRF-токени, middleware-сумісність). Проксювати його запити через наш `request` нічого нам не дасть і зламає все, що покладається на session-лайфцикл. Це вендорний client, не наш HTTP-код.
+- **Чому не через `@sergeant/api-client` / `@shared/api`:** `better-auth` володіє власним транспортним шаром (cookies, PKCE, CSRF-токени, middleware-сумісність). Проксювати його запити через наш `request` нічого нам не дасть і зламає все, що покладається на session-лайфцикл. Це вендорний client, не наш HTTP-код.
 
 Якщо додаєш щось, що теоретично могло б стати третім винятком — зупинись і проконсультуйся в PR. У 95% випадків цього можна уникнути.
 
@@ -302,12 +324,12 @@ export function useDayPlan(date: string) {
 
 ## Додаємо новий ендпоінт: чек-лист
 
-1. Створи/онови файл у `endpoints/<domain>.ts`. Імпортуй тільки `http`/`request` з `../httpClient`.
+1. Створи/онови файл у `endpoints/<domain>.ts`. Імпортуй тільки тип `HttpClient` з `../httpClient`, а `http` отримуй аргументом фабрики `create<Domain>Endpoints(http)`.
 2. Опиши типи запиту/відповіді поруч. Якщо тип використовується в UI — експортуй його.
-3. Додай експорт об'єкта й типів у `src/shared/api/index.ts`.
-4. Якщо запит буде через React Query — додай ключ у `src/shared/lib/queryKeys.ts`. Не інлайни ключ у хуці.
+3. Додай експорт об'єкта й типів у `packages/api-client/src/index.ts`; якщо legacy web import має лишатись доступним через `@shared/api`, додай реекспорт у `apps/web/src/shared/api/index.ts`.
+4. Якщо запит буде через React Query — додай ключ у `packages/api-client/src/react/queryKeys.ts` для package hooks або в `apps/web/src/shared/lib/api/queryKeys.ts` для web module hooks. Не інлайни ключ у хуці.
 5. Кидай `ApiError` далі, якщо треба обгорнути — використовуй `cause`, не прикривай `status`.
-6. Не додавай `fetch(...)` або axios у модуль. Якщо `http.*` чогось не вміє — допиши це в `httpClient.ts`, а не обходь його.
+6. Не додавай `fetch(...)` або axios у модуль. Якщо `HttpClient` чогось не вміє — допиши це в `httpClient.ts`, а не обходь його.
 
 Якщо сумніваєшся — глянь, як зроблено `endpoints/sync.ts` або `endpoints/nutrition.ts`: це живі референси.
 
