@@ -233,10 +233,10 @@ Codemod ідемпотентний: повторний запуск дасть `
 > (43 — попередній вміст рядка статусу хаба). Усі < 200 LOC. Серед seeded об'єктів всі
 > промарковані `demo: true`, щоб `cleanupDemoData` коректно стрипнув їх на first-boot. Count 18 → 17.
 >
-> **Скоуп таблиці нижче** — лише `apps/web/src`. Mobile (`apps/mobile/src/modules/finyk/pages/Transactions/TransactionsPage.tsx` 1215),
+> **Скоуп таблиці нижче** — лише `apps/web/src`. Mobile (`apps/mobile/src/components/ui/CelebrationModal.tsx` 671 — найбільший після [#1453](https://github.com/Skords-01/Sergeant/pull/1453); раніше тут лідирував `TransactionsPage.tsx` 1215, тепер декомпозовано на 14 модулів, max 523 LOC),
 > packages (`packages/shared/src/lib/assistantCatalogue.ts` 1133, `schemas/api.ts` 986,
 > `openapi/routes.ts` 837), server (`modules/chat/chat.ts` 783) — трекаються окремо
-> (mobile tracker — TODO, див. `docs/audits/2026-04-28-sergeant-comprehensive-audit.md` P2-3).
+> (mobile tracker — `docs/tech-debt/mobile.md`).
 
 | Рядків | Файл                                                  |
 | ------ | ----------------------------------------------------- |

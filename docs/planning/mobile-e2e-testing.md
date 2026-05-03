@@ -154,4 +154,4 @@ appId: com.sergeant.mobile
 - [Maestro Docs](https://maestro.mobile.dev/)
 - [Maestro + Expo Guide](https://maestro.mobile.dev/platform-support/react-native)
 - [Detox Docs](https://wix.github.io/Detox/)
-- [Detox + Expo Guide](https://docs.expo.dev/build-reference/e2e-tests/)
+- [Detox + Expo Guide](https://wix.github.io/Detox/docs/19.x/guide/expo/)
