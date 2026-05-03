@@ -243,7 +243,7 @@ Response: `{ ok: true, alreadyEscalated: boolean }`.
 ### Negative
 
 - **+1 nullable BIGINT FK у Phase 5.** Коли додамо multi-operator + `tg_operator_allowlist`, міграція 03X_alert_acks_v2 буде ALTER TABLE з validation. Не критично, але ADR-flag-ну для майбутнього.
-- **17 broadcast-workflows ще не wired.** WF-04 — reference impl у W3 PR-2; WF-03/15/18/22/решта повертатимуть до старого "no ack" patterns поки не дотягнемо їх mechanically. Кожен — окремий S sub-PR (~30 LOC + smoke). Trade-off за швидший merge: alert-fatigue closure буде incremental, не big-bang.
+- **8 broadcast-workflows ще не wired.** WF-04 — reference impl у W3 PR-2; **WF-03 + WF-18** wired у W3 PR-3-batch1 ([#1503](https://github.com/Skords-01/Sergeant/pull/1503)); **WF-01 + WF-02 + WF-05 + WF-06 + WF-17 + WF-19** wired у W3 PR-3-batch2 (цей PR); WF-08/15/16/30/60/63/98/99 повертатимуть до старого "no ack" patterns поки не дотягнемо їх mechanically. Кожен — окремий S sub-PR (~30 LOC + smoke). Trade-off за швидший merge: alert-fatigue closure буде incremental, не big-bang.
 - **DB-таблиця ще одна.** Sergeant прод already 31 таблицю (post-merge цієї міграції). Кожна нова — +5 sec до ROLLBACK-test cycle у CI. Не ризик, але треба не забувати про bound-check у `apps/server/src/migrations/__tests__/rollback-sanity.test.ts`.
 
 ### Neutral
@@ -266,11 +266,13 @@ Response: `{ ok: true, alreadyEscalated: boolean }`.
 - [x] `pnpm ops:n8n:validate` ловить 23 workflows; `scripts/n8n/validate-n8n-workflows.mjs` regex relaxed до `\d{2,}-` щоб manifest міг рости поза 99.
 - [x] Roadmap §3.2 status оновлено на "ack-button + escalation cron live".
 
-**Deferred (W3 PR-3+, not yet shipped):**
+**Deferred (W3 PR-3+, partially shipped):**
 
-- [ ] Wiring 17 решти broadcast-workflows (WF-03/15/18/22/...) — mechanical follow-up sub-PR-у.
+- [x] OpenClaw `/alerts pending` slash-команда (DM-render unacked-list) — W3 PR-3 slash ([#1496](https://github.com/Skords-01/Sergeant/pull/1496)).
+- [x] Wiring batch 1 broadcast-workflows (**WF-03 + WF-18**) — W3 PR-3 batch 1 ([#1503](https://github.com/Skords-01/Sergeant/pull/1503)).
+- [x] Wiring batch 2 broadcast-workflows (**WF-01 + WF-02 + WF-05 + WF-06 + WF-17 + WF-19**) — W3 PR-3 batch 2 (цей PR).
+- [ ] Wiring 8 решти broadcast-workflows (WF-08/15/16/30/60/63/98/99) — mechanical follow-up sub-PR-у.
 - [ ] End-to-end staging-смоук (post → click → ack → escalate → DM founder) перед прод-активацією WF-04/103/104.
-- [ ] OpenClaw `/alerts pending` slash-команда (DM-render unacked-list).
 - [ ] Phase 5 multi-operator (`tg_operator_allowlist` + `acked_users JSONB`).
 
 ## Related work
