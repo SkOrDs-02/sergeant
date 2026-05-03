@@ -206,5 +206,5 @@ Tailwind 4 підтримує:
 
 - [Official Upgrade Guide](https://tailwindcss.com/docs/upgrade-guide)
 - [Tailwind v4 Blog Post](https://tailwindcss.com/blog/tailwindcss-v4)
-- [Tailwind v4 Breaking Changes](https://mintlify.com/tailwindlabs/tailwindcss/upgrading/v3-to-v4)
+- [Tailwind v4 Browser Support / Compatibility](https://tailwindcss.com/docs/browser-support)
 - [NativeWind Compatibility Tracker](https://github.com/nativewind/nativewind/issues) — слідкувати за v4 support
