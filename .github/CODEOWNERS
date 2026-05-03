@@ -10,13 +10,23 @@
 
 /docs/*.md                 @Skords-01
 /docs/adr/                 @Skords-01
+/docs/api/                 @Skords-01
 /docs/architecture/        @Skords-01
+/docs/audits/              @Skords-01
+/docs/deploy/              @Skords-01
+/docs/design/              @Skords-01
 /docs/governance/          @Skords-01
+/docs/integrations/        @Skords-01
+/docs/launch/              @Skords-01
+/docs/mobile/              @Skords-01
+/docs/notes/               @Skords-01
 /docs/observability/       @Skords-01
+/docs/planning/            @Skords-01
 /docs/playbooks/           @Skords-01
 /docs/postmortems/         @Skords-01
 /docs/security/            @Skords-01
 /docs/superpowers/         @Skords-01
+/docs/tech-debt/           @Skords-01
 
 /.github/CODEOWNERS        @Skords-01
 /.github/workflows/        @Skords-01
@@ -37,4 +47,14 @@ packages/config/tsconfig.react.json     @Skords-01
 scripts/check-tsconfig-strict.mjs       @Skords-01
 
 /apps/server/src/migrations/             @Skords-01
+/packages/api-client/                    @Skords-01
+/packages/config/                        @Skords-01
+/packages/db-schema/                     @Skords-01
+/packages/design-tokens/                 @Skords-01
 /packages/eslint-plugin-sergeant-design/ @Skords-01
+/packages/finyk-domain/                  @Skords-01
+/packages/fizruk-domain/                 @Skords-01
+/packages/insights/                      @Skords-01
+/packages/nutrition-domain/              @Skords-01
+/packages/routine-domain/                @Skords-01
+/packages/shared/                        @Skords-01

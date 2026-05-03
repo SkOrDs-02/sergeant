@@ -19,6 +19,7 @@ const SCOPES = [
   "insights",
   "design-tokens",
   "config",
+  "db-schema",
   "eslint-plugins",
   "migrations",
   "agents",

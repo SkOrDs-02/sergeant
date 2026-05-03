@@ -263,6 +263,29 @@
         { "type": "doc", "ref": "docs/audits/UX-UI-AUDIT-2026.md" },
         { "type": "agents", "ref": "#16" }
       ]
+    },
+    {
+      "id": 17,
+      "title": "Animation budget — max 2 concurrent, 3 tiers",
+      "scope": ["apps/web/src/**", "packages/design-tokens/**"],
+      "severity": "blocker",
+      "enforced_by": [
+        {
+          "kind": "convention",
+          "ref": "AGENTS.md § Hard rules #17 (AMBIENT/RESPONSE/CELEBRATE tiers; max 1 AMBIENT + 1 RESPONSE simultaneously; stagger ≤ 30 ms × N capped at 150 ms; CELEBRATE only on milestones 7/30/100/365)"
+        },
+        {
+          "kind": "doc",
+          "ref": "docs/design/design-system.md § 14. Animations"
+        }
+      ],
+      "links": [
+        {
+          "type": "external",
+          "ref": "https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions.html"
+        },
+        { "type": "agents", "ref": "#17" }
+      ]
     }
   ]
 }

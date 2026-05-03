@@ -10,6 +10,7 @@ Sergeant uses raw `pg` plus sequential SQL migrations. Database changes must be 
 ## Covers
 
 - `apps/server/src/migrations/**`
+- `packages/db-schema/**` (Drizzle ORM schemas + migration runner shared with `apps/server`)
 - SQL in server modules
 - query design, indexing, rollout order, local DB verification
 
