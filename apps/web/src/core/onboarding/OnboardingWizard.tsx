@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import {
   safeReadStringLS,
@@ -351,8 +351,15 @@ export function OnboardingWizard({
     persistPicks(picks);
   }, [picks]);
 
+  // The wizard is a single-screen flow (welcome → finish), so the
+  // first paint counts as both `onboarding_started` and the welcome
+  // step's `onboarding_step_viewed`. Capture both in one effect so
+  // the funnel definition in `posthog-ftux-dashboards.md` stays a
+  // strict superset of `started`.
+  const startedAtRef = useRef(Date.now());
   useEffect(() => {
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_STARTED);
+    trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_VIEWED, { step: "welcome" });
   }, []);
 
   const togglePick = useCallback((id: string) => {
@@ -376,6 +383,10 @@ export function OnboardingWizard({
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_VIBE_PICKED, {
       picks: chosen,
       picksCount: chosen.length,
+    });
+    trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_COMPLETED, {
+      step: "welcome",
+      durationMs: Math.max(0, Date.now() - startedAtRef.current),
     });
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
       intent: hadEmptyPicks ? "vibe_empty" : "vibe_picked",

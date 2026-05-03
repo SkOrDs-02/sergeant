@@ -10,6 +10,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { hapticTap } from "@shared/lib/adapters/haptic";
+import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 
 interface ConfettiParticle {
   id: number;
@@ -77,8 +78,12 @@ export function CelebrationModal({
       if (navigator.vibrate) {
         navigator.vibrate([50, 30, 50]);
       }
+      trackEvent(ANALYTICS_EVENTS.CELEBRATION_SHOWN, {
+        ttvMs,
+        source: "first_entry",
+      });
     }
-  }, [open]);
+  }, [open, ttvMs]);
 
   // Auto-dismiss after 10 seconds
   useEffect(() => {

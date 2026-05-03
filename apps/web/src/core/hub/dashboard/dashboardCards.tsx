@@ -1,12 +1,32 @@
-import { useMemo, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { StreakBadge } from "@shared/components/ui/StreakFlame";
 import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS, countRealEntries } from "@sergeant/shared";
+import { ANALYTICS_EVENTS, trackEvent } from "../../observability/analytics";
 import { getWeekRange } from "../../insights/useWeeklyDigest";
 import { MODULE_CONFIGS, type ModuleId } from "./moduleConfigs";
 import { localStorageStore } from "./dashboardStore";
+
+const STREAK_MILESTONES = [7, 14, 21, 30, 60, 90, 100, 365] as const;
+
+function highestMilestoneCrossed(
+  current: number,
+  previous: number,
+): number | null {
+  for (let i = STREAK_MILESTONES.length - 1; i >= 0; i--) {
+    const m = STREAK_MILESTONES[i];
+    if (current >= m && previous < m) return m;
+  }
+  return null;
+}
 
 const PILL_MODULES: ModuleId[] = ["finyk", "routine", "nutrition", "fizruk"];
 
@@ -127,6 +147,38 @@ export function StreakIndicator() {
 
     return streaks[0]?.days ?? 0;
   }, []);
+
+  // Detect streak-milestone crossings on the hub itself rather than
+  // inside the (currently unused) `<StreakCelebration>` modal — that
+  // way the funnel sees `streak_milestone_reached` even when the
+  // celebration UI hasn't been wired into the dashboard yet. We seed
+  // `previousStreakRef` to `streak` on first mount so a returning user
+  // who already crossed a milestone doesn't get double-tracked.
+  const previousStreakRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (previousStreakRef.current === null) {
+      previousStreakRef.current = streak;
+      return;
+    }
+    const previous = previousStreakRef.current;
+    if (streak <= previous) {
+      previousStreakRef.current = streak;
+      return;
+    }
+    const crossed = highestMilestoneCrossed(streak, previous);
+    if (crossed !== null) {
+      trackEvent(ANALYTICS_EVENTS.STREAK_MILESTONE_REACHED, {
+        days: crossed,
+        // Hub renders a `<StreakBadge>` for every crossing; the modal
+        // (`<StreakCelebration>`) is a separate UI path that isn't
+        // mounted here yet. Keeping `type` on the payload lets PostHog
+        // segment by surface once the modal lands without a payload-
+        // shape change to chase.
+        type: "toast" as const,
+      });
+    }
+    previousStreakRef.current = streak;
+  }, [streak]);
 
   if (streak < 2) return null;
 
