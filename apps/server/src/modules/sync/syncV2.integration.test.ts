@@ -154,7 +154,9 @@ beforeEach(async () => {
     `TRUNCATE sync_op_log, sync_audit_log,
               routine_entries, routine_streaks,
               fizruk_workout_sets, fizruk_workout_items, fizruk_workouts,
-              fizruk_custom_exercises, fizruk_measurements
+              fizruk_custom_exercises, fizruk_measurements,
+              nutrition_pantry_items, nutrition_pantries,
+              nutrition_meals, nutrition_prefs, nutrition_recipes
               RESTART IDENTITY CASCADE`,
   );
 });
@@ -1106,6 +1108,43 @@ describe("syncV2Push — fizruk apply-функції (PR #029)", () => {
   );
 
   it(
+    "fizruk_measurements: insert з measured_at працює коректно",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-fz-m-ok");
+
+      const id = "00000000-0000-4000-8000-000000000021";
+      const ts = isoNow();
+
+      const res = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fz-m-ok",
+          body: {
+            ops: [
+              {
+                table: "fizruk_measurements",
+                op: "insert" as const,
+                row: {
+                  id,
+                  user_id: "u-fz-m-ok",
+                  measured_at: ts,
+                  weight_kg: 80,
+                },
+                client_ts: ts,
+                idempotency_key: "fz-m-ok",
+              },
+            ],
+          },
+        }),
+        res,
+      );
+      expect((res.body as { accepted: number }).accepted).toBe(1);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
     "fizruk_measurements: insert без measured_at reject-ається з invalid_measured_at",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
@@ -1142,6 +1181,506 @@ describe("syncV2Push — fizruk apply-функції (PR #029)", () => {
       };
       expect(body.accepted).toBe(0);
       expect(body.results[0].reason).toBe("invalid_measured_at");
+    },
+    TIMEOUT_MS,
+  );
+});
+
+// ---------------------------------------------------------------------
+// Nutrition apply-функції — Stage 4 PR #031.
+//
+// Покриваємо:
+//   1. nutrition_meals: insert → update, LWW reject, soft-delete.
+//   2. nutrition_pantries: insert → update.
+//   3. nutrition_pantry_items: parent-then-child в одному батчі.
+//   4. nutrition_prefs: singleton upsert, delete rejected.
+//   5. nutrition_recipes: insert → soft-delete.
+// ---------------------------------------------------------------------
+describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
+  it(
+    "nutrition_meals: insert → update (новіший client_ts перезаписує)",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-nm");
+
+      const mealId = "10000000-0000-4000-8000-000000000001";
+      const t1 = isoNow(-2_000);
+      const t2 = isoNow();
+
+      const r1 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-nm",
+          body: {
+            ops: [
+              {
+                table: "nutrition_meals",
+                op: "insert" as const,
+                row: {
+                  id: mealId,
+                  user_id: "u-nm",
+                  eaten_at: t1,
+                  meal_type: "lunch",
+                  name: "borshch",
+                  kcal: 350,
+                  protein_g: 12.5,
+                },
+                client_ts: t1,
+                idempotency_key: "nm-insert",
+              },
+            ],
+          },
+        }),
+        r1,
+      );
+      expect((r1.body as { accepted: number }).accepted).toBe(1);
+
+      const r2 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-nm",
+          body: {
+            ops: [
+              {
+                table: "nutrition_meals",
+                op: "update" as const,
+                row: {
+                  id: mealId,
+                  user_id: "u-nm",
+                  eaten_at: t1,
+                  meal_type: "lunch",
+                  name: "borshch — updated",
+                  kcal: 400,
+                  protein_g: 15,
+                },
+                client_ts: t2,
+                idempotency_key: "nm-update",
+              },
+            ],
+          },
+        }),
+        r2,
+      );
+      expect((r2.body as { accepted: number }).accepted).toBe(1);
+
+      const row = await testPool.query<{ name: string; kcal: number }>(
+        `SELECT name, kcal FROM nutrition_meals WHERE id = $1`,
+        [mealId],
+      );
+      expect(row.rows[0].name).toBe("borshch — updated");
+      expect(row.rows[0].kcal).toBe(400);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "nutrition_meals: старіший client_ts reject-нуто (LWW)",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-nm-lww");
+
+      const mealId = "10000000-0000-4000-8000-000000000002";
+      const newer = isoNow();
+      const older = isoNow(-5_000);
+
+      const r1 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-nm-lww",
+          body: {
+            ops: [
+              {
+                table: "nutrition_meals",
+                op: "insert" as const,
+                row: {
+                  id: mealId,
+                  user_id: "u-nm-lww",
+                  eaten_at: newer,
+                  name: "newer",
+                },
+                client_ts: newer,
+                idempotency_key: "nm-lww-newer",
+              },
+            ],
+          },
+        }),
+        r1,
+      );
+      expect((r1.body as { accepted: number }).accepted).toBe(1);
+
+      const r2 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-nm-lww",
+          body: {
+            ops: [
+              {
+                table: "nutrition_meals",
+                op: "update" as const,
+                row: {
+                  id: mealId,
+                  user_id: "u-nm-lww",
+                  eaten_at: older,
+                  name: "older",
+                },
+                client_ts: older,
+                idempotency_key: "nm-lww-older",
+              },
+            ],
+          },
+        }),
+        r2,
+      );
+      const r2Body = r2.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(r2Body.accepted).toBe(0);
+      expect(r2Body.results[0].reason).toBe("lww_conflict");
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "nutrition_meals: op='delete' — soft-delete",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-nm-del");
+
+      const mealId = "10000000-0000-4000-8000-000000000003";
+      const t1 = isoNow(-2_000);
+      const t2 = isoNow();
+
+      const r1 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-nm-del",
+          body: {
+            ops: [
+              {
+                table: "nutrition_meals",
+                op: "insert" as const,
+                row: {
+                  id: mealId,
+                  user_id: "u-nm-del",
+                  eaten_at: t1,
+                  name: "to-delete",
+                },
+                client_ts: t1,
+                idempotency_key: "nm-del-insert",
+              },
+            ],
+          },
+        }),
+        r1,
+      );
+      expect((r1.body as { accepted: number }).accepted).toBe(1);
+
+      const r2 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-nm-del",
+          body: {
+            ops: [
+              {
+                table: "nutrition_meals",
+                op: "delete" as const,
+                row: { id: mealId, user_id: "u-nm-del" },
+                client_ts: t2,
+                idempotency_key: "nm-del-delete",
+              },
+            ],
+          },
+        }),
+        r2,
+      );
+      expect((r2.body as { accepted: number }).accepted).toBe(1);
+
+      const row = await testPool.query<{ deleted_at: Date | null }>(
+        `SELECT deleted_at FROM nutrition_meals WHERE id = $1`,
+        [mealId],
+      );
+      expect(row.rows[0].deleted_at).not.toBeNull();
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "nutrition_meals: insert без eaten_at reject-ається",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-nm-bad");
+
+      const res = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-nm-bad",
+          body: {
+            ops: [
+              {
+                table: "nutrition_meals",
+                op: "insert" as const,
+                row: {
+                  id: "10000000-0000-4000-8000-000000000004",
+                  user_id: "u-nm-bad",
+                  name: "no-eaten-at",
+                },
+                client_ts: isoNow(),
+                idempotency_key: "nm-bad-1",
+              },
+            ],
+          },
+        }),
+        res,
+      );
+      const body = res.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(body.accepted).toBe(0);
+      expect(body.results[0].reason).toBe("invalid_eaten_at");
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "nutrition_pantries + nutrition_pantry_items: parent-then-child в одному батчі",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-np");
+
+      const pantryId = "20000000-0000-4000-8000-000000000001";
+      const itemId = "20000000-0000-4000-8000-000000000002";
+      const ts = isoNow();
+
+      const res = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-np",
+          body: {
+            ops: [
+              {
+                table: "nutrition_pantries",
+                op: "insert" as const,
+                row: {
+                  id: pantryId,
+                  user_id: "u-np",
+                  name: "Холодильник",
+                  text: "",
+                },
+                client_ts: ts,
+                idempotency_key: "np-pantry",
+              },
+              {
+                table: "nutrition_pantry_items",
+                op: "insert" as const,
+                row: {
+                  id: itemId,
+                  pantry_id: pantryId,
+                  user_id: "u-np",
+                  name: "Молоко",
+                  qty: 1,
+                  unit: "л",
+                  sort_order: 0,
+                },
+                client_ts: ts,
+                idempotency_key: "np-item",
+              },
+            ],
+          },
+        }),
+        res,
+      );
+      expect((res.body as { accepted: number }).accepted).toBe(2);
+
+      const pantryRow = await testPool.query<{ name: string }>(
+        `SELECT name FROM nutrition_pantries WHERE id = $1`,
+        [pantryId],
+      );
+      expect(pantryRow.rows[0].name).toBe("Холодильник");
+
+      const itemRow = await testPool.query<{
+        pantry_id: string;
+        name: string;
+        qty: number;
+      }>(
+        `SELECT pantry_id, name, qty FROM nutrition_pantry_items WHERE id = $1`,
+        [itemId],
+      );
+      expect(itemRow.rows[0].pantry_id).toBe(pantryId);
+      expect(itemRow.rows[0].name).toBe("Молоко");
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "nutrition_prefs: singleton upsert — insert потім update",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-nprefs");
+
+      const t1 = isoNow(-2_000);
+      const t2 = isoNow();
+      const pantryId = "30000000-0000-4000-8000-000000000001";
+
+      const r1 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-nprefs",
+          body: {
+            ops: [
+              {
+                table: "nutrition_prefs",
+                op: "insert" as const,
+                row: {
+                  user_id: "u-nprefs",
+                  prefs_json: { kcal_target: 2000 },
+                  active_pantry_id: null,
+                },
+                client_ts: t1,
+                idempotency_key: "nprefs-1",
+              },
+            ],
+          },
+        }),
+        r1,
+      );
+      expect((r1.body as { accepted: number }).accepted).toBe(1);
+
+      const r2 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-nprefs",
+          body: {
+            ops: [
+              {
+                table: "nutrition_prefs",
+                op: "update" as const,
+                row: {
+                  user_id: "u-nprefs",
+                  prefs_json: { kcal_target: 2500 },
+                  active_pantry_id: pantryId,
+                },
+                client_ts: t2,
+                idempotency_key: "nprefs-2",
+              },
+            ],
+          },
+        }),
+        r2,
+      );
+      expect((r2.body as { accepted: number }).accepted).toBe(1);
+
+      const row = await testPool.query<{
+        prefs_json: { kcal_target: number };
+        active_pantry_id: string | null;
+      }>(
+        `SELECT prefs_json, active_pantry_id FROM nutrition_prefs WHERE user_id = $1`,
+        ["u-nprefs"],
+      );
+      expect(row.rows[0].prefs_json).toEqual({ kcal_target: 2500 });
+      expect(row.rows[0].active_pantry_id).toBe(pantryId);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "nutrition_prefs: delete op rejected",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-nprefs-del");
+
+      const res = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-nprefs-del",
+          body: {
+            ops: [
+              {
+                table: "nutrition_prefs",
+                op: "delete" as const,
+                row: { user_id: "u-nprefs-del" },
+                client_ts: isoNow(),
+                idempotency_key: "nprefs-del-1",
+              },
+            ],
+          },
+        }),
+        res,
+      );
+      const body = res.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(body.accepted).toBe(0);
+      expect(body.results[0].reason).toBe("delete_not_supported");
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "nutrition_recipes: insert → soft-delete",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-nr");
+
+      const recipeId = "40000000-0000-4000-8000-000000000001";
+      const t1 = isoNow(-2_000);
+      const t2 = isoNow();
+
+      const r1 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-nr",
+          body: {
+            ops: [
+              {
+                table: "nutrition_recipes",
+                op: "insert" as const,
+                row: {
+                  id: recipeId,
+                  user_id: "u-nr",
+                  name: "Борщ",
+                  data_json: { servings: 4, ingredients: [] },
+                },
+                client_ts: t1,
+                idempotency_key: "nr-insert",
+              },
+            ],
+          },
+        }),
+        r1,
+      );
+      expect((r1.body as { accepted: number }).accepted).toBe(1);
+
+      const r2 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-nr",
+          body: {
+            ops: [
+              {
+                table: "nutrition_recipes",
+                op: "delete" as const,
+                row: { id: recipeId, user_id: "u-nr" },
+                client_ts: t2,
+                idempotency_key: "nr-delete",
+              },
+            ],
+          },
+        }),
+        r2,
+      );
+      expect((r2.body as { accepted: number }).accepted).toBe(1);
+
+      const row = await testPool.query<{
+        name: string;
+        deleted_at: Date | null;
+      }>(`SELECT name, deleted_at FROM nutrition_recipes WHERE id = $1`, [
+        recipeId,
+      ]);
+      expect(row.rows[0].name).toBe("Борщ");
+      expect(row.rows[0].deleted_at).not.toBeNull();
     },
     TIMEOUT_MS,
   );

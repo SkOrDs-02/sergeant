@@ -803,13 +803,15 @@ module='fizruk'` — окремий ops-PR після того, як PR #029 + P
 
 #### **Nutrition** (3 тижні) — PR #031–#034
 
-##### **PR #031 — `feat(nutrition-domain): Drizzle SQLite + Postgres normalized tables + server apply-fns`**
+##### **PR #031 — `feat(nutrition-domain): Drizzle SQLite + Postgres normalized tables + server apply-fns`** ✅ LANDED
 
-> **Status:** ⏳ NEXT — schema-only PR. PR #030 cloud-sync drop
-> приземлений на main (PR #1500), тож можна стартувати. Аналог PR #027
-> (Fizruk schema) — ніщо в проді не активується, просто землемо
-> паралельні Drizzle-схеми + bundled client migration + server
-> apply-функції під feature flag default off.
+> **Status:** ✅ LANDED — schema landed as `17644bef` (Drizzle schema +
+> SQLite migration) + `c9eeb01d` (renumber migration 031→035). Server
+> apply-fns (`applyNutritionMeals`, `applyNutritionPantries`,
+> `applyNutritionPantryItems`, `applyNutritionPrefs`,
+> `applyNutritionRecipes`) added to `OP_LOG_TABLE_REGISTRY` in
+> `syncV2.ts`. Integration tests covering insert→update, LWW reject,
+> soft-delete, FK parent-then-child, singleton upsert.
 
 - **Scope.** Створити нормалізовані таблиці на PG і SQLite під 5 LS/MMKV
   ключів модуля (`NUTRITION_LOG`, `NUTRITION_PANTRIES`,
@@ -862,7 +864,7 @@ module='fizruk'` — окремий ops-PR після того, як PR #029 + P
 - **Risk.** Schema-only — нульовий risk на проді (default-off flag і
   наявних писань у нові таблиці нема). Snapshot тести ловлять drift.
 
-##### **PR #032 — `feat(nutrition-domain): dual-write LS/MMKV↔SQLite`** ⏳ DRAFT
+##### **PR #032 — `feat(nutrition-domain): dual-write LS/MMKV↔SQLite`** ✅ LANDED — [#1528](https://github.com/Skords-01/Sergeant/pull/1528)
 
 - Mirror PR #028 (fizruk dual-write) для nutrition. Feature flag
   `feature.nutrition.sqlite_v2.dual_write`, default off, experimental.
@@ -871,11 +873,14 @@ module='fizruk'` — окремий ops-PR після того, як PR #029 + P
   PR #1491 для routine + fizruk.
 - **Dep.** PR #031.
 
-##### **PR #033 — `feat(nutrition-domain): cut-over reads to SQLite under feature flag`** ⏳ DRAFT
+##### **PR #033 — `feat(nutrition-domain): cut-over reads to SQLite under feature flag`** ⏳ IN PROGRESS
 
 - Mirror PR #029 + PR #029a (web + mobile fizruk read overlay) для
   nutrition. Feature flag `feature.nutrition.sqlite_v2.read_sqlite`,
   default off. LS/MMKV-write залишається safety net.
+- Read-overlay files: `sqliteReader.ts` (cache + refresh),
+  `sqliteReadBoot.ts` (idempotent boot with flag check),
+  `sqliteReadGate.ts` (pub-sub notification) for both web and mobile.
 - **Dep.** PR #032.
 
 ##### **PR #034 — `chore(nutrition-domain): drop module_data.nutrition cloud-sync wiring + ESLint guard`** ⏳ DRAFT
