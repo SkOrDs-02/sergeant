@@ -101,7 +101,7 @@
 
 ### Stage 0 — Security hygiene (P0)
 
-#### **PR #001 — `chore(mobile): MMKV encryption with SecureStore-derived key`**
+#### **PR #001 — `chore(mobile): MMKV encryption with SecureStore-derived key`** ✅ LANDED — [#1272](https://github.com/Skords-01/Sergeant/pull/1272)
 
 - **Scope.** `apps/mobile/src/lib/storage.ts`: при першому запуску
   згенерувати random 32-byte key, зберегти в `expo-secure-store`,
@@ -118,7 +118,7 @@
   виживають reinstall (з SecureStore key).
 - **Dep.** None.
 
-#### **PR #002 — `feat(server): rotate Mono PAT to backend-only flow, drop FINYK_TOKEN from sync keys`**
+#### **PR #002 — `feat(server): rotate Mono PAT to backend-only flow, drop FINYK_TOKEN from sync keys`** ✅ LANDED — [#1280](https://github.com/Skords-01/Sergeant/pull/1280)
 
 - **Scope.** Видалити `FINYK_TOKEN` з `SYNC_MODULES.finyk.keys` у `core/cloudSync/config.ts`
   (web) і `apps/mobile/src/sync/config.ts`. PAT уже зберігається в
@@ -140,7 +140,7 @@
 - **AC.** Unit-test ротації; integration-test mono-mock.
 - **Dep.** None.
 
-#### **PR #004 — `feat(web): exclude sensitive query keys from IDB persister`**
+#### **PR #004 — `feat(web): exclude sensitive query keys from IDB persister`** ✅ LANDED — [#1283](https://github.com/Skords-01/Sergeant/pull/1283)
 
 - **Scope.** `apps/web/src/shared/lib/queryClientPersister.ts`:
   додати `dehydrateOptions.shouldDehydrateQuery` exclude list для
