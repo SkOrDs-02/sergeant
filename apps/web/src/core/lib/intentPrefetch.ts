@@ -2,14 +2,13 @@
  * Intent-prefetch handlers (decoupled).
  *
  * `useRoutePrefetch.ts` owns the static `import("../../modules/...")`
- * factories. Importing it from a strict-scope file (e.g. anything under
- * `src/core/hub/**`) drags the entire module subgraph — including
- * `Workouts.tsx` and `FizrukHeader.tsx` — into `tsconfig.strict.json`'s
- * type-check program, surfacing pre-existing strict-null errors that
- * the per-module `include` whitelist deliberately keeps out of scope.
+ * factories. Hub dashboard cards need hover/focus prefetch handlers
+ * but must not import the module subgraph statically — that would
+ * defeat the route-level code split (Workouts/FizrukHeader/etc. would
+ * land in the hub chunk).
  *
- * To add intent-prefetch on dashboard cards without dragging fizruk
- * types into hub's strict program, this file:
+ * To add intent-prefetch on dashboard cards without dragging module
+ * code into the hub bundle, this file:
  *
  *  1. Holds a runtime registry of the actual prefetch function.
  *  2. Exposes `getModulePrefetchProps(id)` returning hover/focus

@@ -150,17 +150,17 @@ read & write the shared cache.
 
 ### 3.1. Must-have
 
-| Tool                       | What                                                        | Effort    | Статус                                                         |
-| -------------------------- | ----------------------------------------------------------- | --------- | -------------------------------------------------------------- |
-| **TypeScript strict mode** | Incremental: `strictNullChecks` → `noImplicitAny` → full    | 1-2 тижні | ⏳ pending                                                     |
-| **ESLint 9**               | У вас є                                                     | —         | ✅                                                             |
-| **Prettier + lint-staged** | У вас є                                                     | —         | ✅                                                             |
-| **Knip**                   | Find unused exports/files/deps (~50+ findings on first run) | 1 год     | ✅ done [#716](https://github.com/Skords-01/Sergeant/pull/716) |
-| **depcheck**               | Find unused deps в package.json                             | 30 хв     | ✅ done [#716](https://github.com/Skords-01/Sergeant/pull/716) |
-| **size-limit**             | Bundle size budget; fails CI on regression                  | 2 год     | ✅ done [#740](https://github.com/Skords-01/Sergeant/pull/740) |
-| **CSpell**                 | Spell-checker для коду і коментарів                         | 30 хв     | ⏳ pending                                                     |
+| Tool                       | What                                                        | Effort    | Статус                                                                                                                        |
+| -------------------------- | ----------------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **TypeScript strict mode** | Incremental: `strictNullChecks` → `noImplicitAny` → full    | 1-2 тижні | ✅ done (Phase 4 [#1420](https://github.com/Skords-01/Sergeant/pull/1420) + Phase 5 cleanup 2026-05-03; 13/13 пакетів = 100%) |
+| **ESLint 9**               | У вас є                                                     | —         | ✅                                                                                                                            |
+| **Prettier + lint-staged** | У вас є                                                     | —         | ✅                                                                                                                            |
+| **Knip**                   | Find unused exports/files/deps (~50+ findings on first run) | 1 год     | ✅ done [#716](https://github.com/Skords-01/Sergeant/pull/716)                                                                |
+| **depcheck**               | Find unused deps в package.json                             | 30 хв     | ✅ done [#716](https://github.com/Skords-01/Sergeant/pull/716)                                                                |
+| **size-limit**             | Bundle size budget; fails CI on regression                  | 2 год     | ✅ done [#740](https://github.com/Skords-01/Sergeant/pull/740)                                                                |
+| **CSpell**                 | Spell-checker для коду і коментарів                         | 30 хв     | ⏳ pending                                                                                                                    |
 
-**Sergeant-priority:** strict TypeScript. Зараз `strict: false` — це баги waiting to happen.
+**Sergeant-priority:** ~~strict TypeScript. Зараз `strict: false` — це баги waiting to happen.~~ **Резолвед 2026-05-03:** всі 13 пакетів на `strict: true`, silent-drift блокує `tools/tsconfig-guard`.
 
 #### size-limit + bundle-analyzer — як користуватись
 
@@ -588,8 +588,10 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ### Тиждень 2 — type safety
 
-- [x] Strict TypeScript step 1: `strictNullChecks` для одного package — done у `apps/web/tsconfig.strict.json` (`src/shared/**`)
-- [x] Strict TypeScript phases 2–3.1: `strictNullChecks` розширено на весь `src/{test,core/*,modules/*}` (apps/web), плюс `tsconfig.noimplicitany.json` для частини core+modules (див. `docs/tech-debt/frontend.md` §11). Phase 4 in progress — PR1 [#1388](https://github.com/Skords-01/Sergeant/pull/1388) ✅ і PR2 [#1391](https://github.com/Skords-01/Sergeant/pull/1391) ✅ змерджені, PR3 (fizruk pages + insights, −55) у роботі (419 → 194 помилок); залишилось PR4 (flip `strict: true` + зняти `allowJs`).
+- [x] Strict TypeScript step 1: `strictNullChecks` для одного package — done у колишньому `apps/web/tsconfig.strict.json` (`src/shared/**`).
+- [x] Strict TypeScript phases 2–3.1 — `strictNullChecks` повний web (`src/{test,core/*,modules/*}`); паралельно жив `tsconfig.noimplicitany.json` для core+modules.
+- [x] Strict TypeScript Phase 4 (final flip) — PR1 [#1388](https://github.com/Skords-01/Sergeant/pull/1388) · PR2 [#1391](https://github.com/Skords-01/Sergeant/pull/1391) · PR3 [#1402](https://github.com/Skords-01/Sergeant/pull/1402)/#1404 · PR4 [#1420](https://github.com/Skords-01/Sergeant/pull/1420). 419 помилок виправлено без `any` / `@ts-expect-error` / `as unknown as`; `apps/web/tsconfig.json` — `strict: true`, `allowJs: false`.
+- [x] Strict TypeScript Phase 5 cleanup (2026-05-03, commit `a7a31703`) — `noImplicitOverride: true` у `packages/config/tsconfig.base.json`; явний `allowJs: false` на web/console; діагностичні `tsconfig.strict.json` / `tsconfig.noimplicitany.json` видалено (redundant); `pnpm strict:coverage` = 13/13 (100%).
 - [ ] Snapshot tests на server serializers (з #711)
 - [ ] Custom ESLint rule `no-bigint-string`
 - [ ] zod-to-openapi proof-of-concept

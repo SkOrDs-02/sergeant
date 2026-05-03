@@ -1,6 +1,6 @@
 # Sergeant — незалежний аудит (Devin)
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > **STATUS — historical record (2026-04-27): 30 / 31 closed.**
@@ -218,11 +218,11 @@
 - `packages/config/tsconfig.base.json`: `strict: true` ✅
 - `apps/mobile/tsconfig.json`: `strict: true` ✅
 - `apps/mobile-shell/tsconfig.json`: `strict: true` ✅
-- `apps/web/tsconfig.json`: **`strict: false` + `allowJs: true` + `checkJs: false`** ❌
-- `apps/server/tsconfig.json`: **немає `strict: true`** (інхеритс залежить від base, але без явного підтвердження я б це класифікував як «slipperty»).
-- `packages/*/tsconfig.json`: `strict: true` лише в `packages/config/tsconfig.base.json` — packages інхеритять, але без явного `strict: true` редагування у власних tsconfig це fragile.
+- `apps/web/tsconfig.json`: `strict: true` ✅ (повернено у PR4 + Phase 5 cleanup, 2026-05-03 — `allowJs: false`, `noImplicitOverride: true` у base)
+- `apps/server/tsconfig.json`: `strict: true` ✅ (явно в локальному tsconfig — PR-6.D)
+- `packages/*/tsconfig.json`: `strict: true` у `packages/config/tsconfig.base.json`; всі 13 пакетів інхеритять — перевіряється через `tools/tsconfig-guard` (блокує silent-drift).
 
-**Це означає:** найбільший production surface (`apps/web`) живе у non-strict режимі. Це не «pending» — це активний регресі ризик, який росте з кожним PR.
+**Резолвед (2026-05-03):** повний strict TS rollout завершено — `pnpm strict:coverage` рапортує 13/13 пакетів (100%). Див. `docs/tech-debt/frontend.md` §11.
 
 **Сильні сторони (підтримую Васю):**
 
@@ -232,9 +232,9 @@
 **PR-ідеї:**
 
 - `PR-6.A` ✅ closed — [#870](https://github.com/Skords-01/Sergeant/pull/870) `chore(web,tsconfig): enable strictNullChecks (phase 1)` — окремий PR, тільки `strictNullChecks: true`. Скоуп звужений до `apps/web/src/shared/**`.
-- `PR-6.B` 🟡 partial — `chore(web,tsconfig): enable noImplicitAny (phase 2)`. Реалізовано через scoped `apps/web/tsconfig.noimplicitany.json` (paralel з `tsconfig.strict.json` від PR-6.A) + wired у `pnpm typecheck`. Покриті модулі: `src/shared/**` ([#923](https://github.com/Skords-01/Sergeant/pull/923)), `src/modules/routine/**` ([#923](https://github.com/Skords-01/Sergeant/pull/923)), `src/modules/nutrition/**` ([#934](https://github.com/Skords-01/Sergeant/pull/934)). **Залишилось ⏳:** `src/core/**`, `src/modules/finyk/**`, `src/modules/fizruk/**` — кожен у своєму PR; після всіх — promote `noImplicitAny` у root `tsconfig.json`.
-- `PR-6.C` ⏳ pending — `chore(web,tsconfig): set strict: true (phase 3) + remove allowJs` — фінал. Орієнтовно через 4-6 тижнів від phase 1.
-- `PR-6.D` ⏳ pending — `chore(server,tsconfig): explicit strict: true (no implicit inheritance)`.
+- `PR-6.B` ✅ closed — promoted to full `strict: true` у PR4 (див. `PR-6.C`); проміжні PR-и через scoped `tsconfig.noimplicitany.json` ([#923](https://github.com/Skords-01/Sergeant/pull/923) shared+routine, [#934](https://github.com/Skords-01/Sergeant/pull/934) nutrition + живий burndown finyk/fizruk/core) покрили всі модулі до flip-у; діагностичний `tsconfig.noimplicitany.json` видалено Phase 5 cleanup-ом (2026-05-03), бо `noImplicitAny` вже ввімкнений через base `strict: true`.
+- `PR-6.C` ✅ closed — [#1420](https://github.com/Skords-01/Sergeant/pull/1420) `fix(web): strict TS Phase 4 — final flip + cleanup` (419 помилок виправлено без `any` / `@ts-expect-error` / `as unknown as`); flip `strict: true` + зняття `allowJs`. + Phase 5 cleanup commit `a7a31703` додав `noImplicitOverride: true` у base і явно вимкнув `allowJs` на web/console.
+- `PR-6.D` ✅ closed — всі 13 пакетів (apps + packages) мають явний `strict: true` (або інхеритять від base без перевизначення); silent-drift блокує `tools/tsconfig-guard/check.mjs` (PR-1.A, [#1118](https://github.com/Skords-01/Sergeant/pull/1118)).
 - `PR-6.E` ✅ closed — [#877](https://github.com/Skords-01/Sergeant/pull/877) `feat(eslint-plugins): no-strict-bypass` (заборонити нові `// @ts-expect-error`, `// @ts-ignore`, `as any`, `as unknown as` поза тестами).
 - `PR-6.F` ✅ closed — [#872](https://github.com/Skords-01/Sergeant/pull/872) (доробка [#874](https://github.com/Skords-01/Sergeant/pull/874)) `ci(metrics): track strict coverage % per package` — `scripts/strict-coverage.mjs` + `$GITHUB_STEP_SUMMARY`.
 

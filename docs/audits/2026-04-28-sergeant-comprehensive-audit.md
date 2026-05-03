@@ -135,11 +135,11 @@ sergeant/
 | Пакет         | strict       | strictNullChecks | noImplicitAny |
 | ------------- | ------------ | ---------------- | ------------- |
 | `apps/server` | ✅ true      | ✅               | ✅            |
-| `apps/web`    | ❌ false     | ❌               | ❌            |
-| `apps/mobile` | ⚠️ partial   | ⚠️               | ⚠️            |
+| `apps/web`    | ✅ true      | ✅               | ✅            |
+| `apps/mobile` | ✅ true      | ✅               | ✅            |
 | `packages/*`  | ✅ inherited | ✅               | ✅            |
 
-**Критичний недолік:** `apps/web/tsconfig.json` явно перевизначає `strict: false`, що дозволяє type-unsafe код у найбільшій частині codebase.
+**Резолвед (2026-05-03):** Phase 4 final flip + Phase 5 cleanup — `apps/web/tsconfig.json` тепер `strict: true` без `allowJs`, `noImplicitOverride: true` у base. `pnpm strict:coverage` рапортує 13/13 пакетів (100%). Деталі — `docs/tech-debt/frontend.md` §11.
 
 ### 2.5. Тестове Покриття
 
@@ -203,12 +203,12 @@ Workflows:
 
 ### 3.1. Критичні (P0) — Блокують Production Quality
 
-| ID       | Недолік                           | Вплив                              | Поточний стан              |
-| -------- | --------------------------------- | ---------------------------------- | -------------------------- |
-| **P0-1** | `apps/web` strict: false          | Type errors проходять CI           | 52 файли з unsafe patterns |
-| **P0-2** | localStorage migration incomplete | Quota errors, sync race conditions | 52 файли в allowlist       |
-| **P0-3** | Mobile flaky tests                | CI unreliable                      | 2 tests на main            |
-| **P0-4** | No mobile APM                     | Production blindness               | Zero observability         |
+| ID          | Недолік                           | Вплив                              | Поточний стан                                                                                                              |
+| ----------- | --------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **P0-1** ✅ | ~~`apps/web` strict: false~~      | ~~Type errors проходять CI~~       | Resolved 2026-05-03 — Phase 4 final flip + Phase 5 cleanup; strict-coverage = 13/13 (100%); diagnostic tsconfig-и видалено |
+| **P0-2**    | localStorage migration incomplete | Quota errors, sync race conditions | 52 файли в allowlist                                                                                                       |
+| **P0-3**    | Mobile flaky tests                | CI unreliable                      | 2 tests на main                                                                                                            |
+| **P0-4**    | No mobile APM                     | Production blindness               | Zero observability                                                                                                         |
 
 ### 3.2. Високі (P1) — Значний Tech Debt
 

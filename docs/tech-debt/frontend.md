@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-05-03 by @Skords-01 (Phase 5 strict TS clean-up: `noImplicitOverride` + explicit `allowJs: false` on web/console). **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-03 by @Skords-01 (Phase 5 strict TS clean-up: `noImplicitOverride` + explicit `allowJs: false` on web/console + видалено redundant `apps/web/tsconfig.strict.json` / `tsconfig.noimplicitany.json`; `pnpm strict:coverage` = 13/13 пакетів = 100%). **Next review:** 2026-08-03.
 > **Status:** Active
 
 Аналіз кодової бази `apps/web/src` (649 source файлів, ~102k рядків — без тестів і `__tests__/`; 2026-05-03 re-audit).
@@ -590,6 +590,32 @@ modules/fizruk/components/workouts/WorkoutJournalSection`;
 * `apps/server/tsconfig.json` (`allowJs: true`) і
   `apps/mobile-shell/tsconfig.json` (наслідує `true`) залишено as-is —
   вони навмисно тримають JS-файли (`migrate.mjs`, build helpers).
+
+**Phase 5 cleanup — діагностичні tsconfig-и видалено (2026-05-03):**
+
+- `apps/web/tsconfig.strict.json` і `apps/web/tsconfig.noimplicitany.json` —
+  обидва extends-или main `tsconfig.json` (який тепер уже `strict: true`)
+  і додавали `strictNullChecks: true` / `noImplicitAny: true` лише на
+  суб-набір директорій. Після Phase 4 ці прапори вже глобально активні
+  через `strict: true`, тож scoped-конфіги стали no-op-обгортками над
+  тим самим скоупом — клон, що сповільнював `pnpm typecheck` без
+  додаткового сигналу.
+- `apps/web/package.json` — `typecheck` скрипт скорочено з 4-х tsc-passes
+  (`tsconfig.json` + `tsconfig.sw.json` + `tsconfig.strict.json`
+  - `tsconfig.noimplicitany.json`) до 2-х (`tsconfig.json` + `tsconfig.sw.json`).
+- `tools/tsconfig-guard/allowlist.json` — застарілий entry на
+  `apps/web` зі `strict: false` / `expires: 2026-08-15` видалено
+  (в реальності apps/web на `strict: true` від Phase 4; entry був
+  hand-over із Phase 3.1 baseline і вже не відповідав стану).
+- `apps/web/src/core/lib/intentPrefetch.ts` — docstring оновлено:
+  посилання на `tsconfig.strict.json`-only-scope замінено на код-сплит
+  motivation (єдина причина паттерна тепер — runtime registry для
+  static-import-у з hub без тягнення модульного subgraph у hub-чанк).
+- Регресійний guardrail тепер такий: (1) base `tsconfig.base.json` має
+  `strict: true` + `noImplicitOverride: true`; (2) `tools/tsconfig-guard`
+  блокує silent-drift апп-tsconfig-ів проти base; (3) `pnpm typecheck`
+  у CI ганяє повний strict pass на всі 4 апи + 9 пакетів. Окремих
+  scoped-діагностичних конфігів більше не потрібно.
 
 **Strict-pipeline regression-фікси (2026-05-02):** Pull-to-refresh PR #1330
 вніс 3 strict-помилки, що ламали `tsc -p tsconfig.strict.json`. Виправлено

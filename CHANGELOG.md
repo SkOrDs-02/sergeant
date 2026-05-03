@@ -161,6 +161,45 @@ metrics/web-vitals}` — а API серверу не було, vite сипав
 
 ### Changed
 
+- **Web: strict TS rollout — Phase 5 cleanup (видалено діагностичні
+  tsconfig-и).** Після Phase 4 final flip
+  ([#1420](https://github.com/Skords-01/Sergeant/pull/1420)) і Phase 5
+  base-config update (commit `a7a31703`) `apps/web/tsconfig.json` уже
+  на повному `strict: true` без `allowJs`, а `packages/config/tsconfig.base.json`
+  має `noImplicitOverride: true`. Тож scoped-діагностики
+  `apps/web/tsconfig.strict.json` і `apps/web/tsconfig.noimplicitany.json`
+  стали no-op-обгортками над тими ж самими прапорами і лише
+  сповільнювали `pnpm typecheck` (4 tsc-passes на web замість 2).
+  Видалено: обидва файли, відповідні passes у `apps/web/package.json`
+  → `typecheck` (`tsconfig.strict.json` / `tsconfig.noimplicitany.json`),
+  застарілий entry на `apps/web` у `tools/tsconfig-guard/allowlist.json`
+  (вказував `strict: false` із `expires: 2026-08-15` — реально apps/web
+  на `strict: true` від Phase 4), і docstring-посилання у
+  `apps/web/src/core/lib/intentPrefetch.ts`. Регресійний guardrail
+  тепер: base `strict: true` + `tools/tsconfig-guard` (silent-drift)
+  - `pnpm strict:coverage` (інформативний CI-метрика, 13/13 пакетів
+    = 100%). Деталі — `docs/tech-debt/frontend.md` §11
+    «Phase 5 cleanup — діагностичні tsconfig-и видалено».
+
+- **Web: strict TS rollout — Phase 4 final flip + Phase 5 base-config update.**
+  Завершено триетапний strict-TS rollout у `apps/web`. Phase 4
+  ([#1388](https://github.com/Skords-01/Sergeant/pull/1388) /
+  [#1391](https://github.com/Skords-01/Sergeant/pull/1391) /
+  [#1402](https://github.com/Skords-01/Sergeant/pull/1402) /
+  [#1404](https://github.com/Skords-01/Sergeant/pull/1404) /
+  [#1420](https://github.com/Skords-01/Sergeant/pull/1420)): −419
+  strict-mode помилок у 4 PR, без жодного `any` /
+  `@ts-expect-error` / `as unknown as`; `apps/web/tsconfig.json` тепер
+  `strict: true`, `allowJs: false`. Phase 5 (commit `a7a31703`):
+  `packages/config/tsconfig.base.json` отримав
+  `noImplicitOverride: true` (успадковується усіма app-/package-
+  tsconfig-ами); `override` keyword додано на 5 React class
+  methods у `ErrorBoundary` / `ModuleErrorBoundary` /
+  `SectionErrorBoundary` + `MigrationFailedError.cause` у
+  `packages/db-schema/src/migrate/runner.ts`; explicit `allowJs: false`
+  на `apps/web` і `apps/console`. `pnpm strict:coverage` рапортує
+  13/13 пакетів (100%). Деталі — `docs/tech-debt/frontend.md` §11.
+
 - **Web: strict TS rollout — Phase 2.** `apps/web/tsconfig.strict.json`
   розширено з `src/shared/**` до 10 директорій
   (`src/shared`, `src/test`, `src/core/{auth, cloudSync, components,
