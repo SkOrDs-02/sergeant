@@ -44,6 +44,7 @@ import {
   recallCofounderMemory,
   recordDecision,
   OpenClawAllowlistError,
+  OpenClawNotFoundError,
   // ADR-0032: ops/marketing tools ported from Sergeant Console agents.
   getStripeMetrics,
   getSentryIssues,
@@ -288,6 +289,11 @@ function asAllowlistFailure(
   res.status(400).json({ error: "allowlist_fail", message });
 }
 
+function asNotFound(res: import("express").Response, err: unknown): void {
+  const message = err instanceof Error ? err.message : String(err);
+  res.status(404).json({ error: "not_found", message });
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Router factory
 // ─────────────────────────────────────────────────────────────────────────
@@ -321,6 +327,9 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
       } catch (err) {
         if (err instanceof OpenClawAllowlistError) {
           return asAllowlistFailure(res, err);
+        }
+        if (err instanceof OpenClawNotFoundError) {
+          return asNotFound(res, err);
         }
         throw err;
       }

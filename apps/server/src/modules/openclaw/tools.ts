@@ -93,17 +93,22 @@ export interface ReadStrategyDocsOutput {
   size: number;
 }
 
-const REPO_ROOT_ENV = process.env.OPENCLAW_REPO_ROOT;
-
 /**
- * Resolve `repoRoot`. Default — три рівні вище від цього файлу
- * (apps/server/src/modules/openclaw/tools.ts → repo root).
+ * Resolve `repoRoot`. Lazy-читання `OPENCLAW_REPO_ROOT` (а не module-load
+ * snapshot) щоб тести могли під-сетати fake-root через `process.env.X = ...`
+ * у `beforeAll` без re-import-у tools.ts. Production override
+ * прийде з Dockerfile.api `ENV OPENCLAW_REPO_ROOT=/app`.
+ *
+ * Default fallback (env unset): три рівні вище від цього файлу. У дев-середе
+ * (`tsx`) це лежить у `apps/server/src/modules/openclaw/tools.ts` → repo
+ * root. У бандлі (esbuild → `apps/server/dist-server/index.js`) той же
+ * розрахунок дає `/` всередині Docker-image, тому prod-overrider
+ * `OPENCLAW_REPO_ROOT=/app` обов'язковий — без нього `read_strategy_docs`
+ * валив 5xx.
  */
 function resolveRepoRoot(): string {
-  if (REPO_ROOT_ENV) return path.resolve(REPO_ROOT_ENV);
-  // Цей файл зкомпіляється у dist/, але import.meta.url дає absolute path.
-  // У dev (tsx) — теж absolute. Беремо 5 рівнів угору:
-  //   apps/server/src/modules/openclaw/tools.ts → /repo
+  const envRoot = process.env.OPENCLAW_REPO_ROOT;
+  if (envRoot) return path.resolve(envRoot);
   return path.resolve(import.meta.dirname ?? __dirname, "../../../../..");
 }
 
@@ -129,7 +134,26 @@ export async function readStrategyDoc(
 
   // Stat first — якщо це директорія, повертаємо її вміст списком (для
   // index-у). Якщо файл — повертаємо contents.
-  const stat = await fs.stat(resolved);
+  //
+  // Allowlist-prefix може посилатися на директорію, що ще не існує (напр.
+  // `docs/decisions/` до першого `record_decision`-PR-у або aspirational
+  // `docs/strategy/` до першого `commit_to_strategy_doc`). У runtime image
+  // (Dockerfile.api) також копіюються тільки існуючі subdir-и. У таких
+  // випадках раніше `fs.stat` бабахав ENOENT → asyncHandler → Sentry fatal.
+  // Тепер мапаємо на `OpenClawNotFoundError`, який routes-handler віддає
+  // як 404 з `{ error: 'not_found' }`. Allowlist-семантика залишається
+  // окремо — `allowlist_fail` лише для path-traversal/forbidden-prefix.
+  let stat: import("node:fs").Stats;
+  try {
+    stat = await fs.stat(resolved);
+  } catch (err) {
+    if (isEnoentError(err)) {
+      throw new OpenClawNotFoundError(
+        `Path '${input.path}' not found in read_strategy_docs tree`,
+      );
+    }
+    throw err;
+  }
   if (stat.isDirectory()) {
     const entries = await fs.readdir(resolved);
     return {
@@ -145,6 +169,15 @@ export async function readStrategyDoc(
     contents,
     size: stat.size,
   };
+}
+
+function isEnoentError(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code: unknown }).code === "ENOENT"
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -206,6 +239,20 @@ export class OpenClawAllowlistError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "OpenClawAllowlistError";
+  }
+}
+
+/**
+ * Throwed коли LLM запитав allowlist-прохідний path/resource, який ще
+ * фізично не існує (e.g. `docs/decisions/` до першого decision-PR-у,
+ * або subdir, що навмисно не запікається в Docker image). Routes-handler
+ * мапає на 404 з `{ error: 'not_found' }` — це user-error, не server-fault,
+ * тож НЕ повинен ескалейтись у asyncHandler → Sentry-fatal pipeline.
+ */
+export class OpenClawNotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "OpenClawNotFoundError";
   }
 }
 

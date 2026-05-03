@@ -130,12 +130,20 @@ export interface OpenClawWriteAuditRecord {
  * Дозволені таблиці у `query_app_db`. Хардкод — ні в якому разі
  * не env-driven, бо кожне додавання повинно бути reviewed у PR.
  *
+ * Усі таблиці тут МАЮТЬ існувати у поточній схемі (див. `apps/server/src/
+ * migrations/`). Allowlist-рекорди для ще-не-створених таблиць призводять
+ * до 5xx у `query_app_db` (LLM формує SELECT за allowlist-ом → Postgres
+ * → `relation "X" does not exist` → asyncHandler → Sentry fatal).
+ *
+ * Раніше тут були `subscriptions` і `payments` — це aspirational stubs
+ * для майбутнього Stripe billing-модуля. Жодна міграція їх не створювала
+ * (в схемі лише `push_subscriptions`), тож вони генерували Sentry-noise
+ * на проді. Повертати лише разом із міграцією, що CREATE TABLE-ить їх.
+ *
  * Forbidden: auth_*, ai_usage_daily, ai_memories, sync_op_log,
  * sync_audit_log, anything containing PII у raw form.
  */
 export const QUERY_APP_DB_TABLE_ALLOWLIST = new Set<string>([
-  "subscriptions",
-  "payments",
   "users",
   "digest_runs",
   "n8n_errors",

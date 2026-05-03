@@ -76,6 +76,25 @@ RUN pnpm install --prod --frozen-lockfile --ignore-scripts \
 COPY apps/server ./apps/server
 COPY --from=builder /app/apps/server/dist-server ./apps/server/dist-server
 
+# OpenClaw `read_strategy_docs` (ADR-0031 §5) reads from repo-relative
+# `docs/<allowlisted-prefix>/`. У runtime container-і `import.meta.dirname`
+# дорівнює `/app/apps/server/dist-server`; default `resolveRepoRoot()` робив
+# 5 рівнів угору і отримував `/`, тож `fs.stat('/docs/decisions')` валив у
+# ENOENT і LLM-а виганяв 5xx у Sentry. Pinning `OPENCLAW_REPO_ROOT=/app` +
+# COPY-ю прохідних subdir-ів у `/app/docs/` робить tool детермінованим.
+#
+# Копіюємо ТІЛЬКИ існуючі директорії з `READ_STRATEGY_DOCS_ALLOWED_PATHS`
+# (`apps/server/src/modules/openclaw/types.ts`). `docs/decisions/` і
+# `docs/strategy/` навмисно НЕ скопійовано — це aspirational paths, що
+# матеріалізуються через `record_decision` / `commit_to_strategy_doc` PR-и
+# у часі. Для них `readStrategyDoc` повертає 404 (`OpenClawNotFoundError`),
+# а не 500, тож no Sentry-noise.
+ENV OPENCLAW_REPO_ROOT=/app
+COPY docs/adr ./docs/adr
+COPY docs/launch ./docs/launch
+COPY docs/integrations ./docs/integrations
+COPY docs/governance ./docs/governance
+
 # Trim vulnerabilities surfaced by Trivy on the runtime image:
 #
 #   1. `pnpm install --prod` авто-встановлює optional-peer-и (`vitest` у

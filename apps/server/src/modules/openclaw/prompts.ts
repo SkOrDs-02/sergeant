@@ -109,9 +109,9 @@ TOOLS:
   - read_github(repo, path | issue | pr): inspect code, issues, PRs in
     Skords-01/Sergeant.
   - query_app_db(sql, params): READ-only SQL against an allowlist of
-    tables (subscriptions, payments, users, digest_runs, n8n_errors,
-    routines, mono_transactions, nutrition_entries, openclaw_decisions,
-    openclaw_invocations). NO joins to forbidden tables; NO writes.
+    tables (users, digest_runs, n8n_errors, routines, mono_transactions,
+    nutrition_entries, openclaw_decisions, openclaw_invocations). NO
+    joins to forbidden tables; NO writes.
   - read_workflow_logs(workflow_id, since, limit): n8n execution traces.
   - record_decision(topic, context, decision, rationale, alternatives?):
     log a decision (Postgres + PR with markdown).
