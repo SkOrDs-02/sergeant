@@ -260,7 +260,10 @@ describe("Reconnect replay (happy path)", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
-        routine: {
+        // PR #026 видалив 'routine' з SYNC_MODULES (тепер це SQLite-only
+        // модуль). Тут лишилися 'finyk' / 'nutrition' / 'profile' як
+        // три валідні модулі для перевірки cross-module coalescing.
+        profile: {
           data: { v: 2 },
           clientUpdatedAt: "2025-01-01T00:02:00.000Z",
         },
@@ -285,7 +288,7 @@ describe("Reconnect replay (happy path)", () => {
     expect(Object.keys(pushed).sort()).toEqual([
       "finyk",
       "nutrition",
-      "routine",
+      "profile",
     ]);
   });
 
@@ -382,7 +385,10 @@ describe("Reconnect replay (server error)", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
-        routine: {
+        // PR #026 видалив 'routine' з SYNC_MODULES; для цього
+        // 'queue must survive 503' тесту достатньо будь-якого
+        // валідного модуля — використовую 'profile'.
+        profile: {
           data: { habits: ["meditate"] },
           clientUpdatedAt: "2025-01-01T00:00:00.000Z",
         },
@@ -402,7 +408,7 @@ describe("Reconnect replay (server error)", () => {
 
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].modules.routine.data).toEqual({ habits: ["meditate"] });
+    expect(q[0].modules.profile.data).toEqual({ habits: ["meditate"] });
   });
 
   it("does not crash the caller — replay swallows errors", async () => {
