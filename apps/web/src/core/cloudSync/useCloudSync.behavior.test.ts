@@ -29,15 +29,21 @@ import {
   SYNC_EVENT,
   SYNC_STATUS_EVENT,
 } from "./useCloudSync";
+import { __resetOfflineQueueCacheForTests } from "./queue/offlineQueue";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 beforeEach(() => {
   // Clear all tracked state. Use the patched setItem/removeItem so behavior
   // is realistic, but also raw clear() for meta keys.
   localStorage.clear();
+  // PR #009 — the offline queue now lives in an in-memory cache backed
+  // by IDB; LS is best-effort. Reset the cache between tests so a queue
+  // populated by an earlier test doesn't bleed into the next one.
+  __resetOfflineQueueCacheForTests();
 });
 afterEach(() => {
   localStorage.clear();
+  __resetOfflineQueueCacheForTests();
 });
 
 describe("getDirtyModules", () => {

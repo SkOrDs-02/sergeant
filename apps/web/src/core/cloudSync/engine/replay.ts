@@ -1,6 +1,10 @@
 import { syncApi } from "@shared/api";
 import { collectQueuedModules } from "../queue/collectQueued";
-import { clearOfflineQueue, getOfflineQueue } from "../queue/offlineQueue";
+import {
+  clearOfflineQueue,
+  getOfflineQueue,
+  hydrateOfflineQueueFromDisk,
+} from "../queue/offlineQueue";
 import { retryAsync } from "./retryAsync";
 
 // Module-scoped re-entry guard. The original hook used a `replayingRef`; for
@@ -18,6 +22,9 @@ export async function replayOfflineQueue(): Promise<void> {
   // succession, or replay is triggered concurrently from initialSync and
   // pushDirty, we must not fire duplicate push requests for the same queue.
   if (replaying) return;
+  // PR #009 — promote any LS-only queue from a previous app version into
+  // IDB before we read it. Subsequent calls are cheap (cache short-circuit).
+  await hydrateOfflineQueueFromDisk();
   const queue = getOfflineQueue();
   if (queue.length === 0) return;
 
