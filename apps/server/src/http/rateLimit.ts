@@ -1,5 +1,7 @@
 import type { Request, RequestHandler } from "express";
 import type Redis from "ioredis";
+import { pool } from "../db.js";
+import { logger } from "../obs/logger.js";
 import { rateLimitHitsTotal } from "../obs/metrics.js";
 import { getRedis } from "../lib/redis.js";
 
@@ -157,6 +159,150 @@ export async function checkRateLimitRedis(
 }
 
 /**
+ * Fixed-window rate-limit check backed by Postgres (`rate_limit_buckets`).
+ *
+ * Replaces the in-memory fallback for the production path: when Redis is
+ * unavailable, multiple Railway replicas otherwise share no state and a
+ * single user can hit `limit` separately on each instance. The Postgres
+ * path keeps semantics identical to {@link checkRateLimitRedis} (fixed
+ * window, atomic increment) while being horizontally consistent.
+ *
+ * Atomicity: `INSERT … ON CONFLICT … DO UPDATE` runs a single row lock
+ * over `(rl_key, subject)`. The `CASE` branches against
+ * `rate_limit_buckets.started_at` reference the pre-update value, and
+ * `NOW()` is `transaction_timestamp()` — stable for the whole statement —
+ * so both the count rotation and the `started_at` reset see the same
+ * window-elapsed comparison.
+ *
+ * Graceful degradation: if the migration `035_rate_limit_buckets.sql`
+ * has not yet been applied (SQLSTATE `42P01`, undefined table) or any
+ * other Postgres error fires, the caller in {@link rateLimitExpress}
+ * falls through to {@link checkRateLimit}. Errors are logged at `warn`
+ * once per occurrence so a degraded limiter is visible in obs without
+ * spamming on every request.
+ */
+export async function checkRateLimitPg(
+  req: Request,
+  { key, limit, windowMs }: RateLimitOptions,
+): Promise<RateLimitResult> {
+  const subject = rateLimitSubject(req);
+  const sql = `
+    INSERT INTO rate_limit_buckets (rl_key, subject, count, started_at)
+    VALUES ($1, $2, 1, NOW())
+    ON CONFLICT (rl_key, subject) DO UPDATE
+    SET
+      count = CASE
+        WHEN EXTRACT(EPOCH FROM (NOW() - rate_limit_buckets.started_at)) * 1000 >= $3::bigint
+          THEN 1
+        ELSE rate_limit_buckets.count + 1
+      END,
+      started_at = CASE
+        WHEN EXTRACT(EPOCH FROM (NOW() - rate_limit_buckets.started_at)) * 1000 >= $3::bigint
+          THEN NOW()
+        ELSE rate_limit_buckets.started_at
+      END
+    RETURNING
+      count,
+      (EXTRACT(EPOCH FROM (NOW() - started_at)) * 1000)::bigint AS elapsed_ms
+  `;
+
+  const result = await pool.query<{ count: number; elapsed_ms: string }>(sql, [
+    key,
+    subject,
+    String(windowMs),
+  ]);
+  const row = result.rows[0];
+  // Coerce bigint → number per AGENTS.md hard rule #1 (the `pg` driver
+  // returns int8/bigint columns as JS strings).
+  const count = Number(row?.count ?? 0);
+  const elapsedMs = Math.max(0, Number(row?.elapsed_ms ?? 0));
+  const resetMs = Math.max(0, windowMs - elapsedMs);
+
+  if (count > limit) {
+    recordRateLimit(key, "blocked");
+    return {
+      ok: false,
+      remaining: 0,
+      resetMs,
+      retryAfterSec: Math.max(1, Math.ceil(resetMs / 1000)),
+    };
+  }
+  recordRateLimit(key, "allowed");
+  return {
+    ok: true,
+    remaining: Math.max(0, limit - count),
+    resetMs,
+    retryAfterSec: Math.max(1, Math.ceil(resetMs / 1000)),
+  };
+}
+
+// Cleanup probability — fire a sweep ~1/N requests so the table doesn't
+// grow indefinitely under churning IPs while keeping per-request overhead
+// at zero on the hot path. Tuned for ~1k RPS: at 1/256 we sweep ~4×/sec.
+const PG_SWEEP_PROBABILITY = 1 / 256;
+
+// One-shot warn when the Postgres bucket table is unreachable (typically
+// because migration `035_rate_limit_buckets.sql` hasn't been applied yet
+// or the role lacks SELECT/INSERT). Subsequent failures fall through
+// silently to the in-memory limiter — the warn is enough to flag the
+// degraded state in obs without spamming on every request.
+let pgUndefinedTableLogged = false;
+
+/**
+ * Test-only reset for the once-per-process degraded-limiter warn flag.
+ * Exposed because vitest reuses a single module instance across `describe`
+ * blocks; production paths must never call this.
+ */
+export function __resetRateLimitPgWarnForTests(): void {
+  pgUndefinedTableLogged = false;
+}
+
+interface PgErrorLike {
+  code?: string;
+  message?: string;
+}
+
+function pgErr(err: unknown): PgErrorLike {
+  return err && typeof err === "object" ? (err as PgErrorLike) : {};
+}
+
+async function checkRateLimitPgWithFallback(
+  req: Request,
+  options: RateLimitOptions,
+): Promise<RateLimitResult> {
+  try {
+    return await checkRateLimitPg(req, options);
+  } catch (err) {
+    const code = pgErr(err).code;
+    if (code === "42P01" && !pgUndefinedTableLogged) {
+      pgUndefinedTableLogged = true;
+      logger.warn({
+        msg: "rate_limit_pg_table_missing",
+        hint: "apply migration 035_rate_limit_buckets.sql; falling back to in-memory limiter",
+      });
+    }
+    return checkRateLimit(req, options);
+  }
+}
+
+async function maybeSweepPgBuckets(maxWindowMs: number): Promise<void> {
+  if (Math.random() >= PG_SWEEP_PROBABILITY) return;
+  // Keep rows for 2× the longest configured window so we never evict
+  // a still-live bucket out from under a concurrent request that hasn't
+  // yet read it back. The application path always re-rotates a bucket
+  // on access, so a stale row is at worst a one-window over-count.
+  const ttlMs = Math.max(60_000, maxWindowMs * 2);
+  try {
+    await pool.query(
+      "DELETE FROM rate_limit_buckets WHERE started_at < NOW() - ($1::bigint || ' milliseconds')::interval",
+      [String(ttlMs)],
+    );
+  } catch {
+    /* sweep is best-effort */
+  }
+}
+
+/**
  * Fixed-window rate-limit check (in-memory, per-process).
  */
 export function checkRateLimit(
@@ -211,12 +357,17 @@ export function rateLimitExpress({
       try {
         rl = await checkRateLimitRedis(redis, req, { key, limit, windowMs });
       } catch {
-        // Redis unavailable — fall back to per-process in-memory limiter.
-        rl = checkRateLimit(req, { key, limit, windowMs });
+        // Redis unavailable — fall back to Postgres (horizontally
+        // consistent across replicas), and only to in-memory if even
+        // Postgres is broken (test bootstrap, migration not applied).
+        rl = await checkRateLimitPgWithFallback(req, { key, limit, windowMs });
       }
     } else {
-      rl = checkRateLimit(req, { key, limit, windowMs });
+      rl = await checkRateLimitPgWithFallback(req, { key, limit, windowMs });
     }
+    // Best-effort sweep of stale rows; runs ~1/256 calls so the table
+    // doesn't grow under churning IPs. No-op when Postgres is degraded.
+    void maybeSweepPgBuckets(windowMs);
     try {
       res.setHeader("X-RateLimit-Remaining", String(rl.remaining));
     } catch {
