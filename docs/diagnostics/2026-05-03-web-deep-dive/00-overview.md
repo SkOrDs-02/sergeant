@@ -1,0 +1,141 @@
+# Web deep-dive — Overview
+
+> **Last validated:** 2026-05-03 by @Skords-01.
+> **Status:** Active
+> **Scope:** `apps/web` + `apps/server` + `packages/*` (mobile — лише дотичні точки).
+> **Related:**
+>
+> - `docs/audits/2026-04-28-sergeant-comprehensive-audit.md` — попередній комплексний аудит (Closed).
+> - `docs/audits/UX-UI-AUDIT-2026.md`, `docs/audits/UX-IMPROVEMENT-PLAN.md` — UX план.
+> - `docs/tech-debt/frontend.md`, `docs/tech-debt/backend.md` — поточний tech-debt.
+
+Це **fresh second opinion**: автор свідомо читав код первинно, а не існуючі звіти, щоб бачити те, що могло «закам'яніти» в командному рутіні. Звірка з попередніми аудитами — у §11.
+
+## Структура серії
+
+| Файл | Скоуп |
+| --- | --- |
+| `00-overview.md` (цей файл) | TL;DR, scoring, top-9, roadmap, що НЕ робити |
+| [`01-frontend-ergonomics.md`](./01-frontend-ergonomics.md) | Forms, loading/empty/error, Toast, Modal, mobile safe-area, i18n |
+| [`02-architecture-and-state.md`](./02-architecture-and-state.md) | Provider tree, routing, localStorage migration, CloudSync, in-process workers, `index.css` |
+| [`03-backend-and-performance.md`](./03-backend-and-performance.md) | Validate pattern, routes registry, OpenAPI, rate-limit cost, prefetch, Service Worker |
+| [`04-security-observability-testing-devx.md`](./04-security-observability-testing-devx.md) | PII в логах, Sentry↔requestId, CSP, contract tests, mutation testing, Storybook, C4, CHANGELOG |
+
+## TL;DR (5 хвилин)
+
+**Загальна оцінка: 8/10**, з помітним перекосом у бік дисципліни (CI, hard rules, custom ESLint, freshness gate) і недоінвестованим front-end ergonomics-шаром (одна гігантська stylesheet, дублювання форм-логіки, відсутність єдиного `DataState`-wrapper-а).
+
+### Top-5 пунктів, які варто рухати першими (impact × cost)
+
+1. **`apps/web` усе ще на `tsconfig.strict: false`** — це проривається у формах, у `chatActions/*` і у місцях, де `unknown` ховається під «м'якою» типізацією. **(High impact, M cost)** — див. §1.0 в [02-architecture-and-state](./02-architecture-and-state.md).
+2. **17 файлів усе ще читають `localStorage` напряму** через TODO-allowlist у `eslint.config.js`. Кожен з них — потенційний краш у Safari Private Mode / quota exceeded. **(High impact, M cost)** — див. [02-architecture-and-state §2.2](./02-architecture-and-state.md).
+3. **Форм-стек неуніфікований.** `Input.tsx` чудовий, але є `useFormValidation` (`shared/hooks`) + локальний state + кілька самописних `validateXxx` у різних модулях. Жодного RHF/zod-resolver-патерна. **(Medium-high impact, M cost)** — див. [01-frontend-ergonomics §3.1](./01-frontend-ergonomics.md).
+4. **`apps/web/src/index.css = 1244 рядки.** Tailwind + кастомні `@layer` не маршалюються. Половина тут — design-tokens/CSS variables, які мали б жити в `packages/design-tokens`. **(Medium impact, S-M cost)** — див. [02-architecture-and-state §1.4](./02-architecture-and-state.md).
+5. **Provider-tree в `App.tsx` неоднорідний** і має тонкий race в порядку — нема інваріант-теста, який би це фіксував. **(Low-medium impact, S cost)** — див. [02-architecture-and-state §1.1](./02-architecture-and-state.md).
+
+### Що в нас уже сильне (важливо не зламати)
+
+- Hard Rules registry + перевірка sync з AGENTS.md/CONTRIBUTING.md (`scripts/check-hard-rules-registry.mjs`).
+- Custom ESLint plugin `sergeant-design` — рідкість для one-man-проєктів.
+- Audit-trail дисципліна: `docs/tech-debt/*.md` з 60-денним freshness-gate.
+- Сервер: factory `createApp` без побічних ефектів, granular body-size policy на endpoint, `errorHandler` віддає `requestId`, graceful-shutdown з hard-timeout.
+- Auth: AES-256-GCM token encryption, image sanitization, email fingerprinting.
+- CI/CD: SHA-pinned actions, license-policy, vitest coverage, axe a11y, critical-flow Playwright, bundle-size guard, codecov.
+
+## Scorecard
+
+| Категорія | Оцінка | Коментар |
+| --- | --- | --- |
+| Architecture | 8.5/10 | Server: factory + graceful shutdown — еталонно. Web: provider tree без інваріантів, routing імперативний. |
+| Frontend ergonomics | 6.5/10 | Форм-стек роздроблений, `index.css` 1244 LOC, відсутні DataState/Skeleton policy. |
+| State management | 7.5/10 | RQ + queryKeys factory сильні. CloudSync без integration-тестів split-brain — найбільший прихований ризик. |
+| Backend / API | 8/10 | Granular body-size, окремі guards, factory. Бракує OpenAPI / typed-client autogen. |
+| Security | 8/10 | Auth hardening — рідкість для one-man-проєкту. Бракує PII redact у Pino, CSP report-only, requestId↔Sentry tag. |
+| Performance | 7.5/10 | Manual chunks продумані. Бракує prefetch on hover та DST/quota edge-cases у SW. |
+| Testing | 7/10 | 178 web + 81 server тести. Бракує contract tests web↔server та integration на CloudSync. |
+| DevX / CI | 9/10 | Hard Rules + freshness gate + custom ESLint — топ-1%. Бракує Storybook + AI-agent quickstart блоку. |
+| Documentation | 8/10 | 23+ playbook-и, AGENTS.md. Бракує C4-діаграм та CHANGELOG. |
+| Mobile (web↔mobile interaction) | OOS | Не покривалось у цій прожарці; див. існуючі аудити. |
+
+**Загальна оцінка: 8/10.** Сильна, зріла, з чіткою інженерною культурою.
+
+## Top-9 точок виправлення (висока ROI, тиждень-два кожен)
+
+| # | Item | Time | Impact | Cost | Pointer |
+| --- | --- | --- | --- | --- | --- |
+| 1 | **Pino redact** для PII у логах | 30 хв | 5 | 1 | [04-security §6.5](./04-security-observability-testing-devx.md) |
+| 2 | **Sentry tag `requestId`** + UI shows requestId on 5xx | 1 год | 3 | 1 | [04-security §4.4 / §6.5](./04-security-observability-testing-devx.md) |
+| 3 | **CSP report-only** на Vercel | 1 год | 3 | 1 | [04-security §6.2](./04-security-observability-testing-devx.md) |
+| 4 | **Module prefetch on hover/idle** | 1 день | 3 | 1 | [03-backend §5.2](./03-backend-and-performance.md) |
+| 5 | **`<DataState>` wrapper** (skeleton/empty/error/stale) | 2 дні | 4 | 2 | [01-frontend §3.2](./01-frontend-ergonomics.md) |
+| 6 | **`localStorage` 17 → 0 codemod** | 3 дні | 4 | 2 | [02-arch §2.2](./02-architecture-and-state.md) |
+| 7 | **CloudSync split-brain integration tests** | 1 тиж | 5 | 3 | [02-arch §2.3](./02-architecture-and-state.md) |
+| 8 | **Уніфікований form-engine** (`useApiForm` + zod resolver) | 1-2 тиж | 5 | 3 | [01-frontend §3.1](./01-frontend-ergonomics.md) |
+| 9 | **OpenAPI / typed-client autogen + contract tests web↔server** | 2 тиж | 4 | 3 | [03-backend §4.7](./03-backend-and-performance.md), [04-security §7.4](./04-security-observability-testing-devx.md) |
+
+## Roadmap (impact × cost, sortоване по Score = impact × (1 / cost))
+
+| # | Item | Impact | Cost | Score | Pointer |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Pino redact для PII | 5 | 1 | 5.00 | [04 §6.5](./04-security-observability-testing-devx.md) |
+| 2 | Sentry tag `requestId` + UI shows on 5xx | 3 | 1 | 3.00 | [04 §4.4](./04-security-observability-testing-devx.md) |
+| 3 | CSP report-only on Vercel | 3 | 1 | 3.00 | [04 §6.2](./04-security-observability-testing-devx.md) |
+| 4 | Module prefetch on hover + on-idle | 3 | 1 | 3.00 | [03 §5.2](./03-backend-and-performance.md) |
+| 5 | `<DataState>` wrapper | 4 | 2 | 2.00 | [01 §3.2](./01-frontend-ergonomics.md) |
+| 6 | `localStorage` 17 → 0 codemod | 4 | 2 | 2.00 | [02 §2.2](./02-architecture-and-state.md) |
+| 7 | Audit docs status-table + archive >6-mo | 2 | 1 | 2.00 | [04 §8.5](./04-security-observability-testing-devx.md) |
+| 8 | Form-engine unification | 5 | 3 | 1.67 | [01 §3.1](./01-frontend-ergonomics.md) |
+| 9 | CloudSync split-brain integration tests | 5 | 3 | 1.67 | [02 §2.3](./02-architecture-and-state.md) |
+| 10 | C4-mermaid діаграми | 3 | 2 | 1.50 | [04 §9.2](./04-security-observability-testing-devx.md) |
+| 11 | `index.css` decomposition | 3 | 2 | 1.50 | [02 §1.4](./02-architecture-and-state.md) |
+| 12 | Rate-limiter `cost`-multiplier для AI streams | 3 | 2 | 1.50 | [03 §4.5](./03-backend-and-performance.md) |
+| 13 | OpenAPI generation + typed client out of zod | 4 | 3 | 1.33 | [03 §4.7](./03-backend-and-performance.md) |
+| 14 | Contract tests web↔server | 4 | 2 | 2.00 | [04 §7.4](./04-security-observability-testing-devx.md) |
+| 15 | `tsconfig.strict: true` для `apps/web` поетапно | 5 | 4 | 1.25 | [02 §1.0](./02-architecture-and-state.md) |
+| 16 | Storybook для top 20 компонентів | 3 | 3 | 1.00 | [04 §8.6](./04-security-observability-testing-devx.md) |
+| 17 | Mutation testing на критичних модулях (квартально) | 4 | 4 | 1.00 | [04 §7.3](./04-security-observability-testing-devx.md) |
+| 18 | i18n key extraction (UA-only поки) | 2 | 3 | 0.67 | [01 §3.8](./01-frontend-ergonomics.md) |
+
+## Що НЕ треба робити (засвітлено окремо, бо «не зламай добре»)
+
+- **Не міняй** Hard Rules registry / freshness gate / custom ESLint plugin — це найкраще, що в проєкті є.
+- **Не вирівнюй** in-process workers у окремий сервіс зараз — поки не побачиш проблеми (event-loop lag метрика).
+- **Не переходь** на Next.js / SSR — local-first PWA не виграє від SSR; виграє від кращого SW кешу.
+- **Не централізуй** state у Zustand/Redux — React Query + localStorage + CloudSync уже працюють. Замість «ще одна бібліотека» — вирівнюй існуючі шари.
+- **Не переписуй** sync v1 під v2 раніше Stage 7 — два контури паралельно тримати на 100% safer, ніж big-bang cutover.
+
+## Звірка з існуючими аудитами `docs/audits/`
+
+Я свідомо не читав внутрішні аудити, поки не написав цей. Тепер швидко:
+
+| Тема | Внутрішній аудит | Я знайшов | Diff |
+| --- | --- | --- | --- |
+| TypeScript strict | Згадано | §1.0 (опосередк.) | Same — підтверджую |
+| localStorage migration 17 файлів | Прямо є | [02 §2.2](./02-architecture-and-state.md) | Same — підтверджую |
+| Mobile flaky tests | Згадано | OOS у цій прожарці | Не лізли — приймаю |
+| Observability gaps | Згадано | [02 §1.6](./02-architecture-and-state.md), [04 §6.4](./04-security-observability-testing-devx.md) | Same — деталі різні, напрямок збігся |
+| Tech debt накопичується | Згадано | §3.x, §4.x | More granular — додав конкретні fix recipes |
+| **Form-engine-уніфікація** | Не бачу | [01 §3.1](./01-frontend-ergonomics.md) | **Свіже** — варто винести в окремий план |
+| **Contract-tests web↔server** | Не бачу | [04 §7.4](./04-security-observability-testing-devx.md) | **Свіже** |
+| **Skeleton-policy / DataState wrapper** | Частково в UX-плані | [01 §3.2](./01-frontend-ergonomics.md) | Більш-менш є, але не як уніфікація |
+| **Prefetch-on-hover модулів** | Не бачу | [03 §5.2](./03-backend-and-performance.md) | **Свіже** |
+| **Per-route bundle budget (size-limit)** | Згадано | [03 §5.1](./03-backend-and-performance.md) | Same — додав «per-route, не тільки vendor» |
+| **`requestId` correlation Sentry ↔ logs ↔ user** | Не бачу | [04 §4.4](./04-security-observability-testing-devx.md) | **Свіже, дешеве** |
+| **Storybook** | Не бачу | [04 §8.6](./04-security-observability-testing-devx.md) | **Свіже** |
+| **C4-діаграми архітектури** | Згадано (doc-hygiene) | [04 §9.2](./04-security-observability-testing-devx.md) | Підтверджую |
+
+## Один найбільш недооцінений проєктом item
+
+> **Pino redact для PII у логах** ([04 §6.5](./04-security-observability-testing-devx.md)). П'ять рядків коду, але запобігає накопиченню паролів/токенів у логах за роки роботи. Цей risk росте монотонно з кожним днем без mitigation.
+
+## Один найбільш невидимий ризик
+
+> **CloudSync split-brain без integration-тестів** ([02 §2.3](./02-architecture-and-state.md)). Якщо щось зламається тут — це втрата даних користувача, найгірше з можливого. Unit-тестами не покривається.
+
+## Питання, які варто обговорити з командою
+
+1. **Чи плануємо англомовний MVP найближчі 6 міс?** Якщо так — i18n треба починати **зараз** (extract keys), не пізніше.
+2. **`SERVER_ROLE=worker` сепарація** — це next quarter або ніколи? Залежить від трафіку.
+3. **OpenAPI / typed client autogen** — це готовий з'їсти 2 тижні, але дасть compile-time guarantees на 200+ endpoints. Що важливіше: швидкість feature-shipping чи довгостроковий drift-protection?
+4. **Storybook** — є запит від нових контриб'юторів (включно з AI-агентами)? Якщо немає — пропустити.
+5. **Mutation testing** — тільки для CloudSync/auth/error handling, чи на всю апу? Я б почав з 3 модулів.
