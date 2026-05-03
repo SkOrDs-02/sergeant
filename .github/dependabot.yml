@@ -1,0 +1,108 @@
+# Dependabot configuration for the Sergeant monorepo.
+#
+# Closes hardening card H2: docs/security/hardening/H2-dependabot.md.
+#
+# Strategy:
+# - npm        : single workspace root (pnpm workspace + Turborepo), weekly,
+#                grouped by dependency-type to keep PR noise predictable.
+# - github-actions: weekly. Comment-format used in workflows
+#                ("# action vX.Y.Z (SHA-pinned for supply-chain hardening)")
+#                is preserved by Dependabot when it bumps the SHA.
+# - docker     : two scopes — root (Dockerfile.api, Dockerfile.console) and
+#                ops/grafana-alloy.
+#
+# `ignore` mirrors package.json -> pnpm.overrides — those packages are
+# manually pinned via overrides; Dependabot must not fight the override.
+#
+# Auto-merge for patch-only security updates lives in a separate workflow
+# (see Sprint 1 follow-up); landing dependabot.yml first is intentionally
+# the smallest possible diff.
+
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Kyiv"
+    open-pull-requests-limit: 10
+    versioning-strategy: "increase"
+    commit-message:
+      # Both production and development bumps land as `chore(deps): ...`
+      # because `deps-dev` is not in the project's commitlint scope-enum
+      # (see commitlint.config.cjs / .commitlintrc — valid scopes include
+      # `deps`, `ci`, `docs`, `root`, plus the workspace package names).
+      prefix: "chore(deps)"
+    groups:
+      production-deps:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      dev-deps:
+        dependency-type: "development"
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
+    ignore:
+      # Manual pins via pnpm.overrides in package.json — Dependabot must
+      # not propose updates that fight the override pin. Keep this list in
+      # sync with package.json:pnpm.overrides whenever overrides change.
+      - dependency-name: "react-server-dom-webpack"
+      - dependency-name: "tar"
+      - dependency-name: "@xmldom/xmldom"
+      - dependency-name: "serialize-javascript"
+      - dependency-name: "postcss"
+      - dependency-name: "uuid"
+      - dependency-name: "@tootallnate/once"
+    labels:
+      - "dependencies"
+      - "automerge-eligible"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Kyiv"
+    open-pull-requests-limit: 5
+    commit-message:
+      # `ci(deps)` lands the bump under the `ci` type (workflow change)
+      # with the `deps` scope so commitlint scope-enum accepts it.
+      prefix: "ci(deps)"
+    labels:
+      - "dependencies"
+      - "ci"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Kyiv"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/ops/grafana-alloy"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Kyiv"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(deps)"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "observability"

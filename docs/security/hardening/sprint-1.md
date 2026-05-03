@@ -8,12 +8,12 @@
 
 ## Скоуп
 
-| ID                                          | Title                                                        | Severity | Effort | Owner    |
-| ------------------------------------------- | ------------------------------------------------------------ | -------- | ------ | -------- |
-| [C1](./C1-mono-webhook-secret-in-url.md)    | Mono webhook secret з URL → header + sanitize logs + rotate  | Critical | 1d     | backend  |
-| [C2](./C2-frontend-csp.md)                  | Додати CSP у `vercel.json` (Report-Only → Enforce)           | Critical | 0.5d   | frontend |
-| [H1](./H1-mobile-bearer-storage.md)         | Capacitor secure-storage AC + `android:allowBackup="false"`  | High     | 0.5d   | mobile   |
-| [H2](./H2-dependabot.md)                    | Створити `.github/dependabot.yml` (npm + actions + docker)   | High     | 0.5h   | devops   |
+| ID                                       | Title                                                                        | Severity | Effort | Owner    |
+| ---------------------------------------- | ---------------------------------------------------------------------------- | -------- | ------ | -------- |
+| [C1](./C1-mono-webhook-secret-in-url.md) | Mono webhook secret з URL → header + sanitize logs + rotate                  | Critical | 1d     | backend  |
+| [C2](./C2-frontend-csp.md)               | Додати CSP у `vercel.json` (Report-Only → Enforce)                           | Critical | 0.5d   | frontend |
+| [H1](./H1-mobile-bearer-storage.md)      | Capacitor secure-storage AC + `android:allowBackup="false"`                  | High     | 0.5d   | mobile   |
+| [H2](./H2-dependabot.md)                 | Створити `.github/dependabot.yml` (npm + actions + docker) — **In progress** | High     | 0.5h   | devops   |
 
 ## Чому саме ці чотири разом
 

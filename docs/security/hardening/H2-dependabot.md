@@ -1,18 +1,18 @@
 # H2 — Немає Dependabot / Renovate (відсутність авто-оновлень залежностей)
 
 > **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
-> **Status:** Open
+> **Status:** In progress (implementation PR відкритий)
 
-| Field              | Value                                                                                                       |
-| ------------------ | ----------------------------------------------------------------------------------------------------------- |
-| **Severity**       | **High** (CVSS 7.0 — Supply-chain MTTR window)                                                              |
-| **Sprint**         | [Sprint 1](./sprint-1.md)                                                                                   |
-| **Owner**          | devops                                                                                                      |
-| **Effort**         | 0.5 hour (config) + ~2h на review першого batch-у PR                                                        |
-| **Status**         | Open                                                                                                        |
-| **Discovered**     | 2026-05-03                                                                                                  |
-| **Threat model**   | Supply Chain → Tampering / Information Disclosure                                                           |
-| **Affected files** | `.github/dependabot.yml` (відсутній), `.github/workflows/nightly-audit.yml`, `package.json:overrides`        |
+| Field              | Value                                                                                                 |
+| ------------------ | ----------------------------------------------------------------------------------------------------- |
+| **Severity**       | **High** (CVSS 7.0 — Supply-chain MTTR window)                                                        |
+| **Sprint**         | [Sprint 1](./sprint-1.md)                                                                             |
+| **Owner**          | devops                                                                                                |
+| **Effort**         | 0.5 hour (config) + ~2h на review першого batch-у PR                                                  |
+| **Status**         | In progress — `.github/dependabot.yml` додано, очікуємо merge + перший batch                          |
+| **Discovered**     | 2026-05-03                                                                                            |
+| **Threat model**   | Supply Chain → Tampering / Information Disclosure                                                     |
+| **Affected files** | `.github/dependabot.yml` (відсутній), `.github/workflows/nightly-audit.yml`, `package.json:overrides` |
 
 ## Summary
 
@@ -37,8 +37,8 @@ ls: cannot access 'renovate.json': No such file or directory
     "xmldom": "npm:@xmldom/xmldom@^0.8.10",
     "serialize-javascript": ">=6.0.2",
     "postcss": ">=8.4.31",
-    "uuid": ">=14.0.0"  // ← див. L1 (можливо, нерезольвиться)
-  }
+    "uuid": ">=14.0.0", // ← див. L1 (можливо, нерезольвиться)
+  },
 }
 ```
 
@@ -99,7 +99,7 @@ updates:
       - "ci"
 
   - package-ecosystem: "docker"
-    directory: "/"  # uses Dockerfile.api
+    directory: "/" # uses Dockerfile.api
     schedule:
       interval: "weekly"
     labels:
@@ -145,21 +145,21 @@ jobs:
     {
       "matchUpdateTypes": ["patch"],
       "matchCurrentVersion": "!/^0/",
-      "automerge": true
-    }
-  ]
+      "automerge": true,
+    },
+  ],
 }
 ```
 
 ## Correction points
 
-| File                                                | Action                                                                                                |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `.github/dependabot.yml` (new)                      | Створити (повний спек вище).                                                                          |
-| `.github/workflows/dependabot-automerge.yml` (new)  | Auto-merge patch-only security-updates після зеленого CI.                                             |
-| `.github/labels.yml` (якщо існує)                   | Додати labels: `dependencies`, `security`, `automerge-eligible`, `ci`, `docker`.                       |
-| GitHub repo settings → Code security                | Увімкнути `dependabot-alerts` + `secret-scanning` + `secret-scanning-push-protection` (див. [I2](./README.md)). |
-| `docs/security/audit-exceptions.md`                 | Перевірити, що manual-pin-и (uuid, tar, postcss, xmldom, serialize-javascript) задокументовані як exceptions. |
+| File                                               | Action                                                                                                          |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `.github/dependabot.yml` (new)                     | Створити (повний спек вище).                                                                                    |
+| `.github/workflows/dependabot-automerge.yml` (new) | Auto-merge patch-only security-updates після зеленого CI.                                                       |
+| `.github/labels.yml` (якщо існує)                  | Додати labels: `dependencies`, `security`, `automerge-eligible`, `ci`, `docker`.                                |
+| GitHub repo settings → Code security               | Увімкнути `dependabot-alerts` + `secret-scanning` + `secret-scanning-push-protection` (див. [I2](./README.md)). |
+| `docs/security/audit-exceptions.md`                | Перевірити, що manual-pin-и (uuid, tar, postcss, xmldom, serialize-javascript) задокументовані як exceptions.   |
 
 ## Verification
 
@@ -168,6 +168,23 @@ jobs:
 3. **First batch** — Dependabot створив perший batch PR протягом 7 днів (перевірити Dependabot dashboard).
 4. **Auto-merge test** — підготувати штучний PR з patch-only-update → CI зелений → auto-merge спрацював.
 5. **Audit-trail** — кожен Dependabot-PR має правильні labels.
+
+## Implementation log
+
+| Date       | Event                                                                                                              |
+| ---------- | ------------------------------------------------------------------------------------------------------------------ |
+| 2026-05-03 | Картка створена (Sprint 1).                                                                                        |
+| 2026-05-03 | Implementation PR відкритий: `.github/dependabot.yml` (npm + github-actions + docker root + docker grafana-alloy). |
+
+### Що ще не зроблено в межах цієї картки
+
+1. **Auto-merge workflow** (`.github/workflows/dependabot-automerge.yml`) — окрема follow-up картка / PR, бо потребує SHA-pinned `dependabot/fetch-metadata` + увімкненого auto-merge у GitHub repo settings.
+2. **GitHub repo settings** → Code security:
+   - Dependabot alerts — увімкнути.
+   - Secret scanning + push protection — див. [I2](./I2-secret-scanning-push-protection.md).
+3. **Verification гейт у `nightly-audit.md`** — додати рядок «Dependabot active since 2026-05-03» після першого batch-у PR.
+
+Коли все три пункти виконані — картка переходить у `Closed` з посиланням на merged-PR і дату першого Dependabot-batch-у.
 
 ## Cross-references
 

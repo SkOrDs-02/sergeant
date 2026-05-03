@@ -29,12 +29,12 @@
 
 ## Spring roadmap
 
-| Sprint                                   | Що закриваємо                              | Effort  |
-| ---------------------------------------- | ------------------------------------------ | ------- |
-| [Sprint 1](./sprint-1.md) — 1–2 тижні    | C1, C2, H1, H2                             | ~2.5d   |
-| [Sprint 2](./sprint-2.md) — тиждень 3–4  | H3, H5, H6, H7, H8, H9, M1, M3             | ~5d     |
-| [Sprint 3](./sprint-3.md) — місяць 2     | I1 (CodeQL), I2, M4–M21 batched            | ~7d     |
-| [Sprint 4](./sprint-4.md) — місяць 2.5–3 | L1–L14 cleanup, I3 (SBOM), I6 threat-model | ~5d     |
+| Sprint                                   | Що закриваємо                              | Effort |
+| ---------------------------------------- | ------------------------------------------ | ------ |
+| [Sprint 1](./sprint-1.md) — 1–2 тижні    | C1, C2, H1, H2                             | ~2.5d  |
+| [Sprint 2](./sprint-2.md) — тиждень 3–4  | H3, H5, H6, H7, H8, H9, M1, M3             | ~5d    |
+| [Sprint 3](./sprint-3.md) — місяць 2     | I1 (CodeQL), I2, M4–M21 batched            | ~7d    |
+| [Sprint 4](./sprint-4.md) — місяць 2.5–3 | L1–L14 cleanup, I3 (SBOM), I6 threat-model | ~5d    |
 
 Окремі sprint-overview-файли (`sprint-N.md`) тримають narrative-опис, чому саме ці картки разом, що міряємо як «success», та залежності між картками.
 
@@ -42,24 +42,24 @@
 
 ### Critical
 
-| ID                                                      | Title                                          | Status | Sprint                |
-| ------------------------------------------------------- | ---------------------------------------------- | ------ | --------------------- |
-| [C1](./C1-mono-webhook-secret-in-url.md)                | Monobank webhook secret leaks via URL path     | Open   | [Sprint 1](./sprint-1.md) |
-| [C2](./C2-frontend-csp.md)                              | Frontend SPA не має Content-Security-Policy   | Open   | [Sprint 1](./sprint-1.md) |
+| ID                                       | Title                                       | Status | Sprint                    |
+| ---------------------------------------- | ------------------------------------------- | ------ | ------------------------- |
+| [C1](./C1-mono-webhook-secret-in-url.md) | Monobank webhook secret leaks via URL path  | Open   | [Sprint 1](./sprint-1.md) |
+| [C2](./C2-frontend-csp.md)               | Frontend SPA не має Content-Security-Policy | Open   | [Sprint 1](./sprint-1.md) |
 
 ### High
 
-| ID                                                      | Title                                                     | Status | Sprint                    |
-| ------------------------------------------------------- | --------------------------------------------------------- | ------ | ------------------------- |
-| [H1](./H1-mobile-bearer-storage.md)                     | Bearer token у мобільному shell без явного Keychain-AC    | Open   | [Sprint 1](./sprint-1.md) |
-| [H2](./H2-dependabot.md)                                | Немає Dependabot / Renovate                               | Open   | [Sprint 1](./sprint-1.md) |
-| H3 — `H3-session-revoke.md` (Sprint 2)                  | Сесія 30d без revoke-on-password-change і device-binding  | Open   | Sprint 2                  |
-| H4 — `H4-token-key-rotation.md` (Sprint 2/3)            | Немає сценарію ротації `*_TOKEN_ENC_KEY`                  | Open   | Sprint 2                  |
-| H5 — `H5-exp-trusted-origin.md` (Sprint 2)              | `exp://` як trusted origin у production                   | Open   | Sprint 2                  |
-| H6 — `H6-email-verification.md` (Sprint 2)              | Email verification disabled                               | Open   | Sprint 2                  |
-| H7 — `H7-vercel-config-drift.md` (Sprint 2)             | `vercel.json` SSOT drift                                  | Open   | Sprint 2                  |
-| H8 — `H8-corp-per-route.md` (Sprint 2)                  | Helmet `CORP: cross-origin` глобально                     | Open   | Sprint 2                  |
-| H9 — `H9-transcribe-usd-cap.md` (Sprint 2)              | Transcribe per-user USD-cap відсутній                     | Open   | Sprint 2                  |
+| ID                                           | Title                                                    | Status      | Sprint                    |
+| -------------------------------------------- | -------------------------------------------------------- | ----------- | ------------------------- |
+| [H1](./H1-mobile-bearer-storage.md)          | Bearer token у мобільному shell без явного Keychain-AC   | Open        | [Sprint 1](./sprint-1.md) |
+| [H2](./H2-dependabot.md)                     | Немає Dependabot / Renovate                              | In progress | [Sprint 1](./sprint-1.md) |
+| H3 — `H3-session-revoke.md` (Sprint 2)       | Сесія 30d без revoke-on-password-change і device-binding | Open        | Sprint 2                  |
+| H4 — `H4-token-key-rotation.md` (Sprint 2/3) | Немає сценарію ротації `*_TOKEN_ENC_KEY`                 | Open        | Sprint 2                  |
+| H5 — `H5-exp-trusted-origin.md` (Sprint 2)   | `exp://` як trusted origin у production                  | Open        | Sprint 2                  |
+| H6 — `H6-email-verification.md` (Sprint 2)   | Email verification disabled                              | Open        | Sprint 2                  |
+| H7 — `H7-vercel-config-drift.md` (Sprint 2)  | `vercel.json` SSOT drift                                 | Open        | Sprint 2                  |
+| H8 — `H8-corp-per-route.md` (Sprint 2)       | Helmet `CORP: cross-origin` глобально                    | Open        | Sprint 2                  |
+| H9 — `H9-transcribe-usd-cap.md` (Sprint 2)   | Transcribe per-user USD-cap відсутній                    | Open        | Sprint 2                  |
 
 ### Medium / Low / Informational
 
