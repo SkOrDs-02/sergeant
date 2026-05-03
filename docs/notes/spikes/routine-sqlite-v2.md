@@ -60,8 +60,8 @@ Concretely:
 | ------------------------------------------------------------------------------------------------ | --------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | Drizzle SQLite schema (`routine_entries`, `routine_streaks`, `sync_op_outbox`, `sync_op_cursor`) | Done                  | `packages/db-schema/src/sqlite/routine.ts`                                                                             |
 | Bundled client migration (`001_routine_spike.sql`) + manifest                                    | Done                  | Runs through `runMigrations` from `@sergeant/db-schema/migrate`                                                        |
-| Web SPIKE library (repo + sync engine + sqlite-wasm adapter)                                     | Done                  | `apps/web/src/modules/routine/lib/sqliteSpike/`                                                                        |
-| Mobile SPIKE library (mirror + expo-sqlite adapter)                                              | Done                  | `apps/mobile/src/modules/routine/lib/sqliteSpike/`                                                                     |
+| Web SPIKE library (repo + sync engine + sqlite-wasm adapter)                                     | Done (removed #1421)  | Was `apps/web/src/modules/routine/lib/sqliteSpike/`; promoted to `dualWrite/` + `clientMigrate.ts`                     |
+| Mobile SPIKE library (mirror + expo-sqlite adapter)                                              | Done (removed #1421)  | Was `apps/mobile/src/modules/routine/lib/sqliteSpike/`; promoted to `dualWrite/` + `clientMigrate.ts`                  |
 | Web feature flag `feature.routine.sqlite_v2`                                                     | Done                  | Registered in `apps/web/src/core/lib/featureFlags.ts`                                                                  |
 | Unit tests (web vitest + mobile jest + db-schema vitest)                                         | Done                  | 24 tests total — see "Tests" below                                                                                     |
 | Dev-only web panel (`Settings → «Routine SPIKE — dev panel»`)                                    | Done                  | Landed in commit `501a7b74` (`feat(web): routine SPIKE dev panel у Settings → Експериментальне`)                       |
@@ -73,7 +73,7 @@ Concretely:
 | Multi-device toggle conflict-free                                                                | **Hardware-required** | Two devices + staging account                                                                                          |
 
 The library code is intentionally split between platforms (≈500 lines
-duplicated) so each app keeps its own `sqliteSpike/` directory. This is
+duplicated) so each app kept its own `sqliteSpike/` directory (removed in PR #1421; promoted to `dualWrite/`). This was
 acknowledged tech debt for a time-boxed SPIKE — Stage 5 (PR #040)
 promotes the library to a shared workspace package once the design has
 settled.
@@ -137,20 +137,12 @@ layer below the typed Drizzle client.
 
 ## Tests (this PR)
 
-| Suite | Count | Coverage |
-| ----- | ----- | -------- |
-
-> **Note (archive):** the file paths below pointed at SPIKE-only code
-> that was deleted at archive time (2026-05-02, see [#1421](https://github.com/Skords-01/Sergeant/pull/1421)). They are
-> intentionally written without backticks so the governance-sync linter
-> ignores them as historical references.
-
-| Suite                                                                                  | Count | Coverage                                                                                                                                   |
-| -------------------------------------------------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `packages/db-schema` schema-roundtrip (vitest)                                         | 3     | Migration runs idempotently; tables present; outbox UNIQUE on `idempotency_key`.                                                           |
-| apps/web/src/modules/routine/lib/sqliteSpike/\_\_tests\_\_/repo.test.ts (vitest)       | 9     | upsert / soft-delete / list lifecycle, outbox enqueue+pop+reject, cursor, LWW conflict guard, malformed payload rejection.                 |
-| apps/web/src/modules/routine/lib/sqliteSpike/\_\_tests\_\_/syncEngine.test.ts (vitest) | 6     | push drain, push reject triage, pull apply + cursor persist, origin-device echo filter, multi-device end-to-end, LWW with stale pulled op. |
-| apps/mobile/src/modules/routine/lib/sqliteSpike/\_\_tests\_\_/repo.test.ts (jest)      | 6     | Mirror of the web repo tests + the `createExpoSqliteRawClient` adapter forwarder.                                                          |
+| Suite                                                                                 | Count | Coverage                                                                                                                                   |
+| ------------------------------------------------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `packages/db-schema` schema-roundtrip (vitest)                                        | 3     | Migration runs idempotently; tables present; outbox UNIQUE on `idempotency_key`.                                                           |
+| `apps/web/src/modules/routine/lib/dualWrite/__tests__/` (vitest, was `sqliteSpike/`)  | 9     | upsert / soft-delete / list lifecycle, outbox enqueue+pop+reject, cursor, LWW conflict guard, malformed payload rejection.                 |
+| (was `sqliteSpike/__tests__/syncEngine.test.ts`, removed in PR #1421)                 | 6     | push drain, push reject triage, pull apply + cursor persist, origin-device echo filter, multi-device end-to-end, LWW with stale pulled op. |
+| `apps/mobile/src/modules/routine/lib/dualWrite/__tests__/` (jest, was `sqliteSpike/`) | 6     | Mirror of the web repo tests + the `createExpoSqliteRawClient` adapter forwarder.                                                          |
 
 All 24 tests pass locally on Node 22.12 / pnpm 9.15. Total runtime
 ≈3.5 s.
@@ -231,7 +223,7 @@ compounds linearly.
 The SPIKE-library code is **fully isolated** behind
 `React.lazy(() => import("…/RoutineSpikeDevPanel"))` in
 `RoutineSpikeSection.tsx`, and the `RoutineSpikeDevPanel` itself is the
-only place that imports `apps/web/src/modules/routine/lib/sqliteSpike/`.
+only place that imported the SPIKE library (removed in PR #1421).
 That means Rollup splits the SPIKE library plus its sqlite-wasm
 adapter into the lazy chunk for the dev panel, and the sqlite-wasm
 vendor module ships in a separate `vendor-sqlite-*.js` chunk that is
@@ -256,8 +248,7 @@ Greps over the built artefacts confirm the isolation:
   → 0 hits.
 - `rg "sqliteSpike|SqliteSpike|sync_op_outbox" dist/assets/RoutineApp-*.js`
   → 0 hits.
-- `rg "sqliteSpike|SqliteSpike|sync_op_outbox" dist/assets/RoutineSpikeDevPanel-*.js`
-  → 9 hits.
+- (RoutineSpikeDevPanel chunk removed in PR #1421 — was 9 hits.)
 
 So: **a user who never enables the flag downloads exactly 0 bytes of
 SPIKE code**. The Stage 3 «≤ +5 KB initial-bundle delta when the flag
@@ -422,11 +413,8 @@ Routine module migration на SQLite завершена. Completions читаю�
 If the gate fails:
 
 1. Remove the feature flag entry from `apps/web/src/core/lib/featureFlags.ts`.
-2. Delete `apps/web/src/modules/routine/lib/sqliteSpike/` and
-   `apps/mobile/src/modules/routine/lib/sqliteSpike/`.
-3. Delete the dev panels (`apps/web/src/modules/routine/components/RoutineSpikeDevPanel.{tsx,test.tsx}`,
-   `apps/web/src/core/settings/RoutineSpikeSection.{tsx,test.tsx}`,
-   plus mobile mirrors) and their `HubSettingsPage` imports.
+2. ~~Delete `sqliteSpike/` directories~~ — done in PR #1421.
+3. ~~Delete the dev panels and `HubSettingsPage` imports~~ — done in PR #1421.
 4. Keep `packages/db-schema/src/sqlite/routine.ts` and the migration
    bundle, since they cost nothing and unblock a later resumption.
 5. Keep the server-side `routine_entries` / `routine_streaks` PG
