@@ -67,6 +67,14 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     defaultValue: false,
     experimental: true,
   },
+  {
+    id: "feature.fizruk.sqlite_v2.dual_write",
+    label: "Fizruk — dual-write LS↔SQLite",
+    description:
+      "Кожен write у localStorage Фізрука додатково мирорить у локальну SQLite (`fizruk_workouts`, `fizruk_custom_exercises`, `fizruk_measurements`). Reads ще беруться з LS. Stage 4 PR #028 storage-roadmap. Best-effort: помилка SQLite-запису не ламає LS. Default: off.",
+    defaultValue: false,
+    experimental: true,
+  },
 ] as const;
 
 export type FlagId = (typeof FLAG_REGISTRY)[number]["id"];
