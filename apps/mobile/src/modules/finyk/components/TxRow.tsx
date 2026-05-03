@@ -45,21 +45,42 @@ import {
   getCategory,
   getIncomeCategory,
 } from "@sergeant/finyk-domain";
+import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
+import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
+import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 
-// Legacy untyped shapes — pages/storage hand us heterogeneous records
-// and the categorisation / split / account code paths predate static
-// typing. Mirrors the web file.
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * Мінімальна форма транзакції, яку рендерить рядок. Свідомо НЕ імпортуємо
+ * повний `Transaction` з finyk-domain — рядок бачить і нормалізовані, і
+ * сирі monobank-записи (різні точки виклику persist різні shape-и: Mono
+ * statement entries, manual-expenses, merged splits), тому лишаємо тільки
+ * реально читані поля. Mirrors the web twin (`TxRowTx`) byte-for-byte —
+ * shapes drift in lockstep across web/mobile.
+ */
+export interface TxRowTx {
+  id: string;
+  amount: number;
+  description?: string;
+  mcc?: number;
+  time?: number;
+  currencyCode?: number;
+  operationAmount?: number;
+  _accountId?: string | null;
+  _source?: string;
+  _manual?: boolean;
+  _manualId?: string;
+}
+
 export interface TxRowProps {
-  tx: any;
+  tx: TxRowTx;
   onPress?: () => void;
   highlighted?: boolean;
   hidden?: boolean;
   overrideCatId?: string | null;
-  accounts?: any[];
+  accounts?: readonly MonoAccount[];
   hideAmount?: boolean;
-  txSplits?: Record<string, any[]>;
-  customCategories?: any[];
+  txSplits?: TxSplitsMap;
+  customCategories?: readonly CustomCategoryInput[];
   /**
    * Propagated to the row's outer `Pressable` / `View` so Detox E2E
    * can match a specific transaction by id (see the first suite in
@@ -67,7 +88,6 @@ export interface TxRowProps {
    */
   testID?: string;
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 const INCOME_ICONS: Record<string, string> = {
   in_salary: "💰",
@@ -88,7 +108,7 @@ const ACCOUNT_TYPE_LABEL: Record<string, string> = {
 };
 
 function getAccountShortName(
-  acc: { type?: string } | undefined | null,
+  acc: MonoAccount | undefined | null,
 ): string | null {
   if (!acc) return null;
   return ACCOUNT_TYPE_LABEL[acc.type ?? ""] || acc.type || "Рахунок";
@@ -121,8 +141,13 @@ function TxRowImpl({
   const cat = useMemo(
     () =>
       isIncome
-        ? getIncomeCategory(tx.description, overrideCatId)
-        : getCategory(tx.description, tx.mcc, overrideCatId, customCategories),
+        ? getIncomeCategory(tx.description ?? "", overrideCatId)
+        : getCategory(
+            tx.description ?? "",
+            tx.mcc ?? 0,
+            overrideCatId,
+            customCategories,
+          ),
     [isIncome, tx.description, tx.mcc, overrideCatId, customCategories],
   );
 
@@ -203,7 +228,9 @@ function TxRowImpl({
                 </Text>
               </View>
             )}
-            <Text className="text-xs text-fg-muted">· {fmtDate(tx.time)}</Text>
+            <Text className="text-xs text-fg-muted">
+              · {fmtDate(tx.time ?? 0)}
+            </Text>
           </View>
         </View>
       </View>
