@@ -21,7 +21,7 @@ import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Stat } from "@shared/components/ui/Stat";
 
-function weekStartMs(d) {
+function weekStartMs(d: number | string | Date) {
   const x = new Date(d);
   const day = (x.getDay() + 6) % 7;
   x.setHours(0, 0, 0, 0);
@@ -38,7 +38,7 @@ export function Progress() {
   const meas = useMemo(() => {
     const latest = entries?.[0] || null;
     const prev = entries?.[1] || null;
-    const delta = (field) => {
+    const delta = (field: string) => {
       const a = Number(latest?.[field]);
       const b = Number(prev?.[field]);
       if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
@@ -290,7 +290,7 @@ export function Progress() {
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-text">Прогрес</h1>
+            <h1 className="text-style-title text-text">Прогрес</h1>
             <p className="text-xs text-subtle mt-0.5">
               {quickStats.latestWorkoutAt !== "—"
                 ? `Останнє: ${quickStats.latestWorkoutAt} · ${quickStats.prsCount} PR`
@@ -314,15 +314,12 @@ export function Progress() {
         </div>
 
         {!hasAny && (
-          <Card radius="lg" padding="xl" className="p-8 text-center">
-            <div className="text-3xl mb-3">📈</div>
-            <div className="text-sm font-medium text-text mb-1">
-              Даних ще немає
-            </div>
-            <div className="text-xs text-subtle">
-              Додай тренування або заміри — і тут зʼявиться аналітика
-            </div>
-          </Card>
+          <EmptyState
+            compact
+            icon="📈"
+            title="Даних ще немає"
+            description="Додай тренування або заміри — і тут зʼявиться аналітика"
+          />
         )}
 
         {/* Weekly volume chart */}
@@ -343,9 +340,7 @@ export function Progress() {
                 💪
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold text-text">
-                  Відтискання
-                </div>
+                <div className="text-style-label text-text">Відтискання</div>
                 <div className="text-xs text-subtle">
                   за даними щоденних звичок
                 </div>
@@ -611,7 +606,7 @@ export function Progress() {
                                 {medal}
                               </span>
                             )}
-                            <div className="text-sm font-semibold text-text truncate">
+                            <div className="text-style-label text-text truncate">
                               {p.name}
                             </div>
                           </div>

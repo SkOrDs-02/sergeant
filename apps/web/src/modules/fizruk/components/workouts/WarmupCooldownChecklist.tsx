@@ -1,3 +1,22 @@
+interface ChecklistItem {
+  id: string;
+  label: string;
+  done: boolean;
+}
+
+interface ChecklistColor {
+  border: string;
+  text: string;
+}
+
+interface WarmupCooldownChecklistProps {
+  title: string;
+  items: ChecklistItem[] | null | undefined;
+  onToggle: (id: string) => void;
+  onInit: () => void;
+  color: ChecklistColor;
+}
+
 /**
  * Collapsible checklist for the warm-up / cool-down sections of a workout.
  *
@@ -14,7 +33,7 @@ export function WarmupCooldownChecklist({
   onToggle,
   onInit,
   color,
-}) {
+}: WarmupCooldownChecklistProps) {
   if (!items) {
     return (
       <div
@@ -32,7 +51,7 @@ export function WarmupCooldownChecklist({
     );
   }
 
-  const doneCount = (items || []).filter((x) => x.done).length;
+  const doneCount = (items || []).filter((x: ChecklistItem) => x.done).length;
   const total = (items || []).length;
 
   return (
@@ -51,7 +70,7 @@ export function WarmupCooldownChecklist({
         </span>
       </summary>
       <ul className="mt-2 space-y-1.5">
-        {(items || []).map((item) => (
+        {(items || []).map((item: ChecklistItem) => (
           <li key={item.id} className="flex items-center gap-2">
             <button
               type="button"

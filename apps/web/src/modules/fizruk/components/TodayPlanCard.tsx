@@ -57,9 +57,17 @@ export function TodayPlanCard({
     setPendingTemplateId(null);
   };
 
-  const startWorkoutFromPlan = (picks, templateId) => {
+  const startWorkoutFromPlan = (
+    picks: unknown[],
+    templateId?: string | null,
+  ) => {
     const w = createWorkout();
-    for (const ex of picks) {
+    for (const ex of picks as Array<{
+      id: string;
+      primaryGroup?: string;
+      name?: { uk?: string; en?: string };
+      muscles?: { primary?: string[]; secondary?: string[] };
+    }>) {
       const isCardio = ex.primaryGroup === "cardio";
       addItem(w.id, {
         exerciseId: ex.id,
@@ -105,9 +113,7 @@ export function TodayPlanCard({
     <>
       <Card radius="lg" padding="lg">
         <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="text-xs font-medium text-subtle">
-            План на сьогодні
-          </div>
+          <div className="text-style-caption text-subtle">План на сьогодні</div>
           {onOpenCalendar && (
             <button
               type="button"
@@ -189,7 +195,7 @@ export function TodayPlanCard({
                       window.location.hash = `#exercise/${ex.id}`;
                     }}
                   >
-                    <div className="text-sm font-semibold text-text truncate">
+                    <div className="text-style-label text-text truncate">
                       {ex?.name?.uk || ex?.name?.en}
                     </div>
                     <div className="text-xs text-subtle mt-0.5">

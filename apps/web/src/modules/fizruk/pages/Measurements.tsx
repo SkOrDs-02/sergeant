@@ -2,7 +2,11 @@ import { useCallback, useMemo, useState } from "react";
 import { cn } from "@shared/lib/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { MEASURE_FIELDS, useMeasurements } from "../hooks/useMeasurements";
+import {
+  MEASURE_FIELDS,
+  useMeasurements,
+  type MeasurementEntry,
+} from "../hooks/useMeasurements";
 import { Card } from "@shared/components/ui/Card";
 import { Stat } from "@shared/components/ui/Stat";
 import { useToast } from "@shared/hooks/useToast";
@@ -15,8 +19,8 @@ export function Measurements() {
   const { entries, addEntry, deleteEntry, restoreEntry } = useMeasurements();
   const toast = useToast();
   const handleDelete = useCallback(
-    (id) => {
-      const snapshot = entries.find((e) => e.id === id);
+    (id: string) => {
+      const snapshot = entries.find((e: MeasurementEntry) => e.id === id);
       if (!snapshot) return;
       deleteEntry(id);
       showUndoToast(toast, {
@@ -26,15 +30,15 @@ export function Measurements() {
     },
     [entries, deleteEntry, restoreEntry, toast],
   );
-  const [form, setForm] = useState(() =>
+  const [form, setForm] = useState<Record<string, string>>(() =>
     Object.fromEntries(MEASURE_FIELDS.map((f) => [f.id, ""])),
   );
 
   const latest = entries[0] || null;
-  const deltas = useMemo(() => {
+  const deltas = useMemo<Record<string, number>>(() => {
     const prev = entries[1] || null;
     if (!latest || !prev) return {};
-    const out = {};
+    const out: Record<string, number> = {};
     for (const f of MEASURE_FIELDS) {
       const a = Number(latest[f.id]);
       const b = Number(prev[f.id]);
@@ -90,7 +94,7 @@ export function Measurements() {
             <SectionHeading as="div" size="sm">
               Мануал
             </SectionHeading>
-            <div className="text-sm font-semibold text-success mt-0.5">
+            <div className="text-style-label text-success mt-0.5">
               Як правильно робити заміри →
             </div>
           </div>
@@ -139,9 +143,12 @@ export function Measurements() {
                   className={inp}
                   inputMode="decimal"
                   placeholder="—"
-                  value={form[f.id]}
+                  value={form[f.id] ?? ""}
                   onChange={(e) =>
-                    setForm((s) => ({ ...s, [f.id]: e.target.value }))
+                    setForm((s: Record<string, string>) => ({
+                      ...s,
+                      [f.id]: e.target.value,
+                    }))
                   }
                 />
               </div>
@@ -152,7 +159,7 @@ export function Measurements() {
               type="button"
               className="w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98]"
               onClick={() => {
-                const payload = {};
+                const payload: Record<string, number> = {};
                 for (const f of MEASURE_FIELDS) {
                   const v = (form[f.id] || "").trim();
                   if (v) payload[f.id] = Number(v.replace(",", "."));
@@ -227,7 +234,7 @@ export function Measurements() {
               className="px-4 py-3 border-b border-line last:border-0"
             >
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-text">
+                <div className="text-style-label text-text">
                   {new Date(e.at).toLocaleDateString("uk-UA", {
                     month: "short",
                     day: "numeric",

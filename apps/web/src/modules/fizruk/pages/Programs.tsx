@@ -3,9 +3,28 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/cn";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
-import { BUILTIN_PROGRAMS } from "@sergeant/fizruk-domain";
+import {
+  BUILTIN_PROGRAMS,
+  type FizrukData,
+  type ProgramScheduleEntry,
+  type ProgramSessionDef,
+  type TrainingProgramDef,
+} from "@sergeant/fizruk-domain";
+
+type RawExerciseDef = FizrukData.RawExerciseDef;
 
 const DAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
+
+interface ProgramsProps {
+  onStartWorkout?: (
+    session: ProgramSessionDef,
+    prog: TrainingProgramDef,
+  ) => void;
+  activeProgramId: string | null;
+  activeProgram: TrainingProgramDef | null;
+  activateProgram: (id: string) => void;
+  deactivateProgram: () => void;
+}
 
 export function Programs({
   onStartWorkout,
@@ -13,7 +32,7 @@ export function Programs({
   activeProgram,
   activateProgram,
   deactivateProgram,
-}) {
+}: ProgramsProps) {
   const { exercises } = useExerciseCatalog();
   const [expandedProgram, setExpandedProgram] = useState<string | null>(null);
 
@@ -24,7 +43,7 @@ export function Programs({
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-text">Програми</h1>
+            <h1 className="text-style-title text-text">Програми</h1>
             <p className="text-xs text-subtle mt-0.5">
               {activeProgram
                 ? `Активна: ${activeProgram.name}`
@@ -44,11 +63,11 @@ export function Programs({
         </div>
 
         <div className="space-y-3">
-          {BUILTIN_PROGRAMS.map((prog) => {
+          {BUILTIN_PROGRAMS.map((prog: TrainingProgramDef) => {
             const isActive = activeProgramId === prog.id;
             const isExpanded = expandedProgram === prog.id;
             const todaySession = prog.schedule.find(
-              (s) => s.day - 1 === todayDayIndex,
+              (s: ProgramScheduleEntry) => s.day - 1 === todayDayIndex,
             );
 
             return (
@@ -84,7 +103,7 @@ export function Programs({
                   <div className="flex items-center gap-1.5 mt-3">
                     {Array.from({ length: 7 }, (_, i) => {
                       const hasSession = prog.schedule.some(
-                        (s) => s.day - 1 === i,
+                        (s: ProgramScheduleEntry) => s.day - 1 === i,
                       );
                       const isToday = i === todayDayIndex;
                       return (
@@ -109,7 +128,7 @@ export function Programs({
                     {!isActive ? (
                       <button
                         type="button"
-                        className="flex-1 py-2.5 rounded-xl bg-success-strong text-white text-sm font-semibold transition-[background-color,opacity,transform] active:scale-[0.98]"
+                        className="flex-1 py-2.5 rounded-xl bg-success-strong text-white text-style-label transition-[background-color,opacity,transform] active:scale-[0.98]"
                         onClick={() => activateProgram(prog.id)}
                       >
                         Активувати
@@ -119,7 +138,7 @@ export function Programs({
                         {todaySession && onStartWorkout && (
                           <button
                             type="button"
-                            className="flex-1 py-2.5 rounded-xl bg-fizruk-strong text-white text-sm font-semibold transition-[background-color,opacity,transform] active:scale-[0.98]"
+                            className="flex-1 py-2.5 rounded-xl bg-fizruk-strong text-white text-style-label transition-[background-color,opacity,transform] active:scale-[0.98]"
                             onClick={() => {
                               const session =
                                 prog.sessions[todaySession.sessionKey];
@@ -130,7 +149,7 @@ export function Programs({
                           </button>
                         )}
                         {!todaySession && (
-                          <div className="flex-1 py-2.5 rounded-xl bg-panelHi text-subtle text-sm font-semibold text-center">
+                          <div className="flex-1 py-2.5 rounded-xl bg-panelHi text-subtle text-style-label text-center">
                             Сьогодні відпочинок
                           </div>
                         )}
@@ -168,18 +187,25 @@ export function Programs({
   );
 }
 
-function ProgramDetails({ prog, exercises }) {
+interface ProgramDetailsProps {
+  prog: TrainingProgramDef;
+  exercises: RawExerciseDef[];
+}
+
+function ProgramDetails({ prog, exercises }: ProgramDetailsProps) {
   return (
     <div className="border-t border-line px-4 pb-4 pt-3 space-y-3 bg-bg/50">
       <SectionHeading as="div" size="xs">
         Розклад та вправи
       </SectionHeading>
-      {prog.schedule.map((schedEntry) => {
+      {prog.schedule.map((schedEntry: ProgramScheduleEntry) => {
         const session = prog.sessions[schedEntry.sessionKey];
         if (!session) return null;
-        const exList = (session.exerciseIds || [])
-          .map((id) => exercises.find((e) => e.id === id))
-          .filter(Boolean);
+        const exList: RawExerciseDef[] = (session.exerciseIds || [])
+          .map((id: string) =>
+            exercises.find((e: RawExerciseDef) => e.id === id),
+          )
+          .filter((e): e is RawExerciseDef => Boolean(e));
         return (
           <div
             key={`${schedEntry.day}_${schedEntry.sessionKey}`}
@@ -189,7 +215,7 @@ function ProgramDetails({ prog, exercises }) {
               <span className="text-2xs font-bold px-2 py-0.5 rounded-full bg-fizruk/10 text-success border border-success/20">
                 День {schedEntry.day}
               </span>
-              <span className="text-sm font-semibold text-text">
+              <span className="text-style-label text-text">
                 {schedEntry.name}
               </span>
             </div>
@@ -209,7 +235,7 @@ function ProgramDetails({ prog, exercises }) {
             </div>
             {exList.length > 0 ? (
               <div className="flex flex-wrap gap-1">
-                {exList.map((ex) => (
+                {exList.map((ex: RawExerciseDef) => (
                   <span
                     key={ex.id}
                     className="text-xs px-2 py-0.5 rounded-full bg-panelHi border border-line text-subtle"

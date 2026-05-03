@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-05-02 by @sonher468. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
 Аналіз кодової бази `apps/web/src` (434 source файли, 87k рядків).
@@ -355,11 +355,13 @@ pill-overlay typography, marketing eyebrow). Не критично; колись
 
 ---
 
-### 11. Strict TypeScript rollout — Phases 1–3.1 complete, Phase 4 sized
+### 11. Strict TypeScript rollout — ✅ Phase 4 complete (full `strict: true`)
 
-**Контекст:** `apps/web/tsconfig.json` має `strict: false` + `allowJs: true`.
-Базовий `packages/config/tsconfig.base.json` — `strict: true`, але web-app
-перевизначає його. Це regression risk на найбільшому production surface.
+**Контекст (історія):** `apps/web/tsconfig.json` мав `strict: false` +
+`allowJs: true`. Базовий `packages/config/tsconfig.base.json` — `strict: true`,
+але web-app перевизначав його, що було regression risk на найбільшому
+production surface. Phase 4 (PR4) флипнув `strict: true` і видалив
+`allowJs` — апп тепер на повному strict-режимі без bypass-патернів.
 
 **Триетапний план:**
 
@@ -369,7 +371,7 @@ pill-overlay typography, marketing eyebrow). Не критично; колись
 | 2     | `strictNullChecks`                          | + `src/test/**`, `src/core/{auth,cloudSync,components,hints,hooks,observability,pricing,profile}/**` (10 дир) | ✅ Виконано |
 | 3     | `strictNullChecks`                          | + `src/modules/{routine,nutrition,finyk,fizruk}/**`, `src/core/{app,hub,insights,onboarding,settings,lib}/**` | ✅ Виконано |
 | 3.1   | `strictNullChecks`                          | + `src/core/designShowcase/**`, `src/core/stories/**`                                                         | ✅ Виконано |
-| 4     | повний `strict: true` + видалення `allowJs` | всі файли                                                                                                     | TODO        |
+| 4     | повний `strict: true` + видалення `allowJs` | всі файли                                                                                                     | ✅ Виконано |
 
 **Phase 1 деталі (PR-6.A):**
 
@@ -436,27 +438,52 @@ pill-overlay typography, marketing eyebrow). Не критично; колись
   та non-null assertions (`!`) після `expect(...).toBeDefined()` guards.
 - Жодних `@ts-expect-error`, `as any`, або runtime-змін не додано.
 
-**Phase 4 (TODO):** увімкнути `strict: true` у головному `tsconfig.json`,
-видалити `allowJs`, виправити всі залишкові помилки.
+**Phase 4 (✅ complete, PR4 merged):** увімкнено `strict: true` у
+головному `apps/web/tsconfig.json`, видалено `allowJs`, виправлено всі
+**419 помилок** strict-mode без `any`/`@ts-expect-error`/`as unknown as`.
+Web-app тепер на повному strict-режимі — `pnpm --filter @sergeant/web
+typecheck` зелений на чистому tsconfig (без діагностичних додатків).
 
-- **Заміряний скоуп (2026-05-02, post-PR3):**
-  **194 помилки** (повний `strict: true` + `allowJs: false`
-  без жодних змін у коді, через діагностичний `tsconfig.strict-full.json`).
-  Стартовий baseline був 419 помилок; PR1 #1388 закрив `sw.ts` (−27) і
-  `core/onboarding/presetApply.ts` (−23) = −50; PR2 #1391 закрив 5 fizruk
-  components (−99 на стартовому baseline; на чистому main −101 завдяки
-  ripple-у з типізованих props у викликах); PR3 закрив `Workouts.tsx`
-  (19) + `Exercise.tsx` (18) + `WeeklyDigestCard.tsx` (15) + ripple = −55.
-  Сумарно −225 (~54 % від стартового скоупу).
-- **Залишкові топ-блокери (post-PR3):**
-  `modules/fizruk/components/MiniLineChart.tsx` (13),
-  `modules/fizruk/pages/Programs.tsx` (11),
-  `modules/fizruk/pages/Body.tsx` (9),
-  `modules/fizruk/components/workouts/WorkoutFinishSheets.tsx` (9),
-  `modules/fizruk/components/workouts/QuickStartSheet.tsx` (9),
-  `core/onboarding/PresetSheet.tsx` (9). Решта помилок розпорошені по
-  fizruk/onboarding/insights/test-fixtures.
-- **Закриті топ-блокери (Phase 4 progress):**
+- **Підсумок (2026-05-03):**
+  Стартовий baseline — **419 помилок** (повний `strict: true` +
+  `allowJs: false` без змін у коді, через діагностичний
+  `tsconfig.strict-full.json`).
+  - **PR1 [#1388](https://github.com/Skords-01/Sergeant/pull/1388)** —
+    `sw.ts` (−27), `core/onboarding/presetApply.ts` (−23) = **−50**.
+  - **PR2 [#1391](https://github.com/Skords-01/Sergeant/pull/1391)** —
+    5 fizruk components (`AddExerciseSheet`, `WorkoutTemplatesSection`,
+    `WorkoutItemCard`, `WorkoutCatalogSection`, `ExerciseDetailSheet`):
+    **−99** на стартовому baseline (на чистому main −101 завдяки
+    ripple-у з типізованих props у викликах).
+  - **PR3 [#1402](https://github.com/Skords-01/Sergeant/pull/1402) /
+    [#1404](https://github.com/Skords-01/Sergeant/pull/1404)** —
+    `Workouts.tsx` (−19), `Exercise.tsx` (−18),
+    `WeeklyDigestCard.tsx` (−15) + ripple = **−55**. Pre-PR4 baseline = 194.
+  - **PR4 (final flip)** — добив усі **194 залишкові помилки** + flip
+    `strict: true` + видалення `allowJs`. Топ-блокери цієї фази:
+    `MiniLineChart.tsx` (13), `Programs.tsx` (11),
+    `WorkoutFinishSheets.tsx` (9), `QuickStartSheet.tsx` (9),
+    `PresetSheet.tsx` (9), `Body.tsx` (9, через локальне розширення
+    `useDailyLog`), `AssetsTxPickerView.tsx` (8),
+    `useWorkoutTemplates.test.tsx` (9), `useWorkouts.test.tsx` (8),
+    `WarmupCooldownChecklist.tsx` (7), `insightsEngine.test.ts` (7),
+    `Atlas.tsx` (6), `FirstActionSheet.tsx` (6), плюс ~30 файлів по
+    1–5 помилок (`Measurements.tsx`, `Dashboard.tsx`, `AssetsTable.tsx`,
+    `Overview.tsx`, `Transactions.tsx`/`useTransactionSelection.ts`,
+    `FizrukApp.tsx`/`useFizrukProgramStart.ts`, `Progress.tsx`,
+    `BodyAtlas.tsx`, `RestTimerOverlay.tsx`, `WellbeingChart.tsx`,
+    `TodayPlanCard.tsx`, `fizrukStorage.ts`/`fizrukStorage.test.ts`,
+    `activeWorkoutLib.ts`, `hubChatContext.ts`, `featureFlags.test.ts`,
+    `dailyFinykSummary.test.ts`, `hasLiveWeeklyDigest.test.ts`,
+    `WorkoutJournalSection.finish.test.tsx`, `syncEngine.test.ts`,
+    `useFinykPersonalization.ts`, `AssetsForm.tsx`, `TxListItem.tsx`,
+    `TransactionList.tsx`, `ResetPasswordPage.tsx`,
+    `ActiveWorkoutPanel.tsx`, `WorkoutItemCard.tsx`).
+- **Загальний підсумок:** **−419 помилок (100 % скоупу)** через 4 PR;
+  жодного `any`/`@ts-expect-error`/`as unknown as` ні в production-коді,
+  ні в нових патчах. Pre-existing `: any`-плями у `transactions/budgets`-
+  decompositions залишаються в окремому борговому пункті § 9.
+- **Закриті топ-блокери (історія Phase 4 progress):**
   PR1 [#1388](https://github.com/Skords-01/Sergeant/pull/1388) (merged):
   `sw.ts` (27), `core/onboarding/presetApply.ts` (23). PR2
   [#1391](https://github.com/Skords-01/Sergeant/pull/1391) (merged):

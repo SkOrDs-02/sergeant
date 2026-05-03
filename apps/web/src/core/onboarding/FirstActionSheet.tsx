@@ -6,8 +6,18 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { clearFirstActionPending, getVibePicks } from "./vibePicks";
 import { PresetSheet, getPresetModule } from "./PresetSheet";
+import type { ModuleId } from "./presetApply";
 import { getOnboardingGoals } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage";
+
+type IconName = Parameters<typeof Icon>[0]["name"];
+
+interface FirstActionEntry {
+  icon: IconName;
+  title: string;
+  desc: string;
+  accent: string;
+}
 
 /**
  * Per-module "one tap to your first real entry" copy. Tapping a row
@@ -19,7 +29,7 @@ import { webKVStore } from "@shared/lib/storage";
  * «Власний варіант» fallback that still deep-links via
  * `openHubModuleWithAction`.
  */
-const ACTIONS = {
+const ACTIONS: Record<ModuleId, FirstActionEntry> = {
   routine: {
     icon: "check",
     title: "Створи першу звичку",
@@ -51,9 +61,13 @@ const ACTIONS = {
 // camera, no bank auth) and the highest emotional payoff (7-day streak
 // preview). Fizruk requires an in-module wizard to produce a real entry,
 // so it goes last.
-const PRIORITY = ["routine", "finyk", "nutrition", "fizruk"];
+const PRIORITY: ModuleId[] = ["routine", "finyk", "nutrition", "fizruk"];
 
-function pickPrimary(picks) {
+function isModuleId(id: string): id is ModuleId {
+  return id in ACTIONS;
+}
+
+function pickPrimary(picks: string[]): ModuleId {
   for (const id of PRIORITY) {
     if (picks.includes(id)) return id;
   }
@@ -105,8 +119,12 @@ function getGoalAwareDesc(moduleId: string, fallback: string): string {
   return fallback;
 }
 
-export function FirstActionHeroCard({ onDismiss }) {
-  const picks = useMemo(() => {
+interface FirstActionHeroCardProps {
+  onDismiss?: () => void;
+}
+
+export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
+  const picks = useMemo<string[]>(() => {
     const raw = getVibePicks();
     return raw.length > 0 ? raw : Object.keys(ACTIONS);
   }, []);
@@ -116,8 +134,11 @@ export function FirstActionHeroCard({ onDismiss }) {
   // work and the dependency compare costs more than the scan.
   const primaryId = pickPrimary(picks);
   const primary = ACTIONS[primaryId];
-  const others = useMemo(
-    () => picks.filter((id) => id !== primaryId && ACTIONS[id]),
+  const others = useMemo<ModuleId[]>(
+    () =>
+      picks.filter(
+        (id: string): id is ModuleId => id !== primaryId && isModuleId(id),
+      ),
     [picks, primaryId],
   );
 
@@ -126,7 +147,7 @@ export function FirstActionHeroCard({ onDismiss }) {
   // Keeping the hero card mounted while the sheet is open means the
   // user can dismiss the sheet and try another module without losing
   // their FTUX context.
-  const [activePresetId, setActivePresetId] = useState(null);
+  const [activePresetId, setActivePresetId] = useState<ModuleId | null>(null);
 
   useEffect(() => {
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_SHOWN, {
@@ -140,7 +161,7 @@ export function FirstActionHeroCard({ onDismiss }) {
     onDismiss?.();
   };
 
-  const openPreset = (id) => {
+  const openPreset = (id: ModuleId) => {
     if (!getPresetModule(id)) return;
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_PICKED, {
       module: id,
@@ -150,7 +171,9 @@ export function FirstActionHeroCard({ onDismiss }) {
     setActivePresetId(id);
   };
 
-  const handlePresetPick = ({ persisted } = { persisted: true }) => {
+  const handlePresetPick = (
+    { persisted }: { persisted: boolean } = { persisted: true },
+  ) => {
     // Тільки routine-пресет дійсно пише запис у storage. Для
     // finyk/fizruk/nutrition ми лише навігуємо у повний add-sheet
     // модуля, а реальне збереження відбудеться, коли користувач
@@ -238,7 +261,7 @@ export function FirstActionHeroCard({ onDismiss }) {
               onClick={() => setExpanded((v) => !v)}
               aria-expanded={expanded}
               className={cn(
-                "w-full text-xs font-medium text-muted hover:text-text",
+                "w-full text-style-caption text-muted hover:text-text",
                 "flex items-center justify-center gap-1 py-1",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded-xl",
               )}
@@ -279,7 +302,7 @@ export function FirstActionHeroCard({ onDismiss }) {
                           <Icon name={a.icon} size={18} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm font-semibold text-text">
+                          <div className="text-style-label text-text">
                             {a.title}
                           </div>
                           <div className="text-xs text-muted mt-0.5 truncate">

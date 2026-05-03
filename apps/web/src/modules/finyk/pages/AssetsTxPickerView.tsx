@@ -92,6 +92,21 @@ export function AssetsTxPickerView({
 }: AssetsTxPickerViewProps) {
   if (txPicker.type === "monoDebt") {
     const account = accounts.find((a) => a.id === txPicker.id);
+    if (!account) {
+      return (
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-line bg-bg sticky top-0 z-10">
+            <button
+              type="button"
+              onClick={() => setTxPicker(null)}
+              className="text-sm text-muted hover:text-text transition-colors"
+            >
+              ← Назад
+            </button>
+          </div>
+        </div>
+      );
+    }
     const linkedIds = monoDebtLinkedTxIds[txPicker.id] || [];
     const paid = transactions
       .filter((t) => linkedIds.includes(t.id))
@@ -265,22 +280,34 @@ export function AssetsTxPickerView({
     ? manualDebts
     : receivables;
   const item = items.find((d) => d.id === (txPicker as { id: string }).id);
-  const linked = item?.linkedTxIds || [];
+  if (!item) {
+    return (
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-line bg-bg sticky top-0 z-10">
+          <button
+            type="button"
+            onClick={() => setTxPicker(null)}
+            className="text-sm text-muted hover:text-text transition-colors"
+          >
+            ← Назад
+          </button>
+        </div>
+      </div>
+    );
+  }
+  const linked = item.linkedTxIds || [];
   const paid = isDebt
-    ? getDebtPaid(item as Debt | undefined, transactions as TxRowTx[])
-    : getRecvPaid(item as Receivable | undefined, transactions as TxRowTx[]);
+    ? getDebtPaid(item as Debt, transactions as TxRowTx[])
+    : getRecvPaid(item as Receivable, transactions as TxRowTx[]);
   const total = isDebt
-    ? getDebtEffectiveTotal(item as Debt | undefined, transactions as TxRowTx[])
+    ? getDebtEffectiveTotal(item as Debt, transactions as TxRowTx[])
     : getReceivableEffectiveTotal(
-        item as Receivable | undefined,
+        item as Receivable,
         transactions as TxRowTx[],
       );
   const remaining = isDebt
-    ? calcDebtRemaining(item as Debt | undefined, transactions as TxRowTx[])
-    : calcReceivableRemaining(
-        item as Receivable | undefined,
-        transactions as TxRowTx[],
-      );
+    ? calcDebtRemaining(item as Debt, transactions as TxRowTx[])
+    : calcReceivableRemaining(item as Receivable, transactions as TxRowTx[]);
   const getTxRole = (tx: TxRowTx) =>
     isDebt ? getDebtTxRole(tx) : getReceivableTxRole(tx);
 

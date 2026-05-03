@@ -60,9 +60,10 @@ interface Debt {
   name: string;
   amount: number;
   totalAmount: number;
-  dueDate?: string;
+  dueDate?: string | null;
   emoji?: string;
   linkedTxIds?: string[];
+  [extra: string]: unknown;
 }
 
 interface Receivable {
@@ -70,6 +71,7 @@ interface Receivable {
   name: string;
   amount: number;
   linkedTxIds?: string[];
+  [extra: string]: unknown;
 }
 
 interface BudgetLimit {

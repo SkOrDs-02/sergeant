@@ -51,8 +51,10 @@ export function ResetPasswordPage() {
   const INPUT_CLS =
     "input-focus w-full min-h-[44px] px-4 py-3 rounded-xl bg-panel border border-line text-text text-base md:text-sm placeholder:text-muted/50";
 
-  const passwordFieldProps = pwValidation.getFieldProps("password");
-  const confirmFieldProps = pwValidation.getFieldProps("confirm");
+  const { className: passwordFieldClassName, ...passwordFieldProps } =
+    pwValidation.getFieldProps("password");
+  const { className: confirmFieldClassName, ...confirmFieldProps } =
+    pwValidation.getFieldProps("confirm");
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -80,7 +82,11 @@ export function ResetPasswordPage() {
       window.setTimeout(() => navigate("/sign-in", { replace: true }), 1500);
     } catch (err) {
       setStatus("error");
-      setServerError(err?.message || "Щось пішло не так. Спробуй ще раз.");
+      setServerError(
+        err instanceof Error
+          ? err.message
+          : "Щось пішло не так. Спробуй ще раз.",
+      );
     }
   };
 
@@ -140,7 +146,7 @@ export function ResetPasswordPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={10}
-                  className={cn(INPUT_CLS, passwordFieldProps.className)}
+                  className={cn(INPUT_CLS, passwordFieldClassName)}
                   placeholder="Мінімум 10 символів"
                   autoComplete="new-password"
                   aria-invalid={
@@ -151,7 +157,7 @@ export function ResetPasswordPage() {
                       ? "reset-pw-error"
                       : undefined
                   }
-                  {...pwValidation.getFieldProps("password")}
+                  {...passwordFieldProps}
                 />
                 {pwValidation.fields.password.error && (
                   <p id="reset-pw-error" className="text-xs text-danger">
@@ -174,7 +180,7 @@ export function ResetPasswordPage() {
                   onChange={(e) => setConfirm(e.target.value)}
                   required
                   minLength={10}
-                  className={cn(INPUT_CLS, confirmFieldProps.className)}
+                  className={cn(INPUT_CLS, confirmFieldClassName)}
                   placeholder="Введи пароль ще раз"
                   autoComplete="new-password"
                   aria-invalid={
@@ -185,7 +191,7 @@ export function ResetPasswordPage() {
                       ? "reset-confirm-error"
                       : undefined
                   }
-                  {...pwValidation.getFieldProps("confirm")}
+                  {...confirmFieldProps}
                 />
                 {pwValidation.fields.confirm.error && (
                   <p id="reset-confirm-error" className="text-xs text-danger">

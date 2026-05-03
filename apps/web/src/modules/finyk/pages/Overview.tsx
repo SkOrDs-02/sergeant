@@ -125,10 +125,15 @@ export function Overview({
   const { balance: monoOnlyTotal, debt: monoTotalDebt } = useMemo(
     () =>
       getMonoTotals(
-        accounts.filter(
-          (a): a is Extract<typeof a, { _source: "monobank" }> =>
-            a._source === "monobank",
-        ),
+        accounts
+          .filter(
+            (a): a is Extract<typeof a, { _source: "monobank" }> =>
+              a._source === "monobank",
+          )
+          .filter(
+            (a): a is typeof a & { balance: number } =>
+              typeof a.balance === "number",
+          ),
         hiddenAccounts,
       ),
     [accounts, hiddenAccounts],
@@ -357,10 +362,16 @@ export function Overview({
   }
 
   const recurringOutThisMonth = monthFlows
-    .filter((f) => f.sign === "-" && typeof f.amount === "number")
+    .filter(
+      (f): f is typeof f & { amount: number } =>
+        f.sign === "-" && typeof f.amount === "number",
+    )
     .reduce((sum, f) => sum + f.amount, 0);
   const recurringInThisMonth = monthFlows
-    .filter((f) => f.sign === "+" && typeof f.amount === "number")
+    .filter(
+      (f): f is typeof f & { amount: number } =>
+        f.sign === "+" && typeof f.amount === "number",
+    )
     .reduce((sum, f) => sum + f.amount, 0);
   const unknownOutCount = monthFlows.filter(
     (f) => f.sign === "-" && f.amount === null,
@@ -453,7 +464,7 @@ export function Overview({
 
         <PlannedFlowsCard
           plannedFlows={plannedFlows}
-          onNavigate={onNavigate}
+          onNavigate={onNavigate ?? (() => {})}
           showBalance={showBalance}
         />
 

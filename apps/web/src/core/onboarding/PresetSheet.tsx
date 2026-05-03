@@ -4,8 +4,36 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { openHubModuleWithAction } from "@shared/lib/hubNav";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
-import { applyPreset } from "./presetApply";
+import { applyPreset, type ModuleId, type ModulePreset } from "./presetApply";
 import { writePresetPrefill } from "./presetPrefill";
+
+type HubAction = Parameters<typeof openHubModuleWithAction>[1];
+
+interface PresetItem {
+  id: string;
+  emoji: string;
+  title: string;
+  desc: string;
+  data: ModulePreset | Record<string, unknown>;
+}
+
+interface PresetFallback {
+  action: HubAction;
+  label: string;
+  icon: string;
+}
+
+interface PresetModuleConfig {
+  title: string;
+  desc: string;
+  accent: string;
+  moduleIcon: string;
+  fallback: PresetFallback;
+  action?: HubAction;
+  items: PresetItem[];
+}
+
+type PresetCatalog = Record<ModuleId, PresetModuleConfig>;
 
 /**
  * Per-module "tap-to-log" presets. Each entry is deliberately narrow —
@@ -18,7 +46,7 @@ import { writePresetPrefill } from "./presetPrefill";
  * no wizard. The custom-entry row at the bottom of the sheet keeps the
  * escape hatch for users whose first instinct doesn't fit the list.
  */
-const PRESETS = {
+const PRESETS: PresetCatalog = {
   routine: {
     title: "Яку звичку почнемо?",
     desc: "Одне натискання — і вона у твоєму списку сьогодні.",
@@ -117,8 +145,14 @@ const PRESETS = {
   },
 };
 
-export function getPresetModule(moduleId) {
-  return PRESETS[moduleId] || null;
+export function getPresetModule(
+  moduleId: string | null | undefined,
+): PresetModuleConfig | null {
+  if (!moduleId) return null;
+  return (
+    (PRESETS as Record<string, PresetModuleConfig | undefined>)[moduleId] ??
+    null
+  );
 }
 
 /**
@@ -131,20 +165,42 @@ export function getPresetModule(moduleId) {
  * flow (same PWA action the old FirstActionRow used) for users whose
  * first entry isn't in the preset list.
  */
-export function PresetSheet({ open, moduleId, onClose, onPick }) {
-  const config = useMemo(() => PRESETS[moduleId] || null, [moduleId]);
+interface PresetPickResult {
+  moduleId: ModuleId;
+  presetId: string | null;
+  custom?: boolean;
+  persisted: boolean;
+}
+
+interface PresetSheetProps {
+  open: boolean;
+  moduleId: ModuleId | null;
+  onClose: () => void;
+  onPick?: (result: PresetPickResult) => void;
+}
+
+export function PresetSheet({
+  open,
+  moduleId,
+  onClose,
+  onPick,
+}: PresetSheetProps) {
+  const config = useMemo<PresetModuleConfig | null>(
+    () => (moduleId ? PRESETS[moduleId] : null),
+    [moduleId],
+  );
 
   useEffect(() => {
-    if (!open || !config) return;
+    if (!open || !config || !moduleId) return;
     trackEvent(ANALYTICS_EVENTS.FTUX_PRESET_SHEET_SHOWN, {
       module: moduleId,
       presetCount: config.items.length,
     });
   }, [open, config, moduleId]);
 
-  if (!config) return null;
+  if (!config || !moduleId) return null;
 
-  const handlePick = (item) => {
+  const handlePick = (item: PresetItem) => {
     trackEvent(ANALYTICS_EVENTS.FTUX_PRESET_PICKED, {
       module: moduleId,
       presetId: item.id,
@@ -157,7 +213,7 @@ export function PresetSheet({ open, moduleId, onClose, onPick }) {
     // до трьох ідентичних порожніх форм.
     let persisted = false;
     if (moduleId === "routine") {
-      applyPreset(moduleId, item.data);
+      applyPreset(moduleId, item.data as ModulePreset);
       persisted = true;
     } else if (config.action) {
       writePresetPrefill(moduleId, item.data);
@@ -181,6 +237,10 @@ export function PresetSheet({ open, moduleId, onClose, onPick }) {
     openHubModuleWithAction(moduleId, config.fallback.action);
   };
 
+  const fallbackIconName = config.fallback.icon as Parameters<
+    typeof Icon
+  >[0]["name"];
+
   return (
     <Sheet
       open={open}
@@ -189,7 +249,7 @@ export function PresetSheet({ open, moduleId, onClose, onPick }) {
       description={config.desc}
     >
       <div className="px-5 pb-5 space-y-2">
-        {config.items.map((item) => (
+        {config.items.map((item: PresetItem) => (
           <button
             key={item.id}
             type="button"
@@ -232,13 +292,13 @@ export function PresetSheet({ open, moduleId, onClose, onPick }) {
           onClick={handleCustom}
           className={cn(
             "w-full text-center px-3 py-3 rounded-2xl border border-dashed border-line",
-            "text-sm font-semibold text-muted hover:text-text hover:border-brand-500/50",
+            "text-style-label text-muted hover:text-text hover:border-brand-500/50",
             "transition-[background-color,border-color,opacity]",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
           )}
         >
           <div className="flex items-center justify-center gap-1.5">
-            <Icon name={config.fallback.icon} size={14} />
+            <Icon name={fallbackIconName} size={14} />
             <span>{config.fallback.label}</span>
           </div>
         </button>

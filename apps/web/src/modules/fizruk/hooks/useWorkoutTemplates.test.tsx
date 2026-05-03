@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
 import { act, renderHook } from "@testing-library/react";
-import { useWorkoutTemplates } from "./useWorkoutTemplates";
+import {
+  useWorkoutTemplates,
+  type WorkoutTemplate,
+} from "./useWorkoutTemplates";
+
+type CreatedTemplate = ReturnType<
+  ReturnType<typeof useWorkoutTemplates>["addTemplate"]
+>;
 
 describe("useWorkoutTemplates", () => {
   beforeEach(() => {
@@ -41,7 +48,7 @@ describe("useWorkoutTemplates", () => {
   it("restoreTemplate переживає stale closure: захоплена до deletion функція все одно відновлює шаблон", () => {
     const { result } = renderHook(() => useWorkoutTemplates());
 
-    let created;
+    let created: CreatedTemplate | undefined;
     act(() => {
       created = result.current.addTemplate("X", ["e1"]);
     });
@@ -51,33 +58,33 @@ describe("useWorkoutTemplates", () => {
     const capturedRestore = result.current.restoreTemplate;
 
     act(() => {
-      result.current.removeTemplate(created.id);
+      result.current.removeTemplate(created!.id);
     });
     expect(result.current.templates).toHaveLength(0);
 
     act(() => {
-      capturedRestore(created, 0);
+      capturedRestore(created as unknown as WorkoutTemplate, 0);
     });
-    expect(result.current.templates.map((t) => t.id)).toEqual([created.id]);
+    expect(result.current.templates.map((t) => t.id)).toEqual([created!.id]);
   });
 
   it("restoreTemplate ідемпотентний: повторний виклик не дублює шаблон", () => {
     const { result } = renderHook(() => useWorkoutTemplates());
-    let created;
+    let created: CreatedTemplate | undefined;
     act(() => {
       created = result.current.addTemplate("Y", []);
     });
     act(() => {
-      result.current.removeTemplate(created.id);
+      result.current.removeTemplate(created!.id);
     });
     act(() => {
-      result.current.restoreTemplate(created, 0);
+      result.current.restoreTemplate(created as unknown as WorkoutTemplate, 0);
     });
     act(() => {
-      result.current.restoreTemplate(created, 0);
+      result.current.restoreTemplate(created as unknown as WorkoutTemplate, 0);
     });
     expect(
-      result.current.templates.filter((t) => t.id === created.id),
+      result.current.templates.filter((t) => t.id === created!.id),
     ).toHaveLength(1);
   });
 

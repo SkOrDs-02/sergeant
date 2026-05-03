@@ -7,7 +7,7 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 // onFinishClick callback as a single button. This keeps the test focused on
 // WorkoutJournalSection's finish flow, not ActiveWorkoutPanel internals.
 vi.mock("../workouts/ActiveWorkoutPanel", () => ({
-  ActiveWorkoutPanel: ({ onFinishClick }) => (
+  ActiveWorkoutPanel: ({ onFinishClick }: { onFinishClick: () => void }) => (
     <button type="button" data-testid="finish-btn" onClick={onFinishClick}>
       Завершити
     </button>
@@ -17,9 +17,15 @@ vi.mock("../workouts/ActiveWorkoutPanel", () => ({
 // Virtuoso isn't relevant to the finish flow and needs ResizeObserver etc.
 // Replace it with a plain mapper so the journal list renders trivially.
 vi.mock("react-virtuoso", () => ({
-  Virtuoso: ({ data, itemContent }) => (
+  Virtuoso: ({
+    data,
+    itemContent,
+  }: {
+    data: Array<{ id?: string }> | undefined;
+    itemContent: (i: number, d: { id?: string }) => React.ReactNode;
+  }) => (
     <div data-testid="journal-list">
-      {(data || []).map((d, i) => (
+      {(data || []).map((d: { id?: string }, i: number) => (
         <div key={d?.id ?? i}>{itemContent(i, d)}</div>
       ))}
     </div>

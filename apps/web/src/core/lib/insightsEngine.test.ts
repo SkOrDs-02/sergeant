@@ -3,17 +3,17 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { generateInsights } from "./insightsEngine";
 
 function createLocalStorageMock() {
-  /** @type {Map<string, string>} */
-  const store = new Map();
+  const store = new Map<string, string>();
   return {
-    getItem: (k) => (store.has(String(k)) ? store.get(String(k)) : null),
-    setItem: (k, v) => void store.set(String(k), String(v)),
-    removeItem: (k) => void store.delete(String(k)),
+    getItem: (k: string) =>
+      store.has(String(k)) ? (store.get(String(k)) ?? null) : null,
+    setItem: (k: string, v: string) => void store.set(String(k), String(v)),
+    removeItem: (k: string) => void store.delete(String(k)),
     clear: () => void store.clear(),
   };
 }
 
-function setLS(key, value) {
+function setLS(key: string, value: unknown) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
@@ -22,7 +22,7 @@ function clearAll() {
 }
 
 /** Генерує N завершених тренувань розподілених по днях тижня */
-function makeWorkouts(count, dayOfWeek = 1) {
+function makeWorkouts(count: number, dayOfWeek = 1) {
   const workouts: Array<{
     id: string;
     startedAt: string;

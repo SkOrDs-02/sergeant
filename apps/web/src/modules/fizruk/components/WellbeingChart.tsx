@@ -1,7 +1,17 @@
 import { EmptyState } from "@shared/components/ui/EmptyState";
 
+interface WellbeingPoint {
+  label: string;
+  energy?: number | null;
+  mood?: number | null;
+}
+
+interface WellbeingChartProps {
+  data: WellbeingPoint[] | null | undefined;
+}
+
 /** Grouped bar chart: energy (green) + mood (purple) per workout. */
-export function WellbeingChart({ data }) {
+export function WellbeingChart({ data }: WellbeingChartProps) {
   if (!data || data.length === 0) {
     return (
       <EmptyState
@@ -86,7 +96,7 @@ export function WellbeingChart({ data }) {
           );
         })}
 
-        {data.map((d, i) => {
+        {data.map((d: WellbeingPoint, i: number) => {
           const cx = padL + i * groupW + groupW / 2;
           const energyH =
             d.energy != null ? ((d.energy - 1) / (MAX_SCORE - 1)) * innerH : 0;

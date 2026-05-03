@@ -6,14 +6,14 @@ import {
   DAILY_SUMMARY_DISMISS_KEY,
 } from "./dailyFinykSummary";
 
-function setLS(key, value) {
+function setLS(key: string, value: unknown) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 function clearAll() {
   localStorage.clear();
 }
 
-function ts(date) {
+function ts(date: Date) {
   return Math.floor(date.getTime() / 1000);
 }
 

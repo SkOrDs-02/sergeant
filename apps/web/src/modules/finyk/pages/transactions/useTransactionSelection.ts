@@ -47,7 +47,7 @@ export interface UseTransactionSelectionResult {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   stableSwipeDeleteManual: (tx: any) => void;
   /** Stable handler: TxRow → "edit manual" inline action. */
-  stableOnEditManual: (manualId: string) => void;
+  stableOnEditManual: (manualId?: string) => void;
   /** Stable handler: TxRow → "hide" inline action. */
   stableHideTx: (id: string) => void;
   /** Stable handler: TxRow → category override picker. */
@@ -130,9 +130,9 @@ export function useTransactionSelection({
     (id: string, splits: any) => handlersRef.current.setSplitTx?.(id, splits),
     [],
   );
-  const stableOnEditManual = useCallback((manualId: string) => {
+  const stableOnEditManual = useCallback((manualId?: string) => {
     const fn = handlersRef.current.onEditManualExpense;
-    if (typeof fn === "function") fn(manualId);
+    if (typeof fn === "function" && typeof manualId === "string") fn(manualId);
   }, []);
   const stableSwipeHideTx = useCallback(
     (id: string) => handlersRef.current.hideTx(id),
