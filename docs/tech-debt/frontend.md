@@ -131,7 +131,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 
 ---
 
-### 4. Великі файли (>600 рядків) — 19 файлів (тільки `apps/web/src`)
+### 4. Великі файли (>600 рядків) — 18 файлів (тільки `apps/web/src`)
 
 > `finyk/pages/Assets.tsx` (раніше 1147 рядків) декомпозовано на
 > `useAssetsState.ts` (259), `AssetsForm.tsx` (376), `AssetsTable.tsx` (511),
@@ -215,7 +215,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 > `Body/CollapsibleTrendCard.tsx` (95 — collapsible картка графіка зі
 > збереженим станом відкриття), `Body/JournalEntryCard.tsx` (126 — окремий
 > щоденниковий запис із міткою дати + підсумком + видаленням), `Body/JournalSection.tsx`
-> (78 — обгортка для журналу зі згортанням верхнього рівня). Усі < 200 LOC. Count 18 → 17.
+> (78 — обгортка для журналу зі згортанням верхнього рівня). Усі < 200 LOC. Count 19 → 18.
 >
 > **Скоуп таблиці нижче** — лише `apps/web/src`. Mobile (`apps/mobile/src/modules/finyk/pages/Transactions/TransactionsPage.tsx` 1215),
 > packages (`packages/shared/src/lib/assistantCatalogue.ts` 1133, `schemas/api.ts` 986,
