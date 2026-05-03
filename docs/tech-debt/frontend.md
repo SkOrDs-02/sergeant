@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-05-03 by @Skords-01 (Phase 5 strict TS clean-up: `noImplicitOverride` + explicit `allowJs: false` on web/console + видалено redundant `apps/web/tsconfig.strict.json` / `tsconfig.noimplicitany.json`; `pnpm strict:coverage` = 13/13 пакетів = 100%). **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-03 by @Skords-01 (Phase 5c: `allowJs` flipped to `false` у `packages/config/tsconfig.base.json` + explicit на всіх 4 апах + 8 пакетах — стрікт-coverage `allowJs` колонка тепер `—` для всіх 13 пакетів; PR [#1454](https://github.com/Skords-01/Sergeant/pull/1454)). Phase 5 (commit `a7a31703`) + Phase 5b (PR [#1448](https://github.com/Skords-01/Sergeant/pull/1448)) + Phase 5a finyk-pages `: any` cleanup (PR [#1452](https://github.com/Skords-01/Sergeant/pull/1452)) уже за плечима. `pnpm strict:coverage` = 13/13 пакетів = 100%. **Next review:** 2026-08-03.
 > **Status:** Active
 
 Аналіз кодової бази `apps/web/src` (649 source файлів, ~102k рядків — без тестів і `__tests__/`; 2026-05-03 re-audit).
@@ -596,9 +596,39 @@ modules/fizruk/components/workouts/WorkoutJournalSection`;
   до увімкнення `noImplicitOverride` через свою власну природу
   (10 викликів `handle.client.all<…>()` обернуто в `await`, бо
   `SqliteMigrationClient.all()` має сигнатуру `R[] | Promise<R[]>`).
-* `apps/server/tsconfig.json` (`allowJs: true`) і
+* ~~`apps/server/tsconfig.json` (`allowJs: true`) і
   `apps/mobile-shell/tsconfig.json` (наслідує `true`) залишено as-is —
-  вони навмисно тримають JS-файли (`migrate.mjs`, build helpers).
+  вони навмисно тримають JS-файли (`migrate.mjs`, build helpers).~~
+  **Закрито у Phase 5c (PR #1454):** обидва тепер на `allowJs: false`.
+  `apps/server/tsconfig.json` має `migrate.mjs` у `include`, але під
+  `allowJs: false` `.mjs`-файли не обробляються `tsc` (тільки `.ts`),
+  тож build-helper не ламається — `pnpm --filter @sergeant/server typecheck`
+  зелений. Build-pipeline не торкається — `migrate.mjs` запускається
+  напряму через node, без TS-toolchain-у.
+
+**Phase 5c — `allowJs` workspace-wide flip ([PR #1454](https://github.com/Skords-01/Sergeant/pull/1454), 2026-05-03):**
+
+- `packages/config/tsconfig.base.json` — `allowJs: true → false`
+  (single source of truth). Раніше base дозволяв JS-файлам неявно
+  потрапляти у TS-pipeline через успадкування — `pnpm strict:coverage`
+  на цьому показував `allowJs: ⚠️` для всіх пакетів окрім `apps/web`
+  / `apps/console`. Тепер base стрімкий.
+- Explicit `allowJs: false` + `checkJs: false` додано на всі 12
+  app/package tsconfig-и (`apps/server`, `apps/mobile`, `apps/mobile-shell`,
+  `packages/{api-client,shared,db-schema,insights,finyk-domain,fizruk-domain,
+nutrition-domain,routine-domain}`). Для `apps/server` — це flip з
+  `true → false`; для решти — додавання прапора, бо вони раніше
+  наслідували `true` з base.
+- `apps/mobile/tsconfig.json` — додано 2 нові `paths` mappings:
+  `@sergeant/design-tokens/tokens` → `index.d.ts`, `@sergeant/design-tokens/mobile`
+  → `mobile.d.ts`. Раніше legacy glob `@sergeant/design-tokens/*` мапив
+  ці subpath-імпорти на runtime `tokens.js`/`mobile.js`-файли, які під
+  `allowJs: true` мовчки типувалися як `any`. Під `allowJs: false`
+  TS падав з TS7016 (Could not find a declaration file). Path-mapping
+  на `.d.ts` дає типи без зайвої магії.
+- Регресія unblocked: `pnpm strict:coverage` тепер показує колонку
+  `allowJs: —` (тобто прапор не виставлений у `true`) для всіх 13
+  пакетів. 100 % strict-coverage без жодного `⚠️`.
 
 **Phase 5 cleanup — діагностичні tsconfig-и видалено (2026-05-03):**
 
@@ -638,6 +668,40 @@ in-place перед initiation Phase 4:
   явно, зливаємо через `cn()`, проброс `onBlur` окремо. Це і `TS2783`-фікс,
   і реальний стилевий регрес — інпути пароля втрачали базові стилі при
   validation-error.
+
+---
+
+### 11.1 Що ще лишилось до «ідеального» стрікту
+
+Канонічний `strict: true` + `noImplicitOverride` + `allowJs: false` —
+13/13 (100 %), enforced. Але «ідеально» — ні. Backlog opt-in-прапорів
+та залишкових `as unknown as`-каст:
+
+| #   | Прапор / патерн                                                                                                                  | Очікуваний impact                                                                                                             | Статус     |
+| --- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| 1   | `noUncheckedIndexedAccess` (`arr[i]` стає `T \| undefined`)                                                                      | 100–300 нових помилок (baseline-experiment у плані як окремий PR (b))                                                         | 🟡 next    |
+| 2   | `exactOptionalPropertyTypes` (`?:` не дозволяє явний `\| undefined`)                                                             | ~50–150 помилок (зокрема `MonoAccount.balance?: number` після Phase 5b повинен залишитись валідним)                           | ⏳ pending |
+| 3   | `noImplicitReturns` + `noFallthroughCasesInSwitch`                                                                               | ~10–30 помилок, переважно у chat-actions handler-ах                                                                           | ⏳ pending |
+| 4   | `noPropertyAccessFromIndexSignature` (`.foo` на index-signature → `["foo"]`)                                                     | ~50 помилок, переважно у `Record<string, X>`-сервісах                                                                         | ⏳ pending |
+| 5   | `noUnusedLocals` / `noUnusedParameters` (зараз ESLint-enforced, не TS-enforced)                                                  | низький — ESLint вже ловить, перенести у TS дає uniformity                                                                    | ⏳ pending |
+| 6   | `as unknown as X` у тестах (~50 файлів — mock-каст `vi.fn()`, fake `PointerEvent`, тощо)                                         | mid — нормально для test-коду, але формально strict-violation. Потенційно — типізовані mock-helper-и + `vitest-mock-extended` | ⏳ pending |
+| 7   | `: any` у тест-only allowlisted файлах (e.g. `apps/web/src/core/lib/lazyImport.ts:33-39 type AnyComponent = ComponentType<any>`) | low — навмисно з коментарем, але формально lint-vio                                                                           | ⏳ pending |
+
+**Послідовність розгортання (план):**
+
+- **Phase 6a (наступний PR (b)):** baseline-experiment з `noUncheckedIndexedAccess`.
+  Флипнути в base, виміряти error count, документувати у tech-debt §11.1
+  - сформувати per-module roll-out план (як для Phase 4). Ймовірно
+    вийде 3–5 PR-ів rollout (per-module).
+- **Phase 6b:** `exactOptionalPropertyTypes` baseline (схожа стратегія).
+- **Phase 6c:** discrete `noImplicitReturns` + `noFallthroughCasesInSwitch`
+  - `noPropertyAccessFromIndexSignature` — менший impact, можна разом.
+- **Phase 6d:** `noUnusedLocals`/`noUnusedParameters` flip (тривіально
+  — ESLint вже ловить).
+- **Phase 7 (опційно):** mock-helper-и + `vitest-mock-extended` для
+  закриття `as unknown as` у тестах.
+
+Кожна фаза = окремий PR з baseline-метрикою у описі.
 
 ---
 
