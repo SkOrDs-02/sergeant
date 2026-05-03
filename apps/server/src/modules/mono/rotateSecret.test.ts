@@ -27,6 +27,7 @@ import {
   rotateStaleMonoWebhookSecrets,
 } from "./rotateSecret.js";
 
+// gitleaks:allow — fixed test fixture, not a real key (matches connection.test.ts).
 const ENC_KEY =
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 const PUBLIC_API_BASE_URL = "https://api.example.com";
