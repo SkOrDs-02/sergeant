@@ -1,11 +1,9 @@
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { useScrollHeader } from "@shared/hooks/useScrollHeader";
 import { BrandLogo } from "./BrandLogo";
-import { CHAT_PATH } from "./appPaths";
 import { DarkModeToggle } from "./DarkModeToggle";
 import type { User } from "@sergeant/shared";
 
@@ -65,7 +63,6 @@ export function HubHeader({
   onToggleDark,
   hideAuthButton = false,
 }: HubHeaderProps) {
-  const navigate = useNavigate();
   const { isHidden, isShrunk, hasBlur } = useScrollHeader({
     shrinkThreshold: 40,
     hideThreshold: 120,
@@ -127,22 +124,12 @@ export function HubHeader({
             </button>
           </Tooltip>
 
-          {/* AI-assistant entry. The dedicated `/chat` route replaced the
-              floating FAB removed in #1357, but without a header affordance
-              the route was effectively undiscoverable — only ⌘K → "Запитати
-              асистента" or a deep-link reached it. Restoring a single-tap
-              header button keeps the new routed-chat IA without the visible
-              regression of "the assistant disappeared". */}
-          <Tooltip content="AI-асистент" placement="bottom-center">
-            <button
-              type="button"
-              onClick={() => navigate(CHAT_PATH)}
-              aria-label="Відкрити AI-асистента"
-              className={ICON_BUTTON_CLS}
-            >
-              <Icon name="sparkle" size="lg" />
-            </button>
-          </Tooltip>
+          {/* AI-assistant entry was previously surfaced here as a sparkle
+              icon (#1507) after the floating FAB was retired in #1357. It
+              was reverted: the header now stays focused on Search +
+              theme/auth chrome, and the assistant is reachable via the
+              dashboard FAB rendered by `HubHomeView`. ⌘K → «Запитати
+              асистента» and the `/chat` deep-link continue to work. */}
 
           {/* Dark-mode toggle: surfaced as a single-tap header affordance for
               both signed-in and guest users. Previously buried inside the

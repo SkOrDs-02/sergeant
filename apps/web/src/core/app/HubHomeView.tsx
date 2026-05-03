@@ -1,7 +1,10 @@
+import { useNavigate } from "react-router-dom";
 import { type User } from "@sergeant/shared";
 import { SkipLink } from "@shared/components/ui/SkipLink";
 import { KeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
+import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
 import { ActiveWorkoutBanner } from "./ActiveWorkoutBanner";
+import { CHAT_PATH } from "./appPaths";
 import { HubBottomNav } from "./HubBottomNav";
 import { HubHeader } from "./HubHeader";
 import { HubMainContent } from "./HubMainContent";
@@ -63,6 +66,8 @@ export function HubHomeView(props: HubHomeViewProps) {
     shortcutsOpen,
     onCloseShortcuts,
   } = props;
+
+  const navigate = useNavigate();
 
   // FTUX session = the window between the splash and the user's first
   // real (non-demo) entry. During this window we intentionally
@@ -136,6 +141,22 @@ export function HubHomeView(props: HubHomeViewProps) {
         onOpenModule={openModule}
       />
       <KeyboardShortcutsModal open={shortcutsOpen} onClose={onCloseShortcuts} />
+
+      {/* Floating AI-assistant entry. Shown only on the dashboard tab so
+          it does not occlude reports / profile content; hidden during
+          the FTUX splash window so the first-action signal stays the
+          single CTA on screen. Replaces the sparkle icon that briefly
+          lived in HubHeader (#1507) — bringing back the original FAB
+          chrome the team had pre-#1357 keeps the assistant a one-tap
+          target without crowding the header. */}
+      {ui.hubView === "dashboard" && !inFtuxSession && (
+        <FloatingActionButton
+          icon="sparkle"
+          onClick={() => navigate(CHAT_PATH)}
+          aria-label="Відкрити AI-асистента"
+          hideOnScroll
+        />
+      )}
     </div>
   );
 }
