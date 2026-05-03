@@ -96,7 +96,7 @@ jobs:
       # `version:` mirrors `packageManager` in root package.json — without
       # it the action defaults to pnpm@latest (10.x, needs Node ≥22.13)
       # which crashes setup-node `cache: pnpm` on macOS runners.
-      - uses: pnpm/action-setup@903f9c1a6ebcba6cf41d87230be49611ac97822e
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
         with:
           version: 9.15.1
 
