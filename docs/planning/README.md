@@ -1,6 +1,6 @@
 # Планування
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-03 by Devin (sync after Stage 4 Fizruk progress: PR #029 web cut-over + server apply-fns + PR #029a mobile read overlay усі на main). **Next review:** 2026-07-31.
 > **Status:** Active
 
 Roadmap-и та плани розвитку.

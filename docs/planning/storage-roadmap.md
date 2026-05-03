@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-03 by Devin (sync Stage 4 Fizruk progress: PR #027 schema + bundled SQLite migration, PR #028 dual-write LS/MMKV↔SQLite, та PR #029 cut-over reads + server `applyFizruk*` apply-функції — усі на main; лишається PR #030 LS cleanup). **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-03 by Devin (sync Stage 4 Fizruk progress: PR #027 schema + bundled SQLite migration, PR #028 dual-write LS/MMKV↔SQLite, PR #029 cut-over reads + server `applyFizruk*` apply-функції та PR #029a mobile fizruk read overlay — усі на main; лишається PR #030 LS cleanup і відкладений boot-wiring follow-up для `register{Routine,Fizruk}DualWriteContext`). **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -498,10 +498,9 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   prod routine module ще читає з LS і ці схеми залишаються off-path до
   PR #024.
 
-##### **PR #024 — `feat(routine-domain): dual-write LS↔SQLite behind feature flag`** ⏳ IN-PROGRESS
+##### **PR #024 — `feat(routine-domain): dual-write LS↔SQLite behind feature flag`** ✅ MERGED
 
-> **Статус (2026-05-02):** PR відкрито у гілці
-> `devin/1777758771-routine-sqlite-pr-024-dual-write`. Скоп — додає
+> **Статус (2026-05-03):** залендили (merge `3f41e7f6`). Скоп — додає
 > новий feature flag `feature.routine.sqlite_v2.dual_write` (web +
 > mobile, default: off, experimental: true) і дзеркальний шар
 > `apps/{web,mobile}/src/modules/routine/lib/dualWrite/` з трьох
@@ -518,8 +517,13 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 > через `triggerRoutineDualWrite(prev, next)` fire-and-forget;
 > `peekRoutineDualWritePrev()` повертає `null` коли контекст не
 > зареєстровано — нульовий overhead на off-flag шляху. Boot wiring
-> (web `main.tsx` + mobile entry) **відкладено окремим follow-up
-> PR-ом** щоб тримати цей PR pure mechanism.
+> (web `main.tsx` + mobile entry, виклик
+> `registerRoutineDualWriteContext(...)` з реальними auth/sqlite
+> singleton-ами) **відкладено окремим follow-up PR-ом** і станом на
+> 2026-05-03 ще не зроблено — тому за умови ввімкнених flag-ів
+> dual-write шар у проді поки не активний (`isRoutineDualWriteRegistered()`
+> повертає `false`), і будь-який real-world rollout вимагає спочатку
+> приземлити цей boot-wiring PR.
 
 - **Артефакти.**
   - `apps/{web,mobile}/src/core/lib/featureFlags.ts` — нова
@@ -665,9 +669,9 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   Pub-sub нотифікація між хуками — `sqliteReadGate.ts` (`useSyncExternalStore`
   - tick counter, refresh by `notifyFizrukSqliteCacheRefresh`).
 - **Реалізовано (mobile).** `apps/mobile/src/modules/fizruk/lib/sqliteReader.ts`
-  — паритет shape-а кешу для майбутнього read cutover; UI overlay
-  лишився на наступний mobile PR (мобільний routine має той самий tier-up
-  pattern). FK / soft-delete / LWW семантика повністю мирорить web.
+  — паритет shape-а кешу для майбутнього read cutover; UI overlay у
+  mobile хуках додано окремим follow-up PR #029a (див. нижче). FK /
+  soft-delete / LWW семантика повністю мирорить web.
 - **Тести.**
   `apps/server/src/modules/sync/syncV2.integration.test.ts` — 5 нових
   describe-кейсів: insert→update, LWW reject, soft-delete, parent-then-child
@@ -680,16 +684,51 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   на LS path; SQLite дані лишаються (нічого не дропається).
 - **Не входить.** Outbox / cloudsync push з `fizruk_*` через `/v2/sync/push`
   (web/mobile pull/push pipeline), backfill `module_data.fizruk` →
-  `fizruk_*` per-user. Це вирішується PR #029a / PR #030.
+  `fizruk_*` per-user. Mobile UI overlay рознесений у PR #029a (вже
+  залендили), сам LS cleanup і drop `module_data.fizruk` — у PR #030.
 - **Dep.** PR #027 (schema), PR #028 (dual-write).
+
+##### **PR #029a — `feat(mobile): fizruk read overlay from SQLite under feature flag`** ✅ MERGED
+
+> **Статус (2026-05-03):** залендили (merge `8746145d`). Скоп —
+> mobile-частина PR #029, яка винесена окремо щоб тримати web cut-over
+>
+> - server apply-fns одним PR-ом. Додає `feature.fizruk.sqlite_v2.read_sqlite`
+>   у `apps/mobile/src/core/lib/featureFlags.ts`, mobile bootstrap
+>   `apps/mobile/src/modules/fizruk/lib/sqliteReadBoot.ts` +
+>   `useFizrukSqliteReadBoot` хук, та `sqliteReadGate.ts` pub-sub між
+>   `useFizrukWorkouts` / `useCustomExercises` / `useMeasurements`. Reads
+>   overlay-ять зі SQLite-кешу під фічфлаґом, MMKV-write залишається як
+>   синхронний first-paint fallback.
+
+- **Артефакти.**
+  - `apps/mobile/src/core/lib/featureFlags.ts` — нова
+    `feature.fizruk.sqlite_v2.read_sqlite` (default off, experimental).
+  - `apps/mobile/src/modules/fizruk/lib/{sqliteReadBoot,sqliteReadGate}.ts`
+    - парні `__tests__/{sqliteReadBoot,sqliteReadGate}.test.ts`.
+  - `apps/mobile/src/modules/fizruk/hooks/{useFizrukSqliteReadBoot,useFizrukWorkouts,useCustomExercises,useMeasurements}.ts`
+    — overlay reads із SQLite cache.
+  - `apps/mobile/src/modules/fizruk/pages/Dashboard.tsx` —
+    `useFizrukSqliteReadBoot()` виклик у бутстрапі модуля.
+- **Тести.**
+  `apps/mobile/src/modules/fizruk/__tests__/Dashboard.test.tsx` +
+  `apps/mobile/src/modules/fizruk/hooks/__tests__/useFizrukWorkouts.sqliteOverlay.test.tsx`
+  - `apps/mobile/src/modules/fizruk/lib/__tests__/sqliteRead{Boot,Gate}.test.ts`.
+- **Не входить.** Outbox / cloudsync push з `fizruk_*` (PR #030+).
+  Backfill `module_data.fizruk` → `fizruk_*` per-user (PR #030).
+- **Dep.** PR #029 (web cut-over + server apply-fns).
 
 ##### **PR #030 — `chore(fizruk): remove LS path, drop module_data.fizruk`** ⏳ PENDING
 
 - **Scope.** Видалити `fizruk` з `SYNC_MODULES` (web + mobile).
   ESLint guard проти reads з `STORAGE_KEYS.FIZRUK_*`. Server: одноразова
   міграція `DELETE FROM module_data WHERE module='fizruk'` після того, як
-  PR #029 розкочено на 100% юзерів і backfill завершено.
-- **Dep.** PR #029 (cut-over reads).
+  PR #029 + PR #029a розкочено на 100% юзерів і backfill завершено.
+  Перед видаленням LS path — приземлити boot-wiring follow-up для
+  `registerFizrukDualWriteContext` (інакше rollout dual-write флага
+  лишається no-op, як і у routine).
+- **Dep.** PR #029 (web cut-over + server apply-fns), PR #029a (mobile
+  read overlay), boot-wiring follow-up (`register{Routine,Fizruk}DualWriteContext`).
 
 #### **Nutrition** (3 тижні) — PR #031–#034
 
