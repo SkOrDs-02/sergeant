@@ -9,6 +9,15 @@ First-Time User Experience (FTUX) funnel. Owns the contracts that
 must respect when firing canonical events — payload field names below
 are normative for all `trackEvent(...)` callsites.
 
+> **Implementation status (2026-05-03 v2):** every event in §2 is wired
+> on web. S0.4 ([PR #1582](https://github.com/Skords-01/Sergeant/pull/1582))
+> closed the last 9 missing call-sites; S0.5 (this doc, [PR #1570](https://github.com/Skords-01/Sergeant/pull/1570))
+> defined the contracts. The `Fired by` column links to the exact
+> call-site in code so dashboard authors can grep payloads from the
+> source of truth. Mobile parity (S0.3) is still TODO — dashboards
+> currently aggregate web-only traffic; `platform` super-property
+> already segments cleanly when mobile lands.
+
 > **Cross-refs:**
 > [`docs/observability/frontend.md`](./frontend.md) — analytics
 > transport · [`docs/launch/ftux-sprint-plan.md` §2](../launch/ftux-sprint-plan.md#2-sprint-0--analytics-live-1-тиждень)
@@ -43,29 +52,29 @@ Every insight in §3 reads from a subset of these canonical events.
 **All names are frozen** — see
 [`analyticsEvents.ts`](../../packages/shared/src/lib/analyticsEvents.ts).
 
-| Event                            | Fired by                                                           | Required payload                                                                    |
-| -------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| `onboarding_started`             | `OnboardingWizard.tsx` mount                                       | —                                                                                   |
-| `onboarding_step_viewed`         | `OnboardingWizard.tsx` step render                                 | `step: "welcome" \| "modules" \| "ready"`                                           |
-| `onboarding_step_completed`      | `OnboardingWizard.tsx` step exit                                   | `step`, `durationMs: number`                                                        |
-| `onboarding_skipped`             | `OnboardingWizard.tsx` early-exit                                  | `step`                                                                              |
-| `onboarding_vibe_picked`         | `OnboardingWizard.tsx#finish`                                      | `picks: string[]`, `picksCount: number`                                             |
-| `onboarding_completed`           | `OnboardingWizard.tsx#finish`                                      | `intent: "vibe_picked" \| "vibe_empty"`, `picksCount: number`                       |
-| `onboarding_first_action_shown`  | `FirstActionSheet.tsx` open                                        | `module: string`, `source: "auto" \| "user"`                                        |
-| `onboarding_first_action_picked` | `FirstActionSheet.tsx` choose                                      | `module: string`, `action: string`                                                  |
-| `ftux_preset_sheet_shown`        | `PresetSheet.tsx` open                                             | `module: string`                                                                    |
-| `ftux_preset_picked`             | `PresetSheet.tsx` choose preset                                    | `module: string`, `presetId: string`                                                |
-| `ftux_preset_custom`             | `PresetSheet.tsx` skip-presets path                                | `module: string`                                                                    |
-| `first_real_entry`               | `firstRealEntry.ts#detectFirstRealEntry` (web + mobile via shared) | —                                                                                   |
-| `ftux_time_to_value`             | `firstRealEntry.ts#detectFirstRealEntry` once when flag flips      | `durationMs: number`, `durationSec: number`                                         |
-| `celebration_shown`              | `CelebrationModal.tsx` open                                        | `ttvMs: number \| null`, `source: "first_entry" \| "streak" \| "milestone"`         |
-| `module_checklist_shown`         | `ModuleChecklist.tsx` first paint per module                       | `module: DashboardModuleId`                                                         |
-| `module_checklist_step_done`     | `ModuleChecklist.tsx#handleStepDone`                               | `module: DashboardModuleId`, `stepId: string`, `completed: number`, `total: number` |
-| `module_checklist_dismissed`     | `ModuleChecklist.tsx#handleDismiss`                                | `module: DashboardModuleId`, `completed: number`, `total: number`                   |
-| `streak_milestone_reached`       | `StreakCelebration.tsx` mount when crossing milestone              | `days: number`, `type: "toast" \| "modal"`                                          |
-| `hint_dismissed`                 | `HintsOrchestrator.tsx` user dismiss                               | `id: string`                                                                        |
-| `hint_completed`                 | `HintsOrchestrator.tsx` underlying action satisfied                | `id: string`                                                                        |
-| `budget_set`                     | `apps/web/src/modules/finyk/pages/budgets/Budgets.tsx`             | `bucket: string`, `amount: number`, `currency: string`                              |
+| Event                            | Fired by                                                                                                                                                                                                   | Required payload                                                                               |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `onboarding_started`             | [`OnboardingWizard.tsx`](../../apps/web/src/core/onboarding/OnboardingWizard.tsx) mount                                                                                                                    | —                                                                                              |
+| `onboarding_step_viewed`         | [`OnboardingWizard.tsx`](../../apps/web/src/core/onboarding/OnboardingWizard.tsx) welcome paint (single-screen v3)                                                                                         | `step: "welcome"` (only step in v3 — contract reserves `"modules" \| "ready"` for future)      |
+| `onboarding_step_completed`      | [`OnboardingWizard.tsx`](../../apps/web/src/core/onboarding/OnboardingWizard.tsx) `finish()` exit                                                                                                          | `step: "welcome"`, `durationMs: number`                                                        |
+| `onboarding_skipped`             | _Not wired in v3 — wizard is single-screen with no skip affordance. Contract preserved for S1 if a Skip CTA returns; payload `{ step: string }`._                                                          | `step`                                                                                         |
+| `onboarding_vibe_picked`         | [`OnboardingWizard.tsx`](../../apps/web/src/core/onboarding/OnboardingWizard.tsx) `finish()`                                                                                                               | `picks: string[]`, `picksCount: number`                                                        |
+| `onboarding_completed`           | [`OnboardingWizard.tsx`](../../apps/web/src/core/onboarding/OnboardingWizard.tsx) `finish()`                                                                                                               | `intent: "vibe_picked" \| "vibe_empty"`, `picksCount: number`                                  |
+| `onboarding_first_action_shown`  | [`FirstActionSheet.tsx`](../../apps/web/src/core/onboarding/FirstActionSheet.tsx) open                                                                                                                     | `module: string`, `source: "auto" \| "user"`                                                   |
+| `onboarding_first_action_picked` | [`FirstActionSheet.tsx`](../../apps/web/src/core/onboarding/FirstActionSheet.tsx) choose                                                                                                                   | `module: string`, `action: string`                                                             |
+| `ftux_preset_sheet_shown`        | [`PresetSheet.tsx`](../../apps/web/src/core/onboarding/PresetSheet.tsx) open                                                                                                                               | `module: string`                                                                               |
+| `ftux_preset_picked`             | [`PresetSheet.tsx`](../../apps/web/src/core/onboarding/PresetSheet.tsx) choose preset                                                                                                                      | `module: string`, `presetId: string`                                                           |
+| `ftux_preset_custom`             | [`PresetSheet.tsx`](../../apps/web/src/core/onboarding/PresetSheet.tsx) skip-presets path                                                                                                                  | `module: string`                                                                               |
+| `first_real_entry`               | [`firstRealEntry.ts#detectFirstRealEntry`](../../packages/shared/src/lib/firstRealEntry.ts) (web + mobile via shared)                                                                                      | —                                                                                              |
+| `ftux_time_to_value`             | [`firstRealEntry.ts#detectFirstRealEntry`](../../packages/shared/src/lib/firstRealEntry.ts) once when flag flips                                                                                           | `durationMs: number`, `durationSec: number`                                                    |
+| `celebration_shown`              | [`CelebrationModal.tsx`](../../apps/web/src/core/onboarding/CelebrationModal.tsx) open                                                                                                                     | `ttvMs: number \| null`, `source: "first_entry"` (contract reserves `"streak" \| "milestone"`) |
+| `module_checklist_shown`         | [`ModuleChecklist.tsx`](../../apps/web/src/core/onboarding/ModuleChecklist.tsx) first paint per module                                                                                                     | `module: DashboardModuleId`                                                                    |
+| `module_checklist_step_done`     | [`ModuleChecklist.tsx`](../../apps/web/src/core/onboarding/ModuleChecklist.tsx) `handleStepDone`                                                                                                           | `module: DashboardModuleId`, `stepId: string`, `completed: number`, `total: number`            |
+| `module_checklist_dismissed`     | [`ModuleChecklist.tsx`](../../apps/web/src/core/onboarding/ModuleChecklist.tsx) `handleDismiss`                                                                                                            | `module: DashboardModuleId`, `completed: number`, `total: number`                              |
+| `streak_milestone_reached`       | [`dashboardCards.tsx`](../../apps/web/src/core/hub/dashboard/dashboardCards.tsx) `<StreakIndicator/>` crossing detector (chosen over `<StreakCelebration>` because the modal isn't wired into the hub yet) | `days: number`, `type: "toast"` (contract reserves `"modal"` for when StreakCelebration ships) |
+| `hint_dismissed`                 | [`HintsOrchestrator.tsx`](../../apps/web/src/core/hints/HintsOrchestrator.tsx) toast timeout without action                                                                                                | `id: string`, `via: "timeout"` (contract reserves `"x" \| "swipe"` for explicit dismiss UI)    |
+| `hint_completed`                 | [`HintsOrchestrator.tsx`](../../apps/web/src/core/hints/HintsOrchestrator.tsx) toast action click                                                                                                          | `id: string`, `via: "action"`                                                                  |
+| `budget_set`                     | [`Budgets.tsx`](../../apps/web/src/modules/finyk/pages/budgets/Budgets.tsx)                                                                                                                                | `bucket: string`, `amount: number`, `currency: string`                                         |
 
 **Super-properties** (registered via `posthog.register`, set in
 [`apps/web/src/core/observability/posthog.ts`](../../apps/web/src/core/observability/posthog.ts)):
@@ -103,13 +112,20 @@ days · **Breakdown:** `vibe` (person property) · **Conversion window:**
 **Steps (in order):**
 
 1. `onboarding_started`
-2. `onboarding_step_viewed` (any step)
-3. `onboarding_step_completed` (any step)
+2. `onboarding_step_viewed` (any step — in v3 wizard always `step = "welcome"`)
+3. `onboarding_step_completed` (any step — in v3 wizard always `step = "welcome"`)
 4. `onboarding_vibe_picked`
 5. `onboarding_first_action_picked`
 6. `ftux_preset_picked` **OR** `ftux_preset_custom`
 7. `first_real_entry`
 8. `celebration_shown` (filter: `source = "first_entry"`)
+
+> **Wizard-version note:** the current single-screen wizard fires step
+> `"welcome"` for both `onboarding_step_viewed` and
+> `onboarding_step_completed`. When S1 reintroduces multi-step
+> screens, expand the funnel breakdown by `properties.step` to keep
+> per-step drop-off visible — the contract already accepts
+> `"modules" \| "ready"` (see §2).
 
 **Why:** end-to-end funnel from wizard mount to celebrated first real
 entry. **No gaps allowed** — if any step has 0 events the funnel
