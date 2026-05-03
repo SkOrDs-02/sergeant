@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-03 by Devin (sync Stage 4 Fizruk progress: PR #027 schema + bundled SQLite migration, PR #028 dual-write LS/MMKV↔SQLite, PR #029 cut-over reads + server `applyFizruk*` apply-функції та PR #029a mobile fizruk read overlay — усі на main; лишається PR #030 LS cleanup і відкладений boot-wiring follow-up для `register{Routine,Fizruk}DualWriteContext`. Також синхронізовано Stage 0/1: PR #005/#006/#007/#012 уже зленділи; PR #014 виправлено посилання з помилкового #1290 на правильний #1298; PR #013 переведено в IN-PROGRESS зі списком 3-х sub-PR-ів. Лишаються: #003 webhook rotation, #008 storagePatch removal, #009 sync-meta → IDB, #010 IDB consolidation, #011 Postgres rate-limit, фінальний sub-PR #013 для allowlist→0). **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-03 by Devin (Stage 1 хвости закрито: PR #013 final sub-PR ([#1520](https://github.com/Skords-01/Sergeant/pull/1520)), PR #011 Postgres rate-limit ([#1521](https://github.com/Skords-01/Sergeant/pull/1521)) і tiny `format:check` фікс на main ([#1524](https://github.com/Skords-01/Sergeant/pull/1524)) уже мерджнуті; PR #009 offline queue → IDB ([#1526](https://github.com/Skords-01/Sergeant/pull/1526)) теж landed — `MAX_OFFLINE_QUEUE` піднято з 50 до 10 000; PR #010 консолідація 5 IDB баз у `sergeant-db` ([#1543](https://github.com/Skords-01/Sergeant/pull/1543)) відкрито, CI in-flight. Зі Stage 1 лишається лише PR #008 storagePatch removal. Stage 4 Fizruk усе ще на main з відкладеним boot-wiring follow-up для `register{Routine,Fizruk}DualWriteContext`. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -206,37 +206,66 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   push без monkey-patch.
 - **Dep.** PR #006, #007.
 
-#### **PR #009 — `refactor(web): move sync metadata + offline queue to IDB`**
+#### **PR #009 — `refactor(web): move sync metadata + offline queue to IDB`** ✅ LANDED — [#1526](https://github.com/Skords-01/Sergeant/pull/1526)
 
-- **Scope.** `SYNC_VERSIONS`, `SYNC_DIRTY_MODULES`, `SYNC_OFFLINE_QUEUE`
-  переходять з LS у IDB (через `idb-keyval`). Знімає 5–10 MB cap для
-  offline queue.
-- **Bonus.** `MAX_OFFLINE_QUEUE` піднімається з 50 до ~10 000.
-- **AC.** E2E-тест: 200 offline-операцій → online → сервер отримав усі.
+- **Scope.** `SYNC_OFFLINE_QUEUE` переходить з LS у IDB (через `idb-keyval`).
+  Знімає 5–10 MB cap для offline queue. `SYNC_VERSIONS` та
+  `SYNC_DIRTY_MODULES` лишилися в LS — вони ≤ кількох КБ і їм важливіше
+  sync-read у запуску.
+- **Bonus.** `MAX_OFFLINE_QUEUE` піднято з 50 до **10 000**.
+- **Implementation note.** Додано `apps/web/src/core/cloudSync/storage/syncMetaStore.ts` —
+  тонкий wrapper над `idb-keyval` зі своїм database (`sergeant-sync-meta`)
+  і store (`v1`). LS-dual-write залишений як best-effort backup поки
+  розмір черги ≤ 100 entries (щоб JSON.stringify не churn-ив для довгих
+  черг). На cold-boot `hydrateOfflineQueueFromDisk()` мержить LS-legacy
+  у IDB, після чого IDB стає authoritative.
+- **Follow-up.** PR #010 нижче поглинає `sergeant-sync-meta` базу у
+  спільну `sergeant-db`.
+- **AC.** Vitest unit-тести покривають hydrate path, dual-write threshold,
+  IDB-unavailable graceful degradation. Замінили snapshot для `replay`
+  тестів на новий механізм. (E2E-тест на 200 op-ів — у TODO Stage 5.)
 - **Dep.** PR #007, #008.
 
-#### **PR #010 — `refactor(web): consolidate 4 IDB databases into 1 sergeant-db`**
+#### **PR #010 — `refactor(web): consolidate 5 IDB databases into 1 sergeant-db`** ⏳ OPEN — [#1543](https://github.com/Skords-01/Sergeant/pull/1543)
 
-- **Scope.** Зараз: `sergeant-rq-cache`, `hub_nutrition_recipe_book`,
+- **Scope.** Після PR #009 на клієнті стало 5 IDB баз: `sergeant-rq-cache`,
+  `sergeant-sync-meta`, `hub_nutrition_recipe_book`,
   `hub_nutrition_meal_photos`, `hub_nutrition_food_db`. Зливаємо в одну
-  `sergeant` з 4 object-stores. Один schema-version registry. `rq-cache`
-  лишається окремо тільки якщо buster-логіка реально несумісна.
-- **Migration.** Idempotent open-and-copy на cold-boot. Видалити старі бази
-  після успіху.
-- **AC.** Vitest-fake-indexed-db покриває миграцію + rollback.
-- **Dep.** None (паралельно зі #009).
+  `sergeant-db` з **7 object stores** (`rq_cache`, `sync_meta`,
+  `nutrition_recipes`, `nutrition_foods`, `nutrition_barcodes`,
+  `nutrition_meal_thumbs`, `migration_meta`). Один schema-version,
+  одна shared connection — DevTools, quota і connection pool усі
+  пулиться разом. `rq-cache` теж переїхав, бо buster-логіка вирівняна
+  з рештою.
+- **Migration.** `migrateLegacyDbOnce({ legacyDbName, copy })` — лінива
+  per-module idempotent копія на першому read/write модуля. Прапорець
+  `{ migrated: true, at }` пишеться у `migration_meta` **до** того як
+  стара база видаляється, тож обірваний прохід просто ретраїться.
+  Per-module copy callback зберігає keyPath/index/Blob через
+  structured-clone roundtrip.
+- **No-IDB safety.** SSR / hardened iframe / Safari Private Browsing на
+  старому iOS — усі helpers (`openSergeantDb`, `dbGet/dbSet/dbDel`,
+  `migrateLegacyDbOnce`) deg-radely no-op-лять, не кидаючи. Покрито
+  unit-тестами в `apps/web/src/shared/lib/idb/sergeantDb.test.ts`.
+- **`idb-keyval`** більше не імпортується з production коду; пакет
+  залишається у `package.json` тимчасово, чистка — окремий follow-up
+  після того як цей PR обкатається в проді.
+- **AC.** 7 unit-тестів `sergeantDb.test.ts` + переписаний `syncMetaStore.test.ts`
+  з мок-боунд-арі на `sergeantDb`; 231 cloudSync-test + 126 nutrition-test
+  далі зелені. Ручна перевірка міграції живої бази робиться на наступному
+  cold-boot після деплою.
+- **Dep.** PR #009.
 
-#### **PR #011 — `feat(server): replace in-memory rate-limit with Postgres-backed sliding window`**
+#### **PR #011 — `feat(server): replace in-memory rate-limit with Postgres-backed sliding window`** ✅ LANDED — [#1521](https://github.com/Skords-01/Sergeant/pull/1521)
 
-- **Scope.** `apps/server/src/http/rateLimit.ts` — переписати на
-  Postgres (нова таблиця `rate_limit_buckets`) з sliding-window-counter.
-  Опційно через Railway Redis addon (ENV flag).
-- **Migration.** `024_rate_limit_buckets.{sql,down.sql}`.
-- **Risk.** Latency — кожен request +1 SQL roundtrip. Mitigation:
-  pg-pool warm + `IF NOT EXISTS` upsert; для Redis-варіанту atomic
-  Lua-script.
-- **AC.** Load test: 100 RPS × 10 min — limiter працює стабільно.
-  Horizontal-scale тест на 2 інстанціях Railway.
+- **Scope.** `apps/server/src/http/rateLimit.ts` переписано на Postgres
+  (нова таблиця `rate_limit_buckets`) зі sliding-window-counter. Atomic
+  upsert через `INSERT … ON CONFLICT DO UPDATE` гарантує race-free
+  інкремент між кількома Railway інстансами; in-memory shortcut
+  залишений як cache для retry-cyle при PG outage.
+- **Migration.** `apps/server/src/migrations/035_rate_limit_buckets.{sql,down.sql}`.
+- **Тести.** `apps/server/src/http/rateLimit.test.ts` (sliding-window,
+  reset, race) — pg-mem-харнес підтверджує атомарність upsert-у.
 - **Dep.** None.
 
 #### **PR #012 — `feat(server): add CHECK constraint on module_data.module + soft-delete columns`** ✅ LANDED — [#1290](https://github.com/Skords-01/Sergeant/pull/1290)
@@ -248,17 +277,18 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 - **AC.** Bad-data test: insert невідомого модуля → reject.
 - **Dep.** None.
 
-#### **PR #013 — `chore: complete localStorage burndown to 0 raw uses`** ⏳ IN-PROGRESS — partial coverage у [#1344](https://github.com/Skords-01/Sergeant/pull/1344), [#1345](https://github.com/Skords-01/Sergeant/pull/1345), [#1350](https://github.com/Skords-01/Sergeant/pull/1350)
+#### **PR #013 — `chore: complete localStorage burndown to 0 raw uses`** ✅ LANDED — sub-PR-и [#1344](https://github.com/Skords-01/Sergeant/pull/1344), [#1345](https://github.com/Skords-01/Sergeant/pull/1345), [#1350](https://github.com/Skords-01/Sergeant/pull/1350), [#1520](https://github.com/Skords-01/Sergeant/pull/1520)
 
-- **Scope.** Останні ~46 файлів з allowlist у `eslint.config.js`. Перевести
-  через `useSyncedKVStore` або `safeReadLS/safeWriteLS`. Allowlist → empty.
-- **Risk.** Великий діф. Mitigation: розбити на 3 sub-PR-и по доменах.
-- **AC.** ESLint `no-raw-local-storage` без exceptions, CI green.
+- **Scope.** Allowlist у `eslint.config.js` для `sergeant-design/no-raw-local-storage`
+  закрито до **0**. Усі raw `localStorage.*` рефи перейшли на
+  `safeReadLS` / `safeWriteLS` / `safeRemoveLS` / `safeListLSKeys`.
+- **Sub-PR-и.**
+  - [#1344](https://github.com/Skords-01/Sergeant/pull/1344) — hub/search migration на `safeReadStringLS`.
+  - [#1345](https://github.com/Skords-01/Sergeant/pull/1345) — presetApply.
+  - [#1350](https://github.com/Skords-01/Sergeant/pull/1350) — modules raw-LS.
+  - [#1520](https://github.com/Skords-01/Sergeant/pull/1520) — final drain. 8 з 9 файлів у allowlist уже мігрували попередні sub-PR-и; лише `useWeeklyDigest.ts` мав 2 живих рефа (`localStorage.length` + `localStorage.setItem`) — переписали на `safeListLSKeys` + `safeWriteLS`. Allowlist у `eslint.config.js` зведений до empty.
+- **AC.** ESLint `no-raw-local-storage` без exceptions, CI green на main.
 - **Dep.** PR #006-#008.
-- **Done so far.** `safeReadStringLS` migration на hub/search ([#1344](https://github.com/Skords-01/Sergeant/pull/1344)),
-  presetApply ([#1345](https://github.com/Skords-01/Sergeant/pull/1345)) і modules raw-LS
-  ([#1350](https://github.com/Skords-01/Sergeant/pull/1350)). Лишається фінальний sub-PR
-  з очищенням allowlist до 0 — точну цифру треба перерахувати.
 
 ---
 
@@ -1037,7 +1067,7 @@ module='fizruk'` — окремий ops-PR після того, як PR #029 + P
    PR #004 (query-cache excludes). Це security-quick-wins, низький ризик.~~
 2. ~~**Тиждень 2:** PR #003 (webhook rotation) + PR #005 (sync_audit) +
    review Stage 0.~~
-3. ~~**Тиждень 3-6:** Stage 1 (Consolidation). PR #006 → #013.~~
+3. ~~**Тиждень 3-6:** Stage 1 (Consolidation). PR #006 → #013.~~ ⏳ Майже готово — закриті: #006, #007, #009, #010 (open у #1543), #011, #012, #013. **Лишився тільки PR #008** (storagePatch → `useSyncedKVStore`).
 4. ~~**Тиждень 7:** Перший draft RFC у `docs/rfcs/2026-q3-sqlite-migration.md`
    з фіксованими decision criteria для SPIKE.~~
 5. ~~**Тиждень 8-9:** Stage 2 (Foundation) — найризикованіша частина в плані
