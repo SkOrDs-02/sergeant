@@ -66,6 +66,20 @@ export const KNOWN_NUMBERING_GAPS = new Set([
   // created in parallel sessions on the same day and skipped 0029.
   // See `docs/adr/README.md` § «Note on missing 0029».
   "0029",
+  // 2026-05-03: ADR-0039 ("OpenClaw proactive cron-rituals") was reserved
+  // by `docs/launch/telegram-improvements-roadmap.md` §3.1 for the morning-
+  // ritual / weekly-digest cron work, but the implementation PR shipped
+  // without an accompanying ADR and the roadmap entry remained the only
+  // record. See `docs/adr/README.md` § «Note on missing 0039».
+  "0039",
+  // 2026-05-03: ADR-0040 was referenced in code comments
+  // (`apps/console/src/openclaw/alerts-format.ts`) and roadmap §3.6
+  // ("strategic mode — /plan/analyze/okr") as the planned ADR for the
+  // Wave-3 HTML-mode broadcast formatting decision; the decision was
+  // captured inline in the Wave-3 PRs (#1473/#1480/#1503/#1508) and the
+  // standalone ADR was never written. See `docs/adr/README.md`
+  // § «Note on missing 0040».
+  "0040",
 ]);
 
 // ── Pure helpers ─────────────────────────────────────────────────────────────
