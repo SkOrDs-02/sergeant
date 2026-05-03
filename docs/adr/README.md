@@ -104,8 +104,9 @@ pnpm gen:adr
 | 0034 | Visual regression testing                       | accepted | 2026-05-03 | Argos + Playwright з 56 screenshot-ів; non-blocking Argos status-check; формалізація вже-існуючої CI-конфіги.         |
 | 0035 | Distributed tracing — OpenTelemetry             | proposed | 2026-05-03 | OTel web→server, Honeycomb backend, sample 10%/5%; вимкнення Sentry browserTracing.                                   |
 | 0036 | OpenClaw write-tools with approval flow         | accepted | 2026-05-03 | 5 write-tools (strategy doc PR / GH issue / TG topic post / n8n pause / Sentry mute) gated by inline-button approval. |
+| 0037 | OpenClaw write-audit persistence (Phase 4.5)    | accepted | 2026-05-03 | Append-only `openclaw_write_audit` table + `/audit` slash-command — persists approve/execute/reject lifecycle для post-mortems. |
 
-> **Note on next ADR:** наступний номер — **`0037`**.
+> **Note on next ADR:** наступний номер — **`0038`**.
 
 > **Note on numbering 0016–0022 jump:** ADRs `0016`–`0022` — це retroactive batch, що був написаний паралельно з `0006`–`0012`. Через паралельне виконання Devin-сесій виникли колізії номерів `0003`–`0012`. Розв'язано через PR `docs(adr): resolve numbering collisions` — same-topic дублі (refund, anthropic, PII) видалено, late-comers перенумеровано в `0016`+.
 
