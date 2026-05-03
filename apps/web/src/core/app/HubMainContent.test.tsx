@@ -1,7 +1,18 @@
 /** @vitest-environment jsdom */
+import type { ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HubMainContent, type HubMainContentProps } from "./HubMainContent";
+
+function renderWithClient(ui: ReactElement) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+  );
+}
 
 vi.mock("../hub/HubDashboard", () => ({
   HubDashboard: () => <section data-testid="hub-dashboard" />,
@@ -51,7 +62,7 @@ describe("HubMainContent chrome banners", () => {
   afterEach(() => cleanup());
 
   it("suppresses all install/update chrome while the user is in FTUX", () => {
-    render(
+    renderWithClient(
       <HubMainContent
         {...props({
           updateAvailable: true,
@@ -69,7 +80,7 @@ describe("HubMainContent chrome banners", () => {
   });
 
   it("shows only the highest-priority available banner", () => {
-    render(
+    renderWithClient(
       <HubMainContent
         {...props({
           updateAvailable: true,
@@ -85,7 +96,7 @@ describe("HubMainContent chrome banners", () => {
   });
 
   it("renders clean Ukrainian install copy without replacement characters", () => {
-    render(<HubMainContent {...props({ canInstall: true })} />);
+    renderWithClient(<HubMainContent {...props({ canInstall: true })} />);
 
     expect(screen.getByText("Встановити додаток")).toBeInTheDocument();
     expect(
