@@ -1,4 +1,5 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { lazyImport } from "../../core/lib/lazyImport";
 import { useSwipeNavigation } from "@shared/hooks/useSwipeNavigation";
 import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
@@ -23,18 +24,18 @@ import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
 // time shows the finyk-branded ModulePageLoader skeleton instead of a
 // blank flash. Overview stays eager because it is the landing page and
 // must not add a waterfall to cold module navigation.
-const Transactions = lazy(() =>
-  import("./pages/transactions").then((m) => ({ default: m.Transactions })),
+//
+// `lazyImport` (instead of bare `React.lazy()`) keeps Suspense from
+// crashing when `chunkReload.ts` swallows a `vite:preloadError` after a
+// fresh Vercel deploy — same Sentry-noise pattern that hit AuthPage as
+// `e.AuthPage` (issue 116945546). See core/lib/lazyImport.ts.
+const Transactions = lazyImport(
+  () => import("./pages/transactions"),
+  "Transactions",
 );
-const Budgets = lazy(() =>
-  import("./pages/budgets").then((m) => ({ default: m.Budgets })),
-);
-const Assets = lazy(() =>
-  import("./pages/Assets").then((m) => ({ default: m.Assets })),
-);
-const Analytics = lazy(() =>
-  import("./pages/Analytics").then((m) => ({ default: m.Analytics })),
-);
+const Budgets = lazyImport(() => import("./pages/budgets"), "Budgets");
+const Assets = lazyImport(() => import("./pages/Assets"), "Assets");
+const Analytics = lazyImport(() => import("./pages/Analytics"), "Analytics");
 import { ManualExpenseSheet } from "./components/ManualExpenseSheet";
 import { FinykLoginScreen } from "./components/FinykLoginScreen";
 import { NAV_ICONS, NAV_IDS, NAV_ITEMS } from "./components/finykNav";
