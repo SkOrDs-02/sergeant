@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { visualizer } from "rollup-plugin-visualizer";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { resolve } from "path";
 
 export default defineConfig(({ mode }) => {
@@ -140,10 +141,42 @@ export default defineConfig(({ mode }) => {
           brotliSize: true,
           open: false,
         }),
+      // Sentry sourcemap upload + release management. Має бути
+      // ОСТАННІМ плагіном — інакше пропустить трансформи інших
+      // плагінів. Без `SENTRY_AUTH_TOKEN` (локальні білди, форки,
+      // PR-и без секретів) плагін мовчить (`disable: true`) і не
+      // ламає білд. Release береться з `VERCEL_GIT_COMMIT_SHA` /
+      // `GITHUB_SHA` — той самий, що `VITE_SENTRY_RELEASE` у
+      // `core/observability/sentry.ts`, тож issues корелюються
+      // 1:1 з deploy-ем. Map-файли видаляються після успішного
+      // upload-у, щоб не серватись публічно (Vercel `assets/` має
+      // `Cache-Control: immutable`).
+      sentryVitePlugin({
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        release: {
+          name:
+            process.env.SENTRY_RELEASE ||
+            process.env.VERCEL_GIT_COMMIT_SHA ||
+            process.env.GITHUB_SHA ||
+            undefined,
+        },
+        sourcemaps: {
+          filesToDeleteAfterUpload: ["**/*.js.map", "**/*.mjs.map"],
+        },
+        disable: !process.env.SENTRY_AUTH_TOKEN,
+        telemetry: false,
+      }),
     ].filter(Boolean),
     build: {
       outDir,
       emptyOutDir: true,
+      // "hidden" = `.map` files генеруються (плагін їх вантажить у Sentry),
+      // але JS не містить `//# sourceMappingURL=...` — тож реальні
+      // сорси не доступні через DevTools у проді. Sentry все одно
+      // лінкає maps через debug-id, який плагін інжектить у бандл.
+      sourcemap: "hidden",
       rollupOptions: {
         output: {
           manualChunks(id) {
