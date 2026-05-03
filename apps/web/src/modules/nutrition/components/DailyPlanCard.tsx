@@ -138,16 +138,25 @@ function MacroRatioBar({ prefs }: { prefs: NutritionPrefs }) {
       </div>
       <div className="flex gap-3 flex-wrap">
         <span className="flex items-center gap-1 text-2xs text-subtle">
-          <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: chartHex.protein }} /> Б {pctP}% · {prot}
-          г · {Math.round(protKcal)} ккал
+          <span
+            className="w-2 h-2 rounded-sm"
+            style={{ backgroundColor: chartHex.protein }}
+          />{" "}
+          Б {pctP}% · {prot}г · {Math.round(protKcal)} ккал
         </span>
         <span className="flex items-center gap-1 text-2xs text-subtle">
-          <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: chartHex.fat }} /> Ж {pctF}% ·{" "}
-          {fat}г · {Math.round(fatKcal)} ккал
+          <span
+            className="w-2 h-2 rounded-sm"
+            style={{ backgroundColor: chartHex.fat }}
+          />{" "}
+          Ж {pctF}% · {fat}г · {Math.round(fatKcal)} ккал
         </span>
         <span className="flex items-center gap-1 text-2xs text-subtle">
-          <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: chartHex.carbs }} /> В {pctC}% ·{" "}
-          {carb}г · {Math.round(carbKcal)} ккал
+          <span
+            className="w-2 h-2 rounded-sm"
+            style={{ backgroundColor: chartHex.carbs }}
+          />{" "}
+          В {pctC}% · {carb}г · {Math.round(carbKcal)} ккал
         </span>
       </div>
     </div>

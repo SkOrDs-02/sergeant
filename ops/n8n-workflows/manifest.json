@@ -8,12 +8,17 @@
       "riskTier": "P0",
       "telegramTopic": "revenue",
       "audienceTier": "P0",
-      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID", "TELEGRAM_TOPIC_REVENUE"],
+      "requiredEnv": [
+        "TELEGRAM_ALERT_CHAT_ID",
+        "TELEGRAM_TOPIC_REVENUE",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY"
+      ],
       "requiredCredentials": [
         "Sergeant Postgres (sergeant-db)",
         "Telegram (Sergeant_alert_bot)"
       ],
-      "notes": "Stripe subscription webhook → update DB to Pro → Telegram notification."
+      "notes": "Stripe subscription webhook → update DB to Pro → Telegram + tg_alert_acks idempotent row + 3-button ack-keyboard (ADR-0038 W3 §3.2)."
     },
     "02-failed-payment-recovery.json": {
       "owner": "ops",
@@ -21,13 +26,18 @@
       "riskTier": "P0",
       "telegramTopic": "revenue",
       "audienceTier": "P0",
-      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID", "TELEGRAM_TOPIC_REVENUE"],
+      "requiredEnv": [
+        "TELEGRAM_ALERT_CHAT_ID",
+        "TELEGRAM_TOPIC_REVENUE",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY"
+      ],
       "requiredCredentials": [
         "Sergeant Postgres (sergeant-db)",
         "Telegram (Sergeant_alert_bot)",
         "Resend (Bearer)"
       ],
-      "notes": "Stripe failed-payment webhook → Telegram + Resend email → 24h wait → downgrade if >=4 attempts."
+      "notes": "Stripe failed-payment webhook → Telegram + tg_alert_acks idempotent row + 3-button ack-keyboard (ADR-0038 W3 §3.2) + Resend email → 24h wait → downgrade if >=4 attempts."
     },
     "03-sentry-alert-routing.json": {
       "owner": "ops",
@@ -74,10 +84,12 @@
       "requiredEnv": [
         "GITHUB_TOKEN",
         "TELEGRAM_ALERT_CHAT_ID",
-        "TELEGRAM_TOPIC_ENGINEERING"
+        "TELEGRAM_TOPIC_ENGINEERING",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY"
       ],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "GitHub webhook → Renovate PR → auto-approve patch / Telegram review needed."
+      "notes": "GitHub webhook → Renovate PR → auto-approve patch / Telegram review needed + tg_alert_acks idempotent row + 3-button ack-keyboard (non-patch branch only, ADR-0038 W3 §3.2)."
     },
     "06-mono-webhook-enrichment.json": {
       "owner": "finyk",
@@ -85,13 +97,18 @@
       "riskTier": "P1",
       "telegramTopic": "revenue",
       "audienceTier": "P1",
-      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID", "TELEGRAM_TOPIC_REVENUE"],
+      "requiredEnv": [
+        "TELEGRAM_ALERT_CHAT_ID",
+        "TELEGRAM_TOPIC_REVENUE",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY"
+      ],
       "requiredCredentials": [
         "Sergeant Postgres (sergeant-db)",
         "Telegram (Sergeant_alert_bot)",
         "Anthropic (x-api-key)"
       ],
-      "notes": "Mono webhook → Claude AI categorize → monthly budget check → Telegram alert if over ₴15K."
+      "notes": "Mono webhook → Claude AI categorize → monthly budget check → Telegram alert if over ₴15K + tg_alert_acks idempotent row + 3-button ack-keyboard (ADR-0038 W3 §3.2)."
     },
     "07-morning-briefing-push.json": {
       "owner": "product",
@@ -184,10 +201,12 @@
       "requiredEnv": [
         "GITHUB_PAT",
         "TELEGRAM_ALERT_CHAT_ID",
-        "TELEGRAM_TOPIC_ENGINEERING"
+        "TELEGRAM_TOPIC_ENGINEERING",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY"
       ],
       "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
-      "notes": "PR hygiene reminder. Active; cron fires Mon–Fri 10:00 Kyiv against skords-01/sergeant open PRs > 48h."
+      "notes": "PR hygiene reminder. Cron Mon–Fri 10:00 Kyiv against skords-01/sergeant open PRs > 48h, post-ADR-0038 W3 §3.2 also writes idempotent tg_alert_acks row + renders 3-button ack-keyboard."
     },
     "18-nightly-security-audit.json": {
       "owner": "security",
@@ -211,12 +230,17 @@
       "riskTier": "P1",
       "telegramTopic": "ops",
       "audienceTier": "P1",
-      "requiredEnv": ["TELEGRAM_ALERT_CHAT_ID", "TELEGRAM_TOPIC_OPS"],
+      "requiredEnv": [
+        "TELEGRAM_ALERT_CHAT_ID",
+        "TELEGRAM_TOPIC_OPS",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY"
+      ],
       "requiredCredentials": [
         "Sergeant Postgres (sergeant-db)",
         "Telegram (Sergeant_alert_bot)"
       ],
-      "notes": "DB health report. Active; cron fires Mon 07:00 Kyiv. Sequential chain (DB size → Top tables → Slow queries → Format → Telegram) with executeOnce=true on chained postgres+code nodes. pg_stat_statements may be absent and is tolerated via continueOnFail."
+      "notes": "DB health weekly digest. Cron Mon 07:00 Kyiv. Sequential chain (DB size → Top tables → Slow queries → Format → Telegram) with executeOnce=true on chained postgres+code nodes. pg_stat_statements may be absent and is tolerated via continueOnFail. Post-ADR-0038 W3 §3.2 also writes idempotent tg_alert_acks row + renders 3-button ack-keyboard."
     },
     "20-agent-dispatcher.json": {
       "owner": "agents",
