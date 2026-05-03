@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
-Аналіз кодової бази `apps/web/src` (434 source файли, 87k рядків).
+Аналіз кодової бази `apps/web/src` (649 source файлів, ~102k рядків — без тестів і `__tests__/`; 2026-05-03 re-audit).
 
 > **Оновлено 2026-05-02.** Sync з реальним станом коду після кількох wave-ів decomposition:
 > Розділ 2 (localStorage burndown) — TODO-allowlist у `eslint.config.js` скорочено з 41 до **17 файлів**
@@ -124,10 +124,10 @@ greppable в одному місці.
 
 Codemod ідемпотентний: повторний запуск дасть `would rewrite 0 import(s)`.
 
-> **Не робилось:** ESLint-правило `import/extensions: never`. Воно б
-> вимагало `eslint-plugin-import` (зараз не встановлено) і одразу б
-> пофейлило зовнішній zxing-імпорт. Поки покладаємось на codemod +
-> код-рев'ю; додамо правило окремим PR разом з імпорт-плагіном.
+> **Доповнено [PR #1411](https://github.com/Skords-01/Sergeant/pull/1411):** додано
+> `eslint-plugin-import@^2.32.0` + правило `import/extensions: never` для
+> bundler-fed apps (`apps/web`, `apps/mobile`). Зовнішні `@zxing/*` subpath-імпорти
+> у allowlist. Новий код тепер не може реінтродукувати `.js`/`.jsx` extensions.
 
 </details>
 
@@ -281,9 +281,9 @@ PR на кожен файл; великі data-файли (`seedFoodsUk.ts`) —
 
 ---
 
-### 6. Тестове покриття — 126 test файлів на 529 source
+### 6. Тестове покриття — 160 test файлів на 649 source
 
-~24% файлів мають тести. Критичні модулі без тестів / з тонким покриттям
+~25% файлів мають тести (re-audit 2026-05-03). Критичні модулі без тестів / з тонким покриттям
 (актуально):
 
 - `HubReports.tsx` (638 рядків, складна агрегація)
@@ -333,13 +333,18 @@ debug-logger/warn-патерни — окремий PR (Phase 6 candidate).
 
 ---
 
-### 8. `eslint-disable no-eyebrow-drift` — 26 рядків (`apps/web/src`)
+### 8. `eslint-disable no-eyebrow-drift` — 26 рядків у `apps/web/src` + 10 у `apps/mobile/src`
 
-Custom DS-rule пригнічується 26 разів у `apps/web/src` (+17 у `apps/mobile/src`).
-Усі з обґрунтуваннями в коментарях (кастомні hero kickers, calendar headers,
-pill-overlay typography, marketing eyebrow). Не критично; колись варто
-розширити `SectionHeading` API (нові слоти `eyebrowTone` / `as` / `id`)
-або ввести primitive `Eyebrow` з phrased typography, щоб ці випадки відпали.
+Custom DS-rule пригнічується 26 разів у `apps/web/src` і 10 разів у `apps/mobile/src`
+(2026-05-03 re-audit). Усі з обґрунтуваннями в коментарях (кастомні hero kickers,
+calendar headers, pill-overlay typography, marketing eyebrow).
+
+**Зроблено [PR #1414](https://github.com/Skords-01/Sergeant/pull/1414):** розширено
+`SectionHeading` API новими слотами (`eyebrowTone` / `eyebrowAs` / `eyebrowId` /
+`renderEyebrow`) і виведено 7 disable-сайтів з mobile primitive-owners + ключові
+hub/settings/dashboard кейси (mobile 17 → 10). Залишок 36 disable-ів — або
+legitimate (calendar headers / hero kickers, з обґрунтуванням), або кандидати
+на нові slot-и в наступному API-расширенні.
 
 ---
 

@@ -1,6 +1,6 @@
 # Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor)
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > **Оновлено 2026-05-02.** Перша версія registry: інвентаризація mobile-частини
@@ -46,19 +46,19 @@
 
 ## Summary — per-category
 
-| Категорія                                | Статус                  | Короткий висновок                                                                                                                                                                                      |
-| ---------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| ESLint guardrails                        | ~~Блокер~~ → **OK**     | ✅ [PR #1277](https://github.com/Skords-01/Sergeant/pull/1277). `no-raw-local-storage` + `no-strict-bypass` тепер активні на `apps/mobile/src` + `apps/mobile/app`.                                    |
-| Type-safety bypasses (`as unknown as X`) | **Високий**             | 7 production файлів у allowlist. Усі — adapter-и між domain-shape та локальними view-model-ями (RN-specific). Migration plan: 6 — domain-alignment, 1 — Expo SDK 52 type-update.                       |
-| `: any` types у production               | **Високий**             | 2 production файли (`TxRow.tsx`, `TxListItem.tsx`) — `any` на pressable handler-ах. Заміна на `GestureResponderEvent` тривіальна.                                                                      |
-| Storage migration                        | **OK** (guardrail-only) | RN не має `localStorage`; усі persist-операції через `safeReadLS`/`safeWriteLS` adapter над MMKV. Прямих `localStorage.*` у коді — 0 (усі згадки у JSDoc-коментарях, що документують web→mobile порт). |
-| Cloud-sync invariants                    | **Середній**            | `useLocalStorage` ↔ `useSyncedStorage` дисципліна тримається `sergeant-design/no-raw-tracked-storage` — це окреме правило, статус OK.                                                                  |
-| Великі файли (>600 LOC)                  | **Середній**            | 5 production-файлів >600 LOC у mobile (`TransactionsPage` 1215, `CelebrationModal` 671, `PlanCalendar` 670, `Calendar` 628, `OnboardingWizard` 623). `TransactionsPage` — пріоритет 1.                 |
-| TODO/FIXME маркери                       | **Низький**             | 5 маркерів, усі типу `TODO(mobile-migration, Phase X)` / `TODO(phase-N)` — план відомий, чекає черги.                                                                                                  |
-| Observability (Sentry RN)                | **Середній**            | `apps/mobile/src/lib/observability.ts` готовий, `Sentry.init` гейтується `EXPO_PUBLIC_SENTRY_DSN`. Без DSN — runtime no-op. На staging/prod DSN ще не підключено.                                      |
-| Tests — Jest                             | **OK**                  | 98 test-файлів, Jest 29. Skipped/`xit`/`xdescribe` — 0. Приклад flaky tests-у не виявлено у quick-grep (детальний test-stability audit — окремий PR).                                                  |
-| Capacitor coverage                       | **Середній**            | `apps/mobile-shell` має 5 unit-тестів (deepLink, parseDeepLink, platform, index, auth-storage). Boundary-/integration-тестів для нативних мостів (`pushNative`, `barcodeNative`) — 0.                  |
-| TypeScript-version drift                 | **Середній**            | `apps/mobile`: `typescript ~5.9.0`. `apps/web` + `apps/server`: `^6.0.3`. `apps/console`: `^5.7.2`. Mobile блокує bump через RN/Expo type compatibility — план: дочекатись Expo SDK 53.                |
+| Категорія                                | Статус                  | Короткий висновок                                                                                                                                                                                                                                   |
+| ---------------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ESLint guardrails                        | ~~Блокер~~ → **OK**     | ✅ [PR #1277](https://github.com/Skords-01/Sergeant/pull/1277). `no-raw-local-storage` + `no-strict-bypass` тепер активні на `apps/mobile/src` + `apps/mobile/app`.                                                                                 |
+| Type-safety bypasses (`as unknown as X`) | **Високий**             | 7 production файлів у allowlist. Усі — adapter-и між domain-shape та локальними view-model-ями (RN-specific). Migration plan: 6 — domain-alignment, 1 — Expo SDK 52 type-update.                                                                    |
+| `: any` types у production               | **Високий**             | 2 production файли (`TxRow.tsx`, `TxListItem.tsx`) — `any` на pressable handler-ах. Заміна на `GestureResponderEvent` тривіальна.                                                                                                                   |
+| Storage migration                        | **OK** (guardrail-only) | RN не має `localStorage`; усі persist-операції через `safeReadLS`/`safeWriteLS` adapter над MMKV. Прямих `localStorage.*` у коді — 0 (усі згадки у JSDoc-коментарях, що документують web→mobile порт).                                              |
+| Cloud-sync invariants                    | **Середній**            | `useLocalStorage` ↔ `useSyncedStorage` дисципліна тримається `sergeant-design/no-raw-tracked-storage` — це окреме правило, статус OK.                                                                                                               |
+| Великі файли (>600 LOC)                  | **Середній**            | 5 production-файлів >600 LOC у mobile (`TransactionsPage` 1215, `CelebrationModal` 671, `PlanCalendar` 670, `Calendar` 628, `OnboardingWizard` 623). `TransactionsPage` — пріоритет 1.                                                              |
+| TODO/FIXME маркери                       | **Низький**             | 5 маркерів, усі типу `TODO(mobile-migration, Phase X)` / `TODO(phase-N)` — план відомий, чекає черги.                                                                                                                                               |
+| Observability (Sentry RN)                | **Середній**            | `apps/mobile/src/lib/observability.ts` готовий, `Sentry.init` гейтується `EXPO_PUBLIC_SENTRY_DSN`. Без DSN — runtime no-op. На staging/prod DSN ще не підключено.                                                                                   |
+| Tests — Jest                             | **OK**                  | 98 test-файлів, Jest 29. Skipped/`xit`/`xdescribe` — 0. Приклад flaky tests-у не виявлено у quick-grep (детальний test-stability audit — окремий PR).                                                                                               |
+| Capacitor coverage                       | ~~Середній~~ → **OK**   | ✅ [PR #1415](https://github.com/Skords-01/Sergeant/pull/1415). `apps/mobile-shell` має 7 test-файлів (deepLinkBridge, parseDeepLink, platform, index, auth-storage + `barcodeNative` / `pushNative` boundary-suites — 30 тестів на нативні мости). |
+| TypeScript-version drift                 | **Середній**            | `apps/mobile`: `typescript ~5.9.0`. `apps/web` + `apps/server`: `^6.0.3`. `apps/console`: `^5.7.2`. Mobile блокує bump через RN/Expo type compatibility — план: дочекатись Expo SDK 53.                                                             |
 
 ---
 

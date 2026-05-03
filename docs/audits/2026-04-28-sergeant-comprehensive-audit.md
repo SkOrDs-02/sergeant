@@ -1,6 +1,6 @@
 # Sergeant — Комплексний Генеральний Аудит
 
-> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > **Дата аудиту:** 2026-04-28
@@ -231,11 +231,11 @@ Workflows:
 
 ### 3.4. Низькі (P3) — Nice-to-Have
 
-| ID       | Недолік                    | Вплив            | Рекомендація             |
-| -------- | -------------------------- | ---------------- | ------------------------ |
-| **P3-1** | No visual regression tests | UI drift         | Add Chromatic/Percy      |
-| **P3-2** | Manual release notes       | Process overhead | Automate with changesets |
-| **P3-3** | No PR size limits          | Review fatigue   | Add probot/pr-size       |
+| ID          | Недолік                                                                                                                                               | Вплив            | Рекомендація                  |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ----------------------------- |
+| **P3-1**    | No visual regression tests                                                                                                                            | UI drift         | Add Chromatic/Percy           |
+| **P3-2**    | Manual release notes                                                                                                                                  | Process overhead | Automate with changesets      |
+| **P3-3** ✅ | ~~No PR size limits~~ — закрито в [PR #1426](https://github.com/Skords-01/Sergeant/pull/1426) (`.github/workflows/pr-size.yml` + size labels XS..XXL) | Review fatigue   | ~~Add probot/pr-size~~ — Done |
 
 ---
 
