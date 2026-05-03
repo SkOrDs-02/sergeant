@@ -110,9 +110,15 @@
 
 ### 3.2. Acknowledge-кнопка на P0/P1 alert-ах + 15-min escalation
 
-**Status:** **ack-button + escalation cron live** (Wave 3 PR-1 + PR-2). PR-1 = ADR-0038 + `tg_alert_acks` + 4 endpoint-и live. PR-2 = WF-04 wired як reference (Build alert payload → `/api/internal/alerts/post` → 3-кнопковий inline-keyboard) + WF-104 callback router + WF-103 5-min escalation cron. Решта 17 broadcast workflows (WF-03/15/18/22/...) дотягують ack-row у mechanical follow-up sub-PR-у — pattern зафіксований у WF-04. OpenClaw `/alerts pending` slash залишається у W3 PR-3.
+**Status:** **ack-button + escalation cron live** (Wave 3, 2 PR-и мерджені 2026-05-03):
+
+- W3 PR-1 — [#1473](https://github.com/Skords-01/Sergeant/pull/1473) — [ADR-0038](../adr/0038-tg-alert-acks-and-escalation.md) + `tg_alert_acks` table + 4 internal endpoint-и (`/post`/`/ack`/`/pending`/`/escalate`) + 26 unit/route tests.
+- W3 PR-2 — [#1480](https://github.com/Skords-01/Sergeant/pull/1480) — WF-04 wired як reference (Build alert payload → `/api/internal/alerts/post` → 3-кнопковий inline-keyboard) + WF-104 callback router + WF-103 5-min escalation cron + manifest/REPORTING-MATRIX.
+
+Усі три workflow-ї (WF-04/103/104) в git з `"active": false` — потребують staging смоук-у + ручного toggle у n8n. Решта 17 broadcast workflows (WF-03/15/18/22/...) дотягають ack-row у mechanical follow-up sub-PR-у — pattern зафіксований у WF-04. OpenClaw `/alerts pending` slash залишається у W3 PR-3.
+
 **Pain закриває:** P2.
-**ADR-кандидат:** [ADR-0038](../adr/0038-tg-alert-acks-and-escalation.md) ("Alert acknowledgement + escalation").
+**ADR:** [ADR-0038](../adr/0038-tg-alert-acks-and-escalation.md) ("Alert acknowledgement + escalation").
 
 **Що:** WF-03 / WF-15 / WF-18 / WF-22 шлють alert у топік → `@Sergeant_alert_bot` додає inline-keyboard:
 
@@ -161,9 +167,7 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 ### 3.3. `/audit since=` + `--csv` export
 
-**Status:** shipped — Wave 1, ADR-0037 follow-up. `since=<dur>` (max 30d) і
-`csv` тепер в `apps/console/src/openclaw/handler.ts`; helpers в
-`duration.ts` + `audit-csv.ts`.
+**Status:** **shipped** — Wave 1, [#1462](https://github.com/Skords-01/Sergeant/pull/1462) (ADR-0037 follow-up). `since=<dur>` (max 30d) і `csv` тепер в `apps/console/src/openclaw/handler.ts`; helpers в `duration.ts` + `audit-csv.ts`.
 **Pain закриває:** P6.
 **ADR-кандидат:** none (extension Phase 4.5 без новoï ADR).
 
@@ -192,7 +196,7 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 ### 3.4. WF-15 Bad request — payload-schema fix
 
-**Status:** **shipped** (Wave 1, PR за цим розділом). Root-cause був НЕ schema-drift, а Telegram Markdown-parser, що ламається на `*` / `_` / `` ` `` у commit-message-і — `parse_mode: Markdown` (legacy) не підтримує backslash-escape. Switched to `parse_mode: HTML` + `htmlEscape()` у parser-node.
+**Status:** **shipped** — Wave 1, [#1469](https://github.com/Skords-01/Sergeant/pull/1469). Root-cause був НЕ schema-drift, а Telegram Markdown-parser, що ламається на `*` / `_` / `` ` `` у commit-message-і — `parse_mode: Markdown` (legacy) не підтримує backslash-escape. Switched to `parse_mode: HTML` + `htmlEscape()` у parser-node. WF-15 prod вже на HTML (`PUT /api/v1/workflows/CygZ4vLxTm2ltuRW`, active=true) — repo merge просто привів JSON у відповідність з prod.
 **Pain закриває:** P3.
 **ADR-кандидат:** none (bug-fix у workflow JSON).
 
@@ -281,22 +285,24 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 ## 5. Wave-based PR plan
 
-| Wave  | PR  | Item(s)                                                                | Effort | ADR       |
-| ----- | --- | ---------------------------------------------------------------------- | ------ | --------- |
-| W1    | (a) | §3.3 (`/audit since=` + `--csv`)                                       | S      | —         |
-| W1    | (b) | §3.4 (WF-15 Bad request fix)                                           | S      | —         |
-| W2    | (c) | §3.1 (Phase 2.A morning ritual)                                        | M      | 0039      |
-| W2    | (d) | C.2 (Sentry breadcrumbs у tool-calls)                                  | XS     | —         |
-| W3    | (e) | §3.2 (alert ack-button + escalation) — foundation + WF-04/103/104 live | M      | 0038      |
-| W3    | (f) | A.1 (Phase 2.B Friday weekly + OKR)                                    | M      | 0039      |
-| W3    | (g) | B.1 (alert dedup / occurrence-counter)                                 | M      | —         |
-| W4    | (h) | §3.5 (webhook delivery)                                                | M      | 0041      |
-| W4    | (i) | A.6 + A.7 (`/help` + persona quick-row)                                | S      | —         |
-| Later | …   | A.2 (Phase 3), A.3, A.4, A.5, A.8, A.10, A.11, A.12, A.13              | varies | 0040+     |
-| Later | …   | B.2..B.8                                                               | varies | varies    |
-| Later | …   | C.1, C.3, C.4, C.5                                                     | varies | 0042/0043 |
+| Wave  | PR  | Item(s)                                                                | Effort | ADR       | Status                                                                                                                                           |
+| ----- | --- | ---------------------------------------------------------------------- | ------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| W1    | (a) | §3.3 (`/audit since=` + `--csv`)                                       | S      | —         | ✅ [#1462](https://github.com/Skords-01/Sergeant/pull/1462)                                                                                      |
+| W1    | (b) | §3.4 (WF-15 Bad request fix)                                           | S      | —         | ✅ [#1469](https://github.com/Skords-01/Sergeant/pull/1469)                                                                                      |
+| W2    | (c) | §3.1 (Phase 2.A morning ritual)                                        | M      | 0039      | planned                                                                                                                                          |
+| W2    | (d) | C.2 (Sentry breadcrumbs у tool-calls)                                  | XS     | —         | planned                                                                                                                                          |
+| W3    | (e) | §3.2 (alert ack-button + escalation) — foundation + WF-04/103/104 live | M      | 0038      | ✅ PR-1 [#1473](https://github.com/Skords-01/Sergeant/pull/1473) + PR-2 [#1480](https://github.com/Skords-01/Sergeant/pull/1480); 17 wirings TBD |
+| W3    | (f) | A.1 (Phase 2.B Friday weekly + OKR)                                    | M      | 0039      | planned                                                                                                                                          |
+| W3    | (g) | B.1 (alert dedup / occurrence-counter)                                 | M      | —         | planned                                                                                                                                          |
+| W4    | (h) | §3.5 (webhook delivery)                                                | M      | 0041      | planned                                                                                                                                          |
+| W4    | (i) | A.6 + A.7 (`/help` + persona quick-row)                                | S      | —         | planned                                                                                                                                          |
+| Later | …   | A.2 (Phase 3), A.3, A.4, A.5, A.8, A.10, A.11, A.12, A.13              | varies | 0040+     | backlog                                                                                                                                          |
+| Later | …   | B.2..B.8                                                               | varies | varies    | backlog                                                                                                                                          |
+| Later | …   | C.1, C.3, C.4, C.5                                                     | varies | 0042/0043 | backlog                                                                                                                                          |
 
 **Total для топ-4 хвиль:** ~12 робочих днів, 9 PR-ів, 3 нові ADR-и (0038, 0039, 0041).
+
+**Де-факто завершено (2026-05-03):** W1 (a)+(b) + W3 (e) — 4 merged PR всього.
 
 ---
 

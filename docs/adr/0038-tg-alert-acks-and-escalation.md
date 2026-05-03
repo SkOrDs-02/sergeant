@@ -176,16 +176,30 @@ Bearer-auth. Marks an alert as escalated to prevent double-DM. Idempotent via `W
 
 Response: `{ ok: true, alreadyEscalated: boolean }`.
 
-### 3. n8n / `Sergeant_alert_bot` wiring (deferred to follow-up PR)
+### 3. n8n / `Sergeant_alert_bot` wiring
 
-Цей ADR закриває **тільки server foundation** (DB + 4 endpoints + tests). Реальна wiring — окремий PR-у:
+Цей ADR описує і **server foundation** (W3 PR-1, [#1473](https://github.com/Skords-01/Sergeant/pull/1473)), і **n8n surface** (W3 PR-2, [#1480](https://github.com/Skords-01/Sergeant/pull/1480)).
 
-- **WF-03/WF-15/WF-18/WF-22** додають step `Post alert ack-row` (HTTP `/api/internal/alerts/post`) ПЕРЕД Telegram-send-ом і змінюють Telegram-reply-markup на inline-keyboard з 3 кнопками.
-- **WF-104 (new)** — callback-router: webhook на `https://n8n…/webhook/tg-callback` → парсить `callback_data` → POST `/api/internal/alerts/ack`.
-- **WF-103 (new)** — cron every 1m → POST `/api/internal/alerts/pending` з `severity=P0`, `olderThanMinutes=15`, `notYetEscalated=true` → for each → POST `/api/internal/alerts/escalate` + DM via `@OpenClaw_sergeant_bot`.
-- **OpenClaw `/alerts pending`** slash — query `/api/internal/alerts/pending` без ескалації-фільтру, render-у DM як таблиця.
+**Foundation (shipped W3 PR-1, #1473):**
 
-Кожен з цих 4 step-ів — independent S/M PR; foundation-PR (цей ADR) не блокує жоден з них.
+- DB migration `031_tg_alert_acks.sql` + down + rollback-sanity test.
+- 4 endpoints у `apps/server/src/routes/internal/alerts.ts`: `/post`, `/ack`, `/pending`, `/escalate` — bearer-auth на `INTERNAL_API_KEY`, zod-validated, idempotent.
+- 26 unit + route tests (`apps/server/src/routes/internal/alerts.test.ts`, `apps/server/src/modules/alerts/store.test.ts`).
+
+**n8n wiring (shipped W3 PR-2, #1480):**
+
+- **WF-04 (`04-daily-backup-verification.json`)** — reference-implementation. CRITICAL-гілка викликає `POST /api/internal/alerts/post` (idempotent через `alertId = workflow_id:execution_id`) і рендерить inline-keyboard з 3 кнопок (`✅ Прочитав` / `🔄 Розбираю` / `🔕 Замутити 30хв`). `callback_data` формат — `ack:<r|i|m>:<alertId>`, в межах Telegram-овського 64-byte cap-у.
+- **WF-104 (`104-alert-callback-router.json`, new)** — `telegramTrigger` на `callback_query` → парсить `callback_data` → `POST /api/internal/alerts/ack` → `editMessageText` (стирає inline-keyboard + appends `✅ acked by @user at HH:MM UTC` footer) → `answerCallbackQuery` toast ("Ack recorded" / "Already acked").
+- **WF-103 (`103-alert-escalation-cron.json`, new)** — cron `*/5min` → `POST /api/internal/alerts/pending` (`olderThanMinutes=15, notYetEscalated=true`) → filter to P0/P1 → for each: `POST /api/internal/alerts/escalate` → DM founder via `@OpenClaw_sergeant_bot` raw `sendMessage` (HTML, no inline keyboard). Раз на alert; ON CONFLICT-захист на server-side.
+- Усі три workflow-ї закомічені з `"active": false` — потребують ручного toggle у n8n після staging-смоук-у (`post → click → ack → escalate`).
+
+**Deferred (W3 PR-3+):**
+
+- **Wiring решти broadcast-workflows** — WF-03 (Sentry), WF-15 (Railway deploy), WF-18 (security audit), WF-22, та решта 14 — picks up the WF-04 cookie-cutter mechanically. Залишаємо як serial sub-PR-у бо diff per workflow ~30 рядків і кожен потребує окремого smoke-у у staging.
+- **OpenClaw `/alerts pending`** slash-команда — query `/api/internal/alerts/pending` без `notYetEscalated`-фільтру, render-у у DM табличкою. Поки `tg_alert_acks` уже у `QUERY_APP_DB_TABLE_ALLOWLIST` (PR-1), founder може звертатися до `/cofounder query_app_db SELECT … FROM tg_alert_acks` ad-hoc.
+- **Phase 5 multi-operator** — додає `tg_operator_allowlist` table + `acked_users JSONB` колонку (без schema-break-у).
+
+Цей ADR не блокує жоден з deferred items; кожен — independent S/M follow-up.
 
 ### 4. Що НЕ міняється
 
@@ -229,7 +243,7 @@ Response: `{ ok: true, alreadyEscalated: boolean }`.
 ### Negative
 
 - **+1 nullable BIGINT FK у Phase 5.** Коли додамо multi-operator + `tg_operator_allowlist`, міграція 03X_alert_acks_v2 буде ALTER TABLE з validation. Не критично, але ADR-flag-ну для майбутнього.
-- **n8n-side wiring deferred.** Inline-keyboard у alert-workflows + WF-103/WF-104 — окремі PR-у. Foundation сама по собі live-у нічого не змінює (server route-и доступні, але ніхто їх не викликає). Trade-off: швидше merge foundation → менший surface для review per-PR.
+- **17 broadcast-workflows ще не wired.** WF-04 — reference impl у W3 PR-2; WF-03/15/18/22/решта повертатимуть до старого "no ack" patterns поки не дотягнемо їх mechanically. Кожен — окремий S sub-PR (~30 LOC + smoke). Trade-off за швидший merge: alert-fatigue closure буде incremental, не big-bang.
 - **DB-таблиця ще одна.** Sergeant прод already 31 таблицю (post-merge цієї міграції). Кожна нова — +5 sec до ROLLBACK-test cycle у CI. Не ризик, але треба не забувати про bound-check у `apps/server/src/migrations/__tests__/rollback-sanity.test.ts`.
 
 ### Neutral
@@ -238,14 +252,42 @@ Response: `{ ok: true, alreadyEscalated: boolean }`.
 
 ## Acceptance
 
-- Migration 031 forward+down apply-ять чисто у CI rollback-sanity test.
-- 4 endpoint-и validated unit-тестами (z-schema reject, idempotency lock, ack/escalation transition correctness).
-- `tg_alert_acks` додана до `QUERY_APP_DB_TABLE_ALLOWLIST` у `apps/server/src/modules/openclaw/types.ts` — щоб OpenClaw `/alerts pending` міг через `query_app_db` (read-only) повертати list.
-- Roadmap §3.2 status оновлено на "foundation-shipped" з посиланням на цей ADR.
+**W3 PR-1 (foundation, [#1473](https://github.com/Skords-01/Sergeant/pull/1473), shipped):**
+
+- [x] Migration `031_tg_alert_acks.sql` forward+down apply-ять чисто у CI rollback-sanity test.
+- [x] 4 endpoint-и validated unit-тестами (z-schema reject, idempotency lock, ack/escalation transition correctness) — 26 tests pass.
+- [x] `tg_alert_acks` додана до `QUERY_APP_DB_TABLE_ALLOWLIST` у `apps/server/src/modules/openclaw/types.ts` — щоб OpenClaw `/alerts pending` міг через `query_app_db` (read-only) повертати list.
+- [x] Roadmap §3.2 status оновлено на "foundation-shipped" з посиланням на цей ADR.
+
+**W3 PR-2 (n8n wiring, [#1480](https://github.com/Skords-01/Sergeant/pull/1480), shipped):**
+
+- [x] WF-04 CRITICAL-гілка постить idempotent row у `tg_alert_acks` і рендерить 3-кнопковий inline-keyboard.
+- [x] WF-103 + WF-104 додані у `ops/n8n-workflows/` + `manifest.json` + `REPORTING-MATRIX.md` (з footnote ⁽⁵⁾⁽⁶⁾).
+- [x] `pnpm ops:n8n:validate` ловить 23 workflows; `scripts/n8n/validate-n8n-workflows.mjs` regex relaxed до `\d{2,}-` щоб manifest міг рости поза 99.
+- [x] Roadmap §3.2 status оновлено на "ack-button + escalation cron live".
+
+**Deferred (W3 PR-3+, not yet shipped):**
+
+- [ ] Wiring 17 решти broadcast-workflows (WF-03/15/18/22/...) — mechanical follow-up sub-PR-у.
+- [ ] End-to-end staging-смоук (post → click → ack → escalate → DM founder) перед прод-активацією WF-04/103/104.
+- [ ] OpenClaw `/alerts pending` slash-команда (DM-render unacked-list).
+- [ ] Phase 5 multi-operator (`tg_operator_allowlist` + `acked_users JSONB`).
 
 ## Related work
+
+**Server foundation (W3 PR-1):**
 
 - [`apps/server/src/migrations/031_tg_alert_acks.sql`](../../apps/server/src/migrations/031_tg_alert_acks.sql) + `.down.sql`
 - [`apps/server/src/modules/alerts/store.ts`](../../apps/server/src/modules/alerts/store.ts) — DB helpers.
 - [`apps/server/src/routes/internal/alerts.ts`](../../apps/server/src/routes/internal/alerts.ts) — 4 endpoints.
-- [`docs/launch/telegram-improvements-roadmap.md` §3.2](../launch/telegram-improvements-roadmap.md#32-acknowledge-кнопка-на-p0p1-alert-ах--15-min-escalation) — pain context.
+
+**n8n wiring (W3 PR-2):**
+
+- [`ops/n8n-workflows/04-daily-backup-verification.json`](../../ops/n8n-workflows/04-daily-backup-verification.json) — reference impl: `Build alert payload` → `POST /api/internal/alerts/post` → `Telegram → CRITICAL` з `reply_markup`.
+- [`ops/n8n-workflows/103-alert-escalation-cron.json`](../../ops/n8n-workflows/103-alert-escalation-cron.json) — escalation cron `*/5min`.
+- [`ops/n8n-workflows/104-alert-callback-router.json`](../../ops/n8n-workflows/104-alert-callback-router.json) — Telegram callback router.
+
+**Context:**
+
+- [`docs/launch/telegram-improvements-roadmap.md` §3.2](../launch/telegram-improvements-roadmap.md#32-acknowledge-кнопка-на-p0p1-alert-ах--15-min-escalation) — pain P2 context.
+- [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../ops/n8n-workflows/REPORTING-MATRIX.md) — WF-04/103/104 rows + footnotes ⁽⁵⁾⁽⁶⁾.
