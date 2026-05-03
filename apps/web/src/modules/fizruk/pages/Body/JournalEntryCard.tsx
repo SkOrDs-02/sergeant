@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import {
   JOURNAL_ENTRY_OPEN_PREFIX,
   readPersistedOpen,

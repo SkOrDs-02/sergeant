@@ -12,7 +12,7 @@
  *
  * Importing this module has the side-effect of registering the web
  * adapter on the shared contract, so existing
- * `import { hapticTap } from "@shared/lib/haptic"` call sites keep
+ * `import { hapticTap } from "@shared/lib/adapters/haptic"` call sites keep
  * working unchanged.
  */
 

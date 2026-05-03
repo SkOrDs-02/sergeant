@@ -1,4 +1,4 @@
-import { safeWriteLS, safeRemoveLS } from "@shared/lib/storage";
+import { safeWriteLS, safeRemoveLS } from "@shared/lib/storage/storage";
 
 export function writeJSON(key: string, value: unknown): void {
   safeWriteLS(key, value);

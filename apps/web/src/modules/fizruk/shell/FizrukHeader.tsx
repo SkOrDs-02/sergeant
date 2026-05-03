@@ -3,7 +3,7 @@ import {
   ModuleHeader,
   ModuleHeaderBackButton,
 } from "@shared/components/layout";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import type { FizrukPage } from "./fizrukRoute";
 
 interface ActiveProgramHeaderView {
@@ -66,7 +66,7 @@ function ContextualBackButton({
       onClick={onClick}
       className={cn(
         "-ml-1 flex items-center gap-1 rounded-xl px-2 py-2 min-h-[40px]",
-        "text-sm font-medium text-muted hover:text-text hover:bg-panelHi transition-colors",
+        "text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50",
       )}
       aria-label={`Назад до ${label}`}

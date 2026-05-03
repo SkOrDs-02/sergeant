@@ -1,4 +1,4 @@
-import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import {
   normalizeFinykBackup,
   readFinykBackupFromStorage,

@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { downloadJson } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { useToast } from "@shared/hooks/useToast";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { applyHubBackupPayload, buildHubBackupPayload } from "./hubBackup";
 
 interface HubBackupPanelProps {

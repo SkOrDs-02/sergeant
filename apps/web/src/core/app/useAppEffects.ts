@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 import type { NavigateFunction } from "react-router-dom";
-import { onHubBus } from "@shared/lib/hubBus";
-import { HUB_OPEN_MODULE_EVENT } from "@shared/lib/hubNav";
+import { onHubBus } from "@shared/lib/modules/hubBus";
+import { HUB_OPEN_MODULE_EVENT } from "@shared/lib/modules/hubNav";
 import {
   REQUEST_PULL_EVENT,
   emitCloudPullComplete,
-} from "@shared/lib/cloudPullRequest";
-import { safeWriteLS } from "@shared/lib/storage";
+} from "@shared/lib/modules/cloudPullRequest";
+import { safeWriteLS } from "@shared/lib/storage/storage";
 import { PWA_ACTION_KEY } from "./pwaAction";
 import type { PwaAction } from "../hooks/usePwaActions";
 import type { HubUIState } from "../hooks/useHubUIState";

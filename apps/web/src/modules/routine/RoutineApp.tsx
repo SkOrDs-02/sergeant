@@ -5,19 +5,19 @@ import {
   useState,
   useTransition,
 } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Banner } from "@shared/components/ui/Banner";
 import { SkeletonHabitRow } from "@shared/components/ui/Skeleton";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
-import { requestCloudPull } from "@shared/lib/cloudPullRequest";
+import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { useToast } from "@shared/hooks/useToast";
 import {
   ModuleAccentProvider,
   ModuleHeader,
   ModuleHeaderBackButton,
 } from "@shared/components/layout";
-import { hapticTap, hapticSuccess } from "@shared/lib/haptic";
+import { hapticTap, hapticSuccess } from "@shared/lib/adapters/haptic";
 import {
   loadRoutineState,
   toggleHabitCompletion,

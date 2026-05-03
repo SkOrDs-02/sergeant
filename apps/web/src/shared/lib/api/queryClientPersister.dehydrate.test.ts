@@ -10,7 +10,7 @@
 import { describe, it, expect } from "vitest";
 import { QueryClient, dehydrate, type Query } from "@tanstack/react-query";
 
-import { shouldDehydrateQueryForPersist } from "../queryClientPersister";
+import { shouldDehydrateQueryForPersist } from "./queryClientPersister";
 
 /**
  * Build a fake `Query`-like object good enough for the selector,

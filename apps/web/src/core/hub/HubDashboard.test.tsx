@@ -11,7 +11,7 @@ import {
   VIBE_PICKS_KEY,
   type Rec,
 } from "@sergeant/shared";
-import { getModulePrimaryAction } from "@shared/lib/moduleQuickActions";
+import { getModulePrimaryAction } from "@shared/lib/modules/moduleQuickActions";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { MODULE_CONFIGS } from "./dashboard/moduleConfigs";
 
@@ -77,7 +77,7 @@ vi.mock("@dnd-kit/utilities", () => ({
   CSS: { Transform: { toString: () => "" } },
 }));
 
-vi.mock("@shared/lib/hubNav", () => ({
+vi.mock("@shared/lib/modules/hubNav", () => ({
   openHubModule: (...args: unknown[]) => mocks.openHubModule(...args),
   openHubModuleWithAction: (...args: unknown[]) =>
     mocks.openHubModuleWithAction(...args),

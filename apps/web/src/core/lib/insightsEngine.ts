@@ -10,7 +10,7 @@
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { getTxStatAmount } from "../../modules/finyk/utils";
-import { safeReadLS, safeReadStringLS } from "@shared/lib/storage";
+import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
 import { loadRoutineState } from "../../modules/routine/lib/routineStorage";
 
 export interface Insight {

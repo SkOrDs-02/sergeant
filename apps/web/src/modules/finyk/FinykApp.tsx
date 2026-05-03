@@ -12,10 +12,10 @@ import {
   ModuleHeaderBackButton,
 } from "@shared/components/layout";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { useToast } from "@shared/hooks/useToast";
-import { tryShowCrossModulePrompt } from "@shared/lib/crossModulePrompt";
-import { openHubModuleWithAction } from "@shared/lib/hubNav";
+import { tryShowCrossModulePrompt } from "@shared/lib/modules/crossModulePrompt";
+import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import { Overview } from "./pages/Overview";
 import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
 

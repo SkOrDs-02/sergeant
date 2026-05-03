@@ -6,6 +6,6 @@
  * pending/last-written і єдиний механізм flush-on-hide.
  */
 
-import { createModuleStorage } from "@shared/lib/createModuleStorage";
+import { createModuleStorage } from "@shared/lib/storage/createModuleStorage";
 
 export const nutritionStorage = createModuleStorage({ name: "nutrition" });

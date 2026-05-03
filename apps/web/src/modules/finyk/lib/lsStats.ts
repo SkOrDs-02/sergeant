@@ -1,4 +1,4 @@
-import { safeReadLS } from "@shared/lib/storage";
+import { safeReadLS } from "@shared/lib/storage/storage";
 import { INTERNAL_TRANSFER_ID } from "../constants";
 
 // Збирає Set ID транзакцій, що виключаються зі статистики ФІНІК (та сама логіка, що

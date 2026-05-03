@@ -1,8 +1,8 @@
 import { useState, useCallback, useRef, type ReactNode } from "react";
-import { cn } from "../../lib/cn";
+import { cn } from "../../lib/ui/cn";
 import { Icon } from "./Icon";
 import { SectionHeading, type SectionHeadingSize } from "./SectionHeading";
-import { safeReadLS, safeWriteLS } from "../../lib/storage";
+import { safeReadLS, safeWriteLS } from "../../lib/storage/storage";
 
 export interface CollapsibleSectionProps {
   /** Unique key for persisting collapse state in localStorage. */
@@ -122,7 +122,7 @@ export function CollapsibleSection({
             </span>
           )}
           <span className="flex-1 min-w-0">
-            <span className="block text-sm font-semibold text-text leading-tight">
+            <span className="text-style-label block text-text leading-tight">
               {title}
             </span>
             {collapsedSubtitle && (

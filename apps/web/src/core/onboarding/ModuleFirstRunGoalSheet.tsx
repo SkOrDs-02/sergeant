@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import {
@@ -7,7 +7,7 @@ import {
   safeWriteLS,
   safeRemoveLS,
   webKVStore,
-} from "@shared/lib/storage";
+} from "@shared/lib/storage/storage";
 import {
   getGoalQuestions,
   getOnboardingGoals,

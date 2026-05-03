@@ -6,9 +6,9 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import { cn } from "../../lib/cn";
+import { cn } from "../../lib/ui/cn";
 import { Icon, type IconName } from "./Icon";
-import { hapticTap } from "../../lib/haptic";
+import { hapticTap } from "../../lib/adapters/haptic";
 
 /**
  * Sergeant Design System -- FloatingActionButton (FAB)

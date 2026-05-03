@@ -5,7 +5,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { cn } from "../../lib/cn";
+import { cn } from "../../lib/ui/cn";
 import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
 import { useSwipeToDismiss } from "../../hooks/useSwipeToDismiss";
 import { useAnnounce } from "./ScreenReaderAnnouncer";

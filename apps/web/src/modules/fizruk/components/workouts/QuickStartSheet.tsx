@@ -3,7 +3,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { useVisualKeyboardInset } from "@sergeant/shared";
 import type { FizrukData } from "@sergeant/fizruk-domain";
 

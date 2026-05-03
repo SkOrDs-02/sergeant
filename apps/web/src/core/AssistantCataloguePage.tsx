@@ -3,8 +3,8 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { useLocalStorageState } from "@shared/hooks";
-import { cn } from "@shared/lib/cn";
-import { emitHubBus } from "@shared/lib/hubBus";
+import { cn } from "@shared/lib/ui/cn";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 import {
   ASSISTANT_CAPABILITIES,
   CAPABILITY_MODULE_META,

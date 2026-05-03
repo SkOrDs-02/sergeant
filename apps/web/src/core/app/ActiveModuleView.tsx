@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
 import { SkipLink } from "@shared/components/ui/SkipLink";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";

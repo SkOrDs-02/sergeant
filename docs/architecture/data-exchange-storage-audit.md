@@ -104,7 +104,7 @@ DB-level safety:
 ### 3.2. Web storage
 
 - Основний local-first module state — `localStorage`, згрупований через `SYNC_MODULES`.
-- React Query warm-start cache — IndexedDB через `idb-keyval`, DB `sergeant-rq-cache`, TTL 7 днів, build-id buster, sensitive query keys не персистяться (`apps/web/src/shared/lib/queryClientPersister.ts`).
+- React Query warm-start cache — IndexedDB через `idb-keyval`, DB `sergeant-rq-cache`, TTL 7 днів, build-id buster, sensitive query keys не персистяться (`apps/web/src/shared/lib/api/queryClientPersister.ts`).
 - Service Worker:
   - precache + NetworkFirst navigation cache;
   - GET `/api/*` cache на 30 хв, але auth/sync/coach/weekly-digest виключені (`apps/web/src/sw.ts`);

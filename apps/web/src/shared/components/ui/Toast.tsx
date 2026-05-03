@@ -1,5 +1,5 @@
 import { useToast, type ToastType } from "@shared/hooks/useToast";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon, type IconName } from "./Icon";
 
 const VARIANT: Record<ToastType, string> = {
@@ -38,7 +38,7 @@ export function ToastContainer() {
         <div
           key={t.id}
           className={cn(
-            "pointer-events-auto w-full px-4 py-3 rounded-2xl text-sm font-semibold shadow-float flex items-center gap-2.5",
+            "text-style-label pointer-events-auto w-full px-4 py-3 rounded-2xl shadow-float flex items-center gap-2.5",
             t.leaving
               ? "motion-safe:animate-toast-exit"
               : "motion-safe:animate-toast-enter",

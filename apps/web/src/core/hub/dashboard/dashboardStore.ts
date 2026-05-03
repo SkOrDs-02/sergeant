@@ -3,7 +3,7 @@ import {
   safeRemoveLS,
   safeWriteLS,
   webKVStore,
-} from "@shared/lib/storage";
+} from "@shared/lib/storage/storage";
 import { STORAGE_KEYS, normalizeDashboardOrder } from "@sergeant/shared";
 
 /**

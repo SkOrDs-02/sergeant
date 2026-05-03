@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Input } from "@shared/components/ui/Input";
 import { ROUTINE_THEME as C } from "../../lib/routineConstants";
 import { REMINDER_PRESETS } from "../../lib/routineDraftUtils";
@@ -24,7 +24,7 @@ export function ReminderPresets({
             key={preset.id}
             type="button"
             className={cn(
-              "text-xs px-2.5 py-1.5 rounded-xl border font-medium transition-colors min-h-[32px]",
+              "text-style-caption px-2.5 py-1.5 rounded-xl border transition-colors min-h-[32px]",
               JSON.stringify(times.slice().sort()) ===
                 JSON.stringify(preset.times.slice().sort())
                 ? C.chipOn
@@ -44,7 +44,7 @@ export function ReminderPresets({
         <button
           type="button"
           className={cn(
-            "text-xs px-2.5 py-1.5 rounded-xl border font-medium transition-colors min-h-[32px]",
+            "text-style-caption px-2.5 py-1.5 rounded-xl border transition-colors min-h-[32px]",
             times.length === 0 ? C.chipOn : C.chipOff,
           )}
           onClick={() =>

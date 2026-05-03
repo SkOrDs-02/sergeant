@@ -80,7 +80,7 @@ describe("no-raw-local-storage", () => {
 
   it("does NOT flag `safeReadLS` / `useLocalStorageState` calls", () => {
     const messages = lint(
-      `import { safeReadLS } from "@shared/lib/storage";
+      `import { safeReadLS } from "@shared/lib/storage/storage";
        const v = safeReadLS("foo", null);`,
     );
     assert.equal(messages.length, 0);

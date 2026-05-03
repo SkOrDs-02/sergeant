@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useToast } from "@shared/hooks/useToast";
-import { requestCloudPull } from "@shared/lib/cloudPullRequest";
+import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { TransactionsHeader } from "./TransactionsHeader";
 import { TransactionsBatchToolbar } from "./TransactionsBatchToolbar";
 import { TransactionFilters } from "./TransactionFilters";

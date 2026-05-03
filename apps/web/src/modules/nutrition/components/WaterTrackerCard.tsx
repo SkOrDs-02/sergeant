@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { useWaterTracker } from "../hooks/useWaterTracker";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
@@ -64,9 +64,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
             💧
           </span>
           <div>
-            <div className="text-sm font-semibold text-text leading-none">
-              Вода
-            </div>
+            <div className="text-style-label text-text leading-none">Вода</div>
             <div className="text-xs text-subtle mt-0.5">
               {fmt(todayMl)}
               {goalMl > 0 && ` / ${fmt(goalMl)}`}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import {

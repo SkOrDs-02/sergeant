@@ -1,5 +1,5 @@
 import { memo, type DragEventHandler } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { RECURRENCE_OPTIONS } from "../../lib/routineConstants";
 import type { Habit } from "../../lib/types";
@@ -61,7 +61,7 @@ export const HabitListItem = memo(function HabitListItem({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <span className="text-sm font-medium">
+          <span className="text-style-label">
             {h.emoji} {h.name}
           </span>
           <p className="text-2xs text-subtle mt-0.5">

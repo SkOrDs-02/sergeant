@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { formatMoney } from "@sergeant/shared";

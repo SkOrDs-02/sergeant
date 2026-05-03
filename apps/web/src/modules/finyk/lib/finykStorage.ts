@@ -3,7 +3,7 @@
  *
  * Тонкий wrapper над shared `createModuleStorage(prefix)` — вся логіка
  * safe-parse, debounce + skip-if-equal, guaranteed flush on page hide
- * живе у `@shared/lib/createModuleStorage.js`. Тут лишився тільки доменний API
+ * живе у `@shared/lib/storage/createModuleStorage`. Тут лишився тільки доменний API
  * (getTransactions/saveTransactions, getCategories/saveCategories,
  * getBudget/saveBudget) і реекспорт менеджера міграцій.
  *
@@ -11,7 +11,7 @@
  * "finto_*" → "finyk_*" виконуються через shared `storageManager`.
  */
 
-import { createModuleStorage } from "@shared/lib/createModuleStorage";
+import { createModuleStorage } from "@shared/lib/storage/createModuleStorage";
 import { finykStorageManager } from "./storageManager";
 import type {
   Budget,

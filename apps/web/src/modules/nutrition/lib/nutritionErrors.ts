@@ -1,5 +1,5 @@
-import { friendlyApiError as baseFriendlyApiError } from "@shared/lib/friendlyApiError";
-import { formatApiError } from "@shared/lib/apiErrorFormat";
+import { friendlyApiError as baseFriendlyApiError } from "@shared/lib/api/friendlyApiError";
+import { formatApiError } from "@shared/lib/api/apiErrorFormat";
 
 /**
  * Nutrition-специфічний варіант `friendlyApiError`. Додає дві речі,

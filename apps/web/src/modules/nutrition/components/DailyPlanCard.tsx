@@ -4,7 +4,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import type {
   MealTypeId,
   NutritionPrefs,
@@ -203,7 +203,7 @@ function MealRow({ meal, onAddToLog, onRegen, busy }: MealRowProps) {
               {MEAL_TYPE_LABELS[String(meal.type ?? "")] || meal.label}
             </SectionHeading>
           </div>
-          <div className="text-sm font-semibold text-text leading-tight">
+          <div className="text-style-label text-text leading-tight">
             {meal.name}
           </div>
           {meal.description && (
@@ -329,7 +329,7 @@ export function DailyPlanCard({
 
   return (
     <Card className="p-4">
-      <div className="text-sm font-semibold text-text">Денний план</div>
+      <div className="text-style-label text-text">Денний план</div>
       <div className="text-xs text-subtle mt-0.5">
         AI генерує персоналізований план прийомів їжі з урахуванням твоїх цілей
         та продуктів зі складу.
@@ -516,7 +516,7 @@ export function DailyPlanCard({
             onClick={fetchDayPlan}
             disabled={busy || dayPlanBusy}
             className={cn(
-              "w-full h-11 rounded-2xl text-sm font-semibold",
+              "text-style-label w-full h-11 rounded-2xl",
               "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
             )}
           >
@@ -528,7 +528,7 @@ export function DailyPlanCard({
               onClick={fetchWeekPlan}
               disabled={busy || weekPlanBusy}
               className={cn(
-                "w-full h-11 rounded-2xl text-sm font-semibold border border-nutrition/40",
+                "text-style-label w-full h-11 rounded-2xl border border-nutrition/40",
                 "text-nutrition-strong dark:text-nutrition hover:bg-nutrition/10 disabled:opacity-50 transition-colors",
               )}
             >
@@ -545,7 +545,7 @@ export function DailyPlanCard({
 
         {(weekPlan?.days?.length ?? 0) > 0 && (
           <div className="rounded-2xl border border-line bg-panel p-4 space-y-3">
-            <div className="text-sm font-semibold text-text">Тижневий план</div>
+            <div className="text-style-label text-text">Тижневий план</div>
             {(weekPlan!.days as WeekPlanDay[]).map(
               (d: WeekPlanDay, i: number) => (
                 <div
@@ -598,7 +598,7 @@ export function DailyPlanCard({
         {sortedMeals.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <div className="text-sm font-semibold text-text">
+              <div className="text-style-label text-text">
                 Ваш план на сьогодні
               </div>
               {dayPlan?.totalKcal != null && (

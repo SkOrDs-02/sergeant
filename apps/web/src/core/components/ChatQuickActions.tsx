@@ -10,7 +10,7 @@
 
 import { useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import {
   type AssistantCapability,
   type CapabilityModule,

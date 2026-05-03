@@ -142,7 +142,7 @@
 
 #### **PR #004 — `feat(web): exclude sensitive query keys from IDB persister`** ✅ LANDED — [#1283](https://github.com/Skords-01/Sergeant/pull/1283)
 
-- **Scope.** `apps/web/src/shared/lib/queryClientPersister.ts`:
+- **Scope.** `apps/web/src/shared/lib/api/queryClientPersister.ts`:
   додати `dehydrateOptions.shouldDehydrateQuery` exclude list для
   `/api/coach/*`, `/api/me/finance/balance`, `/api/sync/*`, `/api/auth/*`.
 - **Mirror.** Ті самі exclusions у `apps/mobile/src/sync/persister/mmkvPersister.ts`.

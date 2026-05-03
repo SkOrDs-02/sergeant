@@ -9,7 +9,7 @@
  * dead-code cleanup — see Hard Rule #15 in AGENTS.md.
  */
 import { memo } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 interface IllustrationProps {
   className?: string;

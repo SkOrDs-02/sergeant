@@ -4,7 +4,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import {
   changeEmail,
   sendVerificationEmail,
@@ -168,7 +168,7 @@ export function PersonalInfoSection({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-2xl font-bold bg-brand-500/15 text-brand-strong dark:text-brand">
+              <div className="text-style-hero w-full h-full flex items-center justify-center bg-brand-500/15 text-brand-strong dark:text-brand">
                 {initial}
               </div>
             )}
@@ -232,7 +232,7 @@ export function PersonalInfoSection({
                 </button>
               ) : (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-danger font-medium">
+                  <span className="text-style-caption text-danger">
                     Видалити фото?
                   </span>
                   <button
@@ -262,7 +262,7 @@ export function PersonalInfoSection({
         {!user.emailVerified && user.email && (
           <div className="px-4 py-3 flex items-center gap-3 bg-warning/5">
             <Icon name="alert" size={15} className="text-warning shrink-0" />
-            <p className="text-xs text-warning font-medium flex-1">
+            <p className="text-style-caption text-warning flex-1">
               Email не підтверджено — перевірте вашу поштову скриньку
             </p>
             <Button
@@ -281,7 +281,7 @@ export function PersonalInfoSection({
         <div className="px-4 py-4 space-y-2">
           <label
             htmlFor="profile-name"
-            className="block text-xs font-medium text-muted"
+            className="text-style-caption block text-muted"
           >
             Ім&apos;я
           </label>
@@ -315,7 +315,7 @@ export function PersonalInfoSection({
         <div className="px-4 py-4 space-y-2">
           <label
             htmlFor="profile-email"
-            className="block text-xs font-medium text-muted"
+            className="text-style-caption block text-muted"
           >
             Email
           </label>

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
 import { ModuleEmptyIllustration } from "./EmptyStateIllustrations";

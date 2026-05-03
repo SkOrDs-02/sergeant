@@ -414,7 +414,7 @@ export function PaywallGate({
 ### 4.3 RQ keys — додати
 
 ```ts
-// apps/web/src/shared/lib/queryKeys.ts
+// apps/web/src/shared/lib/api/queryKeys.ts
 
 export const billingKeys = {
   all: ["billing"] as const,

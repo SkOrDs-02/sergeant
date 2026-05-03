@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import {
@@ -10,7 +10,7 @@ import {
 import { Card } from "@shared/components/ui/Card";
 import { Stat } from "@shared/components/ui/Stat";
 import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 
 const inp =
   "input-focus-fizruk w-full h-11 rounded-2xl border border-line bg-panelHi px-4 text-text";

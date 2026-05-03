@@ -5,7 +5,7 @@ import {
   type ReactNode,
   type KeyboardEvent,
 } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
 import { Button } from "./Button";

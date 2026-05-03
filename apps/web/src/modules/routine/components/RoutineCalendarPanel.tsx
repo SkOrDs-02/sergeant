@@ -7,7 +7,7 @@ import {
   type ChangeEvent,
 } from "react";
 import { Virtuoso } from "react-virtuoso";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -295,7 +295,7 @@ export function RoutineCalendarPanel({
           type="button"
           onClick={() => setTagFilter(null)}
           className={cn(
-            "px-2.5 py-1.5 rounded-full text-xs font-medium border",
+            "text-style-caption px-2.5 py-1.5 rounded-full border",
             tagFilter === null ? C.chipOn : C.chipOff,
           )}
         >
@@ -308,7 +308,7 @@ export function RoutineCalendarPanel({
               setTagFilter((f) => (f === "__fizruk" ? null : "__fizruk"))
             }
             className={cn(
-              "px-2.5 py-1.5 rounded-full text-xs font-medium border",
+              "text-style-caption px-2.5 py-1.5 rounded-full border",
               tagFilter === "__fizruk"
                 ? "border-sky-400/50 bg-sky-500/10 text-text"
                 : C.chipOff,
@@ -324,7 +324,7 @@ export function RoutineCalendarPanel({
               setTagFilter((f) => (f === "__finyk_sub" ? null : "__finyk_sub"))
             }
             className={cn(
-              "px-2.5 py-1.5 rounded-full text-xs font-medium border max-w-[200px] truncate",
+              "text-style-caption px-2.5 py-1.5 rounded-full border max-w-[200px] truncate",
               tagFilter === "__finyk_sub"
                 ? "border-emerald-500/40 bg-emerald-500/10 text-text"
                 : C.chipOff,
@@ -339,7 +339,7 @@ export function RoutineCalendarPanel({
             type="button"
             onClick={() => setTagFilter((f) => (f === name ? null : name))}
             className={cn(
-              "px-2.5 py-1.5 rounded-full text-xs font-medium border max-w-[160px] truncate",
+              "text-style-caption px-2.5 py-1.5 rounded-full border max-w-[160px] truncate",
               tagFilter === name ? C.chipOn : C.chipOff,
             )}
           >

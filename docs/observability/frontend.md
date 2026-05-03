@@ -445,7 +445,7 @@ platform:android      — Android WebView
 ### Перехресне посилання: web-помилка → server-log
 
 Web-клієнт включає `requestId` у API-помилках
-(`apps/web/src/shared/lib/apiErrorFormat.ts`). Якщо `requestId` присутній —
+(`apps/web/src/shared/lib/api/apiErrorFormat.ts`). Якщо `requestId` присутній —
 шукайте у серверних логах (Pino) для кореляції.
 
 > **TODO**: додати `x-request-id` header у fetch-клієнт — наразі `requestId`

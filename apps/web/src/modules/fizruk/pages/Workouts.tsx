@@ -3,14 +3,14 @@ import {
   safeReadStringLS,
   safeWriteLS,
   safeRemoveLS,
-} from "@shared/lib/storage";
-import { requestCloudPull } from "@shared/lib/cloudPullRequest";
+} from "@shared/lib/storage/storage";
+import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { WorkoutTemplatesSection } from "../components/WorkoutTemplatesSection";
 import { RestTimerOverlay } from "../components/workouts/RestTimerOverlay";
 import { WorkoutFinishSheets } from "../components/workouts/WorkoutFinishSheets";

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { hapticError } from "../lib/haptic";
+import { hapticError } from "../lib/adapters/haptic";
 
 type ValidationRule<T> = {
   validate: (value: T) => boolean;

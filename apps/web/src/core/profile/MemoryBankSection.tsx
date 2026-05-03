@@ -3,8 +3,8 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
-import { emitHubBus } from "@shared/lib/hubBus";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import {
   CATEGORY_META,
   groupMemoryEntries,
@@ -120,7 +120,7 @@ export function MemoryBankSection() {
     <Card radius="lg" padding="none" className="overflow-hidden">
       <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
         <Icon name="sparkle" size={18} className="text-muted" />
-        <span className="text-sm font-semibold text-text">Пам&apos;ять ШІ</span>
+        <span className="text-style-label text-text">Пам&apos;ять ШІ</span>
         <span className="ml-auto text-xs text-muted">
           {entries.length}{" "}
           {entries.length === 1

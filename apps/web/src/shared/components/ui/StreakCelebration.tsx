@@ -1,5 +1,5 @@
 import { memo, useEffect, useState, useCallback } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 interface ConfettiParticle {
   id: number;
@@ -177,8 +177,8 @@ export const StreakCelebration = memo(function StreakCelebration({
           {streak >= 30 ? "🏆" : streak >= 14 ? "🔥" : "⭐"}
         </div>
         <div className="text-center">
-          <p className="text-2xl font-bold text-text tabular-nums">{streak}</p>
-          <p className="text-sm font-semibold text-muted">днів поспіль</p>
+          <p className="text-style-hero text-text tabular-nums">{streak}</p>
+          <p className="text-style-label text-muted">днів поспіль</p>
         </div>
         {message && (
           <p className="text-base font-semibold text-brand-strong dark:text-brand text-center text-pretty">

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { type MonoTransactionDto } from "@shared/api";
-import { finykKeys } from "@shared/lib/queryKeys";
-import { authAwareRetry } from "@shared/lib/queryClient";
+import { finykKeys } from "@shared/lib/api/queryKeys";
+import { authAwareRetry } from "@shared/lib/api/queryClient";
 import { fetchAllMonoTransactions } from "./monoTransactionsLoader";
 
 const STALE_TIME = 30_000;

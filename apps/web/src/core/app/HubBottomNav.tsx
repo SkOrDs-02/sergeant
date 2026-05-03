@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
-import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import type { HubView } from "../hooks/useHubUIState";
 
 /**

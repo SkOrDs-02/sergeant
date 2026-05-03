@@ -1,8 +1,8 @@
 import {
   MODULE_PRIMARY_ACTION,
   type ModulePrimaryAction,
-} from "@shared/lib/moduleQuickActions";
-import type { HubModuleId } from "@shared/lib/hubNav";
+} from "@shared/lib/modules/moduleQuickActions";
+import type { HubModuleId } from "@shared/lib/modules/hubNav";
 import { type Hit, pushScored } from "./searchTypes";
 
 /**

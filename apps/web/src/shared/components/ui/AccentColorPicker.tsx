@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
-import { cn } from "../../lib/cn";
+import { cn } from "../../lib/ui/cn";
 import { Icon } from "./Icon";
-import { safeReadStringLS, safeWriteLS } from "../../lib/storage";
+import { safeReadStringLS, safeWriteLS } from "../../lib/storage/storage";
 
 const ACCENT_COLOR_KEY = "sergeant_accent_color_v1";
 
@@ -188,7 +188,7 @@ export function AccentColorPickerCard({ className }: { className?: string }) {
     >
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-text">Акцентний колір</h3>
+          <h3 className="text-style-label text-text">Акцентний колір</h3>
           <p className="text-xs text-muted mt-0.5">Поточний: {accent.name}</p>
         </div>
         {/* Preview */}
@@ -212,7 +212,7 @@ export function AccentColorPickerCard({ className }: { className?: string }) {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="px-3 py-1.5 text-sm font-medium rounded-xl transition-colors"
+            className="text-style-label px-3 py-1.5 rounded-xl transition-colors"
             style={{
               backgroundColor: accent.preview,
               color: "white",
@@ -220,10 +220,7 @@ export function AccentColorPickerCard({ className }: { className?: string }) {
           >
             Кнопка
           </button>
-          <span
-            className="text-sm font-medium"
-            style={{ color: accent.preview }}
-          >
+          <span className="text-style-label" style={{ color: accent.preview }}>
             Посилання
           </span>
           <div

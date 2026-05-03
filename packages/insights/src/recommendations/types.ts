@@ -12,7 +12,7 @@ import type { ModuleAccent, StatusColor } from "@sergeant/design-tokens";
 
 /**
  * Імперативна CTA-дія для рекомендації. Повторює літерали
- * `HubModuleAction` з `apps/web/src/shared/lib/hubNav.ts` — джерелом
+ * `HubModuleAction` з `apps/web/src/shared/lib/modules/hubNav.ts` — джерелом
  * правди є цей пакет, `hubNav.ts` реекспортує звідси.
  */
 export type HubModuleAction =

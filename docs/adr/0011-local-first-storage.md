@@ -163,7 +163,7 @@ export interface KVStore {
 Нейтральні функції приймають `KVStore` як параметр. Платформо-специфічні
 адаптери:
 
-- **web:** `apps/web/src/shared/lib/storage.ts` експортує `webKVStore` який обгортає `window.localStorage`.
+- **web:** `apps/web/src/shared/lib/storage/storage.ts` експортує `webKVStore` який обгортає `window.localStorage`.
 - **mobile:** `apps/mobile/src/lib/storage.ts` обгортає `react-native-mmkv`.
 - **tests:** `createMemoryKVStore({...})` з `packages/shared/src/lib/kvStore.ts`.
 

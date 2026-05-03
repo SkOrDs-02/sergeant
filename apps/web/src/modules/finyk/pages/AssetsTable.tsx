@@ -13,10 +13,10 @@ import {
   getReceivableEffectiveTotal,
 } from "../utils";
 import { getAccountVisual } from "../lib/accountVisual";
-import { cn } from "@shared/lib/cn";
-import { openHubModule } from "@shared/lib/hubNav";
+import { cn } from "@shared/lib/ui/cn";
+import { openHubModule } from "@shared/lib/modules/hubNav";
 import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import { FinykStatsStrip } from "../components/FinykStatsStrip";
 import {

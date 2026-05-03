@@ -2,7 +2,7 @@ import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { foodSearchApi } from "@shared/api";
 import type { FoodSearchProduct } from "@shared/api";
-import { nutritionKeys } from "@shared/lib/queryKeys";
+import { nutritionKeys } from "@shared/lib/api/queryKeys";
 import { searchFoods } from "../../lib/foodDb/foodDb";
 import type { FoodProduct } from "../../lib/foodDb/foodDb";
 

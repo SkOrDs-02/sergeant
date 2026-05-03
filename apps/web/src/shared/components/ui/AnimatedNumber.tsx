@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, memo } from "react";
-import { cn } from "../../lib/cn";
+import { cn } from "../../lib/ui/cn";
 
 interface AnimatedNumberProps {
   value: number;

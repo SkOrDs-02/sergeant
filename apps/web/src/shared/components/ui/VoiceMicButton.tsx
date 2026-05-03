@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cn } from "@shared/lib/cn";
-import { hapticTap } from "@shared/lib/haptic";
+import { cn } from "@shared/lib/ui/cn";
+import { hapticTap } from "@shared/lib/adapters/haptic";
 import { PendingVoiceChip } from "./voice/PendingVoiceChip";
 import { resolveConfiguredProvider } from "./voice/resolveVoiceProvider";
 import { useGroqVoiceInput } from "./voice/useGroqVoiceInput";

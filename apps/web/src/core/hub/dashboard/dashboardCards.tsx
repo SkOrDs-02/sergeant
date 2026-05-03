@@ -1,8 +1,8 @@
 import { useMemo, type CSSProperties, type ReactNode } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { StreakBadge } from "@shared/components/ui/StreakFlame";
-import { safeReadLS, safeReadStringLS } from "@shared/lib/storage";
+import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS, countRealEntries } from "@sergeant/shared";
 import { getWeekRange } from "../../insights/useWeeklyDigest";
 import { MODULE_CONFIGS, type ModuleId } from "./moduleConfigs";
@@ -233,7 +233,7 @@ export function WeeklyDigestFooter({
       </span>
       <span className="flex-1 min-w-0 flex flex-col">
         <span className="flex items-center gap-1.5">
-          <span className="text-sm font-semibold text-text">Звіт тижня</span>
+          <span className="text-style-label text-text">Звіт тижня</span>
           {fresh && (
             <span
               className="inline-block w-1.5 h-1.5 rounded-full bg-primary"

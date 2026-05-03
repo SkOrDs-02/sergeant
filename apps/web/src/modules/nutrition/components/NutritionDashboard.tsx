@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { chartHex } from "@sergeant/design-tokens/tokens";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { pluralUa } from "@sergeant/shared";
 import type { NutritionLog, NutritionPrefs } from "@sergeant/nutrition-domain";
 import {
@@ -195,7 +195,7 @@ export function NutritionDashboard({
       <Card className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <div className="text-sm font-semibold text-text">Сьогодні</div>
+            <div className="text-style-label text-text">Сьогодні</div>
             <div className="text-xs text-subtle">
               {summary.mealCount}{" "}
               {pluralUa(summary.mealCount, {
@@ -210,7 +210,7 @@ export function NutritionDashboard({
             type="button"
             onClick={onAddMeal}
             className={cn(
-              "shrink-0 px-4 h-9 rounded-xl text-sm font-semibold",
+              "text-style-label shrink-0 px-4 h-9 rounded-xl",
               "bg-nutrition-strong text-white hover:bg-nutrition-hover transition-colors",
             )}
           >
@@ -278,7 +278,7 @@ export function NutritionDashboard({
           <button
             type="button"
             onClick={onGoToDailyPlan ?? onGoToLog}
-            className="mt-3 w-full text-xs text-nutrition-strong dark:text-nutrition font-medium hover:underline text-center"
+            className="text-style-caption mt-3 w-full text-nutrition-strong dark:text-nutrition hover:underline text-center"
           >
             Налаштувати денні цілі КБЖВ →
           </button>
@@ -287,11 +287,11 @@ export function NutritionDashboard({
 
       <Card className="p-4">
         <div className="flex items-center justify-between mb-2">
-          <div className="text-sm font-semibold text-text">Тиждень · ккал</div>
+          <div className="text-style-label text-text">Тиждень · ккал</div>
           <button
             type="button"
             onClick={onGoToLog}
-            className="text-xs text-nutrition-strong dark:text-nutrition font-medium hover:underline"
+            className="text-style-caption text-nutrition-strong dark:text-nutrition hover:underline"
           >
             Журнал →
           </button>
@@ -304,7 +304,7 @@ export function NutritionDashboard({
       {typeof onFetchDayHint === "function" && (
         <Card className="p-4">
           <div className="flex items-center justify-between gap-3 mb-2">
-            <div className="text-sm font-semibold text-text">Підказка AI</div>
+            <div className="text-style-label text-text">Підказка AI</div>
             <button
               type="button"
               onClick={onFetchDayHint}

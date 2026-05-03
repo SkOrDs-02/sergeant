@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiError, chatApi, isApiError } from "@shared/api";
 import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
-import { hubKeys } from "@shared/lib/queryKeys";
-import { perfMark, perfEnd } from "@shared/lib/perf";
+import { hubKeys } from "@shared/lib/api/queryKeys";
+import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import {
   CONTEXT_TTL_MS,
   cancelIdle,

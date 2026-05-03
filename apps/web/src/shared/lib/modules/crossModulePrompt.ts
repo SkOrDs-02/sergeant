@@ -1,6 +1,6 @@
 import type { ToastApi } from "@shared/hooks/useToast";
-import { hapticTap } from "./haptic";
-import { safeReadLS, safeRemoveLS, safeWriteLS } from "./storage";
+import { hapticTap } from "../adapters/haptic";
+import { safeReadLS, safeRemoveLS, safeWriteLS } from "../storage/storage";
 
 /**
  * Cross-module nudges — small, dismissible toast prompts that suggest a

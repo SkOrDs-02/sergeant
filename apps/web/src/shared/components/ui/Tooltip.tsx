@@ -9,7 +9,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
-import { cn } from "../../lib/cn";
+import { cn } from "../../lib/ui/cn";
 
 /**
  * Sergeant Design System — Tooltip
@@ -160,7 +160,7 @@ export function Tooltip({
           id={id}
           role="tooltip"
           className={cn(
-            "absolute z-50 whitespace-nowrap rounded-xl bg-fg px-2 py-1 text-xs font-medium text-surface shadow-float",
+            "text-style-caption absolute z-50 whitespace-nowrap rounded-xl bg-fg px-2 py-1 text-surface shadow-float",
             "motion-safe:animate-fade-in",
             placementClasses[placement],
             className,

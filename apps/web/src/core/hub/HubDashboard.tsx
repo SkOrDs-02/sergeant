@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/cn";
-import { safeReadStringLS } from "@shared/lib/storage";
+import { cn } from "@shared/lib/ui/cn";
+import { safeReadStringLS } from "@shared/lib/storage/storage";
 import {
   DASHBOARD_DENSITY_EVENT,
   DEFAULT_DASHBOARD_DENSITY,
@@ -21,8 +21,11 @@ import {
   type DashboardDensity,
   type User,
 } from "@sergeant/shared";
-import { openHubModule, openHubModuleWithAction } from "@shared/lib/hubNav";
-import { getModulePrimaryAction } from "@shared/lib/moduleQuickActions";
+import {
+  openHubModule,
+  openHubModuleWithAction,
+} from "@shared/lib/modules/hubNav";
+import { getModulePrimaryAction } from "@shared/lib/modules/moduleQuickActions";
 import { TodayFocusCard, useDashboardFocus } from "../insights/TodayFocusCard";
 import { HubInsightsPanel } from "./HubInsightsPanel";
 import {

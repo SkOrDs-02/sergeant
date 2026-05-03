@@ -2,14 +2,14 @@ import type { Dispatch, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import {
   calculateGoalProgress,
   getGoalMonthlyLabel,
 } from "@sergeant/finyk-domain/domain/budget";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
 import { GoalBudgetCard } from "../../components/budgets/GoalBudgetCard";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { useToast } from "@shared/hooks/useToast";
 
 export interface BudgetsGoalsSectionProps {

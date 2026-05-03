@@ -4,7 +4,7 @@ import {
   safeReadStringLS,
   safeRemoveLS,
   safeWriteLS,
-} from "@shared/lib/storage";
+} from "@shared/lib/storage/storage";
 import {
   dateKeyFromDate,
   habitScheduledOnDate,

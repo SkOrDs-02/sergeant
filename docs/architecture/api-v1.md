@@ -8,7 +8,7 @@
 ## TL;DR
 
 - Усі існуючі маршрути доступні **одночасно** на `/api/*` і `/api/v1/*`.
-- Bреб-клієнт (див. `apps/web/src/shared/lib/apiUrl.ts`) за замовчуванням шле в `/api/v1/*`.
+- Bреб-клієнт (див. `apps/web/src/shared/lib/api/apiUrl.ts`) за замовчуванням шле в `/api/v1/*`.
 - Mobile/Expo-клієнт — зобов'язаний шле в `/api/v1/*`.
 - Жодного дублювання роутерів: сервер переписує `req.url` на канонічний
   `/api/...` ще до маршрутизації (див. `apiVersionRewrite` у `apps/server/src/app.ts`).
@@ -37,7 +37,7 @@
 - Escape hatch — передати `apiPrefix: "/api"` у `createApiClient(...)`
   повертає легасі-поведінку без змін в endpoint-обгортках.
 
-Web прокидає `apiPrefix` через `getApiPrefix()` (див. `apps/web/src/shared/lib/apiUrl.ts`),
+Web прокидає `apiPrefix` через `getApiPrefix()` (див. `apps/web/src/shared/lib/api/apiUrl.ts`),
 щоб і прямі `fetch(apiUrl(...))`, і виклики через api-client одночасно
 перемикалися однією змінною `VITE_API_VERSION`.
 

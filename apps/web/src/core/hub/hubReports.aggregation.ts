@@ -13,7 +13,7 @@
  * покривають саме цей модуль.
  */
 
-import { parseFizrukWorkouts } from "@shared/lib/parseFizrukWorkouts";
+import { parseFizrukWorkouts } from "@shared/lib/ui/parseFizrukWorkouts";
 import { calcFinykSpendingByDate } from "@finyk/utils";
 
 // ── Date helpers ─────────────────────────────────────────────────────────────

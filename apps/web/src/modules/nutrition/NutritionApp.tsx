@@ -21,9 +21,9 @@ import { Banner } from "@shared/components/ui/Banner";
 import { ModuleAccentProvider } from "@shared/components/layout";
 import { Icon } from "@shared/components/ui/Icon";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
-import { requestCloudPull } from "@shared/lib/cloudPullRequest";
+import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { useQueryClient } from "@tanstack/react-query";
-import { nutritionKeys } from "@shared/lib/queryKeys";
+import { nutritionKeys } from "@shared/lib/api/queryKeys";
 import {
   loadNutritionPrefs,
   persistNutritionPrefs,
@@ -47,7 +47,7 @@ import { buildRecipeCacheKey, readRecipeCache } from "./lib/recipeCache";
 import { stableRecipeId } from "./lib/recipeIds";
 import { fileToThumbnailBlob, saveMealThumbnail } from "./lib/mealPhotoStorage";
 import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { fmtMacro, todayISODate } from "./lib/nutritionFormat";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 

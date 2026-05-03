@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useRef } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { hapticTap } from "@shared/lib/haptic";
+import { hapticTap } from "@shared/lib/adapters/haptic";
 import { SearchResultItem } from "./SearchResultItem";
 import type { Hit } from "./searchTypes";
 
@@ -99,6 +99,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
               <button
                 type="button"
                 onClick={onClearRecents}
+                // eslint-disable-next-line sergeant-design/no-rounded-lg -- pre-existing tech debt; semantic fix tracked in docs/tech-debt/frontend.md
                 className="text-xs text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded-lg px-1.5 py-0.5"
               >
                 Очистити
@@ -186,7 +187,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
                     onOpenModule(moduleId);
                     onClose();
                   }}
-                  className="mt-1.5 w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45"
+                  className="text-style-caption mt-1.5 w-full flex items-center justify-between px-3 py-2 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45"
                 >
                   <span>
                     Показано {group.items.length} — відкрити {group.label}

@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { Icon } from "@shared/components/ui/Icon";
 import { TxRow, type TxRowTx } from "./TxRow";

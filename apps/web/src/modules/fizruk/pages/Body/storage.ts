@@ -1,4 +1,4 @@
-import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 export const TREND_STORAGE_PREFIX = "fizruk:body:trend-open:";
 export const JOURNAL_OPEN_STORAGE_KEY = "fizruk:body:journal-open";

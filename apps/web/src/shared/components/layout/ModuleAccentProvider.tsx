@@ -7,7 +7,7 @@ import {
 } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
 import { moduleAccentRgb } from "@sergeant/design-tokens/tokens";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 /**
  * Sergeant Design System — Module accent provider.

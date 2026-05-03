@@ -10,7 +10,7 @@
  */
 
 import { Icon, type IconName } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import {
   formatRelativeDue,
   type UpcomingCharge,

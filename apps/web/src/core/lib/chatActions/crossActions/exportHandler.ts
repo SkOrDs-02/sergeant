@@ -1,4 +1,4 @@
-import { safeReadStringLS } from "@shared/lib/storage";
+import { safeReadStringLS } from "@shared/lib/storage/storage";
 import type { ExportModuleDataAction } from "../types";
 
 export function exportModuleData(action: ExportModuleDataAction): string {

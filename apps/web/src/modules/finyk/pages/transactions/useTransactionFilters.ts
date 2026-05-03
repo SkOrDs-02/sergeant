@@ -8,7 +8,7 @@ import type {
 } from "@sergeant/finyk-domain/domain/types";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import type { TxAccount } from "./Transactions";
-import { perfMark, perfEnd } from "@shared/lib/perf";
+import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import { mergeExpenseCategoryDefinitions } from "../../constants";
 import { getCategory, getIncomeCategory } from "../../utils";
 import {

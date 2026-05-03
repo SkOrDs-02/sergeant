@@ -2,7 +2,7 @@ import {
   safeReadLS,
   safeReadStringLS,
   safeRemoveLS,
-} from "@shared/lib/storage";
+} from "@shared/lib/storage/storage";
 import { ls, lsSet } from "../hubChatUtils";
 import type {
   PlanWorkoutAction,

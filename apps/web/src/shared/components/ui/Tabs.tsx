@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 /**
  * Sergeant Design System — Tabs

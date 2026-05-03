@@ -1,5 +1,5 @@
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
 import type { TxSplit, TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 

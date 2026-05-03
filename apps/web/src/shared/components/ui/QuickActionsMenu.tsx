@@ -1,8 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { cn } from "../../lib/cn";
+import { cn } from "../../lib/ui/cn";
 import { Icon, type IconName } from "./Icon";
-import { hapticTap } from "../../lib/haptic";
+import { hapticTap } from "../../lib/adapters/haptic";
 
 export interface QuickAction {
   id: string;
@@ -197,7 +197,7 @@ export function QuickActionsMenu({
                         style={{ color: action.color }}
                       />
                     </div>
-                    <span className="text-xs font-medium text-text whitespace-nowrap bg-panel/90 px-2 py-0.5 rounded-full">
+                    <span className="text-style-caption text-text whitespace-nowrap bg-panel/90 px-2 py-0.5 rounded-full">
                       {action.label}
                     </span>
                   </button>

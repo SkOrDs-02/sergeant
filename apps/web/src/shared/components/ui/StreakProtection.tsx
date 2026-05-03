@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { cn } from "../../lib/cn";
+import { cn } from "../../lib/ui/cn";
 import { Button } from "./Button";
 import { Icon } from "./Icon";
-import { hapticWarning } from "../../lib/haptic";
-import { safeReadStringLS, safeWriteLS } from "../../lib/storage";
+import { hapticWarning } from "../../lib/adapters/haptic";
+import { safeReadStringLS, safeWriteLS } from "../../lib/storage/storage";
 
 const STREAK_FREEZE_KEY = "sergeant_streak_freeze_v1";
 const STREAK_WARNING_DISMISSED_KEY = "sergeant_streak_warning_dismissed_v1";
@@ -149,7 +149,7 @@ export function StreakProtection({
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-text">
+            <h3 className="text-style-label text-text">
               {urgencyLevel === "critical"
                 ? "Streak в небезпеці!"
                 : "Не забудь про звичку"}

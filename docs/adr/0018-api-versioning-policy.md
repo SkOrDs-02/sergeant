@@ -6,7 +6,7 @@
 - **Supersedes:** —
 - **Related:**
   - [`apps/server/src/app.ts`](../../apps/server/src/app.ts#L24-L50) — `API_V1_PREFIX`, `apiVersionRewrite` middleware.
-  - [`apps/web/src/shared/lib/apiUrl.ts`](../../apps/web/src/shared/lib/apiUrl.ts) — `getApiPrefix()` web-side resolution.
+  - [`apps/web/src/shared/lib/api/apiUrl.ts`](../../apps/web/src/shared/lib/api/apiUrl.ts) — `getApiPrefix()` web-side resolution.
   - [`packages/api-client/src/`](../../packages/api-client/src/) — `apiPrefix` config у HTTP client-і.
   - [`docs/architecture/api-v1.md`](../architecture/api-v1.md) — operational reference.
   - [`docs/adr/0017-better-auth-choice-and-session-model.md`](./0017-better-auth-choice-and-session-model.md) — чому `/api/auth/*` поза версіонуванням.

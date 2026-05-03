@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { MEAL_TYPES, type MealTypeId } from "../../lib/mealTypes";
 import type { MealFormState } from "./mealFormUtils";
@@ -22,7 +22,7 @@ export function MealTypePicker({ mealType, setForm }: MealTypePickerProps) {
             type="button"
             onClick={() => setForm((s) => ({ ...s, mealType: mt.id }))}
             className={cn(
-              "px-3 py-1.5 rounded-xl text-sm font-semibold border transition-[background-color,border-color,color,opacity]",
+              "text-style-label px-3 py-1.5 rounded-xl border transition-[background-color,border-color,color,opacity]",
               mealType === mt.id
                 ? "bg-nutrition-strong text-white border-nutrition"
                 : "bg-panelHi text-muted border-line hover:border-nutrition/50",

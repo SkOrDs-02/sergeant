@@ -52,7 +52,7 @@ export function createMMKVPersister() {
 }
 
 /**
- * Mirror of `apps/web/src/shared/lib/queryClientPersister.ts ->
+ * Mirror of `apps/web/src/shared/lib/api/queryClientPersister.ts ->
  * shouldDehydrateQueryForPersist`. Filters out:
  *
  *   - errored queries (a stale 401/500 would warm-start the next

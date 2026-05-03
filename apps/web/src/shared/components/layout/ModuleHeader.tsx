@@ -1,9 +1,12 @@
 import type { ReactNode } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
-import { cn } from "@shared/lib/cn";
-import { hapticTap } from "@shared/lib/haptic";
-import { openHubModule } from "@shared/lib/hubNav";
-import { MODULE_LABELS, type HubModuleId } from "@shared/lib/moduleLabels";
+import { cn } from "@shared/lib/ui/cn";
+import { hapticTap } from "@shared/lib/adapters/haptic";
+import { openHubModule } from "@shared/lib/modules/hubNav";
+import {
+  MODULE_LABELS,
+  type HubModuleId,
+} from "@shared/lib/modules/moduleLabels";
 
 /**
  * Sticky module header used by Фінік / Фізрук / Рутина.

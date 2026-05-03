@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import {
   safeReadStringLS,
   safeWriteLS,
   safeRemoveLS,
-} from "@shared/lib/storage";
+} from "@shared/lib/storage/storage";
 
 interface AssistantAdviceCardProps {
   insight: string | null;

@@ -18,7 +18,7 @@
 
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
 import { capturePostHogEvent } from "./posthog";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 export { ANALYTICS_EVENTS };
 export { initPostHog, identifyPostHogUser, resetPostHog } from "./posthog";

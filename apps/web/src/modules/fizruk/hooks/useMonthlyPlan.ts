@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 const STORAGE_KEY = MONTHLY_PLAN_STORAGE_KEY;
 

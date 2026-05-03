@@ -2,7 +2,7 @@ import { memo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Tooltip } from "@shared/components/ui/Tooltip";

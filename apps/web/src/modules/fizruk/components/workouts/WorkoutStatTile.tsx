@@ -11,7 +11,7 @@
  * "→ new `WorkoutStatTile` primitive (WorkoutFinishSheets)".
  */
 import { type ReactNode } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 export interface WorkoutStatTileProps {
   label: ReactNode;

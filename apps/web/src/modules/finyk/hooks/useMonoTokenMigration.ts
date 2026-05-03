@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { monoWebhookApi } from "@shared/api";
-import { finykKeys, hubKeys } from "@shared/lib/queryKeys";
+import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import {
   safeReadStringLS,
   safeWriteLS,
   safeRemoveLS,
-} from "@shared/lib/storage";
+} from "@shared/lib/storage/storage";
 import {
   trackEvent,
   ANALYTICS_EVENTS,

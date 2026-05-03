@@ -1,6 +1,6 @@
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import type { Habit } from "../lib/types";
 
@@ -65,7 +65,7 @@ export function DayReportSheet({
                 >
                   ✓
                 </button>
-                <span className="text-sm font-medium text-text truncate">
+                <span className="text-style-label text-text truncate">
                   {h.emoji} {h.name}
                 </span>
               </li>
@@ -93,7 +93,7 @@ export function DayReportSheet({
                 >
                   ○
                 </button>
-                <span className="text-sm font-medium text-muted truncate">
+                <span className="text-style-label text-muted truncate">
                   {h.emoji} {h.name}
                 </span>
               </li>

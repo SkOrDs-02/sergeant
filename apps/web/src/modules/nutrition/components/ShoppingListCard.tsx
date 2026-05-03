@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
-import { cn } from "@shared/lib/cn";
-import { openHubModule } from "@shared/lib/hubNav";
+import { cn } from "@shared/lib/ui/cn";
+import { openHubModule } from "@shared/lib/modules/hubNav";
 import { getTotalCount } from "../lib/shoppingListStorage";
 import type {
   PantryItem,
@@ -71,7 +71,7 @@ export function ShoppingListCard({
 
   return (
     <Card className="p-4">
-      <div className="text-sm font-semibold text-text">Список покупок</div>
+      <div className="text-style-label text-text">Список покупок</div>
       <div className="text-xs text-subtle mt-0.5">
         AI складає список з рецептів або тижневого плану, автоматично виключаючи
         продукти зі складу.
@@ -131,7 +131,7 @@ export function ShoppingListCard({
           onClick={() => onGenerate(source)}
           disabled={shoppingBusy || !canGenerate}
           className={cn(
-            "w-full h-11 rounded-2xl text-sm font-semibold",
+            "text-style-label w-full h-11 rounded-2xl",
             "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
           )}
         >
@@ -141,7 +141,7 @@ export function ShoppingListCard({
         {hasItems && (
           <>
             <div className="flex items-center justify-between gap-2">
-              <div className="text-sm font-semibold text-text">
+              <div className="text-style-label text-text">
                 Список ({checked}/{total} ✓)
               </div>
               <div className="flex gap-2">

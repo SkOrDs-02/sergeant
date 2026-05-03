@@ -170,9 +170,9 @@ return rows.map((r) => ({
 
 #### Опції
 
-| Опція               | Тип      | Default                                | Опис                                                       |
-| ------------------- | -------- | -------------------------------------- | ---------------------------------------------------------- |
-| `factoryModulePath` | `string` | `apps/web/src/shared/lib/queryKeys.ts` | Шлях до файлу factory query-ключів (відносно кореня репо). |
+| Опція               | Тип      | Default                                    | Опис                                                       |
+| ------------------- | -------- | ------------------------------------------ | ---------------------------------------------------------- |
+| `factoryModulePath` | `string` | `apps/web/src/shared/lib/api/queryKeys.ts` | Шлях до файлу factory query-ключів (відносно кореня репо). |
 
 #### Приклади
 
@@ -183,7 +183,7 @@ queryClient.invalidateQueries({ queryKey: ["finyk"] });
 queryClient.getQueryData(["finyk", "mono"]);
 
 // ✅ GOOD — factory-key з queryKeys.ts
-import { finykKeys } from "@shared/lib/queryKeys";
+import { finykKeys } from "@shared/lib/api/queryKeys";
 useQuery({
   queryKey: finykKeys.monoTransactionsDb(from, to, accountId),
   queryFn: fn,

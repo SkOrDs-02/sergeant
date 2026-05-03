@@ -2,7 +2,7 @@ import type { Dispatch, Ref, SetStateAction } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import type { NullableMacros } from "@sergeant/shared";
 
 interface PhotoIngredient {
@@ -52,9 +52,7 @@ export function PhotoAnalyzeCard({
     <Card className="p-4">
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-text">
-            Аналіз фото страви
-          </div>
+          <div className="text-style-label text-text">Аналіз фото страви</div>
           <div className="text-xs text-subtle mt-0.5">
             ШІ визначить КБЖВ і запропонує уточнення
           </div>
@@ -64,7 +62,7 @@ export function PhotoAnalyzeCard({
           onClick={analyzePhoto}
           disabled={busy}
           className={cn(
-            "shrink-0 px-5 h-10 rounded-xl text-sm font-semibold",
+            "text-style-label shrink-0 px-5 h-10 rounded-xl",
             "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
           )}
         >
@@ -117,7 +115,7 @@ export function PhotoAnalyzeCard({
               <circle cx="8.5" cy="8.5" r="1.5" />
               <polyline points="21 15 16 10 5 21" />
             </svg>
-            <span className="text-sm font-medium">Натисни щоб обрати фото</span>
+            <span className="text-style-label">Натисни щоб обрати фото</span>
             <span className="text-xs">jpg / png / heic · до 4 МБ</span>
           </div>
         )}
@@ -180,7 +178,7 @@ export function PhotoAnalyzeCard({
               onClick={onSaveToLog}
               disabled={busy}
               className={cn(
-                "w-full h-11 rounded-2xl text-sm font-semibold border border-nutrition/40",
+                "text-style-label w-full h-11 rounded-2xl border border-nutrition/40",
                 "text-nutrition-strong dark:text-nutrition hover:bg-nutrition/10 disabled:opacity-50 transition-colors",
               )}
             >
@@ -225,7 +223,7 @@ export function PhotoAnalyzeCard({
                       onClick={refinePhoto}
                       disabled={busy}
                       className={cn(
-                        "w-full h-11 rounded-2xl text-sm font-semibold",
+                        "text-style-label w-full h-11 rounded-2xl",
                         "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
                       )}
                     >

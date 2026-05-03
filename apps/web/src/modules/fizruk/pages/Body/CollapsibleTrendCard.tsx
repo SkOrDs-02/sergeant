@@ -2,8 +2,8 @@ import { useCallback, useState } from "react";
 import type { ReactNode } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
-import { cn } from "@shared/lib/cn";
-import { safeWriteLS } from "@shared/lib/storage";
+import { cn } from "@shared/lib/ui/cn";
+import { safeWriteLS } from "@shared/lib/storage/storage";
 import { TREND_STORAGE_PREFIX, readTrendOpen } from "./storage";
 
 export function CollapsibleTrendCard({

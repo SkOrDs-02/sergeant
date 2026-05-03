@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { todayISODate } from "../lib/nutritionFormat";
 
 export interface NutritionReminderPrefs {

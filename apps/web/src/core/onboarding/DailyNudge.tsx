@@ -7,7 +7,7 @@ import {
   snoozeNudge,
   type NudgeDefinition,
 } from "@sergeant/shared";
-import { webKVStore } from "@shared/lib/storage";
+import { webKVStore } from "@shared/lib/storage/storage";
 
 const SNOOZE_DAYS = 7;
 

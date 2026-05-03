@@ -127,7 +127,7 @@
 
 - `PR-2.A` ✅ closed — [#866](https://github.com/Skords-01/Sergeant/pull/866) `ci(commit): add commitlint with the AGENTS.md scope enum + husky commit-msg hook` (точно автоматизує rule #5).
 - `PR-2.B` ✅ closed — [#868](https://github.com/Skords-01/Sergeant/pull/868) `feat(eslint-plugins): add no-bigint-string rule (forbid returning rows.map without Number() on numeric pg columns)`. Конкретна реалізація: AST-walk на `RETURNING.* FROM ... .map((r) => ({ id: r.id }))` + heuristic. Закриває latent surface від rule #1.
-- `PR-2.C` ✅ closed — [#869](https://github.com/Skords-01/Sergeant/pull/869) `feat(eslint-plugins): rq-keys-only-from-factory` (заборонити `useQuery({ queryKey: [...] })` з array literal у `apps/web/src`, окрім `apps/web/src/shared/lib/queryKeys.ts`).
+- `PR-2.C` ✅ closed — [#869](https://github.com/Skords-01/Sergeant/pull/869) `feat(eslint-plugins): rq-keys-only-from-factory` (заборонити `useQuery({ queryKey: [...] })` з array literal у `apps/web/src`, окрім `apps/web/src/shared/lib/api/queryKeys.ts`).
 - `PR-2.D` ✅ closed — [#875](https://github.com/Skords-01/Sergeant/pull/875) `chore(governance): monthly policy-review template` (`docs/governance/policy-review.md`) з полями «правила, що порушувались», «PRs з винятками», «нові кандидати на автоматизацію».
 
 ---

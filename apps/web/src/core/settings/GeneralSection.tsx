@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
-import { webKVStore } from "@shared/lib/storage";
+import { webKVStore } from "@shared/lib/storage/storage";
 import { resetOnboardingState, type User } from "@sergeant/shared";
 import { useAuth } from "../auth/AuthContext";
 import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";

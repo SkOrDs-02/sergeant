@@ -6,7 +6,7 @@ import type {
 import { Input } from "@shared/components/ui/Input";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { FizrukEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 
 type RecExerciseFn = typeof recoveryConflictsForExerciseFn;

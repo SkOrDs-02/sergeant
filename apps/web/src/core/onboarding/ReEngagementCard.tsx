@@ -3,7 +3,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { markReengagementShown } from "@sergeant/shared";
-import { webKVStore } from "@shared/lib/storage";
+import { webKVStore } from "@shared/lib/storage/storage";
 
 export function ReEngagementCard({
   daysInactive,

@@ -7,7 +7,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
-import { cn } from "../../lib/cn";
+import { cn } from "../../lib/ui/cn";
 
 /**
  * Sergeant Design System — Label / FormField
@@ -15,7 +15,7 @@ import { cn } from "../../lib/cn";
  * Consolidates the 5+ flavours of field labels drifting across modules:
  *   - `text-xs text-muted uppercase tracking-wide font-semibold mb-1 block`
  *   - `text-2xs font-bold text-subtle uppercase tracking-widest`
- *   - `text-sm text-text font-medium`
+ *   - `text-style-label text-text`
  *
  * The canonical label is the first variant (Finyk/ManualExpenseSheet
  * pattern), which is already the most prevalent.
@@ -44,7 +44,7 @@ export function Label({
     <label
       className={cn(
         normalCase
-          ? "block text-sm font-medium text-text mb-1"
+          ? "text-style-label block text-text mb-1"
           : "block text-xs text-muted uppercase tracking-wide font-semibold mb-1",
         className,
       )}

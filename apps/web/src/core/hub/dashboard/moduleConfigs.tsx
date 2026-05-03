@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
-import { safeReadStringLS } from "@shared/lib/storage";
+import { safeReadStringLS } from "@shared/lib/storage/storage";
 import {
   STORAGE_KEYS,
   selectModulePreview,

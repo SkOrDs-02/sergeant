@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Button } from "./Button";
 
 export interface InputDialogProps {

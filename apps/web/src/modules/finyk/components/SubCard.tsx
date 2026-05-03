@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 import { daysUntil, fmtDate } from "../utils";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";

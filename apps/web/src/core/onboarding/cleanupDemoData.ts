@@ -7,7 +7,11 @@
 // Keeping this tiny + local rather than spreading migration logic across
 // every module — the demo flag was always a cross-cutting concern.
 
-import { safeReadLS, safeWriteLS, safeRemoveLS } from "@shared/lib/storage";
+import {
+  safeReadLS,
+  safeWriteLS,
+  safeRemoveLS,
+} from "@shared/lib/storage/storage";
 
 const CLEANUP_DONE_KEY = "hub_demo_cleanup_v1_done";
 const LEGACY_SEEDED_FLAG_KEY = "hub_demo_seeded_v1";

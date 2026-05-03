@@ -3,7 +3,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { CategorySelector } from "../CategorySelector";
 
 export type BudgetFormType = "limit" | "goal";

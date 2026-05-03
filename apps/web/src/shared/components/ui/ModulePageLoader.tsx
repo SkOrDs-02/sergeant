@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Skeleton, SkeletonText } from "./Skeleton";
 
 type ModuleType = "finyk" | "fizruk" | "routine" | "nutrition" | "generic";

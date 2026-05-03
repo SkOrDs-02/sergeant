@@ -974,7 +974,7 @@ const noBigintString = {
 // ─── rq-keys-only-from-factory ──────────────────────────────────────────
 //
 // AGENTS.md hard rule #2 — all React Query keys must come from the
-// centralized factory in `apps/web/src/shared/lib/queryKeys.ts`.
+// centralized factory in `apps/web/src/shared/lib/api/queryKeys.ts`.
 // Inline array literals (`queryKey: ['something', id]`) drift from the
 // factory, break bulk invalidation, and let typos compile silently.
 //
@@ -1021,7 +1021,7 @@ const QC_DIRECT_KEY_METHODS = new Set([
   "ensureQueryData",
 ]);
 
-const DEFAULT_FACTORY_PATH = "apps/web/src/shared/lib/queryKeys.ts";
+const DEFAULT_FACTORY_PATH = "apps/web/src/shared/lib/api/queryKeys.ts";
 
 const RQ_KEYS_MESSAGE =
   "Inline array literal for `{{prop}}` — use a factory from `queryKeys.ts` instead (AGENTS.md rule #2). Inline keys drift from the factory, break bulk invalidation, and let typos compile.";

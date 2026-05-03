@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { safeReadLS } from "@shared/lib/storage";
-import { hubKeys } from "@shared/lib/queryKeys";
+import { safeReadLS } from "@shared/lib/storage/storage";
+import { hubKeys } from "@shared/lib/api/queryKeys";
 
 /**
  * React Query-backed signal for "does Finyk have Monobank data loaded?".

@@ -85,7 +85,7 @@ Update or remove stale references.
 
 ### 7. Check for React Query key factories
 
-If the removed code used React Query, ensure the corresponding key factory in `apps/web/src/shared/lib/queryKeys.ts` is cleaned up too (AGENTS.md rule #2).
+If the removed code used React Query, ensure the corresponding key factory in `apps/web/src/shared/lib/api/queryKeys.ts` is cleaned up too (AGENTS.md rule #2).
 
 ### 8. Check for API contract changes
 

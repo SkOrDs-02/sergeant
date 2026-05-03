@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -8,7 +8,7 @@ import { clearFirstActionPending, getVibePicks } from "./vibePicks";
 import { PresetSheet, getPresetModule } from "./PresetSheet";
 import type { ModuleId } from "./presetApply";
 import { getOnboardingGoals } from "@sergeant/shared";
-import { webKVStore } from "@shared/lib/storage";
+import { webKVStore } from "@shared/lib/storage/storage";
 
 type IconName = Parameters<typeof Icon>[0]["name"];
 

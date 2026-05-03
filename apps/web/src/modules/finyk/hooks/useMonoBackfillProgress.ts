@@ -2,8 +2,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 
 import { monoWebhookApi, type MonoBackfillProgress } from "@shared/api";
-import { finykKeys, hubKeys } from "@shared/lib/queryKeys";
-import { authAwareRetry } from "@shared/lib/queryClient";
+import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
+import { authAwareRetry } from "@shared/lib/api/queryClient";
 
 /**
  * Poll cadence while the server reports `status === "running"`. 2 s gives a

@@ -33,7 +33,7 @@ function lint(code, filename = "apps/web/src/modules/finyk/hooks/useTx.js") {
 describe("rq-keys-only-from-factory — valid (factory keys)", () => {
   it("allows useQuery with factory identifier key", () => {
     const messages = lint(`
-      import { finykKeys } from "@shared/lib/queryKeys";
+      import { finykKeys } from "@shared/lib/api/queryKeys";
       useQuery({ queryKey: finykKeys.all, queryFn: fetchAll });
     `);
     assert.equal(messages.length, 0);
@@ -41,7 +41,7 @@ describe("rq-keys-only-from-factory — valid (factory keys)", () => {
 
   it("allows useQuery with factory function call key", () => {
     const messages = lint(`
-      import { finykKeys } from "@shared/lib/queryKeys";
+      import { finykKeys } from "@shared/lib/api/queryKeys";
       useQuery({ queryKey: finykKeys.monoStatement(accId, from, to), queryFn: fn });
     `);
     assert.equal(messages.length, 0);
@@ -198,7 +198,7 @@ describe("rq-keys-only-from-factory — edge cases", () => {
   it("does NOT flag inside the factory file itself (.ts)", () => {
     const messages = lint(
       `export const finykKeys = { all: ["finyk"] };`,
-      "apps/web/src/shared/lib/queryKeys.js",
+      "apps/web/src/shared/lib/api/queryKeys.js",
     );
     assert.equal(messages.length, 0);
   });
@@ -206,7 +206,7 @@ describe("rq-keys-only-from-factory — edge cases", () => {
   it("does NOT flag inside the factory file itself (exact path match)", () => {
     const messages = lint(
       `useQuery({ queryKey: ["finyk"], queryFn: fn });`,
-      "some/prefix/apps/web/src/shared/lib/queryKeys.js",
+      "some/prefix/apps/web/src/shared/lib/api/queryKeys.js",
     );
     assert.equal(messages.length, 0);
   });

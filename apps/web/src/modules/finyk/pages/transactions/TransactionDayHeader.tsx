@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { fmtAmt } from "../../utils";
 import { CURRENCY } from "../../constants";
 import {

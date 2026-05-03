@@ -5,7 +5,7 @@
  * `@capacitor/preferences` імпортуються **compile-time**. Веб-код
  * (`apps/web`) ніколи не тягне цей модуль напряму — він доступний
  * виключно через динамічний `import("@sergeant/mobile-shell/pushNative")`
- * у гейті `apps/web/src/shared/lib/pushNative.ts`, який в свою чергу
+ * у гейті `apps/web/src/shared/lib/adapters/pushNative.ts`, який в свою чергу
  * викликається тільки під guard-ом `isCapacitor()`. Завдяки цьому Rollup
  * виносить FCM/APNs-рантайм у окремий async chunk, який браузерні
  * користувачі ніколи не завантажують (див. `vite.config.js`, блок

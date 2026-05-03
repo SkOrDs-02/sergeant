@@ -1,4 +1,4 @@
-import { safeReadLS } from "@shared/lib/storage";
+import { safeReadLS } from "@shared/lib/storage/storage";
 import {
   MONTHLY_PLAN_STORAGE_KEY,
   TEMPLATES_STORAGE_KEY,

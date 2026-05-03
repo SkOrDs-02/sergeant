@@ -1,6 +1,6 @@
 import type { ModuleAccent } from "@sergeant/design-tokens";
 import type { AssistantCapability } from "@sergeant/shared";
-import type { HubModuleAction, HubModuleId } from "@shared/lib/hubNav";
+import type { HubModuleAction, HubModuleId } from "@shared/lib/modules/hubNav";
 import { scoreMatch } from "../hubSearchEngine";
 
 /**

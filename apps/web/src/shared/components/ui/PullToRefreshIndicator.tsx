@@ -10,7 +10,7 @@
  * Scaffolded but not yet imported by any consumer. Do NOT delete as part of
  * dead-code cleanup — see Hard Rule #15 in AGENTS.md.
  */
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import type { PullToRefreshState } from "@shared/hooks/usePullToRefresh";
 
 export interface PullToRefreshIndicatorProps {

@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import type { PantryItem } from "@sergeant/nutrition-domain";
 import type { MealFormState } from "./mealFormUtils";

@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { JournalEntryCard } from "./JournalEntryCard";
 import {
   JOURNAL_OPEN_STORAGE_KEY,

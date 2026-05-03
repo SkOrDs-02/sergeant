@@ -41,7 +41,7 @@ import { NewPage } from "@module/pages/NewPage";
 
 ### 3. Додати React Query key factory (якщо потрібен data fetching)
 
-Якщо сторінка завантажує дані — додати ключі **тільки** через centralized factories в `apps/web/src/shared/lib/queryKeys.ts` (AGENTS.md rule #2):
+Якщо сторінка завантажує дані — додати ключі **тільки** через centralized factories в `apps/web/src/shared/lib/api/queryKeys.ts` (AGENTS.md rule #2):
 
 ```ts
 export const myModuleKeys = {

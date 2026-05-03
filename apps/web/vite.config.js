@@ -204,7 +204,7 @@ export default defineConfig(({ mode }) => {
               // єдино імпортуються через dynamic `import()` —
               // `@sergeant/mobile-shell/barcodeNative` (→
               // `useBarcodeScanner`), `@sergeant/mobile-shell/auth-storage`
-              // (→ `apps/web/src/shared/lib/bearerToken.ts`) і
+              // (→ `apps/web/src/shared/lib/api/bearerToken.ts`) і
               // `@sergeant/mobile-shell` (→ `main.tsx` під guard-ом
               // `isCapacitor()`). Без цього catch-all нижче загнав би
               // Capacitor-код у загальний `vendor`, який жадібно

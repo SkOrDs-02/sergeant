@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import type { Rec } from "../lib/recommendationEngine";
@@ -48,7 +48,7 @@ function RecRow({ rec, onAction, onDismiss }: RecRowProps) {
         aria-hidden
       />
       <div className="pl-1 flex-1 min-w-0">
-        <p className="text-sm font-semibold text-text leading-snug">
+        <p className="text-style-label text-text leading-snug">
           {rec.icon && (
             <span className="mr-1" aria-hidden>
               {rec.icon}

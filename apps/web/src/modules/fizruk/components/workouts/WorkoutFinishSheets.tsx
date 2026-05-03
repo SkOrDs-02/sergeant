@@ -1,13 +1,13 @@
 import { useRef, type Dispatch, type SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
-import { openHubModule } from "@shared/lib/hubNav";
+import { openHubModule } from "@shared/lib/modules/hubNav";
 import {
   isCrossModulePromptSuppressed,
   recordCrossModulePromptAccepted,
-} from "@shared/lib/crossModulePrompt";
+} from "@shared/lib/modules/crossModulePrompt";
 import {
   formatDurShort,
   type WorkoutFinishSummary,

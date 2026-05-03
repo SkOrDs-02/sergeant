@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { detectRecurring } from "@sergeant/finyk-domain/lib/recurringDetect";
 

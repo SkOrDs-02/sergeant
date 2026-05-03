@@ -24,8 +24,8 @@ import {
   totalCompletedVolumeKg,
   weeklyVolumeSeriesNow,
 } from "@sergeant/fizruk-domain";
-import { perfMark, perfEnd } from "@shared/lib/perf";
-import { safeReadStringLS } from "@shared/lib/storage";
+import { perfMark, perfEnd } from "@shared/lib/ui/perf";
+import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { ls, fmt } from "./hubChatUtils";
 import { generateRecommendations } from "./recommendationEngine";
 import { generateInsights } from "./insightsEngine";

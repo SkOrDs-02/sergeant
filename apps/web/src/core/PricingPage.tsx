@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
@@ -120,7 +120,7 @@ export function PricingPage() {
           >
             <Icon name="chevron-left" size={20} />
           </Button>
-          <h1 className="text-xl font-bold text-text">Тарифи</h1>
+          <h1 className="text-style-title text-text">Тарифи</h1>
         </header>
 
         <section className="space-y-3 text-center">
@@ -128,7 +128,7 @@ export function PricingPage() {
           <p className="text-xs uppercase tracking-wider text-brand-strong font-semibold">
             Pre-MVP — поки збираємо інтерес
           </p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-text leading-tight">
+          <h2 className="text-style-hero sm:text-4xl text-text leading-tight">
             Sergeant буде безкоштовним для більшості.
             <br />
             Pro — для тих, хто хоче усе одразу.
@@ -159,7 +159,7 @@ export function PricingPage() {
             >
               <header className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-text">{tier.name}</h3>
+                  <h3 className="text-style-title text-text">{tier.name}</h3>
                   {tier.highlight && (
                     // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- pill-badge на картці тіра; uppercase + tracking — частина дизайну badge-а.
                     <span className="text-xs font-semibold uppercase tracking-wider text-brand-strong bg-brand/10 px-2 py-1 rounded-full">
@@ -171,9 +171,7 @@ export function PricingPage() {
               </header>
 
               <div className="space-y-1">
-                <span className="text-3xl font-bold text-text">
-                  {tier.price}
-                </span>
+                <span className="text-style-hero text-text">{tier.price}</span>
                 <span className="block text-sm text-muted">{tier.cadence}</span>
               </div>
 
@@ -211,7 +209,7 @@ export function PricingPage() {
           className="rounded-3xl border border-line bg-panel p-6 sm:p-8 max-w-2xl mx-auto"
         >
           <header className="space-y-2 mb-6">
-            <h2 className="text-2xl font-bold text-text">
+            <h2 className="text-style-hero text-text">
               Залишити email для waitlist
             </h2>
             <p className="text-sm text-muted">

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui";
 
 export const NAV_SECTIONS = [

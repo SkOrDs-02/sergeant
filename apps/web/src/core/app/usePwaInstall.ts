@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 const PWA_SESSIONS_KEY = "pwa_session_count";
 const PWA_DISMISSED_KEY = "pwa_install_dismissed";

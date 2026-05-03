@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import type { Hit } from "./searchTypes";
 
 // Search-result chip wash + label per module. Each value uses the

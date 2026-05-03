@@ -39,7 +39,7 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
 
   /**
    * Захист від випадкової зміни префіксу: `/api/auth` зашитий у
-   * `apps/web/src/shared/lib/apiUrl.ts` (виняток у версіонуванні) і у
+   * `apps/web/src/shared/lib/api/apiUrl.ts` (виняток у версіонуванні) і у
    * `apps/server/src/routes/auth.ts` (router path). Якщо basePath
    * зʼїде — веб/mobile-shell одразу побачать 404 на всіх auth-ендпоінтах.
    */

@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { AssistantMessageBody } from "./AssistantMessageBody";
 import { speak } from "../lib/hubChatSpeech";

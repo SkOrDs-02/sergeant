@@ -1,6 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
-import { cn } from "../../lib/cn";
+import { cn } from "../../lib/ui/cn";
 
 /**
  * Sergeant Design System — Button Component

@@ -1,5 +1,5 @@
 import { forwardRef, type ReactNode, type SelectHTMLAttributes } from "react";
-import { cn } from "../../lib/cn";
+import { cn } from "../../lib/ui/cn";
 import type { FormVariant, SmallMediumLarge } from "./types";
 
 /**

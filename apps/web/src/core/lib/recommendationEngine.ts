@@ -5,7 +5,7 @@
 
 import { buildFinanceContext } from "./recommendations/financeContext";
 import { Recommendations } from "@sergeant/insights";
-import { safeReadLS, safeReadStringLS } from "@shared/lib/storage";
+import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
 
 const { FINANCE_RULES, runRules } = Recommendations;
 export type Rec = Recommendations.Rec;

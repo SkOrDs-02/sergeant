@@ -1,5 +1,5 @@
 /**
- * Mobile mirror of `apps/web/src/shared/lib/undoToast.tsx`.
+ * Mobile mirror of `apps/web/src/shared/lib/ui/undoToast.tsx`.
  *
  * Wraps `useToast().show` for destructive actions so the user gets a
  * single 5-second toast with an «Повернути» button instead of an

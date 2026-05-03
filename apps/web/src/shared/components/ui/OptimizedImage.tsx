@@ -15,7 +15,7 @@ import {
   useEffect,
   type ImgHTMLAttributes,
 } from "react";
-import { cn } from "../../lib/cn";
+import { cn } from "../../lib/ui/cn";
 
 /**
  * Sergeant Design System — OptimizedImage

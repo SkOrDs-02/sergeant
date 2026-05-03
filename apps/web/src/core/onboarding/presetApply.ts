@@ -1,4 +1,4 @@
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 // Writes a single preset entry directly into the matching module's
 // localStorage key. This is how the FTUX PresetSheet turns "tap a tile"

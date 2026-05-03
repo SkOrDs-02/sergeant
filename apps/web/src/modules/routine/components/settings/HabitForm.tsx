@@ -6,7 +6,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -278,7 +278,7 @@ export function HabitForm({
                 role="radio"
                 aria-checked={active}
                 className={cn(
-                  "text-xs px-2.5 py-1.5 rounded-xl border font-medium transition-colors min-h-[32px]",
+                  "text-style-caption px-2.5 py-1.5 rounded-xl border transition-colors min-h-[32px]",
                   active ? C.chipOn : C.chipOff,
                 )}
                 onClick={() =>

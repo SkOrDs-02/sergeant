@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useToast } from "@shared/hooks/useToast";
-import { hapticSuccess } from "@shared/lib/haptic";
-import { cn } from "@shared/lib/cn";
+import { hapticSuccess } from "@shared/lib/adapters/haptic";
+import { cn } from "@shared/lib/ui/cn";
 import { createHabit, updateHabit } from "../lib/routineStorage";
 import {
   emptyHabitDraft,

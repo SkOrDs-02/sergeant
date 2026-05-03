@@ -5,7 +5,7 @@ import {
   UNDO_TOAST_DEFAULT_ERROR_MSG,
   UNDO_TOAST_DEFAULT_LABEL,
 } from "@sergeant/shared";
-import { hapticError, hapticTap, hapticWarning } from "./haptic";
+import { hapticError, hapticTap, hapticWarning } from "../adapters/haptic";
 
 export interface UndoToastOptions {
   /** Текст, який бачить користувач ("Видалено звичку «Вода»"). */

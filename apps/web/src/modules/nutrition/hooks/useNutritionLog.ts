@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@shared/hooks/useToast";
-import { coachKeys, digestKeys } from "@shared/lib/queryKeys";
+import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
 import {
   NUTRITION_LOG_KEY,
   loadNutritionLog,

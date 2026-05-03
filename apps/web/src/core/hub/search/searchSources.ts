@@ -1,5 +1,5 @@
 import { formatMoney, formatMoneyFromKopecks } from "@sergeant/shared";
-import { safeReadStringLS } from "@shared/lib/storage";
+import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { tokenize } from "../hubSearchEngine";
 import { searchActions, searchAiHandoff } from "./searchActions";
 import {

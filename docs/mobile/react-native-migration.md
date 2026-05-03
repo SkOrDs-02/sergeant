@@ -927,7 +927,7 @@ Web використовує кастомні компоненти + canvas/SVG.
   живе у `@sergeant/shared/lib/haptic` із безпечним no-op-адаптером за
   замовчуванням. Web-імплементація на `navigator.vibrate` (з reduced-motion
   - feature-detect + try/catch) залишається у
-    `apps/web/src/shared/lib/haptic.ts` і реєструється один раз у
+    `apps/web/src/shared/lib/adapters/haptic.ts` і реєструється один раз у
     `apps/web/src/main.jsx` через side-effect-імпорт. Mobile-імплементація
     через `expo-haptics` (`selectionAsync`, `notificationAsync(Success/Warning/Error)`,
     `impactAsync(Light)` для cancel; `pattern` — no-op з TODO) живе у
@@ -942,7 +942,7 @@ Web використовує кастомні компоненти + canvas/SVG.
   Pure-контракт `FileDownloadAdapter` + `downloadJson(filename, payload)`
   живе у `@sergeant/shared/lib/fileDownload` із безпечним no-op-дефолтом
   (dev-warn, прод-тиша). Web-імплементація `Blob` + `URL.createObjectURL`
-  - `<a download>` у `apps/web/src/shared/lib/fileDownload.ts`, реєструється
+  - `<a download>` у `apps/web/src/shared/lib/adapters/fileDownload.ts`, реєструється
     у `apps/web/src/main.jsx`. УСІ web-споживачі JSON-бекапу мігровано:
     `core/hub/HubBackupPanel.tsx`, `modules/routine/components/RoutineBackupSection.tsx`,
     `modules/fizruk/components/workouts/WorkoutBackupBar.tsx` (PR #432) +

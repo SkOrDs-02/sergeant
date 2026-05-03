@@ -7,11 +7,11 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { AnimatedCheckbox } from "@shared/components/ui/AnimatedCheckbox";
-import { hapticTap } from "@shared/lib/haptic";
-import { webKVStore as localStorageStore } from "@shared/lib/storage";
+import { hapticTap } from "@shared/lib/adapters/haptic";
+import { webKVStore as localStorageStore } from "@shared/lib/storage/storage";
 import { useToast } from "@shared/hooks/useToast";
 import {
   MODULE_CHECKLISTS,

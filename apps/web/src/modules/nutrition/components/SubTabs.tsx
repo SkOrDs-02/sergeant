@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 interface SubTab {
   id: string;
@@ -35,7 +35,7 @@ export function SubTabs({ value, onChange, tabs, className }: SubTabsProps) {
             aria-selected={active}
             onClick={() => onChange(t.id)}
             className={cn(
-              "flex-1 min-h-[40px] px-3 py-2 rounded-xl text-sm font-semibold transition-colors",
+              "text-style-label flex-1 min-h-[40px] px-3 py-2 rounded-xl transition-colors",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
               active
                 ? "bg-panel text-text shadow-sm"

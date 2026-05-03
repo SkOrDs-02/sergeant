@@ -112,7 +112,7 @@ export const STORAGE_KEYS = {
 
   // ─── Web: React Query persisted cache ────────────────────────────────
   // IndexedDB-backed persister key for `apps/web` (see
-  // `apps/web/src/shared/lib/queryClientPersister.ts`). Mirrors mobile's
+  // `apps/web/src/shared/lib/api/queryClientPersister.ts`). Mirrors mobile's
   // `MOBILE_QUERY_CACHE` so the warm-start contract is symmetrical
   // across platforms. The `web:` prefix guarantees we never collide with
   // any pre-existing `localStorage` keys — IDB has its own keyspace, but

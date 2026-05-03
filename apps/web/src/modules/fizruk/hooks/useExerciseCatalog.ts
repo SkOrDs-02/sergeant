@@ -5,7 +5,7 @@ import {
   parseCustomExercisesFromStorage,
   serializeCustomExercisesToStorage,
 } from "@sergeant/fizruk-domain";
-import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import {
   useFizrukSqliteReadFlag,

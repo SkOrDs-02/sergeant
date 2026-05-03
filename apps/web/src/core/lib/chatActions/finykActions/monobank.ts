@@ -1,4 +1,4 @@
-import { safeRemoveLS } from "@shared/lib/storage";
+import { safeRemoveLS } from "@shared/lib/storage/storage";
 import type { ImportMonobankRangeAction, ChatActionResult } from "../types";
 
 export function importMonobankRange(

@@ -1,8 +1,8 @@
 /**
  * MMKV-backed storage adapter for the mobile app.
  *
- * Mirrors the API shape of `apps/web/src/shared/lib/storage.ts` and
- * `apps/web/src/shared/lib/createModuleStorage.ts` so that hooks and modules
+ * Mirrors the API shape of `apps/web/src/shared/lib/storage/storage.ts` and
+ * `apps/web/src/shared/lib/storage/createModuleStorage.ts` so that hooks and modules
  * ported from the web can consume the same named exports on native. The
  * web counterpart is backed by `localStorage`; this one is backed by a
  * single `react-native-mmkv` instance (`id: "sergeant.mobile.v1"`).
@@ -118,7 +118,7 @@ function deleteKey(key: string): boolean {
   }
 }
 
-// --- Flat helpers (mirror apps/web/src/shared/lib/storage.ts) ---------
+// --- Flat helpers (mirror apps/web/src/shared/lib/storage/storage.ts) ---------
 
 /**
  * Read a JSON value from persistent storage.

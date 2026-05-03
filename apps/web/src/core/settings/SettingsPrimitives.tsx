@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
 import { Switch } from "@shared/components/ui/Switch";
@@ -139,7 +139,7 @@ export function ToggleRow({
       )}
     >
       <div className="flex-1 min-w-0">
-        <span className="text-sm font-medium text-text group-hover:text-brand-strong transition-colors">
+        <span className="text-style-label text-text group-hover:text-brand-strong transition-colors">
           {label}
         </span>
         {description && (
@@ -198,7 +198,7 @@ export function ConfirmModal({
       >
         <h2
           id="confirm-modal-title"
-          className="text-lg font-bold text-text leading-tight"
+          className="text-style-title text-text leading-tight"
         >
           {title}
         </h2>
@@ -208,7 +208,7 @@ export function ConfirmModal({
         <div className="flex gap-3 mt-6">
           <button
             type="button"
-            className="flex-1 py-3.5 rounded-xl border border-line text-sm font-semibold text-muted hover:bg-panelHi hover:text-text transition-colors"
+            className="text-style-label flex-1 py-3.5 rounded-xl border border-line text-muted hover:bg-panelHi hover:text-text transition-colors"
             onClick={onCancel}
           >
             Скасувати
@@ -216,7 +216,7 @@ export function ConfirmModal({
           <button
             type="button"
             className={cn(
-              "flex-1 py-3.5 rounded-xl text-sm font-semibold text-white transition-colors shadow-soft",
+              "text-style-label flex-1 py-3.5 rounded-xl text-white transition-colors shadow-soft",
               danger
                 ? "bg-danger hover:bg-danger/90 active:bg-danger/80"
                 : "bg-brand hover:bg-brand/90 active:bg-brand/80",

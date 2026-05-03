@@ -1,6 +1,6 @@
 import { memo } from "react";
-import { cn } from "@shared/lib/cn";
-import { hapticTap } from "@shared/lib/haptic";
+import { cn } from "@shared/lib/ui/cn";
+import { hapticTap } from "@shared/lib/adapters/haptic";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import type { ChangeEvent } from "react";
 

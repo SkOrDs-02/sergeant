@@ -30,7 +30,7 @@ import {
   type SetStateAction,
 } from "react";
 
-import { safeReadLS } from "@shared/lib/storage";
+import { safeReadLS } from "@shared/lib/storage/storage";
 
 export interface UseLocalStorageStateOptions<T> {
   /**

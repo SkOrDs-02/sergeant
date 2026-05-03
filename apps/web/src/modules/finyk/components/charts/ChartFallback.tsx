@@ -1,5 +1,5 @@
 import { Skeleton } from "@shared/components/ui/Skeleton";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 
 // Shared skeleton block used as Suspense fallback while a lazy chart chunk
 // is being fetched. Keeps the dashboard layout stable during the load.

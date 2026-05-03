@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import type { HubChatSession } from "./hubChatSessions";

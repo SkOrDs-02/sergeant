@@ -4,7 +4,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { useVisualKeyboardInset } from "@sergeant/shared";
 
 const EQUIPMENT_OPTIONS = [

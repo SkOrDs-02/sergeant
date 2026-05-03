@@ -4,10 +4,10 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { toLocalISODate } from "@sergeant/shared";
 import type {
   Meal,
@@ -194,7 +194,7 @@ export function RecipesCard({
           aria-expanded={savedOpen}
         >
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-text">Мої рецепти</span>
+            <span className="text-style-label text-text">Мої рецепти</span>
             {!savedBusy && saved.length > 0 && (
               <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-nutrition/15 text-nutrition-strong dark:text-nutrition">
                 {saved.length}
@@ -234,7 +234,7 @@ export function RecipesCard({
                         >
                           <ChevronIcon open={isOpen} />
                           <span className="min-w-0">
-                            <span className="block text-sm font-semibold text-text break-words">
+                            <span className="text-style-label block text-text break-words">
                               {r.title}
                             </span>
                             <span className="block text-xs text-subtle mt-0.5">
@@ -354,7 +354,7 @@ export function RecipesCard({
 
       {/* ── Генератор рецептів ── */}
       <Card className="p-4">
-        <div className="text-sm font-semibold text-text">
+        <div className="text-style-label text-text">
           Рецепти ({activePantry?.name || "Склад"})
         </div>
         <div className="text-xs text-subtle mt-0.5">
@@ -437,7 +437,7 @@ export function RecipesCard({
             onClick={recommendRecipes}
             disabled={busy}
             className={cn(
-              "w-full h-11 rounded-2xl text-sm font-semibold",
+              "text-style-label w-full h-11 rounded-2xl",
               "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50",
             )}
           >
@@ -453,7 +453,7 @@ export function RecipesCard({
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0 flex-1 basis-full sm:basis-auto">
-                      <div className="text-sm font-semibold text-text break-words">
+                      <div className="text-style-label text-text break-words">
                         {r.title || `Рецепт ${idx + 1}`}
                       </div>
                       <div className="text-xs text-subtle mt-1">
@@ -464,7 +464,7 @@ export function RecipesCard({
                     {r.macros?.kcal != null && (
                       <div className="shrink-0 rounded-xl border border-line bg-bg px-3 py-2 text-xs text-subtle">
                         <div className="text-2xs text-subtle">≈ ккал</div>
-                        <div className="text-sm font-semibold text-text">
+                        <div className="text-style-label text-text">
                           {fmtMacro(r.macros.kcal)}
                         </div>
                       </div>

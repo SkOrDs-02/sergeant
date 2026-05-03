@@ -1,8 +1,8 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { coachApi, isApiError } from "@shared/api";
-import { coachKeys } from "@shared/lib/queryKeys";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
+import { coachKeys } from "@shared/lib/api/queryKeys";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
 

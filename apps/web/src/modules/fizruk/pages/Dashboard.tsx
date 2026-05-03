@@ -1,4 +1,4 @@
-import { safeWriteLS } from "@shared/lib/storage";
+import { safeWriteLS } from "@shared/lib/storage/storage";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";

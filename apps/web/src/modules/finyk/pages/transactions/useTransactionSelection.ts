@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { useToast } from "@shared/hooks/useToast";
 import type {
   Transaction,

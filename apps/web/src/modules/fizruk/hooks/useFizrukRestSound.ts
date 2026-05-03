@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { hapticPattern } from "@shared/lib/haptic";
+import { hapticPattern } from "@shared/lib/adapters/haptic";
 
 // Legacy Safari (< 14) ships `AudioContext` only as the prefixed
 // `webkitAudioContext`. Not in `lib.dom.d.ts`, so we attach it to `Window`

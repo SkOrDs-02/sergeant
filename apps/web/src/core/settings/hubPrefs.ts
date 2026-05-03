@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { safeReadLSValidated, safeWriteLS } from "@shared/lib/storage";
+import { safeReadLSValidated, safeWriteLS } from "@shared/lib/storage/storage";
 import { HubPrefsSchema, type HubPrefs } from "./hubPrefs.schema";
 
 const HUB_PREFS_KEY = STORAGE_KEYS.HUB_PREFS;

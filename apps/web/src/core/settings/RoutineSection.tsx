@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useRoutineState } from "../../modules/routine/hooks/useRoutineState";
 import {
   deleteHabit,

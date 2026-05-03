@@ -9,7 +9,7 @@
 
 ```tsx
 import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 
 const toast = useToast();
 
@@ -162,7 +162,7 @@ Toast-и рендеряться через `useToast`-провайдер, яки
 
 ## Пов'язані доки
 
-- [`apps/web/src/shared/lib/undoToast.tsx`](../../apps/web/src/shared/lib/undoToast.tsx) — імплементація.
-- [`apps/web/src/shared/lib/undoToast.test.tsx`](../../apps/web/src/shared/lib/undoToast.test.tsx) — contract-тести.
+- [`apps/web/src/shared/lib/ui/undoToast.tsx`](../../apps/web/src/shared/lib/ui/undoToast.tsx) — імплементація.
+- [`apps/web/src/shared/lib/ui/undoToast.test.tsx`](../../apps/web/src/shared/lib/ui/undoToast.test.tsx) — contract-тести.
 - [`packages/shared/src/lib/undoToast.ts`](../../packages/shared/src/lib/undoToast.ts) — дефолти, шарені з мобілкою.
 - `AGENTS.md` § Soft rules — «Destructive UX defaults».

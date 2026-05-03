@@ -26,7 +26,7 @@ import {
   saveTimeToValueMs as sharedSaveTimeToValueMs,
   saveVibePicks as sharedSaveVibePicks,
 } from "@sergeant/shared";
-import { webKVStore } from "@shared/lib/storage";
+import { webKVStore } from "@shared/lib/storage/storage";
 
 export type HubModuleId = DashboardModuleId;
 

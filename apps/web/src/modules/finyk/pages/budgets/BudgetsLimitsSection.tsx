@@ -2,7 +2,7 @@ import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import {
   calculateLimitUsage,
   shouldShowProactiveAdvice,
@@ -10,7 +10,7 @@ import {
 import type { Budget, Category } from "@sergeant/finyk-domain/domain/types";
 import { LimitBudgetCard } from "../../components/budgets/LimitBudgetCard";
 import { resolveExpenseCategoryMeta } from "../../utils";
-import { showUndoToast } from "@shared/lib/undoToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { useToast } from "@shared/hooks/useToast";
 import type { ProactiveItem } from "./budgetsLib";
 

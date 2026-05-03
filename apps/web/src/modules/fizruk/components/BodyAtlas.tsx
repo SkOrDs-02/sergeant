@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import createBodyHighlighter from "body-highlighter";
-import { cn } from "@shared/lib/cn";
-import { THEME_HEX } from "@shared/lib/themeHex";
+import { cn } from "@shared/lib/ui/cn";
+import { THEME_HEX } from "@shared/lib/ui/themeHex";
 
 const STATUS_TO_FREQ: Record<string, number> = { yellow: 1, red: 2 };
 

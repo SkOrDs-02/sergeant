@@ -15,7 +15,7 @@
 
 import { useSyncExternalStore } from "react";
 import { z } from "zod";
-import { createTypedStore } from "../../shared/lib/typedStore";
+import { createTypedStore } from "../../shared/lib/storage/typedStore";
 
 export interface FlagDefinition {
   id: string;

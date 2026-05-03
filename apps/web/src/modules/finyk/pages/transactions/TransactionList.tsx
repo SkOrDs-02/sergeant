@@ -6,7 +6,7 @@ import { SkeletonTransactionRow } from "@shared/components/ui/Skeleton";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { FinykEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { TransactionDayHeader } from "./TransactionDayHeader";
 import type { computeDaySummary } from "./transactionsLib";
 import type {

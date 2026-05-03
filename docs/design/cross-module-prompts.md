@@ -12,8 +12,8 @@
 ## TL;DR
 
 ```ts
-import { tryShowCrossModulePrompt } from "@shared/lib/crossModulePrompt";
-import { openHubModuleWithAction } from "@shared/lib/hubNav";
+import { tryShowCrossModulePrompt } from "@shared/lib/modules/crossModulePrompt";
+import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 
 tryShowCrossModulePrompt(toast, {
   id: "finyk-restaurant-to-meal",
@@ -203,7 +203,7 @@ import {
   isCrossModulePromptSuppressed,
   recordCrossModulePromptDismissed,
   MAX_DISMISSALS,
-} from "@shared/lib/crossModulePrompt";
+} from "@shared/lib/modules/crossModulePrompt";
 
 beforeEach(() => {
   resetCrossModulePromptForTesting("finyk-restaurant-to-meal");
@@ -222,8 +222,8 @@ acceptance reset, suppression, CTA-tap → onAccept, auto-dismiss → counter.
 
 ## Related docs
 
-- [`apps/web/src/shared/lib/crossModulePrompt.ts`](../../apps/web/src/shared/lib/crossModulePrompt.ts) — implementation.
-- [`apps/web/src/shared/lib/crossModulePrompt.test.ts`](../../apps/web/src/shared/lib/crossModulePrompt.test.ts) — contract tests.
-- [`apps/web/src/shared/lib/hubNav.ts`](../../apps/web/src/shared/lib/hubNav.ts) — `openHubModule` / `openHubModuleWithAction` (cross-module navigation primitive).
+- [`apps/web/src/shared/lib/modules/crossModulePrompt.ts`](../../apps/web/src/shared/lib/modules/crossModulePrompt.ts) — implementation.
+- [`apps/web/src/shared/lib/modules/crossModulePrompt.test.ts`](../../apps/web/src/shared/lib/modules/crossModulePrompt.test.ts) — contract tests.
+- [`apps/web/src/shared/lib/modules/hubNav.ts`](../../apps/web/src/shared/lib/modules/hubNav.ts) — `openHubModule` / `openHubModuleWithAction` (cross-module navigation primitive).
 - [`docs/design/undo-pattern.md`](./undo-pattern.md) — sister doc для destructive actions.
 - `AGENTS.md` § Soft rules — "Cross-module nudges".

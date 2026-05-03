@@ -7,8 +7,8 @@ import {
   type MonoAccountDto,
   type MonoTransactionDto,
 } from "@shared/api";
-import { finykKeys, hubKeys } from "@shared/lib/queryKeys";
-import { authAwareRetry } from "@shared/lib/queryClient";
+import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
+import { authAwareRetry } from "@shared/lib/api/queryClient";
 import { normalizeTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { CURRENCY } from "../constants";

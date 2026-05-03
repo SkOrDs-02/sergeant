@@ -1,7 +1,7 @@
 /**
  * Базовий URL для API мобільного клієнта.
  *
- * Логіка дзеркалить `apps/web/src/shared/lib/apiUrl.ts`:
+ * Логіка дзеркалить `apps/web/src/shared/lib/api/apiUrl.ts`:
  * - читаємо `EXPO_PUBLIC_API_BASE_URL` (publicly inlined at build time);
  * - префіксуємо `/api/*` версією (за замовчуванням `v1`), окрім `/api/auth/*`,
  *   який Better Auth тримає на фіксованому `basePath`.

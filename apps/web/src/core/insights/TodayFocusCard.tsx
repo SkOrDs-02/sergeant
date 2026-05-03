@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { StatusColor } from "@sergeant/design-tokens";
-import { cn } from "@shared/lib/cn";
+import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import {
   openHubModuleWithAction,
   type HubModuleAction,
   type HubModuleId,
-} from "@shared/lib/hubNav";
-import { getModulePrimaryAction } from "@shared/lib/moduleQuickActions";
+} from "@shared/lib/modules/hubNav";
+import { getModulePrimaryAction } from "@shared/lib/modules/moduleQuickActions";
 import { generateRecommendations } from "../lib/recommendationEngine";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 
