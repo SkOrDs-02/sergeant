@@ -46,10 +46,10 @@ export function WorkoutsHome({
   return (
     <div className="space-y-4">
       {hasActive ? (
-        <div className="rounded-xl border border-teal-500/40 bg-teal-500/10 p-4">
+        <div className="rounded-xl border border-fizruk-ring/40 bg-fizruk/10 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-xs font-semibold text-teal-700">
+              <div className="text-xs font-semibold text-fizruk-strong">
                 Активне тренування
               </div>
               <div className="mt-1 text-sm text-text">
