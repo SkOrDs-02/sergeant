@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { GroupedVirtuoso } from "react-virtuoso";
 import { TxListItem } from "../../components/TxListItem";
+import type { TxRowTx } from "../../components/TxRow";
 import { SkeletonTransactionRow } from "@shared/components/ui/Skeleton";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { FinykEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
@@ -8,23 +9,27 @@ import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { cn } from "@shared/lib/cn";
 import { TransactionDayHeader } from "./TransactionDayHeader";
 import type { computeDaySummary } from "./transactionsLib";
+import type {
+  Transaction,
+  TxCategoriesMap,
+  TxSplit,
+  TxSplitsMap,
+} from "@sergeant/finyk-domain/domain/types";
+import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
+import type { TxAccount } from "./Transactions";
 
 export interface TransactionListProps {
   /** Whether the underlying month is still loading (real or history). */
   loading: boolean;
   /** All-month list (incl. hidden) — used to decide whether to render the
    * skeleton block or the empty state. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  activeTx: any[];
+  activeTx: Transaction[];
   /** Filtered + sorted list of transactions to render in the virtual list. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  filtered: any[];
+  filtered: Transaction[];
   /** `GroupedVirtuoso` group spec — one entry per visible day. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  groupedByDate: { key: string; items: any[] }[];
+  groupedByDate: { key: string; items: Transaction[] }[];
   groupCounts: number[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  flatItems: any[];
+  flatItems: Transaction[];
   collapsedKeys: Set<string>;
   daySummaries: Record<string, ReturnType<typeof computeDaySummary>>;
   showBalance: boolean;
@@ -33,22 +38,17 @@ export interface TransactionListProps {
   selectMode: boolean;
   selectedIds: Set<string>;
   hiddenTxIdSet: Set<string>;
-  txCategories: Record<string, string>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  txSplits: Record<string, any>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  accounts: any[] | undefined;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  customCategories: any[] | undefined;
+  txCategories: TxCategoriesMap;
+  txSplits: TxSplitsMap;
+  accounts: ReadonlyArray<TxAccount> | undefined;
+  customCategories: CustomCategoryInput[] | undefined;
   onToggleSelect: (id: string) => void;
   onSwipeHideTx: (id: string) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSwipeDeleteManual: (tx: any) => void;
+  onSwipeDeleteManual: (tx: Transaction) => void;
   onEditManual: (manualId?: string) => void;
   onHideTx: (id: string) => void;
   onCatChange: (id: string, catId: string | null) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSplitChange: (id: string, splits: any) => void;
+  onSplitChange: (id: string, splits: TxSplit[]) => void;
   /** Bottom-of-list "still loading…" text shown when refreshing a non-
    * empty list. */
   trailing?: ReactNode;
@@ -181,9 +181,10 @@ export function TransactionList({
             itemContent={(index) => {
               const t = flatItems[index];
               if (!t) return null;
+              const rowTx = t as TxRowTx;
               return (
                 <TxListItem
-                  tx={t}
+                  tx={rowTx}
                   rowIndex={index}
                   selectMode={selectMode}
                   selected={selectMode && selectedIds.has(t.id)}
@@ -195,11 +196,13 @@ export function TransactionList({
                   customCategories={customCategories}
                   onToggleSelect={onToggleSelect}
                   onSwipeHideTx={onSwipeHideTx}
-                  onSwipeDeleteManual={onSwipeDeleteManual}
+                  onSwipeDeleteManual={() => onSwipeDeleteManual(t)}
                   onEditManual={onEditManual}
                   onHideTx={onHideTx}
                   onCatChange={onCatChange}
-                  onSplitChange={onSplitChange}
+                  onSplitChange={(id, splits) =>
+                    onSplitChange(id, (splits ?? []) as TxSplit[])
+                  }
                 />
               );
             }}

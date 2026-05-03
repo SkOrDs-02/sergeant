@@ -5,15 +5,20 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { formatMoney } from "@sergeant/shared";
 
-type MonthlyPlanInput = {
-  income?: number | string;
-  expense?: number | string;
-  savings?: number | string;
+// Mirrors `useStorage`'s MonthlyPlan: required income/expense/savings,
+// each persisted as the raw `<input type="number">` value (string while
+// editing, number once committed). Defined inline here so the card
+// stays free of a hook import; if a third file ever needs the type,
+// hoist it to a shared module.
+export type MonthlyPlan = {
+  income: number | string;
+  expense: number | string;
+  savings: number | string;
 };
 
 interface MonthlyPlanCardProps {
-  monthlyPlan: MonthlyPlanInput | null | undefined;
-  onChangeMonthlyPlan: Dispatch<SetStateAction<MonthlyPlanInput>>;
+  monthlyPlan: MonthlyPlan | null | undefined;
+  onChangeMonthlyPlan: Dispatch<SetStateAction<MonthlyPlan>>;
   planIncome: number;
   planExpense: number;
   planSavings: number;
@@ -246,7 +251,7 @@ function MonthlyPlanCardComponent({
                 value={monthlyPlan?.income ?? ""}
                 onChange={(e) =>
                   onChangeMonthlyPlan((p) => ({
-                    ...(p || {}),
+                    ...p,
                     income: e.target.value,
                   }))
                 }
@@ -257,7 +262,7 @@ function MonthlyPlanCardComponent({
                 value={monthlyPlan?.expense ?? ""}
                 onChange={(e) =>
                   onChangeMonthlyPlan((p) => ({
-                    ...(p || {}),
+                    ...p,
                     expense: e.target.value,
                   }))
                 }
@@ -268,7 +273,7 @@ function MonthlyPlanCardComponent({
                 value={monthlyPlan?.savings ?? ""}
                 onChange={(e) =>
                   onChangeMonthlyPlan((p) => ({
-                    ...(p || {}),
+                    ...p,
                     savings: e.target.value,
                   }))
                 }

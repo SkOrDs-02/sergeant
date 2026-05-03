@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
+import type {
+  Category,
+  Transaction,
+  TxCategoriesMap,
+  TxSplitsMap,
+} from "@sergeant/finyk-domain/domain/types";
+import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
+import type { TxAccount } from "./Transactions";
 import { perfMark, perfEnd } from "@shared/lib/perf";
 import { mergeExpenseCategoryDefinitions } from "../../constants";
 import { getCategory, getIncomeCategory } from "../../utils";
@@ -16,24 +24,18 @@ const now = new Date();
 
 export interface UseTransactionFiltersParams {
   /** Real Monobank transactions for the current month. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  realTx: any[];
+  realTx: Transaction[];
   /** Cached transactions for any historical month. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  historyTx: any[];
+  historyTx: Transaction[];
   loadingTx: boolean;
   loadingHistory: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  manualExpenses: any[] | undefined;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  accounts: any[] | undefined;
+  manualExpenses: ManualExpense[] | undefined;
+  accounts: ReadonlyArray<TxAccount> | undefined;
   hiddenTxIds: string[];
   excludedTxIds: Set<string>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  txSplits: Record<string, any>;
-  txCategories: Record<string, string>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  customCategories: any[] | undefined;
+  txSplits: TxSplitsMap;
+  txCategories: TxCategoriesMap;
+  customCategories: Category[] | undefined;
   fetchMonth: (year: number, month: number) => Promise<unknown>;
   /** External-driven category filter (e.g. tap on a category card). */
   categoryFilter: string | null | undefined;
@@ -139,13 +141,15 @@ export function useTransactionFilters({
     1,
   ).toLocaleDateString("uk-UA", { month: "long", year: "numeric" });
 
-  const creditAccIds = useMemo(
-    () =>
-      new Set(
-        (accounts || []).filter((a) => a.creditLimit > 0).map((a) => a.id),
-      ),
-    [accounts],
-  );
+  const creditAccIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const a of accounts || []) {
+      if ((a.creditLimit ?? 0) > 0 && typeof a.id === "string") {
+        ids.add(a.id);
+      }
+    }
+    return ids;
+  }, [accounts]);
 
   const hiddenTxIdSet = useMemo(
     () => new Set(hiddenTxIds || []),
@@ -153,8 +157,7 @@ export function useTransactionFilters({
   );
 
   const getEffectiveCat = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (t: any) =>
+    (t: Transaction) =>
       t.amount > 0
         ? getIncomeCategory(t.description, txCategories[t.id])
         : getCategory(
@@ -185,15 +188,8 @@ export function useTransactionFilters({
                   return (
                     s +
                     splits
-                      .filter(
-                        (sp: { categoryId: string }) =>
-                          sp.categoryId === cat.id,
-                      )
-                      .reduce(
-                        (ss: number, sp: { amount?: number }) =>
-                          ss + (sp.amount || 0),
-                        0,
-                      )
+                      .filter((sp) => sp.categoryId === cat.id)
+                      .reduce((ss, sp) => ss + (sp.amount || 0), 0)
                   );
                 return getEffectiveCat(t).id === cat.id
                   ? s + Math.abs(t.amount / 100)
@@ -225,7 +221,10 @@ export function useTransactionFilters({
       if (filter === "all") return true;
       if (filter === "income") return t.amount > 0;
       if (filter === "expense") return t.amount < 0;
-      if (filter === "credit") return creditAccIds.has(t._accountId);
+      if (filter === "credit")
+        return (
+          typeof t._accountId === "string" && creditAccIds.has(t._accountId)
+        );
       return getEffectiveCat(t).id === filter;
     });
     perfEnd(m, { n: res.length });
@@ -234,8 +233,7 @@ export function useTransactionFilters({
 
   const groupedByDate = useMemo(() => {
     const m = perfMark("finyk:tx:groupByDate");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const groups: { key: string; items: any[] }[] = [];
+    const groups: { key: string; items: Transaction[] }[] = [];
     for (const t of filtered) {
       const k = dayKeyFromTx(t.time);
       const last = groups[groups.length - 1];
