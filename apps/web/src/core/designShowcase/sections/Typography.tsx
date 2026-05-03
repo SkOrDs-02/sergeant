@@ -23,10 +23,12 @@ export function TypographySection() {
             <span className="text-2xs text-subtle">24px / 32px</span>
           </div>
           <div className="flex items-baseline gap-4">
+            {/* eslint-disable-next-line sergeant-design/prefer-text-style -- showcase intentionally renders raw text-xl + font-semibold so the demo matches its label */}
             <span className="text-xl font-semibold text-text">text-xl</span>
             <span className="text-2xs text-subtle">20px / 28px</span>
           </div>
           <div className="flex items-baseline gap-4">
+            {/* eslint-disable-next-line sergeant-design/prefer-text-style -- showcase intentionally renders raw text-lg + font-semibold so the demo matches its label */}
             <span className="text-lg font-semibold text-text">text-lg</span>
             <span className="text-2xs text-subtle">18px / 28px</span>
           </div>
@@ -35,6 +37,7 @@ export function TypographySection() {
             <span className="text-2xs text-subtle">16px / 24px</span>
           </div>
           <div className="flex items-baseline gap-4">
+            {/* eslint-disable-next-line sergeant-design/prefer-text-style -- showcase intentionally renders raw text-sm + font-semibold so the demo matches its label */}
             <span className="text-sm font-semibold text-text">text-sm</span>
             <span className="text-2xs text-subtle">14px / 20px</span>
           </div>

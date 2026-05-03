@@ -71,7 +71,7 @@ export function SessionsSection({ online }: { online: boolean }) {
       <div className="px-4 py-3.5 flex items-center justify-between border-b border-line">
         <div className="flex items-center gap-2">
           <Icon name="monitor" size={16} className="text-muted" />
-          <span className="text-sm font-semibold text-text">Активні сесії</span>
+          <span className="text-style-label text-text">Активні сесії</span>
         </div>
         <Button
           variant="ghost"

@@ -145,7 +145,7 @@ export function WaitlistForm({
         </div>
 
         <fieldset>
-          <legend className="text-sm font-medium text-text mb-2">
+          <legend className="text-style-label text-text mb-2">
             Який тариф цікавить найбільше?
           </legend>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -175,7 +175,7 @@ export function WaitlistForm({
                     disabled={pending}
                   />
                   <span className="flex flex-col">
-                    <span className="text-sm font-semibold text-text">
+                    <span className="text-style-label text-text">
                       {opt.label}
                     </span>
                     <span className="text-xs text-muted">{opt.hint}</span>

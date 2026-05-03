@@ -47,7 +47,7 @@ export function HabitLeadersBlock({
           <SectionHeading as="p" size="xs" variant="subtle" className="mb-1">
             Найстабільніша
           </SectionHeading>
-          <p className="text-sm font-semibold text-text truncate">
+          <p className="text-style-label text-text truncate">
             {best.habit.emoji} {best.habit.name}
           </p>
           <p className="text-xs text-subtle mt-0.5 tabular-nums">
@@ -59,7 +59,7 @@ export function HabitLeadersBlock({
             <SectionHeading as="p" size="xs" variant="subtle" className="mb-1">
               Найслабша
             </SectionHeading>
-            <p className="text-sm font-semibold text-text truncate">
+            <p className="text-style-label text-text truncate">
               {worst.habit.emoji} {worst.habit.name}
             </p>
             <p className="text-xs text-subtle mt-0.5 tabular-nums">

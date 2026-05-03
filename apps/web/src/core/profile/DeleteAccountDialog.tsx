@@ -63,7 +63,7 @@ export function DeleteAccountDialog({
         <div className="mt-4 space-y-2">
           <label
             htmlFor={passwordId}
-            className="block text-xs font-medium text-muted"
+            className="block text-style-caption text-muted"
           >
             Пароль
           </label>

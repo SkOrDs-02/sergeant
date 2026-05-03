@@ -25,9 +25,7 @@ export function MigrationPrompt({
           <div className="w-14 h-14 mx-auto bg-brand-500/10 rounded-2xl flex items-center justify-center text-brand-strong dark:text-brand">
             <Icon name="upload" size={28} strokeWidth={1.8} />
           </div>
-          <h2 className="text-xl font-bold text-text">
-            Локальні дані знайдено
-          </h2>
+          <h2 className="text-style-title text-text">Локальні дані знайдено</h2>
           <p className="text-sm text-muted leading-relaxed">
             У вас є дані на цьому пристрої, які ще не збережено в хмарі. Бажаєте
             завантажити їх у свій акаунт?
