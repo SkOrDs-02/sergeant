@@ -86,16 +86,22 @@ function parseLimit<F extends number | null>(
   return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
 
+/**
+ * `true` when the AI-quota subsystem is disabled wholesale (CI/test only).
+ *
+ * Reads `process.env` directly rather than the validated `env` module so that
+ * unit tests can flip the flag at runtime via `process.env.AI_QUOTA_DISABLED`
+ * without re-importing modules. Accepts the same truthy spellings as the typed
+ * env (`true|1`) so the two stay in sync.
+ *
+ * Production safety lives at startup — `assertStartupEnv()` in
+ * `apps/server/src/env/env.ts` hard-blocks server boot when this flag is
+ * truthy alongside `NODE_ENV=production` (or any RAILWAY_* env). The module
+ * here trusts the startup check and does not re-validate at runtime.
+ */
 export function isAiQuotaDisabled(): boolean {
-  return process.env.AI_QUOTA_DISABLED === "1";
-}
-
-// Runs once at module import — warns ops if quotas are bypassed in production.
-if (
-  process.env.AI_QUOTA_DISABLED === "1" &&
-  process.env.NODE_ENV === "production"
-) {
-  logger.warn({ msg: "ai_quota_disabled_in_production" });
+  const v = process.env.AI_QUOTA_DISABLED?.toLowerCase();
+  return v === "1" || v === "true";
 }
 
 function effectiveLimits(): EffectiveLimits {

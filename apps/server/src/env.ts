@@ -148,6 +148,25 @@ export const env = {
     30_000,
   ),
 
+  /**
+   * Killer-switch for AI-quota: when `true`, `assertAiQuota()` becomes a no-op
+   * and every AI route runs without decrementing the `ai_usage_daily` counter.
+   * Designed **exclusively** for CI/test environments where e2e tests hammer
+   * the real Anthropic API without burning user quota
+   * (see `.github/workflows/extended-e2e.yml`).
+   *
+   * In production this flag is a fail-open kill-switch on billing: a stray
+   * `AI_QUOTA_DISABLED=1` in Railway env (copy-paste from staging, helm typo)
+   * disables every per-user / per-IP cap and lets clients burn the entire
+   * Anthropic budget. `assertStartupEnv()` in `env/env.ts` hard-blocks
+   * production startup when this flag is truthy alongside `NODE_ENV=production`
+   * (or any RAILWAY_* env), so a misconfigured deploy refuses to boot rather
+   * than silently leak budget.
+   *
+   * Default: `false`.
+   */
+  AI_QUOTA_DISABLED: parseBoolEnv("AI_QUOTA_DISABLED", false),
+
   // ─────────────────────────────────────────────────────────────────────────
   // Rate Limiting
   // ─────────────────────────────────────────────────────────────────────────
