@@ -1,6 +1,6 @@
 # Data exchange & storage audit
 
-> **Last validated:** 2026-05-03 by Devin (sync з Stage 4 progress: routine SPIKE промоутено у production, Fizruk dual-write LS/MMKV↔SQLite + cut-over reads (web PR #029, mobile read overlay PR #029a), boot-wiring follow-up #1491 (`register{Routine,Fizruk}DualWriteContext`) і PR #030 cloud-sync drop `module_data.fizruk` + ESLint guard — усі на main; LS write cut-over для fizruk-хуків і server-side `DELETE FROM module_data WHERE module='fizruk'` runbook все ще pending). **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-03 by Devin (Stage 1 хвости закрито: PR #009 ([#1526](https://github.com/Skords-01/Sergeant/pull/1526)) переніс `SYNC_OFFLINE_QUEUE` у IDB і підняв `MAX_OFFLINE_QUEUE` з 50 до 10 000; PR #010 ([#1543](https://github.com/Skords-01/Sergeant/pull/1543), open) зливає 5 IDB баз у спільну `sergeant-db` зі своїми prefixed object stores; PR #011 ([#1521](https://github.com/Skords-01/Sergeant/pull/1521)) Postgres-backed rate-limit замінив in-memory bucket в `apps/server/src/http/rateLimit.ts`; PR #013 final sub-PR ([#1520](https://github.com/Skords-01/Sergeant/pull/1520)) звів ESLint allowlist для `sergeant-design/no-raw-local-storage` до 0. Синк зі Stage 4 progress: routine SPIKE промоутено у production, Fizruk dual-write LS/MMKV↔SQLite + cut-over reads (web PR #029, mobile read overlay PR #029a), boot-wiring follow-up #1491 і PR #030 cloud-sync drop `module_data.fizruk` — усі на main; LS write cut-over для fizruk-хуків і server-side `DELETE FROM module_data WHERE module='fizruk'` runbook все ще pending. **Next review:** 2026-07-31.
 > **Status:** Active
 
 Зріз поточного стану: як у Sergeant рухаються і зберігаються дані, де слабкі місця, і який практичний напрям розвитку варто тримати.
@@ -33,7 +33,7 @@ Sergeant зараз має гібридну data-архітектуру:
 2. На кожен write до tracked-key wrapper кличе `enqueueChange(key)` (`apps/web/src/core/cloudSync/enqueue.ts`): визначає module за ключем, ставить dirty flag і емiтить sync event. До PR #008 цю роль грав `storagePatch.ts` через monkey-patch `localStorage.setItem/removeItem` + `__hubSyncPatched` global; тепер opt-in явний — тільки writes через `syncedKV` маркують модулі брудними.
 3. `SYNC_MODULES` визначає, які ключі входять у `finyk`, `nutrition`, `profile` (`packages/shared/src/sync/modules.ts`, реекспортний у `apps/web/src/core/cloudSync/config.ts`). Routine знятий у PR #026 (Stage 4 cleanup), Fizruk — у PR #030; обидва модулі тепер їздять виключно через v2 op-log.
 4. `pushDirty()` збирає dirty modules, робить `syncApi.pushAll(modules)`, а якщо offline/error — додає payload в offline queue (`apps/web/src/core/cloudSync/engine/push.ts`).
-5. Offline queue коалесить послідовні push-и і має hard cap `MAX_OFFLINE_QUEUE = 50` (`apps/web/src/core/cloudSync/queue/offlineQueue.ts`).
+5. Offline queue коалесить послідовні push-и і має hard cap `MAX_OFFLINE_QUEUE = 10 000` (`apps/web/src/core/cloudSync/queue/offlineQueue.ts`). Після Stage 1 PR #009 черга живе в IDB (durable backing) з LS dual-write best-effort до 100 записів; ліміт ~5 MB localStorage більше не є stop-the-world.
 6. Server пише module payload в `module_data` як JSONB blob з `version`, `client_updated_at`, `server_updated_at` (`apps/server/src/migrations/003_baseline_schema.sql`).
 
 Модель конфліктів v1: **last-write-wins на рівні цілого module blob-а**. Це просто і добре для швидкого offline-first UX, але погано для одночасних правок різних частин одного модуля з різних пристроїв.
@@ -104,7 +104,7 @@ DB-level safety:
 ### 3.2. Web storage
 
 - Основний local-first module state — `localStorage`, згрупований через `SYNC_MODULES`.
-- React Query warm-start cache — IndexedDB через `idb-keyval`, DB `sergeant-rq-cache`, TTL 7 днів, build-id buster, sensitive query keys не персистяться (`apps/web/src/shared/lib/api/queryClientPersister.ts`).
+- React Query warm-start cache — IndexedDB, TTL 7 днів, build-id buster, sensitive query keys не персистяться (`apps/web/src/shared/lib/api/queryClientPersister.ts`). Після Stage 1 PR #010 ([#1543](https://github.com/Skords-01/Sergeant/pull/1543)) персистер використовує спільну `sergeant-db` базу (store `rq_cache`) замість окремої `sergeant-rq-cache`; legacy DB мігрується ліниво при першому read/write через `migrateLegacyDbOnce({ legacyDbName, copy })` і видаляється.
 - Service Worker:
   - precache + NetworkFirst navigation cache;
   - GET `/api/*` cache на 30 хв, але auth/sync/coach/weekly-digest виключені (`apps/web/src/sw.ts`);
@@ -140,7 +140,7 @@ Web module state усе ще пишеться в `localStorage`, який:
 - погано підходить для великих tx/workout/nutrition blobs;
 - легко ламається при direct `localStorage.setItem`, якщо код обходить sync wrapper/patched path.
 
-Offline queue має cap 50 і коалесинг, але це захищає від росту queue, не від росту самих module payloads.
+Offline queue після Stage 1 PR #009 підняв cap до 10 000 і переїхав у IDB, тож 5 MB localStorage cap більше не впливає на довжину черги. Коалесинг push-ів залишається. Але це захищає від росту queue, не від росту самих module payloads, які все ще живуть у LS до закриття Stage 4 для відповідного модуля.
 
 ### 4.3. Mobile enqueue discipline
 
