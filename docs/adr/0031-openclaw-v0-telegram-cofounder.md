@@ -163,11 +163,15 @@ OpenClaw v0 не замінює n8n dispatcher і не виконує production
 `commandText`, `action`, `specialist`, `riskTier`, `mode`, `requiresApproval`,
 `telegram.userId`, `telegram.chatId`, `telegram.messageId`.
 
-У v0 OpenClaw лишається read-only co-founder bot-ом. Будь-яка майбутня
-mutating дія через dispatcher повинна пройти той самий approval gate, що й
-console dispatcher: `requiresApproval=true`, explicit founder approval у
-Telegram, audit trail, і тільки після цього n8n continuation. Це не дозволяє
-OpenClaw робити silent writes навіть якщо він сформував правильний task payload.
+У v0 OpenClaw лишається read-only co-founder bot-ом. Для поточного main важливо
+не змішувати два execution paths: WF-20 покриває dispatcher-envelope /
+specialist-agent routing, а Phase 4 write-tools описані в ADR-0036 і виконуються
+через console-side approval + `/api/internal/openclaw/write/*` endpoints.
+
+Інваріант один для обох шляхів: будь-яка mutating дія повинна пройти explicit
+founder approval у Telegram, мати audit trail, і тільки після цього може
+продовжити execution. `source="openclaw"` є audit/routing metadata, а не
+дозволом на silent writes.
 
 `query_app_db` table-allowlist (read-only role, parameterized only):
 

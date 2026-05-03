@@ -148,10 +148,11 @@ cross-domain знання продукту. Це робить його _парт
 - Dispatcher compatibility — WF-20 (`20-agent-dispatcher.json`) приймає той
   самий task envelope для `source="telegram-console"` і `source="openclaw"`.
   Це не робить OpenClaw execution layer-ом: OpenClaw формує/пояснює intent,
-  dispatcher/n8n маршрутизує agent work, а mutating tasks лишаються за
-  explicit approval у Telegram. CI/test/check задачі маршрутизуються до
-  `qa-release`, щоб запити на перевірку PR/CI не падали в generic architect
-  lane.
+  а WF-20 маршрутизує dispatcher-envelope / specialist-agent work. Поточні
+  OpenClaw write-tools лишаються окремим ADR-0036 path через approval-card +
+  server write endpoints; WF-20 не замінює цей path. CI/test/check задачі
+  маршрутизуються до `qa-release`, щоб запити на перевірку PR/CI не падали в
+  generic architect lane.
 
 **Acceptance:**
 

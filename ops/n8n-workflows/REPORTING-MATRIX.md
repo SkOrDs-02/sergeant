@@ -96,9 +96,12 @@ $env.TELEGRAM_TOPIC_INCIDENTS }}`). Вкажи обидва топіки в env 
 ⁽³⁾ WF-18 шле в `#incidents` тільки коли GitHub Actions audit job має `conclusion=failure`. Success runs мовчать.
 
 ⁽⁴⁾ WF-20 приймає dispatcher contract і від `source="telegram-console"`, і
-від `source="openclaw"`. Поле `source` — лише audit/routing metadata: mutating
-actions все одно потребують explicit Telegram approval перед continuation.
-CI/test/check задачі маршрутизуються в specialist lane `qa-release`.
+від `source="openclaw"` для dispatcher-envelope / specialist-agent flows. Поточні
+OpenClaw Phase 4 write-tools не виконуються через WF-20: вони йдуть ADR-0036
+path через console-side approval і `/api/internal/openclaw/write/*` endpoints.
+Поле `source` — лише audit/routing metadata; mutating actions завжди потребують
+explicit Telegram approval. CI/test/check задачі маршрутизуються в specialist
+lane `qa-release`.
 
 ## Escalation flow (hierarchy of pain)
 
