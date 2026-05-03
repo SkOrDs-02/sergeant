@@ -1,8 +1,11 @@
+import crypto from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { safeBackupKeyFromToken } from "./backupKey.js";
 
-const SECRET =
-  "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+// Тестові секрети генеруються на льоту, щоб не зберігати hex-literal у репо
+// (інакше gitleaks/secret-scan-и злітають на ньому як на живому ключі).
+const SECRET = crypto.randomBytes(32).toString("hex");
+const ALT_SECRET = crypto.randomBytes(32).toString("hex");
 
 describe("safeBackupKeyFromToken", () => {
   it("returns a stable 32-char hex digest for a fixed (userId, token, secret)", () => {
@@ -32,11 +35,7 @@ describe("safeBackupKeyFromToken", () => {
 
   it("rotates with the server secret — different secrets → different keys", () => {
     const a = safeBackupKeyFromToken("user_1", "abc", SECRET);
-    const b = safeBackupKeyFromToken(
-      "user_1",
-      "abc",
-      "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-    );
+    const b = safeBackupKeyFromToken("user_1", "abc", ALT_SECRET);
     expect(a).not.toBe(b);
   });
 
