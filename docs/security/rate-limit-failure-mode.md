@@ -1,5 +1,6 @@
 # Rate-limit failure mode
 
+> **Status:** Active
 > **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
 
 ## TL;DR

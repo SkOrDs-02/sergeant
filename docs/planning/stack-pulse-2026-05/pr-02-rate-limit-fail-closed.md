@@ -56,8 +56,8 @@ if (redis) {
 
 ## Тести
 
-- **Unit:** `apps/server/src/http/__tests__/rateLimit.failmode.test.ts` — два test-case (open/closed).
-- **Integration:** `apps/server/src/http/__tests__/rateLimit.redis-down.test.ts` з Testcontainers Redis, kill container, assert response code per route.
+- **Unit:** `apps/server/src/http/rateLimit.test.ts` — describe-block `rateLimitExpress — fail-closed mode` (open/closed coverage). Реалізовано в [PR #1552](https://github.com/Skords-01/Sergeant/pull/1552).
+- **Integration (follow-up):** Testcontainers-based test з реальним Redis + Postgres, kill container, assert 503 per route — TBD у наступному раунді hardening-у.
 - **Manual:** локально `docker compose stop redis` → curl `/api/auth/sign-in` → 503.
 
 ## Rollout
