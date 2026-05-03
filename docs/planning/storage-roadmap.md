@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-03 by Devin (sync Stage 4 Fizruk progress: PR #027 schema + bundled SQLite migration і PR #028 dual-write LS/MMKV↔SQLite вже на main; PR #029 cut-over reads + PR #030 LS cleanup ще попереду). **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-03 by Devin (sync Stage 4 Fizruk progress: PR #027 schema + bundled SQLite migration, PR #028 dual-write LS/MMKV↔SQLite, та PR #029 cut-over reads + server `applyFizruk*` apply-функції — усі на main; лишається PR #030 LS cleanup). **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -642,20 +642,45 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   `applyFizrukCustomExercises` / `applyFizrukMeasurements`).
 - **Dep.** PR #027 (schema + client migration runner).
 
-##### **PR #029 — `feat(fizruk): cut-over reads to SQLite, deprecate LS`** ⏳ PENDING
+##### **PR #029 — `feat(fizruk): cut-over reads to SQLite, server apply-fns`** ✅ MERGED
 
-- **Scope.** Reads ідуть з SQLite через `fizruk` sqliteReader (mirror з
-  `apps/web/src/modules/routine/lib/sqliteReader.ts`). LS-write залишається
-  на ~2 тижні як safety net. Sync `module_data.fizruk` blob більше не
-  оновлюється з клієнта (`fizruk` виключається з `SYNC_MODULES`).
-- **Server-side apply.** Додати `applyFizrukWorkouts` /
-  `applyFizrukItems` / `applyFizrukSets` / `applyFizrukCustomExercises` /
-  `applyFizrukMeasurements` у `OP_LOG_TABLE_REGISTRY`. Бекфіл через
-  `module_data.fizruk` → `fizruk_*` per-user під feature-flag
-  адміністратора.
+- **Реалізовано (server).** `apps/server/src/modules/sync/syncV2.ts` —
+  5 split apply-функцій (`applyFizrukWorkouts`, `applyFizrukItems`,
+  `applyFizrukSets`, `applyFizrukCustomExercises`,
+  `applyFizrukMeasurements`) додано у `OP_LOG_TABLE_REGISTRY`. Кожна з них
+  валідує `id`, перевіряє ownership (`user_id`), застосовує LWW-guard
+  (`existing.updated_at < clientTs`), підтримує soft-delete
+  (`UPDATE deleted_at = clientTs` замість DELETE) і парсить опціональні
+  числові/JSON поля (helper-и `parseRequiredDate` / `parseOptionalNumber`
+  / `parseOptionalInt` / `toJsonbParam`). FK-violation на parent
+  (`workout_id` / `workout_item_id`) ловиться SAVEPOINT-ом
+  `syncV2Push`-у і повертається як `apply_failed`.
+- **Реалізовано (web).** `apps/web/src/modules/fizruk/lib/sqliteReader.ts`
+  тримає кеш `{ workouts, customExercises, measurements }`. Бутстрап
+  через `sqliteReadBoot.ts` + `useFizrukSqliteReadBoot` (idempotent,
+  fire-and-forget, fail-soft). `useWorkouts` / `useMeasurements` /
+  `useExerciseCatalog` overlay-ять зі SQLite-кешу під фічфлаґом
+  `feature.fizruk.sqlite_v2.read_sqlite` (LS читає лишається як перша
+  paint synchronous-fallback, ніколи не блокується на SQLite).
+  Pub-sub нотифікація між хуками — `sqliteReadGate.ts` (`useSyncExternalStore`
+  - tick counter, refresh by `notifyFizrukSqliteCacheRefresh`).
+- **Реалізовано (mobile).** `apps/mobile/src/modules/fizruk/lib/sqliteReader.ts`
+  — паритет shape-а кешу для майбутнього read cutover; UI overlay
+  лишився на наступний mobile PR (мобільний routine має той самий tier-up
+  pattern). FK / soft-delete / LWW семантика повністю мирорить web.
+- **Тести.**
+  `apps/server/src/modules/sync/syncV2.integration.test.ts` — 5 нових
+  describe-кейсів: insert→update, LWW reject, soft-delete, parent-then-child
+  FK у одному push-батчі, `invalid_measured_at`-валідація.
+  `apps/web/src/modules/fizruk/lib/sqliteReader.test.ts` — 7 unit-тестів
+  на refresh / filter by user / soft-delete exclude / hydrate
+  custom-exercises + measurements / cached state.
 - **Feature flag.** `feature.fizruk.sqlite_v2.read_sqlite` (default off)
   — потребує увімкненого `dual_write`. Toggle off → reads повертаються
-  на LS path; SQLite дані лишаються.
+  на LS path; SQLite дані лишаються (нічого не дропається).
+- **Не входить.** Outbox / cloudsync push з `fizruk_*` через `/v2/sync/push`
+  (web/mobile pull/push pipeline), backfill `module_data.fizruk` →
+  `fizruk_*` per-user. Це вирішується PR #029a / PR #030.
 - **Dep.** PR #027 (schema), PR #028 (dual-write).
 
 ##### **PR #030 — `chore(fizruk): remove LS path, drop module_data.fizruk`** ⏳ PENDING

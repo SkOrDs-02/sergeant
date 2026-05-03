@@ -151,7 +151,11 @@ beforeEach(async () => {
   // створили `user` row-и для попередніх suite-ів. Точкове вичищення
   // ізолює тести між собою.
   await testPool.query(
-    `TRUNCATE sync_op_log, sync_audit_log, routine_entries, routine_streaks RESTART IDENTITY CASCADE`,
+    `TRUNCATE sync_op_log, sync_audit_log,
+              routine_entries, routine_streaks,
+              fizruk_workout_sets, fizruk_workout_items, fizruk_workouts,
+              fizruk_custom_exercises, fizruk_measurements
+              RESTART IDENTITY CASCADE`,
   );
 });
 
@@ -805,6 +809,339 @@ describe("syncV2Push / syncV2Pull integration", () => {
       };
       expect(body.accepted).toBe(0);
       expect(body.results[0].reason).toBe("clock_skew");
+    },
+    TIMEOUT_MS,
+  );
+});
+
+// ---------------------------------------------------------------------
+// Fizruk apply-функції — Stage 4 PR #029.
+//
+// Покриваємо найважливіші інваріанти:
+//   1. Per-row UPSERT для `fizruk_workouts` працює (insert → update).
+//   2. LWW guard на `fizruk_workouts` — старіший client_ts відкидається.
+//   3. Soft-delete (op="delete") пише `deleted_at` замість DELETE row-у.
+//   4. FK-зв'язок `fizruk_workout_items.workout_id` коректно застосовує
+//      child після parent (один батч, один push).
+//   5. `applyFizrukMeasurements` — валідує `measured_at` як required.
+//
+// Решту 5-х apply-фн (sets / custom_exercises) покриває та сама
+// shape — UUID PK, user-ownership, LWW, soft-delete — тому окремі
+// e2e не потрібні: при регресії `fizruk_workouts` тести впадуть першими.
+// ---------------------------------------------------------------------
+describe("syncV2Push — fizruk apply-функції (PR #029)", () => {
+  it(
+    "fizruk_workouts: insert → update (новіший client_ts перезаписує)",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-fz-w");
+
+      const workoutId = "00000000-0000-4000-8000-000000000001";
+      const t1 = isoNow(-2_000);
+      const t2 = isoNow();
+
+      const r1 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fz-w",
+          body: {
+            ops: [
+              {
+                table: "fizruk_workouts",
+                op: "insert" as const,
+                row: {
+                  id: workoutId,
+                  user_id: "u-fz-w",
+                  started_at: t1,
+                  ended_at: null,
+                  note: "leg day",
+                  groups_json: [],
+                },
+                client_ts: t1,
+                idempotency_key: "fz-w-insert",
+              },
+            ],
+          },
+        }),
+        r1,
+      );
+      expect((r1.body as { accepted: number }).accepted).toBe(1);
+
+      const r2 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fz-w",
+          body: {
+            ops: [
+              {
+                table: "fizruk_workouts",
+                op: "update" as const,
+                row: {
+                  id: workoutId,
+                  user_id: "u-fz-w",
+                  started_at: t1,
+                  ended_at: t2,
+                  note: "leg day — done",
+                  groups_json: [],
+                },
+                client_ts: t2,
+                idempotency_key: "fz-w-update",
+              },
+            ],
+          },
+        }),
+        r2,
+      );
+      expect((r2.body as { accepted: number }).accepted).toBe(1);
+
+      const row = await testPool.query<{
+        note: string;
+        ended_at: Date | null;
+      }>(`SELECT note, ended_at FROM fizruk_workouts WHERE id = $1`, [
+        workoutId,
+      ]);
+      expect(row.rows).toHaveLength(1);
+      expect(row.rows[0].note).toBe("leg day — done");
+      expect(row.rows[0].ended_at).not.toBeNull();
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "fizruk_workouts: старіший client_ts після свіжішого reject-нуто (LWW)",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-fz-lww");
+
+      const workoutId = "00000000-0000-4000-8000-000000000002";
+      const newer = isoNow();
+      const older = isoNow(-5_000);
+
+      const r1 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fz-lww",
+          body: {
+            ops: [
+              {
+                table: "fizruk_workouts",
+                op: "insert" as const,
+                row: {
+                  id: workoutId,
+                  user_id: "u-fz-lww",
+                  started_at: newer,
+                  note: "newer",
+                },
+                client_ts: newer,
+                idempotency_key: "fz-lww-newer",
+              },
+            ],
+          },
+        }),
+        r1,
+      );
+      expect((r1.body as { accepted: number }).accepted).toBe(1);
+
+      const r2 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fz-lww",
+          body: {
+            ops: [
+              {
+                table: "fizruk_workouts",
+                op: "update" as const,
+                row: {
+                  id: workoutId,
+                  user_id: "u-fz-lww",
+                  started_at: older,
+                  note: "older",
+                },
+                client_ts: older,
+                idempotency_key: "fz-lww-older",
+              },
+            ],
+          },
+        }),
+        r2,
+      );
+      const r2Body = r2.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(r2Body.accepted).toBe(0);
+      expect(r2Body.results[0].status).toBe("rejected");
+      expect(r2Body.results[0].reason).toBe("lww_conflict");
+
+      const row = await testPool.query<{ note: string }>(
+        `SELECT note FROM fizruk_workouts WHERE id = $1`,
+        [workoutId],
+      );
+      expect(row.rows[0].note).toBe("newer");
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "fizruk_workouts: op='delete' — soft-delete, рядок лишається з deleted_at",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-fz-del");
+
+      const workoutId = "00000000-0000-4000-8000-000000000003";
+      const t1 = isoNow(-2_000);
+      const t2 = isoNow();
+
+      const r1 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fz-del",
+          body: {
+            ops: [
+              {
+                table: "fizruk_workouts",
+                op: "insert" as const,
+                row: {
+                  id: workoutId,
+                  user_id: "u-fz-del",
+                  started_at: t1,
+                },
+                client_ts: t1,
+                idempotency_key: "fz-del-insert",
+              },
+            ],
+          },
+        }),
+        r1,
+      );
+      expect((r1.body as { accepted: number }).accepted).toBe(1);
+
+      const r2 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fz-del",
+          body: {
+            ops: [
+              {
+                table: "fizruk_workouts",
+                op: "delete" as const,
+                row: { id: workoutId, user_id: "u-fz-del" },
+                client_ts: t2,
+                idempotency_key: "fz-del-delete",
+              },
+            ],
+          },
+        }),
+        r2,
+      );
+      expect((r2.body as { accepted: number }).accepted).toBe(1);
+
+      const row = await testPool.query<{ deleted_at: Date | null }>(
+        `SELECT deleted_at FROM fizruk_workouts WHERE id = $1`,
+        [workoutId],
+      );
+      expect(row.rows).toHaveLength(1);
+      expect(row.rows[0].deleted_at).not.toBeNull();
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "fizruk_workout_items: parent-then-child в одному батчі застосовуються коректно",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-fz-fk");
+
+      const workoutId = "00000000-0000-4000-8000-000000000010";
+      const itemId = "00000000-0000-4000-8000-000000000011";
+      const ts = isoNow();
+
+      const res = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fz-fk",
+          body: {
+            ops: [
+              {
+                table: "fizruk_workouts",
+                op: "insert" as const,
+                row: {
+                  id: workoutId,
+                  user_id: "u-fz-fk",
+                  started_at: ts,
+                },
+                client_ts: ts,
+                idempotency_key: "fz-fk-w",
+              },
+              {
+                table: "fizruk_workout_items",
+                op: "insert" as const,
+                row: {
+                  id: itemId,
+                  workout_id: workoutId,
+                  user_id: "u-fz-fk",
+                  exercise_id: "ex-1",
+                  name_uk: "Присідання",
+                  primary_group: "legs",
+                  type: "strength",
+                  sort_order: 0,
+                },
+                client_ts: ts,
+                idempotency_key: "fz-fk-i",
+              },
+            ],
+          },
+        }),
+        res,
+      );
+      expect((res.body as { accepted: number }).accepted).toBe(2);
+
+      const row = await testPool.query<{ workout_id: string }>(
+        `SELECT workout_id FROM fizruk_workout_items WHERE id = $1`,
+        [itemId],
+      );
+      expect(row.rows[0].workout_id).toBe(workoutId);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "fizruk_measurements: insert без measured_at reject-ається з invalid_measured_at",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-fz-m");
+
+      const id = "00000000-0000-4000-8000-000000000020";
+      const ts = isoNow();
+
+      const res = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fz-m",
+          body: {
+            ops: [
+              {
+                table: "fizruk_measurements",
+                op: "insert" as const,
+                row: {
+                  id,
+                  user_id: "u-fz-m",
+                  weight_kg: 80,
+                },
+                client_ts: ts,
+                idempotency_key: "fz-m-bad",
+              },
+            ],
+          },
+        }),
+        res,
+      );
+      const body = res.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(body.accepted).toBe(0);
+      expect(body.results[0].reason).toBe("invalid_measured_at");
     },
     TIMEOUT_MS,
   );

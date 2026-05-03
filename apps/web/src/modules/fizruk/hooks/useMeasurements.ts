@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
+import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
+import {
+  useFizrukSqliteReadFlag,
+  useFizrukSqliteReadTick,
+} from "../lib/sqliteReadGate";
 
 const KEY = STORAGE_KEYS.FIZRUK_MEASUREMENTS;
 
@@ -49,11 +54,22 @@ export const MEASURE_FIELDS = [
 
 export function useMeasurements() {
   const [entries, setEntries] = useState<MeasurementEntry[]>([]);
+  const sqliteReadEnabled = useFizrukSqliteReadFlag();
+  const sqliteCacheTick = useFizrukSqliteReadTick();
 
   useEffect(() => {
     const parsed = safeReadLS(KEY, []);
     if (Array.isArray(parsed)) setEntries(parsed);
   }, []);
+
+  // Stage 4 PR #029: under `feature.fizruk.sqlite_v2.read_sqlite`,
+  // overlay measurements from the SQLite cache once it's warm.
+  useEffect(() => {
+    if (!sqliteReadEnabled) return;
+    const cache = getCachedFizrukSqliteState();
+    if (cache.refreshedAt === null) return;
+    setEntries(cache.measurements);
+  }, [sqliteReadEnabled, sqliteCacheTick]);
 
   const persist = useCallback((next: MeasurementEntry[]) => {
     setEntries(next);
