@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-03 by @Skords-01 (Phase 5 strict TS clean-up: `noImplicitOverride` + explicit `allowJs: false` on web/console). **Next review:** 2026-08-03.
 > **Status:** Active
 
 Аналіз кодової бази `apps/web/src` (649 source файлів, ~102k рядків — без тестів і `__tests__/`; 2026-05-03 re-audit).
@@ -559,6 +559,37 @@ modules/fizruk/components/workouts/WorkoutJournalSection`;
   fix-у `modules/{finyk,fizruk}` не зменшує scope** — це була б та сама
   Phase 4. Висновок: рухатись треба per-file (починаючи з топ-блокерів),
   без проміжного "Phase 3.2".
+
+**Phase 5 clean-up (2026-05-03, post-PR4):** додатковий strict-режим прапорів
+
+- explicit `allowJs: false` на web/console — фінальний lock down strict TS
+  у repo:
+
+* `packages/config/tsconfig.base.json` — додано `noImplicitOverride: true`.
+  Прапор тепер успадковується усіма app-/package-tsconfig-ами; нові
+  override-методи без `override` keyword падають у typecheck.
+  - `apps/web/src/core/ErrorBoundary.tsx`,
+    `apps/web/src/core/ModuleErrorBoundary.tsx`,
+    `apps/web/src/shared/components/ui/SectionErrorBoundary.tsx` —
+    додано `override` до 5 React class methods (`componentDidCatch`,
+    `render`).
+  - `packages/db-schema/src/migrate/runner.ts` — `MigrationFailedError.cause`
+    позначено `override` (наслідується з `Error.cause`).
+* `apps/web/tsconfig.json` — додано explicit `"allowJs": false`
+  (override наслідуваного `true` з base) і прибрано
+  `vite.config.js`/`vitest.config.js` з `include` (build-config-и не
+  type-check-аються разом з src).
+* `apps/console/tsconfig.json` — додано explicit `"allowJs": false`
+  (у `apps/console/src` немає JS-файлів, прапор виставлено на майбутнє
+  без зміни поведінки).
+* `apps/web/src/modules/fizruk/lib/dualWrite/__tests__/adapter.test.ts` —
+  drive-by фікс 18 pre-existing TS7053 помилок, що були прихованими
+  до увімкнення `noImplicitOverride` через свою власну природу
+  (10 викликів `handle.client.all<…>()` обернуто в `await`, бо
+  `SqliteMigrationClient.all()` має сигнатуру `R[] | Promise<R[]>`).
+* `apps/server/tsconfig.json` (`allowJs: true`) і
+  `apps/mobile-shell/tsconfig.json` (наслідує `true`) залишено as-is —
+  вони навмисно тримають JS-файли (`migrate.mjs`, build helpers).
 
 **Strict-pipeline regression-фікси (2026-05-02):** Pull-to-refresh PR #1330
 вніс 3 strict-помилки, що ламали `tsc -p tsconfig.strict.json`. Виправлено

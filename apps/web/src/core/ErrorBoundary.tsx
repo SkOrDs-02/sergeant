@@ -51,7 +51,7 @@ export class ErrorBoundary extends Component<
     return { error };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
+  override componentDidCatch(error: Error, info: ErrorInfo) {
     if (isChunkLoadError(error)) return;
     // Lazy-forward: якщо Sentry SDK ще не підтягнувся, це no-op;
     // якщо вже підтягнувся — піде у Sentry.captureException.
@@ -64,7 +64,7 @@ export class ErrorBoundary extends Component<
     }
   }
 
-  render() {
+  override render() {
     const { error } = this.state;
     const { fallback: Fallback, children } = this.props;
     if (error) {
@@ -94,9 +94,7 @@ export class ErrorBoundary extends Component<
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
-          <h1 className="text-lg font-bold text-text mb-1">
-            Щось пішло не так
-          </h1>
+          <h1 className="text-style-title text-text mb-1">Щось пішло не так</h1>
           <p className="text-sm text-muted mb-4 text-center max-w-xs">
             Виникла непередбачена помилка. Спробуй перезавантажити сторінку.
           </p>
@@ -107,14 +105,14 @@ export class ErrorBoundary extends Component<
             <button
               type="button"
               onClick={this.resetError}
-              className="flex-1 px-5 py-2.5 rounded-2xl bg-primary text-bg text-sm font-semibold shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="flex-1 px-5 py-2.5 rounded-2xl bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             >
               Спробувати ще
             </button>
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="flex-1 px-5 py-2.5 rounded-2xl bg-panel border border-line text-text text-sm font-medium shadow-card hover:shadow-float transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+              className="flex-1 px-5 py-2.5 rounded-2xl bg-panel border border-line text-text text-style-label shadow-card hover:shadow-float transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
             >
               Перезавантажити
             </button>

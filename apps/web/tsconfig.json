@@ -2,6 +2,7 @@
   "extends": "@sergeant/config/tsconfig.react.json",
   "compilerOptions": {
     "strict": true,
+    "allowJs": false,
     "checkJs": false,
     "types": ["vite/client"],
     "paths": {
@@ -29,6 +30,6 @@
       "@nutrition/*": ["./src/modules/nutrition/*"]
     }
   },
-  "include": ["src/**/*", "vite.config.js", "vitest.config.js"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "src/sw.ts"]
 }

@@ -24,11 +24,11 @@ export class SectionErrorBoundary extends Component<
     return { error };
   }
 
-  componentDidCatch(_error: Error, _info: ErrorInfo): void {
+  override componentDidCatch(_error: Error, _info: ErrorInfo): void {
     // no-op; rendering fallback via state.error
   }
 
-  render() {
+  override render() {
     const { error } = this.state;
     if (error) {
       const title = this.props.title || "Помилка";
@@ -36,7 +36,7 @@ export class SectionErrorBoundary extends Component<
       const onReset = this.props.onReset;
       return (
         <div className="rounded-2xl border border-danger/40 bg-danger/10 p-4 text-text shadow-card">
-          <div className="text-sm font-semibold">{title}</div>
+          <div className="text-style-label">{title}</div>
           <div className="text-xs text-subtle mt-1">
             Ця секція впала, але інші частини модуля працюють.
           </div>
