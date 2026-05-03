@@ -136,7 +136,10 @@ function summariseWriteInput(record: ApprovalRecord): string {
 //    `_Phase ..._` — Telegram повертав 400 "Can't find end of the entity".
 // HTML mode безпечний — потрібно екранити тільки `<`, `>`, `&`. Тримаємо
 // розмітку мінімальною: <b>, <i>, <code>.
-const HELP_TEXT = [
+//
+// Exported для `parse-mode-guard.test.ts` — regression-сторож проти
+// reintroduce-у Markdown-варіанту (інцидент 2026-05-03, PR #1568).
+export const HELP_TEXT = [
   "<b>OpenClaw</b> — твій co-founder bot.",
   "",
   "Я аналізую дані Sergeant (PG, Stripe, Sentry, PostHog, GitHub, n8n logs, strategy docs)",
