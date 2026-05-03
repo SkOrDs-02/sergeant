@@ -707,5 +707,69 @@ export default [
       ],
     },
   },
+  // Module-size guardrail (initiative 0001) — `max-lines: [error, 600]`
+  // for `apps/web/src/**/*.{ts,tsx}`. Enforces decomposition discipline:
+  // a single TS/TSX file in the web bundle must not exceed 600 LOC
+  // (skipBlankLines + skipComments). New violations fail CI; existing
+  // monoliths are explicitly allowlisted with a deadline TODO so the
+  // queue stays visible. See `docs/initiatives/0001-module-decomposition.md`.
+  //
+  // Scope rationale:
+  // - Limited to `apps/web/src/**` — the audit's red-flag table flagged
+  //   web-only monoliths; `apps/server/src/modules/chat/agent.ts` was
+  //   already decomposed (handlers / tools / cache) and is the precedent.
+  //   `apps/mobile/**` is out of scope (initiative 0002 owns that surface).
+  // - `**/__tests__/**` and `*.{test,spec}.{ts,tsx}` are exempt — large
+  //   fixture files and snapshot-style suites are legitimate.
+  // - Generated files (`apps/web/src/generated/**`) are exempt for the
+  //   same reason — they are regenerated and never hand-edited.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/web/src/**/*.test.{ts,tsx}",
+      "apps/web/src/**/*.spec.{ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+      "apps/web/src/generated/**",
+    ],
+    rules: {
+      "max-lines": [
+        "error",
+        { max: 600, skipBlankLines: true, skipComments: true },
+      ],
+    },
+  },
+  // Allowlist for existing >600 LOC monoliths in `apps/web/src/**`.
+  // Each entry MUST stay paired with a Phase 2 PR in
+  // `docs/initiatives/0001-module-decomposition.md`. When a file is
+  // decomposed below 600 LOC, drop its entry from this list — the
+  // top-level rule above will then enforce it going forward.
+  //
+  // TODO(0001-module-decomposition): deadline 2026-06-15 — drop entries
+  // as the matching PR (decomp-routine-app, decomp-finyk-storage, etc.)
+  // ships. The allowlist is intentionally explicit (not a glob) so each
+  // file shows up in `git blame` / `git log` against this rule.
+  {
+    files: [
+      "apps/web/src/modules/routine/RoutineApp.tsx",
+      "apps/web/src/modules/nutrition/components/LogCard.tsx",
+      "apps/web/src/modules/fizruk/pages/Workouts.tsx",
+      "apps/web/src/modules/fizruk/pages/Progress.tsx",
+      "apps/web/src/modules/nutrition/NutritionApp.tsx",
+      "apps/web/src/modules/finyk/hooks/useStorage.ts",
+      "apps/web/src/core/lib/hubChatContext.ts",
+      "apps/web/src/core/hub/HubDashboard.tsx",
+      "apps/web/src/modules/nutrition/components/DailyPlanCard.tsx",
+      "apps/web/src/core/lib/chatActions/types.ts",
+      "apps/web/src/core/lib/chatActions/fizrukActions.ts",
+      "apps/web/src/modules/fizruk/pages/Exercise.tsx",
+      "apps/web/src/modules/finyk/pages/AssetsTable.tsx",
+      "apps/web/src/shared/components/ui/Icon.tsx",
+      "apps/web/src/sw.ts",
+      "apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx",
+    ],
+    rules: {
+      "max-lines": "off",
+    },
+  },
   eslintConfigPrettier,
 ];
