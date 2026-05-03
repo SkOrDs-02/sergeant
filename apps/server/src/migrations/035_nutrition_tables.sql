@@ -1,4 +1,4 @@
--- 031: nutrition_meals + nutrition_pantries + nutrition_pantry_items +
+-- 035: nutrition_meals + nutrition_pantries + nutrition_pantry_items +
 -- nutrition_prefs + nutrition_recipes — normalized target shape for the
 -- Nutrition module (Stage 4 / PR #031 of `docs/planning/storage-roadmap.md`).
 --

@@ -1,4 +1,4 @@
-// Migration 031 — focused round-trip for the Nutrition tables
+// Migration 035 — focused round-trip for the Nutrition tables
 // (Stage 4 / PR #031 of `docs/planning/storage-roadmap.md`).
 //
 // Complements `rollback-sanity.test.ts` (which round-trips every
@@ -6,9 +6,9 @@
 //
 //   1. applying every forward migration leaves all 5 nutrition tables
 //      present with the columns / indexes documented in
-//      `apps/server/src/migrations/031_nutrition_tables.sql`,
-//   2. running `031_nutrition_tables.down.sql` drops them all,
-//   3. re-applying `031_nutrition_tables.sql` brings them back to a
+//      `apps/server/src/migrations/035_nutrition_tables.sql`,
+//   2. running `035_nutrition_tables.down.sql` drops them all,
+//   3. re-applying `035_nutrition_tables.sql` brings them back to a
 //      byte-identical shape.
 //
 // Mirrors the harness style of `rollback-sanity.test.ts`: real
@@ -81,7 +81,7 @@ beforeAll(async () => {
   } catch (e) {
     skipReason = e instanceof Error ? e.message : String(e);
     console.warn(
-      `[031-nutrition-tables] Skipping: Testcontainers unavailable — ${skipReason}`,
+      `[035-nutrition-tables] Skipping: Testcontainers unavailable — ${skipReason}`,
     );
   }
 }, TIMEOUT_MS);
@@ -159,7 +159,7 @@ async function listColumns(
   }));
 }
 
-describe("031_nutrition_tables migration", () => {
+describe("035_nutrition_tables migration", () => {
   it(
     "creates all 5 nutrition tables and their indexes after forward migration",
     async (ctx) => {
@@ -177,7 +177,7 @@ describe("031_nutrition_tables migration", () => {
       const indexes = await listNutritionIndexes(pool);
       // Per-table primary-key indexes (`nutrition_*_pkey`) are auto-created
       // by Postgres — filter them out so we only assert the explicit
-      // CREATE INDEX statements from 031_nutrition_tables.sql.
+      // CREATE INDEX statements from 035_nutrition_tables.sql.
       const explicit = indexes.filter((i) => !i.endsWith("_pkey"));
       expect(explicit).toEqual([...NUTRITION_INDEXES].sort());
     },
@@ -268,7 +268,7 @@ describe("031_nutrition_tables migration", () => {
   );
 
   it(
-    "031_nutrition_tables.down.sql drops every nutrition_* table",
+    "035_nutrition_tables.down.sql drops every nutrition_* table",
     async (ctx) => {
       if (!dockerAvailable || !pool) {
         ctx.skip();
@@ -279,7 +279,7 @@ describe("031_nutrition_tables migration", () => {
       for (const f of ups) await execSqlFile(pool, f);
       expect((await listTables(pool)).length).toBeGreaterThan(0);
 
-      await execSqlFile(pool, "031_nutrition_tables.down.sql");
+      await execSqlFile(pool, "035_nutrition_tables.down.sql");
       expect(await listTables(pool)).toEqual([]);
       expect(await listNutritionIndexes(pool)).toEqual([]);
     },
@@ -287,7 +287,7 @@ describe("031_nutrition_tables migration", () => {
   );
 
   it(
-    "031_nutrition_tables.down.sql is idempotent",
+    "035_nutrition_tables.down.sql is idempotent",
     async (ctx) => {
       if (!dockerAvailable || !pool) {
         ctx.skip();
@@ -297,10 +297,10 @@ describe("031_nutrition_tables migration", () => {
       await resetSchema(pool);
       for (const f of ups) await execSqlFile(pool, f);
 
-      await execSqlFile(pool, "031_nutrition_tables.down.sql");
+      await execSqlFile(pool, "035_nutrition_tables.down.sql");
       // Second run must not raise — `IF EXISTS` keeps it idempotent
       // per AGENTS rule #4.
-      await execSqlFile(pool, "031_nutrition_tables.down.sql");
+      await execSqlFile(pool, "035_nutrition_tables.down.sql");
     },
     TIMEOUT_MS,
   );
@@ -323,8 +323,8 @@ describe("031_nutrition_tables migration", () => {
         prefs: await listColumns(pool, "nutrition_prefs"),
       };
 
-      await execSqlFile(pool, "031_nutrition_tables.down.sql");
-      await execSqlFile(pool, "031_nutrition_tables.sql");
+      await execSqlFile(pool, "035_nutrition_tables.down.sql");
+      await execSqlFile(pool, "035_nutrition_tables.sql");
 
       const after = {
         tables: await listTables(pool),

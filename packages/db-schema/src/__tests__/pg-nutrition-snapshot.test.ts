@@ -11,7 +11,7 @@ import {
 /**
  * Snapshot tests for the Postgres Drizzle schemas under `pg/nutrition.ts`,
  * locking down the column ordering, types, nullability, indexes, and
- * defaults that mirror migration 031_nutrition_tables.sql.
+ * defaults that mirror migration 035_nutrition_tables.sql.
  *
  * Stage 4 / PR #031 of `docs/planning/storage-roadmap.md`.
  */
@@ -47,7 +47,7 @@ describe("pg/nutritionMeals schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 031", () => {
+  it("declares column types matching migration 035", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
@@ -115,7 +115,7 @@ describe("pg/nutritionPantries schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 031", () => {
+  it("declares column types matching migration 035", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
@@ -159,7 +159,7 @@ describe("pg/nutritionPantryItems schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 031", () => {
+  it("declares column types matching migration 035", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
@@ -205,7 +205,7 @@ describe("pg/nutritionPrefs schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 031", () => {
+  it("declares column types matching migration 035", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
@@ -246,7 +246,7 @@ describe("pg/nutritionRecipes schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 031", () => {
+  it("declares column types matching migration 035", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );

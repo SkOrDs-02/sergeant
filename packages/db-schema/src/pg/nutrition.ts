@@ -13,7 +13,7 @@ import { sql } from "drizzle-orm";
 
 /**
  * Postgres schema for `nutrition_meals` table.
- * Mirrors migration 031_nutrition_tables.sql.
+ * Mirrors migration 035_nutrition_tables.sql.
  *
  * Stage 4 / PR #031 of `docs/planning/storage-roadmap.md` — normalized
  * per-meal rows. Macros are split into columns so cheap aggregates
@@ -60,7 +60,7 @@ export const nutritionMeals = pgTable(
 
 /**
  * Postgres schema for `nutrition_pantries` table.
- * Mirrors migration 031_nutrition_tables.sql.
+ * Mirrors migration 035_nutrition_tables.sql.
  *
  * Per-user pantry definitions. Active-pantry selection is hoisted onto
  * `nutrition_prefs.active_pantry_id` so multi-device LWW on pantry
@@ -90,7 +90,7 @@ export const nutritionPantries = pgTable(
 
 /**
  * Postgres schema for `nutrition_pantry_items` table.
- * Mirrors migration 031_nutrition_tables.sql.
+ * Mirrors migration 035_nutrition_tables.sql.
  *
  * Items within a pantry. Mirrors the existing PantryItem shape
  * (`name + qty + unit + notes`). `qty` is REAL because the parser
@@ -128,7 +128,7 @@ export const nutritionPantryItems = pgTable(
 
 /**
  * Postgres schema for `nutrition_prefs` table.
- * Mirrors migration 031_nutrition_tables.sql.
+ * Mirrors migration 035_nutrition_tables.sql.
  *
  * Per-user singleton row of dietary preferences (kcal/macros targets,
  * meal templates, water goal, reminder settings). The full open-ended
@@ -150,7 +150,7 @@ export const nutritionPrefs = pgTable("nutrition_prefs", {
 
 /**
  * Postgres schema for `nutrition_recipes` table.
- * Mirrors migration 031_nutrition_tables.sql.
+ * Mirrors migration 035_nutrition_tables.sql.
  *
  * Saved recipes. Web currently stores recipes in IndexedDB
  * (`hub_nutrition_recipe_book`); mobile stores them in MMKV under

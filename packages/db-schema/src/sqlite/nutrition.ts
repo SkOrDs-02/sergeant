@@ -10,7 +10,7 @@ import { sql } from "drizzle-orm";
 /**
  * SQLite schema for the `nutrition_meals` table.
  *
- * Mirrors the Postgres version from `apps/server/src/migrations/031_nutrition_tables.sql`
+ * Mirrors the Postgres version from `apps/server/src/migrations/035_nutrition_tables.sql`
  * and `packages/db-schema/src/pg/nutrition.ts`. Hosts the Nutrition meal log
  * on SQLite for both surfaces — web (sqlite-wasm via OPFS-SAH) and mobile
  * (`expo-sqlite`).
