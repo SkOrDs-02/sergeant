@@ -1,0 +1,176 @@
+name: PR size
+
+# Soft size-budget gate (audit row P3-3, "No PR size limits — review fatigue").
+#
+# Computes net `additions + deletions` of the PR, **excluding** generated /
+# vendored / lockfile noise (see `IGNORE_GLOB` below), labels the PR with
+# one of `size/{XS,S,M,L,XL,XXL}`, and warns/fails when the diff is
+# unreasonably large for human review.
+#
+# Thresholds (lines = `additions + deletions`):
+#   XS      <  10
+#   S       < 100
+#   M       < 400
+#   L       < 800
+#   XL      < 1500
+#   XXL    >= 1500
+#
+# Behaviour:
+#   - XS / S / M / L  → label + comment, success.
+#   - XL              → label + comment, success (soft warning).
+#   - XXL             → label + comment, **fails** unless an explicit
+#                       `size/override` label has been applied by a
+#                       maintainer with the rationale in PR description.
+#
+# Doc context: `docs/audits/2026-04-28-sergeant-comprehensive-audit.md`
+# §P3-3 ("Add probot/pr-size"). We use an inline implementation rather
+# than the probot app to avoid an extra GitHub App dependency and keep
+# the policy in-repo.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+concurrency:
+  group: pr-size-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  size:
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+
+      - name: Compute PR diff size and label
+        # actions/github-script v8.0.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          script: |
+            // Globs we exclude from the size budget. Keep this list small and
+            // boring — only files where a large diff is structurally normal
+            // and not human-authored line-by-line.
+            const IGNORE_GLOB = [
+              /^pnpm-lock\.yaml$/,
+              /^package-lock\.json$/,
+              /^yarn\.lock$/,
+              /^.*\.snap$/,
+              /^.*\/__snapshots__\//,
+              /^docs\/governance\/hard-rules-matrix\.md$/,
+              /^docs\/playbooks\/INDEX\.md$/,
+              /^docs\/api\/openapi\.json$/,
+              /^docs\/api\/openapi\.yaml$/,
+              /^apps\/.*\/ios\/Pods\//,
+              /^apps\/.*\/android\/\.gradle\//,
+            ];
+
+            const SIZES = [
+              { label: "size/XS", max: 10 },
+              { label: "size/S", max: 100 },
+              { label: "size/M", max: 400 },
+              { label: "size/L", max: 800 },
+              { label: "size/XL", max: 1500 },
+              { label: "size/XXL", max: Infinity },
+            ];
+
+            const OVERRIDE_LABEL = "size/override";
+
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.info("No pull_request on context — skipping.");
+              return;
+            }
+
+            // Pull every file in the PR (paginate; PRs can have >100 files).
+            const files = await github.paginate(
+              github.rest.pulls.listFiles,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                per_page: 100,
+              },
+            );
+
+            let additions = 0;
+            let deletions = 0;
+            let counted = 0;
+            let ignored = 0;
+            for (const f of files) {
+              const skip = IGNORE_GLOB.some((re) => re.test(f.filename));
+              if (skip) {
+                ignored += 1;
+                continue;
+              }
+              additions += f.additions;
+              deletions += f.deletions;
+              counted += 1;
+            }
+            const total = additions + deletions;
+            core.info(
+              `PR #${pr.number}: ${counted} counted file(s), ${ignored} ignored, +${additions} -${deletions} = ${total} lines.`,
+            );
+
+            const bucket = SIZES.find((s) => total < s.max) ?? SIZES[SIZES.length - 1];
+            core.info(`Bucket: ${bucket.label}`);
+
+            // Reset previous size labels (and OVERRIDE_LABEL is preserved).
+            const existing = pr.labels.map((l) => l.name);
+            const stale = existing.filter(
+              (n) => n.startsWith("size/") && n !== bucket.label && n !== OVERRIDE_LABEL,
+            );
+            for (const name of stale) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  name,
+                });
+              } catch (err) {
+                core.info(`Could not remove label ${name}: ${err.message}`);
+              }
+            }
+
+            if (!existing.includes(bucket.label)) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: [bucket.label],
+              });
+            }
+
+            const overridden = existing.includes(OVERRIDE_LABEL);
+            const failHard = bucket.label === "size/XXL" && !overridden;
+            const warnSoft = bucket.label === "size/XL" || (bucket.label === "size/XXL" && overridden);
+
+            // Step summary so a reviewer can read the verdict without
+            // expanding the action log.
+            await core.summary
+              .addHeading(`PR size: ${bucket.label}`)
+              .addRaw(
+                `**${total}** lines changed across **${counted}** counted file(s) (+${additions} / -${deletions}). Ignored ${ignored} file(s) by glob.`,
+                true,
+              )
+              .write();
+
+            if (failHard) {
+              core.setFailed(
+                `PR exceeds review-fatigue threshold (${total} lines ≥ 1500). ` +
+                `Split into smaller change-sets per CONTRIBUTING.md "найменший узгоджений change-set", ` +
+                `or apply the \`${OVERRIDE_LABEL}\` label with a reviewer rationale in the PR description if this size is unavoidable (e.g. codemod, generated migration).`,
+              );
+              return;
+            }
+            if (warnSoft) {
+              core.warning(
+                `PR is ${bucket.label} (${total} lines). Consider splitting; reviewer fatigue grows non-linearly above ~800 lines.`,
+              );
+            }
