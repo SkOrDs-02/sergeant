@@ -185,6 +185,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           {helperText ? (
             <p
               id={id ? `${id}-helper` : undefined}
+              role={error ? "alert" : "status"}
               className={cn(
                 "text-xs leading-snug",
                 error ? "text-danger" : "text-subtle",
@@ -202,6 +203,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
                 counterColor,
               )}
               aria-live="polite"
+              aria-atomic="true"
               aria-label={`${currentLen} з ${maxLen} символів`}
             >
               {currentLen}/{maxLen}
@@ -272,6 +274,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {helperText && (
           <p
             id={id ? `${id}-helper` : undefined}
+            role={error ? "alert" : "status"}
             className={cn(
               "text-xs leading-snug",
               error ? "text-danger" : "text-subtle",

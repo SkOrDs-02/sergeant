@@ -70,7 +70,9 @@ export function Popover({
   const open = isControlled ? controlledOpen : internalOpen;
   const wrapperRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
+  const prevOpenRef = useRef(open);
 
   const setOpen = useCallback(
     (next: boolean | ((prev: boolean) => boolean)) => {
@@ -111,13 +113,17 @@ export function Popover({
     return () => document.removeEventListener("keydown", handleKey);
   }, [open, close]);
 
-  // Focus first focusable child on open
+  // Focus first focusable child on open; restore focus to trigger on close
   useEffect(() => {
-    if (!open || !panelRef.current) return;
-    const focusable = panelRef.current.querySelector<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
-    focusable?.focus();
+    if (open && panelRef.current) {
+      const focusable = panelRef.current.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      focusable?.focus();
+    } else if (prevOpenRef.current && !open) {
+      triggerRef.current?.focus();
+    }
+    prevOpenRef.current = open;
   }, [open]);
 
   return (
@@ -127,6 +133,7 @@ export function Popover({
     >
       {/* Trigger — wrapped in a button-like click handler */}
       <div
+        ref={triggerRef}
         role="button"
         tabIndex={0}
         aria-expanded={open}
@@ -148,6 +155,7 @@ export function Popover({
           ref={panelRef}
           id={panelId}
           role="menu"
+          tabIndex={-1}
           className={cn(
             "absolute z-50 min-w-[180px]",
             "bg-panel border border-line rounded-2xl shadow-float",
@@ -156,6 +164,28 @@ export function Popover({
             placementClasses[placement],
             className,
           )}
+          onKeyDown={(e) => {
+            const items = Array.from(
+              panelRef.current?.querySelectorAll<HTMLElement>(
+                '[role="menuitem"]:not([disabled]):not([aria-disabled="true"])',
+              ) ?? [],
+            );
+            if (!items.length) return;
+            const idx = items.indexOf(document.activeElement as HTMLElement);
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              items[(idx + 1) % items.length]?.focus();
+            } else if (e.key === "ArrowUp") {
+              e.preventDefault();
+              items[(idx - 1 + items.length) % items.length]?.focus();
+            } else if (e.key === "Home") {
+              e.preventDefault();
+              items[0]?.focus();
+            } else if (e.key === "End") {
+              e.preventDefault();
+              items[items.length - 1]?.focus();
+            }
+          }}
         >
           {children}
         </div>

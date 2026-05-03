@@ -1,4 +1,5 @@
-import { memo, type ReactNode } from "react";
+import { memo, useCallback, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { type User } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -10,6 +11,8 @@ import { HubSettingsPage } from "../hub/HubSettingsPage";
 import { ProfilePage } from "../profile";
 import type { OpenModuleOptions } from "../hooks/useHubNavigation";
 import type { HubView } from "../hooks/useHubUIState";
+import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
+import { coachKeys, digestKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { IOSInstallBanner } from "./IOSInstallBanner";
 
 interface HubSectionFallbackProps {
@@ -107,6 +110,16 @@ export const HubMainContent = memo(function HubMainContent({
   onShowAuth,
   inFtuxSession = false,
 }: HubMainContentProps) {
+  const queryClient = useQueryClient();
+
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: coachKeys.all }),
+      queryClient.invalidateQueries({ queryKey: digestKeys.all }),
+      queryClient.invalidateQueries({ queryKey: hubKeys.all }),
+    ]);
+  }, [queryClient]);
+
   // Banner budget: at most one chrome banner above the hub content.
   // Priority: update > install (PWA) > iOS install.
   //
@@ -165,10 +178,14 @@ export const HubMainContent = memo(function HubMainContent({
 
       {showIos && <IOSInstallBanner onDismiss={onDismissIos} />}
 
-      <main
+      <PullToRefresh
+        as="main"
         id="main"
         tabIndex={-1}
-        className="flex-1 px-5 pb-28 max-w-lg mx-auto w-full overflow-y-auto rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-inset"
+        className="max-w-lg mx-auto w-full rounded-xl focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-inset"
+        contentClassName="px-5 pb-28"
+        onRefresh={handleRefresh}
+        variant="default"
       >
         {hubView === "dashboard" && (
           <ErrorBoundary key="dashboard" fallback={HubSectionFallback}>
@@ -229,7 +246,7 @@ export const HubMainContent = memo(function HubMainContent({
             </div>
           </ErrorBoundary>
         )}
-      </main>
+      </PullToRefresh>
     </>
   );
 });
