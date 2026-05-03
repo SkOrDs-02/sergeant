@@ -126,15 +126,17 @@ describe("collectQueuedModules (corruption tolerance)", () => {
   });
 
   it("merges payloads across modules from multiple entries", () => {
+    // PR #026 видалив 'routine' з SYNC_MODULES (тепер SQLite-only),
+    // тому беремо 'profile' як третій валідний модуль.
     const q = [
       { type: "push", modules: { finyk: { data: { a: 1 } } } },
       { type: "push", modules: { fizruk: { data: { b: 2 } } } },
-      { type: "push", modules: { routine: { data: { c: 3 } } } },
+      { type: "push", modules: { profile: { data: { c: 3 } } } },
     ];
     expect(Object.keys(collectQueued(q)).sort()).toEqual([
       "finyk",
       "fizruk",
-      "routine",
+      "profile",
     ]);
   });
 });

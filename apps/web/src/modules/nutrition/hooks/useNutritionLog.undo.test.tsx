@@ -3,16 +3,23 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { ToastProvider } from "@shared/hooks/useToast";
 import { useNutritionLog } from "./useNutritionLog";
 import type { Meal } from "../lib/nutritionStorage";
 
+// useNutritionLog тягне useToast() зсередини (для toast.error на
+// JSON-merge / undo-restore failure). Без ToastProvider hook кидає
+// "useToast must be used within <ToastProvider>" ще до першого
+// act() — тому wrapper мусить включати обидва провайдери.
 function makeWrapper() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return function Wrapper({ children }: { children: ReactNode }) {
     return (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      <QueryClientProvider client={client}>
+        <ToastProvider>{children}</ToastProvider>
+      </QueryClientProvider>
     );
   };
 }
