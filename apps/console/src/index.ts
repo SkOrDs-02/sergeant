@@ -15,6 +15,7 @@ import {
   shouldUseWebhook,
   unregisterOpenClawWebhook,
 } from "./openclaw/bootstrap.js";
+import { registerOpenClawBotCommands } from "./openclaw/commands.js";
 import { createOpenClawWebhookServer } from "./openclaw/webhook.js";
 
 const DEFAULT_OPENCLAW_MAX_ITERATIONS = 8;
@@ -258,6 +259,9 @@ async function main() {
           secretToken: webhookSecret,
         });
         console.log("[openclaw] webhook registered with Telegram");
+        // Push the slash-command popup + Menu button so the founder
+        // sees the command list in every TG client. Fail-soft inside.
+        await registerOpenClawBotCommands(openclawBot);
         // Webhook server keeps the event loop alive; we await an
         // unresolved promise so `Promise.all(promises)` below blocks
         // the same way `bot.start()` did in long-poll mode.
@@ -278,6 +282,9 @@ async function main() {
             err,
           );
         }
+        // Same registry-push as the webhook branch — runs once on boot
+        // before `bot.start()` enters its blocking long-poll loop.
+        await registerOpenClawBotCommands(openclawBot);
         await startBotWithConflictRetry(openclawBot, "openclaw");
       })();
     }
