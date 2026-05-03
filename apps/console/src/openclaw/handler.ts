@@ -129,39 +129,46 @@ function summariseWriteInput(record: ApprovalRecord): string {
   }
 }
 
+// HTML mode (не Markdown). Legacy Markdown ламався на:
+//  • brackets `[tool]` / `[csv]` без `(url)` — інтерпретуються як початок
+//    untyped link і fail-парсять текст;
+//  • непарна кількість `_` через `recorded_at`, `Sergeant_alert_bot`,
+//    `_Phase ..._` — Telegram повертав 400 "Can't find end of the entity".
+// HTML mode безпечний — потрібно екранити тільки `<`, `>`, `&`. Тримаємо
+// розмітку мінімальною: <b>, <i>, <code>.
 const HELP_TEXT = [
-  "*OpenClaw* — твій co-founder bot.",
+  "<b>OpenClaw</b> — твій co-founder bot.",
   "",
   "Я аналізую дані Sergeant (PG, Stripe, Sentry, PostHog, GitHub, n8n logs, strategy docs)",
   "і даю advisory-думку. Я не пишу в продакшн.",
   "",
-  "*Agent network (WF-20):*",
+  "<b>Agent network (WF-20):</b>",
   "/status, /plan, /assign, /review, /run, /approve, /cancel, /logs",
   "Free-text execution запити про CI/PR/GitHub/n8n/security теж підуть у WF-20.",
   "",
-  "*Швидкі cofounder prompts:*",
+  "<b>Швидкі cofounder prompts:</b>",
   "/metrics — детальні метрики за тиждень",
   "/digest — growth-дайджест (PostHog + GitHub releases + n8n)",
   "",
-  "*Personas (ADR-0033, Phase 2.5):*",
-  "/ops <q> — reliability фокус (Sentry + n8n + healthz)",
-  "/growth <q> — PostHog + GitHub releases + strategy docs",
-  "/eng <q> — GitHub PRs + schema + engineering topic",
-  "/finance <q> — Stripe + cofounder memory + decisions",
-  "/cofounder <q> — default синтез (всі tools)",
-  "/council <q> — round-table: ops → growth → eng → finance → cofounder synthesis",
+  "<b>Personas (ADR-0033, Phase 2.5):</b>",
+  "/ops &lt;q&gt; — reliability фокус (Sentry + n8n + healthz)",
+  "/growth &lt;q&gt; — PostHog + GitHub releases + strategy docs",
+  "/eng &lt;q&gt; — GitHub PRs + schema + engineering topic",
+  "/finance &lt;q&gt; — Stripe + cofounder memory + decisions",
+  "/cofounder &lt;q&gt; — default синтез (всі tools)",
+  "/council &lt;q&gt; — round-table: ops → growth → eng → finance → cofounder synthesis",
   "",
-  "*Службові:*",
+  "<b>Службові:</b>",
   "/decisions — останні зафіксовані рішення",
   "/audit [tool] [action] [since=24h|7d|30m] [csv] — write-actions журнал;",
-  "       `since=` фільтрує по recorded_at (max 30d), `csv` шле документ.",
+  "       <code>since=</code> фільтрує по recorded_at (max 30d), <code>csv</code> шле документ.",
   "/alerts pending [p0|p1] [topic] [since=15m] — unacked Sergeant_alert_bot броадкасти;",
   "       без аргументів — топ-20 unacked, newest-first.",
   "/budget — поточний денний spend",
   "/reset — почати нову сесію",
   "/help — ця довідка",
   "",
-  "_Phase 1, ADR-0031 + ADR-0032 + ADR-0033._",
+  "<i>Phase 1, ADR-0031 + ADR-0032 + ADR-0033.</i>",
 ].join("\n");
 
 // ADR-0032: локальні cofounder prompts, які лишаються в OpenClaw loop. Команди
@@ -390,12 +397,12 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
 
   bot.command("start", async (ctx) => {
     if (!isAllowedDmContext(ctx)) return; // silent ignore у non-DM
-    await ctx.reply(HELP_TEXT, { parse_mode: "Markdown" });
+    await ctx.reply(HELP_TEXT, { parse_mode: "HTML" });
   });
 
   bot.command("help", async (ctx) => {
     if (!isAllowedDmContext(ctx)) return;
-    await ctx.reply(HELP_TEXT, { parse_mode: "Markdown" });
+    await ctx.reply(HELP_TEXT, { parse_mode: "HTML" });
   });
 
   bot.command("reset", async (ctx) => {
@@ -608,15 +615,15 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     if (parsed.subcommand === "help") {
       await ctx.reply(
         [
-          "*Usage:* `/alerts pending [filters]`",
+          "<b>Usage:</b> <code>/alerts pending [filters]</code>",
           "",
           "Filters:",
-          "  • `p0`/`p1`/`p2`/`p3` — severity",
-          "  • `since=15m|24h|7d` — лише старші за вказаний інтервал",
+          "  • <code>p0</code>/<code>p1</code>/<code>p2</code>/<code>p3</code> — severity",
+          "  • <code>since=15m|24h|7d</code> — лише старші за вказаний інтервал",
           "  • число (1..50) — limit (default 20)",
           "  • будь-який інший токен — topic-key",
         ].join("\n"),
-        { parse_mode: "Markdown" },
+        { parse_mode: "HTML" },
       );
       return;
     }
