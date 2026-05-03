@@ -62,7 +62,11 @@ vi.mock("../logger", () => ({
 }));
 
 import { syncApi } from "@shared/api";
-import { addToOfflineQueue, getOfflineQueue } from "../queue/offlineQueue";
+import {
+  __resetOfflineQueueCacheForTests,
+  addToOfflineQueue,
+  getOfflineQueue,
+} from "../queue/offlineQueue";
 import { MAX_OFFLINE_QUEUE, OFFLINE_QUEUE_KEY } from "../config";
 import { SYNC_STATUS_EVENT } from "../state/events";
 
@@ -80,11 +84,17 @@ const mockedPushAll = syncApi.pushAll as unknown as ReturnType<typeof vi.fn>;
 // ---------------------------------------------------------------------------
 beforeEach(() => {
   localStorage.clear();
+  // PR #009 — the queue now lives in an in-memory cache (durable answer
+  // is IDB; LS is just a best-effort backup). `localStorage.clear()`
+  // alone no longer empties the queue between tests, so we must drop
+  // the cache too or state from the previous test bleeds forward.
+  __resetOfflineQueueCacheForTests();
   vi.clearAllMocks();
   mockedPushAll.mockReset();
 });
 afterEach(() => {
   localStorage.clear();
+  __resetOfflineQueueCacheForTests();
 });
 
 // =========================================================================

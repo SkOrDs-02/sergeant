@@ -94,11 +94,17 @@ export const SYNC_STATUS_EVENT = "hub-cloud-sync-status";
 /**
  * Hard cap on the offline queue length. Beyond this we drop the
  * oldest entries to keep storage usage bounded for users offline
- * for extended periods. Same value on web (localStorage) and
- * mobile (MMKV); raised together when sync metadata moves to IDB
- * (PR #009 in the storage roadmap).
+ * for extended periods.
+ *
+ * PR #009 (storage-roadmap Stage 1) raised this from 50 to 10 000
+ * once web's offline queue moved off localStorage (~5 MB cap) onto
+ * IDB (multi-GB practical cap) via `apps/web/src/core/cloudSync/
+ * storage/syncMetaStore.ts`. Mobile (MMKV) had no comparable cap
+ * but inherits the same value so cross-platform replay parity holds:
+ * a user who goes offline for two weeks on web and three on mobile
+ * has the same retention guarantees on both.
  */
-export const MAX_OFFLINE_QUEUE = 50;
+export const MAX_OFFLINE_QUEUE = 10_000;
 
 /**
  * Flat read-only view of every storage key registered with any sync

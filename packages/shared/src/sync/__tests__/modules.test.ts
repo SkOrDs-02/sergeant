@@ -158,8 +158,8 @@ describe("SYNC_MODULES registry", () => {
       expect(SYNC_STATUS_EVENT).toBe("hub-cloud-sync-status");
     });
 
-    it("MAX_OFFLINE_QUEUE keeps the documented cap", () => {
-      expect(MAX_OFFLINE_QUEUE).toBe(50);
+    it("MAX_OFFLINE_QUEUE keeps the documented cap (raised to 10 000 in PR #009 once web moved to IDB)", () => {
+      expect(MAX_OFFLINE_QUEUE).toBe(10_000);
     });
   });
 });

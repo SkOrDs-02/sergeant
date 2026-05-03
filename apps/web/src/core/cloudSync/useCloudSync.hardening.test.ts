@@ -19,10 +19,21 @@ import {
   __internal_addToOfflineQueue as enqueue,
   __internal_parseDateSafe as parseDate,
 } from "./useCloudSync";
+import { __resetOfflineQueueCacheForTests } from "./queue/offlineQueue";
+import { MAX_OFFLINE_QUEUE } from "./config";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
-beforeEach(() => localStorage.clear());
-afterEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  // PR #009 — the offline queue lives in an in-memory cache backed by
+  // IDB. `localStorage.clear()` alone no longer empties it; reset the
+  // cache too so a queue populated by an earlier test doesn't leak.
+  __resetOfflineQueueCacheForTests();
+});
+afterEach(() => {
+  localStorage.clear();
+  __resetOfflineQueueCacheForTests();
+});
 
 describe("isModulePushSuccess", () => {
   it("treats missing/non-object result as failure", () => {
@@ -172,14 +183,18 @@ describe("addToOfflineQueue coalescing", () => {
 
   it("caps queue length when many non-coalescing entries accumulate", () => {
     // Force non-push entries that don't coalesce so we can exercise the cap.
-    for (let i = 0; i < 120; i++) {
+    // Use MAX_OFFLINE_QUEUE + a small overshoot so the assertion stays
+    // tied to the documented cap (raised to 10 000 in PR #009).
+    const overshoot = 20;
+    const total = MAX_OFFLINE_QUEUE + overshoot;
+    for (let i = 0; i < total; i++) {
       enqueue({ type: `other-${i}`, payload: i } as never);
     }
     const q = getOfflineQueue();
-    expect(q.length).toBeLessThanOrEqual(50);
+    expect(q.length).toBeLessThanOrEqual(MAX_OFFLINE_QUEUE);
     // Oldest entries should be dropped, newest preserved.
     const last = q[q.length - 1];
-    expect(last.type).toBe("other-119");
+    expect(last.type).toBe(`other-${total - 1}`);
   });
 
   it("does not coalesce into a non-push last entry", () => {
