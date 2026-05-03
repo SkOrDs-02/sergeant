@@ -10,8 +10,16 @@ import {
   splitTelegramMessage,
 } from "./security.js";
 import { attachOpenClawHandlers } from "./openclaw/index.js";
+import {
+  registerOpenClawWebhook,
+  shouldUseWebhook,
+  unregisterOpenClawWebhook,
+} from "./openclaw/bootstrap.js";
+import { createOpenClawWebhookServer } from "./openclaw/webhook.js";
 
 const DEFAULT_OPENCLAW_MAX_ITERATIONS = 8;
+const DEFAULT_OPENCLAW_WEBHOOK_PATH = "/webhook/openclaw";
+const DEFAULT_OPENCLAW_WEBHOOK_PORT = 8080;
 
 const STARTUP_409_MAX_ATTEMPTS = 12;
 const STARTUP_409_BASE_DELAY_MS = 2_000;
@@ -197,8 +205,82 @@ async function main() {
         process.env.OPENCLAW_MAX_ITERATIONS,
       ),
     });
-    console.log("OpenClaw starting…");
-    openclawPromise = startBotWithConflictRetry(openclawBot, "openclaw");
+
+    // ADR-0041: webhook-based delivery cuts approval-button latency from
+    // 2-3s (next long-poll cycle) to <500ms. Feature-flag default-off so
+    // local dev keeps the long-poll happy path; Railway flips it on per
+    // docs/deploy/console.md.
+    const useWebhook = shouldUseWebhook(process.env.OPENCLAW_USE_WEBHOOK);
+    if (useWebhook) {
+      const webhookUrl = process.env.OPENCLAW_WEBHOOK_URL;
+      const webhookSecret = process.env.OPENCLAW_WEBHOOK_SECRET;
+      const webhookPath =
+        process.env.OPENCLAW_WEBHOOK_PATH ?? DEFAULT_OPENCLAW_WEBHOOK_PATH;
+      const portRaw = process.env.PORT ?? process.env.OPENCLAW_WEBHOOK_PORT;
+      const port = Number(portRaw);
+      if (!webhookUrl) {
+        console.error(
+          "OpenClaw webhook mode: OPENCLAW_WEBHOOK_URL is not set.",
+        );
+        process.exit(1);
+      }
+      if (!webhookSecret) {
+        console.error(
+          "OpenClaw webhook mode: OPENCLAW_WEBHOOK_SECRET is not set.",
+        );
+        process.exit(1);
+      }
+      if (!Number.isFinite(port) || port <= 0) {
+        console.error(
+          `OpenClaw webhook mode: PORT/OPENCLAW_WEBHOOK_PORT must be a positive integer (got ${portRaw ?? "unset"}). Defaulting to ${DEFAULT_OPENCLAW_WEBHOOK_PORT}.`,
+        );
+      }
+      const boundPort =
+        Number.isFinite(port) && port > 0
+          ? port
+          : DEFAULT_OPENCLAW_WEBHOOK_PORT;
+      const server = createOpenClawWebhookServer({
+        bot: openclawBot,
+        path: webhookPath,
+        secretToken: webhookSecret,
+        port: boundPort,
+      });
+      console.log(
+        `OpenClaw starting in webhook mode on :${boundPort}${webhookPath}…`,
+      );
+      openclawPromise = (async () => {
+        await server.start();
+        // Bot.api needs `init()` before any API call when we skip
+        // `bot.start()`; otherwise `bot.botInfo` is unset.
+        await openclawBot.init();
+        await registerOpenClawWebhook(openclawBot, {
+          url: webhookUrl,
+          secretToken: webhookSecret,
+        });
+        console.log("[openclaw] webhook registered with Telegram");
+        // Webhook server keeps the event loop alive; we await an
+        // unresolved promise so `Promise.all(promises)` below blocks
+        // the same way `bot.start()` did in long-poll mode.
+        await new Promise<void>(() => {});
+      })();
+    } else {
+      console.log("OpenClaw starting in long-poll mode…");
+      openclawPromise = (async () => {
+        // If a previous deploy enabled webhook mode, Telegram still has
+        // the webhook registered and `getUpdates` will fail with 409.
+        // Detach defensively before starting the long-poll loop.
+        try {
+          await openclawBot.init();
+          await unregisterOpenClawWebhook(openclawBot);
+        } catch (err) {
+          console.warn(
+            "[openclaw] deleteWebhook on long-poll boot failed (non-fatal):",
+            err,
+          );
+        }
+        await startBotWithConflictRetry(openclawBot, "openclaw");
+      })();
+    }
   }
 
   // Sanity: if neither bot is configured, the process has nothing to do.

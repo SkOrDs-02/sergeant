@@ -215,11 +215,11 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 ### 3.5. Webhook замість long-poll для OpenClaw bot
 
-**Status:** new.
+**Status:** shipped (foundation), default-off until Railway env flip.
 **Pain закриває:** P4.
-**ADR-кандидат:** ADR-0041 ("Telegram webhook delivery").
+**ADR:** [ADR-0041 — OpenClaw Telegram delivery via webhook](../adr/0041-openclaw-telegram-webhook.md).
 
-**Що:** конвертувати `bot.start()` (long-poll mode) у `setWebhook(https://console.sergeant.app/tg/openclaw)` + Express handler. `Sergeant_alert_bot` лишається long-poll (broadcast-only, без callback latency-issue).
+**Що:** додати feature-flag webhook-режим у `apps/console`. Замість Express в `apps/server` хостимо `node:http`-listener в самому console-процесі (там же де `ApprovalStore`/agent-loop) і використовуємо grammy `webhookCallback("http", { secretToken })`. Long-poll лишається дефолтом для local dev (`pnpm console:dev`); Railway вмикається через `OPENCLAW_USE_WEBHOOK=true` + `OPENCLAW_WEBHOOK_URL` + `OPENCLAW_WEBHOOK_SECRET`. `Sergeant_alert_bot` лишається long-poll (broadcast-only, без callback latency-issue).
 
 **Чому:** callback-кнопки (Phase 4 approval, §3.2 ack-button) latency 1-3с. Webhook → <500ms. UX-помітно.
 
@@ -228,13 +228,13 @@ CREATE INDEX idx_tg_alert_acks_unacked
 **Risks:**
 
 - TLS-cert на Railway — already provided via Railway custom domain.
-- Telegram retry-contract: must respond 200 за <60s, ідеально <1s. Mitigation: `setWebhookOptions({ max_connections: 40 })` + Express middleware respond-immediately + queue heavy work.
-- Single-active-webhook constraint: тільки один URL за токеном; deploy-у потрібен short maintenance-window для webhook-swap.
+- Telegram retry-contract: must respond 200 за <60s, ідеально <1s. Mitigation: grammy `webhookCallback("http")` повертає 200 одразу після диспатчу update-у в bot middleware (`ApprovalStore` writes — fire-and-forget).
+- Single-active-webhook constraint: тільки один URL за токеном; на long-poll-фолбек boot робить `deleteWebhook` defensively.
 
 **Acceptance:**
 
 - Approval-кнопка від click до DB-INSERT у `openclaw_write_audit` < 800ms (зараз ~2-3s).
-- Auto-fallback на long-poll якщо webhook-fail > 3 мин (Telegram robustness pattern).
+- Backout — unset `OPENCLAW_USE_WEBHOOK` + redeploy → console робить `deleteWebhook` і повертається у long-poll за один redeploy.
 
 ---
 
