@@ -19,9 +19,15 @@ function readJson(filePath) {
 }
 
 function listWorkflowFiles() {
+  // Workflow files are prefixed with a numeric id and a dash:
+  //   - 01..99 — original "ops" range, used by all production workflows.
+  //   - 100+   — Wave-3+ control-plane workflows that wrap the foundation
+  //              (e.g. 103 alert escalation, 104 alert callback router).
+  // Allow 2-or-more digits so the manifest can grow past 99 without a
+  // schema change.
   return fs
     .readdirSync(workflowsDir)
-    .filter((name) => /^\d{2}-.+\.json$/.test(name))
+    .filter((name) => /^\d{2,}-.+\.json$/.test(name))
     .sort();
 }
 

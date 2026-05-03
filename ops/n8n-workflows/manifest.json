@@ -50,13 +50,15 @@
         "RAILWAY_PROJECT_ID",
         "TELEGRAM_ALERT_CHAT_ID",
         "TELEGRAM_TOPIC_OPS",
-        "TELEGRAM_TOPIC_INCIDENTS"
+        "TELEGRAM_TOPIC_INCIDENTS",
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY"
       ],
       "requiredCredentials": [
         "Sergeant Postgres (sergeant-db)",
         "Telegram (Sergeant_alert_bot)"
       ],
-      "notes": "Cron 03:00 UTC → Railway API latest deployments → Sanity SQL check → Telegram OK/CRITICAL."
+      "notes": "Cron 03:00 UTC → Railway API latest deployments → Sanity SQL check → Telegram OK / CRITICAL+ack-row. Wave 3 §3.2 (ADR-0038): the CRITICAL branch posts an idempotent row to /api/internal/alerts/post and adds a 3-button inline-keyboard (✅ Прочитав / 🔄 Розбираю / 🔕 Замутити 30хв) — clicks land in WF-104. Reference impl for the alert ack-button surface; other 17 alert workflows wired in follow-up sub-PRs."
     },
     "05-renovate-pr-auto-handler.json": {
       "owner": "devex",
@@ -302,6 +304,35 @@
         "Resend (Bearer)"
       ],
       "notes": "n8n liveness heartbeat (every 3 hours) with email fallback."
+    },
+    "103-alert-escalation-cron.json": {
+      "owner": "ops",
+      "status": "experimental",
+      "riskTier": "P1",
+      "telegramTopic": "dm",
+      "audienceTier": "P1",
+      "requiredEnv": [
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY",
+        "OPENCLAW_BOT_TOKEN",
+        "OPENCLAW_FOUNDER_TG_USER_ID"
+      ],
+      "requiredCredentials": [],
+      "notes": "Cron */5 min → POST /api/internal/alerts/pending (olderThanMinutes=15, notYetEscalated=true) → filter to P0/P1 → for each: POST /alerts/escalate → DM founder via @OpenClaw_sergeant_bot raw HTTP. ADR-0038 §3.2 — closes pain P2 (alerts without accountability) by giving every unacked P0/P1 a persistent push notification. Activate after WF-104 + WF-04 are smoke-tested in n8n staging."
+    },
+    "104-alert-callback-router.json": {
+      "owner": "ops",
+      "status": "experimental",
+      "riskTier": "P1",
+      "telegramTopic": "incidents",
+      "audienceTier": "P1",
+      "requiredEnv": [
+        "PUBLIC_API_BASE_URL",
+        "INTERNAL_API_KEY",
+        "SERGEANT_ALERT_BOT_TOKEN"
+      ],
+      "requiredCredentials": ["Telegram (Sergeant_alert_bot)"],
+      "notes": "Telegram trigger (callback_query) → parse `ack:<r|i|m>:<alertId>` → POST /api/internal/alerts/ack → editMessageText (drop buttons + ack footer) → answerCallbackQuery. ADR-0038 §3.2. SERGEANT_ALERT_BOT_TOKEN is the raw bot token used for editMessageText / answerCallbackQuery (the n8n Telegram node doesn't expose those operations cleanly). Activating this is what makes alert ack-buttons clickable end-to-end — keep inactive until WF-04 has been observed posting rows + at least one round-trip test in staging."
     }
   }
 }
