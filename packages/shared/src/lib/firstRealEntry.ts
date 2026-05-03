@@ -19,6 +19,7 @@ import {
   markFirstRealEntryDone,
   saveTimeToValueMs,
 } from "./vibePicks";
+import { ANALYTICS_EVENTS } from "./analyticsEvents";
 import { readJSON, type KVStore } from "../storage/kv";
 
 // Storage keys inspected by `hasAnyRealEntry`. Centralised here so
@@ -168,10 +169,17 @@ export function countRealEntries(store: KVStore): number {
   return count;
 }
 
-/** Event names emitted by `detectFirstRealEntry` when the flag flips. */
+/**
+ * Event names emitted by `detectFirstRealEntry` when the flag flips.
+ *
+ * Re-export of the canonical names from `ANALYTICS_EVENTS` so call-sites
+ * that already import this module don't have to learn a second
+ * constant. Keeping the indirection prevents string drift between this
+ * file and `analyticsEvents.ts`.
+ */
 export const FIRST_REAL_ENTRY_EVENTS = {
-  FIRST_REAL_ENTRY: "first_real_entry",
-  FTUX_TIME_TO_VALUE: "ftux_time_to_value",
+  FIRST_REAL_ENTRY: ANALYTICS_EVENTS.FIRST_REAL_ENTRY,
+  FTUX_TIME_TO_VALUE: ANALYTICS_EVENTS.FTUX_TIME_TO_VALUE,
 } as const;
 
 export interface DetectFirstRealEntryOptions {

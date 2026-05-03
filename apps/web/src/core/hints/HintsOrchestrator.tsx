@@ -129,16 +129,27 @@ export function HintsOrchestrator({
 
       if (!msg) return;
 
+      // Track which hints the user actually engaged with vs. let
+      // time out. The flag is closed over by both callbacks so the
+      // dismiss-after-timeout fires only when no click happened.
+      let actionTaken = false;
+      const HINT_TIMEOUT_MS = 5000;
+
       const action =
         next === "ftux_open_chat"
           ? {
               label: "Відкрити чат",
               onClick: () => {
+                actionTaken = true;
                 try {
                   emitHubBus("openChat", {
                     message: "Що мені важливо сьогодні?",
                   });
                   trackEvent(ANALYTICS_EVENTS.HINT_CLICKED, { id: next });
+                  trackEvent(ANALYTICS_EVENTS.HINT_COMPLETED, {
+                    id: next,
+                    via: "action",
+                  });
                 } catch {
                   /* noop */
                 }
@@ -148,9 +159,14 @@ export function HintsOrchestrator({
             ? {
                 label: "Пошук",
                 onClick: () => {
+                  actionTaken = true;
                   try {
                     emitHubBus("openSearch", undefined);
                     trackEvent(ANALYTICS_EVENTS.HINT_CLICKED, { id: next });
+                    trackEvent(ANALYTICS_EVENTS.HINT_COMPLETED, {
+                      id: next,
+                      via: "action",
+                    });
                   } catch {
                     /* noop */
                   }
@@ -158,7 +174,19 @@ export function HintsOrchestrator({
               }
             : undefined;
 
-      toast.info(msg, 5000, action);
+      toast.info(msg, HINT_TIMEOUT_MS, action);
+
+      // A hint that times out without an action click counts as a
+      // passive dismissal — it surfaces in §3.5 of the dashboards
+      // doc as the «hint shown but never actioned» half of the
+      // hint-effectiveness ratio.
+      window.setTimeout(() => {
+        if (actionTaken) return;
+        trackEvent(ANALYTICS_EVENTS.HINT_DISMISSED, {
+          id: next,
+          via: "timeout",
+        });
+      }, HINT_TIMEOUT_MS);
     }
   }, [candidates, ctx, hasFirstRealEntry, showHints, toast]);
 
