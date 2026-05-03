@@ -26,25 +26,17 @@ export function useUnifiedFinanceData({
     const monoTxs = mono.realTx || [];
     const combined = dedupeAndSortTransactions([...monoTxs, ...privatTxs]);
     const privatTotal = (privat.accounts || [])
-      .filter(
-        (a: { currency?: string | number }) =>
-          a.currency === "UAH" || a.currency === "980",
-      )
-      .reduce(
-        (s: number, a: { balance?: number }) => s + (a.balance || 0) / 100,
-        0,
-      );
+      .filter((a) => a.currency === "UAH" || a.currency === "980")
+      .reduce((s, a) => s + (a.balance || 0) / 100, 0);
 
     const monoAccounts = (mono.accounts || []).map((a) => ({
       ...a,
       _source: "monobank" as const,
     }));
-    const privatAccounts = (privat.accounts || []).map(
-      (a: Record<string, unknown>) => ({
-        ...a,
-        _source: "privatbank" as const,
-      }),
-    );
+    const privatAccounts = (privat.accounts || []).map((a) => ({
+      ...a,
+      _source: "privatbank" as const,
+    }));
     const allAccounts = [...monoAccounts, ...privatAccounts];
 
     const hasPrivatError = !!privat.error;
