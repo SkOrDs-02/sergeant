@@ -1,6 +1,7 @@
 import type * as React from "react";
 import {
   ModuleHeader,
+  ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/ui/cn";
@@ -173,6 +174,7 @@ export function FizrukHeader({
       subtitle={
         showContextualBack ? undefined : subtitleFor(page, activeProgram)
       }
+      right={<ModuleHeaderAssistantButton />}
     />
   );
 }

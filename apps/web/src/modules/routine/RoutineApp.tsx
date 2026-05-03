@@ -15,6 +15,7 @@ import { useToast } from "@shared/hooks/useToast";
 import {
   ModuleAccentProvider,
   ModuleHeader,
+  ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
 } from "@shared/components/layout";
 import { hapticTap, hapticSuccess } from "@shared/lib/adapters/haptic";
@@ -572,18 +573,21 @@ export default function RoutineApp({
         title="РУТИНА"
         subtitle="Звички · план Фізрука · один розклад"
         right={
-          <button
-            type="button"
-            onClick={() => applyTimeMode("today")}
-            className={cn(
-              "shrink-0 min-h-[40px] px-3 rounded-xl text-xs font-bold border transition-colors",
-              C.chipOn,
-            )}
-            title="Перейти до сьогоднішнього дня"
-            aria-label="Перейти на сьогоднішній день"
-          >
-            Сьогодні
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => applyTimeMode("today")}
+              className={cn(
+                "shrink-0 min-h-[40px] px-3 rounded-xl text-xs font-bold border transition-colors",
+                C.chipOn,
+              )}
+              title="Перейти до сьогоднішнього дня"
+              aria-label="Перейти на сьогоднішній день"
+            >
+              Сьогодні
+            </button>
+            <ModuleHeaderAssistantButton />
+          </div>
         }
       />
 

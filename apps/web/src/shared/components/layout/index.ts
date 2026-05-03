@@ -14,11 +14,13 @@ export type { ModuleAccentProviderProps } from "./ModuleAccentProvider";
 
 export {
   ModuleHeader,
+  ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
   ModuleHeaderChevronButton,
   ModuleHeaderIconButton,
 } from "./ModuleHeader";
 export type {
+  ModuleHeaderAssistantButtonProps,
   ModuleHeaderBackButtonProps,
   ModuleHeaderIconButtonProps,
   ModuleHeaderProps,

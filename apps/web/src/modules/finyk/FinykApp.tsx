@@ -10,6 +10,7 @@ import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import {
   ModuleAccentProvider,
   ModuleHeader,
+  ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
 } from "@shared/components/layout";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
@@ -313,6 +314,7 @@ export default function App({
                 </svg>
               )}
             </button>
+            <ModuleHeaderAssistantButton />
           </div>
         }
       />

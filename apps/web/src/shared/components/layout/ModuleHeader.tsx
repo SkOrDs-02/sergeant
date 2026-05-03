@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import type { ModuleAccent } from "@sergeant/design-tokens";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
@@ -201,6 +202,60 @@ export function ModuleHeaderIconButton({
       title={title ?? ariaLabel}
     >
       {children}
+    </button>
+  );
+}
+
+export interface ModuleHeaderAssistantButtonProps {
+  ariaLabel?: string;
+  title?: string;
+  className?: string;
+}
+
+/**
+ * Sparkle button that opens the AI-assistant route (`/chat`). Lives next
+ * to module-specific chrome in the header `right` slot so the assistant
+ * is one tap away from every module — mirrors the dashboard FAB without
+ * adding another floating affordance on top of module-level FABs
+ * (Фінік / Рутина quick-add). The hard-coded `/chat` literal mirrors
+ * `CHAT_PATH` in `core/app/appPaths.ts`; importing from `core/app`
+ * inside `shared/` would cross the layering boundary.
+ */
+export function ModuleHeaderAssistantButton({
+  ariaLabel = "Відкрити AI-асистента",
+  title,
+  className,
+}: ModuleHeaderAssistantButtonProps = {}) {
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        hapticTap();
+        navigate("/chat");
+      }}
+      className={cn(
+        "shrink-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border border-line bg-panel/80",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+        className,
+      )}
+      aria-label={ariaLabel}
+      title={title ?? ariaLabel}
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="M12 3l1.8 4.6L18 9.4l-4.2 1.8L12 16l-1.8-4.8L6 9.4l4.2-1.8z" />
+        <path d="M19 14l.9 2.3L22 17l-2.1.7L19 20l-.9-2.3L16 17l2.1-.7z" />
+      </svg>
     </button>
   );
 }

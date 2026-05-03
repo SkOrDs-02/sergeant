@@ -1,5 +1,6 @@
 import {
   ModuleHeader,
+  ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/ui/cn";
@@ -59,6 +60,7 @@ export function NutritionHeader({
       left={left}
       title="ХАРЧУВАННЯ"
       subtitle="Мій раціон"
+      right={<ModuleHeaderAssistantButton />}
     />
   );
 }
