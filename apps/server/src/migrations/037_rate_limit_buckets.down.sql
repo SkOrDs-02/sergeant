@@ -1,4 +1,5 @@
--- Rollback for 035_rate_limit_buckets.sql.
+-- Rollback for 037_rate_limit_buckets.sql (renamed from 035 to dedupe with
+-- 035_nutrition_tables.sql; see 038_rename_035_rate_limit_buckets.sql).
 --
 -- DBA-runnable manual rollback: the runner in `apps/server/src/db.ts`
 -- ignores `*.down.sql` files. Drops the bucket table; running this

@@ -73,7 +73,7 @@ Sustained >5 min on **any** key is an obs event — both modes mean Redis AND Po
 
 ### Logs
 
-The one-shot `rate_limit_pg_table_missing` warn fires when migration `035_rate_limit_buckets.sql` hasn't been applied. After that point, transient Postgres errors degrade silently — the warn is enough to flag the schema gap without spamming on every request.
+The one-shot `rate_limit_pg_table_missing` warn fires when migration `037_rate_limit_buckets.sql` hasn't been applied. After that point, transient Postgres errors degrade silently — the warn is enough to flag the schema gap without spamming on every request.
 
 ## Failure-mode walkthrough
 

@@ -289,7 +289,7 @@ export async function checkRateLimitRedis(
  * so both the count rotation and the `started_at` reset see the same
  * window-elapsed comparison.
  *
- * Graceful degradation: if the migration `035_rate_limit_buckets.sql`
+ * Graceful degradation: if the migration `037_rate_limit_buckets.sql`
  * has not yet been applied (SQLSTATE `42P01`, undefined table) or any
  * other Postgres error fires, the caller in {@link rateLimitExpress}
  * falls through to {@link checkRateLimit}. Errors are logged at `warn`
@@ -360,7 +360,7 @@ export async function checkRateLimitPg(
 const PG_SWEEP_PROBABILITY = 1 / 256;
 
 // One-shot warn when the Postgres bucket table is unreachable (typically
-// because migration `035_rate_limit_buckets.sql` hasn't been applied yet
+// because migration `037_rate_limit_buckets.sql` hasn't been applied yet
 // or the role lacks SELECT/INSERT). Subsequent failures fall through
 // silently to the in-memory limiter — the warn is enough to flag the
 // degraded state in obs without spamming on every request.
@@ -409,7 +409,7 @@ async function tryCheckRateLimitPg(
       pgUndefinedTableLogged = true;
       logger.warn({
         msg: "rate_limit_pg_table_missing",
-        hint: "apply migration 035_rate_limit_buckets.sql; falling back to in-memory limiter",
+        hint: "apply migration 037_rate_limit_buckets.sql; falling back to in-memory limiter",
       });
     }
     return null;

@@ -263,7 +263,7 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
   upsert через `INSERT … ON CONFLICT DO UPDATE` гарантує race-free
   інкремент між кількома Railway інстансами; in-memory shortcut
   залишений як cache для retry-cyle при PG outage.
-- **Migration.** `apps/server/src/migrations/035_rate_limit_buckets.{sql,down.sql}`.
+- **Migration.** `apps/server/src/migrations/037_rate_limit_buckets.{sql,down.sql}`.
 - **Тести.** `apps/server/src/http/rateLimit.test.ts` (sliding-window,
   reset, race) — pg-mem-харнес підтверджує атомарність upsert-у.
 - **Dep.** None.
