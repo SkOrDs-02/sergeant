@@ -185,14 +185,28 @@ function parseContribRules(text) {
 }
 
 // AGENTS.md numbering also appears in two other top-level numbered lists
-// (Soft rules, Architecture-checklist). We anchor on the literal string
-// "## Hard rules (do not break)" + the next "## " heading to extract only
-// the Hard Rules section.
-function sliceHardRulesSection(text) {
-  const start = text.indexOf("## Hard rules (do not break)");
+// (Soft rules, Architecture-checklist). We anchor on the literal heading
+// strings and slice each section between its heading and the next "## "
+// heading. Initiative 0009 фаза 3.1 виносить design-конвенції з єдиного
+// "## Hard rules" розділу у "## Lint-enforced design conventions"; обидва
+// тримають `### N. …` заголовки з тими ж id, тому sync-чек збирає їх в один
+// індекс.
+const HARD_RULES_SECTION_HEADINGS = [
+  "## Hard rules (do not break)",
+  "## Lint-enforced design conventions",
+];
+
+function sliceSection(text, heading) {
+  const start = text.indexOf(heading);
   if (start < 0) return "";
   const after = text.indexOf("\n## ", start + 1);
   return after < 0 ? text.slice(start) : text.slice(start, after);
+}
+
+function sliceHardRulesSection(text) {
+  return HARD_RULES_SECTION_HEADINGS.map((h) => sliceSection(text, h)).join(
+    "\n",
+  );
 }
 
 // Parse the rule-name map exported by `packages/eslint-plugin-sergeant-design`
