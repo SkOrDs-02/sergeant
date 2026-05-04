@@ -1,16 +1,16 @@
 # I3 — Generate SBOM during container build
 
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** Open
+> **Status:** Phase 1 implemented (workspace-level SBOM on release)
 
-| Field          | Value                           |
-| -------------- | ------------------------------- |
-| **Severity**   | Informational / hardening       |
-| **Sprint**     | [Sprint 4](./sprint-4.md)       |
-| **Owner**      | platform                        |
-| **Effort**     | 0.5 person-day                  |
-| **Status**     | Open                            |
-| **Discovered** | 2026-05-03 deep security review |
+| Field          | Value                                                        |
+| -------------- | ------------------------------------------------------------ |
+| **Severity**   | Informational / hardening                                    |
+| **Sprint**     | [Sprint 4](./sprint-4.md)                                    |
+| **Owner**      | platform                                                     |
+| **Effort**     | 0.5 person-day                                               |
+| **Status**     | Phase 1 (workspace SBOM) live; container-SBOM lишається open |
+| **Discovered** | 2026-05-03 deep security review                              |
 
 ## Summary
 
@@ -28,10 +28,26 @@ purposes.
   GitHub Release assets.
 - Optional: attest the SBOM with cosign / sigstore.
 
+## Implementation status
+
+- **Phase 1 (DONE — initiative 0008 Phase 4):** workspace-level SBOM
+  через `.github/workflows/release-sbom.yml`. Тригериться на published
+  release / pushed tag `v*.*.*` / manual dispatch; видає одночасно
+  SPDX-JSON + CycloneDX-JSON через `anchore/sbom-action` (Syft під
+  капотом). SBOM описує lockfile-стан тегу — кожна release-версія має
+  reproducible artefact для CVE-correlation.
+- **Phase 2 (Open):** container-level SBOM, коли репо отримає
+  Dockerfile-based build pipeline. Поки apps деплояться без containers
+  (Vercel + Railway buildpacks), workspace-SBOM покриває 100% deps; перехід
+  на container-SBOM буде опційно через `docker buildx --sbom=true` додатковим
+  кроком у тому самому workflow.
+- **Phase 3 (Open, optional):** sigstore signing release artifacts
+  (`cosign attest --predicate sbom.spdx.json --type spdxjson`).
+
 ## Correction points
 
-- `.github/workflows/deploy-api.yml` — add SBOM generation + upload
-  steps.
+- `.github/workflows/release-sbom.yml` — workflow живе тут, генерує
+  SBOM на release-published / git-tag-push / workflow_dispatch.
 - `docs/security/container-scan.md` — link to the SBOM artifact location.
 - `docs/security/audit-exceptions.md` — note any policy exceptions
   granted while integrating sigstore.
