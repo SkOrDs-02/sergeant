@@ -134,8 +134,8 @@ pnpm build         # must succeed
 
 ## Tools
 
-- **Knip** (`pnpm knip`) — automated dead code / unused export detection. Run before and after to confirm the cleanup is complete.
-- **depcheck** (`pnpm depcheck:all`) — finds unused dependencies across packages.
+- **Knip** (`pnpm knip`) — automated dead code / unused export detection. Run before and after to confirm the cleanup is complete. Knip is the single dead-code tool after initiative 0009 PR 4.2 (#TBD); `depcheck` and `ts-prune` were retired in favour of a single source of truth.
+- **`pnpm dead-code:files`** — wrapper around `knip` that respects `@scaffolded` lifecycle markers (Hard Rule #10). Use this instead of raw `knip` when triaging files for deletion.
 
 ## Notes
 

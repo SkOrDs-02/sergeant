@@ -3,8 +3,7 @@
   "workspaces": {
     ".": {
       "entry": ["scripts/*.mjs"],
-      "project": ["scripts/**"],
-      "ignoreDependencies": ["ts-prune"]
+      "project": ["scripts/**"]
     },
     "apps/web": {
       "entry": ["src/sw.ts"],
