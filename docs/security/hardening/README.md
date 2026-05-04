@@ -55,7 +55,7 @@
 | [H2](./H2-dependabot.md)                     | Немає Dependabot / Renovate                              | Closed (2026-05-04) | [Sprint 1](./sprint-1.md) |
 | H3 — `H3-session-revoke.md` (Sprint 2)       | Сесія 30d без revoke-on-password-change і device-binding | Open                | Sprint 2                  |
 | H4 — `H4-token-key-rotation.md` (Sprint 2/3) | Немає сценарію ротації `*_TOKEN_ENC_KEY`                 | Open                | Sprint 2                  |
-| H5 — `H5-exp-trusted-origin.md` (Sprint 2)   | `exp://` як trusted origin у production                  | Open                | Sprint 2                  |
+| [H5](./H5-trusted-origins-exp-scheme.md)     | `exp://` як trusted origin у production                  | Closed (2026-05-04) | Sprint 2                  |
 | H6 — `H6-email-verification.md` (Sprint 2)   | Email verification disabled                              | Open                | Sprint 2                  |
 | [H7](./H7-vercel-config-drift.md)            | `vercel.json` SSOT drift                                 | Closed (2026-05-04) | Sprint 2                  |
 | H8 — `H8-corp-per-route.md` (Sprint 2)       | Helmet `CORP: cross-origin` глобально                    | Open                | Sprint 2                  |

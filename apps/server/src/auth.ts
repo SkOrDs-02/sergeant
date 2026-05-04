@@ -237,18 +237,52 @@ export const auth = betterAuth({
   ...(advancedCookies ? { advanced: advancedCookies } : {}),
 });
 
+/**
+ * Native deep-link schemes that Better Auth treats as trusted origins for
+ * mobile flows (OAuth callbacks, cross-origin sign-in).
+ *
+ * `sergeant://` — production scheme published by the RN app
+ * (`apps/mobile/app.config.ts → scheme: "sergeant"`). Always trusted.
+ *
+ * `exp://` — Expo Go dev scheme. NOT bound to a single application: any
+ * Expo Go app on the device can claim it, so a hostile dev-build could
+ * intercept OAuth codes / session bearers. We gate it behind
+ * `NODE_ENV !== "production"` (closes hardening card H5,
+ * docs/security/hardening/H5-trusted-origins-exp-scheme.md).
+ *
+ * `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES` — optional comma-separated override
+ * for ops (e.g. staging that needs a custom scheme without a code change).
+ * When set, it replaces the entire defaults — there is no "merge with
+ * defaults" mode by design (the threat model rules out additive overrides
+ * because the only realistic use case is "remove `exp://` even in dev").
+ */
+function getTrustedNativeSchemes(): string[] {
+  const override = process.env.BETTER_AUTH_TRUSTED_NATIVE_SCHEMES;
+  if (override !== undefined) {
+    return override
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  if (process.env.NODE_ENV === "production") {
+    return ["sergeant://"];
+  }
+  return ["sergeant://", "exp://"];
+}
+
 function getTrustedOrigins(): string[] {
-  // Mobile-клієнти використовують кастомні схеми deep-link (`sergeant://`,
-  // `exp://` у Expo dev) і локальний Metro bundler на `http://localhost:8081`.
-  // Better Auth перевіряє `Origin` / `Referer` проти цього списку при
-  // чутливих операціях (callback OAuth, cross-origin sign-in) — без явного
-  // додавання ці ж запити летіли б у 403.
+  // Mobile-клієнти використовують кастомні схеми deep-link (`sergeant://`
+  // у проді, `exp://` додатково у Expo dev) і локальний Metro bundler на
+  // `http://localhost:8081`. Better Auth перевіряє `Origin` / `Referer`
+  // проти цього списку при чутливих операціях (callback OAuth,
+  // cross-origin sign-in) — без явного додавання ці ж запити летіли б
+  // у 403. Список нативних схем формується у `getTrustedNativeSchemes()`
+  // (див. опис вище).
   const origins: string[] = [
     "http://localhost:5000",
     "http://localhost:5173",
     "http://localhost:8081",
-    "sergeant://",
-    "exp://",
+    ...getTrustedNativeSchemes(),
   ];
   if (process.env.REPLIT_DEV_DOMAIN) {
     origins.push(`https://${process.env.REPLIT_DEV_DOMAIN}`);

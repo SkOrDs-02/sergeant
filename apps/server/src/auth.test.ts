@@ -72,6 +72,76 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
     expect(options.socialProviders).toBeUndefined();
   });
 
+  /**
+   * H5 — `exp://` (Expo Go dev scheme) не повинен потрапляти у
+   * `trustedOrigins` у production. Це не bound-до-аппки схема: будь-який
+   * Expo Go застосунок на пристрої може її claim-ити, що відкриває OAuth
+   * code / bearer interception. Дивись
+   * `docs/security/hardening/H5-trusted-origins-exp-scheme.md`.
+   */
+  it("H5: trustedOrigins у production НЕ містять exp://", async () => {
+    vi.resetModules();
+    vi.stubEnv("NODE_ENV", "production");
+    // Не задаємо BETTER_AUTH_TRUSTED_NATIVE_SCHEMES — перевіряємо саме
+    // дефолти у проді. Інші prod-only env (encryption key) перевіряються у
+    // `assertStartupEnv`, але `auth.ts` сам по собі читає їх лише через
+    // encrypting-adapter factory — для статичного конфіг-чеку це не треба.
+    try {
+      const { auth: prodAuth } = await import("./auth.js");
+      const options = (
+        prodAuth as unknown as { options: { trustedOrigins?: string[] } }
+      ).options;
+      const origins = options.trustedOrigins ?? [];
+      expect(origins).toContain("sergeant://");
+      expect(origins).not.toContain("exp://");
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
+  it("H5: у dev (NODE_ENV != production) trustedOrigins містять і sergeant://, і exp://", async () => {
+    vi.resetModules();
+    vi.stubEnv("NODE_ENV", "development");
+    try {
+      const { auth: devAuth } = await import("./auth.js");
+      const options = (
+        devAuth as unknown as { options: { trustedOrigins?: string[] } }
+      ).options;
+      const origins = options.trustedOrigins ?? [];
+      expect(origins).toContain("sergeant://");
+      expect(origins).toContain("exp://");
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
+  it("H5: BETTER_AUTH_TRUSTED_NATIVE_SCHEMES override повністю замінює дефолти (включно з exp://)", async () => {
+    vi.resetModules();
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv(
+      "BETTER_AUTH_TRUSTED_NATIVE_SCHEMES",
+      "sergeant-staging://, custom-scheme://",
+    );
+    try {
+      const { auth: stagingAuth } = await import("./auth.js");
+      const options = (
+        stagingAuth as unknown as { options: { trustedOrigins?: string[] } }
+      ).options;
+      const origins = options.trustedOrigins ?? [];
+      expect(origins).toContain("sergeant-staging://");
+      expect(origins).toContain("custom-scheme://");
+      expect(origins).not.toContain("sergeant://");
+      // Even у dev — override має пріоритет: якщо ops явно прибрали `exp://`
+      // зі списку, ми не повертаємо його через "merge with defaults".
+      expect(origins).not.toContain("exp://");
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
   it("із заданими GOOGLE_CLIENT_ID/SECRET вмикається google-провайдер", async () => {
     vi.resetModules();
     vi.stubEnv("GOOGLE_CLIENT_ID", "test-client-id.apps.googleusercontent.com");

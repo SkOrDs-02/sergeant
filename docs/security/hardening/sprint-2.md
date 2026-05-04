@@ -1,7 +1,7 @@
 # Sprint 2 — Session, surface and quota hardening
 
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-04.
-> **Status:** Active (H7 closed early — single-source-of-truth deliverable shipped 2026-05-04 alongside Sprint 1 H2 closure).
+> **Status:** Active (H5, H7 closed 2026-05-04 — `exp://` gate + Vercel SSOT shipped alongside Sprint 1 H2 closure).
 
 Sprint 2 closes the **High-severity backlog** that Sprint 1 left open and removes
 two Medium-severity issues that share blast radius with Sprint 1 (`CSP_DISABLE`
@@ -16,7 +16,7 @@ and a maintenance window; it lands in Sprint 3 alongside the medium batch.
 | ID                                       | Title                                            | Severity | Owner    | Effort                       |
 | ---------------------------------------- | ------------------------------------------------ | -------- | -------- | ---------------------------- |
 | [H3](./H3-session-revoke-and-binding.md) | Session 30 d, no revoke-on-password-change       | High     | backend  | 1 d                          |
-| [H5](./H5-trusted-origins-exp-scheme.md) | `exp://` trusted origin in production            | High     | backend  | 0.25 d                       |
+| [H5](./H5-trusted-origins-exp-scheme.md) | `exp://` trusted origin in production            | High     | backend  | 0.25 d _(closed 2026-05-04)_ |
 | [H6](./H6-email-verification.md)         | Email verification disabled, password reset weak | High     | backend  | 0.5 d                        |
 | [H7](./H7-vercel-config-drift.md)        | `vercel.json` duplicated between root and apps   | High     | devops   | 0.25 d _(closed 2026-05-04)_ |
 | [H8](./H8-corp-per-route.md)             | `CORP: cross-origin` without per-route guard     | High     | backend  | 0.5 d                        |
