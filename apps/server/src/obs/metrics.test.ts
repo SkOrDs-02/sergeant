@@ -125,14 +125,17 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
   });
 
   it("`APPLY_REJECT_REASONS` + `ENGINE_REJECT_REASONS` фіксують cardinality budget для `reason` label-у", () => {
-    // PR-C (Stage 5): closed allowlist причин відхилення — джерело
-    // правди для `sync_op_log_apply_total{reason}`. Cardinality cap
-    // у `docs/observability/metrics.md` §4 = ~15 tables × 3 statuses ×
-    // ~50 reasons ≈ 2_250 series worst-case (phenomenologically <100).
-    // Якщо сума елементів у двох масивах drift-ує — оновити cardinality
-    // calc у metrics.md + dashboard top-10 reject reasons panel.
+    // PR-C / PR #043c (Stage 5): closed allowlist причин відхилення —
+    // джерело правди для `sync_op_log_apply_total{reason}`.
+    // PR #042a (Stage 5): engine-level allowlist розширено `op_not_supported`
+    // (gate на `op='increment'` для таблиць поза `INCREMENT_OP_SUPPORTED_TABLES`).
+    // Cardinality cap у `docs/observability/metrics.md` §4 = ~28 tables ×
+    // 3 statuses × 51 reasons ≈ 4_284 series worst-case (phenomenologically <100,
+    // більшість табл/reason-пар не зустрічаються одночасно). Якщо сума
+    // елементів у двох масивах drift-ує — оновити cardinality calc у
+    // metrics.md + dashboard top-10 reject reasons panel.
     expect(APPLY_REJECT_REASONS.length).toBe(45);
-    expect(ENGINE_REJECT_REASONS.length).toBe(4);
+    expect(ENGINE_REJECT_REASONS.length).toBe(5);
 
     // Ключові CRDT-інваріанти, на які прив'язаний sync health alerting,
     // фіксуємо явно — щоб accidental refactor не приховав їх із
@@ -144,6 +147,7 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     expect(ENGINE_REJECT_REASONS).toContain("clock_skew");
     expect(ENGINE_REJECT_REASONS).toContain("apply_failed");
     expect(ENGINE_REJECT_REASONS).toContain("table_not_allowed");
+    expect(ENGINE_REJECT_REASONS).toContain("op_not_supported");
 
     // Жодних дублікатів — Set.size має дорівнювати довжині масиву.
     const all = [...APPLY_REJECT_REASONS, ...ENGINE_REJECT_REASONS];

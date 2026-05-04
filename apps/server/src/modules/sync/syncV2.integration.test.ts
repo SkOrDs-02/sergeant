@@ -3705,3 +3705,147 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
     TIMEOUT_MS,
   );
 });
+
+describe("syncV2Push — op='increment' protocol scaffolding (PR #042a)", () => {
+  // Stage 5 / PR #042a: новий op-kind `increment` додано у zod-енум +
+  // CHECK constraint у migration 040; engine-level gate у syncV2Push
+  // має відхиляти його з `reason='op_not_supported'` для будь-якої
+  // таблиці поза `INCREMENT_OP_SUPPORTED_TABLES` (на цьому етапі
+  // whitelist порожній — kind protocol-only). Тести фіксують
+  // інваріант, щоб PR #042b не залендив apply-fn без opt-in-у у
+  // whitelist (інакше increment-и будуть мовчки applied на чужі
+  // таблиці) і щоб supported op-kind-и не регресили.
+
+  it(
+    "відхиляє op='increment' з engine-level reason='op_not_supported' і не торкає таблицю",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-incr-1");
+
+      // Засіваємо існуючий routine_streaks ряд щоб переконатися, що
+      // engine-gate спрацьовує до DML — counter після push має лишитись
+      // незмінним, а не +1.
+      const ts = isoNow();
+      await testPool.query(
+        `INSERT INTO routine_streaks
+           (id, user_id, current_streak, last_completed_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        ["44444444-4444-4444-4444-444444444444", "u-incr-1", 7, ts, ts],
+      );
+
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-incr-1",
+          body: {
+            ops: [
+              {
+                table: "routine_streaks",
+                op: "increment",
+                row: {
+                  id: "44444444-4444-4444-4444-444444444444",
+                  user_id: "u-incr-1",
+                  delta: 1,
+                },
+                client_ts: ts,
+                idempotency_key: "incr-1",
+              },
+            ],
+          },
+        }),
+        pushRes,
+      );
+
+      expect(pushRes.statusCode).toBe(200);
+      const body = pushRes.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      // Накопичений counter не зайшов: gate спрацював до apply-fn-у.
+      expect(body.accepted).toBe(0);
+      expect(body.results[0].status).toBe("rejected");
+      expect(body.results[0].reason).toBe("op_not_supported");
+
+      // Counter лишається незмінним.
+      const row = await testPool.query<{ current_streak: number }>(
+        `SELECT current_streak FROM routine_streaks WHERE id = $1`,
+        ["44444444-4444-4444-4444-444444444444"],
+      );
+      expect(row.rows[0].current_streak).toBe(7);
+
+      // sync_op_log запис створено зі status='rejected' +
+      // reject_reason='op_not_supported' — щоб RED-dashboard бачив
+      // protocol-level reject окремою категорією.
+      const log = await testPool.query<{
+        status: string;
+        reject_reason: string | null;
+        op: string;
+      }>(
+        `SELECT status, reject_reason, op FROM sync_op_log
+          WHERE user_id = $1 AND idempotency_key = $2`,
+        ["u-incr-1", "incr-1"],
+      );
+      expect(log.rows.length).toBe(1);
+      expect(log.rows[0].status).toBe("rejected");
+      expect(log.rows[0].reject_reason).toBe("op_not_supported");
+      expect(log.rows[0].op).toBe("increment");
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "не регресить supported op-kinds (insert/update/delete) на тій самій таблиці",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-incr-2");
+
+      const ts = isoNow();
+      const id = "55555555-5555-5555-5555-555555555555";
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-incr-2",
+          body: {
+            ops: [
+              {
+                table: "routine_streaks",
+                op: "insert",
+                row: {
+                  id,
+                  user_id: "u-incr-2",
+                  current_streak: 0,
+                  last_completed_at: ts,
+                  updated_at: ts,
+                },
+                client_ts: ts,
+                idempotency_key: "incr-2-insert",
+              },
+              {
+                table: "routine_streaks",
+                op: "update",
+                row: {
+                  id,
+                  user_id: "u-incr-2",
+                  current_streak: 1,
+                  last_completed_at: ts,
+                  updated_at: ts,
+                },
+                client_ts: ts,
+                idempotency_key: "incr-2-update",
+              },
+            ],
+          },
+        }),
+        pushRes,
+      );
+
+      const body = pushRes.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(body.accepted).toBe(2);
+      expect(body.results.map((r) => r.status)).toEqual(["applied", "applied"]);
+    },
+    TIMEOUT_MS,
+  );
+});

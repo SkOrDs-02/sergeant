@@ -54,11 +54,17 @@ type WithSessionUser = Request & { user?: { id: string } };
 /**
  * Public shape SSE-події `op`. Дзеркалить response.ops[] із `/pull`,
  * тому existing api-client типи можна reuse-нути 1:1.
+ *
+ * `op` включає `'increment'` після PR #042a (PN-counter scaffolding):
+ * під час самого PR жоден increment не доходить до applied-стану
+ * (engine-gate ловить його з `op_not_supported`), але type lines up із
+ * `SyncV2OpKind` із `@sergeant/api-client`, щоб PR #042b міг ввімкнути
+ * apply-fn без додаткового rev-у на цьому шарі.
  */
 export interface SyncV2StreamOp {
   id: number;
   table: string;
-  op: "insert" | "update" | "delete";
+  op: "insert" | "update" | "delete" | "increment";
   row: unknown;
   client_ts: string;
   server_ts: string;

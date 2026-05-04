@@ -8,8 +8,18 @@ import type { HttpClient } from "../httpClient";
  * (наразі `routine_entries`, `routine_streaks`) — у тому ж файлі.
  */
 
-/** Допустимі op-kind на per-row рівні. */
-export type SyncV2OpKind = "insert" | "update" | "delete";
+/**
+ * Допустимі op-kind на per-row рівні.
+ *
+ * - `insert` / `update` / `delete` — LWW-протокол з PR #021.
+ * - `increment` — PN-counter primitive, додано у Stage 5 PR #042a як
+ *   protocol-only заділ під PR #042b (atomic
+ *   `UPDATE … SET counter = counter + delta`). Серверна apply-фабрика
+ *   після PR #042a відхиляє кожен `op='increment'` engine-level
+ *   `reason='op_not_supported'`; whitelist per-таблиць вмикається у
+ *   PR #042b.
+ */
+export type SyncV2OpKind = "insert" | "update" | "delete" | "increment";
 
 /**
  * Один запис у вхідній черзі push-у. `idempotency_key` — ULID/UUID,

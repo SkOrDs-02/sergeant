@@ -566,7 +566,20 @@ export const SYNC_V2_MAX_IDEMPOTENCY_KEY_LEN = 64;
 export const SYNC_V2_PULL_DEFAULT_LIMIT = 100;
 export const SYNC_V2_PULL_MAX_LIMIT = 500;
 
-const SyncV2OpKindEnum = z.enum(["insert", "update", "delete"]);
+/**
+ * Допустимі op-kind на per-row рівні.
+ *
+ * `insert` / `update` / `delete` — LWW-протокол від PR #021. `increment`
+ * — додатковий PN-counter primitive, переданий у Stage 5 PR #042a як
+ * protocol-only заділ під PR #042b (`routine_streaks` PN-counter,
+ * `delta`-payload, atomic `UPDATE … SET counter = counter + delta`).
+ *
+ * **Важливо:** після PR #042a server-side apply-шлях відхиляє кожний
+ * `op='increment'` engine-level причиною `op_not_supported` —
+ * ні одна apply-fn його не обробляє. Whitelist підтримуваних таблиць
+ * вмикається у PR #042b разом із самою counter-семантикою.
+ */
+const SyncV2OpKindEnum = z.enum(["insert", "update", "delete", "increment"]);
 
 /**
  * Один запис op-log-а. `row` — JSON-payload (PK + поля); серверний

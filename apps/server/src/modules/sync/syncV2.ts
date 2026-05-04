@@ -154,6 +154,11 @@ export const ENGINE_REJECT_REASONS = [
   "table_not_allowed",
   "apply_failed",
   "duplicate",
+  // Stage 5 / PR #042a: emitted when the engine sees `op='increment'`
+  // for a table that is not in `INCREMENT_OP_SUPPORTED_TABLES` (today
+  // the whitelist is empty — PR #042b will opt-in `routine_streaks`).
+  // Pre-apply gate; no DML is attempted, so apply_failed cannot mask it.
+  "op_not_supported",
 ] as const;
 
 export type EngineRejectReason = (typeof ENGINE_REJECT_REASONS)[number];
@@ -252,6 +257,26 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   finyk_networth_history: applyFinykNetworthHistory,
   finyk_prefs: applyFinykPrefs,
 };
+
+/**
+ * Tables that opt-in to PN-counter semantics (`op='increment'` carrying
+ * a numeric `delta` payload). Empty under PR #042a — the whitelist is
+ * the gate that keeps the kind protocol-only until PR #042b lands the
+ * actual `applyRoutineStreaks`-like atomic
+ * `UPDATE … SET counter = counter + delta` path. Engine pre-apply gate
+ * (in `syncV2Push` below) rejects every `op='increment'` against a
+ * table outside this set with `reason='op_not_supported'`, so the
+ * widened CHECK constraint from migration 040 cannot accidentally let
+ * a counter row land in `sync_op_log` ahead of the apply-fn that
+ * understands it.
+ *
+ * Forward note. PR #042b will add `'routine_streaks'` here together
+ * with the apply-fn that consumes `delta`. New PN-counter tables in
+ * the future extend this `as const` set + ship a matching apply-fn —
+ * the same governance pattern as `OP_LOG_TABLE_REGISTRY` (TS-tsc
+ * blocks accidental drift between the gate and the dispatcher).
+ */
+export const INCREMENT_OP_SUPPORTED_TABLES = new Set<string>([]);
 
 /**
  * Captured truncated header. `X-Origin-Device-Id` — опціональний
@@ -1916,6 +1941,7 @@ async function applyFinykTombstone(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
+  // eslint-disable-next-line no-restricted-syntax -- M11 documented exception (docs/security/audit-exceptions.md): typed dynamic upsert engine, `${table}` / `${extColumn}` from typed apply-fn allowlist, values via $N.
   const existing = await client.query<{
     updated_at: Date;
     deleted_at: Date | null;
@@ -1937,6 +1963,7 @@ async function applyFinykTombstone(
     if (existing.rows.length === 0) {
       return { status: "rejected", reason: "not_found" };
     }
+    // eslint-disable-next-line no-restricted-syntax -- M11 documented exception (docs/security/audit-exceptions.md): typed dynamic upsert engine, `${table}` / `${extColumn}` from typed apply-fn allowlist, values via $N.
     await client.query(
       `UPDATE ${table}
          SET deleted_at = $1, updated_at = $1
@@ -1956,6 +1983,7 @@ async function applyFinykTombstone(
   }
 
   if (existing.rows.length === 0) {
+    // eslint-disable-next-line no-restricted-syntax -- M11 documented exception (docs/security/audit-exceptions.md): typed dynamic upsert engine, `${table}` / `${extColumn}` from typed apply-fn allowlist, values via $N.
     await client.query(
       `INSERT INTO ${table}
          (user_id, ${extColumn}, created_at, updated_at, deleted_at)
@@ -1963,6 +1991,7 @@ async function applyFinykTombstone(
       [userId, extId, createdAt ?? clientTs, clientTs, deletedAt ?? null],
     );
   } else {
+    // eslint-disable-next-line no-restricted-syntax -- M11 documented exception (docs/security/audit-exceptions.md): typed dynamic upsert engine, `${table}` / `${extColumn}` from typed apply-fn allowlist, values via $N.
     await client.query(
       `UPDATE ${table}
          SET updated_at = $1, deleted_at = $2
@@ -2028,6 +2057,7 @@ async function applyFinykPerRowBlob(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
+  // eslint-disable-next-line no-restricted-syntax -- M11 documented exception (docs/security/audit-exceptions.md): typed dynamic upsert engine, `${table}` from typed apply-fn allowlist, values via $N.
   const existing = await client.query<{
     user_id: string;
     updated_at: Date;
@@ -2052,6 +2082,7 @@ async function applyFinykPerRowBlob(
     if (existing.rows.length === 0) {
       return { status: "rejected", reason: "not_found" };
     }
+    // eslint-disable-next-line no-restricted-syntax -- M11 documented exception (docs/security/audit-exceptions.md): typed dynamic upsert engine, `${table}` from typed apply-fn allowlist, values via $N.
     await client.query(
       `UPDATE ${table}
          SET deleted_at = $1, updated_at = $1
@@ -2075,6 +2106,7 @@ async function applyFinykPerRowBlob(
   }
 
   if (existing.rows.length === 0) {
+    // eslint-disable-next-line no-restricted-syntax -- M11 documented exception (docs/security/audit-exceptions.md): typed dynamic upsert engine, `${table}` from typed apply-fn allowlist, values via $N.
     await client.query(
       `INSERT INTO ${table}
          (id, user_id, data_json, created_at, updated_at, deleted_at)
@@ -2089,6 +2121,7 @@ async function applyFinykPerRowBlob(
       ],
     );
   } else {
+    // eslint-disable-next-line no-restricted-syntax -- M11 documented exception (docs/security/audit-exceptions.md): typed dynamic upsert engine, `${table}` from typed apply-fn allowlist, values via $N.
     await client.query(
       `UPDATE ${table}
          SET data_json  = $1::jsonb,
@@ -2278,6 +2311,7 @@ async function applyFinykPerTxJsonbArray(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
+  // eslint-disable-next-line no-restricted-syntax -- M11 documented exception (docs/security/audit-exceptions.md): typed dynamic upsert engine, `${table}` from typed apply-fn allowlist, values via $N.
   const existing = await client.query<{ updated_at: Date }>(
     `SELECT updated_at FROM ${table}
        WHERE user_id = $1 AND transaction_id = $2`,
@@ -2290,6 +2324,7 @@ async function applyFinykPerTxJsonbArray(
   }
 
   if (op.op === "delete") {
+    // eslint-disable-next-line no-restricted-syntax -- M11 documented exception (docs/security/audit-exceptions.md): typed dynamic upsert engine, `${table}` from typed apply-fn allowlist, values via $N.
     await client.query(
       `DELETE FROM ${table}
          WHERE user_id = $1 AND transaction_id = $2`,
@@ -2300,6 +2335,7 @@ async function applyFinykPerTxJsonbArray(
 
   const jsonValue = toJsonbParam(row[jsonColumn]) ?? "[]";
 
+  // eslint-disable-next-line no-restricted-syntax -- M11 documented exception (docs/security/audit-exceptions.md): typed dynamic upsert engine, `${table}` / `${jsonColumn}` from typed apply-fn allowlist, values via $N.
   await client.query(
     `INSERT INTO ${table}
        (user_id, transaction_id, ${jsonColumn}, created_at, updated_at)
@@ -2581,14 +2617,30 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         reason = "clock_skew";
       }
 
-      // 3. Whitelist check.
+      // 3. Op-kind support gate (PR #042a).
+      //    `increment` is the PN-counter primitive scaffolded for PR
+      //    #042b; until per-table apply-fn-и навчаться його обробляти,
+      //    engine відхиляє його тут — до whitelist-check-у і до
+      //    SAVEPOINT, щоб ми не привезли його у DML випадково. Insert
+      //    / update / delete завжди лишаються supported regardless of
+      //    table — окремий per-row reject лишається на apply-fn.
+      if (
+        status === "applied" &&
+        op.op === "increment" &&
+        !INCREMENT_OP_SUPPORTED_TABLES.has(op.table)
+      ) {
+        status = "rejected";
+        reason = "op_not_supported";
+      }
+
+      // 4. Whitelist check.
       const applyFn = OP_LOG_TABLE_REGISTRY[op.table];
       if (status === "applied" && !applyFn) {
         status = "rejected";
         reason = "table_not_allowed";
       }
 
-      // 4. Apply усередині SAVEPOINT — щоб FK/unique-violation не
+      // 5. Apply усередині SAVEPOINT — щоб FK/unique-violation не
       //    poison-нув цілу транзакцію. На очікувані LWW-reject-и
       //    apply-fn просто повертає `{rejected, reason}` без DML.
       if (status === "applied" && applyFn) {
@@ -2622,7 +2674,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         }
       }
 
-      // 5. INSERT у `sync_op_log`. ON CONFLICT не потрібен — idempotency-
+      // 6. INSERT у `sync_op_log`. ON CONFLICT не потрібен — idempotency-
       //    check вище вже відсіяв повтори; UNIQUE-constraint тут служить
       //    як остання сторожа на race з паралельним push-ем тієї ж
       //    сесії (PG поверне 23505 — ловиться як unhandled exception).
