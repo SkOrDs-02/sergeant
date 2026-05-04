@@ -194,6 +194,13 @@
 
 ## 7.4 [Bad] No contract tests web↔server
 
+> **2026-05-04 update.** Запущено мінімальний contract layer для `/api/me`:
+>
+> - Канонічні фікстури — `packages/shared/src/contract-fixtures/me.ts` (4 кейси: `minimal`, `full`, `legacyNoCreatedAt`, `unverified`).
+> - Consumer side — `apps/web/src/test/contract/me.contract.test.ts` (api-client + `MeResponseSchema`).
+> - Producer side — `apps/server/src/routes/me.contract.test.ts` (route handler через supertest).
+> - 17 contract assertions, 0 production code touched. Pattern документовано в `packages/shared/src/contract-fixtures/README.md`. Наступні endpoint-и розширюють той самий каталог.
+
 **Що бачу.** Pact / OpenAPI-validation немає. Кожна сторона припускає shape — це причина drift-у §4.7.
 
 **Recommendation.**

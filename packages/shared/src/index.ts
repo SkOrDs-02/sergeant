@@ -116,3 +116,9 @@ export * from "./lib/fileImport";
 // DOM-free visual-keyboard-inset hook contract (platform adapters register at
 // app bootstrap).
 export * from "./hooks/useVisualKeyboardInset";
+
+// Contract fixtures — canonical wire-shape samples shared between
+// `apps/server` (producer) and `packages/api-client` (consumer). See
+// `./contract-fixtures/README.md` and the diagnostic in
+// `docs/diagnostics/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md` §7.4.
+export * from "./contract-fixtures";
