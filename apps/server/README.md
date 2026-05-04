@@ -47,6 +47,22 @@ Railway, `Dockerfile.api`. Pre-deploy автоматично запускає `p
 
 Деталі: [`docs/integrations/railway-vercel.md`](../../docs/integrations/railway-vercel.md).
 
+### Trust proxy (`TRUST_PROXY`)
+
+`config.ts` читає `process.env.TRUST_PROXY` і передає у `app.set("trust proxy", …)`. Дефолт — `1` для Railway (Railway edge proxy додає рівно один hop у `X-Forwarded-For`).
+
+Коли і як міняти:
+
+| Сценарій                      | Значення                                |
+| ----------------------------- | --------------------------------------- |
+| Тільки Railway (default)      | не задавати, або `TRUST_PROXY=1`        |
+| Cloudflare → Railway          | `TRUST_PROXY=2`                         |
+| AWS ALB → ECS                 | `TRUST_PROXY=2` або CIDR ALB            |
+| Internal-only (no edge proxy) | `TRUST_PROXY=false`                     |
+| Multi-edge з відомими IP      | `TRUST_PROXY=10.0.0.0/8,192.168.0.0/16` |
+
+`TRUST_PROXY=true` **навмисно заборонено** — це робить кожен `req.ip` client-controlled і знеосмислює rate-limit / audit-логи. `parseTrustProxy` падає з помилкою при boot-у. Деталі: [`docs/security/hardening/M2-trust-proxy-parameterize.md`](../../docs/security/hardening/M2-trust-proxy-parameterize.md).
+
 ## Hard rules
 
 - **bigint → number:** `pg` повертає `bigint` як string — завжди `Number()` у serializers ([AGENTS.md #1](../../AGENTS.md)).

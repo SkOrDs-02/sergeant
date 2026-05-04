@@ -28,6 +28,21 @@ const envSchema = z.object({
   PORT: coerceInt.default(3000),
   /** `railway` або `replit` — визначає CSP, trust-proxy, static-serving. */
   SERVER_MODE: z.enum(["railway", "replit"]).optional(),
+  /**
+   * **M2** Trust-proxy override для Express `app.set('trust proxy', …)`.
+   *
+   * Формати (див. `apps/server/src/lib/trustProxy.ts`):
+   *   - `1` (default Railway) — довіряти 1 hop назад у X-Forwarded-For.
+   *   - `2` — Cloudflare + Railway scenario.
+   *   - `10.0.0.0/8,192.168.0.0/16` — explicit CIDR allowlist.
+   *   - `loopback,uniquelocal` — express keyword shortcuts.
+   *   - `false` — вимкнути XFF-парсинг повністю.
+   *   - `true` — **ЗАБОРОНЕНО**, відхиляється `parseTrustProxy`.
+   *
+   * Якщо порожнє — fallback до Railway-1 / Replit-undefined (зберігає
+   * historical behaviour).
+   */
+  TRUST_PROXY: z.string().optional(),
 
   // ── Database ────────────────────────────────────────────────────────
   /** Postgres connection string. Обов'язкова для всього, окрім health-check. */

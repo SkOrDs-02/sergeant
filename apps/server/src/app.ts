@@ -66,8 +66,17 @@ interface CreateAppOptions {
   /**
    * Forwarded to `app.set('trust proxy', …)`. Pass `undefined` to skip (Replit
    * historically did not configure this).
+   *
+   * **M2** Accepts the same union as `parseTrustProxy` returns:
+   *   - `number` — hop count (1 for Railway, 2 for Cloudflare+Railway).
+   *   - `string[]` — explicit CIDR/keyword allowlist.
+   *   - `false` — disable XFF parsing entirely.
+   *   - `undefined` — keep Express defaults (no `app.set` call).
+   *
+   * `true` is intentionally NOT accepted — it makes every `req.ip`
+   * client-controlled. `parseTrustProxy` rejects it at boot.
    */
-  trustProxy?: number | boolean | undefined;
+  trustProxy?: number | boolean | string[] | undefined;
 }
 
 interface FrontendMiddlewareBundle {

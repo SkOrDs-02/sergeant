@@ -1,5 +1,6 @@
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { parseTrustProxy, type TrustProxyValue } from "./lib/trustProxy.js";
 
 /**
  * Determines which runtime mode the server is starting in.
@@ -36,15 +37,29 @@ interface ServerConfig {
   port: number;
   servesFrontend: boolean;
   distPath: string | null;
-  trustProxy: number | undefined;
+  trustProxy: TrustProxyValue;
 }
 
 /**
  * Frozen runtime config consumed by `server/index.js` and `server/app.js`.
  * Preserves the exact behavior of the previous split entrypoints
  * (`railway.mjs` vs `replit.mjs`):
- *  - Railway: port 3000, trust proxy level 1, API-only, strict CSP.
- *  - Replit:  port 5000, no trust proxy, serves built SPA from ../dist, CSP off.
+ *  - Railway: port 3000, trust proxy level 1 (override via `TRUST_PROXY`),
+ *    API-only, strict CSP.
+ *  - Replit:  port 5000, no trust proxy by default, serves built SPA from
+ *    ../dist, CSP off.
+ *
+ * **M2** (`docs/security/hardening/M2-trust-proxy-parameterize.md`):
+ * `trustProxy` тепер читається з `TRUST_PROXY` env-var-у через
+ * `parseTrustProxy`, який підтримує:
+ *   - `TRUST_PROXY=2` — кількість hops (для Cloudflare + Railway: 2).
+ *   - `TRUST_PROXY=10.0.0.0/8,192.168.0.0/16` — CIDR allowlist.
+ *   - `TRUST_PROXY=loopback,uniquelocal` — express keyword shortcuts.
+ *   - `TRUST_PROXY=false` — повністю вимкнути парсинг X-Forwarded-For.
+ *   - `TRUST_PROXY=true` — заборонено (open relay для req.ip spoofing).
+ *
+ * Якщо `TRUST_PROXY` не заданий — fallback до historical Railway/Replit
+ * behaviour (1 для Railway, undefined для Replit).
  */
 export const config: Readonly<ServerConfig> = Object.freeze({
   mode,
@@ -52,7 +67,8 @@ export const config: Readonly<ServerConfig> = Object.freeze({
   port: Number(process.env.PORT) || (isReplit ? 5000 : 3000),
   servesFrontend: isReplit,
   distPath: isReplit ? join(__dirname, "..", "dist") : null,
-  // Railway terminates TLS upstream — needs trust proxy so `req.ip` is real.
-  // Replit historically did not set it; we preserve that to keep behavior stable.
-  trustProxy: isReplit ? undefined : 1,
+  trustProxy: parseTrustProxy({
+    raw: process.env.TRUST_PROXY,
+    fallback: isReplit ? undefined : 1,
+  }),
 });
