@@ -29,7 +29,6 @@ import "@/lib/fileImport";
 // visual-keyboard-inset contract (`@sergeant/shared`). Import for side
 // effects only.
 import "@/hooks/useVisualKeyboardInset";
-import { initPostHog } from "@/lib/analytics";
 import { captureError, initObservability } from "@/lib/observability";
 import { IdentityBridge } from "@/observability/IdentityBridge";
 import { initPostHog } from "@/observability/posthog";
