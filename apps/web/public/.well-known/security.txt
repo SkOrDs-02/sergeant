@@ -1,5 +1,4 @@
 Contact: https://github.com/Skords-01/Sergeant/security/advisories/new
-Contact: mailto:security@2dmanager.com.ua
 Expires: 2026-12-31T23:59:59Z
 Preferred-Languages: uk, en
 Canonical: https://sergeant.2dmanager.com.ua/.well-known/security.txt
