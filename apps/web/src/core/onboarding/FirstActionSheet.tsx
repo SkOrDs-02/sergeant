@@ -17,6 +17,12 @@ interface FirstActionEntry {
   title: string;
   desc: string;
   accent: string;
+  /**
+   * Short label rendered in the inline chip row (S2.3). Module titles
+   * like «Запиши перший прийом їжі» are too long for a chip; the chip
+   * uses just the module name. Icon carries the rest of the meaning.
+   */
+  chipLabel: string;
 }
 
 /**
@@ -35,24 +41,28 @@ const ACTIONS: Record<ModuleId, FirstActionEntry> = {
     title: "Створи першу звичку",
     desc: "~5 секунд. Стрік почнеться сьогодні.",
     accent: "text-routine-strong dark:text-routine bg-routine-surface",
+    chipLabel: "Рутина",
   },
   finyk: {
     icon: "credit-card",
     title: "Додай першу витрату",
     desc: "~5 секунд, будь-яка сума.",
     accent: "text-finyk-strong dark:text-finyk bg-finyk-soft",
+    chipLabel: "Фінік",
   },
   nutrition: {
     icon: "utensils",
     title: "Запиши перший прийом їжі",
     desc: "Калорії порахую я.",
     accent: "text-nutrition-strong dark:text-nutrition bg-nutrition-soft",
+    chipLabel: "Харчування",
   },
   fizruk: {
     icon: "dumbbell",
     title: "Увімкни розминку",
     desc: "10 хв, таймер сам.",
     accent: "text-fizruk-strong dark:text-fizruk bg-fizruk-soft",
+    chipLabel: "Фізрук",
   },
 };
 
@@ -142,7 +152,6 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
     [picks, primaryId],
   );
 
-  const [expanded, setExpanded] = useState(false);
   // Module id whose PresetSheet is currently open, or `null` if closed.
   // Keeping the hero card mounted while the sheet is open means the
   // user can dismiss the sheet and try another module without losing
@@ -166,7 +175,11 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_PICKED, {
       module: id,
       primary: primaryId,
-      via: id === primaryId ? "primary" : "expand",
+      // S2.3: "chip" replaces the legacy "expand" tag now that the inline
+      // chip row is always-visible. PostHog dashboards reading the raw
+      // event can compute switch-rate as `count(via="chip") /
+      // count(*)`. Keep the value short (one token) — it's faceted on.
+      via: id === primaryId ? "primary" : "chip",
     });
     setActivePresetId(id);
   };
@@ -255,72 +268,48 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
         </button>
 
         {others.length > 0 && (
-          <>
-            <button
-              type="button"
-              onClick={() => setExpanded((v) => !v)}
-              aria-expanded={expanded}
-              className={cn(
-                "w-full text-style-caption text-muted hover:text-text",
-                "flex items-center justify-center gap-1 py-1",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded-xl",
-              )}
-            >
-              <span>{expanded ? "Сховати" : "Інший модуль"}</span>
-              <Icon
-                name="chevron-right"
-                size={12}
-                className={cn(
-                  "transition-transform",
-                  expanded ? "rotate-90" : "rotate-0",
-                )}
-              />
-            </button>
-
-            {expanded && (
-              <div className="space-y-2">
-                {others.map((id) => {
-                  const a = ACTIONS[id];
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => openPreset(id)}
-                      className={cn(
-                        "w-full text-left px-3 py-2 rounded-xl border border-line bg-panelHi",
-                        "hover:border-brand-500/50 hover:bg-brand-500/5 transition-[background-color,border-color,opacity]",
-                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={cn(
-                            "w-9 h-9 shrink-0 rounded-xl flex items-center justify-center",
-                            a.accent,
-                          )}
-                        >
-                          <Icon name={a.icon} size={18} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-style-label text-text">
-                            {a.title}
-                          </div>
-                          <div className="text-xs text-muted mt-0.5 truncate">
-                            {a.desc}
-                          </div>
-                        </div>
-                        <Icon
-                          name="chevron-right"
-                          size={14}
-                          className="text-muted"
-                        />
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </>
+          // S2.3: Always-visible inline chip row replaces the previous
+          // «Інший модуль» accordion. Each chip opens its module's
+          // PresetSheet directly. Switch-rate dashboards consume the
+          // `onboarding_first_action_picked` event with `via="chip"`
+          // vs `via="primary"`.
+          <div
+            className="flex flex-wrap items-center gap-2 pt-1"
+            role="group"
+            aria-label="Інший модуль"
+          >
+            <span className="text-style-caption text-muted shrink-0">Або:</span>
+            {others.map((id) => {
+              const a = ACTIONS[id];
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => openPreset(id)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3 h-8 rounded-full",
+                    "border border-line bg-panelHi text-text",
+                    "hover:border-brand-500/50 hover:bg-brand-500/5",
+                    "transition-[background-color,border-color]",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "w-5 h-5 shrink-0 rounded-md flex items-center justify-center",
+                      a.accent,
+                    )}
+                    aria-hidden
+                  >
+                    <Icon name={a.icon} size={12} />
+                  </span>
+                  <span className="text-style-caption font-medium">
+                    {a.chipLabel}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         )}
       </section>
       <PresetSheet
