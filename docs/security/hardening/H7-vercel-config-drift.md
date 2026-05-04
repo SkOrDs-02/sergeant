@@ -1,15 +1,16 @@
 # H7 — `apps/web/vercel.json` vs root `vercel.json` config drift
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-04.
+> **Status:** Closed (2026-05-04 — single source of truth + CI guard)
 
-| Field          | Value                                                |
-| -------------- | ---------------------------------------------------- |
-| **Severity**   | High (CVSS 7.0, AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N) |
-| **Sprint**     | [Sprint 2](./sprint-2.md)                            |
-| **Owner**      | devops                                               |
-| **Effort**     | 0.25 person-day                                      |
-| **Status**     | Open                                                 |
-| **Discovered** | 2026-05-03 deep security review                      |
+| Field          | Value                                                   |
+| -------------- | ------------------------------------------------------- |
+| **Severity**   | High (CVSS 7.0, AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N)    |
+| **Sprint**     | [Sprint 2](./sprint-2.md)                               |
+| **Owner**      | devops                                                  |
+| **Effort**     | 0.25 person-day                                         |
+| **Status**     | Closed (2026-05-04 — single source of truth + CI guard) |
+| **Discovered** | 2026-05-03 deep security review                         |
 
 ## Summary
 
@@ -81,10 +82,19 @@ fi
 - **Manual:** in Vercel UI, confirm "Root Directory" is `/` and deploy preview
   responds with `Cross-Origin-Opener-Policy: same-origin`.
 - **Header smoke:** `curl -sI https://app.sergeant.example | grep -i
-  'cross-origin-opener-policy'` returns the expected value.
+'cross-origin-opener-policy'` returns the expected value.
+
+## Implementation log
+
+| Date       | Event                                                                                                                                                       |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-05-03 | Drift detected during Sprint 2 prep; card opened.                                                                                                           |
+| 2026-05-04 | `apps/web/vercel.json` deleted, `scripts/check-vercel-config.sh` added, wired into CI `check` job, `docs/deploy/vercel.md` documents the SSOT. Card closed. |
 
 ## Cross-references
 
 - [`./C2-frontend-csp.md`](./C2-frontend-csp.md)
 - [`../disaster-recovery.md`](../disaster-recovery.md) — Vercel re-deploy
   procedure relies on the root file.
+- [`../../deploy/vercel.md`](../../deploy/vercel.md) — Vercel project SSOT
+  - incident playbook (this file is the long-term remediation).

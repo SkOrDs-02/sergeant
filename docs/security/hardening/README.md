@@ -1,6 +1,6 @@
 # Security Hardening Backlog
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 Беклог посилення безпеки (security hardening) — структурований список знахідок із внутрішнього security-review від 2026-05-03. Кожна знахідка живе у власному файлі-картці (`<id>-<slug>.md`), згрупована у спринти за пріоритетом усунення.
@@ -42,24 +42,24 @@
 
 ### Critical
 
-| ID                                       | Title                                       | Status | Sprint                    |
-| ---------------------------------------- | ------------------------------------------- | ------ | ------------------------- |
-| [C1](./C1-mono-webhook-secret-in-url.md) | Monobank webhook secret leaks via URL path  | Open   | [Sprint 1](./sprint-1.md) |
-| [C2](./C2-frontend-csp.md)               | Frontend SPA не має Content-Security-Policy | Open   | [Sprint 1](./sprint-1.md) |
+| ID                                       | Title                                       | Status                              | Sprint                    |
+| ---------------------------------------- | ------------------------------------------- | ----------------------------------- | ------------------------- |
+| [C1](./C1-mono-webhook-secret-in-url.md) | Monobank webhook secret leaks via URL path  | Open                                | [Sprint 1](./sprint-1.md) |
+| [C2](./C2-frontend-csp.md)               | Frontend SPA не має Content-Security-Policy | In progress (Phase 1 shipped 05-04) | [Sprint 1](./sprint-1.md) |
 
 ### High
 
-| ID                                           | Title                                                    | Status      | Sprint                    |
-| -------------------------------------------- | -------------------------------------------------------- | ----------- | ------------------------- |
-| [H1](./H1-mobile-bearer-storage.md)          | Bearer token у мобільному shell без явного Keychain-AC   | Open        | [Sprint 1](./sprint-1.md) |
-| [H2](./H2-dependabot.md)                     | Немає Dependabot / Renovate                              | In progress | [Sprint 1](./sprint-1.md) |
-| H3 — `H3-session-revoke.md` (Sprint 2)       | Сесія 30d без revoke-on-password-change і device-binding | Open        | Sprint 2                  |
-| H4 — `H4-token-key-rotation.md` (Sprint 2/3) | Немає сценарію ротації `*_TOKEN_ENC_KEY`                 | Open        | Sprint 2                  |
-| H5 — `H5-exp-trusted-origin.md` (Sprint 2)   | `exp://` як trusted origin у production                  | Open        | Sprint 2                  |
-| H6 — `H6-email-verification.md` (Sprint 2)   | Email verification disabled                              | Open        | Sprint 2                  |
-| H7 — `H7-vercel-config-drift.md` (Sprint 2)  | `vercel.json` SSOT drift                                 | Open        | Sprint 2                  |
-| H8 — `H8-corp-per-route.md` (Sprint 2)       | Helmet `CORP: cross-origin` глобально                    | Open        | Sprint 2                  |
-| H9 — `H9-transcribe-usd-cap.md` (Sprint 2)   | Transcribe per-user USD-cap відсутній                    | Open        | Sprint 2                  |
+| ID                                           | Title                                                    | Status              | Sprint                    |
+| -------------------------------------------- | -------------------------------------------------------- | ------------------- | ------------------------- |
+| [H1](./H1-mobile-bearer-storage.md)          | Bearer token у мобільному shell без явного Keychain-AC   | Open                | [Sprint 1](./sprint-1.md) |
+| [H2](./H2-dependabot.md)                     | Немає Dependabot / Renovate                              | Closed (2026-05-04) | [Sprint 1](./sprint-1.md) |
+| H3 — `H3-session-revoke.md` (Sprint 2)       | Сесія 30d без revoke-on-password-change і device-binding | Open                | Sprint 2                  |
+| H4 — `H4-token-key-rotation.md` (Sprint 2/3) | Немає сценарію ротації `*_TOKEN_ENC_KEY`                 | Open                | Sprint 2                  |
+| H5 — `H5-exp-trusted-origin.md` (Sprint 2)   | `exp://` як trusted origin у production                  | Open                | Sprint 2                  |
+| H6 — `H6-email-verification.md` (Sprint 2)   | Email verification disabled                              | Open                | Sprint 2                  |
+| [H7](./H7-vercel-config-drift.md)            | `vercel.json` SSOT drift                                 | Closed (2026-05-04) | Sprint 2                  |
+| H8 — `H8-corp-per-route.md` (Sprint 2)       | Helmet `CORP: cross-origin` глобально                    | Open                | Sprint 2                  |
+| H9 — `H9-transcribe-usd-cap.md` (Sprint 2)   | Transcribe per-user USD-cap відсутній                    | Open                | Sprint 2                  |
 
 ### Medium / Low / Informational
 

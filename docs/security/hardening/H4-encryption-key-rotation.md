@@ -1,6 +1,7 @@
 # H4 — No rotation procedure for AES-256-GCM data-encryption keys
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Open
 
 | Field          | Value                                                |
 | -------------- | ---------------------------------------------------- |
@@ -67,7 +68,7 @@ no `token_key_version` column.
 
 - `apps/server/src/modules/mono/crypto.ts` — extend `EncryptedToken` with
   `keyVersion: number`; emit `Buffer.concat([Uint8Array.from([keyVersion]),
-  iv, tag, ciphertext])` so legacy rows with no version byte fail fast.
+iv, tag, ciphertext])` so legacy rows with no version byte fail fast.
 - `apps/server/src/auth/encryptingAdapter.ts` — same shape change.
 - `apps/server/src/migrations/03X_token_key_version.sql` — add
   `mono_connection.token_key_version SMALLINT NOT NULL DEFAULT 1`.
@@ -76,7 +77,7 @@ no `token_key_version` column.
   `{ current: Buffer; byVersion: Map<number, Buffer> }` interface.
 - `apps/server/src/modules/mono/connection.ts` —
   on read: decrypt with `byVersion.get(keyVersion)`; if `keyVersion !==
-  current`, re-encrypt and `UPDATE` the row in the same Drizzle transaction.
+current`, re-encrypt and `UPDATE` the row in the same Drizzle transaction.
 - `docs/runbooks/encryption-key-rotation.md` (new) — step-by-step procedure:
   generate new key → add to env-var list → bump current → deploy → monitor
   re-encrypt counter → after 30 days remove old key.

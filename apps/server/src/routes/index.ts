@@ -8,6 +8,7 @@ import { createMonoWebhookRouter } from "./mono-webhook.js";
 import { createBarcodeRouter } from "./barcode.js";
 import { createChatRouter } from "./chat.js";
 import { createCoachRouter } from "./coach.js";
+import { createCspReportRouter } from "./csp-report.js";
 import { createFoodSearchRouter } from "./food-search.js";
 import { createHealthRouter } from "./health.js";
 import { createMeRouter } from "./me.js";
@@ -46,6 +47,7 @@ export function registerRoutes(app: Express, { pool }: { pool: Pool }): void {
   app.use(createCoachRouter());
   app.use(createFoodSearchRouter());
   app.use(createWebVitalsRouter());
+  app.use(createCspReportRouter());
   app.use(createPushRouter());
   app.use(createTranscribeRouter());
   app.use(createWaitlistRouter());

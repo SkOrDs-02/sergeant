@@ -1,6 +1,7 @@
 # H9 — `transcribe` accepts 10 MB raw audio with only count-based quota
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Open
 
 | Field          | Value                                                |
 | -------------- | ---------------------------------------------------- |

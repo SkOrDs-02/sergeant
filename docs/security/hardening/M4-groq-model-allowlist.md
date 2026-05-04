@@ -1,15 +1,16 @@
 # M4 — `GROQ_TRANSCRIBE_MODEL` is env-injectable without an allowlist
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Open
 
-| Field          | Value                                         |
-| -------------- | --------------------------------------------- |
-| **Severity**   | Medium                                        |
-| **Sprint**     | [Sprint 3](./sprint-3.md)                     |
-| **Owner**      | backend                                       |
-| **Effort**     | 0.1 person-day                                |
-| **Status**     | Open                                          |
-| **Discovered** | 2026-05-03 deep security review               |
+| Field          | Value                           |
+| -------------- | ------------------------------- |
+| **Severity**   | Medium                          |
+| **Sprint**     | [Sprint 3](./sprint-3.md)       |
+| **Owner**      | backend                         |
+| **Effort**     | 0.1 person-day                  |
+| **Status**     | Open                            |
+| **Discovered** | 2026-05-03 deep security review |
 
 ## Summary
 
@@ -27,10 +28,7 @@ model) without leaving an audit trail.
 Allowlist in code, not in env:
 
 ```ts
-const ALLOWED_MODELS = new Set([
-  "whisper-large-v3-turbo",
-  "whisper-large-v3",
-]);
+const ALLOWED_MODELS = new Set(["whisper-large-v3-turbo", "whisper-large-v3"]);
 const requested = process.env.GROQ_TRANSCRIBE_MODEL ?? "whisper-large-v3-turbo";
 if (!ALLOWED_MODELS.has(requested)) {
   throw new Error(`Unsupported GROQ_TRANSCRIBE_MODEL: ${requested}`);

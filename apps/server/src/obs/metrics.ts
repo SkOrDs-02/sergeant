@@ -356,6 +356,23 @@ export const webVitalsCls = new client.Histogram({
   registers: [register],
 });
 
+// CSP-violation reports posted by browsers to /api/csp-report. Cardinality
+// is bounded by `directive` (≈ 25 known CSP directives mapped through an
+// allowlist + an `other`/`unknown` bucket) × `disposition` (`report` |
+// `enforce` | `unknown`) — so the time-series count tops out around
+// 75 series. Driving the Phase-1 rollout dashboard for hardening card C2
+// (`docs/security/hardening/C2-frontend-csp.md`): a sustained spike on a
+// directive that we've explicitly allowed in the policy means the
+// allowlist is too narrow; a sustained spike on a directive we never
+// expected to fire means an exfiltration attempt or a third-party script
+// drift. Both cases are actionable from `sum by (directive) (rate(...))`.
+export const cspViolationTotal = new client.Counter({
+  name: "csp_violation_total",
+  help: "CSP violation reports posted by browsers to /api/csp-report",
+  labelNames: ["directive", "disposition"],
+  registers: [register],
+});
+
 // ───────────────────────── Build info ─────────────────────────
 // Const-`1` gauge with version/commit/release/env labels — the standard
 // Prometheus pattern for shipping immutable build metadata. Two reasons we

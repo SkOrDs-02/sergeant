@@ -34,6 +34,29 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!--
+      Defense-in-depth fallback for the production CSP. The canonical policy
+      lives in the root `vercel.json` `headers[*]` block (see
+      `docs/security/hardening/C2-frontend-csp.md`); a Vercel header always
+      wins over a `<meta http-equiv>` tag, so this duplicate is invisible
+      under normal conditions.
+
+      It only kicks in when the page is loaded WITHOUT the Vercel headers —
+      e.g. opened from disk via `file://`, served from a local Vite preview
+      that hasn't replicated the Vercel config, or proxied through a
+      development tool that strips response headers. In every one of those
+      cases the SPA still loads in a CSP-protected context, so an XSS
+      payload that slips into a dev build can't quietly exfiltrate data.
+
+      Note: `<meta>` CSP cannot include `report-uri` / `frame-ancestors` /
+      `sandbox` (HTML spec restriction), so the directive set here is a
+      reduced superset of the Vercel policy. Keep the two in sync when the
+      Vercel policy changes.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline' https://*.posthog.com https://*.sentry-cdn.com https://*.sentry.io https://js.sentry-cdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.posthog.com https://api.openclaw.com https://api.sergeant.app https://api.sergeantapp.com wss: ws:; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+    />
     <title>Sergeant — Твій персональний хаб життя</title>
   </head>
   <body>

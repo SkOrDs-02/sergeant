@@ -1,6 +1,7 @@
 # H8 — `Cross-Origin-Resource-Policy: cross-origin` without per-route guards
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Open
 
 | Field          | Value                                                |
 | -------------- | ---------------------------------------------------- |
@@ -36,7 +37,7 @@ the API into a CORB-bypassed surface usable by attacker-controlled origins
 helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   // …
-})
+});
 ```
 
 A `<img src="https://api.sergeant.example/api/me">` tag in any third-party
@@ -73,7 +74,11 @@ oracle that bypasses CORS preflight because images are simple requests.
   middleware:
 
 ```ts
-export function requireSameOriginCorp(_req: Request, res: Response, next: NextFunction) {
+export function requireSameOriginCorp(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
   next();
 }

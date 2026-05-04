@@ -1,19 +1,19 @@
 # Sprint 1 — Critical + найгірші High
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
-> **Status:** Active
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-04.
+> **Status:** Active (in flight — H2 closed, C2 Phase 1 closed, C1 + H1 still open)
 
 **Тривалість:** 1–2 тижні (target close: 2026-05-17).
 **Сумарний effort:** ~2.5 person-days.
 
 ## Скоуп
 
-| ID                                       | Title                                                                        | Severity | Effort | Owner    |
-| ---------------------------------------- | ---------------------------------------------------------------------------- | -------- | ------ | -------- |
-| [C1](./C1-mono-webhook-secret-in-url.md) | Mono webhook secret з URL → header + sanitize logs + rotate                  | Critical | 1d     | backend  |
-| [C2](./C2-frontend-csp.md)               | Додати CSP у `vercel.json` (Report-Only → Enforce)                           | Critical | 0.5d   | frontend |
-| [H1](./H1-mobile-bearer-storage.md)      | Capacitor secure-storage AC + `android:allowBackup="false"`                  | High     | 0.5d   | mobile   |
-| [H2](./H2-dependabot.md)                 | Створити `.github/dependabot.yml` (npm + actions + docker) — **In progress** | High     | 0.5h   | devops   |
+| ID                                       | Title                                                                            | Severity | Effort | Owner    | Status                                 |
+| ---------------------------------------- | -------------------------------------------------------------------------------- | -------- | ------ | -------- | -------------------------------------- |
+| [C1](./C1-mono-webhook-secret-in-url.md) | Mono webhook secret з URL → header + sanitize logs + rotate                      | Critical | 1d     | backend  | Open                                   |
+| [C2](./C2-frontend-csp.md)               | Додати CSP у `vercel.json` (Report-Only → Enforce)                               | Critical | 0.5d   | frontend | **Phase 1 closed** (2026-05-04) — soak |
+| [H1](./H1-mobile-bearer-storage.md)      | Capacitor secure-storage AC + `android:allowBackup="false"`                      | High     | 0.5d   | mobile   | Open                                   |
+| [H2](./H2-dependabot.md)                 | Створити `.github/dependabot.yml` (npm + actions + docker) + auto-merge workflow | High     | 0.5h   | devops   | **Closed** (2026-05-04)                |
 
 ## Чому саме ці чотири разом
 

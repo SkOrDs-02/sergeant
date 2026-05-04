@@ -1,15 +1,16 @@
 # L9 — Sentry `release` not SHA-pinned
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Open
 
-| Field          | Value                                         |
-| -------------- | --------------------------------------------- |
-| **Severity**   | Low                                           |
-| **Sprint**     | [Sprint 4](./sprint-4.md)                     |
-| **Owner**      | platform                                      |
-| **Effort**     | 0.1 person-day                                |
-| **Status**     | Open                                          |
-| **Discovered** | 2026-05-03 deep security review               |
+| Field          | Value                           |
+| -------------- | ------------------------------- |
+| **Severity**   | Low                             |
+| **Sprint**     | [Sprint 4](./sprint-4.md)       |
+| **Owner**      | platform                        |
+| **Effort**     | 0.1 person-day                  |
+| **Status**     | Open                            |
+| **Discovered** | 2026-05-03 deep security review |
 
 ## Summary
 
@@ -26,10 +27,10 @@ attribution.
 ## Correction points
 
 - `.github/workflows/deploy-*.yml` — `echo "SENTRY_RELEASE=$GITHUB_SHA" >>
-  $GITHUB_ENV`.
+$GITHUB_ENV`.
 - `apps/server/src/obs/sentry.ts` — `release: process.env.SENTRY_RELEASE`.
 - `apps/web/vite.config.ts` — `define: { __SENTRY_RELEASE__:
-  JSON.stringify(process.env.SENTRY_RELEASE) }`.
+JSON.stringify(process.env.SENTRY_RELEASE) }`.
 
 ## Verification
 
