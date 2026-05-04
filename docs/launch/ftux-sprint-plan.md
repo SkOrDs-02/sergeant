@@ -1,6 +1,6 @@
 # FTUX sprint plan — від прожарки до PR-ів
 
-> **Last validated:** 2026-05-03 by @Skords-01 (статус-калібрація S0). **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01 (S1.3 і S1.4 виконані). **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Implementation roadmap для 22 рекомендацій з [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md).
@@ -97,17 +97,22 @@
 
 **Goal:** Wizard → перший вхід в дашборд = чесний emotional contract. Прибрати fake-celebrations, fake-cifry, feature-orientation, "click here"-CTA.
 
+### Status check (2026-05-04)
+
+- **S1.3** і **S1.4** взяті як два перші PR-и S1, бо обидва без deps і без copy-reviewer-blocker-а. Статус — у таблиці нижче (✅ DONE).
+- **S1.1** / **S1.2** / **S1.5** — лишаються в черзі: S1.1 чекає copy-reviewer-а; S1.2 залежить від S1.1; S1.5 — простий лейбл-реней без блокерів, наступний кандидат у роботу.
+
 ### PR-розбивка
 
-| PR-id    | Назва                                                | LOC | Files (≈)                                                                                                                | Deps    | AC / метрики                                                                                                         |
-| -------- | ---------------------------------------------------- | --- | ------------------------------------------------------------------------------------------------------------------------ | ------- | -------------------------------------------------------------------------------------------------------------------- |
-| **S1.1** | feat(onboarding): rewrite hero copy (benefit-driven) | ~80 | `apps/web/src/core/onboarding/OnboardingWizard.tsx:237-264` · `apps/mobile/src/onboarding/OnboardingWizard.tsx` (parity) | S0 done | Final copy schválen copy-reviewer-ом · 3-5 кандидатів збережено в PostHog feature-flag для A/B · "rage-quit" tracked |
-| **S1.2** | feat(onboarding): outcome CTA on welcome             | ~40 | `apps/web/src/core/app/WelcomeScreen.tsx` · `apps/mobile/src/app/WelcomeScreen.tsx`                                      | S1.1    | CTA copy uniform web+mobile · feature-flag готовий до A/B                                                            |
-| **S1.3** | refactor(onboarding): remove wizard-confetti         | ~30 | `apps/web/src/core/onboarding/OnboardingWizard.tsx:388-401` · `apps/mobile/src/onboarding/OnboardingWizard.tsx`          | —       | wizard-finish → плавна transition без celebration-modal · CelebrationModal лишається тільки на real entry            |
-| **S1.4** | feat(welcome): peek backdrop disclaimer              | ~25 | `apps/web/src/core/app/WelcomeScreen.tsx:9-48`                                                                           | —       | disclaimer "Це приклад. Твій дашборд буде твоїм." видно з blurred-state, не attention-pull                           |
-| **S1.5** | refactor(onboarding): rename "Налаштувати модулі"    | ~20 | `apps/web/src/core/onboarding/OnboardingWizard.tsx`                                                                      | —       | label → "Що це за модулі?"; expanded-state містить корисну інформацію                                                |
+| PR-id    | Назва                                                | LOC | Files (≈)                                                                                                                | Deps    | Status (2026-05-04)                                                                                                                                                                                                      | AC / метрики                                                                                                         |
+| -------- | ---------------------------------------------------- | --- | ------------------------------------------------------------------------------------------------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| **S1.1** | feat(onboarding): rewrite hero copy (benefit-driven) | ~80 | `apps/web/src/core/onboarding/OnboardingWizard.tsx:237-264` · `apps/mobile/src/onboarding/OnboardingWizard.tsx` (parity) | S0 done | ❌ **TODO**. Чекає copy-reviewer-а (founder-friend / маркетолог / ЦА).                                                                                                                                                   | Final copy schválen copy-reviewer-ом · 3-5 кандидатів збережено в PostHog feature-flag для A/B · "rage-quit" tracked |
+| **S1.2** | feat(onboarding): outcome CTA on welcome             | ~40 | `apps/web/src/core/app/WelcomeScreen.tsx` · `apps/mobile/src/app/WelcomeScreen.tsx`                                      | S1.1    | ❌ **TODO** (blocked by S1.1).                                                                                                                                                                                           | CTA copy uniform web+mobile · feature-flag готовий до A/B                                                            |
+| **S1.3** | refactor(onboarding): remove wizard-confetti         | ~30 | `apps/web/src/core/onboarding/OnboardingWizard.tsx:388-401` · `apps/mobile/src/onboarding/OnboardingWizard.tsx`          | —       | ✅ **DONE** в [PR #1609](https://github.com/Skords-01/Sergeant/pull/1609). Mobile parity вже виконана раніше — mobile-wizard з минулого спринту без CelebrationModal, тільки `hapticSuccess()` на finish.                | wizard-finish → плавна transition без celebration-modal · CelebrationModal лишається тільки на real entry            |
+| **S1.4** | feat(welcome): peek backdrop disclaimer              | ~25 | `apps/web/src/core/app/WelcomeScreen.tsx:9-48`                                                                           | —       | ✅ **DONE** в [PR #1610](https://github.com/Skords-01/Sergeant/pull/1610). Mobile parity відкладена — mobile-wizard сьогодні без peek-backdrop equivalent (single splash), тримаємо як cross-cutting cleanup в §3 нижче. | disclaimer "Це приклад. Твій дашборд буде твоїм." видно з blurred-state, не attention-pull                           |
+| **S1.5** | refactor(onboarding): rename "Налаштувати модулі"    | ~20 | `apps/web/src/core/onboarding/OnboardingWizard.tsx`                                                                      | —       | ❌ **TODO**. Без deps і без copy-reviewer-а (фіксована copy у specs) — наступний кандидат у роботу.                                                                                                                      | label → "Що це за модулі?"; expanded-state містить корисну інформацію                                                |
 
-**Сума:** 5 PR-ів, ~195 LOC.
+**Сума:** 5 PR-ів, ~195 LOC. **Виконано:** 2/5 (S1.3, S1.4 — штамп 2026-05-04).
 
 **Risks:**
 
@@ -116,8 +121,8 @@
 
 **Cross-cutting:**
 
-- Mobile parity для S1.1, S1.2, S1.4 — обов'язково цього спринту.
-- Result note: `docs/launch/post-mortems/s1-honest-valueprop.md`.
+- Mobile parity для S1.1, S1.2, S1.4 — обов'язково цього спринту. _Update 2026-05-04: S1.4 mobile наразі немає peek-backdrop equivalent (mobile-wizard — одиночний splash без бенто позаду), тому disclaimer введений тільки на web — окремий хвостик для mobile відкладено й треба буде закрити при додаванні mobile-peek (якщо колись з'явиться)._
+- Result note: [`docs/launch/post-mortems/s1-honest-valueprop.md`](./post-mortems/s1-honest-valueprop.md).
 
 ---
 
