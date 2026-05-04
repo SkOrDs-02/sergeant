@@ -75,12 +75,13 @@ export default [
       ...reactHooks.configs.recommended.rules,
       // `eslint-plugin-react-hooks` v7 promoted a batch of new rules
       // (`set-state-in-effect`, `preserve-manual-memoization`,
-      // `static-components`, `use-memo`, `immutability`) to "error" in
-      // its `recommended` config (see #1572 dev-deps bump). The
-      // pre-v7 codebase has dozens of legacy `setState`-inside-effect
-      // and manual-memo patterns that pre-date the rules — they're
-      // queued for a dedicated cleanup initiative (see roadmap). Until
-      // that cleanup lands, disable the rules so:
+      // `static-components`, `use-memo`, `immutability`, `purity`,
+      // `refs-during-render`) to "error" in its `recommended` config
+      // (see #1572 dev-deps bump). The pre-v7 codebase has dozens of
+      // legacy `setState`-inside-effect, manual-memo, and ref-read
+      // patterns that pre-date the rules — they're queued for a
+      // dedicated cleanup initiative (see roadmap). Until that
+      // cleanup lands, disable the rules so:
       //   1. lint-staged on touched files doesn't fail with errors
       //      authored by other contributors before the rule existed,
       //   2. `pnpm lint` keeps a clean signal for genuine regressions.
@@ -89,6 +90,10 @@ export default [
       "react-hooks/set-state-in-effect": "off",
       "react-hooks/preserve-manual-memoization": "off",
       "react-hooks/purity": "off",
+      "react-hooks/refs": "off",
+      "react-hooks/immutability": "off",
+      "react-hooks/static-components": "off",
+      "react-hooks/use-memo": "off",
       // Design-system guardrail — the canonical eyebrow label must go
       // through <SectionHeading> (or <Label>) so tone/size changes stay
       // in one place. Add the file-scoped override below for the DS
