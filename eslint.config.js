@@ -437,6 +437,9 @@ export default [
       //   2 writes + 4 removes на ключ `hub_push_subscribed`).
       // - apps/web/src/shared/lib/storage/weeklyDigestStorage.ts (round 9:
       //   `webStorageReader.getItem` → `safeReadStringLS`).
+      // - apps/web/src/modules/nutrition/domain/nutritionBackup.ts (round 11:
+      //   2 reads + 4 writes мігровано на `safeReadLS`/`safeReadStringLS`/
+      //   `safeWriteLS`; module wrapper більше не у allowlist-і).
       // Cloud-sync internals — the queue / enqueue / state writer all
       // need direct access; users should call the cloud-sync API.
       "apps/web/src/core/cloudSync/logger.ts",
@@ -452,7 +455,6 @@ export default [
       // Module storage wrappers (legitimate primitives in their own
       // namespace).
       "apps/web/src/modules/finyk/lib/storageManager.ts",
-      "apps/web/src/modules/nutrition/domain/nutritionBackup.ts",
       // useWorkouts.ts: intentional direct-storage access — dispatches
       // FIZRUK_WORKOUTS_STORAGE_ERROR custom event on quota failure so the
       // UI can show a banner. safeWriteLS swallows the error silently.
