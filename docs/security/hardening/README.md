@@ -67,19 +67,21 @@
 
 Закриті Medium / Low картки (хронологічно):
 
-| ID                                             | Title                                                  | Status                                                                                                     | Sprint                    |
-| ---------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ------------------------- |
-| [M2](./M2-trust-proxy-parameterize.md)         | `trust proxy = 1` hard-coded                           | Closed (2026-05-04) — PR [#1682](https://github.com/Skords-01/Sergeant/pull/1682)                          | [Sprint 3](./sprint-3.md) |
-| [M4](./M4-groq-model-allowlist.md)             | `GROQ_TRANSCRIBE_MODEL` env-injectable, no allowlist   | Closed (2026-05-04) — batched M4 + M5 + M13 hardening PR                                                   | [Sprint 3](./sprint-3.md) |
-| [M5](./M5-audio-mime-normalize.md)             | Audio MIME aliases without normalization               | Closed (2026-05-04) — batched M4 + M5 + M13 hardening PR                                                   | [Sprint 3](./sprint-3.md) |
-| [M13](./M13-require-session-soft-loud-fail.md) | `requireSessionSoft` swallows DB errors as 401         | Closed (2026-05-04, server-side) — batched M4 + M5 + M13 hardening PR; client-side push back-off follow-up | [Sprint 3](./sprint-3.md) |
-| [M7](./M7-chat-tool-iteration-cap.md)          | Chat loop has no `MAX_TOOL_ITERATIONS` cap             | Closed (2026-05-04) — batched M7 + M12 hardening PR                                                        | [Sprint 3](./sprint-3.md) |
-| [M12](./M12-web-vitals-hardening.md)           | `web-vitals` ingest body cap, allowlist + UA normalise | Closed (2026-05-04) — batched M7 + M12 hardening PR                                                        | [Sprint 3](./sprint-3.md) |
-| [M6](./M6-image-magic-byte-check.md)           | Photo endpoints accept base64 without magic-byte check | Closed (2026-05-04) — batched M6 + M8 hardening PR                                                         | [Sprint 3](./sprint-3.md) |
-| [M8](./M8-prompt-injection-tool-output.md)     | Tool-result blocks not wrapped vs prompt injection     | Closed (2026-05-04) — batched M6 + M8 hardening PR                                                         | [Sprint 3](./sprint-3.md) |
-| [M11](./M11-eslint-plugin-security.md)         | No SAST lint rules for non-literal SQL/FS calls        | Closed (2026-05-04) — PR [#1747](https://github.com/Skords-01/Sergeant/pull/1747)                          | [Sprint 3](./sprint-3.md) |
-| [M15](./M15-console-allowlist-fail-closed.md)  | Confirm `CONSOLE_BOT_TOKEN` allowlist is fail-closed   | Closed (2026-05-04) — PR [#1742](https://github.com/Skords-01/Sergeant/pull/1742)                          | [Sprint 3](./sprint-3.md) |
-| [I1](./I1-codeql-workflow.md)                  | Add CodeQL SAST workflow                               | Closed (2026-05-04) — PR [#1749](https://github.com/Skords-01/Sergeant/pull/1749)                          | [Sprint 3](./sprint-3.md) |
+| ID                                             | Title                                                   | Status                                                                                                     | Sprint                    |
+| ---------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------- |
+| [M2](./M2-trust-proxy-parameterize.md)         | `trust proxy = 1` hard-coded                            | Closed (2026-05-04) — PR [#1682](https://github.com/Skords-01/Sergeant/pull/1682)                          | [Sprint 3](./sprint-3.md) |
+| [M4](./M4-groq-model-allowlist.md)             | `GROQ_TRANSCRIBE_MODEL` env-injectable, no allowlist    | Closed (2026-05-04) — batched M4 + M5 + M13 hardening PR                                                   | [Sprint 3](./sprint-3.md) |
+| [M5](./M5-audio-mime-normalize.md)             | Audio MIME aliases without normalization                | Closed (2026-05-04) — batched M4 + M5 + M13 hardening PR                                                   | [Sprint 3](./sprint-3.md) |
+| [M13](./M13-require-session-soft-loud-fail.md) | `requireSessionSoft` swallows DB errors as 401          | Closed (2026-05-04, server-side) — batched M4 + M5 + M13 hardening PR; client-side push back-off follow-up | [Sprint 3](./sprint-3.md) |
+| [M7](./M7-chat-tool-iteration-cap.md)          | Chat loop has no `MAX_TOOL_ITERATIONS` cap              | Closed (2026-05-04) — batched M7 + M12 hardening PR                                                        | [Sprint 3](./sprint-3.md) |
+| [M12](./M12-web-vitals-hardening.md)           | `web-vitals` ingest body cap, allowlist + UA normalise  | Closed (2026-05-04) — batched M7 + M12 hardening PR                                                        | [Sprint 3](./sprint-3.md) |
+| [M6](./M6-image-magic-byte-check.md)           | Photo endpoints accept base64 without magic-byte check  | Closed (2026-05-04) — batched M6 + M8 hardening PR                                                         | [Sprint 3](./sprint-3.md) |
+| [M8](./M8-prompt-injection-tool-output.md)     | Tool-result blocks not wrapped vs prompt injection      | Closed (2026-05-04) — batched M6 + M8 hardening PR                                                         | [Sprint 3](./sprint-3.md) |
+| [M11](./M11-eslint-plugin-security.md)         | No SAST lint rules for non-literal SQL/FS calls         | Closed (2026-05-04) — PR [#1747](https://github.com/Skords-01/Sergeant/pull/1747)                          | [Sprint 3](./sprint-3.md) |
+| [M15](./M15-console-allowlist-fail-closed.md)  | Confirm `CONSOLE_BOT_TOKEN` allowlist is fail-closed    | Closed (2026-05-04) — PR [#1742](https://github.com/Skords-01/Sergeant/pull/1742)                          | [Sprint 3](./sprint-3.md) |
+| [M16](./M16-telegram-markdown-v2.md)           | Telegram `parse_mode: "Markdown"` is the legacy variant | Closed (2026-05-04) — PR [#1765](https://github.com/Skords-01/Sergeant/pull/1765)                          | [Sprint 3](./sprint-3.md) |
+| [M18](./M18-openclaw-per-call-usd-cap.md)      | OpenClaw daily $5 budget without per-call cap           | Closed (2026-05-04) — PR [#1760](https://github.com/Skords-01/Sergeant/pull/1760)                          | [Sprint 3](./sprint-3.md) |
+| [I1](./I1-codeql-workflow.md)                  | Add CodeQL SAST workflow                                | Closed (2026-05-04) — PR [#1749](https://github.com/Skords-01/Sergeant/pull/1749)                          | [Sprint 3](./sprint-3.md) |
 
 ## Cross-references
 
