@@ -1,6 +1,6 @@
 # Web deep-dive — Security, observability, testing & DevX
 
-> **Last validated:** 2026-05-03 by @Skords-01.
+> **Last validated:** 2026-05-04 by @Skords-01.
 > **Status:** Active
 > **Scope:** PII у логах, Sentry↔requestId correlation, CSP, contract тести, mutation testing, Storybook, C4-діаграми, CHANGELOG, Hard Rules registry, agent onboarding, audit docs status.
 > **Related:** [`00-overview.md`](./00-overview.md), `docs/audits/`, `docs/security/`, `docs/agents/`.
@@ -331,6 +331,8 @@ OK.
 ---
 
 ## 11. Audit docs status table
+
+> **2026-05-04 update.** `docs/audits/README.md` тепер має суцільну таблицю Status / Implemented / Outstanding / Tracker для всіх живих файлів + ad-hoc діагностик секцію. Додано «Як читати таблицю» + «Process» (CI freshness + quarterly recompilation). Більше не треба шукати по гіту, чи аудит ще актуальний.
 
 **Що бачу.** `docs/audits/*` має 8+ файлів, але без status-індикатора («Active», «Implemented», «Superseded»). Reader не знає, чи це актуальна gap-list, чи історія.
 
