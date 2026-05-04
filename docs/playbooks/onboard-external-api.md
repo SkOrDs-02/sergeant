@@ -1,9 +1,15 @@
 # Playbook: Onboard External API
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** "Інтегрувати нову зовнішню API" / додати новий third-party сервіс / нова банківська інтеграція / новий AI-провайдер.
+
+## Owner surface
+
+- Primary surface: `apps/server/src/lib`, `apps/server/src/modules/<integration>`
+- Coupled surface: `packages/api-client`, `.env.example`
+- Governing skill: `sergeant-server-api`
 
 ---
 

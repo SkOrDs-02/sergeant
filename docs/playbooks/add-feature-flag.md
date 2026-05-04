@@ -1,9 +1,15 @@
 # Playbook: Add a Feature Flag
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** "Put feature X behind a flag" / any new experimental feature that should be toggleable without a redeploy.
+
+## Owner surface
+
+- Primary surface: `apps/web/src/core/lib/featureFlags.ts`
+- Coupled surface: `apps/web/src` (every `useFlag`/`getFlag` call site)
+- Governing skill: `sergeant-web-ui`
 
 ---
 

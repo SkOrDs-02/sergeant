@@ -1,9 +1,15 @@
 # Playbook: Debug HubChat Tool
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-06-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** «Асистент каже що зробив, але нічого не сталось» / «Натиснув кнопку quick action — нема ефекту» / tool call повернувся текстом замість дії / `Невідома дія: …` у відповіді.
+
+## Owner surface
+
+- Primary surfaces: `apps/server/src/modules/chat`, `apps/web/src/core/lib/chatActions`
+- Coupled surface: `apps/web/src/core/hub` (HubChat UI)
+- Governing skill: `sergeant-hubchat`
 
 ---
 

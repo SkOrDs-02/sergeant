@@ -1,9 +1,15 @@
 # Playbook: Sync RN Migration Progress
 
-> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-28.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
-**Trigger:** один або кілька PR-ів із `port-web-screen-to-mobile.md` ([#445](https://github.com/Skords-01/Sergeant/pull/445), [#446](https://github.com/Skords-01/Sergeant/pull/446), …) змерджені, треба оновити tracker [`docs/mobile/react-native-migration.md`](../mobile/react-native-migration.md).
+**Trigger:** після merge порту web → mobile (див. `port-web-screen-to-mobile.md`) — оновити progress tracker `docs/mobile/react-native-migration.md`.
+
+## Owner surface
+
+- Primary surface: `docs/mobile/react-native-migration.md`
+- Coupled surface: `apps/mobile`, `apps/web` (ports merged in those surfaces)
+- Governing skill: `sergeant-mobile-expo`
 
 ---
 

@@ -1,9 +1,15 @@
 # Playbook: Bump Dependency Safely
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** "Оновити X до версії Y" / Renovate PR з major-bump / security advisory на залежність.
+
+## Owner surface
+
+- Primary surface: `package.json` (root + per-workspace)
+- Coupled surface: `pnpm-lock.yaml`, `renovate.json`
+- Governing skill: `sergeant-bugfix-and-regression`
 
 ---
 

@@ -1,9 +1,15 @@
 # Playbook: Rotate Secrets
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-06-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** "Secret leaked" / планова ротація / security audit / підозріла активність.
+
+## Owner surface
+
+- Primary surface: Railway env vars, provider consoles (Anthropic, Mono, Voyage, …)
+- Coupled surface: `.env.example`, `apps/server/src/config`
+- Governing skill: `sergeant-deploy-and-observability`
 
 ---
 

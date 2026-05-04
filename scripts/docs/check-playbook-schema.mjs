@@ -14,11 +14,16 @@
 //   1. H1 line: `# Playbook: <title>`
 //   2. Block-quote line: `> **Last validated:** YYYY-MM-DD by @<owner>. **Next review:** YYYY-MM-DD.`
 //   3. Block-quote line: `> **Status:** <one of ALLOWED_STATUSES>`
-//   4. Trigger line:    `**Trigger:** <text>`
+//   4. Trigger line:    `**Trigger:** <text>` (≤ 240 chars of body, after the marker)
+//   5. `## Owner surface` H2 section, containing a `Governing skill:` line
+//      that names a `.agents/skills/<name>/` directory.
+//   6. `## Verification` H2 section with at least one Markdown checkbox
+//      (`- [ ]` or `- [x]`).
 //
 // Items 2, 3, 4 must appear before the first `## ` H2 heading. Order between
 // (2) and (3) does not matter (some playbooks have them on adjacent lines,
-// some don't).
+// some don't). Items 5 and 6 live below H2 cutoffs; their presence is checked
+// via H2 section detection over the full file, not the preamble.
 //
 // Skipped files (treated as non-playbooks):
 //   - docs/playbooks/INDEX.md       (auto-generated lookup)
@@ -157,10 +162,83 @@ export function validatePlaybook(content, opts = {}) {
         `\`**Trigger:**\` is too short (got '${body}', expected at least 10 chars of context)`,
       );
     }
+    // Cap to keep INDEX.md scannable (initiative 0009 PR 1.4 acceptance
+    // criterion: «`INDEX.md` тригери не обрізаються»). 240 chars matches
+    // the budget the initiative documents — long Triggers go in the body.
+    if (body.length > MAX_TRIGGER_LENGTH) {
+      errors.push(
+        `\`**Trigger:**\` is too long (${body.length} chars; max ${MAX_TRIGGER_LENGTH}). Trim to a single sentence and move detail into the body.`,
+      );
+    }
+  }
+
+  // 5. Owner surface section + Governing skill line.
+  const ownerSection = sliceH2Section(lines, /^##\s+Owner surface\s*$/);
+  if (ownerSection === null) {
+    errors.push(
+      "missing `## Owner surface` section (declare `Primary surface`, optional `Coupled surface`, and `Governing skill:`).",
+    );
+  } else {
+    // Accept both `Governing skill:` (single) and `Governing skills:`
+    // (multiple) — playbooks that span two surfaces (mobile+web, hubchat
+    // + deploy) legitimately list more than one.
+    const skillLine = ownerSection.find((l) => /Governing skills?:/.test(l));
+    if (!skillLine) {
+      errors.push(
+        "`## Owner surface` is missing a `Governing skill:` line that names a `.agents/skills/<name>/` directory.",
+      );
+    } else {
+      // Accept formats like "- Governing skill: `sergeant-server-api`" or
+      // "Governing skills: `sergeant-mobile-expo`, `sergeant-web-ui`".
+      // The slug must match the skill-shape conventions: kebab-case,
+      // ASCII letters/digits/hyphen, no leading hyphen.
+      const m = skillLine.match(
+        /Governing skills?:\s*`?([a-z0-9][a-z0-9-]*)`?/i,
+      );
+      if (!m) {
+        errors.push(
+          `\`Governing skill:\` is malformed: '${skillLine.trim()}'. Expected something like '- Governing skill: \`sergeant-server-api\`'.`,
+        );
+      }
+    }
+  }
+
+  // 6. Verification section with ≥ 1 checkbox.
+  const verificationSection = sliceH2Section(lines, /^##\s+Verification\s*$/);
+  if (verificationSection === null) {
+    errors.push(
+      "missing `## Verification` section (must contain at least one `- [ ]` or `- [x]` checkbox).",
+    );
+  } else {
+    const hasCheckbox = verificationSection.some((l) =>
+      /^\s*-\s*\[[ xX]\]\s+/.test(l),
+    );
+    if (!hasCheckbox) {
+      errors.push(
+        "`## Verification` section has no checkboxes; add at least one `- [ ]` item that an agent or reviewer can tick.",
+      );
+    }
   }
 
   return errors;
 }
+
+/**
+ * Slice the lines that belong to the H2 section whose heading matches
+ * `headingRegex`. Returns the lines BETWEEN that heading and the next H2
+ * (or end of file), exclusive of both. Returns `null` if no matching
+ * heading exists.
+ */
+export function sliceH2Section(lines, headingRegex) {
+  const startIdx = lines.findIndex((l) => headingRegex.test(l));
+  if (startIdx < 0) return null;
+  const after = lines.slice(startIdx + 1);
+  const nextH2 = after.findIndex((l) => /^## /.test(l));
+  return nextH2 < 0 ? after : after.slice(0, nextH2);
+}
+
+/** Trigger length cap (chars of body, after `**Trigger:**`). */
+export const MAX_TRIGGER_LENGTH = 240;
 
 /** Walk docs/playbooks/ for .md files that are real playbooks. */
 export function collectPlaybooks(dir = PLAYBOOK_DIR) {
@@ -218,7 +296,7 @@ function main() {
       for (const e of errors) console.error(`    - ${e}`);
     }
     console.error(
-      "\nFix: update the offending playbook(s) so each one has an H1 'Playbook: <title>', a freshness header, a `> **Status:**` line, and a `**Trigger:**` line. See docs/playbooks/_TEMPLATE-decision-tree.md or any well-formed playbook for the exact shape.",
+      "\nFix: update the offending playbook(s) so each one has an H1 'Playbook: <title>', a freshness header, a `> **Status:**` line, a `**Trigger:**` line (≤ 240 chars), an `## Owner surface` section with a `Governing skill:` entry, and an `## Verification` section with at least one checkbox. See docs/playbooks/_TEMPLATE-decision-tree.md or any well-formed playbook for the exact shape.",
     );
   }
 

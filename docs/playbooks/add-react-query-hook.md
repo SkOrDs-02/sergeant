@@ -1,9 +1,15 @@
 # Playbook: Add React Query Hook
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** «Дай хук який тягне X з API» / новий useQuery або useMutation у `apps/web` / нова server-state дата.
+
+## Owner surface
+
+- Primary surface: `apps/web/src/shared/lib/api/queryKeys.ts`
+- Coupled surface: `apps/web/src/modules/**` (hook call sites), `packages/api-client`
+- Governing skill: `sergeant-web-ui`
 
 ---
 

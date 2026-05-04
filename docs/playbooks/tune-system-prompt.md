@@ -1,9 +1,15 @@
 # Playbook: Tune System Prompt
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** «AI відповідає не так як треба» / «Зміни тон асистента» / «Додай нову інструкцію в системний промпт» / зміна як модель розуміє контекст модулі.
+
+## Owner surface
+
+- Primary surface: `apps/server/src/modules/chat/toolDefs/systemPrompt.ts`
+- Coupled surface: `apps/server/src/modules/chat/tools.ts`, prompt-cache budget
+- Governing skill: `sergeant-hubchat`
 
 ---
 

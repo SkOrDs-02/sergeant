@@ -1,6 +1,15 @@
 # Playbook: <Title>
 
-**Trigger:** <When to use this playbook — symptoms, alerts, or requests that activate it.>
+> **Last validated:** YYYY-MM-DD by @<owner>. **Next review:** YYYY-MM-DD.
+> **Status:** Active
+
+**Trigger:** <When to use this playbook — symptoms, alerts, or requests that activate it. Keep ≤ 240 chars; long detail goes in the body.>
+
+## Owner surface
+
+- Primary surface: `<path/to/primary>`
+- Coupled surface: `<path/to/coupled>` (optional — drop if not applicable)
+- Governing skill: `<sergeant-skill-name>`
 
 ---
 

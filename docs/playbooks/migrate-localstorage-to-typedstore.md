@@ -1,9 +1,15 @@
 # Playbook: Migrate localStorage to typedStore
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** "Мігрувати файл X з прямого localStorage на typedStore" / зменшити TODO-список у ESLint allowlist / `frontend-tech-debt.md` #2.
+
+## Owner surface
+
+- Primary surface: `apps/web/src` (callers of `localStorage.*`)
+- Coupled surface: `apps/web/src/shared/lib/typedStore`, `eslint.config.js` allowlist
+- Governing skill: `sergeant-web-ui`
 
 ---
 

@@ -1,9 +1,15 @@
 # Playbook: Fix Exhaustive Deps Warnings
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** "Виправити exhaustive-deps warnings" / ESLint `react-hooks/exhaustive-deps` violations / стале закриття з `apps-web-exhaustive-deps.md`.
+
+## Owner surface
+
+- Primary surface: `apps/web/src` (React hooks)
+- Coupled surface: `apps/mobile/src` (RN hooks)
+- Governing skill: `sergeant-bugfix-and-regression`
 
 ---
 

@@ -1,9 +1,15 @@
 # Playbook: Add Push Notification
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** «Надсилай push коли X» / «Додати новий тип сповіщення» / нагадування / реакція на зовнішню подію (Mono webhook, AI insight, scheduler).
+
+## Owner surface
+
+- Primary surface: `apps/server/src/push`
+- Coupled surface: `packages/shared/src/types/index.ts` (`PushPayload`), `apps/web/public` (service worker), `apps/mobile`
+- Governing skill: `sergeant-server-api`
 
 ---
 

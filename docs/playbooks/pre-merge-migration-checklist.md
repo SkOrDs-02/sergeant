@@ -1,9 +1,15 @@
 # Playbook: Pre-Merge Migration Checklist
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-06-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** PR містить файли в `apps/server/src/migrations/` (новий `NNN_*.sql` або зміна існуючого `*.down.sql`).
+
+## Owner surface
+
+- Primary surface: `apps/server/src/migrations`
+- Coupled surface: `apps/server/src/modules` (serializers — rule #1), `packages/api-client` (rule #3)
+- Governing skill: `sergeant-data-and-migrations`
 
 > Призначення цього playbook-у — це **обов'язковий чек-лист**, який має бути скопійований у PR description і відмічений до merge. Закриває аудитний пункт `PR-5.C` (`docs/audits/2026-04-26-sergeant-audit-devin.md`).
 
@@ -95,6 +101,17 @@
 1. **Перевірити кожен пункт A-J у PR description** — checkboxes мають бути відмічені автором, а рев'юер їх валідує (не просто візьме на віру).
 2. **Запитати про phase-2 PR**, якщо є TODO-rename / TODO-drop. Без явного follow-up issue — request changes.
 3. **Заблокувати merge**, якщо `migration-lint` CI fail, навіть з escape-hatch — спочатку перевірити, що `due:` дата у майбутньому, і tracking issue існує.
+
+---
+
+## Verification
+
+Reviewer must confirm before approving merge:
+
+- [ ] Author has copied sections A–J above into the PR description and ticked each row.
+- [ ] `migration-lint` CI job is green (or has an explicit escape-hatch with a future `due:` date and a tracking issue).
+- [ ] `Test coverage (vitest)` CI job is green — covers the testcontainers migration sanity check.
+- [ ] If a phase-2 follow-up is required (rename / drop after grace period), a tracking issue is linked in the PR description.
 
 ---
 

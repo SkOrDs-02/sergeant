@@ -1,9 +1,15 @@
 # Playbook: Add New Page Route
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** "Додати нову сторінку в apps/web" / новий розділ UI / новий route для SPA.
+
+## Owner surface
+
+- Primary surface: `apps/web/src/modules`, `apps/web/src/core/pages`
+- Coupled surface: `apps/web/src/App.tsx` (route registration)
+- Governing skill: `sergeant-web-ui`
 
 ---
 

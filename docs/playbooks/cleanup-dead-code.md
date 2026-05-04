@@ -1,9 +1,15 @@
 # Playbook: Cleanup Dead Code
 
-> **Last validated:** 2026-04-29 by @Skords-01. **Next review:** 2026-07-29.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** "Remove X and all its usages" / deleting a deprecated module, component, utility, or feature flag.
+
+## Owner surface
+
+- Primary surface: any directory under `apps/` or `packages/` containing the dead symbol
+- Coupled surface: `apps/web/src/shared/lib/api/queryKeys.ts`, `packages/api-client`, `docs/`
+- Governing skill: `sergeant-monorepo-boundaries`
 
 ---
 
@@ -115,7 +121,7 @@ pnpm build         # must succeed
 
 ---
 
-## Verification Checklist
+## Verification
 
 - [ ] `grep -rn "<symbol>"` returns zero hits across the monorepo
 - [ ] `pnpm lint` — green

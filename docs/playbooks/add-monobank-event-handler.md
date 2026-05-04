@@ -1,9 +1,15 @@
 # Playbook: Add Monobank Event Handler
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** "Треба обробити нову подію X від Monobank" / новий тип webhook event / новий статус транзакції від Monobank API.
+
+## Owner surface
+
+- Primary surface: `apps/server/src/modules/monobank`
+- Coupled surface: `packages/api-client`, `apps/web/src/modules/finyk`
+- Governing skill: `sergeant-server-api`
 
 ---
 

@@ -1,11 +1,17 @@
 # Playbook: Enable Anthropic Prompt Caching
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Status:** ✅ active (PR-12.A, Sprint 0)
 
 **Trigger:** «Зменшити cost Anthropic» / «Anthropic API занадто дорогий» / `aiTokensTotal{kind="prompt"}` росте лінійно з трафіком, бо стабільні `SYSTEM_PREFIX` і `TOOLS` повторюються на кожному запиті.
+
+## Owner surface
+
+- Primary surface: `apps/server/src/modules/chat`
+- Coupled surface: `apps/server/src/lib/anthropic` (SDK wrapper), Grafana dashboards
+- Governing skill: `sergeant-hubchat`
 
 ---
 

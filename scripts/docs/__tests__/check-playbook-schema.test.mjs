@@ -15,6 +15,8 @@ import { fileURLToPath } from "node:url";
 import {
   validatePlaybook,
   isSkippableFile,
+  sliceH2Section,
+  MAX_TRIGGER_LENGTH,
 } from "../check-playbook-schema.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -29,11 +31,20 @@ const validPlaybook = `# Playbook: Example
 
 **Trigger:** "do the example thing" / triggers when something interesting happens.
 
+## Owner surface
+
+- Primary surface: \`apps/web\`
+- Governing skill: \`sergeant-web-ui\`
+
 ---
 
 ## Steps
 
 1. Step one.
+
+## Verification
+
+- [ ] Tests pass.
 `;
 
 test("isSkippableFile returns true for INDEX, README, _TEMPLATE*, and underscore-prefixed", () => {
@@ -199,6 +210,130 @@ test("validatePlaybook flags too-short Trigger", () => {
     errors.some((e) => /Trigger.*too short/.test(e)),
     errors.join("; "),
   );
+});
+
+test("validatePlaybook flags too-long Trigger (> 240 chars of body)", () => {
+  // Body 241 chars = exactly one over the cap; should fail.
+  const longBody = "x".repeat(MAX_TRIGGER_LENGTH + 1);
+  const errors = validatePlaybook(
+    validPlaybook.replace(/^\*\*Trigger:\*\*.*$/m, `**Trigger:** ${longBody}`),
+    { today: TODAY },
+  );
+  assert.ok(
+    errors.some((e) => /Trigger.*too long/.test(e)),
+    errors.join("; "),
+  );
+});
+
+test("validatePlaybook accepts Trigger at exactly the cap (240 chars)", () => {
+  const exact = "y".repeat(MAX_TRIGGER_LENGTH);
+  const errors = validatePlaybook(
+    validPlaybook.replace(/^\*\*Trigger:\*\*.*$/m, `**Trigger:** ${exact}`),
+    { today: TODAY },
+  );
+  assert.deepEqual(errors, [], errors.join("; "));
+});
+
+test("validatePlaybook flags missing `## Owner surface` section", () => {
+  const errors = validatePlaybook(
+    validPlaybook.replace(/## Owner surface[\s\S]*?(?=\n---)/, ""),
+    { today: TODAY },
+  );
+  assert.ok(
+    errors.some((e) => /missing `## Owner surface`/.test(e)),
+    errors.join("; "),
+  );
+});
+
+test("validatePlaybook flags `## Owner surface` without a `Governing skill:` line", () => {
+  const errors = validatePlaybook(
+    validPlaybook.replace(/- Governing skill:.*\n/, ""),
+    { today: TODAY },
+  );
+  assert.ok(
+    errors.some((e) => /Owner surface.*missing.*Governing skill/.test(e)),
+    errors.join("; "),
+  );
+});
+
+test("validatePlaybook accepts plural `Governing skills:` form", () => {
+  // Playbooks that span two surfaces (mobile+web, hubchat+deploy) list
+  // multiple skills; the schema should not force them into a single name.
+  const errors = validatePlaybook(
+    validPlaybook.replace(
+      /- Governing skill: `sergeant-web-ui`/,
+      "- Governing skills: `sergeant-mobile-expo`, `sergeant-web-ui`",
+    ),
+    { today: TODAY },
+  );
+  assert.deepEqual(errors, [], errors.join("; "));
+});
+
+test("validatePlaybook flags malformed `Governing skill:` slug (e.g. starts with hyphen)", () => {
+  const errors = validatePlaybook(
+    validPlaybook.replace(
+      /- Governing skill: `sergeant-web-ui`/,
+      "- Governing skill: `-bad-slug`",
+    ),
+    { today: TODAY },
+  );
+  assert.ok(
+    errors.some((e) => /Governing skill.*malformed/.test(e)),
+    errors.join("; "),
+  );
+});
+
+test("validatePlaybook flags missing `## Verification` section", () => {
+  const errors = validatePlaybook(
+    validPlaybook.replace(/## Verification[\s\S]*$/, ""),
+    { today: TODAY },
+  );
+  assert.ok(
+    errors.some((e) => /missing `## Verification`/.test(e)),
+    errors.join("; "),
+  );
+});
+
+test("validatePlaybook flags `## Verification` section with no checkboxes", () => {
+  const errors = validatePlaybook(
+    validPlaybook.replace(
+      /## Verification[\s\S]*$/,
+      "## Verification\n\n- A bullet, but not a checkbox.\n",
+    ),
+    { today: TODAY },
+  );
+  assert.ok(
+    errors.some((e) => /Verification.*no checkboxes/.test(e)),
+    errors.join("; "),
+  );
+});
+
+test("validatePlaybook accepts `- [x]` checked checkbox in Verification", () => {
+  const errors = validatePlaybook(
+    validPlaybook.replace("- [ ] Tests pass.", "- [x] Tests pass."),
+    { today: TODAY },
+  );
+  assert.deepEqual(errors, [], errors.join("; "));
+});
+
+test("sliceH2Section returns null when heading is absent", () => {
+  assert.equal(
+    sliceH2Section(["# H1", "## Other", "body"], /^##\s+Verification/),
+    null,
+  );
+});
+
+test("sliceH2Section stops at the next H2", () => {
+  const lines = [
+    "# H1",
+    "## Owner surface",
+    "- Primary: a",
+    "- Governing skill: `x`",
+    "## Steps",
+    "1. step",
+  ];
+  const slice = sliceH2Section(lines, /^##\s+Owner surface/);
+  assert.deepEqual(slice, ["- Primary: a", "- Governing skill: `x`"]);
 });
 
 test("validatePlaybook treats first H2 as the cutoff (Trigger after H2 is invisible)", () => {

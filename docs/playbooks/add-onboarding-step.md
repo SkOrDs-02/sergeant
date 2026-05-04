@@ -1,9 +1,15 @@
 # Playbook: Add Onboarding Step
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** «Додай новий крок в онбординг» / зміна послідовності перших кроків нового юзера / новий FTUX-етап.
+
+## Owner surface
+
+- Primary surface: `apps/web/src/core/onboarding`
+- Coupled surface: `packages/shared/src/ftux`
+- Governing skill: `sergeant-web-ui`
 
 ---
 

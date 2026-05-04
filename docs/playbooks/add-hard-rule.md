@@ -5,6 +5,12 @@
 
 **Trigger:** "Add a new Hard Rule" / "Add a new mandatory convention" / any rule that should be enforced across all contributors and AI agents.
 
+## Owner surface
+
+- Primary surface: `docs/governance/hard-rules.json`
+- Coupled surface: `AGENTS.md`, `CONTRIBUTING.md`, `docs/governance/hard-rules-matrix.md`
+- Governing skill: `sergeant-review-and-merge`
+
 ---
 
 ## Steps
