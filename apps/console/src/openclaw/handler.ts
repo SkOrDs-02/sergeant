@@ -1123,9 +1123,12 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     }> = [];
 
     for (const persona of COUNCIL_PERSONAS) {
-      await ctx.reply(`*${PERSONA_LABEL[persona]}* думає…`, {
-        parse_mode: "Markdown",
-      });
+      // M16: explicit MarkdownV2 — escape PERSONA_LABEL just in case a
+      // future label introduces a special char (`-`, `.`, `!`, …).
+      await ctx.reply(
+        `*${escapeTelegramMarkdownV2(PERSONA_LABEL[persona])}* ${escapeTelegramMarkdownV2("думає…")}`,
+        { parse_mode: "MarkdownV2" },
+      );
       const turn = await runAgentTurn(ctx, question, "dm", persona, {
         maxIterationsOverride: PER_TURN_ITER_CAP,
         metadataExtras: { council: true, councilStep: persona },
@@ -1163,7 +1166,8 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
       "Будь стислий, леди з висновку.",
     ].join("\n");
 
-    await ctx.reply("*Cofounder synthesis…*", { parse_mode: "Markdown" });
+    // M16: literal contains no MarkdownV2 special chars; just flip the parse_mode.
+    await ctx.reply("*Cofounder synthesis…*", { parse_mode: "MarkdownV2" });
     await runAgentTurn(ctx, synthesisPrompt, "dm", "cofounder", {
       maxIterationsOverride: Math.min(4, maxIterations),
       metadataExtras: { council: true, councilStep: "synthesis" },

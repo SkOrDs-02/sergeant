@@ -73,25 +73,10 @@ function parseOpenClawMaxIterations(value: string | undefined): number {
   return Math.floor(parsed);
 }
 
-const HELP_TEXT = [
-  "*Sergeant Console* - Telegram control surface for ops, marketing, and AI agents",
-  "",
-  "*/ops* <question> - ask the Ops agent",
-  "*/content* <topic> - ask the Marketing agent",
-  "",
-  "*/status* <scope> - read-only agent/system status",
-  "*/plan* <task> - ask n8n to prepare a specialist-agent plan",
-  "*/assign* <specialist> <task> - request agent work; risky work needs approval",
-  "*/review* <target> - review PR, issue, CI, or workflow state",
-  "*/run* <check> - request a controlled check or automation",
-  "*/approve* <task-id|command> - approve a risky dispatcher action",
-  "*/cancel* <task-id> - cancel a queued dispatcher task",
-  "*/logs* <target> - fetch read-only logs or summaries",
-  "",
-  "Free text still routes to ops or marketing by context.",
-  "",
-  "_Version: Telegram control plane + n8n dispatcher_",
-].join("\n");
+// M16: HELP_TEXT lives in `./help-text.ts` so the MarkdownV2 snapshot
+// test can import it without booting the bot's `main()` side-effect.
+export { HELP_TEXT } from "./help-text.js";
+import { HELP_TEXT } from "./help-text.js";
 
 async function main() {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
@@ -126,12 +111,12 @@ async function main() {
         await ctx.reply("Access denied.");
         return;
       }
-      await ctx.reply(HELP_TEXT, { parse_mode: "Markdown" });
+      await ctx.reply(HELP_TEXT, { parse_mode: "MarkdownV2" });
     });
 
     bot.command("help", async (ctx) => {
       if (!checkAuth(ctx.from?.id)) return;
-      await ctx.reply(HELP_TEXT, { parse_mode: "Markdown" });
+      await ctx.reply(HELP_TEXT, { parse_mode: "MarkdownV2" });
     });
 
     bot.on("message:text", async (ctx) => {
