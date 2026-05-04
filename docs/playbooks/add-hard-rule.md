@@ -1,9 +1,9 @@
-# Playbook: Add a Hard Rule
+# Playbook: Додати Hard Rule
 
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
-**Trigger:** "Add a new Hard Rule" / "Add a new mandatory convention" / any rule that should be enforced across all contributors and AI agents.
+**Trigger:** "Додати новий Hard Rule" / "Додати нову обов'язкову конвенцію" / будь-яке правило, яке потрібно енфорсити для всіх контриб'юторів і AI-агентів.
 
 ## Owner surface
 
@@ -15,71 +15,71 @@
 
 ## Steps
 
-### 1. Claim the next rule number
+### 1. Зарезервуй наступний номер правила
 
-Before writing content, **pull latest `main`** and find the current highest rule number:
+Перш ніж писати контент, **підтягни свіжий `main`** і подивись поточний максимальний номер правила:
 
 ```bash
 git pull origin main
 grep -E '^### [0-9]+\.' AGENTS.md | tail -1
 ```
 
-Use `N+1` as your new rule number. Do **not** claim a number without checking first — merge races can cause slot collisions (this happened with PR #1144 / #1146).
+Як новий номер бери `N+1`. **Не** резервуй номер без перевірки — гонки на мердж призводять до колізії слотів (так було з PR #1144 / #1146).
 
-### 2. Write the canonical entry in `AGENTS.md`
+### 2. Запиши канонічний запис у `AGENTS.md`
 
-Add the rule under `## Hard rules (do not break)` in `AGENTS.md`, using this structure:
-
-```md
-### N. Short imperative title
-
-> Why a hard rule? One paragraph explaining the problem this prevents,
-> ideally linking to a real incident or PR that motivated it.
-
-Explanation of the rule. Include:
-
-- What to do (✅ GOOD example)
-- What not to do (❌ BAD example)
-- Which ESLint rule enforces it (if any)
-- Which paths/modules are affected or exempt
-```
-
-Follow the style of existing rules (especially #8–#12 which have `GOOD`/`BAD` code examples).
-
-### 3. Mirror in `CONTRIBUTING.md`
-
-Add a one-line summary to the `### Hard rules (from AGENTS.md)` section in `CONTRIBUTING.md`:
+Додай правило в розділ `## Hard rules (do not break)` у `AGENTS.md`, дотримуючись цієї структури:
 
 ```md
-N. **Short title** — one sentence summary. Enforced by `<eslint-rule>` if applicable.
+### N. Короткий імперативний заголовок
+
+> Чому це hard rule? Один абзац-пояснення проблеми, яку правило усуває,
+> бажано з лінком на реальний інцидент або PR, який його замотивував.
+
+Пояснення правила. Включи:
+
+- Що робити (✅ GOOD приклад)
+- Чого не робити (❌ BAD приклад)
+- Який ESLint-rule енфорсить (якщо є)
+- Які шляхи / модулі під дією або винятки
 ```
 
-The `pnpm lint:hard-rules-registry` CI gate fails the PR if `AGENTS.md`, `CONTRIBUTING.md`, and `docs/governance/hard-rules.json` drift apart — all three move in the same PR (Hard Rule #15).
+Дотримуйся стилю наявних правил (особливо #8–#12, де є `GOOD`/`BAD` приклади коду).
 
-### 4. Update `CLAUDE.md` (if the rule affects AI workflow)
+### 3. Дзеркаль у `CONTRIBUTING.md`
 
-If the rule changes how AI agents should work (e.g., new pre-flight checks, new commands to run), update the `## Before you write code` section in `CLAUDE.md`.
+Додай однорядкове резюме в секцію `### Hard rules (from AGENTS.md)` файлу `CONTRIBUTING.md`:
 
-### 5. Update PR template (if the rule adds a new check)
+```md
+N. **Короткий заголовок** — речення-резюме. Енфорситься через `<eslint-rule>`, якщо доречно.
+```
 
-If the rule introduces a new checkbox-worthy check for PRs, add it to `.github/PULL_REQUEST_TEMPLATE.md` in the appropriate section.
+CI-гейт `pnpm lint:hard-rules-registry` валить PR, якщо `AGENTS.md`, `CONTRIBUTING.md` і `docs/governance/hard-rules.json` дрейфують один від одного — усі троє рухаються в одному PR (Hard Rule #15).
 
-### 6. Add ESLint enforcement (optional but recommended)
+### 4. Онови `CLAUDE.md` (якщо правило впливає на AI-флов)
 
-If the rule can be mechanically detected:
+Якщо правило змінює, як AI-агенти мають працювати (наприклад, додає нові pre-flight перевірки чи команди), онови розділ `## Before you write code` у `CLAUDE.md`.
 
-1. Add or extend a rule in `packages/eslint-plugin-sergeant-design/`.
-2. Tests go in `packages/eslint-plugin-sergeant-design/__tests__/`.
-3. Run `pnpm lint:plugins` to verify.
+### 5. Онови PR-template (якщо правило додає нову перевірку)
 
-### 7. Append to the JSON registry and regenerate the matrix
+Якщо правило вводить новий пункт-чекбокс для PR-ів, додай його в `.github/PULL_REQUEST_TEMPLATE.md` у відповідну секцію.
 
-Add a new entry to [`docs/governance/hard-rules.json`](../governance/hard-rules.json) using the canonical schema:
+### 6. Додай ESLint-енфорсмент (опційно, але бажано)
+
+Якщо правило можна детектувати механічно:
+
+1. Додай або розшир правило в `packages/eslint-plugin-sergeant-design/`.
+2. Тести — у `packages/eslint-plugin-sergeant-design/__tests__/`.
+3. Для перевірки запусти `pnpm lint:plugins`.
+
+### 7. Додай запис у JSON-реєстр і перегенеруй матрицю
+
+Додай новий запис у [`docs/governance/hard-rules.json`](../governance/hard-rules.json) за канонічною схемою:
 
 ```json
 {
   "id": N,
-  "title": "Short imperative title (verbatim from AGENTS.md heading)",
+  "title": "Короткий імперативний заголовок (точно як у AGENTS.md heading)",
   "scope": ["apps/web/src/**"],
   "severity": "blocker",
   "category": "lint-enforced-convention",
@@ -94,31 +94,31 @@ Add a new entry to [`docs/governance/hard-rules.json`](../governance/hard-rules.
 }
 ```
 
-`kind` must be one of: `ci`, `eslint-rule`, `test`, `hook`, `branch-protection`, `codeowners`, `doc`, `convention`, `pr-template` (see [`hard-rules.schema.json`](../governance/hard-rules.schema.json)).
+`kind` має бути одним із: `ci`, `eslint-rule`, `test`, `hook`, `branch-protection`, `codeowners`, `doc`, `convention`, `pr-template` (див. [`hard-rules.schema.json`](../governance/hard-rules.schema.json)).
 
-`category` is **required** since [#1660](https://github.com/Skords-01/Sergeant/pull/1660) (initiative `0009-agent-os-hardening` PR 1.5). It must be one of:
+`category` обов'язковий з [#1660](https://github.com/Skords-01/Sergeant/pull/1660) (ініціатива `0009-agent-os-hardening` PR 1.5). Має бути одним із:
 
-- **`blocker-invariant`** — runtime/process invariant; violation = data loss, outage, or silent regression (e.g. DB migration safety, no-force-push, no-skip-hooks). Pick this for rules whose enforcement is the runtime/process itself.
-- **`lint-enforced-convention`** — style or process rule with mechanical enforcement (ESLint plugin, commitlint, governance-sync, freshness). Same `severity: blocker`, but the enforcement gate is a linter, not a runtime invariant. **Most new design / convention rules go here.**
-- **`active-initiative`** — rule shipped with an explicit allowlist + deadline (linked `TODO(NNNN-…): YYYY-MM-DD`). Treated as a blocker for new code; existing exceptions tracked separately.
+- **`blocker-invariant`** — runtime/process-інваріант; порушення = data loss, outage або silent regression (наприклад, DB migration safety, no-force-push, no-skip-hooks). Бери для правил, у яких enforcement — це сам ран-тайм або процес.
+- **`lint-enforced-convention`** — стилістичне чи процесне правило з механічним enforcement (ESLint plugin, commitlint, governance-sync, freshness). Та сама `severity: blocker`, але enforcement-гейт — це лінтер, не ран-тайм-інваріант. **Більшість нових design / convention правил ідуть сюди.**
+- **`active-initiative`** — правило, що шипиться разом із явним allowlist + дедлайном (лінкований `TODO(NNNN-…): YYYY-MM-DD`). Для нового коду — blocker; наявні винятки трекаються окремо.
 
-The legend lives at the bottom of [`hard-rules-matrix.md`](../governance/hard-rules-matrix.md) and in the `## Hard rules` preface in `AGENTS.md`. `pnpm lint:hard-rules-registry` and `loadRegistry()` (`scripts/docs/generate-hard-rules-matrix.mjs`) reject rules without a valid `category`.
+Легенда лежить унизу [`hard-rules-matrix.md`](../governance/hard-rules-matrix.md) і у преамбулі `## Hard rules` в `AGENTS.md`. `pnpm lint:hard-rules-registry` і `loadRegistry()` (`scripts/docs/generate-hard-rules-matrix.mjs`) відкидають правила без валідного `category`.
 
-Then regenerate the index:
+Далі перегенеруй індекс:
 
 ```bash
-pnpm hard-rules:generate         # rewrites docs/governance/hard-rules-matrix.md
-pnpm hard-rules:check            # CI parity check (must succeed)
-pnpm lint:hard-rules-registry    # JSON ↔ AGENTS.md ↔ CONTRIBUTING.md sync gate
+pnpm hard-rules:generate         # перезаписує docs/governance/hard-rules-matrix.md
+pnpm hard-rules:check            # CI parity-перевірка (має пройти)
+pnpm lint:hard-rules-registry    # sync-гейт JSON ↔ AGENTS.md ↔ CONTRIBUTING.md
 ```
 
-The registry is the **single source of truth for tooling**: the `pnpm hard-rules:list` CLI, the matrix doc, and (later) the monthly policy-review report all read it. Skipping this step makes the rule invisible to automation.
+Реєстр — це **єдине джерело правди для тулінгу**: CLI `pnpm hard-rules:list`, матрична doc і (далі) місячний policy-review-звіт усі читають його. Пропуск цього кроку робить правило невидимим для автоматики.
 
-### 8. Bump freshness headers
+### 8. Онови freshness-заголовки
 
-The pre-commit hook (`scripts/docs/bump-last-validated.mjs`) handles this automatically when you `git add` the touched docs. Verify after `git commit` that the headers were rewritten to today's date.
+Pre-commit hook (`scripts/docs/bump-last-validated.mjs`) робить це автоматично, коли ти `git add` зачеплені doc-и. Після `git commit` перевір, що заголовки переписалися на сьогоднішню дату.
 
-### 9. Commit and PR
+### 9. Commit і PR
 
 ```bash
 git add AGENTS.md CONTRIBUTING.md CLAUDE.md \
@@ -132,25 +132,25 @@ git commit -m "docs(root): add Hard Rule #N — short title"
 
 ## Verification
 
-- [ ] `grep -E '^### N\.' AGENTS.md` — rule exists with full content.
-- [ ] `docs/governance/hard-rules.json` — entry with integer `id: N` exists.
-- [ ] New entry has a valid `category` (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`).
-- [ ] `pnpm hard-rules:check` — matrix is in sync with the JSON registry.
-- [ ] `pnpm lint:hard-rules-registry` — JSON ↔ AGENTS.md ↔ CONTRIBUTING.md in sync.
-- [ ] `pnpm hard-rules:list` — new rule appears in CLI dump.
-- [ ] `CONTRIBUTING.md` § Hard rules has the one-line mirror.
-- [ ] If AI-relevant: `CLAUDE.md` updated.
-- [ ] If ESLint-enforced: `pnpm lint:plugins` passes, `pnpm lint` catches violations.
-- [ ] `pnpm format:check` — clean.
-- [ ] No slot collisions (rule number is unique and sequential).
+- [ ] `grep -E '^### N\.' AGENTS.md` — правило існує з повним контентом.
+- [ ] `docs/governance/hard-rules.json` — запис із цілочисельним `id: N` присутній.
+- [ ] У новому записі — валідний `category` (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`).
+- [ ] `pnpm hard-rules:check` — матриця синхронна з JSON-реєстром.
+- [ ] `pnpm lint:hard-rules-registry` — JSON ↔ AGENTS.md ↔ CONTRIBUTING.md синхронні.
+- [ ] `pnpm hard-rules:list` — нове правило з'являється у CLI-дампі.
+- [ ] `CONTRIBUTING.md` § Hard rules містить однорядкове дзеркало.
+- [ ] Якщо стосується AI: `CLAUDE.md` оновлено.
+- [ ] Якщо ESLint-енфорситься: `pnpm lint:plugins` зеленіє, `pnpm lint` ловить порушення.
+- [ ] `pnpm format:check` — чисто.
+- [ ] Без колізії слотів (номер правила унікальний і послідовний).
 
 ---
 
 ## See also
 
-- [AGENTS.md](../../AGENTS.md) — canonical (human) location for all Hard Rules.
-- [docs/governance/hard-rules.json](../governance/hard-rules.json) — machine-readable registry.
+- [AGENTS.md](../../AGENTS.md) — канонічне (людське) місце для всіх Hard Rules.
+- [docs/governance/hard-rules.json](../governance/hard-rules.json) — машино-читабельний реєстр.
 - [docs/governance/hard-rules.schema.json](../governance/hard-rules.schema.json) — JSON Schema.
-- [docs/governance/hard-rules-matrix.md](../governance/hard-rules-matrix.md) — auto-generated cross-reference.
-- [CONTRIBUTING.md](../../CONTRIBUTING.md) — mirror section.
-- [CLAUDE.md](../../CLAUDE.md) — AI agent pre-flight.
+- [docs/governance/hard-rules-matrix.md](../governance/hard-rules-matrix.md) — авто-згенерована матриця-перехресні-посилання.
+- [CONTRIBUTING.md](../../CONTRIBUTING.md) — секція-дзеркало.
+- [CLAUDE.md](../../CLAUDE.md) — pre-flight для AI-агентів.
