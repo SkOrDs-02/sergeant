@@ -1,9 +1,10 @@
 # Audit-винятки
 
-> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
-> Відстежені вразливості, які тимчасово допускаються через PR-лейбл `audit-exception`.
+> Відстежені вразливості, які тимчасово допускаються через PR-лейбл `audit-exception`,
+> а також bypass-и GitHub secret-scanning push-protection-у.
 
 ## Як цей файл працює
 
@@ -67,5 +68,68 @@ https://github.com/Skords-01/Sergeant/security/code-scanning/1
 | Mitigation  | Dev-only dependency, not in production build |
 | Due date    | YYYY-MM-DD                                  |
 | Owner       | @username                                   |
+
+-->
+
+## Secret-scanning false positives
+
+Якщо GitHub secret-scanning push-protection заблокував `git push` через
+**false positive** (наприклад, рядок виглядає як AWS-key, але це фейкова
+fixture у тесті), задокументуй тут перед використанням GitHub UI bypass.
+Принцип роботи див. у [`README.md` → Secret scanning policy](./README.md#secret-scanning-policy).
+
+Поля для запису:
+
+| Поле            | Опис                                                           |
+| --------------- | -------------------------------------------------------------- |
+| **Date**        | Коли стався bypass (ISO 8601)                                  |
+| **Pattern**     | Який провайдер-патерн зреагував (AWS, Stripe, Anthropic, etc.) |
+| **File:line**   | Де у файлі лежить «секрет»                                     |
+| **Reason**      | Чому це false positive (наприклад, "fixture для smoke-тесту")  |
+| **PR**          | Посилання на PR, де bypass використано                         |
+| **Bypassed by** | Хто натиснув "Bypass" у GitHub UI                              |
+
+> Поки що список порожній. Якщо у вас перший такий запис — копіюйте з
+> template-у нижче.
+
+<!-- Template for a new push-protection bypass:
+
+### <YYYY-MM-DD> — <Pattern>
+
+| Field        | Value                                          |
+| ------------ | ---------------------------------------------- |
+| Date         | 2026-05-04                                     |
+| Pattern      | AWS Access Key                                 |
+| File:line    | apps/server/src/__fixtures__/aws-creds.json:3  |
+| Reason       | Test fixture, не валідний AWS-account ID       |
+| PR           | https://github.com/Skords-01/Sergeant/pull/NNNN |
+| Bypassed by  | @Skords-01                                     |
+
+-->
+
+## Secret-leak incidents
+
+Якщо секрет реально потрапив у git history (push-protection не зловив,
+наприклад через obscure-формат або до того, як push-protection був
+увімкнений), фіксуй incident тут із severity=high. Кожен запис має містити
+timeline ротації.
+
+> Поки що список порожній. Принцип реакції див. у
+> [`README.md` → Secret scanning policy](./README.md#secret-scanning-policy)
+> у секції "Що робити, якщо секрет уже у remote".
+
+<!-- Template for a leak incident:
+
+### <YYYY-MM-DD> — <Secret type>
+
+| Field           | Value                                              |
+| --------------- | -------------------------------------------------- |
+| Detected        | 2026-05-04 12:34 UTC (via gitleaks CI / manual / GH) |
+| Secret type     | BETTER_AUTH_SECRET / Anthropic API key / etc.      |
+| Commit          | https://github.com/Skords-01/Sergeant/commit/<sha> |
+| Rotation done   | 2026-05-04 12:50 UTC (Railway env-var rotated)     |
+| History scrubbed | 2026-05-04 13:10 UTC (git filter-repo, force-push) |
+| Owner           | @Skords-01                                         |
+| Postmortem      | docs/incidents/<YYYY-MM-DD>-<slug>.md              |
 
 -->
