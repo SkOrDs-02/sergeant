@@ -931,6 +931,215 @@ userId)` запитує 5 SQLite таблиць (`nutrition_meals`,
 
 #### **Finyk** (4 тижні) — PR #035–#039 (один extra PR на Mono mirror на клієнті)
 
+> **Контекст.** Finyk — найважчий модуль Stage 4: 19 cloud-sync ключів
+> (`SYNC_MODULES.finyk` у `packages/shared/src/sync/modules.ts`),
+> 13+ доменів (budgets / subscriptions / assets / debts / receivables /
+> hidden accounts / hidden TXs / monthly plan / TX categories / TX splits /
+> mono-debt links / networth history / custom categories / manual expenses /
+> TX filters / show-balance prefs) плюс 3 Mono-кеші (`FINYK_TX_CACHE`,
+> `FINYK_INFO_CACHE`, `FINYK_TX_CACHE_LAST_GOOD`). Тому 5 PR-ів замість 4:
+> схема (PR #035) + dual-write (PR #036) + read overlay (PR #037) + Mono
+> mirror — це окрема PR (PR #038), бо Mono API є source-of-truth і шейп
+> per-tx даних відрізняється від user-edited blob-ів — + cloud-sync drop
+>
+> - ESLint guard (PR #039). Усі дзеркалять відповідні fizruk PR
+>   #027–#030 і nutrition PR #031–#034.
+
+##### **PR #035 — `feat(finyk-domain): Drizzle SQLite + Postgres normalized tables + server apply-fns`** ⏳ DRAFT
+
+- **Scope.** Створити нормалізовані таблиці на PG і SQLite під 16
+  user-edited cloud-sync ключів модуля (`FINYK_HIDDEN`, `FINYK_HIDDEN_TXS`,
+  `FINYK_BUDGETS`, `FINYK_SUBS`, `FINYK_ASSETS`, `FINYK_DEBTS`, `FINYK_RECV`,
+  `FINYK_MONTHLY_PLAN`, `FINYK_TX_CATS`, `FINYK_TX_SPLITS`,
+  `FINYK_MONO_DEBT_LINKED`, `FINYK_NETWORTH_HISTORY`, `FINYK_CUSTOM_CATS`,
+  `FINYK_MANUAL_EXPENSES`, `FINYK_TX_FILTERS`, `FINYK_SHOW_BALANCE`).
+  Mono-кеші (`FINYK_TX_CACHE`, `FINYK_INFO_CACHE`, `FINYK_TX_CACHE_LAST_GOOD`)
+  — НЕ входять, ідуть у PR #038 окремо. Цільові таблиці (фінальний шейп
+  уточнити у PR — нижче — concept):
+  - **Per-row CRUD таблиці** (id uuid PK, user_id, jsonb data, soft-delete,
+    `(user_id, updated_at DESC) WHERE deleted_at IS NULL` index): `finyk_budgets`,
+    `finyk_subscriptions`, `finyk_assets`, `finyk_debts`, `finyk_receivables`,
+    `finyk_custom_categories`, `finyk_manual_expenses`, `finyk_tx_filters`.
+    Domain-types у `apps/web/src/modules/finyk/hooks/useStorage.types.ts`
+    (`Budget`, `Subscription`, `ManualAsset`, `Debt`, `Receivable`,
+    `CustomCategory`, `ManualExpense`) тримаємо як `data_json` (jsonb)
+    замість stretching кожного поля у колонку — спрощує клієнтську міграцію
+    і uses storage уже LWW-friendly per-id.
+  - **Composite-PK таблиці без id**: `finyk_hidden_accounts(user_id, account_id)`,
+    `finyk_hidden_transactions(user_id, transaction_id)` — обидві
+    set-membership структури з `STORAGE_KEYS.FINYK_HIDDEN` і
+    `FINYK_HIDDEN_TXS`. PK захищає від дублікатів.
+  - **Per-tx mapping таблиці**: `finyk_tx_categories(user_id, transaction_id, category_id, updated_at, deleted_at)`
+    (для `FINYK_TX_CATS` map<txId, category>),
+    `finyk_tx_splits(user_id, transaction_id, splits_json, updated_at, deleted_at)`
+    (для `FINYK_TX_SPLITS` map<txId, TxSplit[]>),
+    `finyk_mono_debt_links(user_id, transaction_id, debt_ids_json, updated_at, deleted_at)`
+    (для `FINYK_MONO_DEBT_LINKED` map<txId, debtId[]>).
+  - **Time-series таблиця**: `finyk_networth_history(id, user_id, month varchar(7), networth real, snapshot_json, ...)`
+    з `(user_id, month DESC)` unique index — для `FINYK_NETWORTH_HISTORY`
+    NetworthEntry[].
+  - **Singleton-row prefs**: `finyk_prefs(user_id PK, monthly_plan_json,
+show_balance, updated_at, deleted_at)` — об'єднує
+    `FINYK_MONTHLY_PLAN` (єдиний об'єкт `{income, expense, savings}`)
+    і `FINYK_SHOW_BALANCE` (boolean) у одну row-per-user, як
+    `nutrition_prefs` у PR #031.
+- **Артефакти.**
+  - `apps/server/src/migrations/037_finyk_tables.{sql,down.sql}` —
+    DDL з індексами і composite PKs; `down.sql` чистить у зворотньому
+    FK-порядку. (Migration 036 — останній на main.)
+  - `packages/db-schema/src/pg/finyk.ts` +
+    `packages/db-schema/src/sqlite/finyk.ts` — паралельні Drizzle
+    ORM-схеми (PG і SQLite) з `_lite` суфіксами для індексів. Великий
+    розмір файла очікуваний (~16 таблиць vs 5 у nutrition / 5 у fizruk).
+  - `packages/db-schema/src/__tests__/{pg,sqlite}-finyk-snapshot.test.ts`
+    — snapshot drift-guard між драйверами.
+  - `packages/db-schema/src/sqlite/migrations/index.ts` додає
+    `FINYK_CLIENT_MIGRATIONS` з власним ledger-ом
+    `__finyk_migrations` (separate від `__routine_migrations` /
+    `__fizruk_migrations` / `__nutrition_migrations`).
+  - `apps/{web,mobile}/src/modules/finyk/lib/clientMigrate.ts` —
+    клієнтський runner (lazy, idempotent, pre-write).
+  - `apps/server/src/modules/sync/syncV2.ts` — split apply-функції
+    `applyFinykBudgets`, `applyFinykSubscriptions`, `applyFinykAssets`,
+    `applyFinykDebts`, `applyFinykReceivables`, `applyFinykHiddenAccounts`,
+    `applyFinykHiddenTransactions`, `applyFinykTxCategories`,
+    `applyFinykTxSplits`, `applyFinykMonoDebtLinks`,
+    `applyFinykNetworthHistory`, `applyFinykCustomCategories`,
+    `applyFinykManualExpenses`, `applyFinykTxFilters`, `applyFinykPrefs`
+    додано у `OP_LOG_TABLE_REGISTRY`. Кожна валідує `id` + ownership
+    (`user_id`), застосовує LWW (`existing.updated_at < clientTs`),
+    soft-delete (`UPDATE deleted_at` замість DELETE), парсить
+    `parseRequiredDate` / `parseOptionalNumber` / `toJsonbParam`.
+- **AC.**
+  - `pnpm --filter @sergeant/db-schema test` — snapshot тести проходять,
+    дрифт між PG і SQLite виявляється.
+  - `apps/server/src/modules/sync/syncV2.integration.test.ts` — нові
+    describe-кейси на 15 finyk apply-функцій (insert→update,
+    LWW reject, soft-delete, composite-PK upsert для hidden_accounts /
+    hidden_transactions, singleton upsert для prefs, invalid timestamp
+    validation, FK-violation на parent для networth_history).
+  - `pnpm -w lint` clean (без нових STORAGE_KEYS guards — це PR #039).
+- **Не входить.**
+  - Dual-write шар (`apps/{web,mobile}/src/modules/finyk/lib/dualWrite/`)
+    — це PR #036.
+  - Mono client-side mirror (`finyk_mono_transactions`,
+    `finyk_mono_accounts`, `finyk_mono_account_snapshots`) — це PR #038
+    окремо, бо source-of-truth — Mono API, не user, і refresh-cycle
+    відрізняється.
+  - Cut-over reads (UI читає з SQLite під фічфлаґом) — PR #037.
+  - Drop `module_data.finyk` з `SYNC_MODULES` + ESLint guard — PR #039.
+- **Dep.** PR #027 (fizruk schema pattern), PR #031 (nutrition schema
+  pattern), PR #029 (server apply-fns pattern), PR #034 (cloud-sync
+  drop pattern як референс на майбутню PR #039).
+- **Risk.** Schema-only — нульовий risk на проді (default-off flag і
+  наявних писань у нові таблиці нема). Snapshot тести ловлять drift.
+  Найбільший за обсягом schema-PR на Stage 4 (16 таблиць) —
+  тримаємо `data_json` jsonb замість per-field колонок щоб уникнути
+  жорсткого зв'язку між Drizzle schema і domain types — refactoring
+  у `useStorage.types.ts` не повинен ламати DB.
+
+##### **PR #036 — `feat(finyk-domain): dual-write LS/MMKV↔SQLite`** ⏳ DRAFT
+
+- Mirror PR #028 (fizruk dual-write) і PR #032 (nutrition dual-write)
+  для finyk. Feature flag `feature.finyk.sqlite_v2.dual_write`,
+  default off, experimental.
+- **Scope.** Кожен write у Finyk LS-blob-и (15 cloud-sync ключів окрім
+  Mono-кешів — діло PR #038) додатково мирорить у локальну SQLite.
+  Reads ще беруться з LS — це чистий shadow-write для validation.
+- **Реалізовано (web).** `apps/web/src/modules/finyk/lib/dualWrite/`:
+  `diff.ts` рахує `FinykDualWriteOp[]` з `prev → next` snapshot-у per
+  storage-key (composite діff: kept/added/removed для list-shape ключів,
+  upsert/delete для map-shape, set-replace для prefs). `adapter.ts`
+  — async best-effort upsert у відповідні `finyk_*` таблиці з
+  LWW-guardом на `updated_at`. `index.ts` — orchestrator з
+  registration-pattern-ом (gating через
+  `feature.finyk.sqlite_v2.dual_write`, fail-soft на no-userId /
+  sqlite-unavailable). Mirror у
+  `apps/mobile/src/modules/finyk/lib/dualWrite/` для expo-sqlite.
+- **Реєстрація.** Через registration-pattern як у routine / fizruk /
+  nutrition. Boot-wiring follow-up за тим же шаблоном як
+  `register{Routine,Fizruk,Nutrition}DualWriteContext`.
+- **Не входить.** Outbox / `/v2/sync/push` для `finyk_*` (server
+  apply-fns ландять у PR #035). Reads з SQLite — PR #037.
+- **Dep.** PR #035 (schema + client migration runner).
+
+##### **PR #037 — `feat(finyk-domain): cut-over reads to SQLite under feature flag`** ⏳ DRAFT
+
+- Mirror PR #029 + PR #029a (web + mobile fizruk read overlay) і
+  PR #033 (nutrition read overlay) для finyk. Feature flag
+  `feature.finyk.sqlite_v2.read_sqlite`, default off. LS/MMKV-write
+  залишається safety net.
+- **Реалізувати (web).** `apps/web/src/modules/finyk/lib/sqliteReader.ts`
+  — кеш `SqliteFinykCache` з усіма 13+ доменами, `refreshFinykSqliteState(client, userId)`
+  запитує всі finyk-таблиці, фільтрує `deleted_at IS NULL`,
+  трансформує рядки у domain типи з `useStorage.types.ts`,
+  будує nested maps (txId → category, txId → splits, txId → debt_ids).
+  `sqliteReadBoot.ts` — idempotent boot з перевіркою feature flag,
+  запуском міграцій через `migrateFinyk(client)`, початковим refresh
+  кешу. `sqliteReadGate.ts` — pub-sub нотифікація через
+  `useSyncExternalStore`.
+- **Реалізувати (mobile).** `apps/mobile/src/modules/finyk/lib/`
+  паритет shape-а кешу і refresh logic. Combined hook
+  `useFinykSqliteReadGate()` що повертає `{ enabled, tick }`.
+- **UI overlay.** Wiring у існуючі finyk хуки (`useStorage`,
+  `useBudgets`, `useNetworthHistory`, `useSubscriptions`, …) під
+  flag — read від SQLite-кешу під feature flag, LS-fallback як
+  перша paint synchronous-fallback. Tab-flip під flag для
+  Budgets / Subscriptions / Assets / Debts / Receivables / Networth
+  сторінок.
+- **Feature flag реєстрація** `feature.finyk.sqlite_v2.read_sqlite`
+  у `apps/{web,mobile}/src/core/lib/featureFlags.ts`.
+- **Не входить.** Mono client-side mirror (PR #038). Drop
+  `module_data.finyk` (PR #039).
+- **Dep.** PR #036 (dual-write).
+
+##### **PR #038 — `feat(finyk-domain): client-side Mono cache mirror in SQLite`** ⏳ DRAFT
+
+> **Чому окрема PR.** На відміну від інших finyk-доменів (user-edited),
+> Mono кеші — реплікація **зовнішнього** API source-of-truth.
+> `FINYK_TX_CACHE` (тисячі транзакцій), `FINYK_INFO_CACHE` (rate-limited
+> Mono accounts/clientInfo), `FINYK_TX_CACHE_LAST_GOOD` (fallback
+> snapshot) — потребують іншого refresh-cycle (Mono API + webhook +
+> AI-enrichment) ніж user-edited blob-и. Тому виділяю в окрему PR
+> щоб не ламати dual-write шаблон.
+
+- **Scope.** Перенести три Mono-кеші у per-row SQLite-таблиці
+  `finyk_mono_transactions`, `finyk_mono_accounts`,
+  `finyk_mono_account_snapshots` (з `account_id`, `tx_id`, `imported_at`
+  колонками для пагінації / refresh-cycle). Mirror на PG не потрібен
+  — Mono API server-side вже джерело.
+- **Реалізувати.** `apps/{web,mobile}/src/modules/finyk/lib/monoMirror/`
+  — refresh helper що пише у SQLite на кожен Mono `/personal/statement`
+  fetch (як зараз пише у LS), upsert по `tx_id` з LWW (Mono `time` field).
+  Reads — overlay у `useMonobank` під фічфлаґом
+  `feature.finyk.sqlite_v2.mono_mirror`. LS-write залишається
+  safety net під час experiment.
+- **Не входить.** PG-mirror Mono транзакцій (server-side вже має
+  Mono integration через `apps/server/src/modules/finyk/`); op-log push
+  для Mono-кешів — НЕ потрібен, кожен клієнт refresh-ить локально
+  з API.
+- **Dep.** PR #035 (schema pattern), PR #036 (dual-write
+  registration-pattern як референс).
+
+##### **PR #039 — `chore(finyk-domain): drop module_data.finyk cloud-sync wiring + ESLint guard`** ⏳ DRAFT
+
+- Mirror PR #030 (fizruk cloud-sync drop) і PR #034 (nutrition
+  cloud-sync drop). Знімає `finyk` з `SYNC_MODULES`
+  (`packages/shared/src/sync/modules.ts`), прибирає 19 `FINYK_*`
+  ентрі з `eslint-plugin-sergeant-design` tracked sets
+  (`TRACKED_STORAGE_KEY_NAMES` + `TRACKED_STORAGE_KEY_VALUES`),
+  додає `no-restricted-syntax` guard у `eslint.config.js` з селектором
+  `MemberExpression[STORAGE_KEYS.FINYK_(?:HIDDEN|HIDDEN_TXS|BUDGETS|SUBS|ASSETS|DEBTS|RECV|MONTHLY_PLAN|TX_CATS|TX_SPLITS|MONO_DEBT_LINKED|NETWORTH_HISTORY|CUSTOM_CATS|MANUAL_EXPENSES|TX_FILTERS|SHOW_BALANCE|TX_CACHE|TX_CACHE_LAST_GOOD|INFO_CACHE)]`.
+  Carve-outs повторюють fizruk-/nutrition-патерн (test files,
+  module wrappers, cross-module insights). Server-side
+  `DELETE FROM module_data WHERE module='finyk'` — окремий
+  runbook ops PR.
+- **Deploy gate.** Як і PR #030 / PR #034: розкатувати тільки
+  після 100% rollout `feature.finyk.sqlite_v2.{dual_write,read_sqlite,mono_mirror}`
+  - server backfill `module_data.finyk` → відповідні `finyk_*` per-user.
+- **Dep.** PR #036 (dual-write у проді), PR #037 (read overlay у
+  проді), PR #038 (Mono mirror у проді).
+
 ---
 
 ### Stage 5 — Sync engine v2 hardening
