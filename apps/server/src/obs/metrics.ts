@@ -147,6 +147,25 @@ export const chatToolResultTruncatedTotal = new client.Counter({
   registers: [register],
 });
 
+/**
+ * M7 — `MAX_TOOL_ITERATIONS` cap hit: модель або клієнт перевищили жорсткий
+ * ліміт `tool_use`-блоків в одному round-trip-і. `boundary` лейбл:
+ *   - `anthropic_response` — Anthropic повернув >MAX_TOOL_ITERATIONS блоків
+ *     `tool_use` в одній відповіді (runaway model loop).
+ *   - `client_request` — клієнт надіслав >MAX_TOOL_ITERATIONS блоків у
+ *     `tool_calls_raw` (manipulated payload або зіпсований state).
+ *
+ * Cardinality фіксована (2 значення) — безпечно для Prometheus.
+ *
+ * See `docs/security/hardening/M7-chat-tool-iteration-cap.md`.
+ */
+export const chatToolIterationCapHitTotal = new client.Counter({
+  name: "chat_tool_iteration_cap_hit_total",
+  help: "M7 — tool-iteration cap (MAX_TOOL_ITERATIONS) breached, request rejected with 422",
+  labelNames: ["boundary"], // anthropic_response | client_request
+  registers: [register],
+});
+
 export const aiQuotaBlocksTotal = new client.Counter({
   name: "ai_quota_blocks_total",
   help: "AI quota refusals",

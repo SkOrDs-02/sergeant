@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { WebVitalsPayloadSchema } from "@sergeant/shared";
 import { logger } from "../../obs/logger.js";
 import { webVitalsCls, webVitalsDurationMs } from "../../obs/metrics.js";
+import { normaliseUserAgent } from "../../lib/uaNormalise.js";
 
 /**
  * POST /api/metrics/web-vitals
@@ -38,9 +39,15 @@ export default function webVitalsHandler(req: Request, res: Response): void {
   const parsed = WebVitalsPayloadSchema.safeParse(req.body);
   if (!parsed.success) {
     if (Math.random() < 0.01) {
+      // M12 — `ua_family` додається через canonical normaliser замість сирого
+      // `User-Agent`. Сирий header у Pino-струмі давав >300 унікальних
+      // значень/добу і де-факто реідентифікував окремих юзерів — нормалізована
+      // форма ("chrome 121", "safari-mobile 17", "unknown") тримає кардинальність
+      // у межах ~30 значень, що безпечно для ретеншну логів і дашбордів.
       logger.warn({
         msg: "web_vitals_invalid_payload",
         issues: parsed.error.issues?.slice(0, 3),
+        ua_family: normaliseUserAgent(req.headers["user-agent"]),
       });
     }
     res.status(204).end();

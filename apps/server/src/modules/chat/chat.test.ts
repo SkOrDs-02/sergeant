@@ -427,6 +427,110 @@ describe("chat handler — tool_use parsing", () => {
   });
 });
 
+// M7 — MAX_TOOL_ITERATIONS hard cap. Захищає від runaway tool-loop-у з обох
+// боків: модель повертає >MAX чи клієнт надсилає `tool_calls_raw` з >MAX
+// `tool_use`-блоками. Cap-овий 422 + інкремент `chat_tool_iteration_cap_hit_total`.
+describe("chat handler — MAX_TOOL_ITERATIONS cap (M7)", () => {
+  it("Anthropic повертає >MAX tool_use → 422 + інкремент {boundary=anthropic_response}", async () => {
+    const { chatToolIterationCapHitTotal } =
+      await import("../../obs/metrics.js");
+    const before = (await chatToolIterationCapHitTotal.get()).values
+      .filter((v) => v.labels.boundary === "anthropic_response")
+      .reduce((acc, v) => acc + v.value, 0);
+
+    // 9 паралельних tool-use блоків — на 1 більше за поріг 8.
+    const tooMany = Array.from({ length: 9 }, (_, i) => ({
+      type: "tool_use",
+      id: `toolu_overflow_${i}`,
+      name: "delete_transaction",
+      input: { tx_id: `m_${i}` },
+    }));
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: true, status: 200 },
+      data: { content: [{ type: "text", text: "Багато роботи…" }, ...tooMany] },
+    });
+
+    const req = makeReq({
+      messages: [{ role: "user", content: "Видали все" }],
+    });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(422);
+    expect(res.body).toMatchObject({
+      code: "MAX_TOOL_ITERATIONS",
+      detail: { boundary: "anthropic_response", observed: 9, max: 8 },
+    });
+    const after = (await chatToolIterationCapHitTotal.get()).values
+      .filter((v) => v.labels.boundary === "anthropic_response")
+      .reduce((acc, v) => acc + v.value, 0);
+    expect(after - before).toBe(1);
+  });
+
+  it("Anthropic повертає рівно MAX tool_use → 200 з tool_calls (порогове значення дозволене)", async () => {
+    const exactlyMax = Array.from({ length: 8 }, (_, i) => ({
+      type: "tool_use",
+      id: `toolu_edge_${i}`,
+      name: "delete_transaction",
+      input: { tx_id: `m_${i}` },
+    }));
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: true, status: 200 },
+      data: { content: exactlyMax },
+    });
+
+    const req = makeReq({
+      messages: [{ role: "user", content: "Тримайся межі" }],
+    });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(asRec(res.body).tool_calls).toHaveLength(8);
+  });
+
+  it("Клієнт надсилає >MAX tool_use у tool_calls_raw → 422 + інкремент {boundary=client_request}", async () => {
+    const { chatToolIterationCapHitTotal } =
+      await import("../../obs/metrics.js");
+    const before = (await chatToolIterationCapHitTotal.get()).values
+      .filter((v) => v.labels.boundary === "client_request")
+      .reduce((acc, v) => acc + v.value, 0);
+
+    // Anthropic мокаємо — навіть якщо ми б його викликали, тест повинен
+    // фейлити cap-перевіркою ДО першого запиту, тому жодного очікування
+    // на mock-консьюменті немає.
+    const tooMany = Array.from({ length: 9 }, (_, i) => ({
+      type: "tool_use",
+      id: `toolu_client_${i}`,
+      name: "delete_transaction",
+      input: { tx_id: `m_${i}` },
+    }));
+    const tooManyResults = tooMany.map((b, i) => ({
+      tool_use_id: b.id,
+      content: `result ${i}`,
+    }));
+
+    const req = makeReq({
+      messages: [{ role: "user", content: "Видали все" }],
+      tool_calls_raw: tooMany,
+      tool_results: tooManyResults.slice(0, 8),
+    });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(422);
+    expect(res.body).toMatchObject({
+      code: "MAX_TOOL_ITERATIONS",
+      detail: { boundary: "client_request", observed: 9, max: 8 },
+    });
+    expect(anthropicMessages).not.toHaveBeenCalled();
+    const after = (await chatToolIterationCapHitTotal.get()).values
+      .filter((v) => v.labels.boundary === "client_request")
+      .reduce((acc, v) => acc + v.value, 0);
+    expect(after - before).toBe(1);
+  });
+});
+
 describe("TOOLS registry — структура нових tools", () => {
   const expected = [
     // Фінік

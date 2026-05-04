@@ -156,6 +156,12 @@ export function createApp({
   app.use("/api/coach/memory", express.json({ limit: "6mb" }));
   app.use("/api/chat", express.json({ limit: "1mb" }));
   app.use("/api/mono/webhook", express.json({ limit: "32kb" }));
+  // M12 — web-vitals beacon legitimately ships ≤10 metrics × ~120B JSON ≈ 2KB
+  // у нормі. 10kb cap дає 5×запас від легітимного payload-у і одразу б'є 413
+  // на спроби пхнути великі об'єкти (raw JS-помилка з stacktrace, PII, інше
+  // сміття) у анонімний sessionless endpoint. Mount-имо ПЕРЕД глобальним
+  // 128kb-парсером — порядок mount-ів у Express важливий.
+  app.use("/api/metrics/web-vitals", express.json({ limit: "10kb" }));
   // CSP-violation reports come from browsers with non-default content-types
   // (`application/csp-report` for legacy `report-uri`, `application/reports+json`
   // for the modern Reporting-API). Mount type-aware parsers ahead of the
