@@ -1,11 +1,27 @@
 # 0009 — Agent-OS hardening: skill enforcement, governance slimming, лінтери проти дрейфу
 
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** Proposed
+> **Status:** In progress (Phase 1 — 2 of 5 PRs відкрито: [#1659](https://github.com/Skords-01/Sergeant/pull/1659) skills-lint + skills-lock SHA, [#1660](https://github.com/Skords-01/Sergeant/pull/1660) Hard Rules categorization)
 > **Priority:** P1 (Sprint 2–3)
 > **Owner:** `@Skords-01`
 > **ETA:** 4 weeks (фази 1–4 послідовно, фаза 5 — паралельно або як carry-over)
 > **Sources:** Devin agent-OS review 2026-05-04 (внутрішній звіт-прожарка), [`AGENTS.md`](../../AGENTS.md), [`docs/superpowers/`](../superpowers/), [`docs/playbooks/`](../playbooks/)
+
+## Поточний прогрес
+
+| Фаза | PR   | Опис                                    | Гілка/PR                                                 | Статус                                                                                                                                                                                                                                            |
+| ---- | ---- | --------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.1  | open | `pnpm lint:skills` + skills-lock SHA256 | [#1659](https://github.com/Skords-01/Sergeant/pull/1659) | Відкрито 2026-05-04, чекає на CI/review                                                                                                                                                                                                           |
+| 1.2  | TBD  | `pnpm lint:playbook-language` (UA)      | —                                                        | Не розпочато                                                                                                                                                                                                                                      |
+| 1.3  | hold | Husky pre-commit `tsc-files`            | —                                                        | Заблоковано pre-existing typecheck failures на `main` (`apps/server/src/modules/mono/rotateSecret.test.ts:63` TS2345; `apps/web/src/core/hub/HubDashboard.tsx:682` TS2741). Потрібен hotfix-PR з фіксом перед тим, як активувати pre-commit gate. |
+| 1.4  | TBD  | `playbook-schema` extension             | —                                                        | Не розпочато                                                                                                                                                                                                                                      |
+| 1.5  | open | Hard-rules categorization               | [#1660](https://github.com/Skords-01/Sergeant/pull/1660) | Відкрито 2026-05-04, чекає на CI/review                                                                                                                                                                                                           |
+| 2.x  | TBD  | Уніфікація іменування                   | —                                                        | Не розпочато                                                                                                                                                                                                                                      |
+| 3.x  | TBD  | Слім AGENTS.md / Hard Rules slim-down   | —                                                        | Залежить від 1.5 (categorization)                                                                                                                                                                                                                 |
+| 4.x  | TBD  | Operational cleanup                     | —                                                        | Не розпочато                                                                                                                                                                                                                                      |
+| 5.x  | TBD  | Plop generators, onboarding, n8n smoke  | —                                                        | Carry-over                                                                                                                                                                                                                                        |
+
+> **PR 1.3 deferred reason:** запуск `tsc-files`/`tsc -p` на staged TS-файлах поверх `main` падає на pre-existing помилках (`apps/server/src/modules/mono/rotateSecret.test.ts:63` TS2345; `apps/web/src/core/hub/HubDashboard.tsx:682` TS2741). Pre-commit gate не може бути зеленим, доки ці помилки не виправлено. План: винести фікс цих TS errors як hotfix-PR (поза 0009), потім додати PR 1.3.
 
 ## TL;DR
 
