@@ -39,12 +39,16 @@ export function createNutritionRouter(): Router {
 
   const ai = [requireAnthropicKey(), requireAiQuota()];
 
+  // Vision API call (~5–10s upstream, ~10–20KB image upload). Cost 3 makes
+  // a 20-token bucket effectively ~6 photo-analyses per minute. See
+  // `RateLimitOptions.cost`.
   r.post(
     "/api/nutrition/analyze-photo",
     rateLimitExpress({
       key: "nutrition:analyze-photo",
       limit: 20,
       windowMs: 60_000,
+      cost: () => 3,
     }),
     ...ai,
     asyncHandler(analyzePhoto),
@@ -59,22 +63,27 @@ export function createNutritionRouter(): Router {
     ...ai,
     asyncHandler(parsePantry),
   );
+  // Same Vision shape as analyze-photo — same cost (3).
   r.post(
     "/api/nutrition/refine-photo",
     rateLimitExpress({
       key: "nutrition:refine-photo",
       limit: 20,
       windowMs: 60_000,
+      cost: () => 3,
     }),
     ...ai,
     asyncHandler(refinePhoto),
   );
+  // Anthropic text generation — medium-weight (~5–8s, smaller payloads
+  // than chat-stream). Cost 2.
   r.post(
     "/api/nutrition/recommend-recipes",
     rateLimitExpress({
       key: "nutrition:recommend-recipes",
       limit: 20,
       windowMs: 60_000,
+      cost: () => 2,
     }),
     ...ai,
     asyncHandler(recommendRecipes),
@@ -89,22 +98,27 @@ export function createNutritionRouter(): Router {
     ...ai,
     asyncHandler(dayHint),
   );
+  // Heaviest plan — generates 7 days of meals at once (~10–15s, larger
+  // prompt). Cost 3 leaves the bucket at ~3 plans/min before tightening.
   r.post(
     "/api/nutrition/week-plan",
     rateLimitExpress({
       key: "nutrition:week-plan",
       limit: 10,
       windowMs: 60_000,
+      cost: () => 3,
     }),
     ...ai,
     asyncHandler(weekPlan),
   );
+  // Day plan is ~3× lighter than week-plan — cost 2.
   r.post(
     "/api/nutrition/day-plan",
     rateLimitExpress({
       key: "nutrition:day-plan",
       limit: 15,
       windowMs: 60_000,
+      cost: () => 2,
     }),
     ...ai,
     asyncHandler(dayPlan),

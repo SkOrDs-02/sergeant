@@ -43,6 +43,7 @@ import {
   checkRateLimitRedis,
   checkRateLimitPg,
   rateLimitExpress,
+  resolveRateLimitCost,
   __resetRateLimitPgWarnForTests,
 } from "./rateLimit.js";
 import { getRedis } from "../lib/redis.js";
@@ -250,6 +251,236 @@ describe("checkRateLimit", () => {
   });
 });
 
+describe("resolveRateLimitCost", () => {
+  function makeReq(): Request {
+    return { ip: "192.0.2.10", headers: {} } as unknown as Request;
+  }
+
+  it("defaults to 1 when no cost function is provided", () => {
+    expect(resolveRateLimitCost(makeReq(), {})).toBe(1);
+  });
+
+  it("returns the function's value when within range", () => {
+    expect(resolveRateLimitCost(makeReq(), { cost: () => 10 })).toBe(10);
+    expect(resolveRateLimitCost(makeReq(), { cost: () => 1 })).toBe(1);
+  });
+
+  it("clamps cost to MAX_COST=50", () => {
+    expect(resolveRateLimitCost(makeReq(), { cost: () => 9999 })).toBe(50);
+  });
+
+  it("floors fractional cost", () => {
+    expect(resolveRateLimitCost(makeReq(), { cost: () => 3.9 })).toBe(3);
+  });
+
+  it("returns 1 for non-finite cost (NaN, Infinity, -Infinity)", () => {
+    // Defensive: a non-finite cost almost certainly means a buggy
+    // `cost(req)` (e.g. user input leaked in). Falling back to 1
+    // protects the bucket from silent saturation by NaN-arithmetic.
+    expect(resolveRateLimitCost(makeReq(), { cost: () => NaN })).toBe(1);
+    expect(resolveRateLimitCost(makeReq(), { cost: () => Infinity })).toBe(1);
+    expect(resolveRateLimitCost(makeReq(), { cost: () => -Infinity })).toBe(1);
+  });
+
+  it("returns 1 for cost below 1 (negative or zero)", () => {
+    expect(resolveRateLimitCost(makeReq(), { cost: () => 0 })).toBe(1);
+    expect(resolveRateLimitCost(makeReq(), { cost: () => -5 })).toBe(1);
+    expect(resolveRateLimitCost(makeReq(), { cost: () => 0.5 })).toBe(1);
+  });
+
+  it("returns 1 when cost(req) throws — never lets a bug crash the limiter", () => {
+    expect(
+      resolveRateLimitCost(makeReq(), {
+        cost: () => {
+          throw new Error("boom");
+        },
+      }),
+    ).toBe(1);
+  });
+});
+
+describe("checkRateLimit — cost-multiplier", () => {
+  function makeReq(ip: string): Request {
+    return { ip, headers: {} } as unknown as Request;
+  }
+
+  beforeEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("seeds a fresh bucket at the full cost (not 1)", () => {
+    // Regression guard: a heavy first-hit must count for its full
+    // weight, otherwise the limiter would let `limit / cost` heavy
+    // requests through per window instead of `limit`.
+    const key = `t_cost_seed_${Math.random().toString(36).slice(2)}`;
+    const r = checkRateLimit(makeReq("192.0.2.50"), {
+      key,
+      limit: 60,
+      windowMs: 60_000,
+      cost: () => 10,
+    });
+    expect(r.ok).toBe(true);
+    expect(r.remaining).toBe(50);
+  });
+
+  it("rejects when adding cost would push the bucket over limit (9/10 + cost=10 → block)", () => {
+    // The cost-multiplier specifically prevents this case: a 9-token
+    // bucket at limit=10 must NOT accept a cost=10 chat-stream that
+    // would land the count at 19. Cheap reads (cost=1) on the same key
+    // would still pass — that's the whole point of the multiplier.
+    const key = `t_cost_block_${Math.random().toString(36).slice(2)}`;
+    const req = makeReq("192.0.2.51");
+    // Saturate to 9/10 with cheap calls.
+    for (let i = 0; i < 9; i++) {
+      const r = checkRateLimit(req, { key, limit: 10, windowMs: 60_000 });
+      expect(r.ok).toBe(true);
+    }
+    // Heavy call (cost=10) must be blocked.
+    const heavy = checkRateLimit(req, {
+      key,
+      limit: 10,
+      windowMs: 60_000,
+      cost: () => 10,
+    });
+    expect(heavy.ok).toBe(false);
+    expect(heavy.remaining).toBe(1);
+    // Cheap call still passes — sanity check that the bucket itself
+    // wasn't consumed by the failed heavy call.
+    const cheap = checkRateLimit(req, { key, limit: 10, windowMs: 60_000 });
+    expect(cheap.ok).toBe(true);
+  });
+
+  it("accumulates cost across mixed cheap+heavy calls in the same window", () => {
+    const key = `t_cost_mix_${Math.random().toString(36).slice(2)}`;
+    const req = makeReq("192.0.2.52");
+    // 5 + 3*1 = 8/20
+    const heavy = checkRateLimit(req, {
+      key,
+      limit: 20,
+      windowMs: 60_000,
+      cost: () => 5,
+    });
+    expect(heavy.ok).toBe(true);
+    expect(heavy.remaining).toBe(15);
+    for (let i = 0; i < 3; i++) {
+      checkRateLimit(req, { key, limit: 20, windowMs: 60_000 });
+    }
+    const r = checkRateLimit(req, { key, limit: 20, windowMs: 60_000 });
+    expect(r.ok).toBe(true);
+    // 5 + 3 + 1 = 9 used, 11 remaining after this call.
+    expect(r.remaining).toBe(11);
+  });
+
+  it("equates limit=10/cost=10 with limit=1/cost=1 (effective cap parity)", () => {
+    // The cost-multiplier mechanic is supposed to be isomorphic with a
+    // smaller bucket: cost: 10 against limit 10 must fire exactly once
+    // per window — same observable behavior as limit: 1, cost: 1.
+    const key = `t_cost_parity_${Math.random().toString(36).slice(2)}`;
+    const req = makeReq("192.0.2.53");
+    const first = checkRateLimit(req, {
+      key,
+      limit: 10,
+      windowMs: 60_000,
+      cost: () => 10,
+    });
+    const second = checkRateLimit(req, {
+      key,
+      limit: 10,
+      windowMs: 60_000,
+      cost: () => 10,
+    });
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(false);
+  });
+
+  it("ignores cost-multiplier when no cost option is set (backward compat)", () => {
+    // A route that didn't opt into cost must behave exactly as it did
+    // before this PR — one token per call. Regression guard for every
+    // existing limit-X-windowMs configuration in `routes/*.ts`.
+    const key = `t_cost_compat_${Math.random().toString(36).slice(2)}`;
+    const req = makeReq("192.0.2.54");
+    for (let i = 0; i < 5; i++) {
+      const r = checkRateLimit(req, { key, limit: 5, windowMs: 60_000 });
+      expect(r.ok).toBe(true);
+    }
+    const blocked = checkRateLimit(req, { key, limit: 5, windowMs: 60_000 });
+    expect(blocked.ok).toBe(false);
+  });
+});
+
+describe("checkRateLimitRedis — cost-multiplier", () => {
+  function makeReq(ip: string): Request {
+    return { ip, headers: {} } as unknown as Request;
+  }
+
+  it("passes cost to the Lua INCRBY (third ARGV slot)", async () => {
+    const evalMock = vi.fn().mockResolvedValue([10, 60_000]);
+    const fakRedis = { eval: evalMock } as never;
+    const result = await checkRateLimitRedis(fakRedis, makeReq("1.2.3.4"), {
+      key: "test:redis:cost",
+      limit: 60,
+      windowMs: 60_000,
+      cost: () => 10,
+    });
+    expect(result.ok).toBe(true);
+    expect(result.remaining).toBe(50);
+    // 4th call arg is the cost (after the script body, key count, key, window).
+    const args = evalMock.mock.calls[0];
+    expect(args?.[4]).toBe("10");
+  });
+
+  it("defaults the Lua cost ARGV to '1' when no cost function is set", async () => {
+    const evalMock = vi.fn().mockResolvedValue([1, 4900]);
+    const fakRedis = { eval: evalMock } as never;
+    await checkRateLimitRedis(fakRedis, makeReq("1.2.3.5"), {
+      key: "test:redis:no-cost",
+      limit: 5,
+      windowMs: 5_000,
+    });
+    const args = evalMock.mock.calls[0];
+    expect(args?.[4]).toBe("1");
+  });
+});
+
+describe("checkRateLimitPg — cost-multiplier", () => {
+  function makeReq(ip: string): Request {
+    return { ip, headers: {} } as unknown as Request;
+  }
+
+  beforeEach(() => {
+    pgQueryMock.mockReset();
+  });
+
+  it("passes cost as the 4th SQL parameter", async () => {
+    pgQueryMock.mockResolvedValue({
+      rows: [{ count: 10, elapsed_ms: "1000" }],
+    });
+    const result = await checkRateLimitPg(makeReq("1.2.3.6"), {
+      key: "test:pg:cost",
+      limit: 60,
+      windowMs: 60_000,
+      cost: () => 10,
+    });
+    expect(result.ok).toBe(true);
+    expect(pgQueryMock).toHaveBeenCalledOnce();
+    const args = pgQueryMock.mock.calls[0]?.[1] as unknown[] | undefined;
+    expect(args?.[3]).toBe(10);
+  });
+
+  it("defaults SQL cost parameter to 1 when no cost function is set", async () => {
+    pgQueryMock.mockResolvedValue({
+      rows: [{ count: 1, elapsed_ms: "0" }],
+    });
+    await checkRateLimitPg(makeReq("1.2.3.7"), {
+      key: "test:pg:no-cost",
+      limit: 5,
+      windowMs: 60_000,
+    });
+    const args = pgQueryMock.mock.calls[0]?.[1] as unknown[] | undefined;
+    expect(args?.[3]).toBe(1);
+  });
+});
+
 describe("checkRateLimitRedis", () => {
   function makeReq(ip: string): Request {
     return { ip, headers: {} } as unknown as Request;
@@ -442,7 +673,8 @@ describe("checkRateLimitPg", () => {
     // string so the bigint cast in SQL is unambiguous.
     expect(pgQueryMock).toHaveBeenCalledWith(
       expect.stringContaining("INSERT INTO rate_limit_buckets"),
-      ["pg:allow", expect.any(String), "5000"],
+      // Cost is the 4th param (defaults to 1 when no cost(req) is set).
+      ["pg:allow", expect.any(String), "5000", 1],
     );
   });
 

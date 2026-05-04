@@ -238,6 +238,34 @@ export const rateLimitHitsTotal = new client.Counter({
 });
 
 /**
+ * Total cost (token-equivalents) consumed by accepted requests, summed
+ * per rate-limit `key`. The default cost is 1, so for routes without a
+ * `cost(req)` override this counter advances 1-for-1 with
+ * `rate_limit_hits_total{outcome="allowed"}`. For heavy AI routes
+ * (`api:chat`, `nutrition:analyze-photo`, …) the counter advances by the
+ * configured cost so dashboards see the actual budget burn.
+ *
+ * Prometheus query for the diagnostic's `rate_limit_p95_consumed_per_user`
+ * intent (per-user p95 cost over a 5-minute window):
+ *
+ *   histogram_quantile(0.95,
+ *     sum by (le, key) (
+ *       rate(rate_limit_cost_total[5m])
+ *     )
+ *   )
+ *
+ * (User-level dimension comes from the `subject` baked into the bucket
+ * key on the application side; surfacing it as a Prom label would
+ * cardinality-explode the series.)
+ */
+export const rateLimitCostTotal = new client.Counter({
+  name: "rate_limit_cost_total",
+  help: "Total rate-limit cost (token-equivalents) consumed by accepted requests, by key. Default 1 per call; AI streams configure higher costs via RateLimitOptions.cost.",
+  labelNames: ["key"],
+  registers: [register],
+});
+
+/**
  * Counts how often the rate-limit middleware was forced into degraded
  * mode (both Redis AND Postgres unreachable, leaving only the per-process
  * in-memory bucket). `mode` records what the middleware did from there:
