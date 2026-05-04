@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-04 by Devin — **Stage 1 COMPLETE; Stage 4 Finyk Mono mirror in CI; Stage 5 op-log v2 hardening in flight.** Stage 1: all 8/8 PRs landed (PR #008 `ff217246`, PR #010 [#1543](https://github.com/Skords-01/Sergeant/pull/1543), PR #013 via 4 sub-PRs). Stage 4 Fizruk: 5/5 PRs merged (PR #027–#030 + #029a). Stage 4 Nutrition: PR #031 / #032 / #033 LANDED ([#1574](https://github.com/Skords-01/Sergeant/pull/1574)), PR #034 LANDED ([#1636](https://github.com/Skords-01/Sergeant/pull/1636)). Stage 4 Finyk: PR #035 LANDED ([#1667](https://github.com/Skords-01/Sergeant/pull/1667) — schema + apply-fns), PR #036 LANDED ([#1680](https://github.com/Skords-01/Sergeant/pull/1680) — dual-write web + mobile), PR #037 LANDED (`c89870c6` — read-overlay web + mobile under `feature.finyk.sqlite_v2.read_sqlite`, default off), PR #038 IN CI (Mono cache mirror у `finyk_mono_*` SQLite таблицях під `feature.finyk.sqlite_v2.mono_mirror`, default off). Stage 5: PR #040 LANDED (`ec1f3820` — persistent op-log retry policy у SQLite), PR #041 IN CI ([#1721](https://github.com/Skords-01/Sergeant/pull/1721) — SSE pull stream), PR #043 LANDED ([#1734](https://github.com/Skords-01/Sergeant/pull/1734) — G-set CRDT для `nutrition_meals` із tombstone інваріантом + 3 інтеграційні тести), PR #043a LANDED ([#1739](https://github.com/Skords-01/Sergeant/pull/1739) — tombstone-resurrection guard для routine + 5 fizruk apply-функцій + 6 інтеграційних кейсів), PR #043b LANDED ([#1743](https://github.com/Skords-01/Sergeant/pull/1743) — той самий guard для 3 nutrition non-meals apply-функцій + 2 finyk хелперів, які покривають усі 10 finyk soft-delete таблиць + 7 інтеграційних кейсів; разом із PR #043a закриває per-table TODO з PR #043), PR #043c LANDED ([#1754](https://github.com/Skords-01/Sergeant/pull/1754) — typed RejectReason allowlist для syncV2 apply-шляху: 45+4 літерали в exported `as const` масивах + regression-тест пінить cardinality budget), PR #048 LANDED ([#1737](https://github.com/Skords-01/Sergeant/pull/1737) — RED-метрики `sync_op_log_apply_total` / `sync_op_log_pull_lag_ms` / `sync_op_log_pull_queue_depth` + 4 нові Grafana панелі в `sync.json`). **Stage 6 ops:** PR #049 docs portion LANDED ([#1757](https://github.com/Skords-01/Sergeant/pull/1757) — Railway Postgres backup/restore runbook у `docs/runbooks/database-backup-restore.md` із pg_dump/pg_restore-командами, sync-aware row-level restore матрицею, smoke-test SQL); weekly-verify CI deferred до PR #049b (потребує `RAILWAY_TOKEN`). PR #042 PN-counter для `routine_streaks` розгорнуто двофазно: PR #042a LANDED ([#1769](https://github.com/Skords-01/Sergeant/pull/1769) — protocol-only scaffolding: розширений `op` CHECK constraint, zod-енам, engine-level reject `op_not_supported`), PR #042b LANDED ([#1776](https://github.com/Skords-01/Sergeant/pull/1776) — `applyRoutineStreaks` opt-in у `INCREMENT_OP_SUPPORTED_TABLES` + atomic `UPDATE … SET current_streak = current_streak + delta` із `GREATEST(0, …)` clamping та monotonic `longest_streak` оновленням, |delta| ≤ 1000, 6 нових інтеграційних тестів). PR #044 IN CI ([#1780](https://github.com/Skords-01/Sergeant/pull/1780) — typed module-level conflict store + `useFinykManualExpenseConflicts` hook + `FinykManualExpenseConflictBanner` з UA plural-формами; 18 тестів). Stage 0: PR #003 LANDED ([#1497](https://github.com/Skords-01/Sergeant/pull/1497)). Boot-wiring follow-up для `register{Routine,Fizruk,Nutrition}DualWriteContext` ще не залендили. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by Devin — **Stage 1 COMPLETE; Stage 4 Finyk Mono mirror in CI; Stage 5 op-log v2 hardening in flight.** Stage 1: all 8/8 PRs landed (PR #008 `ff217246`, PR #010 [#1543](https://github.com/Skords-01/Sergeant/pull/1543), PR #013 via 4 sub-PRs). Stage 4 Fizruk: 5/5 PRs merged (PR #027–#030 + #029a). Stage 4 Nutrition: PR #031 / #032 / #033 LANDED ([#1574](https://github.com/Skords-01/Sergeant/pull/1574)), PR #034 LANDED ([#1636](https://github.com/Skords-01/Sergeant/pull/1636)). Stage 4 Finyk: PR #035 LANDED ([#1667](https://github.com/Skords-01/Sergeant/pull/1667) — schema + apply-fns), PR #036 LANDED ([#1680](https://github.com/Skords-01/Sergeant/pull/1680) — dual-write web + mobile), PR #037 LANDED (`c89870c6` — read-overlay web + mobile under `feature.finyk.sqlite_v2.read_sqlite`, default off), PR #038 IN CI (Mono cache mirror у `finyk_mono_*` SQLite таблицях під `feature.finyk.sqlite_v2.mono_mirror`, default off). Stage 5: PR #040 LANDED (`ec1f3820` — persistent op-log retry policy у SQLite), PR #041 IN CI ([#1721](https://github.com/Skords-01/Sergeant/pull/1721) — SSE pull stream), PR #043 LANDED ([#1734](https://github.com/Skords-01/Sergeant/pull/1734) — G-set CRDT для `nutrition_meals` із tombstone інваріантом + 3 інтеграційні тести), PR #043a LANDED ([#1739](https://github.com/Skords-01/Sergeant/pull/1739) — tombstone-resurrection guard для routine + 5 fizruk apply-функцій + 6 інтеграційних кейсів), PR #043b LANDED ([#1743](https://github.com/Skords-01/Sergeant/pull/1743) — той самий guard для 3 nutrition non-meals apply-функцій + 2 finyk хелперів, які покривають усі 10 finyk soft-delete таблиць + 7 інтеграційних кейсів; разом із PR #043a закриває per-table TODO з PR #043), PR #043c LANDED ([#1754](https://github.com/Skords-01/Sergeant/pull/1754) — typed RejectReason allowlist для syncV2 apply-шляху: 45+4 літерали в exported `as const` масивах + regression-тест пінить cardinality budget), PR #048 LANDED ([#1737](https://github.com/Skords-01/Sergeant/pull/1737) — RED-метрики `sync_op_log_apply_total` / `sync_op_log_pull_lag_ms` / `sync_op_log_pull_queue_depth` + 4 нові Grafana панелі в `sync.json`). **Stage 6 ops:** PR #049 docs portion LANDED ([#1757](https://github.com/Skords-01/Sergeant/pull/1757) — Railway Postgres backup/restore runbook у `docs/runbooks/database-backup-restore.md` із pg_dump/pg_restore-командами, sync-aware row-level restore матрицею, smoke-test SQL); weekly-verify CI deferred до PR #049b (потребує `RAILWAY_TOKEN`). PR #042 PN-counter для `routine_streaks` розгорнуто трифазно: PR #042a LANDED ([#1769](https://github.com/Skords-01/Sergeant/pull/1769) — protocol-only scaffolding: розширений `op` CHECK constraint, zod-енам, engine-level reject `op_not_supported`), PR #042b LANDED ([#1776](https://github.com/Skords-01/Sergeant/pull/1776) — `applyRoutineStreaks` opt-in у `INCREMENT_OP_SUPPORTED_TABLES` + atomic `UPDATE … SET current_streak = current_streak + delta` із `GREATEST(0, …)` clamping та monotonic `longest_streak` оновленням, |delta| ≤ 1000, 6 нових інтеграційних тестів), PR #042c LANDED ([#1787](https://github.com/Skords-01/Sergeant/pull/1787) — typed client-side `buildSyncV2IncrementOp` helper в api-client, дзеркалить серверний engine-gate + apply-fn validation з тими самими reject reasons (`op_not_supported` / `missing_delta` / `invalid_delta`); 25 нових unit-тестів + regression-locks на allowlist length і magnitude bound). PR #044 LANDED ([#1780](https://github.com/Skords-01/Sergeant/pull/1780) — typed module-level conflict store + `useFinykManualExpenseConflicts` hook + `FinykManualExpenseConflictBanner` з UA plural-формами; 18 тестів). Stage 0: PR #003 LANDED ([#1497](https://github.com/Skords-01/Sergeant/pull/1497)). Boot-wiring follow-up для `register{Routine,Fizruk,Nutrition}DualWriteContext` ще не залендили. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -1209,18 +1209,20 @@ recreate indexes`) у `packages/db-schema/src/sqlite/migrations/index.ts`,
   у `syncV2Stream.handler.test.ts` із `vi.fakeTimers()`); E2E з
   реальним Postgres — follow-up в `syncV2.integration.test.ts`.
 
-#### **PR #042 — `feat(sync): per-row CRDT for routine_entries (PN-counter for streak)`** — split into PR #042a + PR #042b
+#### **PR #042 — `feat(sync): per-row CRDT for routine_entries (PN-counter for streak)`** — split into PR #042a + PR #042b + PR #042c
 
 - Scope. `routine_streaks.current_streak` стає PN-counter (positive/negative
   counter), не просто Int. Конкурентний toggle з двох девайсів дає коректний
   стрик.
-- **Status (2026-05-04).** Доставлено двофазно (див. підрозділи нижче).
+- **Status (2026-05-04).** Доставлено трифазно (див. підрозділи нижче).
   Початкова деферал-причина — pure-server PN-counter потребував
   протокольної зміни (новий op kind `increment` із `delta`-payload-ом
   у `sync_op_log` CHECK constraint + `SyncV2OpKindEnum`) — закрита
-  PR #042a; apply-fn-семантика для `routine_streaks` — закрита PR #042b.
-  Server-side derivation streak-status-у з `Habit.schedule` лишається
-  поза скоупом цієї пари (LS-блоб міграція — окрема ініціатива).
+  PR #042a; apply-fn-семантика для `routine_streaks` — закрита PR #042b;
+  client-side typed envelope-builder, дзеркалить серверну validation —
+  закрита PR #042c. Server-side derivation streak-status-у з
+  `Habit.schedule` лишається поза скоупом серії (LS-блоб міграція —
+  окрема ініціатива).
 
 #### **PR #042a — `feat(server): protocol scaffolding for op='increment'`** ✅ LANDED ([#1769](https://github.com/Skords-01/Sergeant/pull/1769))
 
@@ -1245,20 +1247,54 @@ recreate indexes`) у `packages/db-schema/src/sqlite/migrations/index.ts`,
   PN-counter-семантика: increments комутативні + ідемпотентні per
   `(idempotency_key)`, тому LWW-guard на цій гілці навмисно вимкнено
   (`AND op <> 'increment'` у LWW-SELECT-і).
-- **Done (2026-05-04).** Three-stage delta validation у engine-gate:
-  presence (`missing_delta`), type/finiteness/integrality (`invalid_delta`),
-  magnitude bound `|delta| ≤ 1000` (`delta_out_of_range`). `GREATEST(0, …)`
+- **Done (2026-05-04).** Two-stage delta validation у apply-fn-у:
+  presence (`missing_delta`) + type/finiteness/integrality/magnitude
+  bound `|delta| ≤ 1000` (`invalid_delta`, collapsed reason — non-finite,
+  non-integer і out-of-range зливаються у одну причину, тому cardinality
+  budget `sync_op_log_apply_total{reason}` не зростає). `GREATEST(0, …)`
   clamping не дає `current_streak` піти у мінус навіть при наївних
   decrement-batch-ах; `longest_streak` оновлюється monotonically лише
   коли новий `current_streak` його перевищує. 6 нових інтеграційних
   тестів у `syncV2.integration.test.ts`: concurrent increment-merge,
-  clamp-at-zero, monotonic longest, missing/invalid/out-of-range delta
-  reject-paths. Locally green: typecheck + lint + sync test-suite.
+  clamp-at-zero, monotonic longest, missing/invalid delta reject-paths.
+  Locally green: typecheck + lint + sync test-suite.
 - **Risk.** Low — PN-counter scope обмежений однією таблицею;
   client-side dual-write outbox-адаптер ще не написано (це окрема
   PR серії), тому live-traffic-у на цій гілці поки нема — net change
   у production нульовий до моменту client-rollout-у.
 - **Dep.** PR #042a.
+
+#### **PR #042c — `feat(api-client): typed buildSyncV2IncrementOp helper for PN-counter`** ✅ LANDED ([#1787](https://github.com/Skords-01/Sergeant/pull/1787))
+
+- Scope. Client-side typed envelope-builder для `op='increment'`
+  push-ops у `packages/api-client/src/endpoints/syncV2.increment.ts`,
+  що дзеркалить серверні validation-rule-и з PR #042a (engine-gate)
+  - PR #042b (`applyRoutineStreaks` apply-fn). Public surface api-client-у:
+    `INCREMENT_OP_SUPPORTED_TABLES` (literal-tuple `["routine_streaks"]`),
+    `IncrementOpTable`, `INCREMENT_DELTA_MAX_ABS` (1000),
+    `isIncrementOpSupported(table)` type-guard,
+    `buildSyncV2IncrementOp(input)` Result-discriminated builder
+    (`{ ok: true, op } | { ok: false, reason }`).
+- **Done (2026-05-04).** `buildSyncV2IncrementOp` ніколи не throw-ить;
+  reject-причини — bit-for-bit ті самі string-літерали, що сервер пише
+  у `sync_op_log_apply_total{reason}`: `op_not_supported` /
+  `missing_delta` / `invalid_delta`. Early-exit ordering замикає
+  серверну послідовність (allowlist-check ПЕРЕД delta-validation,
+  щоб caller із `delta=NaN, table=invalid` отримував той самий
+  `op_not_supported`, що серверний engine-gate спрацював би до
+  SAVEPOINT-у apply-fn-у). 25 нових unit-тестів у
+  `syncV2.increment.test.ts`: happy-path (delta=0/+1/-1/±MAX_ABS,
+  extraRow merge ordering), всі reject-branches (NaN / Infinity /
+  -Infinity / 1.5 / MAX_SAFE_INTEGER / runtime-string cast /
+  null / undefined / not-allowlisted-table / empty-string-table),
+  regression-locks на allowlist length (1) і magnitude bound (1000),
+  early-exit ordering tripwires. Locally: typecheck + lint + 82/82
+  api-client тестів зелені.
+- **Risk.** None — public surface без callsite-ів. Перший consumer
+  буде client-side push-loop refactor у наступній PR-і Stage 5 серії,
+  яка зашиє outbox-адаптер для PN-counter-tier таблиць.
+- **Dep.** PR #042a (engine-gate reasons), PR #042b (apply-fn allowlist
+  - magnitude bound).
 
 #### **PR #043 — `feat(sync): G-set CRDT for nutrition_meals log`** ✅ LANDED ([#1734](https://github.com/Skords-01/Sergeant/pull/1734))
 
