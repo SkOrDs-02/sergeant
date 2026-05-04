@@ -1,5 +1,6 @@
 # 0004 — Server observability (Sentry server-side + OpenTelemetry traces)
 
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Done (Sentry + Pino + Prom + Grafana shipped 2026-05-04). OTEL distributed tracing — carry-over до [ADR-0035](../adr/0035-distributed-tracing-opentelemetry.md) follow-up (потребує підтвердження Honeycomb-tier).
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`

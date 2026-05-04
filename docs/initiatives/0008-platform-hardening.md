@@ -1,6 +1,7 @@
 # 0008 — Platform hardening: rate-limit, health endpoints, Renovate, supply-chain
 
-> **Status:** Proposed
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** In progress (5/5 phases shipped 2026-05-04, all PRs in review)
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
 > **ETA:** 1 week

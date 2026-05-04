@@ -1,5 +1,6 @@
 # 0002 — Mobile platform decision: lock the deprecation deadline
 
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** In progress (Phase 1 done — sunset locked, lint guard live, shell-tax script ready; Phase 2 — weekly cron live)
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`

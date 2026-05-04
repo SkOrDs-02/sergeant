@@ -1,5 +1,6 @@
 # 0001 — Module decomposition + `max-lines` guard
 
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Done (Phase 1 + Phase 2 + Phase 3) — closed 2026-05-04
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`

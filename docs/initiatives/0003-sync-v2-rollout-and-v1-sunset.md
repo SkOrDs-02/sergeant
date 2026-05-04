@@ -1,5 +1,6 @@
 # 0003 — Sync v2 rollout & v1 sunset
 
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** In progress (Phase 1 + 2 shipped 2026-05-04)
 > **Priority:** P0 (Sprint 1–2)
 > **Owner:** `@Skords-01`

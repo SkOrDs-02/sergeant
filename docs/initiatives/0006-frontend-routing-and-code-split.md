@@ -1,5 +1,6 @@
 # 0006 — Frontend routing migration + route-based code-split
 
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Proposed
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
@@ -124,24 +125,24 @@
 
 ## Ризики та митиґація
 
-| Ризик                                                         | Мітигація                                                                                                          |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| PWA install з hash-URL у deep-link — користувачі мають пам'ять | Hash-URL compat shim (фаза 3); broadcast push «оновіть закладки» не потрібен, redirect автоматичний.              |
-| Існуючий код у модулях зав'язаний на `useHashRouter`           | Міграція робиться **по одному модулю на PR** (фаза 2 — 4 PRs). Кожен PR змінює тільки свій модуль.                |
-| Bundle початково росте через runtime react-router             | Замір до/після у `chore-bundle-budget-per-route`. Якщо +20 KB і більше — переглянути імпорти.                     |
-| Route-loader робить waterfall (loader → render → another fetch) | Loader prefetch-ить тільки **критичні** queries; неістотні лишаються RQ-фоновими.                                  |
-| Service-worker precache інвалідується через зміну URL патернів | `apps/web/src/sw.ts` precache `/*.html` лишається; новий route resolution на client-side не змінює precache patterns. |
+| Ризик                                                           | Мітигація                                                                                                             |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| PWA install з hash-URL у deep-link — користувачі мають пам'ять  | Hash-URL compat shim (фаза 3); broadcast push «оновіть закладки» не потрібен, redirect автоматичний.                  |
+| Існуючий код у модулях зав'язаний на `useHashRouter`            | Міграція робиться **по одному модулю на PR** (фаза 2 — 4 PRs). Кожен PR змінює тільки свій модуль.                    |
+| Bundle початково росте через runtime react-router               | Замір до/після у `chore-bundle-budget-per-route`. Якщо +20 KB і більше — переглянути імпорти.                         |
+| Route-loader робить waterfall (loader → render → another fetch) | Loader prefetch-ить тільки **критичні** queries; неістотні лишаються RQ-фоновими.                                     |
+| Service-worker precache інвалідується через зміну URL патернів  | `apps/web/src/sw.ts` precache `/*.html` лишається; новий route resolution на client-side не змінює precache patterns. |
 
 ## Метрики
 
-| Метрика                                  | Baseline (2026-05-03)         | Target                |
-| ---------------------------------------- | ----------------------------- | --------------------- |
-| Initial bundle (gzip)                    | ~ 800 KB (≤ 820 KB ceil)      | ≤ 350 KB              |
-| Per-route bundle (avg)                   | n/a (single bundle)           | ≤ 250 KB              |
-| Time-to-Hub (p75 у PostHog)              | ?                             | -30%                  |
-| Route-change p95 latency                 | n/a (instant; no chunk load)  | ≤ 600 ms (with prefetch) |
-| `useHashRouter` call-sites               | ~15+                          | 0                     |
-| LCP (Web Vitals) на Hub                  | ?                             | Зниження ≥ 200 ms     |
+| Метрика                     | Baseline (2026-05-03)        | Target                   |
+| --------------------------- | ---------------------------- | ------------------------ |
+| Initial bundle (gzip)       | ~ 800 KB (≤ 820 KB ceil)     | ≤ 350 KB                 |
+| Per-route bundle (avg)      | n/a (single bundle)          | ≤ 250 KB                 |
+| Time-to-Hub (p75 у PostHog) | ?                            | -30%                     |
+| Route-change p95 latency    | n/a (instant; no chunk load) | ≤ 600 ms (with prefetch) |
+| `useHashRouter` call-sites  | ~15+                         | 0                        |
+| LCP (Web Vitals) на Hub     | ?                            | Зниження ≥ 200 ms        |
 
 ## Власник, ревʼюери
 
