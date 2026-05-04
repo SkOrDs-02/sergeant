@@ -273,4 +273,135 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
       expect(result.data.image).toBe(url);
     }
   });
+
+  /**
+   * H3 — `databaseHooks.session.create.before` ріже `ipAddress` до /24
+   * (IPv4) або /64 (IPv6) prefix-а. Без цього в `session.ipAddress` лежить
+   * повний IP, який для нас не несе додаткової інформації, але є PII у
+   * 30-денному запису. Закриває
+   * `docs/security/hardening/H3-session-revoke-and-binding.md`.
+   */
+  it("H3: databaseHooks.session.create.before truncates ipAddress to /24 (IPv4)", async () => {
+    const before = (
+      auth as unknown as {
+        options: {
+          databaseHooks?: {
+            session?: {
+              create?: {
+                before?: (
+                  data: Record<string, unknown>,
+                ) => Promise<{ data: Record<string, unknown> } | false | void>;
+              };
+            };
+          };
+        };
+      }
+    ).options.databaseHooks?.session?.create?.before;
+    expect(typeof before).toBe("function");
+    const result = await before!({
+      id: "s-1",
+      userId: "u-1",
+      token: "t-1",
+      ipAddress: "203.0.113.42",
+      userAgent: "Mozilla/5.0",
+    });
+    expect(result).toBeTruthy();
+    if (result && typeof result === "object" && "data" in result) {
+      expect(result.data.ipAddress).toBe("203.0.113.0/24");
+      // userAgent зберігаємо повністю — він не PII у тому ж сенсі, що IP,
+      // і потрібен буквально для UA-drift detection.
+      expect(result.data.userAgent).toBe("Mozilla/5.0");
+    }
+  });
+
+  it("H3: databaseHooks.session.create.before truncates ipAddress to /64 (IPv6)", async () => {
+    const before = (
+      auth as unknown as {
+        options: {
+          databaseHooks?: {
+            session?: {
+              create?: {
+                before?: (
+                  data: Record<string, unknown>,
+                ) => Promise<{ data: Record<string, unknown> } | false | void>;
+              };
+            };
+          };
+        };
+      }
+    ).options.databaseHooks?.session?.create?.before;
+    const result = await before!({
+      id: "s-1",
+      userId: "u-1",
+      token: "t-1",
+      ipAddress: "2001:db8::1",
+    });
+    expect(result).toBeTruthy();
+    if (result && typeof result === "object" && "data" in result) {
+      expect(result.data.ipAddress).toBe("2001:db8:0:0::/64");
+    }
+  });
+
+  it("H3: databaseHooks.session.create.before — no-op коли ipAddress вже prefix", async () => {
+    const before = (
+      auth as unknown as {
+        options: {
+          databaseHooks?: {
+            session?: {
+              create?: {
+                before?: (
+                  data: Record<string, unknown>,
+                ) => Promise<{ data: Record<string, unknown> } | false | void>;
+              };
+            };
+          };
+        };
+      }
+    ).options.databaseHooks?.session?.create?.before;
+    // Якщо повторно прогнати ту ж сесію (наприклад через update path, що
+    // інколи зачитує дані назад), не повинно бути розширення/пере-обрізки.
+    // Наша імплементація повертає `void` коли значення вже у фінальному
+    // вигляді — Better Auth тоді залишає payload як є.
+    const result = await before!({
+      id: "s-1",
+      userId: "u-1",
+      token: "t-1",
+      ipAddress: "203.0.113.0/24",
+    });
+    expect(result).toBeUndefined();
+  });
+
+  it("H3: hooks.before примусово додає revokeOtherSessions=true для /change-password", async () => {
+    const before = (
+      auth as unknown as {
+        options: { hooks?: { before?: unknown } };
+      }
+    ).options.hooks?.before;
+    expect(typeof before).toBe("function");
+    // Better Auth-міддлвара очікує MiddlewareInputContext. Передаємо
+    // мінімальну форму, яку наш handler читає (`path`, `body`).
+    const ctx = {
+      path: "/change-password",
+      body: { newPassword: "n", currentPassword: "c" } as Record<
+        string,
+        unknown
+      >,
+    };
+    await (before as (input: unknown) => Promise<unknown>)(ctx);
+    expect(ctx.body.revokeOtherSessions).toBe(true);
+  });
+
+  it("H3: hooks.before не чіпає інші endpoint-и", async () => {
+    const before = (
+      auth as unknown as {
+        options: { hooks?: { before?: unknown } };
+      }
+    ).options.hooks?.before;
+    const ctx = {
+      path: "/sign-in/email",
+      body: { email: "x@y.z", password: "p" } as Record<string, unknown>,
+    };
+    await (before as (input: unknown) => Promise<unknown>)(ctx);
+    expect(ctx.body.revokeOtherSessions).toBeUndefined();
+  });
 });
