@@ -9,7 +9,9 @@
 
 ---
 
-## 1.0 [Bad] `apps/web` усе ще на `tsconfig.strict: false`
+## 1.0 [Bad → Foundation] `apps/web` усе ще на `tsconfig.strict: false`
+
+> **Update 2026-05-04 (foundation step):** [#1635](https://github.com/Skords-01/Sergeant/pull/1635) увімкнув `noUncheckedIndexedAccess: true` для `@sergeant/shared` (foundation-пакет, від якого залежать усі consumers). Виправлено 28 типових помилок у 8 файлах через дефенсивні guards (`?? fallback`, `?.`, явні narrowing-и); 485 тестів у `@sergeant/shared` лишаються зеленими, поведінка ідентична. Це знімає клас «`arr[i]` мовчки повертає `undefined`» у foundation. Наступні етапи (поширення флагу на `apps/web` + повний `strict: true`) — окремими PR за тим самим патерном.
 
 **Що бачу.** Більшість пакетів на strict. `apps/web/tsconfig.json` — softer. Це проривається у формах, у `chatActions/*` і у місцях, де `unknown` ховається під «м'якою» типізацією. Існуючі strict-coverage метрики бренять, але руки до кінця не дійшли.
 

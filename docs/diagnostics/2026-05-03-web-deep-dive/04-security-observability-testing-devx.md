@@ -280,7 +280,9 @@ OK.
 
 ---
 
-## 8.6 [Bad] Storybook відсутній
+## 8.6 [Bad → Foundation] Storybook відсутній
+
+> **Update 2026-05-04 (foundation step):** [#1647](https://github.com/Skords-01/Sergeant/pull/1647) підняв **Storybook 10** прямо в `apps/web` (`.storybook/main.ts` + `preview.tsx`, framework `@storybook/react-vite`, glob `src/**/*.stories.@(ts|tsx)`). Додано перші stories для `Button` / `Badge` / `Card` (включно з module brand-варіантами finyk/fizruk/routine/nutrition). `viteFinal` хук викидає `vite-plugin-pwa` з конфігу — workbox precache рветься на Storybook manager bundle (~3.18 MB > дефолтний 2 MiB ліміт). Scripts: `pnpm --filter @sergeant/web storybook` (dev на :6006), `pnpm --filter @sergeant/web build-storybook` (статика у `storybook-static/`). Розширення каталогу + Chromatic / Playwright VRT — Phase 1.2+ ініціативи [0007](../../initiatives/0007-design-system-tooling.md).
 
 **Що бачу.** 76 UI-компонентів. Jolt у вкладенні `apps/web/src/shared/ui/*`. Нема Storybook, нема альтернативи (Ladle / Histoire). Ускладнює:
 

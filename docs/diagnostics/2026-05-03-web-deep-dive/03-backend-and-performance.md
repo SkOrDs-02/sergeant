@@ -136,7 +136,9 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
 
 ---
 
-## 4.5 [Bad] Rate limiter — per-module budget, але без єдиного «cost-model»
+## 4.5 [Bad → Done] Rate limiter — per-module budget, але без єдиного «cost-model»
+
+> **Update 2026-05-04:** done у [#1622](https://github.com/Skords-01/Sergeant/pull/1622). Додано optional `cost(req): number` у `rateLimitExpress`; chat / AI streams тепер коштують `4` (замість `1`) та документовані у `docs/api/rate-limiting.md`. Метрика `rate_limit_consumed_total` отримала `cost`-вимір для алертів. Тести на cost-multiplier додано у `apps/server/src/http/rateLimit.test.ts`.
 
 **Що бачу.** `apps/server/src/http/rateLimit.ts` (~249 рядків) робить per-module, per-user/IP buckets. Це сильно. Але:
 
@@ -188,7 +190,9 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
 
 ---
 
-## 4.7 [Bad] No OpenAPI / no typed client between web↔server
+## 4.7 [Bad → Done] No OpenAPI / no typed client between web↔server
+
+> **Update 2026-05-04:** Phase 1+2 уже були закриті раніше (zod-as-SSOT + freshness gate `pnpm api:check-openapi`). Phase 3 закрита у [#1629](https://github.com/Skords-01/Sergeant/pull/1629): додано `openapi-typescript` codegen → `packages/api-client/src/generated/openapi.d.ts`, реекспортовано як `OpenApiPaths/OpenApiComponents/OpenApiOperations` з `@sergeant/api-client`, freshness gate `pnpm api:check-openapi-types` підвішений у `pnpm lint`. Quad-edit правило (zod ↔ routes ↔ `openapi.json` ↔ `openapi.d.ts`) задокументовано у `docs/api/README.md`.
 
 **Що бачу.** `packages/api-client` — **typed HTTP client** (з `STABILIZE` у audit.md), але я не побачив, щоб він автогенерувався з server-схем. Тобто схеми `zod` живуть на сервері, схеми типів — на клієнті, і вони **синхронізуються вручну**.
 
