@@ -1450,6 +1450,270 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
     TIMEOUT_MS,
   );
 
+  // G-set CRDT (PR #043) — tombstone-и монотонні; жоден insert/update після
+  // delete-у не воскрешає ряд. Покриває multi-device race: offline-edit на
+  // одному девайсі НЕ повинен перевизначити delete з іншого девайсу.
+  it(
+    "nutrition_meals: G-set — після soft-delete update із новішим client_ts відхилено як tombstoned",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-nm-gset-tombstoned");
+
+      const mealId = "10000000-0000-4000-8000-000000000010";
+      const tInsert = isoNow(-10_000);
+      const tDelete = isoNow(-5_000);
+      const tEdit = isoNow();
+
+      // Insert.
+      await syncV2Push(
+        makeReq({
+          userId: "u-nm-gset-tombstoned",
+          body: {
+            ops: [
+              {
+                table: "nutrition_meals",
+                op: "insert" as const,
+                row: {
+                  id: mealId,
+                  user_id: "u-nm-gset-tombstoned",
+                  eaten_at: tInsert,
+                  name: "before-delete",
+                  kcal: 100,
+                },
+                client_ts: tInsert,
+                idempotency_key: "nm-gset-tombstoned-insert",
+              },
+            ],
+          },
+        }),
+        makeRes(),
+      );
+
+      // Delete.
+      await syncV2Push(
+        makeReq({
+          userId: "u-nm-gset-tombstoned",
+          body: {
+            ops: [
+              {
+                table: "nutrition_meals",
+                op: "delete" as const,
+                row: { id: mealId, user_id: "u-nm-gset-tombstoned" },
+                client_ts: tDelete,
+                idempotency_key: "nm-gset-tombstoned-delete",
+              },
+            ],
+          },
+        }),
+        makeRes(),
+      );
+
+      // Inflight offline-edit з іншого девайсу із новішим client_ts —
+      // raw LWW дозволив би це апплаїти, але G-set інваріант його блокує.
+      const r3 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-nm-gset-tombstoned",
+          body: {
+            ops: [
+              {
+                table: "nutrition_meals",
+                op: "update" as const,
+                row: {
+                  id: mealId,
+                  user_id: "u-nm-gset-tombstoned",
+                  eaten_at: tInsert,
+                  name: "resurrected",
+                  kcal: 999,
+                },
+                client_ts: tEdit,
+                idempotency_key: "nm-gset-tombstoned-resurrect",
+              },
+            ],
+          },
+        }),
+        r3,
+      );
+      const r3Body = r3.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(r3Body.accepted).toBe(0);
+      expect(r3Body.results[0].reason).toBe("tombstoned");
+
+      // Стан у БД: ряд лишається soft-deleted, ім'я НЕ перезаписане.
+      const finalRow = await testPool.query<{
+        deleted_at: Date | null;
+        name: string;
+        kcal: number;
+      }>(`SELECT deleted_at, name, kcal FROM nutrition_meals WHERE id = $1`, [
+        mealId,
+      ]);
+      expect(finalRow.rows[0].deleted_at).not.toBeNull();
+      expect(finalRow.rows[0].name).toBe("before-delete");
+      expect(finalRow.rows[0].kcal).toBe(100);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "nutrition_meals: G-set — повторний delete із новішим client_ts re-stamp-ить tombstone",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-nm-gset-redel");
+
+      const mealId = "10000000-0000-4000-8000-000000000011";
+      const tInsert = isoNow(-10_000);
+      const tDel1 = isoNow(-5_000);
+      const tDel2 = isoNow();
+
+      await syncV2Push(
+        makeReq({
+          userId: "u-nm-gset-redel",
+          body: {
+            ops: [
+              {
+                table: "nutrition_meals",
+                op: "insert" as const,
+                row: {
+                  id: mealId,
+                  user_id: "u-nm-gset-redel",
+                  eaten_at: tInsert,
+                  name: "to-double-delete",
+                },
+                client_ts: tInsert,
+                idempotency_key: "nm-gset-redel-insert",
+              },
+            ],
+          },
+        }),
+        makeRes(),
+      );
+      await syncV2Push(
+        makeReq({
+          userId: "u-nm-gset-redel",
+          body: {
+            ops: [
+              {
+                table: "nutrition_meals",
+                op: "delete" as const,
+                row: { id: mealId, user_id: "u-nm-gset-redel" },
+                client_ts: tDel1,
+                idempotency_key: "nm-gset-redel-del1",
+              },
+            ],
+          },
+        }),
+        makeRes(),
+      );
+
+      // Другий delete із новішим client_ts. Idempotency-ключ інший
+      // (з іншого девайсу), тому це не duplicate; ряд уже tombstoned,
+      // але delete-шлях має пройти й оновити deleted_at.
+      const r3 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-nm-gset-redel",
+          body: {
+            ops: [
+              {
+                table: "nutrition_meals",
+                op: "delete" as const,
+                row: { id: mealId, user_id: "u-nm-gset-redel" },
+                client_ts: tDel2,
+                idempotency_key: "nm-gset-redel-del2",
+              },
+            ],
+          },
+        }),
+        r3,
+      );
+      expect((r3.body as { accepted: number }).accepted).toBe(1);
+
+      const finalRow = await testPool.query<{ deleted_at: Date | null }>(
+        `SELECT deleted_at FROM nutrition_meals WHERE id = $1`,
+        [mealId],
+      );
+      expect(finalRow.rows[0].deleted_at).not.toBeNull();
+      // deleted_at має бути ≈ tDel2, не tDel1.
+      expect(finalRow.rows[0].deleted_at!.getTime()).toBeGreaterThan(
+        new Date(tDel1).getTime(),
+      );
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "nutrition_meals: G-set — конкурентні insert-и з різними id з обох девайсів об'єднуються",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-nm-gset-merge");
+
+      const mealA = "10000000-0000-4000-8000-000000000012";
+      const mealB = "10000000-0000-4000-8000-000000000013";
+      const ts = isoNow();
+
+      // Device A
+      await syncV2Push(
+        makeReq({
+          userId: "u-nm-gset-merge",
+          body: {
+            ops: [
+              {
+                table: "nutrition_meals",
+                op: "insert" as const,
+                row: {
+                  id: mealA,
+                  user_id: "u-nm-gset-merge",
+                  eaten_at: ts,
+                  name: "device-a",
+                  kcal: 200,
+                },
+                client_ts: ts,
+                idempotency_key: "nm-gset-merge-a",
+              },
+            ],
+          },
+        }),
+        makeRes(),
+      );
+      // Device B (паралельно)
+      await syncV2Push(
+        makeReq({
+          userId: "u-nm-gset-merge",
+          body: {
+            ops: [
+              {
+                table: "nutrition_meals",
+                op: "insert" as const,
+                row: {
+                  id: mealB,
+                  user_id: "u-nm-gset-merge",
+                  eaten_at: ts,
+                  name: "device-b",
+                  kcal: 300,
+                },
+                client_ts: ts,
+                idempotency_key: "nm-gset-merge-b",
+              },
+            ],
+          },
+        }),
+        makeRes(),
+      );
+
+      const rows = await testPool.query<{ id: string; name: string }>(
+        `SELECT id, name FROM nutrition_meals
+          WHERE user_id = $1 AND deleted_at IS NULL
+          ORDER BY name`,
+        ["u-nm-gset-merge"],
+      );
+      expect(rows.rows).toHaveLength(2);
+      expect(rows.rows.map((r) => r.name)).toEqual(["device-a", "device-b"]);
+    },
+    TIMEOUT_MS,
+  );
+
   it(
     "nutrition_pantries + nutrition_pantry_items: parent-then-child в одному батчі",
     async (ctx) => {
