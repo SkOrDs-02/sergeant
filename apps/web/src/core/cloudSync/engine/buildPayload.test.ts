@@ -9,66 +9,63 @@ beforeEach(() => {
 });
 afterEach(() => {
   localStorage.clear();
-  // Reset exclusion flags between tests. PR #030 retired `fizruk`
-  // and PR #034 retired `nutrition` from SYNC_MODULES
-  // (storage-roadmap Stage 4) so we no longer touch their exclusion
-  // flags here.
-  setModuleSyncExcluded("finyk", false);
+  // Reset exclusion flags between tests. PR #030 retired `fizruk`,
+  // PR #034 retired `nutrition` and PR #039 retired `finyk` from
+  // SYNC_MODULES (storage-roadmap Stage 4) so we no longer touch
+  // their exclusion flags here — only `profile` remains.
   setModuleSyncExcluded("profile", false);
 });
 
 describe("buildModulesPayload", () => {
   it("returns empty object when no modules have local data", () => {
-    expect(buildModulesPayload(["finyk", "profile"], {})).toEqual({});
+    expect(buildModulesPayload(["profile"], {})).toEqual({});
   });
 
   it("returns empty object when modifiedTimes is empty and no LS data is set", () => {
-    expect(buildModulesPayload(["finyk"], {})).toEqual({});
+    expect(buildModulesPayload(["profile"], {})).toEqual({});
   });
 
   it("includes module with collected data and stamps clientUpdatedAt", () => {
-    localStorage.setItem(
-      STORAGE_KEYS.FINYK_BUDGETS,
-      JSON.stringify([{ id: 1 }]),
-    );
-    const result = buildModulesPayload(["finyk"], {
-      finyk: "2026-04-15T00:00:00.000Z",
+    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ id: 1 }));
+    const result = buildModulesPayload(["profile"], {
+      profile: "2026-04-15T00:00:00.000Z",
     });
-    expect(result.finyk).toBeDefined();
-    expect(result.finyk.clientUpdatedAt).toBe("2026-04-15T00:00:00.000Z");
-    expect(result.finyk.data).toMatchObject({
-      [STORAGE_KEYS.FINYK_BUDGETS]: [{ id: 1 }],
+    expect(result.profile).toBeDefined();
+    expect(result.profile.clientUpdatedAt).toBe("2026-04-15T00:00:00.000Z");
+    expect(result.profile.data).toMatchObject({
+      [STORAGE_KEYS.USER_PROFILE]: { id: 1 },
     });
   });
 
   it("falls back to current ISO timestamp when modifiedTimes lacks the module", () => {
-    localStorage.setItem(STORAGE_KEYS.FINYK_BUDGETS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, "{}");
     const before = Date.now();
-    const result = buildModulesPayload(["finyk"], {});
+    const result = buildModulesPayload(["profile"], {});
     const after = Date.now();
-    const ts = Date.parse(result.finyk.clientUpdatedAt);
+    const ts = Date.parse(result.profile.clientUpdatedAt);
     expect(ts).toBeGreaterThanOrEqual(before);
     expect(ts).toBeLessThanOrEqual(after);
   });
 
   it("skips modules without any local data", () => {
-    localStorage.setItem(STORAGE_KEYS.FINYK_BUDGETS, "[]");
-    const result = buildModulesPayload(["finyk", "profile"], {
-      finyk: "2026-04-15T00:00:00.000Z",
+    // PR #039: only `profile` is a live SYNC_MODULES entry, so the
+    // multi-module test passes a synthetic `_legacy_finyk` placeholder
+    // that buildModulesPayload should silently skip (unknown module).
+    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, "{}");
+    const result = buildModulesPayload(["profile", "_legacy_finyk" as never], {
       profile: "2026-04-15T00:00:00.000Z",
-    });
-    expect(Object.keys(result)).toEqual(["finyk"]);
+      _legacy_finyk: "2026-04-15T00:00:00.000Z",
+    } as never);
+    expect(Object.keys(result)).toEqual(["profile"]);
   });
 
   it("skips modules excluded via setModuleSyncExcluded", () => {
-    localStorage.setItem(STORAGE_KEYS.FINYK_BUDGETS, "[]");
     localStorage.setItem(STORAGE_KEYS.USER_PROFILE, "{}");
-    setModuleSyncExcluded("finyk", true);
-    const result = buildModulesPayload(["finyk", "profile"], {
-      finyk: "2026-04-15T00:00:00.000Z",
+    setModuleSyncExcluded("profile", true);
+    const result = buildModulesPayload(["profile"], {
       profile: "2026-04-15T00:00:00.000Z",
     });
-    expect(Object.keys(result)).toEqual(["profile"]);
+    expect(Object.keys(result)).toEqual([]);
   });
 
   it("skips the retired fizruk module even when its LS keys exist", () => {
@@ -93,8 +90,21 @@ describe("buildModulesPayload", () => {
     expect(Object.keys(result)).toEqual([]);
   });
 
+  it("skips the retired finyk module even when its LS keys exist", () => {
+    // PR #039 — `finyk` is no longer in SYNC_MODULES, so legacy
+    // `finyk_*` LS rows (budgets, subs, tx_cache, …) must never end
+    // up in the push payload.
+    localStorage.setItem(STORAGE_KEYS.FINYK_BUDGETS, "[]");
+    localStorage.setItem(STORAGE_KEYS.FINYK_SUBS, "[]");
+    localStorage.setItem(STORAGE_KEYS.FINYK_TX_CACHE, "{}");
+    const result = buildModulesPayload(["finyk" as never], {
+      finyk: "2026-04-15T00:00:00.000Z",
+    } as never);
+    expect(Object.keys(result)).toEqual([]);
+  });
+
   it("ignores unknown module names without crashing", () => {
-    const result = buildModulesPayload(["finyk", "ghost"], {});
+    const result = buildModulesPayload(["profile", "ghost"], {});
     expect(Object.keys(result)).toEqual([]);
   });
 });

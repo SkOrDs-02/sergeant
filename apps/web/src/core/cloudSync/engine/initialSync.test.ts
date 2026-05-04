@@ -97,9 +97,13 @@ describe("initialSync return value", () => {
 
   it("returns true on the needMigration branch (decision reached, not a failure)", async () => {
     // No cloud, has local data, not migrated → needMigration.
+    // PR #030 retired `fizruk`, PR #034 retired `nutrition` and PR
+    // #039 retired `finyk` from SYNC_MODULES (storage-roadmap Stage
+    // 4); only `profile` (USER_PROFILE) remains as a live module,
+    // so the "has local data" probe is seeded with USER_PROFILE.
     mockedPullAll.mockResolvedValueOnce({ modules: {} });
     localStorage.setItem(
-      STORAGE_KEYS.FINYK_BUDGETS,
+      STORAGE_KEYS.USER_PROFILE,
       JSON.stringify({ any: "data" }),
     );
     const { args, onNeedMigration, onError, onSettled } = makeArgs();
@@ -116,9 +120,11 @@ describe("initialSync return value", () => {
     // Регресія: `applyMerge` викликав `clearAllDirty()` після `syncApi.pushAll`,
     // ігноруючи per-module `{ ok: true, conflict: true }` → dirty стирався,
     // наступний pull накатував cloud, і локальні зміни зникали.
+    // PR #039 retired `finyk` from SYNC_MODULES; conflict-module
+    // bookkeeping is now exercised on the live `profile` module.
     mockedPullAll.mockResolvedValueOnce({
       modules: {
-        finyk: {
+        profile: {
           data: { a: 1 },
           clientUpdatedAt: new Date(Date.now() - 1000).toISOString(),
           version: 5,
@@ -127,12 +133,12 @@ describe("initialSync return value", () => {
     });
     // LWW loser: server відкинув push як conflict.
     mockedPushAll.mockResolvedValueOnce({
-      results: { finyk: { ok: true, conflict: true, version: 5 } },
+      results: { profile: { ok: true, conflict: true, version: 5 } },
     });
-    localStorage.setItem(STORAGE_KEYS.FINYK_BUDGETS, JSON.stringify({ x: 1 }));
+    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ x: 1 }));
     localStorage.setItem(
       STORAGE_KEYS.SYNC_DIRTY_MODULES,
-      JSON.stringify({ finyk: true }),
+      JSON.stringify({ profile: true }),
     );
     markMigrationDone("u1");
     const { args, onSuccess, onError } = makeArgs();
@@ -145,13 +151,13 @@ describe("initialSync return value", () => {
     // dirty має лишитись — до наступної ітерації push-у.
     expect(
       JSON.parse(localStorage.getItem(STORAGE_KEYS.SYNC_DIRTY_MODULES) || "{}"),
-    ).toEqual({ finyk: true });
+    ).toEqual({ profile: true });
   });
 
   it("clears dirty for non-conflict modules on a successful merge push", async () => {
     mockedPullAll.mockResolvedValueOnce({
       modules: {
-        finyk: {
+        profile: {
           data: { a: 1 },
           clientUpdatedAt: new Date(Date.now() - 1000).toISOString(),
           version: 5,
@@ -159,12 +165,12 @@ describe("initialSync return value", () => {
       },
     });
     mockedPushAll.mockResolvedValueOnce({
-      results: { finyk: { ok: true, version: 6 } },
+      results: { profile: { ok: true, version: 6 } },
     });
-    localStorage.setItem(STORAGE_KEYS.FINYK_BUDGETS, JSON.stringify({ x: 1 }));
+    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ x: 1 }));
     localStorage.setItem(
       STORAGE_KEYS.SYNC_DIRTY_MODULES,
-      JSON.stringify({ finyk: true }),
+      JSON.stringify({ profile: true }),
     );
     markMigrationDone("u1");
     const { args, onSuccess } = makeArgs();
@@ -182,7 +188,7 @@ describe("initialSync return value", () => {
     // branch. pushAll inside initialSync throws.
     mockedPullAll.mockResolvedValueOnce({
       modules: {
-        finyk: {
+        profile: {
           data: { a: 1 },
           clientUpdatedAt: new Date().toISOString(),
           version: 1,
@@ -191,10 +197,10 @@ describe("initialSync return value", () => {
     });
     mockedPushAll.mockRejectedValueOnce(new Error("push 5xx"));
     // Local dirty state so merge actually pushes something.
-    localStorage.setItem(STORAGE_KEYS.FINYK_BUDGETS, JSON.stringify({ x: 1 }));
+    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ x: 1 }));
     localStorage.setItem(
       STORAGE_KEYS.SYNC_DIRTY_MODULES,
-      JSON.stringify({ finyk: true }),
+      JSON.stringify({ profile: true }),
     );
     markMigrationDone("u1");
     const { args, onError, onSuccess, onSettled } = makeArgs();

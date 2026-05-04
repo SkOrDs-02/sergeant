@@ -40,13 +40,17 @@ afterEach(() => {
 
 describe("safeWriteSyncedLS", () => {
   it("writes a tracked key and marks the owning module dirty", () => {
+    // PR #030 retired `fizruk`, PR #034 retired `nutrition` and PR
+    // #039 retired `finyk` from SYNC_MODULES (storage-roadmap Stage
+    // 4); only `profile` (USER_PROFILE) remains as a live module,
+    // so the dirty-marking happy path is exercised on USER_PROFILE.
     expect(getDirtyModules()).toEqual({});
 
-    const ok = safeWriteSyncedLS(STORAGE_KEYS.FINYK_BUDGETS, [{ id: "b1" }]);
+    const ok = safeWriteSyncedLS(STORAGE_KEYS.USER_PROFILE, [{ fact: "v" }]);
 
     expect(ok).toBe(true);
-    expect(safeReadLS(STORAGE_KEYS.FINYK_BUDGETS)).toEqual([{ id: "b1" }]);
-    expect(getDirtyModules().finyk).toBe(true);
+    expect(safeReadLS(STORAGE_KEYS.USER_PROFILE)).toEqual([{ fact: "v" }]);
+    expect(getDirtyModules().profile).toBe(true);
   });
 
   it("does NOT mark nutrition dirty after PR #034 cut-over", () => {
@@ -58,6 +62,17 @@ describe("safeWriteSyncedLS", () => {
     expect(getDirtyModules()).toEqual({});
   });
 
+  it("does NOT mark finyk dirty after PR #039 cut-over", () => {
+    // PR #039 (storage-roadmap Stage 4) — `finyk` retired from
+    // SYNC_MODULES. Writes to legacy `finyk_*` LS keys must NOT
+    // mark anything dirty (parity with the fizruk and nutrition
+    // retirement assertions above).
+    safeWriteSyncedLS(STORAGE_KEYS.FINYK_BUDGETS, [{ id: "b1" }]);
+    safeWriteSyncedLS(STORAGE_KEYS.FINYK_SUBS, []);
+    safeWriteSyncedLS(STORAGE_KEYS.FINYK_TX_CACHE, {});
+    expect(getDirtyModules()).toEqual({});
+  });
+
   it("supports profile module (USER_PROFILE)", () => {
     safeWriteSyncedLS(STORAGE_KEYS.USER_PROFILE, [{ fact: "vegan" }]);
     expect(getDirtyModules().profile).toBe(true);
@@ -66,9 +81,13 @@ describe("safeWriteSyncedLS", () => {
   it("stores raw strings without double JSON-encoding", () => {
     // Same shape contract as `safeWriteLS` — passing a string keeps
     // the value as-is so callers can read back through
-    // `safeReadStringLS` without hitting JSON.parse.
-    safeWriteSyncedLS(STORAGE_KEYS.FINYK_SHOW_BALANCE, "1");
-    expect(safeReadStringLS(STORAGE_KEYS.FINYK_SHOW_BALANCE)).toBe("1");
+    // `safeReadStringLS` without hitting JSON.parse. Use the live
+    // `profile` module key so PR #039 fixture changes do not need
+    // to silently rely on a retired finyk key.
+    safeWriteSyncedLS(STORAGE_KEYS.USER_PROFILE, "raw-string-payload");
+    expect(safeReadStringLS(STORAGE_KEYS.USER_PROFILE)).toBe(
+      "raw-string-payload",
+    );
   });
 
   it("does NOT mark anything dirty for an untracked key", () => {
@@ -82,13 +101,13 @@ describe("safeWriteSyncedLS", () => {
     // this exact call would have fired `enqueueChange` via the patched
     // `setItem`. After PR #008 it must no longer mutate the dirty map.
     localStorage.setItem(
-      STORAGE_KEYS.FINYK_BUDGETS,
-      JSON.stringify([{ id: "b2" }]),
+      STORAGE_KEYS.USER_PROFILE,
+      JSON.stringify([{ fact: "v2" }]),
     );
     expect(getDirtyModules()).toEqual({});
     // Sanity: the value did get written to LS, just without the
     // enqueueChange side effect.
-    expect(safeReadLS(STORAGE_KEYS.FINYK_BUDGETS)).toEqual([{ id: "b2" }]);
+    expect(safeReadLS(STORAGE_KEYS.USER_PROFILE)).toEqual([{ fact: "v2" }]);
   });
 
   it("__hubSyncPatched global is gone", () => {
@@ -127,7 +146,10 @@ describe("syncedKV (low-level)", () => {
   });
 
   it("setString fires enqueueChange exactly once per write to a tracked key", () => {
-    syncedKV.setString(STORAGE_KEYS.FINYK_BUDGETS, "[]");
-    expect(getDirtyModules().finyk).toBe(true);
+    // PR #039 retired `finyk` from SYNC_MODULES; `profile`
+    // (USER_PROFILE) is now the only live tracked module, so the
+    // dirty-marking sanity check writes through it instead.
+    syncedKV.setString(STORAGE_KEYS.USER_PROFILE, "{}");
+    expect(getDirtyModules().profile).toBe(true);
   });
 });
