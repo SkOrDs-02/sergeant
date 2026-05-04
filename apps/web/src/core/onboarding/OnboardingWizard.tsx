@@ -7,7 +7,6 @@ import {
 } from "@shared/lib/storage/storage";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
-import { useCelebration } from "@shared/components/ui/CelebrationModal";
 import { BrandLogo } from "../app/BrandLogo";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { OnboardingProgress } from "./OnboardingProgress";
@@ -342,7 +341,6 @@ export function OnboardingWizard({
 }) {
   const [picks, setPicks] = useState<string[]>(loadPersistedPicks);
   const [expanded, setExpanded] = useState(false);
-  const { confetti, CelebrationComponent } = useCelebration();
 
   // Persist picks on every change. Payload is tiny (≤4 strings) so
   // unconditional writes are cheap and keep the resume-after-refresh
@@ -355,9 +353,12 @@ export function OnboardingWizard({
   // first paint counts as both `onboarding_started` and the welcome
   // step's `onboarding_step_viewed`. Capture both in one effect so
   // the funnel definition in `posthog-ftux-dashboards.md` stays a
-  // strict superset of `started`.
-  const startedAtRef = useRef(Date.now());
+  // strict superset of `started`. `startedAt` is initialised inside
+  // the effect so the render body stays pure (`Date.now()` is impure
+  // per react-hooks/purity).
+  const startedAtRef = useRef<number | null>(null);
   useEffect(() => {
+    startedAtRef.current = Date.now();
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_STARTED);
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_VIEWED, { step: "welcome" });
   }, []);
@@ -386,7 +387,10 @@ export function OnboardingWizard({
     });
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_COMPLETED, {
       step: "welcome",
-      durationMs: Math.max(0, Date.now() - startedAtRef.current),
+      durationMs: Math.max(
+        0,
+        Date.now() - (startedAtRef.current ?? Date.now()),
+      ),
     });
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
       intent: hadEmptyPicks ? "vibe_empty" : "vibe_picked",
@@ -398,19 +402,15 @@ export function OnboardingWizard({
     markOnboardingDone();
     clearPersistedPicks();
 
-    confetti("Готово!", "Твій Sergeant налаштовано. Час діяти!", "high");
-
-    // Hold the celebration on screen long enough for the user to read the
-    // copy and enjoy the confetti before the wizard unmounts and the modal
-    // disappears with it. The CelebrationModal's own `autoCloseMs` (11s) is
-    // bounded by this timer because the modal lives inside the wizard tree.
-    setTimeout(() => {
-      onDone(null, {
-        intent: hadEmptyPicks ? "vibe_empty" : "vibe_picked",
-        picks: chosen,
-      });
-    }, 3500);
-  }, [picks, onDone, confetti]);
+    // Wizard finish is a clean handoff to the hub — no celebration modal
+    // here. The real CelebrationModal fires on the user's first real entry
+    // (see `useFirstEntryCelebration`), so onboarding-completion stays a
+    // promise ("тут буде твій дашборд") instead of a fake reward.
+    onDone(null, {
+      intent: hadEmptyPicks ? "vibe_empty" : "vibe_picked",
+      picks: chosen,
+    });
+  }, [picks, onDone]);
 
   const content = useMemo(
     () => (
@@ -427,32 +427,26 @@ export function OnboardingWizard({
 
   if (variant === "fullPage") {
     return (
-      <>
-        {CelebrationComponent}
-        <div
-          className="relative w-full max-w-sm bg-panel border border-line rounded-3xl shadow-float p-6 animate-onboarding-enter"
-          aria-label="Вітальний екран"
-        >
-          {content}
-        </div>
-      </>
+      <div
+        className="relative w-full max-w-sm bg-panel border border-line rounded-3xl shadow-float p-6 animate-onboarding-enter"
+        aria-label="Вітальний екран"
+      >
+        {content}
+      </div>
     );
   }
 
   return (
-    <>
-      {CelebrationComponent}
-      <div
-        className="fixed inset-0 z-500 flex items-end sm:items-center justify-center p-4 pb-safe"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Вітальний екран"
-      >
-        <div className="absolute inset-0 bg-bg/80 backdrop-blur-md" />
-        <div className="relative w-full max-w-sm bg-panel border border-line rounded-3xl shadow-float p-6 animate-onboarding-enter">
-          {content}
-        </div>
+    <div
+      className="fixed inset-0 z-500 flex items-end sm:items-center justify-center p-4 pb-safe"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Вітальний екран"
+    >
+      <div className="absolute inset-0 bg-bg/80 backdrop-blur-md" />
+      <div className="relative w-full max-w-sm bg-panel border border-line rounded-3xl shadow-float p-6 animate-onboarding-enter">
+        {content}
       </div>
-    </>
+    </div>
   );
 }
