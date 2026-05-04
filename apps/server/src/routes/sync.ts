@@ -15,6 +15,7 @@ import {
 } from "../modules/sync/sync.js";
 import { v1SunsetHeadersMiddleware } from "../modules/sync/sunsetHeaders.js";
 import { syncV2Pull, syncV2Push } from "../modules/sync/syncV2.js";
+import { syncV2Stream } from "../modules/sync/syncV2Stream.js";
 
 /**
  * `/api/sync/*` — всі операції потребують авторизованої сесії. `setModule` і
@@ -63,6 +64,18 @@ export function createSyncRouter(): Router {
   r.use("/api/v2/sync", requireSession());
   r.post("/api/v2/sync/push", asyncHandler(syncV2Push));
   r.get("/api/v2/sync/pull", asyncHandler(syncV2Pull));
+  // Stage 5 / PR #041: SSE long-polling. Окрема rate-limit-категорія,
+  // бо connection-handshake — це 1 hit; ми не хочемо, щоб stream-
+  // reconnect-loop при flapping-мережі з'їдав push-budget.
+  r.get(
+    "/api/v2/sync/stream",
+    rateLimitExpress({
+      key: "api:v2:sync:stream",
+      limit: 30,
+      windowMs: 60_000,
+    }),
+    asyncHandler(syncV2Stream),
+  );
 
   return r;
 }

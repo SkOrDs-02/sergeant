@@ -416,6 +416,19 @@ export const syncPayloadBytes = new client.Histogram({
 });
 
 /**
+ * Stage 5 / PR #041: live SSE стрім real-time op-log (`syncV2Stream`).
+ * Окремий gauge — long-lived connection-и не вписуються в існуючий
+ * `sync_duration_ms` histogram (їх duration — це час до disconnect-у,
+ * не час обробки op-у), а кардинальність `module=v2` фіксована.
+ */
+export const syncStreamConnectionsActive = new client.Gauge({
+  name: "sync_stream_connections_active",
+  help: "Active /api/v2/sync/stream SSE connections",
+  labelNames: ["module"],
+  registers: [register],
+});
+
+/**
  * Pre-sunset measurement для CloudSync v1 (Initiative 0003 Phase 1).
  *
  * Окремий counter (а не label-extension на `sync_operations_total`), бо:
