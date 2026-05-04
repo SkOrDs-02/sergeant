@@ -1,11 +1,36 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { Request, Response } from "express";
+import type { LogFn } from "pino";
 
 vi.mock("@sentry/node", () => {
   return {
     captureException: vi.fn(),
   };
 });
+
+// Замість справжнього pino-логера ставимо мокову copy яку тести можуть
+// читати — щоб перевірити, що C1-redaction-хелпер замінив секрет у
+// `path`-полі лог-рядка. `vi.hoisted` потрібний бо `vi.mock` factory
+// hoisted до top-of-file, а звичайна `const` — ні.
+const { loggerMock } = vi.hoisted(() => ({
+  loggerMock: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    fatal: vi.fn(),
+    trace: vi.fn(),
+  },
+}));
+
+vi.mock("../obs/logger.js", () => ({
+  logger: loggerMock,
+  serializeError: (err: unknown) =>
+    err && typeof err === "object" && "message" in err
+      ? { message: (err as { message: string }).message }
+      : { message: String(err) },
+}));
+type Recorded = Parameters<LogFn>[0];
 
 import * as Sentry from "@sentry/node";
 import { errorHandler } from "./errorHandler.js";
@@ -76,6 +101,39 @@ describe("errorHandler → Sentry.captureException", () => {
     errorHandler(err, req, res, () => {});
     expect(res.statusCode).toBe(429);
     expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+});
+
+describe("errorHandler → log path redaction (C1)", () => {
+  // `docs/security/hardening/C1-mono-webhook-secret-in-url.md`
+  // Якщо запит впав до того, як Express розрезолвив route (404, body-parser
+  // помилка), `req.route` undefined → fallback на `req.originalUrl`. Без
+  // редакції webhook-secret потрапляв у Pino лог із 30-day retention.
+  it("маскує секрет у `path` полі при fallback на req.originalUrl", () => {
+    const { req, res } = makeReqRes();
+    (req as unknown as { originalUrl: string }).originalUrl =
+      "/api/mono/webhook/leaked-secret-abc-123";
+    const err = new Error("body parser failed");
+    errorHandler(err, req, res, () => {});
+    expect(loggerMock.error).toHaveBeenCalledTimes(1);
+    const logCall = loggerMock.error.mock.calls[0]![0] as Recorded;
+    expect(logCall).toMatchObject({
+      msg: "request_failed",
+      path: "/api/mono/webhook/[redacted]",
+    });
+  });
+
+  it("preserves route pattern path (вже безпечно — :secret а не <secret>)", () => {
+    const { req, res } = makeReqRes();
+    (req as unknown as { route: { path: string } }).route = {
+      path: "/api/mono/webhook/:secret",
+    };
+    const err = new AppError("bad payload", { status: 400, code: "BAD_INPUT" });
+    errorHandler(err, req, res, () => {});
+    const logCall = loggerMock.warn.mock.calls[0]![0] as Recorded;
+    expect(logCall).toMatchObject({
+      path: "/api/mono/webhook/:secret",
+    });
   });
 });
 

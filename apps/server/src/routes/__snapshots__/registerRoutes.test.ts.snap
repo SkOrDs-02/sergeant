@@ -85,6 +85,7 @@ exports[`registerRoutes > mounts the stable set of /api/* endpoints (snapshot) 1
   "POST /api/mono/backfill",
   "POST /api/mono/connect",
   "POST /api/mono/disconnect",
+  "POST /api/mono/webhook",
   "POST /api/mono/webhook/:secret",
   "POST /api/nutrition/analyze-photo",
   "POST /api/nutrition/backup-download",
