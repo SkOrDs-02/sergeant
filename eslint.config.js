@@ -428,11 +428,13 @@ export default [
       "apps/web/src/shared/lib/storage/createModuleStorage.ts",
       "apps/web/src/shared/lib/storage/weeklyDigestStorage.ts",
       "apps/web/src/shared/hooks/useLocalStorageState.ts",
-      // Мігровано на `safeReadStringLS`/`safeReadLS`/`safeWriteLS` у PR-i Item 6
+      // Мігровано на `safeReadStringLS`/`safeReadLS`/`safeWriteLS` у PR-и Item 6
       // follow-up (docs/diagnostics/2026-05-03-web-deep-dive/02 §2.2):
       // - apps/web/src/shared/lib/ui/perf.ts (1 LS read)
       // - apps/web/src/shared/hooks/useDarkMode.ts (4 LS reads/writes)
-      "apps/web/src/shared/hooks/usePushNotifications.ts",
+      // - apps/web/src/shared/hooks/useActiveFizrukWorkout.ts (round 7)
+      // - apps/web/src/shared/hooks/usePushNotifications.ts (round 8: 1 read +
+      //   2 writes + 4 removes на ключ `hub_push_subscribed`).
       // Cloud-sync internals — the queue / enqueue / state writer all
       // need direct access; users should call the cloud-sync API.
       "apps/web/src/core/cloudSync/logger.ts",

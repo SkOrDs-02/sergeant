@@ -6,6 +6,11 @@ import { getPlatform, isCapacitor } from "@sergeant/shared";
 import { isApiError, pushApi } from "@shared/api";
 import { pushKeys } from "@shared/lib/api/queryKeys";
 import {
+  safeReadStringLS,
+  safeRemoveLS,
+  safeWriteLS,
+} from "@shared/lib/storage/storage";
+import {
   getStoredNativePushToken,
   subscribeNativePush,
   unsubscribeNativePush,
@@ -85,6 +90,8 @@ export interface UsePushNotificationsResult {
  *
  * Локальна `subscribed`-мітка в localStorage — оптимістичний кеш для
  * першого рендеру, щоб UI не мерехтів між "не підписано" і "підписано".
+ * Доступ через `safeReadStringLS`/`safeWriteLS`/`safeRemoveLS`, щоб quota /
+ * private-mode крахи не валили хук на маунт.
  */
 export function usePushNotifications(): UsePushNotificationsResult {
   const supported = isPushSupported();
@@ -101,13 +108,9 @@ export function usePushNotifications(): UsePushNotificationsResult {
     if (!supported) return "denied";
     return readInitialPermission();
   });
-  const [subscribed, setSubscribed] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(PUSH_SUB_KEY) === "1";
-    } catch {
-      return false;
-    }
-  });
+  const [subscribed, setSubscribed] = useState<boolean>(
+    () => safeReadStringLS(PUSH_SUB_KEY) === "1",
+  );
 
   useEffect(() => {
     // Native-гілка тримає permission-стан всередині плагіна — читати
@@ -146,7 +149,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
           token: result.token,
         };
         await pushRegister.mutateAsync(payload);
-        localStorage.setItem(PUSH_SUB_KEY, "1");
+        safeWriteLS(PUSH_SUB_KEY, "1");
         setSubscribed(true);
         queryClient.invalidateQueries({ queryKey: pushKeys.status });
         return;
@@ -183,7 +186,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
       };
       await pushRegister.mutateAsync(payload);
 
-      localStorage.setItem(PUSH_SUB_KEY, "1");
+      safeWriteLS(PUSH_SUB_KEY, "1");
       setSubscribed(true);
       queryClient.invalidateQueries({ queryKey: pushKeys.status });
     },
@@ -225,7 +228,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
               );
             });
         }
-        localStorage.removeItem(PUSH_SUB_KEY);
+        safeRemoveLS(PUSH_SUB_KEY);
         setSubscribed(false);
         queryClient.invalidateQueries({ queryKey: pushKeys.status });
         return;
@@ -234,7 +237,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
       // Аналогічний build-time guard — у capacitor-білді web-гілка мертва
       // і `loadWebPushModule()` разом з нею DCE-виноситься.
       if (import.meta.env.VITE_TARGET === "capacitor") {
-        localStorage.removeItem(PUSH_SUB_KEY);
+        safeRemoveLS(PUSH_SUB_KEY);
         setSubscribed(false);
         queryClient.invalidateQueries({ queryKey: pushKeys.status });
         return;
@@ -254,7 +257,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
             console.warn("[push] web unregister failed (best-effort)", err);
           });
       }
-      localStorage.removeItem(PUSH_SUB_KEY);
+      safeRemoveLS(PUSH_SUB_KEY);
       setSubscribed(false);
       queryClient.invalidateQueries({ queryKey: pushKeys.status });
     },

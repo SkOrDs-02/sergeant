@@ -538,3 +538,104 @@ describe("usePushNotifications — native Capacitor branch", () => {
     expect(result.current.subscribed).toBe(false);
   });
 });
+
+describe("usePushNotifications — localStorage hardening (Item #6 round 8)", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+    isCapacitorMock.mockReturnValue(false);
+    getPlatformMock.mockReturnValue("web");
+    getVapidPublicMock.mockResolvedValue({ publicKey: "AAAA" });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("ініційний рендер не падає, якщо localStorage.getItem кидає (Safari Private Mode)", () => {
+    // Safari Private Mode / зруйнований storage backend кидає SecurityError
+    // на будь-який getItem. До міграції на `safeReadStringLS` ми ловили це
+    // через try/catch у самому хуку — тепер хедж лежить у `safe*LS`-обгортці.
+    const getItemSpy = vi
+      .spyOn(Storage.prototype, "getItem")
+      .mockImplementation(() => {
+        throw new Error("SecurityError: localStorage is disabled");
+      });
+
+    const apiClient = makeApiClientWithMocks(
+      makeRegisterMock({ ok: true, platform: "web" }),
+    );
+
+    const { result } = renderHook(() => usePushNotifications(), {
+      wrapper: makeWrapper(apiClient),
+    });
+
+    expect(result.current.subscribed).toBe(false);
+    expect(getItemSpy).toHaveBeenCalledWith("hub_push_subscribed");
+  });
+
+  it("subscribe не падає, якщо localStorage.setItem кидає QuotaExceededError", async () => {
+    stubNotification("granted");
+    const subscription = makeMockPushSubscription({
+      endpoint: "https://fcm.googleapis.com/wp/quota",
+      p256dh: "p",
+      auth: "a",
+    });
+    stubServiceWorker(subscription);
+
+    const registerMock = makeRegisterMock({ ok: true, platform: "web" });
+    const apiClient = makeApiClientWithMocks(registerMock);
+
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("QuotaExceededError");
+    });
+
+    const { result } = renderHook(() => usePushNotifications(), {
+      wrapper: makeWrapper(apiClient),
+    });
+
+    await act(async () => {
+      await result.current.subscribe();
+    });
+
+    await waitFor(() => {
+      expect(registerMock).toHaveBeenCalledTimes(1);
+    });
+
+    // Серверна реєстрація все одно пройшла; in-memory стан виставився.
+    // Запис у LS свідомо проігнорено — наступний рендер прочитає `false`,
+    // що краще, ніж краш виклику subscribe() у середині retry-flow.
+    expect(result.current.subscribed).toBe(true);
+  });
+
+  it("unsubscribe не падає, якщо localStorage.removeItem кидає", async () => {
+    stubNotification("granted");
+    const apiClient = makeApiClientWithMocks(
+      makeRegisterMock({ ok: true, platform: "web" }),
+      makeUnregisterMock({ ok: true, platform: "web" }),
+    );
+
+    localStorage.setItem("hub_push_subscribed", "1");
+
+    const subscription = makeMockPushSubscription({
+      endpoint: "https://fcm.googleapis.com/wp/rm",
+      p256dh: "p",
+      auth: "a",
+    });
+    stubServiceWorker(subscription);
+
+    vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
+      throw new Error("SecurityError");
+    });
+
+    const { result } = renderHook(() => usePushNotifications(), {
+      wrapper: makeWrapper(apiClient),
+    });
+
+    await act(async () => {
+      await result.current.unsubscribe();
+    });
+
+    expect(result.current.subscribed).toBe(false);
+  });
+});
