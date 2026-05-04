@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import {
   MODULE_CHECKLISTS,
@@ -12,6 +12,7 @@ import {
 } from "@sergeant/shared";
 
 import { mobileKVStore as mmkvStore } from "@/lib/storage";
+import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
 
 function cx(...classes: Array<string | false | null | undefined>): string {
   return classes.filter(Boolean).join(" ");
@@ -41,9 +42,18 @@ export function ModuleChecklist({
   );
   const total = def.steps.length;
 
+  // Fire `module_checklist_shown` exactly once per (moduleId × mount).
+  // `markChecklistSeen` is idempotent at the storage level but the
+  // analytics event is a true "first paint" signal for the funnel —
+  // mirroring `apps/web/src/core/onboarding/ModuleChecklist.tsx`.
+  const shownFiredRef = useRef(false);
   useEffect(() => {
     if (!visible) return;
     markChecklistSeen(mmkvStore, moduleId);
+    if (!shownFiredRef.current) {
+      shownFiredRef.current = true;
+      trackEvent(ANALYTICS_EVENTS.MODULE_CHECKLIST_SHOWN, { module: moduleId });
+    }
   }, [visible, moduleId]);
 
   const handleStepDone = useCallback(
@@ -51,17 +61,31 @@ export function ModuleChecklist({
       hapticTap();
       const next = markChecklistStepDone(mmkvStore, moduleId, stepId);
       setState(next);
+      const completedCount = next.completedSteps.filter((s) =>
+        def.steps.some((step) => step.id === s),
+      ).length;
+      trackEvent(ANALYTICS_EVENTS.MODULE_CHECKLIST_STEP_DONE, {
+        module: moduleId,
+        stepId,
+        completed: completedCount,
+        total: def.steps.length,
+      });
       if (next.completedSteps.length >= def.steps.length) {
         setVisible(false);
       }
     },
-    [moduleId, def.steps.length],
+    [moduleId, def.steps],
   );
 
   const handleDismiss = useCallback(() => {
     dismissChecklist(mmkvStore, moduleId);
     setVisible(false);
-  }, [moduleId]);
+    trackEvent(ANALYTICS_EVENTS.MODULE_CHECKLIST_DISMISSED, {
+      module: moduleId,
+      completed,
+      total,
+    });
+  }, [moduleId, completed, total]);
 
   if (!visible) return null;
 

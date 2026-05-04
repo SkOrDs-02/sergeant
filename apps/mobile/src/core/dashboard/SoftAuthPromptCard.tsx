@@ -7,13 +7,16 @@
  * interrupt the user.
  *
  * Deferred vs web:
- *   - `trackEvent(ANALYTICS_EVENTS.AUTH_PROMPT_SHOWN, …)` etc. Mobile
- *     analytics sink is not wired yet (Phase 6). Optional `onShown` /
- *     `onOpenAuth` / `onDismissed` callbacks let the caller plug
- *     console / Sentry hooks in once they're ready.
  *   - The web copy says «20 секунд» referring to the Better Auth web
  *     form. Better Auth's native sheet is also one-screen, so the
  *     copy is preserved verbatim.
+ *
+ * Analytics: wired via the optional `onShown` / `onAuthOpened` /
+ * `onDismissed` callbacks. `HubDashboard.tsx` is the canonical caller
+ * and fires `auth_prompt_shown` / `auth_after_value` /
+ * `auth_prompt_dismissed` against PostHog (S0.4 mobile parity). Tests
+ * exercise the prop callbacks directly so they don't depend on the
+ * sink.
  */
 
 import { useEffect } from "react";

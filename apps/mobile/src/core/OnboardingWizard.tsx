@@ -16,7 +16,14 @@
  *  - Progress is persisted through the shared `KVStore` adapter.
  */
 
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import {
   AccessibilityInfo,
   Modal,
@@ -49,6 +56,7 @@ import {
 } from "@sergeant/shared";
 
 import { mobileKVStore } from "@/lib/storage";
+import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
 
 import { Button } from "@/components/ui/Button";
 
@@ -479,17 +487,80 @@ export function OnboardingWizard({
   });
   const reduceMotion = useReduceMotion();
 
+  // FTUX-funnel timestamps (S0.4 mobile parity). `startedAtRef` is the
+  // wizard-mount baseline; `stepEnteredAtRef` resets on every step
+  // transition so `onboarding_step_completed.durationMs` reflects time
+  // *spent* on each step instead of cumulative wall-clock from mount.
+  const startedAtRef = useRef<number | null>(null);
+  const stepEnteredAtRef = useRef<number>(Date.now());
+
+  // Mount-only: fire `onboarding_started` + the welcome step view. The
+  // web wizard collapses both into one screen; on mobile they map to
+  // the first paint of the welcome step. PostHog funnels treat
+  // `step_viewed` as a strict superset of `started`, so order matters.
+  useEffect(() => {
+    startedAtRef.current = Date.now();
+    stepEnteredAtRef.current = startedAtRef.current;
+    trackEvent(ANALYTICS_EVENTS.ONBOARDING_STARTED);
+    trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_VIEWED, { step: "welcome" });
+  }, []);
+
+  // Per-step view event whenever `state.step` changes. The first paint
+  // (welcome) is fired by the mount effect above so the dedupe logic
+  // here only re-fires when the step *transitions*.
+  const lastStepRef = useRef<OnboardingStepId>(state.step);
+  useEffect(() => {
+    if (lastStepRef.current === state.step) return;
+    trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_VIEWED, { step: state.step });
+    lastStepRef.current = state.step;
+    stepEnteredAtRef.current = Date.now();
+  }, [state.step]);
+
   const togglePick = useCallback((id: DashboardModuleId) => {
     dispatch({ type: "TOGGLE_PICK", id });
   }, []);
 
   const setGoal = useCallback((key: keyof OnboardingGoals, value: unknown) => {
     dispatch({ type: "SET_GOAL", key, value });
+    // PostHog parity with web `ONBOARDING_GOAL_SET`. We fire on
+    // every change so dashboards can compute pick-rate per goal
+    // type. `module` mirrors the web payload (the goal-question
+    // module owner) for the same shared dashboard query.
+    const goalToModule: Record<keyof OnboardingGoals, DashboardModuleId> = {
+      finykBudget: "finyk",
+      fizrukWeeklyGoal: "fizruk",
+      routineFirstHabit: "routine",
+      nutritionGoal: "nutrition",
+    };
+    trackEvent(ANALYTICS_EVENTS.ONBOARDING_GOAL_SET, {
+      module: goalToModule[key],
+      goalType: key,
+      value,
+    });
   }, []);
 
   const handleNext = useCallback(() => {
+    // Step-completed event fires on the leaving side of the
+    // transition. The matching step-viewed event for the next step
+    // is emitted by the `state.step` effect above on the next paint.
+    const leaving = state.step;
+    const durationMs = Math.max(0, Date.now() - stepEnteredAtRef.current);
+    trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_COMPLETED, {
+      step: leaving,
+      durationMs,
+    });
+    if (leaving === "modules") {
+      // Mobile is multi-step, so VIBE_PICKED rides the modules→goals
+      // edge — earlier than web's single-screen wizard but with the
+      // same payload contract.
+      const chosen = buildFinalPicks(state.picks, ALL_MODULES);
+      trackEvent(ANALYTICS_EVENTS.ONBOARDING_VIBE_PICKED, {
+        picks: chosen,
+        picksCount: chosen.length,
+      });
+    }
     dispatch({ type: "NEXT" });
-  }, []);
+  }, [state.step, state.picks]);
 
   const handleBack = useCallback(() => {
     dispatch({ type: "BACK" });
@@ -497,14 +568,23 @@ export function OnboardingWizard({
 
   const finish = useCallback(() => {
     const chosen = buildFinalPicks(state.picks, ALL_MODULES);
+    const hadEmptyPicks = state.picks.length === 0;
     saveVibePicks(mobileKVStore, chosen);
     saveOnboardingGoals(mobileKVStore, state.goals);
     markFirstActionStartedAt(mobileKVStore);
     markFirstActionPending(mobileKVStore);
     markOnboardingDone(mobileKVStore);
+    trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_COMPLETED, {
+      step: state.step,
+      durationMs: Math.max(0, Date.now() - stepEnteredAtRef.current),
+    });
+    trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
+      intent: hadEmptyPicks ? "vibe_empty" : "vibe_picked",
+      picksCount: chosen.length,
+    });
     hapticSuccess();
     onDone(null, { intent: "vibe_empty", picks: chosen });
-  }, [onDone, state.picks, state.goals]);
+  }, [onDone, state.picks, state.goals, state.step]);
 
   const skipOnboarding = useCallback(() => {
     // Skip with all modules enabled and empty goals
@@ -513,9 +593,16 @@ export function OnboardingWizard({
     markFirstActionStartedAt(mobileKVStore);
     markFirstActionPending(mobileKVStore);
     markOnboardingDone(mobileKVStore);
+    trackEvent(ANALYTICS_EVENTS.ONBOARDING_SKIPPED, {
+      step: state.step,
+      durationMs: Math.max(
+        0,
+        Date.now() - (startedAtRef.current ?? Date.now()),
+      ),
+    });
     hapticTap();
     onDone(null, { intent: "vibe_empty", picks: [...ALL_MODULES] });
-  }, [onDone]);
+  }, [onDone, state.step]);
 
   const stepIdx = ONBOARDING_STEPS.indexOf(state.step);
 
