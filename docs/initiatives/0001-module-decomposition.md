@@ -1,10 +1,11 @@
 # 0001 — Module decomposition + `max-lines` guard
 
-> **Status:** In progress (Phase 1 done — guard live, allowlist locked)
+> **Status:** In progress (Phase 1 done; Phase 2 — 4 of 5 PRs виконано, лишився `decomp-routine-app`)
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks (5 PRs)
 > **Phase 1 PR:** [#1555](https://github.com/Skords-01/Sergeant/pull/1555) — merged 2026-05-03
+> **Phase 2 PRs:** [#1592](https://github.com/Skords-01/Sergeant/pull/1592) (eslint pin pre-req), [#1593](https://github.com/Skords-01/Sergeant/pull/1593), [#1594](https://github.com/Skords-01/Sergeant/pull/1594), [#1596](https://github.com/Skords-01/Sergeant/pull/1596), [#1597](https://github.com/Skords-01/Sergeant/pull/1597) — opened 2026-05-04
 > **Sources:** Design Review 2026-05-03 §2.1, §3.1, §12; [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md)
 
 ## TL;DR
@@ -14,7 +15,7 @@
 ## Чому зараз
 
 - Топ-15 файлів `apps/web/**` мають ≥600 LOC, найбільший — 745. Сумарно це ~12k LOC «гарячої» логіки в монолітних файлах.
-- Аналогічна декомпозиція вже зроблена для `chat/agent.ts` сервера ([`apps/server/src/modules/chat/agent.ts`](../../apps/server/src/modules/chat/agent.ts)) — патерн `agent.handlers.ts`/`agent.tools.ts`/`agent.cache.ts` доведений в продакшні.
+- Аналогічна декомпозиція вже зроблена для chat-модуля сервера ([`apps/server/src/modules/chat/`](../../apps/server/src/modules/chat/)) — `chat.ts` + `toolDefs/` per-domain — патерн доведений у продакшні.
 - Tech-debt frontend.md уже має `LARGE_FILES` як «зону спостереження» — час перетворити її на жорсткий KPI.
 - Без lint-гарда декомпозиція — це постійний «уторгований борг» (зробили — наповзло знову).
 
@@ -46,15 +47,15 @@
 
 ### Фаза 2 — Top-7 декомпозиція (5 PR-ів, по 1–2 файли)
 
-| #   | Файл                                                                                                                                             | LOC   | Розкладається на                                                                                                                                           | Trigger PR                     |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| 1   | [`apps/web/src/modules/routine/RoutineApp.tsx`](../../apps/web/src/modules/routine/RoutineApp.tsx)                                               | 745   | `useRoutineAppState.ts` (state-machine), `RoutineHeader.tsx`, `RoutineTimeline.tsx`, `RoutineActions.tsx`                                                  | PR `decomp-routine-app`        |
-| 2   | [`apps/web/src/modules/finyk/hooks/useStorage.ts`](../../apps/web/src/modules/finyk/hooks/useStorage.ts)                                         | 685   | `useFinykStorageReader.ts`, `useFinykStorageWriter.ts`, `useFinykMigration.ts`, `useFinykBackupSync.ts` (≤200 LOC each)                                    | PR `decomp-finyk-storage`      |
-| 3   | [`apps/web/src/core/lib/chatActions/types.ts`](../../apps/web/src/core/lib/chatActions/types.ts)                                                 | 672   | core лишає тільки `ChatActionDefinition`, `ChatActionRegistry`, `ChatActionResult`. Domain-types → `modules/{finyk,fizruk,...}/chatActions/types.ts`       | PR `decomp-chat-actions-types` |
-| 4   | [`apps/web/src/sw.ts`](../../apps/web/src/sw.ts)                                                                                                 | 643   | `sw/precache.ts`, `sw/notifications.ts`, `sw/scheduler.ts`, `sw/idb.ts`. Entry `sw.ts` ≤ 60 LOC.                                                           | PR `decomp-sw`                 |
-| 5   | [`apps/web/src/shared/components/ui/Icon.tsx`](../../apps/web/src/shared/components/ui/Icon.tsx)                                                 | 660   | `Icon.tsx` (registry + типи) + per-icon файли в `shared/components/ui/icons/*.tsx`; tree-shake-friendly. Деталі в [0007](./0007-design-system-tooling.md). | PR `decomp-icon`               |
-| 6   | [`apps/web/src/modules/finyk/FinykApp.tsx`](../../apps/web/src/modules/finyk/FinykApp.tsx)                                                       | 559   | `useFinykAppState.ts` (xstate / `useReducer`) + `FinykAppLayout.tsx`. Більшість `useEffect` (12!) → переходи стейт-машини.                                 | PR `decomp-finyk-app`          |
-| 7   | [`apps/web/src/modules/fizruk/components/Workouts.tsx`](../../apps/web/src/modules/fizruk/components/Workouts.tsx) (~605) + `LogCard.tsx` (~580) | ~1185 | `useWorkoutSession.ts`, `WorkoutTimer.tsx`, `WorkoutSetList.tsx`, `WorkoutSummary.tsx`. `LogCard` → split per workout-type.                                | PR `decomp-fizruk-workouts`    |
+| #   | Файл                                                                                                                                   | LOC   | Розкладається на                                                                                                                                           | Trigger PR                     |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| 1   | [`apps/web/src/modules/routine/RoutineApp.tsx`](../../apps/web/src/modules/routine/RoutineApp.tsx)                                     | 745   | `useRoutineAppState.ts` (state-machine), `RoutineHeader.tsx`, `RoutineTimeline.tsx`, `RoutineActions.tsx`                                                  | PR `decomp-routine-app`        |
+| 2   | [`apps/web/src/modules/finyk/hooks/useStorage.ts`](../../apps/web/src/modules/finyk/hooks/useStorage.ts)                               | 685   | `useFinykStorageReader.ts`, `useFinykStorageWriter.ts`, `useFinykMigration.ts`, `useFinykBackupSync.ts` (≤200 LOC each)                                    | PR `decomp-finyk-storage`      |
+| 3   | [`apps/web/src/core/lib/chatActions/types.ts`](../../apps/web/src/core/lib/chatActions/types.ts)                                       | 672   | core лишає тільки `ChatActionDefinition`, `ChatActionRegistry`, `ChatActionResult`. Domain-types → `modules/{finyk,fizruk,...}/chatActions/types.ts`       | PR `decomp-chat-actions-types` |
+| 4   | [`apps/web/src/sw.ts`](../../apps/web/src/sw.ts)                                                                                       | 643   | `sw/precache.ts`, `sw/notifications.ts`, `sw/scheduler.ts`, `sw/idb.ts`. Entry `sw.ts` ≤ 60 LOC.                                                           | PR `decomp-sw`                 |
+| 5   | [`apps/web/src/shared/components/ui/Icon.tsx`](../../apps/web/src/shared/components/ui/Icon.tsx)                                       | 660   | `Icon.tsx` (registry + типи) + per-icon файли в `shared/components/ui/icons/*.tsx`; tree-shake-friendly. Деталі в [0007](./0007-design-system-tooling.md). | PR `decomp-icon`               |
+| 6   | [`apps/web/src/modules/finyk/FinykApp.tsx`](../../apps/web/src/modules/finyk/FinykApp.tsx)                                             | 559   | `useFinykAppState.ts` (xstate / `useReducer`) + `FinykAppLayout.tsx`. Більшість `useEffect` (12!) → переходи стейт-машини.                                 | PR `decomp-finyk-app`          |
+| 7   | [`apps/web/src/modules/fizruk/pages/Workouts.tsx`](../../apps/web/src/modules/fizruk/pages/Workouts.tsx) (~717) + `LogCard.tsx` (~580) | ~1297 | `useWorkoutSession.ts`, `WorkoutTimer.tsx`, `WorkoutSetList.tsx`, `WorkoutSummary.tsx`. `LogCard` → split per workout-type.                                | PR `decomp-fizruk-workouts`    |
 
 ### Фаза 3 — закрити allowlist (1 PR)
 
@@ -151,3 +152,49 @@ PR `decomp-finalize` видаляє `overrides` allowlist цілком і зак
 як **Done**.
 
 Відхилення від плану: жодних — Phase 1 пройшла рівно за описом, без зсувів.
+
+### Фаза 2 — топ-4 декомпозиція (IN PROGRESS — 4 of 5 PRs відкрито 2026-05-04)
+
+Pre-requisite: `eslint` бамп до 10.x з [#1572](https://github.com/Skords-01/Sergeant/pull/1572) ламав
+Husky pre-commit hook (`eslint-plugin-react@7.37.5` ще не сумісний з ESLint 10
+API — `contextOrFilename.getFilename is not a function`). Phase 2 неможливо було
+комітити без обходу hook-а, що порушує Hard Rule #11. Pre-fix:
+
+- **[#1592 — `chore(deps): pin eslint to ^9.39.4 …`](https://github.com/Skords-01/Sergeant/pull/1592)**
+  повертає `eslint` + `@eslint/js` на 9.x, поки впереднього `eslint-plugin-react@7.38+` (Issue #6018) ще не вийшло. Усі 4 decomp-PR-и нижче базуються на цій гілці.
+
+| #   | Файл                       | LOC до | Розклали на                                                                                                                                                                          | LOC після      | PR                                                       |
+| --- | -------------------------- | -----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- | -------------------------------------------------------- |
+| 1   | `useStorage.ts` (finyk)    |    685 | composition root + `useStorage.types.ts` (73), `useStorage.persist.ts` (37), `useFinykStorageSlots.ts` (175), `useFinykStorageMutations.ts` (343), `useFinykBackupSync.ts` (187)     | **174** entry  | [#1593](https://github.com/Skords-01/Sergeant/pull/1593) |
+| 2   | `chatActions/types.ts`     |    672 | barrel + `types.result.ts` (34), `types.finyk.ts` (188), `types.fizruk.ts` (135), `types.routine.ts` (85), `types.nutrition.ts` (103), `types.cross.ts` (116)                        | **281** barrel | [#1594](https://github.com/Skords-01/Sergeant/pull/1594) |
+| 3   | `Icon.tsx`                 |    660 | composition root + 4 path-shards: `Icon.paths.system.tsx` (141, 27 glyphs), `Icon.paths.status.tsx` (180, 25), `Icon.paths.domain.tsx` (154, 21), `Icon.paths.content.tsx` (111, 15) | **109** entry  | [#1596](https://github.com/Skords-01/Sergeant/pull/1596) |
+| 4   | `sw.ts`                    |    643 | entry + 6 шарів: `sw/version.ts` (19), `sw/cache.ts` (122), `sw/notifiedKeys.ts` (140), `sw/reminders.ts` (267), `sw/debug.ts` (74), `sw/messages.ts` (126)                          | **100** entry  | [#1597](https://github.com/Skords-01/Sergeant/pull/1597) |
+| 5   | `RoutineApp.tsx` (745 LOC) |        | _залишається на наступний sprint_ — найбільший ризик регресії, потребує `useReducer`/state-machine рефакторингу + happy-path RTL fixture перед розбиттям.                            | _pending_      | (не відкрито)                                            |
+
+Що саме збережено / змінено:
+
+- **Public API stability:** для всіх 4 декомпонованих файлів зовнішні консьюмери НЕ змінюються:
+  - `useStorage()` повертає той самий tuple, що раніше; усі 14 persisted-state slots і 15 mutation-функцій — ті самі.
+  - `import { ChatAction } from "./types"` resolves у тип-юніон з усіх 6 доменів через barrel.
+  - `<Icon name="..." />` рендериться так само — `IconName` далі типобезпечно derives з `keyof typeof PATHS` (тепер це spread 4 path-shards).
+  - SW message protocol непорушний (`SKIP_WAITING`, `SW_DEBUG`, `CLEAR_SW_CACHES`, `*_STATE_UPDATE`, `ROUTINE_NOTIFICATION_SENT`).
+- **Behavior identity:** `vite build` емітує SW bundle 32.39 kB (gzip 10.75 kB) — байт-в-байт ідентично до baseline. 99 finyk vitest, 293 chatActions vitest, 144 ui vitest — all green, без жодного diff в snapshots.
+- **Lint cleanup:** `useFinykStorageMutations.ts` мав raw `localStorage.getItem/setItem` (порушення `sergeant-design/no-raw-local-storage`) — виправлено через `safeReadStringLS`/`safeWriteLS` з `shared/lib/storage`.
+
+Метрики Phase 2 (станом на 2026-05-04, після відкриття 4 PR-ів):
+
+| Метрика                                       | Phase 1 (post-#1555)   | Phase 2 (post-1593/1594/1596/1597)                                                                                                     | Target (2026-06-15) |
+| --------------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| Файлів `apps/web/src/**` ≥600 LOC у allowlist | 7                      | **3** (`fizrukActions.ts`, `Exercise.tsx`, `AssetsTable.tsx`, `RoutineApp.tsx`, `RoutineCalendarPanel.tsx` — підмножина того, що було) | ≤ 2                 |
+| Найбільший файл у allowlist                   | 745 (`RoutineApp.tsx`) | 745 (`RoutineApp.tsx` — поки на наступний sprint)                                                                                      | ≤ 600               |
+| Сумарний LOC у allowlist                      | ~4500                  | ~3100                                                                                                                                  | ≤ 1500              |
+
+Що далі:
+
+1. PR `decomp-routine-app` (RoutineApp.tsx 745 → ≤200 LOC по компонентах + `useRoutineAppState.ts`) — наступний sprint, з RTL happy-path fixture перед розбиттям.
+2. Phase 3 (`decomp-finalize`) — після PR `decomp-routine-app`, видалити `overrides` allowlist цілком і закрити цю ініціативу як **Done**.
+
+Відхилення від плану:
+
+- **Послідовність:** план казав робити PRs у порядку 1→7. Реалізував у порядку складності-в-зворотному (685→672→660→643), бо `useStorage.ts` був найбільш self-contained і дав калібрування паттерну для решти. `RoutineApp.tsx` (#1, найбільший) лишив на потім свідомо — у нього найбільший behavioral-risk surface.
+- **Pre-req PR:** додав #1592 (eslint pin), бо без нього не можна було комітити без `--no-verify`. Phase-2 план цього не передбачав, але AGENTS.md Hard Rule #7 ("if a hook is broken, fix it in the same PR") вимагав це.
