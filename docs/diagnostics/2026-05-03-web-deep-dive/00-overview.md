@@ -75,26 +75,26 @@
 
 ## Roadmap (impact × cost, sortоване по Score = impact × (1 / cost))
 
-| #   | Item                                               | Impact | Cost | Score | Pointer                                                                                                                              |
-| --- | -------------------------------------------------- | ------ | ---- | ----- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | Pino redact для PII                                | 5      | 1    | 5.00  | [04 §6.5](./04-security-observability-testing-devx.md) — done [#1551](https://github.com/Skords-01/Sergeant/pull/1551)               |
-| 2   | Sentry tag `requestId` + UI shows on 5xx           | 3      | 1    | 3.00  | [04 §4.4](./04-security-observability-testing-devx.md) — done [#1551](https://github.com/Skords-01/Sergeant/pull/1551)               |
-| 3   | CSP report-only on Vercel                          | 3      | 1    | 3.00  | [04 §6.4](./04-security-observability-testing-devx.md) — done [#1551](https://github.com/Skords-01/Sergeant/pull/1551)               |
-| 4   | Module prefetch on hover + on-idle                 | 3      | 1    | 3.00  | [03 §5.2 + §10.4](./03-backend-and-performance.md) — done (idle + connection gate)                                                   |
-| 5   | `<DataState>` wrapper                              | 4      | 2    | 2.00  | [01 §3.2](./01-frontend-ergonomics.md) — done (component + 10 tests)                                                                 |
-| 6   | `localStorage` allowlist burndown CI metric        | 4      | 2    | 2.00  | [02 §2.2](./02-architecture-and-state.md) — done (`pnpm lint:localstorage-allowlist`)                                                |
-| 7   | Audit docs status-table + archive >6-mo            | 2      | 1    | 2.00  | [04 §11](./04-security-observability-testing-devx.md) — done (Status / Implemented / Outstanding)                                    |
-| 8   | Form-engine unification                            | 5      | 3    | 1.67  | [01 §3.1](./01-frontend-ergonomics.md)                                                                                               |
-| 9   | CloudSync split-brain integration tests            | 5      | 3    | 1.67  | [02 §2.3](./02-architecture-and-state.md)                                                                                            |
-| 10  | C4-mermaid діаграми                                | 3      | 2    | 1.50  | [04 §9.2](./04-security-observability-testing-devx.md)                                                                               |
-| 11  | `index.css` decomposition                          | 3      | 2    | 1.50  | [02 §1.4](./02-architecture-and-state.md) — done [#1601](https://github.com/Skords-01/Sergeant/pull/1601) (1244 → 35 LOC; 5 modules) |
-| 12  | Rate-limiter `cost`-multiplier для AI streams      | 3      | 2    | 1.50  | [03 §4.5](./03-backend-and-performance.md)                                                                                           |
-| 13  | OpenAPI generation + typed client out of zod       | 4      | 3    | 1.33  | [03 §4.7](./03-backend-and-performance.md)                                                                                           |
-| 14  | Contract tests web↔server                          | 4      | 2    | 2.00  | [04 §7.4](./04-security-observability-testing-devx.md) — done (`/api/me` fixtures + consumer/producer tests)                         |
-| 15  | `tsconfig.strict: true` для `apps/web` поетапно    | 5      | 4    | 1.25  | [02 §1.0](./02-architecture-and-state.md)                                                                                            |
-| 16  | Storybook для top 20 компонентів                   | 3      | 3    | 1.00  | [04 §8.6](./04-security-observability-testing-devx.md)                                                                               |
-| 17  | Mutation testing на критичних модулях (квартально) | 4      | 4    | 1.00  | [04 §7.3](./04-security-observability-testing-devx.md)                                                                               |
-| 18  | i18n key extraction (UA-only поки)                 | 2      | 3    | 0.67  | [01 §3.8](./01-frontend-ergonomics.md)                                                                                               |
+| #   | Item                                               | Impact | Cost | Score | Pointer                                                                                                                                     |
+| --- | -------------------------------------------------- | ------ | ---- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Pino redact для PII                                | 5      | 1    | 5.00  | [04 §6.5](./04-security-observability-testing-devx.md) — done [#1551](https://github.com/Skords-01/Sergeant/pull/1551)                      |
+| 2   | Sentry tag `requestId` + UI shows on 5xx           | 3      | 1    | 3.00  | [04 §4.4](./04-security-observability-testing-devx.md) — done [#1551](https://github.com/Skords-01/Sergeant/pull/1551)                      |
+| 3   | CSP report-only on Vercel                          | 3      | 1    | 3.00  | [04 §6.4](./04-security-observability-testing-devx.md) — done [#1551](https://github.com/Skords-01/Sergeant/pull/1551)                      |
+| 4   | Module prefetch on hover + on-idle                 | 3      | 1    | 3.00  | [03 §5.2 + §10.4](./03-backend-and-performance.md) — done (idle + connection gate)                                                          |
+| 5   | `<DataState>` wrapper                              | 4      | 2    | 2.00  | [01 §3.2](./01-frontend-ergonomics.md) — done (component + 10 tests)                                                                        |
+| 6   | `localStorage` allowlist burndown CI metric        | 4      | 2    | 2.00  | [02 §2.2](./02-architecture-and-state.md) — done (`pnpm lint:localstorage-allowlist`)                                                       |
+| 7   | Audit docs status-table + archive >6-mo            | 2      | 1    | 2.00  | [04 §11](./04-security-observability-testing-devx.md) — done (Status / Implemented / Outstanding)                                           |
+| 8   | Form-engine unification                            | 5      | 3    | 1.67  | [01 §3.1](./01-frontend-ergonomics.md)                                                                                                      |
+| 9   | CloudSync split-brain integration tests            | 5      | 3    | 1.67  | [02 §2.3](./02-architecture-and-state.md)                                                                                                   |
+| 10  | C4-mermaid діаграми                                | 3      | 2    | 1.50  | [04 §9.2](./04-security-observability-testing-devx.md) — done [#1602](https://github.com/Skords-01/Sergeant/pull/1602) (C1+C2+2×C3+4 flows) |
+| 11  | `index.css` decomposition                          | 3      | 2    | 1.50  | [02 §1.4](./02-architecture-and-state.md) — done [#1601](https://github.com/Skords-01/Sergeant/pull/1601) (1244 → 35 LOC; 5 modules)        |
+| 12  | Rate-limiter `cost`-multiplier для AI streams      | 3      | 2    | 1.50  | [03 §4.5](./03-backend-and-performance.md)                                                                                                  |
+| 13  | OpenAPI generation + typed client out of zod       | 4      | 3    | 1.33  | [03 §4.7](./03-backend-and-performance.md)                                                                                                  |
+| 14  | Contract tests web↔server                          | 4      | 2    | 2.00  | [04 §7.4](./04-security-observability-testing-devx.md) — done (`/api/me` fixtures + consumer/producer tests)                                |
+| 15  | `tsconfig.strict: true` для `apps/web` поетапно    | 5      | 4    | 1.25  | [02 §1.0](./02-architecture-and-state.md)                                                                                                   |
+| 16  | Storybook для top 20 компонентів                   | 3      | 3    | 1.00  | [04 §8.6](./04-security-observability-testing-devx.md)                                                                                      |
+| 17  | Mutation testing на критичних модулях (квартально) | 4      | 4    | 1.00  | [04 §7.3](./04-security-observability-testing-devx.md)                                                                                      |
+| 18  | i18n key extraction (UA-only поки)                 | 2      | 3    | 0.67  | [01 §3.8](./01-frontend-ergonomics.md)                                                                                                      |
 
 ## Що НЕ треба робити (засвітлено окремо, бо «не зламай добре»)
 

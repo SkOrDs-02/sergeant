@@ -1,6 +1,6 @@
 # Architecture
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
 System architecture and runtime surface inventory for Sergeant.
@@ -11,6 +11,7 @@ System architecture and runtime surface inventory for Sergeant.
 | [`apps-status-matrix.md`](./apps-status-matrix.md)                   | Status matrix for apps and packages                                                   |
 | [`apps-web-exhaustive-deps.md`](./apps-web-exhaustive-deps.md)       | Web hooks dependency guidance                                                         |
 | [`data-exchange-storage-audit.md`](./data-exchange-storage-audit.md) | Current data exchange, storage, weak points, and roadmap                              |
+| [`diagrams/`](./diagrams/README.md)                                  | C4 model + sequence flows (Mermaid)                                                   |
 | [`frontend-overview.md`](./frontend-overview.md)                     | React 18 + Vite frontend architecture                                                 |
 | [`hosting-evolution.md`](./hosting-evolution.md)                     | Hosting evolution and infra context                                                   |
 | [`module-structure.md`](./module-structure.md)                       | Canonical layout of `apps/{web,mobile}/src/modules/<domain>/` + per-module deviations |
