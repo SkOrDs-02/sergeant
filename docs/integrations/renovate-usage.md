@@ -1,9 +1,11 @@
 # Renovate — як працювати з PR-ами
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 >
 > Створено 2026-04-25 разом з [#721](https://github.com/Skords-01/Sergeant/pull/721). Конфіг: `renovate.json` у корені.
+>
+> **Розподіл ролей з Dependabot:** див. [ADR-0044](../adr/0044-renovate-vs-dependabot.md). Коротко — Renovate primary для regular weekly bumps; Dependabot security-only daily fallback. Якщо бачиш одночасно два PR-и на той самий пакет — закривай Dependabot-PR з коментарем `duplicate of Renovate group: <name>`.
 
 ## TL;DR
 

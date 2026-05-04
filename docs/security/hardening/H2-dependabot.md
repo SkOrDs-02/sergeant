@@ -3,16 +3,16 @@
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Closed (Sprint 1 deliverable complete; remaining items moved to follow-up cards)
 
-| Field              | Value                                                                                                 |
-| ------------------ | ----------------------------------------------------------------------------------------------------- |
-| **Severity**       | **High** (CVSS 7.0 — Supply-chain MTTR window)                                                        |
-| **Sprint**         | [Sprint 1](./sprint-1.md)                                                                             |
-| **Owner**          | devops                                                                                                |
-| **Effort**         | 0.5 hour (config) + ~2h на review першого batch-у PR                                                  |
-| **Status**         | Closed — `.github/dependabot.yml` + `.github/workflows/dependabot-automerge.yml` shipped              |
-| **Discovered**     | 2026-05-03                                                                                            |
-| **Threat model**   | Supply Chain → Tampering / Information Disclosure                                                     |
-| **Affected files** | `.github/dependabot.yml` (відсутній), `.github/workflows/nightly-audit.yml`, `package.json:overrides` |
+| Field              | Value                                                                                                                                                                             |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Severity**       | **High** (CVSS 7.0 — Supply-chain MTTR window)                                                                                                                                    |
+| **Sprint**         | [Sprint 1](./sprint-1.md)                                                                                                                                                         |
+| **Owner**          | devops                                                                                                                                                                            |
+| **Effort**         | 0.5 hour (config) + ~2h на review першого batch-у PR                                                                                                                              |
+| **Status**         | Closed — `.github/dependabot.yml` + `.github/workflows/dependabot-automerge.yml` shipped; scope reduced to security-only per [ADR-0044](../../adr/0044-renovate-vs-dependabot.md) |
+| **Discovered**     | 2026-05-03                                                                                                                                                                        |
+| **Threat model**   | Supply Chain → Tampering / Information Disclosure                                                                                                                                 |
+| **Affected files** | `.github/dependabot.yml` (відсутній), `.github/workflows/nightly-audit.yml`, `package.json:overrides`                                                                             |
 
 ## Summary
 

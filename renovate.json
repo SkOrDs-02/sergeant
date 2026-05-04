@@ -55,6 +55,21 @@
       "groupName": "eslint"
     },
     {
+      "description": "Anthropic SDK + AI deps — single PR щоб версії клієнта і tool-defs не дрейфували окремо (CVE 2026-04 з @anthropic-ai/sdk показав, що split-update застрягає на 3 дні)",
+      "matchPackageNames": ["/^@anthropic-ai//", "/^@anthropic-ai/sdk/"],
+      "groupName": "anthropic"
+    },
+    {
+      "description": "Sentry SDKs — @sentry/node + @sentry/react + @sentry/profiling-node мають піднiматись разом (mismatch ламає trace-correlation)",
+      "matchPackageNames": ["/^@sentry//"],
+      "groupName": "sentry"
+    },
+    {
+      "description": "OpenTelemetry SDK — пакети @opentelemetry/* мають strict cross-version contract; partial bumps падають із 'plugin not compatible'",
+      "matchPackageNames": ["/^@opentelemetry//"],
+      "groupName": "opentelemetry"
+    },
+    {
       "description": "Vitest ecosystem",
       "matchPackageNames": ["vitest", "/^@vitest//"],
       "groupName": "vitest"

@@ -1,52 +1,46 @@
 # Dependabot configuration for the Sergeant monorepo.
 #
-# Closes hardening card H2: docs/security/hardening/H2-dependabot.md.
+# **Per ADR-0044** (`docs/adr/0044-renovate-vs-dependabot.md`) — Dependabot's
+# scope is **security-only fallback**. Regular weekly bumps are owned by
+# Renovate (`renovate.json`); Dependabot lifts security-updates daily so a
+# CVE disclosed Tuesday lands in a PR Wednesday morning, not next Monday.
 #
-# Strategy:
-# - npm        : single workspace root (pnpm workspace + Turborepo), weekly,
-#                grouped by dependency-type to keep PR noise predictable.
-# - github-actions: weekly. Comment-format used in workflows
-#                ("# action vX.Y.Z (SHA-pinned for supply-chain hardening)")
-#                is preserved by Dependabot when it bumps the SHA.
-# - docker     : two scopes — root (Dockerfile.api, Dockerfile.console) and
-#                ops/grafana-alloy.
+# Scopes kept here:
+# - **npm** : security updates only, daily.
+# - **github-actions** : SHA-pin rotation (overlap з Renovate `pinDigests:
+#   true` навмисний — supply-chain integrity критична).
+# - **docker** : same logic as github-actions.
 #
-# `ignore` mirrors package.json -> pnpm.overrides — those packages are
-# manually pinned via overrides; Dependabot must not fight the override.
+# Scopes that used to live here (production-deps / dev-deps groups) belong
+# to Renovate now; видалено щоб уникнути duplicate-PR-noise.
 #
-# Auto-merge for patch-only security updates lives in a separate workflow
-# (see Sprint 1 follow-up); landing dependabot.yml first is intentionally
-# the smallest possible diff.
+# Auto-merge for patch-only security updates lives in
+# `.github/workflows/dependabot-automerge.yml`.
 
 version: 2
 updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      # Daily — security-updates повинні landed на наступному робочому дні
+      # після disclosure, не чекати наступного понеділка (initiative 0008
+      # Phase 3 vulnerability-window <24h target).
+      interval: "daily"
       time: "06:00"
       timezone: "Europe/Kyiv"
     open-pull-requests-limit: 10
     versioning-strategy: "increase"
     commit-message:
-      # Both production and development bumps land as `chore(deps): ...`
-      # because `deps-dev` is not in the project's commitlint scope-enum
-      # (see commitlint.config.cjs / .commitlintrc — valid scopes include
-      # `deps`, `ci`, `docs`, `root`, plus the workspace package names).
       prefix: "chore(deps)"
     groups:
-      production-deps:
-        dependency-type: "production"
-        update-types:
-          - "minor"
-          - "patch"
-      dev-deps:
-        dependency-type: "development"
       security-updates:
         applies-to: security-updates
         patterns:
           - "*"
+    # Без `production-deps` / `dev-deps` groups — їх власник Renovate
+    # (див. ADR-0044). Якщо Dependabot створить non-security PR з npm
+    # ecosystem, це bug у налаштуванні і має бути закритий вручну з
+    # коментарем «duplicate of Renovate group: <name>».
     ignore:
       # Manual pins via pnpm.overrides in package.json — Dependabot must
       # not propose updates that fight the override pin. Keep this list in
@@ -60,6 +54,7 @@ updates:
       - dependency-name: "@tootallnate/once"
     labels:
       - "dependencies"
+      - "security"
       - "automerge-eligible"
 
   - package-ecosystem: "github-actions"

@@ -110,8 +110,9 @@ pnpm gen:adr
 | 0041 | OpenClaw Telegram delivery via webhook          | accepted | 2026-05-03 | Feature-flag-gated `node:http` webhook server у `apps/console` (за замовчуванням off → long-poll); знижує latency approval-кнопок з 2-3с до <500мс; one-step backout через `OPENCLAW_USE_WEBHOOK=false`.                                                                                      |
 | 0042 | Password hashing strategy                       | proposed | 2026-05-03 | bcrypt 72-byte cap (clamp `MAX_PASSWORD_LENGTH=72`) + SHA-256 pre-hash + Argon2id рекомендація для майбутнього алгоритм-розширення. Закриває false-sense-of-security з 128-байтним лімітом. Phase 1 — immediate code change у env validation.                                                 |
 | 0043 | CloudSync v1 sunset                             | accepted | 2026-05-04 | RFC 8594 `Sunset:` + `Deprecation: true` + RFC 8288 `Link: rel="successor-version"` headers на v1 routes (`/api/sync/*`); 6-фазний rollout-план; T₀ контролюється env var `CLOUDSYNC_V1_SUNSET_AT`. Реалізує [Initiative 0003 Phase 2](../initiatives/0003-sync-v2-rollout-and-v1-sunset.md). |
+| 0044 | Renovate vs Dependabot роль-дільниця            | accepted | 2026-05-04 | Renovate primary для regular weekly bumps; Dependabot security-only daily fallback. Видаляє ~12 duplicate-PR/тиждень. Закриває [Initiative 0008 Phase 3](../initiatives/0008-platform-hardening.md).                                                                                          |
 
-> **Note on next ADR:** наступний номер — **`0044`** (`0040` лишається gap).
+> **Note on next ADR:** наступний номер — **`0045`** (`0040` лишається gap).
 
 > **Note on numbering 0016–0022 jump:** ADRs `0016`–`0022` — це retroactive batch, що був написаний паралельно з `0006`–`0012`. Через паралельне виконання Devin-сесій виникли колізії номерів `0003`–`0012`. Розв'язано через PR `docs(adr): resolve numbering collisions` — same-topic дублі (refund, anthropic, PII) видалено, late-comers перенумеровано в `0016`+.
 
