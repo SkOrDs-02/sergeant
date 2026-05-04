@@ -1402,8 +1402,12 @@ async function applyNutritionPantries(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
-  const existing = await client.query<{ user_id: string; updated_at: Date }>(
-    `SELECT user_id, updated_at FROM nutrition_pantries WHERE id = $1`,
+  const existing = await client.query<{
+    user_id: string;
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(
+    `SELECT user_id, updated_at, deleted_at FROM nutrition_pantries WHERE id = $1`,
     [id],
   );
   if (existing.rows.length > 0) {
@@ -1412,6 +1416,10 @@ async function applyNutritionPantries(
     }
     if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
+    }
+    // Tombstone-resurrection guard — див. PR #043 (`applyNutritionMeals`).
+    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+      return { status: "rejected", reason: "tombstoned" };
     }
   }
 
@@ -1486,8 +1494,12 @@ async function applyNutritionPantryItems(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
-  const existing = await client.query<{ user_id: string; updated_at: Date }>(
-    `SELECT user_id, updated_at FROM nutrition_pantry_items WHERE id = $1`,
+  const existing = await client.query<{
+    user_id: string;
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(
+    `SELECT user_id, updated_at, deleted_at FROM nutrition_pantry_items WHERE id = $1`,
     [id],
   );
   if (existing.rows.length > 0) {
@@ -1496,6 +1508,10 @@ async function applyNutritionPantryItems(
     }
     if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
+    }
+    // Tombstone-resurrection guard — див. PR #043 (`applyNutritionMeals`).
+    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+      return { status: "rejected", reason: "tombstoned" };
     }
   }
 
@@ -1659,8 +1675,12 @@ async function applyNutritionRecipes(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
-  const existing = await client.query<{ user_id: string; updated_at: Date }>(
-    `SELECT user_id, updated_at FROM nutrition_recipes WHERE id = $1`,
+  const existing = await client.query<{
+    user_id: string;
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(
+    `SELECT user_id, updated_at, deleted_at FROM nutrition_recipes WHERE id = $1`,
     [id],
   );
   if (existing.rows.length > 0) {
@@ -1669,6 +1689,10 @@ async function applyNutritionRecipes(
     }
     if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
+    }
+    // Tombstone-resurrection guard — див. PR #043 (`applyNutritionMeals`).
+    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+      return { status: "rejected", reason: "tombstoned" };
     }
   }
 
@@ -1784,13 +1808,20 @@ async function applyFinykTombstone(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
-  const existing = await client.query<{ updated_at: Date }>(
-    `SELECT updated_at FROM ${table} WHERE user_id = $1 AND ${extColumn} = $2`,
+  const existing = await client.query<{
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(
+    `SELECT updated_at, deleted_at FROM ${table} WHERE user_id = $1 AND ${extColumn} = $2`,
     [userId, extId],
   );
   if (existing.rows.length > 0) {
     if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
+    }
+    // Tombstone-resurrection guard — див. PR #043 (`applyNutritionMeals`).
+    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+      return { status: "rejected", reason: "tombstoned" };
     }
   }
 
@@ -1889,16 +1920,23 @@ async function applyFinykPerRowBlob(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
-  const existing = await client.query<{ user_id: string; updated_at: Date }>(
-    `SELECT user_id, updated_at FROM ${table} WHERE id = $1`,
-    [id],
-  );
+  const existing = await client.query<{
+    user_id: string;
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(`SELECT user_id, updated_at, deleted_at FROM ${table} WHERE id = $1`, [
+    id,
+  ]);
   if (existing.rows.length > 0) {
     if (existing.rows[0].user_id !== userId) {
       return { status: "rejected", reason: "fk_violation" };
     }
     if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
+    }
+    // Tombstone-resurrection guard — див. PR #043 (`applyNutritionMeals`).
+    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+      return { status: "rejected", reason: "tombstoned" };
     }
   }
 
