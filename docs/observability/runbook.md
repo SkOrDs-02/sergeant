@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last validated:** 2026-05-01 by @devin-ai. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 Інструкції "що робити, коли спрацював алерт" для правил з
@@ -198,3 +198,94 @@ session-check чекає слот.
    `setRequestModule()` не викликався (або код поза request context).
 3. Fix: огорни у `AppError({ kind: "operational" })` де доречно,
    або виправ root cause.
+
+---
+
+# Platform hardening — operational FAQ
+
+> Ці секції додані разом з [Initiative 0008](../initiatives/0008-platform-hardening.md). Це не алерт-runbook-и (вони вище), а оперативні how-to для повторюваних situations які виникли разом з новою інфраструктурою (probes, rate-limit headers, Renovate, SBOM).
+
+## Як інтерпретувати 429-алерт у Grafana
+
+Алерт `AuthRateLimitSpike` (вище) показує загальний rate. Для **глибшого** аналізу:
+
+1. **Подивись `RateLimit-*` headers** на response-zі. З [Initiative 0008 Phase 2](../initiatives/0008-platform-hardening.md) сервер emit-ить:
+   - `RateLimit-Limit` — конфігурований ліміт (з `apps/server/src/config/rateLimit.ts`).
+   - `RateLimit-Remaining` — скільки запитів лишилось у поточному вікні.
+   - `RateLimit-Reset` — секунд до скидання вікна.
+   - `Retry-After` — у 429-відповідях, секунд до retry.
+2. **PromQL для розподілу 429 по policy-ключах:**
+   ```promql
+   sum by (key, outcome) (rate(rate_limit_hits_total{outcome="blocked"}[5m]))
+   ```
+   `key` лейбл — це `policy.key` з реєстру (наприклад, `api:auth:sensitive`). Якщо blocked-spike тільки на одному `key` — швидше за все targeted attack або bug у клієнті.
+3. **Перевір failMode для затиснутого роуту** в `apps/server/src/config/rateLimit.ts`:
+   - `failMode: "closed"` (як у `api:auth:sensitive`) → при degraded Redis+PG limiter повертає 503 + `Retry-After: 5`. Алерт горить, але кредитстаффінг **не** прискорюється.
+   - `failMode: "open"` → при degraded limiter пропускає трафік. Очікується підвищений rate; перевір `rate_limit_degraded_total{mode=inmem}` — якщо росте, deps degraded, не атака.
+4. **Відрізнити атаку від retry-storm:**
+   - Атака → широкий range `req.ip`, рівномірний rate-pattern. Бан через Cloudflare або `RATE_LIMIT_BAN_IPS` env-var.
+   - Retry-storm → `req.ip` концентрується на 1-3 джерелах (web/mobile/console). Це bug у клієнті, що ігнорує `Retry-After`. Відкривай issue на surface, патч у наступному релізі.
+
+## Що робити, якщо `/health/readiness` FAIL у production
+
+З [Initiative 0008 Phase 1](../initiatives/0008-platform-hardening.md) Sergeant exposед три probes:
+
+- `/health/liveness` — process alive (event-loop responsive). Должен бути 200 завжди, поки Node-процес не повис.
+- `/health/readiness` — `pg.ping()` + `redis.ping()` обидва ОК. 200/503.
+- `/startupz` (also `/health/startup`) — initial migrations + warmup завершені. 200/503; k8s/Render `failureThreshold: 30, periodSeconds: 1`.
+
+**Algorithm коли readiness=503:**
+
+1. **Перший крок — перевір liveness.** `curl https://api.sergeant/health/liveness`. Якщо теж 503 → процес повис, готуйся до restart-у. Якщо 200 → process живий, але dep degraded.
+2. **Перевір тіло readiness:**
+   ```bash
+   curl https://api.sergeant/health/readiness | jq
+   ```
+   Response має `checks: [{ name: "pg", status: "fulfilled" | "rejected" }, { name: "redis", ... }]`. Точно покаже, що саме не так.
+3. **Якщо PG degraded:**
+   - Railway → подивись Postgres metrics + connection-pool. Якщо `db_pool_waiting > 0` 5m — корелюй з `DbPoolWaitingSustained` runbook вище.
+   - Швидкий патч: збільш `DATABASE_POOL_MAX` (Railway env).
+4. **Якщо Redis degraded:**
+   - Перевір `rate_limit_degraded_total{mode=closed}` — якщо росте, всі auth-роути серверу будуть 503. Залежить від `failMode: "closed"` policy.
+   - Швидкий патч (не для prod): `RATE_LIMIT_FAIL_CLOSED_AUTH=false` env-var → revert до open-mode без redeploy. **УВАГА:** це послабляє credential-stuffing захист, тримай не довше за hour.
+5. **Не перезавантажуй pod-и просто щоб «спробувати»** — startup probe з `failureThreshold: 30` сам перезапустить, якщо warmup застряг.
+
+## Як обробити Renovate PR із breaking change
+
+Per [ADR-0044](../adr/0044-renovate-vs-dependabot.md), Renovate — primary tool для regular weekly bumps. Більшість PR-ів — devDep patches з auto-merge. Для **нон-trivial** PR-ів:
+
+| Тип PR                                                       | Дія                                                                                                                                              |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `chore(deps): update <dev-dep> to v<patch>`                  | **Auto-merge** після зеленої CI. Не торкатися.                                                                                                   |
+| `chore(deps): update <dev-dep> to v<minor>`                  | Прочитай PR title, swipe through diff, merge якщо CI ✅.                                                                                         |
+| `chore(deps): update <prod-dep> to v<minor>`                 | Read changelog у PR body. Run `pnpm --filter @sergeant/server test` локально якщо це `apps/server` dep. Merge при ✅.                            |
+| `chore(deps): update <prod-dep> to v<major>`                 | **Hands-on review.** Read changelog. Локальний run + manual smoke. Merge тільки після підтвердження що breaking-change уважно перевірений.       |
+| `chore(deps): update group "anthropic/sentry/opentelemetry"` | Завжди manual review — ці групи pinned (initiative 0008 spec). Часто requires API-changes у consumers (`apps/server/src/lib/anthropic.ts` тощо). |
+| **Duplicate PR** від `dependabot[bot]`                       | Закрий Dependabot-PR з коментарем `duplicate of Renovate group: <name>` (per ADR-0044).                                                          |
+| **Security-PR від `dependabot[bot]`**                        | **High priority** — daily schedule навмисно. Auto-merge label `automerge-eligible` чи review за SLA.                                             |
+
+Якщо breaking change ламає CI:
+
+1. **Не push-ай force з patch-ем у Renovate-branch.** Renovate перепише, твої commit-и зникнуть.
+2. Замість того, **закрий PR не merge-ивши**, склонуй branch локально, патчі в окремий branch на твою feature, відкриваєш свій PR. Renovate створить новий PR через тиждень — на той момент твій fix вже у main.
+
+## Що таке SBOM і де його шукати на release
+
+SBOM (Software Bill of Materials) — це machine-readable список **всіх** runtime-залежностей релізу, з версіями і integrity-хешами. З [Initiative 0008 Phase 4](../initiatives/0008-platform-hardening.md) на кожен release ми генеруємо два формати:
+
+- **SPDX-JSON** (`sergeant-<tag>.spdx.json`) — NTIA-compliant, стандарт індустрії, читається `trivy sbom`, `grype`, `syft`.
+- **CycloneDX-JSON** (`sergeant-<tag>.cdx.json`) — OWASP-стандарт, читається OWASP-Dependency-Track, JFrog Xray.
+
+**Де знайти SBOM:**
+
+1. **На GitHub Release page**: <https://github.com/Skords-01/Sergeant/releases/tag/v*>. Файли `*.spdx.json` і `*.cdx.json` прикріплені як assets.
+2. **В Actions storage** (90 днів retention): Actions tab → workflow «Release SBOM» → run for the tag → Artifacts section.
+3. **Регенерація для попереднього тегу**: Actions → Release SBOM → "Run workflow" → input `ref=v0.5.0` → Run. SBOM з'явиться як artifact (не attach-иться до Release якщо тригер manual).
+
+**Як використовувати при CVE-disclosure:**
+
+1. Завантаж SBOM з релізу що зараз у проді.
+2. Запусти `trivy sbom sergeant-v<tag>.spdx.json` — отримуєш список CVE проти цього SBOM-snapshot-а.
+3. Це **швидше** за full re-scan і відповідає на питання "is prod affected by this CVE" без redeploy.
+
+**Compliance use-case:** аудитор просить SBOM → надсилаєш SPDX-файл з GitHub Release. Sigstore-signing буде Phase 3 ([I3-sbom-generation.md](../security/hardening/I3-sbom-generation.md) Phase 3 Open).
