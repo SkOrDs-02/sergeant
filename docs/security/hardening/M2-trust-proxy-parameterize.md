@@ -1,16 +1,17 @@
 # M2 — `trust proxy = 1` is hard-coded
 
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** Open
+> **Status:** Closed (2026-05-04) — PR [#1682](https://github.com/Skords-01/Sergeant/pull/1682)
 
-| Field          | Value                           |
-| -------------- | ------------------------------- |
-| **Severity**   | Medium                          |
-| **Sprint**     | [Sprint 3](./sprint-3.md)       |
-| **Owner**      | backend                         |
-| **Effort**     | 0.25 person-day                 |
-| **Status**     | Open                            |
-| **Discovered** | 2026-05-03 deep security review |
+| Field          | Value                                                                                                                                                                                                                            |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Severity**   | Medium                                                                                                                                                                                                                           |
+| **Sprint**     | [Sprint 3](./sprint-3.md)                                                                                                                                                                                                        |
+| **Owner**      | backend                                                                                                                                                                                                                          |
+| **Effort**     | 0.25 person-day                                                                                                                                                                                                                  |
+| **Status**     | Closed (2026-05-04) — PR [#1682](https://github.com/Skords-01/Sergeant/pull/1682)                                                                                                                                                |
+| **Discovered** | 2026-05-03 deep security review                                                                                                                                                                                                  |
+| **Resolved**   | `parseTrustProxy` lives in `apps/server/src/lib/trustProxy.ts`; `config.ts` reads `TRUST_PROXY` env-var; `apps/server/README.md` + `.env.example` document the env-var matrix. `TRUST_PROXY=true` is rejected at boot by policy. |
 
 ## Summary
 

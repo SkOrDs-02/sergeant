@@ -1,16 +1,17 @@
 # H3 — Session 30-day TTL with no revoke-on-password-change and no device binding
 
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** Open
+> **Status:** Closed (2026-05-04) — PR [#1669](https://github.com/Skords-01/Sergeant/pull/1669)
 
-| Field          | Value                                                |
-| -------------- | ---------------------------------------------------- |
-| **Severity**   | High (CVSS 7.1, AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N) |
-| **Sprint**     | [Sprint 2](./sprint-2.md)                            |
-| **Owner**      | backend                                              |
-| **Effort**     | 1 person-day                                         |
-| **Status**     | Open                                                 |
-| **Discovered** | 2026-05-03 deep security review                      |
+| Field          | Value                                                                                                                                                           |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Severity**   | High (CVSS 7.1, AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N)                                                                                                            |
+| **Sprint**     | [Sprint 2](./sprint-2.md)                                                                                                                                       |
+| **Owner**      | backend                                                                                                                                                         |
+| **Effort**     | 1 person-day                                                                                                                                                    |
+| **Status**     | Closed (2026-05-04) — PR [#1669](https://github.com/Skords-01/Sergeant/pull/1669)                                                                               |
+| **Discovered** | 2026-05-03 deep security review                                                                                                                                 |
+| **Resolved**   | Server-side hooks land in `apps/server/src/auth.ts` + `apps/server/src/auth/sessionFingerprint.ts`; UI follow-up tracked separately as the SessionsList screen. |
 
 ## Summary
 

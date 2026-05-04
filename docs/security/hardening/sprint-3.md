@@ -1,7 +1,7 @@
 # Sprint 3 — Medium-severity backlog and SAST onboarding
 
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** Planned
+> **Status:** Active (H4 Phase 1 + M2 closed 2026-05-04 — PR [#1679](https://github.com/Skords-01/Sergeant/pull/1679) ships the Better Auth side of the key-rotation infra + runbook; PR [#1682](https://github.com/Skords-01/Sergeant/pull/1682) parameterises trust-proxy via `TRUST_PROXY` env. H4 Phase 2 (Mono `mono_connection.token_*` migration) tracked as follow-up.)
 
 Sprint 3 finishes the High-severity backlog (H4 encryption-key rotation —
 deferred from Sprint 2 because it requires a DB migration), drains the
@@ -15,30 +15,30 @@ because it is a High and touches data at rest.
 
 ## Scope
 
-| ID                                             | Title                                                | Severity | Owner    | Effort                      |
-| ---------------------------------------------- | ---------------------------------------------------- | -------- | -------- | --------------------------- |
-| [H4](./H4-encryption-key-rotation.md)          | No rotation procedure for AES-256-GCM data keys      | High     | backend  | 1.5 d                       |
-| [M2](./M2-trust-proxy-parameterize.md)         | `trust proxy = 1` hard-coded                         | Medium   | backend  | 0.25 d                      |
-| [M4](./M4-groq-model-allowlist.md)             | `GROQ_TRANSCRIBE_MODEL` env-injectable, no allowlist | Medium   | backend  | 0.1 d                       |
-| [M5](./M5-audio-mime-normalize.md)             | Audio MIME aliases without normalization             | Medium   | backend  | 0.1 d                       |
-| [M6](./M6-image-magic-byte-check.md)           | Photo endpoints accept base64 without magic check    | Medium   | backend  | 0.5 d                       |
-| [M7](./M7-chat-tool-iteration-cap.md)          | Chat loop has no `MAX_TOOL_ITERATIONS` cap           | Medium   | backend  | 0.25 d                      |
-| [M8](./M8-prompt-injection-tool-output.md)     | Tool-result blocks not wrapped to defang prompts     | Medium   | backend  | 0.5 d                       |
-| [M9](./M9-per-ip-secondary-rate-limit.md)      | Mass-account abuse can scale rate-limit linearly     | Medium   | backend  | 0.5 d                       |
-| [M10](./M10-csrf-token-check.md)               | No CSRF token on state-changing routes               | Medium   | backend  | 0.5 d                       |
-| [M11](./M11-eslint-plugin-security.md)         | No SAST lint rules for non-literal SQL/FS calls      | Medium   | platform | 0.25 d                      |
-| [M12](./M12-web-vitals-hardening.md)           | `web-vitals` ingest needs cap, allowlist, normaliser | Medium   | backend  | 0.25 d                      |
-| [M13](./M13-require-session-soft-loud-fail.md) | `requireSessionSoft` swallows DB errors as 401       | Medium   | backend  | 0.25 d                      |
-| [M14](./M14-internal-push-ip-allowlist.md)     | `/api/push/send` has no IP allowlist                 | Medium   | backend  | 0.25 d                      |
-| [M15](./M15-console-allowlist-fail-closed.md)  | Confirm `CONSOLE_BOT_TOKEN` allowlist is fail-closed | Medium   | console  | 0.1 d                       |
-| [M16](./M16-telegram-markdown-v2.md)           | Telegram `parse_mode: "Markdown"` legacy             | Medium   | console  | 0.25 d                      |
-| [M17](./M17-console-global-rate-cap.md)        | Console rate-limit per-user, no global cap           | Medium   | console  | 0.25 d                      |
-| [M18](./M18-openclaw-per-call-usd-cap.md)      | OpenClaw daily $5 budget without per-call cap        | Medium   | console  | 0.1 d                       |
-| [M19](./M19-mobile-deeplink-sanitize.md)       | Mobile shell deep-link query/fragment unsanitised    | Medium   | mobile   | 0.25 d                      |
-| [M20](./M20-mobile-back-button-confirm.md)     | `App.exitApp()` on back without unsaved-state check  | Medium   | mobile   | 0.25 d                      |
-| [M21](./M21-coep-stripe-compatibility.md)      | `COEP: require-corp` may break Stripe / OAuth iframe | Medium   | frontend | 0.25 d                      |
-| [I1](./I1-codeql-workflow.md)                  | Add CodeQL SAST workflow                             | Info     | platform | 0.5 d                       |
-| [I2](./I2-secret-scanning-push-protection.md)  | Enable secret-scanning + push protection             | Info     | platform | 0.1 d _(closed 2026-05-04)_ |
+| ID                                             | Title                                                | Severity | Owner    | Effort                                                                                                                    |
+| ---------------------------------------------- | ---------------------------------------------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------- |
+| [H4](./H4-encryption-key-rotation.md)          | No rotation procedure for AES-256-GCM data keys      | High     | backend  | 1.5 d _(Phase 1 closed 2026-05-04 — PR [#1679](https://github.com/Skords-01/Sergeant/pull/1679); Phase 2 follow-up open)_ |
+| [M2](./M2-trust-proxy-parameterize.md)         | `trust proxy = 1` hard-coded                         | Medium   | backend  | 0.25 d _(closed 2026-05-04 — PR [#1682](https://github.com/Skords-01/Sergeant/pull/1682))_                                |
+| [M4](./M4-groq-model-allowlist.md)             | `GROQ_TRANSCRIBE_MODEL` env-injectable, no allowlist | Medium   | backend  | 0.1 d                                                                                                                     |
+| [M5](./M5-audio-mime-normalize.md)             | Audio MIME aliases without normalization             | Medium   | backend  | 0.1 d                                                                                                                     |
+| [M6](./M6-image-magic-byte-check.md)           | Photo endpoints accept base64 without magic check    | Medium   | backend  | 0.5 d                                                                                                                     |
+| [M7](./M7-chat-tool-iteration-cap.md)          | Chat loop has no `MAX_TOOL_ITERATIONS` cap           | Medium   | backend  | 0.25 d                                                                                                                    |
+| [M8](./M8-prompt-injection-tool-output.md)     | Tool-result blocks not wrapped to defang prompts     | Medium   | backend  | 0.5 d                                                                                                                     |
+| [M9](./M9-per-ip-secondary-rate-limit.md)      | Mass-account abuse can scale rate-limit linearly     | Medium   | backend  | 0.5 d                                                                                                                     |
+| [M10](./M10-csrf-token-check.md)               | No CSRF token on state-changing routes               | Medium   | backend  | 0.5 d                                                                                                                     |
+| [M11](./M11-eslint-plugin-security.md)         | No SAST lint rules for non-literal SQL/FS calls      | Medium   | platform | 0.25 d                                                                                                                    |
+| [M12](./M12-web-vitals-hardening.md)           | `web-vitals` ingest needs cap, allowlist, normaliser | Medium   | backend  | 0.25 d                                                                                                                    |
+| [M13](./M13-require-session-soft-loud-fail.md) | `requireSessionSoft` swallows DB errors as 401       | Medium   | backend  | 0.25 d                                                                                                                    |
+| [M14](./M14-internal-push-ip-allowlist.md)     | `/api/push/send` has no IP allowlist                 | Medium   | backend  | 0.25 d                                                                                                                    |
+| [M15](./M15-console-allowlist-fail-closed.md)  | Confirm `CONSOLE_BOT_TOKEN` allowlist is fail-closed | Medium   | console  | 0.1 d                                                                                                                     |
+| [M16](./M16-telegram-markdown-v2.md)           | Telegram `parse_mode: "Markdown"` legacy             | Medium   | console  | 0.25 d                                                                                                                    |
+| [M17](./M17-console-global-rate-cap.md)        | Console rate-limit per-user, no global cap           | Medium   | console  | 0.25 d                                                                                                                    |
+| [M18](./M18-openclaw-per-call-usd-cap.md)      | OpenClaw daily $5 budget without per-call cap        | Medium   | console  | 0.1 d                                                                                                                     |
+| [M19](./M19-mobile-deeplink-sanitize.md)       | Mobile shell deep-link query/fragment unsanitised    | Medium   | mobile   | 0.25 d                                                                                                                    |
+| [M20](./M20-mobile-back-button-confirm.md)     | `App.exitApp()` on back without unsaved-state check  | Medium   | mobile   | 0.25 d                                                                                                                    |
+| [M21](./M21-coep-stripe-compatibility.md)      | `COEP: require-corp` may break Stripe / OAuth iframe | Medium   | frontend | 0.25 d                                                                                                                    |
+| [I1](./I1-codeql-workflow.md)                  | Add CodeQL SAST workflow                             | Info     | platform | 0.5 d                                                                                                                     |
+| [I2](./I2-secret-scanning-push-protection.md)  | Enable secret-scanning + push protection             | Info     | platform | 0.1 d _(closed 2026-05-04)_                                                                                               |
 
 **Total effort:** ≈ 6 person-days.
 
@@ -56,8 +56,17 @@ because it is a High and touches data at rest.
 
 ## Success metrics
 
-- **H4:** dual-key migration runs in staging end-to-end with zero rows
-  un-decryptable; rotation runbook published in `docs/runbooks/`.
+- **H4 Phase 1:** Better Auth `account.{accessToken,refreshToken,idToken}` reads
+  legacy `enc:v1:` and writes versioned `enc:v2:k<N>:…` ciphertext; dual-key
+  ring honours `BETTER_AUTH_TOKEN_ENC_KEYS=v1:…,v2:…` +
+  `BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION`; lazy re-encrypt observed via
+  `auth_token_lazy_reencrypt_total`; rotation runbook published in
+  [`docs/runbooks/encryption-key-rotation.md`](../../runbooks/encryption-key-rotation.md).
+  _Closed 2026-05-04 — PR [#1679](https://github.com/Skords-01/Sergeant/pull/1679)._
+- **H4 Phase 2 (open):** Mono `mono_connection.token_*` migration
+  `040_token_key_version.sql` + `mono/crypto.ts` keyRing wiring; success metric
+  is the same shape (zero rows un-decryptable, `mono_token_lazy_reencrypt_total`
+  drains to zero after the retire-old window).
 - **M11/I1:** CodeQL produces ≤ 5 findings on the first scheduled run; any
   remaining finding has a triage entry in `docs/security/audit-exceptions.md`.
 - **All Mediums:** each card moves to **Closed** with the linked
