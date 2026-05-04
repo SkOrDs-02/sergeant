@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/superpowers/agent-skills-catalog.md`.
@@ -59,6 +59,14 @@ Quick lookup before editing: which path uses which test stack and which conventi
 > CODEOWNERS coverage of every governance / CI / migrations / skills surface is enforced by `pnpm lint:codeowners` (`scripts/check-codeowners-coverage.mjs`). Whenever you delegate a sub-owner here, also add the matching pattern in `.github/CODEOWNERS` — the script will fail the next PR if a required path drifts uncovered.
 
 ## Hard rules (do not break)
+
+> Кожне правило в реєстрі [`docs/governance/hard-rules.json`](./docs/governance/hard-rules.json) має поле `category`. Severity (`blocker` / `warning`) — як CI поводиться з порушенням; `category` — тип правила:
+>
+> - **`blocker-invariant`** — корректність ран-тайму чи процес-інваріант (DB integrity, deploy safety, branch-protection, no-skip-hooks). Порушення = data loss / outage / silent regression.
+> - **`lint-enforced-convention`** — стилістичне/процесне правило з механічним enforcement (ESLint plugin, commitlint, governance-sync, freshness). Severity blocker, але enforcement — лінтер, не ран-тайм.
+> - **`active-initiative`** — правило з allowlist + дедлайном (див. лінкований `TODO(NNNN-…): YYYY-MM-DD`). Для нового коду — blocker; винятки трекаються окремо.
+>
+> Поточний розподіл (18 правил): 6 `blocker-invariant`, 11 `lint-enforced-convention`, 1 `active-initiative`. Машино-читабельна матриця: [`docs/governance/hard-rules-matrix.md`](./docs/governance/hard-rules-matrix.md). Categorization готує ґрунт для slim-down AGENTS.md (initiative `0009-agent-os-hardening`, фаза 3.1) — без зміни enforcement у цьому PR.
 
 ### 1. DB types: coerce `bigint` to `number` in serializers
 

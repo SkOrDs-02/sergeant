@@ -15,6 +15,7 @@
       "title": "DB types: coerce `bigint` to `number` in serializers",
       "scope": ["apps/server/src/modules/**"],
       "severity": "blocker",
+      "category": "blocker-invariant",
       "enforced_by": [
         {
           "kind": "test",
@@ -22,8 +23,14 @@
         }
       ],
       "links": [
-        { "type": "issue", "ref": "#708" },
-        { "type": "agents", "ref": "#1" }
+        {
+          "type": "issue",
+          "ref": "#708"
+        },
+        {
+          "type": "agents",
+          "ref": "#1"
+        }
       ]
     },
     {
@@ -31,13 +38,19 @@
       "title": "RQ keys: only via centralized factories",
       "scope": ["apps/web/src/**", "apps/mobile/src/**"],
       "severity": "blocker",
+      "category": "blocker-invariant",
       "enforced_by": [
         {
           "kind": "convention",
           "ref": "apps/web/src/shared/lib/api/queryKeys.ts (single source of truth)"
         }
       ],
-      "links": [{ "type": "agents", "ref": "#2" }]
+      "links": [
+        {
+          "type": "agents",
+          "ref": "#2"
+        }
+      ]
     },
     {
       "id": 3,
@@ -48,26 +61,45 @@
         "apps/server/src/modules/**/*.test.ts"
       ],
       "severity": "blocker",
+      "category": "blocker-invariant",
       "enforced_by": [
         {
           "kind": "ci",
           "ref": "pnpm api:check-openapi (apps/server openapi vs packages/api-client)"
         }
       ],
-      "links": [{ "type": "agents", "ref": "#3" }]
+      "links": [
+        {
+          "type": "agents",
+          "ref": "#3"
+        }
+      ]
     },
     {
       "id": 4,
       "title": "SQL migrations: sequential, no gaps, two-phase for DROP",
       "scope": ["apps/server/src/migrations/**"],
       "severity": "blocker",
+      "category": "blocker-invariant",
       "enforced_by": [
-        { "kind": "ci", "ref": "pnpm lint:migrations" },
-        { "kind": "codeowners", "ref": ".github/CODEOWNERS" }
+        {
+          "kind": "ci",
+          "ref": "pnpm lint:migrations"
+        },
+        {
+          "kind": "codeowners",
+          "ref": ".github/CODEOWNERS"
+        }
       ],
       "links": [
-        { "type": "issue", "ref": "#704" },
-        { "type": "agents", "ref": "#4" }
+        {
+          "type": "issue",
+          "ref": "#704"
+        },
+        {
+          "type": "agents",
+          "ref": "#4"
+        }
       ]
     },
     {
@@ -75,40 +107,68 @@
       "title": "Conventional Commits: explicit scope enum",
       "scope": ["**/*"],
       "severity": "blocker",
+      "category": "lint-enforced-convention",
       "enforced_by": [
-        { "kind": "ci", "ref": "Workflow lint (commitlint)" },
-        { "kind": "hook", "ref": ".husky/commit-msg" }
+        {
+          "kind": "ci",
+          "ref": "Workflow lint (commitlint)"
+        },
+        {
+          "kind": "hook",
+          "ref": ".husky/commit-msg"
+        }
       ],
-      "links": [{ "type": "agents", "ref": "#5" }]
+      "links": [
+        {
+          "type": "agents",
+          "ref": "#5"
+        }
+      ]
     },
     {
       "id": 6,
       "title": "No force push to main/master",
       "scope": ["main", "master"],
       "severity": "blocker",
+      "category": "blocker-invariant",
       "enforced_by": [
         {
           "kind": "branch-protection",
           "ref": "GitHub branch protection: 'Allow force pushes' = off on main"
         }
       ],
-      "links": [{ "type": "agents", "ref": "#6" }]
+      "links": [
+        {
+          "type": "agents",
+          "ref": "#6"
+        }
+      ]
     },
     {
       "id": 7,
       "title": "Pre-commit hooks via Husky — do not skip",
       "scope": ["**/*"],
       "severity": "blocker",
+      "category": "blocker-invariant",
       "enforced_by": [
-        { "kind": "hook", "ref": ".husky/pre-commit (lint-staged)" }
+        {
+          "kind": "hook",
+          "ref": ".husky/pre-commit (lint-staged)"
+        }
       ],
-      "links": [{ "type": "agents", "ref": "#7" }]
+      "links": [
+        {
+          "type": "agents",
+          "ref": "#7"
+        }
+      ]
     },
     {
       "id": 8,
       "title": "Tailwind colour-opacity steps must be on the registered scale",
       "scope": ["apps/web/src/**", "packages/design-tokens/**"],
       "severity": "blocker",
+      "category": "lint-enforced-convention",
       "enforced_by": [
         {
           "kind": "eslint-rule",
@@ -116,8 +176,14 @@
         }
       ],
       "links": [
-        { "type": "pr", "ref": "#814" },
-        { "type": "agents", "ref": "#8" }
+        {
+          "type": "pr",
+          "ref": "#814"
+        },
+        {
+          "type": "agents",
+          "ref": "#8"
+        }
       ]
     },
     {
@@ -125,6 +191,7 @@
       "title": "Saturated brand fills behind `text-white` must use the `-strong` companion",
       "scope": ["apps/web/src/**"],
       "severity": "blocker",
+      "category": "lint-enforced-convention",
       "enforced_by": [
         {
           "kind": "eslint-rule",
@@ -136,10 +203,22 @@
         }
       ],
       "links": [
-        { "type": "pr", "ref": "#854" },
-        { "type": "pr", "ref": "#855" },
-        { "type": "pr", "ref": "#857" },
-        { "type": "agents", "ref": "#9" }
+        {
+          "type": "pr",
+          "ref": "#854"
+        },
+        {
+          "type": "pr",
+          "ref": "#855"
+        },
+        {
+          "type": "pr",
+          "ref": "#857"
+        },
+        {
+          "type": "agents",
+          "ref": "#9"
+        }
       ]
     },
     {
@@ -152,31 +231,46 @@
         "scripts/**/*.{mjs,js}"
       ],
       "severity": "blocker",
+      "category": "lint-enforced-convention",
       "enforced_by": [
         {
           "kind": "eslint-rule",
           "ref": "sergeant-design/ai-marker-syntax (error)"
         },
-        { "kind": "ci", "ref": "pnpm lint:ai-legacy" },
+        {
+          "kind": "ci",
+          "ref": "pnpm lint:ai-legacy"
+        },
         {
           "kind": "ci",
           "ref": "pnpm dead-code:files (honours @scaffolded markers)"
         }
       ],
-      "links": [{ "type": "agents", "ref": "#10" }]
+      "links": [
+        {
+          "type": "agents",
+          "ref": "#10"
+        }
+      ]
     },
     {
       "id": 11,
       "title": "No arbitrary hex colors in `className`",
       "scope": ["apps/web/src/**", "apps/mobile/src/**"],
       "severity": "blocker",
+      "category": "lint-enforced-convention",
       "enforced_by": [
         {
           "kind": "eslint-rule",
           "ref": "sergeant-design/no-hex-in-classname (error)"
         }
       ],
-      "links": [{ "type": "agents", "ref": "#11" }]
+      "links": [
+        {
+          "type": "agents",
+          "ref": "#11"
+        }
+      ]
     },
     {
       "id": 12,
@@ -188,51 +282,73 @@
         "apps/web/src/modules/routine/**"
       ],
       "severity": "blocker",
+      "category": "lint-enforced-convention",
       "enforced_by": [
         {
           "kind": "eslint-rule",
           "ref": "sergeant-design/no-foreign-module-accent (error)"
         }
       ],
-      "links": [{ "type": "agents", "ref": "#12" }]
+      "links": [
+        {
+          "type": "agents",
+          "ref": "#12"
+        }
+      ]
     },
     {
       "id": 13,
       "title": "No raw-palette light/dark `className` pairs",
       "scope": ["apps/web/src/**", "apps/mobile/src/**"],
       "severity": "blocker",
+      "category": "lint-enforced-convention",
       "enforced_by": [
         {
           "kind": "eslint-rule",
           "ref": "sergeant-design/no-raw-dark-palette (error)"
         }
       ],
-      "links": [{ "type": "agents", "ref": "#13" }]
+      "links": [
+        {
+          "type": "agents",
+          "ref": "#13"
+        }
+      ]
     },
     {
       "id": 14,
       "title": "Visible focus indicators must use `focus-visible:`, not `focus:`",
       "scope": ["apps/web/src/**"],
       "severity": "blocker",
+      "category": "lint-enforced-convention",
       "enforced_by": [
         {
           "kind": "eslint-rule",
           "ref": "sergeant-design/prefer-focus-visible (error)"
         }
       ],
-      "links": [{ "type": "agents", "ref": "#14" }]
+      "links": [
+        {
+          "type": "agents",
+          "ref": "#14"
+        }
+      ]
     },
     {
       "id": 15,
       "title": "Read governance before coding; update docs alongside code; internal docs in Ukrainian",
       "scope": ["**/*"],
       "severity": "blocker",
+      "category": "lint-enforced-convention",
       "enforced_by": [
         {
           "kind": "ci",
           "ref": "pnpm lint:governance-sync (errors on dangling apps/packages/scripts refs in non-aspirational docs)"
         },
-        { "kind": "ci", "ref": "pnpm docs:check-freshness-coverage" },
+        {
+          "kind": "ci",
+          "ref": "pnpm docs:check-freshness-coverage"
+        },
         {
           "kind": "ci",
           "ref": "pnpm lint:hard-rules-registry (this rule's own enforcer)"
@@ -242,13 +358,19 @@
           "ref": ".github/PULL_REQUEST_TEMPLATE.md (Hard Rule #15 checkboxes)"
         }
       ],
-      "links": [{ "type": "agents", "ref": "#15" }]
+      "links": [
+        {
+          "type": "agents",
+          "ref": "#15"
+        }
+      ]
     },
     {
       "id": 16,
       "title": "Typography scale — semantic styles + 12px floor",
       "scope": ["apps/web/src/**", "packages/design-tokens/**"],
       "severity": "blocker",
+      "category": "lint-enforced-convention",
       "enforced_by": [
         {
           "kind": "convention",
@@ -260,8 +382,14 @@
         }
       ],
       "links": [
-        { "type": "doc", "ref": "docs/audits/UX-UI-AUDIT-2026.md" },
-        { "type": "agents", "ref": "#16" }
+        {
+          "type": "doc",
+          "ref": "docs/audits/UX-UI-AUDIT-2026.md"
+        },
+        {
+          "type": "agents",
+          "ref": "#16"
+        }
       ]
     },
     {
@@ -269,6 +397,7 @@
       "title": "Animation budget — max 2 concurrent, 3 tiers",
       "scope": ["apps/web/src/**", "packages/design-tokens/**"],
       "severity": "blocker",
+      "category": "lint-enforced-convention",
       "enforced_by": [
         {
           "kind": "convention",
@@ -284,7 +413,10 @@
           "type": "external",
           "ref": "https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions.html"
         },
-        { "type": "agents", "ref": "#17" }
+        {
+          "type": "agents",
+          "ref": "#17"
+        }
       ]
     },
     {
@@ -292,6 +424,7 @@
       "title": "Module-size discipline — `max-lines: 600` for web TS/TSX",
       "scope": ["apps/web/src/**"],
       "severity": "blocker",
+      "category": "active-initiative",
       "enforced_by": [
         {
           "kind": "convention",
@@ -307,7 +440,10 @@
           "type": "doc",
           "ref": "docs/initiatives/0001-module-decomposition.md"
         },
-        { "type": "agents", "ref": "#18" }
+        {
+          "type": "agents",
+          "ref": "#18"
+        }
       ]
     }
   ]

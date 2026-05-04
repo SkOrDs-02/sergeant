@@ -59,6 +59,17 @@ export function loadRegistry(rawJson) {
       throw new Error(`registry: rule ${r.id} needs a non-empty scope[]`);
     if (!r.severity || typeof r.severity !== "string")
       throw new Error(`registry: rule ${r.id} is missing severity`);
+    if (
+      typeof r.category !== "string" ||
+      ![
+        "blocker-invariant",
+        "lint-enforced-convention",
+        "active-initiative",
+      ].includes(r.category)
+    )
+      throw new Error(
+        `registry: rule ${r.id} is missing a valid category (one of blocker-invariant | lint-enforced-convention | active-initiative)`,
+      );
     if (!Array.isArray(r.enforced_by) || r.enforced_by.length === 0)
       throw new Error(
         `registry: rule ${r.id} needs at least one enforced_by entry`,
@@ -78,6 +89,12 @@ export function loadRegistry(rawJson) {
 const SEVERITY_BADGE = {
   blocker: "🛑 blocker",
   warning: "⚠ warning",
+};
+
+const CATEGORY_LABEL = {
+  "blocker-invariant": "blocker-invariant",
+  "lint-enforced-convention": "lint-enforced-convention",
+  "active-initiative": "active-initiative",
 };
 
 const KIND_LABEL = {
@@ -223,13 +240,18 @@ export function renderMatrixRaw(registry, { now = new Date() } = {}) {
   lines.push("");
   lines.push("## Matrix");
   lines.push("");
-  lines.push("| # | Rule | Severity | Scope | Enforced by | Links |");
-  lines.push("| --- | ---- | -------- | ----- | ----------- | ----- |");
+  lines.push(
+    "| # | Rule | Category | Severity | Scope | Enforced by | Links |",
+  );
+  lines.push(
+    "| --- | ---- | -------- | -------- | ----- | ----------- | ----- |",
+  );
   for (const rule of registry.rules) {
     lines.push(
       [
         `**${rule.id}**`,
         `[${escapePipes(rule.title)}](../../AGENTS.md#${anchorFromTitle(rule.id, rule.title)})`,
+        `\`${CATEGORY_LABEL[rule.category] ?? rule.category}\``,
         SEVERITY_BADGE[rule.severity] ?? rule.severity,
         renderScope(rule),
         renderEnforcement(rule),
@@ -249,6 +271,24 @@ export function renderMatrixRaw(registry, { now = new Date() } = {}) {
   );
   lines.push(
     "| ⚠ `warning` | Lint warns but does not block. Reviewer is expected to triage. |",
+  );
+  lines.push("");
+  lines.push("## Category legend");
+  lines.push("");
+  lines.push("| Category | Meaning |");
+  lines.push("| -------- | ------- |");
+  lines.push(
+    "| `blocker-invariant` | Ship-stopping correctness or process invariant — DB integrity, deploy safety, branch-protection, hooks. Violation = data loss / outage / silent regression. |",
+  );
+  lines.push(
+    "| `lint-enforced-convention` | Style or process rule with mechanical enforcement (ESLint plugin, commitlint, governance-sync, freshness). Same blocker severity, but classification highlights that the gate is a linter, not a runtime invariant. |",
+  );
+  lines.push(
+    "| `active-initiative` | Rule shipped with an explicit allowlist + deadline (see linked TODO/initiative). Treated as a blocker for new code; existing exceptions are tracked separately. |",
+  );
+  lines.push("");
+  lines.push(
+    "Used by initiative `0009-agent-os-hardening` Phase 3.1 (Hard Rules slim-down) — does not change current enforcement.",
   );
   lines.push("");
   lines.push("## How to add a rule");
@@ -289,7 +329,9 @@ function renderPlainList(registry) {
     const enf = r.enforced_by
       .map((e) => `${KIND_LABEL[e.kind] ?? e.kind} ${e.ref}`)
       .join("; ");
-    lines.push(`#${r.id}  [${String(r.severity).toUpperCase()}]  ${r.title}`);
+    lines.push(
+      `#${r.id}  [${String(r.severity).toUpperCase()}]  [${r.category}]  ${r.title}`,
+    );
     lines.push(`        scope: ${r.scope.join(", ")}`);
     lines.push(`        enforced_by: ${enf}`);
     lines.push("");

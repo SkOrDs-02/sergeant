@@ -22,7 +22,14 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["id", "title", "scope", "severity", "enforced_by"],
+        "required": [
+          "id",
+          "title",
+          "scope",
+          "severity",
+          "category",
+          "enforced_by"
+        ],
         "additionalProperties": false,
         "properties": {
           "id": {
@@ -44,6 +51,15 @@
           "severity": {
             "type": "string",
             "enum": ["blocker", "warning"]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "blocker-invariant",
+              "lint-enforced-convention",
+              "active-initiative"
+            ],
+            "description": "Taxonomy bucket. blocker-invariant = ship-stopping correctness or process invariant (data, deploy, history, hooks). lint-enforced-convention = mechanical lint/CI enforcement of style/process. active-initiative = rule with allowlist + deadline (rule is being phased in or phased out)."
           },
           "enforced_by": {
             "type": "array",
