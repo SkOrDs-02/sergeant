@@ -1,12 +1,14 @@
 # 0007 — Design-system tooling: Storybook + visual regression
 
-> **Last validated:** 2026-05-04 by @zlupa005. **Next review:** 2026-08-02.
-> **Status:** In Progress (Phase 1 готовий — каталог 12/20 компонентів, Phase 2+ ще)
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** In Progress (Phase 1 готовий — каталог 21 компонент shared/ui, Phase 2+ ще)
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks
 
-> **Progress (round-7, 2026-05-04):** Каталог Storybook у `apps/web/.storybook/` (а не у новому пакеті — рішення фази 1) тепер містить **12 компонентів** (60 % від цілі ≥ 20): `Button`, `Badge`, `Card` (foundation [#1647](https://github.com/Skords-01/Sergeant/pull/1647)) → +`Banner`, `Skeleton`, `Tooltip`, `DataState`, `Modal` (8 компонентів, [#1678](https://github.com/Skords-01/Sergeant/pull/1678)) → +`Input` / `Spinner` / `Switch` / `Tabs` (12 компонентів, [#1695](https://github.com/Skords-01/Sergeant/pull/1695)). Залишилось мінімум 8: `Avatar`, `Segmented`, `Toast` (потребує Provider у `preview.tsx`), плюс module-level (`FinykCard` / `FizrukCard` / `NutritionCard` / `RoutineCard` / `InsightsCard`). Phase 2 (Chromatic vs Playwright VRT decision) і Phase 5 (deploy live) — ще `Out`.
+> **Progress (round-7, 2026-05-04):** Каталог Storybook у `apps/web/.storybook/` (а не у новому пакеті — рішення фази 1) тепер містить **12 компонентів** (60 % від цілі ≥ 20): `Button`, `Badge`, `Card` (foundation [#1647](https://github.com/Skords-01/Sergeant/pull/1647)) → +`Banner`, `Skeleton`, `Tooltip`, `DataState`, `Modal` (8 компонентів, [#1678](https://github.com/Skords-01/Sergeant/pull/1678)) → +`Input` / `Spinner` / `Switch` / `Tabs` (12 компонентів, [#1695](https://github.com/Skords-01/Sergeant/pull/1695)).
+>
+> **Progress (round-8, 2026-05-04):** Каталог розширено до **21 компонента** shared/ui (мітка ≥ 20 перевершена). Між round-7 і round-8 у `main` уже додані `Avatar`, `Select`, `Stat`, `Segmented` (commit `5963a01c`) + `EmptyState`, `IconButton`, `ProgressRing`, `SkeletonCard` (отдельні commit-и); цей PR закриває останнє зі списку round-7 — `Toast`. Через те, що `<ToastContainer>` тригерить toasts через `useToast()` context, додано **глобальний decorator у `apps/web/.storybook/preview.tsx`** з `<ToastProvider>` + `<ToastContainer />`; інші stories ігнорують контекст без перформансу. Залишок Phase 2: module-level (`FinykCard` / `FizrukCard` / `NutritionCard` / `RoutineCard` / `InsightsCard`) + ESLint правило `require-stories-for-ui-components` (warn-only). Phase 4–5 (Chromatic vs Playwright VRT decision + deploy live) — поки `Out`.
 >
 > **Sources:** Design Review 2026-05-03 §13 (Design system), [`docs/audits/UX-UI-AUDIT-2026.md`](../audits/UX-UI-AUDIT-2026.md)
 
