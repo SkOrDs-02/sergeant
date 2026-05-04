@@ -56,7 +56,7 @@ export function useFirstEntryCelebration(
     // calls drive a one-shot UI transition, not a render derivation,
     // so we suppress `react-hooks/set-state-in-effect` rather than
     // restructure (same precedent as `useRoutineAppState.ts:201`).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     setTtvMs(ttv);
     setModuleId(getFirstRealEntryModule());
     setOpen(true);

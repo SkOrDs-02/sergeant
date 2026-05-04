@@ -69,6 +69,9 @@ export * from "./lib/firstRealEntry";
 // Module-aware copy for the first-entry CelebrationModal.
 export * from "./lib/onboardingCelebrations";
 
+// Gain-first / fear A/B copy for the post-FTUX SoftAuth prompt.
+export * from "./lib/softAuthCopy";
+
 // Dashboard recommendation types + helpers.
 export * from "./lib/recommendations";
 

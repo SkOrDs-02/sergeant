@@ -184,7 +184,6 @@ export function HubDashboard({
   // sentinel keeps FTUX gates closed during the first render so we
   // don't flash post-FTUX surfaces before the value resolves.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSessionDays(recordSessionDay() || getSessionDays());
   }, []);
   const SOFT_AUTH_SESSION_DAYS_THRESHOLD = 3;
@@ -437,6 +436,7 @@ export function HubDashboard({
         onOpenAuth={onShowAuth}
         onDismiss={() => setSoftAuthDismissed(true)}
         entryCount={entryCount}
+        sessionDays={sessionDays}
       />
     );
   } else {

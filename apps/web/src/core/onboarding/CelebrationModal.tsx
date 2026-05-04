@@ -66,7 +66,7 @@ export function CelebrationModal({
   // jitter visual positions / colours / sizes — visual diversity is
   // the goal, not derived state. `useMemo` snapshots the values on
   // mount so subsequent renders are stable; the impurity is contained.
-  /* eslint-disable react-hooks/purity -- intentional visual jitter */
+
   const particles = useMemo<ConfettiParticle[]>(() => {
     return Array.from({ length: 30 }, (_, i) => ({
       id: i,
@@ -79,7 +79,6 @@ export function CelebrationModal({
       delay: Math.random() * 0.3,
     }));
   }, []);
-  /* eslint-enable react-hooks/purity */
 
   const handleClose = useCallback(() => {
     hapticTap();
@@ -97,7 +96,6 @@ export function CelebrationModal({
   // animation; suppress `react-hooks/set-state-in-effect` here.
   useEffect(() => {
     if (open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVisible(true);
       setAnimateOut(false);
       // Trigger haptic on open

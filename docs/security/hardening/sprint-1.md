@@ -1,6 +1,6 @@
 # Sprint 1 — Critical + найгірші High
 
-> **Last validated:** 2026-05-04 by @steppupa. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active (in flight — H2 closed, C2 Phase 1 closed, C1 + H1 still open)
 
 **Тривалість:** 1–2 тижні (target close: 2026-05-17).
