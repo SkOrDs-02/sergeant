@@ -1,17 +1,17 @@
 # H1 — Bearer token у мобільному shell без явного Keychain-accessibility
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
-> **Status:** Open
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Closed (Phase 1 — 2026-05-04). Phase 2 (TTL + device-binding) залишається відкритим, відстежується в [H3](./H3-session-revoke-and-binding.md).
 
-| Field              | Value                                                                                              |
-| ------------------ | -------------------------------------------------------------------------------------------------- |
-| **Severity**       | **High** (CVSS 7.4 — Mobile credential leakage via cross-device sync)                              |
-| **Sprint**         | [Sprint 1](./sprint-1.md)                                                                          |
-| **Owner**          | mobile                                                                                             |
-| **Effort**         | 0.5 person-day                                                                                     |
-| **Status**         | Open                                                                                               |
-| **Discovered**     | 2026-05-03                                                                                         |
-| **Threat model**   | Information Disclosure → Account Takeover                                                          |
+| Field              | Value                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------- |
+| **Severity**       | **High** (CVSS 7.4 — Mobile credential leakage via cross-device sync)                                   |
+| **Sprint**         | [Sprint 1](./sprint-1.md)                                                                               |
+| **Owner**          | mobile                                                                                                  |
+| **Effort**         | 0.5 person-day                                                                                          |
+| **Status**         | **Closed (Phase 1, 2026-05-04)** — secure-storage міграція на iOS Keychain + iCloud-sync OFF            |
+| **Discovered**     | 2026-05-03                                                                                              |
+| **Threat model**   | Information Disclosure → Account Takeover                                                               |
 | **Affected files** | `apps/mobile-shell/src/auth-storage.ts`, `apps/mobile-shell/capacitor.config.ts`, `AndroidManifest.xml` |
 
 ## Summary
@@ -76,14 +76,14 @@ session: {
 
 ## Correction points
 
-| File / line                                                                      | Action                                                                                                          |
-| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| File / line                                                                      | Action                                                                                                                     |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `apps/mobile-shell/src/auth-storage.ts:39`                                       | Виставити `accessibility: 'AfterFirstUnlockThisDeviceOnly'` АБО мігрувати на `@capacitor-community/secure-storage-plugin`. |
-| `apps/mobile-shell/android/app/src/main/AndroidManifest.xml`                     | `android:allowBackup="false"` + `android:dataExtractionRules="@xml/data_extraction_rules"` (API 31+).            |
-| `apps/mobile-shell/android/app/src/main/res/xml/data_extraction_rules.xml` (new) | `<data-extraction-rules>` з `exclude domain="sharedpref"` для CapacitorStorage.                                  |
-| `apps/mobile-shell/ios/App/App/Info.plist`                                       | Перевірити `<key>NSAllowsArbitraryLoads</key><false/>` (cleartext-fallback).                                     |
-| `apps/server/src/auth.ts:104`                                                    | `expiresIn: 7 * 24 * 60 * 60` для bearer (короткий TTL + rolling refresh).                                       |
-| `apps/server/src/auth.ts:databaseHooks.session.create.before`                    | Зберігати `userAgent` + `ipPrefix` для device-binding (див. [H3](./README.md)).                                   |
+| `apps/mobile-shell/android/app/src/main/AndroidManifest.xml`                     | `android:allowBackup="false"` + `android:dataExtractionRules="@xml/data_extraction_rules"` (API 31+).                      |
+| `apps/mobile-shell/android/app/src/main/res/xml/data_extraction_rules.xml` (new) | `<data-extraction-rules>` з `exclude domain="sharedpref"` для CapacitorStorage.                                            |
+| `apps/mobile-shell/ios/App/App/Info.plist`                                       | Перевірити `<key>NSAllowsArbitraryLoads</key><false/>` (cleartext-fallback).                                               |
+| `apps/server/src/auth.ts:104`                                                    | `expiresIn: 7 * 24 * 60 * 60` для bearer (короткий TTL + rolling refresh).                                                 |
+| `apps/server/src/auth.ts:databaseHooks.session.create.before`                    | Зберігати `userAgent` + `ipPrefix` для device-binding (див. [H3](./README.md)).                                            |
 
 ## Verification
 
@@ -97,7 +97,75 @@ session: {
 ## Cross-references
 
 - [docs/security/hardening/sprint-1.md](./sprint-1.md) — sprint context.
-- [docs/security/hardening/H3-session-revoke.md](./README.md) (Sprint 2) — TTL + revoke-on-password-change.
+- [docs/security/hardening/H3-session-revoke-and-binding.md](./H3-session-revoke-and-binding.md) (Sprint 2) — TTL + revoke-on-password-change (Phase 2 для H1).
 - [docs/mobile/shell.md](../../mobile/shell.md) — Capacitor shell architecture.
 - [Capacitor Preferences docs](https://capacitorjs.com/docs/apis/preferences) — accessibility-параметри.
 - [Apple: kSecAttrAccessible](https://developer.apple.com/documentation/security/ksecattraccessible) — iOS Keychain accessibility constants.
+
+## Resolution log
+
+### 2026-05-04 — Phase 1 closed
+
+Bearer-token мігровано з `@capacitor/preferences` (UserDefaults на iOS, plain
+SharedPreferences на Android) у `@aparajita/capacitor-secure-storage` із явними
+hardening-налаштуваннями:
+
+- **iOS** → Keychain з `KeychainAccess.afterFirstUnlockThisDeviceOnly` (закриває
+  cross-device-leak через encrypted device-backup; токен **не** мігрує на новий
+  девайс при відновленні з backup-у іншого пристрою) і `setSynchronize(false)`
+  (iCloud Keychain sync вимкнено — токен **не** з'явиться на іншому пристрої з
+  тим самим AppleID).
+- **Android** → AndroidX EncryptedSharedPreferences (AES-GCM, ключ у
+  AndroidKeyStore). `android:allowBackup="false"` уже виставлено в
+  `AndroidManifest.xml`, тому `adb backup -shared com.sergeant.shell` нічого
+  не дістане.
+- **Web** → fallback на `localStorage` (тільки для DevTools-браузера; у
+  prod-bundle модуль динамічно імпортується тільки під `isCapacitor()`).
+
+**Migration handling.** Для існуючих юзерів, що логінилися до Phase 1, додано
+lazy one-shot міграцію у `getBearerToken()`: якщо secure-storage порожній,
+читаємо `@capacitor/preferences`-ключ → переписуємо у secure-storage →
+видаляємо з legacy. Якщо secure-storage write падає — повертаємо legacy-токен
+без видалення (не валимо UX, наступний read спробує знову). Такий fall-forward
+гарантує, що жоден юзер **не** буде розлогінений примусово; одночасно цей шлях
+безпечний — токен переноситься в encrypted-storage перед видаленням з legacy.
+
+**Tests** (`apps/mobile-shell/src/auth-storage.test.ts` — 15 кейсів, all pass):
+
+1. **H1 hardening contract** (4 кейси) — `setSynchronize(false)` викликаний на
+   першому read-і; `setDefaultKeychainAccess(afterFirstUnlockThisDeviceOnly)`
+   викликаний на першому read-і; ці виклики НЕ повторюються для наступних
+   операцій; падіння конфіг-фази не валить getBearerToken (graceful fallback).
+2. **getBearerToken** (3) — повертає secure-value без legacy-call; повертає
+   null коли обидва порожні; пробрасує помилку із secure-storage без legacy-fallback.
+3. **legacy migration** (4) — мігрує legacy-токен → secure + чистить legacy;
+   при secureSet-падінні повертає legacy без видалення; null-legacy = null;
+   міграція виконується тільки один раз для серії read-ів.
+4. **setBearerToken** (2) — записує у secure + чистить legacy; пробрасує
+   виняток із secure-storage.
+5. **clearBearerToken** (2) — видаляє з secure + з legacy-prefs; пробрасує
+   виняток із secure-remove.
+
+**Phase 2 (винесено окремо як [H3](./H3-session-revoke-and-binding.md)):**
+
+- TTL bearer-tokenа з 30 днів до 7 днів + rolling refresh (Better Auth side).
+- Device-binding: `userAgent` + `ipPrefix`-fingerprint при першому use bearer-у;
+  при сильному drift — forced re-auth.
+- Revoke-on-password-change.
+
+Phase 2 — server-side зміна, що зачіпає бази (revocation table) і всіх існуючих
+юзерів (forced re-login через 7 днів). Тримаємо її окремо від Phase 1, щоб
+mobile rollout (потребує store-review від Apple/Google) не блокував server-side
+hardening.
+
+**Verification status:**
+
+- ✅ Unit-тест на H1 hardening contract (15/15 pass).
+- ✅ Web `bearerToken.test.ts` (gate навколо dynamic-import-у) — 12/12 pass,
+  contract-shape стабільний.
+- ⏳ Manual cross-device test (iPhone-A iCloud Keychain ON → iPhone-B same
+  AppleID) — буде виконано після першого app-store rollout-у Phase 1
+  (потребує signed build + 2 фізичних девайси).
+- ⏳ Android `adb backup` test — потребує debug-build на фізичному Android.
+  `android:allowBackup="false"` уже у манифесті, тож ризику drift немає.
+- ⏳ TTL + rolling refresh — не тут, відстежується в H3.

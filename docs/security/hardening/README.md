@@ -51,7 +51,7 @@
 
 | ID                                           | Title                                                    | Status                       | Sprint                    |
 | -------------------------------------------- | -------------------------------------------------------- | ---------------------------- | ------------------------- |
-| [H1](./H1-mobile-bearer-storage.md)          | Bearer token у мобільному shell без явного Keychain-AC   | Open                         | [Sprint 1](./sprint-1.md) |
+| [H1](./H1-mobile-bearer-storage.md)          | Bearer token у мобільному shell без явного Keychain-AC   | Closed (Phase 1, 2026-05-04) | [Sprint 1](./sprint-1.md) |
 | [H2](./H2-dependabot.md)                     | Немає Dependabot / Renovate                              | Closed (2026-05-04)          | [Sprint 1](./sprint-1.md) |
 | H3 — `H3-session-revoke.md` (Sprint 2)       | Сесія 30d без revoke-on-password-change і device-binding | Open                         | Sprint 2                  |
 | H4 — `H4-token-key-rotation.md` (Sprint 2/3) | Немає сценарію ротації `*_TOKEN_ENC_KEY`                 | Open                         | Sprint 2                  |

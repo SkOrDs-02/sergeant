@@ -327,6 +327,9 @@ importers:
 
   apps/mobile-shell:
     dependencies:
+      '@aparajita/capacitor-secure-storage':
+        specifier: ^7.1.6
+        version: 7.1.6
       '@capacitor-mlkit/barcode-scanning':
         specifier: ^7.5.0
         version: 7.5.0(@capacitor/core@7.6.2)
@@ -929,6 +932,10 @@ packages:
 
   '@anthropic-ai/sdk@0.36.3':
     resolution: {integrity: sha512-+c0mMLxL/17yFZ4P5+U6bTWiCSFZUKJddrv01ud2aFBWnTPLdRncYV76D3q1tqfnL7aCnhRtykFnoCFzvr4U3Q==}
+
+  '@aparajita/capacitor-secure-storage@7.1.6':
+    resolution: {integrity: sha512-KIfLOm/oSciUiWsOMtMv2nzlnwW3LERid0DvZ3djt7UORBQvFqpvSefiLG5kkc8D34pGkb2ZqAz0ZprrI9LiTQ==}
+    engines: {node: '>=20.0.0'}
 
   '@apideck/better-ajv-errors@0.3.7':
     resolution: {integrity: sha512-TajUJwGWbDwkCx/CZi7tRE8PVB7simCvKJfHUsSdvps+aTM/PDPP4gkLmKnc+x3CE//y9i/nj74GqdL/hwk7Iw==}
@@ -12512,6 +12519,13 @@ snapshots:
       node-fetch: 2.7.0
     transitivePeerDependencies:
       - encoding
+
+  '@aparajita/capacitor-secure-storage@7.1.6':
+    dependencies:
+      '@capacitor/android': 7.6.2(@capacitor/core@7.6.2)
+      '@capacitor/app': 7.1.2(@capacitor/core@7.6.2)
+      '@capacitor/core': 7.6.2
+      '@capacitor/ios': 7.6.2(@capacitor/core@7.6.2)
 
   '@apideck/better-ajv-errors@0.3.7(ajv@8.20.0)':
     dependencies:
