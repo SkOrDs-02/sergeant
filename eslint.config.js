@@ -767,7 +767,6 @@ export default [
   // file shows up in `git blame` / `git log` against this rule.
   {
     files: [
-      "apps/web/src/modules/routine/RoutineApp.tsx",
       "apps/web/src/modules/nutrition/components/LogCard.tsx",
       "apps/web/src/modules/fizruk/pages/Workouts.tsx",
       "apps/web/src/modules/fizruk/pages/Progress.tsx",
