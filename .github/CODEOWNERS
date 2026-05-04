@@ -25,7 +25,7 @@
 /docs/playbooks/           @Skords-01
 /docs/postmortems/         @Skords-01
 /docs/security/            @Skords-01
-/docs/superpowers/         @Skords-01
+/docs/agents/              @Skords-01
 /docs/tech-debt/           @Skords-01
 
 /.github/CODEOWNERS        @Skords-01

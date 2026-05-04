@@ -1,6 +1,6 @@
 # Playbooks
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 Playbooks are the canonical execution layer for repeatable tasks in Sergeant. Skills decide the governing surface and repo rules; playbooks define the execution order.
@@ -36,7 +36,7 @@ Each playbook must include:
 
 ## Routing
 
-- Agent routing catalog: [docs/superpowers/agent-skills-catalog.md](../superpowers/agent-skills-catalog.md)
+- Agent routing catalog: [docs/agents/agent-skills-catalog.md](../agents/agent-skills-catalog.md)
 - Trigger index: [INDEX.md](./INDEX.md)
 - Reviewer checklist: [docs/governance/review-checklist.md](../governance/review-checklist.md)
 

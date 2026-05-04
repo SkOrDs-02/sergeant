@@ -11,7 +11,7 @@
 //    docs/*, .agents/*, .github/*) or a `pnpm`/`pnpx` command — i.e. the skill
 //    is grounded, not a free-floating checklist.
 // 5. The body links to at least one playbook in docs/playbooks/ OR to the
-//    skill catalog (docs/superpowers/agent-skills-catalog.md or its successor
+//    skill catalog (docs/agents/agent-skills-catalog.md or its successor
 //    docs/agents/agent-skills-catalog.md once that rename ships).
 //
 // This is the entrypoint for `pnpm lint:skills`. It exits non-zero with a
@@ -34,7 +34,7 @@ const PATH_HINT_RE =
   /(?:apps\/[\w./-]+|packages\/[\w./-]+|scripts\/[\w./-]+|docs\/[\w./-]+|\.agents\/[\w./-]+|\.github\/[\w./-]+)/;
 const COMMAND_HINT_RE = /\bpnp[mx]\s+[\w:.@/-]+/;
 const PLAYBOOK_LINK_RE =
-  /docs\/playbooks\/[\w./-]+|docs\/superpowers\/agent-skills-catalog\.md|docs\/agents\/agent-skills-catalog\.md/;
+  /docs\/playbooks\/[\w./-]+|docs\/agents\/agent-skills-catalog\.md/;
 
 function readJSON(p) {
   return JSON.parse(readFileSync(p, "utf8"));
@@ -102,7 +102,7 @@ function lintSkill(slug) {
   if (!PLAYBOOK_LINK_RE.test(body)) {
     errors.push(
       `${slug}: body has no link to docs/playbooks/* nor to the skill catalog ` +
-        `(docs/superpowers/agent-skills-catalog.md). Skills must point at a recipe.`,
+        `(docs/agents/agent-skills-catalog.md). Skills must point at a recipe.`,
     );
   }
   return errors;

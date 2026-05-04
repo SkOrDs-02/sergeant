@@ -1,6 +1,6 @@
 # Аналіз README: чого не вистачає та повний гайд по проєкту
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 Цей документ робить дві речі:
@@ -518,7 +518,7 @@ HubChat — це чат-інтерфейс, де ти спілкуєшся з Cl
 | `docs/playbooks/`     | Покрокові рецепти (як додати endpoint, як зробити hotfix) |
 | `docs/postmortems/`   | Розбори інцидентів                                        |
 | `docs/security/`      | Політика доступу, disaster recovery, аудит безпеки        |
-| `docs/superpowers/`   | Система для AI-агентів: каталог навичок, workflow         |
+| `docs/agents/`        | Система для AI-агентів: каталог навичок, workflow         |
 | `docs/tech-debt/`     | Реєстри технічного боргу (frontend, backend, mobile)      |
 
 ### Які є Hard Rules?

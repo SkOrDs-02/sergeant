@@ -1,6 +1,6 @@
 # n8n Reporting Matrix
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active. Live since 2026-05-02 — supergroup `Sergeant Ops` (chat
 > id `-1003924852082`) у Forum mode, 7 канонічних топіків створені, кожен
 > workflow JSON шле через `={{ $env.TELEGRAM_TOPIC_* }}` expression на
@@ -209,7 +209,7 @@ end-to-end test у staging.
   `n8n_errors.acknowledged_at`. Розблоковує auto-digest "unacked alerts".
 - **HubChat slash commands.** `/n8n status`, `/n8n recent-errors`, `/n8n ack
 <id>` — доступні з Telegram через існуючу HubChat інтеграцію (див.
-  [`docs/superpowers/`](../../docs/superpowers/)).
+  [`docs/agents/`](../../docs/agents/)).
 - **Per-user push tracking.** WF-07/09/10 поки що логують тільки агрегати; для
   P2-grade engagement metrics — додати `push_send_log` таблицю + WF-\* запис на
   send/dispatch result.

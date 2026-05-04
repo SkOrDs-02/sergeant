@@ -10,7 +10,7 @@ Feature work in Sergeant should move as a disciplined slice, not as scattered ed
 ## Flow
 
 1. Read `AGENTS.md`, the relevant specialist skill, and any matching playbook in `docs/playbooks/`.
-2. Write or update a design/spec in `docs/superpowers/specs/` when the change is non-trivial or product-facing.
+2. Write or update a design/spec in `docs/agents/specs/` when the change is non-trivial or product-facing.
 3. Decide where code belongs with `sergeant-monorepo-boundaries` before adding files.
 4. Add tests first where behavior changes: unit, contract, UI, or migration verification as appropriate.
 5. Implement the minimum end-to-end slice.
@@ -44,4 +44,4 @@ Feature work in Sergeant should move as a disciplined slice, not as scattered ed
 - `docs/playbooks/add-api-endpoint.md` — server contract + api-client + tests in lockstep.
 - `docs/playbooks/add-feature-flag.md` — flag-gated rollout of new behavior.
 - `docs/playbooks/add-onboarding-step.md` — when the feature touches onboarding.
-- Catalog: `docs/superpowers/agent-skills-catalog.md`.
+- Catalog: `docs/agents/agent-skills-catalog.md`.

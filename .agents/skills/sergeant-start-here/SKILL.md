@@ -10,7 +10,7 @@ This is the mandatory entrypoint for Sergeant. First orient in the repo, then ro
 ## Quick Orientation
 
 - Read `AGENTS.md` for hard rules and path ownership.
-- Read `docs/README.md` for repo docs and `docs/superpowers/agent-skills-catalog.md` for skill routing.
+- Read `docs/README.md` for repo docs and `docs/agents/agent-skills-catalog.md` for skill routing.
 - Treat Sergeant as a `pnpm` + Turborepo monorepo with `apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`, `apps/console`, and shared packages.
 
 ## Non-Negotiable Rules

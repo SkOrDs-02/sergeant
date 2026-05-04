@@ -1,6 +1,6 @@
 # Sergeant — doc-hygiene аудит (2026-05-02)
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 > Аудит виконано 2026-05-02 проти `main @ b7c629dd`. Стиль: прохід зверху-вниз, без правок коду. Фікси (ADR-0029-gap rule, audit lifecycle, agent file unification) реалізовані у PR `docs(hygiene): close audit findings — ADR gap rule, audits lifecycle, agent files`.
@@ -20,7 +20,7 @@
 
 - `apps/{web, server, mobile, mobile-shell, console}` + `packages/{shared, api-client, config, db-schema, design-tokens, finyk-domain, fizruk-domain, nutrition-domain, routine-domain, insights, eslint-plugin-sergeant-design}` — чисте розділення runtime-сервіси vs shared logic, точно як описано в [`docs/adr/0024-monorepo-apps-packages-split.md`](../adr/0024-monorepo-apps-packages-split.md).
 - `pnpm-workspace.yaml` лаконічний (`apps/*` + `packages/*`), `turbo.json` мінімалістичний, всі package-name прив'язані до `@sergeant/*`-namespace окрім `eslint-plugin-sergeant-design` (за конвенцією ESLint).
-- `.agents/skills/` (12 SKILL.md) + `docs/superpowers/agent-skills-catalog.md` мають deprecated→replacement-таблицю — добре читається.
+- `.agents/skills/` (12 SKILL.md) + `docs/agents/agent-skills-catalog.md` мають deprecated→replacement-таблицю — добре читається.
 
 ### Що варто почистити
 

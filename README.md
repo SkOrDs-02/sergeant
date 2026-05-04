@@ -6,7 +6,7 @@
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 Sergeant is a personal hub platform for finance, habits, sport, nutrition, and AI-assisted day-to-day workflows. The product lives in one `pnpm` + `Turborepo` monorepo and ships across web/PWA, mobile, and internal ops surfaces.
@@ -290,7 +290,7 @@ Monitoring is described in `docs/observability/README.md`. Key components: Sentr
 | `docs/playbooks/`     | Step-by-step recipes (add an endpoint, do a hotfix)        |
 | `docs/postmortems/`   | Incident post-mortems                                      |
 | `docs/security/`      | Access policy, disaster recovery, security audit           |
-| `docs/superpowers/`   | AI agent system: skill catalog, workflows                  |
+| `docs/agents/`        | AI agent system: skill catalog, workflows                  |
 | `docs/tech-debt/`     | Tech debt registries (frontend, backend, mobile)           |
 
 Roadmap: `docs/planning/README.md`. Tech debt: `docs/tech-debt/README.md`.
@@ -298,7 +298,7 @@ Roadmap: `docs/planning/README.md`. Tech debt: `docs/tech-debt/README.md`.
 ## For Contributors and Agents
 
 - Humans: start with [CONTRIBUTING.md](./CONTRIBUTING.md).
-- Agents: start with [AGENTS.md](./AGENTS.md) and [docs/superpowers/agent-skills-catalog.md](./docs/superpowers/agent-skills-catalog.md).
+- Agents: start with [AGENTS.md](./AGENTS.md) and [docs/agents/agent-skills-catalog.md](./docs/agents/agent-skills-catalog.md).
 - Repeatable execution recipes: [docs/playbooks/README.md](./docs/playbooks/README.md).
 - Governance and hard rules matrix: [docs/governance/README.md](./docs/governance/README.md).
 - Runtime inventory, release, incident, and recovery surfaces: [docs/architecture/service-catalog.md](./docs/architecture/service-catalog.md), [docs/security/disaster-recovery.md](./docs/security/disaster-recovery.md).

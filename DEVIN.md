@@ -1,15 +1,15 @@
 # Devin in Sergeant
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
-> **Single source of truth → [AGENTS.md](./AGENTS.md).** Цей файл — тонкий вказівник із кількома Devin-specific нотатками. Repo contract, hard rules і operating system для агентів описані в `AGENTS.md`, `docs/superpowers/*` і `docs/playbooks/*`.
+> **Single source of truth → [AGENTS.md](./AGENTS.md).** Цей файл — тонкий вказівник із кількома Devin-specific нотатками. Repo contract, hard rules і operating system для агентів описані в `AGENTS.md`, `docs/agents/*` і `docs/playbooks/*`.
 
 ## Startup flow
 
 1. Прочитай [AGENTS.md](./AGENTS.md).
 2. Почни з `.agents/skills/sergeant-start-here/SKILL.md`.
-3. Завантаж рівно один specialist skill для основної поверхні зміни (див. [agent-skills-catalog.md](./docs/superpowers/agent-skills-catalog.md)).
+3. Завантаж рівно один specialist skill для основної поверхні зміни (див. [agent-skills-catalog.md](./docs/agents/agent-skills-catalog.md)).
 4. Якщо під задачу є playbook у [docs/playbooks/](./docs/playbooks/README.md) — виконуй його як canonical recipe.
 
 ## Devin-specific нотатки
