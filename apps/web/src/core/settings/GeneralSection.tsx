@@ -6,6 +6,7 @@ import { useToast } from "@shared/hooks/useToast";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { resetOnboardingState, type User } from "@sergeant/shared";
 import { useAuth } from "../auth/AuthContext";
+import { OnboardingWizard } from "../onboarding/OnboardingWizard";
 import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
 
 export interface GeneralSectionProps {
@@ -25,6 +26,11 @@ export function GeneralSection({
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
+  // Tour replay (S4.5): show the welcome wizard in read-only mode so
+  // users can re-watch the FTUX without resetting their state.
+  // Distinct from "Перезапустити онбординг", which wipes vibe picks +
+  // first-action flags and routes to /welcome.
+  const [tourOpen, setTourOpen] = useState(false);
 
   const handleLogout = async () => {
     if (loggingOut) return;
@@ -44,9 +50,20 @@ export function GeneralSection({
     <SettingsGroup title="Загальні" emoji="⚙️">
       <SettingsSubGroup title="Онбординг">
         <p className="text-xs text-subtle leading-snug">
-          Перезапуск не видаляє твої дані — лише повертає вітальний екран та
+          Подивитись tour — побачити вітальний екран ще раз без скидання твого
+          стану. Перезапуск не видаляє твої дані — повертає вітальний екран і
           підказки першого запуску.
         </p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-10 w-full justify-center gap-2"
+          onClick={() => setTourOpen(true)}
+        >
+          <Icon name="compass" size={16} />
+          Подивитись tour
+        </Button>
         <Button
           type="button"
           variant="ghost"
@@ -112,6 +129,9 @@ export function GeneralSection({
             {loggingOut ? "Виходимо…" : "Вийти"}
           </Button>
         </SettingsSubGroup>
+      )}
+      {tourOpen && (
+        <OnboardingWizard mode="tour" onDone={() => setTourOpen(false)} />
       )}
     </SettingsGroup>
   );

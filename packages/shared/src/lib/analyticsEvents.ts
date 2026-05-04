@@ -14,6 +14,13 @@ export const ANALYTICS_EVENTS = Object.freeze({
   ONBOARDING_GOAL_SET: "onboarding_goal_set",
   ONBOARDING_SKIPPED: "onboarding_skipped",
 
+  // Onboarding replay (Settings → "Подивитись tour" — read-only mode).
+  // Distinguished from `ONBOARDING_STARTED` / `ONBOARDING_COMPLETED` so
+  // re-runs do not inflate the FTUX funnel — see S4.5 in
+  // `docs/launch/ftux-sprint-plan.md`.
+  ONBOARDING_REPLAY_VIEWED: "onboarding_replay_viewed",
+  ONBOARDING_REPLAY_DISMISSED: "onboarding_replay_dismissed",
+
   // Finyk / activation
   EXPENSE_ADDED: "expense_added",
   EXPENSE_DELETED: "expense_deleted",
