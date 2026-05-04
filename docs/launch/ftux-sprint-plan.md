@@ -77,13 +77,15 @@
 
 **Порядок взяття:** S0.5 (docs) → S0.4 (web events) → S0.3 (mobile). S0.5 першим — щоб контракти dashboard-ів продиктували, як саме fired payload для S0.4. S0.3 останнім — після того як web payload устаткувався.
 
-**Status update 2026-05-04 v3:** Sprint 0 повністю закритий. S0.5 ([PR #1570](https://github.com/Skords-01/Sergeant/pull/1570)) → S0.4 ([PR #1582](https://github.com/Skords-01/Sergeant/pull/1582)) → S0.3 ([PR #1704](https://github.com/Skords-01/Sergeant/pull/1704)) shipped у тому ж порядку (docs → events → mobile). Drive-by hotfix [PR #1755](https://github.com/Skords-01/Sergeant/pull/1755) прибрав duplicate-import регресію, що з'явилася через паралельний rebase двох S0.3-related PR-ів і ламала `pnpm --filter @sergeant/mobile typecheck` на main. Лишились тільки founder-tasks: вставити `VITE_POSTHOG_KEY` у Vercel + `apps/web/.env.local`, створити 5 insights у PostHog UI (HogQL запити готові у [`posthog-ftux-dashboards.md` §3](../observability/posthog-ftux-dashboards.md#3-the-five-saved-insights)) і вставити screenshot-лінки замість «TBD».
+**Status update 2026-05-04 v3:** Sprint 0 повністю закритий. S0.5 ([PR #1570](https://github.com/Skords-01/Sergeant/pull/1570)) → S0.4 ([PR #1582](https://github.com/Skords-01/Sergeant/pull/1582)) → S0.3 ([PR #1704](https://github.com/Skords-01/Sergeant/pull/1704)) shipped у тому ж порядку (docs → events → mobile). Drive-by hotfix [PR #1755](https://github.com/Skords-01/Sergeant/pull/1755) прибрав duplicate-import регресію, що з'явилася через паралельний rebase двох S0.3-related PR-ів і ламала `pnpm --filter @sergeant/mobile typecheck` на main.
+
+**S0.5 founder-tasks (2026-05-04 v4):** закриті через PostHog API в `Default project` (id `167740`, prod). 5 створено інсайтів під [`Dashboards → FTUX overview`](https://eu.posthog.com/project/167740/dashboard/660031) (без «TBD» в документі); `VITE_POSTHOG_KEY` + `VITE_POSTHOG_HOST` виставлені у Vercel-проєкті `prj_WTfB58gE…` для `production` і `preview` (production = `Default project`, preview = `dev serg`). Скріншоти тайлів наберуть дані автоматично як тільки перший `onboarding_started` прилетить. Деталі: [`docs/observability/posthog-ftux-dashboards.md` §1](../observability/posthog-ftux-dashboards.md#1-where-this-lives-in-posthog) + §3.
 
 **Hosted vs self-hosted:** для S0 — hosted Cloud EU (10k events/month free). Self-host пізніше, якщо знадобиться (privacy / GDPR).
 
 **Risks:**
 
-- 2FA / SSO для PostHog account (founder-task — robotic note: створити acc заздалегідь). _Update 2026-05-03: account уже існує, ключ уже на Vercel._
+- 2FA / SSO для PostHog account (founder-task — robotic note: створити acc заздалегідь). _Update 2026-05-04: account існує, `VITE_POSTHOG_KEY` + `VITE_POSTHOG_HOST` виставлені в Vercel для обох targets — ролик почнеться від наступного деплою._
 - iOS App Tracking Transparency для mobile — пропустити, бо internal-only трекаємо.
 - Stub-режим має лишитись як fallback (CI без `VITE_POSTHOG_KEY` не падає). _Уже так працює — `posthog.ts` no-ops без ключа._
 - Mobile parity (S0.3) має не дублювати web `analytics.ts` — спільні рядки винести в `packages/shared` або шарити транспорт через `@sergeant/shared`. Інакше дріфт між web і mobile невпинно.
