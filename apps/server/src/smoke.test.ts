@@ -44,6 +44,10 @@ vi.mock("./auth.js", () => ({
 }));
 
 import { createApp } from "./app.js";
+import {
+  __resetAppStateForTests,
+  markStartupComplete,
+} from "./lib/appState.js";
 
 // Залишаємо env чистим між тестами: guard-и читають process.env, тож стан
 // має бути детермінований.
@@ -64,6 +68,7 @@ beforeEach(() => {
   for (const k of ENV_KEYS) delete process.env[k];
   queryMock.mockReset();
   queryMock.mockResolvedValue({ rows: [{ "?column?": 1 }] });
+  __resetAppStateForTests();
 });
 
 afterAll(() => {
@@ -81,6 +86,56 @@ describe("smoke: createApp wiring", () => {
     expect(res.text).toBe("ok");
     // liveness не має торкатися БД.
     expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it("GET /health/liveness → 200 'ok' (nested alias)", async () => {
+    const app = createApp();
+    const res = await request(app).get("/health/liveness");
+    expect(res.status).toBe(200);
+    expect(res.text).toBe("ok");
+    expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it("GET /startupz → 503 'starting' before markStartupComplete()", async () => {
+    const app = createApp();
+    const res = await request(app).get("/startupz");
+    expect(res.status).toBe(503);
+    expect(res.text).toBe("starting");
+    // startup probe — дешева, БД не торкається ні до, ні після.
+    expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it("GET /startupz → 200 'ok' after markStartupComplete()", async () => {
+    markStartupComplete();
+    const app = createApp();
+    const res = await request(app).get("/startupz");
+    expect(res.status).toBe(200);
+    expect(res.text).toBe("ok");
+    expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it("GET /health/startup → 200 after markStartupComplete() (nested alias)", async () => {
+    markStartupComplete();
+    const app = createApp();
+    const res = await request(app).get("/health/startup");
+    expect(res.status).toBe(200);
+    expect(res.text).toBe("ok");
+  });
+
+  it("GET /health/readiness → 200 when DB ping resolves (nested alias)", async () => {
+    const app = createApp();
+    const res = await request(app).get("/health/readiness");
+    expect(res.status).toBe(200);
+    expect(res.text).toBe("ok");
+    expect(queryMock).toHaveBeenCalledWith("SELECT 1");
+  });
+
+  it("GET /health/readiness → 503 when DB ping rejects (nested alias)", async () => {
+    queryMock.mockRejectedValueOnce(new Error("pg down"));
+    const app = createApp();
+    const res = await request(app).get("/health/readiness");
+    expect(res.status).toBe(503);
+    expect(res.text).toBe("unhealthy");
   });
 
   it("GET /health → 200 when DB ping resolves", async () => {

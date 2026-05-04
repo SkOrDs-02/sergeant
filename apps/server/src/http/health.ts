@@ -5,6 +5,7 @@ import { getPoolStats } from "../db.js";
 import { backgroundQueue } from "../lib/backgroundQueue.js";
 import { anthropicCircuitBreaker } from "../lib/circuitBreaker.js";
 import { elapsedMs } from "../lib/timing.js";
+import { appState } from "../lib/appState.js";
 
 interface DbPool {
   query(sql: string): Promise<unknown>;
@@ -13,6 +14,24 @@ interface DbPool {
 /** Liveness: процес живий. Дешево і не чіпає БД. */
 export function livezHandler(_req: Request, res: Response): void {
   res.status(200).type("text/plain").send("ok");
+}
+
+/**
+ * Startup: чи завершилася стартова послідовність. Платформа (Railway /
+ * k8s) налаштовує startup-probe з більшим `failureThreshold` ніж
+ * liveness/readiness, щоб не вбити pod під час cold-start. Поки
+ * `app.listen` callback не відпрацював — повертаємо 503 і платформа
+ * терпляче чекає; як тільки startup завершився — повертаємо 200 і
+ * платформа перемикається на читання liveness/readiness.
+ *
+ * Дешева перевірка: жодних DB-пінгів, тільки прапор з `appState`.
+ */
+export function startupzHandler(_req: Request, res: Response): void {
+  if (appState.startupComplete) {
+    res.status(200).type("text/plain").send("ok");
+  } else {
+    res.status(503).type("text/plain").send("starting");
+  }
 }
 
 /**

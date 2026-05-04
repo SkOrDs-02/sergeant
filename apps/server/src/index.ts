@@ -27,6 +27,7 @@ import { createApp } from "./app.js";
 import { config } from "./config.js";
 import { pool } from "./db.js";
 import { env } from "./env.js";
+import { markStartupComplete } from "./lib/appState.js";
 import {
   startAuthMailWorker,
   type StartedAuthMailWorker,
@@ -295,6 +296,10 @@ for (const sig of ["SIGTERM", "SIGINT"]) {
 // реплік race на `INSERT schema_migrations` раніше валив один із процесів,
 // плюс readiness-проб затримувався часом виконання міграцій.
 httpServer = app.listen(config.port, "0.0.0.0", () => {
+  // Сигнал для `/startupz` (a.k.a. `/health/startup`): процес завершив
+  // env-assert, Sentry-init і прив'язку до порту, тож платформа може
+  // переключитися з startup-probe на readiness/liveness. Idempotent.
+  markStartupComplete();
   logger.info({
     msg: "server_listening",
     role: config.role,

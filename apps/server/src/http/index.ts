@@ -17,6 +17,7 @@ export {
 
 export {
   livezHandler,
+  startupzHandler,
   createReadyzHandler,
   createHealthzHandler,
 } from "./health.js";
