@@ -1,7 +1,7 @@
 # 0011 — Foundation adoption + process discipline (post-launch sweep)
 
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** Phase 1 ~70% done (1.1/1.2/1.3 merged; 1.4 pending). Phase 2 in flight: 2.2 merged (#1696); 2.4 (#1703) + 2.5 (#1709) + 2.6 (#1713) + 2.7 (#1714) + 2.8 (#1726) opened 2026-05-04 (DataState consumer adoption — finyk + fizruk + nutrition + routine + digest closes the consumer-adoption block; 2.9 ESLint rule і 2.1 ManualExpenseSheet залишаються).
+> **Status:** **Phase 1 complete** — 4/4 PR-ів merged станом на 2026-05-04. Phase 2 in flight: 2.2 merged (#1696); 2.4 (#1703) + 2.5 (#1709) + 2.6 (#1713) + 2.7 (#1714) + 2.8 (#1726) opened 2026-05-04 (DataState consumer adoption — finyk + fizruk + nutrition + routine + digest closes the consumer-adoption block; 2.9 ESLint rule і 2.1 ManualExpenseSheet залишаються). Phases 3–4 заплановані пост-0010-launch ≥ 2026-06-01.
 > **Priority:** P1 (subordinate to 0010-revenue-first-launch scope-freeze)
 > **Owner:** `@Skords-01`
 > **ETA:** 7 тижнів (Phase 1 — паралельно з 0010 freeze; Phases 2–4 — після 0010 launch)
@@ -45,48 +45,47 @@
 
 ### Фаза 1 — Process discipline (CI guards) — 1 тиждень, 2026-05-05 → 2026-05-12 _(паралельно з 0010 freeze — in-scope)_
 
-**PR 1.1 — `ci(governance): fail PR with empty body or unfilled template`** (P0)
+**Status: 4/4 PR-ів merged станом на 2026-05-04.** Phase 1 завершено повністю; залишаються лише 5 operational action items з PR 1.4 на @Skords-01 з due-date 2026-05-11.
 
-- Файл: `.github/workflows/pr-quality.yml` (новий) + `scripts/<check-pr-body>.mjs` (новий — placeholder).
-- Аналог existing `scripts/check-skill-shape.mjs` за стилем.
-- Логіка: GitHub Actions trigger `pull_request: [opened, edited, synchronize]`. Зчитує `${{ github.event.pull_request.body }}`. Падає якщо:
-  - Тіло порожнє (length < 50 chars після обрізання whitespace/HTML-comment-ів).
-  - Не містить хоча б одного з заповнених sections з `.github/PULL_REQUEST_TEMPLATE.md` (заголовки `## Summary`, `## Verification` мають мати непорожній текст під собою).
-  - `Hard Rule #15` чек-боксів не tick-нуто (3 з 3 мають бути `[x]`).
-- Винятки: PR-и з лейблом `meta` або від `dependabot[bot]` / `renovate[bot]` (Renovate / Dependabot заповнюють body автогенеровано).
-- Тести: `scripts/<check-pr-body>.test.mjs` з 6+ кейсами (порожнє, тільки template, заповнене, dependabot-PR, renovate-PR, Hard Rule #15 не позначений).
-- **Закриває:** PR #1571 type-incident.
-- **Risk:** низький. Зміна — тільки GitHub Actions, не runtime.
+**PR 1.1 — `ci(root): require all Hard Rule #15 boxes ticked in PR body`** (P0) — **MERGED [#1688](https://github.com/Skords-01/Sergeant/pull/1688)**
 
-**PR 1.2 — `ci(migrations): cross-branch collision pre-merge guard`** (P0)
+- **Pivot під час реалізації:** оригінальний план казав «новий `pr-quality.yml` + новий `<check-pr-body>.mjs`», але `scripts/ci/validate-pr-body.mjs` **уже існував** і вже перевіряв 7 секцій + non-empty body + ≥1 ticked checkbox. Створювати другий validator = той самий дубляж, який цей initiative закриває (Renovate × Dependabot ~4 тижні).
+- **Реальна зміна:** додано `SECTIONS_REQUIRING_ALL_TICKED = ["Hard Rule #15"]`. Hard Rule #15 тепер валідується суворо **3-of-3 ticked**, бо кожен box — binary, factually-verifiable (read AGENTS.md / Ukrainian / no `--no-verify`). `Docs and Governance` лишається `≥1` (там є explicit `N/A` box).
+- **+60 / −7 LOC у двох файлах. Тести:** 8 → 11 pass (нові: 1/3, 2/3, 3/3 grid).
+- **Self-test:** validator валідує тіло цього ж PR-у, тож CI green = він працює.
+- **Закрив:** PR #1571 type-incident (PR з порожнім тілом merged into main).
 
-- Файл: розширення `scripts/lint-migrations.mjs` + новий job у `.github/workflows/ci.yml`.
-- Логіка: на `pull_request` (event type `synchronize` після rebase) перевіряємо: чи у поточному PR є новий міграційний файл `NNN_*.sql`. Якщо так — fetch-имо `origin/main` і перевіряємо, що `NNN` строго більше за `max(numbers in main:apps/server/src/migrations)`. Якщо ні — fail з порадою «rebase + renumber».
-- Поточний `lint-migrations.mjs` ловить тільки **внутрішньо-PR** дублікати; цей extend ловить cross-branch.
-- Тести: інтеграційний у `scripts/__tests__/<lint-migrations.cross-branch>.test.mjs` (з мокнутим `git ls-files`).
-- **Закриває:** PR #1652 type-incident.
-- **Risk:** низький. Рестроспективно перевіримо, що `git fetch` доступний у CI runner-і (вже є — `actions/checkout@v4` із `fetch-depth: 0` у `ci.yml`).
+**PR 1.2 — `ci(server): cross-branch migration-number collision guard`** (P0) — **MERGED [#1691](https://github.com/Skords-01/Sergeant/pull/1691)**
 
-**PR 1.3 — `ci(deploy): require staging-verification label for vercel.json / fly.toml / railway.toml changes`** (P1)
+- Розширення `scripts/lint-migrations.mjs` (без нового workflow YAML — re-use existing `migration-lint` job, який вже має `fetch-depth: 0`).
+- Три нові helper-и (`listMigrationsOnRef`, `filterNewMigrationFiles`, `findCrossBranchCollisions`) + step 2a у `run()`. Перевіряє тільки `git diff --diff-filter=A` (newly-added) → modified files (M) НЕ flag-ляться як колізії.
+- Graceful fallback: якщо `origin/main` недоступний — крок скіпається, lint degrades до prior behaviour.
+- **Тести:** 28 → 41 pass (+13 нових). Black-box-сімуляція колізії: error-message правильно іменує файл і дає `rebase + renumber` guidance.
+- **Закрив:** PR #1652 type-incident (та ж колізія, що сталась з 0010/0011 номерами під час підготовки цього initiative-document-у — meta!).
 
-- Файл: розширення `.github/workflows/pr-quality.yml` (з PR 1.1) + новий step.
-- Логіка: якщо diff PR торкається `**/vercel.json` або `**/fly.toml` або `**/railway.toml` або `**/Dockerfile*` або `apps/server/build.mjs` — fail без лейбла `verified-on-staging` (повинен бути доданий вручну після того, як автор підтвердив deploy на staging-environment).
-- Винятки: only-comment-додаток (детектиш через `diff --stat`), pure rename без зміни ключів.
-- Документ: `docs/playbooks/deploy-config-change.md` — як саме верифікувати staging.
-- **Закриває:** PR #1595 → #1600 type-incident.
-- **Risk:** середній. Може уповільнити hot-fix-и — митиґуємо через `verified-on-staging-emergency` лейбл з обов'язковим post-mortem.
+**PR 1.3 — `ci(root): require staging-verification label for deploy-config changes`** (P1) — **MERGED [#1697](https://github.com/Skords-01/Sergeant/pull/1697)**
 
-**PR 1.4 — `docs(incidents): CSP_DISABLE kill-switch retrospective audit`** (P1)
+- Новий workflow `.github/workflows/deploy-config-staging-gate.yml` + supporting script `scripts/ci/check-deploy-config-staging-gate.mjs`.
+- Тригер: `pull_request: [opened, synchronize, reopened, labeled, unlabeled]`. Гейтить deploy-config файли: `vercel.json` (anywhere), `fly.toml`, `railway.toml`, `Dockerfile*` (basename), `Caddyfile`, `apps/server/build.mjs`.
+- Comment-aware exemption per dialect: `none` (JSON, no comments), `hash` (TOML / Dockerfile / Caddyfile), `js` (build.mjs). Pure-comment / pure-whitespace diffs auto-skip the gate.
+- Required labels: `verified-on-staging` (normal flow per playbook) OR `verified-on-staging-emergency` (escape-hatch with post-mortem commitment).
+- **Тести:** 31 unit-test покриття (dispatch matchers, comment-only detection across 3 dialects, label parsing edge cases, full `evaluate()` integration).
+- **Новий playbook:** `docs/playbooks/deploy-config-change.md` — decision tree (Mermaid) + per-surface verification steps (Vercel preview / Fly staging / Railway service) + emergency escape-hatch protocol. Зареєстровано у `playbook-catalog.md` + auto-regenerated INDEX.md.
+- **Закрив:** PR #1595 → #1600 type-incident (Vercel SSOT-flip).
 
-- Файл: `docs/incidents/2026-05-04-csp-disable-audit.md` (новий) + посилання з `docs/runbooks/`.
-- Скоуп: перевірити Railway env-var history (production + staging), git-blame для `CSP_DISABLE` додавання (`git log --all -S "CSP_DISABLE"`), Sentry-логи на CSP-violation-dropouts. Записати:
-  - Коли і ким додано прапорець (commit + дата).
-  - Чи був enabled у prod (Railway env-var snapshots).
-  - Якщо так — на скільки часу і чи були CSP-violation-події в той період.
-  - Lessons learned + чи треба disclosure.
-- Якщо `CSP_DISABLE` ніколи не був true в prod → закриваємо як «zero-impact retrospective».
-- Якщо був true → еacalation-path до 0008 phase 1 + потенційний `docs/security/disclosures/` запис.
-- **Risk:** низький (read-only audit). Залежність — Railway env-history retention (зазвичай 90 днів — може бути часткове покриття).
+**PR 1.4 — `docs(docs): csp-disable retrospective audit`** (P1) — **MERGED [#1699](https://github.com/Skords-01/Sergeant/pull/1699)**
+
+- Файл: `docs/audits/2026-05-04-csp-disable-retrospective.md` (а не `docs/incidents/...` як було у початковому плані — у репо вже існує `docs/audits/` як convention для retrospective-документів; `docs/postmortems/` зарезервовано для real incidents з confirmed user-impact).
+- Зареєстровано у `docs/audits/README.md` як Active / 0-of-5 implemented.
+- **Git-log investigation проведена:** `CSP_DISABLE` введено 2026-04-18 у [PR #128](https://github.com/Skords-01/Sergeant/pull/128) (commit `01914d34` — DevinAI feat strict API CSP), warn-on-boot-log додано через 24 години у [PR #345](https://github.com/Skords-01/Sergeant/pull/345) (commit `97ed26e9`), deep security review M1 зафіксував CVSS 6.1 на 2026-05-03, видалення з коду + EnvSchema 2026-05-04 у [PR #1631](https://github.com/Skords-01/Sergeant/pull/1631) (commit `de602495`). Total lifetime: 16 днів.
+- **Open questions Q1–Q4 → action items A1–A5 на @Skords-01** з due-date 2026-05-11:
+  - A1 — підтвердити Railway env-cleanup (production + staging) і записати pre-existing-value
+  - A2 — експортувати Railway audit-log за 2026-04-18 → 2026-05-04 (або зафіксувати tier-limitation)
+  - A3 — Sentry-query: `event.type:default AND (message:csp_disabled OR message:"csp-report")`
+  - A4 — додати retroactive-row у `secret-ownership-register.md`
+  - A5 — verify, що PR 1.3 staging-gate **НЕ** покриває runtime env-var changes у Railway dashboard (це окремий клас ризику; потрібна окрема ініціатива)
+- Severity: **SEV4 near-miss** (no confirmed user-impact, але structural risk був реальним).
+- **Закриває:** zombie-incident PR #1631 (operational boundary, явно deferred у Resolution log самої М1-картки).
 
 ### Фаза 2 — Foundation adoption (consumer migrations) — 3 тижні, 2026-06-02 → 2026-06-23 _(поста-0010-launch)_
 
