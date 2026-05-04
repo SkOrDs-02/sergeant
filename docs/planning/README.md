@@ -11,3 +11,4 @@ Roadmap-и та плани розвитку.
 | [`ai-coding-improvements.md`](./ai-coding-improvements.md) | План покращення AI-coding workflow                           |
 | [`storage-roadmap.md`](./storage-roadmap.md)               | Storage & Sync roadmap до production-ready (SQLite + op-log) |
 | [`stack-pulse-2026-05/`](./stack-pulse-2026-05/README.md)  | Серія PR-планів зі зрізу стеку 2026-05 (16 PR-ів)            |
+| [`pr-plan-2026-05.md`](./pr-plan-2026-05.md)               | Зведений PR-план 30/60/90/180 днів зі зрізу автоматизації / n8n / Telegram / OpenClaw / AI-як-інфра (48 PR-ів) |
