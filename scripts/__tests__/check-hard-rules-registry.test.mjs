@@ -116,6 +116,7 @@ const minimalRule = (id, title) => ({
   title,
   scope: ["**/*"],
   severity: "blocker",
+  category: "blocker-invariant",
   enforced_by: [{ kind: "doc", ref: "docs/some.md" }],
 });
 
@@ -387,6 +388,7 @@ test("eslint-rule-ref: cites a real plugin rule passes", () => {
     title: "First",
     scope: ["**/*"],
     severity: "blocker",
+    category: "lint-enforced-convention",
     enforced_by: [
       { kind: "eslint-rule", ref: `sergeant-design/${name} (error)` },
     ],
@@ -419,6 +421,7 @@ test("eslint-rule-ref: malformed ref (not 'sergeant-design/<name>') fails", () =
     title: "First",
     scope: ["**/*"],
     severity: "blocker",
+    category: "lint-enforced-convention",
     enforced_by: [
       { kind: "eslint-rule", ref: "some/other-plugin/rule (error)" },
     ],

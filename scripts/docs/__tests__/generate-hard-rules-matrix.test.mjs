@@ -33,6 +33,7 @@ const FIXTURE = {
       title: "DB types: coerce `bigint` to `number` in serializers",
       scope: ["apps/server/src/modules/**"],
       severity: "blocker",
+      category: "blocker-invariant",
       enforced_by: [
         {
           kind: "test",
@@ -49,6 +50,7 @@ const FIXTURE = {
       title: "RQ keys: only via centralized factories",
       scope: ["apps/web/src/**", "apps/mobile/src/**"],
       severity: "blocker",
+      category: "blocker-invariant",
       enforced_by: [
         {
           kind: "convention",
@@ -123,6 +125,18 @@ test("loadRegistry: rejects enforced_by entries missing kind/ref", () => {
   const bad = structuredClone(FIXTURE);
   bad.rules[0].enforced_by = [{ kind: "ci" }];
   assert.throws(() => loadRegistry(bad), /missing kind\/ref/);
+});
+
+test("loadRegistry: rejects rules without category", () => {
+  const bad = structuredClone(FIXTURE);
+  delete bad.rules[0].category;
+  assert.throws(() => loadRegistry(bad), /valid category/);
+});
+
+test("loadRegistry: rejects rules with unknown category", () => {
+  const bad = structuredClone(FIXTURE);
+  bad.rules[0].category = "design-suggestion";
+  assert.throws(() => loadRegistry(bad), /valid category/);
 });
 
 // ── anchorFromTitle ──────────────────────────────────────────────────────────
@@ -233,6 +247,26 @@ test("renderMatrixRaw: severity legend section is present", () => {
   assert.match(md, /## Severity legend/);
   assert.match(md, /🛑.+`blocker`/);
   assert.match(md, /⚠.+`warning`/);
+});
+
+test("renderMatrixRaw: category column renders backticked label per rule", () => {
+  const md = renderMatrixRaw(FIXTURE, { now: FROZEN_NOW });
+  const matrixSection = md.split("## Matrix")[1].split("## Severity legend")[0];
+  const bodyRows = matrixSection
+    .split("\n")
+    .filter((l) => l.startsWith("| **"));
+  assert.equal(bodyRows.length, 2);
+  for (const row of bodyRows) {
+    assert.match(row, /`blocker-invariant`/);
+  }
+});
+
+test("renderMatrixRaw: category legend section enumerates the three buckets", () => {
+  const md = renderMatrixRaw(FIXTURE, { now: FROZEN_NOW });
+  assert.match(md, /## Category legend/);
+  assert.match(md, /`blocker-invariant`/);
+  assert.match(md, /`lint-enforced-convention`/);
+  assert.match(md, /`active-initiative`/);
 });
 
 test("renderMatrixRaw: How-to-add-a-rule section references the playbook", () => {
