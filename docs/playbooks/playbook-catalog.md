@@ -1,6 +1,6 @@
 # Playbook Catalog
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 Scenario catalog: which playbook to open, which skill governs the work, and whether the document is primarily for humans, agents, or both.
@@ -14,6 +14,7 @@ Scenario catalog: which playbook to open, which skill governs the work, and whet
 | Respond to a prod regression            | [`hotfix-prod-regression.md`](./hotfix-prod-regression.md)                                   | `sergeant-deploy-and-observability`                     | Human + agent |
 | Investigate an alert or degradation     | [`investigate-alert.md`](./investigate-alert.md)                                             | `sergeant-deploy-and-observability`                     | Human + agent |
 | Ship a web/API release                  | [`release-web-and-api.md`](./release-web-and-api.md)                                         | `sergeant-deploy-and-observability`                     | Human + agent |
+| Change deploy-config (vercel/fly/etc)   | [`deploy-config-change.md`](./deploy-config-change.md)                                       | `sergeant-deploy-and-observability`                     | Human + agent |
 | Ship a mobile shell release             | [`release-mobile-shell.md`](./release-mobile-shell.md)                                       | `sergeant-deploy-and-observability`                     | Human + agent |
 | Ship an Expo mobile release             | [`release-expo-mobile.md`](./release-expo-mobile.md)                                         | `sergeant-mobile-expo`                                  | Human + agent |
 | Declare a production incident           | [`declare-incident.md`](./declare-incident.md)                                               | `sergeant-deploy-and-observability`                     | Human + agent |
