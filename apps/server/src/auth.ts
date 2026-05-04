@@ -9,6 +9,7 @@ import type { Request } from "express";
 import { env } from "./env/env.js";
 import { createEncryptingAdapter } from "./auth/encryptingAdapter.js";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+import { parseKeyRing } from "./lib/keyRing.js";
 import { db } from "./drizzle.js";
 import { sanitizeUserImage } from "./auth/sanitizeUserImage.js";
 import { detectFingerprintDrift, ipPrefix } from "./auth/sessionFingerprint.js";
@@ -114,9 +115,22 @@ const socialProviders = getSocialProviders();
  * стандартному Drizzle adapter — `assertStartupEnv` уже заборонив такий
  * старт у production. Обидва шляхи ділять один пул (`./db.js`) через
  * Drizzle instance — двох окремих pool-ів більше нема.
+ *
+ * H4: побудоване через `parseKeyRing`, який підтримує два формати
+ * env-конфігурації — single-key (legacy `BETTER_AUTH_TOKEN_ENC_KEY`) і
+ * multi-key (`*_KEYS` + `*_CURRENT_VERSION`) — без зміни callsite-у.
+ * Validation помилки вже спливли у `assertStartupEnv`; тут ми просто
+ * дублюємо catch для випадку, коли auth.ts завантажується без
+ * `assertStartupEnv` (наприклад, у тестах).
  */
-const databaseConfig = env.BETTER_AUTH_TOKEN_ENC_KEY
-  ? createEncryptingAdapter(env.BETTER_AUTH_TOKEN_ENC_KEY)
+const tokenKeyRing = parseKeyRing({
+  keysCsv: env.BETTER_AUTH_TOKEN_ENC_KEYS,
+  currentVersion: env.BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION,
+  legacyKey: env.BETTER_AUTH_TOKEN_ENC_KEY,
+  envName: "BETTER_AUTH_TOKEN_ENC_KEY",
+});
+const databaseConfig = tokenKeyRing
+  ? createEncryptingAdapter(tokenKeyRing)
   : drizzleAdapter(db, { provider: "pg" });
 
 export const auth = betterAuth({

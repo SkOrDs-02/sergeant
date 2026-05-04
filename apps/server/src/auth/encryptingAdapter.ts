@@ -5,8 +5,15 @@ import type {
   DBAdapterInstance,
 } from "@better-auth/core/db/adapter";
 import { db } from "../drizzle.js";
-import { decryptString, encryptString, isEncrypted } from "./tokenCrypto.js";
+import {
+  decryptString,
+  encryptString,
+  isEncrypted,
+  readKeyVersion,
+} from "./tokenCrypto.js";
+import type { KeyRing } from "../lib/keyRing.js";
 import { logger } from "../obs/logger.js";
+import { authTokenLazyReencryptTotal } from "../obs/metrics.js";
 
 /**
  * Wraps the built-in Better Auth Drizzle adapter so that the OAuth token
@@ -43,7 +50,7 @@ type TokenField = (typeof TOKEN_FIELDS)[number];
 
 function encryptTokenFields(
   data: Record<string, unknown>,
-  hexKey: string,
+  ring: KeyRing,
 ): Record<string, unknown> {
   let cloned: Record<string, unknown> | null = null;
   for (const field of TOKEN_FIELDS) {
@@ -52,12 +59,12 @@ function encryptTokenFields(
     if (typeof value !== "string" || value.length === 0) continue;
     if (isEncrypted(value)) continue;
     if (!cloned) cloned = { ...data };
-    cloned[field] = encryptString(value, hexKey);
+    cloned[field] = encryptString(value, ring);
   }
   return cloned ?? data;
 }
 
-function decryptTokenFields<T>(row: T, hexKey: string): T {
+function decryptTokenFields<T>(row: T, ring: KeyRing): T {
   if (!row || typeof row !== "object") return row;
   const obj = row as Record<string, unknown>;
   let cloned: Record<string, unknown> | null = null;
@@ -67,7 +74,28 @@ function decryptTokenFields<T>(row: T, hexKey: string): T {
     if (!isEncrypted(value)) continue;
     if (!cloned) cloned = { ...obj };
     try {
-      cloned[field] = decryptString(value, hexKey);
+      cloned[field] = decryptString(value, ring);
+      // H4: warn-log stale key versions so ops can confirm rotation progress
+      // before retiring the old key. Better Auth refreshes OAuth tokens via
+      // `update`, which rewrites under `ring.current.version` — so the next
+      // refresh after rotation naturally re-encrypts. No DB touch here.
+      try {
+        const rowVersion = readKeyVersion(value);
+        if (rowVersion !== null && rowVersion !== ring.current.version) {
+          logger.warn({
+            event: "auth.token.stale_key_version",
+            field,
+            row_version: rowVersion,
+            current_version: ring.current.version,
+          });
+          authTokenLazyReencryptTotal.inc({
+            field,
+            row_version: String(rowVersion),
+          });
+        }
+      } catch {
+        // readKeyVersion can throw on malformed prefix; ignore — decrypt above already succeeded
+      }
     } catch (err) {
       logger.error({
         msg: "auth_token_decrypt_failed",
@@ -92,7 +120,7 @@ function decryptTokenFields<T>(row: T, hexKey: string): T {
  *   `user` / `session` / `account` / `verification` table objects. The
  *   adapter walks those by `model` name — no extra wiring needed.
  */
-export function createEncryptingAdapter(hexKey: string): DBAdapterInstance {
+export function createEncryptingAdapter(ring: KeyRing): DBAdapterInstance {
   const inner = drizzleAdapter(db, { provider: "pg" });
 
   return (options: BetterAuthOptions): DBAdapter => {
@@ -111,12 +139,12 @@ export function createEncryptingAdapter(hexKey: string): DBAdapterInstance {
           args.model === ACCOUNT_MODEL
             ? (encryptTokenFields(
                 args.data as Record<string, unknown>,
-                hexKey,
+                ring,
               ) as Omit<T, "id">)
             : args.data;
         const result = await base.create<T, R>({ ...args, data: transformed });
         return args.model === ACCOUNT_MODEL
-          ? decryptTokenFields(result, hexKey)
+          ? decryptTokenFields(result, ring)
           : result;
       },
       async findOne<T>(
@@ -124,35 +152,35 @@ export function createEncryptingAdapter(hexKey: string): DBAdapterInstance {
       ): Promise<T | null> {
         const result = await base.findOne<T>(args);
         if (result === null || args.model !== ACCOUNT_MODEL) return result;
-        return decryptTokenFields(result, hexKey);
+        return decryptTokenFields(result, ring);
       },
       async findMany<T>(
         args: Parameters<DBAdapter["findMany"]>[0],
       ): Promise<T[]> {
         const result = await base.findMany<T>(args);
         if (args.model !== ACCOUNT_MODEL) return result;
-        return result.map((row) => decryptTokenFields(row, hexKey));
+        return result.map((row) => decryptTokenFields(row, ring));
       },
       async update<T>(
         args: Parameters<DBAdapter["update"]>[0],
       ): Promise<T | null> {
         const transformed =
           args.model === ACCOUNT_MODEL
-            ? encryptTokenFields(args.update as Record<string, unknown>, hexKey)
+            ? encryptTokenFields(args.update as Record<string, unknown>, ring)
             : args.update;
         const result = await base.update<T>({
           ...args,
           update: transformed,
         });
         if (result === null || args.model !== ACCOUNT_MODEL) return result;
-        return decryptTokenFields(result, hexKey);
+        return decryptTokenFields(result, ring);
       },
       async updateMany(
         args: Parameters<DBAdapter["updateMany"]>[0],
       ): Promise<number> {
         const transformed =
           args.model === ACCOUNT_MODEL
-            ? encryptTokenFields(args.update as Record<string, unknown>, hexKey)
+            ? encryptTokenFields(args.update as Record<string, unknown>, ring)
             : args.update;
         return base.updateMany({ ...args, update: transformed });
       },
