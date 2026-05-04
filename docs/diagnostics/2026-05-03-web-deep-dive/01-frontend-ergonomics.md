@@ -1,6 +1,6 @@
 # Web deep-dive — Frontend ergonomics & UX
 
-> **Last validated:** 2026-05-03 by @Skords-01.
+> **Last validated:** 2026-05-04 by @Skords-01.
 > **Status:** Active
 > **Scope:** Forms, loading/empty/error states, Toast, Modal, mobile safe-area, PWA install banner, auth error translation, i18n readiness, feature-reveal pattern.
 > **Related:** [`00-overview.md`](./00-overview.md), `docs/audits/UX-UI-AUDIT-2026.md`, `docs/audits/UX-IMPROVEMENT-PLAN.md`.
@@ -53,6 +53,8 @@
 ---
 
 ## 3.2 [Bad] Loading states — не бачу system-wide skeleton policy
+
+> **2026-05-04 update.** Wrapper доданий: `<DataState>` у `apps/web/src/shared/components/ui/DataState.tsx` + 10 contract tests у `DataState.test.tsx`. Precedence error → loading → empty → success зафіксовано тестом, slot-и описані у JSDoc на пропсах. Експорт через UI-barrel (`shared/components/ui/index.ts`). Наступний крок — refactor високотрафічних екранів (`MonoTransactionsPanel`, `BudgetPanel`, `RoutineList`) на цей wrapper в окремих PR-ах.
 
 **Що бачу.** Є `ModulePageLoader.tsx`, `PageTransition.tsx`, окремі `... loading` тексти всередині сторінок. Кожна сторінка вирішує сама. Skeleton-component-library немає; немає й уніфікованої політики «коли skeleton, коли spinner, коли nothing».
 
