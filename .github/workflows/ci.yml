@@ -117,6 +117,14 @@ jobs:
         # docs/deploy/vercel.md.
         run: bash scripts/check-vercel-config.sh
 
+      - name: security.txt expiry guard
+        # Closes hardening card I4. RFC 9116 §2.5.5 requires the Expires
+        # field in /.well-known/security.txt to be a valid ISO 8601
+        # timestamp in the future. We fail CI when <30 days remain so we
+        # always have a buffer to refresh it before researchers treat the
+        # file as void.
+        run: bash scripts/check-security-txt-expiry.sh
+
       - name: Format, lint, test, build
         run: pnpm check
 
