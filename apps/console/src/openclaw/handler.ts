@@ -28,6 +28,7 @@ import {
   writeToolRoute,
   type OpenClawAgentDeps,
 } from "../agents/openclaw.js";
+import { PerCallCapExceededError } from "./policy.js";
 import { COUNCIL_PERSONAS, type OpenClawPersona } from "../agents/personas.js";
 import {
   escapeTelegramMarkdownV2,
@@ -822,9 +823,23 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
     } catch (err) {
       const durationMs = Date.now() - startedAt;
       const message = err instanceof Error ? err.message : String(err);
+      // M18: per-call USD cap. Surface the structured rejection
+      // (projected vs cap) so the operator sees *why* the call was
+      // refused without us spending tokens. The metric is already
+      // incremented inside `runOpenClawAgent`; here we just emit a
+      // distinct telemetry status and a founder-readable reply.
+      const isPerCallCap = err instanceof PerCallCapExceededError;
       console.error("OpenClaw agent error:", message);
       if (!options?.silent) {
-        await ctx.reply("Помилка під час обробки. Спробуй ще раз.");
+        if (isPerCallCap) {
+          const projected = err.projectedUsd.toFixed(4);
+          const cap = err.capUsd.toFixed(2);
+          await ctx.reply(
+            `Запит відхилено: проєктна вартість виклику $${projected} перевищує per-call cap $${cap} (model=${err.model}, max_tokens=${err.maxTokens}). Зменши scope або підніми OPENCLAW_MAX_PER_CALL_USD.`,
+          );
+        } else {
+          await ctx.reply("Помилка під час обробки. Спробуй ще раз.");
+        }
       }
       if (invocationId) {
         await postJson(
@@ -832,7 +847,7 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
           internalApiKey,
           {
             invocationId,
-            status: "error",
+            status: isPerCallCap ? "per_call_cap_exceeded" : "error",
             errorMessage: message,
             durationMs,
           },

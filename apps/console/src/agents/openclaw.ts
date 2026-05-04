@@ -16,10 +16,19 @@
 
 import type Anthropic from "@anthropic-ai/sdk";
 import {
+  incrementCounter,
+  OPENCLAW_PER_CALL_CAP_HIT_TOTAL,
+} from "../obs/metrics.js";
+import {
   type ApprovalStore,
   type PendingApprovalsCollector,
   isWriteToolName,
 } from "../openclaw/approval-store.js";
+import {
+  assertPerCallCapAllowed,
+  parseMaxPerCallUsd,
+  PerCallCapExceededError,
+} from "../openclaw/policy.js";
 import {
   DEFAULT_PERSONA,
   filterToolsForPersona,
@@ -28,8 +37,10 @@ import {
 } from "./personas.js";
 import { runAgentLoop } from "./run-agent-loop.js";
 
-const MODEL = "claude-sonnet-4-6";
-const MAX_TOKENS = 4096;
+export const OPENCLAW_MODEL = "claude-sonnet-4-6";
+export const OPENCLAW_MAX_TOKENS = 4096;
+const MODEL = OPENCLAW_MODEL;
+const MAX_TOKENS = OPENCLAW_MAX_TOKENS;
 
 export type OpenClawToneMode = "diplomatic" | "direct";
 
@@ -737,6 +748,25 @@ export async function runOpenClawAgent(input: RunOpenClawAgentInput): Promise<{
   });
 
   const tools = filterToolsForPersona(openClawTools, persona);
+
+  // M18: pre-flight per-call USD cap. The daily-budget guard at
+  // `/api/internal/openclaw/budget` enforces a per-day ceiling, but a
+  // single Anthropic call with an inflated `max_tokens` could burn
+  // the entire daily budget in one round-trip. We cap the
+  // worst-case per-call spend (output tokens × output price) before
+  // dispatching so the failure surfaces locally without spending
+  // tokens. See `docs/security/hardening/M18-openclaw-per-call-usd-cap.md`.
+  const perCallCapUsd = parseMaxPerCallUsd(
+    process.env.OPENCLAW_MAX_PER_CALL_USD,
+  );
+  try {
+    assertPerCallCapAllowed(MODEL, MAX_TOKENS, perCallCapUsd);
+  } catch (e) {
+    if (e instanceof PerCallCapExceededError) {
+      incrementCounter(OPENCLAW_PER_CALL_CAP_HIT_TOTAL);
+    }
+    throw e;
+  }
 
   const reply = await runAgentLoop(input.client, input.userMessage, {
     model: MODEL,
