@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
-**Trigger:** PR touches deploy-config files (`vercel.json`, `fly.toml`, `railway.toml`, `Dockerfile*`, `Caddyfile`, `apps/server/build.mjs`) and the change is not pure-comment / pure-whitespace. The CI job `Deploy-config staging gate` will fail without the appropriate verification label.
+**Trigger:** PR has non-comment changes to deploy-config files (`vercel.json`, `fly.toml`, `railway.toml`, `Dockerfile*`, `Caddyfile`, `apps/server/build.mjs`) — `Deploy-config staging gate` CI fails without a verification label.
 
 ## Owner surface
 

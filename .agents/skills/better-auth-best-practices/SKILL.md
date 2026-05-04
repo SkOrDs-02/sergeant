@@ -38,7 +38,5 @@ Do not use this skill for generic API work that only happens to require a user i
 
 ## Playbooks
 
-- `docs/playbooks/grant-privileged-access.md` — granting elevated roles/scopes.
-- `docs/playbooks/revoke-privileged-access.md` — revoking sessions and tokens.
-- `docs/playbooks/respond-to-suspected-account-compromise.md` — incident path.
+- `docs/playbooks/access-governance.md` — canonical access governance playbook (grant, revoke, periodic review, suspected compromise) with decision tree.
 - Catalog: `docs/agents/agent-skills-catalog.md`.

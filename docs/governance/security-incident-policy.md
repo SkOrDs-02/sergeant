@@ -1,6 +1,6 @@
 # Security Incident Policy
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 Use this policy when the incident is primarily about identity compromise, privileged misuse, leaked credentials, or unauthorized access to sensitive systems.
@@ -59,6 +59,6 @@ A postmortem is mandatory when:
 
 ## Canonical routes
 
-- [respond-to-suspected-account-compromise.md](../playbooks/respond-to-suspected-account-compromise.md)
+- [access-governance.md § Suspected account compromise](../playbooks/access-governance.md#4-suspected-account-compromise)
 - [rotate-secrets.md](../playbooks/rotate-secrets.md)
 - [write-postmortem.md](../playbooks/write-postmortem.md)
