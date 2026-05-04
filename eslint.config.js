@@ -655,6 +655,20 @@ export default [
       "sergeant-design/rq-keys-only-from-factory": "error",
     },
   },
+  // M16: Telegram legacy `parse_mode: "Markdown"` is forbidden in Console
+  // sources — use `MarkdownV2` (or `HTML`). The legacy parser silently
+  // truncates on unbalanced markers and ignores zero-width Unicode
+  // sequences; V2 fails loudly. The custom rule lives in
+  // `packages/eslint-plugin-sergeant-design/index.js` so `no-restricted-syntax`
+  // does not collide with the M11 templated-query selectors that
+  // also live on `apps/console/**`. See
+  // `docs/security/hardening/M16-telegram-markdown-v2.md`.
+  {
+    files: ["apps/console/src/**/*.{js,ts}"],
+    rules: {
+      "sergeant-design/no-legacy-telegram-parse-mode": "error",
+    },
+  },
   // Anthropic key logging guardrail — prevents accidental logging of
   // `process.env.ANTHROPIC_API_KEY` or secret-like identifiers via
   // console.* / logger.* / pino.* / log.*. See AGENTS.md security rules.

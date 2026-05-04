@@ -2794,6 +2794,65 @@ const noHashRouterInModules = {
   },
 };
 
+// ─── no-legacy-telegram-parse-mode (M16) ─────────────────────────────
+//
+// Bans `parse_mode: "Markdown"` (the legacy Telegram parser) in favour
+// of `MarkdownV2` or `HTML`. The legacy parser silently truncates on
+// unbalanced markers and ignores zero-width Unicode sequences; V2
+// fails loudly. See `docs/security/hardening/M16-telegram-markdown-v2.md`.
+//
+// Selector matches **only** object-property `parse_mode: "Markdown"`,
+// so regex literals / string literals in tests (e.g. the
+// parse-mode-guard regression test that contains the literal string
+// inside a regex) are unaffected.
+
+const NO_LEGACY_TELEGRAM_PARSE_MODE_MESSAGE =
+  'Use parse_mode: "MarkdownV2" (or "HTML"); legacy "Markdown" silently truncates on unbalanced markers. See docs/security/hardening/M16-telegram-markdown-v2.md.';
+
+const noLegacyTelegramParseMode = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        'Disallow legacy Telegram parse_mode: "Markdown" — use MarkdownV2 or HTML.',
+    },
+    schema: [],
+    messages: { legacyParseMode: NO_LEGACY_TELEGRAM_PARSE_MODE_MESSAGE },
+  },
+  create(context) {
+    function isParseModeKey(node) {
+      // Identifier key: { parse_mode: ... }
+      if (node.key.type === "Identifier" && node.key.name === "parse_mode") {
+        return true;
+      }
+      // Literal-string key: { "parse_mode": ... }
+      if (
+        node.key.type === "Literal" &&
+        typeof node.key.value === "string" &&
+        node.key.value === "parse_mode"
+      ) {
+        return true;
+      }
+      return false;
+    }
+    function isMarkdownLiteral(node) {
+      return (
+        node.type === "Literal" &&
+        typeof node.value === "string" &&
+        node.value === "Markdown"
+      );
+    }
+    return {
+      Property(node) {
+        if (node.computed) return;
+        if (!isParseModeKey(node)) return;
+        if (!isMarkdownLiteral(node.value)) return;
+        context.report({ node: node.value, messageId: "legacyParseMode" });
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
@@ -2819,6 +2878,7 @@ const plugin = {
     "no-flat-shared-lib": noFlatSharedLib,
     "forbid-shell-only-feature": forbidShellOnlyFeature,
     "no-hash-router-in-modules": noHashRouterInModules,
+    "no-legacy-telegram-parse-mode": noLegacyTelegramParseMode,
   },
 };
 
@@ -2850,6 +2910,7 @@ export {
   NO_FLAT_SHARED_LIB_MESSAGE,
   NO_FLAT_SHARED_LIB_ALLOWED_TOP,
   NO_HASH_ROUTER_MESSAGE,
+  NO_LEGACY_TELEGRAM_PARSE_MODE_MESSAGE,
 };
 
 export default plugin;
