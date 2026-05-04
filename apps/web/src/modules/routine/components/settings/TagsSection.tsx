@@ -1,9 +1,16 @@
-import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useCallback,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
+import { z } from "zod";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
+import { useApiForm } from "@shared/forms/useApiForm";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { createTag, deleteTag, updateTag } from "../../lib/routineStorage";
 import type { RoutineState } from "../../lib/types";
@@ -15,6 +22,16 @@ export interface TagsSectionProps {
   setTagDraft: Dispatch<SetStateAction<string>>;
 }
 
+// Item #8 round-12: form-engine — `useApiForm` (zod + RHF) для inline rename.
+// Schema нормалізує whitespace через `.trim()` і відсікає порожні tag names —
+// раніше це робив `commitEdit` через `editingTagName.trim()` без валідації як
+// окремий крок, що створювало двозначність при `onBlur` після Backspace до пустого.
+const tagRenameSchema = z.object({
+  tagName: z.string().trim().min(1, "Назва тега не може бути порожньою"),
+});
+
+type TagRenameValues = z.infer<typeof tagRenameSchema>;
+
 export function TagsSection({
   routine,
   setRoutine,
@@ -22,18 +39,42 @@ export function TagsSection({
   setTagDraft,
 }: TagsSectionProps) {
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
-  const [editingTagName, setEditingTagName] = useState("");
-  const tagSavedRef = useRef(false);
   const toast = useToast();
 
-  const commitEdit = (id: string) => {
-    if (!tagSavedRef.current && editingTagName.trim()) {
-      tagSavedRef.current = true;
-      setRoutine((s) => updateTag(s, id, editingTagName));
-    }
+  // `useApiForm` тримає uniform pattern (server-error mapping залишається
+  // нульовим для local-only форм, як показав round-11 на Body.tsx). Submit
+  // спрацьовує і на Enter (native form submit), і на blur (через `submit()`
+  // imperatively); `isSubmitting`-guard всередині useApiForm дедуплікує
+  // одночасні виклики, замінюючи `tagSavedRef` antipattern із попередньої
+  // інкарнації.
+  const { register, submit, reset, isSubmitting, formState } = useApiForm<
+    TagRenameValues,
+    void
+  >({
+    schema: tagRenameSchema,
+    defaultValues: { tagName: "" },
+    onSubmit: async (values) => {
+      if (!editingTagId) return;
+      setRoutine((s) => updateTag(s, editingTagId, values.tagName));
+    },
+    onSuccess: () => {
+      setEditingTagId(null);
+      reset({ tagName: "" });
+    },
+  });
+
+  const startEdit = useCallback(
+    (id: string, name: string) => {
+      setEditingTagId(id);
+      reset({ tagName: name });
+    },
+    [reset],
+  );
+
+  const cancelEdit = useCallback(() => {
     setEditingTagId(null);
-    setEditingTagName("");
-  };
+    reset({ tagName: "" });
+  }, [reset]);
 
   return (
     <Card as="section" radius="lg" padding="md" className="space-y-3">
@@ -68,21 +109,25 @@ export function TagsSection({
             {editingTagId === t.id ? (
               <form
                 className="inline-flex items-center gap-1"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  commitEdit(t.id);
-                }}
+                onSubmit={submit}
               >
                 <Input
                   className="h-7! px-1.5! text-xs! w-24"
-                  value={editingTagName}
-                  onChange={(e) => setEditingTagName(e.target.value)}
-                  onBlur={() => commitEdit(t.id)}
+                  aria-label={`Назва тега ${t.name}`}
+                  aria-invalid={Boolean(formState.errors.tagName) || undefined}
+                  disabled={isSubmitting}
+                  {...register("tagName", {
+                    onBlur: () => {
+                      // Submit on blur, але тільки якщо input не порожній —
+                      // інакше zod refine впаде на min(1) і onSuccess не
+                      // зачинить edit, що дасть користувачу другу спробу.
+                      void submit();
+                    },
+                  })}
                   onKeyDown={(e) => {
                     if (e.key === "Escape") {
-                      tagSavedRef.current = true;
-                      setEditingTagId(null);
-                      setEditingTagName("");
+                      e.preventDefault();
+                      cancelEdit();
                     }
                   }}
                 />
@@ -93,11 +138,7 @@ export function TagsSection({
                 <button
                   type="button"
                   className="text-subtle hover:text-text min-w-[28px] min-h-[28px] flex items-center justify-center rounded-xl"
-                  onClick={() => {
-                    tagSavedRef.current = false;
-                    setEditingTagId(t.id);
-                    setEditingTagName(t.name);
-                  }}
+                  onClick={() => startEdit(t.id, t.name)}
                   aria-label={`Змінити ${t.name}`}
                 >
                   ✎
