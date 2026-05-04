@@ -1,6 +1,6 @@
 # Sergeant — незалежний аудит (Devin)
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 > **STATUS — historical record (2026-04-27): 30 / 31 closed.**
@@ -346,7 +346,7 @@
 **Що бачу:**
 
 - 23 playbooks у `docs/playbooks/` — кожен має «коли робити», «кроки», «гарантії», «приклади».
-- `docs/superpowers/specs/` — окрема директорія для специфікацій великих фіч.
+- `docs/agents/specs/` — окрема директорія для специфікацій великих фіч.
 - `docs/observability/{SLO.md, runbook.md, dashboards.md, prometheus/}` — повне operational documentation.
 - AI-marker система (`AI-NOTE`/`AI-CONTEXT`/`AI-DANGER`/`AI-GENERATED`/`AI-LEGACY: expires YYYY-MM-DD`) з `sergeant-design/ai-marker-syntax` ESLint rule (warn). Це формалізована documentation для AI-агентів, що пишуть код.
 - AGENTS.md фіксує **усі скоупи commit-message** як enum (no `monorepo`, no `app`, no `core`, no `all`).

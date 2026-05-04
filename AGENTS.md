@@ -3,13 +3,13 @@
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
-> **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/superpowers/agent-skills-catalog.md`.
+> **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/agents/agent-skills-catalog.md`.
 
 ## Agent operating system
 
 - Start here: `.agents/skills/sergeant-start-here/SKILL.md`
-- Skill routing catalog: `docs/superpowers/agent-skills-catalog.md`
-- Workflow decision trees: `docs/superpowers/agent-workflows.md`
+- Skill routing catalog: `docs/agents/agent-skills-catalog.md`
+- Workflow decision trees: `docs/agents/agent-workflows.md`
 - Execution recipes: `docs/playbooks/README.md`
 - Playbook lookup: `docs/playbooks/playbook-catalog.md`
 
@@ -798,7 +798,7 @@ Real regressions we've shipped — do not repeat:
 ## See also
 
 - [`docs/playbooks/README.md`](docs/playbooks/README.md) — full index of procedural recipes (with triggers and 🌳 decision-tree markers)
-- [`docs/superpowers/agent-skills-catalog.md`](docs/superpowers/agent-skills-catalog.md) — canonical routing table for repo-owned Sergeant skills
+- [`docs/agents/agent-skills-catalog.md`](docs/agents/agent-skills-catalog.md) — canonical routing table for repo-owned Sergeant skills
 - [`.agents/skills/`](.agents/skills/) — current `SKILL.md` files for AI agents; start with `sergeant-start-here`
 - [`docs/security/audit-exceptions.md`](docs/security/audit-exceptions.md) — tracked vulnerabilities with no available fix (audit-exception label workflow)
 - `docs/planning/ai-coding-improvements.md` — full roadmap for AI coding infra

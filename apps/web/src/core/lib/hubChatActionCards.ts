@@ -1,5 +1,5 @@
 // Lightweight mapper з tool-call result у структуровану action-картку.
-// За специфікацією `docs/superpowers/specs/2026-04-24-assistant-quick-actions-v1-design.md` §3.
+// За специфікацією `docs/agents/specs/2026-04-24-assistant-quick-actions-v1-design.md` §3.
 //
 // Без змін у `executeAction`/Anthropic протоколі — карти будуються
 // поруч і додаються до assistant-message як metadata. Якщо tool

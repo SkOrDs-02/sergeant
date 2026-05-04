@@ -98,7 +98,7 @@ const MUST_BE_OWNED = [
     reason: "threat model & SLA",
   },
   {
-    path: "docs/superpowers",
+    path: "docs/agents",
     kind: "tree",
     match: /\.md$/,
     reason: "agent skill catalog & workflow decision trees",

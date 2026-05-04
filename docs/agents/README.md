@@ -1,9 +1,11 @@
-# Superpowers
+# Agents
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-07-31.
 > **Status:** Active
 
-Операційний розділ для AI-агентів у Sergeant. Тут лежить не лише історія design specs, а й канонічна навігація по repo-owned skills.
+Операційний розділ для AI-агентів у Sergeant — це **operating system для AI-агентів, які працюють у репо**, а не AI-фічі продукту (HubChat, AI Coach, Mono-classifier тощо живуть під `apps/web` і `apps/server` і документуються в окремих модулях). Тут навігація по repo-owned skills, decision trees для типових flow і design specs.
+
+> **History:** до 2026-05-04 цей розділ називався `docs/superpowers/`. Перейменовано в межах initiative 0009 PR 2.2 для усунення термінологічної плутанини між «agent-OS surface» (цей розділ) і product-side AI features.
 
 ## З чого починати агенту
 

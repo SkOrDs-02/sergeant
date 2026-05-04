@@ -157,5 +157,5 @@ pnpm lint:skills     # перевірить shape + збіг хешів
 ## Де шукати далі
 
 - Повний doc index: [docs/README.md](./docs/README.md)
-- Agent operating system: [docs/superpowers/README.md](./docs/superpowers/README.md)
+- Agent operating system: [docs/agents/README.md](./docs/agents/README.md)
 - Planning/roadmaps: [docs/planning/README.md](./docs/planning/README.md)

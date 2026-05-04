@@ -2,7 +2,7 @@
 // user-facing capabilities. Drives the catalogue UI, in-chat quick-action
 // chips, and (post follow-up PR) the system prompt's tool list.
 //
-// Spec: docs/superpowers/specs/2026-04-25-assistant-capability-catalogue-design.md
+// Spec: docs/agents/specs/2026-04-25-assistant-capability-catalogue-design.md
 //
 // Invariants (enforced by assistantCatalogue.test.ts):
 //   - all `id` values are unique;

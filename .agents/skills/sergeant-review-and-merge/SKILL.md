@@ -26,7 +26,7 @@ Pay extra attention when the diff touches:
 - `apps/web/src/shared/lib/api/queryKeys.ts`
 - `apps/web/src/core/lib/hubChat*`
 - auth wiring, env docs, or deploy docs
-- `.agents/**`, `docs/superpowers/**`, `.github/**`
+- `.agents/**`, `docs/agents/**`, `.github/**`
 
 ## Findings Priority
 
@@ -40,4 +40,4 @@ Pay extra attention when the diff touches:
 - `docs/playbooks/release-web-and-api.md` — coordinated web + server release.
 - `docs/playbooks/release-mobile-shell.md` — mobile-shell coordinated release.
 - `docs/playbooks/declare-incident.md` — escalation when a merge regresses prod.
-- Catalog: `docs/superpowers/agent-skills-catalog.md`.
+- Catalog: `docs/agents/agent-skills-catalog.md`.

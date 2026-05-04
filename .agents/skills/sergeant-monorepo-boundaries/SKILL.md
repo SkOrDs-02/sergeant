@@ -36,4 +36,4 @@ Most bad Sergeant edits start with code landing in the wrong layer. Decide the o
 ## Playbooks
 
 - `docs/playbooks/cleanup-dead-code.md` — when extracting/retiring shared modules.
-- Catalog: `docs/superpowers/agent-skills-catalog.md`.
+- Catalog: `docs/agents/agent-skills-catalog.md`.
