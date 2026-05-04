@@ -18,6 +18,7 @@
 
 | Підрозділ                                              | Призначення                                                                    |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| [`onboarding.md`](./onboarding.md)                     | Перші 30 хвилин агента в Sergeant: секрети, БД, hard-rule навігація, plop.     |
 | [`agent-skills-catalog.md`](./agent-skills-catalog.md) | Scenario -> skill -> what it enforces.                                         |
 | [`agent-workflows.md`](./agent-workflows.md)           | Decision trees для feature, bugfix, review, migration, release.                |
 | [`specialists-mapping.md`](./specialists-mapping.md)   | Runtime `SpecialistAgent` ↔ governance skill ↔ primary playbook ↔ ADR.         |

@@ -1,6 +1,6 @@
 # Claude in Sergeant
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 > **Single source of truth → [AGENTS.md](./AGENTS.md).** Цей файл — тонкий вказівник із кількома Claude-specific нотатками. Уся repo policy, hard rules, routing catalog і playbook-індекс живуть там і в `docs/`.
@@ -11,6 +11,7 @@
 2. Почни з `.agents/skills/sergeant-start-here/SKILL.md`.
 3. Завантаж рівно один specialist skill для основної поверхні зміни.
 4. Якщо під задачу є playbook у [docs/playbooks/](./docs/playbooks/README.md) — виконуй його як canonical recipe.
+5. Перший раз у репо? Прогонись по [`docs/agents/onboarding.md`](./docs/agents/onboarding.md) — секрети, БД, hard-rule навігація, plop-генератори.
 
 ## Claude-specific нотатки
 
