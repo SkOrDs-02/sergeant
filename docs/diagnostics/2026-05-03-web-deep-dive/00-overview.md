@@ -87,7 +87,7 @@
 | 8   | Form-engine unification                            | 5      | 3    | 1.67  | [01 §3.1](./01-frontend-ergonomics.md)                                                                                 |
 | 9   | CloudSync split-brain integration tests            | 5      | 3    | 1.67  | [02 §2.3](./02-architecture-and-state.md)                                                                              |
 | 10  | C4-mermaid діаграми                                | 3      | 2    | 1.50  | [04 §9.2](./04-security-observability-testing-devx.md)                                                                 |
-| 11  | `index.css` decomposition                          | 3      | 2    | 1.50  | [02 §1.4](./02-architecture-and-state.md)                                                                              |
+| 11  | `index.css` decomposition                          | 3      | 2    | 1.50  | [02 §1.4](./02-architecture-and-state.md) — done (1244 → 35 LOC; 5 modules)                                            |
 | 12  | Rate-limiter `cost`-multiplier для AI streams      | 3      | 2    | 1.50  | [03 §4.5](./03-backend-and-performance.md)                                                                             |
 | 13  | OpenAPI generation + typed client out of zod       | 4      | 3    | 1.33  | [03 §4.7](./03-backend-and-performance.md)                                                                             |
 | 14  | Contract tests web↔server                          | 4      | 2    | 2.00  | [04 §7.4](./04-security-observability-testing-devx.md) — done (`/api/me` fixtures + consumer/producer tests)           |

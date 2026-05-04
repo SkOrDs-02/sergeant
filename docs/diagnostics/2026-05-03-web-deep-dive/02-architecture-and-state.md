@@ -109,8 +109,11 @@ ShortcutRegistryProvider
 
    ```ts
    const routes = defineStandaloneRoutes([
-     { path: '/auth', component: lazy(() => import('./auth/AuthPage')) },
-     { path: '/onboarding', component: lazy(() => import('./onboarding/OnboardingPage')) },
+     { path: "/auth", component: lazy(() => import("./auth/AuthPage")) },
+     {
+       path: "/onboarding",
+       component: lazy(() => import("./onboarding/OnboardingPage")),
+     },
    ]);
    ```
 
@@ -155,6 +158,8 @@ ShortcutRegistryProvider
 4. ESLint rule (`sergeant-design`): «no `@apply` with >5 tailwind classes» (можна зробити через PostCSS plugin).
 
 **Точковий план міграції.** PR_A → виносить tokens. PR_B → розбиває `index.css` на 4 файли. PR_C → переводить top-10 `@apply`-stack-ів на компоненти.
+
+> **Update 2026-05-04 (#PR_PLACEHOLDER_CSS):** PR_B відбувся. `index.css` тепер ≤35 LOC і містить лише `@import`-и + `@config`. Файли під `apps/web/src/styles/`: `theme.css` (CSS-vars light/dark + DM Sans fallback), `base.css` (reset + body + reduced-motion + iOS input-zoom), `utilities.css` (Tailwind v4 `@utility` rules), `components.css` (`.skeleton`, `.glass`, `.fab`, `.tooltip`, micro-interactions), `mobile.css` (touch-target floor, mobile-first helpers). `animations.css` і `module-surfaces.css` уже були винесені раніше. Cascade order збережено: tailwindcss → theme → base → utilities → components → mobile. Залишились **PR_A** (tokens у `packages/design-tokens/css/`) і **PR_C** (`@apply`-stack-и → компоненти).
 
 ---
 
@@ -216,12 +221,12 @@ ShortcutRegistryProvider
 
    ```ts
    // before
-   const x = JSON.parse(localStorage.getItem('key') || 'null');
-   localStorage.setItem('key', JSON.stringify(value));
+   const x = JSON.parse(localStorage.getItem("key") || "null");
+   localStorage.setItem("key", JSON.stringify(value));
 
    // after
-   const x = safeReadLS('key', schema);
-   safeWriteLS('key', value, schema);
+   const x = safeReadLS("key", schema);
+   safeWriteLS("key", value, schema);
    ```
 
 3. ESLint allowlist уже сам по собі сигнал — додай у CI annotation «allowlist скоротився на N рядків з минулого major-релізу». Якщо за квартал 0 progress — automatic block.
@@ -304,16 +309,16 @@ ShortcutRegistryProvider
 
 ## Прив'язка до roadmap (00-overview)
 
-| Item у roadmap | Section тут |
-| --- | --- |
-| `tsconfig.strict: true` для `apps/web` поетапно | §1.0 |
-| Provider-tree інваріант-тест | §1.1 |
-| Routing — типобезпечний registry | §1.2 |
-| `@deprecated_after` marker для sync v1 | §1.3 |
-| `index.css` decomposition | §1.4 |
-| `SERVER_ROLE=api|worker|all` + event-loop SLO | §1.6 |
-| `localStorage` 17 → 0 codemod | §2.2 |
-| CloudSync split-brain integration tests | §2.3 |
-| `useCloudSync` split на read/write | §2.4 |
+| Item у roadmap                                  | Section тут |
+| ----------------------------------------------- | ----------- | --------------------- | ---- |
+| `tsconfig.strict: true` для `apps/web` поетапно | §1.0        |
+| Provider-tree інваріант-тест                    | §1.1        |
+| Routing — типобезпечний registry                | §1.2        |
+| `@deprecated_after` marker для sync v1          | §1.3        |
+| `index.css` decomposition                       | §1.4        |
+| `SERVER_ROLE=api                                | worker      | all` + event-loop SLO | §1.6 |
+| `localStorage` 17 → 0 codemod                   | §2.2        |
+| CloudSync split-brain integration tests         | §2.3        |
+| `useCloudSync` split на read/write              | §2.4        |
 
 > **Tracker.** Кожен item після впровадження → `docs/tech-debt/frontend.md` (frontend-side) або `docs/tech-debt/backend.md` (server-side) з фіналізованим статусом.
