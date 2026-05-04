@@ -24,17 +24,17 @@ freshness-маркером (див. `scripts/check-tech-debt-freshness.mjs`).
 
 ## Документи
 
-| Документ                                                                                     | Опис                                                | Status   | Implemented | Outstanding | Tracker                                                                                |
-| -------------------------------------------------------------------------------------------- | --------------------------------------------------- | -------- | ----------- | ----------- | -------------------------------------------------------------------------------------- |
-| [`2026-04-26-sergeant-audit-devin.md`](./2026-04-26-sergeant-audit-devin.md)                 | Незалежний аудит Devin (historical record)          | Closed   | 30/31       | 1           | embedded таблиця у самому файлі                                                        |
-| [`2026-04-28-sergeant-comprehensive-audit.md`](./2026-04-28-sergeant-comprehensive-audit.md) | Комплексний генеральний аудит                       | Closed   | 12/18 ≈     | 6 ≈         | [`2026-04-28-implementation-roadmap.md`](./2026-04-28-implementation-roadmap.md)       |
-| [`2026-04-28-implementation-roadmap.md`](./2026-04-28-implementation-roadmap.md)             | План реалізації покращень                           | Active   | —           | —           | self                                                                                   |
-| [`2026-05-02-doc-hygiene-audit.md`](./2026-05-02-doc-hygiene-audit.md)                       | Doc-hygiene аудит — структура, freshness, dead code | Active   | 3/5 ≈       | 2 ≈         | embedded fix list                                                                      |
-| [`2026-05-03-readme-gap-analysis.md`](./2026-05-03-readme-gap-analysis.md)                   | README gap analysis — що відсутнє у root README     | Active   | 0/8 ≈       | 8 ≈         | self                                                                                   |
-| [`UX-UI-AUDIT-2026.md`](./UX-UI-AUDIT-2026.md)                                               | UX/UI аудит 2026                                    | Closed   | —           | —           | [`UX-IMPROVEMENT-PLAN.md`](./UX-IMPROVEMENT-PLAN.md)                                   |
-| [`UX-IMPROVEMENT-PLAN.md`](./UX-IMPROVEMENT-PLAN.md)                                         | Технічний план покращення UX                        | Active   | —           | —           | self                                                                                   |
-| [`2026-05-03-ftux-onboarding-roast.md`](./2026-05-03-ftux-onboarding-roast.md)               | Web FTUX onboarding roast — 6 P0 + 22 рекомендацій  | Active   | 0/6 P0 ≈    | 6 P0 ≈      | self                                                                                   |
-| [`archive/ux-audit-2025.md`](./archive/ux-audit-2025.md)                                     | UX-аудит 2025                                       | Archived | n/a         | n/a         | superseded by [`UX-UI-AUDIT-2026.md`](./UX-UI-AUDIT-2026.md)                           |
+| Документ                                                                                     | Опис                                                | Status   | Implemented | Outstanding | Tracker                                                                          |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------- | -------- | ----------- | ----------- | -------------------------------------------------------------------------------- |
+| [`2026-04-26-sergeant-audit-devin.md`](./2026-04-26-sergeant-audit-devin.md)                 | Незалежний аудит Devin (historical record)          | Closed   | 30/31       | 1           | embedded таблиця у самому файлі                                                  |
+| [`2026-04-28-sergeant-comprehensive-audit.md`](./2026-04-28-sergeant-comprehensive-audit.md) | Комплексний генеральний аудит                       | Closed   | 12/18 ≈     | 6 ≈         | [`2026-04-28-implementation-roadmap.md`](./2026-04-28-implementation-roadmap.md) |
+| [`2026-04-28-implementation-roadmap.md`](./2026-04-28-implementation-roadmap.md)             | План реалізації покращень                           | Active   | —           | —           | self                                                                             |
+| [`2026-05-02-doc-hygiene-audit.md`](./2026-05-02-doc-hygiene-audit.md)                       | Doc-hygiene аудит — структура, freshness, dead code | Active   | 3/5 ≈       | 2 ≈         | embedded fix list                                                                |
+| [`2026-05-03-readme-gap-analysis.md`](./2026-05-03-readme-gap-analysis.md)                   | README gap analysis — що відсутнє у root README     | Active   | 0/8 ≈       | 8 ≈         | self                                                                             |
+| [`UX-UI-AUDIT-2026.md`](./UX-UI-AUDIT-2026.md)                                               | UX/UI аудит 2026                                    | Closed   | —           | —           | [`UX-IMPROVEMENT-PLAN.md`](./UX-IMPROVEMENT-PLAN.md)                             |
+| [`UX-IMPROVEMENT-PLAN.md`](./UX-IMPROVEMENT-PLAN.md)                                         | Технічний план покращення UX                        | Active   | —           | —           | self                                                                             |
+| [`2026-05-03-ftux-onboarding-roast.md`](./2026-05-03-ftux-onboarding-roast.md)               | Web FTUX onboarding roast — 6 P0 + 22 рекомендацій  | Active   | 0/6 P0 ≈    | 6 P0 ≈      | self                                                                             |
+| [`archive/ux-audit-2025.md`](./archive/ux-audit-2025.md)                                     | UX-аудит 2025                                       | Archived | n/a         | n/a         | superseded by [`UX-UI-AUDIT-2026.md`](./UX-UI-AUDIT-2026.md)                     |
 
 ## Diagnostics (ad-hoc deep-dives)
 
@@ -43,9 +43,9 @@ freshness-маркером (див. `scripts/check-tech-debt-freshness.mjs`).
 зріз системи й завершуються коротким roadmap'ом. Лінкаються звідси,
 бо часто породжують нові tracker-items для активних аудитів.
 
-| Документ                                                                                     | Опис                                                                                | Status   | Implemented | Outstanding |
-| -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------- | ----------- | ----------- |
-| [`../diagnostics/2026-05-03-web-deep-dive/`](../diagnostics/2026-05-03-web-deep-dive/)       | Web deep-dive — 18-item roadmap (forms, state, security, observability, DevX)       | Active   | 5/18        | 13          |
+| Документ                                                                               | Опис                                                                          | Status | Implemented | Outstanding |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------ | ----------- | ----------- |
+| [`../diagnostics/2026-05-03-web-deep-dive/`](../diagnostics/2026-05-03-web-deep-dive/) | Web deep-dive — 18-item roadmap (forms, state, security, observability, DevX) | Active | 5/18        | 13          |
 
 ## Process
 

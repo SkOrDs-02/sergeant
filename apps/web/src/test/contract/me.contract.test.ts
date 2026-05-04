@@ -102,8 +102,8 @@ describe("contract: /api/me", () => {
         createdAt: "2026-01-01T00:00:00.000Z",
       },
     };
-    globalThis.fetch = vi.fn(
-      async () => jsonResponse(broken),
+    globalThis.fetch = vi.fn(async () =>
+      jsonResponse(broken),
     ) as unknown as typeof fetch;
 
     const http = createHttpClient({ baseUrl: "http://contract.test" });

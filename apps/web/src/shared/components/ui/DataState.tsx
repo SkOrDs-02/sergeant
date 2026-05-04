@@ -148,12 +148,7 @@ function DefaultErrorFallback<TError>({
     >
       <p className="font-semibold">Помилка</p>
       <p className="mt-1 text-xs opacity-90">{message}</p>
-      <Button
-        variant="secondary"
-        size="xs"
-        className="mt-3"
-        onClick={onRetry}
-      >
+      <Button variant="secondary" size="xs" className="mt-3" onClick={onRetry}>
         Спробувати ще
       </Button>
     </div>
