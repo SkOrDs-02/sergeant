@@ -173,6 +173,9 @@ describe("sqlite/syncOpOutbox schema snapshot", () => {
       "idempotency_key",
       "status",
       "reject_reason",
+      "attempts",
+      "next_retry_at",
+      "last_error",
       "created_at",
     ]);
   });
@@ -216,16 +219,30 @@ describe("sqlite/syncOpOutbox schema snapshot", () => {
     expect(columnMap["reject_reason"]!.dataType).toBe("string");
     expect(columnMap["reject_reason"]!.notNull).toBe(false);
 
+    // attempts INTEGER NOT NULL DEFAULT 0 — PR #040 retry counter.
+    expect(columnMap["attempts"]!.dataType).toBe("number");
+    expect(columnMap["attempts"]!.notNull).toBe(true);
+    expect(columnMap["attempts"]!.hasDefault).toBe(true);
+
+    // next_retry_at TEXT (nullable, ISO-8601 — earliest retry).
+    expect(columnMap["next_retry_at"]!.dataType).toBe("string");
+    expect(columnMap["next_retry_at"]!.notNull).toBe(false);
+
+    // last_error TEXT (nullable, free-form transient-error reason).
+    expect(columnMap["last_error"]!.dataType).toBe("string");
+    expect(columnMap["last_error"]!.notNull).toBe(false);
+
     // created_at TEXT NOT NULL DEFAULT (datetime('now'))
     expect(columnMap["created_at"]!.dataType).toBe("string");
     expect(columnMap["created_at"]!.notNull).toBe(true);
     expect(columnMap["created_at"]!.hasDefault).toBe(true);
   });
 
-  it("declares both indexes (UNIQUE on idempotency_key, partial pending)", () => {
+  it("declares all three indexes (UNIQUE idem, partial pending, partial pending+due)", () => {
     const indexNames = config.indexes.map((i) => i.config.name);
     expect(indexNames).toContain("sync_op_outbox_idem_uniq_lite");
     expect(indexNames).toContain("sync_op_outbox_pending_idx_lite");
+    expect(indexNames).toContain("sync_op_outbox_pending_due_idx_lite");
   });
 
   it("idempotency_key index is UNIQUE", () => {
@@ -244,12 +261,24 @@ describe("sqlite/syncOpOutbox schema snapshot", () => {
     expect(pendingIdx!.config.where).toBeDefined();
   });
 
+  it("pending+due partial index has WHERE clause on status (PR #040)", () => {
+    const dueIdx = config.indexes.find(
+      (i) => i.config.name === "sync_op_outbox_pending_due_idx_lite",
+    );
+    expect(dueIdx).toBeDefined();
+    expect(dueIdx!.config.where).toBeDefined();
+  });
+
   it("exposes a stable enum tuple of allowed `op` values", () => {
     expect(SYNC_OP_OUTBOX_OPS).toEqual(["insert", "update", "delete"]);
   });
 
   it("exposes a stable enum tuple of allowed `status` values", () => {
-    expect(SYNC_OP_OUTBOX_STATUSES).toEqual(["pending", "rejected"]);
+    expect(SYNC_OP_OUTBOX_STATUSES).toEqual([
+      "pending",
+      "rejected",
+      "dead_letter",
+    ]);
   });
 });
 
@@ -291,11 +320,27 @@ describe("sqlite/syncOpCursor schema snapshot", () => {
 });
 
 describe("sqlite/migrations exports", () => {
-  it("exports a single 001_routine_spike.sql migration", () => {
-    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(1);
+  it("exports the SPIKE migration first, then the PR #040 retry-policy migration", () => {
+    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(2);
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.name).toBe("001_routine_spike.sql");
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS routine_entries/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[1]!.name).toBe(
+      "002_sync_op_outbox_retry.sql",
+    );
+    // The retry-policy migration rebuilds sync_op_outbox via the
+    // SQLite "12-step ALTER" recipe (rename → re-create → backfill →
+    // drop). Each anchor below would change in a way the test should
+    // notice, so we lock all three.
+    expect(ROUTINE_CLIENT_MIGRATIONS[1]!.sql).toMatch(
+      /ALTER TABLE sync_op_outbox RENAME TO sync_op_outbox_legacy/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[1]!.sql).toMatch(
+      /CHECK \(status IN \('pending','rejected','dead_letter'\)\)/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[1]!.sql).toMatch(
+      /sync_op_outbox_pending_due_idx_lite/,
     );
   });
 
