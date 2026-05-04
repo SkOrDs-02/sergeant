@@ -7,6 +7,7 @@ import { useFinykBackupSync } from "./useFinykBackupSync";
 import { useFinykDualWriteBoot } from "./useFinykDualWriteBoot";
 import { useFinykDualWriteSync } from "./useFinykDualWriteSync";
 import { useFinykSqliteReadBoot } from "./useFinykSqliteReadBoot";
+import { useFinykMonoMirrorBoot } from "./useFinykMonoMirrorBoot";
 
 // Public type re-exports — стабільний import path для зовнішніх consumer-ів
 // (`AssetsForm.tsx`, `Overview.tsx`, тощо). Декомпозиція внутрішнього коду
@@ -66,6 +67,10 @@ export function useStorage({
   // values returned to consumers reflect the SQLite cache once it
   // warms; LS reads stay as a synchronous first-paint fallback.
   useFinykSqliteReadBoot();
+  // PR #038 — boot the Mono cache mirror so `useMonobankWebhook` can
+  // overlay reads from the local `finyk_mono_*` tables before the
+  // first network fetch lands.
+  useFinykMonoMirrorBoot();
 
   const {
     hiddenAccounts,

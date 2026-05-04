@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-04 by Devin — **Stage 1 COMPLETE, Stage 4 Finyk read-overlay in CI.** Stage 1: all 8/8 PRs landed (PR #008 `ff217246`, PR #010 [#1543](https://github.com/Skords-01/Sergeant/pull/1543), PR #013 via 4 sub-PRs). Stage 4 Fizruk: 5/5 PRs merged (PR #027–#030 + #029a). Stage 4 Nutrition: PR #031 / #032 / #033 LANDED ([#1574](https://github.com/Skords-01/Sergeant/pull/1574)), PR #034 LANDED ([#1636](https://github.com/Skords-01/Sergeant/pull/1636)). Stage 4 Finyk: PR #035 LANDED ([#1667](https://github.com/Skords-01/Sergeant/pull/1667) — schema + apply-fns), PR #036 LANDED ([#1680](https://github.com/Skords-01/Sergeant/pull/1680) — dual-write web + mobile), PR #037 IN CI (read-overlay web + mobile under `feature.finyk.sqlite_v2.read_sqlite`, default off). Stage 0: PR #003 LANDED ([#1497](https://github.com/Skords-01/Sergeant/pull/1497)). Boot-wiring follow-up для `register{Routine,Fizruk,Nutrition}DualWriteContext` ще не залендили. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by Devin — **Stage 1 COMPLETE, Stage 4 Finyk Mono mirror in CI.** Stage 1: all 8/8 PRs landed (PR #008 `ff217246`, PR #010 [#1543](https://github.com/Skords-01/Sergeant/pull/1543), PR #013 via 4 sub-PRs). Stage 4 Fizruk: 5/5 PRs merged (PR #027–#030 + #029a). Stage 4 Nutrition: PR #031 / #032 / #033 LANDED ([#1574](https://github.com/Skords-01/Sergeant/pull/1574)), PR #034 LANDED ([#1636](https://github.com/Skords-01/Sergeant/pull/1636)). Stage 4 Finyk: PR #035 LANDED ([#1667](https://github.com/Skords-01/Sergeant/pull/1667) — schema + apply-fns), PR #036 LANDED ([#1680](https://github.com/Skords-01/Sergeant/pull/1680) — dual-write web + mobile), PR #037 LANDED (`c89870c6` — read-overlay web + mobile under `feature.finyk.sqlite_v2.read_sqlite`, default off), PR #038 IN CI (Mono cache mirror у `finyk_mono_*` SQLite таблицях під `feature.finyk.sqlite_v2.mono_mirror`, default off). Stage 0: PR #003 LANDED ([#1497](https://github.com/Skords-01/Sergeant/pull/1497)). Boot-wiring follow-up для `register{Routine,Fizruk,Nutrition}DualWriteContext` ще не залендили. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -1075,7 +1075,7 @@ show_balance, updated_at, deleted_at)` — об'єднує
   apply-fns ландять у PR #035). Reads з SQLite — PR #037.
 - **Dep.** PR #035 (schema + client migration runner).
 
-##### **PR #037 — `feat(finyk-domain): cut-over reads to SQLite under feature flag`** ⏳ IN CI
+##### **PR #037 — `feat(finyk-domain): cut-over reads to SQLite under feature flag`** ✅ LANDED (`c89870c6`)
 
 - Mirror PR #029 + PR #029a (web + mobile fizruk read overlay) і
   PR #033 (nutrition read overlay) для finyk. Feature flag
@@ -1105,7 +1105,7 @@ show_balance, updated_at, deleted_at)` — об'єднує
   `module_data.finyk` (PR #039).
 - **Dep.** PR #036 (dual-write).
 
-##### **PR #038 — `feat(finyk-domain): client-side Mono cache mirror in SQLite`** ⏳ DRAFT
+##### **PR #038 — `feat(finyk-domain): client-side Mono cache mirror in SQLite`** ⏳ IN CI
 
 > **Чому окрема PR.** На відміну від інших finyk-доменів (user-edited),
 > Mono кеші — реплікація **зовнішнього** API source-of-truth.

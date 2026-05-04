@@ -53,6 +53,9 @@ export {
   finykTxCategories,
   finykTxSplits,
   finykMonoDebtLinks,
+  finykMonoTransactions,
+  finykMonoAccounts,
+  finykMonoAccountSnapshots,
   finykNetworthHistory,
   finykPrefs,
 } from "./finyk.js";

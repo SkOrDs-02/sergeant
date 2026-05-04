@@ -564,6 +564,61 @@ CREATE TABLE IF NOT EXISTS finyk_prefs (
 );
 `;
 
+// ---------------------------------------------------------------------------
+// Finyk module — Stage 4 / PR #038 — Mono cache mirror
+//
+// Adds three client-only tables that mirror the Mono cache LS keys
+// (`finyk_tx_cache`, `finyk_info_cache`, `finyk_tx_cache_last_good`)
+// into per-row SQLite. Mono is the external source-of-truth — rows
+// are upserted by `(user_id, tx_id)` with LWW against Mono's own
+// `time` field. No Postgres counterpart: server-side Mono integration
+// already lives in `apps/server/src/modules/finyk/` with its own
+// row-level schema, so we don't push these client mirrors back
+// through op-log. See `packages/db-schema/src/sqlite/finyk.ts`.
+// ---------------------------------------------------------------------------
+
+const FINYK_002_SQL = `
+CREATE TABLE IF NOT EXISTS finyk_mono_transactions (
+  user_id      TEXT NOT NULL,
+  tx_id        TEXT NOT NULL,
+  account_id   TEXT NOT NULL,
+  mono_time    INTEGER NOT NULL,
+  data_json    TEXT NOT NULL DEFAULT '{}',
+  imported_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, tx_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_mono_transactions_user_time_idx_lite
+  ON finyk_mono_transactions (user_id, mono_time DESC);
+
+CREATE INDEX IF NOT EXISTS finyk_mono_transactions_user_account_idx_lite
+  ON finyk_mono_transactions (user_id, account_id, mono_time DESC);
+
+CREATE TABLE IF NOT EXISTS finyk_mono_accounts (
+  user_id      TEXT NOT NULL,
+  account_id   TEXT NOT NULL,
+  data_json    TEXT NOT NULL DEFAULT '{}',
+  imported_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, account_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_mono_accounts_user_idx_lite
+  ON finyk_mono_accounts (user_id);
+
+CREATE TABLE IF NOT EXISTS finyk_mono_account_snapshots (
+  user_id       TEXT NOT NULL,
+  account_id    TEXT NOT NULL,
+  snapshot_at   TEXT NOT NULL,
+  balance       INTEGER NOT NULL DEFAULT 0,
+  credit_limit  INTEGER,
+  data_json     TEXT NOT NULL DEFAULT '{}',
+  PRIMARY KEY (user_id, account_id, snapshot_at)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_mono_account_snapshots_account_time_idx_lite
+  ON finyk_mono_account_snapshots (user_id, account_id, snapshot_at DESC);
+`;
+
 /**
  * Ordered list of bundled client migrations for the Finyk module on
  * SQLite. Pass this directly to `runMigrations` from
@@ -577,6 +632,7 @@ CREATE TABLE IF NOT EXISTS finyk_prefs (
  */
 export const FINYK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_finyk_tables.sql", sql: FINYK_001_SQL },
+  { name: "002_finyk_mono_mirror.sql", sql: FINYK_002_SQL },
 ] as const;
 
 /**

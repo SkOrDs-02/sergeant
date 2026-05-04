@@ -337,6 +337,85 @@ export const finykNetworthHistory = sqliteTable(
 );
 
 // ---------------------------------------------------------------------
+// Mono cache mirror — Stage 4 / PR #038
+//
+// Replicates the three Mono cache LS keys (FINYK_TX_CACHE,
+// FINYK_INFO_CACHE, FINYK_TX_CACHE_LAST_GOOD) into per-row SQLite
+// tables. Rows are upserted by `(user_id, tx_id)` with LWW comparison
+// against Mono's own `time` field (Unix seconds) — Mono is the
+// external source-of-truth, so write-ordering follows the API's
+// monotonic clock rather than our local `updated_at`.
+//
+// No PG counterpart: server-side Mono integration already lives in
+// `apps/server/src/modules/finyk/` with its own row-level Postgres
+// schema, so we don't push these client mirrors back through op-log.
+// ---------------------------------------------------------------------
+
+export const finykMonoTransactions = sqliteTable(
+  "finyk_mono_transactions",
+  {
+    userId: text("user_id").notNull(),
+    txId: text("tx_id").notNull(),
+    accountId: text("account_id").notNull(),
+    monoTime: integer("mono_time").notNull(),
+    dataJson: text("data_json").notNull().default("{}"),
+    importedAt: text("imported_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.txId] }),
+    index("finyk_mono_transactions_user_time_idx_lite").on(
+      table.userId,
+      sql`${table.monoTime} DESC`,
+    ),
+    index("finyk_mono_transactions_user_account_idx_lite").on(
+      table.userId,
+      table.accountId,
+      sql`${table.monoTime} DESC`,
+    ),
+  ],
+);
+
+export const finykMonoAccounts = sqliteTable(
+  "finyk_mono_accounts",
+  {
+    userId: text("user_id").notNull(),
+    accountId: text("account_id").notNull(),
+    dataJson: text("data_json").notNull().default("{}"),
+    importedAt: text("imported_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.accountId] }),
+    index("finyk_mono_accounts_user_idx_lite").on(table.userId),
+  ],
+);
+
+export const finykMonoAccountSnapshots = sqliteTable(
+  "finyk_mono_account_snapshots",
+  {
+    userId: text("user_id").notNull(),
+    accountId: text("account_id").notNull(),
+    snapshotAt: text("snapshot_at").notNull(),
+    balance: integer().notNull().default(0),
+    creditLimit: integer("credit_limit"),
+    dataJson: text("data_json").notNull().default("{}"),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.userId, table.accountId, table.snapshotAt],
+    }),
+    index("finyk_mono_account_snapshots_account_time_idx_lite").on(
+      table.userId,
+      table.accountId,
+      sql`${table.snapshotAt} DESC`,
+    ),
+  ],
+);
+
+// ---------------------------------------------------------------------
 // Singleton prefs
 // ---------------------------------------------------------------------
 

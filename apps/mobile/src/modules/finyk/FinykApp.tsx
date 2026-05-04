@@ -21,6 +21,7 @@ import { Overview } from "./pages/Overview";
 import type { OverviewNavRoute } from "./pages/Overview";
 import { useFinykDualWriteBoot } from "./hooks/useFinykDualWriteBoot";
 import { useFinykSqliteReadBoot } from "./hooks/useFinykSqliteReadBoot";
+import { useFinykMonoMirrorBoot } from "./hooks/useFinykMonoMirrorBoot";
 
 export function FinykApp() {
   // Stage 4 PR #036: install the dual-write context once the user is
@@ -34,6 +35,11 @@ export function FinykApp() {
   // first-paint values for the local SQLite mirror. Idempotent + flag-
   // gated; a no-op when the flag is off.
   useFinykSqliteReadBoot();
+  // Stage 4 PR #038: boot the Mono cache mirror so MMKV-backed Mono
+  // reads can be overlaid from the local `finyk_mono_*` SQLite tables
+  // before the next live fetch lands. Idempotent + flag-gated; a
+  // no-op when `feature.finyk.sqlite_v2.mono_mirror` is off.
+  useFinykMonoMirrorBoot();
 
   const router = useRouter();
   const handleNavigate = useCallback(

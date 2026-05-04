@@ -18,6 +18,23 @@ import {
 } from "../../../core/observability/analytics";
 import { fetchAllMonoTransactions } from "./monoTransactionsLoader";
 import { writeJSON, removeItem } from "../lib/finykStorage";
+import { apiQueryKeys } from "@sergeant/api-client/react";
+import type { MeResponse } from "@sergeant/api-client";
+import { getSqliteDb } from "../../../core/db/sqlite";
+import { migrateFinyk } from "../lib/clientMigrate";
+import {
+  writeMonoTransactions,
+  writeMonoAccounts,
+  writeMonoAccountSnapshots,
+} from "../lib/monoMirror";
+import {
+  getCachedFinykMonoMirrorState,
+  refreshFinykMonoMirrorState,
+} from "../lib/monoMirrorReader";
+import {
+  notifyFinykMonoMirrorRefresh,
+  useFinykMonoMirrorGate,
+} from "../lib/monoMirrorGate";
 
 /**
  * Legacy localStorage keys still read by other surfaces (Hub previews,
@@ -71,6 +88,17 @@ export function useMonobankWebhook({
   enabled = true,
 }: { enabled?: boolean } = {}) {
   const queryClient = useQueryClient();
+  // PR #038 — read the authenticated user id straight from the React
+  // Query cache instead of `useUser()` / `useAuth()`. The `me` cache is
+  // hydrated by `AuthProvider` (web) / mobile app shell, so by the
+  // time `useMonobankWebhook` renders inside FinykApp the entry is
+  // there. Reading via `queryClient.getQueryData` keeps this hook
+  // testable without forcing an `ApiClientProvider` / `AuthProvider`
+  // wrapper into existing isolated unit tests.
+  const meData =
+    queryClient.getQueryData<MeResponse>(apiQueryKeys.me.current()) ?? null;
+  const userId = meData?.user?.id ?? null;
+  const { enabled: mirrorEnabled, tick: mirrorTick } = useFinykMonoMirrorGate();
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState("");
   const [authError, setAuthError] = useState("");
@@ -180,6 +208,83 @@ export function useMonobankWebhook({
     if (!clientInfo) return;
     writeJSON(LEGACY_INFO_CACHE_KEY, { token: "", info: clientInfo });
   }, [clientInfo]);
+
+  // PR #038 — Mono cache mirror.
+  //
+  // Best-effort write into the SQLite mirror tables on every successful
+  // Mono fetch. Runs alongside the LS shim above so the mirror stays
+  // a strict superset of LS during the experiment. Failures are
+  // swallowed — the LS write above remains the source-of-truth until
+  // the read overlay flag is flipped on per-user.
+  useEffect(() => {
+    if (!mirrorEnabled || !userId || transactions.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const handle = await getSqliteDb();
+        const client = handle.migrationClient();
+        await migrateFinyk(client);
+        if (cancelled) return;
+        await writeMonoTransactions(client, userId, transactions);
+        if (cancelled) return;
+        await refreshFinykMonoMirrorState(client, userId);
+        if (!cancelled) notifyFinykMonoMirrorRefresh();
+      } catch (err) {
+        console.warn(
+          "[finyk.monoMirror] write transactions failed",
+          err instanceof Error ? err.message : err,
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [transactions, userId, mirrorEnabled]);
+
+  useEffect(() => {
+    if (!mirrorEnabled || !userId || accounts.length === 0) return;
+    let cancelled = false;
+    const snapshotAt = new Date().toISOString();
+    void (async () => {
+      try {
+        const handle = await getSqliteDb();
+        const client = handle.migrationClient();
+        await migrateFinyk(client);
+        if (cancelled) return;
+        await writeMonoAccounts(client, userId, accounts);
+        if (cancelled) return;
+        await writeMonoAccountSnapshots(client, userId, accounts, snapshotAt);
+        if (cancelled) return;
+        await refreshFinykMonoMirrorState(client, userId);
+        if (!cancelled) notifyFinykMonoMirrorRefresh();
+      } catch (err) {
+        console.warn(
+          "[finyk.monoMirror] write accounts failed",
+          err instanceof Error ? err.message : err,
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [accounts, userId, mirrorEnabled]);
+
+  // Read overlay — when the network slice is empty (cold start, fetch
+  // pending) and the flag is on, return the mirrored transactions so
+  // the UI can paint cached data immediately. Live data wins as soon
+  // as the first successful fetch lands.
+  const overlayTransactions: Transaction[] = useMemo(() => {
+    if (!mirrorEnabled) return transactions;
+    if (transactions.length > 0) return transactions;
+    // `mirrorTick` is intentionally listed even though `useMemo`
+    // doesn't reference it directly — bumping the tick is the signal
+    // that `getCachedFinykMonoMirrorState()` returns a different
+    // value than on the previous render. Without it the memo would
+    // never re-evaluate after the first cold-start refresh.
+    void mirrorTick;
+    const cached = getCachedFinykMonoMirrorState();
+    return cached.transactions.length > 0 ? cached.transactions : transactions;
+  }, [mirrorEnabled, transactions, mirrorTick]);
 
   const lastUpdated: Date | null = useMemo(() => {
     if (syncStateData?.lastEventAt) {
@@ -389,8 +494,8 @@ export function useMonobankWebhook({
     token: "",
     clientInfo,
     accounts,
-    transactions,
-    realTx: transactions,
+    transactions: overlayTransactions,
+    realTx: overlayTransactions,
     connecting,
     loadingTx,
     error,
