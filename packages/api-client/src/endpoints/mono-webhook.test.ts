@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createHttpClient } from "../httpClient";
+import { firstCall } from "../__test-utils/firstCall";
 import { createMonoWebhookEndpoints } from "./mono";
 
 type FetchMock = ReturnType<typeof vi.fn>;
@@ -41,7 +42,7 @@ describe("createMonoWebhookEndpoints", () => {
 
     expect(result).toEqual(syncData);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const url = fetchMock.mock.calls[0][0] as string;
+    const url = firstCall(fetchMock)[0] as string;
     expect(url).toContain("/mono/sync-state");
   });
 
@@ -114,10 +115,7 @@ describe("createMonoWebhookEndpoints", () => {
     });
 
     expect(result).toEqual(page);
-    const url = new URL(
-      fetchMock.mock.calls[0][0] as string,
-      "http://localhost",
-    );
+    const url = new URL(firstCall(fetchMock)[0] as string, "http://localhost");
     expect(url.pathname).toContain("/mono/transactions");
   });
 
@@ -136,7 +134,7 @@ describe("createMonoWebhookEndpoints", () => {
     await endpoints.backfill();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [url, init] = firstCall(fetchMock) as [string, RequestInit];
     expect(url).toContain("/mono/backfill");
     expect(init.method).toBe("POST");
   });
@@ -161,7 +159,7 @@ describe("createMonoWebhookEndpoints", () => {
     const result = await endpoints.backfillProgress();
 
     expect(result).toEqual(snapshot);
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [url, init] = firstCall(fetchMock) as [string, RequestInit];
     expect(url).toContain("/mono/backfill-progress");
     // HttpClient defaults GET to no `method` field; explicit POSTs set it.
     expect(init.method ?? "GET").toBe("GET");
@@ -179,7 +177,7 @@ describe("createMonoWebhookEndpoints", () => {
     const result = await endpoints.connect("my-token");
 
     expect(result).toEqual({ status: "active", accountsCount: 2 });
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [, init] = firstCall(fetchMock) as [string, RequestInit];
     expect(init.method).toBe("POST");
     const body = JSON.parse(init.body as string);
     expect(body.token).toBe("my-token");
@@ -199,7 +197,7 @@ describe("createMonoWebhookEndpoints", () => {
     const endpoints = createMonoWebhookEndpoints(createHttpClient());
     await endpoints.disconnect();
 
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [url, init] = firstCall(fetchMock) as [string, RequestInit];
     expect(url).toContain("/mono/disconnect");
     expect(init.method).toBe("POST");
   });
