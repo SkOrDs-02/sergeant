@@ -125,14 +125,17 @@ describe("syncMetaStore", () => {
     expect(firstArg?.legacyDbName).toBe("sergeant-sync-meta");
   });
 
-  it("exposes the four documented keys (offline queue + 3 sync-meta slots)", () => {
+  it("exposes the five documented keys (offline queue + 3 sync-meta slots + dead-letter)", () => {
     // Snapshot the registry so renaming a key in the wrapper without
-    // updating production callers gets caught at test time.
+    // updating production callers gets caught at test time. PR #040
+    // (storage-roadmap Stage 5) added `DEAD_LETTER_QUEUE` for queue
+    // entries that exceeded `MAX_QUEUE_ATTEMPTS` consecutive failures.
     expect(SYNC_META_KEYS).toEqual({
       OFFLINE_QUEUE: "offline_queue",
       VERSIONS: "sync_versions",
       DIRTY_MODULES: "dirty_modules",
       MODULE_MODIFIED: "module_modified",
+      DEAD_LETTER_QUEUE: "dead_letter_queue",
     });
   });
 });

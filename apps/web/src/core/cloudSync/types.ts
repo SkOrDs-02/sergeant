@@ -100,9 +100,35 @@ export interface QueuePushEntry {
   type: "push";
   ts: string;
   modules: Record<string, ModulePayload>;
+  /**
+   * PR #040 — replay attempt counter. Counts batches the entry has
+   * been part of where `replayOfflineQueue` ultimately threw (after
+   * `retryAsync`'s inner exponential-backoff retries already drained).
+   * Old entries written by pre-PR-#040 code paths come back as
+   * `undefined`, which is treated as `0`.
+   */
+  attemptCount?: number;
+  /** Last error message seen on a failed replay batch, for debug only. */
+  lastError?: string;
+  /** ISO timestamp of the last failed replay attempt for this entry. */
+  lastAttemptAt?: string;
 }
 
 export type QueueEntry = QueuePushEntry;
+
+/**
+ * Dead-letter store entry — produced when a `QueuePushEntry` exceeds
+ * `MAX_QUEUE_ATTEMPTS` consecutive failed replay batches. The original
+ * entry is preserved verbatim so a future manual replay can re-enqueue
+ * it. `finalError` carries the message from the last failure for
+ * debugging; `deadLetteredAt` is when the move happened.
+ */
+export interface DeadLetterEntry {
+  type: "dead-letter";
+  entry: QueuePushEntry;
+  finalError: string;
+  deadLetteredAt: string;
+}
 
 export interface CurrentUser {
   id?: string;

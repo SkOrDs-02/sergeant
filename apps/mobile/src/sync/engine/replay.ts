@@ -11,7 +11,11 @@
  *     a later retry
  */
 import { collectQueuedModules } from "../queue/collectQueued";
-import { clearOfflineQueue, getOfflineQueue } from "../queue/offlineQueue";
+import {
+  clearOfflineQueue,
+  getOfflineQueue,
+  recordReplayBatchFailure,
+} from "../queue/offlineQueue";
 import { syncApi } from "../api";
 import { retryAsync } from "./retryAsync";
 
@@ -39,10 +43,13 @@ export async function replayOfflineQueue(): Promise<void> {
       label: "replayOfflineQueue",
     });
     clearOfflineQueue();
-  } catch {
+  } catch (err) {
     // Network / transport failure during replay must not break callers
     // (the scheduler chains `pushDirty` afterwards). Keep the queue
-    // for later.
+    // for later, but bump per-entry attempt counts so we eventually
+    // dead-letter entries that fail forever instead of looping
+    // indefinitely (PR #040).
+    recordReplayBatchFailure(err);
   } finally {
     replaying = false;
   }

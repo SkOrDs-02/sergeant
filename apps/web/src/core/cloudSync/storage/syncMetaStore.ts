@@ -47,6 +47,15 @@ export const SYNC_META_KEYS = {
   VERSIONS: "sync_versions",
   DIRTY_MODULES: "dirty_modules",
   MODULE_MODIFIED: "module_modified",
+  /**
+   * PR #040 — durable storage for entries that exceeded
+   * `MAX_QUEUE_ATTEMPTS` consecutive failed replay batches and were
+   * moved out of the live queue. Survives reloads via the same IDB
+   * `sync_meta` object store as the live queue, so a dead-letter
+   * built up on Tuesday is still around on Friday for the user (or a
+   * future support workflow) to inspect.
+   */
+  DEAD_LETTER_QUEUE: "dead_letter_queue",
 } as const;
 
 export type SyncMetaKey = (typeof SYNC_META_KEYS)[keyof typeof SYNC_META_KEYS];

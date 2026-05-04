@@ -1133,7 +1133,7 @@ show_balance, updated_at, deleted_at)` — об'єднує
 - **Dep.** PR #035 (schema pattern), PR #036 (dual-write
   registration-pattern як референс).
 
-##### **PR #039 — `chore(finyk-domain): drop module_data.finyk cloud-sync wiring + ESLint guard`** ⏳ DRAFT
+##### **PR #039 — `chore(shared): drop module_data.finyk cloud-sync wiring + ESLint guard`** ✅ DONE — landed [#1711](https://github.com/Skords-01/Sergeant/pull/1711) (2026-05-04)
 
 - Mirror PR #030 (fizruk cloud-sync drop) і PR #034 (nutrition
   cloud-sync drop). Знімає `finyk` з `SYNC_MODULES`

@@ -100,6 +100,32 @@ export const SYNC_STATUS_EVENT = "hub-cloud-sync-status";
 export const MAX_OFFLINE_QUEUE = 10_000;
 
 /**
+ * Per-entry retry policy for the offline queue (PR #040, storage-roadmap
+ * Stage 5). When a queued push entry has been replayed and failed
+ * `MAX_QUEUE_ATTEMPTS` consecutive times — i.e. every replay attempt
+ * since the entry was first enqueued has thrown — the entry is moved
+ * out of the live queue into a separate dead-letter store
+ * (`SYNC_META_KEYS.DEAD_LETTER_QUEUE` on web; `SYNC_DEAD_LETTER_QUEUE`
+ * MMKV key on mobile) so the live queue does not retry it forever.
+ *
+ * The threshold is conservative on purpose: most push failures are
+ * transient (network, 5xx, brief auth blips) and resolve well below
+ * ten attempts, while a payload that has hit ten cumulative failures
+ * is almost always a structural problem (malformed module data,
+ * server schema mismatch) that needs human triage rather than another
+ * automated retry. Dead-lettered entries can be inspected via
+ * `getDeadLetterEntries` and re-enqueued via the manual
+ * `replayDeadLetters` helper once the underlying issue is fixed.
+ *
+ * Counts increment per replay batch (one per `replayOfflineQueue`
+ * failure), not per `retryAsync` inner attempt — the intra-batch
+ * exponential-backoff retries are hidden bookkeeping. So a queue
+ * entry takes at minimum N=10 successive replay-cycle failures to
+ * be dead-lettered, never less.
+ */
+export const MAX_QUEUE_ATTEMPTS = 10;
+
+/**
  * Flat read-only view of every storage key registered with any sync
  * module. Used by web's `storagePatch` to decide whether a write
  * should be enqueued, and by mobile's `useSyncedStorage` to

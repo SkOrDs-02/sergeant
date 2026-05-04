@@ -59,6 +59,8 @@ export const syncLog = {
     write("state", info),
   retry: (info: { attempt: number; delay: number; label?: string }) =>
     write("retry", info),
+  replayDeadLetter: (info: { count: number }) =>
+    write("replay:dead-letter", info),
   supersededCallback: (info: {
     kind: "onStart" | "onSuccess" | "onError" | "onSettled";
     staleSyncId: number;

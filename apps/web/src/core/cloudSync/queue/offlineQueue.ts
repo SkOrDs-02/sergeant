@@ -1,3 +1,4 @@
+import { MAX_QUEUE_ATTEMPTS } from "@sergeant/shared";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { MAX_OFFLINE_QUEUE, OFFLINE_QUEUE_KEY } from "../config";
 import { emitStatusEvent } from "../state/events";
@@ -8,6 +9,7 @@ import {
   setSyncMeta,
 } from "../storage/syncMetaStore";
 import type { QueueEntry, QueuePushEntry } from "../types";
+import { moveToDeadLetter } from "./deadLetter";
 
 /**
  * Sync source of truth for the queue. Backing store is IDB
@@ -165,6 +167,12 @@ export function addToOfflineQueue(entry: Partial<QueuePushEntry>): void {
         }
         last.modules = { ...last.modules, ...entry.modules! };
         last.ts = new Date().toISOString();
+        // PR #040 — preserve `attemptCount`/`lastError`/`lastAttemptAt`
+        // across coalesce. New module data merging into a stranded
+        // entry should NOT reset its retry budget — the reason we're
+        // about to push is the same reason the previous batch failed.
+        // (Explicit no-op: the retry-tracking fields live on `last`
+        // already; skipping `Object.assign(last, entry)` keeps them.)
         queueCache = queue;
         persistQueue(queue);
         emitStatusEvent();
@@ -199,10 +207,26 @@ function normalizePushEntries(queue: QueueEntry[]): QueueEntry[] {
   if (pushIndices.length <= 1) return queue;
   const mergedModules: QueuePushEntry["modules"] = {};
   let latestTs = "";
+  // PR #040 — when collapsing several stranded push entries, take the
+  // MAX of their `attemptCount` and the latest `lastError` /
+  // `lastAttemptAt`. Picking the worst attempt count is intentional:
+  // it preserves dead-letter pressure across normalization, so a
+  // queue that had previously been retried 9× and then split (e.g.
+  // by a multi-tab race) still trips dead-letter on its 10th batch
+  // rather than silently resetting to 0 here.
+  let maxAttempts = 0;
+  let lastError: string | undefined;
+  let lastAttemptAt: string | undefined;
   for (const idx of pushIndices) {
     const e = queue[idx] as QueuePushEntry;
     Object.assign(mergedModules, e.modules);
     if (e.ts && e.ts > latestTs) latestTs = e.ts;
+    const a = e.attemptCount ?? 0;
+    if (a > maxAttempts) {
+      maxAttempts = a;
+      lastError = e.lastError;
+      lastAttemptAt = e.lastAttemptAt;
+    }
   }
   const next: QueueEntry[] = [];
   for (let i = 0; i < queue.length; i++) {
@@ -212,6 +236,9 @@ function normalizePushEntries(queue: QueueEntry[]): QueueEntry[] {
     type: "push",
     modules: mergedModules,
     ts: latestTs || new Date().toISOString(),
+    ...(maxAttempts > 0 ? { attemptCount: maxAttempts } : {}),
+    ...(lastError ? { lastError } : {}),
+    ...(lastAttemptAt ? { lastAttemptAt } : {}),
   });
   return next;
 }
@@ -225,6 +252,55 @@ export function clearOfflineQueue(): void {
     /* swallow */
   }
   emitStatusEvent();
+}
+
+/**
+ * PR #040 — record a failed replay batch against every entry in the
+ * live queue. Bumps each entry's `attemptCount`, stamps the latest
+ * `lastError` / `lastAttemptAt`, and moves any entry whose attempt
+ * count has reached `MAX_QUEUE_ATTEMPTS` into the dead-letter store.
+ *
+ * Returns the number of entries dead-lettered by this call (0 most of
+ * the time; ≥1 only on the cycle where the threshold trips). Callers
+ * that care about surfacing dead-letter to telemetry can use the
+ * return value; everyone else can ignore it.
+ *
+ * Side-effects: persists the (possibly trimmed) live queue back to
+ * IDB + LS, persists dead-lettered entries via `moveToDeadLetter`,
+ * and emits a status event so the UI re-renders the queue badge.
+ */
+export function recordReplayBatchFailure(error: unknown): number {
+  const queue = getQueueSync();
+  if (queue.length === 0) return 0;
+  const message = error instanceof Error ? error.message : String(error);
+  const now = new Date().toISOString();
+  const survivors: QueueEntry[] = [];
+  let deadLettered = 0;
+  for (const entry of queue) {
+    if (!isPushEntryWithModules(entry)) {
+      // Non-push entries (none today, but keep the door open) don't
+      // participate in attempt tracking — pass through untouched.
+      survivors.push(entry);
+      continue;
+    }
+    const nextAttempts = (entry.attemptCount ?? 0) + 1;
+    const updated: QueuePushEntry = {
+      ...entry,
+      attemptCount: nextAttempts,
+      lastError: message,
+      lastAttemptAt: now,
+    };
+    if (nextAttempts >= MAX_QUEUE_ATTEMPTS) {
+      moveToDeadLetter(updated, message);
+      deadLettered += 1;
+      continue;
+    }
+    survivors.push(updated);
+  }
+  queueCache = survivors;
+  persistQueue(survivors);
+  emitStatusEvent();
+  return deadLettered;
 }
 
 /**

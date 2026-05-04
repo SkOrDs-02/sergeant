@@ -107,6 +107,15 @@ export const STORAGE_KEYS = {
   MOBILE_SYNC_DIRTY_MODULES: "mobile:sync_dirty_modules",
   MOBILE_SYNC_MODULE_MODIFIED: "mobile:sync_module_modified",
   MOBILE_SYNC_OFFLINE_QUEUE: "mobile:sync_offline_queue",
+  /**
+   * PR #040 — mobile dead-letter store. Lives next to
+   * `MOBILE_SYNC_OFFLINE_QUEUE` in MMKV; entries that have failed
+   * `MAX_QUEUE_ATTEMPTS` consecutive replay batches move out of the
+   * live queue into here. Same shape as the web IDB
+   * `dead_letter_queue` row so cross-platform sync diagnostics stay
+   * apples-to-apples.
+   */
+  MOBILE_SYNC_DEAD_LETTER_QUEUE: "mobile:sync_dead_letter_queue",
   MOBILE_SYNC_MIGRATION_DONE: "mobile:sync_migrated_users",
   MOBILE_QUERY_CACHE: "mobile:query_cache_v1",
 

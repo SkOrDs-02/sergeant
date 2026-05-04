@@ -13,6 +13,12 @@ export { SYNC_EVENT, SYNC_STATUS_EVENT } from "./config";
 
 export { getDirtyModules } from "./state/dirtyModules";
 export { getOfflineQueue } from "./queue/offlineQueue";
+export {
+  clearDeadLetters,
+  getDeadLetterCount,
+  getDeadLetterEntries,
+  hydrateDeadLetterFromDisk,
+} from "./queue/deadLetter";
 
 export { enqueueChange, notifySyncDirty } from "./enqueue";
 
@@ -26,7 +32,7 @@ export {
   SYNC_ERROR_TOAST_DURATION_MS,
 } from "./hook/useSyncErrorToast";
 export type { CloudSyncDebugSnapshot, SyncDebugAction } from "./debugState";
-export type { SyncError, SyncState } from "./types";
+export type { DeadLetterEntry, SyncError, SyncState } from "./types";
 export { toSyncError, isRetryableError } from "./errorNormalizer";
 export { retryAsync } from "./engine/retryAsync";
 

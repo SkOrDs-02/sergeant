@@ -7,6 +7,11 @@ export { SYNC_EVENT, SYNC_STATUS_EVENT } from "./config";
 
 export { getDirtyModules } from "./state/dirtyModules";
 export { getOfflineQueue } from "./queue/offlineQueue";
+export {
+  clearDeadLetters,
+  getDeadLetterCount,
+  getDeadLetterEntries,
+} from "./queue/deadLetter";
 
 export { enqueueChange, notifySyncDirty } from "./enqueue";
 export { useSyncedStorage } from "./useSyncedStorage";
@@ -24,6 +29,7 @@ export {
 
 export type {
   CurrentUser,
+  DeadLetterEntry,
   ModulePayload,
   QueueEntry,
   QueuePushEntry,
