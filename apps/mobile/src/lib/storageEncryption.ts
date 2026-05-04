@@ -160,7 +160,7 @@ function bytesToBase64(bytes: Uint8Array): string {
   let output = "";
   let i = 0;
   for (; i + 2 < bytes.length; i += 3) {
-    const triplet = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+    const triplet = (bytes[i]! << 16) | (bytes[i + 1]! << 8) | bytes[i + 2]!;
     output += alphabet[(triplet >> 18) & 0x3f];
     output += alphabet[(triplet >> 12) & 0x3f];
     output += alphabet[(triplet >> 6) & 0x3f];
@@ -169,13 +169,13 @@ function bytesToBase64(bytes: Uint8Array): string {
   if (i < bytes.length) {
     const remaining = bytes.length - i;
     if (remaining === 1) {
-      const byte = bytes[i];
+      const byte = bytes[i]!;
       output += alphabet[(byte >> 2) & 0x3f];
       output += alphabet[(byte << 4) & 0x3f];
       output += "==";
     } else {
-      const a = bytes[i];
-      const b = bytes[i + 1];
+      const a = bytes[i]!;
+      const b = bytes[i + 1]!;
       output += alphabet[(a >> 2) & 0x3f];
       output += alphabet[((a << 4) | (b >> 4)) & 0x3f];
       output += alphabet[(b << 2) & 0x3f];

@@ -44,7 +44,7 @@ export interface TrendChartProps {
 function deriveAreaFill(stroke: string): string {
   const hex = stroke.trim().match(/^#([0-9a-f]{6})$/i);
   if (hex) {
-    const n = parseInt(hex[1], 16);
+    const n = parseInt(hex[1]!, 16);
     const r = (n >> 16) & 0xff;
     const g = (n >> 8) & 0xff;
     const b = n & 0xff;
@@ -104,8 +104,8 @@ const TrendChartImpl = function TrendChart({
       return p.y != null;
     });
 
-  const latest = points[points.length - 1];
-  const first = points[0];
+  const latest = points[points.length - 1]!;
+  const first = points[0]!;
   const delta = latest.y - first.y;
 
   const screenWidth = Dimensions.get("window").width;

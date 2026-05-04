@@ -213,7 +213,7 @@ export function useFizrukWorkouts(): UseFizrukWorkoutsResult {
         const idx = prev.findIndex((w) => w.id === id);
         if (idx < 0) return prev;
         const next = prev.slice();
-        next[idx] = { ...prev[idx], ...patch };
+        next[idx] = { ...prev[idx]!, ...patch };
         return next;
       });
     },
@@ -251,7 +251,7 @@ export function useFizrukWorkouts(): UseFizrukWorkoutsResult {
     (id) => {
       const idx = stateRef.current.findIndex((w) => w.id === id);
       if (idx < 0) return null;
-      const current = stateRef.current[idx];
+      const current = stateRef.current[idx]!;
       if (current.endedAt) return current; // already-ended → silent no-op
       const ended: FizrukWorkout = {
         ...current,
@@ -259,7 +259,7 @@ export function useFizrukWorkouts(): UseFizrukWorkoutsResult {
       };
       persist((prev) => {
         const i = prev.findIndex((w) => w.id === id);
-        if (i < 0 || prev[i].endedAt) return prev;
+        if (i < 0 || prev[i]!.endedAt) return prev;
         const next = prev.slice();
         next[i] = ended;
         return next;
@@ -280,9 +280,9 @@ export function useFizrukWorkouts(): UseFizrukWorkoutsResult {
         if (idx < 0) return prev;
         const next = prev.slice();
         next[idx] = {
-          ...prev[idx],
+          ...prev[idx]!,
           items: [
-            ...(prev[idx].items || []),
+            ...(prev[idx]!.items || []),
             { ...(item as FizrukWorkoutItem), id: itemId },
           ],
         };
@@ -298,13 +298,13 @@ export function useFizrukWorkouts(): UseFizrukWorkoutsResult {
       persist((prev) => {
         const wIdx = prev.findIndex((w) => w.id === workoutId);
         if (wIdx < 0) return prev;
-        const items = prev[wIdx].items || [];
+        const items = prev[wIdx]!.items || [];
         const iIdx = items.findIndex((i) => i.id === itemId);
         if (iIdx < 0) return prev;
         const nextItems = items.slice();
-        nextItems[iIdx] = { ...items[iIdx], ...patch };
+        nextItems[iIdx] = { ...items[iIdx]!, ...patch };
         const next = prev.slice();
-        next[wIdx] = { ...prev[wIdx], items: nextItems };
+        next[wIdx] = { ...prev[wIdx]!, items: nextItems };
         return next;
       });
     },
@@ -316,17 +316,17 @@ export function useFizrukWorkouts(): UseFizrukWorkoutsResult {
       persist((prev) => {
         const wIdx = prev.findIndex((w) => w.id === workoutId);
         if (wIdx < 0) return prev;
-        const items = prev[wIdx].items || [];
+        const items = prev[wIdx]!.items || [];
         if (!items.some((i) => i.id === itemId)) return prev;
         const nextItems = items.filter((i) => i.id !== itemId);
-        const nextGroups = (prev[wIdx].groups || [])
+        const nextGroups = (prev[wIdx]!.groups || [])
           .map((g) => ({
             ...g,
             itemIds: (g.itemIds || []).filter((id) => id !== itemId),
           }))
           .filter((g) => (g.itemIds || []).length >= 2);
         const next = prev.slice();
-        next[wIdx] = { ...prev[wIdx], items: nextItems, groups: nextGroups };
+        next[wIdx] = { ...prev[wIdx]!, items: nextItems, groups: nextGroups };
         return next;
       });
     },

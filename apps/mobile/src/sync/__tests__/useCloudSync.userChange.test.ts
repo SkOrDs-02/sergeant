@@ -87,8 +87,8 @@ describe("useCloudSync — user-id change", () => {
 
     // Call order: clear must happen BEFORE the user-B replay so the
     // new user's session never sees the previous user's queued changes.
-    const clearOrder = mockClearSyncManagedData.mock.invocationCallOrder[0];
-    const replayOrder = mockReplayOfflineQueue.mock.invocationCallOrder[0];
+    const clearOrder = mockClearSyncManagedData.mock.invocationCallOrder[0]!;
+    const replayOrder = mockReplayOfflineQueue.mock.invocationCallOrder[0]!;
     expect(clearOrder).toBeLessThan(replayOrder);
   });
 

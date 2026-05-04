@@ -350,7 +350,7 @@ export const commonActions = {
   more: (onPress: () => void): SwipeAction => ({
     key: "more",
     icon: MoreHorizontal,
-    backgroundColor: brandColors.cream[500],
+    backgroundColor: brandColors.cream[500]!,
     iconColor: "#1c1917",
     label: "Більше",
     onPress,

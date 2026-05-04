@@ -25,8 +25,8 @@ export function createConfettiParticle(
     y: new Animated.Value(SCREEN_HEIGHT / 2 - 100),
     rotation: new Animated.Value(0),
     scale: new Animated.Value(0),
-    color: colors[Math.floor(Math.random() * colors.length)],
+    color: colors[Math.floor(Math.random() * colors.length)]!,
     size: 8 + Math.random() * 12,
-    shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
+    shape: SHAPES[Math.floor(Math.random() * SHAPES.length)]!,
   };
 }

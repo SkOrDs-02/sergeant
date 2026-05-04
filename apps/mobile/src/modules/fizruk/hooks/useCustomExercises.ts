@@ -128,7 +128,7 @@ export function useCustomExercises(): UseCustomExercisesResult {
       const idx = stateRef.current.findIndex((e) => e.id === id);
       if (idx < 0) return null;
       const updated: CustomExercise = {
-        ...stateRef.current[idx],
+        ...stateRef.current[idx]!,
         ...patch,
         id,
       };

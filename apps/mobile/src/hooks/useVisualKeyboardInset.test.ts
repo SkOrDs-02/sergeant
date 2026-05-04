@@ -80,17 +80,17 @@ describe("useMobileVisualKeyboardInset", () => {
     );
 
     act(() => {
-      showListeners[0](makeEvent(324));
+      showListeners[0]!(makeEvent(324));
     });
     expect(result.current).toBe(324);
 
     act(() => {
-      showListeners[0](makeEvent(410));
+      showListeners[0]!(makeEvent(410));
     });
     expect(result.current).toBe(410);
 
     act(() => {
-      hideListeners[0](makeEvent(0));
+      hideListeners[0]!(makeEvent(0));
     });
     expect(result.current).toBe(0);
   });
@@ -117,7 +117,7 @@ describe("useMobileVisualKeyboardInset", () => {
     );
 
     act(() => {
-      showListeners[0](makeEvent(280));
+      showListeners[0]!(makeEvent(280));
     });
     expect(result.current).toBe(280);
 

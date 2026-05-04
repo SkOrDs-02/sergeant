@@ -40,35 +40,35 @@ export {
 export const chartColors = {
   /** Routine module heatmap levels */
   routine: {
-    future: brandColors.cream[300], // #f5ead8 — disabled/future
-    empty: brandColors.cream[200], // #faf3e8 — neutral
-    l1: brandColors.coral[200], // #ffd4cb — weak
-    l2: brandColors.coral[400], // #ff8c78 — medium
-    l3: brandColors.coral[500], // #f97066 — strong
-    strokeToday: brandColors.coral[700], // #c23a3a
-    strokeSelected: brandColors.coral[900], // #862e2e
+    future: brandColors.cream[300]!, // #f5ead8 — disabled/future
+    empty: brandColors.cream[200]!, // #faf3e8 — neutral
+    l1: brandColors.coral[200]!, // #ffd4cb — weak
+    l2: brandColors.coral[400]!, // #ff8c78 — medium
+    l3: brandColors.coral[500]!, // #f97066 — strong
+    strokeToday: brandColors.coral[700]!, // #c23a3a
+    strokeSelected: brandColors.coral[900]!, // #862e2e
   },
   /** Nutrition module macro rings */
   nutrition: {
     kcal: "#f97316", // orange-500 — calories
-    protein: brandColors.emerald[500], // #10b981 — protein
+    protein: brandColors.emerald[500]!, // #10b981 — protein
     carbs: "#3b82f6", // blue-500 — carbohydrates
     fat: "#eab308", // yellow-500 — fat
-    track: brandColors.cream[300], // #f5ead8 — background track
+    track: brandColors.cream[300]!, // #f5ead8 — background track
   },
   /** Fizruk module charts */
   fizruk: {
     primary: moduleColors.fizruk.primary,
     secondary: moduleColors.fizruk.secondary,
     accent: moduleColors.fizruk.accent,
-    track: brandColors.cream[300],
+    track: brandColors.cream[300]!,
   },
   /** Finyk module charts */
   finyk: {
-    income: brandColors.emerald[500], // #10b981
-    expense: brandColors.coral[500], // #f97066
-    balance: brandColors.teal[500], // #14b8a6
-    track: brandColors.cream[300],
+    income: brandColors.emerald[500]!, // #10b981
+    expense: brandColors.coral[500]!, // #f97066
+    balance: brandColors.teal[500]!, // #14b8a6
+    track: brandColors.cream[300]!,
   },
   /** General chart palette for pie/donut charts */
   palette: chartPaletteList,
@@ -116,7 +116,7 @@ export const semanticColors = {
   // Additional semantic aliases
   positive: statusColors.success,
   negative: statusColors.danger,
-  neutral: brandColors.cream[400],
+  neutral: brandColors.cream[400]!,
 } as const;
 
 /**
@@ -131,13 +131,13 @@ export const adaptiveColors = {
     inverse: "#fafaf9", // stone-50
   },
   background: {
-    primary: brandColors.cream[50],
-    secondary: brandColors.cream[100],
-    tertiary: brandColors.cream[200],
+    primary: brandColors.cream[50]!,
+    secondary: brandColors.cream[100]!,
+    tertiary: brandColors.cream[200]!,
   },
   border: {
-    light: brandColors.cream[200],
-    medium: brandColors.cream[300],
-    strong: brandColors.cream[400],
+    light: brandColors.cream[200]!,
+    medium: brandColors.cream[300]!,
+    strong: brandColors.cream[400]!,
   },
 } as const;

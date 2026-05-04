@@ -43,7 +43,7 @@ const SLIDES: Slide[] = [
 export default function OnboardingScreen() {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const slide = SLIDES[step];
+  const slide = SLIDES[step]!;
   const isLast = step === SLIDES.length - 1;
 
   const goNext = () => {

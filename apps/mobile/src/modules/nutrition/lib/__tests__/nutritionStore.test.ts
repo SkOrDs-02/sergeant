@@ -59,8 +59,8 @@ describe("mobile nutritionStore — log", () => {
       },
     });
     const out = loadNutritionLog();
-    expect(out["2024-01-15"].meals).toHaveLength(1);
-    expect(out["2024-01-15"].meals[0].id).toBe("m1");
+    expect(out["2024-01-15"]!.meals).toHaveLength(1);
+    expect(out["2024-01-15"]!.meals[0]!.id).toBe("m1");
   });
 
   it("saveNutritionLog writes to the canonical key", () => {
@@ -121,7 +121,7 @@ describe("mobile nutritionStore — pantries", () => {
   it("loadPantries seeds the default pantry on first launch", () => {
     const out = loadPantries();
     expect(out).toHaveLength(1);
-    expect(out[0].id).toBe("home");
+    expect(out[0]!.id).toBe("home");
     // Seeded default also writes the active pointer.
     expect(mockSafeWriteLS).toHaveBeenCalledWith(
       NUTRITION_ACTIVE_PANTRY_KEY,
@@ -200,8 +200,8 @@ describe("mobile nutritionStore — shopping list", () => {
     });
     const out = loadShoppingList();
     expect(out.categories).toHaveLength(1);
-    expect(out.categories[0].items).toHaveLength(1);
-    expect(out.categories[0].items[0].name).toBe("Морква");
+    expect(out.categories[0]!.items).toHaveLength(1);
+    expect(out.categories[0]!.items[0]!.name).toBe("Морква");
   });
 
   it("saveShoppingList normalises before persisting", () => {

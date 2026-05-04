@@ -30,7 +30,7 @@ export function WeekKcalChart({
         const height = Math.max(3, ratio * CHART_HEIGHT);
         const isToday = r.date === todayIso;
         const [y, m, d] = r.date.split("-").map(Number);
-        const dt = new Date(y, m - 1, d);
+        const dt = new Date(y!, (m ?? 1) - 1, d ?? 1);
         const label = DAY_LABELS[(dt.getDay() + 6) % 7];
         return (
           <View key={r.date} className="flex-1 items-center gap-0.5">

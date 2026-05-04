@@ -62,8 +62,8 @@ describe("useRecovery", () => {
     const { result } = renderHook(() => useRecovery());
 
     expect(result.current.by.chest).toBeDefined();
-    expect(result.current.by.chest.status).toBe("red");
-    expect(result.current.by.chest.daysSince).toBe(0);
+    expect(result.current.by.chest!.status).toBe("red");
+    expect(result.current.by.chest!.daysSince).toBe(0);
     expect(result.current.avoid.some((m) => m.id === "chest")).toBe(true);
   });
 
@@ -96,8 +96,8 @@ describe("useRecovery", () => {
     const { result } = renderHook(() => useRecovery());
 
     expect(result.current.by.quadriceps).toBeDefined();
-    expect(result.current.by.quadriceps.status).toBe("green");
-    expect(result.current.by.quadriceps.daysSince).toBeGreaterThanOrEqual(4);
+    expect(result.current.by.quadriceps!.status).toBe("green");
+    expect(result.current.by.quadriceps!.daysSince).toBeGreaterThanOrEqual(4);
     expect(result.current.avoid.some((m) => m.id === "quadriceps")).toBe(false);
   });
 

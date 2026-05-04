@@ -135,6 +135,7 @@ export function moveInArray<T>(
   if (fromIndex === toIndex) return [...list];
   const next = [...list];
   const [moved] = next.splice(fromIndex, 1);
+  if (moved === undefined) return next;
   next.splice(toIndex, 0, moved);
   return next;
 }

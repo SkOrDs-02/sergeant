@@ -294,7 +294,7 @@ describe("routineStore — enqueueChange wiring", () => {
     mockEnqueueChange.mockClear();
 
     act(() => {
-      result.current.moveHabitInOrder(ids[0], 1);
+      result.current.moveHabitInOrder(ids[0]!, 1);
     });
     expect(mockEnqueueChange).toHaveBeenCalledWith(ROUTINE_STORAGE_KEY);
   });

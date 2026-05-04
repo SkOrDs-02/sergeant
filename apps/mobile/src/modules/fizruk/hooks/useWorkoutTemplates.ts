@@ -113,7 +113,7 @@ export function useWorkoutTemplates(): UseWorkoutTemplatesResult {
         if (idx < 0) return prev;
         const next = prev.slice();
         next[idx] = {
-          ...prev[idx],
+          ...prev[idx]!,
           ...patch,
           id,
           updatedAt: new Date().toISOString(),
@@ -163,7 +163,7 @@ export function useWorkoutTemplates(): UseWorkoutTemplatesResult {
         const idx = prev.findIndex((t) => t.id === id);
         if (idx < 0) return prev;
         const next = prev.slice();
-        next[idx] = { ...prev[idx], lastUsedAt: new Date().toISOString() };
+        next[idx] = { ...prev[idx]!, lastUsedAt: new Date().toISOString() };
         return next;
       });
     },

@@ -165,7 +165,7 @@ async function upsertWorkout(
 
   const items = w.items ?? [];
   for (let i = 0; i < items.length; i++) {
-    await upsertWorkoutItem(client, items[i], w.id, userId, clientTs, i);
+    await upsertWorkoutItem(client, items[i]!, w.id, userId, clientTs, i);
   }
 
   const itemIds = items.map((it) => it.id);
@@ -238,7 +238,7 @@ async function upsertWorkoutItem(
       item.id,
       userId,
       clientTs,
-      sets[s],
+      sets[s]!,
       s,
     );
   }

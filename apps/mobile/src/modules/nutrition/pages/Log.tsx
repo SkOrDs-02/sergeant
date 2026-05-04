@@ -44,7 +44,7 @@ function formatIsoDate(iso: string): string {
   if (iso === yesterday) return "Вчора";
   if (iso === tomorrow) return "Завтра";
   const [y, m, d] = iso.split("-").map(Number);
-  const dt = new Date(y, m - 1, d);
+  const dt = new Date(y!, (m ?? 1) - 1, d ?? 1);
   const months = [
     "січ",
     "лют",

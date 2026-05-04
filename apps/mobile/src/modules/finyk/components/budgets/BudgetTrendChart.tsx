@@ -56,8 +56,8 @@ function BudgetTrendChartImpl({
   const limitPoints =
     limit > 0
       ? [
-          { x: dailyData[0].day, y: limit },
-          { x: dailyData[dailyData.length - 1].day, y: limit },
+          { x: dailyData[0]!.day, y: limit },
+          { x: dailyData[dailyData.length - 1]!.day, y: limit },
         ]
       : [];
 

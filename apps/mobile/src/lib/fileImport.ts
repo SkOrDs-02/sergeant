@@ -25,7 +25,7 @@ export const mobileFileImportAdapter: FileImportAdapter = {
       return null;
     }
 
-    const asset = result.assets[0];
+    const asset = result.assets[0]!;
     const raw = await FileSystem.readAsStringAsync(asset.uri, {
       encoding: FileSystem.EncodingType.UTF8,
     });

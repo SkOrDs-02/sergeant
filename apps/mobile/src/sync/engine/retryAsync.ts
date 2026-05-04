@@ -51,7 +51,7 @@ function calculateDelay(
   maxDelay: number,
 ): number {
   // Get base delay for this attempt
-  const baseDelay = delays[Math.min(attempt, delays.length - 1)];
+  const baseDelay = delays[Math.min(attempt, delays.length - 1)] ?? 1000;
 
   // Apply exponential multiplier for attempts beyond the delays array
   const multiplier =

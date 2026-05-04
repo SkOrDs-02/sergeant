@@ -45,7 +45,7 @@ describe("Toast", () => {
     });
     expect(typeof id).toBe("number");
     expect(result.current.toasts).toHaveLength(1);
-    expect(result.current.toasts[0].type).toBe("success");
+    expect(result.current.toasts[0]!.type).toBe("success");
   });
 
   it("success / error / info / warning helpers route to the right variant", () => {

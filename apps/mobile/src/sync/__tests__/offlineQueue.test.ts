@@ -47,10 +47,10 @@ describe("offlineQueue — enqueue", () => {
     addToOfflineQueue({ type: "push", modules: makeModules("profile", 1) });
     const queue = getOfflineQueue();
     expect(queue).toHaveLength(1);
-    expect(queue[0].type).toBe("push");
-    expect(queue[0].modules.profile).toBeDefined();
-    expect(typeof queue[0].ts).toBe("string");
-    expect(new Date(queue[0].ts).toString()).not.toBe("Invalid Date");
+    expect(queue[0]!.type).toBe("push");
+    expect(queue[0]!.modules.profile).toBeDefined();
+    expect(typeof queue[0]!.ts).toBe("string");
+    expect(new Date(queue[0]!.ts).toString()).not.toBe("Invalid Date");
   });
 
   it("caps queue length at MAX_OFFLINE_QUEUE by dropping oldest rows", () => {
@@ -74,7 +74,7 @@ describe("offlineQueue — enqueue", () => {
     const queue = getOfflineQueue();
     expect(queue.length).toBeLessThanOrEqual(MAX_OFFLINE_QUEUE);
     expect(
-      queue[queue.length - 1].modules[`m${MAX_OFFLINE_QUEUE + 4}`],
+      queue[queue.length - 1]!.modules[`m${MAX_OFFLINE_QUEUE + 4}`],
     ).toBeDefined();
   });
 });
@@ -97,7 +97,7 @@ describe("offlineQueue — dedup / coalescing", () => {
 
     const queue = getOfflineQueue();
     expect(queue).toHaveLength(1);
-    expect(queue[0].modules).toMatchObject({
+    expect(queue[0]!.modules).toMatchObject({
       _legacy_finyk: expect.any(Object),
       profile: expect.any(Object),
       _legacy_nutrition: expect.any(Object),
@@ -110,7 +110,7 @@ describe("offlineQueue — dedup / coalescing", () => {
 
     const queue = getOfflineQueue();
     expect(queue).toHaveLength(1);
-    const data = queue[0].modules.profile.data as { profile_key: number };
+    const data = queue[0]!.modules.profile!.data as { profile_key: number };
     expect(data.profile_key).toBe(99);
   });
 
@@ -128,7 +128,7 @@ describe("offlineQueue — dedup / coalescing", () => {
     // any real legacy `finyk` entries.
     expect(Object.keys(collected).sort()).toEqual(["profile"]);
     expect(
-      (collected.profile.data as { profile_key: number }).profile_key,
+      (collected.profile!.data as { profile_key: number }).profile_key,
     ).toBe(2);
   });
 
@@ -183,17 +183,20 @@ describe("offlineQueue — serialization roundtrip", () => {
     // Drop all in-memory JS references and re-read from MMKV.
     const fresh = getOfflineQueue();
     expect(fresh).toHaveLength(1);
-    const row = fresh[0];
+    const row = fresh[0]!;
     expect(Object.keys(row.modules).sort()).toEqual([
       "_legacy_nutrition",
       "profile",
     ]);
     expect(
-      (row.modules.profile.data as { profile_key: number }).profile_key,
+      (row.modules.profile!.data as { profile_key: number }).profile_key,
     ).toBe(42);
     expect(
-      (row.modules._legacy_nutrition.data as { _legacy_nutrition_key: number })
-        ._legacy_nutrition_key,
+      (
+        row.modules._legacy_nutrition!.data as {
+          _legacy_nutrition_key: number;
+        }
+      )._legacy_nutrition_key,
     ).toBe(7);
 
     // And the `ts` field remains a valid ISO-8601 string.

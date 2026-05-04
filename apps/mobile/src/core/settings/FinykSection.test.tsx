@@ -68,9 +68,9 @@ describe("FinykSection", () => {
       label: string;
     }>;
     expect(parsed).toHaveLength(1);
-    expect(parsed[0].label).toBe("🎨 Хобі");
-    expect(typeof parsed[0].id).toBe("string");
-    expect(parsed[0].id.length).toBeGreaterThan(0);
+    expect(parsed[0]!.label).toBe("🎨 Хобі");
+    expect(typeof parsed[0]!.id).toBe("string");
+    expect(parsed[0]!.id.length).toBeGreaterThan(0);
   });
 
   it("removes a category after confirming in the ConfirmDialog", () => {

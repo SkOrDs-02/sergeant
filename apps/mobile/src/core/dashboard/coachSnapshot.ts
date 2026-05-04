@@ -220,11 +220,8 @@ export function aggregateCurrentSnapshot(): CoachSnapshot {
           d.setDate(weekStart.getDate() + i);
           const dk = localDateKey(d);
           for (const h of habits) {
-            if (
-              Array.isArray(completions[h.id]) &&
-              completions[h.id].includes(dk)
-            )
-              totalDone++;
+            const list = completions[h.id];
+            if (Array.isArray(list) && list.includes(dk)) totalDone++;
           }
         }
         const overallRate = Math.round((totalDone / (habits.length * 7)) * 100);

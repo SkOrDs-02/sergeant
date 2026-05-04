@@ -36,8 +36,9 @@ const ACCOUNT_TYPE_LABEL: Record<string, string> = {
 };
 
 function getAccountLabel(account: MonoAccount): string {
-  if (account.type && ACCOUNT_TYPE_LABEL[account.type]) {
-    return ACCOUNT_TYPE_LABEL[account.type];
+  const label = account.type ? ACCOUNT_TYPE_LABEL[account.type] : undefined;
+  if (label) {
+    return label;
   }
   return account.type || "Рахунок";
 }

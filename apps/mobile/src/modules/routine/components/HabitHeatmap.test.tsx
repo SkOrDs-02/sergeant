@@ -43,7 +43,7 @@ function expectedPayload(
 ): { payload: number; type: number } {
   const m = /^#([0-9a-f]{6})$/i.exec(hex);
   if (!m) throw new Error(`bad hex fixture: ${hex}`);
-  const rgb = Number.parseInt(m[1], 16);
+  const rgb = Number.parseInt(m[1]!, 16);
   // AARRGGBB with alpha 0xFF — unsigned 32-bit.
   const payload = (0xff000000 | rgb) >>> 0;
   return { payload, type: 0 };

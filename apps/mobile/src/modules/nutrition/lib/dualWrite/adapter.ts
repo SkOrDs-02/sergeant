@@ -222,7 +222,7 @@ async function upsertPantry(
 
   const items = p.items ?? [];
   for (let i = 0; i < items.length; i++) {
-    const it = items[i];
+    const it = items[i]!;
     await client.run(
       `INSERT INTO nutrition_pantry_items
          (id, pantry_id, user_id, name, qty, unit, notes, sort_order,

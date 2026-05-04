@@ -119,14 +119,14 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
     case "NEXT": {
       const idx = ONBOARDING_STEPS.indexOf(state.step);
       if (idx < ONBOARDING_STEPS.length - 1) {
-        return { ...state, step: ONBOARDING_STEPS[idx + 1] };
+        return { ...state, step: ONBOARDING_STEPS[idx + 1]! };
       }
       return state;
     }
     case "BACK": {
       const idx = ONBOARDING_STEPS.indexOf(state.step);
       if (idx > 0) {
-        return { ...state, step: ONBOARDING_STEPS[idx - 1] };
+        return { ...state, step: ONBOARDING_STEPS[idx - 1]! };
       }
       return state;
     }
@@ -390,6 +390,7 @@ function GoalsStep({
         <View className="w-full gap-4">
           {questions.map((q) => {
             const goalKey = GOAL_KEY_MAP[q.id];
+            if (!goalKey) return null;
             if (q.type === "radio" && q.options) {
               const currentVal = (goals[goalKey] as string | null) ?? null;
               return (

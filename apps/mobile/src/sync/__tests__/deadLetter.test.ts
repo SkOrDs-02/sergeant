@@ -61,9 +61,9 @@ describe("per-entry attempt counter (mobile)", () => {
 
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].attemptCount).toBe(1);
-    expect(q[0].lastError).toBe("first failure");
-    expect(q[0].lastAttemptAt).toBeTruthy();
+    expect(q[0]!.attemptCount).toBe(1);
+    expect(q[0]!.lastError).toBe("first failure");
+    expect(q[0]!.lastAttemptAt).toBeTruthy();
   });
 
   it("preserves attemptCount when a coalescing write merges new module data", () => {
@@ -77,7 +77,7 @@ describe("per-entry attempt counter (mobile)", () => {
       },
     });
     recordReplayBatchFailure(new Error("blip"));
-    expect(getOfflineQueue()[0].attemptCount).toBe(1);
+    expect(getOfflineQueue()[0]!.attemptCount).toBe(1);
 
     addToOfflineQueue({
       type: "push",
@@ -90,9 +90,9 @@ describe("per-entry attempt counter (mobile)", () => {
     });
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].attemptCount).toBe(1);
-    expect(q[0].lastError).toBe("blip");
-    expect(q[0].modules.profile.data).toEqual({ displayName: "b" });
+    expect(q[0]!.attemptCount).toBe(1);
+    expect(q[0]!.lastError).toBe("blip");
+    expect(q[0]!.modules.profile!.data).toEqual({ displayName: "b" });
   });
 });
 
@@ -120,12 +120,12 @@ describe("dead-letter at MAX_QUEUE_ATTEMPTS (mobile)", () => {
 
     const dl = getDeadLetterEntries();
     expect(dl).toHaveLength(1);
-    expect(dl[0].entry.modules.profile.data).toEqual({
+    expect(dl[0]!.entry.modules.profile!.data).toEqual({
       displayName: "doomed",
     });
-    expect(dl[0].entry.attemptCount).toBe(MAX_QUEUE_ATTEMPTS);
-    expect(dl[0].finalError).toBe(`structural error #${MAX_QUEUE_ATTEMPTS}`);
-    expect(dl[0].deadLetteredAt).toBeTruthy();
+    expect(dl[0]!.entry.attemptCount).toBe(MAX_QUEUE_ATTEMPTS);
+    expect(dl[0]!.finalError).toBe(`structural error #${MAX_QUEUE_ATTEMPTS}`);
+    expect(dl[0]!.deadLetteredAt).toBeTruthy();
   });
 
   it("replayOfflineQueue catch-block dead-letters via recordReplayBatchFailure", async () => {
@@ -169,7 +169,7 @@ describe("crash recovery (mobile)", () => {
     });
     recordReplayBatchFailure(new Error("blip 1"));
     recordReplayBatchFailure(new Error("blip 2"));
-    expect(getOfflineQueue()[0].attemptCount).toBe(2);
+    expect(getOfflineQueue()[0]!.attemptCount).toBe(2);
 
     // Simulate a restart by re-reading the queue through a fresh
     // import. MMKV is synchronous and persists across module
@@ -181,11 +181,11 @@ describe("crash recovery (mobile)", () => {
       require("../queue/offlineQueue") as typeof import("../queue/offlineQueue");
     const q = reloaded.getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].modules.profile.data).toEqual({
+    expect(q[0]!.modules.profile!.data).toEqual({
       displayName: "before crash",
     });
-    expect(q[0].attemptCount).toBe(2);
-    expect(q[0].lastError).toBe("blip 2");
+    expect(q[0]!.attemptCount).toBe(2);
+    expect(q[0]!.lastError).toBe("blip 2");
   });
 
   it("a dead-letter entry survives a process restart", () => {
@@ -209,9 +209,9 @@ describe("crash recovery (mobile)", () => {
       require("../queue/deadLetter") as typeof import("../queue/deadLetter");
     const dl = reloaded.getDeadLetterEntries();
     expect(dl).toHaveLength(1);
-    expect(dl[0].entry.modules.profile.data).toEqual({
+    expect(dl[0]!.entry.modules.profile!.data).toEqual({
       displayName: "doomed",
     });
-    expect(dl[0].entry.attemptCount).toBe(MAX_QUEUE_ATTEMPTS);
+    expect(dl[0]!.entry.attemptCount).toBe(MAX_QUEUE_ATTEMPTS);
   });
 });

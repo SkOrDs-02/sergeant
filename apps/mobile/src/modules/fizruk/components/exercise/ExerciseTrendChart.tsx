@@ -25,7 +25,7 @@ export interface ExerciseTrendChartProps {
 function deriveAreaFill(stroke: string): string {
   const hex = stroke.trim().match(/^#([0-9a-f]{6})$/i);
   if (hex) {
-    const n = parseInt(hex[1], 16);
+    const n = parseInt(hex[1]!, 16);
     const r = (n >> 16) & 0xff;
     const g = (n >> 8) & 0xff;
     const b = n & 0xff;
@@ -85,8 +85,8 @@ const ExerciseTrendChartImpl = function ExerciseTrendChart({
   const fill = deriveAreaFill(strokeColor);
 
   const data = valid.map((p, i) => ({ x: i, y: p.value }));
-  const latest = valid[valid.length - 1];
-  const first = valid[0];
+  const latest = valid[valid.length - 1]!;
+  const first = valid[0]!;
   const delta = latest.value - first.value;
 
   return (

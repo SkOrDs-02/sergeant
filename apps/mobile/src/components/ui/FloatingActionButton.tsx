@@ -338,6 +338,7 @@ export function FloatingActionButton({
             const anim = actionAnimations[index];
             const actionColors = variantColors[action.variant || variant];
             const ActionIcon = action.icon;
+            if (!anim) return null;
 
             return (
               <Animated.View

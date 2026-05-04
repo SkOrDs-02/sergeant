@@ -109,14 +109,14 @@ export function useWellbeing(): UseWellbeingResult {
         persist(() => [created, ...prev]);
         return created;
       }
-      const merged: WellbeingEntry = { ...prev[idx], ...patch, date };
+      const merged: WellbeingEntry = { ...prev[idx]!, ...patch, date };
       // Skip the timestamp bump and the write entirely when nothing
       // user-visible changed — keeps cloud-sync quiet on idempotent
       // re-saves of the daily sheet.
-      const { updatedAt: _prevTs, ...prevSansTs } = prev[idx];
+      const { updatedAt: _prevTs, ...prevSansTs } = prev[idx]!;
       const { updatedAt: _mergedTs, ...mergedSansTs } = merged;
       if (deepEqual(prevSansTs, mergedSansTs)) {
-        return prev[idx];
+        return prev[idx]!;
       }
       const stampedEntry: WellbeingEntry = { ...merged, updatedAt: stamped };
       persist(() => {
