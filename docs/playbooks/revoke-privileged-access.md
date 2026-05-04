@@ -1,56 +1,37 @@
 # Playbook: Revoke Privileged Access
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
-> **Status:** Active
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Deprecated
 
-**Trigger:** offboarding, role reduction, expired contractor access, or a decision that an actor no longer needs privileged access to a Sergeant surface.
+> **Superseded by:** [access-governance.md § Revoke privileged access](./access-governance.md#2-revoke-privileged-access) — merged 2026-05-04 (initiative [0009](../initiatives/0009-agent-os-hardening.md) PR 2.4).
+
+**Trigger:** historical anchor — open [access-governance.md § Revoke privileged access](./access-governance.md#2-revoke-privileged-access) instead.
 
 ## Owner surface
 
 - Primary surface: privileged access governance
 - Governing skill: `sergeant-review-and-merge`
 
-## Required context
+## Why this stub still exists
 
-- Review [access-policy.md](../security/access-policy.md), [access-matrix.md](../security/access-matrix.md), and [secret-ownership-register.md](../security/secret-ownership-register.md).
-- If compromise is suspected, switch to [respond-to-suspected-account-compromise.md](./respond-to-suspected-account-compromise.md).
+The merged [access-governance.md](./access-governance.md) playbook now owns grant, revoke, periodic review, and suspected-compromise paths together. This file stays in the repo so external bookmarks, audit logs, and historical PR/incident references keep resolving without 404s, and so `git blame` on the original steps remains intact.
+
+Do not extend this stub. Update [access-governance.md](./access-governance.md) and let this file follow.
 
 ## Steps
 
-### 1. Identify all affected surfaces
-
-- List every vendor, environment, and machine credential touched by the actor.
-- Confirm whether any access was indirect through shared project membership or release tooling.
-
-### 2. Revoke vendor access first
-
-- Remove membership, role, or token access on the documented surfaces.
-- Prefer immediate removal to "we will clean it later".
-
-### 3. Rotate if needed
-
-- If the actor had access to shared credentials, recovery mailboxes, or exportable secrets, rotate the impacted secret groups.
-- Use [rotate-secrets.md](./rotate-secrets.md) for the rotation path.
-
-### 4. Verify recovery paths remain valid
-
-- Confirm the documented owner still exists for each affected surface.
-- Confirm at least one legitimate maintainer can still recover the system.
+See [access-governance.md § Revoke privileged access](./access-governance.md#2-revoke-privileged-access).
 
 ## Verification
 
-- [ ] All documented surfaces checked
-- [ ] Vendor access removed
-- [ ] Secret rotation triggered where needed
-- [ ] Recovery ownership still valid after revoke
+- [ ] The reader was redirected to [access-governance.md § Revoke privileged access](./access-governance.md#2-revoke-privileged-access).
 
 ## When not to use this playbook
 
-- The actor still needs reduced but active access; use the grant playbook to re-scope deliberately.
-- The event is an active compromise requiring incident handling.
+- Always: this file is deprecated. Use [access-governance.md](./access-governance.md).
 
 ## Related playbooks and skills
 
-- [grant-privileged-access.md](./grant-privileged-access.md)
-- [respond-to-suspected-account-compromise.md](./respond-to-suspected-account-compromise.md)
+- [access-governance.md](./access-governance.md) — canonical merged access playbook.
 - [rotate-secrets.md](./rotate-secrets.md)
+- Skill: `sergeant-review-and-merge`

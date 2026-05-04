@@ -130,6 +130,18 @@ export function useHints({
     })();
 
     if (!msg) return;
-    toast.info(msg, 5000);
+    const HINT_TIMEOUT_MS = 5000;
+    toast.info(msg, HINT_TIMEOUT_MS);
+    // Mobile toasts have no action button (web pairs the toast with a
+    // CTA that fires HINT_COMPLETED). Without an action, every shown
+    // hint times out into a passive dismissal — mirroring web's
+    // setTimeout HINT_DISMISSED branch so the dashboards can compute
+    // shown→engaged ratio with the same numerator as web.
+    setTimeout(() => {
+      trackEvent(ANALYTICS_EVENTS.HINT_DISMISSED, {
+        id: next,
+        via: "timeout",
+      });
+    }, HINT_TIMEOUT_MS);
   }, [candidates, ctx, hasFirstRealEntry, showHints, store, toast]);
 }

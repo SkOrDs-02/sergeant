@@ -77,6 +77,7 @@ import {
   applyHubBackupPayload,
 } from "@/core/hub/hubBackup";
 import { mobileKVStore, useLocalStorage } from "@/lib/storage";
+import { OnboardingWizard } from "@/core/OnboardingWizard";
 
 import {
   SettingsGroup,
@@ -225,6 +226,12 @@ function ModuleReorderList() {
 export function GeneralSection() {
   const [prefs, setPrefs] = useLocalStorage<HubPrefs>(HUB_PREFS_KEY, {});
   const [confirmImport, setConfirmImport] = useState(false);
+  // Tour replay (S4.5 mobile parity): show the welcome wizard in
+  // read-only mode so users can re-watch the FTUX without resetting
+  // their state. Distinct from "Перезапустити онбординг", which wipes
+  // vibe picks + first-action flags via `resetOnboardingState`. Mirror
+  // of `apps/web/src/core/settings/GeneralSection.tsx`.
+  const [tourOpen, setTourOpen] = useState(false);
   const toast = useToast();
 
   const showCoach = prefs.showCoach !== false;
@@ -350,9 +357,18 @@ export function GeneralSection() {
       </SettingsSubGroup>
       <SettingsSubGroup title="Онбординг">
         <Text className="text-xs text-fg-muted leading-snug">
-          Перезапуск не видаляє твої дані — лише повертає вітальний екран та
-          підказки першого запуску.
+          Подивитись tour — побачити вітальний екран ще раз без скидання твого
+          стану. Перезапуск не видаляє твої дані — лише повертає вітальний екран
+          та підказки першого запуску.
         </Text>
+        <Button
+          size="sm"
+          variant="secondary"
+          onPress={() => setTourOpen(true)}
+          testID="general-replay-tour"
+        >
+          Подивитись tour
+        </Button>
         <Button
           size="sm"
           variant="secondary"
@@ -462,6 +478,9 @@ export function GeneralSection() {
           відповідними інфраструктурними кроками — див. примітки вище.
         </Text>
       </View>
+      {tourOpen ? (
+        <OnboardingWizard mode="tour" onDone={() => setTourOpen(false)} />
+      ) : null}
     </SettingsGroup>
   );
 }

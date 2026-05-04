@@ -1,53 +1,37 @@
 # Playbook: Run Access Review
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
-> **Status:** Active
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Deprecated
 
-**Trigger:** periodic access review for Tier 0 and Tier 1 systems, or a governance sweep after staffing, vendor, or infra changes.
+> **Superseded by:** [access-governance.md § Periodic access review](./access-governance.md#3-periodic-access-review) — merged 2026-05-04 (initiative [0009](../initiatives/0009-agent-os-hardening.md) PR 2.4).
+
+**Trigger:** historical anchor — open [access-governance.md § Periodic access review](./access-governance.md#3-periodic-access-review) instead.
 
 ## Owner surface
 
 - Primary surface: privileged access governance
 - Governing skill: `sergeant-review-and-merge`
 
-## Required context
+## Why this stub still exists
 
-- Review [access-matrix.md](../security/access-matrix.md), [access-policy.md](../security/access-policy.md), and [secret-ownership-register.md](../security/secret-ownership-register.md).
+The merged [access-governance.md](./access-governance.md) playbook now owns grant, revoke, periodic review, and suspected-compromise paths together. This file stays in the repo so external bookmarks, audit logs, and historical PR/incident references keep resolving without 404s, and so `git blame` on the original steps remains intact.
+
+Do not extend this stub. Update [access-governance.md](./access-governance.md) and let this file follow.
 
 ## Steps
 
-### 1. Review Tier 0 surfaces
-
-- Verify owner is still correct.
-- Verify holder list is still justified.
-- Remove any stale, redundant, or undocumented access.
-
-### 2. Review Tier 1 surfaces
-
-- Look for over-privileged roles where read-only would be enough.
-- Look for stale contractors or machine credentials without a clear purpose.
-- Confirm every surface still has one owner.
-
-### 3. Record actions
-
-- Open revoke follow-ups for stale access.
-- Open rotation follow-ups for ambiguous shared credentials.
-- Update the matrix or ownership register if a new surface appeared.
+See [access-governance.md § Periodic access review](./access-governance.md#3-periodic-access-review).
 
 ## Verification
 
-- [ ] Every Tier 0 surface reviewed
-- [ ] Every Tier 1 surface reviewed
-- [ ] Stale contractors and unused machine credentials checked
-- [ ] Follow-up items opened for drift
+- [ ] The reader was redirected to [access-governance.md § Periodic access review](./access-governance.md#3-periodic-access-review).
 
 ## When not to use this playbook
 
-- A single urgent compromise is active right now.
-- You only need to grant or revoke one isolated access request.
+- Always: this file is deprecated. Use [access-governance.md](./access-governance.md).
 
 ## Related playbooks and skills
 
-- [grant-privileged-access.md](./grant-privileged-access.md)
-- [revoke-privileged-access.md](./revoke-privileged-access.md)
+- [access-governance.md](./access-governance.md) — canonical merged access playbook.
 - [run-weekly-operator-digest.md](./run-weekly-operator-digest.md)
+- Skill: `sergeant-review-and-merge`

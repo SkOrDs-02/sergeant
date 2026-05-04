@@ -4,7 +4,7 @@
     "better-auth-best-practices": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "0b42004f625f5f966d13ee78a6c45cad01c933232ee9f9ca3ae12c6cf60f0ee2"
+      "computedHash": "f07226cf3bf6aff0491460c18cb4c92e98262324bbd83ebf01d48b67f27b2cbd"
     },
     "sergeant-bugfix-and-regression": {
       "source": "local",
