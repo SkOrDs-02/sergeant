@@ -1,15 +1,16 @@
 # M20 — `App.exitApp()` on back without unsaved-state check
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Open
 
-| Field          | Value                                         |
-| -------------- | --------------------------------------------- |
+| Field          | Value                                          |
+| -------------- | ---------------------------------------------- |
 | **Severity**   | Medium (mostly UX, light security implication) |
-| **Sprint**     | [Sprint 3](./sprint-3.md)                     |
-| **Owner**      | mobile                                        |
-| **Effort**     | 0.25 person-day                               |
-| **Status**     | Open                                          |
-| **Discovered** | 2026-05-03 deep security review               |
+| **Sprint**     | [Sprint 3](./sprint-3.md)                      |
+| **Owner**      | mobile                                         |
+| **Effort**     | 0.25 person-day                                |
+| **Status**     | Open                                           |
+| **Discovered** | 2026-05-03 deep security review                |
 
 ## Summary
 

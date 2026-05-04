@@ -1,6 +1,7 @@
 # H5 — `getTrustedOrigins()` includes `exp://` in production
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Open
 
 | Field          | Value                                                |
 | -------------- | ---------------------------------------------------- |
@@ -55,10 +56,12 @@ Auth always seeds the dev scheme.
 - `apps/server/src/auth.ts` — replace the static `expo()` invocation with:
 
 ```ts
-const trustedNativeSchemes = (process.env.BETTER_AUTH_TRUSTED_NATIVE_SCHEMES
-  ?? (process.env.NODE_ENV === "production"
-        ? "com.sergeant.app://"
-        : "com.sergeant.app://,exp://"))
+const trustedNativeSchemes = (
+  process.env.BETTER_AUTH_TRUSTED_NATIVE_SCHEMES ??
+  (process.env.NODE_ENV === "production"
+    ? "com.sergeant.app://"
+    : "com.sergeant.app://,exp://")
+)
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);

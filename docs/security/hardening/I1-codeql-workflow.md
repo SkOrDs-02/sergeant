@@ -1,15 +1,16 @@
 # I1 — Add CodeQL SAST workflow
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Open
 
-| Field          | Value                                         |
-| -------------- | --------------------------------------------- |
-| **Severity**   | Informational / hardening                     |
-| **Sprint**     | [Sprint 3](./sprint-3.md)                     |
-| **Owner**      | platform                                      |
-| **Effort**     | 0.5 person-day                                |
-| **Status**     | Open                                          |
-| **Discovered** | 2026-05-03 deep security review               |
+| Field          | Value                           |
+| -------------- | ------------------------------- |
+| **Severity**   | Informational / hardening       |
+| **Sprint**     | [Sprint 3](./sprint-3.md)       |
+| **Owner**      | platform                        |
+| **Effort**     | 0.5 person-day                  |
+| **Status**     | Open                            |
+| **Discovered** | 2026-05-03 deep security review |
 
 ## Summary
 

@@ -1,15 +1,16 @@
 # L13 — `Dockerfile.api` platform pin in CI
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Open
 
-| Field          | Value                                         |
-| -------------- | --------------------------------------------- |
-| **Severity**   | Low                                           |
-| **Sprint**     | [Sprint 4](./sprint-4.md)                     |
-| **Owner**      | platform                                      |
-| **Effort**     | 0.25 person-day                               |
-| **Status**     | Open                                          |
-| **Discovered** | 2026-05-03 deep security review               |
+| Field          | Value                           |
+| -------------- | ------------------------------- |
+| **Severity**   | Low                             |
+| **Sprint**     | [Sprint 4](./sprint-4.md)       |
+| **Owner**      | platform                        |
+| **Effort**     | 0.25 person-day                 |
+| **Status**     | Open                            |
+| **Discovered** | 2026-05-03 deep security review |
 
 ## Summary
 
@@ -27,7 +28,7 @@ publishes the resulting digest as a check.
 ## Correction points
 
 - `.github/workflows/ci.yml` — `docker buildx build --platform
-  linux/amd64 -f Dockerfile.api .`.
+linux/amd64 -f Dockerfile.api .`.
 - `docs/security/container-scan.md` — note the platform invariant.
 
 ## Verification

@@ -1,15 +1,16 @@
 # L6 — Confirm `X-Content-Type-Options: nosniff`
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Open
 
-| Field          | Value                                         |
-| -------------- | --------------------------------------------- |
-| **Severity**   | Low                                           |
-| **Sprint**     | [Sprint 4](./sprint-4.md)                     |
-| **Owner**      | backend                                       |
-| **Effort**     | 0.1 person-day                                |
-| **Status**     | Open                                          |
-| **Discovered** | 2026-05-03 deep security review               |
+| Field          | Value                           |
+| -------------- | ------------------------------- |
+| **Severity**   | Low                             |
+| **Sprint**     | [Sprint 4](./sprint-4.md)       |
+| **Owner**      | backend                         |
+| **Effort**     | 0.1 person-day                  |
+| **Status**     | Open                            |
+| **Discovered** | 2026-05-03 deep security review |
 
 ## Summary
 

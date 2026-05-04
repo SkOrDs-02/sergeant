@@ -1,6 +1,7 @@
 # H7 — `apps/web/vercel.json` vs root `vercel.json` config drift
 
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-04.
+> **Status:** Closed (2026-05-04 — single source of truth + CI guard)
 
 | Field          | Value                                                   |
 | -------------- | ------------------------------------------------------- |

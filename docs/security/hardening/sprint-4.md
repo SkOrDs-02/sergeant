@@ -1,6 +1,7 @@
 # Sprint 4 — Low severity sweep and structural hardening
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Planned
 
 Sprint 4 closes the **Low-severity sweep** (L1–L14 — paper cuts, defence in
 depth, hygiene) and lands the **structural hardening track** (I3–I8 — SBOM,
@@ -12,28 +13,28 @@ posture from "secure for an MVP" to "auditable for a paid product".
 
 ## Scope
 
-| ID                                                  | Title                                                | Severity | Owner    | Effort |
-| --------------------------------------------------- | ---------------------------------------------------- | -------- | -------- | ------ |
-| [L1](./L1-uuid-override.md)                         | `package.json` overrides — confirm `uuid` resolves   | Low      | platform | 0.1 d  |
-| [L2](./L2-permissions-policy-broader.md)            | Permissions-Policy could disable more APIs           | Low      | frontend | 0.1 d  |
-| [L3](./L3-meta-referrer.md)                         | `index.html` missing `<meta name="referrer">`       | Low      | frontend | 0.1 d  |
-| [L4](./L4-html-lang-attribute.md)                   | `<html lang>` attribute audit                        | Low      | frontend | 0.1 d  |
-| [L5](./L5-dns-prefetch-control.md)                  | Confirm `X-DNS-Prefetch-Control: off`                | Low      | backend  | 0.1 d  |
-| [L6](./L6-no-sniff-explicit.md)                     | Confirm `X-Content-Type-Options: nosniff`            | Low      | backend  | 0.1 d  |
-| [L7](./L7-health-endpoint-info-leak.md)             | Health endpoint info-leak audit                      | Low      | backend  | 0.25 d |
-| [L8](./L8-openclaw-repo-root-traversal.md)          | OpenClaw `OPENCLAW_REPO_ROOT` path-traversal guard   | Low      | console  | 0.25 d |
-| [L9](./L9-sentry-release-sha.md)                    | Sentry `release` not SHA-pinned                      | Low      | platform | 0.1 d  |
-| [L10](./L10-user-id-hash-in-logs.md)                | `recordSync*` logs raw `userId` instead of hash      | Low      | backend  | 0.25 d |
-| [L11](./L11-csp-monitoring-allowlist.md)            | CSP must allowlist Sentry / PostHog `connect-src`    | Low      | frontend | 0.25 d |
-| [L12](./L12-ios-app-transport-security.md)          | iOS `NSAppTransportSecurity` audit                   | Low      | mobile   | 0.1 d  |
-| [L13](./L13-docker-platform-pin.md)                 | `Dockerfile.api` platform pin in CI                  | Low      | platform | 0.25 d |
-| [L14](./L14-pnpm-frozen-lockfile-dev.md)            | `pnpm install --frozen-lockfile` in dev workflow     | Low      | platform | 0.1 d  |
-| [I3](./I3-sbom-generation.md)                       | Generate SBOM during container build                 | Info     | platform | 0.5 d  |
-| [I4](./I4-security-txt.md)                          | `/.well-known/security.txt` content + expiry refresh | Info     | platform | 0.1 d  |
-| [I5](./I5-pre-commit-secret-detection.md)           | Pre-commit hooks for secret detection                | Info     | platform | 0.25 d |
-| [I6](./I6-threat-model.md)                          | Document the STRIDE threat model per module          | Info     | platform | 1 d    |
-| [I7](./I7-security-events-openclaw.md)              | Push security events to OpenClaw                     | Info     | backend  | 1 d    |
-| [I8](./I8-periodic-external-pentest.md)             | Schedule a periodic external pentest                 | Info     | founder  | —      |
+| ID                                         | Title                                                | Severity | Owner    | Effort |
+| ------------------------------------------ | ---------------------------------------------------- | -------- | -------- | ------ |
+| [L1](./L1-uuid-override.md)                | `package.json` overrides — confirm `uuid` resolves   | Low      | platform | 0.1 d  |
+| [L2](./L2-permissions-policy-broader.md)   | Permissions-Policy could disable more APIs           | Low      | frontend | 0.1 d  |
+| [L3](./L3-meta-referrer.md)                | `index.html` missing `<meta name="referrer">`        | Low      | frontend | 0.1 d  |
+| [L4](./L4-html-lang-attribute.md)          | `<html lang>` attribute audit                        | Low      | frontend | 0.1 d  |
+| [L5](./L5-dns-prefetch-control.md)         | Confirm `X-DNS-Prefetch-Control: off`                | Low      | backend  | 0.1 d  |
+| [L6](./L6-no-sniff-explicit.md)            | Confirm `X-Content-Type-Options: nosniff`            | Low      | backend  | 0.1 d  |
+| [L7](./L7-health-endpoint-info-leak.md)    | Health endpoint info-leak audit                      | Low      | backend  | 0.25 d |
+| [L8](./L8-openclaw-repo-root-traversal.md) | OpenClaw `OPENCLAW_REPO_ROOT` path-traversal guard   | Low      | console  | 0.25 d |
+| [L9](./L9-sentry-release-sha.md)           | Sentry `release` not SHA-pinned                      | Low      | platform | 0.1 d  |
+| [L10](./L10-user-id-hash-in-logs.md)       | `recordSync*` logs raw `userId` instead of hash      | Low      | backend  | 0.25 d |
+| [L11](./L11-csp-monitoring-allowlist.md)   | CSP must allowlist Sentry / PostHog `connect-src`    | Low      | frontend | 0.25 d |
+| [L12](./L12-ios-app-transport-security.md) | iOS `NSAppTransportSecurity` audit                   | Low      | mobile   | 0.1 d  |
+| [L13](./L13-docker-platform-pin.md)        | `Dockerfile.api` platform pin in CI                  | Low      | platform | 0.25 d |
+| [L14](./L14-pnpm-frozen-lockfile-dev.md)   | `pnpm install --frozen-lockfile` in dev workflow     | Low      | platform | 0.1 d  |
+| [I3](./I3-sbom-generation.md)              | Generate SBOM during container build                 | Info     | platform | 0.5 d  |
+| [I4](./I4-security-txt.md)                 | `/.well-known/security.txt` content + expiry refresh | Info     | platform | 0.1 d  |
+| [I5](./I5-pre-commit-secret-detection.md)  | Pre-commit hooks for secret detection                | Info     | platform | 0.25 d |
+| [I6](./I6-threat-model.md)                 | Document the STRIDE threat model per module          | Info     | platform | 1 d    |
+| [I7](./I7-security-events-openclaw.md)     | Push security events to OpenClaw                     | Info     | backend  | 1 d    |
+| [I8](./I8-periodic-external-pentest.md)    | Schedule a periodic external pentest                 | Info     | founder  | —      |
 
 **Total effort:** ≈ 4.5 person-days (excluding I8 which is calendar-bound).
 

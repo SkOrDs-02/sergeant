@@ -1,15 +1,16 @@
 # I7 — Push security events to OpenClaw
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Open
 
-| Field          | Value                                         |
-| -------------- | --------------------------------------------- |
-| **Severity**   | Informational / hardening                     |
-| **Sprint**     | [Sprint 4](./sprint-4.md)                     |
-| **Owner**      | backend                                       |
-| **Effort**     | 1 person-day                                  |
-| **Status**     | Open                                          |
-| **Discovered** | 2026-05-03 deep security review               |
+| Field          | Value                           |
+| -------------- | ------------------------------- |
+| **Severity**   | Informational / hardening       |
+| **Sprint**     | [Sprint 4](./sprint-4.md)       |
+| **Owner**      | backend                         |
+| **Effort**     | 1 person-day                    |
+| **Status**     | Open                            |
+| **Discovered** | 2026-05-03 deep security review |
 
 ## Summary
 
@@ -23,7 +24,7 @@ OpenClaw founder bot turns them into actionable signals.
 
 - Define a "security topic" in OpenClaw with a fixed set of event types.
 - Server emits compact payloads: `{ event, severity, user_id_hash,
-  details, timestamp }`.
+details, timestamp }`.
 - Rate-limit the push at source so a burst does not flood Telegram.
 
 ## Correction points

@@ -11,9 +11,9 @@ for the architectural decision.
 ## Single source of truth: `vercel.json` lives at the repo root
 
 > **Hard rule.** The repository ships exactly **one** `vercel.json`, located at
-> the monorepo root. `apps/web/vercel.json` MUST NOT exist. CI enforces this
-> via `scripts/check-vercel-config.sh` (wired into the `check` job in
-> `.github/workflows/ci.yml`).
+> the monorepo root. A duplicate `vercel.json` under `apps/web/` MUST NOT
+> exist. CI enforces this via `scripts/check-vercel-config.sh` (wired into the
+> `check` job in `.github/workflows/ci.yml`).
 
 Why a single file at the root, instead of one per app:
 

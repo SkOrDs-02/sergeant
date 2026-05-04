@@ -1,15 +1,16 @@
 # M1 — `CSP_DISABLE=1` runtime fault-injection vector
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Open
 
-| Field          | Value                                                |
-| -------------- | ---------------------------------------------------- |
+| Field          | Value                                                  |
+| -------------- | ------------------------------------------------------ |
 | **Severity**   | Medium (CVSS 6.1, AV:N/AC:H/PR:H/UI:R/S:C/C:L/I:L/A:N) |
-| **Sprint**     | [Sprint 2](./sprint-2.md)                            |
-| **Owner**      | backend                                              |
-| **Effort**     | 0.25 person-day                                      |
-| **Status**     | Open                                                 |
-| **Discovered** | 2026-05-03 deep security review                      |
+| **Sprint**     | [Sprint 2](./sprint-2.md)                              |
+| **Owner**      | backend                                                |
+| **Effort**     | 0.25 person-day                                        |
+| **Status**     | Open                                                   |
+| **Discovered** | 2026-05-03 deep security review                        |
 
 ## Summary
 

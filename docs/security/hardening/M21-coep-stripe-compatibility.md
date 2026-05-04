@@ -1,15 +1,16 @@
 # M21 — `Cross-Origin-Embedder-Policy: require-corp` may break future iframes
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Open
 
-| Field          | Value                                         |
-| -------------- | --------------------------------------------- |
-| **Severity**   | Medium                                        |
-| **Sprint**     | [Sprint 3](./sprint-3.md)                     |
-| **Owner**      | frontend                                      |
-| **Effort**     | 0.25 person-day                               |
-| **Status**     | Open                                          |
-| **Discovered** | 2026-05-03 deep security review               |
+| Field          | Value                           |
+| -------------- | ------------------------------- |
+| **Severity**   | Medium                          |
+| **Sprint**     | [Sprint 3](./sprint-3.md)       |
+| **Owner**      | frontend                        |
+| **Effort**     | 0.25 person-day                 |
+| **Status**     | Open                            |
+| **Discovered** | 2026-05-03 deep security review |
 
 ## Summary
 
