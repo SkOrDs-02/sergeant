@@ -1,5 +1,6 @@
 # 0002 — Mobile platform decision: lock the deprecation deadline
 
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** In progress (Phase 1 done — sunset locked, lint guard live, shell-tax script ready; Phase 2 — weekly cron live)
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
@@ -187,7 +188,7 @@ top_files:     README.md (16), package.json (13), AndroidManifest.xml (6), …
 
 ### Фаза 2 — `ci-shell-tax-report` cron (DONE — 2026-05-04)
 
-**PR:** `devin/0002-shell-tax-cron-…` (номер додам сюди після merge).
+**PR:** [#1633](https://github.com/Skords-01/Sergeant/pull/1633) (merged 2026-05-04).
 
 `report-shell-tax.mjs` тепер ганяється автоматично:
 
