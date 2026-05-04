@@ -9,6 +9,10 @@ import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Skeleton } from "@shared/components/ui/Skeleton";
+import {
+  DataState,
+  type DataStateQueryLike,
+} from "@shared/components/ui/DataState";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { WorkoutTemplatesSection } from "../components/WorkoutTemplatesSection";
@@ -36,6 +40,7 @@ import { useWorkouts } from "../hooks/useWorkouts";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
 import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
 import type {
+  Workout,
   WorkoutFinishSummary,
   WorkoutGroup,
   WorkoutItem,
@@ -446,6 +451,33 @@ export function Workouts() {
   // re-render automatically once the engine writes new state.
   const handlePullRefresh = useCallback(() => requestCloudPull(2500), []);
 
+  // DataState contract for the workout journal:
+  //   - `useWorkouts` flips `loaded` from false → true after the first
+  //     hydration tick. While `loaded === false` we feed `data: undefined`
+  //     so DataState renders the skeleton slot; from the second tick on
+  //     `data` is the real list (possibly empty), which lets the journal
+  //     render its own "порожньо" empty-state without flashing it during
+  //     mount.
+  //   - `isLoading` mirrors the inverted `loaded` flag so a future
+  //     stale-revalidate (cloud pull → re-merge) keeps the list visible.
+  const journalQuery: DataStateQueryLike<readonly Workout[]> = {
+    data: workoutsLoaded ? workouts : undefined,
+    isLoading: !workoutsLoaded,
+  };
+
+  const workoutsLoadingSkeleton = (
+    <div
+      className="space-y-3"
+      role="status"
+      aria-live="polite"
+      aria-label="Завантажуємо тренування"
+    >
+      <Skeleton className="h-28 w-full" />
+      <Skeleton className="h-20 w-full" />
+      <Skeleton className="h-20 w-full" />
+    </div>
+  );
+
   return (
     <PullToRefresh onRefresh={handlePullRefresh} variant="fizruk">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
@@ -511,51 +543,46 @@ export function Workouts() {
           />
         ) : null}
 
-        {view === "log" && !workoutsLoaded && (
-          // First-paint placeholder while `useWorkouts` is still rehydrating
-          // from `localStorage` (one tick on mount). Prevents the "порожньо"
-          // empty-state from flashing before real data renders — matches the
-          // Skeleton pattern already used in Finyk.
-          <div
-            className="space-y-3"
-            role="status"
-            aria-live="polite"
-            aria-label="Завантажуємо тренування"
-          >
-            <Skeleton className="h-28 w-full" />
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
-          </div>
-        )}
-        {view === "log" && workoutsLoaded && (
-          <WorkoutJournalSection
-            activeWorkout={activeWorkout}
-            activeDuration={activeDuration}
-            workouts={workouts}
-            activeWorkoutId={activeWorkoutId}
-            setActiveWorkoutId={setActiveWorkoutId}
-            retroOpen={retroOpen}
-            setRetroOpen={setRetroOpen}
-            retroDate={retroDate}
-            setRetroDate={setRetroDate}
-            retroTime={retroTime}
-            setRetroTime={setRetroTime}
-            createWorkout={createWorkout}
-            setMode={setView}
-            musclesUk={musclesUk}
-            recBy={rec.by}
-            lastByExerciseId={lastByExerciseId}
-            setRestTimer={setRestTimer}
-            updateWorkout={updateWorkout}
-            updateItem={updateItem}
-            removeItem={removeItemWithUndo}
-            setFinishFlash={setFinishFlash}
-            endWorkout={endWorkout}
-            summarizeWorkoutForFinish={summarizeWorkoutForFinish}
-            submitRetroWorkout={submitRetroWorkout}
-            deleteWorkout={deleteWorkout}
-            restoreWorkout={restoreWorkout}
-          />
+        {view === "log" && (
+          // DataState contract: `data === undefined` triggers the skeleton
+          // slot. `useWorkouts` flips `loaded` from false → true after one
+          // tick on mount (it rehydrates from `localStorage` / SQLite),
+          // so on first paint we feed `data: undefined` and from the
+          // second tick onwards `data` is the real list — even when it
+          // happens to be empty. This prevents the "порожньо" empty-state
+          // inside `WorkoutJournalSection` from flashing during hydration.
+          <DataState query={journalQuery} skeleton={workoutsLoadingSkeleton}>
+            {() => (
+              <WorkoutJournalSection
+                activeWorkout={activeWorkout}
+                activeDuration={activeDuration}
+                workouts={workouts}
+                activeWorkoutId={activeWorkoutId}
+                setActiveWorkoutId={setActiveWorkoutId}
+                retroOpen={retroOpen}
+                setRetroOpen={setRetroOpen}
+                retroDate={retroDate}
+                setRetroDate={setRetroDate}
+                retroTime={retroTime}
+                setRetroTime={setRetroTime}
+                createWorkout={createWorkout}
+                setMode={setView}
+                musclesUk={musclesUk}
+                recBy={rec.by}
+                lastByExerciseId={lastByExerciseId}
+                setRestTimer={setRestTimer}
+                updateWorkout={updateWorkout}
+                updateItem={updateItem}
+                removeItem={removeItemWithUndo}
+                setFinishFlash={setFinishFlash}
+                endWorkout={endWorkout}
+                summarizeWorkoutForFinish={summarizeWorkoutForFinish}
+                submitRetroWorkout={submitRetroWorkout}
+                deleteWorkout={deleteWorkout}
+                restoreWorkout={restoreWorkout}
+              />
+            )}
+          </DataState>
         )}
 
         {view === "templates" && (
