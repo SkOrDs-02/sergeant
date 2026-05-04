@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-04 by Devin — **Stage 1 COMPLETE; Stage 4 Finyk Mono mirror in CI; Stage 5 op-log v2 hardening in flight.** Stage 1: all 8/8 PRs landed (PR #008 `ff217246`, PR #010 [#1543](https://github.com/Skords-01/Sergeant/pull/1543), PR #013 via 4 sub-PRs). Stage 4 Fizruk: 5/5 PRs merged (PR #027–#030 + #029a). Stage 4 Nutrition: PR #031 / #032 / #033 LANDED ([#1574](https://github.com/Skords-01/Sergeant/pull/1574)), PR #034 LANDED ([#1636](https://github.com/Skords-01/Sergeant/pull/1636)). Stage 4 Finyk: PR #035 LANDED ([#1667](https://github.com/Skords-01/Sergeant/pull/1667) — schema + apply-fns), PR #036 LANDED ([#1680](https://github.com/Skords-01/Sergeant/pull/1680) — dual-write web + mobile), PR #037 LANDED (`c89870c6` — read-overlay web + mobile under `feature.finyk.sqlite_v2.read_sqlite`, default off), PR #038 IN CI (Mono cache mirror у `finyk_mono_*` SQLite таблицях під `feature.finyk.sqlite_v2.mono_mirror`, default off). Stage 5: PR #040 LANDED (`ec1f3820` — persistent op-log retry policy у SQLite), PR #041 IN CI ([#1721](https://github.com/Skords-01/Sergeant/pull/1721) — SSE pull stream), PR #043 LANDED ([#1734](https://github.com/Skords-01/Sergeant/pull/1734) — G-set CRDT для `nutrition_meals` із tombstone інваріантом + 3 інтеграційні тести), PR #043a LANDED ([#1739](https://github.com/Skords-01/Sergeant/pull/1739) — tombstone-resurrection guard для routine + 5 fizruk apply-функцій + 6 інтеграційних кейсів), PR #043b IN CI ([#1743](https://github.com/Skords-01/Sergeant/pull/1743) — той самий guard для 3 nutrition non-meals apply-функцій + 2 finyk хелперів, які покривають усі 10 finyk soft-delete таблиць + 7 інтеграційних кейсів; разом із PR #043a закриває per-table TODO з PR #043), PR #048 LANDED ([#1737](https://github.com/Skords-01/Sergeant/pull/1737) — RED-метрики `sync_op_log_apply_total` / `sync_op_log_pull_lag_ms` / `sync_op_log_pull_queue_depth` + 4 нові Grafana панелі в `sync.json`). PR #042 (PN-counter for `routine_streaks`) deferred — потребує protocol-зміни (новий op kind `increment` у CHECK constraint + zod + DB migration); see PR #042 entry below. Stage 0: PR #003 LANDED ([#1497](https://github.com/Skords-01/Sergeant/pull/1497)). Boot-wiring follow-up для `register{Routine,Fizruk,Nutrition}DualWriteContext` ще не залендили. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by Devin — **Stage 1 COMPLETE; Stage 4 Finyk Mono mirror in CI; Stage 5 op-log v2 hardening in flight.** Stage 1: all 8/8 PRs landed (PR #008 `ff217246`, PR #010 [#1543](https://github.com/Skords-01/Sergeant/pull/1543), PR #013 via 4 sub-PRs). Stage 4 Fizruk: 5/5 PRs merged (PR #027–#030 + #029a). Stage 4 Nutrition: PR #031 / #032 / #033 LANDED ([#1574](https://github.com/Skords-01/Sergeant/pull/1574)), PR #034 LANDED ([#1636](https://github.com/Skords-01/Sergeant/pull/1636)). Stage 4 Finyk: PR #035 LANDED ([#1667](https://github.com/Skords-01/Sergeant/pull/1667) — schema + apply-fns), PR #036 LANDED ([#1680](https://github.com/Skords-01/Sergeant/pull/1680) — dual-write web + mobile), PR #037 LANDED (`c89870c6` — read-overlay web + mobile under `feature.finyk.sqlite_v2.read_sqlite`, default off), PR #038 IN CI (Mono cache mirror у `finyk_mono_*` SQLite таблицях під `feature.finyk.sqlite_v2.mono_mirror`, default off). Stage 5: PR #040 LANDED (`ec1f3820` — persistent op-log retry policy у SQLite), PR #041 IN CI ([#1721](https://github.com/Skords-01/Sergeant/pull/1721) — SSE pull stream), PR #043 LANDED ([#1734](https://github.com/Skords-01/Sergeant/pull/1734) — G-set CRDT для `nutrition_meals` із tombstone інваріантом + 3 інтеграційні тести), PR #043a LANDED ([#1739](https://github.com/Skords-01/Sergeant/pull/1739) — tombstone-resurrection guard для routine + 5 fizruk apply-функцій + 6 інтеграційних кейсів), PR #043b LANDED ([#1743](https://github.com/Skords-01/Sergeant/pull/1743) — той самий guard для 3 nutrition non-meals apply-функцій + 2 finyk хелперів, які покривають усі 10 finyk soft-delete таблиць + 7 інтеграційних кейсів; разом із PR #043a закриває per-table TODO з PR #043), PR #043c LANDED ([#1754](https://github.com/Skords-01/Sergeant/pull/1754) — typed RejectReason allowlist для syncV2 apply-шляху: 45+4 літерали в exported `as const` масивах + regression-тест пінить cardinality budget), PR #048 LANDED ([#1737](https://github.com/Skords-01/Sergeant/pull/1737) — RED-метрики `sync_op_log_apply_total` / `sync_op_log_pull_lag_ms` / `sync_op_log_pull_queue_depth` + 4 нові Grafana панелі в `sync.json`). **Stage 6 ops:** PR #049 docs portion LANDED ([#1757](https://github.com/Skords-01/Sergeant/pull/1757) — Railway Postgres backup/restore runbook у `docs/runbooks/database-backup-restore.md` із pg_dump/pg_restore-командами, sync-aware row-level restore матрицею, smoke-test SQL); weekly-verify CI deferred до PR #049b (потребує `RAILWAY_TOKEN`). PR #042 (PN-counter for `routine_streaks`) deferred — потребує protocol-зміни (новий op kind `increment` у CHECK constraint + zod + DB migration); see PR #042 entry below. Stage 0: PR #003 LANDED ([#1497](https://github.com/Skords-01/Sergeant/pull/1497)). Boot-wiring follow-up для `register{Routine,Fizruk,Nutrition}DualWriteContext` ще не залендили. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -131,13 +131,18 @@
   записати PAT у LS/MMKV. Існуючі — auto-migrate на першому online.
 - **Dep.** None.
 
-#### **PR #003 — `feat(server): persist Mono webhook secret rotation worker`**
+#### **PR #003 — `feat(server): persist Mono webhook secret rotation worker`** ✅ LANDED — [#1497](https://github.com/Skords-01/Sergeant/pull/1497)
 
 - **Scope.** Cron-job (Railway scheduled task) який раз на 90 днів ротує
-  `mono_connection.webhook_secret_hash`. Endpoint `/api/v1/mono/webhook/rotate`.
+  `mono_connection.webhook_secret_hash`. Endpoint `POST /api/internal/mono/webhook/rotate`
+  у [`apps/server/src/routes/internal/mono.ts`](../../apps/server/src/routes/internal/mono.ts);
+  логіка у [`apps/server/src/modules/mono/rotateSecret.ts`](../../apps/server/src/modules/mono/rotateSecret.ts);
+  storage у migration `033_mono_webhook_secret_rotated_at` (стовпець `webhook_secret_rotated_at`).
 - **Risk.** Проґавити вікно ротації — Mono webhook відмовляє. Mitigation:
-  alert у Sentry якщо secret > 100 днів.
-- **AC.** Unit-test ротації; integration-test mono-mock.
+  Sentry warning, якщо connection > `alertAfterDays` без ротації — реалізовано у
+  `rotateSecret.ts`; old secret лишається активним, поки Monobank не ACK-не нову URL,
+  тому incoming webhooks не падають при partial failure.
+- **AC.** Unit-test (`rotateSecret.test.ts`) + integration-test mono-mock — пройшов.
 - **Dep.** None.
 
 #### **PR #004 — `feat(web): exclude sensitive query keys from IDB persister`** ✅ LANDED — [#1283](https://github.com/Skords-01/Sergeant/pull/1283)
@@ -1250,17 +1255,36 @@ recreate indexes`) у `packages/db-schema/src/sqlite/migrations/index.ts`,
   != null, оригінальні поля незмінні).
 - **Dep.** PR #043.
 
-#### **PR #043b — `feat(server): tombstone resurrection guard for nutrition + finyk apply paths`** 🚧 IN CI ([#1743](https://github.com/Skords-01/Sergeant/pull/1743))
+#### **PR #043b — `feat(server): tombstone resurrection guard for nutrition + finyk apply paths`** ✅ LANDED ([#1743](https://github.com/Skords-01/Sergeant/pull/1743))
 
 - Scope. Закриває залишок per-table TODO з PR #043: 3 nutrition non-meals
   apply-функції (`applyNutritionPantries`, `applyNutritionPantryItems`,
   `applyNutritionRecipes`) + 2 finyk хелпери, які покривають усі 10
   finyk soft-delete таблиць (`applyFinykTombstone` — 2 composite-PK,
   `applyFinykPerRowBlob` — 8 per-row + JSONB).
-- **Stage.** Implementation + 7 нових інтеграційних кейсів готові; PR
-  відкрито, очікуємо CI. Разом із PR #043a повністю покриває весь
-  сімейство soft-delete apply-шляхів.
+- **Done (2026-05-04).** 7 нових integration-кейсів покривають
+  resurrection-attack reject + idempotent re-tombstone. Разом із
+  PR #043a повністю закриває per-table TODO з PR #043 для всіх 9 soft-delete
+  apply-шляхів.
 - **Dep.** PR #043, PR #043a.
+
+#### **PR #043c — `feat(server): typed RejectReason allowlist for syncV2 apply path`** ✅ LANDED ([#1754](https://github.com/Skords-01/Sergeant/pull/1754))
+
+- Scope. Тіснимо `reason: string` у syncV2-apply-шляху до closed string-literal
+  union (`ApplyRejectReason | EngineRejectReason`), backed by exported
+  `as const` arrays `APPLY_REJECT_REASONS` (45 літерали) + `ENGINE_REJECT_REASONS`
+  (4 літерали). TS-tsc блокує emit невідомого літерала на compile-time —
+  раніше typo тихо потрапляло у Prometheus як новий label-series, blowing
+  past документований cardinality cap.
+- **Виконано.** `apps/server/src/modules/sync/syncV2.ts` — нові типи + експорт
+  `as const`-масивів; `apps/server/src/obs/metrics.test.ts` — regression-test
+  пінить довжину allowlist-у (45/4) + key CRDT-інваріанти + snake_case-shape +
+  no-duplicates; `docs/observability/metrics.md` §4 — оновлений cardinality
+  budget і source-of-truth-лінк. Locally: typecheck + lint + 121 sync/obs тестів зелені.
+- **Risk.** Low — types-only narrowing; runtime label-set Prometheus незмінний.
+  Forward-compat: future apply-fn additions extend `as const` array (TS блокує
+  compile, поки не додано) — той самий governance-патерн, що `OP_LOG_TABLE_REGISTRY`.
+- **Dep.** PR #043, PR #043a, PR #043b, PR #048.
 
 #### **PR #044 — `feat(sync): conflict resolution UI for finyk_manual_expenses`**
 
@@ -1308,11 +1332,38 @@ recreate indexes`) у `packages/db-schema/src/sqlite/migrations/index.ts`,
     будуть прив'язані SLO-алерти. PromQL рецепти оновлені в
     `docs/observability/metrics.md` §4 і `docs/observability/dashboards.md`.
 
-#### **PR #049 — `feat(ops): backup/restore runbook + weekly verify CI`**
+#### **PR #049 — `feat(ops): backup/restore runbook + weekly verify CI`** 🚧 split into PR #049 (docs) + PR #049b (CI)
 
 - Scope. Документувати full-restore-from-backup для Railway Postgres.
   GitHub Action раз на тиждень: restore latest dump на staging + smoke-test
   schema integrity. Failures → PagerDuty.
+- **Split.** Розділено на два кроки: docs-only PR #049 LANDED ([#1757](https://github.com/Skords-01/Sergeant/pull/1757));
+  weekly-verify GitHub Action — окремий PR #049b (потребує `RAILWAY_TOKEN` у
+  GH Secrets + staging instance, поза скоупом docs-only).
+
+##### **PR #049 — `docs(docs): Railway Postgres backup/restore runbook (PR #049 docs portion)`** ✅ LANDED ([#1757](https://github.com/Skords-01/Sergeant/pull/1757))
+
+- Scope. Новий runbook у [`docs/runbooks/database-backup-restore.md`](../runbooks/database-backup-restore.md):
+  Railway dashboard + локальні `pg_dump`/`pg_restore` команди (custom format,
+  `--no-owner --no-privileges --clean --if-exists`); sync-aware row-level
+  restore матриця (which tables safe per CRDT semantics з PR #043 / #043a / #043b);
+  smoke-test SQL пінить migration ledger, row-counts, tombstone-інваріанти,
+  op-log monotonic server_ts, FK orphans; migration-skew handling; escalation
+  paths. Cross-link із concept-level [`docs/playbooks/restore-from-backup.md`](../playbooks/restore-from-backup.md),
+  [`docs/playbooks/test-backup-restore.md`](../playbooks/test-backup-restore.md),
+  [`docs/security/disaster-recovery.md`](../security/disaster-recovery.md).
+- **Risk.** None — pure docs, no runtime / schema / code change.
+- **Dep.** None.
+
+##### **PR #049b — `feat(ci): weekly Railway Postgres backup-verify GitHub Action`** (not yet started)
+
+- Scope. `.github/workflows/db-backup-verify.yml` — pull-latest-dump → restore
+  у ephemeral pg-instance (testcontainers / Railway temp service) → прогнати
+  smoke-test SQL із runbook-у §4. Failures → PagerDuty / Sentry alert.
+- Blocker. Потребує `RAILWAY_TOKEN` у GH Secrets + dedicated staging instance
+  (поза скоупом docs-only PR #049).
+- **Dep.** PR #049 (docs). Optional: PR #045 (Redis), PR #046 (pgBouncer) — для
+  testcontainers-based image якщо staging-instance занадто дорогий.
 
 #### **PR #050 — `feat(ops): module_data partition + archival`**
 
