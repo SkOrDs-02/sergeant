@@ -67,7 +67,7 @@ export const KNOWN_NUMBERING_GAPS = new Set([
   // See `docs/adr/README.md` § «Note on missing 0029».
   "0029",
   // 2026-05-03: ADR-0040 was referenced in code comments
-  // (`apps/console/src/openclaw/alerts-format.ts`) and roadmap §3.6
+  // (`tools/console/src/openclaw/alerts-format.ts`) and roadmap §3.6
   // ("strategic mode — /plan/analyze/okr") as the planned ADR for the
   // Wave-3 HTML-mode broadcast formatting decision; the decision was
   // captured inline in the Wave-3 PRs (#1473/#1480/#1503/#1508) and the

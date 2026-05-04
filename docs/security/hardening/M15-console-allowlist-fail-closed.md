@@ -14,7 +14,7 @@
 
 ## Summary
 
-`apps/console/src/security.ts` parses `CONSOLE_ALLOWED_TG_USER_IDS` and
+`tools/console/src/security.ts` parses `CONSOLE_ALLOWED_TG_USER_IDS` and
 gates the console bot. The audit confirms the OpenClaw bot is fail-closed
 (empty list → reject everyone) but did not see equivalent test coverage for
 `CONSOLE_BOT_TOKEN`. Empty / undefined env-var must reject, not allow.
@@ -33,8 +33,8 @@ test("CONSOLE_BOT_TOKEN allowlist fails closed when empty", () => {
 
 ## Correction points
 
-- `apps/console/src/security.test.ts` — add the table-driven test.
-- `apps/console/src/security.ts` — if needed, defensively short-circuit the
+- `tools/console/src/security.test.ts` — add the table-driven test.
+- `tools/console/src/security.ts` — if needed, defensively short-circuit the
   empty / undefined cases before parsing.
 
 ## Verification
@@ -46,14 +46,14 @@ test("CONSOLE_BOT_TOKEN allowlist fails closed when empty", () => {
 
 ## Resolution (2026-05-04)
 
-- `apps/console/src/security.ts` — `isUserAllowed` now mirrors the
+- `tools/console/src/security.ts` — `isUserAllowed` now mirrors the
   OpenClaw `isFounderAllowed` fail-closed contract (per
-  [`apps/console/src/openclaw/security.ts`](../../../apps/console/src/openclaw/security.ts)):
+  [`tools/console/src/openclaw/security.ts`](../../../tools/console/src/openclaw/security.ts)):
   empty / undefined `ALLOWED_USER_IDS` returns `false` regardless of
   `NODE_ENV`. The previous `NODE_ENV !== "production"` fall-open path
   is removed — preview / staging deploys with a missing allowlist no
   longer let any Telegram user through.
-- `apps/console/src/security.test.ts` — replaced the dev-only
+- `tools/console/src/security.test.ts` — replaced the dev-only
   fall-open test with a `it.each` matrix that locks the fail-closed
   contract across `production` / `development` / `staging` / unset
   `NODE_ENV`, plus empty + whitespace-only `ALLOWED_USER_IDS` strings.

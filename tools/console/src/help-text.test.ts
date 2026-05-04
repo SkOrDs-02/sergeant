@@ -1,5 +1,5 @@
 /**
- * Snapshot tests for `apps/console/src/index.ts` HELP_TEXT (M16).
+ * Snapshot tests for `tools/console/src/index.ts` HELP_TEXT (M16).
  *
  * The console bot's `/start` and `/help` send `HELP_TEXT` with
  * `parse_mode: "MarkdownV2"`. MarkdownV2 fails loudly on any

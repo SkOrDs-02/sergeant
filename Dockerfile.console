@@ -1,8 +1,12 @@
-# Мінімальний образ для apps/console (Telegram bot runtime).
+# Мінімальний образ для tools/console (Telegram bot runtime).
+#
+# Шлях `tools/console` (раніше `apps/console`) — internal ops tool, не product
+# surface. Сам Railway service `sergeant-hubchat` і ім'я npm-пакету
+# `@sergeant/console` НЕ змінюються, лише monorepo placement.
 #
 # Розгортається як окремий Railway service `sergeant-hubchat`
 # (див. docs/architecture/service-catalog.md рядок про Console agents).
-# Хостить два long-poll grammy-боти у одному процесі:
+# Хостить два long-poll grammy-боти в одному процесі:
 #   1. `@sergeant_console_bot` (ADR-0027) — multi-agent ops/marketing.
 #   2. `@OpenClaw_sergeant_bot` (ADR-0031) — DM-only co-founder bot.
 #
@@ -18,7 +22,7 @@ RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY patches ./patches
 COPY packages/config/package.json ./packages/config/package.json
-COPY apps/console/package.json ./apps/console/package.json
+COPY tools/console/package.json ./tools/console/package.json
 
 RUN pnpm install --frozen-lockfile --ignore-scripts \
       --filter @sergeant/console... \
@@ -26,9 +30,9 @@ RUN pnpm install --frozen-lockfile --ignore-scripts \
 
 # --- Джерела ---
 COPY packages/config ./packages/config
-COPY apps/console ./apps/console
+COPY tools/console ./tools/console
 
-WORKDIR /app/apps/console
+WORKDIR /app/tools/console
 ENV NODE_ENV=production
 
 RUN pnpm build
@@ -46,14 +50,14 @@ RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY patches ./patches
 COPY packages/config/package.json ./packages/config/package.json
-COPY apps/console/package.json ./apps/console/package.json
+COPY tools/console/package.json ./tools/console/package.json
 
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts \
       --filter @sergeant/console...
 
 # App code + build output
-COPY apps/console ./apps/console
-COPY --from=builder /app/apps/console/dist ./apps/console/dist
+COPY tools/console ./tools/console
+COPY --from=builder /app/tools/console/dist ./tools/console/dist
 
 # Trim Trivy-flagged optional peers (vite/vitest/esbuild) — ми їх не виконуємо
 # у runtime, але `pnpm install --prod` тягне через peer-граф.
@@ -82,7 +86,7 @@ RUN find node_modules -maxdepth 3 -type d \
 RUN addgroup -S app && adduser -S app -G app
 USER app
 
-WORKDIR /app/apps/console
+WORKDIR /app/tools/console
 
 # Long-poll grammy-боти не слухають HTTP. Healthcheck — наявність процесу
 # `node dist/index.js`. Railway автоматично рестартить crash-нутий контейнер.

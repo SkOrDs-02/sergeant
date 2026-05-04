@@ -32,7 +32,7 @@ details, timestamp }`.
 - `apps/server/src/obs/securityEvents.ts` (new) — typed emitter.
 - `apps/server/src/modules/mono/webhook.ts`, `auth.ts`, `chat.ts`,
   `transcribe.ts` — call sites for each event.
-- `apps/console/src/openclaw/securityRoom.ts` (new) — OpenClaw consumer.
+- `tools/console/src/openclaw/securityRoom.ts` (new) — OpenClaw consumer.
 - `docs/runbooks/security-events.md` (new) — operator playbook for each
   event type.
 

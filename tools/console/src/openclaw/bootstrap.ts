@@ -3,7 +3,7 @@
  *
  * Pure functions that wrap `bot.api.setWebhook` / `bot.api.deleteWebhook`
  * with shape validation + dry-run logging. Kept separate from
- * `apps/console/src/index.ts` so they can be unit-tested without
+ * `tools/console/src/index.ts` so they can be unit-tested without
  * spinning up an HTTP listener.
  *
  * Idempotency: Telegram's `setWebhook` is itself idempotent for a fixed
@@ -96,7 +96,7 @@ function sleep(ms: number): Promise<void> {
  * After `setWebhook` we read back `getWebhookInfo` and confirm the URL
  * stuck — see W4.1 race comment above. On mismatch we retry the
  * `setWebhook` call (max {@link WEBHOOK_VERIFY_MAX_ATTEMPTS} attempts).
- * Verification failures are thrown so caller (`apps/console/src/index.ts`)
+ * Verification failures are thrown so caller (`tools/console/src/index.ts`)
  * can decide between `process.exit(1)` and falling back to long-poll.
  */
 export async function registerOpenClawWebhook(

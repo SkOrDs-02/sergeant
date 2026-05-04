@@ -324,7 +324,7 @@ export interface RecordWriteAuditInput {
 
 /**
  * INSERT-ить одну row у `openclaw_write_audit` (append-only за дизайном).
- * Caller — `apps/console` callback handler через
+ * Caller — `tools/console` callback handler через
  * `POST /api/internal/openclaw/write-audit/log` endpoint.
  *
  * Чому без UPDATE-flow-у: lifecycle reconstructed by reading rows за
@@ -422,6 +422,11 @@ export async function listRecentWriteAudits(
   const limit = Math.max(1, Math.min(100, filters.limit ?? 20));
   params.push(limit);
 
+  // WHERE conjuncts assembled from allowlisted typed filter keys
+  // (`approvalId`, `tool`, `founderUserId`, `recordedAfter`, `limit`); each
+  // value is a `$N` placeholder bound via `params`. Same baseline pattern
+  // documented in eslint.config.js M11 audit comments.
+  // eslint-disable-next-line no-restricted-syntax
   const result = await pool.query(
     `SELECT id, recorded_at, approval_id, tool, founder_user_id,
             founder_tg_user_id, invocation_id, action, input,

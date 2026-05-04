@@ -1,14 +1,14 @@
-# Deploy `apps/console` (sergeant-hubchat)
+# Deploy `tools/console` (sergeant-hubchat)
 
 > **Status:** Active
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 > **Власник:** `sergeant-hubchat`.
 > **Webhook delivery (ADR-0041):** ✅ live in production з 2026-05-03 21:26 UTC. URL `https://sergeant-hubchat-production.up.railway.app/webhook/openclaw`, secret set, healthcheck `GET /healthz`. Backout — unset `OPENCLAW_USE_WEBHOOK` + redeploy.
 
 ## Що це
 
-`apps/console` — Node.js процес, що хостить grammy long-poll-боти Sergeant.
+`tools/console` — Node.js процес, що хостить grammy long-poll-боти Sergeant.
 Після [ADR-0032](../adr/0032-console-consolidated-into-openclaw.md) активний
 там тільки **`@OpenClaw_sergeant_bot`** (ADR-0031, DM-only co-founder з
 chat + slash-командами + ops/marketing tool-ами). Legacy
@@ -129,7 +129,7 @@ OpenClaw отримує update-и через webhook замість long-poll-у
 
 Backout: `variableDelete OPENCLAW_USE_WEBHOOK` + redeploy → `unregisterOpenClawWebhook` зробить `deleteWebhook` і console повернеться у long-poll за один redeploy. Не забудь повернути healthcheck path на `pgrep -f "node dist/index.js"`, інакше long-poll-контейнер не пройде healthcheck і Railway вб'є його.
 
-**Initial long-poll → webhook race (one-shot, observed 2026-05-03):** при першій активації перший redeploy викликав `setWebhook` ОК (видно в логах нового container-а), але одразу після цього старий long-poll контейнер у graceful-shutdown зробив один `getUpdates`, що неявно очищає webhook на стороні Telegram. `getWebhookInfo` повернув `url=""`. Workaround — після того як `OPENCLAW_USE_WEBHOOK=true` redeploy став SUCCESS, ще раз вручну викликати `setWebhook` через Bot API curl-ом і зробити explicit `serviceInstanceRedeploy`. Подальші webhook → webhook redeploy-и стабільні: старий webhook-контейнер не робить `getUpdates`, тому Telegram-side state не чіпається. Race-condition виникає тільки на першому переході і фіксується одним повторним setWebhook. **W4.1 hardening (backlog):** додати у `apps/console/src/openclaw/bootstrap.ts` poll-and-retry — після `setWebhook` робити `getWebhookInfo`, перевіряти що URL дорівнює очікуваному, при mismatch ще раз `setWebhook` (max 3 retries з backoff). Усуне ручний крок при майбутніх long-poll → webhook міграціях інших ботів.
+**Initial long-poll → webhook race (one-shot, observed 2026-05-03):** при першій активації перший redeploy викликав `setWebhook` ОК (видно в логах нового container-а), але одразу після цього старий long-poll контейнер у graceful-shutdown зробив один `getUpdates`, що неявно очищає webhook на стороні Telegram. `getWebhookInfo` повернув `url=""`. Workaround — після того як `OPENCLAW_USE_WEBHOOK=true` redeploy став SUCCESS, ще раз вручну викликати `setWebhook` через Bot API curl-ом і зробити explicit `serviceInstanceRedeploy`. Подальші webhook → webhook redeploy-и стабільні: старий webhook-контейнер не робить `getUpdates`, тому Telegram-side state не чіпається. Race-condition виникає тільки на першому переході і фіксується одним повторним setWebhook. **W4.1 hardening (backlog):** додати у `tools/console/src/openclaw/bootstrap.ts` poll-and-retry — після `setWebhook` робити `getWebhookInfo`, перевіряти що URL дорівнює очікуваному, при mismatch ще раз `setWebhook` (max 3 retries з backoff). Усуне ручний крок при майбутніх long-poll → webhook міграціях інших ботів.
 
 **Legacy console (dormant після ADR-0032):**
 
@@ -148,7 +148,7 @@ Backout: `variableDelete OPENCLAW_USE_WEBHOOK` + redeploy → `unregisterOpenCla
 ## Локальний dev
 
 ```bash
-cd apps/console
+cd tools/console
 cp .env.example .env       # заповнити CONSOLE_BOT_TOKEN (або dev-bot)
 pnpm dev                    # tsx watch src/index.ts
 ```

@@ -1,6 +1,6 @@
 # Telegram surfaces — план покращень
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 > Поетапний план покращень Telegram-частини Sergeant — двох ботів
@@ -167,7 +167,7 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 ### 3.3. `/audit since=` + `--csv` export
 
-**Status:** **shipped** — Wave 1, [#1462](https://github.com/Skords-01/Sergeant/pull/1462) (ADR-0037 follow-up). `since=<dur>` (max 30d) і `csv` тепер в `apps/console/src/openclaw/handler.ts`; helpers в `duration.ts` + `audit-csv.ts`.
+**Status:** **shipped** — Wave 1, [#1462](https://github.com/Skords-01/Sergeant/pull/1462) (ADR-0037 follow-up). `since=<dur>` (max 30d) і `csv` тепер в `tools/console/src/openclaw/handler.ts`; helpers в `duration.ts` + `audit-csv.ts`.
 **Pain закриває:** P6.
 **ADR-кандидат:** none (extension Phase 4.5 без новoï ADR).
 
@@ -183,8 +183,8 @@ CREATE INDEX idx_tg_alert_acks_unacked
 **Implementation:**
 
 - `apps/server/src/modules/openclaw/store.ts::listRecentWriteAudits` приймає optional `recordedAfter?: Date`.
-- `apps/console/src/openclaw/handler.ts::handleAuditCommand` парсить `since=24h` через `parseDuration()` helper.
-- CSV-rendering в `apps/console/src/openclaw/audit-csv.ts` (новий файл, ~30 рядків).
+- `tools/console/src/openclaw/handler.ts::handleAuditCommand` парсить `since=24h` через `parseDuration()` helper.
+- CSV-rendering в `tools/console/src/openclaw/audit-csv.ts` (новий файл, ~30 рядків).
 
 **Acceptance:**
 
@@ -219,7 +219,7 @@ CREATE INDEX idx_tg_alert_acks_unacked
 **Pain закриває:** P4.
 **ADR:** [ADR-0041 — OpenClaw Telegram delivery via webhook](../adr/0041-openclaw-telegram-webhook.md) §5 (production rollout) + race-condition note.
 
-**Що зроблено:** feature-flag webhook-режим у `apps/console`. Замість Express в `apps/server` хостимо `node:http`-listener в самому console-процесі (там же де `ApprovalStore`/agent-loop) і використовуємо grammy `webhookCallback("http", { secretToken })`. Long-poll лишається дефолтом для local dev (`pnpm console:dev`); production Railway env має `OPENCLAW_USE_WEBHOOK=true` + `OPENCLAW_WEBHOOK_URL=https://sergeant-hubchat-production.up.railway.app/webhook/openclaw` + `OPENCLAW_WEBHOOK_SECRET=<48-char hex>`. `Sergeant_alert_bot` лишається long-poll (broadcast-only, без callback latency-issue).
+**Що зроблено:** feature-flag webhook-режим у `tools/console`. Замість Express в `apps/server` хостимо `node:http`-listener в самому console-процесі (там же де `ApprovalStore`/agent-loop) і використовуємо grammy `webhookCallback("http", { secretToken })`. Long-poll лишається дефолтом для local dev (`pnpm console:dev`); production Railway env має `OPENCLAW_USE_WEBHOOK=true` + `OPENCLAW_WEBHOOK_URL=https://sergeant-hubchat-production.up.railway.app/webhook/openclaw` + `OPENCLAW_WEBHOOK_SECRET=<48-char hex>`. `Sergeant_alert_bot` лишається long-poll (broadcast-only, без callback latency-issue).
 
 **Чому:** callback-кнопки (Phase 4 approval, §3.2 ack-button) latency 1-3с. Webhook → <500ms. UX-помітно.
 
@@ -244,7 +244,7 @@ CREATE INDEX idx_tg_alert_acks_unacked
 **Status:** new (backlog, пост-W4 hardening на основі race-condition зі §3.5).
 **Pain закриває:** P4 follow-up — щоб майбутні long-poll → webhook міграції інших ботів (або accidental re-activation long-poll) не вимагали ручного curl-у.
 
-**Що:** у `apps/console/src/openclaw/bootstrap.ts:registerOpenClawWebhook` після `bot.api.setWebhook(...)` зробити `getWebhookInfo`, перевіряти що повернений `url === expected`, при mismatch ще раз викликати `setWebhook` з backoff (max 3 спроби, 1s/2s/4s). Лог-повідомлення про recovery, щоб у Sentry було видно що race спрацював.
+**Що:** у `tools/console/src/openclaw/bootstrap.ts:registerOpenClawWebhook` після `bot.api.setWebhook(...)` зробити `getWebhookInfo`, перевіряти що повернений `url === expected`, при mismatch ще раз викликати `setWebhook` з backoff (max 3 спроби, 1s/2s/4s). Лог-повідомлення про recovery, щоб у Sentry було видно що race спрацював.
 
 **Чому:** ADR-0041 §5 описує race ("getUpdates у старому контейнері перетирає webhook-state на Telegram-стороні"). Поточний код викликає `setWebhook` оптимістично і не перевіряє кінцевий стан → race потребує operator manual-fix. Поточний обхід — окремий `serviceInstanceRedeploy` після того, як впевнились що старий контейнер уже мертвий.
 
@@ -347,6 +347,6 @@ CREATE INDEX idx_tg_alert_acks_unacked
 - [ADR-0037 — OpenClaw write-audit persistence](../adr/0037-openclaw-write-audit-persistence.md)
 - [openclaw-roadmap.md — phase plan](./openclaw-roadmap.md)
 - [05-operations-and-automation.md §6.2](./05-operations-and-automation.md#62-телеграм-як-control-room) — Telegram як control-room
-- `apps/console/src/openclaw/handler.ts` — DM bot entry-point
+- `tools/console/src/openclaw/handler.ts` — DM bot entry-point
 - `apps/server/src/modules/openclaw/store.ts` — write-audit persistence
 - `ops/n8n-workflows/` — 19 active workflows

@@ -14,7 +14,7 @@
 
 ## Summary
 
-`apps/console/src/index.ts:128, 133` sends with `parse_mode: "Markdown"`. The
+`tools/console/src/index.ts:128, 133` sends with `parse_mode: "Markdown"`. The
 legacy parser has weaker escaping than `MarkdownV2` and tolerates zero-width
 sequences that can be exploited if a future contributor accidentally
 interpolates user input into a `Markdown`-formatted message.
@@ -24,13 +24,13 @@ interpolates user input into a `Markdown`-formatted message.
 - Move every console / OpenClaw message to `MarkdownV2` and use the existing
   `escapeTelegramMarkdownV2` helper for any interpolated value.
 - Add a lint guard / TODO that fails CI if `parse_mode: "Markdown"` is found
-  in `apps/console`.
+  in `tools/console`.
 
 ## Correction points
 
-- `apps/console/src/index.ts` — replace `Markdown` with `MarkdownV2`;
+- `tools/console/src/index.ts` — replace `Markdown` with `MarkdownV2`;
   re-escape `HELP_TEXT` constants as needed.
-- `apps/console/src/openclaw/*` — same treatment for any remaining call
+- `tools/console/src/openclaw/*` — same treatment for any remaining call
   sites.
 - `eslint.config.js` — add a `no-restricted-syntax` rule disallowing the
   literal string `"Markdown"` next to `parse_mode:`.
@@ -44,28 +44,28 @@ interpolates user input into a `Markdown`-formatted message.
 
 ## Resolution (2026-05-04)
 
-- `apps/console/src/help-text.ts` (new) — `HELP_TEXT` is now built from
+- `tools/console/src/help-text.ts` (new) — `HELP_TEXT` is now built from
   a list of `{bold, italic, plain}` pieces; each piece runs through
   `escapeTelegramMarkdownV2`, and the renderer wraps the bold/italic
   pieces with literal `*…*` / `_…_` markers. This is robust by
   construction: a future addition cannot accidentally drop an escape
   because the helper is the only string-producing path.
-- `apps/console/src/help-text.test.ts` (new) — three locking tests:
+- `tools/console/src/help-text.test.ts` (new) — three locking tests:
   - inline snapshot of the rendered MarkdownV2 string;
   - invariant that every MarkdownV2 special char outside the
     formatting markers is preceded by `\\`;
   - parity invariant that `*` and `_` markers come in pairs.
-- `apps/console/src/index.ts` — `/start` and `/help` send with
+- `tools/console/src/index.ts` — `/start` and `/help` send with
   `parse_mode: "MarkdownV2"`; the legacy hand-written `HELP_TEXT`
   literal was removed in favour of the renderer.
-- `apps/console/src/openclaw/handler.ts` — two remaining `parse_mode:
+- `tools/console/src/openclaw/handler.ts` — two remaining `parse_mode:
 "Markdown"` call-sites at the council loop migrated to MarkdownV2:
   `*${PERSONA_LABEL[persona]}* думає…` now escapes the label and the
   trailing prompt; the synthesis header stays a static literal.
 - `packages/eslint-plugin-sergeant-design/index.js` — new rule
   `no-legacy-telegram-parse-mode`. Custom plugin rule (rather than
   `no-restricted-syntax`) because the existing M11 templated-query
-  selectors already own `no-restricted-syntax` in `apps/console/**` and
+  selectors already own `no-restricted-syntax` in `tools/console/**` and
   flat-config rule values do not merge — last block wins. The rule
   only matches object-property `parse_mode: "Markdown"`, so the
   parse-mode-guard regression test (which contains the literal string
@@ -74,7 +74,7 @@ interpolates user input into a `Markdown`-formatted message.
   (new) — 9 cases covering the BAD/GOOD inputs and the regex-literal
   exemption.
 - `eslint.config.js` — wires the new plugin rule at "error" level on
-  `apps/console/src/**/*.{js,ts}`.
+  `tools/console/src/**/*.{js,ts}`.
 
 ### Verification log (2026-05-04)
 

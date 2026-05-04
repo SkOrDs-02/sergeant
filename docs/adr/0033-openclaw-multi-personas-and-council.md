@@ -26,7 +26,7 @@ Sprint 0 (ADR-0032) явно лишив persona-режим у `Phase 2.5` сек
 
 OpenClaw отримує **multi-persona layer** і **`/council` round-table mode**, обидва як композиція над поточним agent-loop-ом — без зміни server-side tool-схем, audit-table, або budget-cap-логіки.
 
-### 1. Persona registry (`apps/console/src/agents/personas.ts`)
+### 1. Persona registry (`tools/console/src/agents/personas.ts`)
 
 Існує 5 personas, всі read-only:
 
@@ -134,12 +134,12 @@ Sequential, не parallel — навмисно:
 
 ## Migration steps
 
-1. ✅ Code: створити `apps/console/src/agents/personas.ts` (registry + tool-filter + primer-builder).
-2. ✅ Code: `apps/console/src/agents/openclaw.ts` — `buildSystemPromptInline()` приймає optional `persona`, prepend-ить primer перед COMMON-prefix; `runOpenClawAgent()` приймає optional `persona`, фільтрує tools перед `runAgentLoop`.
-3. ✅ Code: `apps/console/src/openclaw/handler.ts` — додати `/ops`, `/growth`, `/eng`, `/finance`, `/cofounder` як persona-aware slash-команди + `/council` як sequential round-table; HELP_TEXT оновлений.
+1. ✅ Code: створити `tools/console/src/agents/personas.ts` (registry + tool-filter + primer-builder).
+2. ✅ Code: `tools/console/src/agents/openclaw.ts` — `buildSystemPromptInline()` приймає optional `persona`, prepend-ить primer перед COMMON-prefix; `runOpenClawAgent()` приймає optional `persona`, фільтрує tools перед `runAgentLoop`.
+3. ✅ Code: `tools/console/src/openclaw/handler.ts` — додати `/ops`, `/growth`, `/eng`, `/finance`, `/cofounder` як persona-aware slash-команди + `/council` як sequential round-table; HELP_TEXT оновлений.
 4. ✅ Code: `OPENCLAW_COUNCIL_USD_BUDGET` env-config + pre-budget check у `/council` handler-і.
 5. ✅ Tests: `personas.test.ts` (16 cases) + extend `openclaw.test.ts` з persona-aware prompt-тестами.
 6. ✅ ADR-0033 (this).
 7. ✅ Update `docs/launch/openclaw-roadmap.md`: Phase 2.5 → shipped.
-8. ✅ Update `apps/console/.env.example`: додати `OPENCLAW_COUNCIL_USD_BUDGET=2`.
+8. ✅ Update `tools/console/.env.example`: додати `OPENCLAW_COUNCIL_USD_BUDGET=2`.
 9. Phase 4 (окремий PR після цього): write-tools з approval-button + per-persona allowlist-и для write-tool-ів.

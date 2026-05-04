@@ -14,8 +14,8 @@
 
 ## Summary
 
-`FixedWindowRateLimiter` (`apps/console/src/security.ts`,
-`apps/console/src/index.ts:117–119`) keys per `chat.id` / `from.id`. While
+`FixedWindowRateLimiter` (`tools/console/src/security.ts`,
+`tools/console/src/index.ts:117–119`) keys per `chat.id` / `from.id`. While
 the founder bot is allowlisted to one user, `consoleBot` (under
 `CONSOLE_BOT_TOKEN`) supports N allowlisted users, each with their own
 bucket. As the allowlist grows the aggregate rate scales linearly.
@@ -29,10 +29,10 @@ bucket. As the allowlist grows the aggregate rate scales linearly.
 
 ## Correction points
 
-- `apps/console/src/security.ts` — extend `FixedWindowRateLimiter` to
+- `tools/console/src/security.ts` — extend `FixedWindowRateLimiter` to
   accept a secondary global key (e.g. `bot:console`); deny when either
   bucket is exhausted.
-- `apps/console/src/obs/metrics.ts` — add
+- `tools/console/src/obs/metrics.ts` — add
   `console.global_rate_cap_hit_total`.
 
 ## Verification

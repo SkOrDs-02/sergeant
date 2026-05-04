@@ -36,7 +36,7 @@ TypeScript-міграція в Sergeant закрита: **0 production `.js`/`.j
 
 **Out:**
 
-- TS 6 bump для `apps/mobile` + `apps/console` — це окремий вектор, BLOCKED на Expo SDK 53. Трекається в [`docs/tech-debt/mobile.md` M9](../tech-debt/mobile.md).
+- TS 6 bump для `apps/mobile` + `tools/console` — це окремий вектор, BLOCKED на Expo SDK 53. Трекається в [`docs/tech-debt/mobile.md` M9](../tech-debt/mobile.md).
 - `as unknown as X` у тестах (~50 файлів) — Phase 7 опційно, окрема міні-ініціатива якщо ROI виправдає.
 - ESLint `consistent-type-imports`, `consistent-type-exports` — це окрема ініціатива по import-style (поза скоупом strictness).
 - `tsconfig.sw.json` (service worker) — окремий target з власним lifecycle.

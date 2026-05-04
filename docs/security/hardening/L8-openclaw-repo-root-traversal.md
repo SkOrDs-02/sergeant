@@ -35,8 +35,8 @@ export function safeJoin(root: string, candidate: string) {
 
 ## Correction points
 
-- `apps/console/src/openclaw/tools/safeJoin.ts` (new).
-- `apps/console/src/openclaw/tools/*.ts` — replace direct `path.join` with
+- `tools/console/src/openclaw/tools/safeJoin.ts` (new).
+- `tools/console/src/openclaw/tools/*.ts` — replace direct `path.join` with
   `safeJoin`.
 - Unit tests for the boundary cases (`..`, `/etc/passwd`, symlink escape).
 

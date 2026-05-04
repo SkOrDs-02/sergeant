@@ -399,7 +399,7 @@ export const env = {
   // ─────────────────────────────────────────────────────────────────────────
   //
   // Server-side env для OpenClaw модуля. Token + Telegram allowlist живуть у
-  // `apps/console` — це Telegram-bot частина. Сервер відповідає за:
+  // `tools/console` — це Telegram-bot частина. Сервер відповідає за:
   //   - tool execution (memory recall, decision write, query_app_db, etc.)
   //   - audit log у `openclaw_invocations`
   //   - per-day cost cap (читається тут, enforce-иться у console pre-call)

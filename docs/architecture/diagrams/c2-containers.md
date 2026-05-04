@@ -25,7 +25,7 @@ flowchart TB
         direction TB
         Server["apps/server<br/><i>Express + better-auth<br/>+ BullMQ workers in-process</i>"]
         N8N["n8n service<br/><i>cron, mono enrich,<br/>morning briefing</i>"]
-        Console["apps/console<br/><i>Telegram bot (grammy)</i>"]
+        Console["tools/console<br/><i>Telegram bot (grammy)</i>"]
 
         subgraph DB["Stateful"]
             PG[("PostgreSQL 16<br/><i>+ pgvector</i>")]

@@ -9,7 +9,7 @@
  * known POST path.
  *
  * Why not use `apps/server` (Express)? OpenClaw bot lives in
- * `apps/console` together with `ApprovalStore` and `OpenClawSessionStore`
+ * `tools/console` together with `ApprovalStore` and `OpenClawSessionStore`
  * — both in-process state. Routing webhooks through `apps/server` would
  * either require IPC or cross-service HTTP fan-out. Hosting the webhook
  * inside the same Node process keeps the data path one hop shorter and

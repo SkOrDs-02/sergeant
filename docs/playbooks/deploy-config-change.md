@@ -82,7 +82,7 @@ flowchart TD
 
 1. Apply the change to a staging Railway project (or a temporary fork). Configuration changes in `railway.toml` (start commands, env, replica count) MUST be cycled through a real deploy.
 2. Confirm the service starts cleanly (Railway → Service → Deployments → latest → no restart loop).
-3. If the service is `apps/console` (Telegram bot), verify with a `/help` ping in the staging Telegram bot. If the service is `ops/grafana-alloy`, verify metrics ingestion in staging Grafana.
+3. If the service is `tools/console` (Telegram bot), verify with a `/help` ping in the staging Telegram bot. If the service is `ops/grafana-alloy`, verify metrics ingestion in staging Grafana.
 4. Apply label `verified-on-staging`.
 
 ### 4. Emergency escape-hatch

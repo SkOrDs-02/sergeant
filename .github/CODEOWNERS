@@ -36,7 +36,7 @@
 /.agents/skills/           @Skords-01
 /.agents/skills-lock.json  @Skords-01
 
-/apps/console/src/agents/  @Skords-01
+/tools/console/src/agents/ @Skords-01
 /ops/n8n-workflows/        @Skords-01
 
 apps/web/tsconfig.json                  @Skords-01

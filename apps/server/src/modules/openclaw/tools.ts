@@ -1,7 +1,7 @@
 /**
  * Server-side implementations OpenClaw tool-ів (ADR-0031 §5).
  *
- * Чому tool-implementations тут на сервері, а не у `apps/console`:
+ * Чому tool-implementations тут на сервері, а не у `tools/console`:
  *   1) Tool-execution потребує Postgres + filesystem-access у repo +
  *      внутрішні API. Все це є на сервері; виносити у console — duplicate
  *      DI + risk дрейф конфігурації.
@@ -145,6 +145,7 @@ export async function readStrategyDoc(
   // окремо — `allowlist_fail` лише для path-traversal/forbidden-prefix.
   let stat: import("node:fs").Stats;
   try {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- `resolved` validated by `isAllowed`/path-traversal check at lines 123-128
     stat = await fs.stat(resolved);
   } catch (err) {
     if (isEnoentError(err)) {
@@ -155,6 +156,7 @@ export async function readStrategyDoc(
     throw err;
   }
   if (stat.isDirectory()) {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- `resolved` validated by `isAllowed`/path-traversal check at lines 123-128
     const entries = await fs.readdir(resolved);
     return {
       path: input.path,
@@ -163,6 +165,7 @@ export async function readStrategyDoc(
     };
   }
 
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- `resolved` validated by `isAllowed`/path-traversal check at lines 123-128
   const contents = await fs.readFile(resolved, "utf-8");
   return {
     path: input.path,

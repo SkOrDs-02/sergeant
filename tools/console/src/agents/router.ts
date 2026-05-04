@@ -45,6 +45,7 @@ export function parseCommand(text: string): {
       return {
         agent: "dispatcher",
         query: trimmed
+          // eslint-disable-next-line security/detect-non-literal-regexp -- `command` from `dispatcherCommands` const allowlist (lines 33-42), no user input
           .replace(new RegExp(`^/${command}\\s*`), `${command} `)
           .trim(),
       };

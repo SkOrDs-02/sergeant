@@ -1,6 +1,6 @@
 # Status-матриця apps і packages
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 > **Last revalidated: 2026-05-02** (ADR-0032 console consolidation).
@@ -31,7 +31,7 @@
 | `@sergeant/server`       | `apps/server`       | `active`    | Node 20 / TypeScript / Express `/api/v1/*`, Better Auth, Postgres, Anthropic tool-use.                                                                                                                                                         | [`docs/architecture/api-v1.md`](api-v1.md), [`docs/tech-debt/backend.md`](../tech-debt/backend.md), [`AGENTS.md`](../../AGENTS.md)                                                      |
 | `@sergeant/mobile`       | `apps/mobile`       | `active`    | Expo SDK 52 + Expo Router. Usе 4 модулі, native push (APNs/FCM), MMKV-офлайн. Internal dev-client.                                                                                                                                             | [`docs/mobile/overview.md`](../mobile/overview.md), [`docs/mobile/react-native-migration.md`](../mobile/react-native-migration.md), [`docs/architecture/platforms.md` §2](platforms.md) |
 | `@sergeant/mobile-shell` | `apps/mobile-shell` | `stabilize` | Capacitor 7 wrapper навколо `@sergeant/web` для Android / iOS. MVP-release флоу. Далі — лише maintenance, нові фічі уже в `@sergeant/mobile`.                                                                                                  | [`docs/mobile/shell.md`](../mobile/shell.md), [`docs/mobile/capacitor-deep-links.md`](../mobile/capacitor-deep-links.md), [`docs/architecture/platforms.md` §3](platforms.md)           |
-| `@sergeant/console`      | `apps/console`      | `active`    | Telegram-бот (grammy + Anthropic) — host для OpenClaw co-founder bot (ADR-0031). ADR-0032 законсолідував legacy `@sergeant_console_bot` (ADR-0027) у OpenClaw; `CONSOLE_BOT_TOKEN` тепер optional, console-агенти dormant до Sprint 1 cleanup. | [`apps/console/README.md`](../../apps/console/README.md), [`docs/adr/0032-console-consolidated-into-openclaw.md`](../adr/0032-console-consolidated-into-openclaw.md)                    |
+| `@sergeant/console`      | `tools/console`     | `active`    | Telegram-бот (grammy + Anthropic) — host для OpenClaw co-founder bot (ADR-0031). ADR-0032 законсолідував legacy `@sergeant_console_bot` (ADR-0027) у OpenClaw; `CONSOLE_BOT_TOKEN` тепер optional, console-агенти dormant до Sprint 1 cleanup. | [`tools/console/README.md`](../../tools/console/README.md), [`docs/adr/0032-console-consolidated-into-openclaw.md`](../adr/0032-console-consolidated-into-openclaw.md)                  |
 
 ## Domain packages
 

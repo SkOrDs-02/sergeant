@@ -68,9 +68,7 @@ function validateTelegramHtml(text: string): void {
     if (closing) {
       const top = stack.pop();
       if (!top) {
-        throw new Error(
-          `Stray </${tag}> with no opener at offset ${offset}.`,
-        );
+        throw new Error(`Stray </${tag}> with no opener at offset ${offset}.`);
       }
       if (top.tag !== tag) {
         throw new Error(
@@ -175,7 +173,7 @@ describe("OpenClaw parse_mode integrity (regression PR #1568)", () => {
     expect(() => validateTelegramLegacyMarkdown("`code")).toThrow(/Unbalanced/);
   });
 
-  it("handler.ts does not wrap a long-form *_TEXT/*_MESSAGE/*_HELP const with legacy parse_mode: \"Markdown\"", () => {
+  it('handler.ts does not wrap a long-form *_TEXT/*_MESSAGE/*_HELP const with legacy parse_mode: "Markdown"', () => {
     // Шукаємо паттерн виду `parse_mode: "Markdown"` і дивимось 8 рядків
     // вище — якщо там згадка HELP_TEXT / FOO_TEXT / FOO_MESSAGE /
     // FOO_HELP / FOO_REPLY — fail, бо такі змінні майже завжди довгі і

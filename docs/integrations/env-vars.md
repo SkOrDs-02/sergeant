@@ -417,11 +417,11 @@ TTL in-memory дедуп-кешу для ідентичних GET-ів (key = up
 
 ## 20. OpenClaw v0 — Telegram-only co-founder bot (ADR-0031)
 
-> Server-side env. Token + Telegram allowlist живуть у `apps/console` (бот працює там). Сервер відповідає за tool execution + audit log.
+> Server-side env. Token + Telegram allowlist живуть у `tools/console` (бот працює там). Сервер відповідає за tool execution + audit log.
 
 ### `OPENCLAW_FOUNDER_USER_ID` _(required for OpenClaw)_
 
-Better Auth `user.id` founder-а (для join-у з `ai_memories.user_id`, який партиціонується по `hash(user_id)`). Окремий від `OPENCLAW_FOUNDER_TG_USER_ID` (Telegram numeric `user_id`, у `apps/console/.env`).
+Better Auth `user.id` founder-а (для join-у з `ai_memories.user_id`, який партиціонується по `hash(user_id)`). Окремий від `OPENCLAW_FOUNDER_TG_USER_ID` (Telegram numeric `user_id`, у `tools/console/.env`).
 
 ### `OPENCLAW_DAILY_USD_BUDGET` _(optional)_
 

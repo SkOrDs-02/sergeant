@@ -17,7 +17,7 @@ export function parseAllowedUserIds(value: string | undefined): Set<string> {
 /**
  * Allowlist gate for the Sergeant Console bot. **Fail-closed**: an
  * empty / undefined `ALLOWED_USER_IDS` rejects every user, including
- * outside production. Mirrors `apps/console/src/openclaw/security.ts`
+ * outside production. Mirrors `tools/console/src/openclaw/security.ts`
  * (`isFounderAllowed`) and closes the audit gap in
  * [`docs/security/hardening/M15-console-allowlist-fail-closed.md`](../../../docs/security/hardening/M15-console-allowlist-fail-closed.md):
  * a `NODE_ENV` that is not exactly `"production"` (staging, preview,

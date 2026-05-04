@@ -59,7 +59,7 @@ export default [
           alwaysTryTypes: true,
           project: [
             "apps/web/tsconfig.json",
-            "apps/console/tsconfig.json",
+            "tools/console/tsconfig.json",
             "apps/mobile/tsconfig.json",
             "apps/mobile-shell/tsconfig.json",
           ],
@@ -315,7 +315,7 @@ export default [
   {
     files: [
       "apps/web/src/**/*.{ts,tsx,js,jsx}",
-      "apps/console/src/**/*.{ts,tsx,js,jsx}",
+      "tools/console/src/**/*.{ts,tsx,js,jsx}",
       "apps/mobile/src/**/*.{ts,tsx,js,jsx}",
       "apps/mobile/app/**/*.{ts,tsx,js,jsx}",
       "apps/mobile-shell/src/**/*.{ts,tsx,js,jsx}",
@@ -576,14 +576,14 @@ export default [
   // and web bundles do not touch `fs` / `eval`; web XSS is governed
   // by the existing CSP card (C2).
   {
-    files: ["apps/server/src/**/*.{js,ts}", "apps/console/src/**/*.{js,ts}"],
+    files: ["apps/server/src/**/*.{js,ts}", "tools/console/src/**/*.{js,ts}"],
     ignores: [
       "apps/server/src/**/*.test.{js,ts}",
       "apps/server/src/**/*.integration.test.{js,ts}",
       "apps/server/src/**/__tests__/**",
       "apps/server/src/test/**",
-      "apps/console/src/**/*.test.{js,ts}",
-      "apps/console/src/**/__tests__/**",
+      "tools/console/src/**/*.test.{js,ts}",
+      "tools/console/src/**/__tests__/**",
     ],
     plugins: { security },
     rules: {
@@ -664,10 +664,10 @@ export default [
   // sequences; V2 fails loudly. The custom rule lives in
   // `packages/eslint-plugin-sergeant-design/index.js` so `no-restricted-syntax`
   // does not collide with the M11 templated-query selectors that
-  // also live on `apps/console/**`. See
+  // also live on `tools/console/**`. See
   // `docs/security/hardening/M16-telegram-markdown-v2.md`.
   {
-    files: ["apps/console/src/**/*.{js,ts}"],
+    files: ["tools/console/src/**/*.{js,ts}"],
     rules: {
       "sergeant-design/no-legacy-telegram-parse-mode": "error",
     },

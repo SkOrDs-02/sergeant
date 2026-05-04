@@ -43,7 +43,7 @@ export function resetMetricsForTesting(): void {
 /**
  * Incremented every time the OpenClaw per-call USD cap (M18) rejects
  * an Anthropic request before dispatch. See
- * `apps/console/src/openclaw/policy.ts` for the cap logic.
+ * `tools/console/src/openclaw/policy.ts` for the cap logic.
  */
 export const OPENCLAW_PER_CALL_CAP_HIT_TOTAL =
   "openclaw.per_call_cap_hit_total";

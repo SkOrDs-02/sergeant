@@ -80,7 +80,7 @@ Pin every action by SHA per existing project convention.
 - `language: javascript-typescript` matrix (single value) with the
   `security-extended,security-and-quality` query suites — both
   explicitly recommended in the audit recommendation. Covers JSX/TSX
-  in `apps/web` + Node in `apps/server`, `apps/console`, `apps/mobile`
+  in `apps/web` + Node in `apps/server`, `tools/console`, `apps/mobile`
   - every `packages/**` workspace.
 - `docs/security/codeql.md` (new) — runbook documenting triggers,
   configuration, action SHA pinning, triage protocol (false positive

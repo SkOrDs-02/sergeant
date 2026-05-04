@@ -26,7 +26,7 @@ src/
 ## Запуск
 
 ```bash
-cp apps/console/.env.example apps/console/.env
+cp tools/console/.env.example tools/console/.env
 # Заповни CONSOLE_BOT_TOKEN, ALLOWED_USER_IDS, ANTHROPIC_API_KEY
 
 pnpm --filter @sergeant/console dev     # tsx watch
@@ -36,7 +36,7 @@ pnpm --filter @sergeant/console start   # node dist/index.js
 
 ## Середовище
 
-Див. [`apps/console/.env.example`](.env.example) — потрібні `CONSOLE_BOT_TOKEN`, `ALLOWED_USER_IDS`, `ANTHROPIC_API_KEY`. Опціонально: `SERVER_INTERNAL_URL`, `INTERNAL_API_KEY`.
+Див. [`tools/console/.env.example`](.env.example) — потрібні `CONSOLE_BOT_TOKEN`, `ALLOWED_USER_IDS`, `ANTHROPIC_API_KEY`. Опціонально: `SERVER_INTERNAL_URL`, `INTERNAL_API_KEY`.
 
 ## Тести
 

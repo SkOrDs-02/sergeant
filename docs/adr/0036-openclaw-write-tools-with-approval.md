@@ -68,7 +68,7 @@ founder click Reject  → callback handler → store.markRejected() → reply "r
 
 #### 2.1 Approval store
 
-In-memory `Map<id, ApprovalRecord>`, TTL `10 min` (`OPENCLAW_APPROVAL_TTL_MS` нескриптовий, але overridable у constructor для тестів). Лежить у `apps/console/src/openclaw/approval-store.ts`.
+In-memory `Map<id, ApprovalRecord>`, TTL `10 min` (`OPENCLAW_APPROVAL_TTL_MS` нескриптовий, але overridable у constructor для тестів). Лежить у `tools/console/src/openclaw/approval-store.ts`.
 
 `ApprovalRecord` зберігає `{ id, tool, input, founderUserId, founderTgUserId, invocationId, createdAt, expiresAt, status }`. `id` — random 8-char hex (досить унікальний для 10-min window-у при 1 founder-у; collision-prob ~10⁻⁹). Status: `pending` | `executed` | `rejected` | `expired`. Щойно `markExecuted()` / `markRejected()` зробив transition — `get(id)` повертає `undefined` (idempotent click-protection).
 
@@ -102,7 +102,7 @@ Callback data — `oc:approve:<id>` / `oc:reject:<id>` (19 байтів total, �
 
 #### 2.4 Executor interception
 
-`createOpenClawToolExecutor()` (у `apps/console/src/agents/openclaw.ts`) тепер містить gate:
+`createOpenClawToolExecutor()` (у `tools/console/src/agents/openclaw.ts`) тепер містить gate:
 
 ```ts
 if (isWriteToolName(name)) {

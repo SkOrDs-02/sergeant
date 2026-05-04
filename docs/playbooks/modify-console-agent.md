@@ -1,13 +1,13 @@
 # Playbook: Modify or Add a Console Agent
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
-**Trigger:** "Додай нового агента в Telegram bot" / "Зміни system prompt ops/marketing агента" / "Додай tool для console agent" / будь-яка зміна в `apps/console/src/agents/`.
+**Trigger:** "Додай нового агента в Telegram bot" / "Зміни system prompt ops/marketing агента" / "Додай tool для console agent" / будь-яка зміна в `tools/console/src/agents/`.
 
 ## Owner surface
 
-- Primary surface: `apps/console/src/agents`
+- Primary surface: `tools/console/src/agents`
 - Governing skills: `sergeant-hubchat`, `sergeant-deploy-and-observability`
 
 ## Required context

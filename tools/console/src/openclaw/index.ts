@@ -2,7 +2,7 @@
  * OpenClaw bot module entry-point. Single export — `attachOpenClawHandlers`
  * (caller складає Bot + Anthropic + deps і атачить handler-и).
  *
- * Bootstrap-логіка тут навмисно не міститься: caller (`apps/console/src/index.ts`)
+ * Bootstrap-логіка тут навмисно не міститься: caller (`tools/console/src/index.ts`)
  * вирішує, чи стартувати OpenClaw залежно від `OPENCLAW_BOT_TOKEN`
  * (fail-closed якщо unset).
  */

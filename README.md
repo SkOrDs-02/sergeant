@@ -47,7 +47,7 @@ Sergeant is a personal hub platform for finance, habits, sport, nutrition, and A
 | `apps/server`       | API server (backend)     | Express + PostgreSQL    | Railway                 |
 | `apps/mobile`       | Mobile app (native)      | Expo + React Native     | App Store / Google Play |
 | `apps/mobile-shell` | Mobile app (web wrapper) | Capacitor               | App Store / Google Play |
-| `apps/console`      | Telegram bot (internal)  | grammy + Anthropic      | Railway                 |
+| `tools/console`     | Telegram bot (internal)  | grammy + Anthropic      | Railway                 |
 
 ### Packages (`packages/`)
 
@@ -94,7 +94,7 @@ Architecture overview lives in [docs/architecture/README.md](./docs/architecture
                     │
                     ▼
         ┌───────────────────────┐     ┌─────────────────┐
-        │   PostgreSQL          │     │  apps/console   │
+        │   PostgreSQL          │     │  tools/console   │
         │ (Railway / Docker)    │     │  (Telegram bot)  │
         └───────────────────────┘     └─────────────────┘
 ```
@@ -177,7 +177,7 @@ pnpm --filter @sergeant/mobile start
 pnpm --filter @sergeant/console dev
 ```
 
-Requires a Telegram Bot Token in `apps/console/.env`.
+Requires a Telegram Bot Token in `tools/console/.env`.
 
 ## Core commands
 

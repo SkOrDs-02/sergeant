@@ -17,10 +17,10 @@
 
 ADR-0027 ввів дві окремі поверхні Telegram-автоматизації для команди:
 
-1. `@sergeant_console_bot` (`apps/console/src/index.ts` + `apps/console/src/agents/`) — slash-команди (`/ops`, `/content`, `/plan`, `/assign`, `/run`, `/approve`, `/cancel`, `/review`, `/logs`, `/status`), free-text роутер, allowlist по `ALLOWED_USER_IDS`.
-2. `@OpenClaw_sergeant_bot` (ADR-0031, `apps/console/src/openclaw/*`) — DM-only co-founder з memory + read-only tools + decision log.
+1. `@sergeant_console_bot` (`tools/console/src/index.ts` + `tools/console/src/agents/`) — slash-команди (`/ops`, `/content`, `/plan`, `/assign`, `/run`, `/approve`, `/cancel`, `/review`, `/logs`, `/status`), free-text роутер, allowlist по `ALLOWED_USER_IDS`.
+2. `@OpenClaw_sergeant_bot` (ADR-0031, `tools/console/src/openclaw/*`) — DM-only co-founder з memory + read-only tools + decision log.
 
-Обидва живуть у одному Node-процесі (`apps/console`), але користуються різними `*_BOT_TOKEN`. На момент Sprint 0 (2026-05-02) console-бот ніколи не був створений у @BotFather: токен `CONSOLE_BOT_TOKEN` відсутній, а `apps/console/src/index.ts` `process.exit(1)`-ив при старті, що блокувало OpenClaw.
+Обидва живуть у одному Node-процесі (`tools/console`), але користуються різними `*_BOT_TOKEN`. На момент Sprint 0 (2026-05-02) console-бот ніколи не був створений у @BotFather: токен `CONSOLE_BOT_TOKEN` відсутній, а `tools/console/src/index.ts` `process.exit(1)`-ив при старті, що блокувало OpenClaw.
 
 Проте архітектурно для **solo-founder** фази Sergeant три бота — це over-engineering:
 
@@ -36,9 +36,9 @@ ADR-0027 ввів дві окремі поверхні Telegram-автомати
 
 ### Що міняється у коді
 
-1. **Boot-fence:** `apps/console/src/index.ts` робить `CONSOLE_BOT_TOKEN` опціональним за тим самим fail-closed-патерном, що OpenClaw — warn + skip замість `exit(1)`. Якщо обидва токени відсутні — процес виходить `1` (sanity-guard, інакше Railway-slot тримає dead container).
+1. **Boot-fence:** `tools/console/src/index.ts` робить `CONSOLE_BOT_TOKEN` опціональним за тим самим fail-closed-патерном, що OpenClaw — warn + skip замість `exit(1)`. Якщо обидва токени відсутні — процес виходить `1` (sanity-guard, інакше Railway-slot тримає dead container).
 
-2. **Server-side tool ports** (`apps/server/src/modules/openclaw/tools.ts`): додано п'ять fail-soft tool-helpers, портованих з legacy `apps/console/src/agents/ops.ts` + `apps/console/src/agents/marketing.ts`:
+2. **Server-side tool ports** (`apps/server/src/modules/openclaw/tools.ts`): додано п'ять fail-soft tool-helpers, портованих з legacy `tools/console/src/agents/ops.ts` + `tools/console/src/agents/marketing.ts`:
 
    | Tool                  | Upstream                       | Fail-soft trigger                                                   |
    | --------------------- | ------------------------------ | ------------------------------------------------------------------- |
@@ -57,22 +57,22 @@ ADR-0027 ввів дві окремі поверхні Telegram-автомати
    - `POST /api/internal/openclaw/metrics/posthog`
    - `POST /api/internal/openclaw/github/releases`
 
-4. **Tool definitions** (`apps/console/src/agents/openclaw.ts`): додано 5 нових `openClawTools` записів і 5 ентрі у `TOOL_ROUTE` map. Жодних змін у system-prompt, tone-modes, або iteration-loop.
+4. **Tool definitions** (`tools/console/src/agents/openclaw.ts`): додано 5 нових `openClawTools` записів і 5 ентрі у `TOOL_ROUTE` map. Жодних змін у system-prompt, tone-modes, або iteration-loop.
 
-5. **Slash-команди** (`apps/console/src/openclaw/handler.ts`): preset-prompts для `/status`, `/metrics`, `/digest`, `/logs`, `/review`. Кожна команда викликає той самий `runAgentTurn(ctx, preset, "dm")` що і free-text. Audit-row відкривається/закривається однаково; `trigger='dm'` залишається.
+5. **Slash-команди** (`tools/console/src/openclaw/handler.ts`): preset-prompts для `/status`, `/metrics`, `/digest`, `/logs`, `/review`. Кожна команда викликає той самий `runAgentTurn(ctx, preset, "dm")` що і free-text. Audit-row відкривається/закривається однаково; `trigger='dm'` залишається.
 
 6. **Dispatcher write-команди НЕ переносяться в Sprint 0.** `/run`, `/approve`, `/cancel`, `/assign` heavy-version — це Phase 4 OpenClaw roadmap-у (write-tools з approval-button). До тих пір вони відсутні. Якщо founder напише `/run X` — Telegram повідомить "command not recognized" (grammy default).
 
 ### Що НЕ міняється
 
-- ADR-0027 політика для самого console-коду (`apps/console/src/agents/`) — read-only за замовчуванням, escape Telegram output, allowlist — лишається валідною до моменту повного видалення коду.
+- ADR-0027 політика для самого console-коду (`tools/console/src/agents/`) — read-only за замовчуванням, escape Telegram output, allowlist — лишається валідною до моменту повного видалення коду.
 - `@Sergeant_alert_bot` (id `7949536379`) — push-only бот з n8n — без змін; ADR-0030 не зачіпається.
 - ADR-0031 OpenClaw v0 — без змін у scope (DM-only, read-only, single founder, hard caps); цей ADR лише розширює tool-set.
 - Railway service `Sergeant` (`apps/server`) — без змін.
 
 ### Naming + deployment
 
-- Railway service для bot-процесу: `sergeant-hubchat` (config-as-code path `railway.console.toml`, Dockerfile `Dockerfile.console`). Ім'я `hubchat` залишається з epoch `apps/console` нейминг-а; перейменовувати — Phase 1.5 task разом з повним видаленням `apps/console/src/agents/`.
+- Railway service для bot-процесу: `sergeant-hubchat` (config-as-code path `railway.console.toml`, Dockerfile `Dockerfile.console`). Ім'я `hubchat` залишається з epoch `tools/console` нейминг-а; перейменовувати — Phase 1.5 task разом з повним видаленням `tools/console/src/agents/`.
 - Логи: `console.log("Sergeant Console starting…")` лишається у `index.ts` під `if (botToken)` гілкою — спрощує grep-по-логах. Коли console-код буде видалено повністю, замінимо на `console.log("OpenClaw bot starting…")`.
 
 ## Consequences
@@ -86,10 +86,10 @@ ADR-0027 ввів дві окремі поверхні Telegram-автомати
 
 ### Negative / debt
 
-- **Втрата deterministic slash-команд.** Коли user пише `/status`, raw output з `apps/console/src/agents/ops.ts` був детермінований markdown. Тепер це prompt → LLM → output, з потенційним дрейфом форматування. **Mitigation:** prompt-и у `COMMAND_PROMPTS` явно вимагають `bullet-list, без зайвих коментарів`; калібрувати перші 7 діб після deploy. Якщо drift > 30% викликів — додати dedicated `formatter` tool, який бере raw JSON і дає шаблонний markdown.
+- **Втрата deterministic slash-команд.** Коли user пише `/status`, raw output з `tools/console/src/agents/ops.ts` був детермінований markdown. Тепер це prompt → LLM → output, з потенційним дрейфом форматування. **Mitigation:** prompt-и у `COMMAND_PROMPTS` явно вимагають `bullet-list, без зайвих коментарів`; калібрувати перші 7 діб після deploy. Якщо drift > 30% викликів — додати dedicated `formatter` tool, який бере raw JSON і дає шаблонний markdown.
 - **Cost per command.** Кожна `/status` тепер коштує 1-2 ¢ Anthropic-токенами проти ~0¢ console-варіанту. Acceptable у $5/добу envelope (≈250-500 викликів/добу), але треба моніторити `openclaw_invocations.cost_usd` після deploy.
 - **Dispatcher-команди (`/run`, `/approve`) тимчасово недоступні.** До Phase 4 OpenClaw — write-tools з approval-button. **Mitigation:** founder може попросити OpenClaw "run X" вільним текстом; OpenClaw відповість "це write-action — поза Phase 1 scope, треба ADR".
-- **Console-код залишається у репо як dead-weight.** `apps/console/src/agents/`, `apps/console/src/dispatcher/`, `apps/console/src/router*.ts` ~1.2k LOC dormant. **Mitigation:** Sprint 1 видалить, або помітимо `@deprecated` зараз. Не критично у Sprint 0 — менший diff = швидша роль-аут.
+- **Console-код залишається у репо як dead-weight.** `tools/console/src/agents/`, `tools/console/src/dispatcher/`, `tools/console/src/router*.ts` ~1.2k LOC dormant. **Mitigation:** Sprint 1 видалить, або помітимо `@deprecated` зараз. Не критично у Sprint 0 — менший diff = швидша роль-аут.
 
 ### Re-evaluation triggers
 
@@ -106,7 +106,7 @@ ADR-0027 ввів дві окремі поверхні Telegram-автомати
 
 **Чому ні:** founder уже спитав "а чому бот 2 цього не може?" — і chunked нашу архітектуру правильно. Solo-founder не має use-case для двох слухачів-ботів плюс push-бота. Більше surface = більше способів збити state-у. Cost у Railway-slot-ах і у memory-моделі (де коли яка команда) перевищує користь deterministic-формату.
 
-### B. Повне видалення `apps/console/src/agents/` і `dispatcher/` зараз
+### B. Повне видалення `tools/console/src/agents/` і `dispatcher/` зараз
 
 Спустити Sprint 0 із заодно видаленням 1.2k LOC.
 
@@ -132,5 +132,5 @@ ADR-0027 ввів дві окремі поверхні Telegram-автомати
 4. ✅ Update `docs/deploy/console.md`: rename intent to `sergeant-hubchat` deployment, додати ENV-list для нових tool-ів.
 5. ✅ Update `docs/launch/openclaw-roadmap.md`: Phase 1 scope включає `/status`, `/metrics`, `/digest`, `/logs`, `/review`.
 6. ✅ Update `docs/runbooks/openclaw-runbook.md`: команди + troubleshooting + persona-roadmap.
-7. ✅ Update `apps/console/.env.example`: 5 нових tool-ENV (Stripe / Sentry / PostHog / GitHub PAT) як optional.
-8. Sprint 1 (окремий PR): видалити `apps/console/src/agents/`, `apps/console/src/dispatcher/`, `apps/console/src/router*.ts` і перейменувати package на `@sergeant/openclaw-bot`.
+7. ✅ Update `tools/console/.env.example`: 5 нових tool-ENV (Stripe / Sentry / PostHog / GitHub PAT) як optional.
+8. Sprint 1 (окремий PR): видалити `tools/console/src/agents/`, `tools/console/src/dispatcher/`, `tools/console/src/router*.ts` і перейменувати package на `@sergeant/openclaw-bot`.

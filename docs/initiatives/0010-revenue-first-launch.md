@@ -9,7 +9,7 @@
 
 ## TL;DR
 
-Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду — і 7 467 рядків плану монетизації. Ця ініціатива фокусує наступні 4 тижні на **shipping реального білінгу (Stripe + Apple/Google/Email auth) + activation v2 (Mono-wedge) + публічного landing-у з EN-локаллю**. OpenClaw і `apps/console` лишаються активними паралельно; mobile-strategy — Capacitor primary, Expo довершуємо нативку, обидва підтримуються. Перший PR (цей) — docs-only: фіксує decision-baseline (pricing v3, mobile-strategy ADR, ФОП-track, scope hero/insights як open-questions) і реєструє PR-план. Наступні PR-и реалізовують білінг від міграцій до Customer Portal-у і Apple/Google sign-in.
+Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду — і 7 467 рядків плану монетизації. Ця ініціатива фокусує наступні 4 тижні на **shipping реального білінгу (Stripe + Apple/Google/Email auth) + activation v2 (Mono-wedge) + публічного landing-у з EN-локаллю**. OpenClaw і `tools/console` лишаються активними паралельно; mobile-strategy — Capacitor primary, Expo довершуємо нативку, обидва підтримуються. Перший PR (цей) — docs-only: фіксує decision-baseline (pricing v3, mobile-strategy ADR, ФОП-track, scope hero/insights як open-questions) і реєструє PR-план. Наступні PR-и реалізовують білінг від міграцій до Customer Portal-у і Apple/Google sign-in.
 
 ## Чому зараз
 
@@ -18,7 +18,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 - **Pricing-модель v1 економічно нежиттєздатна.** ₴99/міс при ≈$5/користувача API costs (Anthropic) = негативна gross margin на Pro tier. Це треба виправити **до** першого Stripe-чека, не після.
 - **Технічний skeleton монетизації** [(`docs/launch/06-monetization-architecture.md`)](../launch/06-monetization-architecture.md) розписаний на 691 рядок без жодного рядка `subscriptions` SQL у `apps/server/src/migrations/`. Час перейти від v2-плану до коду.
 - **High-friction signup.** Email + password + verify email — це 4 кроки, що дають ~30–50% drop-off на signup-екрані (industry baseline). Apple + Google sign-in (через Better Auth) знизять friction до ≤10%.
-- **OpenClaw і `apps/console` лишаються активними паралельно** до фази 6 — owner ухвалив, що NOT freeze. Просто не блокують revenue track. Mobile: Capacitor залишається primary до завершення Expo-нативки; обидва стеки підтримуються паралельно (рішення зафіксовано в ADR-0047 — фаза 1.2).
+- **OpenClaw і `tools/console` лишаються активними паралельно** до фази 6 — owner ухвалив, що NOT freeze. Просто не блокують revenue track. Mobile: Capacitor залишається primary до завершення Expo-нативки; обидва стеки підтримуються паралельно (рішення зафіксовано в ADR-0047 — фаза 1.2).
 
 ## Скоуп
 
@@ -91,6 +91,8 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 #### Ankle-PR (поза фазою 1, scope: `chore`)
 
 `chore-console-move-to-tools` — переніс `apps/console/` → `tools/console/`. Сигналізує «це internal tool, не product». Maintenance — той самий. ~1 година роботи.
+
+**Status:** `done` — реалізовано у [#TBD](https://github.com/Skords-01/Sergeant/pulls). `apps/console/` зник з `apps/`, `tools/console/` додано до `pnpm-workspace.yaml`, `.github/CODEOWNERS` оновлено (`/apps/console/src/agents/` → `/tools/console/src/agents/`). NPM-package name (`@sergeant/console`) і Railway service (`sergeant-hubchat`) НЕ змінювалися — лише monorepo placement. Локальна верифікація: `pnpm typecheck` (root, `turbo run typecheck`) — 16/16 task-ів, 0 errors.
 
 **Acceptance:** `apps/console/` зник, `tools/console/` працює (CI зелений), CODEOWNERS оновлено.
 
@@ -309,7 +311,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 - [ ] Усі PR-и пройшли CI зелено + a11y axe-core + Lighthouse budget.
 - [ ] Усі нові docs мають freshness header + Status badge (Hard Rule #10).
 - [ ] `docs/launch/01-monetization-and-pricing.md` оновлено: pricing v3 — current state, не план.
-- [ ] Ankle-PR `chore-console-move-to-tools` змерджено (`apps/console/` → `tools/console/`).
+- [x] Ankle-PR `chore-console-move-to-tools` змерджено (`apps/console/` → `tools/console/`).
 
 ## Метрики успіху (вимірюються через 30 днів після фази 6)
 
@@ -337,7 +339,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 | **[OPEN]** 3 cross-module AI insights pick                                        | `@Skords-01` | Брейншторм окремо post-launch. Кандидати в audit-сорсі. Не блокує фази 1–6.                                                                                                      |
 | **[DEFERRED]** Public metrics dashboard (`/api/public/metrics`)                   | `@Skords-01` | Out of scope цієї ініціативи. Окрема decision коли і чи публікувати MRR/WAU/D7. Endpoint може бути доданий пізніше.                                                              |
 | **[DEFERRED]** Mobile-stack deprecate (Capacitor vs Expo final pick)              | `@Skords-01` | Обидва підтримуються паралельно у цій ініціативі. Окремий decision коли Expo матиме feature parity з web (триггер: `apps/mobile` MAU > `apps/mobile-shell` MAU 30 днів поспіль). |
-| **[ACTIVE PARALLEL]** OpenClaw v0 / `apps/console` як Telegram bot                | `@Skords-01` | NOT freeze. Працює паралельно з revenue track. Не блокує фази 1–6, але і не in-scope (developer time на нього не з cap-у цих 4 тижнів).                                          |
+| **[ACTIVE PARALLEL]** OpenClaw v0 / `tools/console` як Telegram bot               | `@Skords-01` | NOT freeze. Працює паралельно з revenue track. Не блокує фази 1–6, але і не in-scope (developer time на нього не з cap-у цих 4 тижнів).                                          |
 
 ## Фази та залежності (граф)
 

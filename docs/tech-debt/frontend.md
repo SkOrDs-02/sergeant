@@ -634,8 +634,8 @@ modules/fizruk/components/workouts/WorkoutJournalSection`;
   (override наслідуваного `true` з base) і прибрано
   `vite.config.js`/`vitest.config.js` з `include` (build-config-и не
   type-check-аються разом з src).
-* `apps/console/tsconfig.json` — додано explicit `"allowJs": false`
-  (у `apps/console/src` немає JS-файлів, прапор виставлено на майбутнє
+* `tools/console/tsconfig.json` — додано explicit `"allowJs": false`
+  (у `tools/console/src` немає JS-файлів, прапор виставлено на майбутнє
   без зміни поведінки).
 * `apps/web/src/modules/fizruk/lib/dualWrite/__tests__/adapter.test.ts` —
   drive-by фікс 18 pre-existing TS7053 помилок, що були прихованими
@@ -658,7 +658,7 @@ modules/fizruk/components/workouts/WorkoutJournalSection`;
   (single source of truth). Раніше base дозволяв JS-файлам неявно
   потрапляти у TS-pipeline через успадкування — `pnpm strict:coverage`
   на цьому показував `allowJs: ⚠️` для всіх пакетів окрім `apps/web`
-  / `apps/console`. Тепер base стрімкий.
+  / `tools/console`. Тепер base стрімкий.
 - Explicit `allowJs: false` + `checkJs: false` додано на всі 12
   app/package tsconfig-и (`apps/server`, `apps/mobile`, `apps/mobile-shell`,
   `packages/{api-client,shared,db-schema,insights,finyk-domain,fizruk-domain,
@@ -756,7 +756,7 @@ Baseline (виміряно через `npx tsc -p tsconfig.json --noEmit` per-wo
 | `packages/shared`           |       26 |       7 | `false`  |
 | `apps/mobile`               |       25 |      14 | `false`  |
 | `packages/routine-domain`   |     ✅ 0 |       — | inherit  |
-| `apps/console`              |     ✅ 0 |       — | inherit  |
+| `tools/console`             |     ✅ 0 |       — | inherit  |
 | `packages/db-schema`        |     ✅ 0 |       — | inherit  |
 | `apps/mobile-shell`         |     ✅ 0 |       — | inherit  |
 | **Total**                   | **1225** | **280** |          |

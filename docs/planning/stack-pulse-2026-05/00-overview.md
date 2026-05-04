@@ -92,7 +92,7 @@
 | L9  | `lazyImport` chunk-reload без guard проти infinite-loop       |
 | L10 | Postgres image у `docker-compose.yml` не SHA-pinned           |
 | L11 | PWA precache — перевірити що всі assets 1st-party             |
-| L12 | `apps/console` SDK Anthropic 0.36.3 outdated                  |
+| L12 | `tools/console` SDK Anthropic 0.36.3 outdated                 |
 
 ---
 
@@ -104,7 +104,7 @@
 | R2  | `ts-prune` + `knip`                                   | видалити `ts-prune`                             |
 | R3  | 3× Sentry SDK (node, react, react-native)             | unified release-name `sergeant@${COMMIT_SHA}`   |
 | R4  | API-version rewrite                                   | видалити (PR-08)                                |
-| R5  | `apps/console` + OpenClaw (обидва Telegram-bot-и)     | дочекатися ADR-0032 завершення                  |
+| R5  | `tools/console` + OpenClaw (обидва Telegram-bot-и)    | дочекатися ADR-0032 завершення                  |
 | R6  | `pnpm.overrides` для давно-патчених CVE               | quarterly cleanup                               |
 | R7  | `SERVER_MODE=railway` / `replit` runtime-flag         | окремий entrypoint якщо Replit ≠ production     |
 | R8  | `@types/node@25` всюди + Node 20 runtime              | downgrade (PR-05)                               |
@@ -125,7 +125,7 @@
 | MS7  | Threat model document (STRIDE)           | 1-сторінка у `docs/security/`                     |
 | MS8  | Migration `down.sql` rollback drill у CI | applied → run down → re-run forward → diff schema |
 | MS9  | Cost monitoring dashboard                | Grafana `cost_per_user_per_module`                |
-| MS10 | Public status page                       | self-hosted instatus у `apps/console`             |
+| MS10 | Public status page                       | self-hosted instatus у `tools/console`            |
 | MS11 | Privacy policy CI-check                  | annual review checklist в `.github/`              |
 | MS12 | Build provenance / SBOM                  | `cyclonedx-bom` step → release artifact           |
 

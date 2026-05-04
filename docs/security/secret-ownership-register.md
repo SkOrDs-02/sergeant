@@ -1,6 +1,6 @@
 # Secret Ownership Register
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 Operational metadata registry for secrets and privileged system credentials in Sergeant. This register documents ownership and blast radius, never secret values.
@@ -14,7 +14,7 @@ Operational metadata registry for secrets and privileged system credentials in S
 | Anthropic / OpenAI provider keys                     | Founder | Railway prod env                             | AI endpoints, console-agent workloads, HubChat orchestration  | Monthly review, immediate on suspicion    | No backward compatibility; update all runtimes together                     | Cost abuse, feature outage, prompt-serving disruption       | 2026-05-01    |
 | Sentry auth / DSN / admin secrets                    | Founder | Railway env, vendor console                  | `apps/server`, `apps/web`, alerting workflows                 | Quarterly or on compromise                | DSN swaps are usually low-risk; admin-token rotation may break integrations | Lost error visibility or unauthorized issue access          | 2026-05-01    |
 | PostHog project / admin secrets                      | Founder | Railway env, vendor console                  | product analytics, release annotations, behavioral dashboards | Quarterly or on compromise                | Reconfigure integrations after rotation                                     | Behavioral data exposure, analytics tampering               | 2026-05-01    |
-| Telegram bot token / console-agent credentials       | Founder | Railway env                                  | `apps/console`, bot runtime                                   | On compromise or role change              | Rotation can interrupt bot flows until redeploy                             | Internal bot impersonation or action abuse                  | 2026-05-01    |
+| Telegram bot token / console-agent credentials       | Founder | Railway env                                  | `tools/console`, bot runtime                                  | On compromise or role change              | Rotation can interrupt bot flows until redeploy                             | Internal bot impersonation or action abuse                  | 2026-05-01    |
 | Push / mobile distribution credentials               | Founder | App store consoles, local release tooling    | `apps/mobile`, `apps/mobile-shell`, release workflows         | On compromise or certificate expiry cycle | Store propagation may delay full recovery                                   | Broken mobile release pipeline or malicious app update risk | 2026-05-01    |
 | n8n integration credentials                          | Founder | n8n runtime, vendor consoles                 | workflow automations, webhook relays                          | Quarterly review, immediate on compromise | Validate workflow health after rotation                                     | Automation misuse or external service abuse                 | 2026-05-01    |
 

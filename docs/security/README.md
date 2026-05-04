@@ -31,7 +31,7 @@ project's full SAST + SCA coverage.
 | **OSV-Scanner** ([`nightly-audit.md`](./nightly-audit.md)) | Lockfile dependencies (SCA across npm + transitive)                                 | nightly 03:00 UTC                                                                              | Triaged in `audit-exceptions.md`; blocker fixes via PR  |
 
 The wider lint pipeline also runs `eslint-plugin-security` (M11) on
-`apps/server/**` and `apps/console/**` — that is a per-PR review-time
+`apps/server/**` and `tools/console/**` — that is a per-PR review-time
 signal layered on top of CodeQL's deeper taint analysis.
 
 ## Secret scanning policy

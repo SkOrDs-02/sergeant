@@ -8,7 +8,7 @@
 Workflow [`.github/workflows/codeql.yml`](../../.github/workflows/codeql.yml)
 запускає [CodeQL](https://codeql.github.com/) — статичний taint-flow
 analyzer від GitHub — на повному TypeScript codebase (`apps/web`,
-`apps/server`, `apps/console`, `apps/mobile`, `packages/**`). Закриває
+`apps/server`, `tools/console`, `apps/mobile`, `packages/**`). Закриває
 [`hardening/I1-codeql-workflow.md`](./hardening/I1-codeql-workflow.md)
 і завершує SAST/SCA trio:
 
