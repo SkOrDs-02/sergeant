@@ -75,9 +75,9 @@ describe("onboardingGoals — getGoalQuestions", () => {
       "routine",
       "nutrition",
     ]);
-    expect(questions[0].module).toBe("routine");
-    expect(questions[1].module).toBe("finyk");
-    expect(questions[2].module).toBe("nutrition");
+    expect(questions[0]?.module).toBe("routine");
+    expect(questions[1]?.module).toBe("finyk");
+    expect(questions[2]?.module).toBe("nutrition");
   });
 
   it("caps at maxQuestions", () => {
@@ -91,7 +91,7 @@ describe("onboardingGoals — getGoalQuestions", () => {
   it("only returns questions for picked modules", () => {
     const questions = getGoalQuestions(["finyk"]);
     expect(questions).toHaveLength(1);
-    expect(questions[0].module).toBe("finyk");
+    expect(questions[0]?.module).toBe("finyk");
   });
 
   it("includes correct question types", () => {

@@ -81,11 +81,9 @@ export function assignVariant(
 ): string {
   const assignments = getAssignments(store);
 
-  if (
-    assignments[experiment.id] &&
-    experiment.variants.includes(assignments[experiment.id])
-  ) {
-    return assignments[experiment.id];
+  const existing = assignments[experiment.id];
+  if (existing && experiment.variants.includes(existing)) {
+    return existing;
   }
 
   const fp = getOrCreateFingerprint(store);
@@ -95,11 +93,12 @@ export function assignVariant(
     experiment.variants.map(() => 1 / experiment.variants.length);
 
   let cumulative = 0;
-  let chosen = experiment.variants[0];
+  // Fallback to the first variant; experiments are required to declare ≥1.
+  let chosen = experiment.variants[0] ?? "control";
   for (let i = 0; i < experiment.variants.length; i++) {
-    cumulative += weights[i];
+    cumulative += weights[i] ?? 0;
     if (fraction < cumulative) {
-      chosen = experiment.variants[i];
+      chosen = experiment.variants[i] ?? chosen;
       break;
     }
   }

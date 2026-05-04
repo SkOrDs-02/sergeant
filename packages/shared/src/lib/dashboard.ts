@@ -166,6 +166,7 @@ export function arrayMoveImmutable<T>(
   if (toIndex < 0 || toIndex >= list.length) return [...list];
   const next = [...list];
   const [moved] = next.splice(fromIndex, 1);
+  if (moved === undefined) return [...list];
   next.splice(toIndex, 0, moved);
   return next;
 }

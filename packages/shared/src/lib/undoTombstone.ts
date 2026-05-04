@@ -122,7 +122,8 @@ export function purgeExpiredTombstones(
   const nowMs = (now ?? new Date()).getTime();
   let dirty = false;
   for (const id of Object.keys(map)) {
-    if (map[id].expiresAt <= nowMs) {
+    const entry = map[id];
+    if (entry && entry.expiresAt <= nowMs) {
       delete map[id];
       dirty = true;
     }

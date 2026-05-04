@@ -131,7 +131,7 @@ describe("MonoAccountsResponseSchema", () => {
       { ...VALID_ACCOUNT, monoAccountId: "acc2", currencyCode: 840 },
     ]);
     expect(parsed).toHaveLength(2);
-    expect(parsed[1].currencyCode).toBe(840);
+    expect(parsed[1]?.currencyCode).toBe(840);
   });
 
   it("rejects when one row is malformed", () => {
