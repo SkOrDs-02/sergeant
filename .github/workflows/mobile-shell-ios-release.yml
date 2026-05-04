@@ -1,5 +1,9 @@
 name: Mobile Shell (iOS Release)
 
+# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
+# Schedule rationale: див. docs/initiatives/0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+
 # iOS release lane for the Capacitor shell in `apps/mobile-shell/**`.
 # Produces a signed `.ipa` and uploads it to TestFlight on tag pushes
 # (`v*`) or manual `workflow_dispatch`. Sibling of the PR-time

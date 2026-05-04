@@ -1,5 +1,9 @@
 name: Release SBOM
 
+# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
+# Schedule rationale: див. docs/initiatives/0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+
 # Генерує Software Bill of Materials (SBOM) у форматах SPDX (NTIA-compliant)
 # і CycloneDX (OWASP) для production-артефактів. Тригериться на:
 #   - GitHub Release published — артефакти прикріплюються до релізу;

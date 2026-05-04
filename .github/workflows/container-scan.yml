@@ -1,5 +1,9 @@
 name: Container image scan (Trivy)
 
+# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
+# Schedule rationale: див. docs/initiatives/0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+
 # Сканує зібраний Docker-образ Hub API (`Dockerfile.api`) на CVE через
 # Trivy. Це OS+бібліотечний шар поверх існуючого `pnpm audit` / OSV-Scanner
 # / Snyk pipeline (див. `.github/workflows/nightly-audit.yml`) — там

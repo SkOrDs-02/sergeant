@@ -1,5 +1,9 @@
 name: Deploy-config staging gate
 
+# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
+# Schedule rationale: див. docs/initiatives/0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+
 # Closes initiative 0011 phase 1 PR 1.3 — process guard against the
 # "Vercel SSOT-flip" type-incident (PR #1595 → PR #1600). When a PR
 # touches deploy-config files (vercel.json / fly.toml / railway.toml /

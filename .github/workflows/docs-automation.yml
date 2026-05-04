@@ -1,5 +1,9 @@
 name: Docs automation
 
+# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
+# Schedule rationale: див. docs/initiatives/0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+
 # Guards documentation quality on every PR / push:
 #
 #   - playbook-index: regenerates docs/playbooks/INDEX.md and fails if the

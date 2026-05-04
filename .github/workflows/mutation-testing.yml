@@ -1,5 +1,9 @@
 name: Mutation testing (Stryker)
 
+# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
+# Schedule rationale: див. docs/initiatives/0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+
 # Mutation testing на критичних модулях. Не на кожен PR (~3 хв на 109 мутантів
 # для cloudSync), а:
 #   - workflow_dispatch (ручний запуск з конкретним config-ом),
