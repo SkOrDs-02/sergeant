@@ -11,6 +11,9 @@ import { logger } from "../../obs/logger.js";
 import {
   syncDurationMs,
   syncOperationsTotal,
+  syncOpLogApplyTotal,
+  syncOpLogPullLagMs,
+  syncOpLogPullQueueDepth,
   syncPayloadBytes,
 } from "../../obs/metrics.js";
 
@@ -2312,6 +2315,18 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         } else if (r.status === "rejected") {
           rejectedCount++;
         }
+        // PR #048: per-op outcome counter. Idempotency-replay лічимо
+        // окремим `status="duplicate"` — RED-dashboard відрізняє
+        // first-write outcome від кешованих повторів.
+        try {
+          syncOpLogApplyTotal.inc({
+            table: op.table,
+            status: "duplicate",
+            reason: "duplicate",
+          });
+        } catch {
+          /* metrics must never break a request */
+        }
         continue;
       }
 
@@ -2406,6 +2421,24 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
           status: "rejected",
           ...(reason ? { reason } : {}),
         });
+      }
+
+      // PR #048: per-op outcome counter (RED-stack — Errors). На
+      // `applied` reason="none" (label-uniformity вимога prom-client-у);
+      // на `rejected` пишемо реальну причину з зафіксованого набору в
+      // syncV2.ts; `table_not_allowed` гілку маркуємо `__unknown__`,
+      // щоб не "забруднити" cardinality невідомими user-input table-
+      // іменами.
+      try {
+        const labelTable =
+          reason === "table_not_allowed" ? "__unknown__" : op.table;
+        syncOpLogApplyTotal.inc({
+          table: labelTable,
+          status,
+          reason: status === "applied" ? "none" : reason || "unknown",
+        });
+      } catch {
+        /* metrics must never break a request */
       }
     }
 
@@ -2522,6 +2555,30 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
         return acc;
       }
     }, 0);
+
+    // PR #048 — pull RED-метрики (queue depth + staleness).
+    //
+    // `queue_depth` = скільки ops повернули цим pull-ом. Sustained
+    // p95 = limit означає, що клієнт постійно "позаду" і має робити
+    // наступний pull зразу — backpressure-сигнал для алертів.
+    //
+    // `pull_lag` = вік newest-op-у в батчі (now - server_ts). Це проксі
+    // user-perceived staleness: SSE-стрім (PR #041) має тримати <100ms,
+    // polling fallback — кілька секунд. Спостерігаємо тільки коли є хоч
+    // один op у відповіді — пустий pull = клієнт уже на курсорі, lag
+    // не визначений.
+    try {
+      syncOpLogPullQueueDepth.observe(opsOut.length);
+      if (result.rows.length > 0) {
+        const newest = result.rows[result.rows.length - 1].server_ts;
+        const lagMs = Date.now() - newest.getTime();
+        if (lagMs >= 0 && Number.isFinite(lagMs)) {
+          syncOpLogPullLagMs.observe(lagMs);
+        }
+      }
+    } catch {
+      /* metrics must never break a request */
+    }
 
     recordSyncV2("v2_pull", opsOut.length === 0 ? "empty" : "ok", {
       ms: elapsedMs(start),
