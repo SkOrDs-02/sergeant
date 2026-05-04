@@ -1,6 +1,6 @@
 # Access Policy
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @steppupa. **Next review:** 2026-08-02.
 > **Status:** Active
 
 Canonical policy for privileged access in Sergeant. This policy is optimized for a Founder+1 operating model: minimal ceremony, explicit ownership, and zero reliance on tribal memory.
@@ -48,6 +48,21 @@ Canonical policy for privileged access in Sergeant. This policy is optimized for
 - Access revoke: [revoke-privileged-access.md](../playbooks/revoke-privileged-access.md)
 - Access review: [run-access-review.md](../playbooks/run-access-review.md)
 - Suspected compromise: [respond-to-suspected-account-compromise.md](../playbooks/respond-to-suspected-account-compromise.md)
+
+## Runtime security knobs
+
+- **No runtime CSP kill switch.** As of 2026-05-04 ([M1](./hardening/M1-csp-disable-runtime-flag.md)),
+  `CSP_DISABLE` env-var is removed from `apps/server/src/http/security.ts`.
+  Disabling Content-Security-Policy in production now requires a code change +
+  redeploy (PR + CI), which enforces a git audit trail and four-eyes review.
+- The remaining `CSP_REPORT_ONLY=1` flag is the only runtime CSP knob — it
+  switches the header to Report-Only mode for phased rollout. It does NOT
+  disable CSP; reports are still emitted to the configured `report-uri`.
+
+The general principle: **a single env-var must not silently weaken security
+posture without a git-traceable change**. New runtime feature flags MUST go
+through code review for both the flag and its callers; "kill switch" patterns
+are forbidden unless paired with explicit alerting and documentation here.
 
 ## Out of scope
 

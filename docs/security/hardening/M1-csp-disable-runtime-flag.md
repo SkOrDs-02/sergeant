@@ -1,7 +1,7 @@
 # M1 — `CSP_DISABLE=1` runtime fault-injection vector
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** Open
+> **Last validated:** 2026-05-04 by @steppupa. **Next review:** 2026-08-02.
+> **Status:** Closed (2026-05-04) — see Resolution log.
 
 | Field          | Value                                                  |
 | -------------- | ------------------------------------------------------ |
@@ -9,7 +9,7 @@
 | **Sprint**     | [Sprint 2](./sprint-2.md)                              |
 | **Owner**      | backend                                                |
 | **Effort**     | 0.25 person-day                                        |
-| **Status**     | Open                                                   |
+| **Status**     | **Closed** (2026-05-04)                                |
 | **Discovered** | 2026-05-03 deep security review                        |
 
 ## Summary
@@ -91,3 +91,35 @@ res.setHeader(headerName, cspString);
 - [`./C2-frontend-csp.md`](./C2-frontend-csp.md)
 - [`./M3-pino-redact-paths.md`](./M3-pino-redact-paths.md)
 - [`../secret-ownership-register.md`](../secret-ownership-register.md)
+- [`../access-policy.md`](../access-policy.md) — `Runtime security knobs`
+
+## Resolution log
+
+### 2026-05-04 — closed
+
+`CSP_DISABLE` runtime kill-switch видалено з кодової бази:
+
+- `apps/server/src/http/security.ts` — гілка `process.env.CSP_DISABLE === "1"` повністю прибрана разом із boot-логом `csp_disabled`. CSP тепер вимикається лише прапорцем `servesFrontend: true` (Replit-режим, де SPA вимагає `script-src` без `'none'`). Залишився тільки `CSP_REPORT_ONLY=1` як phased-rollout-toggle (header переходить у `Content-Security-Policy-Report-Only`, не блокуючи запит).
+- `apps/server/src/env/env.ts` — `CSP_DISABLE` Zod-entry прибрано з `EnvSchema`. Залишено M1-нотатку, чому його нема й куди йти за швидкою деградацією.
+- `.env.example` — приклад env-var-у `CSP_DISABLE` прибрано; залишено пояснення про відсутність kill-switch.
+- `docs/security/access-policy.md` — додано секцію `Runtime security knobs`, що формалізує "no runtime CSP kill switch" + загальний принцип щодо feature flags та audit trail.
+
+**Tests** (`apps/server/src/http/security.test.ts` — нова `M1 — CSP_DISABLE runtime flag removal` describe-група, 4 кейси):
+
+1. `CSP_DISABLE=1` НЕ вимикає CSP (header `Content-Security-Policy` все одно виставлений з `default-src 'none'`).
+2. `CSP_DISABLE=true` (legacy truthy) НЕ вимикає CSP — захист від випадкового повернення kill-switch для будь-якого truthy-значення.
+3. `CSP_REPORT_ONLY=1` → header стає `Content-Security-Policy-Report-Only` (phased-rollout працює).
+4. `CSP_DISABLE=1 + CSP_REPORT_ONLY=1` → CSP активна у Report-Only-режимі (kill-switch повністю проігноровано).
+
+**Audit trail check** (вимога з картки):
+
+```bash
+grep -r CSP_DISABLE apps/server/src/
+# → no matches in code; only mentions у /docs/security/hardening/* (історичний контекст)
+```
+
+**Не зроблено в цьому PR (Railway-config drift, відносять до операційного boundary):**
+
+- Видалити `CSP_DISABLE` з production / staging Railway env-vars (зараз read-only, але краще зачистити).
+- Записати видалення у `docs/security/secret-ownership-register.md`.
+  Обидва — наступний крок для @Skords-01 (≤ 5 хв роботи в Railway dashboard).
