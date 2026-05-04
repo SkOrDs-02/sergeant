@@ -7,7 +7,8 @@
  * ADR: docs/adr/0010-mobile-dual-track-capacitor-expo.md
  *      § Sunset schedule (T₀ 2026-09-01, T₁ 2026-11-30, T₂ 2026-12-30).
  *
- * Why: ADR-0010 status is `accepted-with-sunset` — `apps/mobile-shell/`
+ * Why: ADR-0010 status is `accepted` with lifecycle marker
+ *      `dual-track with locked sunset` — `apps/mobile-shell/`
  * is on a locked-in deprecation timeline, but until T₂ the maintainer
  * keeps paying for shell PRs (Capacitor bumps, Android signing pipeline,
  * iOS release scaffolding, Sentry triage). The ADR's Exit dashboard

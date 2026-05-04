@@ -1,6 +1,7 @@
 # ADR-0010: Mobile dual-track — Capacitor shell + Expo native
 
-- **Status:** accepted-with-sunset (shell deprecation locked, RN-only after T₀ — див. § Sunset schedule)
+- **Status:** accepted
+- **Lifecycle:** dual-track with locked sunset (shell deprecation T₀ 2026-09-01 → T₂ 2027-02-28; RN-only after T₀ — див. § Sunset schedule)
 - **Date:** 2026-04-27
 - **Updated:** 2026-05-03 — added § Sunset schedule (T₀/T₁/T₂) per [`docs/initiatives/0002-mobile-platform-decision.md`](../initiatives/0002-mobile-platform-decision.md)
 - **Reviewers:** @Skords-01
@@ -40,7 +41,7 @@ long-term нативний клієнт. Обидва коекзистують �
 
 ## Sunset schedule
 
-> Locked-in deprecation timeline for `apps/mobile-shell`. Status `accepted-with-sunset`
+> Locked-in deprecation timeline for `apps/mobile-shell`. Status `accepted` with the lifecycle marker `dual-track with locked sunset`
 > означає, що dual-track — тимчасовий стан, не steady state. Дати нижче — **operational
 > commitments**: про їх зсув мейнтейнер коментує тут і у [`docs/initiatives/0002-mobile-platform-decision.md`](../initiatives/0002-mobile-platform-decision.md) Outcome,
 > з обґрунтуванням на основі feature-parity матриці у
