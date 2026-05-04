@@ -20,32 +20,38 @@ afterEach(() => {
   localStorage.clear();
 });
 
+// PR #030 retired `fizruk`, PR #034 retired `nutrition` and PR #039
+// retired `finyk` from SYNC_MODULES (storage-roadmap Stage 4); only
+// `profile` remains. The pure dirty-bookkeeping helpers don't validate
+// against SYNC_MODULES, but using the post-retirement set (`profile`)
+// keeps the fixture honest. Multi-module assertions use a synthetic
+// `_legacy_finyk` placeholder that does NOT collide with any active
+// SYNC_MODULES entry — the helpers accept any string.
 describe("markModuleDirty", () => {
   it("writes into DIRTY_MODULES_KEY and stamps MODULE_MODIFIED_KEY", () => {
     const before = Date.now();
-    markModuleDirty("finyk");
+    markModuleDirty("profile");
     const after = Date.now();
 
     const dirty = getDirtyModules();
-    expect(dirty).toEqual({ finyk: true });
+    expect(dirty).toEqual({ profile: true });
 
     const modifiedTimes = getModuleModifiedTimes();
-    expect(Object.keys(modifiedTimes)).toEqual(["finyk"]);
-    const ts = Date.parse(modifiedTimes.finyk);
+    expect(Object.keys(modifiedTimes)).toEqual(["profile"]);
+    const ts = Date.parse(modifiedTimes.profile);
     expect(ts).toBeGreaterThanOrEqual(before);
     expect(ts).toBeLessThanOrEqual(after);
   });
 
   it("accumulates entries across modules", () => {
-    // PR #030 retired `fizruk` and PR #034 retired `nutrition` from
-    // SYNC_MODULES. The pure dirty-bookkeeping helpers don't
-    // validate against SYNC_MODULES, but using the post-retirement
-    // set (`finyk`, `profile`) keeps the fixture honest.
-    markModuleDirty("finyk");
     markModuleDirty("profile");
-    expect(getDirtyModules()).toEqual({ finyk: true, profile: true });
+    markModuleDirty("_legacy_finyk");
+    expect(getDirtyModules()).toEqual({
+      profile: true,
+      _legacy_finyk: true,
+    });
     expect(Object.keys(getModuleModifiedTimes()).sort()).toEqual([
-      "finyk",
+      "_legacy_finyk",
       "profile",
     ]);
   });
@@ -56,20 +62,20 @@ describe("clearDirtyModule", () => {
     // clearDirtyModule only wipes dirty flags; modifiedTimes stay so that
     // an in-flight push can still diff against a snapshot after the single
     // module is cleared.
-    markModuleDirty("finyk");
     markModuleDirty("profile");
-    clearDirtyModule("finyk");
+    markModuleDirty("_legacy_finyk");
+    clearDirtyModule("_legacy_finyk");
     expect(getDirtyModules()).toEqual({ profile: true });
     expect(Object.keys(getModuleModifiedTimes()).sort()).toEqual([
-      "finyk",
+      "_legacy_finyk",
       "profile",
     ]);
   });
 
   it("is a no-op for unknown modules", () => {
-    markModuleDirty("finyk");
+    markModuleDirty("profile");
     clearDirtyModule("does-not-exist");
-    expect(getDirtyModules()).toEqual({ finyk: true });
+    expect(getDirtyModules()).toEqual({ profile: true });
   });
 });
 
@@ -78,8 +84,8 @@ describe("clearAllDirty", () => {
     // Regression: previously only DIRTY_MODULES_KEY was reset, so the
     // modified-times map grew unbounded across every module ever dirtied
     // on the device.
-    markModuleDirty("finyk");
     markModuleDirty("profile");
+    markModuleDirty("_legacy_finyk");
 
     clearAllDirty();
 
@@ -95,7 +101,7 @@ describe("clearAllDirty", () => {
     const handler = vi.fn();
     window.addEventListener(SYNC_STATUS_EVENT, handler);
     try {
-      markModuleDirty("finyk");
+      markModuleDirty("profile");
       handler.mockReset();
       clearAllDirty();
       expect(handler).toHaveBeenCalledTimes(1);

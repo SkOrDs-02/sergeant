@@ -105,7 +105,12 @@ describe("pushDirty", () => {
   it("calls onSuccess even when dirty modules produce an empty payload", async () => {
     // Regression: previously `clearAllDirty()` ran but `onSuccess` did not,
     // so the "last synced" indicator never advanced on this code path.
-    markModuleDirty("finyk");
+    // PR #030 retired `fizruk`, PR #034 retired `nutrition` and PR #039
+    // retired `finyk` from SYNC_MODULES (storage-roadmap Stage 4); only
+    // `profile` remains. Push tests use mocked `buildModulesPayload`,
+    // so the dirty module name is just an opaque identifier — fixtures
+    // here use `profile` (live) and `_legacy_finyk` (synthetic).
+    markModuleDirty("profile");
     mockedBuild.mockReturnValueOnce({});
 
     const { args, onSuccess, onError, onSettled } = makeArgs();
@@ -123,13 +128,13 @@ describe("pushDirty", () => {
   });
 
   it("enqueues the payload offline and does not call onSuccess", async () => {
-    markModuleDirty("finyk");
+    markModuleDirty("profile");
     Object.defineProperty(navigator, "onLine", {
       configurable: true,
       value: false,
     });
     const payload = {
-      finyk: { data: { a: 1 }, clientUpdatedAt: "2025-01-01T00:00:00.000Z" },
+      profile: { data: { a: 1 }, clientUpdatedAt: "2025-01-01T00:00:00.000Z" },
     };
     mockedBuild.mockReturnValueOnce(payload);
 
@@ -147,9 +152,9 @@ describe("pushDirty", () => {
   });
 
   it("re-queues the attempted payload when the server request fails", async () => {
-    markModuleDirty("finyk");
+    markModuleDirty("profile");
     const payload = {
-      finyk: { data: { a: 1 }, clientUpdatedAt: "2025-01-01T00:00:00.000Z" },
+      profile: { data: { a: 1 }, clientUpdatedAt: "2025-01-01T00:00:00.000Z" },
     };
     mockedBuild.mockReturnValueOnce(payload);
     mockedPushAllApi.mockRejectedValueOnce(new Error("boom"));
@@ -185,7 +190,7 @@ describe("pushAll", () => {
 
   it("enqueues offline and skips onSuccess when navigator is offline", async () => {
     mockedBuild.mockReturnValueOnce({
-      finyk: { data: { a: 1 }, clientUpdatedAt: "2025-01-01T00:00:00.000Z" },
+      profile: { data: { a: 1 }, clientUpdatedAt: "2025-01-01T00:00:00.000Z" },
     });
     Object.defineProperty(navigator, "onLine", {
       configurable: true,
@@ -202,12 +207,12 @@ describe("pushAll", () => {
   });
 
   it("calls onSuccess and clears dirty state after a successful server push", async () => {
-    markModuleDirty("finyk");
+    markModuleDirty("profile");
     mockedBuild.mockReturnValueOnce({
-      finyk: { data: { a: 1 }, clientUpdatedAt: "2025-01-01T00:00:00.000Z" },
+      profile: { data: { a: 1 }, clientUpdatedAt: "2025-01-01T00:00:00.000Z" },
     });
     mockedPushAllApi.mockResolvedValueOnce({
-      results: { finyk: { ok: true, version: 42 } },
+      results: { profile: { ok: true, version: 42 } },
     });
 
     const { args, onSuccess, onError } = makeArgs();
@@ -221,16 +226,19 @@ describe("pushAll", () => {
   it("keeps conflict modules dirty (LWW loser) instead of silently dropping local changes", async () => {
     // Регресія: `clearAllDirty()` стирав dirty і для `{ ok: true, conflict: true }`,
     // після чого pull накатував cloud → локальні зміни гинули.
-    markModuleDirty("finyk");
-    markModuleDirty("routine");
+    markModuleDirty("profile");
+    markModuleDirty("_legacy_finyk");
     mockedBuild.mockReturnValueOnce({
-      finyk: { data: { a: 1 }, clientUpdatedAt: "2025-01-01T00:00:00.000Z" },
-      routine: { data: { b: 2 }, clientUpdatedAt: "2025-01-01T00:00:00.000Z" },
+      profile: { data: { a: 1 }, clientUpdatedAt: "2025-01-01T00:00:00.000Z" },
+      _legacy_finyk: {
+        data: { b: 2 },
+        clientUpdatedAt: "2025-01-01T00:00:00.000Z",
+      },
     });
     mockedPushAllApi.mockResolvedValueOnce({
       results: {
-        finyk: { ok: true, version: 42 },
-        routine: { ok: true, conflict: true, version: 7 },
+        profile: { ok: true, version: 42 },
+        _legacy_finyk: { ok: true, conflict: true, version: 7 },
       },
     });
 
@@ -239,11 +247,11 @@ describe("pushAll", () => {
 
     expect(onSuccess).toHaveBeenCalledTimes(1);
     expect(onError).not.toHaveBeenCalled();
-    // finyk — очищений, routine — лишився dirty до наступного push-у.
-    expect(getDirtyModules()).toEqual({ routine: true });
+    // profile — очищений, _legacy_finyk — лишився dirty до наступного push-у.
+    expect(getDirtyModules()).toEqual({ _legacy_finyk: true });
 
     // PostHog sync_conflict_resolved фіксуємо рівно один раз з
-    // правильним лічильником модулів (routine) і kind="push" —
+    // правильним лічильником модулів (1) і kind="push" —
     // дашборди для виявлення regression-ів LWW-guard-а очікують саме цю форму.
     expect(mockedTrackEvent).toHaveBeenCalledWith(
       ANALYTICS_EVENTS.SYNC_CONFLICT_RESOLVED,
@@ -252,12 +260,12 @@ describe("pushAll", () => {
   });
 
   it("does not fire sync_conflict_resolved when all modules succeed cleanly", async () => {
-    markModuleDirty("finyk");
+    markModuleDirty("profile");
     mockedBuild.mockReturnValueOnce({
-      finyk: { data: { a: 1 }, clientUpdatedAt: "2025-01-01T00:00:00.000Z" },
+      profile: { data: { a: 1 }, clientUpdatedAt: "2025-01-01T00:00:00.000Z" },
     });
     mockedPushAllApi.mockResolvedValueOnce({
-      results: { finyk: { ok: true, version: 42 } },
+      results: { profile: { ok: true, version: 42 } },
     });
 
     const { args } = makeArgs();

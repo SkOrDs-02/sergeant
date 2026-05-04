@@ -726,6 +726,21 @@ export default [
   // web + mobile reads). The selector matches only those five — NOT
   // ancillary nutrition LS keys that remain local-only (e.g.
   // `STORAGE_KEYS.NUTRITION_QUICK_STATS`, `NUTRITION_PROFILE_*`).
+  //
+  // Finyk cloud-sync retirement guard (PR #039, storage-roadmap
+  // Stage 4) is added in the same block — same shape, same rationale.
+  // The nineteen `STORAGE_KEYS.FINYK_{HIDDEN, HIDDEN_TXS, BUDGETS,
+  // SUBS, ASSETS, DEBTS, RECV, MONTHLY_PLAN, TX_CATS, TX_SPLITS,
+  // MONO_DEBT_LINKED, NETWORTH_HISTORY, CUSTOM_CATS, MANUAL_EXPENSES,
+  // TX_FILTERS, SHOW_BALANCE, TX_CACHE, TX_CACHE_LAST_GOOD,
+  // INFO_CACHE}` keys backed the legacy `module_data.finyk` blob;
+  // per-table `finyk_*` SQLite mirror plus the op-log and the Mono
+  // client-side mirror replace it (PR #035 schema, PR #036 dual-write,
+  // PR #037 read overlay, PR #038 Mono mirror). FINYK_TOKEN remains
+  // separately banned by `no-finyk-token-in-storage` (server-only PAT,
+  // PR #002). The selector matches only those nineteen — NOT
+  // ancillary finyk LS keys that remain local-only (e.g.
+  // `STORAGE_KEYS.FINYK_TX_CACHE_TS`, `FINYK_*` UI prefs).
   {
     files: ["apps/web/src/**/*.{ts,tsx}", "apps/mobile/src/**/*.{ts,tsx}"],
     ignores: [
@@ -742,15 +757,35 @@ export default [
       // entry-points everyone else should call.
       "apps/web/src/modules/nutrition/**",
       "apps/mobile/src/modules/nutrition/**",
-      // Cross-module insights still reads FIZRUK_WORKOUTS and
-      // NUTRITION_LOG as a best-effort local heuristic (insights do
-      // not need cloud-sync round-tripping). Migration to the SQLite
-      // reader is tracked in a follow-up under storage-roadmap
-      // Stage 5.
+      // Canonical finyk module wrappers — the official read/write
+      // entry-points everyone else should call.
+      "apps/web/src/modules/finyk/**",
+      "apps/mobile/src/modules/finyk/**",
+      // Mobile settings → "Власні категорії витрат" is the canonical
+      // user-facing writer for `STORAGE_KEYS.FINYK_CUSTOM_CATS` —
+      // the web equivalent lives behind seed/UI hooks that hard-code
+      // the raw `finyk_custom_cats_v1` string. The MMKV write goes
+      // through `useSyncedStorage` which still calls
+      // `enqueueChange(key)`; after PR #039 that call is a no-op for
+      // retired keys, but the section still owns the persistence
+      // contract for the categories list.
+      "apps/mobile/src/core/settings/FinykSection.tsx",
+      // Cross-module insights still reads FIZRUK_WORKOUTS,
+      // NUTRITION_LOG and finyk LS keys as a best-effort local
+      // heuristic (insights do not need cloud-sync round-tripping).
+      // Migration to the SQLite reader is tracked in a follow-up
+      // under storage-roadmap Stage 5.
       "apps/web/src/core/lib/insightsEngine.ts",
-      // Mobile backup still reads the fizruk + nutrition LS keys for
-      // full-state export/import (parity with hubBackup ROUTINE
-      // carve-out).
+      // Routine calendar's "Finyk subscription events" lane reads
+      // `FINYK_SUBS` / `FINYK_TX_CACHE` / `FINYK_TX_CACHE_LAST_GOOD`
+      // directly to overlay subscription due-dates and Monobank
+      // transactions onto the calendar. The migration to the
+      // canonical finyk SQLite reader is tracked in a follow-up
+      // under storage-roadmap Stage 5 alongside the insights engine.
+      "apps/web/src/modules/routine/lib/finykSubscriptionCalendar.ts",
+      // Mobile backup still reads the fizruk + nutrition + finyk LS
+      // keys for full-state export/import (parity with hubBackup
+      // ROUTINE carve-out).
       "apps/mobile/src/core/hub/hubBackup.ts",
     ],
     rules: {
@@ -783,6 +818,13 @@ export default [
             "MemberExpression[object.name='STORAGE_KEYS'][property.name=/^NUTRITION_(?:LOG|PANTRIES|ACTIVE_PANTRY|PREFS|SAVED_RECIPES)$/]",
           message:
             "Direct access to the retired `STORAGE_KEYS.NUTRITION_*` cloud-sync keys is forbidden (PR #034, storage-roadmap). Use the canonical nutrition hooks (`useNutritionLog`, `useNutritionPantries`, `useNutritionPrefs`, `useSavedRecipesList`) from `apps/{web,mobile}/src/modules/nutrition/hooks` — they handle the SQLite overlay transparently.",
+        },
+        // PR #039 — finyk cloud-sync retirement.
+        {
+          selector:
+            "MemberExpression[object.name='STORAGE_KEYS'][property.name=/^FINYK_(?:HIDDEN|HIDDEN_TXS|BUDGETS|SUBS|ASSETS|DEBTS|RECV|MONTHLY_PLAN|TX_CATS|TX_SPLITS|MONO_DEBT_LINKED|NETWORTH_HISTORY|CUSTOM_CATS|MANUAL_EXPENSES|TX_FILTERS|SHOW_BALANCE|TX_CACHE|TX_CACHE_LAST_GOOD|INFO_CACHE)$/]",
+          message:
+            "Direct access to the retired `STORAGE_KEYS.FINYK_*` cloud-sync keys is forbidden (PR #039, storage-roadmap). Use the canonical finyk module wrappers (`apps/{web,mobile}/src/modules/finyk/hooks/useStorage` and friends) — they handle the SQLite overlay transparently. The Monobank PAT (`FINYK_TOKEN`) remains separately banned by `no-finyk-token-in-storage` (PR #002).",
         },
       ],
     },

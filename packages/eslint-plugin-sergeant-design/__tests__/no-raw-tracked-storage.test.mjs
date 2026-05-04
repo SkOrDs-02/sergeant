@@ -34,7 +34,7 @@ describe("no-raw-tracked-storage", () => {
   it("flags useLocalStorage with a tracked string-literal key", () => {
     const messages = lint(
       `import { useLocalStorage } from "@/lib/storage";
-       useLocalStorage("finyk_budgets", []);`,
+       useLocalStorage("hub_user_profile_v1", []);`,
     );
     assert.equal(messages.length, 1);
     assert.equal(messages[0].ruleId, RULE_ID);
@@ -44,7 +44,7 @@ describe("no-raw-tracked-storage", () => {
     const messages = lint(
       `import { useLocalStorage } from "@/lib/storage";
        import { STORAGE_KEYS } from "@sergeant/shared";
-       useLocalStorage(STORAGE_KEYS.FINYK_BUDGETS, []);`,
+       useLocalStorage(STORAGE_KEYS.USER_PROFILE, []);`,
     );
     assert.equal(messages.length, 1);
     assert.equal(messages[0].ruleId, RULE_ID);
@@ -70,7 +70,7 @@ describe("no-raw-tracked-storage", () => {
     const messages = lint(
       `import { useLocalStorage } from "@/lib/storage";
        import { STORAGE_KEYS } from "@sergeant/shared";
-       useLocalStorage(STORAGE_KEYS["FINYK_BUDGETS"], []);`,
+       useLocalStorage(STORAGE_KEYS["USER_PROFILE"], []);`,
     );
     assert.equal(messages.length, 1);
     assert.equal(messages[0].ruleId, RULE_ID);
@@ -92,6 +92,27 @@ describe("no-raw-tracked-storage", () => {
     assert.deepEqual(messages, []);
   });
 
+  it("does NOT flag useLocalStorage with the retired finyk keys", () => {
+    // PR #039 (storage-roadmap Stage 4): the nineteen historical
+    // `module_data.finyk` LS/MMKV keys (`finyk_budgets`,
+    // `finyk_subs`, `finyk_assets`, etc.) were removed from
+    // SYNC_MODULES — cross-device sync moved to the per-table
+    // `finyk_*` SQLite mirror plus the op-log and the Mono
+    // client-side mirror. Direct access is now guarded by the
+    // dedicated `no-restricted-syntax` rule in `eslint.config.js`,
+    // not by `no-raw-tracked-storage`. The Monobank PAT
+    // (`finyk_token`) was already retired in PR #002 and remains
+    // banned by its own `no-finyk-token-in-storage` rule.
+    const messages = lint(
+      `import { useLocalStorage } from "@/lib/storage";
+       import { STORAGE_KEYS } from "@sergeant/shared";
+       useLocalStorage(STORAGE_KEYS.FINYK_BUDGETS, []);
+       useLocalStorage("finyk_subs", []);
+       useLocalStorage("finyk_tx_cache", []);`,
+    );
+    assert.deepEqual(messages, []);
+  });
+
   it("does NOT flag useLocalStorage with the retired routine key", () => {
     // PR #026 (storage-roadmap Stage 4): routine was removed from
     // SYNC_MODULES — its LS blob is no longer cloud-synced. Direct
@@ -105,15 +126,15 @@ describe("no-raw-tracked-storage", () => {
   });
 
   it("flags template-literal keys with no expressions", () => {
-    // `finyk_budgets` is a tracked key (in `SYNC_MODULES.finyk.keys`).
-    // The earlier fixture used `finyk_token`, which was retired from
-    // tracked storage in PR #002 (Stage 0): the Monobank PAT lives only
-    // server-side now and has its own dedicated rule
-    // (`no-finyk-token-in-storage`). The AST matcher under test —
-    // template-literal-with-no-expressions — is the same.
+    // `hub_user_profile_v1` (USER_PROFILE) is the only tracked key
+    // remaining after PR #039 retired the finyk module from
+    // SYNC_MODULES (storage-roadmap Stage 4). Earlier fixtures used
+    // `finyk_budgets` / `finyk_token`, both retired (Stages 0 and 4).
+    // The AST matcher under test — template-literal-with-no-
+    // expressions — is the same.
     const messages = lint(
       `import { useLocalStorage } from "@/lib/storage";
-       useLocalStorage(\`finyk_budgets\`, null);`,
+       useLocalStorage(\`hub_user_profile_v1\`, null);`,
     );
     assert.equal(messages.length, 1);
     assert.equal(messages[0].ruleId, RULE_ID);
@@ -133,7 +154,7 @@ describe("no-raw-tracked-storage", () => {
   it("does NOT flag useSyncedStorage even with a tracked key", () => {
     const messages = lint(
       `import { useSyncedStorage } from "@/sync/useSyncedStorage";
-       useSyncedStorage("finyk_budgets", []);`,
+       useSyncedStorage("hub_user_profile_v1", []);`,
     );
     assert.deepEqual(messages, []);
   });
@@ -141,7 +162,7 @@ describe("no-raw-tracked-storage", () => {
   it("does NOT flag arbitrary call expressions that share an arg shape", () => {
     const messages = lint(
       `import { STORAGE_KEYS } from "@sergeant/shared";
-       safeReadLS(STORAGE_KEYS.FINYK_BUDGETS, []);`,
+       safeReadLS(STORAGE_KEYS.USER_PROFILE, []);`,
     );
     assert.deepEqual(messages, []);
   });
@@ -161,7 +182,7 @@ describe("no-raw-tracked-storage", () => {
   it("flags member-access useLocalStorage (e.g. namespace import)", () => {
     const messages = lint(
       `import * as storage from "@/lib/storage";
-       storage.useLocalStorage("finyk_budgets", []);`,
+       storage.useLocalStorage("hub_user_profile_v1", []);`,
     );
     assert.equal(messages.length, 1);
     assert.equal(messages[0].ruleId, RULE_ID);

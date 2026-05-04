@@ -98,7 +98,7 @@ describe("collectQueuedModules (corruption tolerance)", () => {
 
   it("skips entries with wrong type", () => {
     const q = [
-      { type: "pull", modules: { finyk: { data: {} } } },
+      { type: "pull", modules: { profile: { data: {} } } },
       { type: "unknown", modules: { fizruk: { data: {} } } },
     ];
     expect(collectQueued(q)).toEqual({});
@@ -119,69 +119,92 @@ describe("collectQueuedModules (corruption tolerance)", () => {
         type: "push",
         modules: {
           not_a_real_module: { data: { foo: "bar" } },
-          finyk: { data: { x: 1 } },
+          profile: { data: { x: 1 } },
         },
       },
     ];
     const out = collectQueued(q);
-    expect(out).toHaveProperty("finyk");
+    expect(out).toHaveProperty("profile");
     expect(out).not.toHaveProperty("not_a_real_module");
   });
 
   it("later entries overwrite earlier ones for the same module", () => {
     const q = [
-      { type: "push", modules: { finyk: { data: { v: 1 } } } },
-      { type: "push", modules: { finyk: { data: { v: 2 } } } },
+      { type: "push", modules: { profile: { data: { v: 1 } } } },
+      { type: "push", modules: { profile: { data: { v: 2 } } } },
     ];
-    expect(collectQueued(q)).toEqual({ finyk: { data: { v: 2 } } });
+    expect(collectQueued(q)).toEqual({ profile: { data: { v: 2 } } });
   });
 
-  it("merges payloads across modules from multiple entries", () => {
-    // PR #026 retired 'routine', PR #030 retired 'fizruk' and PR
-    // #034 retired 'nutrition' from SYNC_MODULES. Only `finyk` and
-    // `profile` remain.
-    const q = [
-      { type: "push", modules: { finyk: { data: { a: 1 } } } },
-      { type: "push", modules: { profile: { data: { c: 3 } } } },
-    ];
-    expect(Object.keys(collectQueued(q)).sort()).toEqual(["finyk", "profile"]);
+  it("keeps the live profile module in the collected payload", () => {
+    // PR #026 retired `routine`, PR #030 retired `fizruk`, PR #034
+    // retired `nutrition` and PR #039 retired `finyk` from
+    // SYNC_MODULES (storage-roadmap Stage 4); only `profile`
+    // remains, so collectQueued returns at most that module.
+    const q = [{ type: "push", modules: { profile: { data: { c: 3 } } } }];
+    expect(Object.keys(collectQueued(q)).sort()).toEqual(["profile"]);
   });
 
   it("drops the retired fizruk module from the collected payload (PR #030)", () => {
     const q = [
-      { type: "push", modules: { finyk: { data: { a: 1 } } } },
+      { type: "push", modules: { profile: { data: { a: 1 } } } },
       { type: "push", modules: { fizruk: { data: { b: 2 } } } },
     ];
-    expect(Object.keys(collectQueued(q)).sort()).toEqual(["finyk"]);
+    expect(Object.keys(collectQueued(q)).sort()).toEqual(["profile"]);
   });
 
   it("drops the retired nutrition module from the collected payload (PR #034)", () => {
     const q = [
-      { type: "push", modules: { finyk: { data: { a: 1 } } } },
+      { type: "push", modules: { profile: { data: { a: 1 } } } },
       { type: "push", modules: { nutrition: { data: { b: 2 } } } },
     ];
-    expect(Object.keys(collectQueued(q)).sort()).toEqual(["finyk"]);
+    expect(Object.keys(collectQueued(q)).sort()).toEqual(["profile"]);
+  });
+
+  it("drops the retired finyk module from the collected payload (PR #039)", () => {
+    const q = [
+      { type: "push", modules: { profile: { data: { a: 1 } } } },
+      { type: "push", modules: { finyk: { data: { b: 2 } } } },
+    ];
+    expect(Object.keys(collectQueued(q)).sort()).toEqual(["profile"]);
   });
 });
 
 describe("addToOfflineQueue coalescing", () => {
   it("merges consecutive push entries into the last row", () => {
-    enqueue({ type: "push", modules: { finyk: { data: { v: 1 } } } } as never);
+    // The offline queue itself does NOT validate module names against
+    // SYNC_MODULES — the SYNC_MODULES filter runs at
+    // `collectQueuedModules` time, not at enqueue time. Coalescing
+    // tests therefore use `profile` (live) plus a synthetic
+    // `_legacy_finyk` placeholder for the second module.
+    enqueue({
+      type: "push",
+      modules: { profile: { data: { v: 1 } } },
+    } as never);
+    enqueue({
+      type: "push",
+      modules: { _legacy_finyk: { data: { v: 2 } } },
+    } as never);
+    const q = getOfflineQueue();
+    expect(q).toHaveLength(1);
+    expect(Object.keys(q[0].modules).sort()).toEqual([
+      "_legacy_finyk",
+      "profile",
+    ]);
+  });
+
+  it("later merged module payload overwrites earlier one", () => {
+    enqueue({
+      type: "push",
+      modules: { profile: { data: { v: 1 } } },
+    } as never);
     enqueue({
       type: "push",
       modules: { profile: { data: { v: 2 } } },
     } as never);
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(Object.keys(q[0].modules).sort()).toEqual(["finyk", "profile"]);
-  });
-
-  it("later merged module payload overwrites earlier one", () => {
-    enqueue({ type: "push", modules: { finyk: { data: { v: 1 } } } } as never);
-    enqueue({ type: "push", modules: { finyk: { data: { v: 2 } } } } as never);
-    const q = getOfflineQueue();
-    expect(q).toHaveLength(1);
-    expect(q[0].modules.finyk.data.v).toBe(2);
+    expect(q[0].modules.profile.data.v).toBe(2);
   });
 
   it("caps queue length when many non-coalescing entries accumulate", () => {
@@ -202,7 +225,10 @@ describe("addToOfflineQueue coalescing", () => {
 
   it("does not coalesce into a non-push last entry", () => {
     enqueue({ type: "other", payload: {} } as never);
-    enqueue({ type: "push", modules: { finyk: { data: {} } } } as never);
+    enqueue({
+      type: "push",
+      modules: { profile: { data: {} } },
+    } as never);
     const q = getOfflineQueue();
     expect(q).toHaveLength(2);
     expect(q[0].type).toBe("other");
@@ -210,13 +236,13 @@ describe("addToOfflineQueue coalescing", () => {
   });
 
   it("is idempotent wrt queue contents when coalescing repeated pushes", () => {
-    const payload = { finyk: { data: { v: "same" } } };
+    const payload = { profile: { data: { v: "same" } } };
     enqueue({ type: "push", modules: payload } as never);
     enqueue({ type: "push", modules: payload } as never);
     enqueue({ type: "push", modules: payload } as never);
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].modules.finyk.data.v).toBe("same");
+    expect(q[0].modules.profile.data.v).toBe("same");
   });
 });
 
@@ -227,9 +253,10 @@ describe("offline queue + corruption end-to-end", () => {
   });
 
   it("collectQueuedModules tolerates a mix of valid and corrupted entries", () => {
-    // PR #030 retired `fizruk` and PR #034 retired `nutrition` from
-    // SYNC_MODULES, so they are dropped during collection alongside
-    // the malformed rows.
+    // PR #030 retired `fizruk`, PR #034 retired `nutrition` and
+    // PR #039 retired `finyk` from SYNC_MODULES — they are dropped
+    // during collection alongside the malformed rows. Only `profile`
+    // survives.
     const q = [
       null,
       { type: "push", modules: { finyk: { data: { v: 1 } } } },
@@ -241,6 +268,6 @@ describe("offline queue + corruption end-to-end", () => {
       { malformed: true },
     ];
     const out = collectQueued(q);
-    expect(Object.keys(out).sort()).toEqual(["finyk", "profile"]);
+    expect(Object.keys(out).sort()).toEqual(["profile"]);
   });
 });

@@ -38,11 +38,17 @@ beforeEach(() => {
 
 describe("offlineQueue — enqueue", () => {
   it("appends a new push row with a stamped timestamp", () => {
-    addToOfflineQueue({ type: "push", modules: makeModules("finyk", 1) });
+    // PR #026 retired `routine`, PR #030 retired `fizruk`, PR #034
+    // retired `nutrition` and PR #039 retired `finyk` from
+    // SYNC_MODULES; only `profile` remains. The queue itself accepts
+    // any string as a module name (the SYNC_MODULES filter only runs
+    // at `collectQueuedModules` time), so this test still uses
+    // `profile` as the live module fixture.
+    addToOfflineQueue({ type: "push", modules: makeModules("profile", 1) });
     const queue = getOfflineQueue();
     expect(queue).toHaveLength(1);
     expect(queue[0].type).toBe("push");
-    expect(queue[0].modules.finyk).toBeDefined();
+    expect(queue[0].modules.profile).toBeDefined();
     expect(typeof queue[0].ts).toBe("string");
     expect(new Date(queue[0].ts).toString()).not.toBe("Invalid Date");
   });
@@ -75,49 +81,73 @@ describe("offlineQueue — enqueue", () => {
 
 describe("offlineQueue — dedup / coalescing", () => {
   it("coalesces consecutive push rows into one", () => {
-    // PR #030 — fizruk retired; the queue itself accepts any string
-    // module name, but collectQueuedModules will later drop fizruk
-    // entries. Use the post-retirement set here.
-    addToOfflineQueue({ type: "push", modules: makeModules("finyk", 1) });
+    // The queue itself accepts any string as a module name (the
+    // SYNC_MODULES filter only runs at collect time), so we drive
+    // it here with `profile` (live) plus two synthetic placeholders
+    // representing legacy modules retired in PR #030 / #034 / #039.
+    addToOfflineQueue({
+      type: "push",
+      modules: makeModules("_legacy_finyk", 1),
+    });
     addToOfflineQueue({ type: "push", modules: makeModules("profile", 2) });
-    addToOfflineQueue({ type: "push", modules: makeModules("nutrition", 3) });
+    addToOfflineQueue({
+      type: "push",
+      modules: makeModules("_legacy_nutrition", 3),
+    });
 
     const queue = getOfflineQueue();
     expect(queue).toHaveLength(1);
     expect(queue[0].modules).toMatchObject({
-      finyk: expect.any(Object),
+      _legacy_finyk: expect.any(Object),
       profile: expect.any(Object),
-      nutrition: expect.any(Object),
+      _legacy_nutrition: expect.any(Object),
     });
   });
 
   it("overwrites an earlier module payload with the newer one", () => {
-    addToOfflineQueue({ type: "push", modules: makeModules("finyk", 1) });
-    addToOfflineQueue({ type: "push", modules: makeModules("finyk", 99) });
+    addToOfflineQueue({ type: "push", modules: makeModules("profile", 1) });
+    addToOfflineQueue({ type: "push", modules: makeModules("profile", 99) });
 
     const queue = getOfflineQueue();
     expect(queue).toHaveLength(1);
-    const data = queue[0].modules.finyk.data as { finyk_key: number };
-    expect(data.finyk_key).toBe(99);
+    const data = queue[0].modules.profile.data as { profile_key: number };
+    expect(data.profile_key).toBe(99);
   });
 
   it("collectQueuedModules picks the last payload per module", () => {
-    addToOfflineQueue({ type: "push", modules: makeModules("finyk", 1) });
-    addToOfflineQueue({ type: "push", modules: makeModules("finyk", 2) });
-    addToOfflineQueue({ type: "push", modules: makeModules("nutrition", 3) });
+    addToOfflineQueue({ type: "push", modules: makeModules("profile", 1) });
+    addToOfflineQueue({ type: "push", modules: makeModules("profile", 2) });
+    addToOfflineQueue({
+      type: "push",
+      modules: makeModules("_legacy_finyk", 3),
+    });
 
     const collected = collectQueuedModules(getOfflineQueue());
-    expect(Object.keys(collected).sort()).toEqual(["finyk", "nutrition"]);
-    expect((collected.finyk.data as { finyk_key: number }).finyk_key).toBe(2);
+    // PR #039: only `profile` survives the SYNC_MODULES filter; the
+    // synthetic `_legacy_finyk` placeholder is dropped alongside
+    // any real legacy `finyk` entries.
+    expect(Object.keys(collected).sort()).toEqual(["profile"]);
+    expect(
+      (collected.profile.data as { profile_key: number }).profile_key,
+    ).toBe(2);
   });
 
   it("collectQueuedModules drops the retired fizruk module (PR #030)", () => {
-    addToOfflineQueue({ type: "push", modules: makeModules("finyk", 1) });
+    addToOfflineQueue({ type: "push", modules: makeModules("profile", 1) });
     addToOfflineQueue({ type: "push", modules: makeModules("fizruk", 9) });
 
     const collected = collectQueuedModules(getOfflineQueue());
-    expect(Object.keys(collected)).toEqual(["finyk"]);
+    expect(Object.keys(collected)).toEqual(["profile"]);
     expect(collected).not.toHaveProperty("fizruk");
+  });
+
+  it("collectQueuedModules drops the retired finyk module (PR #039)", () => {
+    addToOfflineQueue({ type: "push", modules: makeModules("profile", 1) });
+    addToOfflineQueue({ type: "push", modules: makeModules("finyk", 9) });
+
+    const collected = collectQueuedModules(getOfflineQueue());
+    expect(Object.keys(collected)).toEqual(["profile"]);
+    expect(collected).not.toHaveProperty("finyk");
   });
 
   it("collectQueuedModules drops unknown modules and corrupted entries", () => {
@@ -126,7 +156,7 @@ describe("offlineQueue — dedup / coalescing", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
-        ...makeModules("finyk", 1),
+        ...makeModules("profile", 1),
         ...makeModules("notAModule", 1),
       },
     });
@@ -138,25 +168,32 @@ describe("offlineQueue — dedup / coalescing", () => {
       { type: "unknown", modules: {} } as unknown as never,
       { type: "push", modules: null } as unknown as never,
     ]);
-    expect(Object.keys(collected)).toEqual(["finyk"]);
+    expect(Object.keys(collected)).toEqual(["profile"]);
   });
 });
 
 describe("offlineQueue — serialization roundtrip", () => {
   it("survives a serialize → deserialize cycle through MMKV", () => {
-    addToOfflineQueue({ type: "push", modules: makeModules("finyk", 42) });
-    addToOfflineQueue({ type: "push", modules: makeModules("nutrition", 7) });
+    addToOfflineQueue({ type: "push", modules: makeModules("profile", 42) });
+    addToOfflineQueue({
+      type: "push",
+      modules: makeModules("_legacy_nutrition", 7),
+    });
 
     // Drop all in-memory JS references and re-read from MMKV.
     const fresh = getOfflineQueue();
     expect(fresh).toHaveLength(1);
     const row = fresh[0];
-    expect(Object.keys(row.modules).sort()).toEqual(["finyk", "nutrition"]);
-    expect((row.modules.finyk.data as { finyk_key: number }).finyk_key).toBe(
-      42,
-    );
+    expect(Object.keys(row.modules).sort()).toEqual([
+      "_legacy_nutrition",
+      "profile",
+    ]);
     expect(
-      (row.modules.nutrition.data as { nutrition_key: number }).nutrition_key,
+      (row.modules.profile.data as { profile_key: number }).profile_key,
+    ).toBe(42);
+    expect(
+      (row.modules._legacy_nutrition.data as { _legacy_nutrition_key: number })
+        ._legacy_nutrition_key,
     ).toBe(7);
 
     // And the `ts` field remains a valid ISO-8601 string.
@@ -164,7 +201,7 @@ describe("offlineQueue — serialization roundtrip", () => {
   });
 
   it("clearOfflineQueue wipes persisted state", () => {
-    addToOfflineQueue({ type: "push", modules: makeModules("finyk", 1) });
+    addToOfflineQueue({ type: "push", modules: makeModules("profile", 1) });
     expect(getOfflineQueue()).toHaveLength(1);
     clearOfflineQueue();
     expect(getOfflineQueue()).toEqual([]);

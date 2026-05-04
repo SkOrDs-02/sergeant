@@ -20,36 +20,49 @@ afterEach(() => {
   localStorage.clear();
 });
 
+// PR #030 retired `fizruk`, PR #034 retired `nutrition` and PR #039
+// retired `finyk` from SYNC_MODULES (storage-roadmap Stage 4); only
+// `profile` (USER_PROFILE) remains. The collect/has/apply helpers
+// reject unknown modules via `SYNC_MODULES[moduleName]` lookup, so
+// fixtures here use `profile` as the live module and treat retired
+// modules (`finyk`, `nutrition`, `fizruk`) as unknown.
 describe("collectModuleData", () => {
   it("returns null for unknown module", () => {
     expect(collectModuleData("ghost")).toBeNull();
   });
 
-  it("returns empty object when no LS keys are set for the module", () => {
-    expect(collectModuleData("finyk")).toEqual({});
-  });
-
-  it("collects only keys that are present", () => {
+  it("returns null for the retired finyk module (PR #039)", () => {
+    // Even when legacy `finyk_*` LS rows exist, collectModuleData must
+    // refuse to push them because finyk is no longer in SYNC_MODULES.
     localStorage.setItem(
       STORAGE_KEYS.FINYK_BUDGETS,
       JSON.stringify([{ id: 1 }]),
     );
-    const data = collectModuleData("finyk");
+    expect(collectModuleData("finyk")).toBeNull();
+  });
+
+  it("returns empty object when no LS keys are set for the module", () => {
+    expect(collectModuleData("profile")).toEqual({});
+  });
+
+  it("collects only keys that are present", () => {
+    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ id: 1 }));
+    const data = collectModuleData("profile");
     expect(data).not.toBeNull();
-    expect(data).toHaveProperty(STORAGE_KEYS.FINYK_BUDGETS);
+    expect(data).toHaveProperty(STORAGE_KEYS.USER_PROFILE);
     expect(
-      (data as Record<string, unknown>)[STORAGE_KEYS.FINYK_BUDGETS],
-    ).toEqual([{ id: 1 }]);
+      (data as Record<string, unknown>)[STORAGE_KEYS.USER_PROFILE],
+    ).toEqual({ id: 1 });
   });
 
   it("preserves raw string when value is not valid JSON", () => {
-    localStorage.setItem(STORAGE_KEYS.FINYK_BUDGETS, "not-json");
-    const data = collectModuleData("finyk") as Record<string, unknown>;
-    expect(data[STORAGE_KEYS.FINYK_BUDGETS]).toBe("not-json");
+    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, "not-json");
+    const data = collectModuleData("profile") as Record<string, unknown>;
+    expect(data[STORAGE_KEYS.USER_PROFILE]).toBe("not-json");
   });
 
   it("swallows getItem exceptions and returns the keys it could read", () => {
-    localStorage.setItem(STORAGE_KEYS.FINYK_BUDGETS, JSON.stringify({ ok: 1 }));
+    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify({ ok: 1 }));
     let firstCall = true;
     const original = Storage.prototype.getItem;
     const spy = vi
@@ -61,10 +74,12 @@ describe("collectModuleData", () => {
         }
         return original.call(this, key);
       });
-    const data = collectModuleData("finyk") as Record<string, unknown>;
+    const data = collectModuleData("profile") as Record<string, unknown>;
     spy.mockRestore();
-    // First key threw → not in output. Subsequent keys are read normally.
-    expect(data[STORAGE_KEYS.FINYK_BUDGETS]).toEqual({ ok: 1 });
+    // First key threw → not in output. Subsequent keys are read normally
+    // (profile only has one key, so the swallow path is exercised even
+    // when the module's first key is the one that throws).
+    expect(data[STORAGE_KEYS.USER_PROFILE]).toBeUndefined();
   });
 });
 
@@ -73,21 +88,26 @@ describe("hasLocalData", () => {
     expect(hasLocalData("ghost")).toBe(false);
   });
 
-  it("returns false when no module key is set", () => {
+  it("returns false for the retired finyk module (PR #039)", () => {
+    localStorage.setItem(STORAGE_KEYS.FINYK_BUDGETS, "[]");
     expect(hasLocalData("finyk")).toBe(false);
   });
 
+  it("returns false when no module key is set", () => {
+    expect(hasLocalData("profile")).toBe(false);
+  });
+
   it("returns true when at least one module key is set", () => {
-    localStorage.setItem(STORAGE_KEYS.FINYK_BUDGETS, "[]");
-    expect(hasLocalData("finyk")).toBe(true);
+    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, "{}");
+    expect(hasLocalData("profile")).toBe(true);
   });
 });
 
 describe("applyModuleData", () => {
   it("ignores non-object data", () => {
-    applyModuleData("finyk", null);
-    applyModuleData("finyk", "string");
-    applyModuleData("finyk", 42);
+    applyModuleData("profile", null);
+    applyModuleData("profile", "string");
+    applyModuleData("profile", 42);
     expect(localStorage.length).toBe(0);
   });
 
@@ -96,30 +116,40 @@ describe("applyModuleData", () => {
     expect(localStorage.length).toBe(0);
   });
 
-  it("writes only keys that belong to the module", () => {
-    // PR #030 retired fizruk and PR #034 retired nutrition — neither
-    // `STORAGE_KEYS.FIZRUK_WORKOUTS` nor `STORAGE_KEYS.NUTRITION_LOG`
-    // is tracked by any module any more, so applyModuleData("finyk", …)
-    // must skip them the same way it skips truly unrelated keys.
+  it("ignores the retired finyk module (PR #039)", () => {
     applyModuleData("finyk", {
       [STORAGE_KEYS.FINYK_BUDGETS]: [{ id: 1 }],
+    });
+    expect(localStorage.getItem(STORAGE_KEYS.FINYK_BUDGETS)).toBeNull();
+  });
+
+  it("writes only keys that belong to the module", () => {
+    // PR #030 retired fizruk, PR #034 retired nutrition and PR #039
+    // retired finyk — none of `STORAGE_KEYS.FIZRUK_WORKOUTS`,
+    // `STORAGE_KEYS.NUTRITION_LOG`, or `STORAGE_KEYS.FINYK_BUDGETS`
+    // is tracked by any module any more, so applyModuleData("profile",
+    // …) must skip them the same way it skips truly unrelated keys.
+    applyModuleData("profile", {
+      [STORAGE_KEYS.USER_PROFILE]: { id: 1 },
       [STORAGE_KEYS.NUTRITION_LOG]: { leak: true },
       [STORAGE_KEYS.FIZRUK_WORKOUTS]: ["retired"],
+      [STORAGE_KEYS.FINYK_BUDGETS]: ["retired"],
       unrelated: { x: 1 },
     });
-    expect(localStorage.getItem(STORAGE_KEYS.FINYK_BUDGETS)).toBe(
-      JSON.stringify([{ id: 1 }]),
+    expect(localStorage.getItem(STORAGE_KEYS.USER_PROFILE)).toBe(
+      JSON.stringify({ id: 1 }),
     );
     expect(localStorage.getItem(STORAGE_KEYS.NUTRITION_LOG)).toBeNull();
     expect(localStorage.getItem(STORAGE_KEYS.FIZRUK_WORKOUTS)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.FINYK_BUDGETS)).toBeNull();
     expect(localStorage.getItem("unrelated")).toBeNull();
   });
 
   it("stores string values verbatim instead of double-encoding", () => {
-    applyModuleData("finyk", {
-      [STORAGE_KEYS.FINYK_BUDGETS]: "literal",
+    applyModuleData("profile", {
+      [STORAGE_KEYS.USER_PROFILE]: "literal",
     });
-    expect(localStorage.getItem(STORAGE_KEYS.FINYK_BUDGETS)).toBe("literal");
+    expect(localStorage.getItem(STORAGE_KEYS.USER_PROFILE)).toBe("literal");
   });
 
   it("swallows setItem exceptions", () => {
@@ -129,8 +159,8 @@ describe("applyModuleData", () => {
         throw new Error("quota");
       });
     expect(() =>
-      applyModuleData("finyk", {
-        [STORAGE_KEYS.FINYK_BUDGETS]: [{ id: 1 }],
+      applyModuleData("profile", {
+        [STORAGE_KEYS.USER_PROFILE]: { id: 1 },
       }),
     ).not.toThrow();
     spy.mockRestore();
@@ -139,12 +169,12 @@ describe("applyModuleData", () => {
 
 describe("clearSyncManagedData", () => {
   it("calls the supplied raw remover for every tracked module key", () => {
-    // PR #030 retired fizruk and PR #034 retired nutrition LS keys
-    // from sync tracking. Any rows still living under
-    // `fizruk_*_v1` / `nutrition_*_v1` (legacy data from before the
-    // cut-over) must NOT be removed by clearSyncManagedData; the
-    // sweep is restricted to the currently-tracked modules
-    // (`finyk`, `profile`).
+    // PR #030 retired fizruk, PR #034 retired nutrition and PR #039
+    // retired finyk LS keys from sync tracking. Any rows still living
+    // under `fizruk_*_v1` / `nutrition_*_v1` / `finyk_*` (legacy data
+    // from before the cut-over) must NOT be removed by
+    // clearSyncManagedData; the sweep is restricted to the currently-
+    // tracked modules (`profile`).
     localStorage.setItem(STORAGE_KEYS.FINYK_BUDGETS, "[]");
     localStorage.setItem(STORAGE_KEYS.USER_PROFILE, "{}");
     localStorage.setItem(STORAGE_KEYS.NUTRITION_LOG, "{}");
@@ -158,15 +188,14 @@ describe("clearSyncManagedData", () => {
       localStorage.removeItem(key);
     });
     expect(removed).toEqual(
-      expect.arrayContaining([
-        STORAGE_KEYS.FINYK_BUDGETS,
-        STORAGE_KEYS.USER_PROFILE,
-      ]),
+      expect.arrayContaining([STORAGE_KEYS.USER_PROFILE]),
     );
     expect(removed).not.toContain(STORAGE_KEYS.FIZRUK_WORKOUTS);
     expect(removed).not.toContain(STORAGE_KEYS.NUTRITION_LOG);
+    expect(removed).not.toContain(STORAGE_KEYS.FINYK_BUDGETS);
     expect(localStorage.getItem(STORAGE_KEYS.FIZRUK_WORKOUTS)).toBe("[]");
     expect(localStorage.getItem(STORAGE_KEYS.NUTRITION_LOG)).toBe("{}");
+    expect(localStorage.getItem(STORAGE_KEYS.FINYK_BUDGETS)).toBe("[]");
     // Sync-internal bookkeeping is wiped via the standard removeItem.
     expect(localStorage.getItem(DIRTY_MODULES_KEY)).toBeNull();
     expect(localStorage.getItem(OFFLINE_QUEUE_KEY)).toBeNull();

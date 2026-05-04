@@ -28,31 +28,22 @@
 import { STORAGE_KEYS } from "../lib/storageKeys";
 
 export const SYNC_MODULES = {
-  finyk: {
-    keys: [
-      STORAGE_KEYS.FINYK_HIDDEN,
-      STORAGE_KEYS.FINYK_BUDGETS,
-      STORAGE_KEYS.FINYK_SUBS,
-      STORAGE_KEYS.FINYK_ASSETS,
-      STORAGE_KEYS.FINYK_DEBTS,
-      STORAGE_KEYS.FINYK_RECV,
-      STORAGE_KEYS.FINYK_HIDDEN_TXS,
-      STORAGE_KEYS.FINYK_MONTHLY_PLAN,
-      STORAGE_KEYS.FINYK_TX_CATS,
-      STORAGE_KEYS.FINYK_MONO_DEBT_LINKED,
-      STORAGE_KEYS.FINYK_NETWORTH_HISTORY,
-      STORAGE_KEYS.FINYK_TX_SPLITS,
-      STORAGE_KEYS.FINYK_CUSTOM_CATS,
-      STORAGE_KEYS.FINYK_TX_CACHE,
-      STORAGE_KEYS.FINYK_INFO_CACHE,
-      STORAGE_KEYS.FINYK_TX_CACHE_LAST_GOOD,
-      STORAGE_KEYS.FINYK_SHOW_BALANCE,
-      STORAGE_KEYS.FINYK_MANUAL_EXPENSES,
-      STORAGE_KEYS.FINYK_TX_FILTERS,
-      // Monobank PAT (FINYK_TOKEN) intentionally excluded — server-only,
-      // see `no-finyk-token-in-storage` ESLint rule and PR #002.
-    ],
-  },
+  // finyk — removed from SYNC_MODULES in PR #039 (storage-roadmap
+  // Stage 4). The nineteen `finyk_*` LS/MMKV keys (hidden, budgets,
+  // subs, assets, debts, recv, hidden_txs, monthly_plan, tx_cats,
+  // mono_debt_linked, networth_history, tx_splits, custom_cats,
+  // tx_cache, info_cache, tx_cache_last_good, show_balance,
+  // manual_expenses, tx_filters) are no longer pushed to / pulled
+  // from `module_data.finyk`; cross-device sync moved to the
+  // per-table `finyk_*` SQLite mirror plus the op-log pipeline
+  // (PR #035 schema, PR #036 dual-write, PR #037 read overlay,
+  // PR #038 Mono client-side mirror). The Monobank PAT (FINYK_TOKEN)
+  // was already excluded — server-only, see `no-finyk-token-in-storage`
+  // ESLint rule and PR #002. The dedicated `no-restricted-syntax`
+  // guard in `eslint.config.js` blocks new direct reads of the
+  // nineteen tracked finyk-prefixed STORAGE_KEYS entries outside the
+  // canonical finyk module wrappers, mirroring the fizruk retirement
+  // in PR #030 and the nutrition retirement in PR #034.
   // fizruk — removed from SYNC_MODULES in PR #030 (storage-roadmap
   // Stage 4). The eleven `fizruk_*_v1` LS/MMKV keys are no longer
   // pushed to / pulled from `module_data.fizruk`; cross-device sync
