@@ -37,7 +37,6 @@ Pay extra attention when the diff touches:
 
 ## Playbooks
 
-- `docs/playbooks/release-web-and-api.md` — coordinated web + server release.
-- `docs/playbooks/release-mobile-shell.md` — mobile-shell coordinated release.
+- `docs/playbooks/release.md` — canonical release playbook (web + API, Capacitor shell, Expo) with decision tree.
 - `docs/playbooks/declare-incident.md` — escalation when a merge regresses prod.
 - Catalog: `docs/agents/agent-skills-catalog.md`.

@@ -39,5 +39,5 @@ Sergeant web work is React 18 + Vite PWA + Tailwind with repo-enforced design ru
 
 - `docs/playbooks/add-onboarding-step.md` — when the change touches onboarding.
 - `docs/playbooks/add-feature-flag.md` — when the rollout is gated.
-- `docs/playbooks/release-web-and-api.md` — coordinated web + server release.
+- `docs/playbooks/release.md` — canonical release playbook (web + API section).
 - Catalog: `docs/agents/agent-skills-catalog.md`.

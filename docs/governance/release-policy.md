@@ -1,6 +1,6 @@
 # Release Policy
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 Canonical release policy for Sergeant. This document defines when a normal merge is enough and when a change must be treated as an explicit release event with extra coordination.
@@ -56,7 +56,5 @@ Every coordinated or high-risk release should record:
 
 ## Canonical playbooks
 
-- [release-web-and-api.md](../playbooks/release-web-and-api.md)
-- [release-mobile-shell.md](../playbooks/release-mobile-shell.md)
-- [release-expo-mobile.md](../playbooks/release-expo-mobile.md)
+- [release.md](../playbooks/release.md) — canonical merged playbook (web + API, Capacitor shell, Expo) with decision tree.
 - [hotfix-prod-regression.md](../playbooks/hotfix-prod-regression.md)

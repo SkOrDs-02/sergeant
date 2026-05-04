@@ -1,6 +1,6 @@
 # Playbook: Run Weekly Operator Digest
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** weekly operating review for repo health, release discipline, incidents, and process friction.
@@ -50,6 +50,6 @@
 
 ## Related playbooks and skills
 
-- [release-web-and-api.md](./release-web-and-api.md)
+- [release.md](./release.md)
 - [write-postmortem.md](./write-postmortem.md)
 - [retire-feature-flag.md](./retire-feature-flag.md)
