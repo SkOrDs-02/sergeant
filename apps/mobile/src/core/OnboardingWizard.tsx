@@ -53,6 +53,11 @@ import {
   getGoalQuestions,
   saveOnboardingGoals,
   type OnboardingGoals,
+  ONBOARDING_HERO_COPY_EXPERIMENT,
+  assignVariant,
+  getOnboardingHeroCopy,
+  type OnboardingHeroCopy,
+  type OnboardingHeroCopyVariant,
 } from "@sergeant/shared";
 
 import { mobileKVStore } from "@/lib/storage";
@@ -201,7 +206,13 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
 // Step 1: Welcome
 // ---------------------------------------------------------------------------
 
-function WelcomeStep({ onContinue }: { onContinue: () => void }) {
+function WelcomeStep({
+  onContinue,
+  copy,
+}: {
+  onContinue: () => void;
+  copy: OnboardingHeroCopy;
+}) {
   return (
     <View className="items-center gap-5">
       <View className="h-20 w-20 items-center justify-center rounded-3xl bg-brand-500/10">
@@ -209,16 +220,16 @@ function WelcomeStep({ onContinue }: { onContinue: () => void }) {
       </View>
       <View className="items-center gap-2">
         <Text className="text-center text-2xl font-bold text-fg">
-          Привіт. Це Sergeant.
+          {copy.title}
         </Text>
         <Text className="text-center text-sm leading-relaxed text-fg-muted">
-          Гроші, тіло, звички, їжа — все в одному місці. Офлайн. Приватно.
+          {copy.subtitle}
         </Text>
       </View>
       <View className="flex-row items-center gap-3">
-        <Text className="text-xs text-fg-subtle">📶 Офлайн</Text>
-        <Text className="text-xs text-fg-subtle">🔒 Локально</Text>
-        <Text className="text-xs text-fg-subtle">⚡ ~30 сек</Text>
+        <Text className="text-xs text-fg-subtle">🔒 {copy.badges[0]}</Text>
+        <Text className="text-xs text-fg-subtle">☁️ {copy.badges[1]}</Text>
+        <Text className="text-xs text-fg-subtle">🚫 {copy.badges[2]}</Text>
       </View>
       <Button
         variant="primary"
@@ -227,7 +238,7 @@ function WelcomeStep({ onContinue }: { onContinue: () => void }) {
         testID="onboarding-next-welcome"
         className="w-full"
       >
-        Далі
+        {copy.primaryCta}
       </Button>
     </View>
   );
@@ -531,6 +542,32 @@ export function OnboardingWizard({
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_VIEWED, { step: "welcome" });
   }, [isTour]);
 
+  // Hero copy A/B (S1.1 + S1.2). Mirrors the web wizard so a single
+  // user on both surfaces sees the same arm. Tour replay bypasses
+  // assignment so it never contaminates the experiment dataset.
+  const heroVariant = useMemo<OnboardingHeroCopyVariant>(
+    () =>
+      isTour
+        ? "outcome"
+        : (assignVariant(
+            mobileKVStore,
+            ONBOARDING_HERO_COPY_EXPERIMENT,
+          ) as OnboardingHeroCopyVariant),
+    [isTour],
+  );
+  const heroCopy = useMemo(
+    () => getOnboardingHeroCopy(heroVariant),
+    [heroVariant],
+  );
+
+  useEffect(() => {
+    if (isTour) return;
+    trackEvent(ANALYTICS_EVENTS.EXPERIMENT_EXPOSED, {
+      experiment_id: ONBOARDING_HERO_COPY_EXPERIMENT.id,
+      variant: heroVariant,
+    });
+  }, [isTour, heroVariant]);
+
   // Per-step view event whenever `state.step` changes. The first paint
   // (welcome) is fired by the mount effect above so the dedupe logic
   // here only re-fires when the step *transitions*. Tour mode skips
@@ -686,7 +723,9 @@ export function OnboardingWizard({
         )
       )}
       <StepIndicator current={stepIdx} total={ONBOARDING_STEPS.length} />
-      {state.step === "welcome" && <WelcomeStep onContinue={handleNext} />}
+      {state.step === "welcome" && (
+        <WelcomeStep onContinue={handleNext} copy={heroCopy} />
+      )}
       {state.step === "modules" && (
         <ModulesStep
           picks={state.picks}

@@ -42,12 +42,19 @@ describe("OnboardingWizard", () => {
     return screen;
   }
 
-  it("renders the welcome headline and all four module cards", () => {
-    const { getByText, getByTestId } = render(
+  it("renders the outcome-variant hero copy and all four module cards", () => {
+    const { getByText, queryByText, getByTestId } = render(
       <OnboardingWizard onDone={jest.fn()} />,
     );
-    expect(getByText("Привіт. Це Sergeant.")).toBeTruthy();
-    expect(getByText(/Гроші, тіло, звички, їжа/)).toBeTruthy();
+    // S1.1 + S1.2: outcome variant ships at 100% (`weights: [1, 0, 0]`).
+    // Mobile parity must show the same headline/subtitle as the web wizard.
+    expect(
+      getByText("Запиши перший зум — і побачиш, куди йде твоє життя."),
+    ).toBeTruthy();
+    expect(getByText(/30 секунд, без реєстрації/)).toBeTruthy();
+    // Audit-guard: the pre-S1.1 copy must not resurrect.
+    expect(queryByText("Привіт. Це Sergeant.")).toBeNull();
+    expect(queryByText(/Гроші, тіло, звички, їжа/)).toBeNull();
 
     fireEvent.press(getByTestId("onboarding-next-welcome"));
 

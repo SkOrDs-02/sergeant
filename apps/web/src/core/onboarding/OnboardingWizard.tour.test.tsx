@@ -50,20 +50,32 @@ describe("OnboardingWizard — tour mode (read-only replay)", () => {
     ).toBeNull();
   });
 
-  it("renders the «Закрити» CTA instead of «Відкрити Sergeant»", () => {
+  it("renders the «Закрити» CTA instead of the experiment-arm CTA", () => {
     render(<OnboardingWizard mode="tour" onDone={() => {}} />);
     expect(
       screen.getByRole("button", { name: /Закрити/i }),
     ).toBeInTheDocument();
+    // Tour mode must override `copy.primaryCta` so the user always sees
+    // «Закрити» regardless of which hero variant is assigned.
+    expect(
+      screen.queryByRole("button", { name: /Розпочати/i }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /Відкрити Sergeant/i }),
     ).not.toBeInTheDocument();
   });
 
-  it("default mode still renders «Відкрити Sergeant» CTA", () => {
+  it("default mode renders the outcome-variant CTA (mainline post-S1.1)", () => {
     render(<OnboardingWizard onDone={() => {}} />);
+    // `weights: [1, 0, 0]` ships outcome at 100%, so a fresh fingerprint
+    // always lands on the outcome arm: «Розпочати — 30 секунд».
     expect(
-      screen.getByRole("button", { name: /Відкрити Sergeant/i }),
+      screen.getByRole("button", { name: /Розпочати/i }),
     ).toBeInTheDocument();
+    // Audit-guard — the pre-S1.1 «Відкрити Sergeant» CTA must not
+    // resurrect from a stale assignment or a forgotten code path.
+    expect(
+      screen.queryByRole("button", { name: /Відкрити Sergeant/i }),
+    ).not.toBeInTheDocument();
   });
 });
