@@ -1,6 +1,6 @@
 # Sprint 2 — Session, surface and quota hardening
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-04 by @steppupa. **Next review:** 2026-08-04.
 > **Status:** Active (H5, H6, H7, H8, H9 closed 2026-05-04 — `exp://` gate + email-verification + Vercel SSOT + per-route CORP override + transcribe USD cap shipped alongside Sprint 1 H2 closure; H6 closed partial — Mono connect gated, sign-in gate behind ops flip; H9 closed partial — per-user USD cap enforced inline, S3 pre-signed upload deferred).
 
 Sprint 2 closes the **High-severity backlog** that Sprint 1 left open and removes
@@ -22,7 +22,7 @@ and a maintenance window; it lands in Sprint 3 alongside the medium batch.
 | [H8](./H8-corp-per-route.md)             | `CORP: cross-origin` without per-route guard     | High     | backend  | 0.5 d _(closed 2026-05-04)_          |
 | [H9](./H9-transcribe-usd-cap.md)         | `transcribe` 10 MB upload, no per-user USD cap   | High     | backend  | 0.5 d _(closed 2026-05-04, partial)_ |
 | [M1](./M1-csp-disable-runtime-flag.md)   | `CSP_DISABLE=1` env-fault-injection              | Medium   | backend  | 0.25 d                               |
-| [M3](./M3-pino-redact-paths.md)          | Pino `redactPaths` is incomplete                 | Medium   | platform | 0.25 d                               |
+| [M3](./M3-pino-redact-paths.md)          | Pino `redactPaths` is incomplete                 | Medium   | platform | 0.25 d _(closed 2026-05-04)_         |
 
 **Total effort:** ≈ 3.5 person-days (one engineer, one calendar week).
 

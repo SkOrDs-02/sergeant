@@ -133,6 +133,231 @@ describe("logger", () => {
     });
   });
 
+  // M3 — `docs/security/hardening/M3-pino-redact-paths.md`
+  // Table-driven: для кожного нового entry у redactPaths переконуємось,
+  // що pino дійсно маскує його при дамп-у. Single source of truth — цей
+  // масив; redactPaths можна розширювати без правки індивідуальних it().
+  describe("M3 — extended redactPaths coverage", () => {
+    interface Case {
+      readonly name: string;
+      readonly payload: Record<string, unknown>;
+      readonly readRedacted: (parsed: Record<string, unknown>) => unknown;
+      readonly readSafe?: (parsed: Record<string, unknown>) => unknown;
+    }
+
+    const cases: ReadonlyArray<Case> = [
+      {
+        name: "X-Mono-Webhook-Secret header у req.headers",
+        payload: {
+          msg: "mono_webhook_dbg",
+          req: {
+            headers: {
+              "x-mono-webhook-secret": "leaked-secret-abc",
+              "user-agent": "Monobank/1.0",
+            },
+          },
+        },
+        readRedacted: (p) =>
+          (
+            p.req as {
+              headers: Record<string, unknown>;
+            }
+          ).headers["x-mono-webhook-secret"],
+        readSafe: (p) =>
+          (
+            p.req as {
+              headers: Record<string, unknown>;
+            }
+          ).headers["user-agent"],
+      },
+      {
+        name: "X-Openclaw-Webhook-Secret header",
+        payload: {
+          req: {
+            headers: { "x-openclaw-webhook-secret": "openclaw-secret-xyz" },
+          },
+        },
+        readRedacted: (p) =>
+          (
+            p.req as {
+              headers: Record<string, unknown>;
+            }
+          ).headers["x-openclaw-webhook-secret"],
+      },
+      {
+        name: "X-Api-Secret header",
+        payload: {
+          req: {
+            headers: { "x-api-secret": "api-secret-123" },
+          },
+        },
+        readRedacted: (p) =>
+          (
+            p.req as {
+              headers: Record<string, unknown>;
+            }
+          ).headers["x-api-secret"],
+      },
+      {
+        name: "X-Internal-Token header",
+        payload: {
+          req: {
+            headers: { "x-internal-token": "internal-tok-abc" },
+          },
+        },
+        readRedacted: (p) =>
+          (
+            p.req as {
+              headers: Record<string, unknown>;
+            }
+          ).headers["x-internal-token"],
+      },
+      {
+        name: "groqKey у root",
+        payload: { groqKey: "gsk_live_xxx" },
+        readRedacted: (p) => p.groqKey,
+      },
+      {
+        name: "anthropicKey у root",
+        payload: { anthropicKey: "sk-ant-xxx" },
+        readRedacted: (p) => p.anthropicKey,
+      },
+      {
+        name: "voyageKey у root",
+        payload: { voyageKey: "pa-voyage-xxx" },
+        readRedacted: (p) => p.voyageKey,
+      },
+      {
+        name: "groqKey всередині debug-об'єкта (1 рівень)",
+        payload: { ctx: { groqKey: "gsk_live_xxx", model: "llama" } },
+        readRedacted: (p) => (p.ctx as Record<string, unknown>).groqKey,
+        readSafe: (p) => (p.ctx as Record<string, unknown>).model,
+      },
+      {
+        name: "req.body.password (login flow)",
+        payload: {
+          req: { body: { email: "u@example.com", password: "leak" } },
+        },
+        readRedacted: (p) =>
+          (p.req as { body: Record<string, unknown> }).body.password,
+      },
+      {
+        name: "req.body.token (CSRF / form token)",
+        payload: { req: { body: { token: "form-token-xxx" } } },
+        readRedacted: (p) =>
+          (p.req as { body: Record<string, unknown> }).body.token,
+      },
+      {
+        name: "req.body.currentPassword (change-password endpoint)",
+        payload: { req: { body: { currentPassword: "old-pass" } } },
+        readRedacted: (p) =>
+          (p.req as { body: Record<string, unknown> }).body.currentPassword,
+      },
+      {
+        name: "req.body.newPassword (change-password endpoint)",
+        payload: { req: { body: { newPassword: "new-pass" } } },
+        readRedacted: (p) =>
+          (p.req as { body: Record<string, unknown> }).body.newPassword,
+      },
+      {
+        name: "err.config.headers.Authorization (axios upstream failure)",
+        payload: {
+          err: {
+            message: "ECONNRESET",
+            config: {
+              headers: {
+                Authorization: "Bearer leaked-token",
+                "Content-Type": "application/json",
+              },
+            },
+          },
+        },
+        readRedacted: (p) =>
+          (
+            p.err as {
+              config: { headers: Record<string, unknown> };
+            }
+          ).config.headers.Authorization,
+        readSafe: (p) =>
+          (
+            p.err as {
+              config: { headers: Record<string, unknown> };
+            }
+          ).config.headers["Content-Type"],
+      },
+      {
+        name: "err.config.headers.authorization (lowercase)",
+        payload: {
+          err: { config: { headers: { authorization: "Bearer leak" } } },
+        },
+        readRedacted: (p) =>
+          (
+            p.err as {
+              config: { headers: Record<string, unknown> };
+            }
+          ).config.headers.authorization,
+      },
+      {
+        name: "err.config.headers.Cookie (axios upstream)",
+        payload: {
+          err: { config: { headers: { Cookie: "session=leaked" } } },
+        },
+        readRedacted: (p) =>
+          (
+            p.err as {
+              config: { headers: Record<string, unknown> };
+            }
+          ).config.headers.Cookie,
+      },
+      {
+        name: "err.config.headers['x-mono-webhook-secret'] (axios outbound)",
+        payload: {
+          err: {
+            config: { headers: { "x-mono-webhook-secret": "outbound-leak" } },
+          },
+        },
+        readRedacted: (p) =>
+          (
+            p.err as {
+              config: { headers: Record<string, unknown> };
+            }
+          ).config.headers["x-mono-webhook-secret"],
+      },
+    ];
+
+    cases.forEach((c) => {
+      it(`маскує ${c.name}`, () => {
+        const { logger, chunks } = makeTestLogger();
+        logger.info(c.payload);
+        expect(chunks).toHaveLength(1);
+        const parsed = JSON.parse(chunks[0]!) as Record<string, unknown>;
+        expect(c.readRedacted(parsed)).toBe("[redacted]");
+        if (c.readSafe) {
+          // Sanity-check — нейтральне поле в тому ж payload-і не зачеплене.
+          const safe = c.readSafe(parsed);
+          expect(safe).not.toBe("[redacted]");
+          expect(safe).toBeDefined();
+        }
+      });
+    });
+  });
+
+  // M3 — Sentry redactKeyNames узгоджені з Pino redactPaths
+  describe("M3 — redactKeyNames extended", () => {
+    it("містить webhook-secret-headers (Sentry case-insensitive scrub)", () => {
+      expect(redactKeyNames).toContain("x-mono-webhook-secret");
+      expect(redactKeyNames).toContain("x-openclaw-webhook-secret");
+      expect(redactKeyNames).toContain("x-api-secret");
+      expect(redactKeyNames).toContain("x-internal-token");
+    });
+
+    it("містить provider-specific API-keys (для extra/contexts у Sentry)", () => {
+      expect(redactKeyNames).toContain("groqKey");
+      expect(redactKeyNames).toContain("anthropicKey");
+      expect(redactKeyNames).toContain("voyageKey");
+    });
+  });
+
   describe("redactKeyNames (для Sentry-скрабера)", () => {
     it("експортується з обов'язковими ключами", () => {
       // Sentry beforeSend hook використовує цей список для рекурсивного
