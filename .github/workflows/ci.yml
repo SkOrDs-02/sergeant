@@ -108,6 +108,15 @@ jobs:
         # scripts/check-codeowners-coverage.mjs.
         run: pnpm lint:codeowners
 
+      - name: Vercel config drift guard
+        # Closes hardening card H7. Vercel reads exactly one vercel.json
+        # (whichever lives under the project's Root Directory). A second
+        # copy under apps/web/ silently drifts and lets a Vercel UI change
+        # swap which security headers protect production. See
+        # docs/security/hardening/H7-vercel-config-drift.md and
+        # docs/deploy/vercel.md.
+        run: bash scripts/check-vercel-config.sh
+
       - name: Format, lint, test, build
         run: pnpm check
 

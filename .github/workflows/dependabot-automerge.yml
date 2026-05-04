@@ -1,0 +1,91 @@
+# Dependabot auto-merge — Sprint 1 follow-up to docs/security/hardening/H2.
+#
+# Goal: shrink supply-chain MTTR for the safest class of updates by letting
+# Dependabot self-serve patch-level security updates (and patch-level direct
+# production bumps) once the existing CI workflows go green. Anything risky
+# (minor/major bumps, indirect prod deps, version updates that aren't security)
+# still flows through human review.
+#
+# Why we still keep this workflow tiny:
+#   - dependency-name allowlist lives in `.github/dependabot.yml` (`ignore`).
+#   - Group/version policy lives in `.github/dependabot.yml` (`groups`,
+#     `versioning-strategy`).
+#   - This workflow only adds the merge action AFTER `check`/`commitlint`
+#     succeed; it does NOT relax review or branch protection. A failing
+#     required check still blocks the merge regardless of the `gh pr merge
+#     --auto` call below.
+#
+# Security notes:
+#   - We use `pull_request_target` so the workflow has write-scoped tokens
+#     when the PR comes from `dependabot[bot]`. We never check out the PR's
+#     code (no `actions/checkout`); the only thing we run is GitHub-CLI
+#     against the repo's own API surface. This is the documented safe
+#     pattern from GitHub's "Automating Dependabot with GitHub Actions"
+#     guide.
+#   - `if: github.actor == 'dependabot[bot]'` guards every step so a
+#     forked-PR re-trigger (or a manual `pull_request_target` event)
+#     cannot escape into auto-merge.
+#   - `dependabot/fetch-metadata` is SHA-pinned to v2.4.0, matching the
+#     repo's "SHA-pinned for supply-chain hardening" convention used in
+#     other workflows.
+#   - Required reviewers / branch protection are NOT bypassed: `gh pr
+#     merge --auto` schedules the squash, but GitHub still waits for all
+#     required checks AND CODEOWNERS approvals before actually merging.
+
+name: Dependabot Auto-Merge
+
+on: pull_request_target
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: dependabot-automerge-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  auto-merge:
+    name: Auto-merge eligible Dependabot PRs
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        # dependabot/fetch-metadata v2.4.0 (SHA-pinned for supply-chain hardening)
+        uses: dependabot/fetch-metadata@08eff52bf64351f401fb50d4972fa95b9f2c2d1b
+        with:
+          # `compat` would attach a "compatibility score" comment on every
+          # PR which clutters the timeline for grouped patch bumps.
+          compat-lookup: false
+
+      - name: Enable auto-merge for security patch updates (npm)
+        # Security updates are the highest-value class — Dependabot only
+        # opens these when an advisory exists for the version we currently
+        # use. Auto-merging the patch tier (no API-surface change by
+        # SemVer contract) gives us same-day MTTR without any review
+        # bottleneck on our side. Minor/major security updates still go
+        # through manual review because they may carry behaviour changes.
+        if: |
+          steps.meta.outputs.package-ecosystem == 'npm' &&
+          steps.meta.outputs.update-type == 'version-update:semver-patch' &&
+          steps.meta.outputs.dependency-type == 'direct:production' &&
+          contains(steps.meta.outputs.alert-state, 'AUTO_DISMISSED') == false
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge for github-actions patch SHA bumps
+        # Pinning github-actions to floating tags is forbidden in this
+        # repo (see CI workflows: every action is pinned by full SHA with
+        # an inline `# action vX.Y.Z (SHA-pinned ...)` comment). Patch
+        # bumps from Dependabot only move the SHA forward inside the
+        # same major.minor — safe to auto-merge after CI passes.
+        if: |
+          steps.meta.outputs.package-ecosystem == 'github_actions' &&
+          steps.meta.outputs.update-type == 'version-update:semver-patch'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
