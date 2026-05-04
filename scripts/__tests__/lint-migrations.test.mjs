@@ -14,6 +14,8 @@ import {
   findDropLines,
   hasAllowDropEscapeHatch,
   checkSequentialNumbers,
+  findCrossBranchCollisions,
+  filterNewMigrationFiles,
   run,
 } from "../lint-migrations.mjs";
 
@@ -295,5 +297,189 @@ describe("run() — integration", () => {
     });
     assert.equal(ok, false);
     assert.ok(errors.some((e) => e.includes("Duplicate")));
+  });
+});
+
+// ── findCrossBranchCollisions ────────────────────────────────────────────────
+
+describe("findCrossBranchCollisions", () => {
+  it("returns empty when PR introduces a number above main's max", () => {
+    const main = ["001_a.sql", "002_b.sql", "003_c.sql"];
+    const prNew = ["004_d.sql"];
+    assert.deepEqual(findCrossBranchCollisions(main, prNew), []);
+  });
+
+  it("detects a single collision (PR #1652 type-incident)", () => {
+    // PR branched off when max(main) = 034. PR added 035_foo.sql.
+    // Meanwhile main merged its own 035_bar.sql. PR's local lint
+    // sees only its 035_foo.sql — no duplicate. This function is
+    // what catches the cross-branch case.
+    const main = ["034_x.sql", "035_main_branch.sql"];
+    const prNew = ["035_pr_branch.sql"];
+    const collisions = findCrossBranchCollisions(main, prNew);
+    assert.equal(collisions.length, 1);
+    assert.equal(collisions[0].number, 35);
+    assert.equal(collisions[0].filename, "035_pr_branch.sql");
+  });
+
+  it("detects multiple collisions when PR adds several colliding numbers", () => {
+    const main = ["010_a.sql", "011_b.sql"];
+    const prNew = ["010_x.sql", "011_y.sql", "012_new.sql"];
+    const collisions = findCrossBranchCollisions(main, prNew);
+    assert.equal(collisions.length, 2);
+    assert.deepEqual(
+      collisions.map((c) => c.number),
+      [10, 11],
+    );
+  });
+
+  it("does not flag .down.sql companions on either side", () => {
+    const main = ["010_a.sql", "010_a.down.sql"];
+    const prNew = ["010_a.down.sql", "011_new.sql"];
+    // PR's .down.sql for 010 is fine (it's modifying main's existing
+    // companion, not adding a new number); 011 is new and clean.
+    assert.deepEqual(findCrossBranchCollisions(main, prNew), []);
+  });
+
+  it("ignores non-migration filenames (README, scripts, etc.)", () => {
+    const main = ["README.md", "001_init.sql"];
+    const prNew = ["001_init.sql", "notes.md", "scripts/x.sh"];
+    const collisions = findCrossBranchCollisions(main, prNew);
+    // 001_init.sql is the same file (not really a "new" addition in
+    // a real scenario), but filterNewMigrationFiles is the gate that
+    // prevents this mis-input. Here we only verify that non-NNN_*.sql
+    // entries are silently ignored.
+    assert.equal(collisions.length, 1);
+    assert.equal(collisions[0].number, 1);
+  });
+
+  it("returns empty when main is empty (first migration ever)", () => {
+    assert.deepEqual(findCrossBranchCollisions([], ["001_first.sql"]), []);
+  });
+});
+
+// ── filterNewMigrationFiles ──────────────────────────────────────────────────
+
+describe("filterNewMigrationFiles", () => {
+  it("keeps NNN_*.sql up files and drops .down.sql", () => {
+    const result = filterNewMigrationFiles([
+      "apps/server/src/migrations/040_foo.sql",
+      "apps/server/src/migrations/040_foo.down.sql",
+      "apps/server/src/migrations/041_bar.sql",
+    ]);
+    assert.deepEqual(result, [
+      "apps/server/src/migrations/040_foo.sql",
+      "apps/server/src/migrations/041_bar.sql",
+    ]);
+  });
+
+  it("drops non-migration files (README, scripts, tests)", () => {
+    const result = filterNewMigrationFiles([
+      "apps/server/src/migrations/README.md",
+      "apps/server/src/migrations/__tests__/foo.test.ts",
+      "apps/server/src/migrations/040_foo.sql",
+    ]);
+    assert.deepEqual(result, ["apps/server/src/migrations/040_foo.sql"]);
+  });
+
+  it("returns empty for an empty input", () => {
+    assert.deepEqual(filterNewMigrationFiles([]), []);
+  });
+});
+
+// ── run() with cross-branch collision ────────────────────────────────────────
+
+describe("run() — cross-branch collision", () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "migration-lint-xbranch-"));
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("fails when PR adds a number that already exists on main", () => {
+    // Local tree (PR view): only 001_init and 002_pr_collide.
+    writeFileSync(join(tmpDir, "001_init.sql"), "SELECT 1;\n");
+    writeFileSync(join(tmpDir, "002_pr_collide.sql"), "SELECT 1;\n");
+
+    // Simulate `main` having 001_init AND 002_main_winner.
+    const mainFiles = ["001_init.sql", "002_main_winner.sql"];
+
+    const { ok, errors } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [join(tmpDir, "002_pr_collide.sql")],
+      newFiles: [join(tmpDir, "002_pr_collide.sql")],
+      mainFiles,
+    });
+
+    assert.equal(ok, false);
+    assert.ok(
+      errors.some((e) => e.includes("Cross-branch migration number collision")),
+      `expected cross-branch error, got: ${errors.join(" | ")}`,
+    );
+    assert.ok(
+      errors.some((e) => e.includes("002_pr_collide.sql")),
+      "error must name the offending file",
+    );
+    assert.ok(
+      errors.some((e) => e.includes("rebase")),
+      "error must include the rebase guidance",
+    );
+  });
+
+  it("passes when PR's new migration is strictly above main's max", () => {
+    writeFileSync(join(tmpDir, "001_a.sql"), "SELECT 1;\n");
+    writeFileSync(join(tmpDir, "002_b.sql"), "SELECT 1;\n");
+    writeFileSync(join(tmpDir, "003_new.sql"), "SELECT 1;\n");
+
+    const mainFiles = ["001_a.sql", "002_b.sql"];
+
+    const { ok, errors } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [join(tmpDir, "003_new.sql")],
+      newFiles: [join(tmpDir, "003_new.sql")],
+      mainFiles,
+    });
+
+    assert.equal(ok, true, JSON.stringify(errors));
+  });
+
+  it("skips cross-branch check when mainFiles is empty (no remote)", () => {
+    // Simulates local dev without `git fetch origin`. The local-tree
+    // checks (gaps, duplicates) still run.
+    writeFileSync(join(tmpDir, "001_a.sql"), "SELECT 1;\n");
+    writeFileSync(join(tmpDir, "002_b.sql"), "SELECT 1;\n");
+
+    const { ok } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [join(tmpDir, "002_b.sql")],
+      newFiles: [join(tmpDir, "002_b.sql")],
+      mainFiles: [],
+    });
+
+    assert.equal(ok, true);
+  });
+
+  it("does not flag a modified (non-new) migration file", () => {
+    // PR modifies an existing migration on main — same number, same name.
+    // This is rare but happens for typo fixes pre-deploy. It must NOT be
+    // a collision because the file is the same one, not a duplicate number.
+    writeFileSync(join(tmpDir, "001_a.sql"), "SELECT 1;\n");
+    writeFileSync(join(tmpDir, "002_existing.sql"), "SELECT 2;\n");
+
+    const mainFiles = ["001_a.sql", "002_existing.sql"];
+
+    const { ok } = run({
+      migrationsDir: tmpDir,
+      // changedFiles includes M (modified) entries; newFiles does NOT.
+      changedFiles: [join(tmpDir, "002_existing.sql")],
+      newFiles: [], // empty → diff-filter=A returned nothing
+      mainFiles,
+    });
+
+    assert.equal(ok, true);
   });
 });
