@@ -1,56 +1,56 @@
-# Playbook: Write Postmortem
+# Playbook: Postmortem після інциденту
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
-**Trigger:** a SEV1/SEV2 incident occurred, a recurring production failure needs formal learning capture, or repo guardrails changed because of an incident.
+**Trigger:** стався SEV1/SEV2 інцидент, повторюваний продакшн-збій потребує формального уроку, або repo guardrails змінилися саме через інцидент.
 
 ## Owner surface
 
-- Primary surface: incident learning and follow-up
-- Governing skill: `sergeant-review-and-merge`
+- Primary surface: розбір інцидентів і фоллов-апи.
+- Governing skill: `sergeant-review-and-merge`.
 
 ## Required context
 
-- Review [incident-severity-policy.md](../governance/incident-severity-policy.md), [Postmortem Index](../postmortems/INDEX.md), and [TEMPLATE.md](../postmortems/TEMPLATE.md).
+- Перш ніж писати — перечитати [incident-severity-policy.md](../governance/incident-severity-policy.md), [Postmortem Index](../postmortems/INDEX.md) і [TEMPLATE.md](../postmortems/TEMPLATE.md).
 
 ## Steps
 
-### 1. Collect facts before narrative
+### 1. Зібрати факти до того, як писати наратив
 
-- Timeline from detection to recovery
-- root cause
-- mitigation path
-- detection gaps
-- missing guardrails
+- Таймлайн від детекту до відновлення.
+- Корінна причина (root cause).
+- Шлях мітигації.
+- Прогалини в детектуванні.
+- Відсутні guardrails (тести, лінтери, alerting).
 
-### 2. Fill the template
+### 2. Заповнити шаблон
 
-- Be specific about the technical cause.
-- Separate what failed from why it escaped.
-- Include links to the incident log, release, PR, or rollback reference.
+- Технічну причину описати конкретно — без обтічних формулювань.
+- Розділити «що зламалося» від «чому це не зловили раніше».
+- Додати посилання на incident log, реліз, PR або rollback-комміт.
 
-### 3. Create action items
+### 3. Створити action items
 
-- Each action item needs an owner and due date.
-- Route fixes into playbooks, runbooks, hard rules, tests, or infra as appropriate.
+- Кожен action item має мати owner-а і дедлайн.
+- Маршрутизувати фікси у playbook, runbook, hard rule, тести або інфраструктуру — залежно від рівня дрейфу.
 
-### 4. Update the index
+### 4. Оновити індекс
 
-- Add the new postmortem entry to [INDEX.md](../postmortems/INDEX.md).
-- Link the follow-up issue or tracker item.
+- Додати запис нового postmortem-у в [INDEX.md](../postmortems/INDEX.md).
+- Прив'язати фоллов-ап issue або tracker-item.
 
 ## Verification
 
-- [ ] Root cause is concrete
-- [ ] Detection and mitigation gaps are called out separately
-- [ ] Action items have owners and due dates
-- [ ] Index updated
+- [ ] Корінна причина описана конкретно (не «edge case» / «race condition» без деталей).
+- [ ] Прогалини детекту й мітигації виокремлені окремо одна від одної.
+- [ ] Усі action items мають owner-а і дедлайн.
+- [ ] [INDEX.md](../postmortems/INDEX.md) оновлено.
 
-## When not to use this playbook
+## Коли цей playbook не застосовується
 
-- The event is a SEV4 transient issue with no meaningful learning value.
-- The investigation is still active and facts are incomplete.
+- Подія SEV4, тимчасова, без значущого уроку.
+- Розслідування ще активне — факти неповні; чекаємо стабілізації, перш ніж писати postmortem.
 
 ## Related playbooks and skills
 
