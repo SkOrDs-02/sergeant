@@ -20,6 +20,10 @@ import {
   syncOpLogPullLagMs,
   syncOpLogPullQueueDepth,
 } from "./metrics.js";
+import {
+  APPLY_REJECT_REASONS,
+  ENGINE_REJECT_REASONS,
+} from "../modules/sync/syncV2.js";
 
 describe("metrics registry — `app_build_info` gauge", () => {
   it("реєструється у спільному `register`-і з ім'ям `app_build_info`", () => {
@@ -118,6 +122,38 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     expect(text).toMatch(
       /sync_op_log_apply_total\{table="nutrition_meals",status="applied",reason="none"\} \d+/,
     );
+  });
+
+  it("`APPLY_REJECT_REASONS` + `ENGINE_REJECT_REASONS` фіксують cardinality budget для `reason` label-у", () => {
+    // PR-C (Stage 5): closed allowlist причин відхилення — джерело
+    // правди для `sync_op_log_apply_total{reason}`. Cardinality cap
+    // у `docs/observability/metrics.md` §4 = ~15 tables × 3 statuses ×
+    // ~50 reasons ≈ 2_250 series worst-case (phenomenologically <100).
+    // Якщо сума елементів у двох масивах drift-ує — оновити cardinality
+    // calc у metrics.md + dashboard top-10 reject reasons panel.
+    expect(APPLY_REJECT_REASONS.length).toBe(45);
+    expect(ENGINE_REJECT_REASONS.length).toBe(4);
+
+    // Ключові CRDT-інваріанти, на які прив'язаний sync health alerting,
+    // фіксуємо явно — щоб accidental refactor не приховав їх із
+    // допустимого набору.
+    expect(APPLY_REJECT_REASONS).toContain("lww_conflict");
+    expect(APPLY_REJECT_REASONS).toContain("tombstoned");
+    expect(APPLY_REJECT_REASONS).toContain("not_found");
+    expect(APPLY_REJECT_REASONS).toContain("user_id_mismatch");
+    expect(ENGINE_REJECT_REASONS).toContain("clock_skew");
+    expect(ENGINE_REJECT_REASONS).toContain("apply_failed");
+    expect(ENGINE_REJECT_REASONS).toContain("table_not_allowed");
+
+    // Жодних дублікатів — Set.size має дорівнювати довжині масиву.
+    const all = [...APPLY_REJECT_REASONS, ...ENGINE_REJECT_REASONS];
+    expect(new Set(all).size).toBe(all.length);
+
+    // Допустимі тільки snake_case-літерали (захист від випадкового
+    // copy-paste-у з іншого namespace-у з пробілами / великими літерами).
+    for (const r of all) {
+      expect(r).toMatch(/^[a-z][a-z0-9_]*$/);
+    }
   });
 
   it("histogram метрики `sync_op_log_pull_lag_ms` і `sync_op_log_pull_queue_depth` мають TYPE=histogram", async () => {
