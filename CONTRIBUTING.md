@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/playbooks/README.md](./docs/playbooks/README.md).
@@ -142,7 +142,17 @@ pnpm lint:governance-sync --strict
 pnpm lint:hard-rules-registry
 pnpm hard-rules:check
 pnpm lint:codeowners
+pnpm lint:skills
 ```
+
+При зміні `.agents/skills/<slug>/SKILL.md` додатково треба оновити SHA-256 у `.agents/skills-lock.json`:
+
+```bash
+pnpm skills:lock     # перерахує хеші та оновить lock
+pnpm lint:skills     # перевірить shape + збіг хешів
+```
+
+Без `skills:lock` після правок CI впаде з повідомленням `stale computedHash`.
 
 ## Де шукати далі
 

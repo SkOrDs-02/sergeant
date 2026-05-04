@@ -38,3 +38,10 @@ Feature work in Sergeant should move as a disciplined slice, not as scattered ed
 - Starting in `apps/web` or `apps/server` before deciding if logic belongs in a shared package
 - Shipping behavior changes without touching the matching tests
 - Updating docs as a changelog dump instead of only the affected canonical doc
+
+## Playbooks
+
+- `docs/playbooks/add-api-endpoint.md` — server contract + api-client + tests in lockstep.
+- `docs/playbooks/add-feature-flag.md` — flag-gated rollout of new behavior.
+- `docs/playbooks/add-onboarding-step.md` — when the feature touches onboarding.
+- Catalog: `docs/superpowers/agent-skills-catalog.md`.

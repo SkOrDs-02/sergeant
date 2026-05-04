@@ -31,3 +31,9 @@ Sergeant mobile is not a thin copy of the web app. It uses Expo Router, NativeWi
 - Run the nearest Jest coverage for the touched mobile surface.
 - If navigation or deep links changed, inspect the matching docs in `docs/mobile/`.
 - If the change ports a web feature, confirm which parts stay shared and which remain platform-specific.
+
+## Playbooks
+
+- `docs/playbooks/release-expo-mobile.md` — Expo build and submit.
+- `docs/playbooks/release-mobile-shell.md` — Capacitor mobile-shell release.
+- Catalog: `docs/superpowers/agent-skills-catalog.md`.

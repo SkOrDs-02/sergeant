@@ -38,3 +38,10 @@ If you hear those thoughts, stop and reproduce first.
 - schema / deploy crash -> `sergeant-data-and-migrations`
 - mobile-only behavior -> `sergeant-mobile-expo`
 - chat tool failure -> `sergeant-hubchat`
+
+## Playbooks
+
+- `docs/playbooks/hotfix-prod-regression.md` — production regression triage and fix.
+- `docs/playbooks/declare-incident.md` — when the bug rises to incident severity.
+- `docs/playbooks/write-postmortem.md` — after-the-fact postmortem.
+- Catalog: `docs/superpowers/agent-skills-catalog.md`.

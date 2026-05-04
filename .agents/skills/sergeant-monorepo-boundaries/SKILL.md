@@ -32,3 +32,8 @@ Most bad Sergeant edits start with code landing in the wrong layer. Decide the o
 - Putting reusable domain logic directly into `apps/web`
 - Porting browser APIs into `apps/mobile`
 - Adding a shared package for code that is only used once
+
+## Playbooks
+
+- `docs/playbooks/cleanup-dead-code.md` — when extracting/retiring shared modules.
+- Catalog: `docs/superpowers/agent-skills-catalog.md`.

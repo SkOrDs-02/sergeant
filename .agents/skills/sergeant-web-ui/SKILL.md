@@ -34,3 +34,10 @@ Sergeant web work is React 18 + Vite PWA + Tailwind with repo-enforced design ru
 - Run the closest Vitest/RTL coverage for the touched screen or hook.
 - If navigation, install UX, offline UX, or layout changed, verify desktop and mobile behavior.
 - If query behavior changed, verify the right key factory and invalidation path.
+
+## Playbooks
+
+- `docs/playbooks/add-onboarding-step.md` — when the change touches onboarding.
+- `docs/playbooks/add-feature-flag.md` — when the rollout is gated.
+- `docs/playbooks/release-web-and-api.md` — coordinated web + server release.
+- Catalog: `docs/superpowers/agent-skills-catalog.md`.

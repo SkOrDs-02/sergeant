@@ -4,62 +4,62 @@
     "better-auth-best-practices": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": ""
+      "computedHash": "bb2158f7a0ecd6d439c4eecc479f360cba8a8b7c9a1b98b51266ea86e85d9ec0"
     },
     "sergeant-bugfix-and-regression": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": ""
+      "computedHash": "1116b0c10d60cc281f665ee5dad1cb443c9fd3c567864b3851d75698516b89a0"
     },
     "sergeant-data-and-migrations": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": ""
+      "computedHash": "0eea0034dc6a98367c3404c5972b1213cb7ce6539cce24a21385db17c5edcdd8"
     },
     "sergeant-deploy-and-observability": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": ""
+      "computedHash": "ed1806359daafff8948be02335a7a0f7560c11ce3e39734e47fab12195735757"
     },
     "sergeant-feature-delivery": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": ""
+      "computedHash": "2d6d7159112f11e8b84f8009fd30a3acfe492e7c830e302635b47d72bc542492"
     },
     "sergeant-hubchat": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": ""
+      "computedHash": "2088f31ebed619d7a83f54506ef307534049cc84a65b2cea70685482b098ddfe"
     },
     "sergeant-mobile-expo": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": ""
+      "computedHash": "a257a7a718cb7658d855374d94c04302ecfa0d05693ee5b4cc7b6e4fa91d1c14"
     },
     "sergeant-monorepo-boundaries": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": ""
+      "computedHash": "33fc07875dda4f5626c94800e3a30973e87e72437f400ac4dce2c2c0e06339f7"
     },
     "sergeant-review-and-merge": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": ""
+      "computedHash": "87541954e411fede84814f587cb1e42d180f12452d1723c067e9be72e8d52e73"
     },
     "sergeant-server-api": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": ""
+      "computedHash": "46b76b079fe679d1f8e98398e2bf19b202edfffd66cc88a0d42604d637e52363"
     },
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": ""
+      "computedHash": "b3c5b7457772091b95148ff273a7491fbc90412927c94ea66b8b71a575df4a87"
     },
     "sergeant-web-ui": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": ""
+      "computedHash": "1648bef122576d804c1c057f559d38dfb97c4571bb21018a22e0e18abab460d8"
     }
   }
 }

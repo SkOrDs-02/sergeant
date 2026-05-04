@@ -34,3 +34,10 @@ Pay extra attention when the diff touches:
 - Contract drift or missing test coverage
 - Deploy or rollback hazard
 - Docs, maintainability, or clarity gaps
+
+## Playbooks
+
+- `docs/playbooks/release-web-and-api.md` — coordinated web + server release.
+- `docs/playbooks/release-mobile-shell.md` — mobile-shell coordinated release.
+- `docs/playbooks/declare-incident.md` — escalation when a merge regresses prod.
+- Catalog: `docs/superpowers/agent-skills-catalog.md`.

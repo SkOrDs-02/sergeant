@@ -35,3 +35,10 @@ Do not use this skill for generic API work that only happens to require a user i
 - Protected routes still read the same server session shape.
 - Any schema or plugin change is paired with the needed migration or CLI step.
 - Auth-related docs or env docs are updated if operator setup changed.
+
+## Playbooks
+
+- `docs/playbooks/grant-privileged-access.md` — granting elevated roles/scopes.
+- `docs/playbooks/revoke-privileged-access.md` — revoking sessions and tokens.
+- `docs/playbooks/respond-to-suspected-account-compromise.md` — incident path.
+- Catalog: `docs/superpowers/agent-skills-catalog.md`.

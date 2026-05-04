@@ -37,3 +37,10 @@ Server work in Sergeant is contract work. The API is correct only when serialize
 - auth/session/cookies -> `better-auth-best-practices`
 - SQL schema or rollout sequencing -> `sergeant-data-and-migrations`
 - HubChat tool integration -> `sergeant-hubchat`
+
+## Playbooks
+
+- `docs/playbooks/add-api-endpoint.md` — handler + route + api-client + tests in lockstep.
+- `docs/playbooks/add-sql-migration.md` — when the endpoint needs schema changes.
+- `docs/playbooks/release-web-and-api.md` — coordinated server deploy.
+- Catalog: `docs/superpowers/agent-skills-catalog.md`.
