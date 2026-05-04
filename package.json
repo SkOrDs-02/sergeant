@@ -74,9 +74,9 @@
   "devDependencies": {
     "@commitlint/cli": "^20.5.3",
     "@commitlint/config-conventional": "^20.5.3",
-    "@eslint/js": "^10.0.1",
+    "@eslint/js": "^9.39.4",
     "depcheck": "^1.4.7",
-    "eslint": "^10.3.0",
+    "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.32.0",
@@ -119,8 +119,7 @@
       "@tootallnate/once": ">=3.0.1"
     },
     "patchedDependencies": {
-      "@expo/cli@0.22.28": "patches/@expo__cli@0.22.28.patch",
-      "eslint-plugin-react": "patches/eslint-plugin-react.patch"
+      "@expo/cli@0.22.28": "patches/@expo__cli@0.22.28.patch"
     }
   }
 }

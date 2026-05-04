@@ -1,6 +1,6 @@
 # Web deep-dive — Frontend ergonomics & UX
 
-> **Last validated:** 2026-05-03 by @Skords-01.
+> **Last validated:** 2026-05-04 by @Skords-01.
 > **Status:** Active
 > **Scope:** Forms, loading/empty/error states, Toast, Modal, mobile safe-area, PWA install banner, auth error translation, i18n readiness, feature-reveal pattern.
 > **Related:** [`00-overview.md`](./00-overview.md), `docs/audits/UX-UI-AUDIT-2026.md`, `docs/audits/UX-IMPROVEMENT-PLAN.md`.
@@ -54,6 +54,8 @@
 
 ## 3.2 [Bad] Loading states — не бачу system-wide skeleton policy
 
+> **2026-05-04 update.** Wrapper доданий: `<DataState>` у `apps/web/src/shared/components/ui/DataState.tsx` + 10 contract tests у `DataState.test.tsx`. Precedence error → loading → empty → success зафіксовано тестом, slot-и описані у JSDoc на пропсах. Експорт через UI-barrel (`shared/components/ui/index.ts`). Наступний крок — refactor високотрафічних екранів (`MonoTransactionsPanel`, `BudgetPanel`, `RoutineList`) на цей wrapper в окремих PR-ах.
+
 **Що бачу.** Є `ModulePageLoader.tsx`, `PageTransition.tsx`, окремі `... loading` тексти всередині сторінок. Кожна сторінка вирішує сама. Skeleton-component-library немає; немає й уніфікованої політики «коли skeleton, коли spinner, коли nothing».
 
 **Recommendation / fix points.**
@@ -99,9 +101,9 @@
 **Recommendation.** Закодифікуй цей паттерн як `useFeatureReveal(featureId, condition)` у `shared/hooks/`. API:
 
 ```ts
-const { revealed, dismiss } = useFeatureReveal('reports', {
+const { revealed, dismiss } = useFeatureReveal("reports", {
   condition: hasFirstTransaction,
-  toast: 'Reports tab активований — спробуй зараз',
+  toast: "Reports tab активований — спробуй зараз",
 });
 ```
 
@@ -122,12 +124,12 @@ Persistence — через `safeReadLS('feature_reveal_reports')`. Це дозв
 
 1. Створити `docs/ui/toast-policy.md` з правилами:
 
-   | Tone | Duration | Actionable | Приклад |
-   | --- | --- | --- | --- |
-   | success | 3s auto-dismiss | optional undo | «Транзакцію збережено [Undo]» |
-   | info | 4s auto-dismiss | optional CTA | «Версія 2.4 доступна [Update]» |
-   | warn | 6s auto-dismiss | optional CTA | «Слабкий зв'язок — синхронізація на паузі» |
-   | error | until dismiss / retry | **обов'язково** retry | «Не вдалося синхронізувати [Retry]» |
+   | Tone    | Duration              | Actionable            | Приклад                                    |
+   | ------- | --------------------- | --------------------- | ------------------------------------------ |
+   | success | 3s auto-dismiss       | optional undo         | «Транзакцію збережено [Undo]»              |
+   | info    | 4s auto-dismiss       | optional CTA          | «Версія 2.4 доступна [Update]»             |
+   | warn    | 6s auto-dismiss       | optional CTA          | «Слабкий зв'язок — синхронізація на паузі» |
+   | error   | until dismiss / retry | **обов'язково** retry | «Не вдалося синхронізувати [Retry]»        |
 
 2. ESLint rule (через `sergeant-design`): `toast.error(...)` без `action: { label, onClick }` → error.
 3. Додати тест на toast queue: одночасно 5+ toast'ів повинні стекатися без overflow або loss.
@@ -238,7 +240,12 @@ Persistence — через `safeReadLS('feature_reveal_reports')`. Це дозв
 2. У `index.css` додати:
    ```css
    @media (prefers-reduced-motion: reduce) {
-     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+     *,
+     *::before,
+     *::after {
+       animation-duration: 0.01ms !important;
+       transition-duration: 0.01ms !important;
+     }
    }
    ```
    Це brute-force, але гарантовано покриває все.
@@ -289,15 +296,15 @@ Persistence — через `safeReadLS('feature_reveal_reports')`. Це дозв
 
 ## Прив'язка до roadmap (00-overview)
 
-| Item у roadmap | Section тут |
-| --- | --- |
-| Form-engine unification | §3.1 |
-| `<DataState>` wrapper | §3.2 |
-| Toast policy + ESLint rule | §3.4 |
-| Modal a11y rule + axe-prop-test | §3.5 |
-| Safe-viewport + `100dvh` codemod | §3.6 |
-| PWA install A/B + defer-update-while-streaming | §3.7 |
-| i18n key extraction (UA-only) | §3.8 |
-| `prefers-reduced-motion` global gate | §3.9 |
+| Item у roadmap                                 | Section тут |
+| ---------------------------------------------- | ----------- |
+| Form-engine unification                        | §3.1        |
+| `<DataState>` wrapper                          | §3.2        |
+| Toast policy + ESLint rule                     | §3.4        |
+| Modal a11y rule + axe-prop-test                | §3.5        |
+| Safe-viewport + `100dvh` codemod               | §3.6        |
+| PWA install A/B + defer-update-while-streaming | §3.7        |
+| i18n key extraction (UA-only)                  | §3.8        |
+| `prefers-reduced-motion` global gate           | §3.9        |
 
 > **Tracker hook.** Коли з'явиться чек-лист реалізації, винеси у `docs/audits/UX-IMPROVEMENT-PLAN.md` (Active) з KPI на квартал.

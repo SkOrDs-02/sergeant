@@ -1,6 +1,6 @@
 # Web deep-dive — Security, observability, testing & DevX
 
-> **Last validated:** 2026-05-03 by @Skords-01.
+> **Last validated:** 2026-05-04 by @Skords-01.
 > **Status:** Active
 > **Scope:** PII у логах, Sentry↔requestId correlation, CSP, contract тести, mutation testing, Storybook, C4-діаграми, CHANGELOG, Hard Rules registry, agent onboarding, audit docs status.
 > **Related:** [`00-overview.md`](./00-overview.md), `docs/audits/`, `docs/security/`, `docs/agents/`.
@@ -194,6 +194,13 @@
 
 ## 7.4 [Bad] No contract tests web↔server
 
+> **2026-05-04 update.** Запущено мінімальний contract layer для `/api/me`:
+>
+> - Канонічні фікстури — `packages/shared/src/contract-fixtures/me.ts` (4 кейси: `minimal`, `full`, `legacyNoCreatedAt`, `unverified`).
+> - Consumer side — `apps/web/src/test/contract/me.contract.test.ts` (api-client + `MeResponseSchema`).
+> - Producer side — `apps/server/src/routes/me.contract.test.ts` (route handler через supertest).
+> - 17 contract assertions, 0 production code touched. Pattern документовано в `packages/shared/src/contract-fixtures/README.md`. Наступні endpoint-и розширюють той самий каталог.
+
 **Що бачу.** Pact / OpenAPI-validation немає. Кожна сторона припускає shape — це причина drift-у §4.7.
 
 **Recommendation.**
@@ -331,6 +338,8 @@ OK.
 ---
 
 ## 11. Audit docs status table
+
+> **2026-05-04 update.** `docs/audits/README.md` тепер має суцільну таблицю Status / Implemented / Outstanding / Tracker для всіх живих файлів + ad-hoc діагностик секцію. Додано «Як читати таблицю» + «Process» (CI freshness + quarterly recompilation). Більше не треба шукати по гіту, чи аудит ще актуальний.
 
 **Що бачу.** `docs/audits/*` має 8+ файлів, але без status-індикатора («Active», «Implemented», «Superseded»). Reader не знає, чи це актуальна gap-list, чи історія.
 

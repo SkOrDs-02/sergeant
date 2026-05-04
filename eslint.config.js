@@ -407,7 +407,6 @@ export default [
       "apps/web/src/core/cloudSync/enqueue.ts",
       // Module storage wrappers (legitimate primitives in their own
       // namespace).
-      "apps/web/src/modules/finyk/hooks/useStorage.ts",
       "apps/web/src/modules/finyk/lib/storageManager.ts",
       "apps/web/src/modules/nutrition/domain/nutritionBackup.ts",
       // useWorkouts.ts: intentional direct-storage access — dispatches
@@ -773,16 +772,13 @@ export default [
       "apps/web/src/modules/fizruk/pages/Workouts.tsx",
       "apps/web/src/modules/fizruk/pages/Progress.tsx",
       "apps/web/src/modules/nutrition/NutritionApp.tsx",
-      "apps/web/src/modules/finyk/hooks/useStorage.ts",
       "apps/web/src/core/lib/hubChatContext.ts",
       "apps/web/src/core/hub/HubDashboard.tsx",
       "apps/web/src/modules/nutrition/components/DailyPlanCard.tsx",
-      "apps/web/src/core/lib/chatActions/types.ts",
       "apps/web/src/core/lib/chatActions/fizrukActions.ts",
       "apps/web/src/modules/fizruk/pages/Exercise.tsx",
       "apps/web/src/modules/finyk/pages/AssetsTable.tsx",
       "apps/web/src/shared/components/ui/Icon.tsx",
-      "apps/web/src/sw.ts",
       "apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx",
     ],
     rules: {
