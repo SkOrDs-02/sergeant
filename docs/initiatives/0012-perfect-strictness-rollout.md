@@ -210,3 +210,23 @@ Baseline (виміряно 2026-05-04 через per-workspace `npx tsc -p tscon
 - `packages/config/tsconfig.base.json` — `"noImplicitReturns": true, "noFallthroughCasesInSwitch": true` додано.
 - `tools/tsconfig-guard/check.mjs` — `GUARDED_OPTIONS` розширено двома новими прапорами; жоден workspace не має override-у.
 - [`docs/tech-debt/frontend.md` §11.1 row 3](../tech-debt/frontend.md) — статус `⏳ pending → ✅ Done`.
+
+### Phase 6e — `noUnusedLocals` + `noUnusedParameters` (✅ DONE — 1 PR, 2026-05-04)
+
+Baseline (виміряно 2026-05-04 через per-workspace `npx tsc -p tsconfig.json --noEmit`):
+
+| Workspace                           | Errors | Files | Notes                                                                                                                              |
+| ----------------------------------- | -----: | ----: | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web`                          |      1 |     1 | `apps/web/src/core/db/__tests__/sqlite-wasm-fake.ts` — `private cols: string[]` field assigned but never read (dead state in fake) |
+| `apps/server` + 11 інших workspaces |      0 |     0 | clean — ESLint `@typescript-eslint/no-unused-vars` rule вже багато років ловив усе                                                 |
+| **Total**                           |  **1** | **1** |                                                                                                                                    |
+
+**Fix pattern:** видалив поле `cols` із `FakeRows` test-fake (запис у `CREATE TABLE` branch + reset у `close()`); поле ніде не читалось — це dead state. Замінив на short comment, що пояснює, чому fake не парсить колонки (rows повертаються verbatim).
+
+**Coverage update:**
+
+- `packages/config/tsconfig.base.json` — `"noUnusedLocals": true, "noUnusedParameters": true` додано.
+- `tools/tsconfig-guard/check.mjs` — `GUARDED_OPTIONS` розширено двома новими прапорами; жоден workspace не має override-у.
+- [`docs/tech-debt/frontend.md` §11.1 row 5](../tech-debt/frontend.md) — статус `⏳ pending → ✅ Done`.
+
+**Чому залишаємо ESLint rule active (doubly-redundant):** `@typescript-eslint/no-unused-vars` ловить деякі edge-cases, які TS пропускає — зокрема JSX-imports у `.tsx` файлах і `_`-prefixed argument convention. Видалення ESLint-rule можна зробити окремим PR-ом після кварталу expirience з TS-enforcement, якщо буде доведено, що ESLint нічого додаткового не знаходить. Поки — обидва.

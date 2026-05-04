@@ -28,7 +28,6 @@ type ExecArg =
 
 class FakeRows {
   private rows: unknown[][] = [];
-  private cols: string[] = [];
 
   exec(arg: ExecArg): unknown[][] | undefined {
     const { sql, bind, returnValue } =
@@ -37,10 +36,9 @@ class FakeRows {
         : arg;
     const stmt = sql.trim().toUpperCase();
     if (stmt.startsWith("CREATE TABLE")) {
-      const m = sql.match(/\(([^)]+)\)/);
-      if (m) {
-        this.cols = m[1].split(",").map((c) => c.trim().split(/\s+/)[0]);
-      }
+      // Fake schema parsing was tracked here (column-name list) but is
+      // unused — `exec("SELECT ...")` returns rows verbatim without column
+      // metadata. Drop the field rather than carry dead state.
       return undefined;
     }
     if (stmt.startsWith("INSERT")) {
@@ -56,7 +54,6 @@ class FakeRows {
 
   close(): void {
     this.rows = [];
-    this.cols = [];
   }
 }
 
