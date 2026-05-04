@@ -11,6 +11,8 @@
 
 ## 3.1 [Bad] Немає одного form-двигуна
 
+> **2026-05-04 update.** Foundation готовий: [`useApiForm`](https://github.com/Skords-01/Sergeant/blob/main/apps/web/src/shared/forms/useApiForm.ts) у `apps/web/src/shared/forms/useApiForm.ts` — wrapper над **react-hook-form + @hookform/resolvers/zod** з автоматичним мапуванням server-side `details: [{ path, message }]` на `setError(path, …)`. 12 тестів покривають happy path, zod-валідацію, server-error mapping, top-level помилки, dirty-state, `resetOnSuccess`, `clearServerError`. PR [#1614](https://github.com/Skords-01/Sergeant/pull/1614). `useFormValidation` помічено `@deprecated` (існуючі споживачі залишаються — мігруються в окремих PR-ах). Наступний крок — incremental migration high-traffic форм (auth → finyk → fizruk → nutrition → routine), кожна окремим PR-ом.
+
 **Що бачу.** `apps/web/src/shared/components/ui/Input.tsx` сам по собі чудовий: typed defaults, char counter, `aria-invalid`, `aria-live`. Але **навколо** нього — зоопарк:
 
 - `apps/web/src/shared/hooks/useFormValidation.ts` — самопис.
