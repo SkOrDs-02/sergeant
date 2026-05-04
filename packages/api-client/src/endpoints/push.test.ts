@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createHttpClient } from "../httpClient";
+import { firstCall } from "../__test-utils/firstCall";
 import { createPushEndpoints } from "./push";
 
-// Мокаємо глобальний fetch. `vi.fn` без generic-параметра повертає Mock з
-// flexible-tuple args — pattern із `me.test.ts` / `httpClient.test.ts`, щоб
-// `mock.calls[0][n]` індексувалось без TS2493 під CI-strict tsconfig.
+// Мокаємо глобальний fetch. `vi.fn` без generic повертає Mock з
+// flexible-tuple args — pattern із `me.test.ts` / `httpClient.test.ts`.
+// Перший виклик дістаємо через `firstCall(fn)` — задовольняє
+// `noUncheckedIndexedAccess: true` без `!` / `as` шуму на сайт-ах.
 type FetchMock = ReturnType<typeof vi.fn>;
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
@@ -44,7 +46,7 @@ describe("createPushEndpoints.register", () => {
 
     expect(res).toEqual({ ok: true, platform: "web" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    const init = firstCall(fetchMock)[1] as RequestInit;
     const parsed = JSON.parse(init.body as string) as {
       platform: string;
       token: string;
@@ -85,7 +87,7 @@ describe("createPushEndpoints.register", () => {
       { signal: ctrl.signal },
     );
 
-    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    const init = firstCall(fetchMock)[1] as RequestInit;
     expect(init.signal).toBe(ctrl.signal);
   });
 
@@ -95,7 +97,7 @@ describe("createPushEndpoints.register", () => {
     const push = createPushEndpoints(createHttpClient());
     await push.register({ platform: "android", token: "fcm-token" });
 
-    const url = fetchMock.mock.calls[0][0] as string;
+    const url = firstCall(fetchMock)[0] as string;
     expect(url).toContain("/api/v1/push/register");
     expect(url).not.toContain("/api/push/register");
   });
@@ -113,7 +115,7 @@ describe("createPushEndpoints.unregister", () => {
 
     expect(res).toEqual({ ok: true, platform: "web" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    const init = firstCall(fetchMock)[1] as RequestInit;
     const parsed = JSON.parse(init.body as string) as {
       platform: string;
       endpoint: string;
@@ -143,7 +145,7 @@ describe("createPushEndpoints.unregister", () => {
       endpoint: "https://fcm.googleapis.com/wp/xxx",
     });
 
-    const url = fetchMock.mock.calls[0][0] as string;
+    const url = firstCall(fetchMock)[0] as string;
     expect(url).toContain("/api/v1/push/unregister");
     expect(url).not.toContain("/api/push/unregister");
   });

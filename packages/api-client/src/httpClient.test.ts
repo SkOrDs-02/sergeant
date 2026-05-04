@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createHttpClient, parseRetryAfterMs } from "./httpClient";
 import { ApiError } from "./ApiError";
+import { firstCall } from "./__test-utils/firstCall";
 
 // Test fixture — minimal client that uses default fetch and relative URLs,
 // matching the legacy `http` module export so the assertions below stay
@@ -58,7 +59,7 @@ describe("httpClient — успішні запити", () => {
   it("за замовчуванням credentials: 'include' та Accept: application/json", async () => {
     const fn = mockFetchOnce(jsonResponse({ ok: true }));
     await http.get("/api/ping");
-    const init = fn.mock.calls[0][1] as RequestInit;
+    const init = firstCall(fn)[1] as RequestInit;
     expect(init.credentials).toBe("include");
     const headers = init.headers as Headers;
     expect(headers.get("Accept")).toBe("application/json");
@@ -67,7 +68,7 @@ describe("httpClient — успішні запити", () => {
   it("POST: автоматично серіалізує plain-обʼєкт і ставить Content-Type", async () => {
     const fn = mockFetchOnce(jsonResponse({ ok: true }));
     await http.post("/api/x", { a: 1 });
-    const init = fn.mock.calls[0][1] as RequestInit;
+    const init = firstCall(fn)[1] as RequestInit;
     expect(init.method).toBe("POST");
     expect(init.body).toBe(JSON.stringify({ a: 1 }));
     const headers = init.headers as Headers;
@@ -77,7 +78,7 @@ describe("httpClient — успішні запити", () => {
   it("мерджить кастомні заголовки поверх дефолтів (X-Token)", async () => {
     const fn = mockFetchOnce(jsonResponse({ ok: true }));
     await http.get("/api/mono", { headers: { "X-Token": "secret" } });
-    const headers = (fn.mock.calls[0][1] as RequestInit).headers as Headers;
+    const headers = (firstCall(fn)[1] as RequestInit).headers as Headers;
     expect(headers.get("X-Token")).toBe("secret");
     expect(headers.get("Accept")).toBe("application/json");
   });
@@ -87,7 +88,7 @@ describe("httpClient — успішні запити", () => {
     await http.get("/api/search", {
       query: { q: "hello world", limit: 10, skip: undefined },
     });
-    const url = fn.mock.calls[0][0] as string;
+    const url = firstCall(fn)[0] as string;
     expect(url).toContain("q=hello+world");
     expect(url).toContain("limit=10");
     expect(url).not.toContain("skip=");
@@ -98,7 +99,7 @@ describe("httpClient — успішні запити", () => {
     const fd = new FormData();
     fd.append("file", new Blob(["x"]), "f.txt");
     await http.post("/api/upload", fd);
-    const init = fn.mock.calls[0][1] as RequestInit;
+    const init = firstCall(fn)[1] as RequestInit;
     expect(init.body).toBe(fd);
     const headers = init.headers as Headers;
     expect(headers.get("Content-Type")).toBeNull();
@@ -195,59 +196,59 @@ describe("httpClient — apiPrefix versioning", () => {
   it("за замовчуванням /api/* → /api/v1/*", async () => {
     const fn = mockFetchOnce(jsonResponse({ ok: true }));
     await http.get("/api/sync/push-all");
-    const url = fn.mock.calls[0][0] as string;
+    const url = firstCall(fn)[0] as string;
     expect(url).toBe("/api/v1/sync/push-all");
   });
 
   it("/api/auth/* НЕ версіонується (Better Auth basePath)", async () => {
     const fn = mockFetchOnce(jsonResponse({ ok: true }));
     await http.get("/api/auth/session");
-    expect(fn.mock.calls[0][0]).toBe("/api/auth/session");
+    expect(firstCall(fn)[0]).toBe("/api/auth/session");
   });
 
   it("уже версіонований /api/v1/foo → залишається як є", async () => {
     const fn = mockFetchOnce(jsonResponse({ ok: true }));
     await http.get("/api/v1/push/register");
-    expect(fn.mock.calls[0][0]).toBe("/api/v1/push/register");
+    expect(firstCall(fn)[0]).toBe("/api/v1/push/register");
   });
 
   it("не-/api/ шляхи прокидаються без змін", async () => {
     const fn = mockFetchOnce(jsonResponse({ ok: true }));
     await http.get("/healthz");
-    expect(fn.mock.calls[0][0]).toBe("/healthz");
+    expect(firstCall(fn)[0]).toBe("/healthz");
   });
 
   it("apiPrefix: '/api' — legacy-режим, без версіонування (escape hatch)", async () => {
     const legacy = createHttpClient({ apiPrefix: "/api" });
     const fn = mockFetchOnce(jsonResponse({ ok: true }));
     await legacy.get("/api/sync/push-all");
-    expect(fn.mock.calls[0][0]).toBe("/api/sync/push-all");
+    expect(firstCall(fn)[0]).toBe("/api/sync/push-all");
   });
 
   it("кастомний apiPrefix: /api/v2 → /api/v2/foo", async () => {
     const v2 = createHttpClient({ apiPrefix: "/api/v2" });
     const fn = mockFetchOnce(jsonResponse({ ok: true }));
     await v2.get("/api/coach/memory");
-    expect(fn.mock.calls[0][0]).toBe("/api/v2/coach/memory");
+    expect(firstCall(fn)[0]).toBe("/api/v2/coach/memory");
   });
 
   it("не чіпає /api-шляхи без слеша після (напр. /api-foo) щоб не поламати сусідні префікси", async () => {
     const fn = mockFetchOnce(jsonResponse({ ok: true }));
     await http.get("/api-foo");
-    expect(fn.mock.calls[0][0]).toBe("/api-foo");
+    expect(firstCall(fn)[0]).toBe("/api-foo");
   });
 
   it("прокидає baseUrl + apiPrefix у правильному порядку", async () => {
     const remote = createHttpClient({ baseUrl: "https://api.example.com" });
     const fn = mockFetchOnce(jsonResponse({ ok: true }));
     await remote.get("/api/me");
-    expect(fn.mock.calls[0][0]).toBe("https://api.example.com/api/v1/me");
+    expect(firstCall(fn)[0]).toBe("https://api.example.com/api/v1/me");
   });
 
   it("query-параметри коректно додаються до переписаного шляху", async () => {
     const fn = mockFetchOnce(jsonResponse({ ok: true }));
     await http.get("/api/food-search", { query: { q: "банан" } });
-    const url = fn.mock.calls[0][0] as string;
+    const url = firstCall(fn)[0] as string;
     expect(url.startsWith("/api/v1/food-search?")).toBe(true);
     expect(url).toContain("q=%D0%B1%D0%B0%D0%BD%D0%B0%D0%BD");
   });
@@ -258,7 +259,7 @@ describe("httpClient — AbortSignal", () => {
     const fn = mockFetchOnce(jsonResponse({ ok: true }));
     const ac = new AbortController();
     await http.get("/api/x", { signal: ac.signal });
-    const init = fn.mock.calls[0][1] as RequestInit;
+    const init = firstCall(fn)[1] as RequestInit;
     expect(init.signal).toBeDefined();
   });
 

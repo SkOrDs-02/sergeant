@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createHttpClient } from "../httpClient";
+import { firstCall } from "../__test-utils/firstCall";
 import { createMeEndpoints } from "./me";
 
-// Повторюємо pattern із `httpClient.test.ts`: `vi.fn` без generic-параметра
-// повертає Mock з flexible-tuple args, тож `mock.calls[0][n]` індексується
-// без помилки TS2493 "has no element at index" під CI-strict tsconfig.
+// Pattern із `httpClient.test.ts`: `vi.fn` без generic повертає Mock з
+// flexible-tuple args. Перший виклик дістаємо через `firstCall(fn)` —
+// helper кидає `Error`, якщо мок не викликали; це задовольняє
+// `noUncheckedIndexedAccess: true` без `!` / `as` шуму на сайт-ах.
 type FetchMock = ReturnType<typeof vi.fn>;
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
@@ -59,7 +61,7 @@ describe("createMeEndpoints", () => {
       },
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const url = fetchMock.mock.calls[0][0] as string;
+    const url = firstCall(fetchMock)[0] as string;
     // `createHttpClient()` defaults to `apiPrefix = "/api/v1"` (see
     // DEFAULT_API_PREFIX / PR #390), so `/api/me` is rewritten to
     // `/api/v1/me` before fetch. The server mirrors both `/api/me` and
@@ -103,7 +105,7 @@ describe("createMeEndpoints", () => {
     const me = createMeEndpoints(createHttpClient());
     const ctrl = new AbortController();
     await me.get({ signal: ctrl.signal });
-    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    const init = firstCall(fetchMock)[1] as RequestInit;
     expect(init.signal).toBe(ctrl.signal);
   });
 });
