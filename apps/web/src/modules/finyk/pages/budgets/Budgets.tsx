@@ -1,6 +1,10 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Skeleton, SkeletonBudgetBar } from "@shared/components/ui/Skeleton";
+import {
+  DataState,
+  type DataStateQueryLike,
+} from "@shared/components/ui/DataState";
 import { calcCategorySpent } from "../../utils";
 import { computeFinykSchedule, startOfToday } from "../../lib/upcomingSchedule";
 import { FinykStatsStrip } from "../../components/FinykStatsStrip";
@@ -305,22 +309,29 @@ export function Budgets({
     resetForm();
   };
 
-  if (loadingTx && realTx.length === 0) {
-    return (
-      <div
-        className="flex-1 overflow-y-auto px-4 pt-4 page-tabbar-pad space-y-3 max-w-4xl mx-auto w-full"
-        aria-busy="true"
-        aria-live="polite"
-      >
-        {/* Shape-aware: header bar + 3 budget rows so the layout doesn't
-            reflow when data lands. */}
-        <Skeleton className="h-28 rounded-2xl" />
-        <SkeletonBudgetBar />
-        <SkeletonBudgetBar className="opacity-80" />
-        <SkeletonBudgetBar className="opacity-60" />
-      </div>
-    );
-  }
+  // DataState contract: `data === undefined` triggers the skeleton slot.
+  // First-paint of the Budgets page treats "loading and no realTx yet" as
+  // initial-load; once data lands we keep rendering even on background
+  // refetches so the page never blanks out.
+  const budgetsQuery: DataStateQueryLike<readonly Transaction[]> = {
+    data: loadingTx && realTx.length === 0 ? undefined : realTx,
+    isLoading: loadingTx,
+  };
+
+  const budgetsLoadingSkeleton = (
+    <div
+      className="flex-1 overflow-y-auto px-4 pt-4 page-tabbar-pad space-y-3 max-w-4xl mx-auto w-full"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      {/* Shape-aware: header bar + 3 budget rows so the layout doesn't
+          reflow when data lands. */}
+      <Skeleton className="h-28 rounded-2xl" />
+      <SkeletonBudgetBar />
+      <SkeletonBudgetBar className="opacity-80" />
+      <SkeletonBudgetBar className="opacity-60" />
+    </div>
+  );
 
   const {
     remaining: remaining2,
@@ -334,89 +345,93 @@ export function Budgets({
   );
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
-        {/* Сума підписок + Наступний платіж з тих самих даних, що й на
+    <DataState query={budgetsQuery} skeleton={budgetsLoadingSkeleton}>
+      {() => (
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
+            {/* Сума підписок + Наступний платіж з тих самих даних, що й на
             сторінці Активи — без пасив-з-дедлайном тайлу (у Плануванні
             це не релевантно). Зникає цілком, якщо обидва слоти пусті. */}
-        <FinykStatsStrip
-          subsMonthly={schedule.subsMonthly}
-          subsCount={schedule.subsCount}
-          nextCharge={schedule.nextCharge}
-          urgentLiability={null}
-          todayStart={todayStart}
-          showBalance={showBalance}
-        />
+            <FinykStatsStrip
+              subsMonthly={schedule.subsMonthly}
+              subsCount={schedule.subsCount}
+              nextCharge={schedule.nextCharge}
+              urgentLiability={null}
+              todayStart={todayStart}
+              showBalance={showBalance}
+            />
 
-        <MonthlyPlanCard
-          monthlyPlan={monthlyPlan}
-          onChangeMonthlyPlan={setMonthlyPlan}
-          planIncome={planIncome}
-          planExpense={planExpense}
-          planSavings={planSavings}
-          totalExpenseFact={totalExpenseFact}
-          factIncome={factIncome}
-          factSavings={factSavings}
-          remaining={remaining2}
-          safePerDay={safePerDay}
-          pctExpense={pctExpense}
-          isOver={isOver}
-          daysLeft={daysLeft2}
-        />
+            <MonthlyPlanCard
+              monthlyPlan={monthlyPlan}
+              onChangeMonthlyPlan={setMonthlyPlan}
+              planIncome={planIncome}
+              planExpense={planExpense}
+              planSavings={planSavings}
+              totalExpenseFact={totalExpenseFact}
+              factIncome={factIncome}
+              factSavings={factSavings}
+              remaining={remaining2}
+              safePerDay={safePerDay}
+              pctExpense={pctExpense}
+              isOver={isOver}
+              daysLeft={daysLeft2}
+            />
 
-        <BudgetsLimitsSection
-          limitsOpen={limitsOpen}
-          toggleLimits={toggleLimits}
-          monthStart={monthStart}
-          limitBudgets={limitBudgets}
-          budgets={budgets}
-          setBudgets={setBudgets}
-          editIdx={editIdx}
-          setEditIdx={setEditIdx}
-          customCategories={customCategories}
-          calcSpent={calcSpent}
-          proactiveItems={proactiveItems}
-          proactiveAdvice={proactiveAdvice}
-          proactiveLoading={proactiveLoading}
-          dismissedAdvice={dismissedAdvice}
-          dismissAdvice={dismissAdvice}
-          highlightedCategoryId={highlightedCategoryId}
-          limitCardRefs={limitCardRefs}
-          toast={toast}
-        />
+            <BudgetsLimitsSection
+              limitsOpen={limitsOpen}
+              toggleLimits={toggleLimits}
+              monthStart={monthStart}
+              limitBudgets={limitBudgets}
+              budgets={budgets}
+              setBudgets={setBudgets}
+              editIdx={editIdx}
+              setEditIdx={setEditIdx}
+              customCategories={customCategories}
+              calcSpent={calcSpent}
+              proactiveItems={proactiveItems}
+              proactiveAdvice={proactiveAdvice}
+              proactiveLoading={proactiveLoading}
+              dismissedAdvice={dismissedAdvice}
+              dismissAdvice={dismissAdvice}
+              highlightedCategoryId={highlightedCategoryId}
+              limitCardRefs={limitCardRefs}
+              toast={toast}
+            />
 
-        <BudgetsGoalsSection
-          goalsOpen={goalsOpen}
-          toggleGoals={toggleGoals}
-          goalBudgets={goalBudgets}
-          budgets={budgets}
-          setBudgets={setBudgets}
-          editIdx={editIdx}
-          setEditIdx={setEditIdx}
-          now={now}
-          toast={toast}
-        />
+            <BudgetsGoalsSection
+              goalsOpen={goalsOpen}
+              toggleGoals={toggleGoals}
+              goalBudgets={goalBudgets}
+              budgets={budgets}
+              setBudgets={setBudgets}
+              editIdx={editIdx}
+              setEditIdx={setEditIdx}
+              now={now}
+              toast={toast}
+            />
 
-        {showForm ? (
-          <AddBudgetForm
-            formType={formType}
-            newB={newB}
-            onChangeFormType={setFormType}
-            onChangeNewB={setNewB}
-            expenseCategoryList={expenseCategoryList}
-            formError={formError}
-            onSubmit={addBudget}
-            onCancel={resetForm}
-          />
-        ) : (
-          <button
-            onClick={() => setShowForm(true)}
-            className="w-full py-3 text-sm text-muted border border-dashed border-line rounded-xl hover:border-primary hover:text-primary transition-colors"
-          >
-            + Додати ліміт або ціль
-          </button>
-        )}
-      </div>
-    </div>
+            {showForm ? (
+              <AddBudgetForm
+                formType={formType}
+                newB={newB}
+                onChangeFormType={setFormType}
+                onChangeNewB={setNewB}
+                expenseCategoryList={expenseCategoryList}
+                formError={formError}
+                onSubmit={addBudget}
+                onCancel={resetForm}
+              />
+            ) : (
+              <button
+                onClick={() => setShowForm(true)}
+                className="w-full py-3 text-sm text-muted border border-dashed border-line rounded-xl hover:border-primary hover:text-primary transition-colors"
+              >
+                + Додати ліміт або ціль
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </DataState>
   );
 }

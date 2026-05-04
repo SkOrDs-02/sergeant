@@ -32,9 +32,14 @@ import {
 } from "@sergeant/finyk-domain/domain/budget";
 import { filterStatTransactions } from "@sergeant/finyk-domain/domain/transactions";
 import { Skeleton } from "@shared/components/ui/Skeleton";
+import {
+  DataState,
+  type DataStateQueryLike,
+} from "@shared/components/ui/DataState";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { THEME_HEX } from "@shared/lib/ui/themeHex";
 import { SyncStatusBadge } from "../components/SyncStatusBadge";
+import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 
 import { FirstInsightBanner } from "./overview/FirstInsightBanner";
 import { HeroCard } from "./overview/HeroCard";
@@ -348,18 +353,26 @@ export function Overview({
     [subscriptionFlows, debtOutFlows, debtInFlows, currentYear, currentMonth],
   );
 
-  if (loadingTx && realTx.length === 0) {
-    return (
-      <div className="flex-1 overflow-y-auto">
-        <div className="px-4 pt-4 page-tabbar-pad space-y-4 max-w-4xl mx-auto">
-          <Skeleton className="h-[168px] rounded-3xl" />
-          <Skeleton className="h-[120px] opacity-80 rounded-2xl" />
-          <Skeleton className="h-[110px] opacity-60 rounded-2xl" />
-          <Skeleton className="h-[90px] opacity-40 rounded-2xl" />
-        </div>
+  // DataState contract: `data === undefined` triggers the skeleton slot.
+  // We treat the very first month load (no realTx yet) as loading;
+  // subsequent background refetches keep `data` defined so the page stays
+  // visible while a stale-revalidate happens. Mirrors the prior
+  // `if (loadingTx && realTx.length === 0)` early-return guard exactly.
+  const overviewQuery: DataStateQueryLike<readonly Transaction[]> = {
+    data: loadingTx && realTx.length === 0 ? undefined : realTx,
+    isLoading: loadingTx,
+  };
+
+  const overviewLoadingSkeleton = (
+    <div className="flex-1 overflow-y-auto">
+      <div className="px-4 pt-4 page-tabbar-pad space-y-4 max-w-4xl mx-auto">
+        <Skeleton className="h-[168px] rounded-3xl" />
+        <Skeleton className="h-[120px] opacity-80 rounded-2xl" />
+        <Skeleton className="h-[110px] opacity-60 rounded-2xl" />
+        <Skeleton className="h-[90px] opacity-40 rounded-2xl" />
       </div>
-    );
-  }
+    </div>
+  );
 
   const recurringOutThisMonth = monthFlows
     .filter(
@@ -400,78 +413,82 @@ export function Overview({
   });
 
   return (
-    <div className="flex-1 overflow-y-auto overscroll-contain">
-      <div className="px-4 pt-4 page-tabbar-pad space-y-4 max-w-4xl mx-auto">
-        {(clientInfo ||
-          syncState?.status === "error" ||
-          syncState?.status === "loading" ||
-          monoError) && (
-          <SyncStatusBadge
-            syncState={syncState}
-            lastUpdated={lastUpdated}
-            error={monoError}
-            onRetry={monoRefresh}
-            loading={loadingTx}
-          />
-        )}
+    <DataState query={overviewQuery} skeleton={overviewLoadingSkeleton}>
+      {() => (
+        <div className="flex-1 overflow-y-auto overscroll-contain">
+          <div className="px-4 pt-4 page-tabbar-pad space-y-4 max-w-4xl mx-auto">
+            {(clientInfo ||
+              syncState?.status === "error" ||
+              syncState?.status === "loading" ||
+              monoError) && (
+              <SyncStatusBadge
+                syncState={syncState}
+                lastUpdated={lastUpdated}
+                error={monoError}
+                onRetry={monoRefresh}
+                loading={loadingTx}
+              />
+            )}
 
-        {showFirstInsight && hasAnyData && (
-          <FirstInsightBanner
-            onSetBudget={handleSetBudgetFromInsight}
-            onDismiss={dismissFirstInsight}
-          />
-        )}
+            {showFirstInsight && hasAnyData && (
+              <FirstInsightBanner
+                onSetBudget={handleSetBudgetFromInsight}
+                onDismiss={dismissFirstInsight}
+              />
+            )}
 
-        <HeroCard
-          networth={networth}
-          monoTotal={monoTotal}
-          totalDebt={totalDebt}
-          daysInMonth={daysInMonth}
-          daysPassed={daysPassed}
-          dayBudget={dayBudget}
-          hasExpensePlan={hasExpensePlan}
-          spendPlanRatio={spendPlanRatio}
-          showBalance={showBalance}
-        />
+            <HeroCard
+              networth={networth}
+              monoTotal={monoTotal}
+              totalDebt={totalDebt}
+              daysInMonth={daysInMonth}
+              daysPassed={daysPassed}
+              dayBudget={dayBudget}
+              hasExpensePlan={hasExpensePlan}
+              spendPlanRatio={spendPlanRatio}
+              showBalance={showBalance}
+            />
 
-        <MonthPulseCard
-          dateLabel={dateLabel}
-          daysPassed={daysPassed}
-          spent={spent}
-          income={income}
-          showBalance={showBalance}
-          showMonthForecast={showMonthForecast}
-          projectedSpend={projectedSpend}
-          hasExpensePlan={hasExpensePlan}
-          spendPlanRatio={spendPlanRatio}
-          planExpense={planExpense}
-          forecastTrendPct={forecastTrendPct}
-          forecastBarClass={forecastBarClass}
-          recurringOutThisMonth={recurringOutThisMonth}
-          recurringInThisMonth={recurringInThisMonth}
-          unknownOutCount={unknownOutCount}
-        />
+            <MonthPulseCard
+              dateLabel={dateLabel}
+              daysPassed={daysPassed}
+              spent={spent}
+              income={income}
+              showBalance={showBalance}
+              showMonthForecast={showMonthForecast}
+              projectedSpend={projectedSpend}
+              hasExpensePlan={hasExpensePlan}
+              spendPlanRatio={spendPlanRatio}
+              planExpense={planExpense}
+              forecastTrendPct={forecastTrendPct}
+              forecastBarClass={forecastBarClass}
+              recurringOutThisMonth={recurringOutThisMonth}
+              recurringInThisMonth={recurringInThisMonth}
+              unknownOutCount={unknownOutCount}
+            />
 
-        <NetworthSection networthHistory={networthHistory} />
+            <NetworthSection networthHistory={networthHistory} />
 
-        <BudgetAlertsList
-          budgetAlerts={budgetAlerts}
-          statTx={statTx}
-          txCategories={txCategories}
-          txSplits={txSplits}
-          customCategories={customCategories}
-        />
+            <BudgetAlertsList
+              budgetAlerts={budgetAlerts}
+              statTx={statTx}
+              txCategories={txCategories}
+              txSplits={txSplits}
+              customCategories={customCategories}
+            />
 
-        <PlannedFlowsCard
-          plannedFlows={plannedFlows}
-          onNavigate={onNavigate ?? (() => {})}
-          showBalance={showBalance}
-        />
+            <PlannedFlowsCard
+              plannedFlows={plannedFlows}
+              onNavigate={onNavigate ?? (() => {})}
+              showBalance={showBalance}
+            />
 
-        {loadingTx && (
-          <p className="text-center text-xs text-subtle py-4">Оновлення…</p>
-        )}
-      </div>
-    </div>
+            {loadingTx && (
+              <p className="text-center text-xs text-subtle py-4">Оновлення…</p>
+            )}
+          </div>
+        </div>
+      )}
+    </DataState>
   );
 }
