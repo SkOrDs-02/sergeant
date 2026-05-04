@@ -56,6 +56,17 @@ export {
 } from "./endpoints/syncV2";
 
 export {
+  buildSyncV2IncrementOp,
+  isIncrementOpSupported,
+  INCREMENT_DELTA_MAX_ABS,
+  INCREMENT_OP_SUPPORTED_TABLES,
+  type BuildSyncV2IncrementOpInput,
+  type BuildSyncV2IncrementOpReason,
+  type BuildSyncV2IncrementOpResult,
+  type IncrementOpTable,
+} from "./endpoints/syncV2.increment";
+
+export {
   createCoachEndpoints,
   type CoachEndpoints,
   type CoachInsightPayload,
