@@ -4,6 +4,8 @@ import { toLocalISODate } from "@sergeant/shared";
 import { useFinykStorageSlots } from "./useFinykStorageSlots";
 import { useFinykStorageMutations } from "./useFinykStorageMutations";
 import { useFinykBackupSync } from "./useFinykBackupSync";
+import { useFinykDualWriteBoot } from "./useFinykDualWriteBoot";
+import { useFinykDualWriteSync } from "./useFinykDualWriteSync";
 
 // Public type re-exports — стабільний import path для зовнішніх consumer-ів
 // (`AssetsForm.tsx`, `Overview.tsx`, тощо). Декомпозиція внутрішнього коду
@@ -50,6 +52,12 @@ export function useStorage({
   const slots = useFinykStorageSlots();
   const mutations = useFinykStorageMutations(slots);
   const backupSync = useFinykBackupSync(slots, toast);
+
+  // Stage 4 PR #036 — install dual-write context once auth + flag are
+  // available, then mirror every slot mutation into SQLite (best-effort,
+  // gated by `feature.finyk.sqlite_v2.dual_write`).
+  useFinykDualWriteBoot();
+  useFinykDualWriteSync(slots);
 
   const {
     hiddenAccounts,

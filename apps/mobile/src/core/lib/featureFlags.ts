@@ -96,6 +96,13 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
       "Meals / pantries / prefs / recipes читаються з локальної SQLite (`nutrition_*` таблиці) замість MMKV blob. MMKV-write залишається як safety net. Stage 4 PR #033 storage-roadmap. Потребує увімкненого dual-write. Default: off.",
     defaultValue: false,
   },
+  {
+    id: "feature.finyk.sqlite_v2.dual_write",
+    label: "Finyk — dual-write MMKV↔SQLite",
+    description:
+      "Кожен write у MMKV Finyk-у додатково мирорить у локальну SQLite (`finyk_*` таблиці: hidden_accounts, hidden_transactions, budgets, subscriptions, assets, debts, receivables, custom_categories, manual_expenses, tx_categories, tx_splits, mono_debt_links, networth_history, prefs). Reads ще беруться з MMKV. Stage 4 PR #036 storage-roadmap. Best-effort: помилка SQLite-запису не ламає MMKV. Default: off.",
+    defaultValue: false,
+  },
 ] as const;
 
 const DEFAULTS: FlagValues = Object.freeze(

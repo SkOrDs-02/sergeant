@@ -28,6 +28,14 @@ import type { MonoAccount, Transaction } from "@sergeant/finyk-domain/domain";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
+import { isFinykDualWriteRegistered, triggerFinykDualWrite } from "./dualWrite";
+import {
+  blobsFromArray,
+  idsFromArray,
+  stateWithSlice,
+  txCatsFromMap,
+  txSplitsFromMap,
+} from "./dualWrite/extract";
 import { enqueueChange } from "@/sync/enqueue";
 
 import type { ManualExpensePayload } from "../components/ManualExpenseSheet";
@@ -281,9 +289,16 @@ export function useFinykTransactionsStore(
   }, []);
 
   const writeManual = useCallback((next: ManualExpenseRecord[]) => {
+    const prev = read<ManualExpenseRecord[]>(KEY_MANUAL, []);
     setManualState(next);
     safeWriteLS(KEY_MANUAL, next);
     enqueueChange(KEY_MANUAL);
+    if (isFinykDualWriteRegistered()) {
+      triggerFinykDualWrite(
+        stateWithSlice("manualExpenses", blobsFromArray(prev)),
+        stateWithSlice("manualExpenses", blobsFromArray(next)),
+      );
+    }
   }, []);
 
   const addManualExpense = useCallback(
@@ -339,6 +354,12 @@ export function useFinykTransactionsStore(
     setHiddenState(next);
     safeWriteLS(KEY_HIDDEN_TXS, next);
     enqueueChange(KEY_HIDDEN_TXS);
+    if (isFinykDualWriteRegistered()) {
+      triggerFinykDualWrite(
+        stateWithSlice("hiddenTransactions", idsFromArray(current)),
+        stateWithSlice("hiddenTransactions", idsFromArray(next)),
+      );
+    }
   }, []);
 
   const unhideTx = useCallback((id: string) => {
@@ -348,6 +369,12 @@ export function useFinykTransactionsStore(
     setHiddenState(next);
     safeWriteLS(KEY_HIDDEN_TXS, next);
     enqueueChange(KEY_HIDDEN_TXS);
+    if (isFinykDualWriteRegistered()) {
+      triggerFinykDualWrite(
+        stateWithSlice("hiddenTransactions", idsFromArray(current)),
+        stateWithSlice("hiddenTransactions", idsFromArray(next)),
+      );
+    }
   }, []);
 
   const overrideCategory = useCallback(
@@ -362,6 +389,12 @@ export function useFinykTransactionsStore(
       setTxCatsState(next);
       safeWriteLS(KEY_TX_CATS, next);
       enqueueChange(KEY_TX_CATS);
+      if (isFinykDualWriteRegistered()) {
+        triggerFinykDualWrite(
+          stateWithSlice("txCategories", txCatsFromMap(current)),
+          stateWithSlice("txCategories", txCatsFromMap(next)),
+        );
+      }
     },
     [],
   );
@@ -377,6 +410,12 @@ export function useFinykTransactionsStore(
     setTxSplitsState(next);
     safeWriteLS(KEY_TX_SPLITS, next);
     enqueueChange(KEY_TX_SPLITS);
+    if (isFinykDualWriteRegistered()) {
+      triggerFinykDualWrite(
+        stateWithSlice("txSplits", txSplitsFromMap(current)),
+        stateWithSlice("txSplits", txSplitsFromMap(next)),
+      );
+    }
   }, []);
 
   const refresh = useCallback(() => {

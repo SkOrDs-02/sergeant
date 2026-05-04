@@ -27,6 +27,12 @@ import type {
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
 import { enqueueChange } from "@/sync/enqueue";
+import { isFinykDualWriteRegistered, triggerFinykDualWrite } from "./dualWrite";
+import {
+  blobsFromArray,
+  idsFromArray,
+  stateWithSlice,
+} from "./dualWrite/extract";
 
 const KEY_ASSETS = FINYK_BACKUP_STORAGE_KEYS.manualAssets;
 const KEY_DEBTS = FINYK_BACKUP_STORAGE_KEYS.manualDebts;
@@ -124,26 +130,66 @@ export function useFinykAssetsStore(
     return () => sub.remove();
   }, []);
 
-  const setManualAssets = useCallback((next: ManualAsset[]) => {
-    setAssetsState(next);
-    safeWriteLS(KEY_ASSETS, next);
-    enqueueChange(KEY_ASSETS);
-  }, []);
-  const setManualDebts = useCallback((next: AssetsDebt[]) => {
-    setDebtsState(next);
-    safeWriteLS(KEY_DEBTS, next);
-    enqueueChange(KEY_DEBTS);
-  }, []);
-  const setReceivables = useCallback((next: AssetsReceivable[]) => {
-    setRecvState(next);
-    safeWriteLS(KEY_RECV, next);
-    enqueueChange(KEY_RECV);
-  }, []);
-  const setHiddenAccounts = useCallback((next: string[]) => {
-    setHiddenState(next);
-    safeWriteLS(KEY_HIDDEN, next);
-    enqueueChange(KEY_HIDDEN);
-  }, []);
+  const setManualAssets = useCallback(
+    (next: ManualAsset[]) => {
+      const prev = manualAssets;
+      setAssetsState(next);
+      safeWriteLS(KEY_ASSETS, next);
+      enqueueChange(KEY_ASSETS);
+      if (isFinykDualWriteRegistered()) {
+        triggerFinykDualWrite(
+          stateWithSlice("assets", blobsFromArray(prev)),
+          stateWithSlice("assets", blobsFromArray(next)),
+        );
+      }
+    },
+    [manualAssets],
+  );
+  const setManualDebts = useCallback(
+    (next: AssetsDebt[]) => {
+      const prev = manualDebts;
+      setDebtsState(next);
+      safeWriteLS(KEY_DEBTS, next);
+      enqueueChange(KEY_DEBTS);
+      if (isFinykDualWriteRegistered()) {
+        triggerFinykDualWrite(
+          stateWithSlice("debts", blobsFromArray(prev)),
+          stateWithSlice("debts", blobsFromArray(next)),
+        );
+      }
+    },
+    [manualDebts],
+  );
+  const setReceivables = useCallback(
+    (next: AssetsReceivable[]) => {
+      const prev = receivables;
+      setRecvState(next);
+      safeWriteLS(KEY_RECV, next);
+      enqueueChange(KEY_RECV);
+      if (isFinykDualWriteRegistered()) {
+        triggerFinykDualWrite(
+          stateWithSlice("receivables", blobsFromArray(prev)),
+          stateWithSlice("receivables", blobsFromArray(next)),
+        );
+      }
+    },
+    [receivables],
+  );
+  const setHiddenAccounts = useCallback(
+    (next: string[]) => {
+      const prev = hiddenAccounts;
+      setHiddenState(next);
+      safeWriteLS(KEY_HIDDEN, next);
+      enqueueChange(KEY_HIDDEN);
+      if (isFinykDualWriteRegistered()) {
+        triggerFinykDualWrite(
+          stateWithSlice("hiddenAccounts", idsFromArray(prev)),
+          stateWithSlice("hiddenAccounts", idsFromArray(next)),
+        );
+      }
+    },
+    [hiddenAccounts],
+  );
 
   // Mono accounts + transactions are not persisted here — they come
   // from the network layer (to be wired in a follow-up PR). For now we

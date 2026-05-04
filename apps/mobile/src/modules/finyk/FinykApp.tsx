@@ -19,8 +19,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Overview } from "./pages/Overview";
 import type { OverviewNavRoute } from "./pages/Overview";
+import { useFinykDualWriteBoot } from "./hooks/useFinykDualWriteBoot";
 
 export function FinykApp() {
+  // Stage 4 PR #036: install the dual-write context once the user is
+  // known and the flag is on. Without this the `triggerFinykDualWrite`
+  // calls in `assetsStore.ts` and friends early-out at the
+  // `isFinykDualWriteRegistered()` gate, leaving SQLite empty.
+  useFinykDualWriteBoot();
+
   const router = useRouter();
   const handleNavigate = useCallback(
     (route: OverviewNavRoute) => {
