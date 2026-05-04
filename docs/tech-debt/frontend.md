@@ -719,15 +719,15 @@ in-place перед initiation Phase 4:
 13/13 (100 %), enforced. Але «ідеально» — ні. Backlog opt-in-прапорів
 та залишкових `as unknown as`-каст:
 
-| #   | Прапор / патерн                                                                                                                  | Очікуваний impact                                                                                                             | Статус       |
-| --- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| 1   | `noUncheckedIndexedAccess` (`arr[i]` стає `T \| undefined`)                                                                      | **1225 baseline / 280 файлів** (виміряно 2026-05-03, PR § 6a). Flipped у base, 2 пакети мігровано (routine-domain, db-schema) | 🟢 in-flight |
-| 2   | `exactOptionalPropertyTypes` (`?:` не дозволяє явний `\| undefined`)                                                             | ~50–150 помилок (зокрема `MonoAccount.balance?: number` після Phase 5b повинен залишитись валідним)                           | ⏳ pending   |
-| 3   | `noImplicitReturns` + `noFallthroughCasesInSwitch`                                                                               | ~10–30 помилок, переважно у chat-actions handler-ах                                                                           | ⏳ pending   |
-| 4   | `noPropertyAccessFromIndexSignature` (`.foo` на index-signature → `["foo"]`)                                                     | ~50 помилок, переважно у `Record<string, X>`-сервісах                                                                         | ⏳ pending   |
-| 5   | `noUnusedLocals` / `noUnusedParameters` (зараз ESLint-enforced, не TS-enforced)                                                  | низький — ESLint вже ловить, перенести у TS дає uniformity                                                                    | ⏳ pending   |
-| 6   | `as unknown as X` у тестах (~50 файлів — mock-каст `vi.fn()`, fake `PointerEvent`, тощо)                                         | mid — нормально для test-коду, але формально strict-violation. Потенційно — типізовані mock-helper-и + `vitest-mock-extended` | ⏳ pending   |
-| 7   | `: any` у тест-only allowlisted файлах (e.g. `apps/web/src/core/lib/lazyImport.ts:33-39 type AnyComponent = ComponentType<any>`) | low — навмисно з коментарем, але формально lint-vio                                                                           | ⏳ pending   |
+| #   | Прапор / патерн                                                                                                                  | Очікуваний impact                                                                                                                                                  | Статус       |
+| --- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| 1   | `noUncheckedIndexedAccess` (`arr[i]` стає `T \| undefined`)                                                                      | **1225 baseline / 280 файлів** (виміряно 2026-05-03, PR § 6a). Flipped у base, 5 пакетів мігровано (routine-domain, db-schema, shared, nutrition-domain, insights) | 🟢 in-flight |
+| 2   | `exactOptionalPropertyTypes` (`?:` не дозволяє явний `\| undefined`)                                                             | ~50–150 помилок (зокрема `MonoAccount.balance?: number` після Phase 5b повинен залишитись валідним)                                                                | ⏳ pending   |
+| 3   | `noImplicitReturns` + `noFallthroughCasesInSwitch`                                                                               | ~10–30 помилок, переважно у chat-actions handler-ах                                                                                                                | ⏳ pending   |
+| 4   | `noPropertyAccessFromIndexSignature` (`.foo` на index-signature → `["foo"]`)                                                     | ~50 помилок, переважно у `Record<string, X>`-сервісах                                                                                                              | ⏳ pending   |
+| 5   | `noUnusedLocals` / `noUnusedParameters` (зараз ESLint-enforced, не TS-enforced)                                                  | низький — ESLint вже ловить, перенести у TS дає uniformity                                                                                                         | ⏳ pending   |
+| 6   | `as unknown as X` у тестах (~50 файлів — mock-каст `vi.fn()`, fake `PointerEvent`, тощо)                                         | mid — нормально для test-коду, але формально strict-violation. Потенційно — типізовані mock-helper-и + `vitest-mock-extended`                                      | ⏳ pending   |
+| 7   | `: any` у тест-only allowlisted файлах (e.g. `apps/web/src/core/lib/lazyImport.ts:33-39 type AnyComponent = ComponentType<any>`) | low — навмисно з коментарем, але формально lint-vio                                                                                                                | ⏳ pending   |
 
 **Phase 6a baseline-experiment (PR 2026-05-03):**
 
@@ -744,7 +744,7 @@ Baseline (виміряно через `npx tsc -p tsconfig.json --noEmit` per-wo
 | `apps/server`               |      335 |      57 | `false`  |
 | `packages/finyk-domain`     |       73 |      18 | `false`  |
 | `packages/api-client`       |       45 |       9 | `false`  |
-| `packages/insights`         |       34 |       7 | `false`  |
+| `packages/insights`         |     ✅ 0 |       — | `true`   |
 | `packages/fizruk-domain`    |       31 |      12 | `false`  |
 | `packages/nutrition-domain` |       31 |       9 | `false`  |
 | `packages/shared`           |       26 |       7 | `false`  |
@@ -759,6 +759,12 @@ Baseline (виміряно через `npx tsc -p tsconfig.json --noEmit` per-wo
 `maxStreakAllTime` під null-check loop, `Object.entries()` замість
 `Object.keys()` для notes-prefix-filter, explicit array swap з
 undefined-guard. Без `!` non-null assertions.
+
+**Follow-up міграції (round 7):**
+
+- `packages/shared` — `noUncheckedIndexedAccess: true` (PR [#1635](https://github.com/Skords-01/Sergeant/pull/1635)).
+- `packages/nutrition-domain` — `true` (PR [#1681](https://github.com/Skords-01/Sergeant/pull/1681)), 10 errors / 4 файли закрито через `!` після `findIndex >= 0` guard.
+- `packages/insights` — `true` (Item 15 round-7 follow-up), 13 errors / 2 тестових файли закрито через `recs[0]?.x` після `expect(recs).toHaveLength(1)`.
 
 [`tools/tsconfig-guard`](../../tools/tsconfig-guard/check.mjs) розширено:
 `noUncheckedIndexedAccess` додано у `GUARDED_OPTIONS`. Allowlist

@@ -112,9 +112,9 @@ describe("frequentNoBudgetRule", () => {
     });
     const recs = frequentNoBudgetRule.evaluate(ctx);
     expect(recs).toHaveLength(1);
-    expect(recs[0].id).toBe("finyk_frequent_no_budget_food");
-    expect(recs[0].title).toContain("Продукти");
-    expect(recs[0].body).toContain("1");
+    expect(recs[0]?.id).toBe("finyk_frequent_no_budget_food");
+    expect(recs[0]?.title).toContain("Продукти");
+    expect(recs[0]?.body).toContain("1");
   });
 
   it("пропускає категорії, для яких уже є ліміт", () => {
@@ -138,7 +138,7 @@ describe("frequentNoBudgetRule", () => {
       customCategories: [{ id: "myId", label: "Собача їжа" }],
     });
     const rec = frequentNoBudgetRule.evaluate(ctx)[0];
-    expect(rec.title).toContain("Собача їжа");
+    expect(rec?.title).toContain("Собача їжа");
   });
 });
 
@@ -157,7 +157,7 @@ describe("goalProgressRule", () => {
     });
     const recs = goalProgressRule.evaluate(ctx);
     expect(recs[0]?.id).toBe("goal_almost_g1");
-    expect(recs[0].body).toContain("150");
+    expect(recs[0]?.body).toContain("150");
   });
 
   it("ігнорує вже досягнуті цілі", () => {
@@ -202,9 +202,9 @@ describe("noTxRecentRule", () => {
     });
     const recs = noTxRecentRule.evaluate(ctx);
     expect(recs).toHaveLength(1);
-    expect(recs[0].id).toBe("finyk_no_tx_recent");
-    expect(recs[0].pwaAction).toBe("add_expense");
-    expect(recs[0].title).toMatch(/5 днів/);
+    expect(recs[0]?.id).toBe("finyk_no_tx_recent");
+    expect(recs[0]?.pwaAction).toBe("add_expense");
+    expect(recs[0]?.title).toMatch(/5 днів/);
   });
 
   it("плюралізація: 3 дні (few), а не «3 днів»", () => {
@@ -219,7 +219,7 @@ describe("noTxRecentRule", () => {
       ],
     });
     const recs = noTxRecentRule.evaluate(ctx);
-    expect(recs[0].title).toMatch(/^3 дні /);
+    expect(recs[0]?.title).toMatch(/^3 дні /);
   });
 
   it("не тригериться, якщо активність була сьогодні", () => {
@@ -303,9 +303,9 @@ describe("dailyVsWeeklyPaceRule", () => {
     });
     const recs = dailyVsWeeklyPaceRule.evaluate(ctx);
     expect(recs).toHaveLength(1);
-    expect(recs[0].id).toBe("finyk_daily_vs_weekly_pace");
-    expect(recs[0].pwaAction).toBe("add_expense");
-    expect(recs[0].title).toMatch(/500.*₴/);
+    expect(recs[0]?.id).toBe("finyk_daily_vs_weekly_pace");
+    expect(recs[0]?.pwaAction).toBe("add_expense");
+    expect(recs[0]?.title).toMatch(/500.*₴/);
   });
 
   it("мовчить до 14:00", () => {

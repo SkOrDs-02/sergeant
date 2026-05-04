@@ -47,7 +47,7 @@ describe("runRules", () => {
     ];
     const result = runRules(rules, null);
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe("ok");
+    expect(result[0]?.id).toBe("ok");
   });
 
   it("isolates a throwing rule — other rules still run", () => {
