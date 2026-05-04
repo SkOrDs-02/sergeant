@@ -1,6 +1,6 @@
 # Playbook: Test Backup Restore
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** scheduled recovery rehearsal, backup confidence check, or evidence that snapshots exist but have not been validated recently.
@@ -23,8 +23,8 @@
 
 ### 2. Run the rehearsal
 
-- Restore into a safe environment.
-- Validate connectivity, migration state, and one or two key domain records.
+- Restore into a safe environment using the concrete commands in [`docs/runbooks/database-backup-restore.md`](../runbooks/database-backup-restore.md) §2.
+- Validate connectivity, migration state (§4.1), critical-table row counts (§4.2), and one or two key domain records.
 - Measure elapsed time against RTO expectations.
 
 ### 3. Capture evidence

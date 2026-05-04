@@ -1,6 +1,6 @@
 # Playbook: Restore from Backup
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** critical data must be recovered after corruption, destructive migration, provider incident, or unrecoverable runtime state loss.
@@ -52,6 +52,7 @@
 
 ## Related playbooks and skills
 
+- Concrete commands: [`docs/runbooks/database-backup-restore.md`](../runbooks/database-backup-restore.md) — Railway `pg_dump` / `pg_restore`, smoke-test SQL, migration-skew handling.
 - [test-backup-restore.md](./test-backup-restore.md)
 - [hotfix-prod-regression.md](./hotfix-prod-regression.md)
 - [declare-incident.md](./declare-incident.md)

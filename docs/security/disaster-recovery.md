@@ -1,6 +1,6 @@
 # Disaster Recovery
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 Disaster recovery defines how Sergeant recovers from catastrophic runtime or data loss events. This document keeps the expectations lightweight but explicit for a Founder+1 operating model.
@@ -41,3 +41,8 @@ Disaster recovery defines how Sergeant recovers from catastrophic runtime or dat
 - [restore-from-backup.md](../playbooks/restore-from-backup.md)
 - [test-backup-restore.md](../playbooks/test-backup-restore.md)
 - [hotfix-prod-regression.md](../playbooks/hotfix-prod-regression.md)
+
+## Operational runbooks
+
+- [database-backup-restore.md](../runbooks/database-backup-restore.md) — Railway-specific `pg_dump`/`pg_restore` commands, smoke-test SQL, migration-skew handling (PR #049 docs portion).
+- [encryption-key-rotation.md](../runbooks/encryption-key-rotation.md) — Better Auth + Mono token-encryption rotation.
