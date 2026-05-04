@@ -154,7 +154,10 @@ export function countProductionEntries(blockText) {
  */
 export function parseBudgetFile(text) {
   const json = JSON.parse(text);
-  if (typeof json.production !== "number" || !Number.isFinite(json.production)) {
+  if (
+    typeof json.production !== "number" ||
+    !Number.isFinite(json.production)
+  ) {
     throw new Error("budget.production must be a finite number");
   }
   if (json.production < 0) {
@@ -215,7 +218,7 @@ export function run({ envBudget } = {}) {
         budget: null,
         reason:
           `Budget file missing: ${BUDGET_PATH}. ` +
-          "Create it with `{ \"production\": <count>, \"rationale\": \"...\" }`.",
+          'Create it with `{ "production": <count>, "rationale": "…" }`.',
       };
     }
     try {
