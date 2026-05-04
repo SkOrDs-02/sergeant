@@ -220,8 +220,10 @@ const envSchema = z.object({
   POSTHOG_HOST: z.string().optional(),
 
   // ── Security ───────────────────────────────────────────────────────
-  /** `"1"` — вимкнути Content-Security-Policy (Replit dev). */
-  CSP_DISABLE: z.string().optional(),
+  // M1 (2026-05-04) — CSP_DISABLE видалено. Якщо потрібно швидко вимкнути
+  // CSP — використовуй CSP_REPORT_ONLY=1 (header переходить у Report-Only,
+  // не блокуючи браузер). Постійне вимкнення робиться лише через explicit
+  // PR (revert apiHelmetMiddleware).
   /** `"1"` — CSP у report-only mode. */
   CSP_REPORT_ONLY: z.string().optional(),
   // ── Monobank webhook ─────────────────────────────────────────────────

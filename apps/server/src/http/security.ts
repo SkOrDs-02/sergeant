@@ -44,8 +44,16 @@ export function buildApiCspDirectives(): ApiCspDirectives {
  *   інлайн-скрипт реєстрації SW, плюс `blob:` worker). Для розгортань, де
  *   потрібна CSP на SPA, політика задається на CDN-рівні (Vercel headers).
  * - `servesFrontend: false` (дефолт) — API-only (Railway). CSP буде строгою
- *   (див. buildApiCspDirectives). `CSP_REPORT_ONLY=1` переводить у
- *   report-only, `CSP_DISABLE=1` — повне вимкнення без re-deploy.
+ *   (див. buildApiCspDirectives). `CSP_REPORT_ONLY=1` переводить її у
+ *   report-only-режим — корисно під час phased-rollout, бо ловить порушення
+ *   у браузерах через `report-uri`/`report-to`, не блокуючи запит.
+ *
+ * **Видалено** (M1 — `docs/security/hardening/M1-csp-disable-runtime-flag.md`,
+ * 2026-05-04): `CSP_DISABLE=1`-kill-switch. Він давав можливість одним
+ * env-var вимкнути CSP у проді без code-review/PR — це suprises CCP-controls
+ * посилення. Якщо CSP колись треба буде швидко вимкнути — це робиться
+ * через `CSP_REPORT_ONLY=1` або через явний revert PR-а; обидва шляхи
+ * залишають аудит-слід.
  *
  * `crossOriginResourcePolicy: 'cross-origin'` — щоб fetch з іншого домену
  * (Vercel → Railway) не ламався.
@@ -53,25 +61,10 @@ export function buildApiCspDirectives(): ApiCspDirectives {
 export function apiHelmetMiddleware({
   servesFrontend = false,
 }: ApiHelmetOptions = {}): RequestHandler {
-  const cspEnvDisabled = process.env.CSP_DISABLE === "1";
-  const cspDisabled = cspEnvDisabled || servesFrontend;
+  const cspDisabled = servesFrontend;
   const reportOnly = process.env.CSP_REPORT_ONLY === "1";
 
-  // Без явного лога CSP_DISABLE=1 став би тихою деградацією — ревʼю
-  // security-headers легко пропускає факт, що CSP взагалі не застосована.
-  // Логуємо один раз на boot з рівнем warn у проді і info у дев-режимі.
-  if (cspEnvDisabled) {
-    const isProd = process.env.NODE_ENV === "production";
-    // pino-методи читають `this` внутрішньо (this[writeSym], this[msgPrefixSym]),
-    // тож витягання у змінну без .bind() крашне процес у strict-mode ESM.
-    const payload = {
-      msg: "csp_disabled",
-      reason: "CSP_DISABLE=1",
-      env: process.env.NODE_ENV || "unknown",
-    };
-    if (isProd) logger.warn(payload);
-    else logger.info(payload);
-  } else if (reportOnly) {
+  if (reportOnly) {
     logger.info({ msg: "csp_report_only" });
   }
 

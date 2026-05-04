@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, beforeEach, describe, it, expect } from "vitest";
 import { buildApiCspDirectives, apiHelmetMiddleware } from "./security.js";
 
 describe("buildApiCspDirectives", () => {
@@ -61,5 +61,55 @@ describe("apiHelmetMiddleware", () => {
   it("servesFrontend=true → CSP вимкнена (не ламає SPA на Replit)", () => {
     const csp = captureCsp(apiHelmetMiddleware({ servesFrontend: true }));
     expect(csp).toBeUndefined();
+  });
+
+  // M1 — `docs/security/hardening/M1-csp-disable-runtime-flag.md`
+  // CSP_DISABLE=1 більше не існує. Хто б його не виставив у env, CSP
+  // мусить лишатись активною. Це регресія-захист — щоб ніхто випадково
+  // не повернув kill-switch без code-review.
+  describe("M1 — CSP_DISABLE runtime flag removal", () => {
+    let originalDisable: string | undefined;
+    let originalReportOnly: string | undefined;
+
+    beforeEach(() => {
+      originalDisable = process.env.CSP_DISABLE;
+      originalReportOnly = process.env.CSP_REPORT_ONLY;
+      delete process.env.CSP_DISABLE;
+      delete process.env.CSP_REPORT_ONLY;
+    });
+    afterEach(() => {
+      if (originalDisable === undefined) delete process.env.CSP_DISABLE;
+      else process.env.CSP_DISABLE = originalDisable;
+      if (originalReportOnly === undefined) delete process.env.CSP_REPORT_ONLY;
+      else process.env.CSP_REPORT_ONLY = originalReportOnly;
+    });
+
+    it("CSP_DISABLE=1 НЕ вимикає CSP (kill-switch видалено)", () => {
+      process.env.CSP_DISABLE = "1";
+      const csp = captureCsp(apiHelmetMiddleware());
+      expect(csp).toBeTruthy();
+      expect(String(csp!.value)).toContain("default-src 'none'");
+    });
+
+    it("CSP_DISABLE=true (legacy truthy) НЕ вимикає CSP", () => {
+      process.env.CSP_DISABLE = "true";
+      const csp = captureCsp(apiHelmetMiddleware());
+      expect(csp).toBeTruthy();
+    });
+
+    it("CSP_REPORT_ONLY=1 → переводить у Report-Only header", () => {
+      process.env.CSP_REPORT_ONLY = "1";
+      const csp = captureCsp(apiHelmetMiddleware());
+      expect(csp).toBeTruthy();
+      expect(csp!.name).toBe("Content-Security-Policy-Report-Only");
+    });
+
+    it("CSP_DISABLE=1 + CSP_REPORT_ONLY=1 → CSP активна у Report-Only (kill-switch ігнорується)", () => {
+      process.env.CSP_DISABLE = "1";
+      process.env.CSP_REPORT_ONLY = "1";
+      const csp = captureCsp(apiHelmetMiddleware());
+      expect(csp).toBeTruthy();
+      expect(csp!.name).toBe("Content-Security-Policy-Report-Only");
+    });
   });
 });
