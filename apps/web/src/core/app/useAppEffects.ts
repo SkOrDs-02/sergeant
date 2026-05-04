@@ -79,6 +79,7 @@ export function useAppEffects(deps: AppEffectsDeps): void {
       return () =>
         navigator.serviceWorker.removeEventListener("message", onMessage);
     }
+    return undefined;
   }, [openModule]);
 
   // Bridge module-level pull-to-refresh gestures to the App-level

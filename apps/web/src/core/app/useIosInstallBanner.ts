@@ -7,7 +7,7 @@ export function useIosInstallBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (safeReadStringLS(IOS_BANNER_DISMISSED_KEY) === "1") return;
+    if (safeReadStringLS(IOS_BANNER_DISMISSED_KEY) === "1") return undefined;
 
     const isIOS =
       /iPad|iPhone|iPod/.test(navigator.userAgent) ||
@@ -20,6 +20,7 @@ export function useIosInstallBanner() {
       const timer = setTimeout(() => setVisible(true), 3000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, []);
 
   const dismiss = useCallback(() => {

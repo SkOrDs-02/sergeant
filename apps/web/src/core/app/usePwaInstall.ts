@@ -32,8 +32,8 @@ export function usePwaInstall() {
   }, []);
 
   useEffect(() => {
-    if (!prompt) return;
-    if (safeReadStringLS(PWA_DISMISSED_KEY) === "1") return;
+    if (!prompt) return undefined;
+    if (safeReadStringLS(PWA_DISMISSED_KEY) === "1") return undefined;
 
     const sessions = parseInt(safeReadStringLS(PWA_SESSIONS_KEY) || "1", 10);
 
@@ -41,6 +41,7 @@ export function usePwaInstall() {
       const timer = setTimeout(() => setReady(true), INSTALL_DELAY_MS);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [prompt]);
 
   const install = useCallback(async () => {

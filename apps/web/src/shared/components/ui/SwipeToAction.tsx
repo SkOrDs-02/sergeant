@@ -56,7 +56,7 @@ function SwipeToActionImpl({
 
   // Show hint for first-time users
   useEffect(() => {
-    if (!showHint || disabled) return;
+    if (!showHint || disabled) return undefined;
     const shown = safeReadLS(SWIPE_HINT_STORAGE_KEY);
     if (!shown) {
       // Show hint after a short delay
@@ -67,6 +67,7 @@ function SwipeToActionImpl({
       }, 2000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [showHint, disabled]);
 
   // Mark hint as shown after first successful swipe

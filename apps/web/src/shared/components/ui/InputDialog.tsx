@@ -50,6 +50,7 @@ export function InputDialog({
       const timer = setTimeout(() => inputRef.current?.focus(), 60);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [open, defaultValue]);
 
   useEffect(() => {
