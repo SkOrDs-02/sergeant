@@ -14,6 +14,7 @@ import type { User } from "@sergeant/shared";
 import { signIn, signUp, signOut, forgetPassword } from "./authClient";
 import { identifyPostHogUser, resetPostHog } from "../observability/posthog";
 import { buildIdentifyTraits } from "../observability/identifyTraits";
+import { messages } from "../../shared/i18n/uk";
 
 /**
  * AuthContext — єдине джерело правди «хто я» для веб-додатку.
@@ -65,35 +66,33 @@ export function translateAuthError(
   // Status / serverний код мають пріоритет над англійським `message` —
   // 429 від нашого rate-limiter-а й 5xx від errorHandler-а не несуть
   // Better Auth-ового коду, тільки `code: "RATE_LIMIT" | "INTERNAL"`.
-  if (status === 429 || code === "RATE_LIMIT")
-    return "Забагато спроб. Зачекай хвилину і спробуй ще раз.";
-  if (status >= 500 || code === "INTERNAL")
-    return "Сервер тимчасово недоступний. Спробуй пізніше.";
+  if (status === 429 || code === "RATE_LIMIT") return messages.auth.rateLimited;
+  if (status >= 500 || code === "INTERNAL") return messages.auth.serverDown;
 
   // Better Auth canonical error-codes — стабільніше за parsing message.
   switch (code) {
     case "INVALID_EMAIL_OR_PASSWORD":
     case "USER_NOT_FOUND":
     case "CREDENTIAL_ACCOUNT_NOT_FOUND":
-      return "Невірний email або пароль.";
+      return messages.auth.invalidEmailOrPassword;
     case "USER_ALREADY_EXISTS":
     case "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL":
-      return "Цей email вже зареєстровано. Спробуй увійти.";
+      return messages.auth.userAlreadyExists;
     case "INVALID_EMAIL":
-      return "Невірний формат email.";
+      return messages.auth.invalidEmail;
     case "INVALID_PASSWORD":
-      return "Невірний пароль.";
+      return messages.auth.invalidPassword;
     case "PASSWORD_TOO_SHORT":
-      return "Пароль занадто короткий.";
+      return messages.auth.passwordTooShort;
     case "PASSWORD_TOO_LONG":
-      return "Пароль занадто довгий.";
+      return messages.auth.passwordTooLong;
     case "EMAIL_NOT_VERIFIED":
-      return "Email ще не підтверджено. Перевір пошту.";
+      return messages.auth.emailNotVerified;
     case "PROVIDER_NOT_FOUND":
-      return "Цей провайдер входу не налаштовано.";
+      return messages.auth.providerNotFound;
     case "FAILED_TO_CREATE_SESSION":
     case "FAILED_TO_CREATE_USER":
-      return "Не вдалося завершити вхід. Спробуй ще раз.";
+      return messages.auth.sessionFailure;
   }
 
   return translateByMessage(message, fallback);
@@ -107,13 +106,14 @@ function translateByMessage(message: string, fallback: string): string {
   // email.». Тримаємо composite-патерн вище і використовуємо межу слова
   // у вузькій гілці.
   if (/user already exists/i.test(message))
-    return "Цей email вже зареєстровано. Спробуй увійти.";
+    return messages.auth.userAlreadyExists;
   if (/invalid email or password/i.test(message))
-    return "Невірний email або пароль.";
-  if (/password too short/i.test(message)) return "Пароль занадто короткий.";
-  if (/password too long/i.test(message)) return "Пароль занадто довгий.";
-  if (/^invalid email\b/i.test(message)) return "Невірний формат email.";
-  if (/invalid password/i.test(message)) return "Невірний пароль.";
+    return messages.auth.invalidEmailOrPassword;
+  if (/password too short/i.test(message))
+    return messages.auth.passwordTooShort;
+  if (/password too long/i.test(message)) return messages.auth.passwordTooLong;
+  if (/^invalid email\b/i.test(message)) return messages.auth.invalidEmail;
+  if (/invalid password/i.test(message)) return messages.auth.invalidPassword;
   return message || fallback;
 }
 
