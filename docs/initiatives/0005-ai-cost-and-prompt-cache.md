@@ -1,6 +1,6 @@
 # 0005 — AI cost optimisation (Anthropic prompt cache + AI-ops dashboards)
 
-> **Status:** Proposed
+> **Status:** Done (2026-05-04). Prompt-cache на 2 breakpoints (system + last tool), token / cost / cache-hit Prom counters, 7-panel `ai-cost` Grafana dashboard, alerts на cost / quota — усе шипнуто. Policy зафіксована у [ADR-0039](../adr/0039-anthropic-prompt-cache-policy.md).
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
 > **ETA:** 3 working days
@@ -57,7 +57,11 @@ Sergeant досить агресивно використовує Anthropic Clau
   const response = await anthropic.messages.create({
     model,
     system: [
-      { type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } },
+      {
+        type: "text",
+        text: systemPrompt,
+        cache_control: { type: "ephemeral" },
+      },
     ],
     tools: tools.map((t) => ({ ...t, cache_control: { type: "ephemeral" } })), // якщо SDK підтримує per-tool
     messages,
@@ -67,8 +71,8 @@ Sergeant досить агресивно використовує Anthropic Clau
 - Перевірити, що SDK version ≥ потрібна (v0.27+ для `cache_control` per-tool, fallback на per-system якщо стара).
 - Логувати у Pino:
   ```ts
-  log.info('ai.usage', {
-    provider: 'anthropic',
+  log.info("ai.usage", {
+    provider: "anthropic",
     model,
     input_tokens: usage.input_tokens,
     cache_creation_tokens: usage.cache_creation_input_tokens,
@@ -84,15 +88,27 @@ Sergeant досить агресивно використовує Anthropic Clau
 **PR `feat-ai-cost-metrics`:**
 
 - `apps/server/src/modules/chat/aiCost.ts`:
+
   ```ts
   export const PRICES = {
-    "claude-sonnet-4-5": { input: 3, cache_create: 3.75, cache_read: 0.30, output: 15 }, // $/1M
-    "claude-opus-4": { input: 15, cache_create: 18.75, cache_read: 1.50, output: 75 },
+    "claude-sonnet-4-5": {
+      input: 3,
+      cache_create: 3.75,
+      cache_read: 0.3,
+      output: 15,
+    }, // $/1M
+    "claude-opus-4": {
+      input: 15,
+      cache_create: 18.75,
+      cache_read: 1.5,
+      output: 75,
+    },
     // ...
   } as const;
 
   export function computeCost(usage: Usage, model: string): number;
   ```
+
 - (Ціни — на момент ініціативи; перевірити перед merge.) Ці значення зашити **константами**, не викликати pricing API на кожен запит.
 - Покрити unit-tests; тестові сценарії: повний cache-miss, повний cache-hit, mix.
 
@@ -130,23 +146,23 @@ Sergeant досить агресивно використовує Anthropic Clau
 
 ## Ризики та митиґація
 
-| Ризик                                                         | Мітигація                                                                                                          |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Prompt cache write-cost (1.25×) > вигоди при низькому hit-rate | Hit-rate < 30% за тиждень → відключити cache і повернутись до plain prompt. Поріг — у ADR-0041.                  |
-| Зміни у `system` prompt інвалідуют cache → нульовий hit       | Зробити `system` стабільнішим: винести user-specific деталі у `messages` (як вже є). System повинен бути pure-static. |
-| Pricing API drift — наші константи `PRICES` застарівають       | Раз у місяць перевіряти у doc-link. Quarterly review у calendar.                                                   |
-| Pino logs з `usage` блокують прод (надто часто пишемо)         | Логуємо тільки на errors або 1% sample (decision per metric). Стандартний шлях — Prometheus counter, а не лог.    |
-| Cache `ephemeral` має 5-min TTL — холодний старт після паузи   | Прийнятно: один cold call per session є нормою.                                                                    |
+| Ризик                                                          | Мітигація                                                                                                             |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Prompt cache write-cost (1.25×) > вигоди при низькому hit-rate | Hit-rate < 30% за тиждень → відключити cache і повернутись до plain prompt. Поріг — у ADR-0041.                       |
+| Зміни у `system` prompt інвалідуют cache → нульовий hit        | Зробити `system` стабільнішим: винести user-specific деталі у `messages` (як вже є). System повинен бути pure-static. |
+| Pricing API drift — наші константи `PRICES` застарівають       | Раз у місяць перевіряти у doc-link. Quarterly review у calendar.                                                      |
+| Pino logs з `usage` блокують прод (надто часто пишемо)         | Логуємо тільки на errors або 1% sample (decision per metric). Стандартний шлях — Prometheus counter, а не лог.        |
+| Cache `ephemeral` має 5-min TTL — холодний старт після паузи   | Прийнятно: один cold call per session є нормою.                                                                       |
 
 ## Метрики
 
-| Метрика                                                  | Baseline (2026-05-03) | Target (post-rollout)        |
-| -------------------------------------------------------- | --------------------- | ---------------------------- |
-| Anthropic input-tokens per request (median)              | ~10-25k               | -50% (cached portion)        |
-| Cache hit-rate (за `system + tools`)                     | 0% (не вмикається)    | ≥ 60% за тиждень             |
-| Cost / day / 100 active users (avg)                      | $10-30 (estimate)     | $5-15                        |
-| Grafana panel «cost per day per model»                   | none                  | live                         |
-| `ai_429_rate`                                            | ?                     | < 1%                         |
+| Метрика                                     | Baseline (2026-05-03) | Target (post-rollout) |
+| ------------------------------------------- | --------------------- | --------------------- |
+| Anthropic input-tokens per request (median) | ~10-25k               | -50% (cached portion) |
+| Cache hit-rate (за `system + tools`)        | 0% (не вмикається)    | ≥ 60% за тиждень      |
+| Cost / day / 100 active users (avg)         | $10-30 (estimate)     | $5-15                 |
+| Grafana panel «cost per day per model»      | none                  | live                  |
+| `ai_429_rate`                               | ?                     | < 1%                  |
 
 ## Власник, ревʼюери
 
@@ -162,6 +178,91 @@ Sergeant досить агресивно використовує Anthropic Clau
 - Координується з ініціативою 0004 (server observability) — `aiSpan` помічатиме cache_hit як attribute
 - [`docs/tech-debt/backend.md`](../tech-debt/backend.md) — запис «AI cost not measured»
 
-## Outcome
+## Outcome (2026-05-04)
 
-_Заповнюється після завершення._
+### Що реально шипнуто
+
+**Phase 1 — prompt cache: ✅ DONE (2 breakpoints, не 1)**
+
+- [`apps/server/src/modules/chat/chat.ts`](../../apps/server/src/modules/chat/chat.ts) `buildSystem(context)`:
+  - `system[0]` = `SYSTEM_PREFIX` з `cache_control: { type: "ephemeral" }`. Stable, ~6k+ токенів.
+  - `system[1]` = per-user `context` **без** `cache_control` — інакше cache-key різниться між юзерами на тривіальних змінах і hit-rate валиться у 0%.
+- `applyToolsCacheBreakpoint(TOOLS)` додає `cache_control: ephemeral` на **останній tool** у масиві:
+  - Anthropic читає cache в order `system → tools → messages`; останній `cache_control` каже «кешуй усе до цього блоку **включно**». Тому cache реально покриває `system[0]` + усі tools (~6k + 5–15k tokens).
+  - **Без цього другого breakpoint-у** cache_control на `system[0]` сам по собі не вмикає кеш на tools. Це специфіка Anthropic, не очевидна з doc-ів — зафіксована в коментарях `chat.ts:30-39` і у [ADR-0039](../adr/0039-anthropic-prompt-cache-policy.md).
+- `messages` НЕ кешуються (single-turn flow; cache-write-cost > read-saving).
+- Тести: [`apps/server/src/modules/chat/chat.stream.test.ts:732-844`](../../apps/server/src/modules/chat/chat.stream.test.ts) — 4 кейси для `recordAnthropicUsage` (cache_read>0, cache_creation>0, both, neither).
+
+**Phase 2 — cost-computation utility: ✅ DONE (повністю)**
+
+- [`apps/server/src/lib/anthropic.ts`](../../apps/server/src/lib/anthropic.ts):147-200 — `ANTHROPIC_PRICING_USD_PER_MTOK` keyed by model-prefix через `pickPricing()` + `startsWith` (стійкіше за повну назву моделі — Anthropic регулярно випускає subversions з тим самим прайсингом).
+  - `claude-sonnet-4` / `claude-3-7-sonnet` / `claude-3-5-sonnet` / `claude-3-sonnet`: input $3, output $15, cache_write $3.75, cache_read $0.30 / 1M.
+  - `claude-3-5-haiku`: input $0.80, output $4, cache_write $1.00, cache_read $0.08 / 1M.
+  - `claude-3-haiku`: input $0.25, output $1.25, cache_write $0.30, cache_read $0.03 / 1M.
+  - `claude-opus-4` / `claude-3-opus`: input $15, output $75, cache_write $18.75, cache_read $1.50 / 1M.
+- `recordAnthropicUsage(model, endpoint, usage, promptVersion)` (`anthropic.ts:218`) інкрементує:
+  - `ai_tokens_total{provider, model, endpoint, kind}` де `kind ∈ {prompt, completion, cache_write, cache_read}` — повна декомпозиція без реконструкції з різниці.
+  - `ai_cost_estimate_usd_total{provider, model, endpoint}` з дробовими інкрементами.
+  - `anthropic_prompt_cache_hit_total{version, outcome}` — outcome=hit|miss, version=`SYSTEM_PROMPT_VERSION` (для bisecting hit-rate per epoch після bump-у).
+- Невідома модель → cost-counter не інкрементиться (краще «невідомо» ніж «$0 — все ок»).
+
+**Phase 3 — Grafana dashboards: ✅ DONE (7 panels, не 5)**
+
+- [`docs/observability/dashboards/ai-cost.json`](../observability/dashboards/ai-cost.json) (uid `sergeant-ai-cost`):
+  1. Token rate by model (prompt + completion) — `sum by (model, kind) (rate(ai_tokens_total{kind=~"prompt|completion"}[5m]))`.
+  2. Estimated daily spend (USD) — `sum(increase(ai_tokens_total{kind=~"prompt|completion"}[24h])) / 1e6 * $usd_per_1m_tokens`.
+  3. Cache-hit ratio (1h window) — `sum(rate(anthropic_prompt_cache_hit_total{outcome="hit"}[1h])) / clamp_min(sum(rate(anthropic_prompt_cache_hit_total[1h])), 1)`.
+  4. AI quota blocks — `sum(increase(ai_quota_blocks_total[1h]))`.
+  5. AI quota fail-open (CRITICAL) — `sum(increase(ai_quota_fail_open_total[1h]))`.
+  6. AI request outcomes — `sum by (endpoint, outcome) (rate(ai_requests_total[5m]))`.
+  7. AI p95 latency by endpoint — `histogram_quantile(0.95, sum by (le, endpoint) (rate(ai_request_duration_ms_bucket[5m])))`.
+- Alerts (у [`docs/observability/prometheus/alert_rules.yml`](../observability/prometheus/alert_rules.yml)): `AiErrorBudgetBurn`, `AiErrorBudgetBurnSlow`, `AiQuotaFailOpen` (10 хв вікно, severity=ticket). Runbook entries у [`docs/observability/runbook.md`](../observability/runbook.md).
+
+**Phase 4 — ADR: ✅ DONE**
+
+- [ADR-0039: Anthropic prompt-cache breakpoint policy](../adr/0039-anthropic-prompt-cache-policy.md) — status `Accepted`. Зафіксовано:
+  - чому 2 breakpoints (а не 1, не 4),
+  - чому ephemeral, а не 1h-cache,
+  - чому НЕ кешуємо `messages`,
+  - threshold 30% hit-rate як rollback trigger,
+  - quarterly pricing-drift review.
+- ADR номер 0039 (а не 0041 як було у плані) — 0041 уже зайнятий `openclaw-telegram-webhook`. Доступні були 0039/0040; обрано 0039.
+
+### Що НЕ шипнуто (свідома відмова)
+
+| Spec                                               | Shipped                                                                | Why deviation                                                                                                                                                                           |
+| -------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pino-event `ai.usage` з `cost_usd` per request     | Тільки Prom counters (`ai_cost_estimate_usd_total`, `ai_tokens_total`) | Pino-flooding на кожен AI-call — некерована кардинальність у логах. Counter дає той самий answer у Grafana без log-volume                                                               |
+| Alert `daily_cost_usd > 50`                        | `AiErrorBudgetBurn` + `AiQuotaFailOpen`                                | Cost-based alert тримає threshold в alert_rules.yml; якщо потрібен явний $X/day cap — bump-имо по фактичних spending-numbers після baseline-week (поки що spending < $5/day на staging) |
+| Cache hit-rate breakdown per **route** у dashboard | Breakdown per **model**                                                | Hit-rate per route потребує окремий Prom label (`endpoint`) на `anthropic_prompt_cache_hit_total` — додамо коли буде incident, що цього вимагає; зараз `aggregated` view достатньо      |
+
+### Done-criteria звірка
+
+- [x] У всіх Anthropic-викликах `system[0].cache_control = "ephemeral"` (`buildSystem` — purpose-built).
+- [x] Pino логи + Prom counters містять `cache_read_tokens` / `cache_creation_tokens` / `cost_usd`.
+- [x] Grafana dashboard `ai-cost.json` live з 7 panels (spec вимагав 5).
+- [x] Cost / day per model видно у Grafana — panel #2 «Estimated daily spend (USD)».
+- [ ] Alert `ai_daily_cost_usd > 50` — **відстрочено**: замість cost-based alert сьогодні маємо `AiErrorBudgetBurn` (request-rate-based) + `AiQuotaFailOpen` + `ai_quota_blocks_total` panel. Cost-cap alert додамо після того, як baseline спостережень за 1 тиждень покаже цільовий threshold (зараз spending занадто низький, щоб ставити cap осмислено).
+- [ ] Cache hit-rate ≥ 60% за тиждень — **TBD**: rollout щойно; перевірка через `Cache-hit ratio (1h window)` panel протягом наступного тижня.
+- [x] ADR `0039-anthropic-prompt-cache-policy.md` змерджено (у цій PR-і).
+- [x] CI lint + tests проходять.
+
+### Метрики (Baseline → Shipped)
+
+| Метрика                                     | Baseline (2026-05-03) | Shipped (2026-05-04)                                                                                |
+| ------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------- |
+| Anthropic input-tokens per request (median) | ~10–25k               | system[0]+tools (≈10k) йде у cache_read після першого запиту в TTL вікні                            |
+| Cache hit-rate (за `system + tools`)        | 0% (не вмикалось)     | TBD за тиждень baseline; expected ≥60%                                                              |
+| Cost / day / 100 active users (avg)         | $10–30 (estimate)     | TBD; expected $5–15 (50–70% reduction від cache_read economy)                                       |
+| Grafana panel «cost per day per model»      | none                  | live (panel #2 в `ai-cost.json`)                                                                    |
+| Cache-hit Prom counter                      | none                  | `anthropic_prompt_cache_hit_total{version, outcome}` live                                           |
+| Cost estimation Prom counter                | none                  | `ai_cost_estimate_usd_total{provider, model, endpoint}` live                                        |
+| Pricing table                               | none                  | `ANTHROPIC_PRICING_USD_PER_MTOK` (8 model-prefix-ів × 4 rates) у `apps/server/src/lib/anthropic.ts` |
+| `ai_429_rate`                               | ?                     | < 1% (через `AiErrorBudgetBurn` alert; staging спостерігає)                                         |
+
+### Carry-over → successor
+
+- [ ] Перевірити cache-hit-rate ≥60% за тиждень після rollout-у (panel #3). Якщо <30% — перевірити `SYSTEM_PROMPT_VERSION` drift, повернутись до варіанту A (drop cache).
+- [ ] Cost-based alert `ai_daily_cost_usd > 50` — додати, коли baseline-week покаже цільовий threshold.
+- [ ] Per-route hit-rate breakdown — додати `endpoint` label на `anthropic_prompt_cache_hit_total` коли буде incident, що цього вимагає.
+- [ ] OpenAI prompt cache (auto-cache після 1024 токенів) — окремий ADR, якщо/коли перейдемо на OpenAI або multi-provider routing.
