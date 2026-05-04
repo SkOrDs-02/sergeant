@@ -66,6 +66,9 @@ export * from "./lib/moduleChecklist";
 // First-real-entry detection shared between web and mobile.
 export * from "./lib/firstRealEntry";
 
+// Gain-first / fear A/B copy for the post-FTUX SoftAuth prompt.
+export * from "./lib/softAuthCopy";
+
 // Dashboard recommendation types + helpers.
 export * from "./lib/recommendations";
 
