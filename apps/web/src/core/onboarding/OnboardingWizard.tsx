@@ -224,12 +224,15 @@ function WelcomeOneScreen({
   onOpen,
   expanded,
   onToggleExpanded,
+  ctaLabel = "Відкрити Sergeant",
 }: {
   picks: string[];
   togglePick: (id: string) => void;
   onOpen: () => void;
   expanded: boolean;
   onToggleExpanded: () => void;
+  /** Override label for the primary CTA (e.g. tour replay shows "Закрити"). */
+  ctaLabel?: string;
 }) {
   return (
     <div className="flex flex-col items-center text-center space-y-5">
@@ -293,7 +296,7 @@ function WelcomeOneScreen({
         size="lg"
         className="w-full"
       >
-        Відкрити Sergeant
+        {ctaLabel}
         <Icon name="chevron-right" size={16} />
       </Button>
 
@@ -332,36 +335,53 @@ function WelcomeOneScreen({
 export function OnboardingWizard({
   onDone,
   variant = "modal",
+  mode = "real",
 }: {
   onDone: (
     startModuleId: string | null,
     opts?: { intent: string; picks: string[] },
   ) => void;
   variant?: "modal" | "fullPage";
+  /**
+   * "real" (default) — first-run wizard: persists picks, fires the FTUX
+   * funnel events, and marks onboarding done on finish.
+   *
+   * "tour" — read-only replay launched from Settings → "Подивитись tour".
+   * Skips all storage writes and FTUX-funnel events, fires
+   * `onboarding_replay_*` instead, and `finish` simply closes the
+   * wizard without touching the user's onboarding / first-action state.
+   */
+  mode?: "real" | "tour";
 }) {
-  const [picks, setPicks] = useState<string[]>(loadPersistedPicks);
+  const isTour = mode === "tour";
+  const [picks, setPicks] = useState<string[]>(() =>
+    isTour ? [...ALL_MODULES] : loadPersistedPicks(),
+  );
   const [expanded, setExpanded] = useState(false);
 
   // Persist picks on every change. Payload is tiny (≤4 strings) so
   // unconditional writes are cheap and keep the resume-after-refresh
-  // story trivial.
+  // story trivial. Tour mode is throwaway state — never persists.
   useEffect(() => {
+    if (isTour) return;
     persistPicks(picks);
-  }, [picks]);
+  }, [picks, isTour]);
 
-  // The wizard is a single-screen flow (welcome → finish), so the
-  // first paint counts as both `onboarding_started` and the welcome
-  // step's `onboarding_step_viewed`. Capture both in one effect so
-  // the funnel definition in `posthog-ftux-dashboards.md` stays a
-  // strict superset of `started`. `startedAt` is initialised inside
-  // the effect so the render body stays pure (`Date.now()` is impure
-  // per react-hooks/purity).
+  // Real wizard: first paint counts as both `onboarding_started` and the
+  // welcome step's `onboarding_step_viewed` so the funnel definition in
+  // `posthog-ftux-dashboards.md` stays a strict superset of `started`.
+  // Tour replay fires its own events instead so it never inflates the
+  // FTUX funnel.
   const startedAtRef = useRef<number | null>(null);
   useEffect(() => {
     startedAtRef.current = Date.now();
+    if (isTour) {
+      trackEvent(ANALYTICS_EVENTS.ONBOARDING_REPLAY_VIEWED);
+      return;
+    }
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_STARTED);
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_VIEWED, { step: "welcome" });
-  }, []);
+  }, [isTour]);
 
   const togglePick = useCallback((id: string) => {
     setPicks((prev) =>
@@ -374,6 +394,21 @@ export function OnboardingWizard({
   }, []);
 
   const finish = useCallback(() => {
+    if (isTour) {
+      // Tour replay: no side effects on user state. Just emit the
+      // dismissal event with a duration so PostHog can show "how long
+      // does the user spend in replay" without polluting the FTUX
+      // funnel.
+      trackEvent(ANALYTICS_EVENTS.ONBOARDING_REPLAY_DISMISSED, {
+        durationMs: Math.max(
+          0,
+          Date.now() - (startedAtRef.current ?? Date.now()),
+        ),
+      });
+      onDone(null, { intent: "tour_replay", picks: [] });
+      return;
+    }
+
     // Empty selection falls back to all modules: the lazy "tap-through"
     // path leaves every module visible on the hub instead of producing
     // a useless dashboard.
@@ -410,7 +445,7 @@ export function OnboardingWizard({
       intent: hadEmptyPicks ? "vibe_empty" : "vibe_picked",
       picks: chosen,
     });
-  }, [picks, onDone]);
+  }, [picks, onDone, isTour]);
 
   const content = useMemo(
     () => (
@@ -420,9 +455,10 @@ export function OnboardingWizard({
         onOpen={finish}
         expanded={expanded}
         onToggleExpanded={toggleExpanded}
+        ctaLabel={isTour ? "Закрити" : "Відкрити Sergeant"}
       />
     ),
-    [picks, togglePick, finish, expanded, toggleExpanded],
+    [picks, togglePick, finish, expanded, toggleExpanded, isTour],
   );
 
   if (variant === "fullPage") {
