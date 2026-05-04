@@ -779,7 +779,6 @@ export default [
       "apps/web/src/modules/fizruk/pages/Exercise.tsx",
       "apps/web/src/modules/finyk/pages/AssetsTable.tsx",
       "apps/web/src/shared/components/ui/Icon.tsx",
-      "apps/web/src/sw.ts",
       "apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx",
     ],
     rules: {
