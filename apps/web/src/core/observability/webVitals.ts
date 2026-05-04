@@ -70,10 +70,17 @@ function flush() {
 
   // Fallback: keepalive fetch. Обмежений 64 KB по специфікації, але наш батч
   // <1 KB — безпечно.
+  // M10 — `/api/metrics/web-vitals` exempt-нутий від `requireCsrfHeader`
+  // (sendBeacon-форма не дає виставити custom header), але fetch-fallback
+  // з cookie виставляє XRW для defense-in-depth: якщо хтось колись
+  // прибере exempt-path, raw fetch не почне сипати 403.
   try {
     void fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
       body: payload,
       keepalive: true,
       credentials: "omit",

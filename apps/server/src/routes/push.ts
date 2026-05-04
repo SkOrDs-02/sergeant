@@ -7,6 +7,8 @@ import {
   requireSessionSoft,
   setModule,
 } from "../http/index.js";
+import { requireInternalIp } from "../http/requireInternalIp.js";
+import { logger } from "../obs/logger.js";
 import {
   pushTest,
   register as pushRegister,
@@ -61,8 +63,36 @@ export function createPushRouter(): Router {
     requireSession(),
     asyncHandler(pushUnregister),
   );
+  // `/api/push/send` — internal-only fan-out endpoint. Hardening item M14
+  // (`docs/security/hardening/M14-internal-push-ip-allowlist.md`) layers
+  // three independent checks here:
+  //   1. `requireInternalIp(...)` — network-level allowlist. The
+  //      operator-supplied list lives in `PUSH_INTERNAL_ALLOWED_IPS`
+  //      (comma-or-newline-separated CIDRs / IPs). On Railway this is
+  //      typically `100.64.0.0/10` (the proxy-internal CGN range that
+  //      every internal client sees) plus any explicit IPv4/IPv6 of
+  //      n8n-style external workers. Loopback is included implicitly so
+  //      on-host calls (supertest, `curl localhost`) keep working in
+  //      dev/test without operator action. An empty allowlist
+  //      fails-open in non-production and fails-closed (503) in
+  //      production — symmetric to how `requireApiSecret` 503s on a
+  //      missing env var.
+  //   2. `requireApiSecret("API_SECRET")` — application-level shared
+  //      secret with constant-time compare.
+  //   3. Per-target-user rate-limit + audit log inside the `sendPush`
+  //      handler itself.
   r.post(
     "/api/push/send",
+    requireInternalIp({
+      entries: process.env.PUSH_INTERNAL_ALLOWED_IPS ?? "",
+      onReject: ({ ip, path }) => {
+        logger.warn({
+          msg: "push_send_ip_rejected",
+          callerIp: ip,
+          path,
+        });
+      },
+    }),
     requireApiSecret("API_SECRET"),
     asyncHandler(sendPush),
   );

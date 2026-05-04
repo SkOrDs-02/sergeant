@@ -45,6 +45,8 @@ export { setModule } from "./setModule.js";
 export { requireSession, requireSessionSoft } from "./requireSession.js";
 export { requireVerifiedEmail } from "./requireVerifiedEmail.js";
 export { requireApiSecret } from "./requireApiSecret.js";
+export { requireCsrfHeader } from "./requireCsrfHeader.js";
+export type { RequireCsrfHeaderOptions } from "./requireCsrfHeader.js";
 export { safeStringEqual } from "./safeCompare.js";
 export { requireAnthropicKey } from "./requireAnthropicKey.js";
 export { requireGroqKey } from "./requireGroqKey.js";

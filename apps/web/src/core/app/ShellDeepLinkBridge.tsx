@@ -26,6 +26,64 @@ type DeepLinkBridgeWindow = Window & {
   __sergeantShellDeepLinkQueue?: string[];
 };
 
+/**
+ * Top-level path-prefix whitelist для shell-deep-link навігації
+ * (M19 — `docs/security/hardening/M19-mobile-deeplink-sanitize.md`).
+ *
+ * Дзеркалить `ALLOWED_DEEP_LINK_PATH_PREFIXES` у `apps/mobile-shell/src/index.ts`
+ * — навмисно дублюємо тут невеликий блок замість cross-package імпорту, щоб
+ * не вводити нову runtime-залежність web-у на mobile-shell. Якщо колись
+ * додаємо новий top-level маршрут — оновлюй обидва місця разом з
+ * `KNOWN_PATHS` у `appPaths.ts`.
+ */
+const ALLOWED_PATH_PREFIXES: readonly string[] = [
+  "/sign-in",
+  "/welcome",
+  "/reset-password",
+  "/profile",
+  "/design",
+  "/pricing",
+  "/assistant",
+  "/chat",
+  "/help",
+  "/finyk",
+  "/fizruk",
+  "/nutrition",
+  "/routine",
+  "/coach",
+  "/auth",
+  "/oauth",
+];
+
+/**
+ * Defensive recheck (M19) перед `navigate(path)`.
+ *
+ * Парсер `parseDeepLink()` у нативному shell-і вже виконує цю саму
+ * перевірку, але bridge — публічна точка входу: будь-який код, що
+ * викликає `window.__sergeantShellNavigate(...)` напряму (зокрема з
+ * Capacitor-плагіну, який ми не контролюємо), обходить нативний санітайзер.
+ * Тому повторюємо валідацію тут — defense-in-depth.
+ */
+function isSafeNavPath(path: unknown): path is string {
+  if (typeof path !== "string" || path.length === 0) return false;
+  if (!path.startsWith("/") || path.startsWith("//")) return false;
+  // Reject embedded XSS-схеми у будь-якій позиції — ловимо
+  // `?next=javascript:alert(1)` тощо.
+  if (/(?:^|[/?#&=])(?:javascript|data|vbscript):/i.test(path)) return false;
+  if (path === "/") return true;
+  for (const prefix of ALLOWED_PATH_PREFIXES) {
+    if (
+      path === prefix ||
+      path.startsWith(`${prefix}/`) ||
+      path.startsWith(`${prefix}?`) ||
+      path.startsWith(`${prefix}#`)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function ShellDeepLinkBridge(): null {
   const navigate = useNavigate();
 
@@ -35,6 +93,10 @@ export function ShellDeepLinkBridge(): null {
     const w = window as DeepLinkBridgeWindow;
 
     const handler = (path: string): void => {
+      if (!isSafeNavPath(path)) {
+        console.warn("[shell-deep-link] rejected unsafe path", { path });
+        return;
+      }
       navigate(path);
     };
     w.__sergeantShellNavigate = handler;
@@ -47,6 +109,12 @@ export function ShellDeepLinkBridge(): null {
     if (Array.isArray(queue) && queue.length > 0) {
       const pending = queue.splice(0, queue.length);
       for (const path of pending) {
+        if (!isSafeNavPath(path)) {
+          console.warn("[shell-deep-link] flush rejected unsafe path", {
+            path,
+          });
+          continue;
+        }
         try {
           navigate(path);
         } catch (err) {

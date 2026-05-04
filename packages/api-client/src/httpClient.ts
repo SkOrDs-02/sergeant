@@ -264,6 +264,13 @@ export function createHttpClient(config: HttpClientConfig = {}): HttpClient {
     if (opts.body != null && !isBodylessInit(opts.body)) {
       h.set("Content-Type", JSON_MIME);
     }
+    // M10 — CSRF guard. Усі fetch-и через цей клієнт виставляють non-simple
+    // header `X-Requested-With: XMLHttpRequest`, що змушує браузер preflight-
+    // нути cross-origin POST/PUT/PATCH/DELETE; preflight зупиняється на
+    // CORS allowlist сервера, і атакерська сторінка не може приклеїти
+    // session cookie до state-changing запиту з нашого фронту.
+    // Карта: `docs/security/hardening/M10-csrf-token-check.md`.
+    h.set("X-Requested-With", "XMLHttpRequest");
     if (defaultHeaders) {
       for (const [k, v] of Object.entries(defaultHeaders)) {
         if (v !== undefined && v !== null) h.set(k, v);

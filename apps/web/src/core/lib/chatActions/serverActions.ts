@@ -71,7 +71,15 @@ async function callRecallApi(
     const res = await fetch(apiUrl("/api/ai-memory/recall"), {
       method: "POST",
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        // M10 — CSRF guard. Решта app-у йде через `createHttpClient()`, який
+        // виставляє цей хедер автоматично; цей raw fetch свідомо обмежений
+        // одним handler-ом і має дзеркалити поведінку клієнта, інакше після
+        // mount-у `requireCsrfHeader` сервер відстрілить запит 403.
+        // Карта: `docs/security/hardening/M10-csrf-token-check.md`.
+        "X-Requested-With": "XMLHttpRequest",
+      },
       body: JSON.stringify(body),
       signal: controller.signal,
     });

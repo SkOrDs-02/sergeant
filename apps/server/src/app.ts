@@ -16,6 +16,7 @@ import {
   requestIdMiddleware,
   requestLogMiddleware,
   requestTimeout,
+  requireCsrfHeader,
   traceMiddleware,
   withRequestContext,
 } from "./http/index.js";
@@ -187,6 +188,16 @@ export function createApp({
   // Global CORS for the whole /api surface. Individual handlers may re-set
   // headers (e.g. to widen allow-headers) — `setCorsHeaders` is idempotent.
   app.use("/api", apiCorsMiddleware());
+
+  // M10 — CSRF guard для state-changing запитів на `/api/*`.
+  // Браузер не дасть cross-origin сторінці поставити non-simple header
+  // `X-Requested-With` без preflight-у; preflight зупиняється на нашому
+  // CORS allowlist (`apiCorsMiddleware()` вище) → SOP + CSRF guard.
+  // Винятки і деталі — у `requireCsrfHeader.ts`. Mount-имо ПІСЛЯ CORS,
+  // щоб OPTIONS-preflight встиг відповісти 200 до того, як ми спитаємо
+  // про XRW header.
+  // Карта: `docs/security/hardening/M10-csrf-token-check.md`.
+  app.use("/api", requireCsrfHeader());
 
   registerRoutes(app, { pool });
 

@@ -105,6 +105,7 @@ describe("coach routes — auth guard (unauthenticated → 401)", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/coach/memory")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ weeklyDigest: { weekKey: "2026-W18" } });
     expect(res.status).toBe(401);
   });
@@ -113,6 +114,7 @@ describe("coach routes — auth guard (unauthenticated → 401)", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/coach/insight")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ snapshot: {} });
     expect(res.status).toBe(401);
   });
@@ -124,6 +126,7 @@ describe("coach routes — key guard", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/coach/insight")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ snapshot: {} });
     expect(res.status).toBe(503);
     expect(res.body).toMatchObject({ error: expect.any(String) });
@@ -179,6 +182,7 @@ describe("coach routes — POST /memory", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/coach/memory")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({
         weeklyDigest: {
           weekKey: "2026-W18",
@@ -198,6 +202,7 @@ describe("coach routes — POST /memory", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/coach/memory")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ weeklyDigest: { summary: "no weekKey" } });
 
     expect(res.status).toBe(400);
@@ -219,6 +224,7 @@ describe("coach routes — POST /insight", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/coach/insight")
+      .set("X-Requested-With", "XMLHttpRequest")
       .set("x-anthropic-key", "test-key")
       .send({
         snapshot: {

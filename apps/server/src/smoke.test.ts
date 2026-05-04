@@ -172,8 +172,14 @@ describe("smoke: createApp wiring", () => {
 
   it("POST /api/push/send → 503 without API_SECRET env", async () => {
     const app = createApp();
+    // CSRF middleware allows S2S calls (those carrying `X-Api-Secret`)
+    // through, so the test must pass any non-empty value here — the
+    // *server-side* secret being absent is exactly what we are
+    // probing. Without this header the global `requireCsrfHeader`
+    // would 403 the request before `requireApiSecret` could 503.
     const res = await request(app)
       .post("/api/push/send")
+      .set("X-Api-Secret", "smoke-test")
       .send({ user_id: "x", title: "t" });
     expect(res.status).toBe(503);
     expect(res.body).toMatchObject({ code: "NOT_CONFIGURED" });
@@ -184,6 +190,7 @@ describe("smoke: createApp wiring", () => {
     const res = await request(app)
       .post("/api/chat")
       .set("content-type", "application/json")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ messages: [] });
     expect(res.status).toBe(503);
     expect(res.body).toMatchObject({ error: expect.any(String) });

@@ -1,16 +1,16 @@
 # M10 — No CSRF token check on state-changing routes
 
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** Open
+> **Status:** Closed 2026-05-04 — PR [#1784](https://github.com/Skords-01/Sergeant/pull/1784).
 
-| Field          | Value                           |
-| -------------- | ------------------------------- |
-| **Severity**   | Medium                          |
-| **Sprint**     | [Sprint 3](./sprint-3.md)       |
-| **Owner**      | backend                         |
-| **Effort**     | 0.5 person-day                  |
-| **Status**     | Open                            |
-| **Discovered** | 2026-05-03 deep security review |
+| Field          | Value                                                                                                    |
+| -------------- | -------------------------------------------------------------------------------------------------------- |
+| **Severity**   | Medium                                                                                                   |
+| **Sprint**     | [Sprint 3](./sprint-3.md)                                                                                |
+| **Owner**      | backend                                                                                                  |
+| **Effort**     | 0.5 person-day                                                                                           |
+| **Status**     | Closed 2026-05-04 — PR [#1784](https://github.com/Skords-01/Sergeant/pull/1784) (batched with M14 + M19) |
+| **Discovered** | 2026-05-03 deep security review                                                                          |
 
 ## Summary
 
@@ -38,19 +38,30 @@ CORS preflight cannot set the header.
 ## Correction points
 
 - `apps/server/src/http/requireCsrfHeader.ts` (new) — middleware that 403s
-  any state-changing request without `X-Requested-With: XMLHttpRequest`.
-- `apps/server/src/app.ts` — apply on every `Router` mount that handles
-  POST/PUT/PATCH/DELETE except OAuth callbacks.
-- `apps/web/src/core/api/client.ts` — set the header in the global fetch
-  wrapper.
-- `apps/mobile-shell/src/auth-storage.ts` — same.
+  any state-changing request without `X-Requested-With: XMLHttpRequest` or
+  `X-Api-Secret` (S2S bypass).
+- `apps/server/src/app.ts` — applied globally with an explicit allowlist
+  for OAuth callbacks (`/api/auth/callback/*`) and the Better Auth
+  handler mount, where browsers cannot set custom headers on a redirect.
+- `apps/web/src/core/lib/chatActions/serverActions.ts` and
+  `packages/api-client/src/httpClient.ts` — set
+  `X-Requested-With: XMLHttpRequest` in the shared fetch wrapper so every
+  outbound call carries it.
+- `apps/web/src/core/observability/webVitals.ts` — same for the
+  beacon-style ingest path.
+- Updated supertest fixtures (`pushTest.test.ts`, `smoke.test.ts`,
+  `coach.route.test.ts`, `ai-memory.route.test.ts`, `apiV1.test.ts`) to
+  attach the header on every state-changing call.
 
 ## Verification
 
-- **Unit:** Supertest hit on `POST /api/mono/connect` without the header
-  returns 403; with the header returns 200.
-- **Browser test:** a third-party page posts to `/api/sync/push` while the
-  user is signed in; request returns 403 without ever reaching the handler.
+- **Unit:** `apps/server/src/http/requireCsrfHeader.test.ts` covers the
+  full method matrix (GET/HEAD/OPTIONS skip, POST/PUT/PATCH/DELETE
+  enforce), the `X-Requested-With` accept-path, the `X-Api-Secret`
+  S2S-bypass, and the OAuth-callback allowlist.
+- **Integration:** existing route tests (`pushTest.test.ts`,
+  `smoke.test.ts`, `coach.route.test.ts`, …) exercise the global mount
+  end-to-end.
 
 ## Cross-references
 

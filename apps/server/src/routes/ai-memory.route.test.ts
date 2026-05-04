@@ -104,6 +104,7 @@ describe("POST /api/ai-memory/ingest — auth guard", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/ingest")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ source: "nutrition", content: "Сніданок: omelette + кава" });
     expect(res.status).toBe(401);
     expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
@@ -126,6 +127,7 @@ describe("POST /api/ai-memory/ingest — schema validation", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/ingest")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ source: "nutrition", content: "" });
     expect(res.status).toBe(400);
     expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
@@ -135,6 +137,7 @@ describe("POST /api/ai-memory/ingest — schema validation", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/ingest")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ source: "evil", content: "abc" });
     expect(res.status).toBe(400);
     expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
@@ -144,6 +147,7 @@ describe("POST /api/ai-memory/ingest — schema validation", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/ingest")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ source: "finyk", content: "abc" });
     expect(res.status).toBe(400);
     expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
@@ -153,6 +157,7 @@ describe("POST /api/ai-memory/ingest — schema validation", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/ingest")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ source: "digest", content: "abc" });
     expect(res.status).toBe(400);
     expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
@@ -163,6 +168,7 @@ describe("POST /api/ai-memory/ingest — schema validation", () => {
     const oversized = "x".repeat(5000);
     const res = await request(app)
       .post("/api/ai-memory/ingest")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ source: "nutrition", content: oversized });
     expect(res.status).toBe(400);
     expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
@@ -170,12 +176,15 @@ describe("POST /api/ai-memory/ingest — schema validation", () => {
 
   it("→ 400 при unknown ключі (strict schema)", async () => {
     const app = createApp();
-    const res = await request(app).post("/api/ai-memory/ingest").send({
-      source: "nutrition",
-      content: "abc",
-      // навмисно невалідне поле
-      evil: "xss",
-    });
+    const res = await request(app)
+      .post("/api/ai-memory/ingest")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({
+        source: "nutrition",
+        content: "abc",
+        // навмисно невалідне поле
+        evil: "xss",
+      });
     expect(res.status).toBe(400);
     expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
   });
@@ -190,6 +199,7 @@ describe("POST /api/ai-memory/ingest — happy path", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/ingest")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({
         source: "nutrition",
         sourceRef: "meal-2026-05-01-08:30",
@@ -214,10 +224,13 @@ describe("POST /api/ai-memory/ingest — happy path", () => {
 
   it("→ 202 з sourceRef=null коли клієнт його не передав (chat without stable id)", async () => {
     const app = createApp();
-    const res = await request(app).post("/api/ai-memory/ingest").send({
-      source: "chat",
-      content: "Я хочу запам'ятати: книга — 'Atomic habits'",
-    });
+    const res = await request(app)
+      .post("/api/ai-memory/ingest")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({
+        source: "chat",
+        content: "Я хочу запам'ятати: книга — 'Atomic habits'",
+      });
     expect(res.status).toBe(202);
     expect(enqueueMemoryIngestMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -237,11 +250,14 @@ describe("POST /api/ai-memory/ingest — metadata size guard", () => {
   it("→ 413 коли metadata blob > 8KB", async () => {
     const app = createApp();
     const huge = { blob: "x".repeat(10_000) };
-    const res = await request(app).post("/api/ai-memory/ingest").send({
-      source: "fizruk",
-      content: "Тренування",
-      metadata: huge,
-    });
+    const res = await request(app)
+      .post("/api/ai-memory/ingest")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({
+        source: "fizruk",
+        content: "Тренування",
+        metadata: huge,
+      });
     expect(res.status).toBe(413);
     expect(res.body).toMatchObject({ code: "METADATA_TOO_LARGE" });
     expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
@@ -253,6 +269,7 @@ describe("POST /api/ai-memory/recall — auth guard", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/recall")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ query: "test" });
     expect(res.status).toBe(401);
     expect(recallMock).not.toHaveBeenCalled();
@@ -268,6 +285,7 @@ describe("POST /api/ai-memory/recall — schema validation", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/recall")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ query: "" });
     expect(res.status).toBe(400);
     expect(recallMock).not.toHaveBeenCalled();
@@ -277,6 +295,7 @@ describe("POST /api/ai-memory/recall — schema validation", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/recall")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ query: "x".repeat(1500) });
     expect(res.status).toBe(400);
     expect(recallMock).not.toHaveBeenCalled();
@@ -286,6 +305,7 @@ describe("POST /api/ai-memory/recall — schema validation", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/recall")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ query: "test", topK: 100 });
     expect(res.status).toBe(400);
     expect(recallMock).not.toHaveBeenCalled();
@@ -295,6 +315,7 @@ describe("POST /api/ai-memory/recall — schema validation", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/recall")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ query: "test", sources: ["evil"] });
     expect(res.status).toBe(400);
     expect(recallMock).not.toHaveBeenCalled();
@@ -304,6 +325,7 @@ describe("POST /api/ai-memory/recall — schema validation", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/recall")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ query: "test", evil: "xss" });
     expect(res.status).toBe(400);
     expect(recallMock).not.toHaveBeenCalled();
@@ -337,6 +359,7 @@ describe("POST /api/ai-memory/recall — happy path", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/recall")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ query: "що я їв на сніданок", topK: 5 });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
@@ -365,6 +388,7 @@ describe("POST /api/ai-memory/recall — happy path", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/recall")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ query: "no matches" });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ memories: [] });
@@ -375,6 +399,7 @@ describe("POST /api/ai-memory/recall — happy path", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/recall")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ query: "test", sources: ["chat", "fizruk"] });
     expect(res.status).toBe(200);
     expect(recallMock).toHaveBeenCalledWith({
@@ -398,6 +423,7 @@ describe("POST /api/ai-memory/recall — provider failure", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/recall")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ query: "test" });
     expect(res.status).toBe(503);
     expect(res.body).toMatchObject({ code: "EMBEDDING_PROVIDER_UNAVAILABLE" });
@@ -412,6 +438,7 @@ describe("POST /api/ai-memory/recall — provider failure", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/recall")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ query: "test" });
     expect(res.status).toBe(503);
     expect(res.body).toMatchObject({ code: "EMBEDDING_PROVIDER_UNAVAILABLE" });
@@ -422,6 +449,7 @@ describe("POST /api/ai-memory/recall — provider failure", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/ai-memory/recall")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ query: "test" });
     expect(res.status).toBe(500);
     expect(res.body).toMatchObject({ code: "RECALL_FAILED" });

@@ -80,6 +80,7 @@ describe("POST /api/v1/push/test", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/v1/push/test")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ title: "Sergeant", body: "It works" });
     expect(res.status).toBe(401);
     expect(sendToUserMock).not.toHaveBeenCalled();
@@ -98,6 +99,7 @@ describe("POST /api/v1/push/test", () => {
     const res = await request(app)
       .post("/api/v1/push/test")
       .set("Authorization", "Bearer x")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({
         title: "Sergeant",
         body: "It works",
@@ -133,12 +135,14 @@ describe("POST /api/v1/push/test", () => {
     const first = await request(app)
       .post("/api/v1/push/test")
       .set("Authorization", "Bearer x")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ title: "t", body: "b" });
     expect(first.status).toBe(200);
 
     const second = await request(app)
       .post("/api/v1/push/test")
       .set("Authorization", "Bearer x")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ title: "t", body: "b" });
     expect(second.status).toBe(429);
     expect(second.body).toMatchObject({ code: "RATE_LIMIT" });
@@ -154,6 +158,7 @@ describe("POST /api/v1/push/test", () => {
     const res = await request(app)
       .post("/api/v1/push/test")
       .set("Authorization", "Bearer x")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ body: "only body, no title" });
 
     expect(res.status).toBe(400);
@@ -168,6 +173,7 @@ describe("POST /api/v1/push/test", () => {
     const res = await request(app)
       .post("/api/v1/push/test")
       .set("Authorization", "Bearer x")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ title: "t", body: "b" });
 
     expect(res.status).toBe(500);

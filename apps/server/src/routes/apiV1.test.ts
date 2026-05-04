@@ -176,6 +176,7 @@ describe("POST /api/v1/push/register", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/v1/push/register")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ platform: "ios", token: "t".repeat(64) });
     expect(res.status).toBe(401);
   });
@@ -186,6 +187,7 @@ describe("POST /api/v1/push/register", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/v1/push/register")
+      .set("X-Requested-With", "XMLHttpRequest")
       .set("Authorization", "Bearer x")
       .send({ platform: "ios", token: "t".repeat(64) });
     expect(res.status).toBe(200);
@@ -203,6 +205,7 @@ describe("POST /api/v1/push/register", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/v1/push/register")
+      .set("X-Requested-With", "XMLHttpRequest")
       .set("Authorization", "Bearer x")
       .send({ platform: "android", token: "fcm-registration-token" });
     expect(res.status).toBe(200);
@@ -224,6 +227,7 @@ describe("POST /api/v1/push/register", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/v1/push/register")
+      .set("X-Requested-With", "XMLHttpRequest")
       .set("Authorization", "Bearer x")
       .send({
         platform: "web",
@@ -240,6 +244,7 @@ describe("POST /api/v1/push/register", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/v1/push/register")
+      .set("X-Requested-With", "XMLHttpRequest")
       .set("Authorization", "Bearer x")
       .send({
         platform: "web",
@@ -255,6 +260,7 @@ describe("POST /api/v1/push/register", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/v1/push/register")
+      .set("X-Requested-With", "XMLHttpRequest")
       .set("Authorization", "Bearer x")
       .send({ platform: "windows-phone", token: "x" });
     expect(res.status).toBe(400);
@@ -269,6 +275,7 @@ describe("POST /api/v1/push/unregister", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/v1/push/unregister")
+      .set("X-Requested-With", "XMLHttpRequest")
       .send({ platform: "ios", token: "t".repeat(64) });
     expect(res.status).toBe(401);
   });
@@ -279,6 +286,7 @@ describe("POST /api/v1/push/unregister", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/v1/push/unregister")
+      .set("X-Requested-With", "XMLHttpRequest")
       .set("Authorization", "Bearer x")
       .send({
         platform: "web",
@@ -300,6 +308,7 @@ describe("POST /api/v1/push/unregister", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/v1/push/unregister")
+      .set("X-Requested-With", "XMLHttpRequest")
       .set("Authorization", "Bearer x")
       .send({ platform: "android", token: "fcm-reg-tok" });
     expect(res.status).toBe(200);
@@ -315,6 +324,7 @@ describe("POST /api/v1/push/unregister", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/push/unregister")
+      .set("X-Requested-With", "XMLHttpRequest")
       .set("Authorization", "Bearer x")
       .send({
         platform: "web",
@@ -329,6 +339,7 @@ describe("POST /api/v1/push/unregister", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/v1/push/unregister")
+      .set("X-Requested-With", "XMLHttpRequest")
       .set("Authorization", "Bearer x")
       .send({ platform: "web", token: "not-a-url" });
     expect(res.status).toBe(400);
@@ -395,6 +406,7 @@ describe("H8: Cross-Origin-Resource-Policy per-route", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/csp-report")
+      .set("X-Requested-With", "XMLHttpRequest")
       .set("Content-Type", "application/csp-report")
       .send(
         JSON.stringify({
@@ -415,13 +427,16 @@ describe("H8: Cross-Origin-Resource-Policy per-route", () => {
 
   it("публічний /api/metrics/web-vitals → CORP=cross-origin (анонімна метрика з фронта)", async () => {
     const app = createApp();
-    const res = await request(app).post("/api/metrics/web-vitals").send({
-      name: "LCP",
-      id: "v1-1234",
-      value: 1234,
-      rating: "good",
-      navigationType: "navigate",
-    });
+    const res = await request(app)
+      .post("/api/metrics/web-vitals")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({
+        name: "LCP",
+        id: "v1-1234",
+        value: 1234,
+        rating: "good",
+        navigationType: "navigate",
+      });
     // Web-vitals навмисно cross-origin (`apps/server/src/modules/observability/web-vitals.ts`):
     // вимірюємо realuser-метрики на anonymous-користувачах теж.
     expect(res.headers["cross-origin-resource-policy"]).toBe("cross-origin");
@@ -471,6 +486,7 @@ describe("H6: /api/mono/connect gate on email verification", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/mono/connect")
+      .set("X-Requested-With", "XMLHttpRequest")
       .set("Authorization", "Bearer x")
       .set("Content-Type", "application/json")
       .send({ token: "would-be-victim-token-12345" });
@@ -490,6 +506,7 @@ describe("H6: /api/mono/connect gate on email verification", () => {
     const app = createApp();
     const res = await request(app)
       .post("/api/mono/connect")
+      .set("X-Requested-With", "XMLHttpRequest")
       .set("Content-Type", "application/json")
       .send({ token: "x".repeat(20) });
     expect(res.status).toBe(401);

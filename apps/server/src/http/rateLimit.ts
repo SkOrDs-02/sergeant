@@ -231,18 +231,21 @@ return {c, ttl}
 `;
 
 /**
- * Fixed-window rate-limit check backed by Redis (global across replicas).
- * Falls back to in-memory via {@link checkRateLimit} if Redis throws.
+ * Subject-keyed Redis primitive shared by {@link checkRateLimitRedis} and
+ * {@link getPerTargetRateLimit}. The Request-taking export resolves
+ * `subject = rateLimitSubject(req)` and `cost = resolveRateLimitCost(req,
+ * …)` then delegates here, so a per-target caller (push fan-out) can
+ * pass a precomputed subject directly without faking up an Express
+ * Request value.
  */
-export async function checkRateLimitRedis(
+async function checkRateLimitRedisBySubject(
   redis: Redis,
-  req: Request,
-  { key, limit, windowMs, cost: costFn }: RateLimitOptions,
+  subject: string,
+  { key, limit, windowMs }: { key: string; limit: number; windowMs: number },
+  cost: number,
 ): Promise<RateLimitResult> {
-  const subject = rateLimitSubject(req);
   const k = `rl:${key}:${subject}`;
   const windowSecs = Math.max(1, Math.ceil(windowMs / 1000));
-  const cost = resolveRateLimitCost(req, { cost: costFn });
 
   const result = (await redis.eval(
     LUA_INCRBY_EXPIRE,
@@ -274,6 +277,20 @@ export async function checkRateLimitRedis(
 }
 
 /**
+ * Fixed-window rate-limit check backed by Redis (global across replicas).
+ * Falls back to in-memory via {@link checkRateLimit} if Redis throws.
+ */
+export async function checkRateLimitRedis(
+  redis: Redis,
+  req: Request,
+  options: RateLimitOptions,
+): Promise<RateLimitResult> {
+  const subject = rateLimitSubject(req);
+  const cost = resolveRateLimitCost(req, { cost: options.cost });
+  return checkRateLimitRedisBySubject(redis, subject, options, cost);
+}
+
+/**
  * Fixed-window rate-limit check backed by Postgres (`rate_limit_buckets`).
  *
  * Replaces the in-memory fallback for the production path: when Redis is
@@ -298,10 +315,23 @@ export async function checkRateLimitRedis(
  */
 export async function checkRateLimitPg(
   req: Request,
-  { key, limit, windowMs, cost: costFn }: RateLimitOptions,
+  options: RateLimitOptions,
 ): Promise<RateLimitResult> {
   const subject = rateLimitSubject(req);
-  const cost = resolveRateLimitCost(req, { cost: costFn });
+  const cost = resolveRateLimitCost(req, { cost: options.cost });
+  return checkRateLimitPgBySubject(subject, options, cost);
+}
+
+/**
+ * Subject-keyed Postgres primitive shared by {@link checkRateLimitPg} and
+ * {@link getPerTargetRateLimit}. See {@link checkRateLimitRedisBySubject}
+ * for the rationale.
+ */
+async function checkRateLimitPgBySubject(
+  subject: string,
+  { key, limit, windowMs }: { key: string; limit: number; windowMs: number },
+  cost: number,
+): Promise<RateLimitResult> {
   const sql = `
     INSERT INTO rate_limit_buckets (rl_key, subject, count, started_at)
     VALUES ($1, $2, $4::int, NOW())
@@ -438,14 +468,26 @@ async function maybeSweepPgBuckets(maxWindowMs: number): Promise<void> {
  */
 export function checkRateLimit(
   req: Request,
-  { key, limit, windowMs, cost: costFn }: RateLimitOptions,
+  options: RateLimitOptions,
 ): RateLimitResult {
   const subject = rateLimitSubject(req);
+  const cost = resolveRateLimitCost(req, { cost: options.cost });
+  return checkRateLimitBySubject(subject, options, cost);
+}
+
+/**
+ * Subject-keyed in-memory primitive shared by {@link checkRateLimit} and
+ * {@link getPerTargetRateLimit}.
+ */
+function checkRateLimitBySubject(
+  subject: string,
+  { key, limit, windowMs }: { key: string; limit: number; windowMs: number },
+  cost: number,
+): RateLimitResult {
   const now = Date.now();
   sweepBuckets(now);
   const k = `${key}:${subject}`;
   const cur = buckets.get(k);
-  const cost = resolveRateLimitCost(req, { cost: costFn });
   if (!cur || now - cur.startMs >= windowMs) {
     // Fresh bucket — seed at `cost` (not 1). A heavy first hit must
     // count for its full weight, otherwise the next call could find a
@@ -584,4 +626,68 @@ export function rateLimitExpress({
     }
     next();
   };
+}
+
+/**
+ * Per-target-user rate-limit primitive
+ * (`docs/security/hardening/M14-internal-push-ip-allowlist.md`).
+ *
+ * `rateLimitExpress` keys off `rateLimitSubject(req)` — `u:<sessionUserId>`
+ * or `ip:<callerIp>` — which is the right knob for "limit how often *this
+ * caller* hits the API". `/api/push/send` needs the *opposite* knob:
+ * limit how often **the target user** receives a push, regardless of who
+ * sent it. The same compromised internal worker that loops `userId =
+ * "victim"` would otherwise stay under the per-caller bucket because the
+ * caller's session/IP is constant — the victim just sees 1000 spam pushes.
+ *
+ * Rather than refactor `rateLimitSubject` to accept a per-route subject
+ * resolver (which would ripple into every existing limiter call), this
+ * helper exposes a thin `(key, subject) → RateLimitResult` API that
+ * shares Redis/Pg/in-memory paths with the standard limiter. Each call
+ * synthesises a request-shaped value with `user.id = subject` so the
+ * underlying primitives keep their `rateLimitSubject(req)` contract
+ * unchanged. Cost is fixed at 1 (no AI-stream-style cost multiplier on
+ * push fan-out — the upstream cap is already enforced by the API
+ * caller's own limiter).
+ *
+ * Failure modes mirror `rateLimitExpress`: Redis-first, Postgres
+ * fallback, in-memory last resort. The caller decides what to do with
+ * `result.ok === false` (we 429 inline in `sendPush` rather than going
+ * through the middleware response shape).
+ */
+export async function getPerTargetRateLimit(
+  key: string,
+  subject: string,
+  options: { limit: number; windowMs: number },
+): Promise<RateLimitResult> {
+  // Per-target buckets share the `u:` prefix of regular per-caller
+  // subjects so logs/metrics stay homogeneous: a `u:<id>` line in the
+  // limiter dashboard works whether it came from a session-bound
+  // request or a push fan-out call. Cost is fixed at 1 (no AI-stream
+  // multiplier on push fan-out).
+  const subjectKey = `u:${subject}`;
+  const opts = { key, limit: options.limit, windowMs: options.windowMs };
+
+  const redis = getRedis();
+  if (redis) {
+    try {
+      return await checkRateLimitRedisBySubject(redis, subjectKey, opts, 1);
+    } catch {
+      // Fall through to Postgres.
+    }
+  }
+  try {
+    return await checkRateLimitPgBySubject(subjectKey, opts, 1);
+  } catch (err) {
+    const code = pgErr(err).code;
+    if (code === "42P01" && !pgUndefinedTableLogged) {
+      pgUndefinedTableLogged = true;
+      logger.warn({
+        msg: "rate_limit_pg_table_missing",
+        hint: "apply migration 037_rate_limit_buckets.sql; falling back to in-memory limiter",
+      });
+    }
+  }
+  recordRateLimitDegraded(key, "inmem");
+  return checkRateLimitBySubject(subjectKey, opts, 1);
 }

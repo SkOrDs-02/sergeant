@@ -6,6 +6,7 @@ import { logger } from "../../obs/logger.js";
 import { pushSendsTotal } from "../../obs/metrics.js";
 import { sendToUser } from "../../push/send.js";
 import { validateBody } from "../../http/validate.js";
+import { getIp, getPerTargetRateLimit } from "../../http/rateLimit.js";
 import {
   PushRegisterSchema,
   PushSendSchema,
@@ -14,6 +15,7 @@ import {
   PushUnregisterSchema,
   PushUnsubscribeSchema,
 } from "../../http/schemas.js";
+import { logPushSend } from "./audit.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 
@@ -253,11 +255,44 @@ interface PushSubscriptionRow {
 }
 
 /**
+ * Per-target user rate-limit for `/api/push/send`. Hardening item M14
+ * (`docs/security/hardening/M14-internal-push-ip-allowlist.md`) calls for
+ * 10 sends/minute/recipient even from valid internal callers, so a
+ * compromised worker cannot loop one user into a notification flood.
+ *
+ * Tunable via `PUSH_SEND_TARGET_LIMIT` / `PUSH_SEND_TARGET_WINDOW_MS` for
+ * incident response (raise during a legitimate broadcast, lower during
+ * abuse), but the defaults match the hardening spec.
+ */
+const PUSH_SEND_TARGET_LIMIT = (() => {
+  const raw = Number.parseInt(process.env.PUSH_SEND_TARGET_LIMIT ?? "", 10);
+  return Number.isFinite(raw) && raw > 0 ? raw : 10;
+})();
+const PUSH_SEND_TARGET_WINDOW_MS = (() => {
+  const raw = Number.parseInt(process.env.PUSH_SEND_TARGET_WINDOW_MS ?? "", 10);
+  return Number.isFinite(raw) && raw > 0 ? raw : 60_000;
+})();
+
+/**
  * POST /api/push/send — надіслати push конкретному користувачу (внутрішній API).
  * Body: { userId, title, body, module, tag }
  *
- * Auth через `X-Api-Secret` зроблено в `requireApiSecret("API_SECRET")` на
- * рівні роутера; handler вже отримує запит з перевіреним секретом.
+ * Defence-in-depth (hardening item M14):
+ *   1. `requireInternalIp(...)` middleware on the route restricts who can
+ *      *reach* the handler at all (Railway internal CIDR + explicit
+ *      allowlist). 403 with `code: IP_NOT_ALLOWED` on miss.
+ *   2. `requireApiSecret("API_SECRET")` middleware verifies a constant-
+ *      time-compared shared secret. 401 on miss / 503 if the secret is
+ *      not configured in the env.
+ *   3. The per-target-user rate limit below (10/minute by default) caps
+ *      the spam an attacker who got past steps 1+2 can land on any
+ *      single recipient. 429 with `code: PUSH_TARGET_RATE_LIMIT` on
+ *      breach so dashboards can alert on it independently of the
+ *      per-caller `api:push` bucket on the route.
+ *   4. Every send (including 0-subscription no-ops, but excluding
+ *      pre-fan-out 429s) appends a row to `push_send_audit` so an
+ *      analyst can reconstruct who hit whom even if the audit-write
+ *      itself races the response.
  */
 export async function sendPush(req: Request, res: Response): Promise<void> {
   if (!vapidReady) {
@@ -268,6 +303,27 @@ export async function sendPush(req: Request, res: Response): Promise<void> {
   const parsed = validateBody(PushSendSchema, req, res);
   if (!parsed.ok) return;
   const { userId, title, body, module: mod, tag } = parsed.data;
+
+  // Per-target rate-limit BEFORE the DB read so a flooder cannot still
+  // probe `push_subscriptions` shape via repeated 429s; the bucket key
+  // `push:target:<userId>` is independent of the per-caller `api:push`
+  // bucket attached on the router.
+  const rl = await getPerTargetRateLimit("push:target", userId, {
+    limit: PUSH_SEND_TARGET_LIMIT,
+    windowMs: PUSH_SEND_TARGET_WINDOW_MS,
+  });
+  if (!rl.ok) {
+    try {
+      res.setHeader("Retry-After", String(rl.retryAfterSec));
+    } catch {
+      /* swallow header-set failures (already-sent etc.) */
+    }
+    res.status(429).json({
+      error: "Забагато push-сповіщень для цього користувача. Спробуй пізніше.",
+      code: "PUSH_TARGET_RATE_LIMIT",
+    });
+    return;
+  }
 
   // EXPLAIN ANALYZE (типовий plan після міграції 005):
   //   Index Scan using idx_push_subs_user_active on push_subscriptions
@@ -280,17 +336,32 @@ export async function sendPush(req: Request, res: Response): Promise<void> {
       WHERE user_id = $1 AND deleted_at IS NULL`,
     [userId],
   );
-  if (rows.length === 0) {
-    res.json({ sent: 0 });
-    return;
-  }
-
-  const payload = JSON.stringify({
+  const callerIp = getIp(req);
+  const auditPayload = {
     title,
     body: body || "",
     module: mod || null,
     tag: tag || null,
-  });
+  };
+  if (rows.length === 0) {
+    // Even no-op sends are audited: a flood of "no subscriptions" calls
+    // is itself a tell ("attacker probing for active accounts") and
+    // dropping that signal on the floor would defeat the audit's
+    // forensic purpose. `void` because the response has shipped — we
+    // do not want to block the client on the Postgres write.
+    void logPushSend({
+      callerIp,
+      targetUserId: userId,
+      notificationType: mod ?? null,
+      payload: auditPayload,
+      subsCount: 0,
+      sentCount: 0,
+    });
+    res.json({ sent: 0 });
+    return;
+  }
+
+  const payload = JSON.stringify(auditPayload);
   let sent = 0;
   const stale: string[] = [];
 
@@ -327,6 +398,15 @@ export async function sendPush(req: Request, res: Response): Promise<void> {
       [stale],
     );
   }
+
+  void logPushSend({
+    callerIp,
+    targetUserId: userId,
+    notificationType: mod ?? null,
+    payload: auditPayload,
+    subsCount: rows.length,
+    sentCount: sent,
+  });
 
   res.json({ sent, stale: stale.length });
 }

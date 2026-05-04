@@ -35,6 +35,96 @@ const STATUS_BAR_COLOR_DARK = "#171412";
 const DEEP_LINK_SCHEME = "com.sergeant.shell://";
 
 /**
+ * Allowed top-level path prefixes для shell-deep-link навігації
+ * ([M19](../../../docs/security/hardening/M19-mobile-deeplink-sanitize.md)).
+ * `parseDeepLink()` повертає `null` для будь-чого, що не починається з
+ * одного з цих префіксів — щоб майбутній regression не міг repurpose-нути
+ * deep-link як XSS-точку входу.
+ *
+ * Дзеркалить `KNOWN_PATHS` з `apps/web/src/core/app/appPaths.ts` плюс
+ * top-level модульні префікси (`/finyk`, `/fizruk`, …) для глибоких
+ * shell-навігацій типу `com.sergeant.shell://finyk/transactions/123`.
+ *
+ * Список свідомо щільний: якщо новий маршрут потрібно зробити deep-link-
+ * адресованим, його треба явно додати тут (і в `KNOWN_PATHS` на web-side).
+ */
+export const ALLOWED_DEEP_LINK_PATH_PREFIXES: readonly string[] = Object.freeze(
+  [
+    "/sign-in",
+    "/welcome",
+    "/reset-password",
+    "/profile",
+    "/design",
+    "/pricing",
+    "/assistant",
+    "/chat",
+    "/help",
+    "/finyk",
+    "/fizruk",
+    "/nutrition",
+    "/routine",
+    "/coach",
+    "/auth",
+    "/oauth",
+  ],
+);
+
+/**
+ * Тригери XSS-схем, які можуть просочитися у downstream `<a href={…}>`
+ * або у `navigate()` від React Router. Перевірка регістронезалежна, бо
+ * Android-Intent іноді приймає host у lowercase, а деякі Inter-App
+ * deep-link виклики зберігають original-case.
+ *
+ * Перевіряється не лише на початку path-у, а й у будь-якій позиції
+ * після `?`/`&`/`/`/`#`/`=` — типовий вектор `?next=javascript:alert(1)`
+ * (див. [M19](../../../docs/security/hardening/M19-mobile-deeplink-sanitize.md)).
+ */
+const UNSAFE_SCHEME_RE = /(?:^|[/?#&=])(?:javascript|data|vbscript):/i;
+
+/**
+ * `isSafeShellPath(path)` — defensive sanitiser для shell-deep-link path-у.
+ *
+ * Повертає `true` тільки якщо:
+ *   1. Path починається з `/` (не protocol-relative `//evil`, не fully
+ *      qualified URL).
+ *   2. Не містить XSS-схем (`javascript:`, `data:`, `vbscript:`) у будь-
+ *      якій позиції.
+ *   3. Top-level prefix входить у `ALLOWED_DEEP_LINK_PATH_PREFIXES`,
+ *      або path точно дорівнює `/`.
+ *
+ * Викликається у двох місцях:
+ *   - `parseDeepLink()` нижче (нативний бік, до dispatch-у у web).
+ *   - `apps/web/src/core/app/ShellDeepLinkBridge.tsx` (defensive recheck
+ *     перед `navigate(path)` — закриває M19 hardening-карту навіть якщо
+ *     хтось обходить нативну ділянку bridge-а).
+ */
+export function isSafeShellPath(path: string): boolean {
+  if (typeof path !== "string" || path.length === 0) return false;
+  // Path-only forms — `parseDeepLink()` гарантує leading `/`. Protocol-
+  // relative `//evil/...` спеціально rejection: `new URL("//evil/x",
+  // "https://app/")` парситься як `https://evil/x` у багатьох роутерах.
+  if (!path.startsWith("/") || path.startsWith("//")) return false;
+  if (UNSAFE_SCHEME_RE.test(path)) return false;
+  // `/` (корінь) — окремий валідний випадок.
+  if (path === "/") return true;
+  for (const prefix of ALLOWED_DEEP_LINK_PATH_PREFIXES) {
+    if (path === prefix) return true;
+    // Subpath: `/finyk/transactions/123`, `/auth/callback?token=…` тощо.
+    // Свідомо також приймаємо `?`/`#` одразу після префікса, без проміжного
+    // `/`, щоб `https://sergeant.vercel.app/chat?q=…` (без trailing slash)
+    // не різалось на легальній адресі.
+    if (
+      path.startsWith(`${prefix}/`) ||
+      path.startsWith(`${prefix}?`) ||
+      path.startsWith(`${prefix}#`)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * HTTPS-хости, які shell приймає як Universal Links (iOS) / App Links
  * (Android). Має збігатись з:
  *   - `<data android:host="..." />` у `AndroidManifest.xml`;
@@ -173,17 +263,17 @@ function isDarkTheme(): boolean {
 export function parseDeepLink(url: string): string | null {
   if (typeof url !== "string" || url.length === 0) return null;
 
+  let candidate: string | null = null;
+
   if (url.startsWith(DEEP_LINK_SCHEME)) {
     const rest = url.slice(DEEP_LINK_SCHEME.length);
     // `com.sergeant.shell://home` і `com.sergeant.shell:///home` трактуємо
     // однаково — перша форма частіше генерується Android `am start`.
-    return rest.startsWith("/") ? rest : `/${rest}`;
-  }
-
-  // HTTPS-варіант. Навмисно не приймаємо http:// — App Links / Universal
-  // Links апрувляться тільки на https, і ми не хочемо стрільнути cleartext
-  // deep link навіть у тесті.
-  if (url.startsWith("https://")) {
+    candidate = rest.startsWith("/") ? rest : `/${rest}`;
+  } else if (url.startsWith("https://")) {
+    // HTTPS-варіант. Навмисно не приймаємо http:// — App Links / Universal
+    // Links апрувляться тільки на https, і ми не хочемо стрільнути cleartext
+    // deep link навіть у тесті.
     let parsed: URL;
     try {
       parsed = new URL(url);
@@ -198,10 +288,17 @@ export function parseDeepLink(url: string): string | null {
     // `parsed.pathname` завжди починається з `/` (у т.ч. для кореня);
     // `parsed.search` і `parsed.hash` вже з лідируючим `?` / `#` або
     // порожні рядки — об'єднуємо напряму без re-encoding.
-    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    candidate = `${parsed.pathname}${parsed.search}${parsed.hash}`;
   }
 
-  return null;
+  if (candidate === null) return null;
+
+  // M19 — sanitization: блокуємо unsafe-схеми (`javascript:`, `data:`,
+  // `vbscript:`) і шляхи поза whitelist-ом top-level префіксів. Без цього
+  // crafted intent типу `com.sergeant.shell://?next=javascript:alert(1)`
+  // міг би просочитися у downstream `<a href={next}>` як JS-XSS.
+  if (!isSafeShellPath(candidate)) return null;
+  return candidate;
 }
 
 /**
