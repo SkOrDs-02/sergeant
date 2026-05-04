@@ -362,6 +362,144 @@
           "refId": "E"
         }
       ]
+    },
+    {
+      "title": "V1 vs V2 traffic split (5m rate)",
+      "type": "timeseries",
+      "description": "Initiative 0003 Phase 1 — pre-sunset baseline. v1 = `module=sync` legacy LWW-blob; v2 = `module=syncV2` op-log. Target: v1 → 0 by T₀.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 6,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 30,
+            "stacking": {
+              "mode": "normal"
+            },
+            "lineWidth": 1
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["sum", "lastNotNull"]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (module) (rate(sync_operations_total{module=~\"sync|syncV2\"}[5m]))",
+          "legendFormat": "{{module}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "V1 legacy clients by user-agent class (5m rate)",
+      "type": "timeseries",
+      "description": "Initiative 0003 Phase 1 survey. Тільки v1 (`/api/sync/*`); UA buckets: web, mobile-rn, mobile-shell-ios/-android, other. Counter живе у `apps/server/src/modules/sync/clientSurvey.ts`.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "id": 7,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 30,
+            "stacking": {
+              "mode": "normal"
+            },
+            "lineWidth": 1
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["sum"]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (user_agent_class) (rate(sync_v1_legacy_clients_total[5m]))",
+          "legendFormat": "{{user_agent_class}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "V1 legacy clients by app version (1h rate, top 5)",
+      "type": "timeseries",
+      "description": "Initiative 0003 Phase 1 survey. `app_version` = `major.minor` з `x-app-version` header (cap=20). Перед T₀ — push-апдейт топ-2 версій що ще ходять у v1.",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "id": 8,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 1
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["sum", "lastNotNull"]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "topk(5, sum by (app_version) (rate(sync_v1_legacy_clients_total[1h])))",
+          "legendFormat": "v{{app_version}}",
+          "refId": "A"
+        }
+      ]
     }
   ],
   "refresh": "30s",
