@@ -156,7 +156,14 @@ beforeEach(async () => {
               fizruk_workout_sets, fizruk_workout_items, fizruk_workouts,
               fizruk_custom_exercises, fizruk_measurements,
               nutrition_pantry_items, nutrition_pantries,
-              nutrition_meals, nutrition_prefs, nutrition_recipes
+              nutrition_meals, nutrition_prefs, nutrition_recipes,
+              finyk_hidden_accounts, finyk_hidden_transactions,
+              finyk_budgets, finyk_subscriptions, finyk_assets,
+              finyk_debts, finyk_receivables, finyk_custom_categories,
+              finyk_manual_expenses, finyk_tx_filters,
+              finyk_tx_categories, finyk_tx_splits,
+              finyk_mono_debt_links, finyk_networth_history,
+              finyk_prefs
               RESTART IDENTITY CASCADE`,
   );
 });
@@ -1681,6 +1688,445 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
       ]);
       expect(row.rows[0].name).toBe("Борщ");
       expect(row.rows[0].deleted_at).not.toBeNull();
+    },
+    TIMEOUT_MS,
+  );
+});
+
+// ---------------------------------------------------------------------
+// Finyk apply-функції — Stage 4 PR #035.
+//
+// Один integration-тест на shape (5 shapes у total, див. коментар в
+// `apps/server/src/migrations/039_finyk_tables.sql` — composite-PK
+// tombstone, per-row+JSONB, per-tx mapping, time-series, singleton
+// prefs). Фокус — на унікальній логіці кожного shape, а не на
+// повторюванні стандартної LWW-перевірки (її вже покривають nutrition
+// інтеграційні тести вище — apply-фн поділяє ту саму інфраструктуру).
+// ---------------------------------------------------------------------
+describe("syncV2Push — finyk apply-функції (PR #035)", () => {
+  it(
+    "finyk_hidden_accounts: insert → soft-delete (composite-PK tombstone shape)",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-fha");
+
+      const t1 = isoNow(-2_000);
+      const t2 = isoNow();
+
+      const r1 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fha",
+          body: {
+            ops: [
+              {
+                table: "finyk_hidden_accounts",
+                op: "insert" as const,
+                row: {
+                  user_id: "u-fha",
+                  account_id: "mono-acc-42",
+                },
+                client_ts: t1,
+                idempotency_key: "fha-insert",
+              },
+            ],
+          },
+        }),
+        r1,
+      );
+      expect((r1.body as { accepted: number }).accepted).toBe(1);
+
+      const r2 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fha",
+          body: {
+            ops: [
+              {
+                table: "finyk_hidden_accounts",
+                op: "delete" as const,
+                row: { user_id: "u-fha", account_id: "mono-acc-42" },
+                client_ts: t2,
+                idempotency_key: "fha-delete",
+              },
+            ],
+          },
+        }),
+        r2,
+      );
+      expect((r2.body as { accepted: number }).accepted).toBe(1);
+
+      const row = await testPool.query<{ deleted_at: Date | null }>(
+        `SELECT deleted_at FROM finyk_hidden_accounts
+         WHERE user_id = $1 AND account_id = $2`,
+        ["u-fha", "mono-acc-42"],
+      );
+      expect(row.rows).toHaveLength(1);
+      expect(row.rows[0].deleted_at).not.toBeNull();
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "finyk_budgets: insert → update (per-row + JSONB blob shape, LWW honoured)",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-fb");
+
+      const budgetId = "50000000-0000-4000-8000-000000000001";
+      const t1 = isoNow(-2_000);
+      const t2 = isoNow();
+
+      const r1 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fb",
+          body: {
+            ops: [
+              {
+                table: "finyk_budgets",
+                op: "insert" as const,
+                row: {
+                  id: budgetId,
+                  user_id: "u-fb",
+                  data_json: { categoryId: "food", limit: 1000 },
+                },
+                client_ts: t1,
+                idempotency_key: "fb-insert",
+              },
+            ],
+          },
+        }),
+        r1,
+      );
+      expect((r1.body as { accepted: number }).accepted).toBe(1);
+
+      const r2 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fb",
+          body: {
+            ops: [
+              {
+                table: "finyk_budgets",
+                op: "update" as const,
+                row: {
+                  id: budgetId,
+                  user_id: "u-fb",
+                  data_json: { categoryId: "food", limit: 1500 },
+                },
+                client_ts: t2,
+                idempotency_key: "fb-update",
+              },
+            ],
+          },
+        }),
+        r2,
+      );
+      expect((r2.body as { accepted: number }).accepted).toBe(1);
+
+      const row = await testPool.query<{ data_json: { limit: number } }>(
+        `SELECT data_json FROM finyk_budgets WHERE id = $1`,
+        [budgetId],
+      );
+      expect(row.rows[0].data_json.limit).toBe(1500);
+
+      // Stale (t1) update must lose to the t2 row already on disk.
+      const r3 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fb",
+          body: {
+            ops: [
+              {
+                table: "finyk_budgets",
+                op: "update" as const,
+                row: {
+                  id: budgetId,
+                  user_id: "u-fb",
+                  data_json: { categoryId: "food", limit: 9999 },
+                },
+                client_ts: t1,
+                idempotency_key: "fb-stale",
+              },
+            ],
+          },
+        }),
+        r3,
+      );
+      const body3 = r3.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(body3.accepted).toBe(0);
+      expect(body3.results[0].reason).toBe("lww_conflict");
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "finyk_tx_categories: insert → delete uses hard DELETE (no soft-delete column)",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-ftc");
+
+      const t1 = isoNow(-2_000);
+      const t2 = isoNow();
+
+      const r1 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-ftc",
+          body: {
+            ops: [
+              {
+                table: "finyk_tx_categories",
+                op: "insert" as const,
+                row: {
+                  user_id: "u-ftc",
+                  transaction_id: "mono-tx-1",
+                  category_id: "groceries",
+                },
+                client_ts: t1,
+                idempotency_key: "ftc-insert",
+              },
+            ],
+          },
+        }),
+        r1,
+      );
+      expect((r1.body as { accepted: number }).accepted).toBe(1);
+
+      const r2 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-ftc",
+          body: {
+            ops: [
+              {
+                table: "finyk_tx_categories",
+                op: "delete" as const,
+                row: { user_id: "u-ftc", transaction_id: "mono-tx-1" },
+                client_ts: t2,
+                idempotency_key: "ftc-delete",
+              },
+            ],
+          },
+        }),
+        r2,
+      );
+      expect((r2.body as { accepted: number }).accepted).toBe(1);
+
+      const rows = await testPool.query(
+        `SELECT 1 FROM finyk_tx_categories
+           WHERE user_id = $1 AND transaction_id = $2`,
+        ["u-ftc", "mono-tx-1"],
+      );
+      expect(rows.rows).toHaveLength(0);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "finyk_networth_history: monthly upsert keeps month TEXT (composite (user_id, month) PK)",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-fnh");
+
+      const t1 = isoNow(-2_000);
+      const t2 = isoNow();
+
+      const r1 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fnh",
+          body: {
+            ops: [
+              {
+                table: "finyk_networth_history",
+                op: "insert" as const,
+                row: {
+                  user_id: "u-fnh",
+                  month: "2026-04",
+                  networth: 1234.5,
+                },
+                client_ts: t1,
+                idempotency_key: "fnh-insert",
+              },
+            ],
+          },
+        }),
+        r1,
+      );
+      expect((r1.body as { accepted: number }).accepted).toBe(1);
+
+      const r2 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fnh",
+          body: {
+            ops: [
+              {
+                table: "finyk_networth_history",
+                op: "update" as const,
+                row: {
+                  user_id: "u-fnh",
+                  month: "2026-04",
+                  networth: 1500,
+                },
+                client_ts: t2,
+                idempotency_key: "fnh-update",
+              },
+            ],
+          },
+        }),
+        r2,
+      );
+      expect((r2.body as { accepted: number }).accepted).toBe(1);
+
+      const row = await testPool.query<{ networth: number; month: string }>(
+        `SELECT month, networth FROM finyk_networth_history
+           WHERE user_id = $1 AND month = $2`,
+        ["u-fnh", "2026-04"],
+      );
+      expect(row.rows[0].month).toBe("2026-04");
+      expect(row.rows[0].networth).toBeCloseTo(1500, 5);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "finyk_networth_history: invalid month string is rejected",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-fnh-bad");
+
+      const r = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fnh-bad",
+          body: {
+            ops: [
+              {
+                table: "finyk_networth_history",
+                op: "insert" as const,
+                row: {
+                  user_id: "u-fnh-bad",
+                  month: "April 2026",
+                  networth: 1,
+                },
+                client_ts: isoNow(),
+                idempotency_key: "fnh-bad",
+              },
+            ],
+          },
+        }),
+        r,
+      );
+      const body = r.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(body.accepted).toBe(0);
+      expect(body.results[0].reason).toBe("invalid_month");
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "finyk_prefs: singleton upsert — insert then update; delete rejected",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-fp");
+
+      const t1 = isoNow(-2_000);
+      const t2 = isoNow();
+      const t3 = isoNow(2_000);
+
+      const r1 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fp",
+          body: {
+            ops: [
+              {
+                table: "finyk_prefs",
+                op: "insert" as const,
+                row: {
+                  user_id: "u-fp",
+                  prefs_json: { defaultCurrency: "UAH" },
+                  monthly_plan_json: { income: "50000", expense: "30000" },
+                  show_balance: true,
+                },
+                client_ts: t1,
+                idempotency_key: "fp-insert",
+              },
+            ],
+          },
+        }),
+        r1,
+      );
+      expect((r1.body as { accepted: number }).accepted).toBe(1);
+
+      const r2 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fp",
+          body: {
+            ops: [
+              {
+                table: "finyk_prefs",
+                op: "update" as const,
+                row: {
+                  user_id: "u-fp",
+                  prefs_json: { defaultCurrency: "USD" },
+                  monthly_plan_json: { income: "60000", expense: "30000" },
+                  show_balance: false,
+                },
+                client_ts: t2,
+                idempotency_key: "fp-update",
+              },
+            ],
+          },
+        }),
+        r2,
+      );
+      expect((r2.body as { accepted: number }).accepted).toBe(1);
+
+      const row = await testPool.query<{
+        prefs_json: { defaultCurrency: string };
+        show_balance: boolean;
+      }>(
+        `SELECT prefs_json, show_balance FROM finyk_prefs WHERE user_id = $1`,
+        ["u-fp"],
+      );
+      expect(row.rows[0].prefs_json.defaultCurrency).toBe("USD");
+      expect(row.rows[0].show_balance).toBe(false);
+
+      const r3 = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-fp",
+          body: {
+            ops: [
+              {
+                table: "finyk_prefs",
+                op: "delete" as const,
+                row: { user_id: "u-fp" },
+                client_ts: t3,
+                idempotency_key: "fp-delete",
+              },
+            ],
+          },
+        }),
+        r3,
+      );
+      const body3 = r3.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(body3.accepted).toBe(0);
+      expect(body3.results[0].reason).toBe("delete_not_supported");
     },
     TIMEOUT_MS,
   );

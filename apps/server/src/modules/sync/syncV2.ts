@@ -123,6 +123,21 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   nutrition_pantry_items: applyNutritionPantryItems,
   nutrition_prefs: applyNutritionPrefs,
   nutrition_recipes: applyNutritionRecipes,
+  finyk_hidden_accounts: applyFinykHiddenAccounts,
+  finyk_hidden_transactions: applyFinykHiddenTransactions,
+  finyk_budgets: applyFinykBudgets,
+  finyk_subscriptions: applyFinykSubscriptions,
+  finyk_assets: applyFinykAssets,
+  finyk_debts: applyFinykDebts,
+  finyk_receivables: applyFinykReceivables,
+  finyk_custom_categories: applyFinykCustomCategories,
+  finyk_manual_expenses: applyFinykManualExpenses,
+  finyk_tx_filters: applyFinykTxFilters,
+  finyk_tx_categories: applyFinykTxCategories,
+  finyk_tx_splits: applyFinykTxSplits,
+  finyk_mono_debt_links: applyFinykMonoDebtLinks,
+  finyk_networth_history: applyFinykNetworthHistory,
+  finyk_prefs: applyFinykPrefs,
 };
 
 /**
@@ -1616,6 +1631,594 @@ async function applyNutritionRecipes(
              deleted_at = $4
        WHERE id = $5 AND user_id = $6`,
       [name, dataJson, clientTs, deletedAt ?? null, id, userId],
+    );
+  }
+  return { status: "applied" };
+}
+
+// ---------------------------------------------------------------------
+// Finyk apply-функції — Stage 4 PR #035.
+//
+// 15 split-функцій по таблицях. Архітектурно повторюють nutrition та
+// fizruk: кожна функція робить LWW-guard, розрізняє op `delete` /
+// upsert, оперує `(user_id, …)` ключем і повертає `applied`/`rejected`
+// з причиною (`lww_conflict`, `missing_id`, `user_id_mismatch`,
+// `fk_violation`, `not_found`).
+//
+// Розподіл за shape-ами (див. коментар у міграції 039_finyk_tables.sql):
+//
+//   * **Composite-PK tombstone** (per-(user, ext_id) запис із soft-delete):
+//     - `finyk_hidden_accounts`        — ext_id = account_id
+//     - `finyk_hidden_transactions`    — ext_id = transaction_id
+//
+//   * **Per-row + JSONB blob** (UUID PK, soft-delete):
+//     - `finyk_budgets`, `finyk_subscriptions`, `finyk_assets`,
+//       `finyk_debts`, `finyk_receivables`,
+//       `finyk_custom_categories`, `finyk_manual_expenses`,
+//       `finyk_tx_filters`
+//
+//   * **Per-tx mapping** (composite PK на (user_id, transaction_id),
+//     без soft-delete — `delete` = жорсткий `DELETE FROM`):
+//     - `finyk_tx_categories` — поле `category_id TEXT`
+//     - `finyk_tx_splits`     — поле `splits_json JSONB`
+//     - `finyk_mono_debt_links` — поле `debt_ids_json JSONB`
+//
+//   * **Time-series** (`finyk_networth_history`): composite PK
+//     `(user_id, month)`; `month` — TEXT YYYY-MM.
+//
+//   * **Singleton prefs** (`finyk_prefs`): PK = `user_id`. `delete`
+//     відхиляється, тільки оновлення.
+// ---------------------------------------------------------------------
+
+/**
+ * Generic helper for "composite-PK tombstone" finyk таблиць:
+ * `finyk_hidden_accounts` (ext column = account_id) і
+ * `finyk_hidden_transactions` (ext column = transaction_id). Уся
+ * apply-логіка ідентична — різняться лише імена колонки і таблиці.
+ */
+async function applyFinykTombstone(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+  table: "finyk_hidden_accounts" | "finyk_hidden_transactions",
+  extColumn: "account_id" | "transaction_id",
+): Promise<AppliedStatus> {
+  const row = op.row;
+  const extId = typeof row[extColumn] === "string" ? row[extColumn] : null;
+  if (!extId) return { status: "rejected", reason: "missing_ext_id" };
+
+  if (row.user_id != null && row.user_id !== userId) {
+    return { status: "rejected", reason: "user_id_mismatch" };
+  }
+
+  const existing = await client.query<{ updated_at: Date }>(
+    `SELECT updated_at FROM ${table} WHERE user_id = $1 AND ${extColumn} = $2`,
+    [userId, extId],
+  );
+  if (existing.rows.length > 0) {
+    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+      return { status: "rejected", reason: "lww_conflict" };
+    }
+  }
+
+  if (op.op === "delete") {
+    if (existing.rows.length === 0) {
+      return { status: "rejected", reason: "not_found" };
+    }
+    await client.query(
+      `UPDATE ${table}
+         SET deleted_at = $1, updated_at = $1
+       WHERE user_id = $2 AND ${extColumn} = $3`,
+      [clientTs, userId, extId],
+    );
+    return { status: "applied" };
+  }
+
+  const createdAt = parseOptionalDate(row.created_at);
+  if (createdAt === "invalid") {
+    return { status: "rejected", reason: "invalid_created_at" };
+  }
+  const deletedAt = parseOptionalDate(row.deleted_at);
+  if (deletedAt === "invalid") {
+    return { status: "rejected", reason: "invalid_deleted_at" };
+  }
+
+  if (existing.rows.length === 0) {
+    await client.query(
+      `INSERT INTO ${table}
+         (user_id, ${extColumn}, created_at, updated_at, deleted_at)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [userId, extId, createdAt ?? clientTs, clientTs, deletedAt ?? null],
+    );
+  } else {
+    await client.query(
+      `UPDATE ${table}
+         SET updated_at = $1, deleted_at = $2
+       WHERE user_id = $3 AND ${extColumn} = $4`,
+      [clientTs, deletedAt ?? null, userId, extId],
+    );
+  }
+  return { status: "applied" };
+}
+
+async function applyFinykHiddenAccounts(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  return applyFinykTombstone(
+    client,
+    op,
+    userId,
+    clientTs,
+    "finyk_hidden_accounts",
+    "account_id",
+  );
+}
+
+async function applyFinykHiddenTransactions(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  return applyFinykTombstone(
+    client,
+    op,
+    userId,
+    clientTs,
+    "finyk_hidden_transactions",
+    "transaction_id",
+  );
+}
+
+/**
+ * Generic helper for "per-row + JSONB blob" finyk таблиць
+ * (`finyk_budgets`, `finyk_subscriptions`, `finyk_assets`,
+ * `finyk_debts`, `finyk_receivables`, `finyk_custom_categories`,
+ * `finyk_manual_expenses`, `finyk_tx_filters`). Ідентична семантика —
+ * лише ім'я таблиці змінюється. Колонки фіксовані: `(id UUID PK,
+ * user_id, data_json JSONB, created_at, updated_at, deleted_at)`.
+ */
+async function applyFinykPerRowBlob(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+  table: string,
+): Promise<AppliedStatus> {
+  const row = op.row;
+  const id = typeof row.id === "string" ? row.id : null;
+  if (!id) return { status: "rejected", reason: "missing_id" };
+
+  if (row.user_id != null && row.user_id !== userId) {
+    return { status: "rejected", reason: "user_id_mismatch" };
+  }
+
+  const existing = await client.query<{ user_id: string; updated_at: Date }>(
+    `SELECT user_id, updated_at FROM ${table} WHERE id = $1`,
+    [id],
+  );
+  if (existing.rows.length > 0) {
+    if (existing.rows[0].user_id !== userId) {
+      return { status: "rejected", reason: "fk_violation" };
+    }
+    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+      return { status: "rejected", reason: "lww_conflict" };
+    }
+  }
+
+  if (op.op === "delete") {
+    if (existing.rows.length === 0) {
+      return { status: "rejected", reason: "not_found" };
+    }
+    await client.query(
+      `UPDATE ${table}
+         SET deleted_at = $1, updated_at = $1
+       WHERE id = $2 AND user_id = $3`,
+      [clientTs, id, userId],
+    );
+    return { status: "applied" };
+  }
+
+  const dataJson = toJsonbParam(row.data_json);
+  if (dataJson === null) {
+    return { status: "rejected", reason: "missing_data_json" };
+  }
+  const createdAt = parseOptionalDate(row.created_at);
+  if (createdAt === "invalid") {
+    return { status: "rejected", reason: "invalid_created_at" };
+  }
+  const deletedAt = parseOptionalDate(row.deleted_at);
+  if (deletedAt === "invalid") {
+    return { status: "rejected", reason: "invalid_deleted_at" };
+  }
+
+  if (existing.rows.length === 0) {
+    await client.query(
+      `INSERT INTO ${table}
+         (id, user_id, data_json, created_at, updated_at, deleted_at)
+       VALUES ($1, $2, $3::jsonb, $4, $5, $6)`,
+      [
+        id,
+        userId,
+        dataJson,
+        createdAt ?? clientTs,
+        clientTs,
+        deletedAt ?? null,
+      ],
+    );
+  } else {
+    await client.query(
+      `UPDATE ${table}
+         SET data_json  = $1::jsonb,
+             updated_at = $2,
+             deleted_at = $3
+       WHERE id = $4 AND user_id = $5`,
+      [dataJson, clientTs, deletedAt ?? null, id, userId],
+    );
+  }
+  return { status: "applied" };
+}
+
+async function applyFinykBudgets(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  return applyFinykPerRowBlob(client, op, userId, clientTs, "finyk_budgets");
+}
+
+async function applyFinykSubscriptions(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  return applyFinykPerRowBlob(
+    client,
+    op,
+    userId,
+    clientTs,
+    "finyk_subscriptions",
+  );
+}
+
+async function applyFinykAssets(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  return applyFinykPerRowBlob(client, op, userId, clientTs, "finyk_assets");
+}
+
+async function applyFinykDebts(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  return applyFinykPerRowBlob(client, op, userId, clientTs, "finyk_debts");
+}
+
+async function applyFinykReceivables(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  return applyFinykPerRowBlob(
+    client,
+    op,
+    userId,
+    clientTs,
+    "finyk_receivables",
+  );
+}
+
+async function applyFinykCustomCategories(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  return applyFinykPerRowBlob(
+    client,
+    op,
+    userId,
+    clientTs,
+    "finyk_custom_categories",
+  );
+}
+
+async function applyFinykManualExpenses(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  return applyFinykPerRowBlob(
+    client,
+    op,
+    userId,
+    clientTs,
+    "finyk_manual_expenses",
+  );
+}
+
+async function applyFinykTxFilters(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  return applyFinykPerRowBlob(client, op, userId, clientTs, "finyk_tx_filters");
+}
+
+/**
+ * Apply-шлях для `finyk_tx_categories` — per-tx mapping без
+ * soft-delete. `delete` op виконує `DELETE FROM` (idempotent).
+ */
+async function applyFinykTxCategories(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  const row = op.row;
+  const transactionId =
+    typeof row.transaction_id === "string" ? row.transaction_id : null;
+  if (!transactionId) return { status: "rejected", reason: "missing_tx_id" };
+
+  if (row.user_id != null && row.user_id !== userId) {
+    return { status: "rejected", reason: "user_id_mismatch" };
+  }
+
+  const existing = await client.query<{ updated_at: Date }>(
+    `SELECT updated_at FROM finyk_tx_categories
+       WHERE user_id = $1 AND transaction_id = $2`,
+    [userId, transactionId],
+  );
+  if (existing.rows.length > 0) {
+    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+      return { status: "rejected", reason: "lww_conflict" };
+    }
+  }
+
+  if (op.op === "delete") {
+    await client.query(
+      `DELETE FROM finyk_tx_categories
+         WHERE user_id = $1 AND transaction_id = $2`,
+      [userId, transactionId],
+    );
+    return { status: "applied" };
+  }
+
+  const categoryId =
+    typeof row.category_id === "string" ? row.category_id : null;
+  if (!categoryId) {
+    return { status: "rejected", reason: "missing_category_id" };
+  }
+
+  await client.query(
+    `INSERT INTO finyk_tx_categories
+       (user_id, transaction_id, category_id, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (user_id, transaction_id) DO UPDATE
+       SET category_id = EXCLUDED.category_id,
+           updated_at  = EXCLUDED.updated_at`,
+    [userId, transactionId, categoryId, clientTs, clientTs],
+  );
+  return { status: "applied" };
+}
+
+/**
+ * Generic helper for `finyk_tx_splits` and `finyk_mono_debt_links` —
+ * per-tx JSONB-array mapping (composite PK на `(user_id,
+ * transaction_id)`, без soft-delete). Розрізняються лише ім'ям
+ * таблиці і JSONB-колонки. Default fallback значення для відсутнього
+ * payload-у — порожній масив `[]`.
+ */
+async function applyFinykPerTxJsonbArray(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+  table: "finyk_tx_splits" | "finyk_mono_debt_links",
+  jsonColumn: "splits_json" | "debt_ids_json",
+): Promise<AppliedStatus> {
+  const row = op.row;
+  const transactionId =
+    typeof row.transaction_id === "string" ? row.transaction_id : null;
+  if (!transactionId) return { status: "rejected", reason: "missing_tx_id" };
+
+  if (row.user_id != null && row.user_id !== userId) {
+    return { status: "rejected", reason: "user_id_mismatch" };
+  }
+
+  const existing = await client.query<{ updated_at: Date }>(
+    `SELECT updated_at FROM ${table}
+       WHERE user_id = $1 AND transaction_id = $2`,
+    [userId, transactionId],
+  );
+  if (existing.rows.length > 0) {
+    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+      return { status: "rejected", reason: "lww_conflict" };
+    }
+  }
+
+  if (op.op === "delete") {
+    await client.query(
+      `DELETE FROM ${table}
+         WHERE user_id = $1 AND transaction_id = $2`,
+      [userId, transactionId],
+    );
+    return { status: "applied" };
+  }
+
+  const jsonValue = toJsonbParam(row[jsonColumn]) ?? "[]";
+
+  await client.query(
+    `INSERT INTO ${table}
+       (user_id, transaction_id, ${jsonColumn}, created_at, updated_at)
+     VALUES ($1, $2, $3::jsonb, $4, $5)
+     ON CONFLICT (user_id, transaction_id) DO UPDATE
+       SET ${jsonColumn} = EXCLUDED.${jsonColumn},
+           updated_at    = EXCLUDED.updated_at`,
+    [userId, transactionId, jsonValue, clientTs, clientTs],
+  );
+  return { status: "applied" };
+}
+
+async function applyFinykTxSplits(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  return applyFinykPerTxJsonbArray(
+    client,
+    op,
+    userId,
+    clientTs,
+    "finyk_tx_splits",
+    "splits_json",
+  );
+}
+
+async function applyFinykMonoDebtLinks(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  return applyFinykPerTxJsonbArray(
+    client,
+    op,
+    userId,
+    clientTs,
+    "finyk_mono_debt_links",
+    "debt_ids_json",
+  );
+}
+
+/**
+ * Apply-шлях для `finyk_networth_history` — time-series, composite
+ * PK `(user_id, month)`. `month` — TEXT YYYY-MM (stored verbatim).
+ */
+async function applyFinykNetworthHistory(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  const row = op.row;
+  const month = typeof row.month === "string" ? row.month : null;
+  if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+    return { status: "rejected", reason: "invalid_month" };
+  }
+
+  if (row.user_id != null && row.user_id !== userId) {
+    return { status: "rejected", reason: "user_id_mismatch" };
+  }
+
+  const existing = await client.query<{ updated_at: Date }>(
+    `SELECT updated_at FROM finyk_networth_history
+       WHERE user_id = $1 AND month = $2`,
+    [userId, month],
+  );
+  if (existing.rows.length > 0) {
+    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+      return { status: "rejected", reason: "lww_conflict" };
+    }
+  }
+
+  if (op.op === "delete") {
+    await client.query(
+      `DELETE FROM finyk_networth_history
+         WHERE user_id = $1 AND month = $2`,
+      [userId, month],
+    );
+    return { status: "applied" };
+  }
+
+  const networth = parseOptionalNumber(row.networth);
+  if (networth === "invalid") {
+    return { status: "rejected", reason: "invalid_networth" };
+  }
+  const snapshotJson = toJsonbParam(row.snapshot_json) ?? "{}";
+
+  await client.query(
+    `INSERT INTO finyk_networth_history
+       (user_id, month, networth, snapshot_json, created_at, updated_at)
+     VALUES ($1, $2, $3, $4::jsonb, $5, $6)
+     ON CONFLICT (user_id, month) DO UPDATE
+       SET networth      = EXCLUDED.networth,
+           snapshot_json = EXCLUDED.snapshot_json,
+           updated_at    = EXCLUDED.updated_at`,
+    [userId, month, networth ?? 0, snapshotJson, clientTs, clientTs],
+  );
+  return { status: "applied" };
+}
+
+/**
+ * Apply-шлях для `finyk_prefs` — singleton per-user (PK = user_id).
+ *
+ * Структурно дзеркало `applyNutritionPrefs`: `delete` відхиляється,
+ * `prefs_json`/`monthly_plan_json` серіалізуються через `toJsonbParam`,
+ * `show_balance` приходить як boolean / 0|1.
+ */
+async function applyFinykPrefs(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  if (op.op === "delete") {
+    return { status: "rejected", reason: "delete_not_supported" };
+  }
+
+  const row = op.row;
+  if (row.user_id != null && row.user_id !== userId) {
+    return { status: "rejected", reason: "user_id_mismatch" };
+  }
+
+  const existing = await client.query<{ updated_at: Date }>(
+    `SELECT updated_at FROM finyk_prefs WHERE user_id = $1`,
+    [userId],
+  );
+  if (existing.rows.length > 0) {
+    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+      return { status: "rejected", reason: "lww_conflict" };
+    }
+  }
+
+  const prefsJson = toJsonbParam(row.prefs_json) ?? "{}";
+  const monthlyPlanJson = toJsonbParam(row.monthly_plan_json) ?? "{}";
+  const showBalance =
+    row.show_balance === false || row.show_balance === 0 ? false : true;
+
+  if (existing.rows.length === 0) {
+    await client.query(
+      `INSERT INTO finyk_prefs
+         (user_id, prefs_json, monthly_plan_json, show_balance,
+          created_at, updated_at)
+       VALUES ($1, $2::jsonb, $3::jsonb, $4, $5, $6)`,
+      [userId, prefsJson, monthlyPlanJson, showBalance, clientTs, clientTs],
+    );
+  } else {
+    await client.query(
+      `UPDATE finyk_prefs
+         SET prefs_json        = $1::jsonb,
+             monthly_plan_json = $2::jsonb,
+             show_balance      = $3,
+             updated_at        = $4
+       WHERE user_id = $5`,
+      [prefsJson, monthlyPlanJson, showBalance, clientTs, userId],
     );
   }
   return { status: "applied" };

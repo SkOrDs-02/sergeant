@@ -369,3 +369,220 @@ export const NUTRITION_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
  * (fizruk) so the three modules' migration histories don't collide.
  */
 export const NUTRITION_MIGRATIONS_TABLE = "__nutrition_migrations";
+
+// ---------------------------------------------------------------------------
+// Finyk module — Stage 4 / PR #035
+// ---------------------------------------------------------------------------
+
+const FINYK_001_SQL = `
+CREATE TABLE IF NOT EXISTS finyk_hidden_accounts (
+  user_id     TEXT NOT NULL,
+  account_id  TEXT NOT NULL,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT,
+  PRIMARY KEY (user_id, account_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_hidden_accounts_user_active_idx_lite
+  ON finyk_hidden_accounts (user_id)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_hidden_transactions (
+  user_id        TEXT NOT NULL,
+  transaction_id TEXT NOT NULL,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at     TEXT,
+  PRIMARY KEY (user_id, transaction_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_hidden_transactions_user_active_idx_lite
+  ON finyk_hidden_transactions (user_id)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_budgets (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS finyk_budgets_user_active_idx_lite
+  ON finyk_budgets (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_subscriptions (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS finyk_subscriptions_user_active_idx_lite
+  ON finyk_subscriptions (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_assets (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS finyk_assets_user_active_idx_lite
+  ON finyk_assets (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_debts (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS finyk_debts_user_active_idx_lite
+  ON finyk_debts (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_receivables (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS finyk_receivables_user_active_idx_lite
+  ON finyk_receivables (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_tx_categories (
+  user_id        TEXT NOT NULL,
+  transaction_id TEXT NOT NULL,
+  category_id    TEXT NOT NULL,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, transaction_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_tx_categories_user_idx_lite
+  ON finyk_tx_categories (user_id);
+
+CREATE TABLE IF NOT EXISTS finyk_tx_splits (
+  user_id        TEXT NOT NULL,
+  transaction_id TEXT NOT NULL,
+  splits_json    TEXT NOT NULL DEFAULT '[]',
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, transaction_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_tx_splits_user_idx_lite
+  ON finyk_tx_splits (user_id);
+
+CREATE TABLE IF NOT EXISTS finyk_mono_debt_links (
+  user_id        TEXT NOT NULL,
+  transaction_id TEXT NOT NULL,
+  debt_ids_json  TEXT NOT NULL DEFAULT '[]',
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, transaction_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_mono_debt_links_user_idx_lite
+  ON finyk_mono_debt_links (user_id);
+
+CREATE TABLE IF NOT EXISTS finyk_networth_history (
+  user_id        TEXT NOT NULL,
+  month          TEXT NOT NULL,
+  networth       REAL NOT NULL DEFAULT 0,
+  snapshot_json  TEXT NOT NULL DEFAULT '{}',
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, month)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_networth_history_user_month_idx_lite
+  ON finyk_networth_history (user_id, month DESC);
+
+CREATE TABLE IF NOT EXISTS finyk_custom_categories (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS finyk_custom_categories_user_active_idx_lite
+  ON finyk_custom_categories (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_manual_expenses (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS finyk_manual_expenses_user_active_idx_lite
+  ON finyk_manual_expenses (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_tx_filters (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS finyk_tx_filters_user_active_idx_lite
+  ON finyk_tx_filters (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_prefs (
+  user_id            TEXT PRIMARY KEY,
+  prefs_json         TEXT NOT NULL DEFAULT '{}',
+  monthly_plan_json  TEXT NOT NULL DEFAULT '{}',
+  show_balance       INTEGER NOT NULL DEFAULT 1,
+  created_at         TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at         TEXT NOT NULL DEFAULT (datetime('now'))
+);
+`;
+
+/**
+ * Ordered list of bundled client migrations for the Finyk module on
+ * SQLite. Pass this directly to `runMigrations` from
+ * `@sergeant/db-schema/migrate`.
+ *
+ * The Finyk module uses a separate ledger table
+ * (`__finyk_migrations`) so that routine, fizruk, nutrition, and
+ * finyk migrations are independent — each module can be migrated,
+ * rolled out, and rolled back without affecting the others. Same
+ * rationale as nutrition's split from fizruk in PR #031.
+ */
+export const FINYK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
+  { name: "001_finyk_tables.sql", sql: FINYK_001_SQL },
+] as const;
+
+/**
+ * Stable ledger table name used by the Finyk SQLite module.
+ * Separate from `__migrations` (routine), `__fizruk_migrations`
+ * (fizruk), and `__nutrition_migrations` (nutrition) so all four
+ * modules' migration histories stay independent.
+ */
+export const FINYK_MIGRATIONS_TABLE = "__finyk_migrations";
