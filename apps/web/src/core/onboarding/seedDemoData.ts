@@ -44,6 +44,7 @@ import { seedHubQuickStats } from "./seedDemoData/seedHubQuickStats";
 import { seedNutrition } from "./seedDemoData/seedNutrition";
 import { seedRoutine } from "./seedDemoData/seedRoutine";
 import { removeKey, writeRaw } from "./seedDemoData/utils";
+import { safeReadStringLS } from "@shared/lib/storage/storage";
 
 const SEEDED_KEYS = [
   DEMO_FLAG_KEY,
@@ -90,6 +91,18 @@ export function seedDemoData(): void {
 /** Wipe everything the seeder writes. */
 export function resetDemoData(): void {
   for (const k of SEEDED_KEYS) removeKey(k);
+}
+
+/**
+ * `true` when the local store currently holds a demo payload. Read
+ * synchronously from localStorage so the boot path can fork before
+ * React mounts. Used by the FTUX-banner (S4.1) to surface the
+ * "Це приклад. Створити свій?" CTA. Goes through the boundary helper
+ * so private-mode / corrupted-quota errors degrade to "no demo" the
+ * same way every other storage read does.
+ */
+export function isDemoMode(): boolean {
+  return safeReadStringLS(DEMO_FLAG_KEY) === "1";
 }
 
 /**
