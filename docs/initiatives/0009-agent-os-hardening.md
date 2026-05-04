@@ -1,7 +1,7 @@
 # 0009 — Agent-OS hardening: skill enforcement, governance slimming, лінтери проти дрейфу
 
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** In progress (Phase 1 — 2 of 5 PRs відкрито: [#1659](https://github.com/Skords-01/Sergeant/pull/1659) skills-lint + skills-lock SHA, [#1660](https://github.com/Skords-01/Sergeant/pull/1660) Hard Rules categorization)
+> **Status:** In progress (Phase 1 — 2/5 PR merged 2026-05-04: [#1659](https://github.com/Skords-01/Sergeant/pull/1659) skills-lint + skills-lock SHA, [#1660](https://github.com/Skords-01/Sergeant/pull/1660) Hard Rules categorization)
 > **Priority:** P1 (Sprint 2–3)
 > **Owner:** `@Skords-01`
 > **ETA:** 4 weeks (фази 1–4 послідовно, фаза 5 — паралельно або як carry-over)
@@ -9,17 +9,17 @@
 
 ## Поточний прогрес
 
-| Фаза | PR   | Опис                                    | Гілка/PR                                                 | Статус                                                                                                                                                                                                                                            |
-| ---- | ---- | --------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1.1  | open | `pnpm lint:skills` + skills-lock SHA256 | [#1659](https://github.com/Skords-01/Sergeant/pull/1659) | Відкрито 2026-05-04, чекає на CI/review                                                                                                                                                                                                           |
-| 1.2  | TBD  | `pnpm lint:playbook-language` (UA)      | —                                                        | Не розпочато                                                                                                                                                                                                                                      |
-| 1.3  | hold | Husky pre-commit `tsc-files`            | —                                                        | Заблоковано pre-existing typecheck failures на `main` (`apps/server/src/modules/mono/rotateSecret.test.ts:63` TS2345; `apps/web/src/core/hub/HubDashboard.tsx:682` TS2741). Потрібен hotfix-PR з фіксом перед тим, як активувати pre-commit gate. |
-| 1.4  | TBD  | `playbook-schema` extension             | —                                                        | Не розпочато                                                                                                                                                                                                                                      |
-| 1.5  | open | Hard-rules categorization               | [#1660](https://github.com/Skords-01/Sergeant/pull/1660) | Відкрито 2026-05-04, чекає на CI/review                                                                                                                                                                                                           |
-| 2.x  | TBD  | Уніфікація іменування                   | —                                                        | Не розпочато                                                                                                                                                                                                                                      |
-| 3.x  | TBD  | Слім AGENTS.md / Hard Rules slim-down   | —                                                        | Залежить від 1.5 (categorization)                                                                                                                                                                                                                 |
-| 4.x  | TBD  | Operational cleanup                     | —                                                        | Не розпочато                                                                                                                                                                                                                                      |
-| 5.x  | TBD  | Plop generators, onboarding, n8n smoke  | —                                                        | Carry-over                                                                                                                                                                                                                                        |
+| Фаза | PR         | Опис                                    | Гілка/PR                                                 | Статус                                                                                                                                                                                                                                             |
+| ---- | ---------- | --------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.1  | **merged** | `pnpm lint:skills` + skills-lock SHA256 | [#1659](https://github.com/Skords-01/Sergeant/pull/1659) | Merged 2026-05-04. Поставлено: `scripts/check-skill-shape.mjs`, `scripts/check-skills-lock.mjs`, `pnpm lint:skills`, `pnpm skills:lock`, реальні SHA-256 для 12 skill-ів, `Playbooks` секції в 8 SKILL.md, `skill-freshness.yml` через нові гейти. |
+| 1.2  | TBD        | `pnpm lint:playbook-language` (UA)      | —                                                        | Не розпочато                                                                                                                                                                                                                                       |
+| 1.3  | hold       | Husky pre-commit `tsc-files`            | —                                                        | Заблоковано pre-existing typecheck failures на `main` (`apps/server/src/modules/mono/rotateSecret.test.ts:63` TS2345; `apps/web/src/core/hub/HubDashboard.tsx:682` TS2741). Потрібен hotfix-PR з фіксом перед тим, як активувати pre-commit gate.  |
+| 1.4  | TBD        | `playbook-schema` extension             | —                                                        | Не розпочато                                                                                                                                                                                                                                       |
+| 1.5  | **merged** | Hard-rules categorization               | [#1660](https://github.com/Skords-01/Sergeant/pull/1660) | Merged 2026-05-04. Додано required-поле `category` (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`) у `hard-rules.json` + schema; новий стовпець + Category legend у `hard-rules-matrix.md`; AGENTS.md preface оновлено.   |
+| 2.x  | TBD        | Уніфікація іменування                   | —                                                        | Не розпочато                                                                                                                                                                                                                                       |
+| 3.x  | TBD        | Слім AGENTS.md / Hard Rules slim-down   | —                                                        | Залежить від 1.5 (categorization) — тепер unblock-нуто                                                                                                                                                                                             |
+| 4.x  | TBD        | Operational cleanup                     | —                                                        | Не розпочато                                                                                                                                                                                                                                       |
+| 5.x  | TBD        | Plop generators, onboarding, n8n smoke  | —                                                        | Carry-over                                                                                                                                                                                                                                         |
 
 > **PR 1.3 deferred reason:** запуск `tsc-files`/`tsc -p` на staged TS-файлах поверх `main` падає на pre-existing помилках (`apps/server/src/modules/mono/rotateSecret.test.ts:63` TS2345; `apps/web/src/core/hub/HubDashboard.tsx:682` TS2741). Pre-commit gate не може бути зеленим, доки ці помилки не виправлено. План: винести фікс цих TS errors як hotfix-PR (поза 0009), потім додати PR 1.3.
 
@@ -80,11 +80,13 @@ Sergeant має один із найдорожче побудованих agent-
 
 **Acceptance criteria:**
 
-- [ ] `pnpm lint:skills` зеленіє локально + у CI на `main`.
-- [ ] Зміна вмісту будь-якого `SKILL.md` без оновлення lock → CI fail з інструкцією.
-- [ ] `skill-freshness.yml` більше не warning-ить про DEVIN.md.
+- [x] `pnpm lint:skills` зеленіє локально + у CI на `main`. _(Done у [#1659](https://github.com/Skords-01/Sergeant/pull/1659).)_
+- [x] Зміна вмісту будь-якого `SKILL.md` без оновлення lock → CI fail з інструкцією. _(Done — `scripts/check-skills-lock.mjs` падає з посиланням на `pnpm skills:lock`.)_
+- [x] `skill-freshness.yml` більше не warning-ить про DEVIN.md. _(Done — workflow тепер запускає `pnpm lint:skills`; DEVIN.md grep видалено.)_
 
 **Ризики:** початковий PR оновить 12 hash-ів; reviewer має перевірити, що SKILL.md тіла справді не змінювалися.
+
+**Status:** Merged 2026-05-04 ([#1659](https://github.com/Skords-01/Sergeant/pull/1659)).
 
 #### PR 1.2 — `pnpm lint:playbook-language` (Ukrainian-required)
 
@@ -149,8 +151,10 @@ Sergeant має один із найдорожче побудованих agent-
 
 **Acceptance criteria:**
 
-- [ ] Кожне правило має `category`.
-- [ ] Categorization — у форматі, який очікує фаза 3.
+- [x] Кожне правило має `category`. _(Done у [#1660](https://github.com/Skords-01/Sergeant/pull/1660) — 18/18 правил.)_
+- [x] Categorization — у форматі, який очікує фаза 3. _(Done — enum `blocker-invariant` / `lint-enforced-convention` / `active-initiative` валідується schema-ою + `loadRegistry`; розподіл 6/11/1.)_
+
+**Status:** Merged 2026-05-04 ([#1660](https://github.com/Skords-01/Sergeant/pull/1660)).
 
 ### Фаза 2 — Уніфікація іменування і структури (тиждень 2, 4 PR)
 
@@ -403,19 +407,20 @@ Sergeant має один із найдорожче побудованих agent-
 
 ## Метрики
 
-| Метрика                                                                      | Baseline (2026-05-04)          | Target (post-rollout) |
-| ---------------------------------------------------------------------------- | ------------------------------ | --------------------- |
-| % playbook'ів, що відповідають Hard Rule #15 (UA prose або явний `lang: en`) | ~62% (26/42)                   | 100%                  |
-| `.agents/skills-lock.json` `computedHash` integrity                          | broken (порожні)               | enforced (CI gate)    |
-| AGENTS.md LOC                                                                | 800                            | ≤ 150                 |
-| Skills з task-specific тригерною фразою у `description:`                     | 0/12                           | 12/12                 |
-| EN-only playbook без `lang: en` allow-list                                   | 16                             | 0                     |
-| `SpecialistAgent` enum записів без skill-mapping                             | 11/11                          | 0                     |
-| Pre-commit ловить TS-помилки                                                 | no                             | yes (`tsc-files`)     |
-| % PR-ів із isolated TS-fail у CI (per 30 days)                               | TBD (sample)                   | < 50% від baseline    |
-| CI median minutes per PR                                                     | TBD                            | -15%                  |
-| Dependency automation tools                                                  | 2 (Renovate + Dependabot)      | 1 (Renovate за ADR)   |
-| Dead-code інструменти                                                        | 3 (knip + ts-prune + depcheck) | 1 (knip)              |
+| Метрика                                                                      | Baseline (2026-05-04)          | Поточне (2026-05-04)                                                                             | Target (post-rollout)            |
+| ---------------------------------------------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------ | -------------------------------- |
+| % playbook'ів, що відповідають Hard Rule #15 (UA prose або явний `lang: en`) | ~62% (26/42)                   | ~62% (без змін — PR 1.2 не розпочато)                                                            | 100%                             |
+| `.agents/skills-lock.json` `computedHash` integrity                          | broken (порожні)               | **enforced** (PR 1.1 #1659)                                                                      | enforced (CI gate)               |
+| Hard-rules registry містить категорізацію                                    | no                             | **yes** — 6 blocker-invariant / 11 lint-enforced-convention / 1 active-initiative (PR 1.5 #1660) | yes (фаза 3 use-cases категорії) |
+| AGENTS.md LOC                                                                | 800                            | 808 (мінімальний +8 від preface PR 1.5)                                                          | ≤ 150                            |
+| Skills з task-specific тригерною фразою у `description:`                     | 0/12                           | 0/12 (без змін — PR 1.2 не розпочато)                                                            | 12/12                            |
+| EN-only playbook без `lang: en` allow-list                                   | 16                             | 16 (без змін)                                                                                    | 0                                |
+| `SpecialistAgent` enum записів без skill-mapping                             | 11/11                          | 11/11 (без змін)                                                                                 | 0                                |
+| Pre-commit ловить TS-помилки                                                 | no                             | no (PR 1.3 deferred)                                                                             | yes (`tsc-files`)                |
+| % PR-ів із isolated TS-fail у CI (per 30 days)                               | TBD (sample)                   | TBD                                                                                              | < 50% від baseline               |
+| CI median minutes per PR                                                     | TBD                            | TBD                                                                                              | -15%                             |
+| Dependency automation tools                                                  | 2 (Renovate + Dependabot)      | 2 (без змін; ADR-0044 фіксує дочасний стан)                                                      | 1 (Renovate за ADR)              |
+| Dead-code інструменти                                                        | 3 (knip + ts-prune + depcheck) | 3 (без змін)                                                                                     | 1 (knip)                         |
 
 ## Власник, рев'юери
 

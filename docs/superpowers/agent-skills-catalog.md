@@ -1,9 +1,20 @@
 # Sergeant Agent Skills Catalog
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 Канонічна карта repo-owned skills. Якщо ти агент у цьому репо, починай із `sergeant-start-here`, а потім переходь до одного specialist skill на основну поверхню змін.
+
+## Maintaining skills
+
+Якщо твоя задача змінює `.agents/skills/**/SKILL.md` (рідко — лише maintainer-роботи):
+
+```bash
+pnpm lint:skills    # перевіряє shape (frontmatter, посилання) + integrity (SHA-256 ↔ skills-lock.json)
+pnpm skills:lock    # регенерує SHA-256 у .agents/skills-lock.json після свідомої зміни вмісту
+```
+
+Гейти введено initiative-ою [`0009-agent-os-hardening`](../initiatives/0009-agent-os-hardening.md) PR 1.1 ([#1659](https://github.com/Skords-01/Sergeant/pull/1659)). `skill-freshness.yml` тепер запускає той самий `pnpm lint:skills` як required-чек на PR. Без оновленого lock-у CI падає з посиланням на `pnpm skills:lock`.
 
 ## Active Skills
 
