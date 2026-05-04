@@ -5,6 +5,8 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 import { _getMMKVInstance } from "@/lib/storage";
 
 import { loadSavedRecipes, type SavedRecipe } from "../lib/recipeBookStore";
+import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
+import { useNutritionSqliteReadGate } from "../lib/sqliteReadGate";
 
 export function useSavedRecipesList(): { recipes: SavedRecipe[] } {
   const [recipes, setRecipes] = useState<SavedRecipe[]>(() =>
@@ -21,6 +23,18 @@ export function useSavedRecipesList(): { recipes: SavedRecipe[] } {
     });
     return () => sub.remove();
   }, []);
+
+  // Stage 4 PR #033: under `feature.nutrition.sqlite_v2.read_sqlite`,
+  // overlay saved recipes from the local SQLite cache once it's warm.
+  // MMKV first-paint read above stays as a synchronous fallback.
+  const { enabled: sqliteReadEnabled, tick: sqliteCacheTick } =
+    useNutritionSqliteReadGate();
+  useEffect(() => {
+    if (!sqliteReadEnabled) return;
+    const cache = getCachedNutritionSqliteState();
+    if (cache.refreshedAt === null) return;
+    setRecipes(cache.recipes);
+  }, [sqliteReadEnabled, sqliteCacheTick]);
 
   return { recipes };
 }
