@@ -242,6 +242,8 @@ ShortcutRegistryProvider
 
 ## 2.3 [Bad] CloudSync без E2E reproduction для split-brain
 
+> **2026-05-04 update.** Закрито у foundation-формі: [`apps/web/src/test/integration/cloudSync.splitBrain.test.ts`](https://github.com/Skords-01/Sergeant/blob/main/apps/web/src/test/integration/cloudSync.splitBrain.test.ts) додає **10 split-brain сценаріїв** через in-memory `FakeServer` (репліка LWW SQL-логіки з `apps/server/src/modules/sync/sync.ts`) та два `FakeClient`-и. Покриває: idempotency, LWW ordering, conflict, tombstone wins, no resurrection (v1 поведінка), clock skew (+/− 5 min), network flap (3 5xx → 4-та проходить), pull respects dirty, multiple modules (50 ops × 5 modules з 10 fail). Suite runs <100ms у CI. PR [#1607](https://github.com/Skords-01/Sergeant/pull/1607) — merged. Наступні follow-up-и: real engine offline queue replay (jsdom + fake timers), Stryker mutation testing, `useCloudSync` hook integration (вже §2.4).
+
 **Що бачу.** LWW conflict-resolution + per-row op-log v2 — це грамотно для local-first. Але реальні баги в local-first народжуються в нетипових сценаріях:
 
 - Юзер створив транзакцію офлайн → закрив вкладку → відкрив на іншому пристрої → створив там → синк → що бачимо?

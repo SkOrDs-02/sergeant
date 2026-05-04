@@ -134,6 +134,21 @@ export const auth = betterAuth({
     // maxPasswordLength захищає від DoS через надто довгі bcrypt-пейлоади.
     minPasswordLength: env.MIN_PASSWORD_LENGTH,
     maxPasswordLength: env.MAX_PASSWORD_LENGTH,
+    /**
+     * H6 — gate sign-in on `email_verified=true` коли ops явно увімкнув це
+     * через `REQUIRE_EMAIL_VERIFICATION` env-var. Default `false` навмисно:
+     * існуючі акаунти створені до H6 з `email_verified=false` миттєво
+     * залочаться, якщо просто фліпнути на `true`. Plan rollout-у —
+     * у `docs/security/hardening/H6-email-verification.md` (Implementation log).
+     *
+     * Незалежно від цього flag-а:
+     *   - `emailVerification.sendOnSignUp = true` нижче — нові акаунти ВЖЕ
+     *     отримують верифікаційний лист (одразу мають канал верифікації).
+     *   - `requireVerifiedEmail()` middleware гейтить `/api/mono/connect`
+     *     unconditional — найпотужніша атака з картки (squat email →
+     *     підв'язати чужий банк) не чекає на глобальний flip.
+     */
+    requireEmailVerification: env.REQUIRE_EMAIL_VERIFICATION,
     // Не await-имо відправку — зменшує ризик timing enumeration (див. Better Auth docs).
     sendResetPassword: async ({ user, url }) => {
       queueAuthTransactionalEmail({
@@ -146,7 +161,15 @@ export const auth = betterAuth({
     },
   },
   emailVerification: {
-    sendOnSignUp: false,
+    /**
+     * H6 — кожен sign-up тепер триггерить верифікаційний лист. До цього був
+     * `false`, тож `email_verified` лишався `false` навічно і ми не мали
+     * каналу для cross-check власника email-а. Зміна безризикова: лист
+     * іде в існуючу `auth-mail` BullMQ-чергу (Resend), ретраї та fallback
+     * вже зроблені у `email/authTransactionalMail.ts`. Без `RESEND_API_KEY`
+     * (dev) — лог-warn без падіння flow-у sign-up.
+     */
+    sendOnSignUp: true,
     sendVerificationEmail: async ({ user, url }) => {
       queueAuthTransactionalEmail({
         kind: "email_verification",

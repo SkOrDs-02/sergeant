@@ -54,6 +54,12 @@ export interface UseFormValidationReturn<T extends Record<string, unknown>> {
 /**
  * useFormValidation - Form validation hook with shake animation
  *
+ * @deprecated Per docs/diagnostics/2026-05-03-web-deep-dive §3.1, нові форми
+ * мають використовувати `useApiForm` з `@shared/forms` (react-hook-form +
+ * zod resolver + автоматичний server-error mapping). Існуючі споживачі
+ * (`ManualExpenseSheet`, `ResetPasswordPage`) лишаються на цьому хуку
+ * до окремих migration-PR-ів. Не використовуй у нових формах.
+ *
  * @example
  * const { fields, getFieldProps, validateAll, shakeField } = useFormValidation({
  *   email: {

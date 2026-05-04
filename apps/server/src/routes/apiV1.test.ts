@@ -427,3 +427,72 @@ describe("H8: Cross-Origin-Resource-Policy per-route", () => {
     expect(res.headers["cross-origin-resource-policy"]).toBe("cross-origin");
   });
 });
+
+/**
+ * H6 — sensitive-action gate `/api/mono/connect` мусить вимагати
+ * `email_verified=true`. Закриває squat-attack: атакувальник реєструє
+ * акаунт на чужий email і одразу під'єднує свій Mono-token, отримуючи
+ * картину "хтось бачить мої транзакції" та забруднюючи нашу БД
+ * кросс-власницькими записами.
+ */
+describe("H6: /api/mono/connect gate on email verification", () => {
+  // `MONO_WEBHOOK_ENABLED` за замовчуванням false у тест-env, тож для
+  // реалістичного gate-кейсу його треба ввімкнути. Без цього handler
+  // повертає 404 ще до перевірки email_verified.
+  const savedMonoFlags: Record<string, string | undefined> = {};
+  const MONO_KEYS = [
+    "MONO_WEBHOOK_ENABLED",
+    "MONO_TOKEN_ENC_KEY",
+    "PUBLIC_API_BASE_URL",
+  ];
+  for (const k of MONO_KEYS) savedMonoFlags[k] = process.env[k];
+
+  beforeEach(() => {
+    process.env.MONO_WEBHOOK_ENABLED = "true";
+    process.env.MONO_TOKEN_ENC_KEY = "0".repeat(64);
+    process.env.PUBLIC_API_BASE_URL = "https://api.example.com";
+  });
+
+  afterAll(() => {
+    for (const k of MONO_KEYS) {
+      if (savedMonoFlags[k] === undefined) delete process.env[k];
+      else process.env[k] = savedMonoFlags[k];
+    }
+  });
+
+  it("unverified user → 403 EMAIL_VERIFICATION_REQUIRED, без виклику Mono-API", async () => {
+    getSessionUserMock.mockResolvedValueOnce({
+      id: "u-unverified",
+      email: "squat@victim.com",
+      name: "Squatter",
+      image: null,
+      emailVerified: false,
+    });
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/mono/connect")
+      .set("Authorization", "Bearer x")
+      .set("Content-Type", "application/json")
+      .send({ token: "would-be-victim-token-12345" });
+    expect(res.status).toBe(403);
+    expect(res.body).toMatchObject({
+      code: "EMAIL_VERIFICATION_REQUIRED",
+    });
+    // CORP-гарантія H8 продовжує діяти і на 403.
+    expect(res.headers["cross-origin-resource-policy"]).toBe("same-origin");
+    // Жоден запит до БД (encrypt-token, INSERT mono_connection) не мав
+    // піти, бо middleware відсікає ДО handler-а.
+    expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it("unauthenticated → 401 (gate не downgrades 401 у 403)", async () => {
+    // Сесії немає взагалі — `requireSession()` має спрацювати першим.
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/mono/connect")
+      .set("Content-Type", "application/json")
+      .send({ token: "x".repeat(20) });
+    expect(res.status).toBe(401);
+    expect(res.body).toMatchObject({ code: "UNAUTHORIZED" });
+  });
+});
