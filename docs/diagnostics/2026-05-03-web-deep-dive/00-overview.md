@@ -1,6 +1,6 @@
 # Web deep-dive — Overview
 
-> **Last validated:** 2026-05-03 by @Skords-01.
+> **Last validated:** 2026-05-04 by @Skords-01.
 > **Status:** Active
 > **Scope:** `apps/web` + `apps/server` + `packages/*` (mobile — лише дотичні точки).
 > **Related:**
@@ -83,7 +83,7 @@
 | 4   | Module prefetch on hover + on-idle                 | 3      | 1    | 3.00  | [03 §5.2 + §10.4](./03-backend-and-performance.md) — done (idle + connection gate)                                     |
 | 5   | `<DataState>` wrapper                              | 4      | 2    | 2.00  | [01 §3.2](./01-frontend-ergonomics.md)                                                                                 |
 | 6   | `localStorage` 17 → 0 codemod                      | 4      | 2    | 2.00  | [02 §2.2](./02-architecture-and-state.md)                                                                              |
-| 7   | Audit docs status-table + archive >6-mo            | 2      | 1    | 2.00  | [04 §8.5](./04-security-observability-testing-devx.md)                                                                 |
+| 7   | Audit docs status-table + archive >6-mo            | 2      | 1    | 2.00  | [04 §11](./04-security-observability-testing-devx.md) — done (Status / Implemented / Outstanding)                      |
 | 8   | Form-engine unification                            | 5      | 3    | 1.67  | [01 §3.1](./01-frontend-ergonomics.md)                                                                                 |
 | 9   | CloudSync split-brain integration tests            | 5      | 3    | 1.67  | [02 §2.3](./02-architecture-and-state.md)                                                                              |
 | 10  | C4-mermaid діаграми                                | 3      | 2    | 1.50  | [04 §9.2](./04-security-observability-testing-devx.md)                                                                 |
