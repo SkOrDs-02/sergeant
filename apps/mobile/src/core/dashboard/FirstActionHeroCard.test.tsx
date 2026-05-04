@@ -78,7 +78,9 @@ describe("FirstActionHeroCard", () => {
     });
   });
 
-  it("reveals alternates and routes with via=expand when Інший модуль is tapped", () => {
+  it("renders alt-module chip row inline (no expand) and routes with via=chip", () => {
+    // S2.3 mobile parity: the legacy «Інший модуль» expand toggle is gone;
+    // alt-module chips are always visible, mirroring the web refactor.
     seedPicks(["routine", "finyk"]);
     const onAction = jest.fn();
     const onPicked = jest.fn();
@@ -86,14 +88,24 @@ describe("FirstActionHeroCard", () => {
       <FirstActionHeroCard onAction={onAction} onPicked={onPicked} />,
     );
 
-    expect(queryByTestId("first-action-alt-finyk")).toBeNull();
-    fireEvent.press(getByTestId("first-action-expand"));
+    expect(queryByTestId("first-action-expand")).toBeNull();
+    expect(getByTestId("first-action-alt-finyk")).toBeTruthy();
+
     fireEvent.press(getByTestId("first-action-alt-finyk"));
 
     expect(onAction).toHaveBeenCalledWith("finyk");
     expect(onPicked).toHaveBeenCalledWith({
       module: "finyk",
-      via: "expand",
+      via: "chip",
     });
+  });
+
+  it("hides the alt-chip row when only one module is picked", () => {
+    seedPicks(["routine"]);
+    const { queryByTestId } = render(
+      <FirstActionHeroCard onAction={jest.fn()} />,
+    );
+    expect(queryByTestId("first-action-alt-finyk")).toBeNull();
+    expect(queryByTestId("first-action-alt-fizruk")).toBeNull();
   });
 });

@@ -21,7 +21,7 @@
  *     `onShown` / `onPicked` if they want to observe the lifecycle.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import {
@@ -101,10 +101,17 @@ export interface FirstActionHeroCardProps {
     primary: DashboardModuleId;
     picks: DashboardModuleId[];
   }) => void;
-  /** Optional analytics hook: fires when the user taps a CTA. */
+  /** Optional analytics hook: fires when the user taps a CTA. The
+   *  `via` field carries the same vocabulary as the web counterpart
+   *  (`apps/web/src/core/onboarding/FirstActionSheet.tsx` after S2.3):
+   *  `"primary"` for the headline CTA, `"chip"` for the always-visible
+   *  alt-module chip row. PostHog dashboards reading the canonical
+   *  `onboarding_first_action_picked` event compute switch-rate as
+   *  `count(via="chip") / count(*)`.
+   */
   onPicked?: (info: {
     module: DashboardModuleId;
-    via: "primary" | "expand";
+    via: "primary" | "chip";
   }) => void;
 }
 
@@ -133,8 +140,6 @@ export function FirstActionHeroCard({
     [picks, primaryId],
   );
 
-  const [expanded, setExpanded] = useState(false);
-
   useEffect(() => {
     onShown?.({ primary: primaryId, picks });
     // Report-on-mount only — treat like a mount-level analytics event.
@@ -147,9 +152,9 @@ export function FirstActionHeroCard({
     onAction(primaryId);
   };
 
-  const handleExpandedPick = (id: DashboardModuleId) => {
+  const handleAltPick = (id: DashboardModuleId) => {
     hapticTap();
-    onPicked?.({ module: id, via: "expand" });
+    onPicked?.({ module: id, via: "chip" });
     onAction(id);
   };
 
@@ -207,25 +212,15 @@ export function FirstActionHeroCard({
         >
           Почати
         </Button>
-        {others.length > 0 ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={
-              expanded ? "Приховати інші модулі" : "Показати інші модулі"
-            }
-            onPress={() => setExpanded((v) => !v)}
-            className="rounded-lg px-2.5 py-1.5 active:opacity-60"
-            testID="first-action-expand"
-          >
-            <Text className="text-xs font-medium text-fg-muted">
-              {expanded ? "Приховати" : "Інший модуль"}
-            </Text>
-          </Pressable>
-        ) : null}
       </View>
 
-      {expanded && others.length > 0 ? (
-        <View className="mt-3 flex-row flex-wrap gap-2">
+      {others.length > 0 ? (
+        <View
+          accessibilityRole="toolbar"
+          accessibilityLabel="Інший модуль"
+          className="mt-3 flex-row flex-wrap items-center gap-2"
+        >
+          <Text className="text-xs text-fg-muted">Або:</Text>
           {others.map((id) => {
             const spec = ACTIONS[id];
             return (
@@ -233,7 +228,7 @@ export function FirstActionHeroCard({
                 key={id}
                 accessibilityRole="button"
                 accessibilityLabel={spec.title}
-                onPress={() => handleExpandedPick(id)}
+                onPress={() => handleAltPick(id)}
                 className={`flex-row items-center rounded-full px-3 py-1.5 active:opacity-80 ${spec.accentChip}`}
                 testID={`first-action-alt-${id}`}
               >
