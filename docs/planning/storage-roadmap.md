@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-04 by Devin — **Stage 1 COMPLETE, Stage 4 Finyk Mono mirror in CI.** Stage 1: all 8/8 PRs landed (PR #008 `ff217246`, PR #010 [#1543](https://github.com/Skords-01/Sergeant/pull/1543), PR #013 via 4 sub-PRs). Stage 4 Fizruk: 5/5 PRs merged (PR #027–#030 + #029a). Stage 4 Nutrition: PR #031 / #032 / #033 LANDED ([#1574](https://github.com/Skords-01/Sergeant/pull/1574)), PR #034 LANDED ([#1636](https://github.com/Skords-01/Sergeant/pull/1636)). Stage 4 Finyk: PR #035 LANDED ([#1667](https://github.com/Skords-01/Sergeant/pull/1667) — schema + apply-fns), PR #036 LANDED ([#1680](https://github.com/Skords-01/Sergeant/pull/1680) — dual-write web + mobile), PR #037 LANDED (`c89870c6` — read-overlay web + mobile under `feature.finyk.sqlite_v2.read_sqlite`, default off), PR #038 IN CI (Mono cache mirror у `finyk_mono_*` SQLite таблицях під `feature.finyk.sqlite_v2.mono_mirror`, default off). Stage 0: PR #003 LANDED ([#1497](https://github.com/Skords-01/Sergeant/pull/1497)). Boot-wiring follow-up для `register{Routine,Fizruk,Nutrition}DualWriteContext` ще не залендили. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by Devin — **Stage 1 COMPLETE; Stage 4 Finyk Mono mirror in CI; Stage 5 op-log v2 hardening in flight.** Stage 1: all 8/8 PRs landed (PR #008 `ff217246`, PR #010 [#1543](https://github.com/Skords-01/Sergeant/pull/1543), PR #013 via 4 sub-PRs). Stage 4 Fizruk: 5/5 PRs merged (PR #027–#030 + #029a). Stage 4 Nutrition: PR #031 / #032 / #033 LANDED ([#1574](https://github.com/Skords-01/Sergeant/pull/1574)), PR #034 LANDED ([#1636](https://github.com/Skords-01/Sergeant/pull/1636)). Stage 4 Finyk: PR #035 LANDED ([#1667](https://github.com/Skords-01/Sergeant/pull/1667) — schema + apply-fns), PR #036 LANDED ([#1680](https://github.com/Skords-01/Sergeant/pull/1680) — dual-write web + mobile), PR #037 LANDED (`c89870c6` — read-overlay web + mobile under `feature.finyk.sqlite_v2.read_sqlite`, default off), PR #038 IN CI (Mono cache mirror у `finyk_mono_*` SQLite таблицях під `feature.finyk.sqlite_v2.mono_mirror`, default off). Stage 5: PR #040 LANDED (`ec1f3820` — persistent op-log retry policy у SQLite), PR #041 IN CI ([#1721](https://github.com/Skords-01/Sergeant/pull/1721) — SSE pull stream), PR #043 LANDED ([#1734](https://github.com/Skords-01/Sergeant/pull/1734) — G-set CRDT для `nutrition_meals` із tombstone інваріантом + 3 інтеграційні тести), PR #048 LANDED ([#1737](https://github.com/Skords-01/Sergeant/pull/1737) — RED-метрики `sync_op_log_apply_total` / `sync_op_log_pull_lag_ms` / `sync_op_log_pull_queue_depth` + 4 нові Grafana панелі в `sync.json`). PR #042 (PN-counter for `routine_streaks`) deferred — потребує protocol-зміни (новий op kind `increment` у CHECK constraint + zod + DB migration); see PR #042 entry below. Stage 0: PR #003 LANDED ([#1497](https://github.com/Skords-01/Sergeant/pull/1497)). Boot-wiring follow-up для `register{Routine,Fizruk,Nutrition}DualWriteContext` ще не залендили. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -1170,16 +1170,36 @@ show_balance, updated_at, deleted_at)` — об'єднує
 - Risk. Express+Vercel: SSE на serverless має edge-case з timeout. Mitigation:
   Keep-alive heartbeat 25s; reconnect on close.
 
-#### **PR #042 — `feat(sync): per-row CRDT for routine_entries (PN-counter for streak)`**
+#### **PR #042 — `feat(sync): per-row CRDT for routine_entries (PN-counter for streak)`** — _deferred_
 
 - Scope. `routine_streaks.current_streak` стає PN-counter (positive/negative
   counter), не просто Int. Конкурентний toggle з двох девайсів дає коректний
   стрик.
+- **Status (2026-05-04).** Відкладено: pure-server PN-counter потребує
+  протокольної зміни (новий op kind `increment` із `delta`-payload-ом
+  у `sync_op_log` CHECK constraint, у `SyncV2OpKindEnum` zod-схемі,
+  плюс client-side dual-write адаптер у outbox-і). Окремо до того:
+  server-side derivation streak-status-у не доступне, бо `Habit.schedule`
+  ще лежить у LS-блобі, тож сервер не знає, чи день було помічено
+  outside-of-schedule.
+- Plan. Окрема сесія: PR #042a (op-kind enum + zod + protocol docs)
+  → PR #042b (apply-fn + atomic UPDATE … SET current_streak =
+  current_streak + delta). PR #043 (`nutrition_meals` G-set) пройшов
+  першим — він не вимагає protocol-change.
 
-#### **PR #043 — `feat(sync): G-set CRDT for nutrition_meals log`**
+#### **PR #043 — `feat(sync): G-set CRDT for nutrition_meals log`** ✅ LANDED ([#1734](https://github.com/Skords-01/Sergeant/pull/1734))
 
 - Scope. `nutrition_meals` — append-only G-set. Видалення через
   tombstone (`deleted_at`) + LWW per-row.
+- **Done (2026-05-04).** `applyNutritionMeals` тепер реджектить
+  `op='insert'`/`op='update'` проти tombstoned ряду з причиною
+  `tombstoned`. Idempotent delete (re-stamp `deleted_at`) збережений
+  для коректного LWW pull-cursor advance-у. 3 нові інтеграційні тести
+  (resurrection-attack, idempotent re-tombstone, concurrent-insert
+  merge). Docstring документує G-set інваріант inline.
+- Note. Цей самий resurrection-via-update guard формально лишається
+  TODO для `fizruk_workouts`/`finyk_*`/`routine_entries` apply-шляхів
+  — окрема сесія per-table.
 
 #### **PR #044 — `feat(sync): conflict resolution UI for finyk_manual_expenses`**
 
@@ -1207,11 +1227,25 @@ show_balance, updated_at, deleted_at)` — об'єднує
   `seo_*` queries ідуть туди.
 - AC. Lag < 5s на p99.
 
-#### **PR #048 — `feat(observability): sync health Grafana/Sentry dashboard`**
+#### **PR #048 — `feat(observability): sync health Grafana/Sentry dashboard`** ✅ LANDED ([#1737](https://github.com/Skords-01/Sergeant/pull/1737))
 
 - Scope. Дашборд з RED (p50/p95/p99 push-latency, conflict rate, queue depth,
   op-log throughput per user). Алерти: conflict rate > 5%, queue depth > 100,
   push p99 > 5s.
+- **Done (2026-05-04).** Три нові prom-client метрики:
+  `sync_op_log_apply_total{table,status,reason}` (per-op outcome counter),
+  `sync_op_log_pull_lag_ms` (user-perceived staleness histogram),
+  `sync_op_log_pull_queue_depth` (ops-returned-per-pull histogram).
+  Інструментація в `syncV2Push` (3 call-site-и) + `syncV2Pull` (lag
+  observation на newest op + depth = `opsOut.length`); усе в `try/catch`,
+  не ламає request у разі Prometheus failure. 4 нові панелі в
+  `docs/observability/dashboards/sync.json` (per-op outcomes stacked,
+  topk-10 reject reasons, pull lag p50/95/99, queue depth p50/95/99).
+  Cardinality cap: ~1100 worst-case (phenomenologically ~50–100 active).
+  3 нові тести в `apps/server/src/obs/metrics.test.ts` фіксують registry
+  - label-set + bucket boundaries `le=100` / `5000` / `200`, на які
+    будуть прив'язані SLO-алерти. PromQL рецепти оновлені в
+    `docs/observability/metrics.md` §4 і `docs/observability/dashboards.md`.
 
 #### **PR #049 — `feat(ops): backup/restore runbook + weekly verify CI`**
 
