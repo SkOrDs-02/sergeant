@@ -440,6 +440,11 @@ export default [
       // - apps/web/src/modules/nutrition/domain/nutritionBackup.ts (round 11:
       //   2 reads + 4 writes мігровано на `safeReadLS`/`safeReadStringLS`/
       //   `safeWriteLS`; module wrapper більше не у allowlist-і).
+      // - apps/web/src/modules/fizruk/hooks/useWorkouts.ts (round 12:
+      //   1 read + 1 write мігровано на `safeReadStringLS` / `safeWriteLS`;
+      //   FIZRUK_WORKOUTS_STORAGE_ERROR custom event тепер dispatch-иться,
+      //   коли `safeWriteLS` повертає `false`, з generic-reason — банер сам
+      //   формує текст для користувача).
       // Cloud-sync internals — the queue / enqueue / state writer all
       // need direct access; users should call the cloud-sync API.
       "apps/web/src/core/cloudSync/logger.ts",
@@ -455,10 +460,6 @@ export default [
       // Module storage wrappers (legitimate primitives in their own
       // namespace).
       "apps/web/src/modules/finyk/lib/storageManager.ts",
-      // useWorkouts.ts: intentional direct-storage access — dispatches
-      // FIZRUK_WORKOUTS_STORAGE_ERROR custom event on quota failure so the
-      // UI can show a banner. safeWriteLS swallows the error silently.
-      "apps/web/src/modules/fizruk/hooks/useWorkouts.ts",
     ],
     rules: {
       "sergeant-design/no-raw-local-storage": "error",

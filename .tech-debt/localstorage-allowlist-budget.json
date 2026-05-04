@@ -1,4 +1,4 @@
 {
-  "production": 12,
-  "rationale": "Updated 2026-05-04 (Item 6 round-11 follow-up): production count 13 → 12 after migrating apps/web/src/modules/nutrition/domain/nutritionBackup.ts off direct localStorage onto safeReadLS / safeReadStringLS / safeWriteLS (2 reads + 4 writes). (Headroom: 0 — bump only with a deliberate decision; new sites must migrate an existing one to keep parity.) Burndown plan in docs/diagnostics/2026-05-03-web-deep-dive/02-architecture-and-state.md §2.2 + docs/tech-debt/frontend.md §2."
+  "production": 11,
+  "rationale": "Updated 2026-05-04 (Item 6 round-12 follow-up): production count 12 → 11 after migrating apps/web/src/modules/fizruk/hooks/useWorkouts.ts off direct localStorage onto safeReadStringLS / safeWriteLS (1 read + 1 write); FIZRUK_WORKOUTS_STORAGE_ERROR custom event тепер dispatch-иться, коли safeWriteLS повертає false (з generic-reason — банер сам формує текст). (Headroom: 0 — bump only with a deliberate decision; new sites must migrate an existing one to keep parity.) Burndown plan in docs/diagnostics/2026-05-03-web-deep-dive/02-architecture-and-state.md §2.2 + docs/tech-debt/frontend.md §2."
 }

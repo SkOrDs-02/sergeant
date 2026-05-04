@@ -15,6 +15,7 @@ import {
   useFizrukSqliteReadFlag,
   useFizrukSqliteReadTick,
 } from "../lib/sqliteReadGate";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 /**
  * Window event fired when persisting workouts to `localStorage` throws
@@ -129,15 +130,16 @@ export function useWorkouts() {
   const sqliteCacheTick = useFizrukSqliteReadTick();
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(WORKOUTS_STORAGE_KEY);
-      const parsed = parseWorkoutsFromStorage(raw);
-      // Storage parser returns `unknown[]` (the persisted blob is loose):
-      // it's the boundary between untyped JSON and typed runtime state, so
-      // we trust the shape here. Each consumer already guards optional
-      // fields (`w.items || []`, `w.endedAt`, etc.).
-      if (Array.isArray(parsed)) setWorkouts(parsed as Workout[]);
-    } catch {}
+    // `safeReadStringLS` глитає будь-які read-failure-и (private mode,
+    // disabled storage, throwing access) — так само, як попередній
+    // inline try/catch, тільки централізовано в `@shared/lib/storage`.
+    const raw = safeReadStringLS(WORKOUTS_STORAGE_KEY, null);
+    const parsed = parseWorkoutsFromStorage(raw);
+    // Storage parser returns `unknown[]` (the persisted blob is loose):
+    // it's the boundary between untyped JSON and typed runtime state, so
+    // we trust the shape here. Each consumer already guards optional
+    // fields (`w.items || []`, `w.endedAt`, etc.).
+    if (Array.isArray(parsed)) setWorkouts(parsed as Workout[]);
     setLoaded(true);
   }, []);
 
@@ -162,21 +164,20 @@ export function useWorkouts() {
           typeof nextOrUpdater === "function"
             ? nextOrUpdater(prev)
             : nextOrUpdater;
-        try {
-          localStorage.setItem(
-            WORKOUTS_STORAGE_KEY,
-            serializeWorkoutsToStorage(next),
-          );
-        } catch (err) {
+        const ok = safeWriteLS(
+          WORKOUTS_STORAGE_KEY,
+          serializeWorkoutsToStorage(next),
+        );
+        if (!ok) {
           // Surface quota/private-mode failures to the UI instead of silently
           // losing data. We keep `next` in memory so the current session does
           // not visibly reset — the banner prompts the user to act.
+          // `safeWriteLS` глитає specific Error.message (quota / private
+          // mode), тож передаємо generic reason — банер сам формує текст.
           try {
-            const message =
-              err instanceof Error ? err.message : "невідома помилка";
             window.dispatchEvent(
               new CustomEvent(FIZRUK_WORKOUTS_STORAGE_ERROR, {
-                detail: { message },
+                detail: { message: "сховище недоступне або переповнене" },
               }),
             );
           } catch {
