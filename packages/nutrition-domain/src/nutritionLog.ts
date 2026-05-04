@@ -203,7 +203,13 @@ export function getDaySummary(log: NutritionLogLike, date: string): DaySummary {
 }
 
 export function addDaysISODate(iso: string, deltaDays: number): string {
-  const [y, m, d] = iso.split("-").map(Number);
+  // ISO-формат `YYYY-MM-DD` — split дає рівно 3 елементи; `noUncheckedIndexedAccess`
+  // цього не виводить, тому розпаковуємо явно з fallback на 0 (`new Date(0,-1,…)`
+  // деградує плавно для битих рядків замість throw-у на `undefined - 1`).
+  const parts = iso.split("-").map(Number);
+  const y = parts[0] ?? 0;
+  const m = parts[1] ?? 0;
+  const d = parts[2] ?? 0;
   const dt = new Date(y, m - 1, d + deltaDays);
   return toLocalISODate(dt);
 }

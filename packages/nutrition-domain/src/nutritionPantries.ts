@@ -58,6 +58,9 @@ export function updatePantry(
     return [created, ...arr];
   }
   const next = [...arr];
-  next[idx] = fn(next[idx]);
+  // `idx >= 0` гарантує існування — strip-имо `undefined` через `!`,
+  // бо runtime-fallback (e.g. `makeDefaultPantry()`) seedав би неправильний
+  // pantry-id і користувач втратив би state на наступному пасі.
+  next[idx] = fn(next[idx]!);
   return next;
 }

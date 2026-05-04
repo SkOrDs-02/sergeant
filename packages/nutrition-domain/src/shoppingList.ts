@@ -103,7 +103,11 @@ export function normalizeShoppingList(raw: unknown): ShoppingList {
         bucket.byKey.set(key, bucket.items.length);
         bucket.items.push(item);
       } else {
-        bucket.items[existingIdx] = mergeItem(bucket.items[existingIdx], item);
+        // `existingIdx` прийшов з `bucket.byKey.get(key)` — Map тримає
+        // тільки валідні `bucket.items` indices (перевірено вище через
+        // `bucket.byKey.set(key, bucket.items.length)` перед push-ом),
+        // тому `bucket.items[existingIdx]` гарантовано не undefined.
+        bucket.items[existingIdx] = mergeItem(bucket.items[existingIdx]!, item);
       }
     }
     if (bucket.items.length > 0) {

@@ -96,7 +96,11 @@ export function mergeItems(
         });
 
         if (idx >= 0) {
-          const cur = merged[idx];
+          // `merged[idx]` гарантовано існує всередині `idx >= 0` блоку,
+          // але `noUncheckedIndexedAccess` цього не виводить — non-null
+          // assertion безпечніший, ніж runtime-fallback (повернув би
+          // баг-mask: silent skip злиття одиниць).
+          const cur = merged[idx]!;
           const qx = Number(cur.qty);
           const ux = normalizeUnit(cur.unit);
           const baseX = toBaseUnit(qx, ux);
@@ -123,7 +127,9 @@ export function mergeItems(
     );
 
     if (sameNameIdx >= 0) {
-      const cur = merged[sameNameIdx];
+      // Аналогічно вище: `findIndex` повернув валідний індекс,
+      // отже `merged[sameNameIdx]` є.
+      const cur = merged[sameNameIdx]!;
       const curQty =
         cur?.qty != null &&
         (cur.qty as unknown) !== "" &&
@@ -136,6 +142,7 @@ export function mergeItems(
       if (curQty == null && !curUnit && (incomingQty != null || incomingUnit)) {
         merged[sameNameIdx] = {
           ...cur,
+          name: cur.name,
           qty: incomingQty,
           unit: incomingUnit,
           notes: cur.notes ?? it?.notes ?? null,
