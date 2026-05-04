@@ -3706,31 +3706,30 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
   );
 });
 
-describe("syncV2Push — op='increment' protocol scaffolding (PR #042a)", () => {
-  // Stage 5 / PR #042a: новий op-kind `increment` додано у zod-енум +
-  // CHECK constraint у migration 040; engine-level gate у syncV2Push
-  // має відхиляти його з `reason='op_not_supported'` для будь-якої
-  // таблиці поза `INCREMENT_OP_SUPPORTED_TABLES` (на цьому етапі
-  // whitelist порожній — kind protocol-only). Тести фіксують
-  // інваріант, щоб PR #042b не залендив apply-fn без opt-in-у у
-  // whitelist (інакше increment-и будуть мовчки applied на чужі
-  // таблиці) і щоб supported op-kind-и не регресили.
+describe("syncV2Push — op='increment' engine-level gate (PR #042a)", () => {
+  // Stage 5 / PR #042a: engine-level gate відхиляє `op='increment'` для
+  // таблиць поза `INCREMENT_OP_SUPPORTED_TABLES` із
+  // `reason='op_not_supported'` ще до apply-fn-у. PR #042b опт-інив
+  // `routine_streaks` у whitelist, тому регресійний тест gate-у тепер
+  // тримається на `routine_entries` — kind для неї так і лишається
+  // protocol-only (per-row LWW семантично несумісна з PN-counter-ом).
 
   it(
-    "відхиляє op='increment' з engine-level reason='op_not_supported' і не торкає таблицю",
+    "відхиляє op='increment' для не-whitelisted таблиці з engine-level reason='op_not_supported'",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-incr-1");
 
-      // Засіваємо існуючий routine_streaks ряд щоб переконатися, що
-      // engine-gate спрацьовує до DML — counter після push має лишитись
-      // незмінним, а не +1.
+      // Засіваємо існуючий routine_entries ряд щоб переконатися, що
+      // engine-gate спрацьовує до DML — soft-delete-ний deleted_at
+      // після push має лишитись NULL, а не оновитись.
       const ts = isoNow();
+      const id = "44444444-4444-4444-4444-444444444444";
       await testPool.query(
-        `INSERT INTO routine_streaks
-           (id, user_id, current_streak, last_completed_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5)`,
-        ["44444444-4444-4444-4444-444444444444", "u-incr-1", 7, ts, ts],
+        `INSERT INTO routine_entries
+           (id, user_id, name, completed_at)
+         VALUES ($1, $2, $3, $4)`,
+        [id, "u-incr-1", "stretch", ts],
       );
 
       const pushRes = makeRes();
@@ -3740,10 +3739,10 @@ describe("syncV2Push — op='increment' protocol scaffolding (PR #042a)", () => 
           body: {
             ops: [
               {
-                table: "routine_streaks",
+                table: "routine_entries",
                 op: "increment",
                 row: {
-                  id: "44444444-4444-4444-4444-444444444444",
+                  id,
                   user_id: "u-incr-1",
                   delta: 1,
                 },
@@ -3766,12 +3765,12 @@ describe("syncV2Push — op='increment' protocol scaffolding (PR #042a)", () => 
       expect(body.results[0].status).toBe("rejected");
       expect(body.results[0].reason).toBe("op_not_supported");
 
-      // Counter лишається незмінним.
-      const row = await testPool.query<{ current_streak: number }>(
-        `SELECT current_streak FROM routine_streaks WHERE id = $1`,
-        ["44444444-4444-4444-4444-444444444444"],
+      // Рядок не торкнули.
+      const row = await testPool.query<{ deleted_at: Date | null }>(
+        `SELECT deleted_at FROM routine_entries WHERE id = $1`,
+        [id],
       );
-      expect(row.rows[0].current_streak).toBe(7);
+      expect(row.rows[0].deleted_at).toBeNull();
 
       // sync_op_log запис створено зі status='rejected' +
       // reject_reason='op_not_supported' — щоб RED-dashboard бачив
@@ -3800,7 +3799,6 @@ describe("syncV2Push — op='increment' protocol scaffolding (PR #042a)", () => 
       await ensureUser("u-incr-2");
 
       const ts = isoNow();
-      const id = "55555555-5555-5555-5555-555555555555";
       const pushRes = makeRes();
       await syncV2Push(
         makeReq({
@@ -3811,11 +3809,10 @@ describe("syncV2Push — op='increment' protocol scaffolding (PR #042a)", () => 
                 table: "routine_streaks",
                 op: "insert",
                 row: {
-                  id,
                   user_id: "u-incr-2",
                   current_streak: 0,
+                  longest_streak: 0,
                   last_completed_at: ts,
-                  updated_at: ts,
                 },
                 client_ts: ts,
                 idempotency_key: "incr-2-insert",
@@ -3824,11 +3821,10 @@ describe("syncV2Push — op='increment' protocol scaffolding (PR #042a)", () => 
                 table: "routine_streaks",
                 op: "update",
                 row: {
-                  id,
                   user_id: "u-incr-2",
                   current_streak: 1,
+                  longest_streak: 1,
                   last_completed_at: ts,
-                  updated_at: ts,
                 },
                 client_ts: ts,
                 idempotency_key: "incr-2-update",
@@ -3845,6 +3841,430 @@ describe("syncV2Push — op='increment' protocol scaffolding (PR #042a)", () => 
       };
       expect(body.accepted).toBe(2);
       expect(body.results.map((r) => r.status)).toEqual(["applied", "applied"]);
+    },
+    TIMEOUT_MS,
+  );
+});
+
+describe("syncV2Push — routine_streaks PN-counter apply-fn (PR #042b)", () => {
+  // Stage 5 / PR #042b: `routine_streaks` опт-іниться у
+  // `INCREMENT_OP_SUPPORTED_TABLES`, apply-fn консумує `delta`-payload
+  // через атомарний `INSERT … ON CONFLICT DO UPDATE SET current_streak
+  // = current_streak + delta` (з clamp-ом до MAX(0, …) + monotonic
+  // longest_streak GREATEST). Тести фіксують CRDT-семантику: дві
+  // конкурентні toggle-ops від різних пристроїв накопичуються
+  // деtermіністично, а не перетирають одна одну (LWW-проблема, яка
+  // мотивувала PR #042 у roadmap).
+
+  it(
+    "increment з порожньої таблиці створює рядок із current_streak = max(0, delta)",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-pn-empty");
+
+      const ts = isoNow();
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-pn-empty",
+          body: {
+            ops: [
+              {
+                table: "routine_streaks",
+                op: "increment",
+                row: { user_id: "u-pn-empty", delta: 1 },
+                client_ts: ts,
+                idempotency_key: "pn-empty-1",
+              },
+            ],
+          },
+        }),
+        pushRes,
+      );
+
+      const body = pushRes.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(body.accepted).toBe(1);
+      expect(body.results[0].status).toBe("applied");
+
+      const row = await testPool.query<{
+        current_streak: number;
+        longest_streak: number;
+      }>(
+        `SELECT current_streak, longest_streak FROM routine_streaks
+          WHERE user_id = $1`,
+        ["u-pn-empty"],
+      );
+      expect(row.rows.length).toBe(1);
+      expect(row.rows[0].current_streak).toBe(1);
+      expect(row.rows[0].longest_streak).toBe(1);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "два конкурентні increment-и (delta=+1 кожен) накопичуються до 2 — CRDT, без LWW-перетирання",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-pn-concur");
+
+      // Симуляція: пристрій A і пристрій B обидва зробили toggle на
+      // одному й тому ж таймстемпі (clock-collision), кожен надсилає
+      // власну ор-ку. Під старим LWW-протоколом одна перетерла б іншу
+      // (insert update update would lose toggle), під PN-counter
+      // обидві durably накопичуються.
+      const ts = isoNow();
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-pn-concur",
+          body: {
+            ops: [
+              {
+                table: "routine_streaks",
+                op: "increment",
+                row: { user_id: "u-pn-concur", delta: 1 },
+                client_ts: ts,
+                idempotency_key: "pn-concur-A",
+              },
+              {
+                table: "routine_streaks",
+                op: "increment",
+                row: { user_id: "u-pn-concur", delta: 1 },
+                client_ts: ts,
+                idempotency_key: "pn-concur-B",
+              },
+            ],
+          },
+        }),
+        pushRes,
+      );
+
+      const body = pushRes.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(body.accepted).toBe(2);
+      expect(body.results.map((r) => r.status)).toEqual(["applied", "applied"]);
+
+      const row = await testPool.query<{
+        current_streak: number;
+        longest_streak: number;
+      }>(
+        `SELECT current_streak, longest_streak FROM routine_streaks
+          WHERE user_id = $1`,
+        ["u-pn-concur"],
+      );
+      expect(row.rows[0].current_streak).toBe(2);
+      expect(row.rows[0].longest_streak).toBe(2);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "decrement (delta=-1) на counter > 0 зменшує current_streak, але longest_streak лишається max",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-pn-dec");
+
+      // Засіюємо існуючий рядок: current=5, longest=5.
+      await testPool.query(
+        `INSERT INTO routine_streaks (user_id, current_streak, longest_streak)
+         VALUES ($1, 5, 5)`,
+        ["u-pn-dec"],
+      );
+
+      const ts = isoNow();
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-pn-dec",
+          body: {
+            ops: [
+              {
+                table: "routine_streaks",
+                op: "increment",
+                row: { user_id: "u-pn-dec", delta: -1 },
+                client_ts: ts,
+                idempotency_key: "pn-dec-1",
+              },
+            ],
+          },
+        }),
+        pushRes,
+      );
+
+      expect((pushRes.body as { accepted: number }).accepted).toBe(1);
+      const row = await testPool.query<{
+        current_streak: number;
+        longest_streak: number;
+      }>(
+        `SELECT current_streak, longest_streak FROM routine_streaks
+          WHERE user_id = $1`,
+        ["u-pn-dec"],
+      );
+      expect(row.rows[0].current_streak).toBe(4);
+      // longest_streak — monotonic max, не зменшується разом із current.
+      expect(row.rows[0].longest_streak).toBe(5);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "decrement, що пхає current_streak < 0, clamp-иться до 0 (домен-інваріант non-negative)",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-pn-clamp");
+
+      // current=1, longest=3 — щоб упевнитись, що longest зберігається.
+      await testPool.query(
+        `INSERT INTO routine_streaks (user_id, current_streak, longest_streak)
+         VALUES ($1, 1, 3)`,
+        ["u-pn-clamp"],
+      );
+
+      const ts = isoNow();
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-pn-clamp",
+          body: {
+            ops: [
+              {
+                table: "routine_streaks",
+                op: "increment",
+                row: { user_id: "u-pn-clamp", delta: -5 },
+                client_ts: ts,
+                idempotency_key: "pn-clamp-1",
+              },
+            ],
+          },
+        }),
+        pushRes,
+      );
+
+      expect((pushRes.body as { accepted: number }).accepted).toBe(1);
+      const row = await testPool.query<{
+        current_streak: number;
+        longest_streak: number;
+      }>(
+        `SELECT current_streak, longest_streak FROM routine_streaks
+          WHERE user_id = $1`,
+        ["u-pn-clamp"],
+      );
+      // 1 + (-5) = -4 → clamped to 0; UI завжди бачить non-negative streak.
+      expect(row.rows[0].current_streak).toBe(0);
+      expect(row.rows[0].longest_streak).toBe(3);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "missing delta → reason='missing_delta'",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-pn-missing");
+
+      const ts = isoNow();
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-pn-missing",
+          body: {
+            ops: [
+              {
+                table: "routine_streaks",
+                op: "increment",
+                row: { user_id: "u-pn-missing" },
+                client_ts: ts,
+                idempotency_key: "pn-missing-1",
+              },
+            ],
+          },
+        }),
+        pushRes,
+      );
+
+      const body = pushRes.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(body.accepted).toBe(0);
+      expect(body.results[0].status).toBe("rejected");
+      expect(body.results[0].reason).toBe("missing_delta");
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "invalid delta (non-integer / non-finite / >MAX_ABS) → reason='invalid_delta'",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-pn-invalid");
+
+      const ts = isoNow();
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-pn-invalid",
+          body: {
+            ops: [
+              {
+                table: "routine_streaks",
+                op: "increment",
+                row: { user_id: "u-pn-invalid", delta: 1.5 },
+                client_ts: ts,
+                idempotency_key: "pn-invalid-fraction",
+              },
+              {
+                table: "routine_streaks",
+                op: "increment",
+                row: { user_id: "u-pn-invalid", delta: "1" },
+                client_ts: ts,
+                idempotency_key: "pn-invalid-string",
+              },
+              {
+                table: "routine_streaks",
+                op: "increment",
+                row: { user_id: "u-pn-invalid", delta: 100_000 },
+                client_ts: ts,
+                idempotency_key: "pn-invalid-toolarge",
+              },
+            ],
+          },
+        }),
+        pushRes,
+      );
+
+      const body = pushRes.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(body.accepted).toBe(0);
+      expect(body.results.map((r) => r.reason)).toEqual([
+        "invalid_delta",
+        "invalid_delta",
+        "invalid_delta",
+      ]);
+
+      // Жоден поганий push не створив рядка.
+      const row = await testPool.query<{ count: string }>(
+        `SELECT COUNT(*)::text AS count FROM routine_streaks WHERE user_id = $1`,
+        ["u-pn-invalid"],
+      );
+      expect(Number(row.rows[0].count)).toBe(0);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "increment не блокується LWW-guard-ом проти попереднього insert із вищим client_ts",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-pn-lww");
+
+      // Спершу insert з ts1, потім increment з ts0 (раніше за ts1).
+      // Insert/update LWW-guard відкинув би старіший update, але
+      // increment-у LWW не стосується (він чіпає тільки `op<>'increment'`
+      // суб-сет op-log-у). Це фіксує семантику: PN-counter durably
+      // накопичує, навіть якщо клієнт замість insert-а зразу шле
+      // increment з clock skew.
+      const ts1 = isoNow();
+      const ts0 = isoNow(-60_000);
+
+      const pushIns = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-pn-lww",
+          body: {
+            ops: [
+              {
+                table: "routine_streaks",
+                op: "insert",
+                row: {
+                  user_id: "u-pn-lww",
+                  current_streak: 3,
+                  longest_streak: 3,
+                  last_completed_at: ts1,
+                },
+                client_ts: ts1,
+                idempotency_key: "pn-lww-ins",
+              },
+            ],
+          },
+        }),
+        pushIns,
+      );
+      expect((pushIns.body as { accepted: number }).accepted).toBe(1);
+
+      const pushInc = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-pn-lww",
+          body: {
+            ops: [
+              {
+                table: "routine_streaks",
+                op: "increment",
+                row: { user_id: "u-pn-lww", delta: 1 },
+                client_ts: ts0,
+                idempotency_key: "pn-lww-inc",
+              },
+            ],
+          },
+        }),
+        pushInc,
+      );
+      const incBody = pushInc.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(incBody.accepted).toBe(1);
+      expect(incBody.results[0].status).toBe("applied");
+
+      const row = await testPool.query<{ current_streak: number }>(
+        `SELECT current_streak FROM routine_streaks WHERE user_id = $1`,
+        ["u-pn-lww"],
+      );
+      expect(row.rows[0].current_streak).toBe(4);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "increment з payload-у іншого юзера (user_id mismatch) reject-нуто з 'user_id_mismatch'",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-pn-mismatch");
+
+      const ts = isoNow();
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-pn-mismatch",
+          body: {
+            ops: [
+              {
+                table: "routine_streaks",
+                op: "increment",
+                row: { user_id: "someone-else", delta: 1 },
+                client_ts: ts,
+                idempotency_key: "pn-mismatch-1",
+              },
+            ],
+          },
+        }),
+        pushRes,
+      );
+
+      const body = pushRes.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(body.accepted).toBe(0);
+      expect(body.results[0].reason).toBe("user_id_mismatch");
     },
     TIMEOUT_MS,
   );

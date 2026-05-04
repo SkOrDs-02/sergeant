@@ -129,12 +129,15 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // джерело правди для `sync_op_log_apply_total{reason}`.
     // PR #042a (Stage 5): engine-level allowlist розширено `op_not_supported`
     // (gate на `op='increment'` для таблиць поза `INCREMENT_OP_SUPPORTED_TABLES`).
+    // PR #042b (Stage 5): apply-level allowlist розширено `missing_delta` +
+    // `invalid_delta` (PN-counter primitive payload validation у
+    // `applyRoutineStreaks`).
     // Cardinality cap у `docs/observability/metrics.md` §4 = ~28 tables ×
-    // 3 statuses × 51 reasons ≈ 4_284 series worst-case (phenomenologically <100,
+    // 3 statuses × 53 reasons ≈ 4_452 series worst-case (phenomenologically <100,
     // більшість табл/reason-пар не зустрічаються одночасно). Якщо сума
     // елементів у двох масивах drift-ує — оновити cardinality calc у
     // metrics.md + dashboard top-10 reject reasons panel.
-    expect(APPLY_REJECT_REASONS.length).toBe(45);
+    expect(APPLY_REJECT_REASONS.length).toBe(47);
     expect(ENGINE_REJECT_REASONS.length).toBe(5);
 
     // Ключові CRDT-інваріанти, на які прив'язаний sync health alerting,

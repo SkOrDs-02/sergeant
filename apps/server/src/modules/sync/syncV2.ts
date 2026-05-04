@@ -138,6 +138,9 @@ export const APPLY_REJECT_REASONS = [
   "invalid_rpe",
   // Field validation — calendar
   "invalid_month",
+  // Field validation — PN-counter primitive (PR #042b)
+  "missing_delta",
+  "invalid_delta",
 ] as const;
 
 export type ApplyRejectReason = (typeof APPLY_REJECT_REASONS)[number];
@@ -260,23 +263,27 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
 
 /**
  * Tables that opt-in to PN-counter semantics (`op='increment'` carrying
- * a numeric `delta` payload). Empty under PR #042a — the whitelist is
- * the gate that keeps the kind protocol-only until PR #042b lands the
- * actual `applyRoutineStreaks`-like atomic
- * `UPDATE … SET counter = counter + delta` path. Engine pre-apply gate
- * (in `syncV2Push` below) rejects every `op='increment'` against a
- * table outside this set with `reason='op_not_supported'`, so the
- * widened CHECK constraint from migration 040 cannot accidentally let
- * a counter row land in `sync_op_log` ahead of the apply-fn that
- * understands it.
+ * a numeric `delta` payload). PR #042b adds `routine_streaks` here
+ * together with the atomic `INSERT … ON CONFLICT DO UPDATE SET
+ * current_streak = current_streak + delta` apply-path inside
+ * `applyRoutineStreaks`. Engine pre-apply gate (in `syncV2Push` below)
+ * rejects every `op='increment'` against a table outside this set
+ * with `reason='op_not_supported'`, so the widened CHECK constraint
+ * from migration 040 cannot accidentally let a counter row land in
+ * `sync_op_log` ahead of an apply-fn that understands it.
  *
- * Forward note. PR #042b will add `'routine_streaks'` here together
- * with the apply-fn that consumes `delta`. New PN-counter tables in
- * the future extend this `as const` set + ship a matching apply-fn —
- * the same governance pattern as `OP_LOG_TABLE_REGISTRY` (TS-tsc
- * blocks accidental drift between the gate and the dispatcher).
+ * Governance. Adding a new PN-counter table requires (1) adding the
+ * literal here, (2) extending the matching apply-fn with an
+ * `op === 'increment'` branch that persists `delta` atomically,
+ * (3) updating cardinality calc у `docs/observability/metrics.md` §4
+ * (нові `*_delta` reject-причини), (4) regression test у
+ * `metrics.test.ts` для довжини `APPLY_REJECT_REASONS`. Той самий
+ * pattern, що для `OP_LOG_TABLE_REGISTRY` — TS-tsc блокує accidental
+ * drift між gate-ом і dispatcher-ом.
  */
-export const INCREMENT_OP_SUPPORTED_TABLES = new Set<string>([]);
+export const INCREMENT_OP_SUPPORTED_TABLES = new Set<string>([
+  "routine_streaks",
+]);
 
 /**
  * Captured truncated header. `X-Origin-Device-Id` — опціональний
@@ -510,6 +517,17 @@ async function applyRoutineEntries(
 }
 
 /**
+ * Maximum allowed |delta| in a single `op='increment'` payload. PN-counter
+ * primitive is built for ±1 toggles (one habit-completion per emit), so
+ * a hard cap at 1000 keeps a malformed/malicious client from corrupting
+ * the streak counter with `delta=Number.MAX_SAFE_INTEGER`. INTEGER
+ * column overflow would otherwise raise PG `numeric value out of range`
+ * inside the SAVEPOINT — the cap turns it into a clean apply-level
+ * `invalid_delta` reject before DML.
+ */
+const INCREMENT_DELTA_MAX_ABS = 1000;
+
+/**
  * Apply-шлях для `routine_streaks` (per-user aggregate). PK = user_id,
  * один рядок на юзера; історичного `updated_at` нема. LWW-guard
  * робимо проти `MAX(client_ts)` із `sync_op_log` для (user_id,
@@ -520,6 +538,16 @@ async function applyRoutineEntries(
  * `delete` — жорстке видалення (немає soft-delete-стовпця). Клієнт
  * рідко це виконує, але семантика синхронна з реальною кнопкою
  * "reset streaks".
+ *
+ * `increment` (PR #042b) — PN-counter primitive: атомарний
+ * `INSERT … ON CONFLICT DO UPDATE SET current_streak =
+ * current_streak + delta`, з clamp-ом до `MAX(0, …)` щоб лічильник
+ * не йшов у мінус (UI assumes non-negative). `longest_streak` —
+ * derived `GREATEST(longest_streak, new_current_streak)`, тобто
+ * монотонний максимум за всю історію. LWW-guard НЕ блокує increment-
+ * и (інакше другий toggle того самого пристрою з ідентичним `client_ts`
+ * губився б), на відміну від insert/update — там LWW потрібен щоб
+ * стара версія не перетирала свіжу.
  */
 async function applyRoutineStreaks(
   client: PoolClient,
@@ -532,12 +560,51 @@ async function applyRoutineStreaks(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
+  if (op.op === "increment") {
+    if (row.delta == null) {
+      return { status: "rejected", reason: "missing_delta" };
+    }
+    if (
+      typeof row.delta !== "number" ||
+      !Number.isFinite(row.delta) ||
+      !Number.isInteger(row.delta) ||
+      Math.abs(row.delta) > INCREMENT_DELTA_MAX_ABS
+    ) {
+      return { status: "rejected", reason: "invalid_delta" };
+    }
+    const delta = row.delta;
+    // Атомарний upsert. Початковий рядок засіюється з `MAX(0, delta)` —
+    // якщо клієнт надіслав `delta=-1` без попереднього insert-а, ми не
+    // створюємо рядок із `current_streak = -1` (порушує домен-інваріант),
+    // а сідаємо у 0. На вже існуючому рядку `current_streak + delta`
+    // обчислюється всередині SQL-виразу, тому між двома пушами одного
+    // юзера race-condition відсутній (PG row-level lock у тій самій
+    // транзакції). `longest_streak = GREATEST(...)` робить максимум
+    // монотонним.
+    await client.query(
+      `INSERT INTO routine_streaks
+         (user_id, current_streak, longest_streak, last_completed_at)
+       VALUES ($1, GREATEST(0, $2::int), GREATEST(0, $2::int), NULL)
+       ON CONFLICT (user_id) DO UPDATE
+         SET current_streak =
+               GREATEST(0, routine_streaks.current_streak + $2::int),
+             longest_streak =
+               GREATEST(
+                 routine_streaks.longest_streak,
+                 GREATEST(0, routine_streaks.current_streak + $2::int)
+               )`,
+      [userId, delta],
+    );
+    return { status: "applied" };
+  }
+
   const lwwGuard = await client.query<{ max_ts: Date | null }>(
     `SELECT MAX(client_ts) AS max_ts
        FROM sync_op_log
       WHERE user_id = $1
         AND table_name = 'routine_streaks'
-        AND status = 'applied'`,
+        AND status = 'applied'
+        AND op <> 'increment'`,
     [userId],
   );
   if (
