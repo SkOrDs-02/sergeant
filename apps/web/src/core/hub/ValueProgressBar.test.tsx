@@ -96,10 +96,58 @@ describe("ValueProgressBar (S3.3a)", () => {
     expect(bars[1]).toHaveAttribute("data-testid", "value-progress-bar-finyk");
   });
 
-  it("ignores fizruk + nutrition goals (S3.3b territory)", () => {
+  it("renders a nutrition bar with the goal-specific label (S3.3b)", () => {
     render(
       <ValueProgressBar
-        activeModules={["fizruk", "nutrition", "routine"]}
+        activeModules={["nutrition"]}
+        goals={{ ...EMPTY_GOALS, nutritionGoal: "maintain" }}
+      />,
+    );
+    const bar = screen.getByTestId("value-progress-bar-nutrition");
+    expect(bar).toBeInTheDocument();
+    expect(bar).toHaveAttribute(
+      "aria-label",
+      "Підтримка ваги — 0 страв сьогодні",
+    );
+  });
+
+  it("renders a fizruk bar with the per-week target (S3.3b)", () => {
+    render(
+      <ValueProgressBar
+        activeModules={["fizruk"]}
+        goals={{ ...EMPTY_GOALS, fizrukWeeklyGoal: 3 }}
+      />,
+    );
+    const bar = screen.getByTestId("value-progress-bar-fizruk");
+    expect(bar).toBeInTheDocument();
+    expect(bar).toHaveAttribute("aria-label", "3×/тиждень — 0 з 3");
+  });
+
+  it("orders bars routine → finyk → nutrition → fizruk (S3.3b)", () => {
+    render(
+      <ValueProgressBar
+        activeModules={["fizruk", "nutrition", "finyk", "routine"]}
+        goals={{
+          finykBudget: 30000,
+          fizrukWeeklyGoal: 4,
+          nutritionGoal: "lose",
+          routineFirstHabit: "water",
+        }}
+      />,
+    );
+    const bars = screen.getAllByRole("progressbar");
+    expect(bars.map((b) => b.getAttribute("data-testid"))).toEqual([
+      "value-progress-bar-routine",
+      "value-progress-bar-finyk",
+      "value-progress-bar-nutrition",
+      "value-progress-bar-fizruk",
+    ]);
+  });
+
+  it("hides nutrition / fizruk bars when their module is not active (S3.3b)", () => {
+    render(
+      <ValueProgressBar
+        activeModules={["routine"]}
         goals={{
           ...EMPTY_GOALS,
           fizrukWeeklyGoal: 3,
@@ -113,6 +161,21 @@ describe("ValueProgressBar (S3.3a)", () => {
     expect(
       screen.getByTestId("value-progress-bar-routine"),
     ).toBeInTheDocument();
+  });
+
+  it("uses each variant of nutritionGoal label (S3.3b)", () => {
+    for (const goal of ["lose", "gain", "maintain"] as const) {
+      cleanup();
+      render(
+        <ValueProgressBar
+          activeModules={["nutrition"]}
+          goals={{ ...EMPTY_GOALS, nutritionGoal: goal }}
+        />,
+      );
+      expect(
+        screen.getByTestId("value-progress-bar-nutrition"),
+      ).toBeInTheDocument();
+    }
   });
 });
 

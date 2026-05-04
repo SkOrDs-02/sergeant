@@ -8,9 +8,11 @@
  * user just spelled out, so the «empty hub» moment carries explicit
  * intent instead of static guilt.
  *
- * For S3.3a we cover the two lowest-friction modules (routine + finyk)
- * — fizruk and nutrition land in S3.3b without changing the public
- * surface of this component.
+ * For S3.3a we covered the two lowest-friction modules (routine +
+ * finyk). S3.3b extends the same component to the remaining two
+ * (fizruk + nutrition) without changing the public surface — the
+ * call-site in `HubDashboard` keeps the original
+ * `<ValueProgressBar activeModules goals/>` props.
  *
  * The component is intentionally _presentational_:
  *
@@ -55,6 +57,18 @@ const ROUTINE_HABIT_LABELS: Record<string, string> = {
   custom: "Своя звичка",
 };
 
+// Nutrition copy maps directly to the wizard's three goal options
+// (`packages/shared/src/lib/onboardingGoals.ts` — `nutrition_goal`).
+// We intentionally describe the *outcome the user picked* in the
+// label and the *daily-meal counter* in the `current` slot — the
+// daily counter resets, the goal does not, so they can't share a
+// surface without lying about progress.
+const NUTRITION_GOAL_LABELS: Record<"lose" | "gain" | "maintain", string> = {
+  lose: "Схуднути",
+  gain: "Набрати масу",
+  maintain: "Підтримка ваги",
+};
+
 function formatThousand(uah: number): string {
   // 30000 → "30 000 ₴" — matches the slider label in the goals step
   // (`apps/web/src/core/onboarding/GoalsStep.tsx`).
@@ -90,6 +104,29 @@ function buildBars(props: ValueProgressBarProps): BarData[] {
       testId: "value-progress-bar-finyk",
       label: `Бюджет ${formatThousand(goals.finykBudget)}`,
       current: "Записано 0 ₴",
+      percent: 0,
+    });
+  }
+
+  // Nutrition before fizruk — the wizard surfaces nutrition first when
+  // both goals exist, so the bar order mirrors the goal-step order
+  // and the user reads back their commitments in the same sequence
+  // they spelled them out.
+  if (active.has("nutrition") && goals.nutritionGoal !== null) {
+    bars.push({
+      testId: "value-progress-bar-nutrition",
+      label: NUTRITION_GOAL_LABELS[goals.nutritionGoal],
+      current: "0 страв сьогодні",
+      percent: 0,
+    });
+  }
+
+  if (active.has("fizruk") && goals.fizrukWeeklyGoal !== null) {
+    const target = goals.fizrukWeeklyGoal;
+    bars.push({
+      testId: "value-progress-bar-fizruk",
+      label: `${target}×/тиждень`,
+      current: `0 з ${target}`,
       percent: 0,
     });
   }
