@@ -12,6 +12,7 @@ import {
   getActiveModules,
   getActiveNudge,
   getHideInactiveModules,
+  getOnboardingGoals,
   getVibePicks,
   isActiveModule,
   normalizeDashboardDensity,
@@ -50,6 +51,8 @@ import { DailyNudge } from "../onboarding/DailyNudge";
 import { ReEngagementCard } from "../onboarding/ReEngagementCard";
 import { ModuleChecklist } from "../onboarding/ModuleChecklist";
 import { OnboardingProgress } from "../onboarding/OnboardingProgress";
+import { ValueProgressBar, hasAnyValueBar } from "./ValueProgressBar";
+import { webKVStore } from "@shared/lib/storage/storage";
 import {
   DndContext,
   PointerSensor,
@@ -516,10 +519,26 @@ export function HubDashboard({
               {/* Activation progress — visible only before the first real
                * entry. Once the user crosses the FTUX gate the bar would
                * read 100% indefinitely, so we drop it instead of pinning
-               * a perpetual «4/4 модулів» chrome above the bento grid. */}
-              {!hasRealEntry && (
-                <OnboardingProgress activeModules={activeModules} />
-              )}
+               * a perpetual «4/4 модулів» chrome above the bento grid.
+               *
+               * Value-promise bars (S3.3a) replace the generic «N/4 модулів»
+               * counter when the user has set at least one onboarding goal
+               * for an active module — they read back the budget / habit /
+               * weekly target the user just spelled out. Goals payload is
+               * read once per render; it is stable for the FTUX session
+               * (wizard.finish() persists it before unmounting). */}
+              {!hasRealEntry &&
+                (hasAnyValueBar({
+                  activeModules,
+                  goals: getOnboardingGoals(webKVStore),
+                }) ? (
+                  <ValueProgressBar
+                    activeModules={activeModules}
+                    goals={getOnboardingGoals(webKVStore)}
+                  />
+                ) : (
+                  <OnboardingProgress activeModules={activeModules} />
+                ))}
             </>
           )}
         </div>
