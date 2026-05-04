@@ -37,28 +37,42 @@ interface QueryRow {
   rowCount?: number | null;
 }
 
-function makeQueryMock(responses: Array<QueryRow | (() => QueryRow)>): Mock & {
+// Matches the generic shape of `RotateOneInput["query"]` in
+// `rotateSecret.ts`. We keep the generic parameter on the call signature
+// (rather than fixing it to a concrete row type) so the mock can be
+// passed straight into `rotateMonoWebhookSecret({ query: fn, ... })`
+// without a per-call cast — see the `<R>` parameter on the production
+// signature. Vitest 4 tightened `Mock<T>` to require a concrete `T`, so
+// we declare the call signature explicitly and cast the spy through it.
+type QueryFn = <R extends Record<string, unknown> = Record<string, unknown>>(
+  sql: string,
+  values?: unknown[],
+  meta?: { op?: string },
+) => Promise<{ rows: R[]; rowCount?: number | null }>;
+
+type QueryMock = QueryFn & {
   /** All calls in order, for assertions on SQL/op routing. */
   callsOrdered: Array<{ sql: string; values?: unknown[]; op?: string }>;
-} {
+} & Pick<Mock, "mockClear" | "mockReset" | "mockRestore" | "mock">;
+
+function makeQueryMock(
+  responses: Array<QueryRow | (() => QueryRow)>,
+): QueryMock {
   const calls: Array<{ sql: string; values?: unknown[]; op?: string }> = [];
   let i = 0;
-  const fn = vi.fn(
-    async (
-      sql: string,
-      values?: unknown[],
-      meta?: { op?: string },
-    ): Promise<QueryRow> => {
-      calls.push({ sql, values, op: meta?.op });
-      const next = responses[i++];
-      if (!next) {
-        throw new Error(`Unexpected DB call #${i} (op=${meta?.op}): ${sql}`);
-      }
-      return typeof next === "function" ? next() : next;
-    },
-  ) as ReturnType<typeof vi.fn> & {
-    callsOrdered: typeof calls;
+  const impl = async (
+    sql: string,
+    values?: unknown[],
+    meta?: { op?: string },
+  ): Promise<QueryRow> => {
+    calls.push({ sql, values, op: meta?.op });
+    const next = responses[i++];
+    if (!next) {
+      throw new Error(`Unexpected DB call #${i} (op=${meta?.op}): ${sql}`);
+    }
+    return typeof next === "function" ? next() : next;
   };
+  const fn = vi.fn(impl) as unknown as QueryMock;
   fn.callsOrdered = calls;
   return fn;
 }
