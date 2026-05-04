@@ -60,6 +60,24 @@ function PeekBackdrop() {
           "bg-linear-to-b from-brand-500/5 via-transparent to-transparent",
         )}
       />
+      {/* Honest peek disclaimer. The blurred cards beneath carry fake
+          metrics (`−320 ₴`, `5 трен.`, ...) so on first load the splash
+          visually promises a populated dashboard. The disclaimer keeps
+          that promise honest without competing with the primary CTA:
+          muted caption-size text, single-line, pinned just below the
+          safe-area top so it sits inside the peek area but above the
+          blurred bento. */}
+      <div
+        className={cn(
+          "absolute inset-x-0",
+          "pt-[max(0.5rem,calc(env(safe-area-inset-top)+0.25rem))] px-5",
+          "flex justify-center",
+        )}
+      >
+        <span className="text-style-caption text-muted/80">
+          Це приклад. Твій дашборд буде твоїм.
+        </span>
+      </div>
       {/* Animated floating shapes for visual interest */}
       <div className="absolute inset-0">
         <div
