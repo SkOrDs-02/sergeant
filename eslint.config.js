@@ -31,6 +31,8 @@ export default [
       "**/test-results/**",
       ".turbo/**",
       "**/.turbo/**",
+      "storybook-static/**",
+      "**/storybook-static/**",
     ],
   },
   js.configs.recommended,

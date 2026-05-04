@@ -16,7 +16,9 @@
     "test:coverage": "vitest run --coverage",
     "test:a11y": "playwright test",
     "test:visual": "playwright test --config playwright.visual.config.ts",
-    "size": "size-limit"
+    "size": "size-limit",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "size-limit": [
     {
@@ -85,6 +87,8 @@
     "@sergeant/config": "workspace:*",
     "@sergeant/db-schema": "workspace:^",
     "@size-limit/file": "^12.1.0",
+    "@storybook/addon-docs": "^10.3.6",
+    "@storybook/react-vite": "^10.3.6",
     "@tailwindcss/vite": "^4.2.4",
     "@tanstack/react-query-devtools": "^5.100.9",
     "@testing-library/jest-dom": "^6.9.1",
@@ -99,6 +103,7 @@
     "msw": "^2.14.2",
     "rollup-plugin-visualizer": "^7.0.1",
     "size-limit": "^12.1.0",
+    "storybook": "^10.3.6",
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
     "vite": "^8.0.10",

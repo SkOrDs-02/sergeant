@@ -12,6 +12,9 @@ apps/server/dist-server/
 # Vitest coverage
 coverage/
 
+# Storybook
+storybook-static/
+
 # Playwright (a11y tests)
 playwright-report/
 test-results/
