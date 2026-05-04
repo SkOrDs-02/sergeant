@@ -57,6 +57,12 @@ jobs:
         # See scripts/docs/check-playbook-schema.mjs for the exact schema.
         run: node scripts/docs/check-playbook-schema.mjs
 
+      - name: Check playbook + SKILL language (Hard Rule #15) — warn-only
+        # Initiative 0009 PR 1.2a: the linter is wired in --warn-only mode
+        # so violations are visible in CI without breaking main during the
+        # backfill. PR 1.2c flips this to a blocking gate.
+        run: node scripts/check-playbook-language.mjs --warn-only
+
   adr-graph:
     name: ADR graph (statuses, supersede, README index)
     runs-on: ubuntu-latest
@@ -171,4 +177,5 @@ jobs:
             scripts/docs/__tests__/check-markdown-links.test.mjs \
             scripts/docs/__tests__/check-adr-graph.test.mjs \
             scripts/docs/__tests__/check-playbook-schema.test.mjs \
+            scripts/__tests__/check-playbook-language.test.mjs \
             scripts/ci/__tests__/validate-pr-body.test.mjs
