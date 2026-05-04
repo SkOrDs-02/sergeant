@@ -109,13 +109,13 @@
 
 ## Критерії DONE
 
-- [ ] У Sentry проєкті `sergeant-server` за останні 24 год є щонайменше 1 server-side error event.
+- [x] У Sentry проєкті `sergeant-server` за останні 24 год є щонайменше 1 server-side error event.
 - [ ] У Grafana Tempo за останні 24 год видно span tree від web ⟶ server ⟶ pg / Anthropic.
-- [ ] У Grafana dashboard `server.json` усі 8 panels live.
-- [ ] Alert «error-rate > 1%» спрацьовує (можна тестово знизити поріг до 0.01% і перевірити).
-- [ ] У `apps/server/src/observability/otel.ts` сервер не падає при відсутності `OTEL_EXPORTER_OTLP_ENDPOINT` (graceful no-op).
-- [ ] Sampling rates документовані у [`docs/observability/runbook.md`](../observability/runbook.md).
-- [ ] CI lint-checks проходять без warnings.
+- [x] У Grafana dashboard `server.json` усі 8 panels live.
+- [x] Alert «error-rate > 1%» спрацьовує (можна тестово знизити поріг до 0.01% і перевірити).
+- [x] У `apps/server/src/observability/otel.ts` сервер не падає при відсутності `OTEL_EXPORTER_OTLP_ENDPOINT` (graceful no-op).
+- [x] Sampling rates документовані у [`docs/observability/runbook.md`](../observability/runbook.md).
+- [x] CI lint-checks проходять без warnings.
 
 ## Ризики та митиґація
 

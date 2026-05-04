@@ -136,14 +136,14 @@ Sergeant досить агресивно використовує Anthropic Clau
 
 ## Критерії DONE
 
-- [ ] У всіх Anthropic-викликах `system[0].cache_control = "ephemeral"`.
-- [ ] У Pino логах `ai.usage` events містять `cache_read_tokens` / `cache_creation_tokens` / `cost_usd`.
-- [ ] Grafana dashboard `ai-ops.json` live з 5 panels.
-- [ ] Cost / day per model видно у Grafana (1 тиждень baseline зібрано).
+- [x] У всіх Anthropic-викликах `system[0].cache_control = "ephemeral"`.
+- [x] У Pino логах `ai.usage` events містять `cache_read_tokens` / `cache_creation_tokens` / `cost_usd`.
+- [x] Grafana dashboard `ai-ops.json` live з 5 panels.
+- [x] Cost / day per model видно у Grafana (1 тиждень baseline зібрано).
 - [ ] Alert `ai_daily_cost_usd > 50` спрацьовує (тестово знизити поріг до $0.01 і перевірити).
 - [ ] Cache hit-rate **за тиждень після rollout ≥ 60%** (target).
-- [ ] ADR `0041+-anthropic-prompt-cache-policy.md` змерджено.
-- [ ] CI lint + tests проходять.
+- [x] ADR `0041+-anthropic-prompt-cache-policy.md` змерджено.
+- [x] CI lint + tests проходять.
 
 ## Ризики та митиґація
 

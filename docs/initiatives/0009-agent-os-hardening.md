@@ -146,8 +146,8 @@ Sergeant має один із найдорожче побудованих agent-
 
 **Acceptance criteria:**
 
-- [ ] CI fail на новому playbook без `Owner surface` або `Verification`.
-- [ ] `INDEX.md` тригери не обрізаються (всі ≤ 240 chars).
+- [x] CI fail на новому playbook без `Owner surface` або `Verification`.
+- [x] `INDEX.md` тригери не обрізаються (всі ≤ 240 chars).
 
 #### PR 1.5 — Hard-rules categorization (підготовка до фази 3)
 
@@ -401,14 +401,14 @@ Sergeant має один із найдорожче побудованих agent-
 
 - [ ] Усі 5 фаз шипнуто (фаза 5 може carry-over як successor initiative).
 - [ ] `pnpm lint` (root) включає: `lint:skills`, `lint:playbook-language`, `lint:playbook-schema` (extended), `lint:hard-rules-registry`, `lint:codeowners` — всі required.
-- [ ] Жоден SKILL.md не може бути замінено без оновлення hash у lock.
+- [x] Жоден SKILL.md не може бути замінено без оновлення hash у lock.
 - [ ] Жоден EN-only playbook без явного `lang: en` allow-list у frontmatter.
 - [ ] Husky pre-commit ловить ≥ 80% TS-помилок локально (метрика: PR-и за 30 днів із isolated TS-fail у CI < 20% від baseline).
 - [ ] AGENTS.md ≤ 150 LOC.
-- [ ] Kожен `SpecialistAgent` має задокументований skill mapping.
-- [ ] `docs/agents/` → `docs/agents/` мейгрейцію завершено.
-- [ ] release-_ і access-_ playbook'и зведено.
-- [ ] Renovate-vs-Dependabot decision зафіксовано в ADR.
+- [x] Kожен `SpecialistAgent` має задокументований skill mapping.
+- [x] `docs/agents/` → `docs/agents/` мейгрейцію завершено.
+- [x] release-_ і access-_ playbook'и зведено.
+- [x] Renovate-vs-Dependabot decision зафіксовано в ADR.
 - [ ] CI median minutes per PR знижено на ≥ 15%.
 
 ## Ризики та мітигація

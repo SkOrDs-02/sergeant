@@ -76,10 +76,10 @@
 
 ## Критерії DONE
 
-- [ ] [ADR-0010](../adr/0010-mobile-dual-track-capacitor-expo.md) має поле `Sunset schedule` з трьома датами.
-- [ ] У `docs/architecture/platforms.md` є feature-parity таблиця, оновлена за останні 7 днів.
-- [ ] `scripts/report-shell-tax.mjs` бігає у CI cron щотижня.
-- [ ] У lint-плагіні є rule `forbid-shell-only-feature` із покриттям unit-тестами.
+- [x] [ADR-0010](../adr/0010-mobile-dual-track-capacitor-expo.md) має поле `Sunset schedule` з трьома датами.
+- [x] У `docs/architecture/platforms.md` є feature-parity таблиця, оновлена за останні 7 днів.
+- [x] `scripts/report-shell-tax.mjs` бігає у CI cron щотижня.
+- [x] У lint-плагіні є rule `forbid-shell-only-feature` із покриттям unit-тестами.
 - [ ] У `#mobile-channel` опубліковано рішення з датами.
 - [ ] `apps/mobile-shell/src/` не отримав жодного нового модуля з моменту впровадження lint-правила (грейс-період 1 спринт для in-flight PR-ів).
 

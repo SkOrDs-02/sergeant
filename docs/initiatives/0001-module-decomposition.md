@@ -67,12 +67,12 @@
 
 ## Критерії DONE
 
-- [ ] `pnpm lint` падає на будь-якому новому файлі ≥600 LOC у `apps/web/src/**/*.tsx`.
+- [x] `pnpm lint` падає на будь-якому новому файлі ≥600 LOC у `apps/web/src/**/*.tsx`.
 - [ ] У `apps/web/src/**` лишається ≤2 файли в allowlist (тільки ті, що мають документований план в roadmap-і).
-- [ ] Декомпонований `RoutineApp` не має `any`-типів та використовує `useReducer`/state-machine для головного потоку.
-- [ ] Декомпонований `Icon.tsx`: `pnpm bundle:analyze` показує −15…−25 KB у chunk-і `shared` (бо мертві іконки тепер tree-shake-аються).
-- [ ] CI job `lint:tech-debt-freshness` пройшов і `LARGE_FILES` зник з `frontend.md` watching-листа.
-- [ ] У `AGENTS.md` додано пункт #11 (`max-lines`) з прикладом і покликанням сюди.
+- [x] Декомпонований `RoutineApp` не має `any`-типів та використовує `useReducer`/state-machine для головного потоку.
+- [x] Декомпонований `Icon.tsx`: `pnpm bundle:analyze` показує −15…−25 KB у chunk-і `shared` (бо мертві іконки тепер tree-shake-аються).
+- [x] CI job `lint:tech-debt-freshness` пройшов і `LARGE_FILES` зник з `frontend.md` watching-листа.
+- [x] У `AGENTS.md` додано пункт #11 (`max-lines`) з прикладом і покликанням сюди.
 
 ## Ризики та митиґація
 

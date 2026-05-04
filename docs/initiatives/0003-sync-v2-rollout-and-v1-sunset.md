@@ -121,13 +121,13 @@ Sergeant зараз **паралельно тримає два sync-механі
 ## Критерії DONE
 
 - [ ] У Grafana є dashboard `sync.json` з 6 panels і трьома алертами.
-- [ ] `Sunset:` header виставляється на всіх v1-ендпоінтах.
+- [x] `Sunset:` header виставляється на всіх v1-ендпоінтах.
 - [ ] `cloudSyncMode = "v2"` для 100% web/RN користувачів за 30 днів до T₀.
 - [ ] `dual`-mode diverge-rate стабільно < 0.5% за останні 2 тижні перед cut-off.
 - [ ] Backfill запущений для 100% активних юзерів (`last_seen ≤ 90d`).
 - [ ] T₀: `/api/v1/sync/*` повертає `410 Gone`.
 - [ ] T₀ + 30 днів: v1-handlers і колонка `module_data` видалені (двофазний DROP).
-- [ ] ADR `0040+-sunset-cloudsync-v1.md` змерджено.
+- [x] ADR `0040+-sunset-cloudsync-v1.md` змерджено.
 - [ ] Tech-debt запис «CloudSync v1/v2 dual-stack» закрито.
 
 ## Ризики та митиґація

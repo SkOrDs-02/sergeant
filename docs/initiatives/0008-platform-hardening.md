@@ -132,15 +132,15 @@
 
 ## Критерії DONE
 
-- [ ] `/health/liveness`, `/health/readiness`, `/health/startup` працюють і повертають коректні коди.
+- [x] `/health/liveness`, `/health/readiness`, `/health/startup` працюють і повертають коректні коди.
 - [ ] Render/k8s конфіг оновлено на нові probes (`failureThreshold` для startup).
 - [ ] Старий `/health` → 308 redirect (буде видалено через 30 днів).
-- [ ] Rate-limit policy у `config/rateLimit.ts`, 429-відповіді мають `Retry-After`.
+- [x] Rate-limit policy у `config/rateLimit.ts`, 429-відповіді мають `Retry-After`.
 - [ ] Renovate / Dependabot активний; перші 5 PR-ів пройшли (auto-merge або manual).
 - [ ] `pnpm audit` gate у CI зеленіє; нема відомих moderate/high CVE.
-- [ ] SBOM генерується на release (artifact видно у GH Release).
+- [x] SBOM генерується на release (artifact видно у GH Release).
 - [ ] ADR-0043 (Renovate vs Dependabot) і ADR-0044 (sigstore) змерджено.
-- [ ] Runbook оновлено з новими секціями.
+- [x] Runbook оновлено з новими секціями.
 
 ## Ризики та митиґація
 
