@@ -92,7 +92,7 @@ export interface FocusSelection<T> {
  */
 export function selectFocusAndRest<T>(recs: readonly T[]): FocusSelection<T> {
   if (recs.length === 0) return { focus: null, rest: [] };
-  return { focus: recs[0], rest: recs.slice(1) };
+  return { focus: recs[0] ?? null, rest: recs.slice(1) };
 }
 
 /**

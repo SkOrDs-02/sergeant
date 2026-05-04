@@ -138,9 +138,10 @@ export function normalizeUaNumbers(text: string): string {
   const PUNCT_BREAK = /[.,;:!?)»]$/;
   let i = 0;
   while (i < words.length) {
-    const clean = stripWordPunctuation(words[i]).toLowerCase();
+    const wi = words[i] ?? "";
+    const clean = stripWordPunctuation(wi).toLowerCase();
     if (UA_NUMBER_WORDS[clean] == null) {
-      out.push(words[i]);
+      out.push(wi);
       i++;
       continue;
     }
@@ -152,8 +153,9 @@ export function normalizeUaNumbers(text: string): string {
       // If the previous word ended with separator punctuation, stop the run
       // here so that "вісімдесят, вісім" produces 80 + 8 (two numbers) rather
       // than the merged "вісімдесят вісім" = 88.
-      if (PUNCT_BREAK.test(words[j - 1])) break;
-      const c = stripWordPunctuation(words[j]).toLowerCase();
+      const prev = words[j - 1] ?? "";
+      if (PUNCT_BREAK.test(prev)) break;
+      const c = stripWordPunctuation(words[j] ?? "").toLowerCase();
       if (UA_NUMBER_WORDS[c] == null) break;
       runWords.push(c);
       j++;
@@ -162,11 +164,11 @@ export function normalizeUaNumbers(text: string): string {
     if (n != null) {
       // Preserve trailing punctuation on the last word of the run
       // (e.g. "вісімдесят," → "80,").
-      const lastRaw = words[j - 1];
+      const lastRaw = words[j - 1] ?? "";
       const trailingPunct = lastRaw.match(/[.,!?;:)»]+$/)?.[0] ?? "";
       out.push(String(n) + trailingPunct);
     } else {
-      for (let k = i; k < j; k++) out.push(words[k]);
+      for (let k = i; k < j; k++) out.push(words[k] ?? "");
     }
     i = j;
   }
@@ -194,7 +196,7 @@ export function parseExpenseSpeech(text: string): ParsedExpense | null {
     ) || lower.match(/(\d+(?:\.\d+)?)/u);
 
   let amount: number | null = null;
-  if (amountMatch) {
+  if (amountMatch?.[1]) {
     amount = parseFloat(amountMatch[1]);
   }
 
@@ -267,17 +269,17 @@ export function parseWorkoutSetSpeech(text: string): ParsedWorkoutSet | null {
     lower.match(/(?:підхід|sets?)\s*(\d+)/iu);
 
   let weight: number | null = null;
-  if (weightMatch) {
+  if (weightMatch?.[1]) {
     weight = parseFloat(weightMatch[1].replace(",", "."));
     if (/lb|lbs|фунт/i.test(weightMatch[0]))
       weight = Math.round(weight * 0.453592);
   }
 
   let reps: number | null = null;
-  if (repsMatch) reps = parseInt(repsMatch[1] || repsMatch[2], 10);
+  if (repsMatch) reps = parseInt(repsMatch[1] ?? repsMatch[2] ?? "", 10);
 
   let sets: number | null = null;
-  if (setsMatch) sets = parseInt(setsMatch[1] || setsMatch[2], 10);
+  if (setsMatch) sets = parseInt(setsMatch[1] ?? setsMatch[2] ?? "", 10);
 
   let exerciseName: string | null = norm
     .replace(
@@ -343,13 +345,14 @@ export function parseMealSpeech(text: string): ParsedMeal | null {
 
   let kcal: number | null = null;
   if (kcalMatch)
-    kcal = parseFloat((kcalMatch[1] || kcalMatch[2]).replace(",", "."));
+    kcal = parseFloat((kcalMatch[1] ?? kcalMatch[2] ?? "").replace(",", "."));
 
   let grams: number | null = null;
-  if (gramsMatch) grams = parseFloat(gramsMatch[1].replace(",", "."));
+  if (gramsMatch?.[1]) grams = parseFloat(gramsMatch[1].replace(",", "."));
 
   let protein: number | null = null;
-  if (proteinMatch) protein = parseFloat(proteinMatch[1].replace(",", "."));
+  if (proteinMatch?.[1])
+    protein = parseFloat(proteinMatch[1].replace(",", "."));
 
   // Strip recognized number-units from the name. Same Cyrillic-aware
   // lookahead trick for "гр"/"г" so we don't munch food-name prefixes.

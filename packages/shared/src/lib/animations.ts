@@ -229,6 +229,14 @@ export function cssTransitionMulti(
  * Mobile consumers should use `AccessibilityInfo.isReduceMotionEnabled()`.
  */
 export function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined") return false;
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // We avoid pulling DOM types into this package (it is shared web ↔ mobile
+  // ↔ server). The local cast keeps the runtime check while satisfying the
+  // type-checker without `lib: ["DOM"]`.
+  const w = (
+    globalThis as {
+      window?: { matchMedia?: (q: string) => { matches: boolean } };
+    }
+  ).window;
+  if (!w?.matchMedia) return false;
+  return w.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
