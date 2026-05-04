@@ -732,6 +732,53 @@ export const authMailQueueDepth = new client.Gauge({
   registers: [register],
 });
 
+// ───────────────────── FTUX drip jobs (BullMQ) ────────────────
+// Metric set дзеркалить auth-mail-набір. Лейбл `day` (`day_0|day_1|day_3`)
+// дозволяє відрізняти Day-0 (immediate) від delayed-job-ів і дивитись на
+// drop-off між днями (Day 0 надсилається 100%, Day 1/3 — після opt-out
+// фільтрації + idempotency-перевірок). Лейбл `outcome` для processedTotal:
+//   - `ok` — лист пішов через Resend
+//   - `skipped_optout` — opt-out зафіксований у `email_unsubscribes`
+//   - `skipped_already_sent` — `email_campaigns_log` уже має row
+//   - `skipped_user_deleted` — юзера вже немає (3-day-ге очікування)
+//   - `retry` / `permanent_fail` — як і в auth-mail.
+export const ftuxDripJobsEnqueuedTotal = new client.Counter({
+  name: "ftux_drip_jobs_enqueued_total",
+  help: "FTUX drip mail enqueue attempts by mode and day",
+  labelNames: ["mode", "day"], // mode: queued|fallback|skipped_no_redis|enqueue_error
+  registers: [register],
+});
+
+export const ftuxDripJobsProcessedTotal = new client.Counter({
+  name: "ftux_drip_jobs_processed_total",
+  help: "FTUX drip mail processor outcomes",
+  labelNames: ["outcome", "day"],
+  // outcome: ok|retry|permanent_fail|skipped_optout|skipped_already_sent|skipped_user_deleted
+  registers: [register],
+});
+
+export const ftuxDripJobDurationMs = new client.Histogram({
+  name: "ftux_drip_job_duration_ms",
+  help: "FTUX drip mail per-job duration (ms)",
+  labelNames: ["outcome", "day"],
+  buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000],
+  registers: [register],
+});
+
+export const ftuxDripQueueDepth = new client.Gauge({
+  name: "ftux_drip_queue_depth",
+  help: "BullMQ ftux-drip queue depth by status",
+  labelNames: ["status"], // waiting|active|delayed|failed
+  registers: [register],
+});
+
+export const ftuxDripUnsubscribesTotal = new client.Counter({
+  name: "ftux_drip_unsubscribes_total",
+  help: "FTUX drip opt-out clicks by outcome",
+  labelNames: ["outcome"], // ok|already_unsubscribed|invalid_token|missing_secret
+  registers: [register],
+});
+
 // ───────────────── AI memory ingestion (BullMQ) ───────────────
 // Лічильники для PR2-черги `ai-memory-ingest` (Redis-keys під префіксом
 // `sergeant:`). Дзеркалять

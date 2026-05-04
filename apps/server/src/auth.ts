@@ -14,6 +14,7 @@ import { db } from "./drizzle.js";
 import { sanitizeUserImage } from "./auth/sanitizeUserImage.js";
 import { detectFingerprintDrift, ipPrefix } from "./auth/sessionFingerprint.js";
 import { queueAuthTransactionalEmail } from "./email/authTransactionalMail.js";
+import { queueFtuxDripForNewUser } from "./email/ftuxDripMail.js";
 import { logger } from "./obs/logger.js";
 import {
   authAttemptsTotal,
@@ -241,6 +242,46 @@ export const auth = betterAuth({
             );
           }
           return { data: result.data };
+        },
+        /**
+         * S4.3 — FTUX email drip (Day 0 / 1 / 3) через Resend.
+         *
+         * Триггер свідомо у `.after`, а не у `.before`: до `.after`-моменту
+         * у нас уже є реальний `user.id`, потрібний для unsubscribe-токена,
+         * idempotency-row-у в `email_campaigns_log`, і opt-out check-у в
+         * `email_unsubscribes`. У `.before` `id` ще не присвоєний.
+         *
+         * Не блокуємо callback Better Auth — `queueFtuxDripForNewUser`
+         * усередині `void enqueue()` (як у `queueAuthTransactionalEmail`),
+         * тож sign-up-flow завжди завершується за <50ms, навіть якщо
+         * BullMQ або Redis тимчасово недоступні.
+         *
+         * Без `RESEND_API_KEY` (dev / preview): dispatcher логує warn і
+         * відмовляється від зовнішнього fetch-у; `email_campaigns_log` row
+         * усе одно записується — це потрібно для idempotency у production
+         * cutover-і (не пхати дублікати у юзерів, що зареєструвались до
+         * вмикання Resend).
+         */
+        after: async (user) => {
+          if (
+            !user ||
+            typeof user.id !== "string" ||
+            typeof user.email !== "string"
+          ) {
+            return;
+          }
+          try {
+            queueFtuxDripForNewUser({ userId: user.id, email: user.email });
+          } catch (err) {
+            logger.error(
+              {
+                event: "auth.user.ftux_drip.enqueue_error",
+                email_hash: emailFingerprint(user.email),
+                err: err instanceof Error ? err.message : String(err),
+              },
+              "queueFtuxDripForNewUser threw during user.create.after hook",
+            );
+          }
         },
       },
       update: {

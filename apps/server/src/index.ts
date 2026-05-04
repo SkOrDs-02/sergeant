@@ -32,6 +32,10 @@ import {
   startAuthMailWorker,
   type StartedAuthMailWorker,
 } from "./lib/jobs/authMail.js";
+import {
+  startFtuxDripWorker,
+  type StartedFtuxDripWorker,
+} from "./lib/jobs/ftuxDrip.js";
 import { connectRedis, disconnectRedis } from "./lib/redis.js";
 import {
   startMemoryIngestWorker,
@@ -46,6 +50,9 @@ import { logger, serializeError } from "./obs/logger.js";
 // має кому делегувати job-и. Винесено вище за `startAuthMailWorker`, щоб
 // інакше lazy-import з Better-Auth-callback-у міг race-нути з першим job-ом.
 import "./email/authTransactionalMail.js";
+// Той самий register-pattern для FTUX-drip-у. Імпорт реєструє dispatcher,
+// `configureFtuxDripDispatcher` нижче передає pg-pool.
+import { configureFtuxDripDispatcher } from "./email/ftuxDripMail.js";
 import {
   startPoolSampler,
   uncaughtExceptionsTotal,
@@ -87,6 +94,14 @@ if (env.MONO_ENRICHMENT_WORKER_ENABLED && env.ANTHROPIC_API_KEY) {
 // `startAuthMailWorker()` повертає null, і `enqueueAuthMail()` падає у
 // in-process fallback (як було до цього PR-а). Це збережено для CI / dev.
 const authMailWorker: StartedAuthMailWorker | null = startAuthMailWorker();
+
+// FTUX-drip BullMQ worker. Контракт ідентичний `auth-mail`-черзі: без
+// REDIS_URL → null → `enqueueFtuxDripMail` падає у sync fallback ТІЛЬКИ
+// для Day 0; Day 1 і Day 3 відверто пропускаються із warn-логом. Pool
+// проброшуємо явно, бо dispatcher робить opt-out check + idempotent INSERT
+// у `email_campaigns_log` через той самий pg-pool, що й решта server-у.
+configureFtuxDripDispatcher({ pool });
+const ftuxDripWorker: StartedFtuxDripWorker | null = startFtuxDripWorker();
 
 // AI memory ingestion BullMQ worker. Так само як `authMailWorker`, повертає
 // null коли `REDIS_URL` не задано (CI / local dev) — у такому разі
@@ -186,6 +201,18 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
       } catch (err) {
         logger.warn({
           msg: "auth_mail_worker_close_error",
+          err: serializeError(err, { includeStack: false }),
+        });
+      }
+    }
+
+    if (ftuxDripWorker) {
+      try {
+        await ftuxDripWorker.close();
+        logger.info({ msg: "ftux_drip_worker_closed" });
+      } catch (err) {
+        logger.warn({
+          msg: "ftux_drip_worker_close_error",
           err: serializeError(err, { includeStack: false }),
         });
       }
