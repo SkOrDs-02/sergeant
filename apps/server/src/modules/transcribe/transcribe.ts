@@ -3,6 +3,7 @@ import { TranscribeQuerySchema } from "@sergeant/shared";
 import { validateQuery } from "../../http/validate.js";
 import { transcribeAudio, GroqTranscribeError } from "../../lib/groq.js";
 import { logger } from "../../obs/logger.js";
+import { assertTranscribeUsdCap, recordTranscribeUsdSpend } from "./usdCap.js";
 
 type WithGroqKey = Request & { groqKey?: string };
 
@@ -84,13 +85,21 @@ export default async function transcribeHandler(
   if (!parsed.ok) return;
   const { language, prompt } = parsed.data;
 
+  const model = process.env.GROQ_TRANSCRIBE_MODEL || "whisper-large-v3-turbo";
+
+  // H9 — pre-charge per-user-per-day USD cap. Після MIME / size / query
+  // validation, але ДО Groq-виклику. Якщо cap буде перевищений — handler
+  // негайно повертає 402, і ми не платимо за цю транскрипцію.
+  // `assertTranscribeUsdCap` сам відправляє 402 у `res`, тут лише
+  // достроково виходимо.
+  const capCheck = await assertTranscribeUsdCap(req, res, body.length, model);
+  if (!capCheck.ok) return;
+
   // Прокидаємо abort при client-disconnect, щоб не платити за марний upstream.
   const abortController = new AbortController();
   req.on("close", () => {
     if (!res.writableEnded) abortController.abort();
   });
-
-  const model = process.env.GROQ_TRANSCRIBE_MODEL || "whisper-large-v3-turbo";
 
   try {
     const result = await transcribeAudio({
@@ -102,6 +111,12 @@ export default async function transcribeHandler(
       prompt,
       signal: abortController.signal,
     });
+    // H9 — post-success accounting. Не списуємо за провалений Groq
+    // виклик (catch нижче), бо upstream теж не виставляє рахунку за
+    // 5xx. Викликаємо до `res.json` щоб тестувати ledger-стан після
+    // запиту, і не блокуємо response (recordTranscribeUsdSpend сам
+    // ковтає всі помилки).
+    await recordTranscribeUsdSpend(req, body.length, model);
     res.json({
       text: result.text,
       durationSec: result.durationSec,

@@ -161,6 +161,20 @@ export const aiQuotaFailOpenTotal = new client.Counter({
   registers: [register],
 });
 
+/**
+ * H9 — `/api/transcribe` USD-cap circuit breaker. `outcome` лейбл:
+ *   - `cap_hit` — pre-charge відсіяв виклик до Groq (402 у клієнта).
+ *   - `store_unavailable` — DB недоступна, fail-open (логуємо для
+ *     алерту, але виклик пройшов далі).
+ * Cardinality фіксована (2 значення) — безпечно для Prometheus.
+ */
+export const transcribeUsdCapEventsTotal = new client.Counter({
+  name: "transcribe_usd_cap_events_total",
+  help: "H9 — transcribe per-user USD cap circuit-breaker events",
+  labelNames: ["outcome"], // cap_hit | store_unavailable
+  registers: [register],
+});
+
 export const syncConflictsTotal = new client.Counter({
   name: "sync_conflicts_total",
   help: "Sync conflicts per module",
