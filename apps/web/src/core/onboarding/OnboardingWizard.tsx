@@ -308,7 +308,7 @@ function WelcomeOneScreen({
           size={12}
           aria-hidden
         />
-        {expanded ? "Згорнути" : "Налаштувати модулі"}
+        {expanded ? "Згорнути" : "Що це за модулі?"}
       </button>
     </div>
   );
