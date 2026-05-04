@@ -14,6 +14,7 @@ import {
   ModuleHeaderBackButton,
 } from "@shared/components/layout";
 import { NoBankBanner } from "./components/NoBankBanner";
+import { FinykManualExpenseConflictBanner } from "./components/FinykManualExpenseConflictBanner";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { cn } from "@shared/lib/ui/cn";
 import { useToast } from "@shared/hooks/useToast";
@@ -41,6 +42,7 @@ const Analytics = lazyImport(() => import("./pages/Analytics"), "Analytics");
 import { ManualExpenseSheet } from "./components/ManualExpenseSheet";
 import { FinykLoginScreen } from "./components/FinykLoginScreen";
 import { NAV_ICONS, NAV_IDS, NAV_ITEMS } from "./components/finykNav";
+// eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite (initiative 0006 Phase 2 migration на react-router-dom ще не дійшла до FinykApp shell-роутера).
 import { useHashRouter, useHashQueryParam } from "./hooks/useHashRouter";
 import { useUnifiedFinanceData } from "./hooks/useUnifiedFinanceData";
 import { useFinykPersonalization } from "./hooks/useFinykPersonalization";
@@ -70,6 +72,7 @@ export default function App({
   // collapsed everything except `error` to `success`, which blocked any
   // `warning`/`info`/`action` usage from the shared Toast module.
   const storage = useStorage({ toast });
+  // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite (initiative 0006 Phase 2 migration на react-router-dom ще не дійшла до FinykApp shell-роутера).
   const [page, navigate] = useHashRouter();
   // Підтримка глибоких лінків на конкретний ліміт із Hub-інсайту
   // (`#budgets?cat=smoking`). Передається у Budgets, щоб одразу
@@ -324,6 +327,17 @@ export default function App({
           }}
         />
       )}
+
+      {/*
+        Sync-v2 LWW-conflict banner для `finyk_manual_expenses` (Stage 5
+        PR #044, `docs/planning/storage-roadmap.md`). Self-renders як
+        no-op коли черга у `conflicts/store.ts` порожня — тому жодного
+        feature-flag-у тут не треба, гілка дешева. Розташований нижче
+        no-bank банера, щоб «налаштуй банк» залишався primary CTA для
+        свіжих юзерів, а conflict-warning спливав поверх для тих, хто
+        вже має data + race з іншого пристрою.
+      */}
+      <FinykManualExpenseConflictBanner />
 
       {/* Page content */}
       <div
