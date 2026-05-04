@@ -6,6 +6,7 @@ import {
   FIRST_REAL_ENTRY_EVENTS,
   FIRST_REAL_ENTRY_SOURCES,
   detectFirstRealEntry,
+  getFirstRealEntryModule,
   hasAnyRealEntry,
 } from "./firstRealEntry";
 import { FIRST_REAL_ENTRY_KEY, TTV_MS_KEY } from "./vibePicks";
@@ -102,6 +103,83 @@ describe("hasAnyRealEntry", () => {
       [FIRST_REAL_ENTRY_SOURCES.FIZRUK_WORKOUTS]: "nope",
     });
     expect(hasAnyRealEntry(s)).toBe(false);
+  });
+});
+
+describe("getFirstRealEntryModule", () => {
+  it("returns null when no module has a real entry", () => {
+    expect(getFirstRealEntryModule(createMemoryKVStore())).toBeNull();
+  });
+
+  it("ignores demo-only payloads", () => {
+    const s = storeWith({
+      [FIRST_REAL_ENTRY_SOURCES.FINYK_MANUAL]: [{ id: "a", demo: true }],
+      [FIRST_REAL_ENTRY_SOURCES.FIZRUK_WORKOUTS]: [{ id: "w", demo: true }],
+    });
+    expect(getFirstRealEntryModule(s)).toBeNull();
+  });
+
+  it("identifies finyk via manual expenses", () => {
+    const s = storeWith({
+      [FIRST_REAL_ENTRY_SOURCES.FINYK_MANUAL]: [{ id: "real" }],
+    });
+    expect(getFirstRealEntryModule(s)).toBe("finyk");
+  });
+
+  it("identifies finyk via synced monobank cache", () => {
+    const s = storeWith({
+      [FIRST_REAL_ENTRY_SOURCES.FINYK_TX_CACHE]: {
+        transactions: [{ id: "tx" }],
+      },
+    });
+    expect(getFirstRealEntryModule(s)).toBe("finyk");
+  });
+
+  it("identifies fizruk via bare-array workouts", () => {
+    const s = storeWith({
+      [FIRST_REAL_ENTRY_SOURCES.FIZRUK_WORKOUTS]: [{ id: "w" }],
+    });
+    expect(getFirstRealEntryModule(s)).toBe("fizruk");
+  });
+
+  it("identifies fizruk via object-wrapped workouts", () => {
+    const s = storeWith({
+      [FIRST_REAL_ENTRY_SOURCES.FIZRUK_WORKOUTS]: {
+        workouts: [{ id: "w" }],
+      },
+    });
+    expect(getFirstRealEntryModule(s)).toBe("fizruk");
+  });
+
+  it("identifies routine via real habits", () => {
+    const s = storeWith({
+      [FIRST_REAL_ENTRY_SOURCES.ROUTINE]: {
+        habits: [{ id: "h", demo: true }, { id: "real" }],
+      },
+    });
+    expect(getFirstRealEntryModule(s)).toBe("routine");
+  });
+
+  it("identifies nutrition by scanning every day", () => {
+    const s = storeWith({
+      [FIRST_REAL_ENTRY_SOURCES.NUTRITION_LOG]: {
+        "2025-01-01": { meals: [{ id: "m", demo: true }] },
+        "2025-01-02": { meals: [{ id: "real" }] },
+      },
+    });
+    expect(getFirstRealEntryModule(s)).toBe("nutrition");
+  });
+
+  it("returns finyk first when multiple modules race", () => {
+    // Documented contract: scan order finyk → fizruk → routine →
+    // nutrition. If two modules flipped in the same tick the modal
+    // copy stays predictable; analytics still records the actual
+    // source via per-event payloads.
+    const s = storeWith({
+      [FIRST_REAL_ENTRY_SOURCES.FINYK_MANUAL]: [{ id: "real" }],
+      [FIRST_REAL_ENTRY_SOURCES.FIZRUK_WORKOUTS]: [{ id: "w" }],
+    });
+    expect(getFirstRealEntryModule(s)).toBe("finyk");
   });
 });
 

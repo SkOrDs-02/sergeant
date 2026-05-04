@@ -6,8 +6,12 @@
  * analytics sink.
  */
 
-import { detectFirstRealEntry as sharedDetectFirstRealEntry } from "@sergeant/shared";
-import { hasAnyRealEntry as sharedHasAnyRealEntry } from "@sergeant/shared";
+import {
+  detectFirstRealEntry as sharedDetectFirstRealEntry,
+  getFirstRealEntryModule as sharedGetFirstRealEntryModule,
+  hasAnyRealEntry as sharedHasAnyRealEntry,
+  type DashboardModuleId,
+} from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { trackEvent } from "../observability/analytics";
 
@@ -29,4 +33,14 @@ export function hasAnyRealEntry(): boolean {
  */
 export function detectFirstRealEntry(): boolean {
   return sharedDetectFirstRealEntry(webKVStore, { trackEvent });
+}
+
+/**
+ * Which module owns the user's first real entry? Used by
+ * `useFirstEntryCelebration` to pick module-aware copy from
+ * `FIRST_ENTRY_CELEBRATIONS`. Returns `null` when no real entry
+ * exists yet, or in the rare race where a payload races the read.
+ */
+export function getFirstRealEntryModule(): DashboardModuleId | null {
+  return sharedGetFirstRealEntryModule(webKVStore);
 }

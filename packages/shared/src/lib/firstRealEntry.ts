@@ -21,6 +21,7 @@ import {
 } from "./vibePicks";
 import { ANALYTICS_EVENTS } from "./analyticsEvents";
 import { readJSON, type KVStore } from "../storage/kv";
+import type { DashboardModuleId } from "./dashboard";
 
 // Storage keys inspected by `hasAnyRealEntry`. Centralised here so
 // the web and mobile adapters don't drift.
@@ -95,6 +96,68 @@ export function hasAnyRealEntry(store: KVStore): boolean {
   }
 
   return false;
+}
+
+/**
+ * Detect *which* module currently holds at least one real entry.
+ *
+ * Returns the first-hit module in scan order — Finyk → Fizruk →
+ * Routine → Nutrition. Same scan as `hasAnyRealEntry`, but yields the
+ * id instead of a boolean. Used by `useFirstEntryCelebration` to pick
+ * module-aware copy from `FIRST_ENTRY_CELEBRATIONS`.
+ *
+ * Returns `null` if no real entry exists. Order is deterministic so a
+ * race (two modules flipped in the same tick) resolves to a stable
+ * choice — copy stays predictable for the user even though analytics
+ * still records the actual `source` per event.
+ */
+export function getFirstRealEntryModule(
+  store: KVStore,
+): DashboardModuleId | null {
+  // Finyk — manual expenses, then synced monobank cache.
+  const manual = readJSON(store, FIRST_REAL_ENTRY_SOURCES.FINYK_MANUAL);
+  if (hasNonDemoItem(manual)) return "finyk";
+  const finykCache = readJSON<{ transactions?: unknown[] }>(
+    store,
+    FIRST_REAL_ENTRY_SOURCES.FINYK_TX_CACHE,
+  );
+  if (
+    finykCache &&
+    Array.isArray(finykCache.transactions) &&
+    finykCache.transactions.length > 0
+  ) {
+    return "finyk";
+  }
+
+  const fizruk = readJSON<unknown[] | { workouts?: unknown[] }>(
+    store,
+    FIRST_REAL_ENTRY_SOURCES.FIZRUK_WORKOUTS,
+  );
+  const workouts = Array.isArray(fizruk)
+    ? fizruk
+    : fizruk && Array.isArray(fizruk.workouts)
+      ? fizruk.workouts
+      : [];
+  if (hasNonDemoItem(workouts)) return "fizruk";
+
+  const routine = readJSON<{ habits?: unknown[] }>(
+    store,
+    FIRST_REAL_ENTRY_SOURCES.ROUTINE,
+  );
+  if (routine && hasNonDemoItem(routine.habits)) return "routine";
+
+  const nutrition = readJSON<Record<string, { meals?: unknown }>>(
+    store,
+    FIRST_REAL_ENTRY_SOURCES.NUTRITION_LOG,
+  );
+  if (nutrition && typeof nutrition === "object" && !Array.isArray(nutrition)) {
+    for (const day of Object.values(nutrition)) {
+      const meals = day?.meals;
+      if (hasNonDemoItem(meals)) return "nutrition";
+    }
+  }
+
+  return null;
 }
 
 /**
