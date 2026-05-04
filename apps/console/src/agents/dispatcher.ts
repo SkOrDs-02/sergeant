@@ -10,17 +10,41 @@ export type DispatcherAction =
   | "cancel"
   | "logs";
 
+/**
+ * Runtime specialist agents. Telegram dispatcher (`/assign <specialist> …`)
+ * uses these labels to classify tasks; the Devin / Claude session loads the
+ * matching governance skill from `.agents/skills/` to actually do the work.
+ *
+ * Canonical mapping table: `docs/agents/specialists-mapping.md`.
+ */
 export type SpecialistAgent =
+  /** @see docs/agents/specialists-mapping.md (extra — uses `sergeant-start-here` for routing). */
   | "product-roadmap"
+  /** @see .agents/skills/sergeant-monorepo-boundaries/SKILL.md */
   | "repo-architect"
+  /** @see .agents/skills/sergeant-web-ui/SKILL.md */
   | "web-ui"
+  /** @see .agents/skills/sergeant-server-api/SKILL.md */
   | "server-api"
+  /** @see .agents/skills/sergeant-data-and-migrations/SKILL.md */
   | "data-migrations"
+  /** @see .agents/skills/sergeant-mobile-expo/SKILL.md */
   | "mobile"
+  /** @see .agents/skills/sergeant-hubchat/SKILL.md */
   | "hubchat-ai"
+  /** @see docs/agents/specialists-mapping.md (extra — `modify-n8n-workflow.md` playbook is canonical). */
   | "n8n-automation"
+  /** @see docs/agents/specialists-mapping.md (extra — output is product / launch artefacts, not repo edits). */
   | "growth-marketing"
+  /**
+   * @see .agents/skills/sergeant-deploy-and-observability/SKILL.md
+   * @see .agents/skills/sergeant-review-and-merge/SKILL.md
+   */
   | "qa-release"
+  /**
+   * @see .agents/skills/better-auth-best-practices/SKILL.md (auth-flow scope)
+   * @see docs/agents/specialists-mapping.md (extra — broader security skill is a phase-5 candidate).
+   */
   | "security";
 
 export type RiskTier = "P0" | "P1" | "P2";

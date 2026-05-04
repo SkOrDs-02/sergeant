@@ -20,6 +20,7 @@
 | ------------------------------------------------------ | ------------------------------------------------------------------------------ |
 | [`agent-skills-catalog.md`](./agent-skills-catalog.md) | Scenario -> skill -> what it enforces.                                         |
 | [`agent-workflows.md`](./agent-workflows.md)           | Decision trees для feature, bugfix, review, migration, release.                |
+| [`specialists-mapping.md`](./specialists-mapping.md)   | Runtime `SpecialistAgent` ↔ governance skill ↔ primary playbook ↔ ADR.         |
 | [`specs/`](./specs)                                    | Design specs для нетривіальних змін, які потребують явного проектного рішення. |
 
 ## Політика skill system
