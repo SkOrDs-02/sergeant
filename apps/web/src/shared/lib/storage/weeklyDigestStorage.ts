@@ -7,6 +7,12 @@
  * adapts the real `localStorage` to that contract and returns wrapped
  * helpers with the storage argument pre-bound. Every web call-site
  * keeps its old signature after importing from here.
+ *
+ * The adapter delegates to `safeReadStringLS` so quota-exceeded /
+ * Safari Private Mode / disabled-storage failures collapse to `null`
+ * — the same try/catch contract the prior inline version provided.
+ * Going through the shared helper keeps this file off the
+ * `no-raw-local-storage` allowlist (Item 6 burndown).
  */
 
 import {
@@ -15,14 +21,11 @@ import {
   type StorageReader,
   type WeeklyDigestRecord,
 } from "@sergeant/shared";
+import { safeReadStringLS } from "./storage";
 
 const webStorageReader: StorageReader = {
   getItem(key) {
-    try {
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
+    return safeReadStringLS(key);
   },
 };
 
