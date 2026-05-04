@@ -5,9 +5,9 @@
 
 Аналіз кодової бази `apps/web/src` (649 source файлів, ~102k рядків — без тестів і `__tests__/`; 2026-05-03 re-audit).
 
-> **Оновлено 2026-05-03.** Sync з реальним станом коду після кількох wave-ів decomposition:
-> Розділ 2 (localStorage burndown) — TODO-allowlist у `eslint.config.js` скорочено з 41 до **17 файлів**
-> (нові хвилі міграцій у `routine`/`finyk`/`onboarding`/`chatActions`/`insights`/`recommendations`).
+> **Оновлено 2026-05-04.** Sync з реальним станом коду після кількох wave-ів decomposition:
+> Розділ 2 (localStorage burndown) — TODO-allowlist у `eslint.config.js` скорочено з 41 до **15 файлів**
+> (нові хвилі міграцій у `routine`/`finyk`/`onboarding`/`chatActions`/`insights`/`recommendations`/`useDarkMode`/`useActiveFizrukWorkout`).
 > Розділ 4 (великі файли) — у `apps/web/src` залишилось **16 файлів >600 LOC** (раніше 22; lookup-таблиця нижче синхронізована з `wc -l` 2026-05-03);
 > декомпозовано `Transactions.tsx`, `HubSearch.tsx`, `Budgets.tsx`, `Overview.tsx`, `DesignShowcase.tsx`,
 > `ActiveWorkoutPanel.tsx`, `core/App.tsx` (645 → 224 LOC, винесено
@@ -80,18 +80,22 @@ try/catch крашить на quota exceeded, corrupted storage або private b
   бо виконують роль фікстур і ізольовані від production-ризиків.
 - **Storage primitives** — самі обгортки (`safeReadLS`, `storageManager`,
   `storageQuota`, `typedStore`, `createModuleStorage`, `weeklyDigestStorage`,
-  `useLocalStorageState`, `useDarkMode`, `usePushNotifications`,
-  `useActiveFizrukWorkout`, `perf`).
+  `useLocalStorageState`, `useDarkMode`, `usePushNotifications`).
 - **Cloud-sync internals** — черга, патчер, state writer.
 - **Module storage wrappers** — `modules/finyk/lib/storageManager`,
   `modules/finyk/hooks/useStorage`, `modules/nutrition/domain/nutritionBackup`.
 - **TODO-список немігрованих файлів** — кожен файл, що ще
   читає/пише напряму, перерахований у `eslint.config.js` явно. Міграція
-  файла = видалення рядка зі списку. **На 2026-05-01 TODO-список
-  містить 17 файлів** (попередня хвиля: 46 → 41 → 27 → 17 після міграції
-  routine/finyk/onboarding/chatActions/insights/recommendations-сайтів).
+  файла = видалення рядка зі списку. **На 2026-05-04 TODO-список
+  містить 15 файлів** (попередня хвиля: 46 → 41 → 27 → 17 → 16 → 15
+  після міграції routine/finyk/onboarding/chatActions/insights/
+  recommendations/`useDarkMode`/`perf`/`useActiveFizrukWorkout`-сайтів).
+  Бюджет жорстко зафіксовано у
+  [`.tech-debt/localstorage-allowlist-budget.json`](../../.tech-debt/localstorage-allowlist-budget.json)
+  (15, headroom 0) і enforce-нутий у CI через
+  [`pnpm lint:localstorage-allowlist`](../../scripts/check-localstorage-allowlist.mjs).
   Фактичних production-файлів у `apps/web/src` з прямим `localStorage.*` —
-  **35** (з них ~18 — легітимні wrappers/primitives, 17 — у TODO-списку).
+  **~35** (з них ~20 — легітимні wrappers/primitives, 15 — у TODO-списку).
   Тести (`*.test.*`, `__tests__/`) повний opt-out і не лічаться.
 
 **Що це дає:** новий код / нові файли НЕ зможуть додати прямий
