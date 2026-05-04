@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { z } from "zod";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Label } from "@shared/components/ui/FormField";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
+import { useApiForm } from "@shared/forms/useApiForm";
 import { useDailyLog } from "../hooks/useDailyLog";
 import { Card } from "@shared/components/ui/Card";
 import { MiniLineChart } from "../components/MiniLineChart";
@@ -37,13 +39,45 @@ interface BodyProps {
   onOpenMeasurements?: () => void;
 }
 
-interface BodyForm {
-  weightKg: string;
-  sleepHours: string;
-  energyLevel: number | null;
-  moodScore: number | null;
-  note: string;
-}
+/**
+ * Form schema — повторює UX-обмеження інпутів (`min`/`max`/`step`),
+ * але дозволяє пусті стрічки для не-заповнених метрик. Ціна порожнього
+ * рядка в `weightKg`/`sleepHours` — `null` у persisted entry; саме тому
+ * client-side валідація працює на string-полях, а конверсія в number
+ * відбувається в `onSubmit`. Item #8 round-11 — уніфікація form-engine
+ * під `useApiForm` (zod-резолвер + uniform `isSubmitting`/`reset`).
+ */
+const bodyFormSchema = z.object({
+  weightKg: z
+    .string()
+    .refine(
+      (v) =>
+        v === "" ||
+        (!Number.isNaN(Number(v)) && Number(v) >= 20 && Number(v) <= 300),
+      "Вага має бути від 20 до 300 кг",
+    ),
+  sleepHours: z
+    .string()
+    .refine(
+      (v) =>
+        v === "" ||
+        (!Number.isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 24),
+      "Сон має бути від 0 до 24 годин",
+    ),
+  energyLevel: z.number().int().min(1).max(5).nullable(),
+  moodScore: z.number().int().min(1).max(5).nullable(),
+  note: z.string().max(200, "Не більше 200 символів"),
+});
+
+type BodyFormValues = z.infer<typeof bodyFormSchema>;
+
+const DEFAULT_VALUES: BodyFormValues = {
+  weightKg: "",
+  sleepHours: "",
+  energyLevel: null,
+  moodScore: null,
+  note: "",
+};
 
 export function Body({ onOpenMeasurements }: BodyProps) {
   const { entries, addEntry, deleteEntry, restoreEntry, recentWith } =
@@ -62,13 +96,6 @@ export function Body({ onOpenMeasurements }: BodyProps) {
     [entries, deleteEntry, restoreEntry, toast],
   );
 
-  const [form, setForm] = useState<BodyForm>({
-    weightKg: "",
-    sleepHours: "",
-    energyLevel: null,
-    moodScore: null,
-    note: "",
-  });
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const submitSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -83,32 +110,45 @@ export function Body({ onOpenMeasurements }: BodyProps) {
     };
   }, []);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const entry = {
-      weightKg: form.weightKg !== "" ? Number(form.weightKg) : null,
-      sleepHours: form.sleepHours !== "" ? Number(form.sleepHours) : null,
-      energyLevel: form.energyLevel,
-      moodScore: form.moodScore,
-      note: form.note.trim(),
-    };
-    addEntry(entry);
-    setForm({
-      weightKg: "",
-      sleepHours: "",
-      energyLevel: null,
-      moodScore: null,
-      note: "",
+  // Item #8 round-11: form-engine — `useApiForm` (zod + RHF + server-error
+  // mapping) замість локального `useState<BodyForm>`. Запис іде в
+  // localStorage, а не в API, але hook все одно дає uniform
+  // `isSubmitting`/`reset`/`formState.errors` patern, який знадобиться
+  // коли цей форм мігрує на серверний `dailyLog`-endpoint. `addEntry`
+  // synchronous — обертка `async` дає useApiForm змогу коректно
+  // прокачати `isSubmitting`-флаг навколо запису.
+  const { register, submit, formState, watch, setValue, reset, isSubmitting } =
+    useApiForm<BodyFormValues, void>({
+      schema: bodyFormSchema,
+      defaultValues: DEFAULT_VALUES,
+      onSubmit: async (values) => {
+        addEntry({
+          weightKg: values.weightKg !== "" ? Number(values.weightKg) : null,
+          sleepHours:
+            values.sleepHours !== "" ? Number(values.sleepHours) : null,
+          energyLevel: values.energyLevel,
+          moodScore: values.moodScore,
+          note: values.note.trim(),
+        });
+      },
+      onSuccess: () => {
+        reset(DEFAULT_VALUES);
+        setSubmitSuccess(true);
+        if (submitSuccessTimerRef.current) {
+          clearTimeout(submitSuccessTimerRef.current);
+        }
+        submitSuccessTimerRef.current = setTimeout(() => {
+          setSubmitSuccess(false);
+          submitSuccessTimerRef.current = null;
+        }, 2000);
+      },
     });
-    setSubmitSuccess(true);
-    if (submitSuccessTimerRef.current) {
-      clearTimeout(submitSuccessTimerRef.current);
-    }
-    submitSuccessTimerRef.current = setTimeout(() => {
-      setSubmitSuccess(false);
-      submitSuccessTimerRef.current = null;
-    }, 2000);
-  };
+
+  const energyLevel = watch("energyLevel");
+  const moodScore = watch("moodScore");
+  const weightError = formState.errors.weightKg?.message;
+  const sleepError = formState.errors.sleepHours?.message;
+  const noteError = formState.errors.note?.message;
 
   const weightData = useMemo(() => {
     const recent = recentWith("weightKg", 30);
@@ -226,7 +266,7 @@ export function Body({ onOpenMeasurements }: BodyProps) {
           <SectionHeading as="h2" size="sm" className="mb-3">
             Записати сьогодні
           </SectionHeading>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={submit} noValidate className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="body-weight">Вага (кг)</Label>
@@ -239,11 +279,22 @@ export function Body({ onOpenMeasurements }: BodyProps) {
                   max="300"
                   className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
                   placeholder="70.5"
-                  value={form.weightKg}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, weightKg: e.target.value }))
+                  disabled={isSubmitting}
+                  aria-invalid={weightError ? true : undefined}
+                  aria-describedby={
+                    weightError ? "body-weight-error" : undefined
                   }
+                  {...register("weightKg")}
                 />
+                {weightError && (
+                  <p
+                    id="body-weight-error"
+                    className="mt-1 text-xs text-danger-strong"
+                    role="alert"
+                  >
+                    {weightError}
+                  </p>
+                )}
               </div>
               <div>
                 <Label htmlFor="body-sleep">Сон (год)</Label>
@@ -256,11 +307,20 @@ export function Body({ onOpenMeasurements }: BodyProps) {
                   max="24"
                   className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
                   placeholder="8.0"
-                  value={form.sleepHours}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, sleepHours: e.target.value }))
-                  }
+                  disabled={isSubmitting}
+                  aria-invalid={sleepError ? true : undefined}
+                  aria-describedby={sleepError ? "body-sleep-error" : undefined}
+                  {...register("sleepHours")}
                 />
+                {sleepError && (
+                  <p
+                    id="body-sleep-error"
+                    className="mt-1 text-xs text-danger-strong"
+                    role="alert"
+                  >
+                    {sleepError}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -278,12 +338,13 @@ export function Body({ onOpenMeasurements }: BodyProps) {
                     key={v}
                     value={v}
                     label={ENERGY_LABELS[v]}
-                    selected={form.energyLevel === v}
+                    selected={energyLevel === v}
                     onClick={(val: number) =>
-                      setForm((f: BodyForm) => ({
-                        ...f,
-                        energyLevel: f.energyLevel === val ? null : val,
-                      }))
+                      setValue(
+                        "energyLevel",
+                        energyLevel === val ? null : val,
+                        { shouldDirty: true },
+                      )
                     }
                   />
                 ))}
@@ -300,12 +361,11 @@ export function Body({ onOpenMeasurements }: BodyProps) {
                     key={v}
                     value={v}
                     label={MOOD_LABELS[v]}
-                    selected={form.moodScore === v}
+                    selected={moodScore === v}
                     onClick={(val: number) =>
-                      setForm((f: BodyForm) => ({
-                        ...f,
-                        moodScore: f.moodScore === val ? null : val,
-                      }))
+                      setValue("moodScore", moodScore === val ? null : val, {
+                        shouldDirty: true,
+                      })
                     }
                   />
                 ))}
@@ -321,21 +381,32 @@ export function Body({ onOpenMeasurements }: BodyProps) {
                 type="text"
                 className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
                 placeholder="Як почуваєшся сьогодні…"
-                value={form.note}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, note: e.target.value }))
-                }
                 maxLength={200}
+                disabled={isSubmitting}
+                aria-invalid={noteError ? true : undefined}
+                aria-describedby={noteError ? "body-note-error" : undefined}
+                {...register("note")}
               />
+              {noteError && (
+                <p
+                  id="body-note-error"
+                  className="mt-1 text-xs text-danger-strong"
+                  role="alert"
+                >
+                  {noteError}
+                </p>
+              )}
             </div>
 
             <button
               type="submit"
+              disabled={isSubmitting}
               className={cn(
                 "focus-ring w-full py-3 rounded-xl text-style-label transition-[background-color,box-shadow,opacity,transform]",
                 submitSuccess
                   ? "bg-success-strong text-white"
                   : "bg-success-strong text-white active:scale-[0.98]",
+                isSubmitting && "opacity-60",
               )}
             >
               {submitSuccess ? "Записано ✓" : "Записати"}
