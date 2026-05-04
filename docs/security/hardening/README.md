@@ -77,6 +77,9 @@
 | [M12](./M12-web-vitals-hardening.md)           | `web-vitals` ingest body cap, allowlist + UA normalise | Closed (2026-05-04) — batched M7 + M12 hardening PR                                                        | [Sprint 3](./sprint-3.md) |
 | [M6](./M6-image-magic-byte-check.md)           | Photo endpoints accept base64 without magic-byte check | Closed (2026-05-04) — batched M6 + M8 hardening PR                                                         | [Sprint 3](./sprint-3.md) |
 | [M8](./M8-prompt-injection-tool-output.md)     | Tool-result blocks not wrapped vs prompt injection     | Closed (2026-05-04) — batched M6 + M8 hardening PR                                                         | [Sprint 3](./sprint-3.md) |
+| [M11](./M11-eslint-plugin-security.md)         | No SAST lint rules for non-literal SQL/FS calls        | Closed (2026-05-04) — PR [#1747](https://github.com/Skords-01/Sergeant/pull/1747)                          | [Sprint 3](./sprint-3.md) |
+| [M15](./M15-console-allowlist-fail-closed.md)  | Confirm `CONSOLE_BOT_TOKEN` allowlist is fail-closed   | Closed (2026-05-04) — PR [#1742](https://github.com/Skords-01/Sergeant/pull/1742)                          | [Sprint 3](./sprint-3.md) |
+| [I1](./I1-codeql-workflow.md)                  | Add CodeQL SAST workflow                               | Closed (2026-05-04) — PR [#1749](https://github.com/Skords-01/Sergeant/pull/1749)                          | [Sprint 3](./sprint-3.md) |
 
 ## Cross-references
 
