@@ -692,6 +692,16 @@ export default [
   // ancillary fizruk LS keys that remain local-only (e.g.
   // `STORAGE_KEYS.FIZRUK_QUICK_STATS`, `FIZRUK_REST_SETTINGS`,
   // `FIZRUK_PROGRAM_PLANS_*`).
+  //
+  // Nutrition cloud-sync retirement guard (PR #034, storage-roadmap
+  // Stage 4) is added in the same block — same shape, same rationale.
+  // The five `STORAGE_KEYS.NUTRITION_{LOG, PANTRIES, ACTIVE_PANTRY,
+  // PREFS, SAVED_RECIPES}` keys backed the legacy `module_data.
+  // nutrition` blob; per-table `nutrition_*` SQLite mirror plus the
+  // op-log replace it (PR #031 schema, PR #032 dual-write, PR #033
+  // web + mobile reads). The selector matches only those five — NOT
+  // ancillary nutrition LS keys that remain local-only (e.g.
+  // `STORAGE_KEYS.NUTRITION_QUICK_STATS`, `NUTRITION_PROFILE_*`).
   {
     files: ["apps/web/src/**/*.{ts,tsx}", "apps/mobile/src/**/*.{ts,tsx}"],
     ignores: [
@@ -704,13 +714,19 @@ export default [
       // entry-points everyone else should call.
       "apps/web/src/modules/fizruk/**",
       "apps/mobile/src/modules/fizruk/**",
-      // Cross-module insights still reads FIZRUK_WORKOUTS as a
-      // best-effort local heuristic (insights do not need cloud-sync
-      // round-tripping). Migration to the SQLite reader is tracked in
-      // a follow-up under storage-roadmap Stage 5.
+      // Canonical nutrition module wrappers — the official read/write
+      // entry-points everyone else should call.
+      "apps/web/src/modules/nutrition/**",
+      "apps/mobile/src/modules/nutrition/**",
+      // Cross-module insights still reads FIZRUK_WORKOUTS and
+      // NUTRITION_LOG as a best-effort local heuristic (insights do
+      // not need cloud-sync round-tripping). Migration to the SQLite
+      // reader is tracked in a follow-up under storage-roadmap
+      // Stage 5.
       "apps/web/src/core/lib/insightsEngine.ts",
-      // Mobile backup still reads the fizruk LS keys for full-state
-      // export/import (parity with hubBackup ROUTINE carve-out).
+      // Mobile backup still reads the fizruk + nutrition LS keys for
+      // full-state export/import (parity with hubBackup ROUTINE
+      // carve-out).
       "apps/mobile/src/core/hub/hubBackup.ts",
     ],
     rules: {
@@ -736,6 +752,13 @@ export default [
             "MemberExpression[object.name='STORAGE_KEYS'][property.name=/^FIZRUK_(?:WORKOUTS|CUSTOM_EXERCISES|MEASUREMENTS|TEMPLATES|SELECTED_TEMPLATE|ACTIVE_WORKOUT|ACTIVE_PROGRAM|PLAN_TEMPLATE|MONTHLY_PLAN|WELLBEING|DAILY_LOG)$/]",
           message:
             "Direct access to the retired `STORAGE_KEYS.FIZRUK_*` cloud-sync keys is forbidden (PR #030, storage-roadmap). Use the canonical fizruk hooks (`useFizrukWorkouts`, `useMeasurements`, `useWorkoutTemplates`, …) from `apps/{web,mobile}/src/modules/fizruk/hooks` — they handle the SQLite overlay transparently.",
+        },
+        // PR #034 — nutrition cloud-sync retirement.
+        {
+          selector:
+            "MemberExpression[object.name='STORAGE_KEYS'][property.name=/^NUTRITION_(?:LOG|PANTRIES|ACTIVE_PANTRY|PREFS|SAVED_RECIPES)$/]",
+          message:
+            "Direct access to the retired `STORAGE_KEYS.NUTRITION_*` cloud-sync keys is forbidden (PR #034, storage-roadmap). Use the canonical nutrition hooks (`useNutritionLog`, `useNutritionPantries`, `useNutritionPrefs`, `useSavedRecipesList`) from `apps/{web,mobile}/src/modules/nutrition/hooks` — they handle the SQLite overlay transparently.",
         },
       ],
     },

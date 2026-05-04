@@ -25,12 +25,12 @@ describe("collectQueuedModules", () => {
         type: "push",
         modules: {
           finyk: payload({ a: 1 }),
-          nutrition: payload({ b: 2 }),
+          profile: payload({ b: 2 }),
         },
       },
     ];
     const result = collectQueuedModules(queue);
-    expect(Object.keys(result).sort()).toEqual(["finyk", "nutrition"]);
+    expect(Object.keys(result).sort()).toEqual(["finyk", "profile"]);
     expect(result.finyk.data).toEqual({ a: 1 });
   });
 
@@ -41,6 +41,20 @@ describe("collectQueuedModules", () => {
         modules: {
           finyk: payload({ a: 1 }),
           fizruk: payload({ b: 2 }),
+        },
+      },
+    ];
+    const result = collectQueuedModules(queue);
+    expect(Object.keys(result)).toEqual(["finyk"]);
+  });
+
+  it("drops the retired nutrition module entries (PR #034)", () => {
+    const queue = [
+      {
+        type: "push",
+        modules: {
+          finyk: payload({ a: 1 }),
+          nutrition: payload({ b: 2 }),
         },
       },
     ];
@@ -91,17 +105,18 @@ describe("collectQueuedModules", () => {
         type: "push",
         modules: {
           finyk: null,
-          // fizruk + routine are also retired modules — they are
-          // dropped before the non-object check fires, but listing
-          // them here keeps the fixture realistic.
+          // fizruk, routine, nutrition are all retired modules —
+          // they are dropped before the non-object check fires, but
+          // listing them here keeps the fixture realistic.
           fizruk: "string",
           routine: 0,
-          nutrition: payload({ ok: true }),
+          nutrition: payload({ ignored: true }),
+          profile: payload({ ok: true }),
         },
       },
     ];
     const result = collectQueuedModules(queue);
-    expect(Object.keys(result)).toEqual(["nutrition"]);
+    expect(Object.keys(result)).toEqual(["profile"]);
   });
 
   it("skips garbage queue entries entirely", () => {

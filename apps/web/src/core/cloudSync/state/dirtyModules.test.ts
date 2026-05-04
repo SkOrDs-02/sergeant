@@ -37,15 +37,16 @@ describe("markModuleDirty", () => {
   });
 
   it("accumulates entries across modules", () => {
-    // PR #030 — fizruk is no longer a valid sync module. The pure
-    // dirty-bookkeeping helpers don't validate against SYNC_MODULES,
-    // but using the post-retirement set keeps the fixture honest.
+    // PR #030 retired `fizruk` and PR #034 retired `nutrition` from
+    // SYNC_MODULES. The pure dirty-bookkeeping helpers don't
+    // validate against SYNC_MODULES, but using the post-retirement
+    // set (`finyk`, `profile`) keeps the fixture honest.
     markModuleDirty("finyk");
-    markModuleDirty("nutrition");
-    expect(getDirtyModules()).toEqual({ finyk: true, nutrition: true });
+    markModuleDirty("profile");
+    expect(getDirtyModules()).toEqual({ finyk: true, profile: true });
     expect(Object.keys(getModuleModifiedTimes()).sort()).toEqual([
       "finyk",
-      "nutrition",
+      "profile",
     ]);
   });
 });
@@ -56,12 +57,12 @@ describe("clearDirtyModule", () => {
     // an in-flight push can still diff against a snapshot after the single
     // module is cleared.
     markModuleDirty("finyk");
-    markModuleDirty("nutrition");
+    markModuleDirty("profile");
     clearDirtyModule("finyk");
-    expect(getDirtyModules()).toEqual({ nutrition: true });
+    expect(getDirtyModules()).toEqual({ profile: true });
     expect(Object.keys(getModuleModifiedTimes()).sort()).toEqual([
       "finyk",
-      "nutrition",
+      "profile",
     ]);
   });
 
@@ -79,7 +80,6 @@ describe("clearAllDirty", () => {
     // on the device.
     markModuleDirty("finyk");
     markModuleDirty("profile");
-    markModuleDirty("nutrition");
 
     clearAllDirty();
 

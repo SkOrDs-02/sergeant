@@ -70,10 +70,26 @@ describe("no-raw-tracked-storage", () => {
     const messages = lint(
       `import { useLocalStorage } from "@/lib/storage";
        import { STORAGE_KEYS } from "@sergeant/shared";
-       useLocalStorage(STORAGE_KEYS["NUTRITION_LOG"], []);`,
+       useLocalStorage(STORAGE_KEYS["FINYK_BUDGETS"], []);`,
     );
     assert.equal(messages.length, 1);
     assert.equal(messages[0].ruleId, RULE_ID);
+  });
+
+  it("does NOT flag useLocalStorage with the retired nutrition keys", () => {
+    // PR #034 (storage-roadmap Stage 4): the five historical
+    // `module_data.nutrition` LS/MMKV keys (`nutrition_log_v1`, etc.)
+    // were removed from SYNC_MODULES — cross-device sync moved to the
+    // per-table `nutrition_*` SQLite mirror plus the op-log. Direct
+    // access is now guarded by the dedicated `no-restricted-syntax`
+    // rule in `eslint.config.js`, not by `no-raw-tracked-storage`.
+    const messages = lint(
+      `import { useLocalStorage } from "@/lib/storage";
+       import { STORAGE_KEYS } from "@sergeant/shared";
+       useLocalStorage(STORAGE_KEYS.NUTRITION_LOG, []);
+       useLocalStorage("nutrition_pantries_v1", []);`,
+    );
+    assert.deepEqual(messages, []);
   });
 
   it("does NOT flag useLocalStorage with the retired routine key", () => {

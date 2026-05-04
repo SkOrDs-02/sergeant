@@ -137,25 +137,28 @@ describe("collectQueuedModules (corruption tolerance)", () => {
   });
 
   it("merges payloads across modules from multiple entries", () => {
-    // PR #026 видалив 'routine' з SYNC_MODULES; PR #030 видалив
-    // 'fizruk'. Поточний популярний набір модулів: finyk / nutrition /
-    // profile.
+    // PR #026 retired 'routine', PR #030 retired 'fizruk' and PR
+    // #034 retired 'nutrition' from SYNC_MODULES. Only `finyk` and
+    // `profile` remain.
     const q = [
       { type: "push", modules: { finyk: { data: { a: 1 } } } },
-      { type: "push", modules: { nutrition: { data: { b: 2 } } } },
       { type: "push", modules: { profile: { data: { c: 3 } } } },
     ];
-    expect(Object.keys(collectQueued(q)).sort()).toEqual([
-      "finyk",
-      "nutrition",
-      "profile",
-    ]);
+    expect(Object.keys(collectQueued(q)).sort()).toEqual(["finyk", "profile"]);
   });
 
   it("drops the retired fizruk module from the collected payload (PR #030)", () => {
     const q = [
       { type: "push", modules: { finyk: { data: { a: 1 } } } },
       { type: "push", modules: { fizruk: { data: { b: 2 } } } },
+    ];
+    expect(Object.keys(collectQueued(q)).sort()).toEqual(["finyk"]);
+  });
+
+  it("drops the retired nutrition module from the collected payload (PR #034)", () => {
+    const q = [
+      { type: "push", modules: { finyk: { data: { a: 1 } } } },
+      { type: "push", modules: { nutrition: { data: { b: 2 } } } },
     ];
     expect(Object.keys(collectQueued(q)).sort()).toEqual(["finyk"]);
   });
@@ -166,11 +169,11 @@ describe("addToOfflineQueue coalescing", () => {
     enqueue({ type: "push", modules: { finyk: { data: { v: 1 } } } } as never);
     enqueue({
       type: "push",
-      modules: { nutrition: { data: { v: 2 } } },
+      modules: { profile: { data: { v: 2 } } },
     } as never);
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(Object.keys(q[0].modules).sort()).toEqual(["finyk", "nutrition"]);
+    expect(Object.keys(q[0].modules).sort()).toEqual(["finyk", "profile"]);
   });
 
   it("later merged module payload overwrites earlier one", () => {
@@ -224,18 +227,20 @@ describe("offline queue + corruption end-to-end", () => {
   });
 
   it("collectQueuedModules tolerates a mix of valid and corrupted entries", () => {
-    // PR #030 — fizruk is no longer in SYNC_MODULES, so it is
-    // dropped during collection alongside the malformed rows.
+    // PR #030 retired `fizruk` and PR #034 retired `nutrition` from
+    // SYNC_MODULES, so they are dropped during collection alongside
+    // the malformed rows.
     const q = [
       null,
       { type: "push", modules: { finyk: { data: { v: 1 } } } },
       "garbage",
       { type: "push", modules: "not-an-object" },
-      { type: "push", modules: { nutrition: { data: { v: 2 } } } },
+      { type: "push", modules: { profile: { data: { v: 2 } } } },
       { type: "push", modules: { fizruk: { data: { v: 3 } } } },
+      { type: "push", modules: { nutrition: { data: { v: 4 } } } },
       { malformed: true },
     ];
     const out = collectQueued(q);
-    expect(Object.keys(out).sort()).toEqual(["finyk", "nutrition"]);
+    expect(Object.keys(out).sort()).toEqual(["finyk", "profile"]);
   });
 });

@@ -10,16 +10,16 @@ beforeEach(() => {
 afterEach(() => {
   localStorage.clear();
   // Reset exclusion flags between tests. PR #030 retired `fizruk`
-  // from SYNC_MODULES (storage-roadmap Stage 4) so we no longer
-  // touch its exclusion flag here.
+  // and PR #034 retired `nutrition` from SYNC_MODULES
+  // (storage-roadmap Stage 4) so we no longer touch their exclusion
+  // flags here.
   setModuleSyncExcluded("finyk", false);
-  setModuleSyncExcluded("nutrition", false);
   setModuleSyncExcluded("profile", false);
 });
 
 describe("buildModulesPayload", () => {
   it("returns empty object when no modules have local data", () => {
-    expect(buildModulesPayload(["finyk", "nutrition"], {})).toEqual({});
+    expect(buildModulesPayload(["finyk", "profile"], {})).toEqual({});
   });
 
   it("returns empty object when modifiedTimes is empty and no LS data is set", () => {
@@ -53,22 +53,22 @@ describe("buildModulesPayload", () => {
 
   it("skips modules without any local data", () => {
     localStorage.setItem(STORAGE_KEYS.FINYK_BUDGETS, "[]");
-    const result = buildModulesPayload(["finyk", "nutrition"], {
+    const result = buildModulesPayload(["finyk", "profile"], {
       finyk: "2026-04-15T00:00:00.000Z",
-      nutrition: "2026-04-15T00:00:00.000Z",
+      profile: "2026-04-15T00:00:00.000Z",
     });
     expect(Object.keys(result)).toEqual(["finyk"]);
   });
 
   it("skips modules excluded via setModuleSyncExcluded", () => {
     localStorage.setItem(STORAGE_KEYS.FINYK_BUDGETS, "[]");
-    localStorage.setItem(STORAGE_KEYS.NUTRITION_LOG, "{}");
+    localStorage.setItem(STORAGE_KEYS.USER_PROFILE, "{}");
     setModuleSyncExcluded("finyk", true);
-    const result = buildModulesPayload(["finyk", "nutrition"], {
+    const result = buildModulesPayload(["finyk", "profile"], {
       finyk: "2026-04-15T00:00:00.000Z",
-      nutrition: "2026-04-15T00:00:00.000Z",
+      profile: "2026-04-15T00:00:00.000Z",
     });
-    expect(Object.keys(result)).toEqual(["nutrition"]);
+    expect(Object.keys(result)).toEqual(["profile"]);
   });
 
   it("skips the retired fizruk module even when its LS keys exist", () => {
@@ -78,6 +78,17 @@ describe("buildModulesPayload", () => {
     localStorage.setItem(STORAGE_KEYS.FIZRUK_DAILY_LOG, "{}");
     const result = buildModulesPayload(["fizruk" as never], {
       fizruk: "2026-04-15T00:00:00.000Z",
+    } as never);
+    expect(Object.keys(result)).toEqual([]);
+  });
+
+  it("skips the retired nutrition module even when its LS keys exist", () => {
+    // PR #034 — `nutrition` is no longer in SYNC_MODULES, so legacy
+    // `nutrition_*_v1` LS rows must never end up in the push payload.
+    localStorage.setItem(STORAGE_KEYS.NUTRITION_LOG, "{}");
+    localStorage.setItem(STORAGE_KEYS.NUTRITION_PANTRIES, "[]");
+    const result = buildModulesPayload(["nutrition" as never], {
+      nutrition: "2026-04-15T00:00:00.000Z",
     } as never);
     expect(Object.keys(result)).toEqual([]);
   });

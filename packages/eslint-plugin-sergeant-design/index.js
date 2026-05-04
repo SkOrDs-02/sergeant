@@ -204,12 +204,13 @@ const TRACKED_STORAGE_KEY_NAMES = new Set([
   // Stage 4). Completions now live in SQLite; the LS blob is no longer
   // cloud-synced. The dedicated ESLint guard in eslint.config.js
   // prevents new direct reads of STORAGE_KEYS.ROUTINE.
-  // nutrition
-  "NUTRITION_LOG",
-  "NUTRITION_PANTRIES",
-  "NUTRITION_ACTIVE_PANTRY",
-  "NUTRITION_PREFS",
-  "NUTRITION_SAVED_RECIPES",
+  // nutrition — removed from SYNC_MODULES in PR #034 (storage-roadmap
+  // Stage 4). The five `nutrition_*_v1` LS/MMKV keys are no longer
+  // cloud-synced through `module_data.nutrition`; the per-table
+  // `nutrition_*` SQLite mirror plus the op-log carry meals /
+  // pantries / prefs / saved-recipes instead. The dedicated
+  // `no-restricted-syntax` guard in `eslint.config.js` prevents new
+  // direct reads of `STORAGE_KEYS.NUTRITION_<key>`.
   // profile (web-only payload — `USER_PROFILE` does not exist in MMKV,
   // but listing it here keeps the cross-platform registry symmetric so
   // mobile sync no longer null-overwrites the server blob).
@@ -243,12 +244,8 @@ const TRACKED_STORAGE_KEY_VALUES = new Set([
   // PR #030).
   // routine — see TRACKED_STORAGE_KEY_NAMES comment above (retired in
   // PR #026).
-  // nutrition
-  "nutrition_log_v1",
-  "nutrition_pantries_v1",
-  "nutrition_active_pantry_v1",
-  "nutrition_prefs_v1",
-  "nutrition_recipe_book_v1",
+  // nutrition — see TRACKED_STORAGE_KEY_NAMES comment above (retired
+  // in PR #034).
   // profile (see USER_PROFILE comment above).
   "hub_user_profile_v1",
 ]);

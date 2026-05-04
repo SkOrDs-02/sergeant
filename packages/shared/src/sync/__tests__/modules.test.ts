@@ -13,14 +13,11 @@ import {
 
 describe("SYNC_MODULES registry", () => {
   it("exposes the expected module names", () => {
-    // PR #030 (storage-roadmap Stage 4) — `fizruk` retired from the
-    // cross-platform `module_data` cloud-sync registry. Per-table
-    // SQLite mirror + op-log carry workouts/measurements/etc. now.
-    expect(Object.keys(SYNC_MODULES).sort()).toEqual([
-      "finyk",
-      "nutrition",
-      "profile",
-    ]);
+    // PR #030 retired `fizruk` and PR #034 retired `nutrition` from
+    // the cross-platform `module_data` cloud-sync registry
+    // (storage-roadmap Stage 4). Per-table SQLite mirror + op-log
+    // carry workouts/measurements/meals/pantries/recipes now.
+    expect(Object.keys(SYNC_MODULES).sort()).toEqual(["finyk", "profile"]);
   });
 
   it("snapshot of finyk keys (closes drift bug — every key must be listed)", () => {
@@ -69,14 +66,20 @@ describe("SYNC_MODULES registry", () => {
     }
   });
 
-  it("snapshot of nutrition keys", () => {
-    expect(SYNC_MODULES.nutrition.keys).toEqual([
+  it("does NOT include the retired nutrition module keys (PR #034)", () => {
+    // PR #034 retirement guard — none of the five historical
+    // `module_data.nutrition` LS/MMKV keys are tracked any more.
+    const nutritionKeys = [
       STORAGE_KEYS.NUTRITION_LOG,
       STORAGE_KEYS.NUTRITION_PANTRIES,
       STORAGE_KEYS.NUTRITION_ACTIVE_PANTRY,
       STORAGE_KEYS.NUTRITION_PREFS,
       STORAGE_KEYS.NUTRITION_SAVED_RECIPES,
-    ]);
+    ];
+    for (const key of nutritionKeys) {
+      expect(ALL_TRACKED_KEYS.has(key)).toBe(false);
+      expect(keyToModule(key)).toBeNull();
+    }
   });
 
   it("snapshot of profile keys", () => {
@@ -117,9 +120,6 @@ describe("SYNC_MODULES registry", () => {
   describe("keyToModule", () => {
     it("returns the owning module for tracked keys", () => {
       expect(keyToModule(STORAGE_KEYS.FINYK_BUDGETS)).toBe("finyk");
-      expect(keyToModule(STORAGE_KEYS.NUTRITION_SAVED_RECIPES)).toBe(
-        "nutrition",
-      );
       expect(keyToModule(STORAGE_KEYS.USER_PROFILE)).toBe("profile");
     });
 
@@ -129,6 +129,9 @@ describe("SYNC_MODULES registry", () => {
       // fizruk — retired in PR #030 (storage-roadmap Stage 4).
       expect(keyToModule(STORAGE_KEYS.FIZRUK_DAILY_LOG)).toBeNull();
       expect(keyToModule(STORAGE_KEYS.FIZRUK_WORKOUTS)).toBeNull();
+      // nutrition — retired in PR #034 (storage-roadmap Stage 4).
+      expect(keyToModule(STORAGE_KEYS.NUTRITION_LOG)).toBeNull();
+      expect(keyToModule(STORAGE_KEYS.NUTRITION_SAVED_RECIPES)).toBeNull();
       expect(keyToModule("totally_made_up_key")).toBeNull();
       expect(keyToModule("")).toBeNull();
     });
@@ -143,8 +146,9 @@ describe("SYNC_MODULES registry", () => {
       // Compile-time check that the type stays in sync with the
       // value. If a module is added to SYNC_MODULES but the type is
       // not regenerated, this assignment would fail to typecheck.
-      // PR #030 — `fizruk` retired alongside `routine` (PR #026).
-      const allModules: ModuleName[] = ["finyk", "nutrition", "profile"];
+      // PR #030 retired `fizruk` and PR #034 retired `nutrition`
+      // (storage-roadmap Stage 4); only `finyk` and `profile` remain.
+      const allModules: ModuleName[] = ["finyk", "profile"];
       expect(allModules.sort()).toEqual(Object.keys(SYNC_MODULES).sort());
     });
   });

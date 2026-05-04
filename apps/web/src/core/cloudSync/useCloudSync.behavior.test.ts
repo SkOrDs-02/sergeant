@@ -105,10 +105,14 @@ describe("notifySyncDirty", () => {
     expect(getDirtyModules()).toEqual({});
   });
 
-  it("для tracked ключа nutrition позначає модуль nutrition брудним", () => {
+  it("для ретиреного nutrition ключа не маркує жоден модуль брудним (PR #034)", () => {
+    // PR #034 (storage-roadmap Stage 4) — `nutrition` retired from
+    // SYNC_MODULES. Writes to legacy `nutrition_*_v1` LS keys are now
+    // untracked, so notifySyncDirty must NOT mark anything dirty.
     localStorage.setItem(STORAGE_KEYS.SYNC_DIRTY_MODULES, "{}");
     notifySyncDirty(STORAGE_KEYS.NUTRITION_LOG);
-    expect(getDirtyModules().nutrition).toBe(true);
+    notifySyncDirty(STORAGE_KEYS.NUTRITION_PANTRIES);
+    expect(getDirtyModules()).toEqual({});
   });
 
   it("notifySyncDirty також зберігає MODULE_MODIFIED ISO час", () => {
@@ -125,9 +129,9 @@ describe("notifySyncDirty", () => {
   it("декілька викликів для різних модулів накопичуються в dirty map", () => {
     localStorage.setItem(STORAGE_KEYS.SYNC_DIRTY_MODULES, "{}");
     notifySyncDirty(STORAGE_KEYS.FINYK_BUDGETS);
-    notifySyncDirty(STORAGE_KEYS.NUTRITION_LOG);
+    notifySyncDirty(STORAGE_KEYS.USER_PROFILE);
     const d = getDirtyModules();
-    expect(Object.keys(d).sort()).toEqual(["finyk", "nutrition"]);
+    expect(Object.keys(d).sort()).toEqual(["finyk", "profile"]);
   });
 
   it("диспатчить SYNC_STATUS_EVENT для tracked ключа", () => {
@@ -146,8 +150,8 @@ describe("notifySyncDirty edge cases", () => {
   it("для tracked ключа позначає відповідний модуль брудним", () => {
     // Reset dirty state
     localStorage.setItem(STORAGE_KEYS.SYNC_DIRTY_MODULES, "{}");
-    notifySyncDirty(STORAGE_KEYS.NUTRITION_LOG);
-    expect(getDirtyModules().nutrition).toBe(true);
+    notifySyncDirty(STORAGE_KEYS.USER_PROFILE);
+    expect(getDirtyModules().profile).toBe(true);
   });
 
   it("для untracked ключа не мутує dirty мапу", () => {

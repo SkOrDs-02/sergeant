@@ -49,9 +49,13 @@ describe("safeWriteSyncedLS", () => {
     expect(getDirtyModules().finyk).toBe(true);
   });
 
-  it("supports nutrition module", () => {
+  it("does NOT mark nutrition dirty after PR #034 cut-over", () => {
+    // PR #034 (storage-roadmap Stage 4) — `nutrition` retired from
+    // SYNC_MODULES. Writes to legacy `nutrition_*_v1` LS keys must
+    // NOT mark anything dirty (parity with the fizruk retirement
+    // assertion in `useCloudSync.behavior.test.ts`).
     safeWriteSyncedLS(STORAGE_KEYS.NUTRITION_LOG, { "2025-05-03": {} });
-    expect(getDirtyModules().nutrition).toBe(true);
+    expect(getDirtyModules()).toEqual({});
   });
 
   it("supports profile module (USER_PROFILE)", () => {
@@ -96,15 +100,15 @@ describe("safeWriteSyncedLS", () => {
 
 describe("safeRemoveSyncedLS", () => {
   it("removes a tracked key and marks the owning module dirty", () => {
-    safeWriteSyncedLS(STORAGE_KEYS.NUTRITION_LOG, { d: 1 });
+    safeWriteSyncedLS(STORAGE_KEYS.USER_PROFILE, { d: 1 });
     // Reset dirty state before the actual remove-under-test.
     localStorage.setItem(STORAGE_KEYS.SYNC_DIRTY_MODULES, "{}");
 
-    const ok = safeRemoveSyncedLS(STORAGE_KEYS.NUTRITION_LOG);
+    const ok = safeRemoveSyncedLS(STORAGE_KEYS.USER_PROFILE);
 
     expect(ok).toBe(true);
-    expect(safeReadLS(STORAGE_KEYS.NUTRITION_LOG)).toBeNull();
-    expect(getDirtyModules().nutrition).toBe(true);
+    expect(safeReadLS(STORAGE_KEYS.USER_PROFILE)).toBeNull();
+    expect(getDirtyModules().profile).toBe(true);
   });
 
   it("removes an untracked key without touching the dirty map", () => {

@@ -102,9 +102,13 @@ afterEach(() => {
 // =========================================================================
 describe("Offline → many writes → coalesce", () => {
   it("consecutive pushDirty-style enqueues coalesce into a single push entry with merged modules", () => {
-    // PR #026 retired 'routine' and PR #030 retired 'fizruk' from
-    // SYNC_MODULES; the queue helper itself accepts any string but
-    // we keep the fixture aligned with the post-retirement registry.
+    // PR #026 retired 'routine', PR #030 retired 'fizruk' and PR #034
+    // retired 'nutrition' from SYNC_MODULES; only `finyk` and `profile`
+    // remain. The queue helper itself accepts any string as a module
+    // name, but we keep the fixture aligned with the post-retirement
+    // registry. To still exercise the multi-module coalesce, use both
+    // remaining modules plus a second `finyk` write to assert
+    // overlay-by-key merging.
     addToOfflineQueue({
       type: "push",
       modules: {
@@ -117,8 +121,8 @@ describe("Offline → many writes → coalesce", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
-        nutrition: {
-          data: { log: ["lunch"] },
+        finyk: {
+          data: { budgets: [100], subs: ["netflix"] },
           clientUpdatedAt: "2025-01-01T00:01:00.000Z",
         },
       },
@@ -136,13 +140,11 @@ describe("Offline → many writes → coalesce", () => {
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
     expect(q[0].type).toBe("push");
-    expect(Object.keys(q[0].modules).sort()).toEqual([
-      "finyk",
-      "nutrition",
-      "profile",
-    ]);
-    expect(q[0].modules.finyk.data).toEqual({ budgets: [100] });
-    expect(q[0].modules.nutrition.data).toEqual({ log: ["lunch"] });
+    expect(Object.keys(q[0].modules).sort()).toEqual(["finyk", "profile"]);
+    expect(q[0].modules.finyk.data).toEqual({
+      budgets: [100],
+      subs: ["netflix"],
+    });
     expect(q[0].modules.profile.data).toEqual({ displayName: "sergeant" });
   });
 
@@ -230,8 +232,8 @@ describe("Reconnect replay (happy path)", () => {
   it("drains the queue and calls syncApi.pushAll with collected modules", async () => {
     const replayOfflineQueue = await freshReplay();
     // Seed the queue with a pre-populated entry. PR #030 retired
-    // 'fizruk' from SYNC_MODULES, so we use 'nutrition' as the
-    // second module here.
+    // 'fizruk' and PR #034 retired 'nutrition' from SYNC_MODULES;
+    // the remaining valid modules are `finyk` and `profile`.
     addToOfflineQueue({
       type: "push",
       modules: {
@@ -239,8 +241,8 @@ describe("Reconnect replay (happy path)", () => {
           data: { budgets: [100] },
           clientUpdatedAt: "2025-01-01T00:00:00.000Z",
         },
-        nutrition: {
-          data: { log: ["breakfast"] },
+        profile: {
+          data: { displayName: "sergeant" },
           clientUpdatedAt: "2025-01-01T00:01:00.000Z",
         },
       },
@@ -248,7 +250,7 @@ describe("Reconnect replay (happy path)", () => {
     expect(getOfflineQueue()).toHaveLength(1);
 
     mockedPushAll.mockResolvedValueOnce({
-      results: { finyk: { ok: true }, nutrition: { ok: true } },
+      results: { finyk: { ok: true }, profile: { ok: true } },
     });
 
     await replayOfflineQueue();
@@ -256,7 +258,7 @@ describe("Reconnect replay (happy path)", () => {
     expect(mockedPushAll).toHaveBeenCalledTimes(1);
     const pushed = mockedPushAll.mock.calls[0][0];
     expect(pushed).toHaveProperty("finyk");
-    expect(pushed).toHaveProperty("nutrition");
+    expect(pushed).toHaveProperty("profile");
     // Queue should be cleared after successful push
     expect(getOfflineQueue()).toEqual([]);
   });
@@ -275,10 +277,11 @@ describe("Reconnect replay (happy path)", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
-        // PR #026 видалив 'routine' і PR #030 — 'fizruk' з
-        // SYNC_MODULES (обидва тепер SQLite-only модулі). Тут
-        // лишилися 'finyk' / 'nutrition' / 'profile' як три валідні
-        // модулі для перевірки cross-module coalescing.
+        // PR #026 видалив 'routine', PR #030 — 'fizruk' і PR #034
+        // — 'nutrition' з SYNC_MODULES (всі три тепер SQLite-only).
+        // Залишаються 'finyk' і 'profile' як валідні модулі для
+        // перевірки cross-module coalescing; додаємо другий запис
+        // 'finyk' щоб зафіксувати overlay-by-key merging.
         profile: {
           data: { v: 2 },
           clientUpdatedAt: "2025-01-01T00:02:00.000Z",
@@ -288,8 +291,8 @@ describe("Reconnect replay (happy path)", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
-        nutrition: {
-          data: { v: 3 },
+        finyk: {
+          data: { v: 1, extra: true },
           clientUpdatedAt: "2025-01-01T00:03:00.000Z",
         },
       },
@@ -301,11 +304,7 @@ describe("Reconnect replay (happy path)", () => {
 
     expect(getOfflineQueue()).toEqual([]);
     const pushed = mockedPushAll.mock.calls[0][0];
-    expect(Object.keys(pushed).sort()).toEqual([
-      "finyk",
-      "nutrition",
-      "profile",
-    ]);
+    expect(Object.keys(pushed).sort()).toEqual(["finyk", "profile"]);
   });
 
   it("is a no-op when the queue is empty", async () => {
@@ -374,9 +373,10 @@ describe("Reconnect replay (server error)", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
-        // PR #030 — 'fizruk' retired; substitute 'nutrition'.
-        nutrition: {
-          data: { log: ["snack"] },
+        // PR #030 retired 'fizruk' and PR #034 retired 'nutrition';
+        // substitute 'profile'.
+        profile: {
+          data: { displayName: "sergeant" },
           clientUpdatedAt: "2025-01-01T00:00:00.000Z",
         },
       },
@@ -394,7 +394,7 @@ describe("Reconnect replay (server error)", () => {
 
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].modules.nutrition.data).toEqual({ log: ["snack"] });
+    expect(q[0].modules.profile.data).toEqual({ displayName: "sergeant" });
   });
 
   it("preserves the queue on a 503 Service Unavailable", async () => {

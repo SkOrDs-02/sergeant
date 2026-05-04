@@ -65,15 +65,17 @@ export const SYNC_MODULES = {
   // active_workout, active_program, plan_template, monthly_plan,
   // wellbeing, daily_log) outside the canonical fizruk module
   // wrappers, mirroring the routine retirement in PR #026.
-  nutrition: {
-    keys: [
-      STORAGE_KEYS.NUTRITION_LOG,
-      STORAGE_KEYS.NUTRITION_PANTRIES,
-      STORAGE_KEYS.NUTRITION_ACTIVE_PANTRY,
-      STORAGE_KEYS.NUTRITION_PREFS,
-      STORAGE_KEYS.NUTRITION_SAVED_RECIPES,
-    ],
-  },
+  // nutrition — removed from SYNC_MODULES in PR #034 (storage-roadmap
+  // Stage 4). The five `nutrition_*_v1` LS/MMKV keys are no longer
+  // pushed to / pulled from `module_data.nutrition`; cross-device
+  // sync moved to the per-table `nutrition_*` SQLite mirror plus the
+  // op-log pipeline (PR #031 schema, PR #032 dual-write, PR #033 web
+  // and mobile reads). The dedicated `no-restricted-syntax` guard in
+  // `eslint.config.js` blocks new direct reads of the five tracked
+  // nutrition-prefixed STORAGE_KEYS entries (log, pantries,
+  // active_pantry, prefs, saved_recipes) outside the canonical
+  // nutrition module wrappers, mirroring the fizruk retirement in
+  // PR #030.
   profile: {
     keys: [STORAGE_KEYS.USER_PROFILE],
   },
