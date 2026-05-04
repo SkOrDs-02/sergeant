@@ -21,10 +21,14 @@ export function forecastFullRecoveryByDate(
   const out: Record<string, string | null> = {};
 
   const byNow = computeRecoveryBy(workouts, musclesUk, nowMs);
-  const ids = Object.keys(byNow).filter((id) => byNow[id].lastAt != null);
+  // Під strict-index `byNow[id]` дає `T | undefined`; зберігаємо
+  // [id, row] парами одразу, щоб не повторювати lookup.
+  const entries = Object.entries(byNow).filter(
+    ([, row]) => row?.lastAt != null,
+  );
 
-  for (const id of ids) {
-    if (isFullyRecovered(byNow[id])) {
+  for (const [id, row] of entries) {
+    if (isFullyRecovered(row)) {
       out[id] = localDateKey(nowMs);
       continue;
     }

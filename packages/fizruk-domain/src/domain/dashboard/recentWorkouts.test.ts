@@ -97,6 +97,6 @@ describe("listRecentCompletedWorkouts", () => {
       },
     ];
     const rows = listRecentCompletedWorkouts(workouts);
-    expect(rows[0].label).toBe("Тренування");
+    expect(rows[0]!.label).toBe("Тренування");
   });
 });

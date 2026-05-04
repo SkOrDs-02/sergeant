@@ -73,7 +73,10 @@ describe("mergeExerciseCatalog", () => {
   });
 
   it("custom entry overrides base with same id", () => {
-    const baseFirst = EXERCISES[0];
+    // Під strict-index `EXERCISES[0]` — `Exercise | undefined`. Тест
+    // покладається на непорожній каталог (перевірено в it("parses…"))
+    // — використовуємо non-null assertion як runtime-інваріант.
+    const baseFirst = EXERCISES[0]!;
     const override = { ...baseFirst, name: { uk: "Overridden" } };
     const merged = mergeExerciseCatalog([override]);
     const updated = merged.find((ex) => ex.id === baseFirst.id);

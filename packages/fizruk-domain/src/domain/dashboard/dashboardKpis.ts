@@ -232,8 +232,12 @@ export function computeWeightChangeKg(
 
   if (samples.length < 2) return null;
   samples.sort((a, b) => a.ms - b.ms);
+  // Інваріант `length >= 2` гарантує, що `first`/`last` визначені;
+  // під strict-index `arr[i]` повертає `T | undefined`, тому фіксуємо
+  // intent явним narrow-ом замість non-null assertion.
   const first = samples[0];
   const last = samples[samples.length - 1];
+  if (!first || !last) return null;
   return Math.round((last.weight - first.weight) * 100) / 100;
 }
 

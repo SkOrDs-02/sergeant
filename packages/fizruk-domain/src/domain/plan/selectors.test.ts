@@ -50,8 +50,8 @@ describe("aggregatePlannedByDate", () => {
   it("buckets planned workouts by YYYY-MM-DD prefix and preserves input order", () => {
     const map = aggregatePlannedByDate(sample);
     expect(Object.keys(map).sort()).toEqual(["2025-03-15", "2025-03-16"]);
-    expect(map["2025-03-15"].map((w) => w.id)).toEqual(["a", "b"]);
-    expect(map["2025-03-16"].map((w) => w.id)).toEqual(["c"]);
+    expect(map["2025-03-15"]!.map((w) => w.id)).toEqual(["a", "b"]);
+    expect(map["2025-03-16"]!.map((w) => w.id)).toEqual(["c"]);
   });
 
   it("ignores non-planned workouts, null/undefined startedAt, and bad keys", () => {

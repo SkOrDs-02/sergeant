@@ -54,7 +54,7 @@ describe("fizruk/recoveryCompute", () => {
       nowMs,
       [],
     );
-    expect(by.chest.status).toBe("red");
+    expect(by.chest!.status).toBe("red");
     expect(isFullyRecovered(by.chest)).toBe(false);
   });
 });

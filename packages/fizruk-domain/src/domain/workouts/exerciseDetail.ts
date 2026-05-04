@@ -187,7 +187,11 @@ export function computeExerciseBest(
   let lastWorkoutBest1rm = 0;
   let priorBest1rm = 0;
 
-  const lastWorkoutId = history.length > 0 ? history[0].workout?.id : null;
+  // Під strict-index `history[0]` має тип `T | undefined`, тому
+  // явно проводимо через optional-chain — зберігаємо стару семантику
+  // «`null` коли історія порожня».
+  const lastWorkoutId =
+    history.length > 0 ? (history[0]?.workout?.id ?? null) : null;
 
   for (const { workout, item } of history) {
     if (item?.type !== "strength") continue;
@@ -314,7 +318,12 @@ export function computeExerciseCardioTrend(
   const dist: ExerciseCardioPoint[] = [];
   // History is newest-first; iterate in reverse to emit oldest-first.
   for (let i = history.length - 1; i >= 0; i -= 1) {
-    const { workout, item } = history[i];
+    // Під strict-index `history[i]` дає `T | undefined`; інваріант
+    // циклу `0 ≤ i < history.length` гарантує визначеність, але
+    // перевіряємо явно замість non-null assertion.
+    const entry = history[i];
+    if (!entry) continue;
+    const { workout, item } = entry;
     if (item?.type !== "distance") continue;
     const iso = workout?.startedAt;
     if (!iso) continue;

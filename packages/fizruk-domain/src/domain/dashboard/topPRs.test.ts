@@ -71,7 +71,7 @@ describe("computeTopPRs", () => {
       weightKg: 120,
       reps: 5,
     });
-    expect(result[0].oneRmKg).toBeCloseTo(140, 1);
+    expect(result[0]!.oneRmKg).toBeCloseTo(140, 1);
     expect(result[1]).toMatchObject({
       exerciseId: "bench",
       nameUk: "Жим лежачи",
@@ -79,7 +79,7 @@ describe("computeTopPRs", () => {
       reps: 3,
       atIso: "2026-04-20T11:00:00Z",
     });
-    expect(result[1].oneRmKg).toBeCloseTo(99, 1);
+    expect(result[1]!.oneRmKg).toBeCloseTo(99, 1);
   });
 
   it("honours the limit option", () => {

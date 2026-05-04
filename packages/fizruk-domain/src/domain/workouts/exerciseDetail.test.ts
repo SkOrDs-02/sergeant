@@ -105,8 +105,8 @@ describe("collectExerciseHistory", () => {
       ]),
     ];
     const h = collectExerciseHistory(ws, "squat");
-    expect(h[0].workout.id).toBe("w_ok");
-    expect(h[1].workout.id).toBe("w_bad");
+    expect(h[0]!.workout.id).toBe("w_ok");
+    expect(h[1]!.workout.id).toBe("w_bad");
   });
 });
 
@@ -200,12 +200,12 @@ describe("computeExerciseWeeklyTrend", () => {
     expect(rmPoints).toHaveLength(2);
     expect(volPoints).toHaveLength(2);
     // Buckets are sorted ascending by week key.
-    expect(rmPoints[0].weekKey < rmPoints[1].weekKey).toBe(true);
+    expect(rmPoints[0]!.weekKey < rmPoints[1]!.weekKey).toBe(true);
     // Second week max 1RM ≥ first week.
-    expect(rmPoints[1].value).toBeGreaterThanOrEqual(rmPoints[0].value);
+    expect(rmPoints[1]!.value).toBeGreaterThanOrEqual(rmPoints[0]!.value);
     // Volume is sum of weight × reps inside the bucket.
-    expect(volPoints[0].value).toBe(100 * 5 + 90 * 8 + 110 * 3);
-    expect(volPoints[1].value).toBe(120 * 2);
+    expect(volPoints[0]!.value).toBe(100 * 5 + 90 * 8 + 110 * 3);
+    expect(volPoints[1]!.value).toBe(120 * 2);
   });
 
   it("drops non-strength or malformed entries", () => {
@@ -241,10 +241,10 @@ describe("computeExerciseCardioTrend", () => {
     const { pacePoints, distPoints } = computeExerciseCardioTrend(history);
     expect(pacePoints).toHaveLength(2);
     expect(distPoints).toHaveLength(2);
-    expect(distPoints[0].value).toBe(5);
-    expect(distPoints[1].value).toBe(6);
+    expect(distPoints[0]!.value).toBe(5);
+    expect(distPoints[1]!.value).toBe(6);
     // 5 km in 25 min = 5 min/km.
-    expect(pacePoints[0].value).toBeCloseTo(5, 1);
+    expect(pacePoints[0]!.value).toBeCloseTo(5, 1);
   });
 
   it("skips sessions without a positive distance+duration pair", () => {
@@ -278,12 +278,12 @@ describe("buildLoadCalculatorZones", () => {
       "hypertrophy",
       "endurance",
     ]);
-    const strengthEntries = zones[0].entries;
+    const strengthEntries = zones[0]!.entries;
     expect(strengthEntries[0]).toEqual({ percent: 95, kg: 95 });
     expect(strengthEntries[1]).toEqual({ percent: 90, kg: 90 });
     expect(strengthEntries[2]).toEqual({ percent: 85, kg: 85 });
     // Fractional % → rounded 2.5 step.
-    const hyper = zones[1].entries;
+    const hyper = zones[1]!.entries;
     expect(hyper.find((e) => e.percent === 75)?.kg).toBe(75);
   });
 });

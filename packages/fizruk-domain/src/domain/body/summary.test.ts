@@ -162,7 +162,7 @@ describe("buildBodySummary / buildBodySummaries", () => {
     const s = buildBodySummary(entries, "weightKg", 7, NOW);
     expect(s.field).toBe("weightKg");
     expect(s.latest).toBe(79);
-    expect(s.latestAt).toBe(entries[0].at);
+    expect(s.latestAt).toBe(entries[0]!.at);
     expect(s.delta).toBe(-2);
     expect(s.direction).toBe("down");
     expect(s.windowDays).toBe(7);

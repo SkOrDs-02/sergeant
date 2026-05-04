@@ -35,11 +35,17 @@ export function todayDateKey(now: Date = new Date()): string {
 
 /** Parse a `YYYY-MM-DD` key into a local-time `Date` (noon-anchored). */
 export function parseDateKey(key: string): Date {
-  const [y, m, d] = key.split("-").map(Number);
+  // Під strict-index `arr[i]` дає `number | undefined`, тому збираємо
+  // три позиції з явним fallback-ом, замість того щоб покладатись на
+  // `Number.isFinite(undefined)` (false) і косу логіку «-1 з NaN».
+  const parts = key.split("-").map(Number);
+  const y = parts[0];
+  const m = parts[1];
+  const d = parts[2];
   const out = new Date(
-    Number.isFinite(y) ? y : 1970,
-    (Number.isFinite(m) ? m : 1) - 1,
-    Number.isFinite(d) ? d : 1,
+    typeof y === "number" && Number.isFinite(y) ? y : 1970,
+    (typeof m === "number" && Number.isFinite(m) ? m : 1) - 1,
+    typeof d === "number" && Number.isFinite(d) ? d : 1,
   );
   out.setHours(12, 0, 0, 0);
   return out;

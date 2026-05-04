@@ -181,7 +181,10 @@ export function weeklyVolumeSeriesNow(
     const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     const idx = Math.round((d0 - week0) / DAY_MS);
     if (idx < 0 || idx > 6) continue;
-    vol[idx] += workoutTonnageKg(w);
+    // Під strict-index `vol[idx]` дає `number | undefined`, хоча
+    // інваріант 0..6 гарантує визначеність — narrow-имо явно через
+    // `?? 0`, щоб уникнути non-null assertion.
+    vol[idx] = (vol[idx] ?? 0) + workoutTonnageKg(w);
   }
   return { weekStartMs: week0, volumeKg: vol };
 }
