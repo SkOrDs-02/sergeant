@@ -19,6 +19,12 @@ storybook-static/
 playwright-report/
 test-results/
 
+# Stryker mutation testing artefacts
+.stryker-tmp/
+stryker-tmp/
+reports/mutation/
+stryker-reports/
+
 # Session-only artifacts from the DS visual-QA harness
 .agents/ds-qa/
 .agents/test-plans/

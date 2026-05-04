@@ -16,6 +16,7 @@
     "test:coverage": "vitest run --coverage",
     "test:a11y": "playwright test",
     "test:visual": "playwright test --config playwright.visual.config.ts",
+    "test:mutation:cloudSync": "stryker run stryker.cloudSync.conf.json",
     "size": "size-limit",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
@@ -89,6 +90,8 @@
     "@size-limit/file": "^12.1.0",
     "@storybook/addon-docs": "^10.3.6",
     "@storybook/react-vite": "^10.3.6",
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^9.6.1",
     "@tailwindcss/vite": "^4.2.4",
     "@tanstack/react-query-devtools": "^5.100.9",
     "@testing-library/jest-dom": "^6.9.1",
