@@ -1,0 +1,4 @@
+{
+  "production": 19,
+  "rationale": "Baseline 2026-05-04: 11 storage primitives + 4 cloud-sync internals + 4 module wrappers (see eslint.config.js). Burndown plan in docs/diagnostics/2026-05-03-web-deep-dive/02-architecture-and-state.md §2.2 + docs/tech-debt/frontend.md §2."
+}

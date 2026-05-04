@@ -82,7 +82,7 @@
 | 3   | CSP report-only on Vercel                          | 3      | 1    | 3.00  | [04 §6.4](./04-security-observability-testing-devx.md) — done [#1551](https://github.com/Skords-01/Sergeant/pull/1551) |
 | 4   | Module prefetch on hover + on-idle                 | 3      | 1    | 3.00  | [03 §5.2 + §10.4](./03-backend-and-performance.md) — done (idle + connection gate)                                     |
 | 5   | `<DataState>` wrapper                              | 4      | 2    | 2.00  | [01 §3.2](./01-frontend-ergonomics.md) — done (component + 10 tests)                                                   |
-| 6   | `localStorage` 17 → 0 codemod                      | 4      | 2    | 2.00  | [02 §2.2](./02-architecture-and-state.md)                                                                              |
+| 6   | `localStorage` allowlist burndown CI metric        | 4      | 2    | 2.00  | [02 §2.2](./02-architecture-and-state.md) — done (`pnpm lint:localstorage-allowlist`)                                  |
 | 7   | Audit docs status-table + archive >6-mo            | 2      | 1    | 2.00  | [04 §11](./04-security-observability-testing-devx.md) — done (Status / Implemented / Outstanding)                      |
 | 8   | Form-engine unification                            | 5      | 3    | 1.67  | [01 §3.1](./01-frontend-ergonomics.md)                                                                                 |
 | 9   | CloudSync split-brain integration tests            | 5      | 3    | 1.67  | [02 §2.3](./02-architecture-and-state.md)                                                                              |

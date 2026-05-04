@@ -1,6 +1,6 @@
 # Web deep-dive — Architecture & state
 
-> **Last validated:** 2026-05-03 by @Skords-01.
+> **Last validated:** 2026-05-04 by @Skords-01.
 > **Status:** Active
 > **Scope:** Provider tree, routing, sync v1↔v2, `index.css`, in-process workers, React Query patterns, `localStorage` migration, CloudSync split-brain risk, `useCloudSync` shape.
 > **Related:** [`00-overview.md`](./00-overview.md), `docs/tech-debt/frontend.md`, `docs/audits/2026-04-28-sergeant-comprehensive-audit.md`.
@@ -202,6 +202,8 @@ ShortcutRegistryProvider
 ---
 
 ## 2.2 [Bad] `localStorage` allowlist у 17 файлах
+
+> **2026-05-04 update.** Burn-down KPI запиновано у `pnpm lint:localstorage-allowlist` (`scripts/check-localstorage-allowlist.mjs`) — лічильник production-entries проти `.tech-debt/localstorage-allowlist-budget.json`. CI падає, якщо allowlist розросся понад бюджет; зменшення → треба бампнути бюджет вниз у тому ж PR + оновити `rationale`. Baseline 19 (11 storage primitives + 4 cloud-sync internals + 4 module wrappers).
 
 **Що бачу.** `docs/tech-debt/frontend.md:89-100` — є TODO-список з 17 файлами, які усе ще читають `localStorage` напряму через `eslint.config.js` allowlist. Допустима тимчасова фаза, але burn-down треба **запланувати**, а не «коли руки дійдуть».
 
