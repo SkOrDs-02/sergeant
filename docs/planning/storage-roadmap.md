@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-03 by Devin — **Stage 1 COMPLETE, Stage 4 Nutrition in progress.** Stage 1: all 8/8 PRs landed (PR #008 `ff217246`, PR #010 [#1543](https://github.com/Skords-01/Sergeant/pull/1543), PR #013 via 4 sub-PRs). Stage 4 Fizruk: 5/5 PRs merged (PR #027–#030 + #029a). Stage 4 Nutrition: PR #031 LANDED (schema `17644bef` + server apply-fns in `OP_LOG_TABLE_REGISTRY`), PR #032 LANDED ([#1528](https://github.com/Skords-01/Sergeant/pull/1528) dual-write), PR #033 IN PROGRESS (read-overlay files implemented for web + mobile in [#1574](https://github.com/Skords-01/Sergeant/pull/1574), UI overlay hooks pending). Boot-wiring follow-up для `register{Routine,Fizruk,Nutrition}DualWriteContext` ще не залендили. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by Devin — **Stage 1 COMPLETE, Stage 4 Finyk in progress.** Stage 1: all 8/8 PRs landed (PR #008 `ff217246`, PR #010 [#1543](https://github.com/Skords-01/Sergeant/pull/1543), PR #013 via 4 sub-PRs). Stage 4 Fizruk: 5/5 PRs merged (PR #027–#030 + #029a). Stage 4 Nutrition: PR #031 LANDED (schema `17644bef` + server apply-fns in `OP_LOG_TABLE_REGISTRY`), PR #032 LANDED ([#1528](https://github.com/Skords-01/Sergeant/pull/1528) dual-write), PR #033 IN PROGRESS (read-overlay files implemented for web + mobile in [#1574](https://github.com/Skords-01/Sergeant/pull/1574), UI overlay hooks pending). Stage 4 Finyk: PR #035 IN CI ([#1667](https://github.com/Skords-01/Sergeant/pull/1667) — schema + apply-fns), PR #036 IN PROGRESS (dual-write web + mobile, boot-hook wired in `FinykApp.tsx`). Boot-wiring follow-up для `register{Routine,Fizruk,Nutrition}DualWriteContext` ще не залендили. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -945,7 +945,7 @@ userId)` запитує 5 SQLite таблиць (`nutrition_meals`,
 > - ESLint guard (PR #039). Усі дзеркалять відповідні fizruk PR
 >   #027–#030 і nutrition PR #031–#034.
 
-##### **PR #035 — `feat(finyk-domain): Drizzle SQLite + Postgres normalized tables + server apply-fns`** ⏳ DRAFT
+##### **PR #035 — `feat(finyk-domain): Drizzle SQLite + Postgres normalized tables + server apply-fns`** ⏳ DRAFT (in CI — [#1667](https://github.com/Skords-01/Sergeant/pull/1667))
 
 - **Scope.** Створити нормалізовані таблиці на PG і SQLite під 16
   user-edited cloud-sync ключів модуля (`FINYK_HIDDEN`, `FINYK_HIDDEN_TXS`,
@@ -1038,7 +1038,7 @@ show_balance, updated_at, deleted_at)` — об'єднує
   жорсткого зв'язку між Drizzle schema і domain types — refactoring
   у `useStorage.types.ts` не повинен ламати DB.
 
-##### **PR #036 — `feat(finyk-domain): dual-write LS/MMKV↔SQLite`** ⏳ DRAFT
+##### **PR #036 — `feat(finyk-domain): dual-write LS/MMKV↔SQLite`** ⏳ DRAFT (in CI — TBD)
 
 - Mirror PR #028 (fizruk dual-write) і PR #032 (nutrition dual-write)
   для finyk. Feature flag `feature.finyk.sqlite_v2.dual_write`,
@@ -1054,11 +1054,23 @@ show_balance, updated_at, deleted_at)` — об'єднує
   LWW-guardом на `updated_at`. `index.ts` — orchestrator з
   registration-pattern-ом (gating через
   `feature.finyk.sqlite_v2.dual_write`, fail-soft на no-userId /
-  sqlite-unavailable). Mirror у
-  `apps/mobile/src/modules/finyk/lib/dualWrite/` для expo-sqlite.
+  sqlite-unavailable). `extract.ts` — пара мапперів LS-shape →
+  diff-state. `dualWriteBoot.ts` + `useFinykDualWriteBoot()` —
+  boot-wiring (mirror nutrition). `useFinykDualWriteSync()` —
+  per-`useFinykStorageSlots`-render snapshot diff trigger; шлях
+  включається тільки коли flag і userId відомі.
+- **Реалізовано (mobile).** `apps/mobile/src/modules/finyk/lib/dualWrite/`
+  diff/adapter/index/extract з тим самим shape-ом. Boot-hook
+  `useFinykDualWriteBoot` встановлюється у `FinykApp.tsx`.
+  `assetsStore.ts`, `budgetsStore.ts`, `transactionsStore.ts`
+  додатково викликають `triggerFinykDualWrite(prev, next)` після
+  `safeWriteLS` per-key (через `stateWithSlice` helper для
+  ізольованого diff-у — інші ключі лишаються `EMPTY_FINYK_STATE` і
+  не випльовують операцій).
 - **Реєстрація.** Через registration-pattern як у routine / fizruk /
-  nutrition. Boot-wiring follow-up за тим же шаблоном як
-  `register{Routine,Fizruk,Nutrition}DualWriteContext`.
+  nutrition. `bootFinykDualWrite()` + `registerFinykDualWriteContext()`
+  у `lib/dualWriteBoot.ts` встановлюється з `useFinykDualWriteBoot`
+  у `FinykApp.tsx` (web + mobile).
 - **Не входить.** Outbox / `/v2/sync/push` для `finyk_*` (server
   apply-fns ландять у PR #035). Reads з SQLite — PR #037.
 - **Dep.** PR #035 (schema + client migration runner).

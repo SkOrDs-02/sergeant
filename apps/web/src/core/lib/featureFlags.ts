@@ -99,6 +99,14 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     defaultValue: false,
     experimental: true,
   },
+  {
+    id: "feature.finyk.sqlite_v2.dual_write",
+    label: "Finyk — dual-write LS↔SQLite",
+    description:
+      "Кожен write у localStorage Finyk-у додатково мирорить у локальну SQLite (`finyk_hidden_accounts`, `finyk_hidden_transactions`, `finyk_budgets`, `finyk_subscriptions`, `finyk_assets`, `finyk_debts`, `finyk_receivables`, `finyk_custom_categories`, `finyk_manual_expenses`, `finyk_tx_categories`, `finyk_tx_splits`, `finyk_mono_debt_links`, `finyk_networth_history`, `finyk_prefs`). Reads ще беруться з LS. Stage 4 PR #036 storage-roadmap. Best-effort: помилка SQLite-запису не ламає LS. Default: off.",
+    defaultValue: false,
+    experimental: true,
+  },
 ] as const;
 
 export type FlagId = (typeof FLAG_REGISTRY)[number]["id"];

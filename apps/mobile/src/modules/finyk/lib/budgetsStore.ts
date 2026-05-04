@@ -23,9 +23,30 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
 import { enqueueChange } from "@/sync/enqueue";
 
+import { isFinykDualWriteRegistered, triggerFinykDualWrite } from "./dualWrite";
+import { EMPTY_FINYK_STATE, type FinykPrefsSnapshot } from "./dualWrite/diff";
+import { blobsFromArray, stateWithSlice } from "./dualWrite/extract";
+
 const KEY_BUDGETS = STORAGE_KEYS.FINYK_BUDGETS;
 const KEY_MONTHLY_PLAN = STORAGE_KEYS.FINYK_MONTHLY_PLAN;
 const KEY_SUBS = STORAGE_KEYS.FINYK_SUBS;
+
+const SHOW_BALANCE_KEY = STORAGE_KEYS.FINYK_SHOW_BALANCE;
+
+function readShowBalance(): boolean {
+  const v = safeReadLS<unknown>(SHOW_BALANCE_KEY, true);
+  return typeof v === "boolean" ? v : true;
+}
+
+function prefsFrom(plan: MonthlyPlanInput): FinykPrefsSnapshot {
+  let monthlyPlanJson = "{}";
+  try {
+    monthlyPlanJson = JSON.stringify(plan ?? {});
+  } catch {
+    monthlyPlanJson = "{}";
+  }
+  return { monthlyPlanJson, showBalance: readShowBalance() };
+}
 
 /**
  * Subscription record persisted under FINYK_SUBS. Shape mirrors the
@@ -151,6 +172,12 @@ export function useFinykBudgetsStore(
             : next;
         safeWriteLS(KEY_BUDGETS, value);
         enqueueChange(KEY_BUDGETS);
+        if (isFinykDualWriteRegistered()) {
+          triggerFinykDualWrite(
+            stateWithSlice("budgets", blobsFromArray(prev)),
+            stateWithSlice("budgets", blobsFromArray(value)),
+          );
+        }
         return value;
       });
     },
@@ -167,6 +194,12 @@ export function useFinykBudgetsStore(
           : next;
       safeWriteLS(KEY_MONTHLY_PLAN, value);
       enqueueChange(KEY_MONTHLY_PLAN);
+      if (isFinykDualWriteRegistered()) {
+        triggerFinykDualWrite(
+          { ...EMPTY_FINYK_STATE, prefs: prefsFrom(prev) },
+          { ...EMPTY_FINYK_STATE, prefs: prefsFrom(value) },
+        );
+      }
       return value;
     });
   }, []);
@@ -181,6 +214,12 @@ export function useFinykBudgetsStore(
           : next;
       safeWriteLS(KEY_SUBS, value);
       enqueueChange(KEY_SUBS);
+      if (isFinykDualWriteRegistered()) {
+        triggerFinykDualWrite(
+          stateWithSlice("subscriptions", blobsFromArray(prev)),
+          stateWithSlice("subscriptions", blobsFromArray(value)),
+        );
+      }
       return value;
     });
   }, []);
