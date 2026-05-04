@@ -49,7 +49,7 @@ describe("categories: getCategorySpendList", () => {
     ];
     const res = getCategorySpendList(txs);
     expect(res.length).toBeGreaterThan(0);
-    expect(res[0].spent).toBeGreaterThanOrEqual(res[res.length - 1].spent);
+    expect(res[0]!.spent).toBeGreaterThanOrEqual(res[res.length - 1]!.spent);
     expect(res.every((c) => c.id !== "income")).toBe(true);
     expect(res.every((c) => c.spent > 0)).toBe(true);
   });

@@ -118,7 +118,9 @@ export const CANONICAL_TO_MANUAL_LABEL: Record<string, string> = {
 // stable across legacy and new entries.
 function stripLeadingSymbols(str: string): string {
   let i = 0;
-  while (i < str.length && !/[\p{L}\p{N}]/u.test(str[i])) i++;
+  // `str[i]` під strict noUncheckedIndexedAccess — `string | undefined`,
+  // але цикл уже обмежений `i < str.length`, тож non-null-assert безпечний.
+  while (i < str.length && !/[\p{L}\p{N}]/u.test(str[i]!)) i++;
   return str.slice(i);
 }
 

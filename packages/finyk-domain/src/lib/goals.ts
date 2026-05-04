@@ -42,7 +42,10 @@ export function calcMonthlyNeeded(
     const s = String(targetDate || "");
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
       const [y, m, d] = s.split("-").map(Number);
-      return new Date(Date.UTC(y, (m || 1) - 1, d || 1, 12, 0, 0, 0));
+      // Regex `^\d{4}-\d{2}-\d{2}$` гарантує, що `y/m/d` є числами,
+      // але під strict noUncheckedIndexedAccess TS не виводить це з
+      // `String.split` — `?? 0` тут чисто для типового задоволення.
+      return new Date(Date.UTC(y ?? 0, (m || 1) - 1, d || 1, 12, 0, 0, 0));
     }
     const dt = new Date(targetDate);
     return new Date(

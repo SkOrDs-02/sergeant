@@ -22,8 +22,8 @@ describe("finyk/forecastEngine", () => {
     const txCategories = { t1: "food", t2: "food" };
     const out = calcForecast(txs, categoryLimits, today, txCategories, {}, []);
     expect(out).toHaveLength(1);
-    expect(out[0].categoryId).toBe("food");
-    expect(out[0].spent).toBe(300);
-    expect(out[0].dailyData).toHaveLength(31);
+    expect(out[0]!.categoryId).toBe("food");
+    expect(out[0]!.spent).toBe(300);
+    expect(out[0]!.dailyData).toHaveLength(31);
   });
 });

@@ -69,17 +69,21 @@ const FALLBACK_COLORS = [
 ];
 
 // Повертає HEX-колір для категорії: базовий → користувацький → з палітри.
+// `FALLBACK_COLORS` гарантовано непорожня, тому fallback на `[0]` нижче
+// не буде null — індекс просто wrap-иться по модулю.
 export function getCatColor(
   categoryId: string,
   customCategories: CustomCategory[] = [],
   idx = 0,
 ): string {
-  if (CAT_COLORS[categoryId]) return CAT_COLORS[categoryId];
+  const base = CAT_COLORS[categoryId];
+  if (base) return base;
   const custom = Array.isArray(customCategories)
     ? customCategories.find((c) => c.id === categoryId)
     : null;
   if (custom?.color) return custom.color;
-  return FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+  const palette = FALLBACK_COLORS;
+  return palette[idx % palette.length] ?? palette[0]!;
 }
 
 // Повний список категорій витрат (базові + користувацькі). За замовчуванням

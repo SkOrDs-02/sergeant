@@ -78,7 +78,10 @@ export function calcFinykSpendingByDate(
   const dailyRounded: Record<string, number> = {};
   let total = 0;
   for (const k of Object.keys(daily)) {
-    const r = Math.round(daily[k]);
+    // `Object.keys` гарантує, що `daily[k]` визначено, але strict
+    // noUncheckedIndexedAccess повертає `T | undefined` — `?? 0` тут
+    // safe-fallback для типового задоволення.
+    const r = Math.round(daily[k] ?? 0);
     dailyRounded[k] = r;
     total += r;
   }
@@ -164,7 +167,7 @@ export function calcFinykPeriodAggregate(
 
   const byCategoryRounded: Record<string, number> = {};
   for (const k of Object.keys(byCategory)) {
-    byCategoryRounded[k] = Math.round(byCategory[k]);
+    byCategoryRounded[k] = Math.round(byCategory[k] ?? 0);
   }
 
   return {
