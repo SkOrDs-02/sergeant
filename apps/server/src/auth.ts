@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { betterAuth } from "better-auth";
+import { createAuthMiddleware } from "better-auth/api";
 import { fromNodeHeaders } from "better-auth/node";
 import { bearer } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
@@ -10,6 +11,7 @@ import { createEncryptingAdapter } from "./auth/encryptingAdapter.js";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { db } from "./drizzle.js";
 import { sanitizeUserImage } from "./auth/sanitizeUserImage.js";
+import { detectFingerprintDrift, ipPrefix } from "./auth/sessionFingerprint.js";
 import { queueAuthTransactionalEmail } from "./email/authTransactionalMail.js";
 import { logger } from "./obs/logger.js";
 import {
@@ -244,6 +246,56 @@ export const auth = betterAuth({
         },
       },
     },
+    /**
+     * H3 — `databaseHooks.session.create.before` truncates `ipAddress` до
+     * privacy-friendly prefix (`/24` для IPv4, `/64` для IPv6) ДО запису у
+     * `session.ipAddress`. На цей момент Better Auth уже резолвив реальний
+     * client-IP з reverse-proxy ланцюга (з урахуванням `app.set('trust
+     * proxy', …)` на нашому Express), тож ми йдемо «вниз» по точності з
+     * максимальної до достатньої для drift-detection (24/64 біти ASN/підмережі).
+     *
+     * Чому prefix замість повного IP. Повний IP у `session` — це
+     * персональні дані (GDPR Art. 4(1)), що зберігаються 30 днів. Ми це
+     * не використовуємо ніде, окрім fingerprint-порівняння у
+     * `requireSession`, яке і так оперує prefix-ом. Звуження до /24 / /64
+     * виключає сесію як storage-layer для повних IP, не псуючи функціонал.
+     *
+     * Закриває: `docs/security/hardening/H3-session-revoke-and-binding.md`.
+     */
+    session: {
+      create: {
+        before: async (data) => {
+          if (!data.ipAddress) return;
+          const truncated = ipPrefix(data.ipAddress);
+          if (truncated && truncated !== data.ipAddress) {
+            return { data: { ...data, ipAddress: truncated } };
+          }
+        },
+      },
+    },
+  },
+  /**
+   * H3 — глобальний `hooks.before` забезпечує, що будь-який successful
+   * `POST /api/auth/change-password` ВЖЕ revoke-ає інші сесії того ж юзера,
+   * навіть якщо клієнт випадково забув передати `revokeOtherSessions: true`
+   * у тілі. Defense-in-depth: один скомпрометований cookie перестає бути
+   * валідним рівно у момент зміни пароля, не чекаючи 30-денного TTL.
+   *
+   * Реалізація мінімальна — тільки мутуємо `ctx.body`, нічого не запускаємо
+   * самостійно. Better Auth далі сам викликає вбудований
+   * `revokeOtherSessions` flow (див. `change-password` endpoint у
+   * `node_modules/better-auth/dist/api/routes/update-user.mjs`).
+   *
+   * Закриває: `docs/security/hardening/H3-session-revoke-and-binding.md`.
+   */
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/change-password") return;
+      const body = ctx.body;
+      if (body && typeof body === "object" && !Array.isArray(body)) {
+        (body as Record<string, unknown>).revokeOtherSessions = true;
+      }
+    }),
   },
   trustedOrigins: getTrustedOrigins(),
   /**
@@ -345,6 +397,43 @@ export async function getSessionUser(
     const user = (session?.user ?? null) as SessionUser | null;
     if (user?.id) {
       outcome = "hit";
+      // H3 — порівнюємо stored fingerprint (UA + IP-prefix) з поточним
+      // запитом. На drift кидаємо warn-лог `auth.session.ua_drift` —
+      // Sentry/Datadog alert-rule вже може на нього реагувати. Сесію не
+      // викидаємо: drift сам по собі не доказ компромісу (юзер міг
+      // переключити мережу / оновити браузер), але patterns у логах
+      // дають фундамент для майбутнього step-up flow для high-risk
+      // операцій (Mono connect, password change).
+      const stored = (session?.session ?? null) as {
+        id?: string;
+        ipAddress?: string | null;
+        userAgent?: string | null;
+      } | null;
+      if (stored) {
+        const drift = detectFingerprintDrift({
+          storedUserAgent: stored.userAgent ?? null,
+          storedIp: stored.ipAddress ?? null,
+          currentUserAgent:
+            typeof req.headers["user-agent"] === "string"
+              ? req.headers["user-agent"]
+              : null,
+          currentIp: typeof req.ip === "string" ? req.ip : null,
+        });
+        if (drift) {
+          logger.warn(
+            {
+              event: "auth.session.ua_drift",
+              session_id: stored.id,
+              user_id: user.id,
+              ua_changed: drift.ua,
+              ip_changed: drift.ip,
+              stored_ip_prefix: drift.storedIpPrefix,
+              current_ip_prefix: drift.currentIpPrefix,
+            },
+            "session fingerprint drift detected",
+          );
+        }
+      }
       // Ліниво прив'язуємо сесію до request-context і Sentry-scope. Завдяки
       // цьому будь-який log/Sentry-івент далі в ланцюжку знає, хто саме
       // виконує запит. Безпечно без сесії — просто no-op.
