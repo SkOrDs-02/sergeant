@@ -229,6 +229,21 @@ export const authSessionLookupDurationMs = new client.Histogram({
   registers: [register],
 });
 
+/**
+ * H4 — кількість прочитань `account.{accessToken,refreshToken,idToken}`
+ * row-ів, чий ciphertext був зашифрований не поточною версією ключа
+ * (тобто потребує re-encrypt-у на наступному OAuth-refresh-і). Дозволяє
+ * під час rotation moніторити `сума(stale) → 0` перед тим, як прибрати
+ * старий ключ із `BETTER_AUTH_TOKEN_ENC_KEYS`.
+ */
+export const authTokenLazyReencryptTotal = new client.Counter({
+  name: "auth_token_lazy_reencrypt_total",
+  help: "Reads of OAuth token rows still encrypted under a non-current key version (H4 rotation gauge)",
+  // field=accessToken|refreshToken|idToken; row_version=stringified key version
+  labelNames: ["field", "row_version"],
+  registers: [register],
+});
+
 // ───────────────────────── Rate limit ─────────────────────────
 export const rateLimitHitsTotal = new client.Counter({
   name: "rate_limit_hits_total",

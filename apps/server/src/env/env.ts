@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { logger } from "../obs/logger.js";
+import { parseKeyRing } from "../lib/keyRing.js";
 
 /**
  * Центральна валідація та документація всіх env-змінних серверу.
@@ -74,8 +75,37 @@ const envSchema = z.object({
    * C1 із security-review. Без ключа адаптер записує plaintext (legacy
    * поведінка). У production обов'язковий — `assertStartupEnv` кидає
    * помилку, якщо не заданий разом із `DATABASE_URL`.
+   *
+   * **H4** (2026-05-04): тепер це fallback для legacy single-key deployments.
+   * Multi-key rotation реалізовано через `BETTER_AUTH_TOKEN_ENC_KEYS` +
+   * `BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION` (див. нижче).
    */
   BETTER_AUTH_TOKEN_ENC_KEY: z.string().optional(),
+  /**
+   * **H4** Multi-key key-ring для AES-256-GCM шифрування OAuth-токенів.
+   * Формат: `v1:<64-hex>,v2:<64-hex>,...` — CSV пар `vN:<32-byte-hex>`.
+   *
+   * Якщо задане, перевизначає legacy `BETTER_AUTH_TOKEN_ENC_KEY`. Версія,
+   * яка використовується для **запису** нових ciphertext-ів, обирається
+   * через `BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION`. Версія, яка
+   * розшифровує конкретний рядок, читається з префіксу `enc:v2:k<N>:...`
+   * або (для legacy `enc:v1:`) трактується як v1.
+   *
+   * Rotation flow (див. `docs/runbooks/encryption-key-rotation.md`):
+   *   1. додати `v2:hex` до `_KEYS` (deploy)
+   *   2. бампнути `_CURRENT_VERSION=v2` (deploy) — нові записи йдуть під v2
+   *   3. через retention-window (≥30d) прибрати `v1:` із `_KEYS`
+   *      (всі активні рядки вже re-encrypted на refresh)
+   */
+  BETTER_AUTH_TOKEN_ENC_KEYS: z.string().optional(),
+  /**
+   * **H4** Поточна версія ключа для запису ciphertext-ів. Формат — `vN`,
+   * де N — позитивне ціле, присутнє у `BETTER_AUTH_TOKEN_ENC_KEYS`. Якщо
+   * порожнє, використовується найвища версія у key-ring-у. Якщо
+   * посилається на версію, якої нема у `_KEYS`, `parseKeyRing` кидає
+   * помилку при першому використанні.
+   */
+  BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION: z.string().optional(),
   MIN_PASSWORD_LENGTH: coerceInt.positive().default(10),
   /**
    * Hard-capped at 72 because bcrypt silently truncates input beyond 72 bytes.
@@ -361,15 +391,29 @@ export function assertStartupEnv(): void {
   // the key — running plaintext-tokens-in-prod is exactly the regression
   // we shipped this code to prevent. In dev/test we only warn so existing
   // local dev environments don't break overnight.
-  if (env.BETTER_AUTH_TOKEN_ENC_KEY) {
-    if (!/^[0-9a-f]{64}$/i.test(env.BETTER_AUTH_TOKEN_ENC_KEY)) {
-      throw new Error(
-        "BETTER_AUTH_TOKEN_ENC_KEY must be exactly 64 hex chars (32 bytes).",
-      );
+  //
+  // H4: accept either the new multi-key form (`*_KEYS` + `*_CURRENT_VERSION`)
+  // or the legacy single-key (`BETTER_AUTH_TOKEN_ENC_KEY`). Validate via
+  // `parseKeyRing` so configuration errors fail fast at boot, not on first
+  // sign-in.
+  const hasKeyRing = Boolean(
+    env.BETTER_AUTH_TOKEN_ENC_KEYS || env.BETTER_AUTH_TOKEN_ENC_KEY,
+  );
+  if (hasKeyRing) {
+    try {
+      parseKeyRing({
+        keysCsv: env.BETTER_AUTH_TOKEN_ENC_KEYS,
+        currentVersion: env.BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION,
+        legacyKey: env.BETTER_AUTH_TOKEN_ENC_KEY,
+        envName: "BETTER_AUTH_TOKEN_ENC_KEY",
+      });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      throw new Error(`BETTER_AUTH_TOKEN_ENC_KEY[S] is invalid: ${detail}`);
     }
   } else if (isProduction && env.DATABASE_URL) {
     throw new Error(
-      "BETTER_AUTH_TOKEN_ENC_KEY is required in production. Generate one with `openssl rand -hex 32`.",
+      "BETTER_AUTH_TOKEN_ENC_KEY (or _KEYS) is required in production. Generate one with `openssl rand -hex 32`.",
     );
   } else if (env.DATABASE_URL) {
     warnings.push(
