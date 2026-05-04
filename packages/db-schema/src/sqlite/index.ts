@@ -22,6 +22,8 @@ export {
   FIZRUK_MIGRATIONS_TABLE,
   NUTRITION_CLIENT_MIGRATIONS,
   NUTRITION_MIGRATIONS_TABLE,
+  FINYK_CLIENT_MIGRATIONS,
+  FINYK_MIGRATIONS_TABLE,
 } from "./migrations/index.js";
 export {
   fizrukWorkouts,
@@ -37,3 +39,20 @@ export {
   nutritionPrefs,
   nutritionRecipes,
 } from "./nutrition.js";
+export {
+  finykHiddenAccounts,
+  finykHiddenTransactions,
+  finykBudgets,
+  finykSubscriptions,
+  finykAssets,
+  finykDebts,
+  finykReceivables,
+  finykCustomCategories,
+  finykManualExpenses,
+  finykTxFilters,
+  finykTxCategories,
+  finykTxSplits,
+  finykMonoDebtLinks,
+  finykNetworthHistory,
+  finykPrefs,
+} from "./finyk.js";

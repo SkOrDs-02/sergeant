@@ -19,3 +19,20 @@ export {
   nutritionPrefs,
   nutritionRecipes,
 } from "./nutrition.js";
+export {
+  finykHiddenAccounts,
+  finykHiddenTransactions,
+  finykBudgets,
+  finykSubscriptions,
+  finykAssets,
+  finykDebts,
+  finykReceivables,
+  finykCustomCategories,
+  finykManualExpenses,
+  finykTxFilters,
+  finykTxCategories,
+  finykTxSplits,
+  finykMonoDebtLinks,
+  finykNetworthHistory,
+  finykPrefs,
+} from "./finyk.js";
