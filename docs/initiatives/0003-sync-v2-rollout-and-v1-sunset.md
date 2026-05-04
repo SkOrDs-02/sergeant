@@ -1,6 +1,6 @@
 # 0003 — Sync v2 rollout & v1 sunset
 
-> **Status:** Proposed
+> **Status:** In progress (Phase 1 + 2 shipped 2026-05-04)
 > **Priority:** P0 (Sprint 1–2)
 > **Owner:** `@Skords-01`
 > **ETA:** 4 weeks (rollout — 2 sprints, sunset v1 — третій спринт)
@@ -70,7 +70,13 @@ Sergeant зараз **паралельно тримає два sync-механі
 - У `dual`-режимі клієнт пише v1 і v2 паралельно (existing v1 path + новий outbox-flush у v2). Мердж робиться local — v2 — leader, v1 — write-only-mirror.
 - Сервер у `dual` **read** повертає v1 blob + порівнює з op-log → якщо є diverge, лог:
   ```ts
-  log.warn('cloudsync.dual.diverge', { userId, moduleId, hashV1, hashV2, lastOpId });
+  log.warn("cloudsync.dual.diverge", {
+    userId,
+    moduleId,
+    hashV1,
+    hashV2,
+    lastOpId,
+  });
   ```
 - На rollout: 5% → 25% → 50% → 100% за 2 тижні. Кожен step gated на conflict_rate < 1%.
 
@@ -125,24 +131,24 @@ Sergeant зараз **паралельно тримає два sync-механі
 
 ## Ризики та митиґація
 
-| Ризик                                                              | Мітигація                                                                                                                                       |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Старі мобільні клієнти (TestFlight beta, internal test track) вб'ються на T₀ | Перед T₀ broadcast push «оновіться, інакше sync не працюватиме». Force-update через app version check у Better Auth (existing). |
-| Backfill міксує LWW і op-log → подвоєння                          | Idempotency-key на op-log entries (existing PR #021). Backfill emit-ить тільки entries, чий hash не присутній.                                  |
-| `dual`-mode подвоює write-навантаження на DB                      | Rollout 5% → 100% з моніторингом p99 latency. Якщо p99 росте >20% — пауза.                                                                     |
-| Користувачі з конфліктами між v1/v2 під час dual-mode             | Логуємо diverge, але **не «блокуємо» юзера**. Recovery-flow: «Resync» кнопка у Settings, що робить fresh pull v2 і перезаписує local.          |
-| Бекап-стратегія для blob `module_data` перед drop                 | Перед T₀+30 робимо `pg_dump module_data → s3://sergeant-archive/module_data-T₀.sql.gz`. Зберігається 1 рік.                                     |
+| Ризик                                                                        | Мітигація                                                                                                                             |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Старі мобільні клієнти (TestFlight beta, internal test track) вб'ються на T₀ | Перед T₀ broadcast push «оновіться, інакше sync не працюватиме». Force-update через app version check у Better Auth (existing).       |
+| Backfill міксує LWW і op-log → подвоєння                                     | Idempotency-key на op-log entries (existing PR #021). Backfill emit-ить тільки entries, чий hash не присутній.                        |
+| `dual`-mode подвоює write-навантаження на DB                                 | Rollout 5% → 100% з моніторингом p99 latency. Якщо p99 росте >20% — пауза.                                                            |
+| Користувачі з конфліктами між v1/v2 під час dual-mode                        | Логуємо diverge, але **не «блокуємо» юзера**. Recovery-flow: «Resync» кнопка у Settings, що робить fresh pull v2 і перезаписує local. |
+| Бекап-стратегія для blob `module_data` перед drop                            | Перед T₀+30 робимо `pg_dump module_data → s3://sergeant-archive/module_data-T₀.sql.gz`. Зберігається 1 рік.                           |
 
 ## Метрики
 
-| Метрика                                              | Baseline (2026-05-03)           | Target (T₀)                    | Target (T₀ + 30 днів) |
-| ---------------------------------------------------- | ------------------------------- | ------------------------------ | --------------------- |
-| % users on `cloudSyncMode = "v2"`                    | ? (заміряти у фазі 1)           | 100%                           | 100%                  |
-| `sync_v1_request_total` per hour                     | ?                               | < 5/hour (тільки legacy bots)  | 0                     |
-| `sync_v1_v2_dual_writes_total`                       | ?                               | 0 (cleanup)                    | 0                     |
-| Conflict rate (`sync_v2_conflict_rate`)              | ?                               | < 1%                           | < 1%                  |
-| Diverge events / 100k requests (`dual` mode)         | n/a                             | < 50                           | n/a (mode disabled)   |
-| `module_data` колонка існує                          | yes                             | yes                            | no                    |
+| Метрика                                      | Baseline (2026-05-03) | Target (T₀)                   | Target (T₀ + 30 днів) |
+| -------------------------------------------- | --------------------- | ----------------------------- | --------------------- |
+| % users on `cloudSyncMode = "v2"`            | ? (заміряти у фазі 1) | 100%                          | 100%                  |
+| `sync_v1_request_total` per hour             | ?                     | < 5/hour (тільки legacy bots) | 0                     |
+| `sync_v1_v2_dual_writes_total`               | ?                     | 0 (cleanup)                   | 0                     |
+| Conflict rate (`sync_v2_conflict_rate`)      | ?                     | < 1%                          | < 1%                  |
+| Diverge events / 100k requests (`dual` mode) | n/a                   | < 50                          | n/a (mode disabled)   |
+| `module_data` колонка існує                  | yes                   | yes                           | no                    |
 
 ## Власник, ревʼюери
 
@@ -161,4 +167,33 @@ Sergeant зараз **паралельно тримає два sync-механі
 
 ## Outcome
 
-_Заповнюється після завершення._
+_Заповнюється після завершення. Поточний стан — In progress, Phase 1 + 2 shipped 2026-05-04._
+
+### Phase 1 — observability — Done (PR #1621)
+
+- **Survey counter** [`sync_v1_legacy_clients_total{user_agent_class, app_version, op}`](../../apps/server/src/obs/metrics.ts) — окремий від `sync_operations_total`, монтується middleware-ом ТІЛЬКИ на `/api/sync/*` (НЕ на v2). Cardinality bound: 5×20×4 = 400 series worst-case. Implementation у [`apps/server/src/modules/sync/clientSurvey.ts`](../../apps/server/src/modules/sync/clientSurvey.ts) + 28 тестів (`clientSurvey.test.ts`).
+- **Grafana panels** (id 6/7/8 у [`docs/observability/dashboards/sync.json`](../observability/dashboards/sync.json)):
+  - V1 vs V2 traffic split (5m rate, by `module` label)
+  - V1 legacy clients by UA-class
+  - V1 legacy clients by app-version (top 5, 1h rate)
+- **Recording rules** ([`recording_rules.yml`](../observability/prometheus/recording_rules.yml)):
+  - `sli:sync_v1:rate5m`
+  - `sli:sync_v2:rate5m`
+  - `sli:sync_v1_legacy:rate1h_by_appversion`
+- **Out of scope vs original plan**: `sync_v1_v2_dual_writes_total`, `sync_v2_pull_lag_ms` histogram, `sync_v2_queue_depth` gauge — derivable з існуючих labels (`sync_operations_total{module=...}`) і `sync_duration_ms`. Дублювання counter-ів забило б vmagent backpressure без додаткового signal-у. Conflict-rate / queue-depth alerts — defer-ed до Phase 3, коли буде baseline-week-data.
+
+### Phase 2 — Sunset header + ADR — Done (PR #TBD link after merge)
+
+- **ADR-0043** [CloudSync v1 sunset](../adr/0043-cloudsync-v1-sunset.md) — Accepted 2026-05-04. Фіксує: RFC 8594/8288 deprecation contract; 6-фазний rollout-план; T₀ controlled через env var `CLOUDSYNC_V1_SUNSET_AT` (ISO 8601), не code-constant.
+- **HTTP headers на `/api/sync/*`** ([`apps/server/src/modules/sync/sunsetHeaders.ts`](../../apps/server/src/modules/sync/sunsetHeaders.ts) + 20 тестів):
+  - `Deprecation: true` — always (RFC 8594 §2.1.2 "true" form).
+  - `Sunset: <RFC 7231 IMF-fixdate>` — only when env var set; malformed value → no header + log.warn once (cached).
+  - `Link: </api/v2/sync/push>; rel="successor-version", </docs/initiatives/0003-...>; rel="deprecation"` — always (RFC 8288 §3).
+- **На v2 routes** (`/api/v2/sync/*`) — жодного з цих headers. v2 — successor.
+- **T₀ ще не зафіксована**. Буде amend-нута документу-update-ом коли:
+  - `sli:sync_v1:rate5m` < 5% від total sync-traffic протягом 7 поспіль днів (Phase 1 measurement).
+  - Phase 4 backfill завершено для всіх active-users і dry-run ідемпотентний на 100 нових run-ах.
+
+### Phase 3-6 — Pending
+
+Фази 3 (feature-flag + shadow mode), 4 (backfill), 5 (T₀ → 410 Gone), 6 (cleanup) — окремі PR-и за календарним розкладом, gated на metrics з Phase 1-2.
