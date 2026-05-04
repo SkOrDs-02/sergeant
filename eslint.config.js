@@ -5,6 +5,7 @@ import importPlugin from "eslint-plugin-import";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
+import security from "eslint-plugin-security";
 import tseslint from "typescript-eslint";
 import sergeantDesign from "./packages/eslint-plugin-sergeant-design/index.js";
 
@@ -553,6 +554,89 @@ export default [
     ],
     rules: {
       "sergeant-design/no-bigint-string": "error",
+    },
+  },
+  // SAST guardrail — `eslint-plugin-security` taint-flow heuristics on
+  // production server + console code. Closes the M11 audit gap from
+  // `docs/security/hardening/M11-eslint-plugin-security.md`: SQL
+  // parameterisation and table-name allowlists are correct today, but
+  // nothing in lint forbids the next regression. The three rules below
+  // catch the highest-signal patterns the audit asked for; the
+  // companion `no-restricted-syntax` block forbids templated
+  // `pool.query(`…${…}…`)` literals so a future contributor cannot
+  // smuggle interpolated SQL through.
+  //
+  // Scoped to production code only — tests legitimately interpolate
+  // user-controlled fixtures into FS / RegExp helpers and the audit
+  // verification ("baseline run produces no new errors on the existing
+  // codebase") expects no warnings on the existing call-sites. Mobile
+  // and web bundles do not touch `fs` / `eval`; web XSS is governed
+  // by the existing CSP card (C2).
+  {
+    files: ["apps/server/src/**/*.{js,ts}", "apps/console/src/**/*.{js,ts}"],
+    ignores: [
+      "apps/server/src/**/*.test.{js,ts}",
+      "apps/server/src/**/*.integration.test.{js,ts}",
+      "apps/server/src/**/__tests__/**",
+      "apps/server/src/test/**",
+      "apps/console/src/**/*.test.{js,ts}",
+      "apps/console/src/**/__tests__/**",
+    ],
+    plugins: { security },
+    rules: {
+      // `eval(<expression>)` is unrecoverable XSS / RCE surface and the
+      // existing codebase has zero call-sites — promote to error so
+      // any new occurrence blocks CI immediately.
+      "security/detect-eval-with-expression": "error",
+      // The other two rules fire on a long tail of intentional dynamic
+      // patterns in the existing codebase (typed `distPath` arguments,
+      // user-id-keyed backup file paths, the openclaw doc-search
+      // helpers, the CORS allowlist regex). Per
+      // `docs/security/hardening/M11-eslint-plugin-security.md`
+      // verification ("baseline run produces no new errors on the
+      // existing codebase") the rules ship at "warn" — review-time
+      // signal in CI lint output without blocking on the audited
+      // baseline. Promote to "error" once the baseline is migrated;
+      // see `docs/security/audit-exceptions.md` for the inventory.
+      "security/detect-non-literal-fs-filename": "warn",
+      "security/detect-non-literal-regexp": "warn",
+      // Custom hard-rule companion to the SAST plugin: forbid templated
+      // `pool.query(`…${…}…`)` calls. The pg driver supports `$1, $2`
+      // placeholders and the audited modules use them consistently;
+      // the next templated literal is a SQL-injection regression. Test
+      // files are excluded above so existing fixtures (e.g. the
+      // ai-memory vector-store integration test) keep working.
+      //
+      // Selector: `pool.query(…)` / bare `query(…)` whose first
+      // argument is a `TemplateLiteral` with at least one
+      // `${expression}` placeholder (`expressions.length > 0`). A
+      // multi-line template **without** interpolation is just a
+      // static SQL literal and remains allowed.
+      //
+      // Level is "warn" for the same baseline reason as above —
+      // existing intentional templated queries (e.g. `SET LOCAL
+      // hnsw.ef_search = ${Math.floor(efSearch)}`, dynamic
+      // `WHERE ${conditions.join(" AND ")}` over an allowlisted
+      // column set) ship today. New regressions surface in PR lint
+      // output. The plugin test under
+      // `packages/eslint-plugin-sergeant-design/__tests__/eslint-security-rules.test.mjs`
+      // asserts the rule fires programmatically so it cannot silently
+      // be unwired.
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector:
+            "CallExpression[callee.property.name='query'][arguments.0.type='TemplateLiteral'][arguments.0.expressions.length>0]",
+          message:
+            "Templated `pool.query(`…${…}…`)` is risky — use parameterised `pool.query('… $1 …', [value])` instead. See docs/security/hardening/M11-eslint-plugin-security.md.",
+        },
+        {
+          selector:
+            "CallExpression[callee.type='Identifier'][callee.name='query'][arguments.0.type='TemplateLiteral'][arguments.0.expressions.length>0]",
+          message:
+            "Templated `query(`…${…}…`)` is risky — use parameterised `query('… $1 …', [value])` instead. See docs/security/hardening/M11-eslint-plugin-security.md.",
+        },
+      ],
     },
   },
   // React Query keys factory guardrail — AGENTS.md hard rule #2: all
