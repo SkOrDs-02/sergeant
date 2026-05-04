@@ -1,4 +1,9 @@
 import {
+  safeReadLS,
+  safeReadStringLS,
+  safeWriteLS,
+} from "@shared/lib/storage/storage";
+import {
   NUTRITION_ACTIVE_PANTRY_KEY,
   NUTRITION_PANTRIES_KEY,
   NUTRITION_PREFS_KEY,
@@ -44,14 +49,10 @@ export interface NutritionBackupPayload {
 }
 
 function readJsonFromLocalStorage<T>(key: string, fallback: T): T | unknown {
-  if (typeof localStorage === "undefined") return fallback;
-  try {
-    const s = localStorage.getItem(key);
-    if (s === null) return fallback;
-    return JSON.parse(s);
-  } catch {
-    return fallback;
-  }
+  // safeReadLS повертає `T | null` (parse-fail / quota / private mode → null),
+  // а ми зберігаємо стару семантику «fallback при порожньому ключі / збої».
+  const value = safeReadLS<unknown>(key, null);
+  return value ?? fallback;
 }
 
 function safeString(x: unknown, fallback = ""): string {
@@ -132,9 +133,7 @@ function normalizePrefs(x: unknown): NutritionPrefs {
 export function buildNutritionBackupPayload(): NutritionBackupPayload {
   const pantries = readJsonFromLocalStorage(NUTRITION_PANTRIES_KEY, []);
   const activePantryId = safeString(
-    typeof localStorage !== "undefined"
-      ? localStorage.getItem(NUTRITION_ACTIVE_PANTRY_KEY)
-      : "",
+    safeReadStringLS(NUTRITION_ACTIVE_PANTRY_KEY, ""),
     "home",
   );
 
@@ -185,29 +184,14 @@ export function applyNutritionBackupPayload(payload: unknown): void {
   const activePantryId = safeString(data.activePantryId, "home") || "home";
   const prefs = normalizePrefs(data.prefs);
 
-  try {
-    localStorage.setItem(NUTRITION_PANTRIES_KEY, JSON.stringify(pantries));
-  } catch {
-    /* ignore */
-  }
-  try {
-    localStorage.setItem(NUTRITION_ACTIVE_PANTRY_KEY, activePantryId);
-  } catch {
-    /* ignore */
-  }
-  try {
-    localStorage.setItem(NUTRITION_PREFS_KEY, JSON.stringify(prefs));
-  } catch {
-    /* ignore */
-  }
+  // Кожен `safeWriteLS` глитає quota / private-mode помилку самостійно — це
+  // та сама `try/catch + ignore` семантика, що була inline-реалізована
+  // нижче: якщо одне поле бекапу не записалось через quota, продовжуємо
+  // зі скинутими іншими, замість обвалу всієї відновлюваної операції.
+  safeWriteLS(NUTRITION_PANTRIES_KEY, pantries);
+  safeWriteLS(NUTRITION_ACTIVE_PANTRY_KEY, activePantryId);
+  safeWriteLS(NUTRITION_PREFS_KEY, prefs);
   if (data.log && typeof data.log === "object" && !Array.isArray(data.log)) {
-    try {
-      localStorage.setItem(
-        NUTRITION_LOG_KEY,
-        JSON.stringify(normalizeNutritionLog(data.log)),
-      );
-    } catch {
-      /* ignore */
-    }
+    safeWriteLS(NUTRITION_LOG_KEY, normalizeNutritionLog(data.log));
   }
 }
