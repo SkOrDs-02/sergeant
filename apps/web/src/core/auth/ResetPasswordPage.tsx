@@ -1,12 +1,38 @@
-import { useMemo, useState, useRef, type FormEvent } from "react";
+import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
-import { cn } from "@shared/lib/ui/cn";
+import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
-import { useFormValidation } from "@shared/hooks/useFormValidation";
+import { useApiForm } from "@shared/forms/useApiForm";
 import { BrandLogo } from "../app/BrandLogo";
 import { resetPassword } from "./authClient";
+
+/**
+ * Зод-схема — локальна, як у `AuthPage` (Hard Rule #15: меседжі UA).
+ * `confirm` валідуємо через `superRefine` після парсу — стандартний
+ * react-hook-form pattern для cross-field перевірок.
+ */
+const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(10, "Пароль має бути мінімум 10 символів.")
+      .max(128, "Не більше 128 символів"),
+    confirm: z.string(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.confirm !== data.password) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["confirm"],
+        message: "Паролі не збігаються.",
+      });
+    }
+  });
+
+type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
 
 /**
  * Landing page for the Better Auth password-reset magic link. The email
@@ -22,73 +48,41 @@ export function ResetPasswordPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const token = useMemo(() => searchParams.get("token") || "", [searchParams]);
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [status, setStatus] = useState("idle");
-  const [serverError, setServerError] = useState("");
-  const passwordRef = useRef(() => password);
-  passwordRef.current = () => password;
 
-  const pwValidation = useFormValidation({
-    password: {
-      rules: [
-        {
-          validate: (v: string) => v.length >= 10,
-          message: "Пароль має бути мінімум 10 символів.",
-        },
-      ],
-    },
-    confirm: {
-      rules: [
-        {
-          validate: (v: string) => v === passwordRef.current(),
-          message: "Паролі не збігаються.",
-        },
-      ],
-    },
-  });
-
-  const INPUT_CLS =
-    "input-focus w-full min-h-[44px] px-4 py-3 rounded-xl bg-panel border border-line text-text text-base md:text-sm placeholder:text-muted/50";
-
-  const { className: passwordFieldClassName, ...passwordFieldProps } =
-    pwValidation.getFieldProps("password");
-  const { className: confirmFieldClassName, ...confirmFieldProps } =
-    pwValidation.getFieldProps("confirm");
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setServerError("");
-    if (!token) {
-      setServerError(
-        "Посилання неповне. Відкрий лист повністю або запроси новий скид пароля.",
-      );
-      return;
-    }
-    if (!pwValidation.validateAll({ password, confirm })) return;
-    setStatus("sending");
-    try {
-      const result = await resetPassword({ token, newPassword: password });
+  // `useApiForm` зводить валідацію + isSubmitting + server-error mapping
+  // в один hook. Better Auth повертає помилку через `result.error` поле,
+  // а не через `throw`, тому ми штучно кидаємо `Error(message)`, щоб
+  // `useApiForm.serverError` його підхопив.
+  const { register, submit, formState, isSubmitting, serverError } = useApiForm<
+    ResetPasswordValues,
+    true
+  >({
+    schema: resetPasswordSchema,
+    defaultValues: { password: "", confirm: "" },
+    onSubmit: async (values) => {
+      const result = await resetPassword({
+        token,
+        newPassword: values.password,
+      });
       if (result?.error) {
-        setStatus("error");
-        setServerError(
+        throw new Error(
           result.error.message ||
             "Не вдалося скинути пароль. Посилання могло вже бути використане.",
         );
-        return;
       }
-      setStatus("done");
+      return true as const;
+    },
+    onSuccess: () => {
       toast.success("Пароль оновлено");
       window.setTimeout(() => navigate("/sign-in", { replace: true }), 1500);
-    } catch (err) {
-      setStatus("error");
-      setServerError(
-        err instanceof Error
-          ? err.message
-          : "Щось пішло не так. Спробуй ще раз.",
-      );
-    }
-  };
+    },
+  });
+
+  const status = formState.isSubmitSuccessful
+    ? "done"
+    : isSubmitting
+      ? "sending"
+      : "idle";
 
   return (
     <div
@@ -131,7 +125,7 @@ export function ResetPasswordPage() {
               </Button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={submit} noValidate className="space-y-4">
               <div className="space-y-1">
                 <label
                   htmlFor="reset-password-new"
@@ -139,29 +133,22 @@ export function ResetPasswordPage() {
                 >
                   Новий пароль
                 </label>
-                <input
+                <Input
                   id="reset-password-new"
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={10}
-                  className={cn(INPUT_CLS, passwordFieldClassName)}
                   placeholder="Мінімум 10 символів"
                   autoComplete="new-password"
-                  aria-invalid={
-                    pwValidation.fields.password.error ? true : undefined
-                  }
+                  error={!!formState.errors.password}
+                  aria-invalid={!!formState.errors.password}
                   aria-describedby={
-                    pwValidation.fields.password.error
-                      ? "reset-pw-error"
-                      : undefined
+                    formState.errors.password ? "reset-pw-error" : undefined
                   }
-                  {...passwordFieldProps}
+                  disabled={isSubmitting || status === "done"}
+                  {...register("password")}
                 />
-                {pwValidation.fields.password.error && (
+                {formState.errors.password?.message && (
                   <p id="reset-pw-error" className="text-xs text-danger">
-                    {pwValidation.fields.password.error}
+                    {formState.errors.password.message}
                   </p>
                 )}
               </div>
@@ -173,29 +160,22 @@ export function ResetPasswordPage() {
                 >
                   Підтвердження
                 </label>
-                <input
+                <Input
                   id="reset-password-confirm"
                   type="password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  required
-                  minLength={10}
-                  className={cn(INPUT_CLS, confirmFieldClassName)}
                   placeholder="Введи пароль ще раз"
                   autoComplete="new-password"
-                  aria-invalid={
-                    pwValidation.fields.confirm.error ? true : undefined
-                  }
+                  error={!!formState.errors.confirm}
+                  aria-invalid={!!formState.errors.confirm}
                   aria-describedby={
-                    pwValidation.fields.confirm.error
-                      ? "reset-confirm-error"
-                      : undefined
+                    formState.errors.confirm ? "reset-confirm-error" : undefined
                   }
-                  {...confirmFieldProps}
+                  disabled={isSubmitting || status === "done"}
+                  {...register("confirm")}
                 />
-                {pwValidation.fields.confirm.error && (
+                {formState.errors.confirm?.message && (
                   <p id="reset-confirm-error" className="text-xs text-danger">
-                    {pwValidation.fields.confirm.error}
+                    {formState.errors.confirm.message}
                   </p>
                 )}
               </div>
