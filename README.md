@@ -127,14 +127,14 @@ cp .env.example .env
 
 Open `.env` in your editor. Most values are pre-filled for local development. Key variables:
 
-| Variable                                    | Required? | What it does                                                               |
-| ------------------------------------------- | --------- | -------------------------------------------------------------------------- |
-| `DATABASE_URL`                              | Yes       | Database URL (Docker default: `postgresql://hub:hub@localhost:5432/hub`)   |
-| `BETTER_AUTH_SECRET`                        | Yes       | Session cookie signing secret (min 32 characters)                          |
-| `ANTHROPIC_API_KEY`                         | For AI    | Claude API key — HubChat won't work without it                             |
-| `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` | No        | Google OAuth — without these the "Sign in with Google" button won't appear |
-| `VITE_API_PROXY_TARGET`                     | No        | Dev proxy target (default `http://127.0.0.1:3000`)                         |
-| Others                                      | No        | See `.env.example` — each variable has a comment explaining its purpose    |
+| Variable                                    | Required? | What it does                                                                                                                                                                    |
+| ------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                              | Yes       | Database URL (Docker default: `postgresql://hub:hub@localhost:5432/hub`)                                                                                                        |
+| `BETTER_AUTH_SECRET`                        | Yes       | Session cookie signing secret (min 32 characters)                                                                                                                               |
+| `ANTHROPIC_API_KEY`                         | For AI    | Claude API key — HubChat won't work without it                                                                                                                                  |
+| `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` | No        | Google OAuth — without these the "Sign in with Google" button won't appear                                                                                                      |
+| `VITE_API_PROXY_TARGET`                     | No        | Dev proxy target (default `http://127.0.0.1:3000`)                                                                                                                              |
+| Others                                      | No        | See [`docs/integrations/env-vars.md`](./docs/integrations/env-vars.md) — full reference for all 100+ optional variables (Sentry, PostHog, Voyage, Mono, OpenClaw, AI quotas, …) |
 
 ### 3. Start the database
 
