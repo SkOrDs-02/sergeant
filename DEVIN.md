@@ -11,6 +11,7 @@
 2. Почни з `.agents/skills/sergeant-start-here/SKILL.md`.
 3. Завантаж рівно один specialist skill для основної поверхні зміни (див. [agent-skills-catalog.md](./docs/agents/agent-skills-catalog.md)).
 4. Якщо під задачу є playbook у [docs/playbooks/](./docs/playbooks/README.md) — виконуй його як canonical recipe.
+5. Перший раз у репо? Пройди [`docs/agents/onboarding.md`](./docs/agents/onboarding.md) — секрети (`/run/repo_secrets/Sergeant/.env.secrets`), `pnpm db:up` із pgvector image, hard-rule навігація, plop-генератори.
 
 ## Devin-specific нотатки
 
