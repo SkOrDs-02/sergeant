@@ -12,6 +12,8 @@
 ## 1.0 [Bad → Foundation] `apps/web` усе ще на `tsconfig.strict: false`
 
 > **Update 2026-05-04 (foundation step):** [#1635](https://github.com/Skords-01/Sergeant/pull/1635) увімкнув `noUncheckedIndexedAccess: true` для `@sergeant/shared` (foundation-пакет, від якого залежать усі consumers). Виправлено 28 типових помилок у 8 файлах через дефенсивні guards (`?? fallback`, `?.`, явні narrowing-и); 485 тестів у `@sergeant/shared` лишаються зеленими, поведінка ідентична. Це знімає клас «`arr[i]` мовчки повертає `undefined`» у foundation. Наступні етапи (поширення флагу на `apps/web` + повний `strict: true`) — окремими PR за тим самим патерном.
+>
+> **Update 2026-05-04 (follow-up #1):** [#1681](https://github.com/Skords-01/Sergeant/pull/1681) поширив `noUncheckedIndexedAccess: true` на `@sergeant/nutrition-domain`. 10 type-помилок у 4 файлах закрито (`mergeItems.ts`, `nutritionLog.ts`, `nutritionPantries.ts`, `shoppingList.ts`); 21/21 тестів пакету зелені, downstream `apps/web` + `apps/server` typecheck чистий. Поточний стан: 3 з 11 packages працюють у strict-index режимі (`@sergeant/config` (base), `@sergeant/shared`, `@sergeant/nutrition-domain`). Backlog: `@sergeant/finyk-domain` (28 src files), `@sergeant/routine-domain` (19), `@sergeant/insights`, `@sergeant/fizruk-domain` (54), `@sergeant/api-client` (~5135 LOC), apps `web` / `server` / `mobile` (останніми).
 
 **Що бачу.** Більшість пакетів на strict. `apps/web/tsconfig.json` — softer. Це проривається у формах, у `chatActions/*` і у місцях, де `unknown` ховається під «м'якою» типізацією. Існуючі strict-coverage метрики бренять, але руки до кінця не дійшли.
 
@@ -211,6 +213,8 @@ ShortcutRegistryProvider
 ## 2.2 [Bad] `localStorage` allowlist у 17 файлах
 
 > **2026-05-04 update.** Burn-down KPI запиновано у `pnpm lint:localstorage-allowlist` (`scripts/check-localstorage-allowlist.mjs`) — лічильник production-entries проти `.tech-debt/localstorage-allowlist-budget.json`. CI падає, якщо allowlist розросся понад бюджет; зменшення → треба бампнути бюджет вниз у тому ж PR + оновити `rationale`. Baseline 19 (11 storage primitives + 4 cloud-sync internals + 4 module wrappers).
+>
+> **2026-05-04 update (follow-up #1).** [#1674](https://github.com/Skords-01/Sergeant/pull/1674) скоротив production-count 19 → 16: `apps/web/src/shared/lib/ui/perf.ts` (1 LS read) і `apps/web/src/shared/hooks/useDarkMode.ts` (4 LS reads/writes) мігровані на `safeReadStringLS` / `safeReadLS` / `safeWriteLS` без зміни on-disk shape. `useActiveFizrukWorkout.ts` навмисно НЕ міграється у цьому раунді через нетривіальну throw-vs-missing семантику для `WORKOUTS_KEY` — потребує custom helper або прийняття edge-case regression. `usePushNotifications.ts` (287 LOC) — наступний кандидат після audit-у поведінки на private-mode.
 
 **Що бачу.** `docs/tech-debt/frontend.md:89-100` — є TODO-список з 17 файлами, які усе ще читають `localStorage` напряму через `eslint.config.js` allowlist. Допустима тимчасова фаза, але burn-down треба **запланувати**, а не «коли руки дійдуть».
 
