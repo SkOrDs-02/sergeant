@@ -1156,19 +1156,53 @@ show_balance, updated_at, deleted_at)` — об'єднує
 
 ### Stage 5 — Sync engine v2 hardening
 
-#### **PR #040 — `feat(sync): persistent op-log in SQLite with retry policy`**
+#### **PR #040 — `feat(migrations): persistent op-log retry policy in SQLite`** ✅ LANDED — [#1717](https://github.com/Skords-01/Sergeant/pull/1717)
 
-- Scope. Op-log живе в SQLite (зараз in-memory). Retry з exponential
-  backoff, dead-letter після N=10 failures.
-- AC. Crash recovery: kill app → restart → unsent ops дойдуть.
+- Scope. Outbox `sync_op_outbox` отримав durable retry-контракт: нові
+  колонки `attempts INTEGER DEFAULT 0`, `next_retry_at TEXT`,
+  `last_error TEXT` плюс розширений `status` enum із `'dead_letter'`.
+  Worker-helper-и (`computeBackoffMs`, `computeNextRetryAt`,
+  `nextStatusForRetry`, `planRetry`) живуть у
+  `packages/db-schema/src/sqlite/syncOpRetry.ts`.
+- Backoff. Exponential 1s → 2s → 4s → … capped at 5min, ±250ms jitter,
+  dead-letter після `SYNC_OP_MAX_ATTEMPTS = 10` спроб.
+- Migration. Client-side `002_sync_op_outbox_retry.sql` (SQLite "12-step
+  ALTER" — `rename → create new with relaxed CHECK → copy → drop →
+recreate indexes`) у `packages/db-schema/src/sqlite/migrations/index.ts`,
+  бо CHECK constraint у SQLite неможливо relax-нути in-place.
+- AC. Crash recovery: kill app → restart → outbox row-и з минулого
+  ретри-recover-яться без дубліфікацій (idempotency key зберігається),
+  а перманентно-truncated op-и переходять у `dead_letter` для
+  оператор-перевірки замість silent-loop-у.
 
-#### **PR #041 — `feat(sync): real-time pull via Server-Sent Events`**
+#### **PR #041 — `feat(server): real-time pull via Server-Sent Events`** ✅ LANDED — [#1721](https://github.com/Skords-01/Sergeant/pull/1721)
 
-- Scope. `GET /v2/sync/stream` — SSE з push-нотифікаціями про нові op-log
-  entries для цього юзера. Eliminates polling.
-- AC. Multi-tab/multi-device test: зміна на одному девайсі ≤ 2s до іншого.
-- Risk. Express+Vercel: SSE на serverless має edge-case з timeout. Mitigation:
-  Keep-alive heartbeat 25s; reconnect on close.
+- Scope. `GET /api/v2/sync/stream` — SSE-канал, який фен-аутить
+  applied-ops іншим пристроям того ж юзера в режимі реального часу.
+  Eliminates polling-loop проти `/pull?since=`.
+- Wire-format. `event: hello` із `since` cursor-ом і `replay_limit`,
+  потім backlog replay (cap `SYNC_V2_STREAM_REPLAY_LIMIT = 500`,
+  `truncated:true` каже клієнту: реконектся з оновленим cursor-ом),
+  далі `event: caught_up` і live `event: op` фрейми.
+- Reconnect. `?since=<id>` query **АБО** заголовок `Last-Event-ID` на
+  auto-reconnect — header виграє при колізії, бо це resume-сценарій
+  (override над bookmark-ом, який клієнт міг сам сконструювати).
+- Heartbeat. SSE-comment `: heartbeat\n\n` кожні
+  `SYNC_V2_STREAM_HEARTBEAT_MS = 25_000` ms — під типовий 30s
+  idle-таймаут reverse-проксі (Vercel/Cloudflare/nginx default).
+- Fan-out. In-process `opLogEmitter` (per-user канал); `syncV2Push`
+  тригерить `notifySyncV2OpsApplied(userId, applied)` **після**
+  `COMMIT`-у. Failed-COMMIT-шлях сюди не доходить — listener-и
+  бачать лише durable зміни.
+- Operational. Окремий rate-limit `api:v2:sync:stream` — 30/min, не
+  ділиться з push/pull-budget-ом; новий gauge
+  `sync_stream_connections_active{module='v2'}` для Grafana.
+- Single-process замітка. Емітер in-memory; multi-instance деплой
+  потребуватиме PG `LISTEN/NOTIFY` чи Redis pub/sub (PR #045/#050).
+  Railway Sergeant-а зараз single-instance, тому fan-out тривіальний.
+- AC. Multi-tab/multi-device handler-level тест проходить (12 тестів
+  у `syncV2Stream.handler.test.ts` із `vi.fakeTimers()`); E2E з
+  реальним Postgres — follow-up в `syncV2.integration.test.ts`.
 
 #### **PR #042 — `feat(sync): per-row CRDT for routine_entries (PN-counter for streak)`** — _deferred_
 
