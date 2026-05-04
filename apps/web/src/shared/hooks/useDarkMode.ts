@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useState, useMemo } from "react";
+import {
+  safeReadLS,
+  safeReadStringLS,
+  safeWriteLS,
+} from "@shared/lib/storage/storage";
 
 const DARK_KEY = "hub_dark_mode_v1";
 const SCHEDULE_KEY = "hub_dark_mode_schedule_v1";
@@ -20,39 +25,35 @@ function applyTheme(dark: boolean): void {
 }
 
 function readScheduleConfig(): ScheduleConfig {
-  try {
-    const stored = localStorage.getItem(SCHEDULE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch {
-    /* ignore */
-  }
-  return { mode: "manual" };
+  // `safeReadLS` mirrors the previous getItem + JSON.parse + try/catch
+  // dance: returns `null` on missing key, malformed JSON, or storage
+  // errors (private mode, quota, disabled). The hook treats `null`
+  // identically to "not configured" → fall back to the manual default.
+  return safeReadLS<ScheduleConfig>(SCHEDULE_KEY) ?? { mode: "manual" };
 }
 
 function saveScheduleConfig(config: ScheduleConfig): void {
-  try {
-    localStorage.setItem(SCHEDULE_KEY, JSON.stringify(config));
-  } catch {
-    /* ignore */
-  }
+  // Best-effort write — `safeWriteLS` returns `false` on quota / disabled
+  // storage; the hook doesn't surface that signal because the dark-mode
+  // schedule is regenerated on every interaction.
+  safeWriteLS(SCHEDULE_KEY, config);
 }
 
 function readManualDark(): boolean | null {
-  try {
-    const stored = localStorage.getItem(DARK_KEY);
-    if (stored !== null) return stored === "1";
-  } catch {
-    /* ignore */
-  }
+  // The manual flag is stored as a 1-character string ("0"/"1"), so we
+  // read raw to avoid the JSON.parse pass that `safeReadLS` adds. Older
+  // versions wrote `true`/`false` literally — `safeReadStringLS` keeps
+  // both shapes round-trippable through the `=== "1"` check below.
+  const stored = safeReadStringLS(DARK_KEY);
+  if (stored !== null) return stored === "1";
   return null;
 }
 
 function saveManualDark(dark: boolean): void {
-  try {
-    localStorage.setItem(DARK_KEY, dark ? "1" : "0");
-  } catch {
-    /* ignore */
-  }
+  // String values pass through `safeWriteLS` without JSON.stringify (see
+  // shared/lib/storage/storage.ts), so the on-disk shape is unchanged
+  // from the pre-migration `localStorage.setItem(...)` call.
+  safeWriteLS(DARK_KEY, dark ? "1" : "0");
 }
 
 /**

@@ -427,9 +427,11 @@ export default [
       "apps/web/src/shared/lib/storage/typedStore.ts",
       "apps/web/src/shared/lib/storage/createModuleStorage.ts",
       "apps/web/src/shared/lib/storage/weeklyDigestStorage.ts",
-      "apps/web/src/shared/lib/ui/perf.ts",
       "apps/web/src/shared/hooks/useLocalStorageState.ts",
-      "apps/web/src/shared/hooks/useDarkMode.ts",
+      // Мігровано на `safeReadStringLS`/`safeReadLS`/`safeWriteLS` у PR-i Item 6
+      // follow-up (docs/diagnostics/2026-05-03-web-deep-dive/02 §2.2):
+      // - apps/web/src/shared/lib/ui/perf.ts (1 LS read)
+      // - apps/web/src/shared/hooks/useDarkMode.ts (4 LS reads/writes)
       "apps/web/src/shared/hooks/usePushNotifications.ts",
       "apps/web/src/shared/hooks/useActiveFizrukWorkout.ts",
       // Cloud-sync internals — the queue / enqueue / state writer all
