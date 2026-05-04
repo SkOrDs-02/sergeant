@@ -17,6 +17,7 @@ import type { WithAiQuotaRefund } from "./aiQuota.js";
 import { TOOLS, SYSTEM_PREFIX, SYSTEM_PROMPT_VERSION } from "./tools.js";
 import { recordToolProposals, recordToolExecutions } from "./toolMetrics.js";
 import { truncateToolResults } from "./toolResultTruncation.js";
+import { wrapAndScanToolResults } from "./toolOutputWrapping.js";
 import { als } from "../../obs/requestContext.js";
 import { ExternalServiceError } from "../../obs/errors.js";
 import { chatToolIterationCapHitTotal } from "../../obs/metrics.js";
@@ -384,7 +385,16 @@ export default async function handler(
     const normalizedToolResults = truncateToolResults(tool_results, {
       requestId,
     });
-    const toolResultMessages = normalizedToolResults.map((r) => ({
+    // M8 — обгортаємо tool_result-content у `<tool_output tool="...">` envelope
+    // і скануємо на prompt-injection маркери. SYSTEM_PREFIX (v8+) інструктує
+    // модель трактувати все всередині envelope як ДАНІ. Це захищає від
+    // ситуацій, коли скомпрометований upstream (Mono webhook, n8n response)
+    // підкладає інструкції типу "ignore previous instructions and ...".
+    const wrappedToolResults = wrapAndScanToolResults(
+      normalizedToolResults,
+      tool_calls_raw,
+    );
+    const toolResultMessages = wrappedToolResults.map((r) => ({
       type: "tool_result" as const,
       tool_use_id: r.tool_use_id,
       content: r.content,

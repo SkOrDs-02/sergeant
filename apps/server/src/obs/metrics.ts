@@ -166,6 +166,37 @@ export const chatToolIterationCapHitTotal = new client.Counter({
   registers: [register],
 });
 
+/**
+ * M6 — server-side magic-byte rejection at `/api/nutrition/{analyze,refine}-photo`.
+ * `endpoint` лейбл фіксований (`analyze-photo` | `refine-photo`); `reason` — це
+ * `code` з `validateImageBase64` (`INVALID_BASE64` | `TRUNCATED` | `TOO_LARGE`
+ * | `MAGIC_MISMATCH`). Cardinality 2 × 4 = 8, безпечно для Prometheus.
+ *
+ * See `docs/security/hardening/M6-image-magic-byte-check.md`.
+ */
+export const nutritionPhotoRejectedTotal = new client.Counter({
+  name: "nutrition_photo_rejected_total",
+  help: "M6 — nutrition photo rejected before Anthropic call by magic-byte / size validator",
+  labelNames: ["endpoint", "reason"],
+  registers: [register],
+});
+
+/**
+ * M8 — chat tool_result content matched a prompt-injection marker (`ignore
+ * previous instructions`, `<system>`, `act as ...`). Лічильник інкрементиться
+ * один раз на tool_result; `tool` — whitelisted tool name (з `TOOLS`-реєстру)
+ * або `unknown` для orphan-блоків. Cardinality dominated by кількістю tools
+ * (~25), безпечно для Prometheus.
+ *
+ * See `docs/security/hardening/M8-prompt-injection-tool-output.md`.
+ */
+export const chatPromptInjectionAttemptTotal = new client.Counter({
+  name: "chat_prompt_injection_attempt_total",
+  help: "M8 — tool_result content matched a prompt-injection marker; metric only, model still receives the (wrapped) data.",
+  labelNames: ["tool"],
+  registers: [register],
+});
+
 export const aiQuotaBlocksTotal = new client.Counter({
   name: "ai_quota_blocks_total",
   help: "AI quota refusals",
