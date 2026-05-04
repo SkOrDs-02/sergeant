@@ -11,6 +11,41 @@ function parseRate(val: string | undefined, fallback: number): number {
 }
 
 /**
+ * L9 — Resolve the Sentry `release` tag from the deploy environment.
+ *
+ * Sentry needs every event to be tagged with the exact git SHA that produced
+ * the running artifact, otherwise source-maps lookup is best-effort and
+ * incident attribution falls back to "wherever the latest release pointer
+ * happens to be". The cascade lets one helper serve every host:
+ *
+ *   1. `SENTRY_RELEASE`        — explicit override (release-please, custom CI)
+ *   2. `RAILWAY_GIT_COMMIT_SHA`— Railway auto-injects this per deploy
+ *   3. `VERCEL_GIT_COMMIT_SHA` — Vercel auto-injects this per deploy
+ *   4. `GITHUB_SHA`            — fallback when running in GitHub Actions
+ *                                (mobile-shell builds, container scans, etc.)
+ *
+ * Returns `undefined` when none of the variables are set so Sentry's own
+ * `release: undefined` semantics kick in (events go to the "no release"
+ * bucket — visible but not attributable). We deliberately do NOT default to
+ * a fake string like `"unknown"` — that would mask the misconfiguration in
+ * Sentry UI instead of surfacing it.
+ */
+export function resolveSentryRelease(
+  env: NodeJS.ProcessEnv = process.env,
+): string | undefined {
+  const candidates = [
+    env.SENTRY_RELEASE,
+    env.RAILWAY_GIT_COMMIT_SHA,
+    env.VERCEL_GIT_COMMIT_SHA,
+    env.GITHUB_SHA,
+  ];
+  for (const v of candidates) {
+    if (typeof v === "string" && v.trim() !== "") return v.trim();
+  }
+  return undefined;
+}
+
+/**
  * Рекурсивно ходить по об'єкту і маскує значення для ключів з
  * `redactKeyNames` (case-insensitive). Контракт синхронізований з
  * Pino-redaction (`logger.ts`): один список — два енфорсера.
@@ -149,7 +184,7 @@ if (dsn) {
     dsn,
     environment:
       process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development",
-    release: process.env.SENTRY_RELEASE || process.env.RAILWAY_GIT_COMMIT_SHA,
+    release: resolveSentryRelease(),
     // `SENTRY_TRACES_SAMPLE_RATE=0` має вимикати трейсинг — тому не `|| 0.1`.
     tracesSampleRate: parseRate(process.env.SENTRY_TRACES_SAMPLE_RATE, 0.1),
     // Приберемо request body зі звітів — там можуть бути фото/паролі.

@@ -23,7 +23,7 @@ posture from "secure for an MVP" to "auditable for a paid product".
 | [L6](./L6-no-sniff-explicit.md)            | Confirm `X-Content-Type-Options: nosniff`            | Low      | backend  | 0.1 d                       |
 | [L7](./L7-health-endpoint-info-leak.md)    | Health endpoint info-leak audit                      | Low      | backend  | 0.25 d                      |
 | [L8](./L8-openclaw-repo-root-traversal.md) | OpenClaw `OPENCLAW_REPO_ROOT` path-traversal guard   | Low      | console  | 0.25 d                      |
-| [L9](./L9-sentry-release-sha.md)           | Sentry `release` not SHA-pinned                      | Low      | platform | 0.1 d                       |
+| [L9](./L9-sentry-release-sha.md)           | Sentry `release` not SHA-pinned                      | Low      | platform | 0.1 d _(closed 2026-05-04)_ |
 | [L10](./L10-user-id-hash-in-logs.md)       | `recordSync*` logs raw `userId` instead of hash      | Low      | backend  | 0.25 d                      |
 | [L11](./L11-csp-monitoring-allowlist.md)   | CSP must allowlist Sentry / PostHog `connect-src`    | Low      | frontend | 0.25 d                      |
 | [L12](./L12-ios-app-transport-security.md) | iOS `NSAppTransportSecurity` audit                   | Low      | mobile   | 0.1 d                       |

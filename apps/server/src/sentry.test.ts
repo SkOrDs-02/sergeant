@@ -1,10 +1,72 @@
 import { describe, expect, it } from "vitest";
 import type { Breadcrumb, ErrorEvent } from "@sentry/node";
-import { applyBeforeBreadcrumb, applyBeforeSend, scrubPII } from "./sentry.js";
+import {
+  applyBeforeBreadcrumb,
+  applyBeforeSend,
+  resolveSentryRelease,
+  scrubPII,
+} from "./sentry.js";
 
 function makeEvent(overrides: Partial<ErrorEvent> = {}): ErrorEvent {
   return { type: undefined, ...overrides } as ErrorEvent;
 }
+
+// L9 — Sentry release tag must be the deployed git SHA so source-map lookup
+// and incident attribution are deterministic across deploys. Helper is pure
+// (takes env), so we don't need Sentry mocks here.
+describe("resolveSentryRelease (L9)", () => {
+  it("повертає `SENTRY_RELEASE` коли він явно заданий (override)", () => {
+    expect(
+      resolveSentryRelease({
+        SENTRY_RELEASE: "v1.2.3",
+        GITHUB_SHA: "deadbeef",
+      }),
+    ).toBe("v1.2.3");
+  });
+
+  it("віддає перевагу Railway SHA коли немає явного `SENTRY_RELEASE`", () => {
+    expect(
+      resolveSentryRelease({
+        RAILWAY_GIT_COMMIT_SHA: "abc123",
+        VERCEL_GIT_COMMIT_SHA: "def456",
+        GITHUB_SHA: "ghi789",
+      }),
+    ).toBe("abc123");
+  });
+
+  it("падає на Vercel SHA коли немає Railway", () => {
+    expect(
+      resolveSentryRelease({
+        VERCEL_GIT_COMMIT_SHA: "def456",
+        GITHUB_SHA: "ghi789",
+      }),
+    ).toBe("def456");
+  });
+
+  it("падає на GITHUB_SHA коли немає host-specific SHA (mobile-shell CI)", () => {
+    expect(resolveSentryRelease({ GITHUB_SHA: "ghi789" })).toBe("ghi789");
+  });
+
+  it("повертає undefined коли жодне змінне не задано", () => {
+    expect(resolveSentryRelease({})).toBeUndefined();
+  });
+
+  it("ігнорує порожні рядки і whitespace-only значення", () => {
+    expect(
+      resolveSentryRelease({
+        SENTRY_RELEASE: "",
+        RAILWAY_GIT_COMMIT_SHA: "   ",
+        VERCEL_GIT_COMMIT_SHA: "real-sha",
+      }),
+    ).toBe("real-sha");
+  });
+
+  it("trim-ить пробіли у валідному значенні", () => {
+    expect(resolveSentryRelease({ SENTRY_RELEASE: "  v1.2.3  " })).toBe(
+      "v1.2.3",
+    );
+  });
+});
 
 describe("scrubPII", () => {
   it("маскує sensitive ключі у root", () => {

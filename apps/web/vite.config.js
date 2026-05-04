@@ -35,6 +35,26 @@ export default defineConfig(({ mode }) => {
     process.env.GITHUB_SHA ||
     process.env.BUILD_ID ||
     String(Date.now());
+
+  // L9 — Sentry release tag for the browser bundle. Vite only exposes env
+  // vars prefixed `VITE_*`, so without this fallback the client SDK boots
+  // with `release: undefined` whenever the deploy host (Vercel CI, mobile-shell
+  // GH Actions, container scans) sets `*_GIT_COMMIT_SHA` but no one set the
+  // explicit `VITE_SENTRY_RELEASE`. Cascade mirrors `apps/server/src/sentry.ts`
+  // `resolveSentryRelease()` so server + client + source-map upload all share
+  // the same release tag for incident triage. We override `process.env`
+  // BEFORE the Sentry vite plugin reads it below — `define` would also work
+  // but couples to vite's HMR substitution; the env-var path is portable.
+  const sentryReleaseSha =
+    env.VITE_SENTRY_RELEASE ||
+    process.env.SENTRY_RELEASE ||
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.GITHUB_SHA ||
+    process.env.RAILWAY_GIT_COMMIT_SHA ||
+    "";
+  if (sentryReleaseSha && !process.env.VITE_SENTRY_RELEASE) {
+    process.env.VITE_SENTRY_RELEASE = sentryReleaseSha;
+  }
   const outDir =
     env.VITE_BUILD_OUT_DIR ||
     (process.env.VERCEL === "1" ? "dist" : "../server/dist");
@@ -158,11 +178,10 @@ export default defineConfig(({ mode }) => {
         project: process.env.SENTRY_PROJECT,
         authToken: process.env.SENTRY_AUTH_TOKEN,
         release: {
-          name:
-            process.env.SENTRY_RELEASE ||
-            process.env.VERCEL_GIT_COMMIT_SHA ||
-            process.env.GITHUB_SHA ||
-            undefined,
+          // Reuse the same release we just bound to `VITE_SENTRY_RELEASE` —
+          // mismatched source-map upload tag and runtime tag make Sentry
+          // de-symbolicate against the wrong artifact set.
+          name: sentryReleaseSha || undefined,
         },
         sourcemaps: {
           filesToDeleteAfterUpload: ["**/*.js.map", "**/*.mjs.map"],
