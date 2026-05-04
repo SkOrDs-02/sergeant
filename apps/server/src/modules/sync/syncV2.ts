@@ -272,6 +272,13 @@ function recordSyncV2(
  * Soft-delete: `op === "delete"` → ставимо `deleted_at = clientTs`,
  * `updated_at = clientTs`. Жорстке видалення не використовується для
  * Routine, бо клієнт може потім повернути виконання.
+ *
+ * Tombstone-resurrection guard (Stage 5, дзеркалить PR #043 для
+ * `nutrition_meals`): після soft-delete `op='insert'`/`op='update'`
+ * проти tombstoned-у ряд відхиляється з `reason='tombstoned'`. Інакше
+ * stale offline-edit на одному девайсі скасовував би delete на іншому.
+ * `op='delete'` лишається ідемпотентним — re-stamp-ить `deleted_at`
+ * новішим `client_ts`.
  */
 async function applyRoutineEntries(
   client: PoolClient,
@@ -290,8 +297,12 @@ async function applyRoutineEntries(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
-  const existing = await client.query<{ user_id: string; updated_at: Date }>(
-    `SELECT user_id, updated_at FROM routine_entries WHERE id = $1`,
+  const existing = await client.query<{
+    user_id: string;
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(
+    `SELECT user_id, updated_at, deleted_at FROM routine_entries WHERE id = $1`,
     [id],
   );
   if (existing.rows.length > 0) {
@@ -300,6 +311,10 @@ async function applyRoutineEntries(
     }
     if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
+    }
+    // Tombstone-resurrection guard — див. док-стрінг.
+    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+      return { status: "rejected", reason: "tombstoned" };
     }
   }
 
@@ -525,8 +540,12 @@ async function applyFizrukWorkouts(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
-  const existing = await client.query<{ user_id: string; updated_at: Date }>(
-    `SELECT user_id, updated_at FROM fizruk_workouts WHERE id = $1`,
+  const existing = await client.query<{
+    user_id: string;
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(
+    `SELECT user_id, updated_at, deleted_at FROM fizruk_workouts WHERE id = $1`,
     [id],
   );
   if (existing.rows.length > 0) {
@@ -535,6 +554,11 @@ async function applyFizrukWorkouts(
     }
     if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
+    }
+    // Tombstone-resurrection guard (PR #043 шаблон) — після soft-delete
+    // не дозволяємо `op='insert'`/`op='update'` воскресити ряд.
+    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+      return { status: "rejected", reason: "tombstoned" };
     }
   }
 
@@ -644,8 +668,12 @@ async function applyFizrukItems(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
-  const existing = await client.query<{ user_id: string; updated_at: Date }>(
-    `SELECT user_id, updated_at FROM fizruk_workout_items WHERE id = $1`,
+  const existing = await client.query<{
+    user_id: string;
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(
+    `SELECT user_id, updated_at, deleted_at FROM fizruk_workout_items WHERE id = $1`,
     [id],
   );
   if (existing.rows.length > 0) {
@@ -654,6 +682,10 @@ async function applyFizrukItems(
     }
     if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
+    }
+    // Tombstone-resurrection guard (PR #043 шаблон).
+    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+      return { status: "rejected", reason: "tombstoned" };
     }
   }
 
@@ -788,8 +820,12 @@ async function applyFizrukSets(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
-  const existing = await client.query<{ user_id: string; updated_at: Date }>(
-    `SELECT user_id, updated_at FROM fizruk_workout_sets WHERE id = $1`,
+  const existing = await client.query<{
+    user_id: string;
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(
+    `SELECT user_id, updated_at, deleted_at FROM fizruk_workout_sets WHERE id = $1`,
     [id],
   );
   if (existing.rows.length > 0) {
@@ -798,6 +834,10 @@ async function applyFizrukSets(
     }
     if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
+    }
+    // Tombstone-resurrection guard (PR #043 шаблон).
+    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+      return { status: "rejected", reason: "tombstoned" };
     }
   }
 
@@ -905,8 +945,12 @@ async function applyFizrukCustomExercises(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
-  const existing = await client.query<{ user_id: string; updated_at: Date }>(
-    `SELECT user_id, updated_at FROM fizruk_custom_exercises WHERE id = $1`,
+  const existing = await client.query<{
+    user_id: string;
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(
+    `SELECT user_id, updated_at, deleted_at FROM fizruk_custom_exercises WHERE id = $1`,
     [id],
   );
   if (existing.rows.length > 0) {
@@ -915,6 +959,10 @@ async function applyFizrukCustomExercises(
     }
     if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
+    }
+    // Tombstone-resurrection guard (PR #043 шаблон).
+    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+      return { status: "rejected", reason: "tombstoned" };
     }
   }
 
@@ -989,8 +1037,12 @@ async function applyFizrukMeasurements(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
-  const existing = await client.query<{ user_id: string; updated_at: Date }>(
-    `SELECT user_id, updated_at FROM fizruk_measurements WHERE id = $1`,
+  const existing = await client.query<{
+    user_id: string;
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(
+    `SELECT user_id, updated_at, deleted_at FROM fizruk_measurements WHERE id = $1`,
     [id],
   );
   if (existing.rows.length > 0) {
@@ -999,6 +1051,10 @@ async function applyFizrukMeasurements(
     }
     if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
+    }
+    // Tombstone-resurrection guard (PR #043 шаблон).
+    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+      return { status: "rejected", reason: "tombstoned" };
     }
   }
 
