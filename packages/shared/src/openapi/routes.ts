@@ -573,9 +573,29 @@ export const paths: ZodOpenApiPathsObject = {
   },
 
   // ────────────────────── Mono webhook integration ──────────────────────
+  // C1 — `docs/security/hardening/C1-mono-webhook-secret-in-url.md`.
+  // Header-based маршрут — preferred. Path-based маршрут лишається для
+  // backward-compat поки Monobank не мігрує на header-доставку.
+  "/api/mono/webhook": {
+    post: {
+      summary: "Mono webhook (X-Mono-Webhook-Secret header — preferred)",
+      tags: ["mono"],
+      requestParams: {
+        header: z.object({
+          "x-mono-webhook-secret": z
+            .string()
+            .describe(
+              "Per-user webhook secret. Header-варіант — preferred з C1-rollout-у; не потрапляє в access-логи.",
+            ),
+        }),
+      },
+      responses: { "200": okEmpty },
+    },
+  },
   "/api/mono/webhook/{secret}": {
     post: {
-      summary: "Mono webhook (per-user secret у URL — не header)",
+      summary:
+        "Mono webhook (per-user secret у URL — legacy, deprecated по C1)",
       tags: ["mono"],
       requestParams: {
         path: z.object({ secret: z.string() }),

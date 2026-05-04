@@ -20,9 +20,16 @@ import { webhookHandler } from "../modules/mono/webhook.js";
 /**
  * Роутер для webhook-based Monobank інтеграції (Track A).
  *
- * Webhook endpoint (`POST /api/mono/webhook/:secret`) монтується БЕЗ session
- * auth — це публічний endpoint, куди Monobank надсилає delivery. Авторизація
- * через path-secret (constant-time compare у handler-і).
+ * Webhook endpoint монтується БЕЗ session auth — це публічний endpoint, куди
+ * Monobank надсилає delivery. Авторизація — через секрет, що ходить у
+ * `X-Mono-Webhook-Secret` header (preferred) або у legacy path-param
+ * `:secret` (deprecated, див. C1
+ * `docs/security/hardening/C1-mono-webhook-secret-in-url.md`).
+ *
+ * Обидва маршрути ведуть у один і той самий handler — `webhookHandler`
+ * вибирає секрет з header-а (якщо є) або з path-param-у. Header виграє при
+ * колізії, що дозволяє мігрувати Monobank-конфіг на header-mode без
+ * server-change.
  *
  * Решта endpoints — під `requireSession()`.
  */
@@ -37,7 +44,12 @@ export function createMonoWebhookRouter(): Router {
   r.use("/api/mono/backfill", setModule("finyk"));
   r.use("/api/mono/backfill-progress", setModule("finyk"));
 
-  // Webhook — публічний, без auth
+  // Webhook — публічний, без auth.
+  //
+  // Header-based маршрут — preferred. Реєструється першим, щоб
+  // `POST /api/mono/webhook` без trailing-slash потрапляв сюди, а не у 404
+  // через path-param-варіант.
+  r.post("/api/mono/webhook", asyncHandler(webhookHandler));
   r.post("/api/mono/webhook/:secret", asyncHandler(webhookHandler));
 
   // Session-protected endpoints.

@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/node";
 import type { Express } from "express";
 import { als } from "./obs/requestContext.js";
 import { redactKeyNames } from "./obs/logger.js";
+import { redactSensitiveUrl } from "./obs/sensitiveUrl.js";
 
 function parseRate(val: string | undefined, fallback: number): number {
   if (val == null || val === "") return fallback;
@@ -50,6 +51,90 @@ export function scrubPII(
 
 const dsn = process.env.SENTRY_DSN;
 
+/**
+ * Чистий beforeSend-хук — extracted у named-функцію (а не inline-closure
+ * всередині `Sentry.init`), щоб тести могли його викликати напряму без
+ * Sentry-моків. Контракт: мутує `event` in-place і повертає його ж (як того
+ * хоче Sentry SDK).
+ */
+export function applyBeforeSend<E extends Sentry.ErrorEvent>(event: E): E {
+  if (event.request?.data) delete event.request.data;
+  if (event.request?.cookies) delete event.request.cookies;
+  if (event.request?.headers) {
+    // Headers можуть містити Authorization/Cookie/X-Csrf-Token.
+    scrubPII(event.request.headers);
+  }
+  // C1 — `req.originalUrl` для `/api/mono/webhook/<secret>` несе сам секрет,
+  // і Sentry capture-ить його у `event.request.url`. Рятуємо до того, як
+  // подія йде на ingest. Хелпер ідемпотентний — викликати двічі безпечно,
+  // якщо `requestDataIntegration` колись стане сам редагувати ці шляхи.
+  if (typeof event.request?.url === "string") {
+    event.request.url = redactSensitiveUrl(event.request.url);
+  }
+  // Глибокий рекурсивний скраб PII з extra/contexts/breadcrumbs. Ловимо
+  // випадки, коли user-payload потрапив у `event.extra` через
+  // `Sentry.setExtra('payload', req.body)` або
+  // `Sentry.captureException(e, { extra })`.
+  if (event.extra) scrubPII(event.extra);
+  if (event.contexts) scrubPII(event.contexts);
+  if (event.breadcrumbs) {
+    for (const bc of event.breadcrumbs) {
+      if (bc.data) scrubPII(bc.data);
+      // breadcrumb.message — string; нічого скрабити (occurrence rate низький
+      // і парсинг рядка на email/phone дав би false-positive-и).
+    }
+  }
+  // user.email/phone не пускаємо — лишаємо тільки id. `sendDefaultPii=false`
+  // вже це робить, але duplicate-захист дешевий.
+  if (event.user) {
+    const safe: { id?: string | number; ip_address?: string } = {};
+    if (
+      typeof event.user.id === "string" ||
+      typeof event.user.id === "number"
+    ) {
+      safe.id = event.user.id;
+    }
+    event.user = safe;
+  }
+  // Підмішуємо контекст із ALS, якщо подія народилася в рамках запиту.
+  const ctx = als.getStore();
+  if (ctx) {
+    event.tags = {
+      ...(event.tags || {}),
+      ...(ctx.requestId ? { requestId: ctx.requestId } : {}),
+      ...(ctx.module ? { module: ctx.module } : {}),
+    };
+    if (ctx.userId) {
+      event.user = { ...(event.user || {}), id: ctx.userId };
+    }
+  }
+  return event;
+}
+
+/**
+ * Чистий beforeBreadcrumb-хук — extracted з тих самих міркувань, що й
+ * `applyBeforeSend`. Повертає `null`, якщо breadcrumb треба викинути; інакше
+ * мутує `data` і повертає той самий breadcrumb.
+ */
+export function applyBeforeBreadcrumb(
+  breadcrumb: Sentry.Breadcrumb,
+): Sentry.Breadcrumb | null {
+  if (breadcrumb?.category === "http" && breadcrumb.data) {
+    delete breadcrumb.data.request_body_size;
+    delete breadcrumb.data.response_body_size;
+    // C1 — http breadcrumb-и несуть `data.url` як key для запитів outbound
+    // HTTP (axios/fetch). Якщо колись виявимо, що outbound ходить на чужий
+    // API з секрет-у-path-і, той самий хелпер redact-не його. Inbound-leak
+    // (`/api/mono/webhook/<secret>`) сюди не потрапляє — Sentry HTTP-breadcrumb-и
+    // для inbound-у не створюються.
+    if (typeof breadcrumb.data.url === "string") {
+      breadcrumb.data.url = redactSensitiveUrl(breadcrumb.data.url);
+    }
+    scrubPII(breadcrumb.data);
+  }
+  return breadcrumb;
+}
+
 // ВАЖЛИВО: ініціалізація робиться у module top-level, а не в окремій функції,
 // яку треба викликати. У ESM (`"type": "module"`) усі `import` хостяться і
 // оцінюються ДО виконання тіла модуля, тому якщо викликати `Sentry.init()` з
@@ -69,63 +154,8 @@ if (dsn) {
     tracesSampleRate: parseRate(process.env.SENTRY_TRACES_SAMPLE_RATE, 0.1),
     // Приберемо request body зі звітів — там можуть бути фото/паролі.
     sendDefaultPii: false,
-    beforeSend(event) {
-      if (event.request?.data) delete event.request.data;
-      if (event.request?.cookies) delete event.request.cookies;
-      if (event.request?.headers) {
-        // Headers можуть містити Authorization/Cookie/X-Csrf-Token.
-        scrubPII(event.request.headers);
-      }
-      // Глибокий рекурсивний скраб PII з extra/contexts/breadcrumbs.
-      // Ловимо випадки, коли user-payload потрапив у `event.extra` через
-      // `Sentry.setExtra('payload', req.body)` або `Sentry.captureException(e, { extra })`.
-      if (event.extra) scrubPII(event.extra);
-      if (event.contexts) scrubPII(event.contexts);
-      if (event.breadcrumbs) {
-        for (const bc of event.breadcrumbs) {
-          if (bc.data) scrubPII(bc.data);
-          if (bc.message) {
-            // Re-use breadcrumb.message (рядок) — нічого скрабити, але
-            // якщо там email — ми не парсимо (occurance rate низький, і
-            // false-positive шкідливий).
-          }
-        }
-      }
-      // user.email/phone не пускаємо — лишаємо тільки id (sendDefaultPii=false
-      // вже це робить, але duplicate-захист дешевий).
-      if (event.user) {
-        const safe: { id?: string | number; ip_address?: string } = {};
-        if (
-          typeof event.user.id === "string" ||
-          typeof event.user.id === "number"
-        ) {
-          safe.id = event.user.id;
-        }
-        event.user = safe;
-      }
-      // Підмішуємо контекст із ALS, якщо подія народилася в рамках запиту.
-      const ctx = als.getStore();
-      if (ctx) {
-        event.tags = {
-          ...(event.tags || {}),
-          ...(ctx.requestId ? { requestId: ctx.requestId } : {}),
-          ...(ctx.module ? { module: ctx.module } : {}),
-        };
-        if (ctx.userId) {
-          event.user = { ...(event.user || {}), id: ctx.userId };
-        }
-      }
-      return event;
-    },
-    beforeBreadcrumb(breadcrumb) {
-      // Не тягнемо тіла HTTP-запитів у breadcrumbs.
-      if (breadcrumb?.category === "http" && breadcrumb.data) {
-        delete breadcrumb.data.request_body_size;
-        delete breadcrumb.data.response_body_size;
-        scrubPII(breadcrumb.data);
-      }
-      return breadcrumb;
-    },
+    beforeSend: applyBeforeSend,
+    beforeBreadcrumb: applyBeforeBreadcrumb,
   });
 
   // AI-NOTE: console.log тут навмисний — sentry.ts оцінюється ДО logger.ts

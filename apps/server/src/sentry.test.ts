@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { scrubPII } from "./sentry.js";
+import type { Breadcrumb, ErrorEvent } from "@sentry/node";
+import { applyBeforeBreadcrumb, applyBeforeSend, scrubPII } from "./sentry.js";
+
+function makeEvent(overrides: Partial<ErrorEvent> = {}): ErrorEvent {
+  return { type: undefined, ...overrides } as ErrorEvent;
+}
 
 describe("scrubPII", () => {
   it("маскує sensitive ключі у root", () => {
@@ -92,5 +97,153 @@ describe("scrubPII", () => {
     };
     scrubPII(ev);
     expect(ev.authorization).toBeNull();
+  });
+});
+
+describe("applyBeforeSend", () => {
+  it("видаляє request.data і request.cookies (raw body / cookie jar)", () => {
+    const ev = makeEvent({
+      request: {
+        url: "/api/me",
+        data: { password: "leak" },
+        cookies: { session: "leak" },
+        headers: { "user-agent": "vitest" },
+      },
+    });
+    const out = applyBeforeSend(ev);
+    expect(out.request?.data).toBeUndefined();
+    expect(out.request?.cookies).toBeUndefined();
+    // headers не видаляємо — тільки скрабимо PII-значення.
+    expect(out.request?.headers).toBeDefined();
+  });
+
+  it("скрабить sensitive headers (Authorization/Cookie)", () => {
+    const ev = makeEvent({
+      request: {
+        url: "/api/me",
+        headers: {
+          authorization: "Bearer xxx",
+          cookie: "session=yyy",
+          "user-agent": "vitest",
+        },
+      },
+    });
+    const out = applyBeforeSend(ev);
+    const headers = out.request!.headers as Record<string, unknown>;
+    expect(headers.authorization).toBe("[redacted]");
+    expect(headers.cookie).toBe("[redacted]");
+    expect(headers["user-agent"]).toBe("vitest");
+  });
+
+  // ── C1 — URL redaction для secret-bearing path-ів ────────────
+  // `docs/security/hardening/C1-mono-webhook-secret-in-url.md`
+  // Sentry capture-ить `req.originalUrl` у `event.request.url`. Якщо webhook
+  // прийшов на /api/mono/webhook/<secret>, без нашого хука секрет потрапив би
+  // в Sentry-ingest (≥ 90 днів retention за замовчуванням).
+
+  it("C1: маскує секрет у event.request.url для /api/mono/webhook/<secret>", () => {
+    const ev = makeEvent({
+      request: { url: "/api/mono/webhook/abc-very-secret-123" },
+    });
+    const out = applyBeforeSend(ev);
+    expect(out.request?.url).toBe("/api/mono/webhook/[redacted]");
+  });
+
+  it("C1: зберігає query-string при редакції webhook URL", () => {
+    const ev = makeEvent({
+      request: { url: "/api/mono/webhook/abc?retry=2" },
+    });
+    const out = applyBeforeSend(ev);
+    expect(out.request?.url).toBe("/api/mono/webhook/[redacted]?retry=2");
+  });
+
+  it("C1: маскує versioned-path /api/v1/mono/webhook/<secret>", () => {
+    const ev = makeEvent({
+      request: { url: "/api/v1/mono/webhook/secret-from-old-monobank-config" },
+    });
+    const out = applyBeforeSend(ev);
+    expect(out.request?.url).toBe("/api/v1/mono/webhook/[redacted]");
+  });
+
+  it("C1: не чіпає URL без secret-prefix-у", () => {
+    const ev = makeEvent({
+      request: { url: "/api/finyk/transactions?from=2026-01-01" },
+    });
+    const out = applyBeforeSend(ev);
+    expect(out.request?.url).toBe("/api/finyk/transactions?from=2026-01-01");
+  });
+
+  it("C1: працює, коли request.url відсутній (only-error-event)", () => {
+    const ev = makeEvent({ request: undefined });
+    const out = applyBeforeSend(ev);
+    expect(out.request).toBeUndefined();
+  });
+
+  it("залишає тільки user.id (event.user re-shape)", () => {
+    const ev = makeEvent({
+      user: {
+        id: "user_42",
+        email: "leak@example.com",
+        ip_address: "1.2.3.4",
+      },
+    });
+    const out = applyBeforeSend(ev);
+    expect(out.user).toEqual({ id: "user_42" });
+  });
+
+  it("скрабить event.extra рекурсивно", () => {
+    const ev = makeEvent({
+      extra: {
+        debug: { connectionString: "postgres://x", keep: "ok" },
+      },
+    });
+    const out = applyBeforeSend(ev);
+    const debug = (out.extra as { debug: Record<string, unknown> }).debug;
+    expect(debug.connectionString).toBe("[redacted]");
+    expect(debug.keep).toBe("ok");
+  });
+});
+
+describe("applyBeforeBreadcrumb", () => {
+  it("видаляє request_body_size / response_body_size з http breadcrumb-у", () => {
+    const bc: Breadcrumb = {
+      category: "http",
+      data: {
+        url: "/api/me",
+        request_body_size: 42,
+        response_body_size: 100,
+      },
+    };
+    const out = applyBeforeBreadcrumb(bc);
+    expect(out?.data?.request_body_size).toBeUndefined();
+    expect(out?.data?.response_body_size).toBeUndefined();
+  });
+
+  it("C1: маскує URL з секретом у http breadcrumb (outbound axios/fetch)", () => {
+    const bc: Breadcrumb = {
+      category: "http",
+      data: {
+        url: "/api/mono/webhook/leaked-secret-abc",
+        method: "POST",
+      },
+    };
+    const out = applyBeforeBreadcrumb(bc);
+    expect(out?.data?.url).toBe("/api/mono/webhook/[redacted]");
+  });
+
+  it("не чіпає не-http breadcrumb-и (console/navigation)", () => {
+    const bc: Breadcrumb = {
+      category: "console",
+      message: "log line",
+      data: { foo: "bar" },
+    };
+    const out = applyBeforeBreadcrumb(bc);
+    expect(out?.data?.foo).toBe("bar");
+  });
+
+  it("повертає breadcrumb without data незмінним", () => {
+    const bc: Breadcrumb = { category: "http" };
+    const out = applyBeforeBreadcrumb(bc);
+    expect(out).toEqual({ category: "http" });
   });
 });

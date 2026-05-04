@@ -112,6 +112,21 @@ function validPayload() {
 function makeReq(secret: string, body?: unknown): Request {
   return {
     params: { secret },
+    headers: {},
+    body: body ?? validPayload(),
+  } as unknown as Request;
+}
+
+/**
+ * Header-based webhook req — secret їде у `X-Mono-Webhook-Secret`, path-param
+ * відсутній. Це preferred-форма після C1-rollout-у; шлях у Express тоді
+ * `POST /api/mono/webhook` (без `:secret`-сегмента), тож `req.params.secret`
+ * — undefined.
+ */
+function makeHeaderReq(headerSecret: string, body?: unknown): Request {
+  return {
+    params: {},
+    headers: { "x-mono-webhook-secret": headerSecret },
     body: body ?? validPayload(),
   } as unknown as Request;
 }
@@ -349,11 +364,95 @@ describe("webhookHandler", () => {
   it("returns 404 for missing secret param", async () => {
     const req = {
       params: {},
+      headers: {},
       body: validPayload(),
     } as unknown as Request;
     const res = makeRes();
     await webhookHandler(req, res);
     expect(res.statusCode).toBe(404);
+  });
+
+  // ── C1 — X-Mono-Webhook-Secret header transport ──────────────
+  // `docs/security/hardening/C1-mono-webhook-secret-in-url.md`
+  // Secret лізе у URL-path → access-логи Railway/Sentry/Pino. Header-варіант
+  // вирішує це: header не потрапляє у `req.url`, отже не записується в
+  // access-log. Path-варіант лишається працювати як deprecated fallback,
+  // поки Monobank не мігрує на header-конфіг.
+
+  it("C1: приймає секрет через X-Mono-Webhook-Secret header (header-only, path порожній)", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+    });
+    const client = makeClient();
+    queueHappyPathClient(client, { inserted: true });
+    pool.connect.mockResolvedValue(client);
+
+    const res = makeRes();
+    await webhookHandler(makeHeaderReq(VALID_SECRET), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(counter.inc).toHaveBeenCalledWith({ status: "ok" });
+    // Lookup мусить відбутись по тому самому secret-hash, що й path-варіант.
+    expect(dbQuery).toHaveBeenCalledTimes(1);
+    expect(pool.connect).toHaveBeenCalledTimes(1);
+  });
+
+  it("C1: header виграє при колізії з path (forward-compat для rollout-у)", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+    });
+    const client = makeClient();
+    queueHappyPathClient(client, { inserted: true });
+    pool.connect.mockResolvedValue(client);
+
+    // Якщо Monobank ще шле path-secret, але мі вже додали header у proxy/CDN
+    // — header має пріоритет. Path тут — заведомо невалідний.
+    const req = {
+      params: { secret: "old-path-secret-not-valid" },
+      headers: { "x-mono-webhook-secret": VALID_SECRET },
+      body: validPayload(),
+    } as unknown as Request;
+
+    const res = makeRes();
+    await webhookHandler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(counter.inc).toHaveBeenCalledWith({ status: "ok" });
+  });
+
+  it("C1: 404 коли header і path обидва порожні", async () => {
+    const req = {
+      params: {},
+      headers: {},
+      body: validPayload(),
+    } as unknown as Request;
+    const res = makeRes();
+    await webhookHandler(req, res);
+    expect(res.statusCode).toBe(404);
+    expect(counter.inc).toHaveBeenCalledWith({ status: "invalid_secret" });
+  });
+
+  it("C1: ігнорує header-array (defensive — Express нормалізує, але safe-by-default)", async () => {
+    // Якщо Express колись поверне `string[]` у headers (rare, в обхід
+    // proxy-нормалізації), ми трактуємо це як відсутність header-у і не
+    // crash-имо. Тоді fallback на path-secret.
+    dbQuery.mockResolvedValueOnce({
+      rows: [{ user_id: "user_1", webhook_secret: VALID_SECRET }],
+    });
+    const client = makeClient();
+    queueHappyPathClient(client, { inserted: true });
+    pool.connect.mockResolvedValue(client);
+
+    const req = {
+      params: { secret: VALID_SECRET },
+      headers: { "x-mono-webhook-secret": ["a", "b"] },
+      body: validPayload(),
+    } as unknown as Request;
+
+    const res = makeRes();
+    await webhookHandler(req, res);
+    expect(res.statusCode).toBe(200);
   });
 
   it("маппить mcc → category_slug і передає його у INSERT (Monobank Roadmap C)", async () => {
