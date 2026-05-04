@@ -11,6 +11,7 @@ import {
   countCheckboxes,
   validate,
   REQUIRED_SECTIONS,
+  SECTIONS_REQUIRING_ALL_TICKED,
 } from "../validate-pr-body.mjs";
 
 // A minimal body that satisfies the validator. Mirrors the post-`0318b8a6`
@@ -66,8 +67,8 @@ Updated docs:
 ## Hard Rule #15
 
 - [x] I read \`AGENTS.md\` before coding.
-- [ ] Internal docs I touched are in Ukrainian.
-- [ ] I did not use \`--no-verify\`.
+- [x] Internal docs I touched are in Ukrainian.
+- [x] I did not use \`--no-verify\`.
 
 ## Reviewer Notes
 
@@ -125,13 +126,42 @@ describe("validate", () => {
   });
 
   it("rejects a body where Hard Rule #15 has no ticked box", () => {
+    const body = VALID_BODY.replaceAll("- [x]", "- [ ]");
+    const r = validate(body);
+    assert.equal(r.ok, false);
+    assert.match(r.errors.join("\n"), /Hard Rule #15/);
+  });
+
+  it("rejects a body where Hard Rule #15 has only 1 of 3 ticked", () => {
+    // Untick the second and third boxes — historical "≥1 ticked" loophole.
     const body = VALID_BODY.replace(
-      "- [x] I read `AGENTS.md`",
-      "- [ ] I read `AGENTS.md`",
+      "- [x] Internal docs I touched are in Ukrainian.",
+      "- [ ] Internal docs I touched are in Ukrainian.",
+    ).replace(
+      "- [x] I did not use `--no-verify`.",
+      "- [ ] I did not use `--no-verify`.",
+    );
+    const r = validate(body);
+    assert.equal(r.ok, false, "expected strict 3-of-3 validator to fail");
+    assert.match(r.errors.join("\n"), /Hard Rule #15/);
+    assert.match(r.errors.join("\n"), /unticked checkbox/);
+  });
+
+  it("rejects a body where Hard Rule #15 has 2 of 3 ticked", () => {
+    const body = VALID_BODY.replace(
+      "- [x] I did not use `--no-verify`.",
+      "- [ ] I did not use `--no-verify`.",
     );
     const r = validate(body);
     assert.equal(r.ok, false);
     assert.match(r.errors.join("\n"), /Hard Rule #15/);
+  });
+
+  it("accepts a body where Hard Rule #15 has all 3 ticked", () => {
+    // Sanity: VALID_BODY already has all 3 ticked. This locks the contract.
+    const r = validate(VALID_BODY);
+    assert.equal(r.ok, true, JSON.stringify(r.errors));
+    assert.deepEqual(SECTIONS_REQUIRING_ALL_TICKED, ["Hard Rule #15"]);
   });
 
   it("rejects a body where Docs and Governance has no ticked box", () => {

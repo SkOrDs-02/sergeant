@@ -44,10 +44,17 @@ export const REQUIRED_SECTIONS = [
 
 // Sections where at least one checkbox must be ticked. Each entry is the
 // heading text; the validator scans checkboxes until the next H2.
-// `Hard Rule #15` is the new home of the historical `Pre-flight` checkboxes;
 // `Docs and Governance` is the new home of the historical `Docs updated
-// alongside code?` checkboxes.
-export const SECTIONS_REQUIRING_TICK = ["Hard Rule #15", "Docs and Governance"];
+// alongside code?` checkboxes; ≥1 ticked is enough because the explicit
+// `N/A — no docs invalidated…` box counts as a ticked acknowledgement.
+export const SECTIONS_REQUIRING_TICK = ["Docs and Governance"];
+
+// Sections where every checkbox MUST be ticked. `Hard Rule #15` is special:
+// each of its three boxes is a binary, factually-verifiable commitment
+// (read AGENTS.md, internal docs in Ukrainian, no `--no-verify`). Allowing
+// authors to tick only one degrades the registry — initiative 0011 phase 1
+// closes that gap by requiring all three.
+export const SECTIONS_REQUIRING_ALL_TICKED = ["Hard Rule #15"];
 
 // ── Pure helpers (exported for tests) ────────────────────────────────────────
 
@@ -121,6 +128,22 @@ export function validate(body) {
     if (ticked === 0) {
       errors.push(
         `Section \`## ${required}\` has no ticked checkboxes. Tick at least one (or the explicit N/A box).`,
+      );
+    }
+  }
+
+  for (const required of SECTIONS_REQUIRING_ALL_TICKED) {
+    const section = sections.find((s) => s.heading === required);
+    if (!section) continue; // already flagged above
+    const { ticked, unticked } = countCheckboxes(section.body);
+    if (ticked + unticked === 0) {
+      errors.push(
+        `Section \`## ${required}\` has no checkboxes. Restore the template boxes and tick all of them.`,
+      );
+    } else if (unticked > 0) {
+      errors.push(
+        `Section \`## ${required}\` has ${unticked} unticked checkbox(es); all ${ticked + unticked} must be ticked. ` +
+          `Each commitment is binary and factually-verifiable — partial ticking degrades the registry.`,
       );
     }
   }
