@@ -1,14 +1,17 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef } from "react";
+import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { useToast } from "@shared/hooks/useToast";
+import { useApiForm } from "@shared/forms/useApiForm";
 import { waitlistApi } from "@shared/api";
 import { isApiError } from "@sergeant/api-client";
 import {
   type WaitlistSource,
   type WaitlistTier,
-  WaitlistSubmitSchema,
+  type WaitlistSubmitResponse,
+  WaitlistTierSchema,
 } from "@sergeant/shared";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 
@@ -53,6 +56,25 @@ export interface WaitlistFormProps {
   className?: string;
 }
 
+/**
+ * Форм-схема — підмножина `WaitlistSubmitSchema` з `@sergeant/shared`:
+ * `source` приходить пропсом і не редагується, тому виносимо його зі
+ * scope-у форми. Месиджі помилок збігаються з тими, що повертає сервер
+ * (Hard Rule #15: UA), щоб 400-валідація з бекенду і клієнтська помилка
+ * виглядали для користувача однаково.
+ */
+const waitlistFormSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Некоректна email-адреса")
+    .max(254, "Не більше 254 символів"),
+  tier_interest: WaitlistTierSchema,
+});
+
+type WaitlistFormValues = z.infer<typeof waitlistFormSchema>;
+
 export function WaitlistForm({
   source,
   defaultTier,
@@ -60,35 +82,51 @@ export function WaitlistForm({
   className,
 }: WaitlistFormProps) {
   const toast = useToast();
-  const [email, setEmail] = useState("");
-  const [tier, setTier] = useState<WaitlistTier>(defaultTier ?? "unsure");
-  const [pending, setPending] = useState(false);
-  const [emailError, setEmailError] = useState<string | null>(null);
+  // 429 — rate-limit ловимо окремим toast-ом і прибираємо top-level
+  // serverError-банер (інакше дублюємо повідомлення). Цей ref ставиться
+  // у `onSubmit` при rate-limit і скидається на наступному успішному
+  // submit / у `clearServerError`.
+  const rateLimitedRef = useRef(false);
 
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ): Promise<void> {
-    event.preventDefault();
-    setEmailError(null);
-
-    // Локальна валідація перед мережевим викликом — даємо швидкий
-    // feedback. Сервер усе одно валідує знову (rate-limit + Zod).
-    const parsed = WaitlistSubmitSchema.safeParse({
-      email,
-      tier_interest: tier,
-      source,
-    });
-    if (!parsed.success) {
-      const issue = parsed.error.issues.find((i) => i.path[0] === "email");
-      setEmailError(issue?.message ?? "Перевір email");
-      return;
-    }
-
-    setPending(true);
-    try {
-      const res = await waitlistApi.submit(parsed.data);
+  // `useApiForm` зводить zod-валідацію + isSubmitting + server-error mapping
+  // в один hook. 400-помилка з `details: [{path, message}]` від сервера
+  // автоматично кладеться у `formState.errors`; top-level `error` — у
+  // `serverError`. 429 (rate-limit) показуємо окремим toast-ом, щоб не
+  // конфліктувати з emailError у тій же позиції.
+  const {
+    register,
+    submit,
+    formState,
+    watch,
+    isSubmitting,
+    serverError,
+    reset,
+    clearServerError,
+  } = useApiForm<WaitlistFormValues, WaitlistSubmitResponse>({
+    schema: waitlistFormSchema,
+    defaultValues: {
+      email: "",
+      tier_interest: defaultTier ?? "unsure",
+    },
+    onSubmit: async (values) => {
+      rateLimitedRef.current = false;
+      try {
+        return await waitlistApi.submit({
+          email: values.email,
+          tier_interest: values.tier_interest,
+          source,
+        });
+      } catch (err) {
+        if (isApiError(err) && err.status === 429) {
+          rateLimitedRef.current = true;
+          toast.error("Забагато запитів. Спробуй за годину.");
+        }
+        throw err;
+      }
+    },
+    onSuccess: (res, values) => {
       trackEvent(ANALYTICS_EVENTS.WAITLIST_SUBMITTED, {
-        tier_interest: parsed.data.tier_interest,
+        tier_interest: values.tier_interest,
         source,
         created: res.created,
       });
@@ -97,24 +135,45 @@ export function WaitlistForm({
       } else {
         toast.info("Ми вже памʼятаємо твій інтерес — жодних дублікатів.");
       }
-      setEmail("");
+      reset({ email: "", tier_interest: values.tier_interest });
       onSuccess?.(res.created);
-    } catch (err) {
-      if (isApiError(err) && err.status === 429) {
-        toast.error("Забагато запитів. Спробуй за годину.");
-      } else if (isApiError(err) && err.status === 400) {
-        setEmailError("Перевір email-адресу");
-      } else {
-        toast.error("Не вдалося зберегти. Спробуй ще раз.");
-      }
-    } finally {
-      setPending(false);
+    },
+  });
+
+  // Якщо submit упав через 429, ефект після першого render-у з
+  // `serverError !== null` чистить банер: `applyServerError` уже встиг
+  // повернути серверний error-текст, але користувач бачить toast і не
+  // потребує дубля у формі.
+  useEffect(() => {
+    if (rateLimitedRef.current && serverError) {
+      rateLimitedRef.current = false;
+      clearServerError();
     }
-  }
+  }, [serverError, clearServerError]);
+
+  // Якщо preset tier змінився ззовні (батьківський компонент перерендерив
+  // форму з іншим defaultTier — напр. користувач клікнув іншу tier-картку
+  // у `/pricing`), синхронізуємо це з form-state. RHF не реєструє defaults
+  // після першого `useForm`, тому без цього effect-у форма залишилась би
+  // на старому виборі.
+  useEffect(() => {
+    if (defaultTier) {
+      reset({
+        email: watch("email") ?? "",
+        tier_interest: defaultTier,
+      });
+    }
+    // `reset` із RHF стабільний; `watch` не запускає лишніх render-ів через
+    // те, що ми його викликаємо вручну.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultTier]);
+
+  const tierValue = watch("tier_interest");
+  const emailErrorMessage = formState.errors.email?.message;
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={submit}
       className={className}
       noValidate
       aria-label="Підписатись на waitlist Pro-тіру"
@@ -126,20 +185,22 @@ export function WaitlistForm({
             id="waitlist-email"
             type="email"
             placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.currentTarget.value)}
             autoComplete="email"
-            required
-            disabled={pending}
-            aria-invalid={emailError ? true : undefined}
-            aria-describedby={emailError ? "waitlist-email-error" : undefined}
+            disabled={isSubmitting}
+            error={!!emailErrorMessage}
+            aria-invalid={emailErrorMessage ? true : undefined}
+            aria-describedby={
+              emailErrorMessage ? "waitlist-email-error" : undefined
+            }
+            {...register("email")}
           />
-          {emailError && (
+          {emailErrorMessage && (
             <p
               id="waitlist-email-error"
               className="mt-1 text-xs text-danger-strong"
+              role="alert"
             >
-              {emailError}
+              {emailErrorMessage}
             </p>
           )}
         </div>
@@ -150,7 +211,7 @@ export function WaitlistForm({
           </legend>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {TIER_OPTIONS.map((opt) => {
-              const checked = tier === opt.value;
+              const checked = tierValue === opt.value;
               const inputId = `waitlist-tier-${opt.value}`;
               return (
                 <label
@@ -167,12 +228,10 @@ export function WaitlistForm({
                   <input
                     id={inputId}
                     type="radio"
-                    name="waitlist-tier"
                     value={opt.value}
-                    checked={checked}
-                    onChange={() => setTier(opt.value)}
                     className="mt-1 accent-brand-strong"
-                    disabled={pending}
+                    disabled={isSubmitting}
+                    {...register("tier_interest")}
                   />
                   <span className="flex flex-col">
                     <span className="text-style-label text-text">
@@ -186,7 +245,22 @@ export function WaitlistForm({
           </div>
         </fieldset>
 
-        <Button type="submit" variant="primary" size="lg" loading={pending}>
+        {serverError && (
+          <p
+            className="text-xs text-danger-strong"
+            role="alert"
+            data-testid="waitlist-server-error"
+          >
+            {serverError}
+          </p>
+        )}
+
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          loading={isSubmitting}
+        >
           Підписатись на waitlist
         </Button>
 
