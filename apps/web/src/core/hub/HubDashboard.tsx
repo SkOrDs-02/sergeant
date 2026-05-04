@@ -35,6 +35,7 @@ import {
 import { useCoachInsight } from "../insights/useCoachInsight";
 import { AssistantAdviceCard } from "../insights/AssistantAdviceCard";
 import { SoftAuthPromptCard } from "../onboarding/SoftAuthPromptCard";
+import { DemoModeBanner } from "../onboarding/DemoModeBanner";
 import { FirstActionHeroCard } from "../onboarding/FirstActionSheet";
 import { detectFirstRealEntry } from "../onboarding/firstRealEntry";
 import {
@@ -471,6 +472,11 @@ export function HubDashboard({
   // Stable group indices keep the reveal under ~250ms and predictable.
   return (
     <div className={DENSITY_OUTER_SPACE[density]}>
+      {/* S4.1 demo banner — only renders when localStorage holds a
+          seeded demo payload (`hub_demo_seeded_social_v1`). Sits above
+          the hero block so the «Це приклад» framing precedes any of
+          the metric cards below. */}
+      <DemoModeBanner />
       {/* GROUP 0 — Hero block (re-engagement OR streak + hero + checklist) */}
       <StaggerChild index={0}>
         <div className="space-y-4">

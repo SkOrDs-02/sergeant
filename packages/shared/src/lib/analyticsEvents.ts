@@ -150,6 +150,20 @@ export const ANALYTICS_EVENTS = Object.freeze({
   PRICING_VIEWED: "pricing_viewed",
   PRICING_CTA_CLICKED: "pricing_cta_clicked",
   WAITLIST_SUBMITTED: "waitlist_submitted",
+
+  // Demo mode (S4.1 of `docs/launch/ftux-sprint-plan.md`). The welcome
+  // screen ships a "Подивитись приклад" CTA that seeds a fake hub
+  // payload in localStorage; once the user lands inside the hub, a
+  // banner offers them a one-tap path back to the real onboarding
+  // wizard. Events are kept off the FTUX funnel so demo browsing
+  // doesn't inflate `onboarding_started` cohorts. Expected payloads:
+  //
+  //   DEMO_STARTED                { source: "welcome" | "deeplink" }
+  //   DEMO_DISMISSED              {}  // banner X
+  //   DEMO_TO_WIZARD_CONFIRMED    {}  // banner CTA → /welcome
+  DEMO_STARTED: "demo_started",
+  DEMO_DISMISSED: "demo_dismissed",
+  DEMO_TO_WIZARD_CONFIRMED: "demo_to_wizard_confirmed",
 } as const);
 
 export type AnalyticsEventName =
