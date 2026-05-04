@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { createHash } from "crypto";
 import { rateLimitExpress } from "./rateLimit.js";
+import { policyOptions } from "../config/rateLimit.js";
 import { env } from "../env.js";
 import { logger } from "../obs/logger.js";
 import { authAttemptsTotal } from "../obs/metrics.js";
@@ -32,12 +33,14 @@ export function authSensitiveRateLimit(
     next();
     return;
   }
-  rateLimitExpress({
-    key: "api:auth:sensitive",
-    limit: 20,
-    windowMs: 60_000,
-    failMode: env.RATE_LIMIT_FAIL_CLOSED_AUTH ? "closed" : "open",
-  })(req, res, next);
+  rateLimitExpress(
+    policyOptions("api:auth:sensitive", {
+      // Env var — runtime kill-switch (set `RATE_LIMIT_FAIL_CLOSED_AUTH=false`
+      // щоб revert у open-mode без redeploy-у). Реєстр тримає `failMode:
+      // "closed"` як safe default; override-ить тільки якщо явно вимкнено.
+      failMode: env.RATE_LIMIT_FAIL_CLOSED_AUTH ? "closed" : "open",
+    }),
+  )(req, res, next);
 }
 
 /**

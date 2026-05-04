@@ -546,6 +546,16 @@ export function rateLimitExpress({
     // doesn't grow under churning IPs. No-op when Postgres is degraded.
     void maybeSweepPgBuckets(windowMs);
     try {
+      // RFC-9239 (draft-ietf-httpapi-ratelimit-headers) `RateLimit-*`
+      // headers — це сучасний стандарт; lib-cli (better-fetch / axios-
+      // retry-rate-limit) уже їх читають. Тримаємо також старий
+      // `X-RateLimit-Remaining` для backward-compat: дашборди і custom-
+      // клієнти, які гребли на тому хедері, не зламаються до окремого
+      // PR-а на cleanup.
+      const resetSec = Math.max(1, Math.ceil(rl.resetMs / 1000));
+      res.setHeader("RateLimit-Limit", String(limit));
+      res.setHeader("RateLimit-Remaining", String(rl.remaining));
+      res.setHeader("RateLimit-Reset", String(resetSec));
       res.setHeader("X-RateLimit-Remaining", String(rl.remaining));
     } catch {
       /* ignore */
