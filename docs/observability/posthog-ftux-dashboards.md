@@ -1,6 +1,6 @@
 # PostHog FTUX dashboards — runbook
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-01.
 > **Status:** Active
 
 Operational runbook for PostHog (Cloud EU) dashboards that monitor the
@@ -31,18 +31,21 @@ are normative for all `trackEvent(...)` callsites.
 ## 1. Where this lives in PostHog
 
 - **Account:** Sergeant Cloud EU (host `https://eu.i.posthog.com`).
-- **Project:** `sergeant-prod` (separate `sergeant-staging` project for
-  preview deployments — same dashboards, separate data).
-- **Folder:** `Dashboards → FTUX` — five insights below + one umbrella
-  dashboard `FTUX overview` that pins all five tiles in a 2×3 grid.
+- **Project:** `Default project` (id `167740`, prod token `phc_A8dsj…`).
+  Separate `dev serg` project (id `167756`, token `phc_mSvKK…`) covers
+  preview deployments — same dashboards, separate data.
+- **Folder:** [`Dashboards → FTUX overview`](https://eu.posthog.com/project/167740/dashboard/660031)
+  (id `660031`) — five insights below pinned to one umbrella dashboard.
+  Public shareable read-only mirror: [`shared/BUeYAKM…`](https://eu.posthog.com/shared/BUeYAKMJiAKLFfxexqYVD7cyJlo_2A).
 - **Permissions:** founders + on-call SRE have `Dashboard collaborator`.
   Anyone else with PostHog access can view but not edit.
 
-> **Founder-task:** create the five insights via PostHog UI (HogQL +
-> Insight builder), pin to `FTUX overview` dashboard, paste live links
-> back into the «Screenshot» column of §3 below. Until then the table
-> uses placeholder URLs — links are dead in this commit on purpose so
-> the diff is review-friendly.
+> **Founder-task status (2026-05-04):** the five insights and the
+> umbrella dashboard are created via PostHog API (see §3 for live
+> links). `VITE_POSTHOG_KEY` / `VITE_POSTHOG_HOST` are wired in Vercel
+> for both `production` and `preview` targets. Live screenshots will
+> populate inside each insight tile as soon as `onboarding_started`
+> traffic lands in `Default project`.
 
 ---
 
@@ -134,8 +137,10 @@ sprint depends on.
 
 **Targets:** see [§5](#5-alert-thresholds).
 
-**Screenshot:** _TBD founder-task — paste PostHog `Dashboards → FTUX →
-Activation funnel` link here once created._
+**Live insight:** [PostHog → Default project → Insights → `FTUX —
+Activation funnel`](https://eu.posthog.com/project/167740/insights/CAFlb0aB)
+(short_id `CAFlb0aB`, id `4067227`). Public read-only mirror:
+[`shared/U9UPIw5…`](https://eu.posthog.com/shared/U9UPIw5Qg0akOR2bMaWnWfh2ZRfqNQ).
 
 ### 3.2 TTV histogram
 
@@ -167,7 +172,9 @@ preset path and the manual path are diverging.
 p95 < 600 sec (10 min) — anything beyond is a stuck user, not a slow
 one.
 
-**Screenshot:** _TBD founder-task._
+**Live insight:** [PostHog → `FTUX — TTV histogram`](https://eu.posthog.com/project/167740/insights/P5LTH7Lx)
+(short_id `P5LTH7Lx`, id `4067225`). Public read-only mirror:
+[`shared/oCa-3B7…`](https://eu.posthog.com/shared/oCa-3B79r1fUKK0nBJZtO68TNiUskA).
 
 ### 3.3 Vibe → first-entry per module
 
@@ -200,7 +207,9 @@ GROUP BY vibe, first_entry_module
 ORDER BY users DESC
 ```
 
-**Screenshot:** _TBD founder-task._
+**Live insight:** [PostHog → `FTUX — Vibe → first-entry per module`](https://eu.posthog.com/project/167740/insights/tP7zi64v)
+(short_id `tP7zi64v`, id `4067226`). Public read-only mirror:
+[`shared/upU4TJs…`](https://eu.posthog.com/shared/upU4TJsJ9bPcXRplrcdmQaPBs3Aceg).
 
 ### 3.4 D1/D7 retention by signup-cohort
 
@@ -218,7 +227,9 @@ whether the FTUX promise sustained beyond a single session of curiosity.
 [`ftux-sprint-plan.md` §8](../launch/ftux-sprint-plan.md#8-roll-up-success-metrics-dashboard) —
 update both files together when the first 28 days of data land).
 
-**Screenshot:** _TBD founder-task._
+**Live insight:** [PostHog → `FTUX — D1/D7 retention by signup-cohort`](https://eu.posthog.com/project/167740/insights/zUCGdOKV)
+(short_id `zUCGdOKV`, id `4067228`). Public read-only mirror:
+[`shared/pdN2Nh3…`](https://eu.posthog.com/shared/pdN2Nh361uXIMuGZTfBpEUXp88jIXg).
 
 ### 3.5 Celebration drop-off
 
@@ -240,13 +251,17 @@ CelebrationModal headlines, see
 [`ftux-sprint-plan.md` §5](../launch/ftux-sprint-plan.md#5-sprint-3--reward-у-правильний-момент--value-progress-2-тижні))
 needs to ship.
 
-**Screenshot:** _TBD founder-task._
+**Live insight:** [PostHog → `FTUX — Celebration drop-off`](https://eu.posthog.com/project/167740/insights/tl8c3e1T)
+(short_id `tl8c3e1T`, id `4067229`). Public read-only mirror:
+[`shared/aKbPKJG…`](https://eu.posthog.com/shared/aKbPKJGCE0zW5dSl56gU1PhExMQ1UQ).
 
 ---
 
 ## 4. Umbrella dashboard
 
-`Dashboards → FTUX overview` pins:
+[`Dashboards → FTUX overview`](https://eu.posthog.com/project/167740/dashboard/660031)
+(id `660031`, public mirror: [`shared/BUeYAKM…`](https://eu.posthog.com/shared/BUeYAKMJiAKLFfxexqYVD7cyJlo_2A))
+pins:
 
 | Slot | Tile                                                                                                             |
 | ---- | ---------------------------------------------------------------------------------------------------------------- |
