@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-04 by Devin — **Stage 1 COMPLETE; Stage 4 Finyk Mono mirror in CI; Stage 5 op-log v2 hardening in flight.** Stage 1: all 8/8 PRs landed (PR #008 `ff217246`, PR #010 [#1543](https://github.com/Skords-01/Sergeant/pull/1543), PR #013 via 4 sub-PRs). Stage 4 Fizruk: 5/5 PRs merged (PR #027–#030 + #029a). Stage 4 Nutrition: PR #031 / #032 / #033 LANDED ([#1574](https://github.com/Skords-01/Sergeant/pull/1574)), PR #034 LANDED ([#1636](https://github.com/Skords-01/Sergeant/pull/1636)). Stage 4 Finyk: PR #035 LANDED ([#1667](https://github.com/Skords-01/Sergeant/pull/1667) — schema + apply-fns), PR #036 LANDED ([#1680](https://github.com/Skords-01/Sergeant/pull/1680) — dual-write web + mobile), PR #037 LANDED (`c89870c6` — read-overlay web + mobile under `feature.finyk.sqlite_v2.read_sqlite`, default off), PR #038 IN CI (Mono cache mirror у `finyk_mono_*` SQLite таблицях під `feature.finyk.sqlite_v2.mono_mirror`, default off). Stage 5: PR #040 LANDED (`ec1f3820` — persistent op-log retry policy у SQLite), PR #041 IN CI ([#1721](https://github.com/Skords-01/Sergeant/pull/1721) — SSE pull stream), PR #043 LANDED ([#1734](https://github.com/Skords-01/Sergeant/pull/1734) — G-set CRDT для `nutrition_meals` із tombstone інваріантом + 3 інтеграційні тести), PR #048 LANDED ([#1737](https://github.com/Skords-01/Sergeant/pull/1737) — RED-метрики `sync_op_log_apply_total` / `sync_op_log_pull_lag_ms` / `sync_op_log_pull_queue_depth` + 4 нові Grafana панелі в `sync.json`). PR #042 (PN-counter for `routine_streaks`) deferred — потребує protocol-зміни (новий op kind `increment` у CHECK constraint + zod + DB migration); see PR #042 entry below. Stage 0: PR #003 LANDED ([#1497](https://github.com/Skords-01/Sergeant/pull/1497)). Boot-wiring follow-up для `register{Routine,Fizruk,Nutrition}DualWriteContext` ще не залендили. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by Devin — **Stage 1 COMPLETE; Stage 4 Finyk Mono mirror in CI; Stage 5 op-log v2 hardening in flight.** Stage 1: all 8/8 PRs landed (PR #008 `ff217246`, PR #010 [#1543](https://github.com/Skords-01/Sergeant/pull/1543), PR #013 via 4 sub-PRs). Stage 4 Fizruk: 5/5 PRs merged (PR #027–#030 + #029a). Stage 4 Nutrition: PR #031 / #032 / #033 LANDED ([#1574](https://github.com/Skords-01/Sergeant/pull/1574)), PR #034 LANDED ([#1636](https://github.com/Skords-01/Sergeant/pull/1636)). Stage 4 Finyk: PR #035 LANDED ([#1667](https://github.com/Skords-01/Sergeant/pull/1667) — schema + apply-fns), PR #036 LANDED ([#1680](https://github.com/Skords-01/Sergeant/pull/1680) — dual-write web + mobile), PR #037 LANDED (`c89870c6` — read-overlay web + mobile under `feature.finyk.sqlite_v2.read_sqlite`, default off), PR #038 IN CI (Mono cache mirror у `finyk_mono_*` SQLite таблицях під `feature.finyk.sqlite_v2.mono_mirror`, default off). Stage 5: PR #040 LANDED (`ec1f3820` — persistent op-log retry policy у SQLite), PR #041 IN CI ([#1721](https://github.com/Skords-01/Sergeant/pull/1721) — SSE pull stream), PR #043 LANDED ([#1734](https://github.com/Skords-01/Sergeant/pull/1734) — G-set CRDT для `nutrition_meals` із tombstone інваріантом + 3 інтеграційні тести), PR #043a LANDED ([#1739](https://github.com/Skords-01/Sergeant/pull/1739) — tombstone-resurrection guard для routine + 5 fizruk apply-функцій + 6 інтеграційних кейсів), PR #043b IN CI ([#1743](https://github.com/Skords-01/Sergeant/pull/1743) — той самий guard для 3 nutrition non-meals apply-функцій + 2 finyk хелперів, які покривають усі 10 finyk soft-delete таблиць + 7 інтеграційних кейсів; разом із PR #043a закриває per-table TODO з PR #043), PR #048 LANDED ([#1737](https://github.com/Skords-01/Sergeant/pull/1737) — RED-метрики `sync_op_log_apply_total` / `sync_op_log_pull_lag_ms` / `sync_op_log_pull_queue_depth` + 4 нові Grafana панелі в `sync.json`). PR #042 (PN-counter for `routine_streaks`) deferred — потребує protocol-зміни (новий op kind `increment` у CHECK constraint + zod + DB migration); see PR #042 entry below. Stage 0: PR #003 LANDED ([#1497](https://github.com/Skords-01/Sergeant/pull/1497)). Boot-wiring follow-up для `register{Routine,Fizruk,Nutrition}DualWriteContext` ще не залендили. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -1233,7 +1233,34 @@ recreate indexes`) у `packages/db-schema/src/sqlite/migrations/index.ts`,
   merge). Docstring документує G-set інваріант inline.
 - Note. Цей самий resurrection-via-update guard формально лишається
   TODO для `fizruk_workouts`/`finyk_*`/`routine_entries` apply-шляхів
-  — окрема сесія per-table.
+  — окрема сесія per-table. **Закрито PR #043a + PR #043b (нижче).**
+
+#### **PR #043a — `feat(server): tombstone resurrection guard for routine + fizruk apply paths`** ✅ LANDED ([#1739](https://github.com/Skords-01/Sergeant/pull/1739))
+
+- Scope. Дзеркалить інваріант із PR #043 на 6 інших soft-delete
+  apply-функціях: `applyRoutineEntries`, `applyFizrukWorkouts`,
+  `applyFizrukItems`, `applyFizrukSets`, `applyFizrukCustomExercises`,
+  `applyFizrukMeasurements`.
+- **Done (2026-05-04).** Кожна apply-функція тепер `SELECT`-ить
+  `deleted_at` поряд із `user_id`/`updated_at`; після LWW-guard-а додано
+  явну перевірку — якщо ряд tombstoned і `op !== "delete"`, повертаємо
+  `status='rejected', reason='tombstoned'`. `op='delete'` лишається
+  ідемпотентним. 6 нових інтеграційних кейсів у `syncV2.integration.test.ts`
+  (insert → delete → resurrect attempt → reject; final state: `deleted_at`
+  != null, оригінальні поля незмінні).
+- **Dep.** PR #043.
+
+#### **PR #043b — `feat(server): tombstone resurrection guard for nutrition + finyk apply paths`** 🚧 IN CI ([#1743](https://github.com/Skords-01/Sergeant/pull/1743))
+
+- Scope. Закриває залишок per-table TODO з PR #043: 3 nutrition non-meals
+  apply-функції (`applyNutritionPantries`, `applyNutritionPantryItems`,
+  `applyNutritionRecipes`) + 2 finyk хелпери, які покривають усі 10
+  finyk soft-delete таблиць (`applyFinykTombstone` — 2 composite-PK,
+  `applyFinykPerRowBlob` — 8 per-row + JSONB).
+- **Stage.** Implementation + 7 нових інтеграційних кейсів готові; PR
+  відкрито, очікуємо CI. Разом із PR #043a повністю покриває весь
+  сімейство soft-delete apply-шляхів.
+- **Dep.** PR #043, PR #043a.
 
 #### **PR #044 — `feat(sync): conflict resolution UI for finyk_manual_expenses`**
 
