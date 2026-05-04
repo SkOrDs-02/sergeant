@@ -1,7 +1,7 @@
 # S1 — Чесний value-prop · post-mortem (live)
 
-> **Last validated:** 2026-05-04 by @Skords-01 (S1.3 + S1.4 виконані).
-> **Status:** Active — спринт у роботі. Документ оновлюється після кожного S1.x merge-у.
+> **Last validated:** 2026-05-04 by @Skords-01 (S1.3 + S1.4 + S1.5 виконані; cherry-pick S2.4 + S3.4 також).
+> **Status:** Active — спринт у роботі. Документ оновлюється після кожного S×.× merge-у.
 
 > Зворотний зв'язок до [`docs/launch/ftux-sprint-plan.md` §3](../ftux-sprint-plan.md#3-sprint-1--честний-value-prop-2-тижні).
 >
@@ -11,15 +11,17 @@
 
 ## 1. Шкала виконання
 
-| PR-id    | Назва                                                | Статус  | Дата       | Нотатка                                                                                                                                |
-| -------- | ---------------------------------------------------- | ------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **S1.3** | refactor(onboarding): remove wizard-confetti         | ✅ DONE | 2026-05-04 | [PR #1609](https://github.com/Skords-01/Sergeant/pull/1609). Mobile parity була раніше — mobile-wizard без CelebrationModal на finish. |
-| **S1.4** | feat(welcome): peek backdrop disclaimer              | ✅ DONE | 2026-05-04 | [PR #1610](https://github.com/Skords-01/Sergeant/pull/1610). Web-only — mobile-wizard без peek-backdrop.                               |
-| **S1.1** | feat(onboarding): rewrite hero copy (benefit-driven) | ❌ TODO | —          | Заблокований copy-reviewer-ом (founder-friend / маркетолог / ЦА).                                                                      |
-| **S1.2** | feat(onboarding): outcome CTA on welcome             | ❌ TODO | —          | Залежить від S1.1.                                                                                                                     |
-| **S1.5** | refactor(onboarding): rename "Налаштувати модулі"    | ❌ TODO | —          | Без deps і без copy-reviewer-а (фіксована copy у specs) — наступний кандидат у роботу.                                                 |
+| PR-id    | Назва                                                | Статус  | Дата       | Нотатка                                                                                                                                      |
+| -------- | ---------------------------------------------------- | ------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **S1.3** | refactor(onboarding): remove wizard-confetti         | ✅ DONE | 2026-05-04 | [PR #1609](https://github.com/Skords-01/Sergeant/pull/1609). Mobile parity була раніше — mobile-wizard без CelebrationModal на finish.       |
+| **S1.4** | feat(welcome): peek backdrop disclaimer              | ✅ DONE | 2026-05-04 | [PR #1610](https://github.com/Skords-01/Sergeant/pull/1610). Web-only — mobile-wizard без peek-backdrop.                                     |
+| **S1.1** | feat(onboarding): rewrite hero copy (benefit-driven) | ❌ TODO | —          | Заблокований copy-reviewer-ом (founder-friend / маркетолог / ЦА).                                                                            |
+| **S1.2** | feat(onboarding): outcome CTA on welcome             | ❌ TODO | —          | Залежить від S1.1.                                                                                                                           |
+| **S1.5** | refactor(onboarding): rename "Налаштувати модулі"    | ✅ DONE | 2026-05-04 | [PR #1617](https://github.com/Skords-01/Sergeant/pull/1617). Web-only — mobile-wizard показує description інлайн, без expand-toggle.         |
+| **S2.4** | refactor(finyk): preset sub-tile copy hints          | ✅ DONE | 2026-05-04 | [PR #1618](https://github.com/Skords-01/Sergeant/pull/1618). Cherry-pick зі Sprint 2 — без deps. «їжа · введи суму» → «як правило ~60–95 ₴». |
+| **S3.4** | refactor(hub): MotivationalFooter conditional        | ✅ DONE | 2026-05-04 | [PR #1619](https://github.com/Skords-01/Sergeant/pull/1619). Cherry-pick зі Sprint 3 — римується з S1 (drop fake-reassurance).               |
 
-**Виконано:** 2/5. Активне працювання — S1.3 + S1.4 (cleanup-ланка), решта чекає copy-reviewer-а або має одного-два item-и роботи.
+**Виконано у S1:** 3/5. Плюс cherry-pick S2.4 і S3.4 (всього 5 PR у 2026-05-04 cluster-і). S1.1 + S1.2 чекають copy-reviewer-а.
 
 ---
 
@@ -71,25 +73,68 @@ Mobile-wizard сьогодні без peek-backdrop (single-splash без бен
 
 ---
 
-## 4. Що не зроблено в цьому циклі
+## 4. S1.5 — rename "Налаштувати модулі" → "Що це за модулі?"
+
+### Що змінилось
+
+- `apps/web/src/core/onboarding/OnboardingWizard.tsx:311` — single-string реней тоггла під module-checkbox-ами. Через рендер ходив `expanded ? "Згорнути" : "Налаштувати модулі"` → тепер `expanded ? "Згорнути" : "Що це за модулі?"`.
+
+### Чому
+
+Action-orientation («Налаштувати») обіцяє юзеру роботу — хоча по факту картки вже all-on і клік на тоггл просто розгортає description + teaser. Info-orientation («Що це за модулі?») точніше відбиває, що відбувається після кліку і не видумує «role» для юзера.
+
+### Mobile parity
+
+Не потрібна. `apps/mobile/src/core/OnboardingWizard.tsx` показує `ONBOARDING_MODULE_DESCRIPTIONS` завжди inline, без expand toggle — єквівалентної лейбл-копії не існує.
+
+### Метрика
+
+Oпосередкована: «вже все робоче out-of-the-box, ти не запряжений налаштовувати». Очікуємо вищий wizard→first-entry conversion (менше friction-у від фальшивої обіцянки "в тебе є робота").
+
+---
+
+## 5. Cherry-pick — S2.4 + S3.4 (один цикл з S1.5)
+
+Чому одним батчем: обидва PR-и — сравнивають філософію S1 (чесні обіцянки) в сусідніх спринтах, без deps і без copy-reviewer-а. Деляти їх до "своїх" спринтів не має сенсу — навіть якщо S1.1 є блокованим, вони вже є продуктово готовими.
+
+### S2.4 — finyk preset sub-tile copy hints
+
+- `apps/web/src/core/onboarding/PresetSheet.tsx:80-117` — desc на 3 фіник-пресетах (Кава / Таксі / Обід).
+- Було: «їжа · введи суму» / «транспорт · введи суму» / «їжа · введи суму» — taxonomy + дублювання «введи суму» (яке вже є у sheet-заголовку).
+- Стало: «як правило ~60–95 ₴» / «як правило ~80–200 ₴» / «як правило ~150–250 ₴» — хінт є hint, не lie. `~` і range — чесний orientation для Києва.
+- `data.category` далі прокидається у форму модуля — логіка не зачеплена.
+
+### S3.4 — hide MotivationalFooter до першого real entry
+
+- `apps/web/src/core/hub/dashboard/dashboardCards.tsx:228-238` — `MotivationalFooter` повертає `null`, якщо `entryCount === 0`. Вже був фолбек-месидж «Sergeant працює для тебе офлайн 🔒» — прибраний.
+- Вирівнюється з філософією S1.3: не святкуємо до того, як є причина. Real engagement-маркер живе вище у виді `<StreakIndicator />`.
+- AC опціонально згадує preview-card «Ось що ти побачиш через тиждень» — відкладено (окрема історія, може сама перетворитися на fake-reward).
+
+---
+
+## 6. Що не зроблено в цьому циклі
 
 - **S1.1** — copy-rewrite. Чекає copy-reviewer-а. Без review-у ризикуємо розкатати інженер-орієнтовану copy.
 - **S1.2** — depends on S1.1.
-- **S1.5** — простий лейбл-реней "Налаштувати модулі" → "Що це за модулі?". Без блокерів — наступний у черзі.
+- **S2.1 / S2.2 / S2.3** — deps від S1.1 або від S2.1.
+- **S3.1 / S3.2 / S3.3 / S3.5** — наступні кандидати (S3.5 особливо — single-hero rule strengthening, без deps).
 - **Mobile parity** для cross-cutting peek-backdrop — відкладено до того, коли в mobile додасться peek (якщо взагалі додасться).
 
 ---
 
-## 5. Open follow-ups
+## 7. Open follow-ups
 
 - [x] Відкрити PR-и для S1.3 ([#1609](https://github.com/Skords-01/Sergeant/pull/1609)), S1.4 ([#1610](https://github.com/Skords-01/Sergeant/pull/1610)) і docs writeback ([#1611](https://github.com/Skords-01/Sergeant/pull/1611)).
+- [x] Узяти S1.5 у роботу — PR [#1617](https://github.com/Skords-01/Sergeant/pull/1617).
+- [x] Cherry-pick S2.4 — PR [#1618](https://github.com/Skords-01/Sergeant/pull/1618).
+- [x] Cherry-pick S3.4 — PR [#1619](https://github.com/Skords-01/Sergeant/pull/1619).
 - [ ] Підняти copy-reviewer-а для S1.1 (founder-friend / маркетолог / ЦА).
-- [ ] Узяти S1.5 у роботу — без блокерів.
-- [ ] Дочекатись post-S0 cohort report-у (PostHog) і додати before/after метрики для S1.3 і S1.4 (поки що — якісний impact, кількісний — після).
+- [ ] Дочекатись post-S0 cohort report-у (PostHog) і додати before/after метрики для всіх 5 PR-ів цього циклу (поки що — якісний impact, кількісний — після).
+- [ ] Наступний батч кандидатів: S3.5 (single-hero rule strengthening), S3.1 (CelebrationModal i18n), S3.2 (gain-first softauth) — все без deps.
 
 ---
 
-## 6. Reference
+## 8. Reference
 
 - Sprint plan: [`docs/launch/ftux-sprint-plan.md` §3](../ftux-sprint-plan.md#3-sprint-1--честний-value-prop-2-тижні)
 - Audit джерело: [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../../audits/2026-05-03-ftux-onboarding-roast.md) (P0 рекомендації для S1)
