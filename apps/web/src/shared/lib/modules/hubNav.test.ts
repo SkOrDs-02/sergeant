@@ -1,16 +1,23 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { Mock } from "vitest";
 import {
   openHubModule,
   openHubModuleWithAction,
   HUB_OPEN_MODULE_EVENT,
 } from "./hubNav";
 
+// Vitest 4 widened the default `Mock` to `Mock<Procedure | Constructable>`,
+// which is no longer assignable to `EventListenerOrEventListenerObject`.
+// Pin the call signature so the spy round-trips through `addEventListener`
+// without a per-call cast.
+type EventSpy = Mock<(event: Event) => void>;
+
 describe("openHubModule", () => {
-  let listener: ReturnType<typeof vi.fn>;
+  let listener: EventSpy;
 
   beforeEach(() => {
-    listener = vi.fn();
+    listener = vi.fn<(event: Event) => void>();
     window.addEventListener(HUB_OPEN_MODULE_EVENT, listener);
   });
   afterEach(() => {
@@ -38,10 +45,10 @@ describe("openHubModule", () => {
 });
 
 describe("openHubModuleWithAction", () => {
-  let listener: ReturnType<typeof vi.fn>;
+  let listener: EventSpy;
 
   beforeEach(() => {
-    listener = vi.fn();
+    listener = vi.fn<(event: Event) => void>();
     window.addEventListener(HUB_OPEN_MODULE_EVENT, listener);
   });
   afterEach(() => {

@@ -34,13 +34,17 @@ beforeAll(() => {
   Element.prototype.hasPointerCapture = vi.fn(() => false);
 });
 
+// Vitest 4 widened the default `Mock` to `Mock<Procedure | Constructable>`,
+// so an unparameterised `vi.fn()` is no longer assignable to a plain
+// `() => void` callback. We pin every spy to its concrete callback shape
+// to keep `useStoryGestures(opts)` happy without per-handler casts.
 interface HandlerSpies {
   onTap: ReturnType<typeof vi.fn<(zone: TapZone) => void>>;
-  onHoldStart: ReturnType<typeof vi.fn>;
-  onHoldEnd: ReturnType<typeof vi.fn>;
-  onDragStart: ReturnType<typeof vi.fn>;
-  onDragEnd: ReturnType<typeof vi.fn>;
-  onSwipeDown: ReturnType<typeof vi.fn>;
+  onHoldStart: ReturnType<typeof vi.fn<() => void>>;
+  onHoldEnd: ReturnType<typeof vi.fn<() => void>>;
+  onDragStart: ReturnType<typeof vi.fn<() => void>>;
+  onDragEnd: ReturnType<typeof vi.fn<() => void>>;
+  onSwipeDown: ReturnType<typeof vi.fn<() => void>>;
 }
 
 function Harness({ spies }: { spies: HandlerSpies }) {
@@ -71,11 +75,11 @@ function Harness({ spies }: { spies: HandlerSpies }) {
 function makeSpies(): HandlerSpies {
   return {
     onTap: vi.fn<(zone: TapZone) => void>(),
-    onHoldStart: vi.fn(),
-    onHoldEnd: vi.fn(),
-    onDragStart: vi.fn(),
-    onDragEnd: vi.fn(),
-    onSwipeDown: vi.fn(),
+    onHoldStart: vi.fn<() => void>(),
+    onHoldEnd: vi.fn<() => void>(),
+    onDragStart: vi.fn<() => void>(),
+    onDragEnd: vi.fn<() => void>(),
+    onSwipeDown: vi.fn<() => void>(),
   };
 }
 

@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Mock } from "vitest";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import {
   __clearRoutineDualWriteContextForTests,
   dualWriteRoutineState,
   registerRoutineDualWriteContext,
+  type DualWriteLogger,
   type RoutineDualWriteContext,
 } from "../index.js";
 import { createTestSqlite } from "./testSqlite.js";
@@ -52,11 +54,14 @@ async function listEntries(
 
 describe("dualWriteRoutineState orchestrator", () => {
   let handle: Awaited<ReturnType<typeof createTestSqlite>>;
-  let logger: ReturnType<typeof vi.fn>;
+  // Vitest 4 widened the default `Mock` to `Mock<Procedure | Constructable>`,
+  // which is no longer assignable to `DualWriteLogger`. Pin the spy to the
+  // logger signature so it can be passed directly into `RoutineDualWriteContext`.
+  let logger: Mock<DualWriteLogger>;
 
   beforeEach(async () => {
     handle = await createTestSqlite();
-    logger = vi.fn();
+    logger = vi.fn<DualWriteLogger>();
   });
 
   afterEach(() => {
