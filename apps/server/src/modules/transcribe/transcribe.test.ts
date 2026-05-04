@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Request, Response } from "express";
 import type { Mock } from "vitest";
 import { EventEmitter } from "node:events";
@@ -18,7 +18,7 @@ import {
   transcribeAudio as _transcribeAudio,
   GroqTranscribeError,
 } from "../../lib/groq.js";
-import transcribeHandler from "./transcribe.js";
+import transcribeHandler, { __testing } from "./transcribe.js";
 
 const transcribeAudio = _transcribeAudio as unknown as Mock;
 
@@ -191,5 +191,66 @@ describe("transcribeHandler", () => {
     const req = makeReq({ body: Buffer.from("x") });
     const res = makeRes();
     await expect(transcribeHandler(req, res)).rejects.toThrow("boom");
+  });
+
+  // M5 — audio MIME aliases must be folded onto the canonical form.
+  // See docs/security/hardening/M5-audio-mime-normalize.md.
+  it.each([
+    ["audio/wave", "audio/wav"],
+    ["audio/x-wav", "audio/wav"],
+    ["audio/m4a", "audio/mp4"],
+    ["audio/x-m4a", "audio/mp4"],
+    ["audio/mp3", "audio/mpeg"],
+  ])("M5: alias %s normalises to canonical %s", async (alias, canonical) => {
+    transcribeAudio.mockResolvedValueOnce({ text: "ok", durationSec: 1 });
+    const req = makeReq({
+      contentType: alias,
+      body: Buffer.from(new Uint8Array([1, 2, 3])),
+    });
+    const res = makeRes();
+    await transcribeHandler(req, res);
+    expect(res.statusCode).toBe(200);
+    const callArg = transcribeAudio.mock.calls[0][0];
+    expect(callArg.mimeType).toBe(canonical);
+  });
+});
+
+// M4 — boot-time allowlist for GROQ_TRANSCRIBE_MODEL.
+// See docs/security/hardening/M4-groq-model-allowlist.md.
+describe("M4: GROQ_TRANSCRIBE_MODEL allowlist", () => {
+  const ORIG = process.env.GROQ_TRANSCRIBE_MODEL;
+  afterEach(() => {
+    if (ORIG === undefined) delete process.env.GROQ_TRANSCRIBE_MODEL;
+    else process.env.GROQ_TRANSCRIBE_MODEL = ORIG;
+  });
+
+  it("accepts default (env unset)", () => {
+    delete process.env.GROQ_TRANSCRIBE_MODEL;
+    expect(__testing.resolveGroqModel()).toBe("whisper-large-v3-turbo");
+  });
+
+  it("accepts allowlisted alternative model", () => {
+    process.env.GROQ_TRANSCRIBE_MODEL = "whisper-large-v3";
+    expect(__testing.resolveGroqModel()).toBe("whisper-large-v3");
+  });
+
+  it("throws on unknown / experimental model", () => {
+    process.env.GROQ_TRANSCRIBE_MODEL = "whisper-evil-experimental";
+    expect(() => __testing.resolveGroqModel()).toThrow(
+      /Unsupported GROQ_TRANSCRIBE_MODEL/,
+    );
+  });
+
+  it("treats empty-string env as default", () => {
+    process.env.GROQ_TRANSCRIBE_MODEL = "";
+    expect(__testing.resolveGroqModel()).toBe("whisper-large-v3-turbo");
+  });
+
+  it("exposes the allowlist set", () => {
+    expect(__testing.ALLOWED_GROQ_MODELS.has("whisper-large-v3-turbo")).toBe(
+      true,
+    );
+    expect(__testing.ALLOWED_GROQ_MODELS.has("whisper-large-v3")).toBe(true);
+    expect(__testing.ALLOWED_GROQ_MODELS.has("whisper-evil")).toBe(false);
   });
 });

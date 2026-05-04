@@ -230,6 +230,29 @@ export const authSessionLookupDurationMs = new client.Histogram({
 });
 
 /**
+ * M13 — session-lookup failures observed inside `requireSession*`
+ * middleware (i.e. `getSessionUser` threw, not just "no session").
+ *
+ * `variant`: `require` | `require_soft` — which middleware caught.
+ * `mode`:    `soft_swallowed` (early per-request failure, mapped to 401)
+ *          | `loud_503` (consecutive failures crossed the circuit-breaker
+ *            threshold, surfaced to the client as 503 instead of 401).
+ *
+ * Soft-swallowed failures historically masked real outages because clients
+ * (notably the push service-worker) saw them as "you are not signed in"
+ * and retried forever. The circuit-breaker re-emits them as 503 once they
+ * become persistent so dashboards / alerts can fire.
+ *
+ * See `docs/security/hardening/M13-require-session-soft-loud-fail.md`.
+ */
+export const authSessionLookupFailureTotal = new client.Counter({
+  name: "auth_session_lookup_failure_total",
+  help: "Session-lookup failures inside requireSession*: getSessionUser threw rather than returning null",
+  labelNames: ["variant", "mode"],
+  registers: [register],
+});
+
+/**
  * H4 — кількість прочитань `account.{accessToken,refreshToken,idToken}`
  * row-ів, чий ciphertext був зашифрований не поточною версією ключа
  * (тобто потребує re-encrypt-у на наступному OAuth-refresh-і). Дозволяє

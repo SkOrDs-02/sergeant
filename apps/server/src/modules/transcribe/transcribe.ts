@@ -7,18 +7,70 @@ import { assertTranscribeUsdCap, recordTranscribeUsdSpend } from "./usdCap.js";
 
 type WithGroqKey = Request & { groqKey?: string };
 
-const SUPPORTED_AUDIO_MIME = [
+/**
+ * M4 — code-side allowlist for Groq Whisper models. Whoever owns Railway env
+ * (or a leaked Railway token) cannot silently downgrade quality (cheaper
+ * model) or upgrade cost (experimental model) without leaving a code-review
+ * trail: any new model must be added to this Set in source.
+ *
+ * Resolved once at module load (fail-fast on boot) — `assertStartupEnv`
+ * surfaces the throw before the HTTP server starts accepting traffic.
+ * See `docs/security/hardening/M4-groq-model-allowlist.md`.
+ */
+const ALLOWED_GROQ_MODELS = new Set([
+  "whisper-large-v3-turbo",
+  "whisper-large-v3",
+]);
+const DEFAULT_GROQ_MODEL = "whisper-large-v3-turbo";
+
+function resolveGroqModel(): string {
+  const raw = process.env.GROQ_TRANSCRIBE_MODEL;
+  const requested = raw && raw.length > 0 ? raw : DEFAULT_GROQ_MODEL;
+  if (!ALLOWED_GROQ_MODELS.has(requested)) {
+    throw new Error(
+      `Unsupported GROQ_TRANSCRIBE_MODEL: ${requested}. Allowed: ${[
+        ...ALLOWED_GROQ_MODELS,
+      ].join(", ")}`,
+    );
+  }
+  return requested;
+}
+
+const GROQ_MODEL = resolveGroqModel();
+
+export const __testing = {
+  ALLOWED_GROQ_MODELS,
+  resolveGroqModel,
+};
+
+/**
+ * M5 — canonical audio MIME list + alias normaliser. Groq Whisper accepts
+ * only canonical types (`audio/wav`, `audio/mp4`, …); historical aliases
+ * (`audio/x-wav`, `audio/wave`, `audio/m4a`, `audio/mp3`) get folded onto
+ * the canonical form before validation, which trims the attack surface for
+ * future ffmpeg / parser bugs and removes a duplicate-validation footgun.
+ * See `docs/security/hardening/M5-audio-mime-normalize.md`.
+ */
+const SUPPORTED_AUDIO_MIME = new Set<string>([
   "audio/webm",
   "audio/ogg",
   "audio/mp4",
-  "audio/m4a",
   "audio/mpeg",
-  "audio/mp3",
   "audio/wav",
-  "audio/x-wav",
-  "audio/wave",
   "audio/flac",
-];
+]);
+
+const AUDIO_MIME_ALIASES: Record<string, string> = {
+  "audio/x-wav": "audio/wav",
+  "audio/wave": "audio/wav",
+  "audio/m4a": "audio/mp4",
+  "audio/x-m4a": "audio/mp4",
+  "audio/mp3": "audio/mpeg",
+};
+
+function normaliseAudioMime(ct: string): string {
+  return AUDIO_MIME_ALIASES[ct] ?? ct;
+}
 
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // 10 MB
 
@@ -29,8 +81,9 @@ function pickMimeType(req: Request): string | null {
   if (!raw || typeof raw !== "string") return null;
   const ct = raw.split(";")[0].trim().toLowerCase();
   if (!ct.startsWith("audio/")) return null;
-  if (!SUPPORTED_AUDIO_MIME.includes(ct)) return null;
-  return ct;
+  const normalised = normaliseAudioMime(ct);
+  if (!SUPPORTED_AUDIO_MIME.has(normalised)) return null;
+  return normalised;
 }
 
 /**
@@ -85,7 +138,10 @@ export default async function transcribeHandler(
   if (!parsed.ok) return;
   const { language, prompt } = parsed.data;
 
-  const model = process.env.GROQ_TRANSCRIBE_MODEL || "whisper-large-v3-turbo";
+  // M4 — `GROQ_MODEL` is resolved + allowlist-validated at module load,
+  // not per request, so a bad env-var fails the boot rather than every
+  // call. See `docs/security/hardening/M4-groq-model-allowlist.md`.
+  const model = GROQ_MODEL;
 
   // H9 — pre-charge per-user-per-day USD cap. Після MIME / size / query
   // validation, але ДО Groq-виклику. Якщо cap буде перевищений — handler
