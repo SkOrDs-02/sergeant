@@ -20,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Overview } from "./pages/Overview";
 import type { OverviewNavRoute } from "./pages/Overview";
 import { useFinykDualWriteBoot } from "./hooks/useFinykDualWriteBoot";
+import { useFinykSqliteReadBoot } from "./hooks/useFinykSqliteReadBoot";
 
 export function FinykApp() {
   // Stage 4 PR #036: install the dual-write context once the user is
@@ -27,6 +28,12 @@ export function FinykApp() {
   // calls in `assetsStore.ts` and friends early-out at the
   // `isFinykDualWriteRegistered()` gate, leaving SQLite empty.
   useFinykDualWriteBoot();
+
+  // Stage 4 PR #037: warm the SQLite read cache so the per-store
+  // overlays under `feature.finyk.sqlite_v2.read_sqlite` can swap MMKV
+  // first-paint values for the local SQLite mirror. Idempotent + flag-
+  // gated; a no-op when the flag is off.
+  useFinykSqliteReadBoot();
 
   const router = useRouter();
   const handleNavigate = useCallback(

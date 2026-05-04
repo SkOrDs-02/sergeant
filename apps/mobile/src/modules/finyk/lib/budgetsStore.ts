@@ -26,6 +26,8 @@ import { enqueueChange } from "@/sync/enqueue";
 import { isFinykDualWriteRegistered, triggerFinykDualWrite } from "./dualWrite";
 import { EMPTY_FINYK_STATE, type FinykPrefsSnapshot } from "./dualWrite/diff";
 import { blobsFromArray, stateWithSlice } from "./dualWrite/extract";
+import { getCachedFinykSqliteState } from "./sqliteReader";
+import { useFinykSqliteReadGate } from "./sqliteReadGate";
 
 const KEY_BUDGETS = STORAGE_KEYS.FINYK_BUDGETS;
 const KEY_MONTHLY_PLAN = STORAGE_KEYS.FINYK_MONTHLY_PLAN;
@@ -162,6 +164,26 @@ export function useFinykBudgetsStore(
     });
     return () => sub.remove();
   }, []);
+
+  // Stage 4 PR #037 — overlay each persisted slice from the local
+  // SQLite cache once it's warm and the read flag is on. MMKV
+  // first-paint reads above stay as a fallback.
+  const { enabled: sqliteReadEnabled, tick: sqliteCacheTick } =
+    useFinykSqliteReadGate();
+  useEffect(() => {
+    if (!sqliteReadEnabled) return;
+    const cache = getCachedFinykSqliteState();
+    if (cache.refreshedAt === null) return;
+    setBudgetsState(cache.budgets);
+    setSubscriptionsState(cache.subscriptions);
+    if (cache.monthlyPlan !== null) {
+      // `MonthlyPlan` (cache) is the canonical numeric/string-typed
+      // shape; mobile's `MonthlyPlanInput` accepts both — every field
+      // is `string | number | undefined`, so the assignment is a
+      // structural widening, not a downcast.
+      setMonthlyPlanState(cache.monthlyPlan);
+    }
+  }, [sqliteReadEnabled, sqliteCacheTick]);
 
   const setBudgets = useCallback<UseFinykBudgetsStoreReturn["setBudgets"]>(
     (next) => {

@@ -33,6 +33,8 @@ import {
   idsFromArray,
   stateWithSlice,
 } from "./dualWrite/extract";
+import { getCachedFinykSqliteState } from "./sqliteReader";
+import { useFinykSqliteReadGate } from "./sqliteReadGate";
 
 const KEY_ASSETS = FINYK_BACKUP_STORAGE_KEYS.manualAssets;
 const KEY_DEBTS = FINYK_BACKUP_STORAGE_KEYS.manualDebts;
@@ -129,6 +131,26 @@ export function useFinykAssetsStore(
     });
     return () => sub.remove();
   }, []);
+
+  // Stage 4 PR #037 — overlay each persisted slice from the local
+  // SQLite cache once it's warm and the read flag is on. MMKV
+  // first-paint reads above stay as a fallback.
+  const { enabled: sqliteReadEnabled, tick: sqliteCacheTick } =
+    useFinykSqliteReadGate();
+  useEffect(() => {
+    if (!sqliteReadEnabled) return;
+    const cache = getCachedFinykSqliteState();
+    if (cache.refreshedAt === null) return;
+    setAssetsState(cache.manualAssets);
+    // The Assets page consumes its own debt/receivable shapes
+    // (`AssetsDebt`/`AssetsReceivable`) which extend the domain
+    // primitives in `finyk-domain`; the SQLite cache stores the
+    // canonical domain `Debt`/`Receivable` blob. The runtime shape is
+    // identical (same JSON columns), so a structural cast is safe.
+    setDebtsState(cache.manualDebts as AssetsDebt[]);
+    setRecvState(cache.receivables as AssetsReceivable[]);
+    setHiddenState(cache.hiddenAccounts);
+  }, [sqliteReadEnabled, sqliteCacheTick]);
 
   const setManualAssets = useCallback(
     (next: ManualAsset[]) => {

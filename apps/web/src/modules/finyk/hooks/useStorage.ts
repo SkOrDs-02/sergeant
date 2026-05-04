@@ -6,6 +6,7 @@ import { useFinykStorageMutations } from "./useFinykStorageMutations";
 import { useFinykBackupSync } from "./useFinykBackupSync";
 import { useFinykDualWriteBoot } from "./useFinykDualWriteBoot";
 import { useFinykDualWriteSync } from "./useFinykDualWriteSync";
+import { useFinykSqliteReadBoot } from "./useFinykSqliteReadBoot";
 
 // Public type re-exports — стабільний import path для зовнішніх consumer-ів
 // (`AssetsForm.tsx`, `Overview.tsx`, тощо). Декомпозиція внутрішнього коду
@@ -58,6 +59,13 @@ export function useStorage({
   // gated by `feature.finyk.sqlite_v2.dual_write`).
   useFinykDualWriteBoot();
   useFinykDualWriteSync(slots);
+
+  // Stage 4 PR #037 — boot the SQLite read overlay (idempotent, only
+  // when `feature.finyk.sqlite_v2.read_sqlite` is on). The overlay
+  // itself lives inside `useFinykStorageSlots` above so the slot
+  // values returned to consumers reflect the SQLite cache once it
+  // warms; LS reads stay as a synchronous first-paint fallback.
+  useFinykSqliteReadBoot();
 
   const {
     hiddenAccounts,

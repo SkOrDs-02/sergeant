@@ -40,6 +40,9 @@ import { enqueueChange } from "@/sync/enqueue";
 
 import type { ManualExpensePayload } from "../components/ManualExpenseSheet";
 
+import { getCachedFinykSqliteState } from "./sqliteReader";
+import { useFinykSqliteReadGate } from "./sqliteReadGate";
+
 const KEY_MANUAL = FINYK_STORAGE_KEYS.transactions;
 const KEY_TX_CATS = FINYK_BACKUP_STORAGE_KEYS.txCategories;
 const KEY_TX_SPLITS = FINYK_BACKUP_STORAGE_KEYS.txSplits;
@@ -287,6 +290,42 @@ export function useFinykTransactionsStore(
     });
     return () => sub.remove();
   }, []);
+
+  // Stage 4 PR #037 — under `feature.finyk.sqlite_v2.read_sqlite`,
+  // overlay every persisted slice from the local SQLite cache once
+  // it's warm. The MMKV first-paint reads above stay as a synchronous
+  // fallback; this effect only fires after `useFinykSqliteReadBoot`
+  // has refreshed the cache, so the overlay is no-op for cold starts
+  // with the flag off.
+  const { enabled: sqliteReadEnabled, tick: sqliteCacheTick } =
+    useFinykSqliteReadGate();
+  useEffect(() => {
+    if (!sqliteReadEnabled) return;
+    const cache = getCachedFinykSqliteState();
+    if (cache.refreshedAt === null) return;
+    // The cache's `ManualExpense` shape mirrors `ManualExpenseRecord`
+    // exactly (kept in sync inside `sqliteReader.ts` to avoid a
+    // circular import); the assignment is a structural pass-through.
+    setManualState(cache.manualExpenses);
+    // `TxCategoriesMap` declares `string | undefined` values; the
+    // `_State` setter takes `Record<string, string>`. Sweep
+    // `undefined`-valued entries (cache rows always carry a defined
+    // `category_id` so this is defensive only).
+    const txCats: Record<string, string> = {};
+    for (const [k, v] of Object.entries(cache.txCategories)) {
+      if (typeof v === "string") txCats[k] = v;
+    }
+    setTxCatsState(txCats);
+    // `TxSplitsMap` declares `TxSplit[] | undefined`; the
+    // `_State` setter takes `Record<string, TxSplitEntry[]>`. Same
+    // sweep — drop `undefined`-valued buckets.
+    const txSplitsMap: Record<string, TxSplitEntry[]> = {};
+    for (const [k, v] of Object.entries(cache.txSplits)) {
+      if (Array.isArray(v)) txSplitsMap[k] = v;
+    }
+    setTxSplitsState(txSplitsMap);
+    setHiddenState(cache.hiddenTransactions);
+  }, [sqliteReadEnabled, sqliteCacheTick]);
 
   const writeManual = useCallback((next: ManualExpenseRecord[]) => {
     const prev = read<ManualExpenseRecord[]>(KEY_MANUAL, []);

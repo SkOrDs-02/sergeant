@@ -107,6 +107,14 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     defaultValue: false,
     experimental: true,
   },
+  {
+    id: "feature.finyk.sqlite_v2.read_sqlite",
+    label: "Finyk — read from SQLite",
+    description:
+      "Hidden / budgets / subscriptions / assets / debts / receivables / custom categories / manual expenses / tx categories / tx splits / mono debt links / networth history / prefs читаються з локальної SQLite (`finyk_*`) замість LS. LS-write залишається як safety net. Stage 4 PR #037 storage-roadmap. Потребує увімкненого dual-write. Default: off.",
+    defaultValue: false,
+    experimental: true,
+  },
 ] as const;
 
 export type FlagId = (typeof FLAG_REGISTRY)[number]["id"];
