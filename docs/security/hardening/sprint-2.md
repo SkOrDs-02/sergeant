@@ -22,7 +22,7 @@ and a maintenance window; it lands in Sprint 3 alongside the medium batch.
 | [H8](./H8-corp-per-route.md)             | `CORP: cross-origin` without per-route guard     | High     | backend  | 0.5 d _(closed 2026-05-04)_          |
 | [H9](./H9-transcribe-usd-cap.md)         | `transcribe` 10 MB upload, no per-user USD cap   | High     | backend  | 0.5 d _(closed 2026-05-04, partial)_ |
 | [M1](./M1-csp-disable-runtime-flag.md)   | `CSP_DISABLE=1` env-fault-injection              | Medium   | backend  | 0.25 d                               |
-| [M3](./M3-pino-redact-paths.md)          | Pino `redactPaths` is incomplete                 | Medium   | platform | 0.25 d                               |
+| [M3](./M3-pino-redact-paths.md)          | Pino `redactPaths` is incomplete                 | Medium   | platform | 0.25 d _(closed 2026-05-04)_         |
 
 **Total effort:** ≈ 3.5 person-days (one engineer, one calendar week).
 

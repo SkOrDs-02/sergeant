@@ -6,12 +6,14 @@ import {
   setModule,
 } from "../http/index.js";
 import { listSyncAudit } from "../modules/sync/audit.js";
+import { v1ClientSurveyMiddleware } from "../modules/sync/clientSurvey.js";
 import {
   syncPull,
   syncPullAll,
   syncPush,
   syncPushAll,
 } from "../modules/sync/sync.js";
+import { v1SunsetHeadersMiddleware } from "../modules/sync/sunsetHeaders.js";
 import { syncV2Pull, syncV2Push } from "../modules/sync/syncV2.js";
 
 /**
@@ -38,6 +40,14 @@ export function createSyncRouter(): Router {
     rateLimitExpress({ key: "api:sync", limit: 30, windowMs: 60_000 }),
   );
   r.use("/api/sync", requireSession());
+  // v1 sunset survey: emit `sync_v1_legacy_clients_total` per push/pull.
+  // Initiative 0003 Phase 1 — див. `clientSurvey.ts`.
+  r.use("/api/sync", v1ClientSurveyMiddleware());
+  // RFC 8594 / 8288 deprecation headers на всіх v1-routes (Initiative 0003
+  // Phase 2 → ADR-0043). НЕ блокує запит — оголошує намір. T₀ через
+  // `CLOUDSYNC_V1_SUNSET_AT` env var (ISO 8601). Без env — Sunset header
+  // не емітиться, але Deprecation і Link залишаються.
+  r.use("/api/sync", v1SunsetHeadersMiddleware());
   r.post("/api/sync/push", asyncHandler(syncPush));
   r.post("/api/sync/pull", asyncHandler(syncPull));
   r.get("/api/sync/pull-all", asyncHandler(syncPullAll));

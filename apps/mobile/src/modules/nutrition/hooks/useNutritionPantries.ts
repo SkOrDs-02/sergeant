@@ -22,6 +22,8 @@ import {
   loadPantries,
   savePantries,
 } from "../lib/nutritionStore";
+import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
+import { useNutritionSqliteReadGate } from "../lib/sqliteReadGate";
 
 export interface UseNutritionPantriesResult {
   pantries: Pantry[];
@@ -74,6 +76,20 @@ export function useNutritionPantries(): UseNutritionPantriesResult {
     setPantries(loadPantries());
     setActivePantryIdState(loadActivePantryId());
   }, []);
+
+  // Stage 4 PR #033: under `feature.nutrition.sqlite_v2.read_sqlite`,
+  // overlay pantries / active pantry from the local SQLite cache once
+  // it's warm. MMKV first-paint reads above stay as a synchronous
+  // fallback so the first paint never blocks on SQLite.
+  const { enabled: sqliteReadEnabled, tick: sqliteCacheTick } =
+    useNutritionSqliteReadGate();
+  useEffect(() => {
+    if (!sqliteReadEnabled) return;
+    const cache = getCachedNutritionSqliteState();
+    if (cache.refreshedAt === null) return;
+    setPantries(cache.pantries);
+    if (cache.activePantryId) setActivePantryIdState(cache.activePantryId);
+  }, [sqliteReadEnabled, sqliteCacheTick]);
 
   const setActivePantryId = useCallback((id: string) => {
     if (!id) return;

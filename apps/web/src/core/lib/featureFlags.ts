@@ -91,6 +91,14 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     defaultValue: false,
     experimental: true,
   },
+  {
+    id: "feature.nutrition.sqlite_v2.read_sqlite",
+    label: "Nutrition — read from SQLite",
+    description:
+      "Meals / pantries / prefs / recipes читаються з локальної SQLite (`nutrition_*`) замість LS. LS-write залишається як safety net. Stage 4 PR #033 storage-roadmap. Потребує увімкненого dual-write. Default: off.",
+    defaultValue: false,
+    experimental: true,
+  },
 ] as const;
 
 export type FlagId = (typeof FLAG_REGISTRY)[number]["id"];

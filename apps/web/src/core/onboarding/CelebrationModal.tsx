@@ -2,10 +2,19 @@
  * CelebrationModal — First entry success celebration
  *
  * Full-screen modal celebrating the user's first real entry.
- * Shows confetti particles and motivational messaging.
+ * Shows confetti particles and module-aware copy from
+ * `FIRST_ENTRY_CELEBRATIONS` so the headline acknowledges what the
+ * user actually just did. TTV-numbers stay in the analytics payload
+ * (`celebration_shown { ttvMs }`) — they are not used as copy input,
+ * because bragging about engineering speed reframes the moment to
+ * the app instead of the user.
  */
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import {
+  type DashboardModuleId,
+  getFirstEntryCelebrationCopy,
+} from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
@@ -35,18 +44,29 @@ interface CelebrationModalProps {
   onClose: () => void;
   /** Time-to-value in milliseconds (null if not measured) */
   ttvMs: number | null;
+  /**
+   * Module that owns the entry which flipped the first-real-entry
+   * flag. Picks the copy variant from `FIRST_ENTRY_CELEBRATIONS`;
+   * `null` falls back to the default copy.
+   */
+  moduleId: DashboardModuleId | null;
 }
 
 export function CelebrationModal({
   open,
   onClose,
   ttvMs,
+  moduleId,
 }: CelebrationModalProps) {
   const [visible, setVisible] = useState(false);
   const [animateOut, setAnimateOut] = useState(false);
   const backdropRef = useRef<HTMLDivElement>(null);
 
-  // Generate confetti particles
+  // Generate confetti particles. `Math.random()` is used here only to
+  // jitter visual positions / colours / sizes — visual diversity is
+  // the goal, not derived state. `useMemo` snapshots the values on
+  // mount so subsequent renders are stable; the impurity is contained.
+
   const particles = useMemo<ConfettiParticle[]>(() => {
     return Array.from({ length: 30 }, (_, i) => ({
       id: i,
@@ -69,7 +89,11 @@ export function CelebrationModal({
     }, 200);
   }, [onClose]);
 
-  // Sync visibility with open prop
+  // Sync visibility with open prop. The `setVisible` / `setAnimateOut`
+  // calls translate the parent-controlled `open` boolean into local
+  // animation state and fire the analytics event. Treating it as
+  // render-derivation would lose the open-edge needed for the
+  // animation; suppress `react-hooks/set-state-in-effect` here.
   useEffect(() => {
     if (open) {
       setVisible(true);
@@ -81,9 +105,10 @@ export function CelebrationModal({
       trackEvent(ANALYTICS_EVENTS.CELEBRATION_SHOWN, {
         ttvMs,
         source: "first_entry",
+        moduleId,
       });
     }
-  }, [open, ttvMs]);
+  }, [open, ttvMs, moduleId]);
 
   // Auto-dismiss after 10 seconds
   useEffect(() => {
@@ -116,17 +141,13 @@ export function CelebrationModal({
 
   if (!visible) return null;
 
-  // Build headline based on TTV
-  const headline =
-    ttvMs != null && ttvMs < 60000
-      ? `Готово за ${Math.max(1, Math.round(ttvMs / 1000))} с!`
-      : "Перший запис!";
-
-  // Motivational subtext
-  const subtext =
-    ttvMs != null && ttvMs < 30000
-      ? "Блискавично! Це вже твої дані."
-      : "Це вже твої дані. Sergeant працює для тебе.";
+  // Module-aware copy lives in `FIRST_ENTRY_CELEBRATIONS`. The
+  // headline acknowledges what the user actually did (записав
+  // витрату / зафіксував тренування / запустив звичку / залогував
+  // їжу), and the subtext promises the next step. Engineering-speed
+  // bragging is intentionally absent — TTV stays in analytics
+  // (see `celebration_shown` event payload above).
+  const { headline, subtext } = getFirstEntryCelebrationCopy(moduleId);
 
   return (
     <div

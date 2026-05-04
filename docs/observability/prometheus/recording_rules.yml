@@ -82,6 +82,20 @@ groups:
           /
           clamp_min(sum(rate(sync_operations_total{op=~"push|push_all"}[1h])), 1)
 
+      # Initiative 0003 Phase 1 — sunset baseline. v1 (`module=sync` legacy
+      # LWW-blob) vs v2 (`module=syncV2` op-log) per-version split. Target:
+      # `sli:sync_v1:rate5m` → 0 by T₀; legacy survey counter каже, хто саме
+      # ще ходить.
+      - record: sli:sync_v1:rate5m
+        expr: |
+          sum(rate(sync_operations_total{module="sync"}[5m]))
+      - record: sli:sync_v2:rate5m
+        expr: |
+          sum(rate(sync_operations_total{module="syncV2"}[5m]))
+      - record: sli:sync_v1_legacy:rate1h_by_appversion
+        expr: |
+          sum by (app_version) (rate(sync_v1_legacy_clients_total[1h]))
+
   # ──────────────────────────── Auth ────────────────────────────
   - name: sli_auth
     interval: 30s

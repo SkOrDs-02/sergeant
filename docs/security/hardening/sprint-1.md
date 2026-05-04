@@ -8,12 +8,12 @@
 
 ## Скоуп
 
-| ID                                       | Title                                                                            | Severity | Effort | Owner    | Status                                 |
-| ---------------------------------------- | -------------------------------------------------------------------------------- | -------- | ------ | -------- | -------------------------------------- |
-| [C1](./C1-mono-webhook-secret-in-url.md) | Mono webhook secret з URL → header + sanitize logs + rotate                      | Critical | 1d     | backend  | Open                                   |
-| [C2](./C2-frontend-csp.md)               | Додати CSP у `vercel.json` (Report-Only → Enforce)                               | Critical | 0.5d   | frontend | **Phase 1 closed** (2026-05-04) — soak |
-| [H1](./H1-mobile-bearer-storage.md)      | Capacitor secure-storage AC + `android:allowBackup="false"`                      | High     | 0.5d   | mobile   | Open                                   |
-| [H2](./H2-dependabot.md)                 | Створити `.github/dependabot.yml` (npm + actions + docker) + auto-merge workflow | High     | 0.5h   | devops   | **Closed** (2026-05-04)                |
+| ID                                       | Title                                                                            | Severity | Effort | Owner    | Status                                                                                                                                 |
+| ---------------------------------------- | -------------------------------------------------------------------------------- | -------- | ------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| [C1](./C1-mono-webhook-secret-in-url.md) | Mono webhook secret з URL → header + sanitize logs + rotate                      | Critical | 1d     | backend  | **Phase 1 closed** (2026-05-04) — header-маршрут + URL-redaction в Pino/Sentry; Phase 2 (Monobank rollout + secret rotation) — pending |
+| [C2](./C2-frontend-csp.md)               | Додати CSP у `vercel.json` (Report-Only → Enforce)                               | Critical | 0.5d   | frontend | **Phase 1 closed** (2026-05-04) — soak                                                                                                 |
+| [H1](./H1-mobile-bearer-storage.md)      | Capacitor secure-storage AC + `android:allowBackup="false"`                      | High     | 0.5d   | mobile   | Open                                                                                                                                   |
+| [H2](./H2-dependabot.md)                 | Створити `.github/dependabot.yml` (npm + actions + docker) + auto-merge workflow | High     | 0.5h   | devops   | **Closed** (2026-05-04)                                                                                                                |
 
 ## Чому саме ці чотири разом
 

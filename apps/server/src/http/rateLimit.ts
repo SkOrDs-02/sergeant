@@ -2,7 +2,11 @@ import type { Request, RequestHandler } from "express";
 import type Redis from "ioredis";
 import { pool } from "../db.js";
 import { logger } from "../obs/logger.js";
-import { rateLimitDegradedTotal, rateLimitHitsTotal } from "../obs/metrics.js";
+import {
+  rateLimitCostTotal,
+  rateLimitDegradedTotal,
+  rateLimitHitsTotal,
+} from "../obs/metrics.js";
 import { getRedis } from "../lib/redis.js";
 
 type Outcome = "allowed" | "blocked";
@@ -13,6 +17,46 @@ function recordRateLimit(key: string, outcome: Outcome): void {
   } catch {
     /* metrics must never break a request */
   }
+}
+
+function recordRateLimitCost(key: string, cost: number): void {
+  if (!Number.isFinite(cost) || cost <= 0) return;
+  try {
+    rateLimitCostTotal.inc({ key }, cost);
+  } catch {
+    /* metrics must never break a request */
+  }
+}
+
+/**
+ * Maximum cost a single request may consume from a bucket. AI streams are
+ * the legitimate heavy case (chat, photo analysis); anything beyond ~50
+ * means a route is mis-configured (or a caller passed a `cost(req)` that
+ * leaks user input). Clamp defensively rather than refuse — letting the
+ * limiter run with a saturated cost is strictly safer than throwing 500
+ * inside a rate-limit middleware.
+ */
+const MAX_COST = 50;
+
+/**
+ * Resolves the per-request cost for a {@link RateLimitOptions} entry. A
+ * route without an explicit `cost(req)` consumes 1 token per call (current
+ * behavior). Routes with a `cost` function get the value clamped to
+ * `[1, MAX_COST]` and rounded to an integer — Redis `INCRBY` and the
+ * Postgres `count + cost` arithmetic both require integer operands.
+ */
+export function resolveRateLimitCost(
+  req: Request,
+  options: Pick<RateLimitOptions, "cost">,
+): number {
+  let raw: number;
+  try {
+    raw = options.cost ? options.cost(req) : 1;
+  } catch {
+    raw = 1;
+  }
+  if (!Number.isFinite(raw) || raw < 1) return 1;
+  return Math.min(MAX_COST, Math.floor(raw));
 }
 
 function recordRateLimitDegraded(key: string, mode: "inmem" | "closed"): void {
@@ -85,6 +129,40 @@ export interface RateLimitOptions {
    * on a degraded production limiter.
    */
   failMode?: "open" | "closed";
+  /**
+   * Per-request cost multiplier. Defaults to `1` (current behavior — every
+   * call consumes exactly one token from the bucket). Pass a function to
+   * make heavy calls bill more than one token.
+   *
+   * **Why this exists.** A 30-second AI stream that returns ~50KB of tokens
+   * and consumes minutes of upstream Anthropic budget is **not** equivalent
+   * to a 30 ms `GET /api/me`. A naive 30-rpm bucket lets a single user
+   * fire ~30 chat-streams per minute — sustained, that is hours of model
+   * time and tens of MB of egress per minute, but the limiter sees "30
+   * requests" and stays green. A `cost: () => 10` makes the same chat
+   * route effectively a 3-rpm cap while leaving the cheap `GET` reads on
+   * the same key untouched.
+   *
+   * **Contract.** The function must return a positive number. Values are
+   * clamped to `[1, 50]` and rounded down to an integer
+   * ({@link resolveRateLimitCost}) — both the Redis `INCRBY` and the
+   * Postgres `count + cost` arithmetic require integer operands, and a
+   * runaway cost (NaN, Infinity, negative) must never become an
+   * unrecoverable 500 inside a middleware.
+   *
+   * **Observability.** Each accepted request increments
+   * `rate_limit_cost_total{key=…}` by the resolved cost so dashboards can
+   * compute the actual per-user budget consumption (`p95(sum by user)
+   * over rate_limit_cost_total`) — the diagnostic tracker explicitly
+   * called this out as the missing observability counterpart to the
+   * existing `rate_limit_hits_total{outcome}` counter.
+   *
+   * Mirrors `aiQuota.ts → AI_QUOTA_TOOL_COST` for the Anthropic side: same
+   * idea ("some calls cost more than one"), different layer (rate vs.
+   * monthly quota). Routes that bill against both should keep the two
+   * cost models aligned.
+   */
+  cost?: (req: Request) => number;
 }
 
 export interface RateLimitResult {
@@ -136,10 +214,16 @@ export function rateLimitSubject(req: Request): string {
   return `ip:${getIp(req)}`;
 }
 
-// Lua script: atomically INCR, set EXPIRE on first hit, return [count, pttl].
-const LUA_INCR_EXPIRE = `
-local c = redis.call('INCR', KEYS[1])
-if c == 1 then
+// Lua script: atomically INCRBY cost, set EXPIRE on first hit, return
+// [count, pttl]. INCRBY (not INCR) so heavy routes can bill more than 1
+// token per call — see `RateLimitOptions.cost`. The first-hit detector
+// keys on `c == cost` rather than `c == 1` because a brand-new bucket
+// jumps straight to `cost` after the INCRBY; missing this would leave
+// the key without a TTL and the bucket would never reset.
+const LUA_INCRBY_EXPIRE = `
+local cost = tonumber(ARGV[2])
+local c = redis.call('INCRBY', KEYS[1], cost)
+if c == cost then
   redis.call('EXPIRE', KEYS[1], ARGV[1])
 end
 local ttl = redis.call('PTTL', KEYS[1])
@@ -153,17 +237,19 @@ return {c, ttl}
 export async function checkRateLimitRedis(
   redis: Redis,
   req: Request,
-  { key, limit, windowMs }: RateLimitOptions,
+  { key, limit, windowMs, cost: costFn }: RateLimitOptions,
 ): Promise<RateLimitResult> {
   const subject = rateLimitSubject(req);
   const k = `rl:${key}:${subject}`;
   const windowSecs = Math.max(1, Math.ceil(windowMs / 1000));
+  const cost = resolveRateLimitCost(req, { cost: costFn });
 
   const result = (await redis.eval(
-    LUA_INCR_EXPIRE,
+    LUA_INCRBY_EXPIRE,
     1,
     k,
     String(windowSecs),
+    String(cost),
   )) as [number, number];
   const count = result[0];
   const pttlMs = Math.max(0, result[1]);
@@ -178,6 +264,7 @@ export async function checkRateLimitRedis(
     };
   }
   recordRateLimit(key, "allowed");
+  recordRateLimitCost(key, cost);
   return {
     ok: true,
     remaining: Math.max(0, limit - count),
@@ -211,18 +298,19 @@ export async function checkRateLimitRedis(
  */
 export async function checkRateLimitPg(
   req: Request,
-  { key, limit, windowMs }: RateLimitOptions,
+  { key, limit, windowMs, cost: costFn }: RateLimitOptions,
 ): Promise<RateLimitResult> {
   const subject = rateLimitSubject(req);
+  const cost = resolveRateLimitCost(req, { cost: costFn });
   const sql = `
     INSERT INTO rate_limit_buckets (rl_key, subject, count, started_at)
-    VALUES ($1, $2, 1, NOW())
+    VALUES ($1, $2, $4::int, NOW())
     ON CONFLICT (rl_key, subject) DO UPDATE
     SET
       count = CASE
         WHEN EXTRACT(EPOCH FROM (NOW() - rate_limit_buckets.started_at)) * 1000 >= $3::bigint
-          THEN 1
-        ELSE rate_limit_buckets.count + 1
+          THEN $4::int
+        ELSE rate_limit_buckets.count + $4::int
       END,
       started_at = CASE
         WHEN EXTRACT(EPOCH FROM (NOW() - rate_limit_buckets.started_at)) * 1000 >= $3::bigint
@@ -238,6 +326,7 @@ export async function checkRateLimitPg(
     key,
     subject,
     String(windowMs),
+    cost,
   ]);
   const row = result.rows[0];
   // Coerce bigint → number per AGENTS.md hard rule #1 (the `pg` driver
@@ -256,6 +345,7 @@ export async function checkRateLimitPg(
     };
   }
   recordRateLimit(key, "allowed");
+  recordRateLimitCost(key, cost);
   return {
     ok: true,
     remaining: Math.max(0, limit - count),
@@ -326,14 +416,6 @@ async function tryCheckRateLimitPg(
   }
 }
 
-async function checkRateLimitPgWithFallback(
-  req: Request,
-  options: RateLimitOptions,
-): Promise<RateLimitResult> {
-  const pg = await tryCheckRateLimitPg(req, options);
-  return pg ?? checkRateLimit(req, options);
-}
-
 async function maybeSweepPgBuckets(maxWindowMs: number): Promise<void> {
   if (Math.random() >= PG_SWEEP_PROBABILITY) return;
   // Keep rows for 2× the longest configured window so we never evict
@@ -356,35 +438,47 @@ async function maybeSweepPgBuckets(maxWindowMs: number): Promise<void> {
  */
 export function checkRateLimit(
   req: Request,
-  { key, limit, windowMs }: RateLimitOptions,
+  { key, limit, windowMs, cost: costFn }: RateLimitOptions,
 ): RateLimitResult {
   const subject = rateLimitSubject(req);
   const now = Date.now();
   sweepBuckets(now);
   const k = `${key}:${subject}`;
   const cur = buckets.get(k);
+  const cost = resolveRateLimitCost(req, { cost: costFn });
   if (!cur || now - cur.startMs >= windowMs) {
-    buckets.set(k, { startMs: now, count: 1, windowMs });
+    // Fresh bucket — seed at `cost` (not 1). A heavy first hit must
+    // count for its full weight, otherwise the next call could find a
+    // "1-token" bucket and we'd silently let `limit / cost` heavy
+    // requests through per window instead of `limit`.
+    buckets.set(k, { startMs: now, count: cost, windowMs });
     recordRateLimit(key, "allowed");
+    recordRateLimitCost(key, cost);
     return {
       ok: true,
-      remaining: limit - 1,
+      remaining: Math.max(0, limit - cost),
       resetMs: windowMs,
       retryAfterSec: Math.max(1, Math.ceil(windowMs / 1000)),
     };
   }
-  if (cur.count >= limit) {
+  // Reject if adding `cost` would push the bucket over `limit`. This is
+  // intentionally stricter than the previous `cur.count >= limit` check:
+  // a 9/10 bucket must NOT accept a `cost=10` AI stream that would land
+  // it at 19 — that is precisely the case the cost-multiplier exists to
+  // prevent. Cheap (cost=1) calls keep their old behavior.
+  if (cur.count + cost > limit) {
     recordRateLimit(key, "blocked");
     const resetMs = Math.max(0, windowMs - (now - cur.startMs));
     return {
       ok: false,
-      remaining: 0,
+      remaining: Math.max(0, limit - cur.count),
       resetMs,
       retryAfterSec: Math.max(1, Math.ceil(resetMs / 1000)),
     };
   }
-  cur.count += 1;
+  cur.count += cost;
   recordRateLimit(key, "allowed");
+  recordRateLimitCost(key, cost);
   const resetMs = Math.max(0, windowMs - (now - cur.startMs));
   return {
     ok: true,
@@ -399,20 +493,22 @@ export function rateLimitExpress({
   limit,
   windowMs,
   failMode = "open",
+  cost,
 }: RateLimitOptions): RequestHandler {
   return async (req, res, next) => {
     const redis = getRedis();
     let rl: RateLimitResult | null = null;
+    const options: RateLimitOptions = { key, limit, windowMs, cost };
 
     if (redis) {
       try {
-        rl = await checkRateLimitRedis(redis, req, { key, limit, windowMs });
+        rl = await checkRateLimitRedis(redis, req, options);
       } catch {
         // Redis unavailable — try Postgres next.
-        rl = await tryCheckRateLimitPg(req, { key, limit, windowMs });
+        rl = await tryCheckRateLimitPg(req, options);
       }
     } else {
-      rl = await tryCheckRateLimitPg(req, { key, limit, windowMs });
+      rl = await tryCheckRateLimitPg(req, options);
     }
 
     // Both Redis and Postgres failed (or weren't available). Decide what to
@@ -443,7 +539,7 @@ export function rateLimitExpress({
         return;
       }
       recordRateLimitDegraded(key, "inmem");
-      rl = checkRateLimit(req, { key, limit, windowMs });
+      rl = checkRateLimit(req, options);
     }
 
     // Best-effort sweep of stale rows; runs ~1/256 calls so the table

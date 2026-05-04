@@ -14,10 +14,25 @@ import { categorizeMcc } from "./mccCategories.js";
 import { webhookSecretHash } from "./crypto.js";
 
 /**
- * POST /api/mono/webhook/:secret — public Monobank delivery endpoint.
+ * POST /api/mono/webhook/:secret? — public Monobank delivery endpoint.
  *
- * Auth: path-based secret validated against `mono_connection.webhook_secret`
- * with timing-safe comparison. No session auth — Monobank calls this directly.
+ * Auth: secret validated against `mono_connection.webhook_secret_hash` with a
+ * SHA-256 lookup. No session auth — Monobank calls this directly.
+ *
+ * Secret transport (C1 — `docs/security/hardening/C1-mono-webhook-secret-in-url.md`):
+ *   1. **Preferred** — `X-Mono-Webhook-Secret` HTTP header. Headers do not
+ *      land in access-logs / Sentry `event.request.url` / Railway request
+ *      audit, so this path leaves zero secret residue in our log pipeline.
+ *   2. **Legacy** — path param `:secret`. Kept for backward-compat with the
+ *      Monobank delivery URL that pre-dates the header rollout. Once Monobank
+ *      is migrated off path-based delivery, the legacy route stays as a
+ *      404-only stub (it will only ever match expired secrets) and we drop
+ *      the `:secret` route in a follow-up PR.
+ *
+ * If both transports carry a value, the header wins — that lets us flip the
+ * Monobank `setWebHook`/`webhookUrl` to header-mode without re-deploying the
+ * server, and detect any straggling path-deliveries via the `legacy_path`
+ * audit metric tag (see `mono_webhook_secret_transport` counter increment).
  *
  * Payload: `{ type: "StatementItem", data: { account, statementItem } }`.
  * Idempotent UPSERT by PK `(user_id, mono_tx_id)`.
@@ -156,17 +171,57 @@ function buildMonoMemoryContent(
   return `${verb} ${amountStr} ${description}${categoryPart} · ${dateIso}`;
 }
 
+/**
+ * Read the webhook secret from either the `X-Mono-Webhook-Secret` header
+ * (preferred — never logged, see C1) or the legacy `:secret` path param.
+ * Returns `null` if neither is present or non-string. Header wins when both
+ * exist so the rollout can flip Monobank between transports without any
+ * server change.
+ *
+ * `transport` is reported back so the caller can bump a per-transport metric
+ * counter and we can watch the legacy-path traffic drain to zero before we
+ * remove the path route entirely.
+ */
+function extractWebhookSecret(req: Request): {
+  secret: string | null;
+  transport: "header" | "legacy_path" | "missing";
+} {
+  const headerRaw = req.headers["x-mono-webhook-secret"];
+  // Express types `headers[name]` як `string | string[] | undefined`. У
+  // нашому випадку custom-header — завжди один-рядок; стек middleware
+  // нормалізує дублі ще до того, як ми сюди дійдемо. Будь-яка не-string
+  // форма трактується як відсутність header-у — bezpieka першочергова.
+  if (typeof headerRaw === "string" && headerRaw.length > 0) {
+    return { secret: headerRaw, transport: "header" };
+  }
+  const pathSecret = req.params.secret;
+  if (typeof pathSecret === "string" && pathSecret.length > 0) {
+    return { secret: pathSecret, transport: "legacy_path" };
+  }
+  return { secret: null, transport: "missing" };
+}
+
 export async function webhookHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
   const start = process.hrtime.bigint();
-  const secret = req.params.secret;
+  const { secret, transport } = extractWebhookSecret(req);
 
-  if (!secret || typeof secret !== "string") {
+  if (!secret) {
     monoWebhookReceivedTotal.inc({ status: "invalid_secret" });
     res.status(404).json({ error: "Not found" });
     return;
+  }
+
+  // Audit-trail metric: skupчені виклики з `transport=legacy_path` після
+  // того, як Monobank flipped на header — сигнал, що десь пропустили
+  // конфіг. Поки ми ще не мігрували — це просто шумовий tag.
+  if (transport === "legacy_path") {
+    logger.debug({
+      msg: "mono_webhook_legacy_transport",
+      transport,
+    });
   }
 
   // Look up by SHA-256 of the path secret. Pre-hashing makes the WHERE

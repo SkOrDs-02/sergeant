@@ -4,6 +4,7 @@ import { logger, serializeError } from "../obs/logger.js";
 import { als } from "../obs/requestContext.js";
 import { appErrorsTotal } from "../obs/metrics.js";
 import { isOperationalError } from "../obs/errors.js";
+import { redactSensitiveUrl } from "../obs/sensitiveUrl.js";
 
 /**
  * Термінальний error handler Express. Має стояти ПІСЛЯ
@@ -46,10 +47,15 @@ export const errorHandler: ErrorRequestHandler = (
   }
 
   const level = status >= 500 ? "error" : "warn";
+  // C1 — `req.originalUrl` для шляхів типу `/api/mono/webhook/<secret>` несе
+  // сам секрет; `redactSensitiveUrl` знає про чутливі префікси і замінює
+  // path-segment на `[redacted]`. Шлях через `req.route?.path` (route
+  // pattern) безпечний за замовчуванням, але fallback ловить випадки, коли
+  // запит не дійшов до route-резолвера (404, body-parser помилка тощо).
   logger[level]({
     msg: "request_failed",
     method: req.method,
-    path: req.route?.path || req.originalUrl,
+    path: req.route?.path || redactSensitiveUrl(req.originalUrl),
     status,
     code,
     module: mod,

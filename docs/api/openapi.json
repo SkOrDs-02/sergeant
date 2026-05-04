@@ -1659,9 +1659,43 @@
         }
       }
     },
+    "/api/mono/webhook": {
+      "post": {
+        "summary": "Mono webhook (X-Mono-Webhook-Secret header — preferred)",
+        "tags": [
+          "mono"
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-mono-webhook-secret",
+            "schema": {
+              "type": "string",
+              "description": "Per-user webhook secret. Header-варіант — preferred з C1-rollout-у; не потрапляє в access-логи."
+            },
+            "required": true,
+            "description": "Per-user webhook secret. Header-варіант — preferred з C1-rollout-у; не потрапляє в access-логи."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/mono/webhook/{secret}": {
       "post": {
-        "summary": "Mono webhook (per-user secret у URL — не header)",
+        "summary": "Mono webhook (per-user secret у URL — legacy, deprecated по C1)",
         "tags": [
           "mono"
         ],

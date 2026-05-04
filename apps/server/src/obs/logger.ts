@@ -49,6 +49,19 @@ export const redactKeyNames = [
   "x-api-key",
   "x-token",
   "x-csrf-token",
+  // M3 — webhook secrets, які приходять як заголовки. Sentry-скрабер
+  // використовує case-insensitive match, тож одного рядка достатньо
+  // для будь-якого casing-у (X-Mono-Webhook-Secret, x-mono-webhook-secret).
+  "x-mono-webhook-secret",
+  "x-openclaw-webhook-secret",
+  "x-api-secret",
+  "x-internal-token",
+  // M3 — provider-specific API keys, які можуть з'явитись у `extra`-діагностиці
+  // (HubChat, embedding-debug, OpenClaw insights). Зберігаємо їх в одному
+  // конкретному casing-у (Sentry-скрабер сам нормалізує case).
+  "groqKey",
+  "anthropicKey",
+  "voyageKey",
   // PII — на будь-якій глибині.
   "email",
   "phone",
@@ -60,6 +73,14 @@ export const redactPaths = [
   'req.headers["x-api-key"]',
   'req.headers["x-token"]',
   'req.headers["x-csrf-token"]',
+  // M3 — Pino redaction для webhook-secret-headers і internal-tokens.
+  // Це доповнює `redactSensitiveUrl()` (`apps/server/src/obs/sensitiveUrl.ts`),
+  // що чистить URL-path; тут ми ловимо випадок, коли header-варіант
+  // потрапляє у `req.log({ headers })` через помилкове логування.
+  'req.headers["x-mono-webhook-secret"]',
+  'req.headers["x-openclaw-webhook-secret"]',
+  'req.headers["x-api-secret"]',
+  'req.headers["x-internal-token"]',
   'res.headers["set-cookie"]',
   "password",
   "newPassword",
@@ -77,6 +98,28 @@ export const redactPaths = [
   "signature",
   "dsn",
   "connectionString",
+  // M3 — provider-specific API keys у root + 1 рівень.
+  "groqKey",
+  "anthropicKey",
+  "voyageKey",
+  "*.groqKey",
+  "*.anthropicKey",
+  "*.voyageKey",
+  // M3 — типові ділянки `req.body` для login/register flows. Зазвичай ми
+  // НЕ логуємо body, але якщо хтось зробить `logger.error({ req })` через
+  // pino-std-serializer, body буде включений — і ми хочемо його зачистити.
+  "req.body.password",
+  "req.body.token",
+  "req.body.currentPassword",
+  "req.body.newPassword",
+  // M3 — axios `err.config.headers.Authorization` (i.e. упав запит до
+  // зовнішнього сервісу). Pino-std `err` serializer прокидає `config`
+  // як частину помилки, тож Authorization потрапляв у лог як plaintext.
+  "err.config.headers.Authorization",
+  "err.config.headers.authorization",
+  "err.config.headers.Cookie",
+  "err.config.headers.cookie",
+  'err.config.headers["x-mono-webhook-secret"]',
   // Wildcard-шляхи для типових 1-2 рівнів вкладеності (pino redact матчить
   // wildcard рівно на одну глибину, тому потрібно явно прописати обидва).
   // Ширша редакція (будь-яка глибина) робиться у `sentry.ts:scrubPII()`

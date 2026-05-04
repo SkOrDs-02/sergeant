@@ -184,7 +184,6 @@ export function HubDashboard({
   // sentinel keeps FTUX gates closed during the first render so we
   // don't flash post-FTUX surfaces before the value resolves.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSessionDays(recordSessionDay() || getSessionDays());
   }, []);
   const SOFT_AUTH_SESSION_DAYS_THRESHOLD = 3;
@@ -407,10 +406,15 @@ export function HubDashboard({
   const isMondayOrTuesday = now.getDay() === 1 || now.getDay() === 2;
   const showDigestFooter = digestFresh || isMondayOrTuesday;
 
-  // Show checklist for first active module (only if user has no real entry yet).
-  // Suppressed while `FirstActionHeroCard` is the hero — both surfaces enumerate
-  // module-specific next steps, so stacking them split user attention 1:1 and
-  // the FTUX hero already covers the same ground with a single primary CTA.
+  // Show checklist for first active module — strict single-hero rule:
+  // pre-FTUX (no real entry) FirstActionHeroCard / TodayFocusCard alone
+  // is the hero; ModuleChecklist would split attention into two
+  // module-specific next-steps surfaces. Post-FTUX, within the first
+  // 7 session-days, the checklist is the **post-celebration** guide
+  // toward second / third entry, while FirstActionHeroCard is gone.
+  // After 7 days the user is past activation; the checklist gracefully
+  // disappears so the dashboard does not carry a perpetual onboarding
+  // chrome above the bento grid.
   const primaryModule = activeModules[0] as
     | "finyk"
     | "fizruk"
@@ -418,7 +422,7 @@ export function HubDashboard({
     | "nutrition"
     | undefined;
   const showChecklist =
-    primaryModule && !hasRealEntry && !firstActionVisible && sessionDays <= 7;
+    primaryModule && hasRealEntry && !firstActionVisible && sessionDays <= 7;
 
   // ONE-HERO RULE
   let hero: React.ReactNode;

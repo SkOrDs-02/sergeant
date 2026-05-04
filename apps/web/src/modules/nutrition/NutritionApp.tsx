@@ -31,6 +31,12 @@ import {
 import { useNutritionPantries } from "./hooks/useNutritionPantries";
 import { useNutritionLog } from "./hooks/useNutritionLog";
 import { useNutritionDualWriteBoot } from "./hooks/useNutritionDualWriteBoot";
+import { useNutritionSqliteReadBoot } from "./hooks/useNutritionSqliteReadBoot";
+import { getCachedNutritionSqliteState } from "./lib/sqliteReader";
+import {
+  useNutritionSqliteReadFlag,
+  useNutritionSqliteReadTick,
+} from "./lib/sqliteReadGate";
 import { usePhotoAnalysis } from "./hooks/usePhotoAnalysis";
 import { useShoppingList } from "./hooks/useShoppingList";
 import { useNutritionUiState } from "./hooks/useNutritionUiState";
@@ -73,6 +79,11 @@ export default function NutritionApp({
   // calls from `nutritionStorage.ts` early-out at the
   // `isNutritionDualWriteRegistered()` gate, leaving SQLite empty.
   useNutritionDualWriteBoot();
+
+  // Stage 4 PR #033: warm the SQLite read cache once after auth so the
+  // overlay reads in `useNutritionLog` / `useNutritionPantries` /
+  // saved-recipe consumers can hydrate. No-op when the read flag is off.
+  useNutritionSqliteReadBoot();
 
   const {
     activePage,
@@ -160,12 +171,24 @@ export default function NutritionApp({
 
   const [prefs, setPrefs] = useState(() => loadNutritionPrefs());
   const [prefsStorageErr, setPrefsStorageErr] = useState("");
+  const sqliteReadEnabled = useNutritionSqliteReadFlag();
+  const sqliteCacheTick = useNutritionSqliteReadTick();
 
   useEffect(() => {
     setPrefsStorageErr(
       persistNutritionPrefs(prefs) ? "" : "Не вдалося зберегти налаштування.",
     );
   }, [prefs]);
+
+  // Stage 4 PR #033: under `feature.nutrition.sqlite_v2.read_sqlite`,
+  // overlay nutrition prefs from the SQLite cache once it's warm. The
+  // LS read above stays as a synchronous fallback.
+  useEffect(() => {
+    if (!sqliteReadEnabled) return;
+    const cache = getCachedNutritionSqliteState();
+    if (cache.refreshedAt === null) return;
+    if (cache.prefs) setPrefs(cache.prefs);
+  }, [sqliteReadEnabled, sqliteCacheTick]);
 
   const {
     editingMeal,

@@ -1,7 +1,7 @@
 # M3 — Pino `redactPaths` is incomplete for security headers and URLs
 
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** Open
+> **Status:** Closed (2026-05-04) — see Resolution log.
 
 | Field          | Value                                                  |
 | -------------- | ------------------------------------------------------ |
@@ -9,7 +9,7 @@
 | **Sprint**     | [Sprint 2](./sprint-2.md)                              |
 | **Owner**      | platform                                               |
 | **Effort**     | 0.25 person-day                                        |
-| **Status**     | Open                                                   |
+| **Status**     | **Closed** (2026-05-04)                                |
 | **Discovered** | 2026-05-03 deep security review                        |
 
 ## Summary
@@ -110,3 +110,20 @@ const redactPaths = [
 
 - [`./C1-mono-webhook-secret-in-url.md`](./C1-mono-webhook-secret-in-url.md)
 - [`./M1-csp-disable-runtime-flag.md`](./M1-csp-disable-runtime-flag.md)
+
+## Resolution log
+
+### 2026-05-04 — closed
+
+`apps/server/src/obs/logger.ts` розширено:
+
+- **redactKeyNames** (Sentry-скрабер, recursive case-insensitive) тепер містить `x-mono-webhook-secret`, `x-openclaw-webhook-secret`, `x-api-secret`, `x-internal-token`, `groqKey`, `anthropicKey`, `voyageKey`.
+- **redactPaths** (Pino, path-based) тепер містить:
+  - `req.headers["x-mono-webhook-secret"]`, `req.headers["x-openclaw-webhook-secret"]`, `req.headers["x-api-secret"]`, `req.headers["x-internal-token"]`.
+  - `groqKey` / `anthropicKey` / `voyageKey` у root + `*.<key>` (1 рівень вкладеності).
+  - `req.body.password`, `req.body.token`, `req.body.currentPassword`, `req.body.newPassword`.
+  - `err.config.headers.Authorization` / `authorization` / `Cookie` / `cookie` / `["x-mono-webhook-secret"]` (axios upstream-failure capture).
+
+> **`req.url` / `req.originalUrl`** свідомо НЕ додано в redactPaths (повна редакція URL знищить корисність access-логу). Натомість використовуємо `redactSensitiveUrl()` з C1 — він редагує лише secret-bearing path-prefix-и (`/api/mono/webhook/<secret>`), залишаючи решту URL читабельною. Цей хелпер вже інтегрований у `errorHandler.ts` і Sentry `applyBeforeSend`/`applyBeforeBreadcrumb` (PR #1627).
+
+**Tests.** `apps/server/src/obs/logger.test.ts` — table-driven `M3 — extended redactPaths coverage` (15 cases): для кожного нового entry дамп log → assert `[redacted]` у JSON-виводі. Sanity-перевірка нейтральних полів у тому ж payload-і.

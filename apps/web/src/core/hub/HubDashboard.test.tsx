@@ -194,6 +194,21 @@ vi.mock("../onboarding/FirstActionSheet", () => ({
   ),
 }));
 
+// Stub `ModuleChecklist` — its rendered «Фінік: Перші кроки» heading and
+// per-step buttons collided with the bento «Фінік» button under
+// `getByRole("button", { name: /Фінік/i })`. The post-S3.5 single-hero
+// rule shows the checklist whenever `hasRealEntry && sessionDays <= 7`,
+// which is the default beforeEach state. The dedicated S3.5 test below
+// asserts the checklist appears via its own title selector — other tests
+// only need to know it does not pollute the bento buttons.
+vi.mock("../onboarding/ModuleChecklist", () => ({
+  ModuleChecklist: ({ moduleId }: { moduleId: string }) => (
+    <div data-testid={`module-checklist-${moduleId}`}>
+      {MODULE_CHECKLISTS[moduleId as keyof typeof MODULE_CHECKLISTS]?.title}
+    </div>
+  ),
+}));
+
 vi.mock("../onboarding/SoftAuthPromptCard", () => ({
   SoftAuthPromptCard: ({ onOpenAuth }: { onOpenAuth: () => void }) => (
     <button type="button" onClick={onOpenAuth}>
@@ -319,14 +334,27 @@ describe("HubDashboard", () => {
 
     renderDashboard();
 
-    // Hero slot is empty when there is no focus rec — the bento module
-    // grid handles the FTUX entry points, so a chip fallback would only
-    // duplicate the per-module quick-add affordances below.
+    // Single-hero rule (S3.5): pre-FTUX (no real entry) `ModuleChecklist`
+    // is suppressed — `FirstActionHeroCard` / `TodayFocusCard` is the
+    // sole next-steps surface and the bento module grid handles ad-hoc
+    // entry points. Stacking the checklist on top would split user
+    // attention into two competing «do these N steps» surfaces.
     expect(screen.queryByTestId("today-focus-card")).toBeNull();
-    expect(screen.getByText(MODULE_CHECKLISTS.finyk.title)).toBeInTheDocument();
+    expect(screen.queryByText(MODULE_CHECKLISTS.finyk.title)).toBeNull();
     expect(screen.queryByTestId("assistant-advice-card")).toBeNull();
     expect(screen.queryByTestId("hub-insights-panel")).toBeNull();
     expect(screen.queryByTestId("weekly-digest-footer")).toBeNull();
+  });
+
+  it("renders module checklist post-FTUX within first week (single-hero S3.5)", () => {
+    // Past the FTUX gate (default beforeEach state): `hasRealEntry` true,
+    // `firstActionVisible` false, `sessionDays <= 7`. The checklist now
+    // takes over as the post-celebration guide toward 2nd/3rd entry.
+    localStorage.setItem(VIBE_PICKS_KEY, JSON.stringify(["finyk"]));
+
+    renderDashboard();
+
+    expect(screen.getByText(MODULE_CHECKLISTS.finyk.title)).toBeInTheDocument();
   });
 
   it("opens module cards and keeps quick-add actions scoped to active modules with recommendation signal", () => {

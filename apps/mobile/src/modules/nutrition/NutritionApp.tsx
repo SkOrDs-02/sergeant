@@ -25,6 +25,7 @@ import {
   type NutritionMainTab,
 } from "./components/NutritionBottomNav";
 import { useNutritionDualWriteBoot } from "./hooks/useNutritionDualWriteBoot";
+import { useNutritionSqliteReadBoot } from "./hooks/useNutritionSqliteReadBoot";
 import { Dashboard } from "./pages/Dashboard";
 import { Log } from "./pages/Log";
 import { Shopping } from "./pages/Shopping";
@@ -54,6 +55,12 @@ function NutritionShell() {
   // calls from `nutritionStore.ts` and `recipeBookStore.ts` early-out at
   // the `isNutritionDualWriteRegistered()` gate, leaving SQLite empty.
   useNutritionDualWriteBoot();
+
+  // Stage 4 PR #033: warm the SQLite read cache once after auth so
+  // overlay reads in `useNutritionLog` / `useNutritionPantries` /
+  // `useNutritionPrefs` / saved-recipe hooks can hydrate. No-op when
+  // the read flag is off.
+  useNutritionSqliteReadBoot();
 
   const handleSelectTab = useCallback((next: NutritionMainTab) => {
     setMainTab(next);
