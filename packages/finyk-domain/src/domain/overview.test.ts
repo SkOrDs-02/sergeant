@@ -89,8 +89,8 @@ describe("buildSubscriptionFlows", () => {
       currency: "₴",
       amount: null,
     });
-    expect(flows[0].daysLeft).toBe(5);
-    expect(flows[0].hint).toBe("через 5 дн");
+    expect(flows[0]!.daysLeft).toBe(5);
+    expect(flows[0]!.hint).toBe("через 5 дн");
   });
 });
 
@@ -119,9 +119,9 @@ describe("buildDebtOutFlows / buildReceivableInFlows", () => {
       NOW,
     );
     expect(flows).toHaveLength(1);
-    expect(flows[0].sign).toBe("+");
-    expect(flows[0].color).toBe(OVERVIEW_FLOW_COLOR.success);
-    expect(flows[0].daysLeft).toBe(7);
+    expect(flows[0]!.sign).toBe("+");
+    expect(flows[0]!.color).toBe(OVERVIEW_FLOW_COLOR.success);
+    expect(flows[0]!.daysLeft).toBe(7);
   });
 });
 

@@ -96,7 +96,7 @@ describe("getFrequentCategories", () => {
     });
     const ids = result.map((r) => r.id);
     expect(ids[0]).toBe("food"); // 3 використання (2 банк + 1 manual)
-    expect(result[0].count).toBe(3);
+    expect(result[0]!.count).toBe(3);
     expect(ids).toContain("transport");
   });
 
@@ -117,7 +117,7 @@ describe("getFrequentCategories", () => {
       now,
       windowDays: 60,
     });
-    expect(res[0].count).toBe(1);
+    expect(res[0]!.count).toBe(1);
   });
 
   it("ігнорує виключені id", () => {
@@ -129,7 +129,7 @@ describe("getFrequentCategories", () => {
       now,
       excludedTxIds: new Set(["x"]),
     });
-    expect(res[0].count).toBe(1);
+    expect(res[0]!.count).toBe(1);
   });
 
   it("поважає overrides з txCategories", () => {
@@ -145,7 +145,7 @@ describe("getFrequentCategories", () => {
       now,
       txCategories: { t1: "entertainment" },
     });
-    expect(res[0].id).toBe("entertainment");
+    expect(res[0]!.id).toBe("entertainment");
   });
 });
 
@@ -179,9 +179,9 @@ describe("getFrequentMerchants", () => {
     const res = getFrequentMerchants(txs as never, [], { now });
     // АТБ — 2 хіти → у топі; Сільпо — 1, отже відфільтрований (threshold = 2).
     expect(res.length).toBe(1);
-    expect(res[0].count).toBe(2);
-    expect(res[0].total).toBe(300);
-    expect(res[0].suggestedCategoryId).toBe("food");
+    expect(res[0]!.count).toBe(2);
+    expect(res[0]!.total).toBe(300);
+    expect(res[0]!.suggestedCategoryId).toBe("food");
   });
 
   it("manual-витрати рахуються разом із банковими", () => {
@@ -203,8 +203,8 @@ describe("getFrequentMerchants", () => {
       }),
     ];
     const res = getFrequentMerchants(txs as never, manuals as never, { now });
-    expect(res[0].count).toBe(2);
-    expect(res[0].suggestedCategoryId).toBe("transport");
+    expect(res[0]!.count).toBe(2);
+    expect(res[0]!.suggestedCategoryId).toBe("transport");
   });
 
   it("поважає limit", () => {

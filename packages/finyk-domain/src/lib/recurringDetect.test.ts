@@ -56,15 +56,15 @@ describe("finyk/recurringDetect", () => {
       const out = detectRecurring(txs, { nowSec: now });
       expect(out).toHaveLength(1);
       const [cand] = out;
-      expect(cand.cadence).toBe("monthly");
-      expect(cand.occurrences).toBe(4);
-      expect(cand.confidence).toBe("high");
-      expect(cand.avgAmount).toBe(199);
-      expect(cand.currency).toBe("UAH");
-      expect(cand.key).toBe("netflix");
-      expect(cand.billingDay).toBeGreaterThanOrEqual(1);
-      expect(cand.billingDay).toBeLessThanOrEqual(31);
-      expect(cand.sampleTxIds[0]).toBe("t4");
+      expect(cand!.cadence).toBe("monthly");
+      expect(cand!.occurrences).toBe(4);
+      expect(cand!.confidence).toBe("high");
+      expect(cand!.avgAmount).toBe(199);
+      expect(cand!.currency).toBe("UAH");
+      expect(cand!.key).toBe("netflix");
+      expect(cand!.billingDay).toBeGreaterThanOrEqual(1);
+      expect(cand!.billingDay).toBeLessThanOrEqual(31);
+      expect(cand!.sampleTxIds[0]).toBe("t4");
     });
 
     it("flags 3-occurrence group as medium", () => {
@@ -76,7 +76,7 @@ describe("finyk/recurringDetect", () => {
       ];
       const out = detectRecurring(txs, { nowSec: now });
       expect(out).toHaveLength(1);
-      expect(out[0].confidence).toBe("medium");
+      expect(out[0]!.confidence).toBe("medium");
     });
 
     it("flags 2-occurrence group as low", () => {
@@ -87,8 +87,8 @@ describe("finyk/recurringDetect", () => {
       ];
       const out = detectRecurring(txs, { nowSec: now });
       expect(out).toHaveLength(1);
-      expect(out[0].confidence).toBe("low");
-      expect(out[0].cadence).toBe("monthly");
+      expect(out[0]!.confidence).toBe("low");
+      expect(out[0]!.cadence).toBe("monthly");
     });
 
     it("rejects groups with high gap jitter", () => {
@@ -170,8 +170,8 @@ describe("finyk/recurringDetect", () => {
       });
       // Only 2 left → still low confidence monthly.
       expect(out).toHaveLength(1);
-      expect(out[0].occurrences).toBe(2);
-      expect(out[0].sampleTxIds).not.toContain("c");
+      expect(out[0]!.occurrences).toBe(2);
+      expect(out[0]!.sampleTxIds).not.toContain("c");
     });
 
     it("drops groups whose latest tx is older than maxAgeDays", () => {
@@ -195,7 +195,7 @@ describe("finyk/recurringDetect", () => {
       ];
       const out = detectRecurring(txs, { nowSec: now });
       expect(out).toHaveLength(1);
-      expect(out[0].cadence).toBe("weekly");
+      expect(out[0]!.cadence).toBe("weekly");
     });
 
     it("sorts by confidence desc, then amount desc", () => {
@@ -237,10 +237,10 @@ describe("finyk/recurringDetect", () => {
       ];
       const out = detectRecurring(clean, { nowSec: now });
       expect(out).toHaveLength(2);
-      expect(out[0].key).toBe("small often");
-      expect(out[0].confidence).toBe("high");
-      expect(out[1].key).toBe("big rare");
-      expect(out[1].confidence).toBe("low");
+      expect(out[0]!.key).toBe("small often");
+      expect(out[0]!.confidence).toBe("high");
+      expect(out[1]!.key).toBe("big rare");
+      expect(out[1]!.confidence).toBe("low");
     });
 
     it("returns USD for currencyCode 840", () => {
@@ -263,7 +263,7 @@ describe("finyk/recurringDetect", () => {
       ];
       const out = detectRecurring(txs, { nowSec: now });
       expect(out).toHaveLength(1);
-      expect(out[0].currency).toBe("USD");
+      expect(out[0]!.currency).toBe("USD");
     });
 
     it("ignores positive (income) transactions", () => {

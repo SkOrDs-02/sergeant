@@ -164,9 +164,12 @@ export function calcForecast(
       }
     }
 
-    // Add a bridge point at today connecting actual to forecast
+    // Add a bridge point at today connecting actual to forecast.
+    // `dailyData[dayOfMonth - 1]` гарантовано існує: умова `0 < dayOfMonth
+    // < daysInMonth` + цикл вище вже наповнив усі дні місяця.
     if (dayOfMonth > 0 && dayOfMonth < daysInMonth) {
-      dailyData[dayOfMonth - 1].forecast = Math.round(cumActual);
+      const bridge = dailyData[dayOfMonth - 1];
+      if (bridge) bridge.forecast = Math.round(cumActual);
     }
 
     return {

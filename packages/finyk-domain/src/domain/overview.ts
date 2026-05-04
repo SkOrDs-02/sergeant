@@ -56,7 +56,11 @@ export const OVERVIEW_FLOW_COLOR = {
  */
 export function parseLocalDate(isoDate: string | null | undefined): Date {
   const [y, m, d] = (isoDate || "").split("-").map(Number);
-  return new Date(y, (m || 1) - 1, d || 1);
+  // `y` буде `undefined` для пустого рядка — `Date(NaN, ...)` повертає
+  // Invalid Date, а ось `new Date(undefined as any, ...)` падає у TS під
+  // strict noUncheckedIndexedAccess. Дефолтимо у епоху, поведінка
+  // викликачів (`isNaN(date.getTime())`) лишається консистентною.
+  return new Date(y ?? 1970, (m || 1) - 1, d || 1);
 }
 
 /**

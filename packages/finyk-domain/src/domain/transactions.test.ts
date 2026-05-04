@@ -173,7 +173,7 @@ describe("normalizeTransactions / dedupeAndSortTransactions", () => {
       { id: "b", time: 2, amount: -1 },
     ]);
     expect(list).toHaveLength(2);
-    expect(list[0].source).toBe("import");
+    expect(list[0]!.source).toBe("import");
   });
 
   it("дедуплікує за id та сортує за time desc", () => {
@@ -194,7 +194,7 @@ describe("normalizeTransactions / dedupeAndSortTransactions", () => {
       { id: "a", time: 3, amount: 1 },
     ] as never);
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe("a");
+    expect(result[0]!.id).toBe("a");
   });
 
   it("повертає порожній масив для не-масиву", () => {

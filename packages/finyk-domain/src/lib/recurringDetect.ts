@@ -247,8 +247,13 @@ export function detectRecurring(
     const sorted = [...txs].sort((a, b) => (a.time || 0) - (b.time || 0));
     const gapsDays: number[] = [];
     for (let i = 1; i < sorted.length; i++) {
-      const prev = sorted[i - 1].time || 0;
-      const cur = sorted[i].time || 0;
+      // Цикл `i = 1..sorted.length-1` гарантує існування обох індексів,
+      // але `noUncheckedIndexedAccess` все одно вимагає явного narrow.
+      const prevTx = sorted[i - 1];
+      const curTx = sorted[i];
+      if (!prevTx || !curTx) continue;
+      const prev = prevTx.time || 0;
+      const cur = curTx.time || 0;
       if (prev && cur && cur > prev) {
         gapsDays.push((cur - prev) / DAY_SECONDS);
       }
@@ -261,7 +266,10 @@ export function detectRecurring(
     const cv = amountCoefficientOfVariation(absAmounts);
     if (cv > MAX_AMOUNT_CV) continue;
 
+    // `sorted.length >= MIN_OCCURRENCES` (filter вище), але індекс-доступ
+    // у TS під strict — типу `T | undefined`, тому явно narrow-имо.
     const lastTx = sorted[sorted.length - 1];
+    if (!lastTx) continue;
     const lastTxTime = lastTx.time || 0;
     if (!lastTxTime) continue;
 
