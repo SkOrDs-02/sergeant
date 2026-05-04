@@ -775,7 +775,6 @@ export default [
       "apps/web/src/core/lib/hubChatContext.ts",
       "apps/web/src/core/hub/HubDashboard.tsx",
       "apps/web/src/modules/nutrition/components/DailyPlanCard.tsx",
-      "apps/web/src/core/lib/chatActions/types.ts",
       "apps/web/src/core/lib/chatActions/fizrukActions.ts",
       "apps/web/src/modules/fizruk/pages/Exercise.tsx",
       "apps/web/src/modules/finyk/pages/AssetsTable.tsx",
