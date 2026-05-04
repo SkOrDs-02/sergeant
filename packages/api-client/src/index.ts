@@ -191,3 +191,23 @@ export {
   type WebVitalsEndpoints,
   type WebVitalsPayload,
 } from "./endpoints/webVitals";
+
+// ────────────────────── OpenAPI typed client ──────────────────────
+//
+// Auto-generated from `docs/api/openapi.json` by `pnpm api:generate-openapi-types`.
+// Single source of truth → zod schemas in `packages/shared/src/schemas/api.ts`,
+// then `pnpm api:generate-openapi` (zod → spec), then types here. CI gates
+// (`pnpm api:check-openapi` + `pnpm api:check-openapi-types`) fail any PR that
+// touches one without the others.
+//
+// Use `paths` to type-route handlers and `components["schemas"]["MeResponse"]`
+// to pick out a named schema. `operations` is keyed by `operationId` once the
+// spec gets them populated. Keep hand-written types in `endpoints/*` as
+// _the_ public surface for now — the generated ones are an additive parallel
+// layer so consumers can move incrementally.
+export type {
+  paths as OpenApiPaths,
+  components as OpenApiComponents,
+  operations as OpenApiOperations,
+  webhooks as OpenApiWebhooks,
+} from "./generated/openapi";
