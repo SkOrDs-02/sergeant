@@ -67,9 +67,12 @@
 
 Закриті Medium / Low картки (хронологічно):
 
-| ID                                     | Title                        | Status                                                                            | Sprint                    |
-| -------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------- | ------------------------- |
-| [M2](./M2-trust-proxy-parameterize.md) | `trust proxy = 1` hard-coded | Closed (2026-05-04) — PR [#1682](https://github.com/Skords-01/Sergeant/pull/1682) | [Sprint 3](./sprint-3.md) |
+| ID                                             | Title                                                | Status                                                                                                     | Sprint                    |
+| ---------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------- |
+| [M2](./M2-trust-proxy-parameterize.md)         | `trust proxy = 1` hard-coded                         | Closed (2026-05-04) — PR [#1682](https://github.com/Skords-01/Sergeant/pull/1682)                          | [Sprint 3](./sprint-3.md) |
+| [M4](./M4-groq-model-allowlist.md)             | `GROQ_TRANSCRIBE_MODEL` env-injectable, no allowlist | Closed (2026-05-04) — batched M4 + M5 + M13 hardening PR                                                   | [Sprint 3](./sprint-3.md) |
+| [M5](./M5-audio-mime-normalize.md)             | Audio MIME aliases without normalization             | Closed (2026-05-04) — batched M4 + M5 + M13 hardening PR                                                   | [Sprint 3](./sprint-3.md) |
+| [M13](./M13-require-session-soft-loud-fail.md) | `requireSessionSoft` swallows DB errors as 401       | Closed (2026-05-04, server-side) — batched M4 + M5 + M13 hardening PR; client-side push back-off follow-up | [Sprint 3](./sprint-3.md) |
 
 ## Cross-references
 

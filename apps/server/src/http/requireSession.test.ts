@@ -28,7 +28,11 @@ vi.mock("../auth.js", () => ({
   getSessionUser: getSessionUserMock,
 }));
 
-import { requireSession, requireSessionSoft } from "./requireSession.js";
+import {
+  requireSession,
+  requireSessionSoft,
+  __testingResetSoftFailureCounter,
+} from "./requireSession.js";
 
 function makeApp(handler: express.RequestHandler) {
   const app = express();
@@ -55,6 +59,7 @@ function makeApp(handler: express.RequestHandler) {
 
 beforeEach(() => {
   getSessionUserMock.mockReset();
+  __testingResetSoftFailureCounter();
 });
 
 describe("H8: requireSession() сетить Cross-Origin-Resource-Policy: same-origin", () => {
@@ -110,8 +115,72 @@ describe("H8: requireSessionSoft() теж сетить CORP=same-origin", () => 
 
     const res = await request(app).get("/protected");
 
-    // Soft-варіант мапить throw у 401, не у 500 (push-сценарій).
+    // Soft-варіант мапить транзиентну throw у 401, не у 500 (push-сценарій),
+    // допоки circuit-breaker не спрацював (див. M13-блок нижче).
     expect(res.status).toBe(401);
     expect(res.headers["cross-origin-resource-policy"]).toBe("same-origin");
+  });
+});
+
+// M13 — circuit-breaker для persistent session-lookup failures.
+// Див. docs/security/hardening/M13-require-session-soft-loud-fail.md.
+describe("M13: requireSessionSoft() ескалюється з 401 у 503 на persistent fail", () => {
+  it("під threshold (4 fail-и поспіль) лишається 401 з UNAUTHORIZED", async () => {
+    const app = makeApp(requireSessionSoft());
+
+    for (let i = 0; i < 4; i++) {
+      getSessionUserMock.mockRejectedValueOnce(new Error("transient db"));
+      const res = await request(app).get("/protected");
+      expect(res.status).toBe(401);
+      expect(res.body.code).toBe("UNAUTHORIZED");
+      expect(res.headers["cross-origin-resource-policy"]).toBe("same-origin");
+    }
+  });
+
+  it("на 5-му fail-і поспіль ескалюється у 503 SESSION_LOOKUP_UNAVAILABLE", async () => {
+    const app = makeApp(requireSessionSoft());
+
+    for (let i = 0; i < 4; i++) {
+      getSessionUserMock.mockRejectedValueOnce(new Error("db down"));
+      await request(app).get("/protected");
+    }
+    getSessionUserMock.mockRejectedValueOnce(new Error("db down"));
+    const res = await request(app).get("/protected");
+
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe("SESSION_LOOKUP_UNAVAILABLE");
+    // CORP лишається same-origin навіть на 503 (не послаблюємо H8 при outage).
+    expect(res.headers["cross-origin-resource-policy"]).toBe("same-origin");
+  });
+
+  it("успішний lookup ресетить лічильник: після 4 fail + 1 success, наступний throw → 401", async () => {
+    const app = makeApp(requireSessionSoft());
+
+    for (let i = 0; i < 4; i++) {
+      getSessionUserMock.mockRejectedValueOnce(new Error("db blip"));
+      await request(app).get("/protected");
+    }
+    // Successful lookup посередині скидає лічильник.
+    getSessionUserMock.mockResolvedValueOnce({ id: "u-1", email: "x@y.z" });
+    const ok = await request(app).get("/protected");
+    expect(ok.status).toBe(200);
+
+    // Тепер новий throw — це 1-й, не 5-й, тож 401, не 503.
+    getSessionUserMock.mockRejectedValueOnce(new Error("db blip"));
+    const res = await request(app).get("/protected");
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe("UNAUTHORIZED");
+  });
+
+  it('"немає сесії" (user=null) НЕ інкрементує failure counter', async () => {
+    const app = makeApp(requireSessionSoft());
+
+    // 10 раз поспіль "немає сесії" — все одно 401 і ніколи не 503.
+    for (let i = 0; i < 10; i++) {
+      getSessionUserMock.mockResolvedValueOnce(null);
+      const res = await request(app).get("/protected");
+      expect(res.status).toBe(401);
+      expect(res.body.code).toBe("UNAUTHORIZED");
+    }
   });
 });

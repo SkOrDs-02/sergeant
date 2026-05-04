@@ -181,8 +181,16 @@ const envSchema = z.object({
    * Whisper-модель Groq для транскрипції. За замовчуванням
    * `whisper-large-v3-turbo` — найдешевший варіант з адекватною
    * якістю українською. Альтернатива: `whisper-large-v3`.
+   *
+   * **M4** — code-side allowlist. Розширення enum-у потребує PR-ревʼю,
+   * замість прихованої env-зміни. Дублюється у
+   * `apps/server/src/modules/transcribe/transcribe.ts` (boot-time
+   * fail-fast). Див.
+   * `docs/security/hardening/M4-groq-model-allowlist.md`.
    */
-  GROQ_TRANSCRIBE_MODEL: z.string().default("whisper-large-v3-turbo"),
+  GROQ_TRANSCRIBE_MODEL: z
+    .enum(["whisper-large-v3-turbo", "whisper-large-v3"])
+    .default("whisper-large-v3-turbo"),
   /**
    * Killer-switch для AI-квоти: при `true` `assertAiQuota()` стає no-op і всі
    * AI-роути проходять без декременту лічильника `ai_usage_daily`. Призначений
