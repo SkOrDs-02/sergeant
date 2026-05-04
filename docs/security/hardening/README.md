@@ -58,7 +58,7 @@
 | [H5](./H5-trusted-origins-exp-scheme.md)     | `exp://` як trusted origin у production                  | Closed (2026-05-04) | Sprint 2                  |
 | H6 — `H6-email-verification.md` (Sprint 2)   | Email verification disabled                              | Open                | Sprint 2                  |
 | [H7](./H7-vercel-config-drift.md)            | `vercel.json` SSOT drift                                 | Closed (2026-05-04) | Sprint 2                  |
-| H8 — `H8-corp-per-route.md` (Sprint 2)       | Helmet `CORP: cross-origin` глобально                    | Open                | Sprint 2                  |
+| [H8](./H8-corp-per-route.md)                 | Helmet `CORP: cross-origin` глобально                    | Closed (2026-05-04) | Sprint 2                  |
 | H9 — `H9-transcribe-usd-cap.md` (Sprint 2)   | Transcribe per-user USD-cap відсутній                    | Open                | Sprint 2                  |
 
 ### Medium / Low / Informational

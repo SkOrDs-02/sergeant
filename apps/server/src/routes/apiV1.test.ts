@@ -335,3 +335,95 @@ describe("POST /api/v1/push/unregister", () => {
     expect(queryMock).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * H8 — `Cross-Origin-Resource-Policy` per-route classification.
+ *
+ * Глобальний `apiHelmetMiddleware` сетить `CORP: cross-origin` на всі
+ * відповіді, бо SPA на Vercel мусить fetch-ити Railway-API. Це створює
+ * login-state oracle: зловмисний `<img src="…/api/me">` може за `onload`
+ * визначити, чи залогінений користувач. Картка
+ * `docs/security/hardening/H8-corp-per-route.md` вимагає override-а на
+ * `same-origin` для session-protected роутів.
+ *
+ * Реалізація: `requireSession*` сетить хедер до резолву сесії, тож
+ * автоматично покриває весь `/api/me`, `/api/mono/*`, `/api/sync/*`,
+ * `/api/push/*`, `/api/coach/*`, `/api/nutrition/*`, `/api/transcribe`,
+ * `/api/ai-memory/*` тощо. Публічні endpoint-и без `requireSession`
+ * (`/healthz`, `/api/metrics/web-vitals`, `/api/csp-report`,
+ * `/api/auth/*`) лишаються `cross-origin`.
+ */
+describe("H8: Cross-Origin-Resource-Policy per-route", () => {
+  const user = {
+    id: "user_h8",
+    email: "h8@example.com",
+    name: "H8",
+    image: null,
+    emailVerified: true,
+  };
+
+  it("session-protected /api/me з валідною сесією → CORP=same-origin", async () => {
+    getSessionUserMock.mockResolvedValueOnce(user);
+    const app = createApp();
+    const res = await request(app)
+      .get("/api/me")
+      .set("Authorization", "Bearer x");
+    expect(res.status).toBe(200);
+    expect(res.headers["cross-origin-resource-policy"]).toBe("same-origin");
+  });
+
+  it("session-protected /api/me без сесії (401) → теж CORP=same-origin", async () => {
+    // Найкритичніший кейс H8: 401 не може лишатися cross-origin, бо
+    // тоді стейт-оракул через `<img onload>` все одно працює — браузер
+    // дозволив би пікселю завантажитись (status code не приховується від
+    // attacker-сторінки). Хедер мусить блокувати тіло до перевірки auth.
+    const app = createApp();
+    const res = await request(app).get("/api/me");
+    expect(res.status).toBe(401);
+    expect(res.headers["cross-origin-resource-policy"]).toBe("same-origin");
+  });
+
+  it("публічний /healthz → CORP=cross-origin (helmet default)", async () => {
+    const app = createApp();
+    const res = await request(app).get("/healthz");
+    // Health-check мусить лишатись cross-origin — інакше зовнішні
+    // моніторинг-чек-апи (UptimeRobot, Pingdom) ламаються.
+    expect(res.headers["cross-origin-resource-policy"]).toBe("cross-origin");
+  });
+
+  it("публічний /api/csp-report → CORP=cross-origin (CSP-репорти прилітають з Vercel-домену)", async () => {
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/csp-report")
+      .set("Content-Type", "application/csp-report")
+      .send(
+        JSON.stringify({
+          "csp-report": {
+            "document-uri": "https://sergeant.vercel.app/",
+            "violated-directive": "img-src",
+            "blocked-uri": "https://attacker.example/x.png",
+          },
+        }),
+      );
+    // 204 (legacy) або 202 (Reporting-API) — обидва no-content; нам важливий
+    // саме хедер. CSP-report ENDPOINT свідомо cross-origin: браузери шлють
+    // звіти з фронта (Vercel) на API (Railway), тож same-origin зламає сам
+    // канал збирання даних про CSP-порушення.
+    expect([202, 204]).toContain(res.status);
+    expect(res.headers["cross-origin-resource-policy"]).toBe("cross-origin");
+  });
+
+  it("публічний /api/metrics/web-vitals → CORP=cross-origin (анонімна метрика з фронта)", async () => {
+    const app = createApp();
+    const res = await request(app).post("/api/metrics/web-vitals").send({
+      name: "LCP",
+      id: "v1-1234",
+      value: 1234,
+      rating: "good",
+      navigationType: "navigate",
+    });
+    // Web-vitals навмисно cross-origin (`apps/server/src/modules/observability/web-vitals.ts`):
+    // вимірюємо realuser-метрики на anonymous-користувачах теж.
+    expect(res.headers["cross-origin-resource-policy"]).toBe("cross-origin");
+  });
+});
