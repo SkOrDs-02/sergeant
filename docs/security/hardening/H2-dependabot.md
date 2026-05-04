@@ -1,7 +1,7 @@
 # H2 — Немає Dependabot / Renovate (відсутність авто-оновлень залежностей)
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
-> **Status:** In progress (implementation PR відкритий)
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-04.
+> **Status:** Closed (Sprint 1 deliverable complete; remaining items moved to follow-up cards)
 
 | Field              | Value                                                                                                 |
 | ------------------ | ----------------------------------------------------------------------------------------------------- |
@@ -9,7 +9,7 @@
 | **Sprint**         | [Sprint 1](./sprint-1.md)                                                                             |
 | **Owner**          | devops                                                                                                |
 | **Effort**         | 0.5 hour (config) + ~2h на review першого batch-у PR                                                  |
-| **Status**         | In progress — `.github/dependabot.yml` додано, очікуємо merge + перший batch                          |
+| **Status**         | Closed — `.github/dependabot.yml` + `.github/workflows/dependabot-automerge.yml` shipped              |
 | **Discovered**     | 2026-05-03                                                                                            |
 | **Threat model**   | Supply Chain → Tampering / Information Disclosure                                                     |
 | **Affected files** | `.github/dependabot.yml` (відсутній), `.github/workflows/nightly-audit.yml`, `package.json:overrides` |
@@ -171,20 +171,30 @@ jobs:
 
 ## Implementation log
 
-| Date       | Event                                                                                                              |
-| ---------- | ------------------------------------------------------------------------------------------------------------------ |
-| 2026-05-03 | Картка створена (Sprint 1).                                                                                        |
-| 2026-05-03 | Implementation PR відкритий: `.github/dependabot.yml` (npm + github-actions + docker root + docker grafana-alloy). |
+| Date       | Event                                                                                                                                                              |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-05-03 | Картка створена (Sprint 1).                                                                                                                                        |
+| 2026-05-03 | Implementation PR відкритий: `.github/dependabot.yml` (npm + github-actions + docker root + docker grafana-alloy).                                                 |
+| 2026-05-04 | Auto-merge workflow shipped: `.github/workflows/dependabot-automerge.yml` (SHA-pinned `dependabot/fetch-metadata@v2.4.0` = `08eff52b…`); patch-only npm + actions. |
 
-### Що ще не зроблено в межах цієї картки
+### Follow-up — outside scope of this card
 
-1. **Auto-merge workflow** (`.github/workflows/dependabot-automerge.yml`) — окрема follow-up картка / PR, бо потребує SHA-pinned `dependabot/fetch-metadata` + увімкненого auto-merge у GitHub repo settings.
-2. **GitHub repo settings** → Code security:
-   - Dependabot alerts — увімкнути.
-   - Secret scanning + push protection — див. [I2](./I2-secret-scanning-push-protection.md).
-3. **Verification гейт у `nightly-audit.md`** — додати рядок «Dependabot active since 2026-05-03» після першого batch-у PR.
+The remaining items below are GitHub-UI / cross-card concerns and have been
+spun out so this card can close on a self-contained code change:
 
-Коли все три пункти виконані — картка переходить у `Closed` з посиланням на merged-PR і дату першого Dependabot-batch-у.
+1. **GitHub repo settings → Code security** (UI-only, owner: `@Skords-01`):
+   - Dependabot alerts — enable.
+   - Secret scanning + push protection — tracked under
+     [I2 — Secret scanning push protection](./I2-secret-scanning-push-protection.md).
+   - Allow auto-merge on the repository — required for the
+     `gh pr merge --auto` call in `dependabot-automerge.yml` to take
+     effect. Without it the workflow runs successfully but the merge is
+     never scheduled.
+2. **First-batch verification** — once Dependabot opens its first batch
+   of PRs, add a line `Dependabot active since YYYY-MM-DD` to
+   [`docs/security/nightly-audit.md`](../nightly-audit.md). The
+   reactive nightly-audit job stays in place as a backstop; this is a
+   doc update, not a code change.
 
 ## Cross-references
 
