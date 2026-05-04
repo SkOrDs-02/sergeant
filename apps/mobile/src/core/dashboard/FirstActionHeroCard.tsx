@@ -30,8 +30,10 @@ import { Pressable, Text, View } from "react-native";
 
 import {
   clearFirstActionPending,
+  getOnboardingGoals,
   getVibePicks,
   hapticTap,
+  pickPrimaryFirstAction,
   type DashboardModuleId,
 } from "@sergeant/shared";
 
@@ -79,16 +81,19 @@ const ACTIONS: Record<DashboardModuleId, ActionSpec> = {
   },
 };
 
-// Same priority as web — routine first because habit creation is the
-// lowest-friction path to a real entry and the highest emotional
-// payoff. Nutrition is Phase 7 on mobile so it sits behind finyk.
-const PRIORITY: DashboardModuleId[] = ["routine", "finyk", "fizruk"];
-
+/**
+ * Goal-aware primary picker for the mobile FTUX hero (S2.1).
+ *
+ * Delegates to `pickPrimaryFirstAction` so web and mobile resolve the
+ * primary identically: any module with an explicit goal beats one
+ * without, with the shared `FIRST_ACTION_PRIORITY` (routine → finyk
+ * → nutrition → fizruk) breaking ties. Nutrition is already filtered
+ * out of `picks` upstream in `FirstActionHeroCard` (Phase 7 on
+ * mobile), so the helper will never promote nutrition here even if a
+ * `nutritionGoal` happens to be persisted.
+ */
 function pickPrimary(picks: readonly DashboardModuleId[]): DashboardModuleId {
-  for (const id of PRIORITY) {
-    if (picks.includes(id)) return id;
-  }
-  return "routine";
+  return pickPrimaryFirstAction(picks, getOnboardingGoals(mmkvStore));
 }
 
 export interface FirstActionHeroCardProps {

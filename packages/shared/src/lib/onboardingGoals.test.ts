@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 import { createMemoryKVStore } from "../storage/kv";
 import {
   EMPTY_GOALS,
+  FIRST_ACTION_PRIORITY,
   ONBOARDING_GOALS_KEY,
   getGoalQuestions,
   getOnboardingGoals,
+  pickPrimaryFirstAction,
   saveOnboardingGoals,
   type OnboardingGoals,
 } from "./onboardingGoals";
@@ -105,5 +107,89 @@ describe("onboardingGoals — getGoalQuestions", () => {
     expect(finykQ?.type).toBe("slider");
     const routineQ = questions.find((q) => q.module === "routine");
     expect(routineQ?.type).toBe("radio");
+  });
+});
+
+describe("onboardingGoals — pickPrimaryFirstAction (S2.1)", () => {
+  const ALL_PICKS = ["routine", "finyk", "nutrition", "fizruk"];
+
+  it("falls back to FIRST_ACTION_PRIORITY when no goals are set", () => {
+    expect(pickPrimaryFirstAction(ALL_PICKS, EMPTY_GOALS)).toBe("routine");
+  });
+
+  it("picks the highest-priority pick when goals are empty", () => {
+    expect(pickPrimaryFirstAction(["finyk", "nutrition"], EMPTY_GOALS)).toBe(
+      "finyk",
+    );
+    expect(pickPrimaryFirstAction(["fizruk"], EMPTY_GOALS)).toBe("fizruk");
+  });
+
+  it("returns 'routine' as a safe default when picks is empty", () => {
+    expect(pickPrimaryFirstAction([], EMPTY_GOALS)).toBe("routine");
+  });
+
+  it("promotes finyk when finykBudget is set and finyk is in picks", () => {
+    expect(
+      pickPrimaryFirstAction(ALL_PICKS, {
+        ...EMPTY_GOALS,
+        finykBudget: 30000,
+      }),
+    ).toBe("finyk");
+  });
+
+  it("promotes nutrition when nutritionGoal is set", () => {
+    expect(
+      pickPrimaryFirstAction(ALL_PICKS, {
+        ...EMPTY_GOALS,
+        nutritionGoal: "lose",
+      }),
+    ).toBe("nutrition");
+  });
+
+  it("promotes fizruk when fizrukWeeklyGoal is set", () => {
+    expect(
+      pickPrimaryFirstAction(ALL_PICKS, {
+        ...EMPTY_GOALS,
+        fizrukWeeklyGoal: 3,
+      }),
+    ).toBe("fizruk");
+  });
+
+  it("ignores a goal whose module is not in picks", () => {
+    // User set finykBudget but didn't pick finyk → don't promote finyk.
+    expect(
+      pickPrimaryFirstAction(["routine", "fizruk"], {
+        ...EMPTY_GOALS,
+        finykBudget: 30000,
+      }),
+    ).toBe("routine");
+  });
+
+  it("uses FIRST_ACTION_PRIORITY to break ties between multiple goals", () => {
+    // Both routineFirstHabit and finykBudget set → routine wins (lower friction).
+    expect(
+      pickPrimaryFirstAction(ALL_PICKS, {
+        ...EMPTY_GOALS,
+        finykBudget: 30000,
+        routineFirstHabit: "water",
+      }),
+    ).toBe("routine");
+    // finyk + fizruk goals set → finyk wins.
+    expect(
+      pickPrimaryFirstAction(ALL_PICKS, {
+        ...EMPTY_GOALS,
+        finykBudget: 30000,
+        fizrukWeeklyGoal: 3,
+      }),
+    ).toBe("finyk");
+  });
+
+  it("FIRST_ACTION_PRIORITY exposes the friction-first ordering", () => {
+    expect([...FIRST_ACTION_PRIORITY]).toEqual([
+      "routine",
+      "finyk",
+      "nutrition",
+      "fizruk",
+    ]);
   });
 });

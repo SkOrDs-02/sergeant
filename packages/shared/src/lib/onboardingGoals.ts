@@ -166,3 +166,77 @@ export function getGoalQuestions(
     .flatMap((m) => ALL_QUESTIONS.filter((q) => q.module === m))
     .slice(0, maxQuestions);
 }
+
+// ---------------------------------------------------------------------------
+// Primary first-action picker (S2.1)
+// ---------------------------------------------------------------------------
+
+/**
+ * Friction-first ordering used both for the goals wizard and the FTUX
+ * first-action hero card. Routine has the lowest setup cost (no
+ * numbers, no camera, no bank auth) and the highest emotional payoff
+ * (7-day streak preview); fizruk needs an in-module wizard to produce
+ * a real entry, so it goes last.
+ */
+export const FIRST_ACTION_PRIORITY: readonly DashboardModuleId[] = [
+  "routine",
+  "finyk",
+  "nutrition",
+  "fizruk",
+];
+
+/** True iff the user has set an explicit goal value for `moduleId`. */
+function hasGoalFor(
+  moduleId: DashboardModuleId,
+  goals: OnboardingGoals,
+): boolean {
+  switch (moduleId) {
+    case "finyk":
+      return goals.finykBudget !== null;
+    case "fizruk":
+      return goals.fizrukWeeklyGoal !== null;
+    case "routine":
+      return goals.routineFirstHabit !== null;
+    case "nutrition":
+      return goals.nutritionGoal !== null;
+  }
+}
+
+/**
+ * Pick the primary module promoted by the FTUX `FirstActionHeroCard`.
+ *
+ * Goal-aware (S2.1): if the user committed to an explicit goal in the
+ * onboarding goals step (finyk budget, fizruk weekly target, routine
+ * first habit, nutrition objective) AND that module is in their vibe
+ * picks, it wins. The CTA then lines up with the intent the user just
+ * spelled out — "Встанови бюджет 30k ₴" feels personal in a way that
+ * the static-priority "Створи першу звичку" never could for a finance-
+ * driven user.
+ *
+ * Tie-breaking: when more than one goal is set, falls back to
+ * `FIRST_ACTION_PRIORITY` (lowest-friction first). Same rule applies
+ * to the no-goals path so behaviour is byte-identical to the previous
+ * static `pickPrimary` when goals are empty.
+ *
+ * Always returns a valid `DashboardModuleId` — `routine` when `picks`
+ * is empty (lazy users still get a sensible default; matches pre-S2.1).
+ */
+export function pickPrimaryFirstAction(
+  picks: readonly string[],
+  goals: OnboardingGoals,
+): DashboardModuleId {
+  const pickSet = new Set(picks);
+
+  // Goal-aware path: any module with an explicit goal beats one without.
+  for (const moduleId of FIRST_ACTION_PRIORITY) {
+    if (!pickSet.has(moduleId)) continue;
+    if (hasGoalFor(moduleId, goals)) return moduleId;
+  }
+
+  // Static fallback: highest-priority pick wins.
+  for (const moduleId of FIRST_ACTION_PRIORITY) {
+    if (pickSet.has(moduleId)) return moduleId;
+  }
+
+  return "routine";
+}

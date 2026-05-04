@@ -101,3 +101,54 @@ describe("FirstActionHeroCard — inline chips (S2.3)", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe("FirstActionHeroCard — goal-aware primary (S2.1)", () => {
+  afterEach(cleanup);
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.mocked(trackEvent).mockClear();
+  });
+
+  it("promotes finyk when finykBudget is set, even if routine is the static default", () => {
+    localStorage.setItem(
+      VIBE_PICKS_KEY,
+      JSON.stringify(["routine", "finyk", "nutrition", "fizruk"]),
+    );
+    localStorage.setItem(
+      "hub_onboarding_goals_v1",
+      JSON.stringify({ finykBudget: 30000 }),
+    );
+
+    render(<FirstActionHeroCard />);
+
+    // Primary CTA is now finyk's title, not routine's.
+    expect(screen.getByText("Додай першу витрату")).toBeInTheDocument();
+    // Routine drops into the chip row.
+    expect(screen.getByRole("button", { name: /Рутина/ })).toBeInTheDocument();
+  });
+
+  it("promotes nutrition when nutritionGoal is set", () => {
+    localStorage.setItem(
+      VIBE_PICKS_KEY,
+      JSON.stringify(["routine", "nutrition"]),
+    );
+    localStorage.setItem(
+      "hub_onboarding_goals_v1",
+      JSON.stringify({ nutritionGoal: "lose" }),
+    );
+
+    render(<FirstActionHeroCard />);
+
+    expect(screen.getByText("Запиши перший прийом їжі")).toBeInTheDocument();
+  });
+
+  it("falls back to static priority when no goals are set", () => {
+    localStorage.setItem(VIBE_PICKS_KEY, JSON.stringify(["finyk", "fizruk"]));
+
+    render(<FirstActionHeroCard />);
+
+    // No goals → highest-priority pick (finyk over fizruk) wins.
+    expect(screen.getByText("Додай першу витрату")).toBeInTheDocument();
+  });
+});

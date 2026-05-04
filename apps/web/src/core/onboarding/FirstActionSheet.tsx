@@ -7,7 +7,7 @@ import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { clearFirstActionPending, getVibePicks } from "./vibePicks";
 import { PresetSheet, getPresetModule } from "./PresetSheet";
 import type { ModuleId } from "./presetApply";
-import { getOnboardingGoals } from "@sergeant/shared";
+import { getOnboardingGoals, pickPrimaryFirstAction } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
 
 type IconName = Parameters<typeof Icon>[0]["name"];
@@ -66,22 +66,19 @@ const ACTIONS: Record<ModuleId, FirstActionEntry> = {
   },
 };
 
-// Priority order when more than one vibe is picked. Routine comes first
-// because "create a habit" has the lowest friction (no numbers, no
-// camera, no bank auth) and the highest emotional payoff (7-day streak
-// preview). Fizruk requires an in-module wizard to produce a real entry,
-// so it goes last.
-const PRIORITY: ModuleId[] = ["routine", "finyk", "nutrition", "fizruk"];
-
 function isModuleId(id: string): id is ModuleId {
   return id in ACTIONS;
 }
 
+/**
+ * Goal-aware primary picker for the FTUX hero (S2.1). Reads the
+ * onboarding goals once per render and delegates the goal vs static
+ * priority decision to `@sergeant/shared` so web and mobile resolve
+ * the primary identically. Falls back to `routine` if `picks` is
+ * empty (matches pre-S2.1 behaviour).
+ */
 function pickPrimary(picks: string[]): ModuleId {
-  for (const id of PRIORITY) {
-    if (picks.includes(id)) return id;
-  }
-  return "routine";
+  return pickPrimaryFirstAction(picks, getOnboardingGoals(webKVStore));
 }
 
 /**
@@ -139,9 +136,10 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
     return raw.length > 0 ? raw : Object.keys(ACTIONS);
   }, []);
 
-  // `pickPrimary` returns a primitive string from a trivial scan of a
-  // 4-element constant; wrapping it in `useMemo` wouldn't prevent any
-  // work and the dependency compare costs more than the scan.
+  // `pickPrimary` reads onboarding goals once and runs a trivial
+  // 4-module scan; memoising would add more bookkeeping than it
+  // saves. The goals payload is stable for the FTUX session — once
+  // wizard.finish() persists them they won't mutate until reset.
   const primaryId = pickPrimary(picks);
   const primary = ACTIONS[primaryId];
   const others = useMemo<ModuleId[]>(

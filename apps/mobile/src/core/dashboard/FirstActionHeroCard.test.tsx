@@ -1,6 +1,10 @@
 import { fireEvent, render } from "@testing-library/react-native";
 
-import { FIRST_ACTION_PENDING_KEY, VIBE_PICKS_KEY } from "@sergeant/shared";
+import {
+  FIRST_ACTION_PENDING_KEY,
+  ONBOARDING_GOALS_KEY,
+  VIBE_PICKS_KEY,
+} from "@sergeant/shared";
 
 import { FirstActionHeroCard } from "./FirstActionHeroCard";
 import { _getMMKVInstance } from "@/lib/storage";
@@ -13,6 +17,11 @@ function resetStore() {
 function seedPicks(picks: string[]) {
   const mmkv = _getMMKVInstance();
   mmkv.set(VIBE_PICKS_KEY, JSON.stringify(picks));
+}
+
+function seedGoals(goals: Record<string, unknown>) {
+  const mmkv = _getMMKVInstance();
+  mmkv.set(ONBOARDING_GOALS_KEY, JSON.stringify(goals));
 }
 
 describe("FirstActionHeroCard", () => {
@@ -107,5 +116,49 @@ describe("FirstActionHeroCard", () => {
     );
     expect(queryByTestId("first-action-alt-finyk")).toBeNull();
     expect(queryByTestId("first-action-alt-fizruk")).toBeNull();
+  });
+
+  describe("goal-aware primary (S2.1)", () => {
+    it("promotes finyk when finykBudget is set", () => {
+      seedPicks(["routine", "finyk", "fizruk"]);
+      seedGoals({ finykBudget: 30000 });
+
+      const { getByText } = render(
+        <FirstActionHeroCard onAction={jest.fn()} />,
+      );
+      expect(getByText(/Додай першу витрату/)).toBeTruthy();
+    });
+
+    it("promotes fizruk when fizrukWeeklyGoal is set and finyk has no goal", () => {
+      seedPicks(["routine", "finyk", "fizruk"]);
+      seedGoals({ fizrukWeeklyGoal: 3 });
+
+      const { getByText } = render(
+        <FirstActionHeroCard onAction={jest.fn()} />,
+      );
+      expect(getByText(/Увімкни розминку/)).toBeTruthy();
+    });
+
+    it("falls back to static priority when no goals are set", () => {
+      seedPicks(["finyk", "fizruk"]);
+
+      const { getByText } = render(
+        <FirstActionHeroCard onAction={jest.fn()} />,
+      );
+      // No goals → finyk wins by static priority over fizruk.
+      expect(getByText(/Додай першу витрату/)).toBeTruthy();
+    });
+
+    it("ignores nutritionGoal because nutrition is filtered out of mobile picks", () => {
+      // Mobile strips nutrition before picking primary (Phase 7 gate),
+      // so nutritionGoal should never elevate nutrition above other modules.
+      seedPicks(["routine", "fizruk", "nutrition"]);
+      seedGoals({ nutritionGoal: "lose" });
+
+      const { getByText } = render(
+        <FirstActionHeroCard onAction={jest.fn()} />,
+      );
+      expect(getByText(/Створи першу звичку/)).toBeTruthy();
+    });
   });
 });
