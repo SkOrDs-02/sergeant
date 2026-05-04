@@ -57,6 +57,9 @@ export * from "./lib/onboarding";
 // Onboarding goal-setting (multi-step v2).
 export * from "./lib/onboardingGoals";
 
+// OnboardingWizard hero copy A/B (S1.1 + S1.2).
+export * from "./lib/onboardingHeroCopy";
+
 // Reset helpers for Settings ("Restart onboarding").
 export * from "./lib/onboardingReset";
 

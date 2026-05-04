@@ -47,6 +47,18 @@ export const ANALYTICS_EVENTS = Object.freeze({
   AUTH_PROMPT_DISMISSED: "auth_prompt_dismissed",
   AUTH_AFTER_VALUE: "auth_after_value",
 
+  // A/B experiments — exposure event. Payload contract:
+  //
+  //   EXPERIMENT_EXPOSED { experiment_id: string, variant: string }
+  //
+  // Fired exactly once per render-of-the-arm-the-user-sees so PostHog
+  // funnels can do `breakdown by properties.variant` without inflating
+  // counts. Pre-S1.1 the only experiment was `soft_auth_copy_v1`,
+  // which historically smuggled the variant through `auth_prompt_shown.variant`.
+  // Post-S1.1 every experiment fires this event in addition, so the
+  // funnel definition stays uniform across copies.
+  EXPERIMENT_EXPOSED: "experiment_exposed",
+
   // Module checklists (Phase 2 — activation)
   MODULE_CHECKLIST_SHOWN: "module_checklist_shown",
   MODULE_CHECKLIST_STEP_DONE: "module_checklist_step_done",

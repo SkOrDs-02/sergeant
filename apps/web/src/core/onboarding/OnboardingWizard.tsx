@@ -4,6 +4,7 @@ import {
   safeReadStringLS,
   safeWriteLS,
   safeRemoveLS,
+  webKVStore,
 } from "@shared/lib/storage/storage";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
@@ -25,6 +26,11 @@ import {
   ONBOARDING_MODULE_DESCRIPTIONS,
   ONBOARDING_VIBE_ICONS,
   ONBOARDING_VIBE_TEASERS,
+  ONBOARDING_HERO_COPY_EXPERIMENT,
+  assignVariant,
+  getOnboardingHeroCopy,
+  type OnboardingHeroCopy,
+  type OnboardingHeroCopyVariant,
 } from "@sergeant/shared";
 
 // Re-exported so `App.tsx` and any legacy call-site keep importing
@@ -224,44 +230,45 @@ function WelcomeOneScreen({
   onOpen,
   expanded,
   onToggleExpanded,
-  ctaLabel = "Відкрити Sergeant",
+  copy,
+  ctaLabelOverride,
 }: {
   picks: string[];
   togglePick: (id: string) => void;
   onOpen: () => void;
   expanded: boolean;
   onToggleExpanded: () => void;
-  /** Override label for the primary CTA (e.g. tour replay shows "Закрити"). */
-  ctaLabel?: string;
+  /** Resolved A/B copy for the splash hero (S1.1 + S1.2). */
+  copy: OnboardingHeroCopy;
+  /**
+   * Override label for the primary CTA. Used by tour replay to swap
+   * `copy.primaryCta` for "Закрити". Real wizard always renders
+   * `copy.primaryCta` so the experiment arm controls the text.
+   */
+  ctaLabelOverride?: string;
 }) {
   return (
     <div className="flex flex-col items-center text-center space-y-5">
       <div className="space-y-2">
-        <h2 className="text-style-hero text-text">
-          <BrandLogo
-            size="md"
-            variant="inline"
-            className="inline-flex align-baseline"
-          />{" "}
-          — твій хаб.
-        </h2>
+        <BrandLogo size="md" variant="inline" className="mx-auto" />
+        <h2 className="text-style-hero text-text">{copy.title}</h2>
         <p className="text-sm text-muted leading-relaxed max-w-xs mx-auto">
-          Гроші, тіло, звички, їжа — все в одному місці. Офлайн. Приватно.
+          {copy.subtitle}
         </p>
       </div>
 
       <div className="flex items-center gap-3 text-xs text-muted">
         <span className="flex items-center gap-1">
-          <Icon name="wifi-off" size={14} aria-hidden />
-          Офлайн
-        </span>
-        <span className="flex items-center gap-1">
           <Icon name="lock" size={14} aria-hidden />
-          Локально
+          {copy.badges[0]}
         </span>
         <span className="flex items-center gap-1">
-          <Icon name="zap" size={14} aria-hidden />
-          ~10 сек
+          <Icon name="cloud-off" size={14} aria-hidden />
+          {copy.badges[1]}
+        </span>
+        <span className="flex items-center gap-1">
+          <Icon name="eye-off" size={14} aria-hidden />
+          {copy.badges[2]}
         </span>
       </div>
 
@@ -296,7 +303,7 @@ function WelcomeOneScreen({
         size="lg"
         className="w-full"
       >
-        {ctaLabel}
+        {ctaLabelOverride ?? copy.primaryCta}
         <Icon name="chevron-right" size={16} />
       </Button>
 
@@ -447,6 +454,37 @@ export function OnboardingWizard({
     });
   }, [picks, onDone, isTour]);
 
+  // Hero copy A/B (S1.1 + S1.2). Assignment is deterministic per
+  // device fingerprint and persists across renders, so the user always
+  // sees the same headline / CTA throughout the funnel. Tour replay
+  // bypasses assignment so it never gets counted as an exposure.
+  const heroVariant = useMemo<OnboardingHeroCopyVariant>(
+    () =>
+      isTour
+        ? "outcome"
+        : (assignVariant(
+            webKVStore,
+            ONBOARDING_HERO_COPY_EXPERIMENT,
+          ) as OnboardingHeroCopyVariant),
+    [isTour],
+  );
+  const heroCopy = useMemo(
+    () => getOnboardingHeroCopy(heroVariant),
+    [heroVariant],
+  );
+
+  // Fire `EXPERIMENT_EXPOSED` on the same render the user actually sees
+  // the variant. Real wizard only — tour replay must not contaminate
+  // the experiment dataset. Effect runs once because `heroVariant` is
+  // stable for the lifetime of the wizard mount.
+  useEffect(() => {
+    if (isTour) return;
+    trackEvent(ANALYTICS_EVENTS.EXPERIMENT_EXPOSED, {
+      experiment_id: ONBOARDING_HERO_COPY_EXPERIMENT.id,
+      variant: heroVariant,
+    });
+  }, [isTour, heroVariant]);
+
   const content = useMemo(
     () => (
       <WelcomeOneScreen
@@ -455,10 +493,11 @@ export function OnboardingWizard({
         onOpen={finish}
         expanded={expanded}
         onToggleExpanded={toggleExpanded}
-        ctaLabel={isTour ? "Закрити" : "Відкрити Sergeant"}
+        copy={heroCopy}
+        ctaLabelOverride={isTour ? "Закрити" : undefined}
       />
     ),
-    [picks, togglePick, finish, expanded, toggleExpanded, isTour],
+    [picks, togglePick, finish, expanded, toggleExpanded, heroCopy, isTour],
   );
 
   if (variant === "fullPage") {
