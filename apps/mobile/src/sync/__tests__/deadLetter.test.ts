@@ -176,8 +176,8 @@ describe("crash recovery (mobile)", () => {
     // reloads in the same test process, so a `jest.resetModules` +
     // re-import is the closest analog to "kill app → restart".
     jest.resetModules();
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const reloaded =
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       require("../queue/offlineQueue") as typeof import("../queue/offlineQueue");
     const q = reloaded.getOfflineQueue();
     expect(q).toHaveLength(1);
@@ -204,8 +204,8 @@ describe("crash recovery (mobile)", () => {
     expect(getDeadLetterCount()).toBe(1);
 
     jest.resetModules();
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const reloaded =
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       require("../queue/deadLetter") as typeof import("../queue/deadLetter");
     const dl = reloaded.getDeadLetterEntries();
     expect(dl).toHaveLength(1);
