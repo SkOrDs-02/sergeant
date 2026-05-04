@@ -719,6 +719,8 @@ in-place перед initiation Phase 4:
 
 ### 11.1 Що ще лишилось до «ідеального» стрікту
 
+> **Trekається у [Initiative 0012 — Perfect TS strictness rollout](../initiatives/0012-perfect-strictness-rollout.md).** Ця секція = living-burndown (per-flag статус + per-workspace baseline). Ініціатива = roadmap (15-17 PR-ів, 6 фаз, ETA 4 sprints, criteria DONE). Зміни синхронізуйте обома місцями.
+
 Канонічний `strict: true` + `noImplicitOverride` + `allowJs: false` —
 13/13 (100 %), enforced. Але «ідеально» — ні. Backlog opt-in-прапорів
 та залишкових `as unknown as`-каст:
