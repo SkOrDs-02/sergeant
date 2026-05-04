@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import {
+  DataState,
+  type DataStateQueryLike,
+} from "@shared/components/ui/DataState";
 import { Skeleton, SkeletonText } from "@shared/components/ui/Skeleton";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import {
@@ -233,158 +237,174 @@ function DigestContent({
   onPlayStories,
 }: DigestContentProps) {
   const [expanded, setExpanded] = useState(false);
-  const hasData =
-    digest &&
-    (digest.finyk || digest.fizruk || digest.nutrition || digest.routine);
 
-  if (loading) return <LoadingSpinner />;
+  // DataState contract: `data === undefined` → render skeleton slot,
+  // otherwise content/empty/error are evaluated. We force `data` to
+  // `undefined` while `loading` is true so a stale/cached digest is
+  // hidden during regeneration (matches the prior `if (loading)`
+  // short-circuit). When `loading` is false but an error is present
+  // we surface `data: null` + `isError: true` so DataState's "error
+  // wins" branch picks the error slot.
+  const digestQuery: DataStateQueryLike<DigestPayload | null> = {
+    data: loading ? undefined : (digest ?? null),
+    isLoading: loading,
+    isError: !!error && !loading,
+    error: error ? new Error(error) : null,
+  };
 
-  if (error) {
-    return (
-      <div className="px-4 pb-3">
-        <p className="text-xs text-danger bg-danger/10 rounded-xl px-3 py-2 mb-2">
-          {error}
-        </p>
-        {isCurrentWeek && (
+  const errorSlot = (
+    <div className="px-4 pb-3">
+      <p className="text-xs text-danger bg-danger/10 rounded-xl px-3 py-2 mb-2">
+        {error}
+      </p>
+      {isCurrentWeek && (
+        <button
+          type="button"
+          onClick={onGenerate}
+          className="w-full h-9 rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
+        >
+          Спробувати знову
+        </button>
+      )}
+    </div>
+  );
+
+  const emptySlot = (
+    <div className="px-4 pb-4">
+      {isCurrentWeek ? (
+        <>
+          <p className="text-xs text-muted mb-3 leading-relaxed">
+            AI-звіт підсумовує прогрес по всіх модулях і дає конкретні
+            рекомендації на наступний тиждень.
+          </p>
           <button
             type="button"
             onClick={onGenerate}
-            className="w-full h-9 rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
+            className="w-full h-10 rounded-xl bg-primary text-bg text-style-label hover:brightness-110 transition-[filter,opacity,transform] active:scale-[0.98]"
           >
-            Спробувати знову
+            Згенерувати звіт
           </button>
-        )}
-      </div>
-    );
-  }
-
-  if (!hasData) {
-    return (
-      <div className="px-4 pb-4">
-        {isCurrentWeek ? (
-          <>
-            <p className="text-xs text-muted mb-3 leading-relaxed">
-              AI-звіт підсумовує прогрес по всіх модулях і дає конкретні
-              рекомендації на наступний тиждень.
-            </p>
-            <button
-              type="button"
-              onClick={onGenerate}
-              className="w-full h-10 rounded-xl bg-primary text-bg text-style-label hover:brightness-110 transition-[filter,opacity,transform] active:scale-[0.98]"
-            >
-              Згенерувати звіт
-            </button>
-          </>
-        ) : (
-          <p className="text-xs text-muted text-center py-2">
-            Звіт за цей тиждень не збережено
-          </p>
-        )}
-      </div>
-    );
-  }
+        </>
+      ) : (
+        <p className="text-xs text-muted text-center py-2">
+          Звіт за цей тиждень не збережено
+        </p>
+      )}
+    </div>
+  );
 
   return (
-    <>
-      <div className="px-4 pb-3 pt-1">
-        <button
-          type="button"
-          onClick={onPlayStories}
-          className={cn(
-            "w-full h-11 rounded-xl text-sm font-bold text-white",
-            "bg-linear-to-r from-brand-500 via-brand-400 to-teal-400",
-            "dark:from-brand-600 dark:via-brand-500 dark:to-teal-500",
-            "shadow-card hover:brightness-110 active:scale-[0.98] transition-[box-shadow,filter,opacity,transform]",
-            "flex items-center justify-center gap-2",
-            "focus-ring",
-          )}
-        >
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            aria-hidden
-          >
-            <path d="M8 5v14l11-7z" />
-          </svg>
-          Переглянути як сторіс
-        </button>
-      </div>
-      <div
-        className={cn(
-          "grid transition-[grid-template-rows] duration-200 ease-in-out",
-          expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-        )}
-      >
-        <div className="overflow-hidden">
-          <div className="border-t border-line px-4 pt-3 pb-4 space-y-2">
-            {(["finyk", "fizruk", "nutrition", "routine"] as const).map(
-              (key) =>
-                digest?.[key] ? (
-                  <ModuleBlock key={key} moduleKey={key} data={digest[key]} />
-                ) : null,
+    <DataState
+      query={digestQuery}
+      skeleton={<LoadingSpinner />}
+      error={() => errorSlot}
+      empty={emptySlot}
+      isEmpty={(d) => !d || !(d.finyk || d.fizruk || d.nutrition || d.routine)}
+    >
+      {(d) => (
+        <>
+          <div className="px-4 pb-3 pt-1">
+            <button
+              type="button"
+              onClick={onPlayStories}
+              className={cn(
+                "w-full h-11 rounded-xl text-sm font-bold text-white",
+                "bg-linear-to-r from-brand-500 via-brand-400 to-teal-400",
+                "dark:from-brand-600 dark:via-brand-500 dark:to-teal-500",
+                "shadow-card hover:brightness-110 active:scale-[0.98] transition-[box-shadow,filter,opacity,transform]",
+                "flex items-center justify-center gap-2",
+                "focus-ring",
+              )}
+            >
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden
+              >
+                <path d="M8 5v14l11-7z" />
+              </svg>
+              Переглянути як сторіс
+            </button>
+          </div>
+          <div
+            className={cn(
+              "grid transition-[grid-template-rows] duration-200 ease-in-out",
+              expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
             )}
-            {Array.isArray(digest.overallRecommendations) &&
-              digest.overallRecommendations.length > 0 && (
-                <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 space-y-1.5">
-                  {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
+          >
+            <div className="overflow-hidden">
+              <div className="border-t border-line px-4 pt-3 pb-4 space-y-2">
+                {(["finyk", "fizruk", "nutrition", "routine"] as const).map(
+                  (key) =>
+                    d?.[key] ? (
+                      <ModuleBlock key={key} moduleKey={key} data={d[key]} />
+                    ) : null,
+                )}
+                {d &&
+                  Array.isArray(d.overallRecommendations) &&
+                  d.overallRecommendations.length > 0 && (
+                    <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 space-y-1.5">
+                      {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
                       Recommendation block eyebrow uses `text-primary` (a bespoke
                       accent not exposed through SectionHeading tone tokens) so
                       it stays inline until a `primary` tone is added to DS. */}
-                  <p className="text-2xs font-bold text-primary uppercase tracking-wider">
-                    Загальні рекомендації
-                  </p>
-                  {digest.overallRecommendations.map(
-                    (rec: string, i: number) => (
-                      <div key={i} className="flex items-start gap-1.5">
-                        <span className="text-2xs font-bold text-primary mt-0.5 shrink-0">
-                          ★
-                        </span>
-                        <span className="text-xs text-text leading-snug">
-                          {rec}
-                        </span>
-                      </div>
-                    ),
+                      <p className="text-2xs font-bold text-primary uppercase tracking-wider">
+                        Загальні рекомендації
+                      </p>
+                      {d.overallRecommendations.map(
+                        (rec: string, i: number) => (
+                          <div key={i} className="flex items-start gap-1.5">
+                            <span className="text-2xs font-bold text-primary mt-0.5 shrink-0">
+                              ★
+                            </span>
+                            <span className="text-xs text-text leading-snug">
+                              {rec}
+                            </span>
+                          </div>
+                        ),
+                      )}
+                    </div>
                   )}
-                </div>
-              )}
-            {isCurrentWeek && (
+                {isCurrentWeek && (
+                  <button
+                    type="button"
+                    onClick={onUpdate}
+                    className="w-full h-9 rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
+                  >
+                    Оновити звіт
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {!expanded && (
+            <div className="px-4 pb-3">
               <button
                 type="button"
-                onClick={onUpdate}
+                onClick={() => setExpanded(true)}
                 className="w-full h-9 rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
               >
-                Оновити звіт
+                Переглянути звіт
               </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {!expanded && (
-        <div className="px-4 pb-3">
-          <button
-            type="button"
-            onClick={() => setExpanded(true)}
-            className="w-full h-9 rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
-          >
-            Переглянути звіт
-          </button>
-        </div>
+            </div>
+          )}
+          {expanded && (
+            <div className="px-4 pb-3 border-t border-line pt-2">
+              <button
+                type="button"
+                onClick={() => setExpanded(false)}
+                className="w-full h-9 rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
+              >
+                Згорнути
+              </button>
+            </div>
+          )}
+        </>
       )}
-      {expanded && (
-        <div className="px-4 pb-3 border-t border-line pt-2">
-          <button
-            type="button"
-            onClick={() => setExpanded(false)}
-            className="w-full h-9 rounded-xl border border-line text-xs font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
-          >
-            Згорнути
-          </button>
-        </div>
-      )}
-    </>
+    </DataState>
   );
 }
 
