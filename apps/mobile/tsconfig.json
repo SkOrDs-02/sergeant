@@ -13,6 +13,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
+    "types": ["jest", "node"],
     "paths": {
       "@/*": ["./src/*"],
       "@app/*": ["./app/*"],
