@@ -1,10 +1,10 @@
 # FTUX sprint plan — від прожарки до PR-ів
 
-> **Last validated:** 2026-05-04 by @Skords-01 (S1.3 + S1.4 + S1.5 + S2.4 + S3.4 + S3.5 + S3.1 + S3.2 + S4.4 + S4.5 + S2.3 (web) + S4.1 + S2.3 (mobile parity) + **S0.3 + S2.1 + S3.3a + S3.3b** виконані — 17 PR-ів злито з 22 рекомендацій). **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by @Skords-01 (S1.3 + S1.4 + S1.5 + S2.4 + S3.4 + S3.5 + S3.1 + S3.2 + S4.4 + S4.5 + S2.3 (web) + S4.1 + S2.3 (mobile parity) + **S0.3 + S2.1 + S3.3a + S3.3b + S4.3** виконані — 18 PR-ів злито з 22 рекомендацій + Sprint 6 cleanup batch розписаний для 10 раніше прогавлених пунктів аудиту). **Next review:** 2026-08-01.
 > **Status:** Active
 
-> Implementation roadmap для 22 рекомендацій з [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md).
-> 5 спринтів × 2 тижні (+S0 1 тиждень, +S5 опційний) ≈ 10–12 тижнів.
+> Implementation roadmap для 22 рекомендацій з [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md) + 10 раніше прогавлених пунктів (Sprint 6 cleanup batch — див. §8).
+> 6 спринтів × 2 тижні (+S0 1 тиждень, +S5 опційний) ≈ 12–14 тижнів.
 > Ціль: **2–3× activation funnel** (з baseline >25% до >40-60% per [`01-monetization-and-pricing.md`](./01-monetization-and-pricing.md#7-activation-метрики)).
 >
 > **Cross-refs:**
@@ -30,16 +30,17 @@
 
 ## 1. Глобальна карта
 
-| Спринт         | Тема                                             | Гіпотеза                                                                | Метрика успіху                                                         |
-| -------------- | ------------------------------------------------ | ----------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| **S0** (1 т.)  | **Аналітика наживу**                             | Funnel-метрики ~80% точності → можемо приймати рішення                  | Усі 14+5 events пишуться в PostHog · D1/D7 dashboard зеленіє           |
-| **S1** (2 т.)  | **Чесний value-prop + чесні обіцянки**           | Hero benefit-copy + усунення confetti-обману + disclaimer на peek       | Wizard→first-entry conversion ↑ 5pp · "rage-quit" (close < 30s) ↓ 30%  |
-| **S2** (2 т.)  | **Goal-aware first action + чесний PresetSheet** | Primary action слідує за intent; nutrition/fizruk без "пустого sheet'у" | First-entry rate per active module ↑ 10pp · TTV p50 < 90 sec           |
-| **S3** (2 т.)  | **Reward у правильний момент + value-progress**  | Confetti на real entry · CelebrationModal → next-action promise         | Day-1 retention ↑ 5pp · % users з 2+ entries у session 1 ↑ 8pp         |
-| **S4** (2 т.)  | **Demo-first + day-1-7 retention loop**          | "Подивитись приклад" як first-class · push day-2/3 · email drip 0/1/3   | D7 retention ↑ 3pp · share-of-traffic що пройшов demo ≥ 15%            |
-| **S5** (1 т.)? | **Goal-first wizard A/B** (опц.)                 | Onboarding починається з outcome, модулі — під ціль                     | Якщо A/B виграв на ≥5pp retention → раскат; інакше rollback з learning |
+| Спринт         | Тема                                             | Гіпотеза                                                                | Метрика успіху                                                                              |
+| -------------- | ------------------------------------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| **S0** (1 т.)  | **Аналітика наживу**                             | Funnel-метрики ~80% точності → можемо приймати рішення                  | Усі 14+5 events пишуться в PostHog · D1/D7 dashboard зеленіє                                |
+| **S1** (2 т.)  | **Чесний value-prop + чесні обіцянки**           | Hero benefit-copy + усунення confetti-обману + disclaimer на peek       | Wizard→first-entry conversion ↑ 5pp · "rage-quit" (close < 30s) ↓ 30%                       |
+| **S2** (2 т.)  | **Goal-aware first action + чесний PresetSheet** | Primary action слідує за intent; nutrition/fizruk без "пустого sheet'у" | First-entry rate per active module ↑ 10pp · TTV p50 < 90 sec                                |
+| **S3** (2 т.)  | **Reward у правильний момент + value-progress**  | Confetti на real entry · CelebrationModal → next-action promise         | Day-1 retention ↑ 5pp · % users з 2+ entries у session 1 ↑ 8pp                              |
+| **S4** (2 т.)  | **Demo-first + day-1-7 retention loop**          | "Подивитись приклад" як first-class · push day-2/3 · email drip 0/1/3   | D7 retention ↑ 3pp · share-of-traffic що пройшов demo ≥ 15%                                 |
+| **S5** (1 т.)? | **Goal-first wizard A/B** (опц.)                 | Onboarding починається з outcome, модулі — під ціль                     | Якщо A/B виграв на ≥5pp retention → раскат; інакше rollback з learning                      |
+| **S6** (2 т.)  | **Cleanup batch — раніше прогавлене**            | 10 пунктів аудиту, що або не дійшли до P-списку, або не дійшли до плану | Activation funnel ↑ 2-4pp (cumulative); B-1 default-picks: completion ↓2pp / retention ↑4pp |
 
-**Сумарно:** 9–11 PR-серій, ~25 PR-ів, 10 тижнів роботи (+ опційний 11-й).
+**Сумарно:** 10–12 PR-серій, ~35 PR-ів, 12 тижнів роботи (+ опційний 13-й).
 
 ---
 
@@ -240,6 +241,53 @@
 
 ---
 
+## 7a. Sprint 6 — Cleanup batch (раніше прогавлене) (2 тижні)
+
+**Goal:** Закрити 10 пунктів аудиту [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md), що або **не дійшли до P0/P1/P2 numbered-списку** (body-only items у §2.x), або **не дійшли до PR-розбивки у sprint-plan** (numbered, але без рядка). Відкрито після систематичної перевірки 2026-05-04.
+
+### Класифікація
+
+- **A. Numbered рекомендації БЕЗ рядка у плані** — P2-14, P2-15, P2-19 (з §4 audit-у).
+- **B. Body-only items** — описані у §2.x як критика, але автор audit-у НЕ виніс у P0/P1/P2 список. Тому вдвічі прогавлені.
+
+### PR-розбивка
+
+| PR-id     | Назва                                                      | LOC  | Audit § / клас            | Files (≈)                                                                                                                                                                                                                                      | Deps        | AC / метрики                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| --------- | ---------------------------------------------------------- | ---- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **S6.1**  | fix(onboarding): opt-in module selection (none by default) | ~120 | §2.1 / **B-1**            | `apps/web/src/core/onboarding/OnboardingWizard.tsx:59-78,213-217,364-366,419-423` · `apps/mobile/src/core/OnboardingWizard.tsx` · `packages/shared/src/lib/activeModules.ts:43-46` · тести                                                     | S0 done     | `loadPersistedPicks()` повертає `[]` для empty/missing замість `[...ALL_MODULES]` · CTA disabled при `picks.length===0` з inline-hint «Обери хоч один модуль» · `finish()` БЕЗ fallback на ALL для new users · `getActiveModules()` fallback на ALL зберігаємо тільки для already-onboarded legacy через `hasOnboardingDone()` · tour-mode replay лишається з `[...ALL_MODULES]` · feature-flag `onboarding_default_picks` (`none` vs `all`) для A/B 50/50 · 14-day decision window · expected: completion ↓2pp, but D7 retention ↑4pp (audit hypothesis: active choice → commitment ↑) |
+| **S6.2**  | refactor(onboarding): notes voice consistency              | ~30  | §4 P2-19                  | `apps/web/src/core/hub/MotivationalFooter.tsx` · `apps/web/src/core/hub/ReEngagementCard.tsx` · `apps/mobile/src/core/dashboard/HubDashboard.tsx` · `packages/shared/src/lib/copy.ts`                                                          | —           | «Ти був відсутній N днів» → «Тебе не було N днів» · усі CTA лишаються imperative («Створи запис»), статуси — neutral («Тебе не було», «Активна звичка») · audit-guard test блокує регресію                                                                                                                                                                                                                                                                                                                                                                                              |
+| **S6.3**  | feat(onboarding): goal-step як окремий wizard-screen       | ~250 | §4 P2-14 / §2.8 / **B-5** | `apps/web/src/core/onboarding/OnboardingWizard.tsx` (новий step `goals` між `picks` і `finish`) · `apps/web/src/core/onboarding/GoalsStep.tsx` (новий) · `ModuleFirstRunGoalSheet.tsx` (deprecate path коли goals вже зібрані) · mobile parity | S2.1        | користувач збирає goals у wizard, не у per-module-sheet каскаді · «Пропустити, налаштую потім» banner на дашборді з нагадуванням · ModuleFirstRunGoalSheet рендериться тільки якщо `OnboardingGoals[moduleId]` empty · `goal_step_skipped` event tracked · skip-rate ≤30% (audit: «гладкий шлях» був headline-проблемою) · feature-flag `onboarding_goals_step` для A/B vs поточного per-module pattern                                                                                                                                                                                 |
+| **S6.4**  | feat(hub): cross-module preview після першого entry        | ~150 | §4 P2-15 / §3.7 / **B-9** | `apps/web/src/core/hub/HubDashboard.tsx` (новий `<CrossModulePreview/>` що рендериться після `firstRealEntry` тільки 1 раз) · `packages/shared/src/lib/crossModuleCopy.ts` · mobile parity                                                     | S3.3        | post-entry приклад: «Ось що Sergeant зробить, коли додаси ще одну категорію: гроші×їжа = реальна вартість тренувань» · показується inline, не модалкою · `cross_module_preview_seen` / `_clicked` events · clicks → +5pp 2nd-module-entry rate (cross-module USP demonstration)                                                                                                                                                                                                                                                                                                         |
+| **S6.5**  | refactor(onboarding): routine presets — commitment-first   | ~80  | §2.6 / **B-3**            | `apps/web/src/core/onboarding/PresetSheet.tsx` (routine items) · `packages/shared/src/lib/routinePresets.ts` (новий)                                                                                                                           | S1.1        | замість «Випити воду / 10 хв / 10 сторінок» — додати 4-й preset «Своя обіцянка собі» з custom input · копія фрейму: «вибери одну річ що ти обіцяв собі» · A/B vs поточних 3 small-wins · expected: 1-week-streak rate ↑3pp · потребує copy-reviewer-а (як S1.1)                                                                                                                                                                                                                                                                                                                         |
+| **S6.6**  | refactor(onboarding): streak — outcome-first copy          | ~40  | §2.6 / **B-4**            | `packages/shared/src/lib/onboardingCelebrations.ts` · `apps/web/src/core/hub/ValueProgressBar.tsx` · `apps/mobile/src/core/dashboard/HubDashboard.tsx`                                                                                         | S3.3        | копія: «Через 30 днів — це автоматично. Зараз: 0/30» (outcome) замість «Серія днів: 0» (mechanism) · routine value-bar copy refresh · audit-guard test блокує «Серія днів» fallback                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **S6.7**  | refactor(daily-nudge): single-primary affordance           | ~50  | §2.10 / **B-6**           | `apps/web/src/core/hub/DailyNudge.tsx` · `apps/mobile/src/core/dashboard/DailyNudge.tsx`                                                                                                                                                       | —           | замість 3 кнопок одного рангу («Спробувати / Зрозуміло / Нагадай за тиждень») — 1 primary CTA + dismiss-X у кутку · «Нагадай за тиждень» переноситься в overflow `…` menu · `daily_nudge_action { type: "primary" \| "dismiss" \| "snooze" }` tracked · primary-click rate ↑8pp (audit hypothesis)                                                                                                                                                                                                                                                                                      |
+| **S6.8**  | feat(personalization): graceful fallback для skipped goals | ~80  | §3.5 / **B-8**            | `apps/web/src/core/onboarding/FirstActionHeroCard.tsx` · `packages/shared/src/lib/onboardingCelebrations.ts` · `packages/shared/src/lib/softAuthCopy.ts`                                                                                       | S6.3        | окремий copy-tier для users з empty `OnboardingGoals` — НЕ generic «Створи перший запис», а relevant до module («Які витрати ти хочеш бачити в Finyk?») · per-module fallback table · `personalization_tier { had_goals: bool }` event tracked для measuring drift · audit-guard tests                                                                                                                                                                                                                                                                                                  |
+| **S6.9**  | refactor(re-engagement): shorter window + early loops      | ~100 | §2.10 / **B-7**           | `apps/web/src/core/hub/ReEngagementCard.tsx` · `packages/shared/src/lib/reEngagement.ts` (новий) · server-side scheduling (часткове перетинання з S4.2)                                                                                        | S4.2        | window 7d → 2d (показуємо ReEngagementCard з day-2 без entries) · S4.3 email drip 0/1/3 (вже shipped) покриває email-частину · push S4.2 покриває push-частину · цей PR — UI surface для in-app re-engagement у проміжку 1-6d · expected: D7 ↑2pp                                                                                                                                                                                                                                                                                                                                       |
+| **S6.10** | feat(welcome): onboarding video + social proof (P3 batch)  | ~120 | §4 P3-20 / P3-21          | `apps/web/src/core/app/WelcomeScreen.tsx` (15-сек screencast lazy-loaded) · `apps/web/src/core/app/Testimonials.tsx` (новий) · копія від ≥3 beta-users (founder-task)                                                                          | post-launch | 15-сек screencast як 4th CTA на welcome (after «Зайти / Створити / Подивитись приклад») · 3 testimonials з opt-in beta-users · `welcome_video_played` / `_completed` tracked · skeptical-cohort completion ↑3pp (потрібні real beta users для testimonials, тому залежить від post-launch beta)                                                                                                                                                                                                                                                                                         |
+
+**Сума:** 10 PR-ів, ~1020 LOC. Головний blocker chain: S6.1 (default-picks) → можна ship зразу. S6.3 (goal-step) → залежить від S2.1 (зроблено) і потенційно колізує з S5.1 goal-first wizard — потрібно `[OPEN]` decision до старту S6.3 чи S5.1 перший. S6.10 — post-launch, потребує real beta users для testimonials.
+
+**Декомпозиція по пріоритетам:**
+
+- **P0 (ship зараз):** S6.1 (B-1, твій тригер), S6.2 (P2-19 trivial drive-by).
+- **P1 (наступний sprint):** S6.6, S6.7, S6.9 — швидкі copy/UX правки без deep refactor.
+- **P2 (потребує decision):** S6.3 (P2-14, колізія з S5), S6.4 (P2-15, USP demonstration), S6.5 (B-3, потребує copy-reviewer-а), S6.8 (B-8, залежить від S6.3).
+- **P3 (post-launch):** S6.10 (P3-20+P3-21, потребує beta users).
+
+**Risks:**
+
+- S6.1 completion-rate може ↓ 2-3pp перед видимим retention-gain → **обов'язково під feature-flag** з 50/50 A/B 14 днів. Audit-driven, але без даних — гіпотеза.
+- S6.3 goal-step окремим screen-ом подовжує wizard на 1 крок → trade-off з S1.1 hero copy (скільки взагалі інформації споживач хоче за 30 секунд). Розкатуємо тільки після S5 decision.
+- S6.4 cross-module preview потребує real cross-module insights (gross-domestic, food-cost). Якщо AI-стек не готовий — fallback на статичний приклад («Гроші × їжа: типовий витрата 8500₴/міс на доставки»).
+- S6.5 routine commitment-preset потребує custom-input handling у звичайному `applyRoutinePreset` flow — schema може потребувати extension.
+
+**Cross-cutting:**
+
+- Mobile parity для S6.1, S6.3, S6.6, S6.7 — обов'язкова цього спринту.
+- Result note: [`docs/launch/post-mortems/s6-cleanup-batch.md`](./post-mortems/s6-cleanup-batch.md) (буде створений по завершенню).
+
+---
+
 ## 8. Roll-up: success metrics dashboard
 
 | Метрика                                  | Baseline (зараз)           | Target після 5 спринтів |
@@ -261,7 +309,7 @@
 ## 9. Що НЕ входить у цей план
 
 - **OpenClaw / founder-tooling.** Це окремий сюрфейс (Telegram), не consumer FTUX. Див. [`openclaw-roadmap.md`](./openclaw-roadmap.md).
-- **Глибокий cross-module insights** (USP-демонстрація). Це окремий проект (Insights v2), що залежить від AI-стеку. Поточний план фокусується на FTUX-funnel'і, не на product expansion.
+- **Глибокий cross-module insights** (повноцінна Insights v2). Це окремий проект, що залежить від AI-стеку. Поточний план фокусується на FTUX-funnel'і, не на product expansion. _Note: lightweight cross-module **preview** (одноразовий promo після першого entry) тримається у scope як S6.4 — це не Insights v2, а 150-LOC USP-demonstration без AI._
 - **Paywall / monetization triggers.** Pre-condition: ≥4 спринти FTUX-роботи. Paywall в S6+ — після того як retention стабільний (per [`01-monetization-and-pricing.md` §7](./01-monetization-and-pricing.md#7-activation-метрики)).
 - **Rebrand / module renaming.** «Finyk vs Fizruk inconsistency» — brand-розмова, не FTUX-fix. Окрема ініціатива.
 
@@ -269,14 +317,15 @@
 
 ## 10. TL;DR / executive summary
 
-- **5 спринтів, 10 тижнів. S0 + S1 + S2 + S3 + S4 (+S5 опц.).**
+- **6 спринтів, 12 тижнів. S0 + S1 + S2 + S3 + S4 (+S5 опц.) + S6.**
 - **Кожен спринт завершує одну тему повністю** з PostHog-зміреним before/after.
 - **Sprint 0 — обов'язкова передумова.** Без аналітики все наступне сліпе.
 - **Sprint 1 — найбільший impact на perception** (copy, confetti, peek). Очікуваний ↑5pp completion.
 - **Sprint 2 — найбільший impact на activation** (goal-aware primary, чесний preset). Очікуваний ↑10pp first-entry.
 - **Sprint 3-4 — retention loops**, що замикають funnel.
 - **Sprint 5 — radical experiment** (goal-first wizard). Високий upside, високий risk.
+- **Sprint 6 — cleanup batch.** 10 пунктів аудиту, що або не дійшли до P-списку, або не дійшли до плану. Включає S6.1 (B-1, default-picks opt-in) — найбільш actionable з прогавлених.
 
-Якщо команда — 1-2 розробника + founder, це реалістичний 10-тижневий план. Якщо команда менше (1 person, half-time) — додавай 50% buffer, тобто 15 тижнів.
+Якщо команда — 1-2 розробника + founder, це реалістичний 12-тижневий план. Якщо команда менше (1 person, half-time) — додавай 50% buffer, тобто 18 тижнів.
 
 **Single biggest risk:** не зробити S0 серйозно і впасти у S1 з "ну приблизно копія краща". Без metrics — це просто перестановка букв.
