@@ -1,7 +1,7 @@
 # Sprint 2 — Session, surface and quota hardening
 
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-04.
-> **Status:** Active (H5, H7, H8 closed 2026-05-04 — `exp://` gate + Vercel SSOT + per-route CORP override shipped alongside Sprint 1 H2 closure).
+> **Status:** Active (H5, H6, H7, H8 closed 2026-05-04 — `exp://` gate + email-verification + Vercel SSOT + per-route CORP override shipped alongside Sprint 1 H2 closure; H6 closed partial — Mono connect gated, sign-in gate behind ops flip).
 
 Sprint 2 closes the **High-severity backlog** that Sprint 1 left open and removes
 two Medium-severity issues that share blast radius with Sprint 1 (`CSP_DISABLE`
@@ -13,16 +13,16 @@ and a maintenance window; it lands in Sprint 3 alongside the medium batch.
 
 ## Scope
 
-| ID                                       | Title                                            | Severity | Owner    | Effort                       |
-| ---------------------------------------- | ------------------------------------------------ | -------- | -------- | ---------------------------- |
-| [H3](./H3-session-revoke-and-binding.md) | Session 30 d, no revoke-on-password-change       | High     | backend  | 1 d                          |
-| [H5](./H5-trusted-origins-exp-scheme.md) | `exp://` trusted origin in production            | High     | backend  | 0.25 d _(closed 2026-05-04)_ |
-| [H6](./H6-email-verification.md)         | Email verification disabled, password reset weak | High     | backend  | 0.5 d                        |
-| [H7](./H7-vercel-config-drift.md)        | `vercel.json` duplicated between root and apps   | High     | devops   | 0.25 d _(closed 2026-05-04)_ |
-| [H8](./H8-corp-per-route.md)             | `CORP: cross-origin` without per-route guard     | High     | backend  | 0.5 d _(closed 2026-05-04)_  |
-| [H9](./H9-transcribe-usd-cap.md)         | `transcribe` 10 MB upload, no per-user USD cap   | High     | backend  | 0.5 d                        |
-| [M1](./M1-csp-disable-runtime-flag.md)   | `CSP_DISABLE=1` env-fault-injection              | Medium   | backend  | 0.25 d                       |
-| [M3](./M3-pino-redact-paths.md)          | Pino `redactPaths` is incomplete                 | Medium   | platform | 0.25 d                       |
+| ID                                       | Title                                            | Severity | Owner    | Effort                               |
+| ---------------------------------------- | ------------------------------------------------ | -------- | -------- | ------------------------------------ |
+| [H3](./H3-session-revoke-and-binding.md) | Session 30 d, no revoke-on-password-change       | High     | backend  | 1 d                                  |
+| [H5](./H5-trusted-origins-exp-scheme.md) | `exp://` trusted origin in production            | High     | backend  | 0.25 d _(closed 2026-05-04)_         |
+| [H6](./H6-email-verification.md)         | Email verification disabled, password reset weak | High     | backend  | 0.5 d _(closed 2026-05-04, partial)_ |
+| [H7](./H7-vercel-config-drift.md)        | `vercel.json` duplicated between root and apps   | High     | devops   | 0.25 d _(closed 2026-05-04)_         |
+| [H8](./H8-corp-per-route.md)             | `CORP: cross-origin` without per-route guard     | High     | backend  | 0.5 d _(closed 2026-05-04)_          |
+| [H9](./H9-transcribe-usd-cap.md)         | `transcribe` 10 MB upload, no per-user USD cap   | High     | backend  | 0.5 d                                |
+| [M1](./M1-csp-disable-runtime-flag.md)   | `CSP_DISABLE=1` env-fault-injection              | Medium   | backend  | 0.25 d                               |
+| [M3](./M3-pino-redact-paths.md)          | Pino `redactPaths` is incomplete                 | Medium   | platform | 0.25 d                               |
 
 **Total effort:** ≈ 3.5 person-days (one engineer, one calendar week).
 

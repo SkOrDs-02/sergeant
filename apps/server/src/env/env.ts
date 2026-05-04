@@ -85,6 +85,28 @@ const envSchema = z.object({
    * (sha256 pre-hash or Argon2id) is tracked in ADR-0042.
    */
   MAX_PASSWORD_LENGTH: coerceInt.positive().max(72).default(72),
+  /**
+   * H6 — soft kill-switch for Better Auth's `requireEmailVerification`.
+   *
+   * Default `false` (deliberate): existing accounts created before H6
+   * shipped have `email_verified=false` and would all be locked out of
+   * sign-in instantly if we flipped this to `true` repo-wide. Ops flips
+   * this `true` after a soft-gate / re-verification sweep is run on
+   * legacy users. The verification email is **always** sent on sign-up
+   * regardless of this flag (`auth.ts → emailVerification.sendOnSignUp`),
+   * so newly created accounts will always have a working verification
+   * path.
+   *
+   * Independent of this flag, sensitive endpoints (currently
+   * `POST /api/mono/connect`) gate on `req.user.emailVerified` via the
+   * `requireVerifiedEmail()` middleware. Closes the most exploitable
+   * vector of the H6 card (account-squatting → bank-statement leak)
+   * without waiting for the global flip.
+   */
+  REQUIRE_EMAIL_VERIFICATION: z
+    .enum(["true", "false", "1", "0", ""])
+    .default("false")
+    .transform((v) => v === "true" || v === "1"),
 
   // ── CORS / Origins ──────────────────────────────────────────────────
   /** Comma-separated allowed origins (e.g. `https://app.example.com`). */

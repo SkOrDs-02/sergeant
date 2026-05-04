@@ -1,5 +1,10 @@
 import { Router } from "express";
-import { asyncHandler, requireSession, setModule } from "../http/index.js";
+import {
+  asyncHandler,
+  requireSession,
+  requireVerifiedEmail,
+  setModule,
+} from "../http/index.js";
 import {
   connectHandler,
   disconnectHandler,
@@ -35,8 +40,27 @@ export function createMonoWebhookRouter(): Router {
   // Webhook — публічний, без auth
   r.post("/api/mono/webhook/:secret", asyncHandler(webhookHandler));
 
-  // Session-protected endpoints
-  r.post("/api/mono/connect", requireSession(), asyncHandler(connectHandler));
+  // Session-protected endpoints.
+  //
+  // H6 — `/api/mono/connect` додатково гейтиться на `email_verified=true`
+  // через `requireVerifiedEmail()`. Без цього атакувальник, що зареєстрував
+  // squat-акаунт на чужий email, міг би одразу під'єднати свій Mono-token
+  // і дати жертві картину "хтось бачить мої транзакції" (плюс ми писали
+  // б шифрований token у БД на чужому user_id). 403 з code
+  // `EMAIL_VERIFICATION_REQUIRED` — фронт показує банер "Підтверди email,
+  // щоб під'єднати банк".
+  //
+  // `/api/mono/disconnect`, accounts, transactions, backfill — навмисно НЕ
+  // гейтнуті: вони не створюють нових прав, а лише дозволяють юзеру
+  // подивитись/відключити те, що він уже встиг під'єднати (для legacy
+  // акаунтів, що під'єднались до H6). Disconnect взагалі має лишатись
+  // доступним без верифікації, бо це anti-lock-in primitive.
+  r.post(
+    "/api/mono/connect",
+    requireSession(),
+    requireVerifiedEmail(),
+    asyncHandler(connectHandler),
+  );
   r.post(
     "/api/mono/disconnect",
     requireSession(),
