@@ -1,0 +1,156 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE — Touch-target safety net, mobile-first list/grid/typography
+   utilities, safe-area helpers. Extracted from index.css per
+   docs/diagnostics/2026-05-03-web-deep-dive §1.4.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE OPTIMIZATION UTILITIES
+   Touch-friendly spacing, improved readability, and responsive helpers.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TOUCH TARGETS — WCAG 2.5.5 / Apple HIG safety net.
+
+   The `.touch-target` / `.touch-target-48` Tailwind utilities (declared in
+   `packages/design-tokens/tailwind-preset.js`) are the canonical way to
+   set a 44×44 / 48×48 floor on coarse pointers. The CSS rule below is a
+   defence-in-depth guarantee for any interactive element that was added
+   without a min-size — it raises the floor to 44×44 on touch devices for
+   every `<button>`, anchor with `role="button"`, and `role="tab"` element
+   that is not explicitly opted out via the `data-compact` attribute.
+
+   Use `data-compact` on heatmap cells, dense data grid handles, inline
+   chips inside paragraphs, and any element where 44×44 would crowd the
+   surrounding layout. The opt-out is intentional and per-element.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (pointer: coarse) {
+  button:not([data-compact]):not(:disabled),
+  a[role="button"]:not([data-compact]),
+  [role="tab"]:not([data-compact]) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Mobile-optimized list items with larger touch targets */
+.mobile-list-item {
+  @apply min-h-[56px] flex items-center px-4 py-3
+         active:bg-panelHi transition-colors;
+}
+
+@media (pointer: coarse) {
+  .mobile-list-item {
+    @apply min-h-[60px] py-4;
+  }
+}
+
+/* Swipeable container for mobile gestures */
+.swipeable {
+  @apply overflow-x-auto snap-x snap-mandatory scroll-smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.swipeable::-webkit-scrollbar {
+  display: none;
+}
+.swipeable > * {
+  @apply snap-center;
+}
+
+/* Mobile-first card grid — 1 column on mobile, 2 on tablet+ */
+.card-grid-mobile {
+  @apply grid grid-cols-1 gap-3;
+}
+@media (min-width: 480px) {
+  .card-grid-mobile {
+    @apply grid-cols-2;
+  }
+}
+
+/* Improved text readability on small screens */
+.mobile-readable {
+  @apply text-base leading-relaxed;
+  /* Slightly larger text on mobile for better readability */
+}
+@media (min-width: 640px) {
+  .mobile-readable {
+    @apply text-sm leading-normal;
+  }
+}
+
+/* Bottom sheet safe area padding */
+.sheet-safe-bottom {
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Sticky header with safe area */
+.sticky-header-safe {
+  @apply sticky top-0 z-40 bg-bg/95 backdrop-blur-sm;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Hide on touch devices */
+@media (pointer: coarse) {
+  .hide-touch {
+    display: none !important;
+  }
+}
+
+/* Show only on touch devices */
+@media (pointer: fine) {
+  .show-touch-only {
+    display: none !important;
+  }
+}
+
+/* Optimized button spacing for mobile */
+.mobile-button-group {
+  @apply flex flex-col gap-3;
+}
+@media (min-width: 480px) {
+  .mobile-button-group {
+    @apply flex-row gap-2;
+  }
+}
+
+/* Loading placeholder with reduced motion support */
+.loading-placeholder {
+  @apply bg-line/30 rounded-lg;
+  animation: pulseSoft 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-placeholder {
+    animation: none;
+    @apply bg-line/50;
+  }
+}
+
+/* Improved focus visibility for mobile */
+@media (pointer: coarse) {
+  :focus-visible {
+    outline-offset: 4px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   COMPACT MOBILE TYPOGRAPHY
+   Scales base font from 16px → 15px on very small viewports (< 360px)
+   so card content (amounts, labels, streaks) isn't clipped on iPhone SE
+   / budget Android. Affects rem-based type only; px values stay intact.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 360px) {
+  :root {
+    font-size: 15px;
+  }
+}
+
+/* Tighter line-height for module cards on touch devices */
+@media (pointer: coarse) and (max-width: 480px) {
+  .module-card-tight {
+    line-height: 1.3;
+  }
+  .module-card-tight .text-2xs {
+    line-height: 1.2;
+  }
+}

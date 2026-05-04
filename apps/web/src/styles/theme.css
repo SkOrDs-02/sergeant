@@ -1,0 +1,325 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   THEME — Light & dark CSS-vars (semantic tokens) + DM Sans font
+   fallback metrics. Extracted from index.css per
+   docs/diagnostics/2026-05-03-web-deep-dive §1.4.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  @font-face {
+    font-family: "DM Sans Fallback";
+    src: local("Arial");
+    ascent-override: 94%;
+    descent-override: 26%;
+    line-gap-override: 0%;
+    size-adjust: 104%;
+  }
+}
+
+@layer base {
+  /* ═══════════════════════════════════════════════════════════════════════
+     SAFE AREA — iPhone notch / Android system UI overlay insets.
+     `env()` резолвиться в `0px` на desktop-браузерах (через fallback), тож
+     це no-op на web і реальний paddding у Capacitor WebView / PWA standalone.
+     Meta viewport уже має `viewport-fit=cover` (див. apps/web/index.html),
+     без нього `env(safe-area-inset-*)` на iOS завжди повертає 0.
+     ═══════════════════════════════════════════════════════════════════════ */
+  :root {
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-left: env(safe-area-inset-left, 0px);
+    --safe-area-right: env(safe-area-inset-right, 0px);
+  }
+  body {
+    padding-top: var(--safe-area-top);
+    padding-bottom: var(--safe-area-bottom);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     LIGHT THEME — Warm, Organic, Friendly
+     Inspired by: Duolingo, Yazio, Monobank
+     ═══════════════════════════════════════════════════════════════════════ */
+  :root {
+    color-scheme: light;
+
+    /* Semantic UI colors as space-separated RGB triplets.
+       Format required for Tailwind opacity modifiers (bg-panel/95 etc.). */
+
+    /* Page background — warm cream instead of cold blue-gray */
+    --c-bg: 253 249 243; /* #fdf9f3 — warm ivory */
+
+    /* Cards/panels — pure white for contrast */
+    --c-panel: 255 255 255; /* #ffffff — white cards */
+    --c-panel-hi: 250 247 241; /* #faf7f1 — warm hover/input bg */
+
+    /* Borders — warm gray with cream undertone */
+    --c-line: 235 228 218; /* #ebe4da — warm border */
+
+    /* Text hierarchy */
+    --c-text: 28 25 23; /* #1c1917 — warm near-black (stone-900) */
+    --c-muted: 87 83 78; /* #57534e — warm medium gray (stone-600) */
+    --c-subtle: 107 100 93; /* #6b645d — warm stone (tertiary), WCAG AA ≥4.5:1 on panel/panel-hi/bg */
+    --c-primary: 28 25 23; /* #1c1917 — ink (same as text) */
+
+    /* Shadows — softer, warmer, more organic */
+    --shadow-card:
+      0 1px 3px rgba(28, 25, 23, 0.04), 0 4px 16px rgba(28, 25, 23, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+    --shadow-float:
+      0 2px 8px rgba(28, 25, 23, 0.06), 0 12px 40px rgba(28, 25, 23, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85);
+
+    --shadow-soft: 0 8px 32px rgba(28, 25, 23, 0.12);
+
+    /* Module glow drop-shadows for bottom nav icons (active state). */
+    --shadow-finyk-nav: 0 0 8px rgba(16, 185, 129, 0.3);
+    --shadow-fizruk-nav: 0 0 8px rgba(20, 184, 166, 0.3);
+    --shadow-routine-nav: 0 0 8px rgba(249, 112, 102, 0.3);
+    --shadow-nutrition-nav: 0 0 8px rgba(132, 204, 22, 0.3);
+
+    /* Destructive hover ring (Button variant="destructive"). */
+    --shadow-danger-ring: 0 0 0 3px rgba(239, 68, 68, 0.15);
+
+    /* Dark-mode overlay gradients for module hero Card variants. These are
+       layered on top of `bg-panel` when the theme is dark so the card keeps
+       a faint module tint instead of reading as a neutral warm panel. */
+    --gradient-card-finyk-dark: linear-gradient(
+      135deg,
+      rgba(16, 185, 129, 0.1) 0%,
+      transparent 100%
+    );
+    --gradient-card-fizruk-dark: linear-gradient(
+      135deg,
+      rgba(20, 184, 166, 0.1) 0%,
+      transparent 100%
+    );
+    --gradient-card-routine-dark: linear-gradient(
+      135deg,
+      rgba(249, 112, 102, 0.1) 0%,
+      transparent 100%
+    );
+    --gradient-card-nutrition-dark: linear-gradient(
+      135deg,
+      rgba(146, 204, 23, 0.1) 0%,
+      transparent 100%
+    );
+
+    /* Brand accent for focus states */
+    --c-accent: 16 185 129; /* emerald-500 */
+
+    /* Semantic aliases (design-token contract) — map 1:1 to existing vars.
+       Prefer these names in new code: surface / surface-muted / fg / fg-muted.
+       Existing bg / panel / text / muted remain valid for back-compat. */
+    --c-surface: var(--c-panel);
+    --c-surface-muted: var(--c-panel-hi);
+    --c-fg: var(--c-text);
+    --c-fg-muted: var(--c-muted);
+
+    /* Status semantic tokens (kept in sync with tailwind `statusColors`
+       from `@sergeant/design-tokens/tokens`). */
+    --c-success: 16 185 129; /* emerald-500  — statusColors.success */
+    --c-warning: 245 158 11; /* amber-500    — statusColors.warning */
+    --c-danger: 239 68 68; /* red-500       — statusColors.danger  */
+    --c-info: 14 165 233; /* sky-500        — statusColors.info    */
+
+    /* Semantic border tokens — alias `line` for back-compat, add a stronger
+       divider for inputs/separators that need extra weight. */
+    --c-border: var(--c-line);
+    --c-border-strong: 221 211 197; /* #ddd3c5 — stronger warm divider */
+
+    /* Soft status backgrounds — tinted surfaces for banners/badges/cards.
+       These resolve automatically between light & dark themes, eliminating
+       the `bg-red-50 dark:bg-danger/15` string-gymnastics pattern. */
+    --c-success-soft: 209 250 229; /* emerald-100 */
+    --c-warning-soft: 254 243 199; /* amber-100 */
+    --c-danger-soft: 254 226 226; /* red-100 */
+    --c-info-soft: 224 242 254; /* sky-100 */
+
+    /* ───────────────────────────────────────────────────────────────────
+       SOFT BRAND & MODULE TINTS — Wave 1b
+       Same contract as `--c-success-soft`: the `-soft` token is the
+       surface wash, `-soft-border` is the paired hairline, `-soft-hover`
+       is the subtle hover tint. All three resolve automatically between
+       light and dark themes so call-sites never need
+       `dark:bg-{family}-500/15` gymnastics. Used by `Segmented`, `Tabs`,
+       `Button[variant=soft]`, `Badge`, `Banner`, `Card[variant=tint]`,
+       `WeeklyDigestCard`, `AssistantAdviceCard`, etc.
+       See docs/design/dark-mode-audit.md for the migration targets.
+       ─────────────────────────────────────────────────────────────────── */
+    --c-brand-soft: 236 253 245; /* emerald-50 — matches legacy `bg-brand-50` */
+    --c-brand-soft-border: 167 243 208; /* emerald-200 — matches legacy ring */
+    --c-brand-soft-hover: 209 250 229; /* emerald-100 — one step deeper for hover */
+
+    --c-finyk-soft: 236 253 245; /* emerald-50 — parity with `brandColors.emerald[50]` */
+    --c-finyk-soft-border: 167 243 208; /* emerald-200 */
+    --c-finyk-soft-hover: 209 250 229; /* emerald-100 */
+
+    --c-fizruk-soft: 240 253 250; /* teal-50 — parity with `brandColors.teal[50]` */
+    --c-fizruk-soft-border: 153 246 228; /* teal-200 */
+    --c-fizruk-soft-hover: 204 251 241; /* teal-100 */
+
+    /* `tile` + `tile-border` — subtle stat-tile wash on the fizruk hero
+       gradient (`bg-hero-teal`). Used by `<WorkoutStatTile>` and the
+       fizruk summary-sheet close button. Light=teal-800 (so a 10% wash
+       reads as a slightly darker tile on the bright teal gradient);
+       dark=white (10% wash on dark panel reads as a subtle bright tile). */
+    --c-fizruk-tile: 17 94 89; /* teal-800 */
+    --c-fizruk-tile-border: 17 94 89; /* teal-800 */
+
+    --c-routine-soft: 255 245 243; /* coral-50 — parity with `brandColors.coral[50]` */
+    --c-routine-soft-border: 255 210 200; /* coral-200 */
+    --c-routine-soft-hover: 255 232 227; /* coral-100 */
+
+    --c-nutrition-soft: 248 254 231; /* lime-50 — parity with `brandColors.lime[50]` */
+    --c-nutrition-soft-border: 217 249 157; /* lime-200 */
+    --c-nutrition-soft-hover: 239 252 203; /* lime-100 */
+
+    /* Celebration / gamification tokens */
+    --c-celebration: 251 191 36; /* amber-400 — confetti, stars, rewards */
+    --c-streak-glow: 249 112 102; /* coral-500 — streak flame glow */
+    --c-xp: 139 92 246; /* violet-500 — XP / level-up accent */
+
+    /* Module hero card gradients — delicate accent washes for top-of-page
+       hero cards. Semi-transparent so they layer over `bg-panel` or
+       module surfaces. */
+    --gradient-finyk: linear-gradient(
+      135deg,
+      rgba(16, 185, 129, 0.08) 0%,
+      rgba(20, 184, 166, 0.06) 100%
+    );
+    --gradient-fizruk: linear-gradient(
+      135deg,
+      rgba(20, 184, 166, 0.08) 0%,
+      rgba(200, 242, 100, 0.05) 100%
+    );
+    --gradient-routine: linear-gradient(
+      135deg,
+      rgba(249, 112, 102, 0.08) 0%,
+      rgba(255, 140, 120, 0.05) 100%
+    );
+    --gradient-nutrition: linear-gradient(
+      135deg,
+      rgba(146, 204, 23, 0.08) 0%,
+      rgba(176, 230, 54, 0.05) 100%
+    );
+
+    /* Enhanced focus ring — thicker, warmer, with offset for visibility.
+       Used via `focus-visible:ring` utilities that read the custom property. */
+    --focus-ring-width: 3px;
+    --focus-ring-offset: 2px;
+    --focus-ring-color: rgba(16, 185, 129, 0.4);
+
+    /* Motion tokens — single source of truth for duration/easing. */
+    --motion-duration-fast: 150ms;
+    --motion-duration: 200ms;
+    --motion-duration-slow: 300ms;
+    --motion-duration-slower: 400ms;
+    --motion-ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --motion-ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --motion-ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    /* Easing presets from the UX plan (Dodatok B) */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     DARK THEME — Rich, Cozy, Premium
+     Contrast tuned to WCAG AA: tertiary text (subtle) ≥ 4.5:1, prominent
+     dividers (border-strong) ≥ 3:1 against the page background.
+     ═══════════════════════════════════════════════════════════════════════ */
+  .dark {
+    color-scheme: dark;
+
+    /* Page background — deep warm charcoal */
+    --c-bg: 23 20 18; /* #171412 — warm dark */
+
+    /* Cards/panels — elevated warm surface. `panel-hi` is bumped so hover
+       and input backgrounds are distinguishable from the base panel. */
+    --c-panel: 32 28 25; /* #201c19 — warm elevated */
+    --c-panel-hi: 48 42 37; /* #302a25 — warm input/hover (was #292420) */
+
+    /* Borders — warm muted. Raised from #3a342e (≈1.5:1) so card edges,
+       dividers, and input outlines are actually visible. */
+    --c-line: 82 74 65; /* #524a41 — warm border (was #3a342e) */
+
+    /* Text hierarchy — `subtle` raised from #57534e (≈2.4:1) to meet WCAG
+       AA for small tertiary copy (eyebrow headings, captions, meta). */
+    --c-text: 250 247 241; /* #faf7f1 — warm white */
+    --c-muted: 180 174 169; /* #b4aea9 — medium warm gray (brightened) */
+    --c-subtle: 135 128 121; /* #878079 — readable tertiary (was #57534e) */
+    --c-primary: 250 247 241; /* reversed */
+
+    --shadow-card:
+      0 1px 3px rgba(0, 0, 0, 0.25), 0 4px 16px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+
+    --shadow-float:
+      0 2px 8px rgba(0, 0, 0, 0.3), 0 12px 40px rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+
+    --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+    /* Dark-theme overrides for the new semantic tokens added above.
+       `border-strong` now clears the 3:1 UI-contrast threshold so
+       separators between sections read clearly on the dark bg. */
+    --c-border-strong: 112 102 90; /* #70665a — prominent divider (was #4a423a) */
+    --c-success-soft: 6 95 70; /* slightly brighter emerald-900 */
+    --c-warning-soft: 146 64 14; /* slightly brighter amber-900 */
+    --c-danger-soft: 153 27 27; /* red-800 — brighter than red-900 */
+    --c-info-soft: 7 89 133; /* sky-800 — brighter than sky-900 */
+
+    /* Dark-theme overrides for the soft brand/module tints (Wave 1b).
+       Values are deliberately deep (`-900` family) so tinted surfaces
+       like `bg-brand-soft` read as *accent* rather than bright fill on
+       the dark panel background. `-soft-border` matches the
+       corresponding `-800`; `-soft-hover` is one step brighter than
+       `-soft` for a visible but subtle hover lift. */
+    --c-brand-soft: 6 78 59; /* emerald-900 */
+    --c-brand-soft-border: 6 95 70; /* emerald-800 */
+    --c-brand-soft-hover: 6 95 70; /* emerald-800 */
+
+    --c-finyk-soft: 6 78 59; /* emerald-900 */
+    --c-finyk-soft-border: 6 95 70; /* emerald-800 */
+    --c-finyk-soft-hover: 6 95 70; /* emerald-800 */
+
+    --c-fizruk-soft: 19 78 74; /* teal-900 */
+    --c-fizruk-soft-border: 17 94 89; /* teal-800 */
+    --c-fizruk-soft-hover: 17 94 89; /* teal-800 */
+
+    /* Dark-mode flip of the stat-tile token: white wash reads as a
+       subtle bright tile on dark panel (matches the legacy
+       `dark:bg-white/10 dark:border-white/15` hand-rolling). */
+    --c-fizruk-tile: 255 255 255; /* white */
+    --c-fizruk-tile-border: 255 255 255; /* white */
+
+    --c-routine-soft: 159 36 30; /* coral-900 (≈ red-900 tuned) */
+    --c-routine-soft-border: 185 54 48; /* coral-800 */
+    --c-routine-soft-hover: 185 54 48; /* coral-800 */
+
+    --c-nutrition-soft: 63 98 18; /* lime-800 — brighter than lime-900 for readability */
+    --c-nutrition-soft-border: 86 124 15; /* lime-700 */
+    --c-nutrition-soft-hover: 86 124 15; /* lime-700 */
+
+    /* ───────────────────────────────────────────────────────────────────
+       MODULE DARK SURFACES & BORDERS
+       Premixed accents tuned for use over the dark `panel` background.
+       Decoupled from the live `--c-finyk` / `--c-routine` / … accents so
+       the visual proportions of `bg-<m>-surface-dark/N` and
+       `border-<m>-border-dark/N` opacity tints don't silently drift if a
+       module's primary colour is later retuned. Initial RGB values mirror
+       the corresponding `moduleColors.<m>.primary` from
+       `packages/design-tokens/tokens.js` — change them here independently
+       when dark-mode tints need their own treatment.
+       ─────────────────────────────────────────────────────────────────── */
+    --c-finyk-surface-dark: 16 185 129; /* emerald-500 */
+    --c-finyk-border-dark: 16 185 129; /* emerald-500 */
+    --c-fizruk-surface-dark: 20 184 166; /* teal-500 */
+    --c-fizruk-border-dark: 20 184 166; /* teal-500 */
+    --c-routine-surface-dark: 249 112 102; /* coral-500 */
+    --c-routine-border-dark: 249 112 102; /* coral-500 */
+    --c-nutrition-surface-dark: 176 230 54; /* lime-400 — WCAG AA ≥4.5:1 on dark panel */
+    --c-nutrition-border-dark: 176 230 54; /* lime-400 */
+  }
+}

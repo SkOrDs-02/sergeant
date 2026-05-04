@@ -1,0 +1,453 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   UTILITIES — Tailwind v4 `@utility` rules (focus rings, typography
+   scale, panels, gradients, etc.). Extracted from index.css for
+   maintainability per docs/diagnostics/2026-05-03-web-deep-dive §1.4.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@utility focus-ring {
+  /* ═══════════════════════════════════════════════════════════════════════
+     FOCUS RING — consistent keyboard a11y affordance across the app.
+     Apply to any interactive element that doesn't already define its own
+     focus-visible ring (Button already does). Uses the `accent` semantic
+     token so light & dark themes stay in sync automatically.
+     ═══════════════════════════════════════════════════════════════════════ */
+  @apply outline-hidden focus-visible:ring-accent/60
+           focus-visible:ring-offset-surface;
+  --tw-ring-offset-width: var(--focus-ring-offset, 2px);
+  &:focus-visible {
+    --tw-ring-shadow: 0 0 0 var(--focus-ring-width, 3px)
+      var(--focus-ring-color, rgba(16, 185, 129, 0.4));
+  }
+}
+
+@utility focus-ring-enhanced {
+  /* Enhanced focus ring — thicker, with animation on keyboard focus.
+     Applies to all interactive elements that don't define their own ring. */
+  @apply outline-hidden;
+  transition: box-shadow 0.15s ease-out;
+  &:focus-visible {
+    box-shadow: var(--shadow-focus-ring, 0 0 0 3px rgba(16, 185, 129, 0.4));
+  }
+}
+
+@utility input-focus {
+  /* ═══════════════════════════════════════════════════════════════════════
+     INPUT FOCUS — ring без offset (краще читається всередині заповненого
+     input-а), лишає existing border-transition інтактним. Варіанти беруть
+     module tone; базовий `.input-focus` — для загальних (brand) інпутів.
+     Завжди `focus-visible:` щоб не дратувати користувачів миші.
+     ═══════════════════════════════════════════════════════════════════════ */
+  @apply outline-hidden transition-colors
+           focus-visible:border-brand-500/60
+           focus-visible:ring-2 focus-visible:ring-brand-500/30;
+}
+
+@utility input-focus-finyk {
+  @apply outline-hidden transition-colors
+           focus-visible:border-primary/60
+           focus-visible:ring-2 focus-visible:ring-primary/25;
+}
+
+@utility input-focus-fizruk {
+  @apply outline-hidden transition-colors
+           focus-visible:border-success/60
+           focus-visible:ring-2 focus-visible:ring-success/25;
+}
+
+@utility input-focus-nutrition {
+  @apply outline-hidden transition-colors
+           focus-visible:border-nutrition/60
+           focus-visible:ring-2 focus-visible:ring-nutrition/25;
+}
+
+@utility input-focus-routine {
+  @apply outline-hidden transition-colors
+           focus-visible:border-routine/60
+           focus-visible:ring-2 focus-visible:ring-routine/25;
+}
+
+@utility text-display {
+  /* ═══════════════════════════════════════════════════════════════════════
+     TYPOGRAPHY HIERARCHY — Consistent heading scale across the app.
+     Usage: apply `.text-h1` / `.text-h2` etc. to heading elements.
+     Letter-spacing and font-weight are baked in; colour inherits from
+     the surrounding context so dark-mode works automatically.
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  /* Display — hero numbers, large stat values (e.g. ₴ 12 400) */
+  @apply text-[2.25rem] leading-none font-bold tracking-tight tabular-nums;
+}
+
+@utility text-h1 {
+  /* H1 — page / screen title */
+  @apply text-[1.5rem] leading-tight font-bold tracking-tight;
+}
+
+@utility text-h2 {
+  /* H2 — section heading */
+  @apply text-[1.125rem] leading-snug font-semibold tracking-[-0.01em];
+}
+
+@utility text-h3 {
+  /* H3 — card title, subsection label */
+  @apply text-[0.9375rem] leading-snug font-semibold;
+}
+
+@utility text-body {
+  /* Body — default prose */
+  @apply text-[0.9375rem] leading-relaxed font-normal;
+}
+
+@utility text-body-sm {
+  /* Body Small — secondary text, descriptions */
+  @apply text-[0.8125rem] leading-relaxed font-normal;
+}
+
+@utility text-caption {
+  /* Caption — labels, timestamps, meta copy */
+  @apply text-[0.75rem] leading-snug font-normal tracking-[0.01em];
+}
+
+@utility text-eyebrow {
+  /* Eyebrow — overline / section prefix ("ФІНІК", "СЬОГОДНІ") */
+  @apply text-[0.6875rem] leading-none font-semibold tracking-[0.08em] uppercase;
+}
+
+@utility text-meta {
+  /* Meta — compact lowercase labels (KPI hints, badges, "Monobank", "USD",
+     histogram axis ticks). 11px/medium with optional `tabular-nums` for
+     numeric companions. NOT uppercase — that is `text-eyebrow`'s job. */
+  @apply text-[0.6875rem] leading-snug font-medium;
+}
+
+@utility text-micro {
+  /* Micro — 10px aux glyph labels: icon-overlay numbers (mic levels, push-up
+     reps, progress-ring hints). Floor is 10px; nothing below ships in
+     prose. Use only inside controls where surrounding affordance carries
+     the meaning, never for running text. */
+  @apply text-[0.625rem] leading-tight font-medium;
+}
+
+@utility text-display-stat {
+  /* Display Stat — the single most prominent number on a screen:
+     Finyk HeroCard amount, AssetsTable asset value. 40px / bold /
+     tabular-nums / leading-tight so multi-line wraps don't push other
+     hero rows. */
+  @apply text-[2.5rem] leading-tight font-bold tracking-tight tabular-nums;
+}
+
+@utility text-display-hero {
+  /* Display Hero — full-screen "celebration" stat (story slides, weekly
+     digest take-aways). 44px / black / tabular-nums / leading-none for
+     the largest single-line number. */
+  @apply text-[2.75rem] leading-none font-black tracking-tight tabular-nums;
+}
+
+@utility text-style-hero {
+  /* ── Semantic text-style utilities (design-system.md § Typography) ──────
+     Owned shorthand classes: each bundles size + weight (+ optional
+     tracking) so design-token changes propagate automatically.
+     Referenced by the `prefer-text-style` ESLint rule.              ─── */
+  @apply text-2xl font-bold tracking-tight;
+}
+
+@utility text-style-title {
+  @apply text-xl font-semibold leading-snug;
+}
+
+@utility text-style-body {
+  @apply text-base font-normal leading-relaxed;
+}
+
+@utility text-style-label {
+  @apply text-sm font-medium leading-snug;
+}
+
+@utility text-style-caption {
+  @apply text-xs font-medium leading-snug;
+}
+
+@utility text-style-overline {
+  @apply text-[0.6875rem] font-semibold tracking-[0.08em] uppercase;
+}
+
+@utility text-celebration {
+  /* Celebration — achievement moments: XP gains, streaks, confetti title */
+  @apply text-[1.25rem] leading-tight font-bold tracking-[0.02em];
+  color: rgb(var(--c-celebration));
+}
+
+@utility text-xp {
+  /* XP / level chip */
+  @apply text-[0.8125rem] leading-none font-bold tracking-[0.02em] tabular-nums;
+  color: rgb(var(--c-xp));
+}
+
+@utility panel {
+  /* ═══════════════════════════════════════════════════════════════════════
+     PANELS & CARDS — Core UI surfaces
+     ═══════════════════════════════════════════════════════════════════════ */
+  @apply bg-panel border border-line rounded-3xl shadow-card;
+}
+
+@utility panel-interactive {
+  @apply bg-panel border border-line rounded-3xl shadow-card
+           transition-interactive
+           hover:shadow-float hover:-translate-y-0.5
+           active:scale-[0.98] active:shadow-card;
+}
+
+@utility panel-soft {
+  @apply bg-panel/80 backdrop-blur-sm border border-line/50 rounded-3xl shadow-soft;
+}
+
+@utility page-tabbar-pad {
+  /* ═══════════════════════════════════════════════════════════════════════
+     SAFE AREA PADDING — iOS notch & home indicator
+     ═══════════════════════════════════════════════════════════════════════ */
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+}
+
+@utility routine-main-pad {
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+}
+
+@utility routine-sheet-pad {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+}
+
+@utility fizruk-sheet-pad {
+  padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 72px);
+}
+
+@utility fizruk-above-tabbar {
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+}
+
+@utility routine-touch-field {
+  /* ═══════════════════════════════════════════════════════════════════════
+     TOUCH INPUTS — iOS zoom prevention (min 16px)
+     ═══════════════════════════════════════════════════════════════════════ */
+  @apply min-h-[44px] text-base leading-normal md:text-sm;
+}
+
+@utility routine-touch-select {
+  @apply min-h-[44px] w-full rounded-2xl border border-line bg-panelHi px-3 outline-hidden
+           text-base leading-normal md:text-sm
+           transition-colors duration-150
+           focus-visible:border-routine/60 focus-visible:ring-2 focus-visible:ring-routine/20;
+}
+
+@utility fizruk-sheet {
+  /* ═══════════════════════════════════════════════════════════════════════
+     FOCUS STATES — Accessible, branded
+     ═══════════════════════════════════════════════════════════════════════ */
+  & button:focus-visible {
+    @apply outline-hidden ring-2 ring-teal-500/45 ring-offset-2 ring-offset-panel;
+  }
+  & a:focus-visible {
+    @apply outline-hidden ring-2 ring-teal-500/45 ring-offset-2 ring-offset-panel;
+  }
+}
+
+@utility routine-sheet {
+  & button:focus-visible {
+    @apply outline-hidden ring-2 ring-coral-500/45 ring-offset-2 ring-offset-panel;
+  }
+
+  & a:focus-visible {
+    @apply outline-hidden ring-2 ring-coral-500/45 ring-offset-2 ring-offset-panel;
+  }
+}
+
+@utility nutrition-sheet {
+  & button:focus-visible {
+    @apply outline-hidden ring-2 ring-lime-500/45 ring-offset-2 ring-offset-panel;
+  }
+
+  & a:focus-visible {
+    @apply outline-hidden ring-2 ring-lime-500/45 ring-offset-2 ring-offset-panel;
+  }
+}
+
+@utility finyk-sheet {
+  & button:focus-visible {
+    @apply outline-hidden ring-2 ring-brand-500/45 ring-offset-2 ring-offset-panel;
+  }
+
+  & a:focus-visible {
+    @apply outline-hidden ring-2 ring-brand-500/45 ring-offset-2 ring-offset-panel;
+  }
+}
+
+@utility progress-ring {
+  /* ═══════════════════════════════════════════════════════════════════════
+     PROGRESS RING — Duolingo-style circular progress
+     ═══════════════════════════════════════════════════════════════════════ */
+  transform: rotate(-90deg);
+}
+
+@utility progress-ring-circle {
+  transition: stroke-dashoffset 0.5s ease-out;
+}
+
+@utility metric-card {
+  /* ═══════════════════════════════════════════════════════════════════════
+     METRIC CARDS — Data display with status colors
+     ═══════════════════════════════════════════════════════════════════════ */
+  @apply bg-panel border border-line rounded-2xl p-4 shadow-card
+           transition-interactive
+           hover:shadow-float hover:-translate-y-0.5;
+}
+
+@utility metric-card-compact {
+  @apply bg-panel border border-line rounded-xl p-3 shadow-card;
+}
+
+@utility badge {
+  /* ═══════════════════════════════════════════════════════════════════════
+     BADGES — Status indicators, tags
+     ═══════════════════════════════════════════════════════════════════════ */
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+@utility badge-success {
+  @apply badge bg-brand-100 text-brand-700;
+  .dark & {
+    @apply bg-brand-900/30 text-brand-400;
+  }
+}
+
+@utility badge-warning {
+  @apply badge bg-amber-100 text-amber-700;
+  .dark & {
+    @apply bg-amber-900/30 text-amber-400;
+  }
+}
+
+@utility badge-danger {
+  @apply badge bg-danger-soft text-danger;
+  .dark & {
+    @apply bg-danger/15 text-danger;
+  }
+}
+
+@utility badge-neutral {
+  @apply badge bg-stone-100 text-stone-600;
+  .dark & {
+    @apply bg-stone-800 text-stone-400;
+  }
+}
+
+@utility transition-interactive {
+  /* ═══════════════════════════════════════════════════════════════════════
+     TRANSITION UTILITIES — Unified interactive transition shorthand.
+     Replaces ad-hoc `transition-[background-color,border-color,...]`
+     lists scattered across components with a single canonical token.
+     ═══════════════════════════════════════════════════════════════════════ */
+  transition-property:
+    background-color, border-color, color, box-shadow, opacity, transform;
+  transition-duration: var(--motion-duration);
+  transition-timing-function: var(--motion-ease-smooth);
+}
+
+@utility transition-surface {
+  transition-property: background-color, border-color, color;
+  transition-duration: var(--motion-duration-fast);
+  transition-timing-function: var(--motion-ease-smooth);
+}
+
+@utility safe-area-pt {
+  /* ═══════════════════════════════════════════════════════════════════════
+     SAFE AREA UTILITIES
+     ═══════════════════════════════════════════════════════════════════════ */
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+@utility safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@utility safe-area-pt-pb {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@utility safe-area-pt-8 {
+  padding-top: env(safe-area-inset-top, 8px);
+}
+
+@utility safe-area-pb-16 {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+@utility safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@utility safe-area-pl {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+
+@utility safe-area-pr {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+@utility safe-area-pl-pr {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+@utility safe-bottom-h {
+  height: calc(60px + env(safe-area-inset-bottom, 0px));
+}
+
+@utility no-scrollbar {
+  /* ═══════════════════════════════════════════════════════════════════════
+     SCROLLBAR UTILITIES
+     ═══════════════════════════════════════════════════════════════════════ */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@utility custom-scrollbar {
+  /* Custom scrollbar for desktop */
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--c-line));
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(var(--c-muted));
+  }
+}
+
+@utility text-balance {
+  /* ═══════════════════════════════════════════════════════════════════════
+     TEXT UTILITIES
+     ═══════════════════════════════════════════════════════════════════════ */
+  text-wrap: balance;
+}
+
+@utility text-pretty {
+  text-wrap: pretty;
+}
+
+@utility text-gradient-emerald {
+  /* Gradient text for hero sections */
+  @apply bg-linear-to-r from-brand-600 to-teal-600 bg-clip-text text-transparent;
+}
+
+@utility text-gradient-coral {
+  @apply bg-linear-to-r from-coral-500 to-coral-600 bg-clip-text text-transparent;
+}
