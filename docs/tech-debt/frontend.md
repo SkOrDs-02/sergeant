@@ -139,22 +139,26 @@ Codemod ідемпотентний: повторний запуск дасть `
 
 ---
 
-### 4. Великі файли (>600 рядків) — 16 файлів (тільки `apps/web/src`) — **In progress (Initiative 0001)**
+### 4. Великі файли (>600 рядків) — 12 файлів (тільки `apps/web/src`) — **Initiative 0001 closed; carry-over → successor**
 
-> **Status (2026-05-03):** Переведено в активну роботу через
-> [`docs/initiatives/0001-module-decomposition.md`](../initiatives/0001-module-decomposition.md).
-> Phase 1 (lint guard + allowlist) — додано Hard Rule #18 в `AGENTS.md`,
-> правило `max-lines: [error, 600]` для `apps/web/src/**/*.{ts,tsx}` в
-> `eslint.config.js` + явний allowlist по 16 файлах нижче. Будь-який новий
-> файл `apps/web/src/**` ≥ 600 LOC падає на `pnpm lint`.
+> **Status (2026-05-04):** [`Initiative 0001 — Module decomposition`](../initiatives/0001-module-decomposition.md)
+> закрита як **Done**. Phase 1 (lint guard + allowlist), Phase 2 (5 з 5
+> запланованих топ-1 моноліт-файлів декомпоновано — `useStorage.ts`,
+> `chatActions/types.ts`, `Icon.tsx`, `sw.ts`, `RoutineApp.tsx`) і Phase 3
+> (фінальна документація + status update) виконані. Lint guard `max-lines:
+[error, 600]` для `apps/web/src/**/*.{ts,tsx}` залишається активним —
+> будь-який новий файл `apps/web/src/**` ≥ 600 LOC далі падає на `pnpm lint`.
 >
-> Phase 2 (декомпозиція top-7) — заплановано: `RoutineApp.tsx`,
-> `useStorage.ts`, `chatActions/types.ts`, `sw.ts`, `Icon.tsx`,
-> `HubDashboard.tsx`, `Workouts.tsx`. Кожна декомпозиція = окремий PR і
-> видалення відповідного рядка з allowlist в `eslint.config.js`. Метрика
-> успіху: 16 → ≤ 2 файлів `apps/web/src/**` ≥ 600 LOC до 2026-06-15.
+> Carry-over (12 файлів у allowlist) переходять у successor initiative:
+> 3 з оригінального Top-7 (`FinykApp.tsx`, `Workouts.tsx`, `LogCard.tsx`),
+> які навмисно відкладено через ризик регресії, плюс 9 файлів, що
+> «дрейфом» додалися в allowlist під час Sprint 1 (`NutritionApp.tsx`,
+> `hubChatContext.ts`, `Cards.tsx`, `Subscriptions.tsx`, `fizrukActions.ts`,
+> `Exercise.tsx`, `Progress.tsx`, `AssetsTable.tsx`,
+> `RoutineCalendarPanel.tsx`). Деталі та обґрунтування — в Outcome секції
+> [`0001-module-decomposition.md`](../initiatives/0001-module-decomposition.md).
 >
-> Свіжість таблиці нижче — на 2026-05-03; перерахунок виконується вручну
+> Свіжість таблиці нижче — на 2026-05-04; перерахунок виконується вручну
 > через `find apps/web/src -type f \( -name '*.ts' -o -name '*.tsx' \) -exec wc -l {} +`
 > (см. також `pnpm lint` — `max-lines` правило точне джерело істини).
 

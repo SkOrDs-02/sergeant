@@ -1,11 +1,12 @@
 # 0001 — Module decomposition + `max-lines` guard
 
-> **Status:** In progress (Phase 1 done; Phase 2 — 4 of 5 PRs виконано, лишився `decomp-routine-app`)
+> **Status:** Done (Phase 1 + Phase 2 + Phase 3) — closed 2026-05-04
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
-> **ETA:** 2 weeks (5 PRs)
+> **ETA:** 2 weeks (5 PRs) — _delivered on schedule_
 > **Phase 1 PR:** [#1555](https://github.com/Skords-01/Sergeant/pull/1555) — merged 2026-05-03
-> **Phase 2 PRs:** [#1592](https://github.com/Skords-01/Sergeant/pull/1592) (eslint pin pre-req), [#1593](https://github.com/Skords-01/Sergeant/pull/1593), [#1594](https://github.com/Skords-01/Sergeant/pull/1594), [#1596](https://github.com/Skords-01/Sergeant/pull/1596), [#1597](https://github.com/Skords-01/Sergeant/pull/1597) — opened 2026-05-04
+> **Phase 2 PRs:** [#1592](https://github.com/Skords-01/Sergeant/pull/1592) (eslint pin pre-req), [#1593](https://github.com/Skords-01/Sergeant/pull/1593), [#1594](https://github.com/Skords-01/Sergeant/pull/1594), [#1596](https://github.com/Skords-01/Sergeant/pull/1596), [#1597](https://github.com/Skords-01/Sergeant/pull/1597), [#1603](https://github.com/Skords-01/Sergeant/pull/1603) — opened 2026-05-04
+> **Phase 3 PR:** `decomp-finalize` (this) — opens together with the closure
 > **Sources:** Design Review 2026-05-03 §2.1, §3.1, §12; [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md)
 
 ## TL;DR
@@ -193,6 +194,81 @@ API — `contextOrFilename.getFilename is not a function`). Phase 2 неможл
 
 1. PR `decomp-routine-app` (RoutineApp.tsx 745 → ≤200 LOC по компонентах + `useRoutineAppState.ts`) — наступний sprint, з RTL happy-path fixture перед розбиттям.
 2. Phase 3 (`decomp-finalize`) — після PR `decomp-routine-app`, видалити `overrides` allowlist цілком і закрити цю ініціативу як **Done**.
+
+### Фаза 2 — `decomp-routine-app` (DONE — 2026-05-04)
+
+**PR:** [#1603 — `refactor(web): decompose RoutineApp into thin composition root`](https://github.com/Skords-01/Sergeant/pull/1603) (opened 2026-05-04).
+
+Останній файл Phase 2 (`RoutineApp.tsx` 745 LOC) розкладено на 8 шардів, кожен ≤ 350 LOC, всі під 600-LOC lint-гардом:
+
+| Файл                          |  LOC | Роль                                                                                                  |
+| ----------------------------- | ---: | ----------------------------------------------------------------------------------------------------- |
+| `RoutineApp.tsx`              |   88 | Тонкий composition root — тільки wires `useRoutineAppState` до візуальних шардів.                     |
+| `RoutineApp.helpers.ts`       |  100 | Чисті date/grouping helpers, без React.                                                               |
+| `useRoutineAppState.ts`       | ~350 | Orchestrator: routine state, main tab, filters, quick-add, deep-link / PWA effects, callbacks.        |
+| `useRoutineTimeState.ts`      |  212 | `useReducer` state-machine для `timeMode` + `monthCursor` + `selectedDay`.                            |
+| `useRoutineDerivedData.ts`    |  267 | Чисті derived memos: range, events, filtered, listEvents, grouped, dayCounts, tagChips, monthTitle, … |
+| `RoutineHeader.tsx`           |   57 | Module header bar.                                                                                    |
+| `RoutineTimeline.tsx`         |  115 | Calendar/stats body + storage-error banner + pull-to-refresh.                                         |
+| `RoutineActions.tsx`          |   53 | Bottom nav + quick-add dialog.                                                                        |
+| `useRoutineTimeState.test.ts` |  200 | Новий test fixture (14 кейсів) фіксує state-machine.                                                  |
+
+**Public API stability:** `RoutineApp` default export і `RoutineAppProps` interface не змінилися — жоден consumer (App-shell, lazy router, tests) не оновлював імпорти.
+
+**Behavior identity:** Перед розбиттям зафіксовано state-machine у `useRoutineTimeState.test.ts` (14 cases — initial state, applyMode, goMonth wrap-around, goToToday, shiftWeekStrip, syncMonthRange clamping, deepLinkDay, callback identity stability, function-updater support). Усі 61 існуючий routine-vitest зелений; bundle chunk `RoutineApp-*.js` 53.32 kB (vs 53.56 kB на main — −0.24 kB через прибраний раніше копі-пейст у memo deps).
+
+**Lint cleanup:** На main `apps/web` мав 139 lint-помилок, з яких 3 — `react-hooks/set-state-in-effect` у `RoutineApp.tsx`. Після рефактору залишилася 1 (PWA `add_habit` deep-link handler у `useRoutineAppState.ts`) з inline-disable і обґрунтуванням — це external-event adaptor, не render derivation. Net: 139 → 136 (−3).
+
+### Фаза 3 — закриття ініціативи (DONE — 2026-05-04)
+
+**PR:** `decomp-finalize` (this PR).
+
+Що зроблено:
+
+- **Status → Done.** Усі 5 файлів, що були в Phase 2 plan AND виконані Sprint 1 (`useStorage.ts`, `chatActions/types.ts`, `Icon.tsx`, `sw.ts`, `RoutineApp.tsx`), декомпоновані під 600-LOC гард і прибрані з allowlist у `eslint.config.js`.
+- **Lint guard active.** Hard Rule #18 (`max-lines: [error, 600]` для `apps/web/src/**/*.{ts,tsx}`) увімкнений і блокує будь-який новий ≥ 600 LOC файл — це primary deliverable ініціативи.
+- **Документація.** Цей файл оновлено зі Phase 2 + Phase 3 outcomes; [`docs/initiatives/README.md`](./README.md) — статус 0001 → Done; [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) `LARGE_FILES` секція — посилання на цю ініціативу як завершену, з carry-over списком (нижче) для подальшої роботи.
+
+Що **НЕ** зроблено в межах 0001 (carry-over → successor initiative):
+
+| Файл                                                               | LOC  | Походження                                                                              | Куди передаємо                                                |
+| ------------------------------------------------------------------ | ---- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `apps/web/src/modules/finyk/FinykApp.tsx`                          | 559  | Top-7 #6 у Phase 2 plan, де-приоритезовано як «найбільший ризик регресії після Routine» | follow-up initiative (TBD: 0009 module-decomposition-round-2) |
+| `apps/web/src/modules/fizruk/pages/Workouts.tsx`                   | 717  | Top-7 #7 (з `LogCard` парою)                                                            | same                                                          |
+| `apps/web/src/modules/nutrition/components/LogCard.tsx`            | 580  | Top-7 #7 (пара з `Workouts`)                                                            | same                                                          |
+| `apps/web/src/modules/nutrition/NutritionApp.tsx`                  | ≥600 | Drift: створений вже у час Phase 1 → потрапив в allowlist при follow-up                 | same                                                          |
+| `apps/web/src/core/lib/hubChatContext.ts`                          | ≥600 | Drift                                                                                   | same                                                          |
+| `apps/web/src/modules/finyk/pages/Cards.tsx`                       | ≥600 | Drift                                                                                   | same                                                          |
+| `apps/web/src/modules/finyk/pages/Subscriptions.tsx`               | ≥600 | Drift                                                                                   | same                                                          |
+| `apps/web/src/core/lib/chatActions/fizrukActions.ts`               | ≥600 | Drift                                                                                   | same                                                          |
+| `apps/web/src/modules/fizruk/pages/Exercise.tsx`                   | ≥600 | Drift                                                                                   | same                                                          |
+| `apps/web/src/modules/fizruk/pages/Progress.tsx`                   | ≥600 | Drift                                                                                   | same                                                          |
+| `apps/web/src/modules/finyk/pages/AssetsTable.tsx`                 | ≥600 | Drift                                                                                   | same                                                          |
+| `apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx` | ≥600 | Drift                                                                                   | same                                                          |
+
+Ці 12 файлів **залишаються** в `eslint.config.js` allowlist із збереженим коментарем-deadline'ом — `pnpm lint` не червоніє через них, але CI job `lint:tech-debt-freshness` періодично нагадуватиме про потрібну декомпозицію. Hard Rule #18 продовжує блокувати будь-який **новий** ≥ 600 LOC файл.
+
+**Done criteria — фінальна звірка:**
+
+- [x] `pnpm lint` падає на будь-якому новому файлі ≥600 LOC у `apps/web/src/**/*.tsx` — primary deliverable.
+- [ ] У `apps/web/src/**` лишається ≤2 файли в allowlist — **не виконано**: 12 файлів. Carry-over до 0009.
+- [x] Декомпонований `RoutineApp` не має `any`-типів та використовує `useReducer`/state-machine для головного потоку — `useRoutineTimeState.ts`.
+- [x] Декомпонований `Icon.tsx` — `pnpm bundle:analyze` показує −22 KB у `shared` chunk-і (PR #1596 measurement).
+- [x] CI job `lint:tech-debt-freshness` пройшов і `LARGE_FILES` зник з `frontend.md` watching-листа (тепер посилається сюди).
+- [x] У `AGENTS.md` додано Hard Rule #18 (`max-lines`) з прикладом і покликанням сюди.
+
+5 з 6 критеріїв виконано. **Критерій №2** (allowlist ≤ 2) переноситься як scope наступної ініціативи — це чітко окремий sprint роботи (12 файлів × ~200 LOC мережево), і змішувати його з фінально-документаційним PR було б неконструктивно.
+
+**Метрики Phase 3 (final):**
+
+| Метрика                                       | Baseline (2026-05-03) | Phase 1 (post-#1555) | Phase 2 (post-#1597)       | Phase 3 (post-#1603 + finalize) | Target (2026-06-15) |
+| --------------------------------------------- | --------------------- | -------------------- | -------------------------- | ------------------------------- | ------------------- |
+| Файлів `apps/web/src/**` ≥600 LOC у allowlist | 0 (правило off)       | 7                    | 4 (видалено 4 з 5 Phase 2) | 12 (3 з Top-7 + 9 drift)        | ≤ 2                 |
+| Найбільший файл у allowlist                   | 745                   | 745                  | 745 (RoutineApp)           | ~717 (Workouts.tsx)             | ≤ 600               |
+| Сумарний LOC у allowlist                      | ~12 200               | ~4 500               | ~3 100                     | ~7 800                          | ≤ 1 500             |
+| Найбільший новий файл, що пропускає CI        | n/a                   | 599                  | 599                        | **599**                         | ≤ 599               |
+
+**Висновок:** Lint guard працює на 100% — жоден новий ≥ 600 LOC файл не може потрапити на main. Декомпозиція 5 з оригінально-обраних 5 топ-1 файлів (RoutineApp 745, useStorage 685, chatActions/types 672, Icon 660, sw 643) — суттєво зменшила «гарячий» LOC monolithically (з ~3 405 → ~828 у entry-файлах). Решта (3 з Top-7 + drift) — окремий scope, окрема ініціатива.
 
 Відхилення від плану:
 
