@@ -130,6 +130,25 @@ Reviewer checklist живе в [docs/governance/review-checklist.md](./docs/gove
 - Machine-readable registry: [docs/governance/hard-rules.json](./docs/governance/hard-rules.json)
 - Generated matrix: [docs/governance/hard-rules-matrix.md](./docs/governance/hard-rules-matrix.md)
 
+## Generators (`pnpm gen`)
+
+Plop-генератори створюють шаблонні артефакти з валідною мета-структурою (frontmatter, freshness header, schema), щоб не доводилось копіпастити інший приклад і ловити drift.
+
+```bash
+pnpm gen                # інтерактивний вибір генератора
+pnpm gen new-skill      # .agents/skills/<slug>/SKILL.md + запис у skills-lock.json
+pnpm gen new-playbook   # docs/playbooks/<slug>.md з валідним schema + freshness
+pnpm gen:adr            # docs/adr/<NNNN>-<title>.md (auto-numbered)
+pnpm gen migration      # apps/server/src/migrations/<NNN>_<name>.sql + .down.sql
+pnpm gen rq-hook        # apps/web/src/modules/<module>/hooks/use<Name>.ts
+pnpm gen hubchat-tool   # server toolDef stub + web action stub
+pnpm gen endpoint       # server handler + test + api-client stub
+```
+
+`new-skill` і `new-playbook` за замовчуванням генерують UA-текст (Hard Rule #15). Якщо матеріал свідомо англомовний (зовнішній/user-facing), вибери `lang: en` у промпті — генератор додасть `lang: en` у frontmatter і linter візьме файл у allowlist.
+
+Після `pnpm gen new-skill` запусти `pnpm lint:skills`, щоб переконатись, що hash збігається; SHA-256 зберігається відразу в `.agents/skills-lock.json`. Після `pnpm gen new-playbook` запусти `pnpm docs:gen-playbook-index`, щоб оновити trigger-індекс.
+
 ## Governance checks
 
 При зміні docs або process surfaces запускай:

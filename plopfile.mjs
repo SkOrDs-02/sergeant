@@ -1,6 +1,7 @@
-import { readdirSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
+import { createHash } from "node:crypto";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -13,6 +14,43 @@ function nextMigrationNumber() {
     .filter((n) => !isNaN(n));
   const max = nums.length ? Math.max(...nums) : 0;
   return String(max + 1).padStart(3, "0");
+}
+
+/** Returns YYYY-MM-DD `n` days from `from`. */
+function shiftDate(from, days) {
+  const d = new Date(from);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Append `slug` to `.agents/skills-lock.json` with a freshly computed SHA-256
+ * over the new SKILL.md. Idempotent: if the slug already exists, recomputes
+ * the hash and rewrites in place. Keys are emitted in alphabetical order to
+ * match the rest of the lockfile.
+ */
+function appendSkillToLock(slug) {
+  const lockPath = resolve(__dirname, ".agents/skills-lock.json");
+  const skillPath = resolve(__dirname, ".agents/skills", slug, "SKILL.md");
+  const lock = JSON.parse(readFileSync(lockPath, "utf8"));
+  const hash = createHash("sha256")
+    .update(readFileSync(skillPath))
+    .digest("hex");
+  lock.skills = lock.skills ?? {};
+  lock.skills[slug] = {
+    source: "local",
+    sourceType: "local",
+    computedHash: hash,
+  };
+  const sorted = Object.keys(lock.skills)
+    .sort()
+    .reduce((acc, k) => {
+      acc[k] = lock.skills[k];
+      return acc;
+    }, {});
+  lock.skills = sorted;
+  writeFileSync(lockPath, JSON.stringify(lock, null, 2) + "\n");
+  return `appended ${slug} to .agents/skills-lock.json (hash ${hash.slice(0, 12)}…)`;
 }
 
 /** Returns the next zero-padded 4-digit ADR number. */
@@ -29,6 +67,15 @@ function nextAdrNumber() {
 
 export default function (plop) {
   plop.setHelper("timestamp", () => new Date().toISOString().slice(0, 10));
+  plop.setHelper("eq", (a, b) => a === b);
+
+  // Custom action: persist a freshly hashed entry for a new skill into
+  // .agents/skills-lock.json so `pnpm lint:skills` passes immediately after
+  // generation. Without this, every `pnpm gen new-skill` run leaves the
+  // lockfile out of sync and CI fails on the very next push.
+  plop.setActionType("appendSkillToLock", (answers) => {
+    return appendSkillToLock(answers.slug);
+  });
 
   // ── migration ──────────────────────────────────────────────────────────────
   plop.setGenerator("migration", {
@@ -174,6 +221,177 @@ export default function (plop) {
         templateFile: "plop-templates/endpoint/api-client.ts.hbs",
       },
     ],
+  });
+
+  // ── new-skill ──────────────────────────────────────────────────────────────
+  plop.setGenerator("new-skill", {
+    description:
+      "New agent skill (.agents/skills/<slug>/SKILL.md + skills-lock.json entry)",
+    prompts: [
+      {
+        type: "input",
+        name: "slug",
+        message: "Skill slug (kebab-case, e.g. sergeant-monorepo-boundaries):",
+        validate: (v) => {
+          if (!/^[a-z][a-z0-9-]*[a-z0-9]$/.test(v)) {
+            return "kebab-case only (lowercase letters, digits, hyphens)";
+          }
+          const lockPath = resolve(__dirname, ".agents/skills-lock.json");
+          const lock = JSON.parse(readFileSync(lockPath, "utf8"));
+          if (lock.skills && lock.skills[v]) {
+            return `${v} is already registered in .agents/skills-lock.json`;
+          }
+          return true;
+        },
+      },
+      {
+        type: "input",
+        name: "humanTitle",
+        message:
+          "Human-readable title (for the H1 heading, e.g. Sergeant Monorepo Boundaries):",
+        validate: (v) => v.trim().length > 0 || "required",
+      },
+      {
+        type: "input",
+        name: "description",
+        message:
+          "One-line description (≤220 chars; shown in catalog/discovery):",
+        validate: (v) => {
+          if (!v.trim()) return "required";
+          if (v.length > 220)
+            return `description is ${v.length} chars (max 220)`;
+          return true;
+        },
+      },
+      {
+        type: "list",
+        name: "lang",
+        message: "Skill body language:",
+        choices: [
+          { name: "Ukrainian (default for internal skills)", value: "uk" },
+          {
+            name: "English (only when user-facing or external — adds `lang: en` frontmatter)",
+            value: "en",
+          },
+        ],
+        default: "uk",
+      },
+      {
+        type: "input",
+        name: "playbook",
+        message:
+          "Linked playbook (path under docs/playbooks/* OR docs/agents/agent-skills-catalog.md):",
+        default: "docs/agents/agent-skills-catalog.md",
+        validate: (v) =>
+          /^(docs\/playbooks\/[\w./-]+|docs\/agents\/agent-skills-catalog\.md)$/.test(
+            v.trim(),
+          ) ||
+          "must be a docs/playbooks/<file>.md path or docs/agents/agent-skills-catalog.md",
+      },
+    ],
+    actions: [
+      {
+        type: "add",
+        path: ".agents/skills/{{slug}}/SKILL.md",
+        templateFile: "plop-templates/new-skill/SKILL.md.hbs",
+      },
+      {
+        type: "appendSkillToLock",
+      },
+      () =>
+        "Next steps: (1) flesh out the SKILL.md sections, " +
+        "(2) add an entry to docs/agents/agent-skills-catalog.md, " +
+        "(3) run `pnpm lint:skills` to verify shape + lock integrity.",
+    ],
+  });
+
+  // ── new-playbook ───────────────────────────────────────────────────────────
+  plop.setGenerator("new-playbook", {
+    description:
+      "New playbook (docs/playbooks/<slug>.md with required schema + freshness header)",
+    prompts: [
+      {
+        type: "input",
+        name: "slug",
+        message:
+          "Playbook slug (kebab-case; becomes docs/playbooks/<slug>.md):",
+        validate: (v) =>
+          /^[a-z][a-z0-9-]*[a-z0-9]$/.test(v) ||
+          "kebab-case only (lowercase letters, digits, hyphens)",
+      },
+      {
+        type: "input",
+        name: "humanTitle",
+        message:
+          "Human-readable title (e.g. 'Cleanup Dead Code', 'Add Hard Rule'):",
+        validate: (v) => v.trim().length > 0 || "required",
+      },
+      {
+        type: "input",
+        name: "trigger",
+        message:
+          "Trigger sentence (≤240 chars; appears after the **Trigger:** marker):",
+        validate: (v) => {
+          if (!v.trim()) return "required";
+          if (v.length > 240) return `trigger is ${v.length} chars (max 240)`;
+          return true;
+        },
+      },
+      {
+        type: "input",
+        name: "owner",
+        message: "Owner GitHub handle (without @):",
+        default: "Skords-01",
+        validate: (v) => /^[A-Za-z0-9-]+$/.test(v) || "GitHub handle only",
+      },
+      {
+        type: "input",
+        name: "governingSkill",
+        message:
+          "Governing skill slug (must be an existing .agents/skills/<slug>/ directory):",
+        validate: (v) => {
+          const skillsDir = resolve(__dirname, ".agents/skills");
+          const slugs = readdirSync(skillsDir, { withFileTypes: true })
+            .filter((d) => d.isDirectory())
+            .map((d) => d.name);
+          if (!slugs.includes(v)) {
+            return (
+              `unknown skill ${v}; existing skills: ` +
+              slugs.slice(0, 8).join(", ") +
+              (slugs.length > 8 ? "…" : "")
+            );
+          }
+          return true;
+        },
+      },
+      {
+        type: "list",
+        name: "lang",
+        message: "Playbook body language:",
+        choices: [
+          { name: "Ukrainian (default for internal playbooks)", value: "uk" },
+          {
+            name: "English (only when user-facing or external — adds `lang: en` frontmatter)",
+            value: "en",
+          },
+        ],
+        default: "uk",
+      },
+    ],
+    actions: (data) => {
+      data.nextReview = shiftDate(new Date(), 90);
+      return [
+        {
+          type: "add",
+          path: "docs/playbooks/{{slug}}.md",
+          templateFile: "plop-templates/new-playbook/playbook.md.hbs",
+        },
+        () =>
+          "Next steps: (1) flesh out the Steps and Verification sections, " +
+          "(2) run `pnpm docs:gen-playbook-index` to refresh docs/playbooks/INDEX.md, " +
+          "(3) run `pnpm lint` to verify schema + freshness + language gates.",
+      ];
+    },
   });
 
   // ── adr ────────────────────────────────────────────────────────────────────
