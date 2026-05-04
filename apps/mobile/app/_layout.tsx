@@ -29,6 +29,8 @@ import "@/lib/fileImport";
 // effects only.
 import "@/hooks/useVisualKeyboardInset";
 import { captureError, initObservability } from "@/lib/observability";
+import { IdentityBridge } from "@/observability/IdentityBridge";
+import { initPostHog } from "@/observability/posthog";
 import { bootstrapEncryptedStorage } from "@/lib/storageEncryption";
 import { useDeepLinks } from "@/lib/useDeepLinks";
 import { QueryProvider } from "@/providers/QueryProvider";
@@ -115,6 +117,13 @@ export default function RootLayout() {
             reason: result.reason,
           });
         }
+        // Bring up PostHog only after MMKV has settled on its final
+        // (encrypted) instance — `initPostHog` reads / writes a
+        // persisted `distinct_id` through the same store, so racing
+        // it with the bootstrap would land the id on the plaintext
+        // legacy instance and effectively reset attribution on every
+        // cold start.
+        void initPostHog();
       })
       .catch((error) => {
         // Should never happen — `bootstrapEncryptedStorage` returns a
@@ -146,6 +155,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryProvider>
           <ApiClientProvider client={apiClient}>
+            <IdentityBridge />
             <CloudSyncProvider>
               <ToastProvider>
                 <ColorSchemeBridge />
