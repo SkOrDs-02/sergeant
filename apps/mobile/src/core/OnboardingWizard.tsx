@@ -65,7 +65,7 @@ export function getOnboardingStore(): KVStore {
 }
 
 export interface OnboardingFinishOptions {
-  intent: "vibe_empty";
+  intent: "vibe_empty" | "tour_replay";
   picks: DashboardModuleId[];
 }
 
@@ -77,6 +77,20 @@ export interface OnboardingWizardProps {
   variant?: "modal" | "fullPage";
   /** Allow users to skip the entire onboarding. Defaults to false. */
   allowSkip?: boolean;
+  /**
+   * Wizard run-mode (mobile parity for web S4.5).
+   *
+   * - `"real"` (default) — first-run wizard: persists picks/goals,
+   *   fires the FTUX-funnel events, and marks onboarding done on
+   *   finish.
+   * - `"tour"` — read-only replay launched from Settings →
+   *   "Подивитись tour". Skips all storage writes and FTUX-funnel
+   *   events, fires `onboarding_replay_*` instead, and `finish`
+   *   simply closes the wizard without touching the user's
+   *   onboarding / first-action state. Mirrors
+   *   `apps/web/src/core/onboarding/OnboardingWizard.tsx`.
+   */
+  mode?: "real" | "tour";
 }
 
 // ---------------------------------------------------------------------------
@@ -479,7 +493,9 @@ export function OnboardingWizard({
   onDone,
   variant = "modal",
   allowSkip = false,
+  mode = "real",
 }: OnboardingWizardProps) {
+  const isTour = mode === "tour";
   const [state, dispatch] = useReducer(wizardReducer, {
     step: "welcome",
     picks: [...ALL_MODULES],
@@ -498,48 +514,68 @@ export function OnboardingWizard({
   // web wizard collapses both into one screen; on mobile they map to
   // the first paint of the welcome step. PostHog funnels treat
   // `step_viewed` as a strict superset of `started`, so order matters.
+  //
+  // Tour mode (S4.5): replace the FTUX-funnel pair with a single
+  // `onboarding_replay_viewed` so the funnel definitions on PostHog
+  // never see a tour-replay user — the dashboards split shown vs
+  // replayed by event name, mirroring the web parity in
+  // `apps/web/src/core/onboarding/OnboardingWizard.tsx`.
   useEffect(() => {
     startedAtRef.current = Date.now();
     stepEnteredAtRef.current = startedAtRef.current;
+    if (isTour) {
+      trackEvent(ANALYTICS_EVENTS.ONBOARDING_REPLAY_VIEWED);
+      return;
+    }
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_STARTED);
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_VIEWED, { step: "welcome" });
-  }, []);
+  }, [isTour]);
 
   // Per-step view event whenever `state.step` changes. The first paint
   // (welcome) is fired by the mount effect above so the dedupe logic
-  // here only re-fires when the step *transitions*.
+  // here only re-fires when the step *transitions*. Tour mode skips
+  // the funnel entirely.
   const lastStepRef = useRef<OnboardingStepId>(state.step);
   useEffect(() => {
     if (lastStepRef.current === state.step) return;
-    trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_VIEWED, { step: state.step });
     lastStepRef.current = state.step;
     stepEnteredAtRef.current = Date.now();
-  }, [state.step]);
+    if (isTour) return;
+    trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_VIEWED, { step: state.step });
+  }, [state.step, isTour]);
 
   const togglePick = useCallback((id: DashboardModuleId) => {
     dispatch({ type: "TOGGLE_PICK", id });
   }, []);
 
-  const setGoal = useCallback((key: keyof OnboardingGoals, value: unknown) => {
-    dispatch({ type: "SET_GOAL", key, value });
-    // PostHog parity with web `ONBOARDING_GOAL_SET`. We fire on
-    // every change so dashboards can compute pick-rate per goal
-    // type. `module` mirrors the web payload (the goal-question
-    // module owner) for the same shared dashboard query.
-    const goalToModule: Record<keyof OnboardingGoals, DashboardModuleId> = {
-      finykBudget: "finyk",
-      fizrukWeeklyGoal: "fizruk",
-      routineFirstHabit: "routine",
-      nutritionGoal: "nutrition",
-    };
-    trackEvent(ANALYTICS_EVENTS.ONBOARDING_GOAL_SET, {
-      module: goalToModule[key],
-      goalType: key,
-      value,
-    });
-  }, []);
+  const setGoal = useCallback(
+    (key: keyof OnboardingGoals, value: unknown) => {
+      dispatch({ type: "SET_GOAL", key, value });
+      if (isTour) return;
+      // PostHog parity with web `ONBOARDING_GOAL_SET`. We fire on
+      // every change so dashboards can compute pick-rate per goal
+      // type. `module` mirrors the web payload (the goal-question
+      // module owner) for the same shared dashboard query.
+      const goalToModule: Record<keyof OnboardingGoals, DashboardModuleId> = {
+        finykBudget: "finyk",
+        fizrukWeeklyGoal: "fizruk",
+        routineFirstHabit: "routine",
+        nutritionGoal: "nutrition",
+      };
+      trackEvent(ANALYTICS_EVENTS.ONBOARDING_GOAL_SET, {
+        module: goalToModule[key],
+        goalType: key,
+        value,
+      });
+    },
+    [isTour],
+  );
 
   const handleNext = useCallback(() => {
+    if (isTour) {
+      dispatch({ type: "NEXT" });
+      return;
+    }
     // Step-completed event fires on the leaving side of the
     // transition. The matching step-viewed event for the next step
     // is emitted by the `state.step` effect above on the next paint.
@@ -560,13 +596,28 @@ export function OnboardingWizard({
       });
     }
     dispatch({ type: "NEXT" });
-  }, [state.step, state.picks]);
+  }, [state.step, state.picks, isTour]);
 
   const handleBack = useCallback(() => {
     dispatch({ type: "BACK" });
   }, []);
 
   const finish = useCallback(() => {
+    if (isTour) {
+      // Tour replay: no side effects on user state. Just emit the
+      // dismissal event with a duration so PostHog can show "how long
+      // does the user spend in replay" without polluting the FTUX
+      // funnel. Mirrors `apps/web/src/core/onboarding/OnboardingWizard.tsx`.
+      trackEvent(ANALYTICS_EVENTS.ONBOARDING_REPLAY_DISMISSED, {
+        durationMs: Math.max(
+          0,
+          Date.now() - (startedAtRef.current ?? Date.now()),
+        ),
+      });
+      hapticTap();
+      onDone(null, { intent: "tour_replay", picks: [] });
+      return;
+    }
     const chosen = buildFinalPicks(state.picks, ALL_MODULES);
     const hadEmptyPicks = state.picks.length === 0;
     saveVibePicks(mobileKVStore, chosen);
@@ -584,7 +635,7 @@ export function OnboardingWizard({
     });
     hapticSuccess();
     onDone(null, { intent: "vibe_empty", picks: chosen });
-  }, [onDone, state.picks, state.goals, state.step]);
+  }, [onDone, state.picks, state.goals, state.step, isTour]);
 
   const skipOnboarding = useCallback(() => {
     // Skip with all modules enabled and empty goals
@@ -611,16 +662,28 @@ export function OnboardingWizard({
       testID="onboarding-splash-card"
       className="w-full max-w-sm rounded-3xl border border-cream-300 bg-cream-50 p-6 gap-4"
     >
-      {allowSkip && (
+      {isTour ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Пропустити онбординг"
-          onPress={skipOnboarding}
+          accessibilityLabel="Закрити tour"
+          onPress={finish}
           className="absolute top-3 right-3 px-3 py-1.5 rounded-full active:opacity-70"
-          testID="onboarding-skip"
+          testID="onboarding-tour-close"
         >
-          <Text className="text-xs text-fg-muted">Пропустити</Text>
+          <Text className="text-xs text-fg-muted">Закрити</Text>
         </Pressable>
+      ) : (
+        allowSkip && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Пропустити онбординг"
+            onPress={skipOnboarding}
+            className="absolute top-3 right-3 px-3 py-1.5 rounded-full active:opacity-70"
+            testID="onboarding-skip"
+          >
+            <Text className="text-xs text-fg-muted">Пропустити</Text>
+          </Pressable>
+        )
       )}
       <StepIndicator current={stepIdx} total={ONBOARDING_STEPS.length} />
       {state.step === "welcome" && <WelcomeStep onContinue={handleNext} />}
