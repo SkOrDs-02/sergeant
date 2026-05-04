@@ -43,7 +43,7 @@
 >
 > Для всіх Phase-2 PR-ів: **не торкатись бізнес-логіки**, лише міграція тонкого «glue»-шару (RHF + zod, або replace `if (isLoading)` / `if (isError)` на `<DataState>`).
 
-### Фаза 1 — Process discipline (CI guards) — 1 тиждень, 2026-05-05 → 2026-05-12 *(паралельно з 0010 freeze — in-scope)*
+### Фаза 1 — Process discipline (CI guards) — 1 тиждень, 2026-05-05 → 2026-05-12 _(паралельно з 0010 freeze — in-scope)_
 
 **PR 1.1 — `ci(governance): fail PR with empty body or unfilled template`** (P0)
 
@@ -88,7 +88,7 @@
 - Якщо був true → еacalation-path до 0008 phase 1 + потенційний `docs/security/disclosures/` запис.
 - **Risk:** низький (read-only audit). Залежність — Railway env-history retention (зазвичай 90 днів — може бути часткове покриття).
 
-### Фаза 2 — Foundation adoption (consumer migrations) — 3 тижні, 2026-06-02 → 2026-06-23 *(поста-0010-launch)*
+### Фаза 2 — Foundation adoption (consumer migrations) — 3 тижні, 2026-06-02 → 2026-06-23 _(поста-0010-launch)_
 
 **Реальні цифри baseline (2026-05-04):**
 
@@ -143,7 +143,7 @@
 - ETA для severity `error`: 2026-06-30.
 - **Risk:** середній — false-positives для legitimate ad-hoc patterns. Митиґуємо warn-only старт + allowlist.
 
-### Фаза 3 — Hardening verification (для launch readiness) — 2 тижні, 2026-06-23 → 2026-07-07 *(поста-0010-launch)*
+### Фаза 3 — Hardening verification (для launch readiness) — 2 тижні, 2026-06-23 → 2026-07-07 _(поста-0010-launch)_
 
 **PR 3.1 — `docs(security): pen-test playbook for H5/H6/H8/H9 closed cards`** (P0)
 
@@ -180,7 +180,7 @@
 - Документ — підготовча decision-doc; реалізація — у фазі pre-launch (окрема міні-ініціатива або 0011, якщо потрібно).
 - **Risk:** низький (це plan, не реалізація).
 
-### Фаза 4 — Storybook coverage hand-off → 0007 — 1 тиждень, 2026-07-07 → 2026-07-14 *(поста-0010-launch)*
+### Фаза 4 — Storybook coverage hand-off → 0007 — 1 тиждень, 2026-07-07 → 2026-07-14 _(поста-0010-launch)_
 
 **PR 4.1 — `chore(web): storybook coverage CI baseline + handoff to 0007`** (P2)
 
