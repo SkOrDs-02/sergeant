@@ -14,16 +14,24 @@ export function parseAllowedUserIds(value: string | undefined): Set<string> {
   );
 }
 
+/**
+ * Allowlist gate for the Sergeant Console bot. **Fail-closed**: an
+ * empty / undefined `ALLOWED_USER_IDS` rejects every user, including
+ * outside production. Mirrors `apps/console/src/openclaw/security.ts`
+ * (`isFounderAllowed`) and closes the audit gap in
+ * [`docs/security/hardening/M15-console-allowlist-fail-closed.md`](../../../docs/security/hardening/M15-console-allowlist-fail-closed.md):
+ * a `NODE_ENV` that is not exactly `"production"` (staging, preview,
+ * Railway-side typo) must never silently fall through to "let everyone
+ * in". To run the bot locally, set `ALLOWED_USER_IDS=<your-tg-id>`.
+ */
 export function isUserAllowed(
   userId: number | undefined,
   env: ConsoleEnv = process.env,
 ): boolean {
   if (!userId) return false;
-
   const allowed = parseAllowedUserIds(env.ALLOWED_USER_IDS);
-  if (allowed.size > 0) return allowed.has(String(userId));
-
-  return env.NODE_ENV !== "production";
+  if (allowed.size === 0) return false;
+  return allowed.has(String(userId));
 }
 
 export function parseRateLimitPerMinute(value: string | undefined): number {
