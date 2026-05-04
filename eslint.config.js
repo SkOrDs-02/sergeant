@@ -433,7 +433,6 @@ export default [
       // - apps/web/src/shared/lib/ui/perf.ts (1 LS read)
       // - apps/web/src/shared/hooks/useDarkMode.ts (4 LS reads/writes)
       "apps/web/src/shared/hooks/usePushNotifications.ts",
-      "apps/web/src/shared/hooks/useActiveFizrukWorkout.ts",
       // Cloud-sync internals — the queue / enqueue / state writer all
       // need direct access; users should call the cloud-sync API.
       "apps/web/src/core/cloudSync/logger.ts",

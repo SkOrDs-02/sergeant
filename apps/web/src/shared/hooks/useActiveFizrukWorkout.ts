@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { safeReadStringLS, safeRemoveLS } from "@shared/lib/storage/storage";
 
 /**
  * Shared read-only pointer to the in-progress Fizruk workout.
@@ -39,26 +40,13 @@ const WORKOUTS_KEY = "fizruk_workouts_v1";
  * doesn't pull in the fizruk package.
  */
 function readActiveId(): string | null {
-  let id: string | null;
-  try {
-    id = localStorage.getItem(ACTIVE_WORKOUT_KEY) || null;
-  } catch {
-    return null;
-  }
+  const id = safeReadStringLS(ACTIVE_WORKOUT_KEY);
   if (!id) return null;
 
-  let raw: string | null;
-  try {
-    raw = localStorage.getItem(WORKOUTS_KEY);
-  } catch {
-    // If we can't read the workouts list we have no way to validate —
-    // fall back to the optimistic behaviour (show the banner) rather than
-    // hiding a legitimately active session.
-    return id;
-  }
-  if (!raw) {
-    // No workouts persisted at all → the active-id is definitely stale.
-    // Clear it so subsequent reads from any tab see the correct state.
+  const raw = safeReadStringLS(WORKOUTS_KEY);
+  if (raw === null) {
+    // No workouts persisted (or storage threw). Either way the pointer
+    // cannot be validated against the list, so clear it as stale.
     clearStaleActiveId();
     return null;
   }
@@ -74,8 +62,8 @@ function readActiveId(): string | null {
       list = (parsed as { workouts: unknown[] }).workouts;
     else list = [];
   } catch {
-    // Corrupt JSON — same reasoning as the read failure above: don't
-    // hide a potentially active session on parse error.
+    // Corrupt JSON — fail open: don't hide a potentially active session
+    // on parse error.
     return id;
   }
 
@@ -95,11 +83,7 @@ function readActiveId(): string | null {
 }
 
 function clearStaleActiveId(): void {
-  try {
-    localStorage.removeItem(ACTIVE_WORKOUT_KEY);
-  } catch {
-    /* best-effort cleanup */
-  }
+  safeRemoveLS(ACTIVE_WORKOUT_KEY);
 }
 
 export function useActiveFizrukWorkout(): string | null {
