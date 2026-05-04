@@ -1,6 +1,6 @@
 # 0002 — Mobile platform decision: lock the deprecation deadline
 
-> **Status:** In progress (Phase 1 done — sunset locked, lint guard live, shell-tax script ready)
+> **Status:** In progress (Phase 1 done — sunset locked, lint guard live, shell-tax script ready; Phase 2 — weekly cron live)
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks (рішення + 1 ADR + комунікація)
@@ -185,18 +185,43 @@ top_files:     README.md (16), package.json (13), AndroidManifest.xml (6), …
 | Feature-parity матриця <7 днів                 | ні                    | **так** (свіжа)                     | так                      |
 | RN feature-parity маяків зелених               | ? / 3                 | 1 / 3 (Detox 🟡)                    | 3 / 3 до T₀              |
 
+### Фаза 2 — `ci-shell-tax-report` cron (DONE — 2026-05-04)
+
+**PR:** `devin/0002-shell-tax-cron-…` (номер додам сюди після merge).
+
+`report-shell-tax.mjs` тепер ганяється автоматично:
+
+- **Workflow:** [`.github/workflows/shell-tax-report.yml`](../../.github/workflows/shell-tax-report.yml).
+- **Schedule:** weekly Monday 06:00 UTC (≈ 09:00 Kyiv) — той самий слот, що
+  й `docs-freshness`/`skill-freshness`, щоб не бити cron-слот.
+- **Manual trigger:** `workflow_dispatch` приймає `since` (default
+  `90.days.ago`) — для ad-hoc baseline переміряння.
+- **Output:**
+  - GitHub Step Summary з людським текстовим звітом.
+  - Артефакт `shell-tax-report` (json + txt, 90-денна retention) — щоб
+    diff-ити сусідні тижні machine-readable.
+  - Тікет з міткою `shell-tax-report` із body, який оновлюється кожного
+    запуску (один persistent issue, не новий тікет щотижня — щоб не
+    спамити maintainer-у).
+
+Чому tracking-issue замість Slack-webhook (як у початковому плані):
+вебхук вимагає окремий збережений секрет, якого ще нема. Тікет
+тримається на вбудованому `GITHUB_TOKEN` і має стабільний body, тому
+GitHub-нотифікації не вибухнуть. Коли команда зробить рішення про
+Slack — `update-issue` крок міняється на `curl` до webhook-у, JSON
+output вже придатний.
+
 Що далі (Phase 2+):
 
-1. **PR `ci-shell-tax-report`** — щотижневий cron у GH Actions, що ганяє
-   `report-shell-tax.mjs --json` і постить summary у `#mobile-channel`.
-2. **PR `mobile-feature-parity-refresh-2026-08`** — оновлення матриці на 2026-08-01
+1. **PR `mobile-feature-parity-refresh-2026-08`** — оновлення матриці на 2026-08-01
    (next-review, перед T₀).
-3. **Phase 4 — комунікація** — пост у `#mobile-channel` + in-app banner у shell-білді
+2. **Phase 4 — комунікація** — пост у `#mobile-channel` + in-app banner у shell-білді
    (зробити перед T₀ — 2026-09-01).
 
 Відхилення від плану:
 
 - Phase 4 (комунікація) перенесена на серпень — близько до T₀, щоб не «вистрелювати»
   банер у користувачів за 4 місяці до freeze.
-- `ci-shell-tax-report` (фаза 3) ще не land-ить разом з цим PR — окремий PR,
-  бо потребує webhook secret і не блокує decision gating.
+- Slack-webhook нотифікація з `ci-shell-tax-report` свідомо відкладена:
+  тікет з міткою `shell-tax-report` віддає той самий сигнал без секрета,
+  webhook додамо, коли команда вирішить, у який канал постити.

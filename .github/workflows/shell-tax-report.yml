@@ -1,0 +1,167 @@
+name: Shell-tax weekly report
+
+# Phase 2 of initiative 0002 (mobile platform decision):
+#   docs/initiatives/0002-mobile-platform-decision.md § "Що далі (Phase 2+)".
+#
+# What it does:
+#   - Runs `node scripts/report-shell-tax.mjs --since 90 --json` weekly.
+#   - Publishes the snapshot as both a GitHub Step Summary (visible in the
+#     run page) and an upload artifact (machine-readable JSON, 90-day
+#     retention so consecutive weeks can be diff-ed).
+#   - Maintains a single tracking GitHub issue tagged `shell-tax-report`
+#     so the maintainer has *one* persistent place to see the cost
+#     trend instead of digging through cron-run logs.
+#
+# Why a tracking issue and not a Slack webhook:
+#   - The original initiative pencilled in a `#mobile-channel` webhook,
+#     but landing that requires a saved repo secret that does not yet
+#     exist. The tracking issue is webhook-free, uses the built-in
+#     `GITHUB_TOKEN`, and the message body is stable so notifications
+#     stay quiet (only the issue body is rewritten — no new comments).
+#   - When the team is ready to add Slack, swap the `update-issue` step
+#     for a curl-to-webhook one; the script output is already JSON.
+#
+# How to read the artifact:
+#   - shell-tax-report.json: the raw `--json` payload (see the script
+#     header for fields).
+#
+# Manual trigger:
+#   - "Run workflow" on the Actions tab uses the same defaults; pass
+#     `since` to override the 90-day window for ad-hoc baselines.
+
+on:
+  schedule:
+    # Weekly Monday at 06:00 UTC (≈ 09:00 Kyiv) — same slot as docs cron.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      since:
+        description: "Window for git log --since (e.g. '90.days.ago', '6.months')"
+        required: false
+        default: "90.days.ago"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: shell-tax-report
+  cancel-in-progress: true
+
+jobs:
+  report:
+    name: Run report-shell-tax.mjs and update tracking issue
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          # The script reads `git log` for the last 90 days; without
+          # full history a shallow clone underreports `shell_commits`.
+          fetch-depth: 0
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+
+      - name: Run shell-tax report
+        id: report
+        env:
+          SINCE: ${{ github.event.inputs.since || '90.days.ago' }}
+        run: |
+          set -e
+          node scripts/report-shell-tax.mjs --since "$SINCE" --json > shell-tax-report.json
+          node scripts/report-shell-tax.mjs --since "$SINCE" > shell-tax-report.txt
+
+          {
+            echo "### Shell-tax report (window: $SINCE)"
+            echo
+            echo '```'
+            cat shell-tax-report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report artifact
+        if: ${{ !cancelled() }}
+        # actions/upload-artifact v4.4.3 (SHA-pinned for supply-chain hardening)
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: shell-tax-report
+          path: |
+            shell-tax-report.json
+            shell-tax-report.txt
+          retention-days: 90
+
+      - name: Update tracking issue
+        if: ${{ !cancelled() && github.event_name == 'schedule' }}
+        # actions/github-script v8.0.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          script: |
+            const fs = require('node:fs');
+            const data = JSON.parse(fs.readFileSync('shell-tax-report.json', 'utf8'));
+            const txt = fs.readFileSync('shell-tax-report.txt', 'utf8');
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const today = new Date().toISOString().slice(0, 10);
+
+            const top = (data.top_files || []).slice(0, 10).map(
+              (f) => `- \`${f.file}\` — ${f.touches}`,
+            ).join('\n');
+
+            const body = [
+              '<!-- managed-by: .github/workflows/shell-tax-report.yml -->',
+              '',
+              `> **Last run:** ${today} (window: \`${data.since}\`).`,
+              '> **Initiative:** [0002 — mobile platform decision](../blob/main/docs/initiatives/0002-mobile-platform-decision.md).',
+              '> **ADR:** [0010 — mobile dual-track](../blob/main/docs/adr/0010-mobile-dual-track-capacitor-expo.md) (`accepted-with-sunset`, T₀ 2026-09-01).',
+              '',
+              '## Latest snapshot',
+              '',
+              '```',
+              txt.trim(),
+              '```',
+              '',
+              '## Top-10 hottest files',
+              '',
+              top || '_no shell touches in the window — celebrate quietly_',
+              '',
+              '## Sources',
+              '',
+              `- Workflow run: ${runUrl}`,
+              '- Artifact: `shell-tax-report` (json + txt)',
+              '- Script: `scripts/report-shell-tax.mjs`',
+              '',
+              '_This issue is auto-updated weekly. Do not edit the body — comments are fine._',
+            ].join('\n');
+
+            const title = 'Shell-tax weekly report';
+            const label = 'shell-tax-report';
+
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: label,
+              state: 'open',
+              per_page: 5,
+            });
+
+            if (existing.length > 0) {
+              const issue = existing[0];
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body,
+              });
+              core.notice(`Updated tracking issue #${issue.number}`);
+            } else {
+              const { data: created } = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: [label],
+              });
+              core.notice(`Opened tracking issue #${created.number}`);
+            }
