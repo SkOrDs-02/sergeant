@@ -6,6 +6,7 @@ import {
   setModule,
 } from "../http/index.js";
 import { listSyncAudit } from "../modules/sync/audit.js";
+import { v1ClientSurveyMiddleware } from "../modules/sync/clientSurvey.js";
 import {
   syncPull,
   syncPullAll,
@@ -38,6 +39,9 @@ export function createSyncRouter(): Router {
     rateLimitExpress({ key: "api:sync", limit: 30, windowMs: 60_000 }),
   );
   r.use("/api/sync", requireSession());
+  // v1 sunset survey: emit `sync_v1_legacy_clients_total` per push/pull.
+  // Initiative 0003 Phase 1 — see `clientSurvey.ts`.
+  r.use("/api/sync", v1ClientSurveyMiddleware());
   r.post("/api/sync/push", asyncHandler(syncPush));
   r.post("/api/sync/pull", asyncHandler(syncPull));
   r.get("/api/sync/pull-all", asyncHandler(syncPullAll));
