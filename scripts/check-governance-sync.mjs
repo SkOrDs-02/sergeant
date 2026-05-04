@@ -29,6 +29,8 @@
 //                                               components that may rename)
 //      - docs/playbooks/                       (recipes referencing template
 //                                               paths and example structures)
+//      - docs/i18n/                            (i18n migration roadmap; refs
+//                                               include planned target catalogs)
 //    Files in ADRs with Status: proposed are exempt (future refs OK).
 //    All other dangling refs are reported as ERRORS (Hard Rule #15 — docs
 //    that describe current behaviour must move with code).
@@ -231,6 +233,10 @@ function checkDanglingRefs() {
     // (e.g., `apps/web/src/App.tsx` as an illustrative anchor) and may
     // describe target structures rather than current code.
     if (relPath.startsWith("docs/playbooks/")) return true;
+    // `docs/i18n/` describes the i18n migration roadmap; refs include
+    // planned target catalogs (e.g., `apps/web/src/shared/i18n/en.ts`)
+    // that don't exist until the corresponding migration phase lands.
+    if (relPath.startsWith("docs/i18n/")) return true;
     if (
       relPath.startsWith("docs/integrations/") &&
       relPath.endsWith("-roadmap.md")
