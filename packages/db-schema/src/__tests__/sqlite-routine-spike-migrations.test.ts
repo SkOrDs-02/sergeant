@@ -68,6 +68,7 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
     expect(result.applied).toEqual([
       "001_routine_spike.sql",
       "002_sync_op_outbox_retry.sql",
+      "003_sync_op_outbox_increment_op.sql",
     ]);
     expect(result.skipped).toEqual([]);
 
@@ -152,6 +153,7 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
     expect(second.skipped).toEqual([
       "001_routine_spike.sql",
       "002_sync_op_outbox_retry.sql",
+      "003_sync_op_outbox_increment_op.sql",
     ]);
   });
 
@@ -329,5 +331,183 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       next_retry_at: null,
       last_error: null,
     });
+  });
+
+  it("PR #042d-prep accepts op='increment' and rejects unknown op kinds", async () => {
+    await runMigrations({
+      adapter: createSqliteAdapter(client),
+      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+    });
+
+    // op='increment' is now a legal kind — the PR #042c builder
+    // (`buildSyncV2IncrementOp`) emits envelopes with this exact
+    // literal, so the outbox must accept them durably.
+    db.prepare(
+      `INSERT INTO sync_op_outbox
+         (table_name, op, row, client_ts, idempotency_key)
+       VALUES (?, ?, ?, ?, ?)`,
+    ).run(
+      "routine_streaks",
+      "increment",
+      JSON.stringify({ user_id: "user-1", delta: 1 }),
+      "2026-05-04T12:00:00.000+00:00",
+      "idem-inc",
+    );
+    const inc = db
+      .prepare(
+        "SELECT op, row, status FROM sync_op_outbox WHERE idempotency_key = 'idem-inc'",
+      )
+      .get() as { op: string; row: string; status: string };
+    expect(inc.op).toBe("increment");
+    expect(inc.status).toBe("pending");
+    expect(JSON.parse(inc.row)).toEqual({ user_id: "user-1", delta: 1 });
+
+    // Unknown op kinds are still rejected by the CHECK constraint —
+    // typo'd `'incr'` (or any other literal) must not slip through.
+    expect(() =>
+      db
+        .prepare(
+          `INSERT INTO sync_op_outbox
+             (table_name, op, row, client_ts, idempotency_key)
+           VALUES (?, ?, ?, ?, ?)`,
+        )
+        .run(
+          "routine_streaks",
+          "incr",
+          "{}",
+          "2026-05-04T12:00:00.000+00:00",
+          "idem-bad-op",
+        ),
+    ).toThrow();
+  });
+
+  it("PR #042d-prep migration preserves rows enqueued under the PR #040 shape", async () => {
+    // Apply the SPIKE + PR #040 retry-policy migration only, populate
+    // the outbox with rows under the PR #040 shape (one in each
+    // status), then layer the PR #042d-prep increment-op migration
+    // on top to verify the rebuild copies every PR #040 column
+    // verbatim. This is the exact contract a Stage-5 device hits when
+    // it upgrades to the PR #042d-prep build.
+    const adapter = createSqliteAdapter(client);
+    await runMigrations({
+      adapter,
+      files: [
+        ROUTINE_SPIKE_CLIENT_MIGRATIONS[0]!,
+        ROUTINE_SPIKE_CLIENT_MIGRATIONS[1]!,
+      ],
+      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+    });
+
+    // Pending row with retry state populated.
+    db.prepare(
+      `INSERT INTO sync_op_outbox
+         (table_name, op, row, client_ts, idempotency_key, status,
+          attempts, next_retry_at, last_error)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      "routine_entries",
+      "insert",
+      JSON.stringify({ id: "a" }),
+      "2026-05-04T12:00:00.000+00:00",
+      "idem-pending",
+      "pending",
+      3,
+      "2026-05-04T12:00:08.000Z",
+      "http_503",
+    );
+    // Rejected row with reject_reason populated.
+    db.prepare(
+      `INSERT INTO sync_op_outbox
+         (table_name, op, row, client_ts, idempotency_key, status,
+          reject_reason)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      "routine_entries",
+      "update",
+      JSON.stringify({ id: "b" }),
+      "2026-05-04T12:00:00.000+00:00",
+      "idem-rejected",
+      "rejected",
+      "lww_conflict",
+    );
+    // Dead-letter row at the post-PR-040 terminal status.
+    db.prepare(
+      `INSERT INTO sync_op_outbox
+         (table_name, op, row, client_ts, idempotency_key, status,
+          attempts, last_error)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      "routine_entries",
+      "delete",
+      JSON.stringify({ id: "c" }),
+      "2026-05-04T12:00:00.000+00:00",
+      "idem-dead",
+      "dead_letter",
+      10,
+      "http_503",
+    );
+
+    await runMigrations({
+      adapter,
+      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+    });
+
+    const rows = db
+      .prepare(
+        `SELECT idempotency_key, op, status, reject_reason, attempts,
+                next_retry_at, last_error
+         FROM sync_op_outbox
+         ORDER BY idempotency_key ASC`,
+      )
+      .all() as {
+      idempotency_key: string;
+      op: string;
+      status: string;
+      reject_reason: string | null;
+      attempts: number;
+      next_retry_at: string | null;
+      last_error: string | null;
+    }[];
+    expect(rows).toEqual([
+      {
+        idempotency_key: "idem-dead",
+        op: "delete",
+        status: "dead_letter",
+        reject_reason: null,
+        attempts: 10,
+        next_retry_at: null,
+        last_error: "http_503",
+      },
+      {
+        idempotency_key: "idem-pending",
+        op: "insert",
+        status: "pending",
+        reject_reason: null,
+        attempts: 3,
+        next_retry_at: "2026-05-04T12:00:08.000Z",
+        last_error: "http_503",
+      },
+      {
+        idempotency_key: "idem-rejected",
+        op: "update",
+        status: "rejected",
+        reject_reason: "lww_conflict",
+        attempts: 0,
+        next_retry_at: null,
+        last_error: null,
+      },
+    ]);
+
+    // After the rebuild, the legacy table must be gone (otherwise a
+    // second run of the migration would crash trying to rename
+    // sync_op_outbox onto an existing sync_op_outbox_legacy).
+    const legacy = db
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='sync_op_outbox_legacy'",
+      )
+      .all() as { name: string }[];
+    expect(legacy).toEqual([]);
   });
 });

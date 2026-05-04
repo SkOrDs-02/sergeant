@@ -105,7 +105,30 @@ export const routineStreaks = sqliteTable("routine_streaks", {
  * recreates the table because SQLite cannot relax a `CHECK` constraint
  * in place — see `002_sync_op_outbox_retry.sql`.
  */
-export const SYNC_OP_OUTBOX_OPS = ["insert", "update", "delete"] as const;
+/**
+ * Allowed values of `sync_op_outbox.op`.
+ *
+ * The original SPIKE shape (`001_routine_spike.sql`, PR #022) only
+ * supported the three LWW per-row mutation kinds. Stage 5 / PR #042a
+ * extended the server protocol with `'increment'` for PN-counter
+ * rows (`routine_streaks` today; future PN-counter-tier tables would
+ * extend `INCREMENT_OP_SUPPORTED_TABLES` in
+ * `packages/api-client/src/endpoints/syncV2.increment.ts`). The client
+ * outbox follows in PR #042d-prep — `003_sync_op_outbox_increment_op.sql`
+ * relaxes the legacy CHECK so a PN-counter `delta` op can durably sit
+ * in the outbox alongside LWW writes without collapsing into them.
+ *
+ * Order of literals is the source-of-truth: it matches the CHECK
+ * constraint in `003_sync_op_outbox_increment_op.sql` byte-for-byte;
+ * snapshot tests in `packages/db-schema/src/__tests__/sqlite-routine-snapshot.test.ts`
+ * pin the tuple shape so refactors here cannot silently drift.
+ */
+export const SYNC_OP_OUTBOX_OPS = [
+  "insert",
+  "update",
+  "delete",
+  "increment",
+] as const;
 export type SyncOpOutboxOp = (typeof SYNC_OP_OUTBOX_OPS)[number];
 
 export const SYNC_OP_OUTBOX_STATUSES = [

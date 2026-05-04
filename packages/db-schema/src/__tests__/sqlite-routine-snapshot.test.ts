@@ -270,7 +270,16 @@ describe("sqlite/syncOpOutbox schema snapshot", () => {
   });
 
   it("exposes a stable enum tuple of allowed `op` values", () => {
-    expect(SYNC_OP_OUTBOX_OPS).toEqual(["insert", "update", "delete"]);
+    // PR #042d-prep extended the legacy three LWW kinds with
+    // `'increment'` for PN-counter outbox writes. Order is the
+    // source-of-truth — `003_sync_op_outbox_increment_op.sql` lists
+    // the literals in this same order inside the CHECK constraint.
+    expect(SYNC_OP_OUTBOX_OPS).toEqual([
+      "insert",
+      "update",
+      "delete",
+      "increment",
+    ]);
   });
 
   it("exposes a stable enum tuple of allowed `status` values", () => {
@@ -320,8 +329,8 @@ describe("sqlite/syncOpCursor schema snapshot", () => {
 });
 
 describe("sqlite/migrations exports", () => {
-  it("exports the SPIKE migration first, then the PR #040 retry-policy migration", () => {
-    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(2);
+  it("exports the SPIKE migration first, then the PR #040 retry-policy migration, then the PR #042d-prep increment-op migration", () => {
+    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(3);
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.name).toBe("001_routine_spike.sql");
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS routine_entries/,
@@ -340,6 +349,43 @@ describe("sqlite/migrations exports", () => {
       /CHECK \(status IN \('pending','rejected','dead_letter'\)\)/,
     );
     expect(ROUTINE_CLIENT_MIGRATIONS[1]!.sql).toMatch(
+      /sync_op_outbox_pending_due_idx_lite/,
+    );
+
+    // PR #042d-prep migration relaxes the `op` CHECK so PN-counter
+    // `'increment'` rows can sit in the outbox alongside LWW kinds.
+    // Pin the same three rebuild anchors as PR #040 plus the new
+    // CHECK literal that is the actual contract change.
+    expect(ROUTINE_CLIENT_MIGRATIONS[2]!.name).toBe(
+      "003_sync_op_outbox_increment_op.sql",
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[2]!.sql).toMatch(
+      /ALTER TABLE sync_op_outbox RENAME TO sync_op_outbox_legacy/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[2]!.sql).toMatch(
+      /CHECK \(op IN \('insert','update','delete','increment'\)\)/,
+    );
+    // Status CHECK must stay at the post-PR-040 shape — relaxing op
+    // does not re-tighten status.
+    expect(ROUTINE_CLIENT_MIGRATIONS[2]!.sql).toMatch(
+      /CHECK \(status IN \('pending','rejected','dead_letter'\)\)/,
+    );
+    // Backfill INSERT must list `attempts` / `next_retry_at` /
+    // `last_error` (PR #040 columns) by name on both sides — copying
+    // them verbatim from the legacy table without defaulting.
+    expect(ROUTINE_CLIENT_MIGRATIONS[2]!.sql).toMatch(
+      /attempts, next_retry_at, last_error/,
+    );
+    // All three indexes (UNIQUE idem, partial pending, partial
+    // pending+due) must be re-created — the rename drops the
+    // originals.
+    expect(ROUTINE_CLIENT_MIGRATIONS[2]!.sql).toMatch(
+      /sync_op_outbox_idem_uniq_lite/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[2]!.sql).toMatch(
+      /sync_op_outbox_pending_idx_lite/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[2]!.sql).toMatch(
       /sync_op_outbox_pending_due_idx_lite/,
     );
   });

@@ -175,6 +175,78 @@ CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_due_idx_lite
 `;
 
 /**
+ * Stage 5 / PR #042d-prep migration: relax the `sync_op_outbox.op`
+ * CHECK constraint so PN-counter `'increment'` rows can sit in the
+ * outbox alongside the original three LWW kinds.
+ *
+ * Server-side, `'increment'` shipped in PR #042a (engine-gate +
+ * `OP_LOG_TABLE_REGISTRY` allowlist) and PR #042b (`applyRoutineStreaks`
+ * apply-fn). The api-client typed builder
+ * (`buildSyncV2IncrementOp`, PR #042c) lives in
+ * `packages/api-client/src/endpoints/syncV2.increment.ts` and is the
+ * sole supported way of constructing an envelope. Until this migration
+ * runs, however, the SPIKE-era CHECK
+ * (`op IN ('insert','update','delete')`) silently rejects any
+ * `INSERT … op='increment'` against the local outbox — preventing the
+ * eventual client-side push-loop refactor from durably enqueueing
+ * PN-counter ops.
+ *
+ * SQLite cannot relax a `CHECK` constraint in place, so we follow the
+ * same "12-step ALTER" recipe as `002_sync_op_outbox_retry.sql`
+ * (PR #040): rename the existing table out of the way, recreate it
+ * with the relaxed `CHECK`, copy every row across (no defaulting —
+ * every column is preserved verbatim), drop the renamed legacy table,
+ * and recreate the three indexes the runner just lost when the
+ * original table went away.
+ *
+ * Migration runs inside the per-migration BEGIN/COMMIT installed by
+ * `applyMigration` in `packages/db-schema/src/migrate/adapters/sqlite.ts`,
+ * so a partial failure leaves the SPIKE shape intact.
+ */
+const SYNC_OP_OUTBOX_INCREMENT_OP_SQL = `
+ALTER TABLE sync_op_outbox RENAME TO sync_op_outbox_legacy;
+
+CREATE TABLE sync_op_outbox (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  table_name      TEXT NOT NULL,
+  op              TEXT NOT NULL
+                  CHECK (op IN ('insert','update','delete','increment')),
+  row             TEXT NOT NULL,
+  client_ts       TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending','rejected','dead_letter')),
+  reject_reason   TEXT,
+  attempts        INTEGER NOT NULL DEFAULT 0,
+  next_retry_at   TEXT,
+  last_error      TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+INSERT INTO sync_op_outbox (
+  id, table_name, op, row, client_ts, idempotency_key, status,
+  reject_reason, attempts, next_retry_at, last_error, created_at
+)
+SELECT
+  id, table_name, op, row, client_ts, idempotency_key, status,
+  reject_reason, attempts, next_retry_at, last_error, created_at
+FROM sync_op_outbox_legacy;
+
+DROP TABLE sync_op_outbox_legacy;
+
+CREATE UNIQUE INDEX IF NOT EXISTS sync_op_outbox_idem_uniq_lite
+  ON sync_op_outbox (idempotency_key);
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_idx_lite
+  ON sync_op_outbox (id)
+  WHERE status = 'pending';
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_due_idx_lite
+  ON sync_op_outbox (next_retry_at, id)
+  WHERE status = 'pending';
+`;
+
+/**
  * Ordered list of bundled client migrations for the routine module on
  * SQLite. Pass this directly to `runMigrations` from
  * `@sergeant/db-schema/migrate`.
@@ -184,12 +256,18 @@ CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_due_idx_lite
  * different ledger entry on the Stage 4 cut-over and re-apply the DDL.
  * `002_sync_op_outbox_retry.sql` adds the Stage 5 / PR #040 retry
  * columns and the `'dead_letter'` status onto the same `__migrations`
- * ledger; future Stage-5+ migrations append as `003_*.sql`, … and
- * always show a Stage-5-or-later prefix in the file name.
+ * ledger; `003_sync_op_outbox_increment_op.sql` extends the `op`
+ * CHECK constraint with `'increment'` for PN-counter outbox writes
+ * (PR #042d-prep). Future Stage-5+ migrations append as `004_*.sql`, …
+ * and always show a Stage-5-or-later prefix in the file name.
  */
 export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_routine_spike.sql", sql: ROUTINE_SPIKE_SQL },
   { name: "002_sync_op_outbox_retry.sql", sql: SYNC_OP_OUTBOX_RETRY_SQL },
+  {
+    name: "003_sync_op_outbox_increment_op.sql",
+    sql: SYNC_OP_OUTBOX_INCREMENT_OP_SQL,
+  },
 ] as const;
 
 /**
