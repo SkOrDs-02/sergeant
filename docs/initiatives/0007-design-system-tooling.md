@@ -1,10 +1,13 @@
 # 0007 — Design-system tooling: Storybook + visual regression
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** Proposed
+> **Last validated:** 2026-05-04 by @zlupa005. **Next review:** 2026-08-02.
+> **Status:** In Progress (Phase 1 готовий — каталог 12/20 компонентів, Phase 2+ ще)
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks
+
+> **Progress (round-7, 2026-05-04):** Каталог Storybook у `apps/web/.storybook/` (а не у новому пакеті — рішення фази 1) тепер містить **12 компонентів** (60 % від цілі ≥ 20): `Button`, `Badge`, `Card` (foundation [#1647](https://github.com/Skords-01/Sergeant/pull/1647)) → +`Banner`, `Skeleton`, `Tooltip`, `DataState`, `Modal` (8 компонентів, [#1678](https://github.com/Skords-01/Sergeant/pull/1678)) → +`Input` / `Spinner` / `Switch` / `Tabs` (12 компонентів, [#1695](https://github.com/Skords-01/Sergeant/pull/1695)). Залишилось мінімум 8: `Avatar`, `Segmented`, `Toast` (потребує Provider у `preview.tsx`), плюс module-level (`FinykCard` / `FizrukCard` / `NutritionCard` / `RoutineCard` / `InsightsCard`). Phase 2 (Chromatic vs Playwright VRT decision) і Phase 5 (deploy live) — ще `Out`.
+>
 > **Sources:** Design Review 2026-05-03 §13 (Design system), [`docs/audits/UX-UI-AUDIT-2026.md`](../audits/UX-UI-AUDIT-2026.md)
 
 ## TL;DR
