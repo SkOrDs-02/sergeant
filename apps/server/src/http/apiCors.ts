@@ -34,7 +34,10 @@ export function apiCorsMiddleware(): RequestHandler {
       methods: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
       exposeHeaders: EXPOSE_HEADERS,
     });
-    if (req.method === "OPTIONS") return res.status(200).end();
+    if (req.method === "OPTIONS") {
+      res.status(200).end();
+      return;
+    }
     next();
   };
 }

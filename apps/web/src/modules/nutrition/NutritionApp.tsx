@@ -141,7 +141,7 @@ export default function NutritionApp({
       setActivePageAndHash("log");
       log.setAddMealSheetOpen(true);
       onPwaActionConsumed?.();
-      return;
+      return undefined;
     }
     if (pwaAction === "add_meal_photo") {
       setActivePageAndHash("start");
@@ -170,6 +170,7 @@ export default function NutritionApp({
         window.clearTimeout(fallback);
       };
     }
+    return undefined;
     // `photo.fileRef` is a stable ref; `setPhotoCardForceOpen` is a setter.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [log, onPwaActionConsumed, pwaAction]);

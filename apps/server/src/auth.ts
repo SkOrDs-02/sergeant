@@ -279,11 +279,12 @@ export const auth = betterAuth({
     session: {
       create: {
         before: async (data) => {
-          if (!data.ipAddress) return;
+          if (!data.ipAddress) return undefined;
           const truncated = ipPrefix(data.ipAddress);
           if (truncated && truncated !== data.ipAddress) {
             return { data: { ...data, ipAddress: truncated } };
           }
+          return undefined;
         },
       },
     },

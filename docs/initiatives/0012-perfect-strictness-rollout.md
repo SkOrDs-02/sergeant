@@ -189,3 +189,24 @@ Done so far:
 - [#1750](https://github.com/Skords-01/Sergeant/pull/1750) — `packages/finyk-domain` (73 → 0). Merged 2026-05-04.
 
 Naut: **9 / 13 packages done** (post #1750 merge 2026-05-04); **4 left** — `apps/web`, `apps/server`, `apps/mobile`, `packages/fizruk-domain`.
+
+### Phase 6c — `noImplicitReturns` + `noFallthroughCasesInSwitch` (✅ DONE — 1 PR, 2026-05-04)
+
+Baseline (виміряно 2026-05-04 через per-workspace `npx tsc -p tsconfig.json --noEmit`):
+
+| Workspace                           | Errors | Files | Notes                                                                                                                                                |
+| ----------------------------------- | -----: | ----: | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web`                          |      6 |     6 | `useEffect` cleanups з conditional cleanup — `useAppEffects`, `useIosInstallBanner`, `usePwaInstall`, `NutritionApp`, `InputDialog`, `SwipeToAction` |
+| `apps/server`                       |      2 |     2 | `auth.ts` Better Auth `session.create.before` hook + `apiCors.ts` middleware                                                                         |
+| `apps/mobile` + 10 інших workspaces |      0 |     0 | clean                                                                                                                                                |
+| **Total**                           |  **8** | **8** |                                                                                                                                                      |
+
+Жодного `noFallthroughCasesInSwitch` violations — всі `switch`-statement-и у репі коректні.
+
+**Fix pattern:** `useEffect` з conditional cleanup-функцією повертає `(() => void) | undefined`. До `noImplicitReturns` TS приймав implicit-fall-through; тепер вимагається explicit `return undefined;`. Те саме для async-handler-ів і Express middleware — додано explicit `return;` на термінальних branch-ах.
+
+**Coverage update:**
+
+- `packages/config/tsconfig.base.json` — `"noImplicitReturns": true, "noFallthroughCasesInSwitch": true` додано.
+- `tools/tsconfig-guard/check.mjs` — `GUARDED_OPTIONS` розширено двома новими прапорами; жоден workspace не має override-у.
+- [`docs/tech-debt/frontend.md` §11.1 row 3](../tech-debt/frontend.md) — статус `⏳ pending → ✅ Done`.
