@@ -768,7 +768,7 @@ undefined-guard. Без `!` non-null assertions.
 
 - `packages/shared` — `noUncheckedIndexedAccess: true` (PR [#1635](https://github.com/Skords-01/Sergeant/pull/1635)).
 - `packages/nutrition-domain` — `true` (PR [#1681](https://github.com/Skords-01/Sergeant/pull/1681)), 10 errors / 4 файли закрито через `!` після `findIndex >= 0` guard.
-- `packages/insights` — `true` (Item 15 round-7 follow-up), 13 errors / 2 тестових файли закрито через `recs[0]?.x` після `expect(recs).toHaveLength(1)`.
+- `packages/insights` — `true` (Item 15 round-7 follow-up, PR [#1689](https://github.com/Skords-01/Sergeant/pull/1689)), 13 errors / 2 тестових файли закрито через `recs[0]?.x` після `expect(recs).toHaveLength(1)`.
 
 [`tools/tsconfig-guard`](../../tools/tsconfig-guard/check.mjs) розширено:
 `noUncheckedIndexedAccess` додано у `GUARDED_OPTIONS`. Allowlist

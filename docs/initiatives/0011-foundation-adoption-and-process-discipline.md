@@ -1,6 +1,6 @@
 # 0011 — Foundation adoption + process discipline (post-launch sweep)
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-04 by @zlupa005. **Next review:** 2026-08-02.
 > **Status:** Proposed (Phase 1 freeze-compatible — старт 2026-05-05; Phases 2–4 заплановані пост-0010-launch ≥ 2026-06-01)
 > **Priority:** P1 (subordinate to 0010-revenue-first-launch scope-freeze)
 > **Owner:** `@Skords-01`
@@ -9,7 +9,7 @@
 
 ## TL;DR
 
-За 100 PR з 2026-05-03/04 ми збудували **4 foundation-инструменти без масових споживачів** (`useApiForm` — 6 файлів; `<DataState>` — 0 реальних споживачів; типізований OpenAPI-клієнт — споживачі мігровані частково; Storybook 10 — 8 stories на ~50+ UI-компонентів) і допустили **3 типи процес-помилок** (порожнє тіло PR-ів, Vercel-конфіг flip-flop без staging-перевірки, ~4 тижні задвоєння Renovate × Dependabot до фіксу). [`0010-revenue-first-launch`](./0010-revenue-first-launch.md) фрізить product-scope на 4 тижні (до ~2026-06-01) для shipping білінгу — **0011 поважає цей freeze**: Phase 1 (process-discipline CI-guards) проходить паралельно (інкрементальні зміни в `.github/workflows/`, не блокує білінг-PR-и), а Phases 2–4 стартують **після** revenue-first launch. Ця ініціатива закриває **adoption-розрив + три CI-guard-и + один retrospective audit** — у двох вікнах: in-freeze (Phase 1) та post-freeze (Phases 2–4).
+За 100 PR з 2026-05-03/04 ми збудували **4 foundation-инструменти зі змінним adoption-рівнем** (станом на round-7: `useApiForm` — 8 файлів, у т.ч. **3/3 auth-екрани**: AuthPage login + AuthPage register + ResetPasswordPage [#1696](https://github.com/Skords-01/Sergeant/pull/1696); `<DataState>` — 0 реальних споживачів; типізований OpenAPI-клієнт — споживачі мігровані частково; Storybook — **12 stories** на ~50+ UI-компонентів [#1695](https://github.com/Skords-01/Sergeant/pull/1695)) і допустили **3 типи процес-помилок** (порожнє тіло PR-ів, Vercel-конфіг flip-flop без staging-перевірки, ~4 тижні задвоєння Renovate × Dependabot до фіксу). [`0010-revenue-first-launch`](./0010-revenue-first-launch.md) фрізить product-scope на 4 тижні (до ~2026-06-01) для shipping білінгу — **0011 поважає цей freeze**: Phase 1 (process-discipline CI-guards) проходить паралельно (інкрементальні зміни в `.github/workflows/`, не блокує білінг-PR-и), а Phases 2–4 стартують **після** revenue-first launch. Ця ініціатива закриває **adoption-розрив + три CI-guard-и + один retrospective audit** — у двох вікнах: in-freeze (Phase 1) та post-freeze (Phases 2–4).
 
 ## Чому зараз
 
