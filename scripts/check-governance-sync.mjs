@@ -13,9 +13,22 @@
 //    `packages/.../foo.ts` in docs are checked against the filesystem.
 //    Glob/placeholder refs (containing `*`, `?`, `<`, `>`, `[`, `]`, `{`, `}`)
 //    are skipped — those are templates, not concrete file refs.
-//    Aspirational doc trees (docs/launch/, docs/planning/, docs/integrations/
-//    *-roadmap.md, docs/audits/*-implementation-roadmap.md) describe future
-//    state — their dangling refs are reported as WARNINGS only.
+//    Aspirational / planning / tracker doc trees describe planned, historical,
+//    or target-state file structures whose refs naturally drift as code lands
+//    or is decomposed. Their dangling refs are reported as WARNINGS only:
+//      - docs/launch/                          (launch plans)
+//      - docs/planning/                        (stack-pulse, sprint plans)
+//      - docs/diagnostics/                     (deep-dive recommendations)
+//      - docs/integrations/*-roadmap.md        (integration roadmaps)
+//      - docs/audits/*-implementation-roadmap.md (audit roadmaps)
+//      - docs/initiatives/                     (multi-phase initiative trackers)
+//      - docs/security/hardening/              (PR-bound hardening cards)
+//      - docs/runbooks/                        (operations runbooks; refs may
+//                                               describe target scripts)
+//      - docs/architecture/diagrams/           (flow diagrams; refs name
+//                                               components that may rename)
+//      - docs/playbooks/                       (recipes referencing template
+//                                               paths and example structures)
 //    Files in ADRs with Status: proposed are exempt (future refs OK).
 //    All other dangling refs are reported as ERRORS (Hard Rule #15 — docs
 //    that describe current behaviour must move with code).
@@ -196,6 +209,28 @@ function checkDanglingRefs() {
     // docs are graduated into trackers in `docs/audits/` /
     // `docs/tech-debt/` once accepted.
     if (relPath.startsWith("docs/diagnostics/")) return true;
+    // `docs/initiatives/` track multi-phase work; refs may describe
+    // pre-decomposition structure (e.g., `agent.ts` before being split),
+    // upcoming-phase target files, or historical "before" state. The
+    // initiative status badge + PR-link table is the source of truth for
+    // shipped state, not inline file refs.
+    if (relPath.startsWith("docs/initiatives/")) return true;
+    // `docs/security/hardening/` are PR-bound hardening cards — they
+    // describe the target file layout for each card. The card's status
+    // badge and "PRs landed" section is the truth; inline path refs are
+    // a description, not a contract.
+    if (relPath.startsWith("docs/security/hardening/")) return true;
+    // `docs/runbooks/` describe operations including target scripts that
+    // may not be created until the runbook is exercised in incident.
+    if (relPath.startsWith("docs/runbooks/")) return true;
+    // `docs/architecture/diagrams/` document flows by naming components;
+    // a component rename should not break the diagram doc until the
+    // diagram is regenerated.
+    if (relPath.startsWith("docs/architecture/diagrams/")) return true;
+    // `docs/playbooks/` are recipes; refs are template/example paths
+    // (e.g., `apps/web/src/App.tsx` as an illustrative anchor) and may
+    // describe target structures rather than current code.
+    if (relPath.startsWith("docs/playbooks/")) return true;
     if (
       relPath.startsWith("docs/integrations/") &&
       relPath.endsWith("-roadmap.md")

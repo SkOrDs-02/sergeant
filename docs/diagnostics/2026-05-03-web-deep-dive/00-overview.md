@@ -1,6 +1,7 @@
 # Web deep-dive — Overview
 
-> **Last validated:** 2026-05-04 by @Skords-01.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-05-31.
+> **Status:** Active (rounds 1–8 tracker; new follow-ups land as numbered round updates inline).
 >
 > **Update 2026-05-04 (round 4):** Tier 1 закрито у foundation-формі — items #8, #9. Roadmap-таблиця нижче помічена done з PR-лінками.
 >
