@@ -13,6 +13,7 @@ import {
   ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
 } from "@shared/components/layout";
+import { NoBankBanner } from "./components/NoBankBanner";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { cn } from "@shared/lib/ui/cn";
 import { useToast } from "@shared/hooks/useToast";
@@ -81,6 +82,12 @@ export default function App({
     () => readRaw("finyk_show_balance_v1", "1") !== "0",
   );
   const [showExpenseSheet, setShowExpenseSheet] = useState(false);
+  // Inline Mono-token entry overlay. Triggered from the no-bank banner —
+  // replaces the previous full-screen `FinykLoginScreen` gate so users
+  // who land in Finyk without going through the FTUX preset path can
+  // still see the empty Finyk UI immediately and add expenses manually,
+  // without being forced to dismiss a connect-or-skip prompt first.
+  const [showLoginOverlay, setShowLoginOverlay] = useState(false);
   const [editingManualExpenseId, setEditingManualExpenseId] = useState<
     string | null
   >(null);
@@ -203,27 +210,16 @@ export default function App({
   });
   const swipeDx = swipe.dragDx;
 
-  // ── Login screen ──────────────────────────────────────────────────────
-  if (!clientInfo && !manualOnly) {
-    return (
-      <FinykLoginScreen
-        tokenInput={tokenInput}
-        onTokenInputChange={setTokenInput}
-        showToken={showToken}
-        onToggleShowToken={() => setShowToken((v) => !v)}
-        authError={authError}
-        error={error}
-        connecting={connecting}
-        onConnect={() => connect(tokenInput.trim())}
-        onContinueWithoutBank={() => {
-          enableFinykManualOnly();
-          setManualOnly(true);
-        }}
-        toast={toast}
-        onBackToHub={onBackToHub}
-      />
-    );
-  }
+  // Auto-close the connect overlay once the user successfully connects
+  // a Monobank token — `clientInfo` flips from null to populated inside
+  // `useMonobank` after a successful handshake.
+  useEffect(() => {
+    if (clientInfo && showLoginOverlay) {
+      setShowLoginOverlay(false);
+    }
+  }, [clientInfo, showLoginOverlay]);
+
+  const showNoBankBanner = !clientInfo && !manualOnly;
 
   // ── Main app ──────────────────────────────────────────────────────────
   return (
@@ -318,6 +314,16 @@ export default function App({
           </div>
         }
       />
+
+      {showNoBankBanner && (
+        <NoBankBanner
+          onConnect={() => setShowLoginOverlay(true)}
+          onContinueManually={() => {
+            enableFinykManualOnly();
+            setManualOnly(true);
+          }}
+        />
+      )}
 
       {/* Page content */}
       <div
@@ -553,6 +559,34 @@ export default function App({
         onChange={navigate}
         module="finyk"
       />
+
+      {showLoginOverlay && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-bg"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Підключення Monobank"
+        >
+          <FinykLoginScreen
+            tokenInput={tokenInput}
+            onTokenInputChange={setTokenInput}
+            showToken={showToken}
+            onToggleShowToken={() => setShowToken((v) => !v)}
+            authError={authError}
+            error={error}
+            connecting={connecting}
+            onConnect={() => connect(tokenInput.trim())}
+            onContinueWithoutBank={() => {
+              enableFinykManualOnly();
+              setManualOnly(true);
+              setShowLoginOverlay(false);
+            }}
+            toast={toast}
+            onBackToHub={() => setShowLoginOverlay(false)}
+            backLabel="Назад"
+          />
+        </div>
+      )}
     </ModuleAccentProvider>
   );
 }

@@ -15,6 +15,8 @@ export interface FinykLoginScreenProps {
   onContinueWithoutBank: () => void;
   toast: ToastApi;
   onBackToHub?: () => void;
+  /** Override the back-button label. Defaults to "Назад до хабу" (top-level use). */
+  backLabel?: string;
 }
 
 /**
@@ -39,6 +41,7 @@ export function FinykLoginScreen({
   onContinueWithoutBank,
   toast,
   onBackToHub,
+  backLabel = "Назад до хабу",
 }: FinykLoginScreenProps) {
   return (
     <div className="min-h-dvh flex items-center justify-center p-5 bg-bg safe-area-pt-pb">
@@ -241,7 +244,7 @@ export function FinykLoginScreen({
               className="mt-1 w-full min-h-[44px]"
               onClick={onBackToHub}
             >
-              ← Назад до хабу
+              ← {backLabel}
             </Button>
           )}
           <p className="mt-4 text-center text-xs text-subtle flex items-center justify-center gap-1.5">
