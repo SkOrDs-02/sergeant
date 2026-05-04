@@ -1,6 +1,6 @@
 # Frontend-observability — web і mobile
 
-> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 Observability-стек для web- і mobile-клієнтів Sergeant: error tracking,
@@ -18,6 +18,7 @@ session replay, Core Web Vitals, product analytics, ErrorBoundary-конвенц
 | Web — Replay                    | `@sentry/react` `replayIntegration`                        | `VITE_SENTRY_REPLAY_SAMPLE_RATE`              | **Prod-ready** (default session=0, error=1.0)             |
 | Web — Core Web Vitals           | `web-vitals` → `POST /api/metrics/web-vitals` → Prometheus | `VITE_WEB_VITALS_ENDPOINT` (`=0` kill-switch) | **Prod-ready** (baseline, SLO не зафіксовано — SLO.md §8) |
 | Mobile — Sentry                 | `@sentry/react-native` (planned)                           | `EXPO_PUBLIC_SENTRY_DSN` (зарезервовано)      | **TODO (Phase 10)**                                       |
+| Mobile — PostHog                | HTTP `/capture/` (no SDK dep)                              | `EXPO_PUBLIC_POSTHOG_KEY`                     | **Prod-ready** (S0.3 — fire-and-forget, anon → identify)  |
 | Capacitor shell                 | Web Sentry з tag `is_capacitor=true`                       | `VITE_SENTRY_*`                               | **Prod-ready**                                            |
 | Server — Sentry                 | `@sentry/node`                                             | `SENTRY_DSN`                                  | **Prod-ready** (детально — інші docs)                     |
 
