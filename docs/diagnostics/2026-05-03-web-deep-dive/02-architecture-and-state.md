@@ -159,7 +159,7 @@ ShortcutRegistryProvider
 
 **Точковий план міграції.** PR_A → виносить tokens. PR_B → розбиває `index.css` на 4 файли. PR_C → переводить top-10 `@apply`-stack-ів на компоненти.
 
-> **Update 2026-05-04 (#PR_PLACEHOLDER_CSS):** PR_B відбувся. `index.css` тепер ≤35 LOC і містить лише `@import`-и + `@config`. Файли під `apps/web/src/styles/`: `theme.css` (CSS-vars light/dark + DM Sans fallback), `base.css` (reset + body + reduced-motion + iOS input-zoom), `utilities.css` (Tailwind v4 `@utility` rules), `components.css` (`.skeleton`, `.glass`, `.fab`, `.tooltip`, micro-interactions), `mobile.css` (touch-target floor, mobile-first helpers). `animations.css` і `module-surfaces.css` уже були винесені раніше. Cascade order збережено: tailwindcss → theme → base → utilities → components → mobile. Залишились **PR_A** (tokens у `packages/design-tokens/css/`) і **PR_C** (`@apply`-stack-и → компоненти).
+> **Update 2026-05-04 ([#1601](https://github.com/Skords-01/Sergeant/pull/1601)):** PR_B відбувся. `index.css` тепер ≤35 LOC і містить лише `@import`-и + `@config`. Файли під `apps/web/src/styles/`: `theme.css` (CSS-vars light/dark + DM Sans fallback), `base.css` (reset + body + reduced-motion + iOS input-zoom), `utilities.css` (Tailwind v4 `@utility` rules), `components.css` (`.skeleton`, `.glass`, `.fab`, `.tooltip`, micro-interactions), `mobile.css` (touch-target floor, mobile-first helpers). `animations.css` і `module-surfaces.css` уже були винесені раніше. Cascade order збережено: tailwindcss → theme → base → utilities → components → mobile. Залишились **PR_A** (tokens у `packages/design-tokens/css/`) і **PR_C** (`@apply`-stack-и → компоненти).
 
 ---
 
