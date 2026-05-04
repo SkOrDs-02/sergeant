@@ -1,12 +1,43 @@
-import { useState, type FormEvent, type SyntheticEvent } from "react";
+import { useState, type SyntheticEvent } from "react";
+import { z } from "zod";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { useCelebration } from "@shared/components/ui/CelebrationModal";
 import { useToast } from "@shared/hooks/useToast";
+import { useApiForm } from "@shared/forms/useApiForm";
 import { BrandLogo } from "../app/BrandLogo";
 import { useAuth } from "./AuthContext";
+
+// Зод-схеми тримаємо поряд з AuthPage, бо вони вузько-локальні (не
+// використовуються більше ніде). Окремий пакет `@sergeant/auth-schemas`
+// був би оверкіл-ом для двох форм. Меседжі — UA, відповідно до
+// AGENTS.md (Hard Rule #15).
+const loginSchema = z.object({
+  email: z.string().min(1, "Введи email").email("Некоректний формат email"),
+  // На login-у ми не нав'язуємо мінімальну довжину пароля — користувач
+  // міг створити акаунт у епоху 6-символьного мінімуму, а потім стандарт
+  // підняли. Перевірка відбувається на сервері; форма просто гарантує,
+  // що поле не порожнє.
+  password: z.string().min(1, "Введи пароль"),
+});
+type LoginValues = z.infer<typeof loginSchema>;
+
+const registerSchema = z.object({
+  email: z.string().min(1, "Введи email").email("Некоректний формат email"),
+  password: z
+    .string()
+    .min(10, "Мінімум 10 символів")
+    // Better Auth-у достатньо просто довжини, але натякаємо
+    // користувачеві, що 10+ символів — нижня межа надійності.
+    .max(128, "Не більше 128 символів"),
+  // Імʼя — опціональне; якщо не введене, fallback на `email.split("@")[0]`
+  // нижче в `onSubmit`. Залишаємо пустий рядок як валідне значення, щоб
+  // RHF не показав помилку «обовʼязкове поле» — це необовʼязкове.
+  name: z.string().max(80, "Не більше 80 символів").optional(),
+});
+type RegisterValues = z.infer<typeof registerSchema>;
 
 function PasswordStrengthBar({ password }: { password: string }) {
   if (!password) return null;
@@ -39,34 +70,349 @@ function PasswordStrengthBar({ password }: { password: string }) {
   );
 }
 
+interface PasswordVisibilityToggleProps {
+  visible: boolean;
+  onToggle: () => void;
+}
+
+function PasswordVisibilityToggle({
+  visible,
+  onToggle,
+}: PasswordVisibilityToggleProps) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={visible ? "Приховати пароль" : "Показати пароль"}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded"
+    >
+      {visible ? (
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+          <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+          <line x1="1" y1="1" x2="23" y2="23" />
+        </svg>
+      ) : (
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+interface FieldErrorProps {
+  message: string | undefined;
+}
+
+function FieldError({ message }: FieldErrorProps) {
+  if (!message) return null;
+  return (
+    <p className="mt-1.5 text-meta text-error" role="alert">
+      {message}
+    </p>
+  );
+}
+
+interface LoginFormProps {
+  onForgotPassword: (currentEmail: string) => void;
+  showForgot: boolean;
+}
+
+function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
+  const { login, authError } = useAuth();
+  const toast = useToast();
+  const [showPassword, setShowPassword] = useState(false);
+
+  // useApiForm зводить isSubmitting / валідацію / dirty-state в один
+  // hook. Серверні top-level-помилки сюди НЕ протікають — Better Auth
+  // повертає їх через `authError` з `useAuth()`, тож ми просто
+  // перекидаємо `Error("")` в `onSubmit`, щоб придушити `onSuccess`.
+  const { register, submit, formState, isSubmitting } = useApiForm<
+    LoginValues,
+    boolean
+  >({
+    schema: loginSchema,
+    defaultValues: { email: "", password: "" },
+    onSubmit: async (values) => {
+      const ok = await login(values.email, values.password);
+      if (!ok) {
+        // Кидаємо мовчазний error — він блокує `onSuccess`, але не
+        // показується (рендер `serverError` свідомо не приводимо).
+        // Реальний текст помилки відображається через `authError`
+        // нижче, бо він утримує локалізоване повідомлення Better Auth.
+        throw new Error("");
+      }
+      return ok;
+    },
+    onSuccess: () => {
+      toast.success("Вхід виконано");
+    },
+  });
+
+  // Стежимо за поточним email у полі — потрібен `<button "Забули пароль">`,
+  // щоб попередньо заповнити email у форму скидання пароля.
+  const emailValue = formState.defaultValues?.email ?? "";
+
+  return (
+    <form onSubmit={submit} noValidate className="space-y-4">
+      <div>
+        <label
+          htmlFor="auth-email"
+          className="block text-style-caption text-muted mb-1.5"
+        >
+          Email
+        </label>
+        <Input
+          id="auth-email"
+          type="email"
+          placeholder="email@example.com"
+          autoComplete="email"
+          error={!!formState.errors.email}
+          aria-invalid={!!formState.errors.email}
+          disabled={isSubmitting}
+          {...register("email")}
+        />
+        <FieldError message={formState.errors.email?.message} />
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <label
+            htmlFor="auth-password"
+            className="block text-style-caption text-muted"
+          >
+            Пароль
+          </label>
+          <button
+            type="button"
+            onClick={() => onForgotPassword(emailValue)}
+            className="text-xs text-brand-strong dark:text-brand-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded"
+          >
+            Забули пароль?
+          </button>
+        </div>
+        <div className="relative">
+          <Input
+            id="auth-password"
+            type={showPassword ? "text" : "password"}
+            placeholder="Пароль"
+            autoComplete="current-password"
+            className="pr-10"
+            error={!!formState.errors.password}
+            aria-invalid={!!formState.errors.password}
+            disabled={isSubmitting}
+            {...register("password")}
+          />
+          <PasswordVisibilityToggle
+            visible={showPassword}
+            onToggle={() => setShowPassword((v) => !v)}
+          />
+        </div>
+        <FieldError message={formState.errors.password?.message} />
+      </div>
+
+      {/* `authError` тримає локалізоване повідомлення з Better Auth
+          (translateAuthError). Не робимо `serverError` з useApiForm,
+          щоб не дублювати джерело істини — auth context сам володіє
+          серверною помилкою (login + Google + reset). */}
+      {authError && !showForgot && (
+        <div
+          role="alert"
+          className="text-xs text-error bg-error/10 border border-error/20 rounded-xl px-4 py-2.5"
+        >
+          {authError}
+        </div>
+      )}
+
+      <Button
+        type="submit"
+        variant="primary"
+        size="lg"
+        loading={isSubmitting}
+        className="w-full"
+      >
+        {isSubmitting ? "Зачекайте…" : "Увійти"}
+      </Button>
+    </form>
+  );
+}
+
+interface RegisterFormProps {
+  onAlreadyRegistered: () => void;
+}
+
+function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
+  const { register: signup, authError } = useAuth();
+  const { achievement } = useCelebration();
+  const [showPassword, setShowPassword] = useState(false);
+
+  const { register, submit, formState, isSubmitting, watch } = useApiForm<
+    RegisterValues,
+    boolean
+  >({
+    schema: registerSchema,
+    defaultValues: { email: "", password: "", name: "" },
+    onSubmit: async (values) => {
+      const fallbackName = values.email.split("@")[0] ?? "";
+      const ok = await signup(
+        values.email,
+        values.password,
+        values.name?.trim() || fallbackName,
+      );
+      if (!ok) {
+        // Сценарій «вже зареєстровано» обробляє AuthPage (auto-switch
+        // на login). Інші помилки відображає `authError` нижче.
+        if (authError && /вже зареєстровано/i.test(authError)) {
+          onAlreadyRegistered();
+        }
+        throw new Error("");
+      }
+      return ok;
+    },
+    onSuccess: () => {
+      achievement(
+        "Ласкаво просимо!",
+        "Твій акаунт створено. Тепер дані синхронізуються між пристроями.",
+        [
+          { icon: "🔐", label: "Захищений акаунт" },
+          { icon: "🔄", label: "Синхронізація" },
+        ],
+      );
+    },
+  });
+
+  const passwordValue = watch("password") ?? "";
+
+  return (
+    <form onSubmit={submit} noValidate className="space-y-4">
+      <div>
+        <label
+          htmlFor="auth-name"
+          className="block text-style-caption text-muted mb-1.5"
+        >
+          Ім{"'"}я
+        </label>
+        <Input
+          id="auth-name"
+          type="text"
+          placeholder={"Твоє ім'я"}
+          autoComplete="name"
+          error={!!formState.errors.name}
+          aria-invalid={!!formState.errors.name}
+          disabled={isSubmitting}
+          {...register("name")}
+        />
+        <FieldError message={formState.errors.name?.message} />
+      </div>
+
+      <div>
+        <label
+          htmlFor="auth-email"
+          className="block text-style-caption text-muted mb-1.5"
+        >
+          Email
+        </label>
+        <Input
+          id="auth-email"
+          type="email"
+          placeholder="email@example.com"
+          autoComplete="email"
+          error={!!formState.errors.email}
+          aria-invalid={!!formState.errors.email}
+          disabled={isSubmitting}
+          {...register("email")}
+        />
+        <FieldError message={formState.errors.email?.message} />
+      </div>
+
+      <div>
+        <label
+          htmlFor="auth-password"
+          className="block text-style-caption text-muted mb-1.5"
+        >
+          Пароль
+        </label>
+        <div className="relative">
+          <Input
+            id="auth-password"
+            type={showPassword ? "text" : "password"}
+            placeholder="Мінімум 10 символів"
+            autoComplete="new-password"
+            className="pr-10"
+            error={!!formState.errors.password}
+            aria-invalid={!!formState.errors.password}
+            disabled={isSubmitting}
+            {...register("password")}
+          />
+          <PasswordVisibilityToggle
+            visible={showPassword}
+            onToggle={() => setShowPassword((v) => !v)}
+          />
+        </div>
+        <FieldError message={formState.errors.password?.message} />
+        <PasswordStrengthBar password={passwordValue} />
+      </div>
+
+      {authError && (
+        <div
+          role="alert"
+          className="text-xs text-error bg-error/10 border border-error/20 rounded-xl px-4 py-2.5"
+        >
+          {authError}
+        </div>
+      )}
+
+      <Button
+        type="submit"
+        variant="primary"
+        size="lg"
+        loading={isSubmitting}
+        className="w-full"
+      >
+        {isSubmitting ? "Зачекайте…" : "Зареєструватися"}
+      </Button>
+    </form>
+  );
+}
+
 interface AuthPageProps {
   onContinueWithoutAccount?: () => void;
 }
 
 export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
-  const {
-    login,
-    loginWithGoogle,
-    register,
-    requestPasswordReset,
-    authError,
-    setAuthError,
-  } = useAuth();
-  const toast = useToast();
-  const { achievement, CelebrationComponent } = useCelebration();
-  const [mode, setMode] = useState("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { loginWithGoogle, requestPasswordReset, authError, setAuthError } =
+    useAuth();
+  const { CelebrationComponent } = useCelebration();
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
-  // "idle" → the panel renders the reset form; "sending" disables the
-  // button while the request flies; "sent" replaces the form with a
-  // neutral confirmation (no enumeration hints) so the user knows to
-  // check their inbox.
-  const [forgotState, setForgotState] = useState("idle");
+  // "idle" → панель рендерить reset-форму; "sending" — кнопка
+  // disabled під час запиту; "sent" — заміняє форму нейтральним
+  // confirmation (без enumeration hint-у), щоб користувач знав
+  // перевірити інбокс.
+  const [forgotState, setForgotState] = useState<"idle" | "sending" | "sent">(
+    "idle",
+  );
   const [forgotEmail, setForgotEmail] = useState("");
 
   const switchMode = () => {
@@ -79,7 +425,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
 
   const handleForgotSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
-    const target = (forgotEmail || email || "").trim();
+    const target = (forgotEmail || "").trim();
     if (!target) {
       setAuthError("Введи email, на який відправити лист.");
       return;
@@ -98,28 +444,15 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
     setGoogleLoading(false);
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    if (mode === "login") {
-      const ok = await login(email, password);
-      if (ok) toast.success("Вхід виконано");
-    } else {
-      const ok = await register(email, password, name || email.split("@")[0]);
-      if (ok) {
-        achievement(
-          "Ласкаво просимо!",
-          "Твій акаунт створено. Тепер дані синхронізуються між пристроями.",
-          [
-            { icon: "🔐", label: "Захищений акаунт" },
-            { icon: "🔄", label: "Синхронізація" },
-          ],
-        );
-      } else if (authError && /вже зареєстровано/i.test(authError)) {
-        setMode("login");
-      }
-    }
-    setLoading(false);
+  const openForgotPanel = (currentEmail: string) => {
+    setAuthError(null);
+    setForgotState("idle");
+    setForgotEmail((cur) => cur || currentEmail || "");
+    setShowForgot((v) => !v);
+  };
+
+  const onAlreadyRegistered = () => {
+    setMode("login");
   };
 
   return (
@@ -154,200 +487,83 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === "register" && (
-                <div>
-                  <label
-                    htmlFor="auth-name"
-                    className="block text-style-caption text-muted mb-1.5"
-                  >
-                    Ім{"'"}я
-                  </label>
-                  <Input
-                    id="auth-name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={"Твоє ім'я"}
-                    autoComplete="name"
-                  />
-                </div>
-              )}
+            {/*
+              `key={mode}` re-mount-ить форму при зміні режиму. Це
+              надійніший шлях, ніж намагатися переключити schema на
+              льоту: `useApiForm` фіксує zod-resolver під час mount-у,
+              і RHF не перевалідовує існуючі поля при зміні
+              `defaultValues`. Зайвих ререндерів немає — користувач
+              перемикає режим явно через кнопку «Немає акаунту?».
+            */}
+            {mode === "login" ? (
+              <LoginForm
+                key="login"
+                onForgotPassword={openForgotPanel}
+                showForgot={showForgot}
+              />
+            ) : (
+              <RegisterForm
+                key="register"
+                onAlreadyRegistered={onAlreadyRegistered}
+              />
+            )}
 
-              <div>
-                <label
-                  htmlFor="auth-email"
-                  className="block text-style-caption text-muted mb-1.5"
-                >
-                  Email
-                </label>
-                <Input
-                  id="auth-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="email@example.com"
-                  autoComplete="email"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label
-                    htmlFor="auth-password"
-                    className="block text-style-caption text-muted"
-                  >
-                    Пароль
-                  </label>
-                  {mode === "login" && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAuthError(null);
-                        setForgotState("idle");
-                        setForgotEmail((cur) => cur || email || "");
-                        setShowForgot((v) => !v);
-                      }}
-                      className="text-xs text-brand-strong dark:text-brand-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded"
+            {showForgot && mode === "login" && (
+              <div
+                role="group"
+                aria-label="Скидання пароля"
+                className="text-xs text-text bg-brand-500/10 border border-brand-500/30 rounded-xl px-4 py-3 leading-relaxed space-y-2"
+              >
+                {forgotState === "sent" ? (
+                  <p>
+                    Якщо такий email зареєстровано — ми відправили лист із
+                    посиланням для скидання пароля. Перевір вхідні та папку
+                    «Спам». Локальні дані на пристрої залишаються без змін.
+                  </p>
+                ) : (
+                  <>
+                    <p>
+                      Введи email акаунту — пришлемо посилання для скидання
+                      пароля. Локальні дані на пристрої залишаються без змін.
+                    </p>
+                    <label
+                      htmlFor="auth-forgot-email"
+                      className="block text-style-caption text-muted"
                     >
-                      Забули пароль?
-                    </button>
-                  )}
-                </div>
-                <div className="relative">
-                  <Input
-                    id="auth-password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={mode === "register" ? 10 : 1}
-                    placeholder={
-                      mode === "register" ? "Мінімум 10 символів" : "Пароль"
-                    }
-                    autoComplete={
-                      mode === "login" ? "current-password" : "new-password"
-                    }
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={
-                      showPassword ? "Приховати пароль" : "Показати пароль"
-                    }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded"
-                  >
-                    {showPassword ? (
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                      Email для скидання
+                    </label>
+                    <Input
+                      id="auth-forgot-email"
+                      type="email"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      placeholder="email@example.com"
+                      autoComplete="email"
+                    />
+                    {authError && (
+                      <p
+                        role="alert"
+                        className="text-error text-meta font-medium"
                       >
-                        <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-                        <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-                        <line x1="1" y1="1" x2="23" y2="23" />
-                      </svg>
-                    ) : (
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
+                        {authError}
+                      </p>
                     )}
-                  </button>
-                </div>
-                {mode === "register" && (
-                  <PasswordStrengthBar password={password} />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="md"
+                      loading={forgotState === "sending"}
+                      onClick={handleForgotSubmit}
+                      className="w-full"
+                    >
+                      {forgotState === "sending"
+                        ? "Надсилаю…"
+                        : "Надіслати лист"}
+                    </Button>
+                  </>
                 )}
               </div>
-
-              {showForgot && (
-                <div
-                  role="group"
-                  aria-label="Скидання пароля"
-                  className="text-xs text-text bg-brand-500/10 border border-brand-500/30 rounded-xl px-4 py-3 leading-relaxed space-y-2"
-                >
-                  {forgotState === "sent" ? (
-                    <p>
-                      Якщо такий email зареєстровано — ми відправили лист із
-                      посиланням для скидання пароля. Перевір вхідні та папку
-                      «Спам». Локальні дані на пристрої залишаються без змін.
-                    </p>
-                  ) : (
-                    <>
-                      <p>
-                        Введи email акаунту — пришлемо посилання для скидання
-                        пароля. Локальні дані на пристрої залишаються без змін.
-                      </p>
-                      <label
-                        htmlFor="auth-forgot-email"
-                        className="block text-style-caption text-muted"
-                      >
-                        Email для скидання
-                      </label>
-                      <Input
-                        id="auth-forgot-email"
-                        type="email"
-                        value={forgotEmail}
-                        onChange={(e) => setForgotEmail(e.target.value)}
-                        placeholder="email@example.com"
-                        autoComplete="email"
-                      />
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="md"
-                        loading={forgotState === "sending"}
-                        onClick={handleForgotSubmit}
-                        className="w-full"
-                      >
-                        {forgotState === "sending"
-                          ? "Надсилаю…"
-                          : "Надіслати лист"}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {authError && (
-                <div
-                  role="alert"
-                  className="text-xs text-error bg-error/10 border border-error/20 rounded-xl px-4 py-2.5"
-                >
-                  {authError}
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                loading={loading}
-                className="w-full"
-              >
-                {loading
-                  ? "Зачекайте…"
-                  : mode === "login"
-                    ? "Увійти"
-                    : "Зареєструватися"}
-              </Button>
-            </form>
+            )}
 
             {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
             Inline "або" divider between two <span> rules — structurally
@@ -365,7 +581,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               size="lg"
               className="w-full"
               loading={googleLoading}
-              disabled={loading || googleLoading}
+              disabled={googleLoading}
               onClick={handleGoogleSignIn}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
