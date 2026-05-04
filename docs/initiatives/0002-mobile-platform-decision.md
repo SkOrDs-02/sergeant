@@ -187,7 +187,7 @@ top_files:     README.md (16), package.json (13), AndroidManifest.xml (6), …
 
 ### Фаза 2 — `ci-shell-tax-report` cron (DONE — 2026-05-04)
 
-**PR:** `devin/0002-shell-tax-cron-…` (номер додам сюди після merge).
+**PR:** [#1633](https://github.com/Skords-01/Sergeant/pull/1633) (merged 2026-05-04).
 
 `report-shell-tax.mjs` тепер ганяється автоматично:
 

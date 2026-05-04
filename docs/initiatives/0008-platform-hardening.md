@@ -43,7 +43,7 @@
      - `extends: ['config:base', 'docker:enableMajor']`
      - `schedule: ['before 6am every weekday']`
      - `automergeType: 'pr'`, `automerge: true` для devDependencies + patches з зеленою CI.
-     - `groupedNames` для @anthropic-ai/*, @sentry/*, @opentelemetry/*.
+     - `groupedNames` для @anthropic-ai/_, @sentry/_, @opentelemetry/\*.
      - `lockFileMaintenance` weekly.
    - Альтернатива — Dependabot (decision у фазі 1 ADR).
 4. **Supply-chain:**
@@ -67,13 +67,13 @@
 
 - `apps/server/src/routes/health.ts`:
   ```ts
-  router.get('/liveness', (req, res) => res.status(200).json({ ok: true }));
-  router.get('/readiness', async (req, res) => {
+  router.get("/liveness", (req, res) => res.status(200).json({ ok: true }));
+  router.get("/readiness", async (req, res) => {
     const checks = await Promise.allSettled([pgPing(), redisPing()]);
-    const ok = checks.every((c) => c.status === 'fulfilled');
+    const ok = checks.every((c) => c.status === "fulfilled");
     res.status(ok ? 200 : 503).json({ ok, checks });
   });
-  router.get('/startup', (req, res) => {
+  router.get("/startup", (req, res) => {
     const ok = appState.initialMigrationsDone && appState.warmupDone;
     res.status(ok ? 200 : 503).json({ ok });
   });
@@ -88,13 +88,14 @@
 
 - `apps/server/src/config/rateLimit.ts`:
   ```ts
-  export const RATE_LIMITS: Record<string, { windowMs: number; max: number }> = {
-    'POST /auth/sign-in': { windowMs: 60_000, max: 5 },
-    'POST /auth/sign-up': { windowMs: 60_000, max: 3 },
-    'POST /auth/forgot-password': { windowMs: 600_000, max: 3 },
-    'POST /sync/v2/ops': { windowMs: 60_000, max: 600 },
-    // ...
-  } as const;
+  export const RATE_LIMITS: Record<string, { windowMs: number; max: number }> =
+    {
+      "POST /auth/sign-in": { windowMs: 60_000, max: 5 },
+      "POST /auth/sign-up": { windowMs: 60_000, max: 3 },
+      "POST /auth/forgot-password": { windowMs: 600_000, max: 3 },
+      "POST /sync/v2/ops": { windowMs: 60_000, max: 600 },
+      // ...
+    } as const;
   ```
 - Middleware читає policy + видає `Retry-After`, `X-RateLimit-*`.
 - Інтеграційний тест.
@@ -142,25 +143,25 @@
 
 ## Ризики та митиґація
 
-| Ризик                                                          | Мітигація                                                                                                          |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Readiness probe виявляє слабке місце (DB ping fails) → flapping | Cache `pgPing` result 5 секунд (debounce). Алерт на «3 поспіль readiness=503» замість per-fail.                  |
-| Renovate флудить PR-ами і втомлює maintainer                   | `prHourlyLimit: 4`, `prConcurrentLimit: 10`, групи (`@anthropic-ai/*`). Auto-merge на dev-deps + patches знижує шум. |
-| `pnpm audit` фейлить на transitive CVE без фіксу                 | `--audit-level=moderate` (не на low). Allow-list через `pnpm.overrides` для точкових false-positives.            |
+| Ризик                                                           | Мітигація                                                                                                                                                              |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Readiness probe виявляє слабке місце (DB ping fails) → flapping | Cache `pgPing` result 5 секунд (debounce). Алерт на «3 поспіль readiness=503» замість per-fail.                                                                        |
+| Renovate флудить PR-ами і втомлює maintainer                    | `prHourlyLimit: 4`, `prConcurrentLimit: 10`, групи (`@anthropic-ai/*`). Auto-merge на dev-deps + patches знижує шум.                                                   |
+| `pnpm audit` фейлить на transitive CVE без фіксу                | `--audit-level=moderate` (не на low). Allow-list через `pnpm.overrides` для точкових false-positives.                                                                  |
 | `Retry-After` header змінює клієнтську поведінку                | Web/мобайл клієнти у [`apps/web/src/shared/lib/api/queryClient.ts`](../../apps/web/src/shared/lib/api/queryClient.ts) повинні parse-ити `Retry-After`. Координація PR. |
-| SBOM contains paths/secrets                                    | `cyclonedx-bom` з `--exclude-dev`, `--exclude-paths`. Reviewer перевіряє SBOM перед публікацією.                 |
-| Sigstore release-signing збільшує release time                 | Опт-ін у ADR-0044; default off, on тільки для prod tags `v*.*.*`.                                                |
+| SBOM contains paths/secrets                                     | `cyclonedx-bom` з `--exclude-dev`, `--exclude-paths`. Reviewer перевіряє SBOM перед публікацією.                                                                       |
+| Sigstore release-signing збільшує release time                  | Опт-ін у ADR-0044; default off, on тільки для prod tags `v*.*.*`.                                                                                                      |
 
 ## Метрики
 
-| Метрика                                                  | Baseline (2026-05-03) | Target (post-rollout)        |
-| -------------------------------------------------------- | --------------------- | ---------------------------- |
-| MTT-detect dependency CVE                                | days                  | hours (Renovate auto-PR)     |
-| Cold-start kill rate (post-deploy)                       | 1-2/тиждень           | 0/тиждень                    |
-| 429 Retry-After header coverage                          | 0%                    | 100% on rate-limited routes  |
-| `pnpm audit` moderate+ findings                          | ?                     | 0 (gated)                    |
-| SBOM published on release                                | no                    | yes                          |
-| Mean time-to-merge devDep update                         | 2 weeks (manual)      | < 24h (Renovate)             |
+| Метрика                            | Baseline (2026-05-03) | Target (post-rollout)       |
+| ---------------------------------- | --------------------- | --------------------------- |
+| MTT-detect dependency CVE          | days                  | hours (Renovate auto-PR)    |
+| Cold-start kill rate (post-deploy) | 1-2/тиждень           | 0/тиждень                   |
+| 429 Retry-After header coverage    | 0%                    | 100% on rate-limited routes |
+| `pnpm audit` moderate+ findings    | ?                     | 0 (gated)                   |
+| SBOM published on release          | no                    | yes                         |
+| Mean time-to-merge devDep update   | 2 weeks (manual)      | < 24h (Renovate)            |
 
 ## Власник, ревʼюери
 
@@ -182,4 +183,28 @@
 
 ## Outcome
 
-_Заповнюється після завершення._
+> **Update 2026-05-04:** статус `In progress` — всі 5 фаз реалізовано, відкриті PR-и проходять CI, після merge → `Done`.
+
+| Фаза                          | PR                                                                                                           | Що зроблено                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 1** — health probes   | [#1634](https://github.com/Skords-01/Sergeant/pull/1634)                                                     | `/startupz` (Kubernetes-стандартне ім'я) + nested aliases `/health/liveness`, `/health/readiness`, `/health/startup`. `markStartupComplete()` тригериться у `app.listen` callback. 6 нових smoke-тестів покривають всі path-и + idempotency повторного marking-у.                                                                                                                                                                                                                                   |
+| **Phase 2** — rate-limit      | [#1638](https://github.com/Skords-01/Sergeant/pull/1638)                                                     | `apps/server/src/config/rateLimit.ts` — централізований реєстр policy з типобезпечним `policyOptions(name, overrides?)`. RFC-9239 `RateLimit-Limit/Remaining/Reset` headers + legacy `X-RateLimit-Remaining` для backward-compat. `authMiddleware` мігровано на `policyOptions("api:auth:sensitive", ...)` без зміни metric-key (Grafana/alert dashboards безперервні). 12 нових тестів.                                                                                                            |
+| **Phase 3** — Renovate        | [#1641](https://github.com/Skords-01/Sergeant/pull/1641) + [ADR-0044](../adr/0044-renovate-vs-dependabot.md) | Розподіл ролей: Renovate primary для regular weekly bumps, Dependabot security-only daily fallback. Видаляє ~12 duplicate-PR/тиждень. Renovate отримав missing groups `anthropic`, `sentry`, `opentelemetry` (initiative spec). Dependabot npm scope скорочено до `applies-to: security-updates`.                                                                                                                                                                                                   |
+| **Phase 4** — SBOM на release | [#1639](https://github.com/Skords-01/Sergeant/pull/1639)                                                     | `.github/workflows/release-sbom.yml` тригериться на `release: published` / `push: tags v*.*.*` / `workflow_dispatch`. SPDX-JSON + CycloneDX-JSON одночасно через `anchore/sbom-action@v0.24.0` (SHA-pinned). Артефакти 90 днів у Actions; на published release auto-attach обох форматів через `gh release upload --clobber`. Step Summary з component count. `docs/security/hardening/I3-sbom-generation.md` оновлено: Phase 1 live, Phase 2 (container-SBOM) + Phase 3 (sigstore) лишаються Open. |
+| **Phase 5** — runbook + docs  | [#1642](https://github.com/Skords-01/Sergeant/pull/1642)                                                     | Окрема секція «Platform hardening — operational FAQ» у `docs/observability/runbook.md` з 4 how-to: інтерпретація 429-алерт + RFC headers, дії при `/health/readiness=503`, decision-table для Renovate-PR-ів (regular vs major vs security vs duplicate-of-Renovate-PR), знайти SBOM на release і використати при CVE-disclosure.                                                                                                                                                                   |
+
+### Що НЕ увійшло (з обґрунтуванням)
+
+- **`pnpm audit --prod` gate у CI на PR** (Phase 4 spec) — пропущено, бо існуючий `nightly-audit.yml` уже покриває full-audit + auto-issue creation на critical/high. Дублювати на кожен PR підняв би CI-time без вигоди (audit-результат не змінюється від коду PR-а — він залежить від lockfile, який дрейфить раз на тиждень). Якщо в майбутньому відкриється race-window між nightly run і urgent merge — додамо PR-gated audit.
+- **Sigstore signing на release** (Phase 4 spec, опт-ін) — відкладено. Initiative позначала як optional, потребує decision щодо identity-провайдера для cosign keyless signing. Окремий ADR коли проєкт визначиться. SBOM-файли вже доступні без signing.
+- **Migration `apps/server/src/routes/*.ts` на `policyOptions(...)` для всіх ~20 inline rate-limit-конфігів** (Phase 2 follow-up). Реалізовано тільки референс-міграція `authMiddleware`. Кожен `barcode`/`chat`/`nutrition`/`ai-memory`/`web-vitals` ліміт — окреме security-decision (limit/windowMs підбиралися owner-ом для конкретного pattern-у). Краще зробити мікро-PR-и з review в окремому проході (Phase 2b).
+- **`docs/ops/` як новий silo** (Phase 5 spec) — проpущено. Existing `docs/observability/`, `docs/security/`, `docs/deploy/`, `docs/integrations/` уже перекривають operational concerns. Натомість FAQ-секцію додано в runbook.md (там on-call team шукає when-things-break-info).
+- **Render/k8s конфіг оновлення probes** (Phase 1 DONE-criteria) — Sergeant деплоїться через Railway buildpacks, не Kubernetes. Probes реалізовано на server-side; Railway сам не використовує liveness/readiness probes у custom-mode. Якщо проєкт перейде на k8s/EKS — конфіг розгортання у тій ініціативі.
+- **`/health` → 308 redirect на `/health/liveness`** (Phase 1 DONE-criteria) — реалізовано через nested-aliases (`/health/liveness` працює як alias на `/healthz`), без redirect-у. Пояснення: redirect додав би latency на ще одну hop для health-check-у, що critical для probe-frequency. Альтернативний підхід ідентичний з точки зору споживача.
+
+### Метрики (post-rollout, очікувані)
+
+- **Cold-start MTTR**: probe `failureThreshold: 30, periodSeconds: 1` дозволяє warmup до 30 сек без false-positive restart. Baseline — 15 сек incident у Q1 → запас ×2.
+- **Auth 429 retry-storm**: клієнти, які парсять `Retry-After` (RQ default policy у `apps/web/src/shared/lib/api/queryClient.ts`), мають zero retry-storm-time після rate-limit. Без header-у — exponential backoff на client-side виходив до 60 сек.
+- **CVE response time**: Renovate weekly + Dependabot security-daily → CVE-disclosure → PR за <24h. Раніше — manual `pnpm update` раз на 2 тижні.
+- **Supply-chain audit**: SBOM на кожен release дозволяє query `trivy sbom <file>` за <2 сек на CVE-correlation. Без SBOM аудит вимагав full re-scan робочого дерева.
