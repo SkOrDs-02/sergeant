@@ -45,6 +45,7 @@ import { seedNutrition } from "./seedDemoData/seedNutrition";
 import { seedRoutine } from "./seedDemoData/seedRoutine";
 import { removeKey, writeRaw } from "./seedDemoData/utils";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
+import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 
 const SEEDED_KEYS = [
   DEMO_FLAG_KEY,
@@ -126,6 +127,15 @@ export function runDemoSeedFromUrl(): void {
     resetDemoData();
   } else if (mode === "1" || mode === "seed") {
     seedDemoData();
+    // Mirror the welcome-CTA path (`startDemoAndGoHome` in
+    // `WelcomeScreen.tsx`) so the URL handshake also lands in the
+    // demo funnel. The vocabulary `source: "deeplink"` is the one
+    // documented next to `ANALYTICS_EVENTS.DEMO_STARTED` in
+    // `packages/shared/src/lib/analyticsEvents.ts`.
+    // Both transports inside `trackEvent` (PostHog queue + the
+    // `hub_analytics_log_v1` ring-buffer) survive the immediate
+    // `window.location.replace()` below.
+    trackEvent(ANALYTICS_EVENTS.DEMO_STARTED, { source: "deeplink" });
   } else {
     return;
   }
