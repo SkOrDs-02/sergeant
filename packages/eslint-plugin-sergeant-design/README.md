@@ -281,6 +281,10 @@ const el = document.getElementById("foo") as HTMLDivElement;
 
 Блокує imports, що резолвляться у top-level flat-файл усередині `apps/web/src/shared/lib/`. Після reorg-у (PR #1479) утиліти живуть у п'яти тематичних піддиректоріях (`api/`, `storage/`, `modules/`, `adapters/`, `ui/`) — будь-який новий top-level файл re-flattens namespace і стирає grouping. Правило резолвить як `@shared/lib/<x>` (alias), так і відносні `./lib/<x>` / `../lib/<x>` / `../../shared/lib/<x>`, тож воно переживає будь-який майбутній рефактор стилів імпортів. Дозволені top-level імена: `index` (barrel), `api`, `storage`, `modules`, `adapters`, `ui` (subdirs themselves). Scope: тільки `apps/web/src/**`. Severity: **error**.
 
+### `sergeant-design/no-hash-router-in-modules`
+
+Канарка міграції на `react-router@7` ([initiative 0006](../../docs/initiatives/0006-frontend-routing-and-code-split.md)). Підсвічує hash-router callsite-и у `apps/web/src/modules/**`: імпорти з модулів, що містять `useHashRouter` / `useHashRoute` у шляху (включно з ре-експортом), іменовані `ImportSpecifier`-и `useHashRouter` / `useHashRoute`, прямі call-expression-и тих самих хуків і assignment-и `window.location.hash = ...` (та `location.hash = ...`). Тестові файли (`*.test.{ts,tsx}` / `*.spec.{ts,tsx}` / `__tests__/`) ігноруються — там legacy-shim навмисно мокаємо. Scope: тільки `apps/web/src/modules/**` (не `core/`, не `shared/`, не `apps/server/`). Severity: **warn** під час міграції, переходить у **error** після Phase 2 (per-domain route migration).
+
 ## Запуск тестів
 
 ```sh

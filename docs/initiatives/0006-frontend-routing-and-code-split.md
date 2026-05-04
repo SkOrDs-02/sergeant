@@ -1,7 +1,7 @@
 # 0006 — Frontend routing migration + route-based code-split
 
 > **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** Proposed
+> **Status:** In progress (Phase 0 — lint canary shipped 2026-05-04)
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks
@@ -161,4 +161,38 @@
 
 ## Outcome
 
-_Заповнюється після завершення._
+### Phase 0 — lint canary + baseline (2026-05-04)
+
+| Що                                                                | Як зафіксовано                                                                                                                                                                                                                                                                                                   |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ESLint rule `sergeant-design/no-hash-router-in-modules`           | `packages/eslint-plugin-sergeant-design/index.js` — детектить імпорт-шляхи з `useHashRouter`/`useHashRoute`, named-specifier-и `useHashRouter`/`useHashRoute`, direct-call-и тих самих хуків і `window.location.hash = ...` / `location.hash = ...` assignment-и. 17 unit-тестів покривають happy / sad / scope. |
+| Wired як `warn` у `apps/web/src/modules/**`                       | `eslint.config.js` — окремий блок одразу після `forbid-shell-only-feature`. Тестові файли (`*.test.{ts,tsx}` / `*.spec.{ts,tsx}` / `__tests__/`) ігноруються, бо там mock-аємо legacy-shim навмисно.                                                                                                             |
+| Не блокує існуючий код, видно у CI / vite-overlay                 | Severity = `warn` → 18 baseline-warnings, котрі не валять lint-jobs, але видно у lint-staged + CI summary.                                                                                                                                                                                                       |
+| Документовано baseline (нижче) як precondition для Phase 1 metric | Phase 5 (cleanup) піднімає rule до `error` тільки тоді, коли цей лічильник = 0.                                                                                                                                                                                                                                  |
+
+### Baseline hash-router callsites (snapshot 2026-05-04)
+
+`pnpm exec eslint apps/web/src/modules --format json` повідомляє **18 warning-ів у 10 файлах** (rule `sergeant-design/no-hash-router-in-modules`):
+
+| Модуль      | Файлів | Warnings | Замітки                                                                                                                     |
+| ----------- | ------ | -------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `fizruk`    | 7      | 14       | Найбільше `window.location.hash = "#workouts"` / `#exercise/<id>` assignment-ів у `Dashboard`, `Exercise`, `TodayPlanCard`. |
+| `finyk`     | 2      | 3        | Власний хук `hooks/useHashRouter.ts` (1 import + 1 assignment) + 1 виклик у `FinykApp.tsx`.                                 |
+| `nutrition` | 1      | 1        | `lib/nutritionRouter.ts` — самописний router-helper.                                                                        |
+
+Точний перелік call-site-ів (файл + рядок) виходить з тієї самої команди:
+
+```sh
+pnpm exec eslint apps/web/src/modules --rule '{"sergeant-design/no-hash-router-in-modules":"warn"}' --format json \
+  | jq -r '.[].messages[]? | select(.ruleId=="sergeant-design/no-hash-router-in-modules") | "\(.line):\(.column)"'
+```
+
+DOR для Phase 1 (`feat-react-router-setup`): після введення `<RouterProvider />` цей baseline має почати **зменшуватись** з кожним PR-ом Phase 2; новий callsite поза тестами автоматично fail-ить локальний lint-staged як warning, що видно у PR-summary.
+
+### Що НЕ увійшло у Phase 0 (з обґрунтуванням)
+
+- `react-router@7` не доданий — це Phase 1; rule свідомо стоїть до залежності, щоб зафіксувати baseline без ризику регресій рантайму.
+- `<HashRedirect />` shim не реалізовано — Phase 3, після per-route migration; інакше hash-redirect ламає `useHashRouter` під час перехідного стану.
+- Auto-fix-ера не додано — заміна `useHashRouter()` на `useNavigate()` потребує контексту (router-context, відсутній до Phase 1); ручна міграція робиться по одному модулю на PR (Phase 2).
+- Rule НЕ покриває `apps/mobile/**` / `apps/server/**` / `apps/console/**` — мобільний має React Navigation (інша stack), сервер — без DOM, console — Telegram bot.
+- Rule НЕ блокує `addEventListener("hashchange", ...)` — підписка на hashchange валідна для compat-shim Phase 3 і тестів.

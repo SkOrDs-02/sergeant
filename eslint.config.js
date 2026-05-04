@@ -271,6 +271,22 @@ export default [
       "sergeant-design/forbid-shell-only-feature": "error",
     },
   },
+  // Hash-router migration canary — initiative 0006 (frontend routing &
+  // code-split). `apps/web` зараз стоїть на самописному hash-router
+  // (`useHashRouter` / `useHashRoute` / raw `window.location.hash = ...`
+  // assignments) у ~14 модульних callsite-ах; план — поетапна міграція на
+  // `react-router@7` з route-based code-split. Поки міграція in-flight,
+  // ця rule працює як **warn-only canary**: підсвічує нові callsite-и в
+  // `apps/web/src/modules/**` (vite-overlay, lint-staged, CI lint), але
+  // НЕ блокує існуючі. Після завершення Phase 2 (per-domain route
+  // міграція) rule піднімається до `error`. Реалізація + поточний baseline
+  // у `docs/initiatives/0006-frontend-routing-and-code-split.md`.
+  {
+    files: ["apps/web/src/modules/**/*.{ts,tsx}"],
+    rules: {
+      "sergeant-design/no-hash-router-in-modules": "warn",
+    },
+  },
   // Import-extension hygiene — bans `.js`/`.jsx`/`.ts`/`.tsx`/`.mjs`/`.cjs`
   // suffixes in import specifiers for the bundler-fed frontend apps. Codemod
   // #3 stripped 436 historical extension-suffixed imports in `apps/web/src`

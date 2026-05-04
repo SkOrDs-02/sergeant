@@ -2714,6 +2714,114 @@ const forbidShellOnlyFeature = {
   },
 };
 
+// ── no-hash-router-in-modules ───────────────────────────────────────────────
+//
+// Initiative 0006 (frontend routing & code-split) мігрує `apps/web` з
+// самописного hash-router (`useHashRouter`/`useHashRoute` + raw
+// `window.location.hash = ...` assignments) на `react-router@7` з
+// route-based code-split. Поки міграція in-flight, ця rule — **warn-level**
+// canary: не блокує рефакторинг, але висвічує всі нові hash-router
+// callsites у Vite/lint-overlay і фіксує baseline для автоматичних
+// progress-перевірок.
+//
+// Scope:
+//   - `apps/web/src/modules/**` — модулі мають вже не вводити нові
+//     hash-callsites; під час Phase 2 кожен модуль міняє свої callsites
+//     на react-router hooks.
+//   - Тести (`*.test.{ts,tsx}`) пропускаємо — там часто використовується
+//     mock window.location.hash для перевірки legacy-shim-у.
+//
+// Pattern detection:
+//   1. Імпорти з `*useHashRouter*` / `*useHashRoute*` модуль-ів
+//      (включно з `apps/web/src/shared/hooks/useHashRoute.ts`,
+//      `apps/web/src/modules/finyk/hooks/useHashRouter.ts`).
+//   2. Identifier-call `useHashRouter(...)` / `useHashRoute(...)`.
+//   3. Assignment `window.location.hash = ...` або `location.hash = ...`.
+//
+// Звіт через `messageId: "hashRouter"` з посиланням на initiative 0006.
+
+const NO_HASH_ROUTER_MESSAGE =
+  "hash-router callsite виявлено: initiative 0006 (frontend routing & code-split) поступово мігрує `apps/web` на `react-router@7`. Уникай нових `useHashRouter` / `useHashRoute` / `window.location.hash = ...` callsite-ів у `apps/web/src/modules/**` — після завершення Phase 2 ця rule переходить у `error`. Деталі: docs/initiatives/0006-frontend-routing-and-code-split.md.";
+
+const HASH_ROUTER_HOOK_NAMES = new Set(["useHashRouter", "useHashRoute"]);
+
+const HASH_ROUTER_PATH_RE = /(?:^|\/)apps\/web\/src\/modules\//;
+const HASH_ROUTER_TEST_RE =
+  /(?:\.test|\.spec)\.(?:t|j)sx?$|(?:^|\/)__tests__\//;
+
+function isHashLocationMember(node) {
+  // matches `window.location.hash` or `location.hash` (on the LEFT of an
+  // assignment; we filter to AssignmentExpression at call-site).
+  if (!node || node.type !== "MemberExpression") return false;
+  const prop = node.property;
+  if (!prop || prop.type !== "Identifier" || prop.name !== "hash") return false;
+  const obj = node.object;
+  if (!obj) return false;
+  if (obj.type === "Identifier" && obj.name === "location") return true;
+  if (
+    obj.type === "MemberExpression" &&
+    obj.property?.type === "Identifier" &&
+    obj.property.name === "location" &&
+    obj.object?.type === "Identifier" &&
+    obj.object.name === "window"
+  ) {
+    return true;
+  }
+  return false;
+}
+
+const noHashRouterInModules = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Discourage `useHashRouter` / `useHashRoute` / raw `window.location.hash = ...` callsites inside `apps/web/src/modules/**`. Initiative 0006 migrates the web app to `react-router@7`; this rule is a warn-level canary during the migration and graduates to `error` once Phase 2 completes.",
+    },
+    schema: [],
+    messages: { hashRouter: NO_HASH_ROUTER_MESSAGE },
+  },
+  create(context) {
+    const filename = context.filename ?? context.getFilename?.() ?? "";
+    const norm = filename.replace(/\\/g, "/");
+    if (!HASH_ROUTER_PATH_RE.test(norm)) return {};
+    if (HASH_ROUTER_TEST_RE.test(norm)) return {};
+    return {
+      ImportDeclaration(node) {
+        const src =
+          typeof node.source?.value === "string" ? node.source.value : "";
+        if (/useHashRouter|useHashRoute/.test(src)) {
+          context.report({ node, messageId: "hashRouter" });
+          return;
+        }
+        for (const spec of node.specifiers ?? []) {
+          if (
+            spec.type === "ImportSpecifier" &&
+            spec.imported?.type === "Identifier" &&
+            HASH_ROUTER_HOOK_NAMES.has(spec.imported.name)
+          ) {
+            context.report({ node: spec, messageId: "hashRouter" });
+          }
+        }
+      },
+      CallExpression(node) {
+        const callee = node.callee;
+        if (
+          callee?.type === "Identifier" &&
+          HASH_ROUTER_HOOK_NAMES.has(callee.name)
+        ) {
+          context.report({ node, messageId: "hashRouter" });
+        }
+      },
+      AssignmentExpression(node) {
+        if (node.operator !== "=") return;
+        if (isHashLocationMember(node.left)) {
+          context.report({ node, messageId: "hashRouter" });
+        }
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
@@ -2738,6 +2846,7 @@ const plugin = {
     "no-arbitrary-text-size": noArbitraryTextSize,
     "no-flat-shared-lib": noFlatSharedLib,
     "forbid-shell-only-feature": forbidShellOnlyFeature,
+    "no-hash-router-in-modules": noHashRouterInModules,
   },
 };
 
@@ -2768,6 +2877,7 @@ export {
   NO_ARBITRARY_TEXT_SIZE_MESSAGE,
   NO_FLAT_SHARED_LIB_MESSAGE,
   NO_FLAT_SHARED_LIB_ALLOWED_TOP,
+  NO_HASH_ROUTER_MESSAGE,
 };
 
 export default plugin;
