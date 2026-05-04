@@ -1,6 +1,6 @@
 # Access Policy
 
-> **Last validated:** 2026-05-04 by @steppupa. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 Canonical policy for privileged access in Sergeant. This policy is optimized for a Founder+1 operating model: minimal ceremony, explicit ownership, and zero reliance on tribal memory.
@@ -44,10 +44,10 @@ Canonical policy for privileged access in Sergeant. This policy is optimized for
 
 ## Required operating flows
 
-- Access grant: [grant-privileged-access.md](../playbooks/grant-privileged-access.md)
-- Access revoke: [revoke-privileged-access.md](../playbooks/revoke-privileged-access.md)
-- Access review: [run-access-review.md](../playbooks/run-access-review.md)
-- Suspected compromise: [respond-to-suspected-account-compromise.md](../playbooks/respond-to-suspected-account-compromise.md)
+- Access grant: [access-governance.md § Grant privileged access](../playbooks/access-governance.md#1-grant-privileged-access)
+- Access revoke: [access-governance.md § Revoke privileged access](../playbooks/access-governance.md#2-revoke-privileged-access)
+- Access review: [access-governance.md § Periodic access review](../playbooks/access-governance.md#3-periodic-access-review)
+- Suspected compromise: [access-governance.md § Suspected account compromise](../playbooks/access-governance.md#4-suspected-account-compromise)
 
 ## Runtime security knobs
 

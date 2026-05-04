@@ -8,6 +8,10 @@
  */
 
 import { Banner } from "@shared/components/ui/Banner";
+import {
+  DataState,
+  type DataStateQueryLike,
+} from "@shared/components/ui/DataState";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { SkeletonHabitRow } from "@shared/components/ui/Skeleton";
@@ -46,6 +50,25 @@ export function RoutineTimeline({
   onPullRefresh,
   onPullRefreshError,
 }: RoutineTimelineProps) {
+  const calendarBusy = isHabitPending && mainTab === "calendar";
+  const calendarQuery: DataStateQueryLike<true> = {
+    data: calendarBusy ? undefined : (true as const),
+    isLoading: calendarBusy,
+  };
+
+  const calendarLoadingSkeleton = (
+    <div className="px-4 pt-2 space-y-2 motion-safe:animate-pulse">
+      {[0, 1, 2, 3].map((i) => (
+        <SkeletonHabitRow
+          key={i}
+          shimmer
+          module="routine"
+          style={{ animationDelay: `${i * 40}ms` }}
+        />
+      ))}
+    </div>
+  );
+
   return (
     <div className="flex-1 overflow-hidden flex flex-col min-h-0">
       <PullToRefresh
@@ -84,20 +107,12 @@ export function RoutineTimeline({
             actions={calendarActions}
           >
             <SectionErrorBoundary title="Не вдалось показати «Календар»">
-              {isHabitPending && mainTab === "calendar" ? (
-                <div className="px-4 pt-2 space-y-2 motion-safe:animate-pulse">
-                  {[0, 1, 2, 3].map((i) => (
-                    <SkeletonHabitRow
-                      key={i}
-                      shimmer
-                      module="routine"
-                      style={{ animationDelay: `${i * 40}ms` }}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <RoutineCalendarPanel hidden={mainTab !== "calendar"} />
-              )}
+              <DataState
+                query={calendarQuery}
+                skeleton={calendarLoadingSkeleton}
+              >
+                {() => <RoutineCalendarPanel hidden={mainTab !== "calendar"} />}
+              </DataState>
             </SectionErrorBoundary>
           </RoutineCalendarProvider>
 

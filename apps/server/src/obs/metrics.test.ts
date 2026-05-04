@@ -16,6 +16,9 @@ import {
   appBuildInfo,
   aiRequestDurationMs,
   aiRequestsTotal,
+  syncOpLogApplyTotal,
+  syncOpLogPullLagMs,
+  syncOpLogPullQueueDepth,
 } from "./metrics.js";
 
 describe("metrics registry — `app_build_info` gauge", () => {
@@ -78,5 +81,56 @@ describe("metrics registry — AI per-endpoint duration histogram", () => {
     expect(text).toMatch(
       /ai_request_duration_ms_bucket\{.*?endpoint="chat".*?outcome="ok".*?\}/,
     );
+  });
+});
+
+describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
+  it("`sync_op_log_apply_total` зареєстрований із labels {table, status, reason}", () => {
+    const metric = register.getSingleMetric("sync_op_log_apply_total");
+    expect(metric).toBe(syncOpLogApplyTotal);
+
+    const lag = register.getSingleMetric("sync_op_log_pull_lag_ms");
+    expect(lag).toBe(syncOpLogPullLagMs);
+
+    const depth = register.getSingleMetric("sync_op_log_pull_queue_depth");
+    expect(depth).toBe(syncOpLogPullQueueDepth);
+  });
+
+  it("апдейтиться через .inc({table,status,reason}) і експортується з повним label-set-ом", async () => {
+    syncOpLogApplyTotal.inc({
+      table: "nutrition_meals",
+      status: "rejected",
+      reason: "tombstoned",
+    });
+    syncOpLogApplyTotal.inc({
+      table: "nutrition_meals",
+      status: "applied",
+      reason: "none",
+    });
+    const text = await register.metrics();
+    expect(text).toContain("# TYPE sync_op_log_apply_total counter");
+    // SLO/dashboard PromQL: `sum by (table, status) (rate(...))`. Якщо
+    // лейбли drift-нуть, дашборд тихо обмалюється — тому фіксуємо
+    // повний набір labels у експорті.
+    expect(text).toMatch(
+      /sync_op_log_apply_total\{table="nutrition_meals",status="rejected",reason="tombstoned"\} \d+/,
+    );
+    expect(text).toMatch(
+      /sync_op_log_apply_total\{table="nutrition_meals",status="applied",reason="none"\} \d+/,
+    );
+  });
+
+  it("histogram метрики `sync_op_log_pull_lag_ms` і `sync_op_log_pull_queue_depth` мають TYPE=histogram", async () => {
+    syncOpLogPullLagMs.observe(150);
+    syncOpLogPullQueueDepth.observe(42);
+    const text = await register.metrics();
+    expect(text).toContain("# TYPE sync_op_log_pull_lag_ms histogram");
+    expect(text).toContain("# TYPE sync_op_log_pull_queue_depth histogram");
+    // Bucket borders, на які зав'язані SLO-алерти (SSE happy-path <100ms,
+    // polling-fallback <5s) — фіксуємо у тесті, щоб випадковий refactor
+    // bucket-ів не зламав алерти.
+    expect(text).toMatch(/sync_op_log_pull_lag_ms_bucket\{le="100"\}/);
+    expect(text).toMatch(/sync_op_log_pull_lag_ms_bucket\{le="5000"\}/);
+    expect(text).toMatch(/sync_op_log_pull_queue_depth_bucket\{le="200"\}/);
   });
 });

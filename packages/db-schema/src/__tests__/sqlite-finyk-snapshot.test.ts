@@ -14,6 +14,9 @@ import {
   finykTxCategories,
   finykTxSplits,
   finykMonoDebtLinks,
+  finykMonoTransactions,
+  finykMonoAccounts,
+  finykMonoAccountSnapshots,
   finykNetworthHistory,
   finykPrefs,
 } from "../sqlite/finyk.js";
@@ -277,16 +280,92 @@ describe("sqlite/finykPrefs schema snapshot", () => {
 });
 
 // ---------------------------------------------------------------------
+// Group 5 — Mono cache mirror (Stage 4 / PR #038)
+// ---------------------------------------------------------------------
+
+describe("sqlite/finykMonoTransactions schema snapshot", () => {
+  const config = getTableConfig(finykMonoTransactions);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("finyk_mono_transactions");
+  });
+
+  it("declares (user_id, tx_id) composite PK", () => {
+    expect(config.primaryKeys).toHaveLength(1);
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "tx_id",
+    ]);
+  });
+
+  it("declares mono_time INTEGER and data_json TEXT NOT NULL", () => {
+    const cols = Object.fromEntries(config.columns.map((c) => [c.name, c]));
+    expect(cols["mono_time"]!.dataType).toBe("number");
+    expect(cols["mono_time"]!.notNull).toBe(true);
+    expect(cols["data_json"]!.dataType).toBe("string");
+    expect(cols["data_json"]!.notNull).toBe(true);
+  });
+
+  it("declares user_time + user_account `_lite` indexes", () => {
+    const idxNames = config.indexes.map((i) => i.config.name);
+    expect(idxNames).toContain("finyk_mono_transactions_user_time_idx_lite");
+    expect(idxNames).toContain("finyk_mono_transactions_user_account_idx_lite");
+  });
+});
+
+describe("sqlite/finykMonoAccounts schema snapshot", () => {
+  const config = getTableConfig(finykMonoAccounts);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("finyk_mono_accounts");
+  });
+
+  it("declares (user_id, account_id) composite PK", () => {
+    expect(config.primaryKeys).toHaveLength(1);
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "account_id",
+    ]);
+  });
+});
+
+describe("sqlite/finykMonoAccountSnapshots schema snapshot", () => {
+  const config = getTableConfig(finykMonoAccountSnapshots);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("finyk_mono_account_snapshots");
+  });
+
+  it("declares (user_id, account_id, snapshot_at) composite PK", () => {
+    expect(config.primaryKeys).toHaveLength(1);
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "account_id",
+      "snapshot_at",
+    ]);
+  });
+
+  it("declares balance INTEGER NOT NULL and credit_limit INTEGER nullable", () => {
+    const cols = Object.fromEntries(config.columns.map((c) => [c.name, c]));
+    expect(cols["balance"]!.dataType).toBe("number");
+    expect(cols["balance"]!.notNull).toBe(true);
+    expect(cols["credit_limit"]!.dataType).toBe("number");
+    expect(cols["credit_limit"]!.notNull).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------
 // Migrations export contract
 // ---------------------------------------------------------------------
 
 describe("sqlite/finyk migrations exports", () => {
-  it("exports a single 001_finyk_tables.sql migration", () => {
-    expect(FINYK_CLIENT_MIGRATIONS).toHaveLength(1);
+  it("exports the ordered finyk migrations list (001 + 002)", () => {
+    expect(FINYK_CLIENT_MIGRATIONS).toHaveLength(2);
     expect(FINYK_CLIENT_MIGRATIONS[0]!.name).toBe("001_finyk_tables.sql");
+    expect(FINYK_CLIENT_MIGRATIONS[1]!.name).toBe("002_finyk_mono_mirror.sql");
   });
 
-  it("inline SQL contains every finyk_* table CREATE", () => {
+  it("001 inline SQL contains every Stage-4 finyk_* table CREATE", () => {
     const sql = FINYK_CLIENT_MIGRATIONS[0]!.sql;
     for (const table of [
       "finyk_hidden_accounts",
@@ -304,6 +383,17 @@ describe("sqlite/finyk migrations exports", () => {
       "finyk_manual_expenses",
       "finyk_tx_filters",
       "finyk_prefs",
+    ]) {
+      expect(sql).toMatch(new RegExp(`CREATE TABLE IF NOT EXISTS ${table}\\b`));
+    }
+  });
+
+  it("002 inline SQL contains every Mono mirror table CREATE", () => {
+    const sql = FINYK_CLIENT_MIGRATIONS[1]!.sql;
+    for (const table of [
+      "finyk_mono_transactions",
+      "finyk_mono_accounts",
+      "finyk_mono_account_snapshots",
     ]) {
       expect(sql).toMatch(new RegExp(`CREATE TABLE IF NOT EXISTS ${table}\\b`));
     }

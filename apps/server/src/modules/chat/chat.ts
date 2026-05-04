@@ -17,8 +17,10 @@ import type { WithAiQuotaRefund } from "./aiQuota.js";
 import { TOOLS, SYSTEM_PREFIX, SYSTEM_PROMPT_VERSION } from "./tools.js";
 import { recordToolProposals, recordToolExecutions } from "./toolMetrics.js";
 import { truncateToolResults } from "./toolResultTruncation.js";
+import { wrapAndScanToolResults } from "./toolOutputWrapping.js";
 import { als } from "../../obs/requestContext.js";
 import { ExternalServiceError } from "../../obs/errors.js";
+import { chatToolIterationCapHitTotal } from "../../obs/metrics.js";
 import { getSessionUser } from "../../auth.js";
 import { buildRagContext } from "../ai-memory/ragContext.js";
 
@@ -159,6 +161,43 @@ interface StreamEvent {
  * + великий weekly digest. Env-override — для тестів.
  */
 const MAX_TEXT_CONTINUATIONS = env.CHAT_MAX_TEXT_CONTINUATIONS;
+
+/**
+ * M7 — hard cap on `tool_use` blocks per round-trip. Орthogonal до
+ * `MAX_TEXT_CONTINUATIONS`: текстовий continuation не зменшує цей бюджет, і
+ * навпаки. Кожен round-trip клієнт↔сервер на `/api/chat` несе максимум один
+ * `tool_calls_raw` blob (від клієнта) або один model-output (від Anthropic) —
+ * якщо будь-який з них містить >MAX_TOOL_ITERATIONS блоків `tool_use`, ми
+ * розриваємо цикл з `422` замість того, щоб дозволити модель/клієнту
+ * розкручувати tool-loop безкінечно (DoS / runaway-cost).
+ *
+ * Поріг 8 узгоджено з картою: реальні chat-сценарії ніколи не потребують
+ * >3-х паралельних tool-вызовів в одному турі (брифінг, sync-стан + питання
+ * про конкретну категорію — це 2-3). Запас ×2-3 закриває forward-looking
+ * розширення (memory + cross-module комбіновані інструменти) без false
+ * positive.
+ *
+ * See `docs/security/hardening/M7-chat-tool-iteration-cap.md`.
+ */
+export const MAX_TOOL_ITERATIONS = 8;
+
+/**
+ * Структурований 422 для cap-overflow. `code` — стабільний string для
+ * клієнта і Sentry-фільтрів; `boundary` дублює лейбл метрики
+ * `chat_tool_iteration_cap_hit_total`.
+ */
+function rejectWithToolIterationCap(
+  res: Response,
+  boundary: "anthropic_response" | "client_request",
+  observed: number,
+): void {
+  chatToolIterationCapHitTotal.inc({ boundary });
+  res.status(422).json({
+    error: "Перевищено ліміт tool-ітерацій у запиті",
+    code: "MAX_TOOL_ITERATIONS",
+    detail: { boundary, observed, max: MAX_TOOL_ITERATIONS },
+  });
+}
 
 /**
  * Викликає `anthropicMessages` у циклі: якщо відповідь обірвалася на max_tokens
@@ -319,6 +358,25 @@ export default async function handler(
 
   // Другий крок: клієнт виконав tool calls і повертає результати
   if (tool_results && tool_calls_raw) {
+    // M7 — hard cap на кількість tool_use-блоків з клієнтського
+    // боку. Schema допускає до 20 (`ToolResult.max(20)`), але семантично
+    // легітимний потік ніколи не перевищує MAX_TOOL_ITERATIONS у одному
+    // round-trip-і. Перевіряємо ДО `recordToolExecutions`, щоб маніпульований
+    // payload не отруював `chat_tool_invocations_total{outcome="executed"}`.
+    const incomingToolUses = tool_calls_raw.filter(
+      (b) =>
+        typeof b === "object" &&
+        b !== null &&
+        (b as { type?: unknown }).type === "tool_use",
+    );
+    if (incomingToolUses.length > MAX_TOOL_ITERATIONS) {
+      rejectWithToolIterationCap(
+        res,
+        "client_request",
+        incomingToolUses.length,
+      );
+      return;
+    }
     recordToolExecutions(tool_results, tool_calls_raw);
     // Великі `tool_result`-блоби (брифінги, місячні digest-и) з'їдають
     // бюджет вхідних токенів і зривають continuation. Truncate на сервері,
@@ -327,7 +385,16 @@ export default async function handler(
     const normalizedToolResults = truncateToolResults(tool_results, {
       requestId,
     });
-    const toolResultMessages = normalizedToolResults.map((r) => ({
+    // M8 — обгортаємо tool_result-content у `<tool_output tool="...">` envelope
+    // і скануємо на prompt-injection маркери. SYSTEM_PREFIX (v8+) інструктує
+    // модель трактувати все всередині envelope як ДАНІ. Це захищає від
+    // ситуацій, коли скомпрометований upstream (Mono webhook, n8n response)
+    // підкладає інструкції типу "ignore previous instructions and ...".
+    const wrappedToolResults = wrapAndScanToolResults(
+      normalizedToolResults,
+      tool_calls_raw,
+    );
+    const toolResultMessages = wrappedToolResults.map((r) => ({
       type: "tool_result" as const,
       tool_use_id: r.tool_use_id,
       content: r.content,
@@ -464,6 +531,19 @@ export default async function handler(
     .filter((b) => b.type === "text")
     .map((b) => b.text ?? "")
     .join("\n");
+
+  // M7 — model-side cap. Anthropic може повернути довгий ланцюг tool-call-ів
+  // без тексту: malicious / malfunctioning prompt здатен розкрутити
+  // tool_use → tool_result → tool_use round-tripами безкінечно. Якщо в
+  // одній відповіді >MAX_TOOL_ITERATIONS блоків `tool_use` — це вже runaway,
+  // refundимо квоту і повертаємо 422 ДО `recordToolProposals`, щоб не
+  // забруднити `chat_tool_invocations_total{outcome="proposed"}` легітимними
+  // інструментами зі сміттєвої відповіді.
+  if (toolUses.length > MAX_TOOL_ITERATIONS) {
+    await refundQuotaOnUpstreamFailure(req);
+    rejectWithToolIterationCap(res, "anthropic_response", toolUses.length);
+    return;
+  }
 
   if (toolUses.length > 0) {
     recordToolProposals(content);

@@ -102,17 +102,18 @@ afterEach(() => {
 // =========================================================================
 describe("Offline → many writes → coalesce", () => {
   it("consecutive pushDirty-style enqueues coalesce into a single push entry with merged modules", () => {
-    // PR #026 retired 'routine', PR #030 retired 'fizruk' and PR #034
-    // retired 'nutrition' from SYNC_MODULES; only `finyk` and `profile`
-    // remain. The queue helper itself accepts any string as a module
-    // name, but we keep the fixture aligned with the post-retirement
-    // registry. To still exercise the multi-module coalesce, use both
-    // remaining modules plus a second `finyk` write to assert
+    // PR #026 retired `routine`, PR #030 retired `fizruk`, PR #034
+    // retired `nutrition` and PR #039 retired `finyk` from
+    // SYNC_MODULES; only `profile` remains. The queue helper itself
+    // accepts any string as a module name (the SYNC_MODULES filter
+    // runs only at collect/replay time), so multi-module coalescing
+    // is asserted with `profile` plus a synthetic `_legacy_finyk`
+    // placeholder — plus a second `_legacy_finyk` write to assert
     // overlay-by-key merging.
     addToOfflineQueue({
       type: "push",
       modules: {
-        finyk: {
+        _legacy_finyk: {
           data: { budgets: [100] },
           clientUpdatedAt: "2025-01-01T00:00:00.000Z",
         },
@@ -121,7 +122,7 @@ describe("Offline → many writes → coalesce", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
-        finyk: {
+        _legacy_finyk: {
           data: { budgets: [100], subs: ["netflix"] },
           clientUpdatedAt: "2025-01-01T00:01:00.000Z",
         },
@@ -140,8 +141,11 @@ describe("Offline → many writes → coalesce", () => {
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
     expect(q[0].type).toBe("push");
-    expect(Object.keys(q[0].modules).sort()).toEqual(["finyk", "profile"]);
-    expect(q[0].modules.finyk.data).toEqual({
+    expect(Object.keys(q[0].modules).sort()).toEqual([
+      "_legacy_finyk",
+      "profile",
+    ]);
+    expect(q[0].modules._legacy_finyk.data).toEqual({
       budgets: [100],
       subs: ["netflix"],
     });
@@ -152,8 +156,8 @@ describe("Offline → many writes → coalesce", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
-        finyk: {
-          data: { budgets: [100] },
+        profile: {
+          data: { displayName: "a" },
           clientUpdatedAt: "2025-01-01T00:00:00.000Z",
         },
       },
@@ -161,8 +165,8 @@ describe("Offline → many writes → coalesce", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
-        finyk: {
-          data: { budgets: [200, 300] },
+        profile: {
+          data: { displayName: "b" },
           clientUpdatedAt: "2025-01-01T00:05:00.000Z",
         },
       },
@@ -170,7 +174,7 @@ describe("Offline → many writes → coalesce", () => {
 
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].modules.finyk.data).toEqual({ budgets: [200, 300] });
+    expect(q[0].modules.profile.data).toEqual({ displayName: "b" });
   });
 
   it("identical payloads are idempotent (no extra write/event)", () => {
@@ -178,7 +182,7 @@ describe("Offline → many writes → coalesce", () => {
     window.addEventListener(SYNC_STATUS_EVENT, listener);
     try {
       const payload = {
-        finyk: {
+        profile: {
           data: { v: "same" },
           clientUpdatedAt: "2025-01-01T00:00:00.000Z",
         },
@@ -202,7 +206,7 @@ describe("Offline → many writes → coalesce", () => {
       addToOfflineQueue({
         type: "push",
         modules: {
-          finyk: {
+          profile: {
             data: { a: 1 },
             clientUpdatedAt: "2025-01-01T00:00:00.000Z",
           },
@@ -211,7 +215,7 @@ describe("Offline → many writes → coalesce", () => {
       addToOfflineQueue({
         type: "push",
         modules: {
-          nutrition: {
+          _legacy_finyk: {
             data: { b: 2 },
             clientUpdatedAt: "2025-01-01T00:01:00.000Z",
           },
@@ -232,8 +236,10 @@ describe("Reconnect replay (happy path)", () => {
   it("drains the queue and calls syncApi.pushAll with collected modules", async () => {
     const replayOfflineQueue = await freshReplay();
     // Seed the queue with a pre-populated entry. PR #030 retired
-    // 'fizruk' and PR #034 retired 'nutrition' from SYNC_MODULES;
-    // the remaining valid modules are `finyk` and `profile`.
+    // `fizruk`, PR #034 retired `nutrition` and PR #039 retired
+    // `finyk` from SYNC_MODULES; only `profile` survives the
+    // collect-time filter. Legacy `finyk` rows already in the queue
+    // are dropped silently during replay.
     addToOfflineQueue({
       type: "push",
       modules: {
@@ -250,14 +256,14 @@ describe("Reconnect replay (happy path)", () => {
     expect(getOfflineQueue()).toHaveLength(1);
 
     mockedPushAll.mockResolvedValueOnce({
-      results: { finyk: { ok: true }, profile: { ok: true } },
+      results: { profile: { ok: true } },
     });
 
     await replayOfflineQueue();
 
     expect(mockedPushAll).toHaveBeenCalledTimes(1);
     const pushed = mockedPushAll.mock.calls[0][0];
-    expect(pushed).toHaveProperty("finyk");
+    expect(pushed).not.toHaveProperty("finyk");
     expect(pushed).toHaveProperty("profile");
     // Queue should be cleared after successful push
     expect(getOfflineQueue()).toEqual([]);
@@ -268,6 +274,7 @@ describe("Reconnect replay (happy path)", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
+        // Legacy `finyk` row — dropped at collect time after PR #039.
         finyk: {
           data: { v: 1 },
           clientUpdatedAt: "2025-01-01T00:00:00.000Z",
@@ -277,11 +284,11 @@ describe("Reconnect replay (happy path)", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
-        // PR #026 видалив 'routine', PR #030 — 'fizruk' і PR #034
-        // — 'nutrition' з SYNC_MODULES (всі три тепер SQLite-only).
-        // Залишаються 'finyk' і 'profile' як валідні модулі для
-        // перевірки cross-module coalescing; додаємо другий запис
-        // 'finyk' щоб зафіксувати overlay-by-key merging.
+        // PR #026 retired `routine`, PR #030 retired `fizruk`,
+        // PR #034 retired `nutrition` and PR #039 retired `finyk`
+        // from SYNC_MODULES (all SQLite-only now). Only `profile`
+        // remains, so the cross-module coalesce assertion only
+        // checks `profile` survives the collect filter.
         profile: {
           data: { v: 2 },
           clientUpdatedAt: "2025-01-01T00:02:00.000Z",
@@ -291,6 +298,8 @@ describe("Reconnect replay (happy path)", () => {
     addToOfflineQueue({
       type: "push",
       modules: {
+        // Second legacy `finyk` write — also dropped, but exercises
+        // the queue-side overlay-by-key merging path.
         finyk: {
           data: { v: 1, extra: true },
           clientUpdatedAt: "2025-01-01T00:03:00.000Z",
@@ -304,7 +313,7 @@ describe("Reconnect replay (happy path)", () => {
 
     expect(getOfflineQueue()).toEqual([]);
     const pushed = mockedPushAll.mock.calls[0][0];
-    expect(Object.keys(pushed).sort()).toEqual(["finyk", "profile"]);
+    expect(Object.keys(pushed).sort()).toEqual(["profile"]);
   });
 
   it("is a no-op when the queue is empty", async () => {
@@ -341,11 +350,14 @@ describe("Reconnect replay (happy path)", () => {
 describe("Reconnect replay (server error)", () => {
   it("preserves the queue when pushAll rejects with a 5xx ApiError", async () => {
     const replayOfflineQueue = await freshReplay();
+    // PR #039: `finyk` retired from SYNC_MODULES, so a finyk-only
+    // queue entry would now be dropped at collect time — use
+    // `profile` so the replay actually invokes pushAll.
     addToOfflineQueue({
       type: "push",
       modules: {
-        finyk: {
-          data: { v: 1 },
+        profile: {
+          data: { displayName: "sergeant" },
           clientUpdatedAt: "2025-01-01T00:00:00.000Z",
         },
       },
@@ -365,7 +377,7 @@ describe("Reconnect replay (server error)", () => {
     // Queue must be preserved for retry later
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].modules.finyk.data).toEqual({ v: 1 });
+    expect(q[0].modules.profile.data).toEqual({ displayName: "sergeant" });
   });
 
   it("preserves the queue on network error", async () => {
@@ -431,10 +443,12 @@ describe("Reconnect replay (server error)", () => {
 
   it("does not crash the caller — replay swallows errors", async () => {
     const replayOfflineQueue = await freshReplay();
+    // PR #039 — use `profile` so collectQueuedModules returns a
+    // non-empty payload and pushAll is actually invoked.
     addToOfflineQueue({
       type: "push",
       modules: {
-        finyk: {
+        profile: {
           data: { x: 1 },
           clientUpdatedAt: "2025-01-01T00:00:00.000Z",
         },

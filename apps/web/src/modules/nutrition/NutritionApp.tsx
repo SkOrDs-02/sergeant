@@ -5,6 +5,11 @@ import {
   SkeletonText,
   Skeleton,
 } from "@shared/components/ui/Skeleton";
+import {
+  DataState,
+  type DataStateQueryLike,
+} from "@shared/components/ui/DataState";
+import type { NutritionDayPlan } from "./hooks/useNutritionUiState";
 import { NutritionHeader } from "./components/NutritionHeader";
 import { NutritionBottomNav } from "./components/NutritionBottomNav";
 import { SubTabs } from "./components/SubTabs";
@@ -413,6 +418,27 @@ export default function NutritionApp({
     toast.error("Не вдалося оновити дані. Перевір з'єднання.");
   }, [toast]);
 
+  const dayPlanQuery: DataStateQueryLike<NutritionDayPlan | null> = {
+    data: dayPlanBusy ? undefined : dayPlan,
+    isLoading: dayPlanBusy,
+  };
+
+  const dayPlanLoadingSkeleton = (
+    <div className="space-y-3 motion-safe:animate-in motion-safe:fade-in">
+      <div className="flex items-center justify-between px-1 pb-1">
+        <SkeletonText shimmer className="w-32" />
+        <Skeleton shimmer className="w-20 h-6 rounded-full" />
+      </div>
+      {[0, 1, 2].map((i) => (
+        <SkeletonMealCard
+          key={i}
+          shimmer
+          style={{ animationDelay: `${i * 60}ms` }}
+        />
+      ))}
+    </div>
+  );
+
   return (
     <ModuleAccentProvider module="nutrition" asShellRoot>
       <NutritionHeader busy={busy} onBackToHub={onBackToHub} />
@@ -624,36 +650,29 @@ export default function NutritionApp({
                       { id: "recipes", label: "Рецепти" },
                     ]}
                   />
-                  {menuSubTab === "plan" && dayPlanBusy ? (
-                    <div className="space-y-3 motion-safe:animate-in motion-safe:fade-in">
-                      <div className="flex items-center justify-between px-1 pb-1">
-                        <SkeletonText shimmer className="w-32" />
-                        <Skeleton shimmer className="w-20 h-6 rounded-full" />
-                      </div>
-                      {[0, 1, 2].map((i) => (
-                        <SkeletonMealCard
-                          key={i}
-                          shimmer
-                          style={{ animationDelay: `${i * 60}ms` }}
+                  {menuSubTab === "plan" ? (
+                    <DataState
+                      query={dayPlanQuery}
+                      skeleton={dayPlanLoadingSkeleton}
+                    >
+                      {() => (
+                        <DailyPlanCard
+                          prefs={prefs}
+                          setPrefs={setPrefs}
+                          pantryItems={pantry.effectiveItems}
+                          busy={busy}
+                          dayPlan={dayPlan}
+                          dayPlanBusy={dayPlanBusy}
+                          fetchDayPlan={() => fetchDayPlan(null)}
+                          regenMeal={(mealType) => fetchDayPlan(mealType)}
+                          addMealToLog={addMealFromPlan}
+                          weekPlan={weekPlan}
+                          weekPlanRaw={weekPlanRaw}
+                          weekPlanBusy={weekPlanBusy}
+                          fetchWeekPlan={fetchWeekPlan}
                         />
-                      ))}
-                    </div>
-                  ) : menuSubTab === "plan" ? (
-                    <DailyPlanCard
-                      prefs={prefs}
-                      setPrefs={setPrefs}
-                      pantryItems={pantry.effectiveItems}
-                      busy={busy}
-                      dayPlan={dayPlan}
-                      dayPlanBusy={dayPlanBusy}
-                      fetchDayPlan={() => fetchDayPlan(null)}
-                      regenMeal={(mealType) => fetchDayPlan(mealType)}
-                      addMealToLog={addMealFromPlan}
-                      weekPlan={weekPlan}
-                      weekPlanRaw={weekPlanRaw}
-                      weekPlanBusy={weekPlanBusy}
-                      fetchWeekPlan={fetchWeekPlan}
-                    />
+                      )}
+                    </DataState>
                   ) : (
                     <RecipesCard
                       busy={busy}

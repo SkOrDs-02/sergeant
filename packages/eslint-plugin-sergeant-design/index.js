@@ -170,29 +170,20 @@ const noEllipsisDots = {
 // the rule (or vice versa).
 
 const TRACKED_STORAGE_KEY_NAMES = new Set([
-  // finyk
-  "FINYK_HIDDEN",
-  "FINYK_BUDGETS",
-  "FINYK_SUBS",
-  "FINYK_ASSETS",
-  "FINYK_DEBTS",
-  "FINYK_RECV",
-  "FINYK_HIDDEN_TXS",
-  "FINYK_MONTHLY_PLAN",
-  "FINYK_TX_CATS",
-  "FINYK_MONO_DEBT_LINKED",
-  "FINYK_NETWORTH_HISTORY",
-  "FINYK_TX_SPLITS",
-  "FINYK_CUSTOM_CATS",
-  "FINYK_TX_CACHE",
-  "FINYK_INFO_CACHE",
-  "FINYK_TX_CACHE_LAST_GOOD",
-  "FINYK_SHOW_BALANCE",
-  // FINYK_TOKEN intentionally NOT tracked: the Monobank PAT is server-only
-  // (`mono_connection.token_ciphertext`) and writing it client-side is
-  // banned by the dedicated `no-finyk-token-in-storage` rule.
-  "FINYK_MANUAL_EXPENSES",
-  "FINYK_TX_FILTERS",
+  // finyk — removed from SYNC_MODULES in PR #039 (storage-roadmap
+  // Stage 4). The nineteen `finyk_*` LS/MMKV keys are no longer
+  // cloud-synced through `module_data.finyk`; the per-table
+  // `finyk_*` SQLite mirror plus the op-log carry budgets / subs /
+  // assets / debts / receivables / hidden / monthly_plan / tx_cats /
+  // tx_splits / mono_debt_linked / networth_history / custom_cats /
+  // manual_expenses / tx_filters / show_balance plus the Mono cache
+  // mirror (tx_cache, info_cache, tx_cache_last_good) instead. The
+  // dedicated `no-restricted-syntax` guard in `eslint.config.js`
+  // prevents new direct reads of `STORAGE_KEYS.FINYK_<key>`.
+  // FINYK_TOKEN was already not tracked: the Monobank PAT is
+  // server-only (`mono_connection.token_ciphertext`) and writing it
+  // client-side is banned by the dedicated `no-finyk-token-in-storage`
+  // rule.
   // fizruk — removed from SYNC_MODULES in PR #030 (storage-roadmap
   // Stage 4). The eleven `fizruk_*_v1` LS/MMKV keys are no longer
   // cloud-synced through `module_data.fizruk`; the per-table
@@ -218,28 +209,9 @@ const TRACKED_STORAGE_KEY_NAMES = new Set([
 ]);
 
 const TRACKED_STORAGE_KEY_VALUES = new Set([
-  // finyk
-  "finyk_hidden",
-  "finyk_budgets",
-  "finyk_subs",
-  "finyk_assets",
-  "finyk_debts",
-  "finyk_recv",
-  "finyk_hidden_txs",
-  "finyk_monthly_plan",
-  "finyk_tx_cats",
-  "finyk_mono_debt_linked",
-  "finyk_networth_history",
-  "finyk_tx_splits",
-  "finyk_custom_cats_v1",
-  "finyk_tx_cache",
-  "finyk_info_cache",
-  "finyk_tx_cache_last_good",
-  "finyk_show_balance_v1",
-  // "finyk_token" intentionally NOT tracked: server-only PAT, see
-  // `no-finyk-token-in-storage` rule.
-  "finyk_manual_expenses_v1",
-  "finyk_tx_filters_v1",
+  // finyk — see TRACKED_STORAGE_KEY_NAMES comment above (retired in
+  // PR #039). "finyk_token" was already not tracked: server-only PAT,
+  // see `no-finyk-token-in-storage` rule.
   // fizruk — see TRACKED_STORAGE_KEY_NAMES comment above (retired in
   // PR #030).
   // routine — see TRACKED_STORAGE_KEY_NAMES comment above (retired in

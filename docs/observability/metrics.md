@@ -1,6 +1,6 @@
 # Довідник Prometheus-метрик
 
-> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 Каталог усіх Prometheus-метрик бекенду Sergeant (`GET /metrics`, bearer `METRICS_TOKEN`).
@@ -94,22 +94,35 @@ sum(rate(auth_attempts_total{outcome="error"}[5m])) / sum(rate(auth_attempts_tot
 
 ## 4. Sync
 
-| Metric                  | Type      | Labels                      | Emitter                                                      |
-| ----------------------- | --------- | --------------------------- | ------------------------------------------------------------ |
-| `sync_operations_total` | Counter   | `op` · `module` · `outcome` | [sync.ts:91](../../apps/server/src/modules/sync/sync.ts#L91) |
-| `sync_duration_ms`      | Histogram | `op` · `module`             | [sync.ts:92](../../apps/server/src/modules/sync/sync.ts#L92) |
-| `sync_payload_bytes`    | Histogram | `op` · `module`             | [sync.ts:93](../../apps/server/src/modules/sync/sync.ts#L93) |
-| `sync_conflicts_total`  | Counter   | `module`                    | [sync.ts:66](../../apps/server/src/modules/sync/sync.ts#L66) |
+| Metric                         | Type      | Labels                        | Emitter                                                             |
+| ------------------------------ | --------- | ----------------------------- | ------------------------------------------------------------------- |
+| `sync_operations_total`        | Counter   | `op` · `module` · `outcome`   | [sync.ts:91](../../apps/server/src/modules/sync/sync.ts#L91)        |
+| `sync_duration_ms`             | Histogram | `op` · `module`               | [sync.ts:92](../../apps/server/src/modules/sync/sync.ts#L92)        |
+| `sync_payload_bytes`           | Histogram | `op` · `module`               | [sync.ts:93](../../apps/server/src/modules/sync/sync.ts#L93)        |
+| `sync_conflicts_total`         | Counter   | `module`                      | [sync.ts:66](../../apps/server/src/modules/sync/sync.ts#L66)        |
+| `sync_op_log_apply_total`      | Counter   | `table` · `status` · `reason` | [syncV2.ts](../../apps/server/src/modules/sync/syncV2.ts) (PR #048) |
+| `sync_op_log_pull_lag_ms`      | Histogram | —                             | [syncV2.ts](../../apps/server/src/modules/sync/syncV2.ts) (PR #048) |
+| `sync_op_log_pull_queue_depth` | Histogram | —                             | [syncV2.ts](../../apps/server/src/modules/sync/syncV2.ts) (PR #048) |
 
-`op`: `push` · `pull` · `push_all` · `pull_all`. `module`: `finyk` · `fizruk` · `routine` · `nutrition` · `profile`. `outcome`: `ok` · `empty` · `conflict` · `invalid` · `too_large` · `unauthorized` · `error`. Buckets duration: `10…10000` ms; bytes: `1024…5242880` (MAX_BLOB_SIZE = 5 MB).
+`op`: `push` · `pull` · `push_all` · `pull_all` · `v2_push` · `v2_pull`. `module`: `finyk` · `fizruk` · `routine` · `nutrition` · `profile` · `syncV2`. `outcome`: `ok` · `empty` · `conflict` · `invalid` · `too_large` · `unauthorized` · `error` · `partial`. Buckets duration: `10…10000` ms; bytes: `1024…5242880` (MAX_BLOB_SIZE = 5 MB).
 
-**Кардинальність**: 4 × 5 × 7 ≈ **140** (counter); histograms ~180 кожна.
+**v2 op-log per-op (`sync_op_log_apply_total`)**: `table` ∈ whitelist `OP_LOG_TABLE_REGISTRY` + `__unknown__`; `status` ∈ `applied|rejected|duplicate`; `reason` ∈ `none` (для applied) · `duplicate` · `lww_conflict` · `tombstoned` · `fk_violation` · `clock_skew` · `apply_failed` · `table_not_allowed` · `missing_*` · `invalid_*`. Cardinality cap: ~15 × 3 × ~25 ≈ 1100 series worst-case.
+
+**v2 pull lag/queue (`sync_op_log_pull_lag_ms`, `sync_op_log_pull_queue_depth`)**: гістограми без лейблів, спостерігаються по одній observation на `GET /v2/sync/pull` із непорожньою відповіддю. Buckets pull lag: `50…3_600_000` ms (SSE happy-path → offline-replay). Buckets queue depth: `0…1000` ops/pull.
+
+**Кардинальність v1 sync**: 4 × 5 × 7 ≈ **140** (counter); histograms ~180 кожна.
 
 ```promql
 sum by (op, module, outcome) (rate(sync_operations_total[5m]))                              # breakdown
 histogram_quantile(0.95, sum by (le, op, module) (rate(sync_duration_ms_bucket[5m])))       # p95
 sum(rate(sync_operations_total{op=~"push|push_all",outcome="conflict"}[1h]))
   / sum(rate(sync_operations_total{op=~"push|push_all"}[1h]))                              # conflict ratio
+
+# v2 op-log RED (PR #048)
+sum by (table, status) (rate(sync_op_log_apply_total[5m]))                                  # per-op rate
+topk(10, sum by (table, reason) (rate(sync_op_log_apply_total{status="rejected"}[5m])))     # reject reason fan-out
+histogram_quantile(0.95, sum by (le) (rate(sync_op_log_pull_lag_ms_bucket[5m])))            # p95 staleness
+histogram_quantile(0.95, sum by (le) (rate(sync_op_log_pull_queue_depth_bucket[5m])))       # p95 ops/pull
 ```
 
 **SLO/alerts**: [SLO.md §3](./SLO.md#3-sync-slo-995-) · `SyncErrorBudgetBurn{Fast,Slow}` · `SyncLatencyP95High` · `SyncConflictSpike`.

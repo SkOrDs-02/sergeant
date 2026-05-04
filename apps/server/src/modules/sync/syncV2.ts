@@ -11,6 +11,9 @@ import { logger } from "../../obs/logger.js";
 import {
   syncDurationMs,
   syncOperationsTotal,
+  syncOpLogApplyTotal,
+  syncOpLogPullLagMs,
+  syncOpLogPullQueueDepth,
   syncPayloadBytes,
 } from "../../obs/metrics.js";
 
@@ -1131,6 +1134,25 @@ async function applyFizrukMeasurements(
 /**
  * Apply-шлях для `nutrition_meals`. Per-row UPSERT за UUID PK.
  *
+ * Stage 5 / PR #043: формалізовано як **G-set CRDT з tombstone-ами +
+ * per-row LWW** (`docs/planning/storage-roadmap.md`):
+ *
+ *   * **G-set (grow-only set):** ряд із новим `id` додається через
+ *     `op='insert'`. Конкурентні insert-и із різних девайсів конвергують
+ *     природним чином — різні `id` сумарно дають об'єднання, той самий
+ *     `id` із різними `idempotency_key` зливаються через LWW по
+ *     `updated_at`/`client_ts`.
+ *   * **Tombstone (deleted_at):** видалення — це монотонне додавання
+ *     tombstone-а. Раз rt = `deleted_at IS NOT NULL`, ряд лишається
+ *     tombstoned **назавжди** — жоден `op='insert'`/`op='update'` його
+ *     не воскрешає (повертаємо `reason='tombstoned'`). Це load-bearing
+ *     для multi-device convergence: інакше offline-edit на одному
+ *     девайсі скасовував би delete на іншому.
+ *   * **Idempotent delete:** повторний `op='delete'` на вже tombstoned-у
+ *     ряд проходить (re-stamp-ить `deleted_at` новішим `client_ts`),
+ *     щоб LWW-cursor pull-у не "забував" про event після того, як
+ *     інший девайс перепідсиле delete з новішим часом.
+ *
  * Macro columns (`kcal`, `protein_g`, `fat_g`, `carbs_g`) optional
  * integers/reals. `eaten_at` is REQUIRED (TIMESTAMPTZ).
  */
@@ -1148,8 +1170,12 @@ async function applyNutritionMeals(
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
-  const existing = await client.query<{ user_id: string; updated_at: Date }>(
-    `SELECT user_id, updated_at FROM nutrition_meals WHERE id = $1`,
+  const existing = await client.query<{
+    user_id: string;
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(
+    `SELECT user_id, updated_at, deleted_at FROM nutrition_meals WHERE id = $1`,
     [id],
   );
   if (existing.rows.length > 0) {
@@ -1158,6 +1184,14 @@ async function applyNutritionMeals(
     }
     if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
+    }
+    // G-set CRDT invariant: tombstone-и монотонні. `op='insert'`
+    // або `op='update'` проти вже tombstoned-у ряд — це або
+    // resurrection-attack (зловмисний клієнт), або race з offline
+    // editor-ом, що не побачив delete з іншого девайсу. Обидва — no-op,
+    // повертаємо явну `tombstoned` причину для observability.
+    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+      return { status: "rejected", reason: "tombstoned" };
     }
   }
 
@@ -2312,6 +2346,18 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         } else if (r.status === "rejected") {
           rejectedCount++;
         }
+        // PR #048: per-op outcome counter. Idempotency-replay лічимо
+        // окремим `status="duplicate"` — RED-dashboard відрізняє
+        // first-write outcome від кешованих повторів.
+        try {
+          syncOpLogApplyTotal.inc({
+            table: op.table,
+            status: "duplicate",
+            reason: "duplicate",
+          });
+        } catch {
+          /* metrics must never break a request */
+        }
         continue;
       }
 
@@ -2406,6 +2452,24 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
           status: "rejected",
           ...(reason ? { reason } : {}),
         });
+      }
+
+      // PR #048: per-op outcome counter (RED-stack — Errors). На
+      // `applied` reason="none" (label-uniformity вимога prom-client-у);
+      // на `rejected` пишемо реальну причину з зафіксованого набору в
+      // syncV2.ts; `table_not_allowed` гілку маркуємо `__unknown__`,
+      // щоб не "забруднити" cardinality невідомими user-input table-
+      // іменами.
+      try {
+        const labelTable =
+          reason === "table_not_allowed" ? "__unknown__" : op.table;
+        syncOpLogApplyTotal.inc({
+          table: labelTable,
+          status,
+          reason: status === "applied" ? "none" : reason || "unknown",
+        });
+      } catch {
+        /* metrics must never break a request */
       }
     }
 
@@ -2522,6 +2586,30 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
         return acc;
       }
     }, 0);
+
+    // PR #048 — pull RED-метрики (queue depth + staleness).
+    //
+    // `queue_depth` = скільки ops повернули цим pull-ом. Sustained
+    // p95 = limit означає, що клієнт постійно "позаду" і має робити
+    // наступний pull зразу — backpressure-сигнал для алертів.
+    //
+    // `pull_lag` = вік newest-op-у в батчі (now - server_ts). Це проксі
+    // user-perceived staleness: SSE-стрім (PR #041) має тримати <100ms,
+    // polling fallback — кілька секунд. Спостерігаємо тільки коли є хоч
+    // один op у відповіді — пустий pull = клієнт уже на курсорі, lag
+    // не визначений.
+    try {
+      syncOpLogPullQueueDepth.observe(opsOut.length);
+      if (result.rows.length > 0) {
+        const newest = result.rows[result.rows.length - 1].server_ts;
+        const lagMs = Date.now() - newest.getTime();
+        if (lagMs >= 0 && Number.isFinite(lagMs)) {
+          syncOpLogPullLagMs.observe(lagMs);
+        }
+      }
+    } catch {
+      /* metrics must never break a request */
+    }
 
     recordSyncV2("v2_pull", opsOut.length === 0 ? "empty" : "ok", {
       ms: elapsedMs(start),

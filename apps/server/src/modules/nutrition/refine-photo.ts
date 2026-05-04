@@ -8,6 +8,8 @@ import {
   extractAnthropicText,
 } from "../../lib/anthropic.js";
 import { normalizePhotoResult } from "../../lib/nutritionResponse.js";
+import { validateImageBase64 } from "../../lib/imageMagic.js";
+import { nutritionPhotoRejectedTotal } from "../../obs/metrics.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -45,7 +47,28 @@ export default async function handler(
     parsed.data;
 
   const b64 = image_base64.trim();
-  const mediaType = mime_type || "image/jpeg";
+
+  // M6 — server-side magic-byte валідація (див. коментар в analyze-photo.ts).
+  const validation = validateImageBase64(b64, mime_type);
+  if (!validation.ok) {
+    nutritionPhotoRejectedTotal.inc({
+      endpoint: "refine-photo",
+      reason: validation.code,
+    });
+    const status = validation.code === "TOO_LARGE" ? 413 : 415;
+    res.status(status).json({
+      code: validation.code,
+      detail: validation.detail,
+      ...(validation.code === "MAGIC_MISMATCH"
+        ? {
+            declared_mime: validation.declaredMime,
+            detected_mime: validation.detectedMime,
+          }
+        : {}),
+    });
+    return;
+  }
+  const mediaType = validation.mimeType;
   const grams = typeof portion_grams === "number" ? portion_grams : null;
   const qa = Array.isArray(qna) ? qna.slice(0, 8) : [];
 

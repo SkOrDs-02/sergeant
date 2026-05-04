@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { Request, Response } from "express";
 import webVitalsHandler from "./web-vitals.js";
 import {
@@ -6,6 +6,7 @@ import {
   webVitalsCls,
   webVitalsDurationMs,
 } from "../../obs/metrics.js";
+import { logger } from "../../obs/logger.js";
 
 interface TestRes {
   statusCode: number;
@@ -168,5 +169,81 @@ describe("webVitalsHandler", () => {
     expect(res.statusCode).toBe(204);
     const text = await getMetricText();
     expect(text).not.toMatch(/web_vitals_duration_ms_count\{metric="LCP"/);
+  });
+
+  // M12 — explicit metric-name allowlist + UA normaliser regression. Card
+  // recommendation: подивитись, що "evil-metric" не приймається + warn-лог
+  // несе нормалізований `ua_family`, не сирий `User-Agent`.
+  describe("M12 — payload allowlist and UA normalisation", () => {
+    it("rejects metric name outside allowlist (LCP/INP/FCP/TTFB/CLS)", async () => {
+      const req = {
+        method: "POST",
+        body: {
+          metrics: [{ name: "evil-metric", value: 100, rating: "good" }],
+        },
+      };
+      const res = makeRes();
+      webVitalsHandler(asReq(req), res);
+
+      expect(res.statusCode).toBe(204);
+      const text = await getMetricText();
+      expect(text).not.toMatch(/web_vitals_duration_ms_count\{metric="evil/);
+      expect(text).not.toMatch(/web_vitals_cls_count.*evil/);
+    });
+
+    it("warn-логує canonical ua_family (не сирий User-Agent) на invalid payload", async () => {
+      // Форсимо лог-ємісію, обходячи Math.random sample-у — наш warn-callback
+      // має 1% шанс на викид; тут перехоплюємо щоб тест був детермінованим.
+      const warnSpy = vi.spyOn(logger, "warn").mockImplementation(() => {});
+      const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0);
+
+      try {
+        const req = {
+          method: "POST",
+          body: { metrics: [{ name: "GARBAGE", value: 1, rating: "x" }] },
+          headers: {
+            "user-agent":
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+          },
+        };
+        const res = makeRes();
+        webVitalsHandler(asReq(req), res);
+
+        expect(res.statusCode).toBe(204);
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        const logged = warnSpy.mock.calls[0][0] as {
+          msg: string;
+          ua_family: string;
+        };
+        expect(logged.msg).toBe("web_vitals_invalid_payload");
+        // Канонічна форма — "safari 17", НЕ сирий UA-string з версією patch.
+        expect(logged.ua_family).toBe("safari 17");
+      } finally {
+        warnSpy.mockRestore();
+        randomSpy.mockRestore();
+      }
+    });
+
+    it("warn-логує ua_family='unknown' на безголовому запиті (без User-Agent)", async () => {
+      const warnSpy = vi.spyOn(logger, "warn").mockImplementation(() => {});
+      const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0);
+
+      try {
+        const req = {
+          method: "POST",
+          body: { foo: "bar" },
+          headers: {},
+        };
+        const res = makeRes();
+        webVitalsHandler(asReq(req), res);
+
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        const logged = warnSpy.mock.calls[0][0] as { ua_family: string };
+        expect(logged.ua_family).toBe("unknown");
+      } finally {
+        warnSpy.mockRestore();
+        randomSpy.mockRestore();
+      }
+    });
   });
 });

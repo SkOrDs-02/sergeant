@@ -53,9 +53,9 @@ describe("getDirtyModules", () => {
   it("читає збережену мапу dirty модулів", () => {
     localStorage.setItem(
       STORAGE_KEYS.SYNC_DIRTY_MODULES,
-      JSON.stringify({ finyk: true }),
+      JSON.stringify({ profile: true }),
     );
-    expect(getDirtyModules()).toEqual({ finyk: true });
+    expect(getDirtyModules()).toEqual({ profile: true });
   });
   it("повертає {} коли значення пошкоджене JSON", () => {
     localStorage.setItem(STORAGE_KEYS.SYNC_DIRTY_MODULES, "{not-json");
@@ -68,7 +68,7 @@ describe("getOfflineQueue", () => {
     expect(getOfflineQueue()).toEqual([]);
   });
   it("повертає збережену чергу", () => {
-    const q = [{ type: "push", modules: { finyk: { data: {} } } }];
+    const q = [{ type: "push", modules: { profile: { data: {} } } }];
     localStorage.setItem(STORAGE_KEYS.SYNC_OFFLINE_QUEUE, JSON.stringify(q));
     expect(getOfflineQueue()).toHaveLength(1);
   });
@@ -89,10 +89,13 @@ describe("getOfflineQueue", () => {
 // same internal `markModuleDirty`.
 
 describe("notifySyncDirty", () => {
-  it("для tracked ключа finyk позначає модуль finyk брудним", () => {
+  it("для tracked ключа USER_PROFILE позначає модуль profile брудним", () => {
+    // PR #030 retired `fizruk`, PR #034 retired `nutrition` and PR
+    // #039 retired `finyk` from SYNC_MODULES (storage-roadmap Stage
+    // 4); only `profile` (USER_PROFILE) remains as a tracked key.
     localStorage.setItem(STORAGE_KEYS.SYNC_DIRTY_MODULES, "{}");
-    notifySyncDirty(STORAGE_KEYS.FINYK_BUDGETS);
-    expect(getDirtyModules().finyk).toBe(true);
+    notifySyncDirty(STORAGE_KEYS.USER_PROFILE);
+    expect(getDirtyModules().profile).toBe(true);
   });
 
   it("для ретиреного fizruk ключа не маркує жоден модуль брудним (PR #030)", () => {
@@ -115,30 +118,43 @@ describe("notifySyncDirty", () => {
     expect(getDirtyModules()).toEqual({});
   });
 
+  it("для ретиреного finyk ключа не маркує жоден модуль брудним (PR #039)", () => {
+    // PR #039 (storage-roadmap Stage 4) — `finyk` retired from
+    // SYNC_MODULES. Writes to legacy `finyk_*` LS keys are now
+    // untracked, so notifySyncDirty must NOT mark anything dirty.
+    localStorage.setItem(STORAGE_KEYS.SYNC_DIRTY_MODULES, "{}");
+    notifySyncDirty(STORAGE_KEYS.FINYK_BUDGETS);
+    notifySyncDirty(STORAGE_KEYS.FINYK_SUBS);
+    notifySyncDirty(STORAGE_KEYS.FINYK_TX_CACHE);
+    expect(getDirtyModules()).toEqual({});
+  });
+
   it("notifySyncDirty також зберігає MODULE_MODIFIED ISO час", () => {
     localStorage.setItem(STORAGE_KEYS.SYNC_DIRTY_MODULES, "{}");
     localStorage.removeItem(STORAGE_KEYS.SYNC_MODULE_MODIFIED);
-    notifySyncDirty(STORAGE_KEYS.FINYK_BUDGETS);
+    notifySyncDirty(STORAGE_KEYS.USER_PROFILE);
     const raw = localStorage.getItem(STORAGE_KEYS.SYNC_MODULE_MODIFIED);
     expect(raw).not.toBeNull();
     const parsed = JSON.parse(raw as string);
-    expect(parsed.finyk).toBeTruthy();
-    expect(new Date(parsed.finyk).toISOString()).toBe(parsed.finyk);
+    expect(parsed.profile).toBeTruthy();
+    expect(new Date(parsed.profile).toISOString()).toBe(parsed.profile);
   });
 
-  it("декілька викликів для різних модулів накопичуються в dirty map", () => {
+  it("декілька викликів для різних ключів profile реєструють той же модуль", () => {
+    // PR #039: `profile` (USER_PROFILE) is the only currently
+    // tracked module. Writes to retired keys do NOT mark dirty.
     localStorage.setItem(STORAGE_KEYS.SYNC_DIRTY_MODULES, "{}");
-    notifySyncDirty(STORAGE_KEYS.FINYK_BUDGETS);
     notifySyncDirty(STORAGE_KEYS.USER_PROFILE);
+    notifySyncDirty(STORAGE_KEYS.FINYK_BUDGETS);
     const d = getDirtyModules();
-    expect(Object.keys(d).sort()).toEqual(["finyk", "profile"]);
+    expect(Object.keys(d).sort()).toEqual(["profile"]);
   });
 
   it("диспатчить SYNC_STATUS_EVENT для tracked ключа", () => {
     const listener = vi.fn();
     window.addEventListener(SYNC_STATUS_EVENT, listener);
     try {
-      notifySyncDirty(STORAGE_KEYS.FINYK_BUDGETS);
+      notifySyncDirty(STORAGE_KEYS.USER_PROFILE);
       expect(listener).toHaveBeenCalled();
     } finally {
       window.removeEventListener(SYNC_STATUS_EVENT, listener);

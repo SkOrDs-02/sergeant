@@ -1,59 +1,38 @@
 # Playbook: Release Expo Mobile
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
-> **Status:** Active
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Deprecated
 
-**Trigger:** ship a new `apps/mobile` build, EAS update, or release-channel change for the Expo native app.
+> **Superseded by:** [release.md § Expo](./release.md#3-expo) — merged 2026-05-04 (initiative [0009](../initiatives/0009-agent-os-hardening.md) PR 2.3).
+
+**Trigger:** historical anchor — open [release.md § Expo](./release.md#3-expo) instead.
 
 ## Owner surface
 
 - Primary surface: Expo mobile runtime
 - Governing skill: `sergeant-mobile-expo`
 
-## Required context
+## Why this stub still exists
 
-- Start with `sergeant-start-here`, then open `sergeant-mobile-expo`.
-- Review [service-catalog.md](../architecture/service-catalog.md), [platforms.md](../architecture/platforms.md), and [release-policy.md](../governance/release-policy.md).
+The merged [release.md](./release.md) playbook now owns the Expo release loop alongside web/API and Capacitor shell flows. This file stays in the repo so external bookmarks, audit logs, and historical PR/incident references keep resolving without 404s, and so `git blame` on the original steps remains intact.
+
+Do not extend this stub. Update [release.md](./release.md) and let this file follow.
 
 ## Steps
 
-### 1. Classify the mobile release
-
-- Determine whether this is an OTA/channel update, a new build, or both.
-- Confirm whether the release depends on new API behavior or feature flags.
-
-### 2. Prepare rollout
-
-- Capture build or update identifiers.
-- Record target channel, cohort, and rollback method.
-- Make sure auth bootstrap and one mobile-only flow are part of the smoke plan.
-
-### 3. Execute release
-
-- Ship the build or update to the intended lane.
-- Verify that the correct config/env was used.
-- If the release depends on server changes, coordinate with [release-web-and-api.md](./release-web-and-api.md).
-
-### 4. Verify and monitor
-
-- Install or update the published artifact.
-- Run auth, one primary screen load, and one mobile-only interaction.
-- Watch crash/error signals and support feedback during rollout.
+See [release.md § Expo](./release.md#3-expo).
 
 ## Verification
 
-- [ ] Channel/build identifiers recorded
-- [ ] Rollback path documented
-- [ ] Auth and one mobile-only flow tested
-- [ ] Server dependency ordering confirmed when applicable
+- [ ] The reader was redirected to [release.md § Expo](./release.md#3-expo).
 
 ## When not to use this playbook
 
-- The release target is the Capacitor shell rather than Expo.
-- The change is only in shared packages with no mobile deploy.
+- Always: this file is deprecated. Use [release.md](./release.md).
 
 ## Related playbooks and skills
 
-- [release-web-and-api.md](./release-web-and-api.md)
+- [release.md](./release.md) — canonical merged release playbook.
 - [port-web-screen-to-mobile.md](./port-web-screen-to-mobile.md)
+- Skill: `sergeant-mobile-expo`
 - Skill: `sergeant-deploy-and-observability`

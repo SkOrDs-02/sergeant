@@ -1,6 +1,6 @@
 # Мінімальні Grafana-дашборди (Prometheus)
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 Це "starter pack" панелей, яких достатньо, щоб швидко зрозуміти: **що саме горить**
@@ -44,6 +44,14 @@
   - `histogram_quantile(0.95, sum by (le, op, module) (rate(sync_duration_ms_bucket[5m])))`
 - **p95 розміру payload**:
   - `histogram_quantile(0.95, sum by (le, op, module) (rate(sync_payload_bytes_bucket[5m])))`
+- **v2 op-log per-op outcomes (PR #048)**:
+  - `sum by (table, status) (rate(sync_op_log_apply_total[5m]))`
+- **v2 op-log reject-reason fan-out (PR #048)**:
+  - `topk(10, sum by (table, reason) (rate(sync_op_log_apply_total{status="rejected"}[5m])))`
+- **v2 pull staleness p95 (PR #048)**:
+  - `histogram_quantile(0.95, sum by (le) (rate(sync_op_log_pull_lag_ms_bucket[5m])))`
+- **v2 pull queue depth p95 (PR #048)**:
+  - `histogram_quantile(0.95, sum by (le) (rate(sync_op_log_pull_queue_depth_bucket[5m])))`
 
 ## AI / зовнішні upstream-сервіси
 

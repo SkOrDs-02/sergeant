@@ -147,6 +147,56 @@ export const chatToolResultTruncatedTotal = new client.Counter({
   registers: [register],
 });
 
+/**
+ * M7 — `MAX_TOOL_ITERATIONS` cap hit: модель або клієнт перевищили жорсткий
+ * ліміт `tool_use`-блоків в одному round-trip-і. `boundary` лейбл:
+ *   - `anthropic_response` — Anthropic повернув >MAX_TOOL_ITERATIONS блоків
+ *     `tool_use` в одній відповіді (runaway model loop).
+ *   - `client_request` — клієнт надіслав >MAX_TOOL_ITERATIONS блоків у
+ *     `tool_calls_raw` (manipulated payload або зіпсований state).
+ *
+ * Cardinality фіксована (2 значення) — безпечно для Prometheus.
+ *
+ * See `docs/security/hardening/M7-chat-tool-iteration-cap.md`.
+ */
+export const chatToolIterationCapHitTotal = new client.Counter({
+  name: "chat_tool_iteration_cap_hit_total",
+  help: "M7 — tool-iteration cap (MAX_TOOL_ITERATIONS) breached, request rejected with 422",
+  labelNames: ["boundary"], // anthropic_response | client_request
+  registers: [register],
+});
+
+/**
+ * M6 — server-side magic-byte rejection at `/api/nutrition/{analyze,refine}-photo`.
+ * `endpoint` лейбл фіксований (`analyze-photo` | `refine-photo`); `reason` — це
+ * `code` з `validateImageBase64` (`INVALID_BASE64` | `TRUNCATED` | `TOO_LARGE`
+ * | `MAGIC_MISMATCH`). Cardinality 2 × 4 = 8, безпечно для Prometheus.
+ *
+ * See `docs/security/hardening/M6-image-magic-byte-check.md`.
+ */
+export const nutritionPhotoRejectedTotal = new client.Counter({
+  name: "nutrition_photo_rejected_total",
+  help: "M6 — nutrition photo rejected before Anthropic call by magic-byte / size validator",
+  labelNames: ["endpoint", "reason"],
+  registers: [register],
+});
+
+/**
+ * M8 — chat tool_result content matched a prompt-injection marker (`ignore
+ * previous instructions`, `<system>`, `act as ...`). Лічильник інкрементиться
+ * один раз на tool_result; `tool` — whitelisted tool name (з `TOOLS`-реєстру)
+ * або `unknown` для orphan-блоків. Cardinality dominated by кількістю tools
+ * (~25), безпечно для Prometheus.
+ *
+ * See `docs/security/hardening/M8-prompt-injection-tool-output.md`.
+ */
+export const chatPromptInjectionAttemptTotal = new client.Counter({
+  name: "chat_prompt_injection_attempt_total",
+  help: "M8 — tool_result content matched a prompt-injection marker; metric only, model still receives the (wrapped) data.",
+  labelNames: ["tool"],
+  registers: [register],
+});
+
 export const aiQuotaBlocksTotal = new client.Counter({
   name: "ai_quota_blocks_total",
   help: "AI quota refusals",
@@ -381,6 +431,83 @@ export const syncV1LegacyClientsTotal = new client.Counter({
   name: "sync_v1_legacy_clients_total",
   help: "CloudSync v1 (LWW-blob) clients by UA-class and app-version (sunset survey)",
   labelNames: ["user_agent_class", "app_version", "op"],
+  registers: [register],
+});
+
+/**
+ * Per-op apply outcome для v2 op-log (PR #048, Stage 5 DoD #10).
+ *
+ * `syncOperationsTotal{op="v2_push"}` рахує **запит** (`ok|partial|conflict`),
+ * але апдейтити дашборд RED-метрик per-table треба бачити **per-op**
+ * розклад: applied/rejected/duplicate × table × reject_reason. Цей лічильник
+ * інкрементиться один раз на `op` всередині `syncV2Push`, на тому ж місці,
+ * де ми вже пишемо row у `sync_op_log` (тож кардинальність обмежена записами).
+ *
+ * Лейбли:
+ *   - `table` ∈ whitelist `OP_LOG_TABLE_REGISTRY` (≤ ~15)
+ *     + `__unknown__` для table_not_allowed-rejected ops.
+ *   - `status` ∈ `applied|rejected|duplicate`.
+ *   - `reason` — машинно-читабельний reject-reason (`lww_conflict`,
+ *     `tombstoned`, `fk_violation`, `clock_skew`, `apply_failed`,
+ *     `table_not_allowed`, `missing_*`, `invalid_*`, …) для `rejected`;
+ *     `"none"` для `applied`; `"duplicate"` для `duplicate`. Reasons
+ *     походять із зафіксованого набору в коді (`syncV2.ts`) — нові варіанти
+ *     додаються свідомо разом із кодовою зміною, тож кардинальність не
+ *     розповзається.
+ *
+ * Cardinality cap: ~15 tables × 3 statuses × ~25 reasons ≈ 1100 series
+ * worst-case (типовий runtime ~50–100 active series, бо більшість reject-
+ * reason-ів не репродукуються в production).
+ *
+ * Grafana queries (`docs/observability/dashboards/sync.json`):
+ *   sum by (table, status) (rate(sync_op_log_apply_total[5m]))
+ *   topk(10, sum by (table, reason)
+ *     (rate(sync_op_log_apply_total{status="rejected"}[5m])))
+ */
+export const syncOpLogApplyTotal = new client.Counter({
+  name: "sync_op_log_apply_total",
+  help: "v2 sync op-log per-op apply outcomes (PR #048): applied / rejected / duplicate, broken down by table and reject_reason",
+  labelNames: ["table", "status", "reason"],
+  registers: [register],
+});
+
+/**
+ * Pull-lag (queue-staleness) гістограма для v2 sync (PR #048, RED-stack
+ * "Latency"). На кожному `GET /v2/sync/pull` із непорожньою відповіддю
+ * спостерігаємо `now - server_ts(newest_op_returned)` — це проксі
+ * *user-perceived staleness*: скільки часу ops чекали в op-log, перш
+ * ніж клієнт їх забрав. SSE stream-у (PR #041) має тримати це <100ms у
+ * happy path; cursor-based polling — кілька секунд.
+ *
+ * Spike = клієнт довго був offline (ОК) **або** SSE-стрім впав і клієнт
+ * fallback-нувся на polling (warning). Persistent-spike → аларм.
+ *
+ * Bucket-сітка покриває під 100ms (SSE happy path) до 1h (offline-replay
+ * після довгої відсутності).
+ */
+export const syncOpLogPullLagMs = new client.Histogram({
+  name: "sync_op_log_pull_lag_ms",
+  help: "v2 sync pull staleness in ms: now - server_ts of newest op returned in this pull (PR #048)",
+  buckets: [
+    50, 100, 250, 500, 1000, 2500, 5000, 10_000, 30_000, 60_000, 300_000,
+    900_000, 3_600_000,
+  ],
+  registers: [register],
+});
+
+/**
+ * Queue-depth histogram для pull-у: скільки ops повернули за один
+ * `GET /v2/sync/pull` (PR #048). Це проксі *behind-cursor depth*:
+ * якщо p95 = LIMIT (зазвичай 200), значить є ще ops за курсором — клієнт
+ * має зробити наступний pull. Sustained p95 = LIMIT → backpressure.
+ *
+ * Окрема метрика від `sync_payload_bytes`, бо кількість ops не корелює
+ * лінійно з байтами (один meal ≪ один workout зі 50 set-ами).
+ */
+export const syncOpLogPullQueueDepth = new client.Histogram({
+  name: "sync_op_log_pull_queue_depth",
+  help: "v2 sync pull op-count returned per request (PR #048) — proxy for behind-cursor queue depth",
+  buckets: [0, 1, 5, 10, 25, 50, 100, 200, 500, 1000],
   registers: [register],
 });
 

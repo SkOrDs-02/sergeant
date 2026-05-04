@@ -1,6 +1,6 @@
 # Playbook: Retire Feature Flag
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** a feature flag has graduated, expired, or become dead rollout debt and should be removed from the codebase and registry.
@@ -50,4 +50,4 @@
 
 - [add-feature-flag.md](./add-feature-flag.md)
 - [cleanup-dead-code.md](./cleanup-dead-code.md)
-- [release-web-and-api.md](./release-web-and-api.md)
+- [release.md](./release.md)

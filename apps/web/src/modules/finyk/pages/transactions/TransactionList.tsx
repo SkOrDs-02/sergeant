@@ -6,6 +6,10 @@ import { SkeletonTransactionRow } from "@shared/components/ui/Skeleton";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { FinykEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
+import {
+  DataState,
+  type DataStateQueryLike,
+} from "@shared/components/ui/DataState";
 import { cn } from "@shared/lib/ui/cn";
 import { TransactionDayHeader } from "./TransactionDayHeader";
 import type { computeDaySummary } from "./transactionsLib";
@@ -108,107 +112,127 @@ export function TransactionList({
 }: TransactionListProps) {
   const [scrollParent, setScrollParent] = useState<HTMLDivElement | null>(null);
 
+  // DataState contract:
+  //   - `data === undefined` triggers the skeleton slot. We mark the
+  //     query as still-loading only on the very first paint, when the
+  //     parent month list is empty (`activeTx.length === 0`); subsequent
+  //     background refetches keep `data` defined so the existing list
+  //     stays visible while a stale-revalidate happens.
+  //   - `isEmpty` reads the post-filter list (`filtered`) so the empty
+  //     slot shows when filters/exclusions hide every row, not when the
+  //     month payload itself is empty (which the skeleton already covers
+  //     during the first paint).
+  const txQuery: DataStateQueryLike<readonly Transaction[]> = {
+    data: loading && activeTx.length === 0 ? undefined : filtered,
+    isLoading: loading,
+  };
+
+  const skeleton = (
+    // Skeleton — shape-aware: matches a real TxRow (icon · 2-line
+    // description · amount). Stagger fades down so the list feels
+    // like it's "loading from the top" instead of pulsing as a slab.
+    <div className="space-y-2" aria-busy="true" aria-live="polite">
+      {Array(10)
+        .fill(0)
+        .map((_, i) => (
+          <SkeletonTransactionRow
+            key={i}
+            module="finyk"
+            className={cn(
+              i < 3
+                ? "opacity-100"
+                : i < 6
+                  ? "opacity-80"
+                  : i < 8
+                    ? "opacity-60"
+                    : "opacity-40",
+            )}
+          />
+        ))}
+    </div>
+  );
+
+  const emptyFallback = (
+    <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
+      <EmptyState
+        icon={<FinykEmptyIllustration size={80} />}
+        title="Немає транзакцій"
+        description="Зміни місяць, фільтр або переключи «приховані», якщо вони є."
+      />
+    </div>
+  );
+
   const content = (
     <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
       {header}
-      {/* Skeleton — shape-aware: matches a real TxRow (icon · 2-line
-          description · amount). Stagger fades down so the list feels
-          like it's "loading from the top" instead of pulsing as a slab. */}
-      {loading && activeTx.length === 0 && (
-        <div className="space-y-2" aria-busy="true" aria-live="polite">
-          {Array(10)
-            .fill(0)
-            .map((_, i) => (
-              <SkeletonTransactionRow
-                key={i}
-                module="finyk"
-                className={cn(
-                  i < 3
-                    ? "opacity-100"
-                    : i < 6
-                      ? "opacity-80"
-                      : i < 8
-                        ? "opacity-60"
-                        : "opacity-40",
-                )}
-              />
-            ))}
-        </div>
-      )}
-
-      {/* Empty */}
-      {filtered.length === 0 && !loading && (
-        <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
-          <EmptyState
-            icon={<FinykEmptyIllustration size={80} />}
-            title="Немає транзакцій"
-            description="Зміни місяць, фільтр або переключи «приховані», якщо вони є."
-          />
-        </div>
-      )}
-
-      {/* Virtualized list */}
-      {filtered.length > 0 && (
-        <div className="rounded-2xl border border-line/40 overflow-hidden -mx-px">
-          <GroupedVirtuoso
-            customScrollParent={scrollParent ?? undefined}
-            groupCounts={groupCounts}
-            increaseViewportBy={{ top: 400, bottom: 400 }}
-            groupContent={(groupIndex) => {
-              const group = groupedByDate[groupIndex];
-              if (!group) return null;
-              const key = group.key;
-              const collapsed = collapsedKeys.has(key);
-              const summary = daySummaries[key] ?? {
-                total: 0,
-                count: 0,
-                statCount: 0,
-              };
-              // Коли у день є тільки «не в статистиці» транзакції, сховати
-              // суму — інакше побачимо «0,00₴» або (як раніше) злиплі
-              // перекази у вигляді доходу.
-              const showTotal = showBalance && summary.statCount > 0;
-              return (
-                <TransactionDayHeader
-                  dayKey={key}
-                  collapsed={collapsed}
-                  summary={summary}
-                  showTotal={showTotal}
-                  onToggle={toggleDay}
-                />
-              );
-            }}
-            itemContent={(index) => {
-              const t = flatItems[index];
-              if (!t) return null;
-              const rowTx = t as TxRowTx;
-              return (
-                <TxListItem
-                  tx={rowTx}
-                  rowIndex={index}
-                  selectMode={selectMode}
-                  selected={selectMode && selectedIds.has(t.id)}
-                  hidden={hiddenTxIdSet.has(t.id)}
-                  overrideCatId={txCategories[t.id]}
-                  txSplits={txSplits}
-                  accounts={accounts ?? []}
-                  hideAmount={!showBalance}
-                  customCategories={customCategories}
-                  onToggleSelect={onToggleSelect}
-                  onSwipeHideTx={onSwipeHideTx}
-                  onSwipeDeleteManual={() => onSwipeDeleteManual(t)}
-                  onEditManual={onEditManual}
-                  onHideTx={onHideTx}
-                  onCatChange={onCatChange}
-                  onSplitChange={(id, splits) =>
-                    onSplitChange(id, (splits ?? []) as TxSplit[])
-                  }
-                />
-              );
-            }}
-          />
-        </div>
-      )}
+      <DataState
+        query={txQuery}
+        skeleton={skeleton}
+        empty={emptyFallback}
+        isEmpty={(data) => data.length === 0}
+      >
+        {() => (
+          <div className="rounded-2xl border border-line/40 overflow-hidden -mx-px">
+            <GroupedVirtuoso
+              customScrollParent={scrollParent ?? undefined}
+              groupCounts={groupCounts}
+              increaseViewportBy={{ top: 400, bottom: 400 }}
+              groupContent={(groupIndex) => {
+                const group = groupedByDate[groupIndex];
+                if (!group) return null;
+                const key = group.key;
+                const collapsed = collapsedKeys.has(key);
+                const summary = daySummaries[key] ?? {
+                  total: 0,
+                  count: 0,
+                  statCount: 0,
+                };
+                // Коли у день є тільки «не в статистиці» транзакції, сховати
+                // суму — інакше побачимо «0,00₴» або (як раніше) злиплі
+                // перекази у вигляді доходу.
+                const showTotal = showBalance && summary.statCount > 0;
+                return (
+                  <TransactionDayHeader
+                    dayKey={key}
+                    collapsed={collapsed}
+                    summary={summary}
+                    showTotal={showTotal}
+                    onToggle={toggleDay}
+                  />
+                );
+              }}
+              itemContent={(index) => {
+                const t = flatItems[index];
+                if (!t) return null;
+                const rowTx = t as TxRowTx;
+                return (
+                  <TxListItem
+                    tx={rowTx}
+                    rowIndex={index}
+                    selectMode={selectMode}
+                    selected={selectMode && selectedIds.has(t.id)}
+                    hidden={hiddenTxIdSet.has(t.id)}
+                    overrideCatId={txCategories[t.id]}
+                    txSplits={txSplits}
+                    accounts={accounts ?? []}
+                    hideAmount={!showBalance}
+                    customCategories={customCategories}
+                    onToggleSelect={onToggleSelect}
+                    onSwipeHideTx={onSwipeHideTx}
+                    onSwipeDeleteManual={() => onSwipeDeleteManual(t)}
+                    onEditManual={onEditManual}
+                    onHideTx={onHideTx}
+                    onCatChange={onCatChange}
+                    onSplitChange={(id, splits) =>
+                      onSplitChange(id, (splits ?? []) as TxSplit[])
+                    }
+                  />
+                );
+              }}
+            />
+          </div>
+        )}
+      </DataState>
 
       {trailing}
     </div>

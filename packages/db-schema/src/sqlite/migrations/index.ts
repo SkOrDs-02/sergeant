@@ -98,6 +98,83 @@ CREATE TABLE IF NOT EXISTS sync_op_cursor (
 `;
 
 /**
+ * Stage 5 / PR #040 retry-policy migration for `sync_op_outbox`.
+ *
+ * The original SPIKE shape (`001_routine_spike.sql`) only knew two
+ * statuses (`pending`, `rejected`) and had no per-row retry state.
+ * The persistent op-log v2 introduces:
+ *
+ *   - `attempts` — number of failed push attempts (starts at 0).
+ *   - `next_retry_at` — earliest UTC ISO-8601 timestamp at which the
+ *     sync engine may pick this op up again. NULL means "ready
+ *     immediately" (fresh enqueue, or a transient transport failure
+ *     before any backoff was scheduled).
+ *   - `last_error` — short, free-form, machine-readable reason from
+ *     the last transient failure (e.g. `network`, `http_503`,
+ *     `timeout`). Persisted across restarts so the dev panel can show
+ *     why a row is sitting in the queue without grepping logs.
+ *   - `'dead_letter'` status — a row reaches this terminal status
+ *     after `SYNC_OP_MAX_ATTEMPTS` (10) failed attempts. Sync engine
+ *     never retries it automatically; human triage routes it back to
+ *     `pending` after fixing the cause.
+ *
+ * SQLite cannot relax a `CHECK` constraint in place (the original
+ * migration locked status to `('pending','rejected')`), so we rebuild
+ * the table following the standard SQLite "12-step ALTER" recipe:
+ *
+ *   1. Rename old table out of the way.
+ *   2. Create the new shape with the relaxed `CHECK`.
+ *   3. Copy rows across, defaulting the new columns.
+ *   4. Drop the renamed legacy table.
+ *   5. Re-create indexes (old ones dropped with the rename).
+ *
+ * The whole thing runs inside the per-migration `BEGIN`/`COMMIT` the
+ * runner installs — see `applyMigration` in
+ * `packages/db-schema/src/migrate/adapters/sqlite.ts`.
+ */
+const SYNC_OP_OUTBOX_RETRY_SQL = `
+ALTER TABLE sync_op_outbox RENAME TO sync_op_outbox_legacy;
+
+CREATE TABLE sync_op_outbox (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  table_name      TEXT NOT NULL,
+  op              TEXT NOT NULL CHECK (op IN ('insert','update','delete')),
+  row             TEXT NOT NULL,
+  client_ts       TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending','rejected','dead_letter')),
+  reject_reason   TEXT,
+  attempts        INTEGER NOT NULL DEFAULT 0,
+  next_retry_at   TEXT,
+  last_error      TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+INSERT INTO sync_op_outbox (
+  id, table_name, op, row, client_ts, idempotency_key, status,
+  reject_reason, attempts, next_retry_at, last_error, created_at
+)
+SELECT
+  id, table_name, op, row, client_ts, idempotency_key, status,
+  reject_reason, 0, NULL, NULL, created_at
+FROM sync_op_outbox_legacy;
+
+DROP TABLE sync_op_outbox_legacy;
+
+CREATE UNIQUE INDEX IF NOT EXISTS sync_op_outbox_idem_uniq_lite
+  ON sync_op_outbox (idempotency_key);
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_idx_lite
+  ON sync_op_outbox (id)
+  WHERE status = 'pending';
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_due_idx_lite
+  ON sync_op_outbox (next_retry_at, id)
+  WHERE status = 'pending';
+`;
+
+/**
  * Ordered list of bundled client migrations for the routine module on
  * SQLite. Pass this directly to `runMigrations` from
  * `@sergeant/db-schema/migrate`.
@@ -105,11 +182,14 @@ CREATE TABLE IF NOT EXISTS sync_op_cursor (
  * The migration name `001_routine_spike.sql` is preserved verbatim so
  * client DBs that ran the migration under the SPIKE name don't see a
  * different ledger entry on the Stage 4 cut-over and re-apply the DDL.
- * Future Stage-4+ migrations append as `002_*.sql`, `003_*.sql`, … and
- * always show a Stage-4-or-later prefix in the file name.
+ * `002_sync_op_outbox_retry.sql` adds the Stage 5 / PR #040 retry
+ * columns and the `'dead_letter'` status onto the same `__migrations`
+ * ledger; future Stage-5+ migrations append as `003_*.sql`, … and
+ * always show a Stage-5-or-later prefix in the file name.
  */
 export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_routine_spike.sql", sql: ROUTINE_SPIKE_SQL },
+  { name: "002_sync_op_outbox_retry.sql", sql: SYNC_OP_OUTBOX_RETRY_SQL },
 ] as const;
 
 /**
@@ -564,6 +644,61 @@ CREATE TABLE IF NOT EXISTS finyk_prefs (
 );
 `;
 
+// ---------------------------------------------------------------------------
+// Finyk module — Stage 4 / PR #038 — Mono cache mirror
+//
+// Adds three client-only tables that mirror the Mono cache LS keys
+// (`finyk_tx_cache`, `finyk_info_cache`, `finyk_tx_cache_last_good`)
+// into per-row SQLite. Mono is the external source-of-truth — rows
+// are upserted by `(user_id, tx_id)` with LWW against Mono's own
+// `time` field. No Postgres counterpart: server-side Mono integration
+// already lives in `apps/server/src/modules/finyk/` with its own
+// row-level schema, so we don't push these client mirrors back
+// through op-log. See `packages/db-schema/src/sqlite/finyk.ts`.
+// ---------------------------------------------------------------------------
+
+const FINYK_002_SQL = `
+CREATE TABLE IF NOT EXISTS finyk_mono_transactions (
+  user_id      TEXT NOT NULL,
+  tx_id        TEXT NOT NULL,
+  account_id   TEXT NOT NULL,
+  mono_time    INTEGER NOT NULL,
+  data_json    TEXT NOT NULL DEFAULT '{}',
+  imported_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, tx_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_mono_transactions_user_time_idx_lite
+  ON finyk_mono_transactions (user_id, mono_time DESC);
+
+CREATE INDEX IF NOT EXISTS finyk_mono_transactions_user_account_idx_lite
+  ON finyk_mono_transactions (user_id, account_id, mono_time DESC);
+
+CREATE TABLE IF NOT EXISTS finyk_mono_accounts (
+  user_id      TEXT NOT NULL,
+  account_id   TEXT NOT NULL,
+  data_json    TEXT NOT NULL DEFAULT '{}',
+  imported_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, account_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_mono_accounts_user_idx_lite
+  ON finyk_mono_accounts (user_id);
+
+CREATE TABLE IF NOT EXISTS finyk_mono_account_snapshots (
+  user_id       TEXT NOT NULL,
+  account_id    TEXT NOT NULL,
+  snapshot_at   TEXT NOT NULL,
+  balance       INTEGER NOT NULL DEFAULT 0,
+  credit_limit  INTEGER,
+  data_json     TEXT NOT NULL DEFAULT '{}',
+  PRIMARY KEY (user_id, account_id, snapshot_at)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_mono_account_snapshots_account_time_idx_lite
+  ON finyk_mono_account_snapshots (user_id, account_id, snapshot_at DESC);
+`;
+
 /**
  * Ordered list of bundled client migrations for the Finyk module on
  * SQLite. Pass this directly to `runMigrations` from
@@ -577,6 +712,7 @@ CREATE TABLE IF NOT EXISTS finyk_prefs (
  */
 export const FINYK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_finyk_tables.sql", sql: FINYK_001_SQL },
+  { name: "002_finyk_mono_mirror.sql", sql: FINYK_002_SQL },
 ] as const;
 
 /**

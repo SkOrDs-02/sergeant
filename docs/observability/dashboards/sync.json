@@ -364,6 +364,222 @@
       ]
     },
     {
+      "title": "Op-log apply outcomes by table+status (PR #048)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 9,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 30,
+            "stacking": {
+              "mode": "normal"
+            },
+            "lineWidth": 1
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["sum"]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Per-op outcome rate (5m) for v2 op-log push. Stacked applied/rejected/duplicate per target table. Sustained rejected band > applied = client clock-skew or convergence breakdown.",
+      "targets": [
+        {
+          "expr": "sum by (table, status) (rate(sync_op_log_apply_total[5m]))",
+          "legendFormat": "{{table}} — {{status}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Op-log reject reasons (top 10, 5m rate)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "id": 10,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "max"]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Top 10 reject_reason lines among rejected ops. Fan-out by table+reason. Spikes on `tombstoned` after PR #043 deploy = expected; sustained `clock_skew` = client clock drift; `apply_failed` ≠ 0 = unhandled exception in apply path → page on-call.",
+      "targets": [
+        {
+          "expr": "topk(10, sum by (table, reason) (rate(sync_op_log_apply_total{status=\"rejected\"}[5m])))",
+          "legendFormat": "{{table}} / {{reason}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Op-log pull lag p50/p95/p99 (staleness ms)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "id": 11,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1
+          },
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1000
+              },
+              {
+                "color": "red",
+                "value": 5000
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "max"]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "User-perceived staleness: now() - server_ts(newest op returned per pull). SSE happy-path < 100ms; cursor-polling fallback few seconds. Sustained p95 > 5s = backpressure or SSE drop.",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(sync_op_log_pull_lag_ms_bucket[5m])))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(sync_op_log_pull_lag_ms_bucket[5m])))",
+          "legendFormat": "p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(sync_op_log_pull_lag_ms_bucket[5m])))",
+          "legendFormat": "p99",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "title": "Op-log pull queue depth p50/p95/p99 (ops/pull)",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "id": 12,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 1
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "max"]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "description": "Ops returned per pull request. p95 == limit (default 200) for sustained period = client perpetually behind cursor → backpressure / paginate-and-recall in tight loop.",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(sync_op_log_pull_queue_depth_bucket[5m])))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(sync_op_log_pull_queue_depth_bucket[5m])))",
+          "legendFormat": "p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(sync_op_log_pull_queue_depth_bucket[5m])))",
+          "legendFormat": "p99",
+          "refId": "C"
+        }
+      ]
+    },
+    {
       "title": "V1 vs V2 traffic split (5m rate)",
       "type": "timeseries",
       "description": "Initiative 0003 Phase 1 — pre-sunset baseline. v1 = `module=sync` legacy LWW-blob; v2 = `module=syncV2` op-log. Target: v1 → 0 by T₀.",
@@ -371,7 +587,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 40
       },
       "id": 6,
       "datasource": {
@@ -418,7 +634,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 40
       },
       "id": 7,
       "datasource": {
@@ -465,7 +681,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 48
       },
       "id": 8,
       "datasource": {
@@ -547,5 +763,5 @@
   "timezone": "Europe/Kyiv",
   "title": "Sergeant — Sync",
   "uid": "sergeant-sync",
-  "version": 1
+  "version": 2
 }

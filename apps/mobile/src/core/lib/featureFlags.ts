@@ -110,6 +110,13 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
       "Hidden / budgets / subscriptions / assets / debts / receivables / custom_categories / manual_expenses / tx_categories / tx_splits / mono_debt_links / networth_history / prefs читаються з локальної SQLite (`finyk_*`) замість MMKV blob. MMKV-write залишається як safety net. Stage 4 PR #037 storage-roadmap. Потребує увімкненого dual-write. Default: off.",
     defaultValue: false,
   },
+  {
+    id: "feature.finyk.sqlite_v2.mono_mirror",
+    label: "Finyk — Mono cache mirror",
+    description:
+      "Mono транзакції / акаунти / balance-snapshots мирорять у локальну SQLite (`finyk_mono_transactions`, `finyk_mono_accounts`, `finyk_mono_account_snapshots`) на кожен Mono fetch. Reads у `transactionsStore.realTx` оверлеять з SQLite до прильоту наступного MMKV-снапшота. MMKV-write (`finyk_tx_cache`, `finyk_info_cache`, `finyk_tx_cache_last_good`) залишається як safety net. Stage 4 PR #038 storage-roadmap. Default: off.",
+    defaultValue: false,
+  },
 ] as const;
 
 const DEFAULTS: FlagValues = Object.freeze(

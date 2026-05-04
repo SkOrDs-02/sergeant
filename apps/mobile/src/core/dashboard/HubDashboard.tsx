@@ -73,6 +73,7 @@ import { useWeeklyDigest } from "./useWeeklyDigest";
 import { WeeklyDigestFooter } from "./WeeklyDigestFooter";
 import { useHints } from "../hints/useHints";
 import { mobileKVStore as mmkvStore } from "@/lib/storage";
+import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
 
 /**
  * AssistantFab — floating action button with pulse glow animation.
@@ -413,11 +414,34 @@ export function HubDashboard() {
             <FirstActionHeroCard
               onAction={(id) => openModule(id)}
               onDismiss={bumpHero}
+              onShown={({ primary, picks }) => {
+                trackEvent(ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_SHOWN, {
+                  picks,
+                  primary,
+                });
+              }}
+              onPicked={({ module, via }) => {
+                trackEvent(ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_PICKED, {
+                  module,
+                  via,
+                });
+              }}
             />
           ) : showSoftAuth ? (
             <SoftAuthPromptCard
               onOpenAuth={handleShowAuth}
               onDismiss={bumpHero}
+              onShown={() => {
+                trackEvent(ANALYTICS_EVENTS.AUTH_PROMPT_SHOWN, {
+                  placement: "dashboard",
+                });
+              }}
+              onAuthOpened={() => {
+                trackEvent(ANALYTICS_EVENTS.AUTH_AFTER_VALUE);
+              }}
+              onDismissed={() => {
+                trackEvent(ANALYTICS_EVENTS.AUTH_PROMPT_DISMISSED);
+              }}
             />
           ) : (
             <TodayFocusCard

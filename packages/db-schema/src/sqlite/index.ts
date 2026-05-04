@@ -14,6 +14,17 @@ export {
   type SyncOpOutboxStatus,
 } from "./routine.js";
 export {
+  SYNC_OP_MAX_ATTEMPTS,
+  SYNC_OP_BASE_BACKOFF_MS,
+  SYNC_OP_MAX_BACKOFF_MS,
+  SYNC_OP_JITTER_WINDOW_MS,
+  computeBackoffMs,
+  computeNextRetryAt,
+  nextStatusForRetry,
+  planRetry,
+  type SyncOpRetryPlan,
+} from "./syncOpRetry.js";
+export {
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,
   ROUTINE_SPIKE_CLIENT_MIGRATIONS,
@@ -53,6 +64,9 @@ export {
   finykTxCategories,
   finykTxSplits,
   finykMonoDebtLinks,
+  finykMonoTransactions,
+  finykMonoAccounts,
+  finykMonoAccountSnapshots,
   finykNetworthHistory,
   finykPrefs,
 } from "./finyk.js";

@@ -67,12 +67,16 @@
 
 Закриті Medium / Low картки (хронологічно):
 
-| ID                                             | Title                                                | Status                                                                                                     | Sprint                    |
-| ---------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------- |
-| [M2](./M2-trust-proxy-parameterize.md)         | `trust proxy = 1` hard-coded                         | Closed (2026-05-04) — PR [#1682](https://github.com/Skords-01/Sergeant/pull/1682)                          | [Sprint 3](./sprint-3.md) |
-| [M4](./M4-groq-model-allowlist.md)             | `GROQ_TRANSCRIBE_MODEL` env-injectable, no allowlist | Closed (2026-05-04) — batched M4 + M5 + M13 hardening PR                                                   | [Sprint 3](./sprint-3.md) |
-| [M5](./M5-audio-mime-normalize.md)             | Audio MIME aliases without normalization             | Closed (2026-05-04) — batched M4 + M5 + M13 hardening PR                                                   | [Sprint 3](./sprint-3.md) |
-| [M13](./M13-require-session-soft-loud-fail.md) | `requireSessionSoft` swallows DB errors as 401       | Closed (2026-05-04, server-side) — batched M4 + M5 + M13 hardening PR; client-side push back-off follow-up | [Sprint 3](./sprint-3.md) |
+| ID                                             | Title                                                  | Status                                                                                                     | Sprint                    |
+| ---------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ------------------------- |
+| [M2](./M2-trust-proxy-parameterize.md)         | `trust proxy = 1` hard-coded                           | Closed (2026-05-04) — PR [#1682](https://github.com/Skords-01/Sergeant/pull/1682)                          | [Sprint 3](./sprint-3.md) |
+| [M4](./M4-groq-model-allowlist.md)             | `GROQ_TRANSCRIBE_MODEL` env-injectable, no allowlist   | Closed (2026-05-04) — batched M4 + M5 + M13 hardening PR                                                   | [Sprint 3](./sprint-3.md) |
+| [M5](./M5-audio-mime-normalize.md)             | Audio MIME aliases without normalization               | Closed (2026-05-04) — batched M4 + M5 + M13 hardening PR                                                   | [Sprint 3](./sprint-3.md) |
+| [M13](./M13-require-session-soft-loud-fail.md) | `requireSessionSoft` swallows DB errors as 401         | Closed (2026-05-04, server-side) — batched M4 + M5 + M13 hardening PR; client-side push back-off follow-up | [Sprint 3](./sprint-3.md) |
+| [M7](./M7-chat-tool-iteration-cap.md)          | Chat loop has no `MAX_TOOL_ITERATIONS` cap             | Closed (2026-05-04) — batched M7 + M12 hardening PR                                                        | [Sprint 3](./sprint-3.md) |
+| [M12](./M12-web-vitals-hardening.md)           | `web-vitals` ingest body cap, allowlist + UA normalise | Closed (2026-05-04) — batched M7 + M12 hardening PR                                                        | [Sprint 3](./sprint-3.md) |
+| [M6](./M6-image-magic-byte-check.md)           | Photo endpoints accept base64 without magic-byte check | Closed (2026-05-04) — batched M6 + M8 hardening PR                                                         | [Sprint 3](./sprint-3.md) |
+| [M8](./M8-prompt-injection-tool-output.md)     | Tool-result blocks not wrapped vs prompt injection     | Closed (2026-05-04) — batched M6 + M8 hardening PR                                                         | [Sprint 3](./sprint-3.md) |
 
 ## Cross-references
 

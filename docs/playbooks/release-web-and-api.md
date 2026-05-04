@@ -1,71 +1,37 @@
 # Playbook: Release Web and API
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
-> **Status:** Active
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Deprecated
 
-**Trigger:** ship a release-affecting change to `apps/web`, `apps/server`, or both; especially when deploy order, env changes, feature flags, or migrations matter.
+> **Superseded by:** [release.md § Web + API](./release.md#1-web--api) — merged 2026-05-04 (initiative [0009](../initiatives/0009-agent-os-hardening.md) PR 2.3).
+
+**Trigger:** historical anchor — open [release.md § Web + API](./release.md#1-web--api) instead.
 
 ## Owner surface
 
 - Primary surface: web and API runtime
 - Governing skill: `sergeant-deploy-and-observability`
 
-## Required context
+## Why this stub still exists
 
-- Start with `sergeant-start-here`, then open `sergeant-deploy-and-observability`.
-- Review [service-catalog.md](../architecture/service-catalog.md) and [release-policy.md](../governance/release-policy.md).
-- If a migration is involved, also open [add-sql-migration.md](./add-sql-migration.md).
+The merged [release.md](./release.md) playbook now owns the web + API release loop alongside the Capacitor shell and Expo flows. This file stays in the repo so external bookmarks, audit logs, and historical PR/incident references keep resolving without 404s, and so `git blame` on the original steps remains intact.
+
+Do not extend this stub. Update [release.md](./release.md) and let this file follow.
 
 ## Steps
 
-### 1. Classify the release
-
-- Identify whether the change is merge-only, coordinated, or high-risk.
-- Name the touched surfaces and deploy targets in the PR.
-- Confirm rollback path before merging.
-
-### 2. Freeze the deploy order
-
-- Apply env changes before code only if the new values are backward-compatible.
-- Apply migrations before app deploy only when the schema change is additive and backward-compatible.
-- Deploy API before web if the UI depends on new contract behavior.
-- Deploy web before API only when the API is fully backward-compatible and the UI is the risky surface.
-
-### 3. Verify release gates
-
-- CI for the changed surfaces is green.
-- No blocking incident or red error budget on the same dependency chain unless this release is the mitigation.
-- Feature flags and kill switches are documented.
-
-### 4. Execute deploy
-
-- Merge intentionally.
-- Deploy in the documented order.
-- Keep a note of the deployment IDs or release references used.
-
-### 5. Run post-release verification
-
-- Check `/health` and one user-critical flow end-to-end.
-- Verify error rates, latency, and Sentry noise on the changed surfaces.
-- Confirm the feature flag state matches the rollout plan.
+See [release.md § Web + API](./release.md#1-web--api).
 
 ## Verification
 
-- [ ] Primary surface named in the PR
-- [ ] Deploy order documented
-- [ ] Rollback path documented
-- [ ] `/health` and one critical user journey checked after deploy
-- [ ] Any migration/env ordering captured in the PR or release note
+- [ ] The reader was redirected to [release.md § Web + API](./release.md#1-web--api).
 
 ## When not to use this playbook
 
-- Change is docs-only or internal-only with no runtime effect.
-- Mobile store or EAS release is the primary surface.
+- Always: this file is deprecated. Use [release.md](./release.md).
 
 ## Related playbooks and skills
 
-- [release-mobile-shell.md](./release-mobile-shell.md)
-- [release-expo-mobile.md](./release-expo-mobile.md)
+- [release.md](./release.md) — canonical merged release playbook.
 - [hotfix-prod-regression.md](./hotfix-prod-regression.md)
-- Skill: `sergeant-server-api`
-- Skill: `sergeant-web-ui`
+- Skill: `sergeant-deploy-and-observability`

@@ -42,6 +42,18 @@ import type { ManualExpensePayload } from "../components/ManualExpenseSheet";
 
 import { getCachedFinykSqliteState } from "./sqliteReader";
 import { useFinykSqliteReadGate } from "./sqliteReadGate";
+import { useUser } from "@sergeant/api-client/react";
+import { getSqliteMigrationClient } from "@/core/db/sqlite";
+import { migrateFinyk } from "./clientMigrate";
+import { writeMonoTransactions } from "./monoMirror";
+import {
+  getCachedFinykMonoMirrorState,
+  refreshFinykMonoMirrorState,
+} from "./monoMirrorReader";
+import {
+  notifyFinykMonoMirrorRefresh,
+  useFinykMonoMirrorGate,
+} from "./monoMirrorGate";
 
 const KEY_MANUAL = FINYK_STORAGE_KEYS.transactions;
 const KEY_TX_CATS = FINYK_BACKUP_STORAGE_KEYS.txCategories;
@@ -326,6 +338,54 @@ export function useFinykTransactionsStore(
     setTxSplitsState(txSplitsMap);
     setHiddenState(cache.hiddenTransactions);
   }, [sqliteReadEnabled, sqliteCacheTick]);
+
+  // Stage 4 PR #038 — overlay `realTx` from the Mono mirror cache when
+  // `feature.finyk.sqlite_v2.mono_mirror` is on. The MMKV first-paint
+  // hydration above stays as a synchronous fallback; this effect only
+  // fires after `useFinykMonoMirrorBoot` has refreshed the cache.
+  const { enabled: monoMirrorEnabled, tick: monoMirrorTick } =
+    useFinykMonoMirrorGate();
+  useEffect(() => {
+    if (!monoMirrorEnabled) return;
+    const cache = getCachedFinykMonoMirrorState();
+    if (cache.refreshedAt === null) return;
+    if (cache.transactions.length > 0) {
+      setRealTxState(cache.transactions);
+    }
+  }, [monoMirrorEnabled, monoMirrorTick]);
+
+  // Stage 4 PR #038 — best-effort write into the Mono mirror tables on
+  // every `realTx` change (the slice updates whenever cloud-sync
+  // propagates the web snapshot through `KEY_TX_CACHE`). LS write
+  // remains the source-of-truth until the read overlay flag is on.
+  const { data: meData } = useUser({
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const userId = meData?.user?.id ?? null;
+  useEffect(() => {
+    if (!monoMirrorEnabled || !userId || realTx.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const client = await getSqliteMigrationClient();
+        await migrateFinyk(client);
+        if (cancelled) return;
+        await writeMonoTransactions(client, userId, realTx);
+        if (cancelled) return;
+        await refreshFinykMonoMirrorState(client, userId);
+        if (!cancelled) notifyFinykMonoMirrorRefresh();
+      } catch (err) {
+        console.warn(
+          "[finyk.monoMirror] write transactions failed",
+          err instanceof Error ? err.message : err,
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [realTx, userId, monoMirrorEnabled]);
 
   const writeManual = useCallback((next: ManualExpenseRecord[]) => {
     const prev = read<ManualExpenseRecord[]>(KEY_MANUAL, []);

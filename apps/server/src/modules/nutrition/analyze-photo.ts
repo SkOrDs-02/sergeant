@@ -8,6 +8,8 @@ import {
   extractAnthropicText,
 } from "../../lib/anthropic.js";
 import { normalizePhotoResult } from "../../lib/nutritionResponse.js";
+import { validateImageBase64 } from "../../lib/imageMagic.js";
+import { nutritionPhotoRejectedTotal } from "../../obs/metrics.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -49,7 +51,32 @@ export default async function handler(
   const { image_base64, mime_type, locale } = parsed.data;
 
   const b64 = image_base64.trim();
-  const mediaType = mime_type || "image/jpeg";
+
+  // M6 — server-side magic-byte валідація. Клієнтський `mime_type` тут лише
+  // hint: канонічний MIME, який ми передамо Anthropic-у, визначається за
+  // підписом перших 12 байт буфера. Це закриває polyglot-атаки (SVG під
+  // виглядом JPEG), декомпресійну bombу (5 MB cap) і відмовляє неприйнятні
+  // формати (GIF, SVG) до hop-у на Anthropic.
+  const validation = validateImageBase64(b64, mime_type);
+  if (!validation.ok) {
+    nutritionPhotoRejectedTotal.inc({
+      endpoint: "analyze-photo",
+      reason: validation.code,
+    });
+    const status = validation.code === "TOO_LARGE" ? 413 : 415;
+    res.status(status).json({
+      code: validation.code,
+      detail: validation.detail,
+      ...(validation.code === "MAGIC_MISMATCH"
+        ? {
+            declared_mime: validation.declaredMime,
+            detected_mime: validation.detectedMime,
+          }
+        : {}),
+    });
+    return;
+  }
+  const mediaType = validation.mimeType;
 
   const userText = `Мова: ${locale || "uk-UA"}.
 Опиши, що на фото і порахуй приблизне КБЖВ. Якщо треба — задай уточнення.`;

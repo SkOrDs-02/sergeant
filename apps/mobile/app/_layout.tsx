@@ -14,6 +14,7 @@ import { ApiClientProvider } from "@sergeant/api-client/react";
 import { apiClient } from "@/api/apiClient";
 import { SyncStatusOverlay } from "@/core/SyncStatusOverlay";
 import { ColorSchemeBridge } from "@/core/theme/ColorSchemeBridge";
+import { AnalyticsIdentityBridge } from "@/features/analytics/AnalyticsIdentityBridge";
 import { PushRegistrar } from "@/features/push/PushRegistrar";
 // Registers the mobile `expo-haptics`-based adapter on the shared
 // haptic contract (`@sergeant/shared`). Import for side effects only.
@@ -28,6 +29,7 @@ import "@/lib/fileImport";
 // visual-keyboard-inset contract (`@sergeant/shared`). Import for side
 // effects only.
 import "@/hooks/useVisualKeyboardInset";
+import { initPostHog } from "@/lib/analytics";
 import { captureError, initObservability } from "@/lib/observability";
 import { IdentityBridge } from "@/observability/IdentityBridge";
 import { initPostHog } from "@/observability/posthog";
@@ -101,6 +103,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     initObservability();
+    // Boot PostHog after Sentry — fire-and-forget. Без
+    // `EXPO_PUBLIC_POSTHOG_KEY` це повний no-op (жодного fetch),
+    // тож локальний dev і CI без секрету не платять нічого.
+    void initPostHog();
   }, []);
 
   useEffect(() => {
@@ -163,6 +169,7 @@ export default function RootLayout() {
                 <RootShell />
                 <ToastContainer />
                 <PushRegistrar />
+                <AnalyticsIdentityBridge />
               </ToastProvider>
             </CloudSyncProvider>
           </ApiClientProvider>

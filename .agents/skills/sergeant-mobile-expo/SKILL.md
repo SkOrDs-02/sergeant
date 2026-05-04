@@ -34,6 +34,5 @@ Sergeant mobile is not a thin copy of the web app. It uses Expo Router, NativeWi
 
 ## Playbooks
 
-- `docs/playbooks/release-expo-mobile.md` — Expo build and submit.
-- `docs/playbooks/release-mobile-shell.md` — Capacitor mobile-shell release.
+- `docs/playbooks/release.md` — canonical release playbook (Expo and Capacitor shell sections).
 - Catalog: `docs/agents/agent-skills-catalog.md`.

@@ -67,14 +67,15 @@ describe("replayOfflineQueue", () => {
   });
 
   it("flushes queued modules via syncApi.pushAll and clears on success", async () => {
-    // PR #030 retired 'fizruk' from SYNC_MODULES, so
-    // collectQueuedModules drops fizruk entries before they reach
-    // pushAll. Use 'nutrition' as the second module here.
+    // PR #026 retired `routine`, PR #030 retired `fizruk`, PR #034
+    // retired `nutrition` and PR #039 retired `finyk` from
+    // SYNC_MODULES; only `profile` survives the
+    // `collectQueuedModules` filter, so the happy path now asserts
+    // that the single live module is pushed and the queue is cleared.
     mockPushAll.mockResolvedValue({
-      results: { finyk: { ok: true }, nutrition: { ok: true } },
+      results: { profile: { ok: true } },
     });
-    addToOfflineQueue({ type: "push", modules: modules("finyk", 1) });
-    addToOfflineQueue({ type: "push", modules: modules("nutrition", 2) });
+    addToOfflineQueue({ type: "push", modules: modules("profile", 1) });
 
     await replayOfflineQueue();
 
@@ -83,13 +84,13 @@ describe("replayOfflineQueue", () => {
       string,
       ModulePayload
     >;
-    expect(Object.keys(payload).sort()).toEqual(["finyk", "nutrition"]);
+    expect(Object.keys(payload).sort()).toEqual(["profile"]);
     expect(getOfflineQueue()).toEqual([]);
   });
 
   it("drops the retired fizruk module entries before push (PR #030)", async () => {
-    mockPushAll.mockResolvedValue({ results: { finyk: { ok: true } } });
-    addToOfflineQueue({ type: "push", modules: modules("finyk", 1) });
+    mockPushAll.mockResolvedValue({ results: { profile: { ok: true } } });
+    addToOfflineQueue({ type: "push", modules: modules("profile", 1) });
     addToOfflineQueue({ type: "push", modules: modules("fizruk", 2) });
 
     await replayOfflineQueue();
@@ -99,8 +100,29 @@ describe("replayOfflineQueue", () => {
       string,
       ModulePayload
     >;
-    expect(Object.keys(payload)).toEqual(["finyk"]);
+    expect(Object.keys(payload)).toEqual(["profile"]);
     expect(payload).not.toHaveProperty("fizruk");
+    expect(getOfflineQueue()).toEqual([]);
+  });
+
+  it("drops the retired finyk module entries before push (PR #039)", async () => {
+    // PR #039 (storage-roadmap Stage 4) — same shape as the fizruk
+    // and nutrition drops: legacy `finyk` queue rows are silently
+    // filtered by `collectQueuedModules` because finyk is no longer
+    // in `SYNC_MODULES`. The live `profile` module is still pushed.
+    mockPushAll.mockResolvedValue({ results: { profile: { ok: true } } });
+    addToOfflineQueue({ type: "push", modules: modules("profile", 1) });
+    addToOfflineQueue({ type: "push", modules: modules("finyk", 2) });
+
+    await replayOfflineQueue();
+
+    expect(mockPushAll).toHaveBeenCalledTimes(1);
+    const payload = mockPushAll.mock.calls[0][0] as Record<
+      string,
+      ModulePayload
+    >;
+    expect(Object.keys(payload)).toEqual(["profile"]);
+    expect(payload).not.toHaveProperty("finyk");
     expect(getOfflineQueue()).toEqual([]);
   });
 
@@ -111,7 +133,11 @@ describe("replayOfflineQueue", () => {
         kind: "network",
       }),
     );
-    addToOfflineQueue({ type: "push", modules: modules("finyk", 1) });
+    // PR #039: `finyk` retired, so a finyk-only queue entry would be
+    // dropped at collect time and pushAll never invoked. Use the
+    // live `profile` module so the rejection branch is actually
+    // exercised.
+    addToOfflineQueue({ type: "push", modules: modules("profile", 1) });
 
     await replayOfflineQueue();
 
@@ -146,7 +172,7 @@ describe("replayOfflineQueue", () => {
           resolvePush = resolve;
         }),
     );
-    addToOfflineQueue({ type: "push", modules: modules("finyk", 1) });
+    addToOfflineQueue({ type: "push", modules: modules("profile", 1) });
 
     const a = replayOfflineQueue();
     const b = replayOfflineQueue();

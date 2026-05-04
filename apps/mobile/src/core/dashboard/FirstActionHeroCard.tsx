@@ -16,9 +16,13 @@
  *     `onAction` and lets the user type a first entry there. Once
  *     `PresetSheet` lands we can remove the routing fallback and
  *     trigger the sheet inline, keeping parity with web.
- *   - Analytics (`trackEvent`). Mobile doesn't have a sink wired yet
- *     (see migration plan Phase 6). Callers can inject one via
- *     `onShown` / `onPicked` if they want to observe the lifecycle.
+ *   - Analytics (`trackEvent`). Wired via `onShown` / `onPicked` /
+ *     `onDismiss` callbacks. The shared mobile sink lives at
+ *     `apps/mobile/src/lib/analytics.ts`; `HubDashboard.tsx` is the
+ *     canonical caller and fires `onboarding_first_action_shown` /
+ *     `onboarding_first_action_picked` against PostHog (S0.4 mobile
+ *     parity). Tests still rely on the prop callbacks directly so
+ *     they don't depend on the sink.
  */
 
 import { useEffect, useMemo } from "react";

@@ -76,27 +76,43 @@ export const routineStreaks = sqliteTable("routine_streaks", {
  * Client-only outbox of pending `/api/v2/sync/push` ops.
  *
  * No Postgres counterpart — server-side ops live in `sync_op_log`
- * (`packages/db-schema/src/pg/syncOpLog.ts`). The outbox is the SPIKE's
- * client-side enqueue surface: every routine mutation under feature
- * flag `feature.routine.sqlite_v2` writes an entry here in the same
- * transaction as the row mutation, so a crash mid-op never leaves the
- * local DB diverged from what's queued.
+ * (`packages/db-schema/src/pg/syncOpLog.ts`). The outbox is the
+ * client-side enqueue surface: every mutation under a `*_sqlite_v2`
+ * feature flag writes an entry here in the same transaction as the
+ * row mutation, so a crash mid-op never leaves the local DB diverged
+ * from what's queued.
  *
  * Lifecycle:
- *   - inserted with `status='pending'` by the SQLite repo;
- *   - sync engine batches up to 200 oldest pending ops and posts to
+ *   - inserted with `status='pending'`, `attempts=0`, `next_retry_at=NULL`
+ *     by the SQLite repo;
+ *   - sync engine batches up to 200 oldest pending ops where
+ *     `next_retry_at IS NULL OR next_retry_at <= now()` and posts to
  *     `/api/v2/sync/push` (see `SYNC_V2_MAX_OPS_PER_PUSH` in
  *     `packages/shared/src/schemas/api.ts`);
  *   - server responses:
  *     * `applied` / `duplicate` → row is deleted (clean queue);
- *     * `rejected` → row stays with `status='rejected'` and
- *       `reject_reason` populated, ready for human triage. Stage 5
- *       PR #040 will introduce retry/back-off; SPIKE keeps it simple.
+ *     * `rejected` (durable / 4xx) → row stays with `status='rejected'`
+ *       and `reject_reason` populated; never retried automatically;
+ *     * transient transport / 5xx → call `markRetryable` from
+ *       `./syncOpRetry.ts`; updates `attempts`, `last_error`, and
+ *       schedules the next attempt with exponential backoff. After
+ *       `SYNC_OP_MAX_ATTEMPTS` attempts the row flips to
+ *       `status='dead_letter'` and waits for human triage.
+ *
+ * The retry/backoff/dead-letter columns and the `'dead_letter'` status
+ * landed in PR #040 (`docs/planning/storage-roadmap.md` Stage 5) on
+ * top of the original SPIKE shape from PR #022. The migration
+ * recreates the table because SQLite cannot relax a `CHECK` constraint
+ * in place — see `002_sync_op_outbox_retry.sql`.
  */
 export const SYNC_OP_OUTBOX_OPS = ["insert", "update", "delete"] as const;
 export type SyncOpOutboxOp = (typeof SYNC_OP_OUTBOX_OPS)[number];
 
-export const SYNC_OP_OUTBOX_STATUSES = ["pending", "rejected"] as const;
+export const SYNC_OP_OUTBOX_STATUSES = [
+  "pending",
+  "rejected",
+  "dead_letter",
+] as const;
 export type SyncOpOutboxStatus = (typeof SYNC_OP_OUTBOX_STATUSES)[number];
 
 export const syncOpOutbox = sqliteTable(
@@ -112,6 +128,9 @@ export const syncOpOutbox = sqliteTable(
       .notNull()
       .default("pending"),
     rejectReason: text("reject_reason"),
+    attempts: integer().notNull().default(0),
+    nextRetryAt: text("next_retry_at"),
+    lastError: text("last_error"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -120,6 +139,9 @@ export const syncOpOutbox = sqliteTable(
     uniqueIndex("sync_op_outbox_idem_uniq_lite").on(table.idempotencyKey),
     index("sync_op_outbox_pending_idx_lite")
       .on(table.id)
+      .where(sql`${table.status} = 'pending'`),
+    index("sync_op_outbox_pending_due_idx_lite")
+      .on(table.nextRetryAt, table.id)
       .where(sql`${table.status} = 'pending'`),
   ],
 );
