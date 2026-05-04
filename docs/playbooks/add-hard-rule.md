@@ -1,6 +1,6 @@
 # Playbook: Add a Hard Rule
 
-> **Last validated:** 2026-04-30 by @devin-ai-integration. **Next review:** 2026-07-29.
+> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
 > **Status:** Active
 
 **Trigger:** "Add a new Hard Rule" / "Add a new mandatory convention" / any rule that should be enforced across all contributors and AI agents.
@@ -76,6 +76,7 @@ Add a new entry to [`docs/governance/hard-rules.json`](../governance/hard-rules.
   "title": "Short imperative title (verbatim from AGENTS.md heading)",
   "scope": ["apps/web/src/**"],
   "severity": "blocker",
+  "category": "lint-enforced-convention",
   "enforced_by": [
     { "kind": "eslint-rule", "ref": "sergeant-design/<rule-name>" },
     { "kind": "ci", "ref": "pnpm lint:plugins" }
@@ -88,6 +89,14 @@ Add a new entry to [`docs/governance/hard-rules.json`](../governance/hard-rules.
 ```
 
 `kind` must be one of: `ci`, `eslint-rule`, `test`, `hook`, `branch-protection`, `codeowners`, `doc`, `convention`, `pr-template` (see [`hard-rules.schema.json`](../governance/hard-rules.schema.json)).
+
+`category` is **required** since [#1660](https://github.com/Skords-01/Sergeant/pull/1660) (initiative `0009-agent-os-hardening` PR 1.5). It must be one of:
+
+- **`blocker-invariant`** — runtime/process invariant; violation = data loss, outage, or silent regression (e.g. DB migration safety, no-force-push, no-skip-hooks). Pick this for rules whose enforcement is the runtime/process itself.
+- **`lint-enforced-convention`** — style or process rule with mechanical enforcement (ESLint plugin, commitlint, governance-sync, freshness). Same `severity: blocker`, but the enforcement gate is a linter, not a runtime invariant. **Most new design / convention rules go here.**
+- **`active-initiative`** — rule shipped with an explicit allowlist + deadline (linked `TODO(NNNN-…): YYYY-MM-DD`). Treated as a blocker for new code; existing exceptions tracked separately.
+
+The legend lives at the bottom of [`hard-rules-matrix.md`](../governance/hard-rules-matrix.md) and in the `## Hard rules` preface in `AGENTS.md`. `pnpm lint:hard-rules-registry` and `loadRegistry()` (`scripts/docs/generate-hard-rules-matrix.mjs`) reject rules without a valid `category`.
 
 Then regenerate the index:
 
@@ -119,6 +128,7 @@ git commit -m "docs(root): add Hard Rule #N — short title"
 
 - [ ] `grep -E '^### N\.' AGENTS.md` — rule exists with full content.
 - [ ] `docs/governance/hard-rules.json` — entry with integer `id: N` exists.
+- [ ] New entry has a valid `category` (`blocker-invariant` / `lint-enforced-convention` / `active-initiative`).
 - [ ] `pnpm hard-rules:check` — matrix is in sync with the JSON registry.
 - [ ] `pnpm lint:hard-rules-registry` — JSON ↔ AGENTS.md ↔ CONTRIBUTING.md in sync.
 - [ ] `pnpm hard-rules:list` — new rule appears in CLI dump.
