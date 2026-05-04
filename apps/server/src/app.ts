@@ -147,6 +147,22 @@ export function createApp({
   app.use("/api/coach/memory", express.json({ limit: "6mb" }));
   app.use("/api/chat", express.json({ limit: "1mb" }));
   app.use("/api/mono/webhook", express.json({ limit: "32kb" }));
+  // CSP-violation reports come from browsers with non-default content-types
+  // (`application/csp-report` for legacy `report-uri`, `application/reports+json`
+  // for the modern Reporting-API). Mount type-aware parsers ahead of the
+  // global `express.json({ limit: "128kb" })` so the report body lands in
+  // `req.body` regardless of which wire format the browser chose. The 16kb
+  // ceiling matches Sentry's own CSP-ingest limit and is well above any
+  // legitimate single-violation payload (~1–2kb in practice).
+  app.use(
+    "/api/csp-report",
+    express.json({ type: "application/csp-report", limit: "16kb" }),
+  );
+  app.use(
+    "/api/csp-report",
+    express.json({ type: "application/reports+json", limit: "16kb" }),
+  );
+  app.use("/api/csp-report", express.json({ limit: "16kb" }));
   // Voice transcription: raw audio blob, NOT JSON. Mount раніше за глобальний
   // `express.json({ limit: "128kb" })`, щоб 10mb-блоб не різався 128KB-парсером
   // (хоч `express.json()` no-op-ить на не-JSON, явний raw-парсер чіткіший).

@@ -119,7 +119,8 @@
       "@tootallnate/once": ">=3.0.1"
     },
     "patchedDependencies": {
-      "@expo/cli@0.22.28": "patches/@expo__cli@0.22.28.patch"
+      "@expo/cli@0.22.28": "patches/@expo__cli@0.22.28.patch",
+      "eslint-plugin-react": "patches/eslint-plugin-react.patch"
     }
   }
 }

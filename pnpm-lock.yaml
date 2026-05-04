@@ -17,6 +17,9 @@ patchedDependencies:
   '@expo/cli@0.22.28':
     hash: abaug3oj7ww6mgfhur3j3qc7fm
     path: patches/@expo__cli@0.22.28.patch
+  eslint-plugin-react:
+    hash: lvmnijcd2yz5k3znmon7ixpuji
+    path: patches/eslint-plugin-react.patch
 
 importers:
 
@@ -51,7 +54,7 @@ importers:
         version: 6.10.2(eslint@10.3.0(jiti@2.6.1))
       eslint-plugin-react:
         specifier: ^7.37.2
-        version: 7.37.5(eslint@10.3.0(jiti@2.6.1))
+        version: 7.37.5(patch_hash=lvmnijcd2yz5k3znmon7ixpuji)(eslint@10.3.0(jiti@2.6.1))
       eslint-plugin-react-hooks:
         specifier: ^7.1.1
         version: 7.1.1(eslint@10.3.0(jiti@2.6.1))
@@ -19225,7 +19228,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-react@7.37.5(eslint@10.3.0(jiti@2.6.1)):
+  eslint-plugin-react@7.37.5(patch_hash=lvmnijcd2yz5k3znmon7ixpuji)(eslint@10.3.0(jiti@2.6.1)):
     dependencies:
       array-includes: 3.1.9
       array.prototype.findlast: 1.2.5
