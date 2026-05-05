@@ -226,8 +226,8 @@ UNION ALL SELECT 'mono_transaction orphan', COUNT(*) FROM mono_transaction t   L
 
 ## 6. Validation (rehearsal — PR #049b weekly CI)
 
-GitHub Action [`weekly-verify-backup-restore.yml`](../../.github/workflows/weekly-verify-backup-restore.yml)
-_(планується в PR #049b)_ робить:
+GitHub Action [`db-backup-verify.yml`](../../.github/workflows/db-backup-verify.yml)
+_(PR #049b — LANDED)_ робить:
 
 1. Pull найновішого Railway dump через CLI (потребує `RAILWAY_TOKEN` у GH Secrets).
 2. Restore у тимчасовий ephemeral pg-instance (testcontainers / Railway temp service).
