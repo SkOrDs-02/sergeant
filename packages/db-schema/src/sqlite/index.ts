@@ -45,6 +45,11 @@ export {
   type SyncOpOutboxStatusCounts,
 } from "./syncOpOutboxStatus.js";
 export {
+  recoverDeadLetter,
+  type RecoverDeadLetterResult,
+  type RecoverDeadLetterSelector,
+} from "./syncOpOutboxRecover.js";
+export {
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,
   ROUTINE_SPIKE_CLIENT_MIGRATIONS,
