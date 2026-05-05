@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+// @deprecated  One-shot historical codemod (already applied — see
+// `scripts/codemods/README.md` catalog). Preserved here for forensics +
+// re-run on old branches; not part of the active CI / lint workflow.
+//
 // Codemod: replace `safeWriteLS(<sync-tracked key>, value)` with
 // `safeWriteSyncedLS(<sync-tracked key>, value)` under `apps/web/src`,
 // adding the corresponding import if needed.
