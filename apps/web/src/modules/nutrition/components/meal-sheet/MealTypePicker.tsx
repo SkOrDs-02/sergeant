@@ -3,6 +3,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { MEAL_TYPES, type MealTypeId } from "../../lib/mealTypes";
 import type { MealFormState } from "./mealFormUtils";
+import { messages } from "@shared/i18n/uk";
 
 interface MealTypePickerProps {
   mealType: MealTypeId;
@@ -13,7 +14,7 @@ export function MealTypePicker({ mealType, setForm }: MealTypePickerProps) {
   return (
     <div className="mb-4">
       <SectionHeading as="div" size="xs" className="mb-2">
-        Прийом їжі
+        {messages.nutrition.mealType}
       </SectionHeading>
       <div className="flex gap-2 flex-wrap">
         {MEAL_TYPES.map((mt) => (

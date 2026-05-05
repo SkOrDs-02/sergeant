@@ -1,4 +1,5 @@
 import { Skeleton } from "@shared/components/ui/Skeleton";
+import { messages } from "@shared/i18n/uk";
 
 /**
  * Skeleton-плейсхолдер, який використовується як Suspense fallback для
@@ -16,7 +17,7 @@ export function PageLoader() {
       role="status"
       aria-busy="true"
       aria-live="polite"
-      aria-label="Завантаження сторінки"
+      aria-label={messages.loaders.pageLoading}
     >
       <div className="flex items-center gap-3">
         <Skeleton className="h-10 w-10 rounded-2xl motion-safe:animate-pulse" />
@@ -28,7 +29,7 @@ export function PageLoader() {
       <Skeleton className="h-28 w-full motion-safe:animate-pulse" />
       <Skeleton className="h-20 w-full motion-safe:animate-pulse" />
       <Skeleton className="h-20 w-full motion-safe:animate-pulse" />
-      <span className="sr-only">Завантаження…</span>
+      <span className="sr-only">{messages.status.loading}</span>
     </div>
   );
 }

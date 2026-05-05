@@ -7,6 +7,7 @@ import type {
   TrainingProgramDef,
   ProgramSessionDef,
 } from "@sergeant/fizruk-domain/domain";
+import { messages } from "@shared/i18n/uk";
 
 interface RouterTodaySession {
   sessionKey: string;
@@ -137,7 +138,10 @@ export function FizrukRouter(props: FizrukRouterProps) {
     <Suspense fallback={<ModulePageLoader module="fizruk" />}>
       <SectionErrorBoundary
         key={props.page}
-        title={PAGE_ERROR_TITLES[props.page] ?? "Не вдалось показати сторінку"}
+        title={
+          PAGE_ERROR_TITLES[props.page] ??
+          messages.errors.generic.cannotRenderPage
+        }
       >
         {renderPage(props)}
       </SectionErrorBoundary>

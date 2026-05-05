@@ -43,6 +43,9 @@ export const messages = {
     // Серверні errors (rate-limiter, error handler):
     rateLimited: "Забагато спроб. Зачекай хвилину і спробуй ще раз.",
     serverDown: "Сервер тимчасово недоступний. Спробуй пізніше.",
+
+    // Round 16 — soft-auth prompt
+    createAccount: "Створити акаунт",
   },
 
   sync: {
@@ -127,6 +130,59 @@ export const messages = {
     refresh: "Оновити",
     reset: "Скинути",
     open: "Відкрити",
+
+    // Round 16 additions — high-frequency burndown candidates
+    // («Згорнути»/«Розгорнути» з'являються в 5+ місцях кожен,
+    // «Продовжити»/«Пропустити»/«Пізніше» — у onboarding-flow-ах).
+    skip: "Пропустити",
+    continue: "Продовжити",
+    collapse: "Згорнути",
+    expand: "Розгорнути",
+    hide: "Приховати",
+    tryAgain: "Спробувати ще раз",
+    later: "Пізніше",
+    change: "Змінити",
+    restore: "Відновити",
+    reload: "Перезавантажити",
+    clear: "Очистити",
+    remove: "Прибрати",
+    send: "Надіслати",
+  },
+
+  status: {
+    // Round 16 — спільні short-status labels. «Завантаження…» / «Оновлення…»
+    // використовуються кількома компонентами (loaders, pull-to-refresh
+    // pills, inline busy-states). «Виконано» (capitalized) і «виконано»
+    // (lowercase) — це різні рядки; перший — стан-картка, другий —
+    // суфікс у "X виконано" (наприклад, у `ModuleChecklist`).
+    loading: "Завантаження…",
+    updating: "Оновлення…",
+    done: "Виконано",
+    doneLowercase: "виконано",
+  },
+
+  period: {
+    // Round 16 — common period-labels. «День»/«Тиждень»/«Місяць» з'являються
+    // у range-toggle-ах (analytics, journal, dashboard); «Сьогодні» — у
+    // header-міток і chip-ах.
+    today: "Сьогодні",
+    day: "День",
+    week: "Тиждень",
+    month: "Місяць",
+  },
+
+  nav: {
+    // Round 16 — aria-labels та headings у navigation-surface-ах
+    // (bottom-nav, header, search). Винесено в catalog тому що
+    // accessibility-strings часто переписуються на product-ревізії,
+    // і централізація економить grep-час на наступних round-ах.
+    hubSections: "Розділи хабу",
+    openAssistant: "Відкрити AI-асистента",
+    globalSearch: "Глобальний пошук",
+    searchPlaceholder: "Пошук по всіх модулях…",
+    moduleSwitcher: "Перемикач модулів",
+    closeSettings: "Закрити налаштування",
+    closeMenu: "Закрити меню",
   },
 
   empty: {
@@ -153,6 +209,21 @@ export const messages = {
       retry: "Спробуй ще раз",
       timeout: "Перевищено час очікування. Спробуй ще раз.",
       unknown: "Щось пішло не так. Спробуй ще раз.",
+
+      // Round 16 — short error labels та section-failure messages.
+      // `title` — bare "Помилка" як заголовок банера/тулбара.
+      // `somethingWrong` — fallback header без trailing-period (для
+      // стека-ерор-екранів де call-to-action є окремим reload-button).
+      // `cannotRenderPage` — module-router fallback.
+      // `sectionFailed` — section-error-boundary copy.
+      // `moduleFailed` / `backToModulePicker` — використовуються у
+      // <ModuleErrorBoundary/> вгорі модуля.
+      title: "Помилка",
+      somethingWrong: "Щось пішло не так",
+      cannotRenderPage: "Не вдалось показати сторінку",
+      sectionFailed: "Ця секція впала, але інші частини модуля працюють.",
+      moduleFailed: "Помилка в модулі",
+      backToModulePicker: "До вибору модуля",
     },
   },
 
@@ -165,6 +236,61 @@ export const messages = {
     copied: "Скопійовано",
     updated: "Оновлено",
     failed: "Не вдалося виконати",
+  },
+
+  hub: {
+    // Round 16 — Hub-shell-specific copy (ні header, ні bottom-nav). Сюди
+    // потрапляють reused chat/insights/cross-module-preview labels та
+    // довший offline-notice composer-а.
+    insights: "Інсайти",
+    chatQuickActions: "Швидкі сценарії",
+    valueProgressAria: "Прогрес до твоїх цілей",
+    crossModulePreviewAria: "Що Sergeant покаже далі",
+    weeklyDigestTitle: "Щотижневий дайджест — сторіс",
+    chatOfflineNotice:
+      "Асистент недоступний без інтернету. Дані модулів видно офлайн, але\n          AI-відповіді потребують підключення.",
+  },
+
+  onboarding: {
+    // Round 16 — onboarding-specific labels.
+    hideChecklist: "Сховати чекліст",
+  },
+
+  form: {
+    // Round 16 — generic form-shell labels. `quickFill` — keyboard-accessory
+    // ("autocomplete") header, з'являється над клавіатурою на мобілці.
+    quickFill: "Швидке заповнення",
+  },
+
+  loaders: {
+    // Round 16 — page-level loader copy. Окремий ключ для full-page-loader
+    // (`Завантаження сторінки`) щоб не плутати з inline-spinner-ом
+    // (`status.loading` = `Завантаження…`).
+    pageLoading: "Завантаження сторінки",
+  },
+
+  // Module-specific groups. Сюди потрапляють labels, що домінантно живуть
+  // в одному модулі, але з причини фрагментованості surface-у заслуговують
+  // централізованого ключа (rebrand-аме на всіх місцях одною зміною).
+  fizruk: {
+    returnToActiveWorkout: "Повернутись до активного тренування",
+    workoutRest: "Відпочинок",
+  },
+
+  nutrition: {
+    fromPantry: "Зі складу",
+    mealType: "Прийом їжі",
+    templates: "Шаблони",
+  },
+
+  routine: {
+    dayReport: "Денний звіт",
+    weekdays: "Дні тижня",
+    archive: "Архів",
+  },
+
+  finyk: {
+    addLimitOrGoal: "+ Додати ліміт або ціль",
   },
 } as const satisfies MessageCatalog;
 

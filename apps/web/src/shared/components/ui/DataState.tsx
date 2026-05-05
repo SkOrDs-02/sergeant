@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "./Button";
 import { SkeletonCard } from "./SkeletonCard";
+import { messages } from "@shared/i18n/uk";
 
 /**
  * Sergeant Design System — DataState
@@ -146,10 +147,10 @@ function DefaultErrorFallback<TError>({
       role="alert"
       className="rounded-2xl border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger-strong dark:text-red-100"
     >
-      <p className="font-semibold">Помилка</p>
+      <p className="font-semibold">{messages.errors.generic.title}</p>
       <p className="mt-1 text-xs opacity-90">{message}</p>
       <Button variant="secondary" size="xs" className="mt-3" onClick={onRetry}>
-        Спробувати ще
+        {messages.sync.retryCta}
       </Button>
     </div>
   );

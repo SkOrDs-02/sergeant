@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { ChatInput } from "../../components/ChatInput";
 import { ChatQuickActions } from "../../components/ChatQuickActions";
 import type { ActiveModule } from "../../lib/hubChatUtils";
+import { messages } from "@shared/i18n/uk";
 
 export interface HubChatComposerProps {
   activeModule: ActiveModule | null;
@@ -61,8 +62,7 @@ export function HubChatComposer({
           role="status"
           className="mx-4 mb-2 mt-1 px-3 py-2 bg-warning/10 border border-warning/30 rounded-xl text-xs text-warning text-center shrink-0"
         >
-          Асистент недоступний без інтернету. Дані модулів видно офлайн, але
-          AI-відповіді потребують підключення.
+          {messages.hub.chatOfflineNotice}
         </div>
       )}
 

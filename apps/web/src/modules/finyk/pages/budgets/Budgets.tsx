@@ -37,6 +37,7 @@ import type {
   TxCategoriesMap,
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
+import { messages } from "@shared/i18n/uk";
 
 // Mirrors `useStorage`'s MonthlyPlan shape (required income/expense/
 // savings, each a raw input value). Replicated inline here to avoid
@@ -390,7 +391,7 @@ export function Budgets({
                 onClick={() => setShowForm(true)}
                 className="w-full py-3 text-sm text-muted border border-dashed border-line rounded-xl hover:border-primary hover:text-primary transition-colors"
               >
-                + Додати ліміт або ціль
+                {messages.finyk.addLimitOrGoal}
               </button>
             )}
           </div>

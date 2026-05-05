@@ -20,6 +20,7 @@ import {
   pickTopQuickActions,
   sortQuickActionsForModule,
 } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 
 interface ChatQuickActionsProps {
   /** Активний модуль (з URL hash). `null` — генеричний топ. */
@@ -125,7 +126,7 @@ export function ChatQuickActions({
     <div
       className="px-4 pt-2 pb-1 shrink-0"
       role="group"
-      aria-label="Швидкі сценарії"
+      aria-label={messages.hub.chatQuickActions}
     >
       <div className="flex gap-2 overflow-x-auto scrollbar-hide">
         {topActions.map(renderChip)}

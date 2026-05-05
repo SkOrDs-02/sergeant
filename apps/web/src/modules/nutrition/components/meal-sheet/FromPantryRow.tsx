@@ -3,6 +3,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import type { PantryItem } from "@sergeant/nutrition-domain";
 import type { MealFormState } from "./mealFormUtils";
+import { messages } from "@shared/i18n/uk";
 
 interface FromPantryRowProps {
   pantryItems: PantryItem[];
@@ -23,7 +24,7 @@ export function FromPantryRow({
   return (
     <div className="mb-4 rounded-2xl border border-line bg-panel/40 px-3 py-3">
       <SectionHeading as="div" size="xs" className="mb-2">
-        Зі складу
+        {messages.nutrition.fromPantry}
         {fromPantryItem && (
           <span className="ml-2 text-nutrition-strong dark:text-nutrition font-semibold normal-case tracking-normal">
             · {fromPantryItem}

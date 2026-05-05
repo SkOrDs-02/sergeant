@@ -22,6 +22,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { trackEvent } from "../observability/analytics";
+import { messages } from "@shared/i18n/uk";
 
 interface CrossModulePreviewProps {
   /** Module that owned the user's first real entry. */
@@ -74,7 +75,7 @@ export function CrossModulePreview({
   return (
     <section
       className="relative bg-panel border border-line rounded-2xl p-4 shadow-card overflow-hidden"
-      aria-label="Що Sergeant покаже далі"
+      aria-label={messages.hub.crossModulePreviewAria}
       data-testid="cross-module-preview"
     >
       <button

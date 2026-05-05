@@ -23,6 +23,7 @@ import {
   type DashboardModuleId,
 } from "@sergeant/shared";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
+import { messages } from "@shared/i18n/uk";
 
 const MODULE_STYLES: Record<
   DashboardModuleId,
@@ -213,7 +214,7 @@ export function ModuleChecklist({
               {compact ? "Перші кроки" : def.title}
             </h3>
             <p className="text-xs text-muted">
-              {completed}/{total} виконано
+              {completed}/{total} {messages.status.doneLowercase}
             </p>
           </div>
         </div>
@@ -328,7 +329,7 @@ export function ModuleChecklist({
               "transition-colors focus:outline-none focus-visible:underline",
             )}
           >
-            Сховати чекліст
+            {messages.onboarding.hideChecklist}
           </button>
         </div>
       )}

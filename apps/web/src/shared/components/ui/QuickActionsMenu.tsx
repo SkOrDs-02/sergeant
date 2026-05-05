@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
 import { Icon, type IconName } from "./Icon";
 import { hapticTap } from "../../lib/adapters/haptic";
+import { messages } from "@shared/i18n/uk";
 
 export interface QuickAction {
   id: string;
@@ -145,7 +146,7 @@ export function QuickActionsMenu({
               type="button"
               className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-in fade-in duration-150 cursor-default"
               onClick={close}
-              aria-label="Закрити меню"
+              aria-label={messages.nav.closeMenu}
               tabIndex={-1}
             />
 

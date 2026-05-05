@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { messages } from "@shared/i18n/uk";
 
 export interface SectionErrorBoundaryProps {
   title?: string;
@@ -38,7 +39,7 @@ export class SectionErrorBoundary extends Component<
         <div className="rounded-2xl border border-danger/40 bg-danger/10 p-4 text-text shadow-card">
           <div className="text-style-label">{title}</div>
           <div className="text-xs text-subtle mt-1">
-            Ця секція впала, але інші частини модуля працюють.
+            {messages.errors.generic.sectionFailed}
           </div>
           <pre className="mt-2 text-xs text-danger whitespace-pre-wrap wrap-break-word max-h-40 overflow-auto">
             {String(error?.message || error)}

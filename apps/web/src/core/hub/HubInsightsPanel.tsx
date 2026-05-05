@@ -3,6 +3,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import type { Rec } from "../lib/recommendationEngine";
+import { messages } from "@shared/i18n/uk";
 
 type ModuleId = "finyk" | "fizruk" | "routine" | "nutrition" | "hub";
 type Severity = "danger" | "warning";
@@ -67,7 +68,7 @@ function RecRow({ rec, onAction, onDismiss }: RecRowProps) {
             onClick={() => onAction(rec.action ?? "", rec.actionHash)}
             className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-text hover:text-primary transition-colors"
           >
-            Відкрити
+            {messages.actions.open}
             <Icon name="chevron-right" size={12} strokeWidth={2.5} />
           </button>
         )}
@@ -78,8 +79,8 @@ function RecRow({ rec, onAction, onDismiss }: RecRowProps) {
           size="xs"
           iconOnly
           onClick={() => onDismiss(rec.id)}
-          aria-label="Прибрати"
-          title="Прибрати"
+          aria-label={messages.actions.remove}
+          title={messages.actions.remove}
           className="shrink-0 -mr-1 -mt-1 text-muted hover:text-text"
         >
           <Icon name="close" size={14} />
@@ -125,7 +126,7 @@ export function HubInsightsPanel({
         )}
       >
         <span className="flex items-center gap-2 text-xs font-semibold text-text">
-          Інсайти
+          {messages.hub.insights}
           <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-panelHi text-2xs font-bold text-muted">
             {total}
           </span>

@@ -31,6 +31,7 @@ import { initPostHog } from "./core/observability/posthog.js";
 import { runDemoCleanupOnce } from "./core/onboarding/cleanupDemoData.js";
 import { runDemoSeedFromUrl } from "./core/onboarding/seedDemoData.js";
 import { isCapacitor } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 import { bootSyncEngineWriter } from "./core/syncEngine/singleton.js";
 
 const queryClient = createAppQueryClient();
@@ -76,7 +77,9 @@ interface ErrorFallbackProps {
 function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   return (
     <div className="p-8 font-sans">
-      <h2 className="text-style-title text-text">Щось пішло не так</h2>
+      <h2 className="text-style-title text-text">
+        {messages.errors.generic.somethingWrong}
+      </h2>
       <pre className="text-xs text-danger whitespace-pre-wrap mt-2">
         {error?.message}
       </pre>
@@ -88,7 +91,7 @@ function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
         }}
         className="mt-4 px-4 py-2 rounded-xl border border-line bg-panel text-style-label text-text"
       >
-        Перезавантажити
+        {messages.actions.reload}
       </button>
     </div>
   );

@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import type { MealTemplate } from "@sergeant/nutrition-domain";
 import type { MealFormState } from "./mealFormUtils";
+import { messages } from "@shared/i18n/uk";
 
 interface MealTemplatesRowProps {
   mealTemplates: MealTemplate[];
@@ -18,7 +19,7 @@ export function MealTemplatesRow({
   return (
     <div className="mb-4">
       <SectionHeading as="div" size="xs" className="mb-2">
-        Шаблони
+        {messages.nutrition.templates}
       </SectionHeading>
       <div className="flex flex-wrap gap-2">
         {mealTemplates.map((t) => (
