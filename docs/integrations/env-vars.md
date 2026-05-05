@@ -327,6 +327,26 @@ Base URL Railway-API, який [`apps/web/middleware.ts`](../../apps/web/middlew
 
 ---
 
+## 13.5. OpenTelemetry traces (server-side OTLP)
+
+Активує distributed tracing через NodeSDK + OTLP/HTTP exporter (`apps/server/src/obs/tracing.ts`). Якщо `OTEL_EXPORTER_OTLP_ENDPOINT` (або traces-specific override) не заданий — SDK НЕ реєструється; `aiSpan`/`dbSpan` працюють як no-op-обгортки над NoopTracer-ом без overhead. Деталі: [ADR-0035](../adr/0035-distributed-tracing-opentelemetry.md), runbook [`observability/runbook.md` § «OpenTelemetry traces»](../observability/runbook.md).
+
+| Змінна                               | Default        | Опис                                                                                                                                                                             |
+| ------------------------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`        | _empty_        | OTLP/HTTP collector base-endpoint. Якщо порожній — OTel SDK no-op.                                                                                                               |
+| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | _empty_        | Override лише для traces (наприклад `https://api.honeycomb.io:443/v1/traces`, `https://otlp-gateway-prod-eu-north-0.grafana.net/otlp/v1/traces`, `http://tempo:4318/v1/traces`). |
+| `OTEL_EXPORTER_OTLP_HEADERS`         | _empty_        | Comma-separated `k=v` headers (e.g. `Authorization=Basic ...`). SECRET-значення (API keys) — через secrets manager, **НЕ** комітити у `.env.example`.                            |
+| `OTEL_EXPORTER_OTLP_TRACES_HEADERS`  | _empty_        | Як `OTEL_EXPORTER_OTLP_HEADERS`, але лише для traces (override). Honeycomb: `x-honeycomb-team=hcaik_***,x-honeycomb-dataset=sergeant-prod`.                                      |
+| `OTEL_SERVICE_NAME`                  | `sergeant-api` | `service.name` resource attribute.                                                                                                                                               |
+| `OTEL_SERVICE_VERSION`               | _empty_        | Override service.version. Default fallback: `SENTRY_RELEASE` → `RAILWAY_GIT_COMMIT_SHA` → `VERCEL_GIT_COMMIT_SHA` → `GITHUB_SHA`.                                                |
+| `OTEL_TRACES_SAMPLE_RATE`            | `0.1`          | Default sample-rate для GET-non-AI-маршрутів. Range `0.0..1.0` (clamped). Health-routes завжди 0%, AI/write — 100% (див. `apps/server/src/obs/sampler.ts`).                      |
+
+> **Web-бандл:** `apps/web` НЕ підтягує OTel SDK (~50KB gzip). Замість цього `packages/api-client/src/httpClient.ts` генерує W3C `traceparent` header вручну (через `crypto.getRandomValues`). Сервер підхоплює traceId і будує від нього span-tree. RUM-spans на клієнті — окрема P1 ініціатива (0006-rum-spans-web).
+
+> **Sentry співіснування:** Sentry web tracing і server OTel НЕ конфліктують у prod-і. Коли OTLP-endpoint увімкнено, можна виставити `SENTRY_TRACES_SAMPLE_RATE=0`, щоб не платити двічі за server-side latency tracking. Sentry error tracking залишається як було.
+
+---
+
 ## 14. PostHog product analytics
 
 ### Web (`VITE_*`)

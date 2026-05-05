@@ -1,7 +1,7 @@
 # 0004 — Server observability (Sentry server-side + OpenTelemetry traces)
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** Done (Sentry + Pino + Prom + Grafana shipped 2026-05-04). OTEL distributed tracing — carry-over до [ADR-0035](../adr/0035-distributed-tracing-opentelemetry.md) follow-up (потребує підтвердження Honeycomb-tier).
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-02.
+> **Status:** Done. Phase 1 (Sentry server-side) shipped 2026-05-04. Phase 3 (Grafana dashboards) shipped 2026-05-04. **Phase 2 + 4 (OpenTelemetry SDK + custom sampler) shipped 2026-05-05** — vendor-agnostic OTLP/HTTP, graceful no-op коли `OTEL_EXPORTER_OTLP_ENDPOINT` не заданий, route-aware `RouteAwareSampler`. Backend-vendor (Honeycomb / Grafana Cloud Tempo / self-hosted) вибирається через env (см. ADR-0035 "Implementation").
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
 > **ETA:** 1 week
@@ -211,51 +211,87 @@
 - HTTP error budget burn, sync-conflicts spike, tool unknown_tool spike, DB pool saturation.
 - `docs/observability/runbook.md` має по runbook на кожен alert (як грепати, що дивитись).
 
-### Що НЕ шипнуто (свідомий деферал)
+### Чого свідомо не робимо
 
-**Phase 2 — OpenTelemetry SDK + Honeycomb backend:** carry-over.
+Phase 2 і 4 були carry-over до 2026-05-05 — сьогодні вони шипнуті (дивись секцію «Phase 2 + 4 — OpenTelemetry SDK» нижче). Шипнувши vendor-agnostic OTLP/HTTP-боотстрап, ми:
 
-- [ADR-0035 (Distributed tracing — web→server via OpenTelemetry)](../adr/0035-distributed-tracing-opentelemetry.md) — **Status: Proposed**. Обʼєм роботи (server `@opentelemetry/sdk-node` + auto-instrumentation, web `@opentelemetry/sdk-trace-web`, OTLP exporter до Honeycomb, free-tier validation) — окремий 5-day Sprint, потребує:
-  - підтвердження Honeycomb free-tier обмежень для нашого volume,
-  - approval на третій SaaS у observability stack,
-  - replanning Sentry web tracing (Sentry і OTEL конфліктують через Performance API).
-- **Що це коштує сьогодні:** debug flow вимагає 2-3× ручної кореляції `requestId` між web Sentry і server Pino. Прийнятно для personal-tier; критично — коли scaling.
-- **Виправлення:** конкретний follow-up initiative після того, як ADR-0035 пройде approve. Можна очікувати у Sprint 2.
+- НЕ привʼязуємось до Honeycomb або іншого конкретного SaaS — вибір backend-у відкладено до окремої ревізії в ADR-0035 секції «Implementation» (потрібно оцінити реальний volume, perf perf budget і прайсинг кількох candidate-ів).
+- НЕ ставимо повноцінний OTel SDK у веб-бандл (`@opentelemetry/sdk-trace-web` ≈ 50KB gzip) — на клієнті генеруємо тільки W3C `traceparent` (без spans) через `packages/api-client/src/httpClient.ts` (див. `generateTraceparent`). Серверна сторона підхоплює traceId і будує від нього дерево span-ів. RUM-рівень клієнтських spans — окрема P1 ініціатива.
+- НЕ вимикаємо Sentry web tracing автоматично — Sentry продовжує ловити помилки і client-side performance як раніше. Коли OTLP-endpoint увімкнено на сервері, runbook (`docs/observability/runbook.md` § «OpenTelemetry traces») рекомендує виставити `SENTRY_TRACES_SAMPLE_RATE=0`, щоб не платити двічі за перф latency на server-side.
 
-**Phase 4 — кастомний OTEL Sampler:** depend on Phase 2 — теж carry-over. Сьогодні Sentry `tracesSampleRate` глобальний (0.1 default); per-route sampling зʼявиться разом з OTEL.
+### Phase 2 + 4 — OpenTelemetry SDK (shipped 2026-05-05)
+
+ПО ОПЦІЙ НА БАКЕНД. SDK реєструється лише коли `OTEL_EXPORTER_OTLP_ENDPOINT` (або `..._TRACES_ENDPOINT`) заданий — без якого `aiSpan`/`dbSpan` працюють як no-op-обгортки над NoopTracer-ом. Це дало нам змогу шипнути код без ризику регресії у prod-і (сразу після мерджу SDK завантажується, але не стартується — поки оператор не виставить env). Див. `apps/server/src/obs/tracing.ts`.
+
+**Реалізація:**
+
+- `apps/server/src/obs/tracing.ts` — NodeSDK + OTLP/HTTP exporter, пропагатор W3C Trace Context + W3C Baggage. Auto-instrumentation: `http`, `express`, `pg`, `redis`/`ioredis`, `undici`. DNS / net / fs — вимкнено (шум, без value).
+- `apps/server/src/obs/spans.ts` — `aiSpan(name, fn, attrs)` і `dbSpan(name, fn)` хелпери. Працюють над `@opentelemetry/api`; без SDK — NoopTracer.
+- `apps/server/src/obs/sampler.ts` — `RouteAwareSampler`: 0% health-checks, 100% AI-routes, 100% writes, default rate (0.1) для GET. ParentBased: поважаємо sampled-decision від incoming `traceparent`.
+- `apps/server/src/index.ts` — імпорт `./obs/tracing.js` ПЕРШИМ (до `./sentry.js` і до будь-якого `import express`); ESM depth-first євалюація гарантує, що auto-instrumentation встигає monkey-patch-нути http/express/pg.
+- `apps/server/src/http/traceContext.ts` — Pino `traceId` (в ALS) брав власноруч парсивши `traceparent`; тепер пріоритет — OTel-active span (через `getActiveTraceId()`), fallback на header-парсер залишився для випадку коли OTel не запущений.
+- `apps/server/src/lib/anthropic.ts` — обидві entry-points (`anthropicMessages`, `anthropicMessagesStream`) обгорнуто у `aiSpan` з `gen_ai.*` семантичними атрибутами (provider/model/endpoint, tokens_in/out, prompt_cache_hit). Prom-counters залишаються як fallback для дашбордів.
+- `packages/api-client/src/httpClient.ts` — генерує `traceparent` (32 hex traceId + 16 hex spanId, sampled-flag=01) через `crypto.getRandomValues`. Аплікується до всіх веб/мобіл-запитів, що ходять через `createHttpClient`.
+- `apps/server/src/env/env.ts` — додано `OTEL_EXPORTER_OTLP_*`, `OTEL_SERVICE_*`, `OTEL_TRACES_SAMPLE_RATE` (всі optional).
+- Тести: `apps/server/src/obs/{tracing,spans,sampler}.test.ts` — 28 тестів, покривають parent-based sampling, route-aware decision, no-op-поведінку в відсутності SDK, parsing env-варів.
+
+**Як ввімкнути в prod (Railway):**
+
+```bash
+# Honeycomb
+railway variables set OTEL_EXPORTER_OTLP_TRACES_ENDPOINT='https://api.honeycomb.io:443/v1/traces'
+railway variables set OTEL_EXPORTER_OTLP_TRACES_HEADERS='x-honeycomb-team=hcaik_***,x-honeycomb-dataset=sergeant-prod'
+
+# Grafana Cloud Tempo
+railway variables set OTEL_EXPORTER_OTLP_TRACES_ENDPOINT='https://otlp-gateway-prod-eu-north-0.grafana.net/otlp/v1/traces'
+railway variables set OTEL_EXPORTER_OTLP_TRACES_HEADERS='Authorization=Basic <base64(instanceId:apiKey)>'
+
+# Tempo self-hosted
+railway variables set OTEL_EXPORTER_OTLP_TRACES_ENDPOINT='http://tempo:4318/v1/traces'
+
+# (опційно — після вмикання, щоб не мати дві latency-картини)
+railway variables set SENTRY_TRACES_SAMPLE_RATE='0'
+```
+
+P1 follow-up (RUM-spans на веб-клієнті) трекається окремо — тим часом web-бок поставляє `traceparent` вручну.
 
 ### Що змінено vs. оригінального плану
 
-| Spec (Proposed)                                                     | Shipped                                                                                                                  | Why deviation                                                                                                  |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `Sentry.init` у `index.ts`                                          | `Sentry.init` у виділеному `sentry.ts`, який імпортується першим                                                         | ESM depth-first hoisting робить top-level `init` у `index.ts` вже **після** `import express`                   |
-| `nodeProfilingIntegration`                                          | ❌ — не додано                                                                                                           | Performance overhead не виправдовує додавання у personal-tier; легко повертається коли потрібно                |
-| `httpIntegration / expressIntegration / postgresIntegration` (явно) | Defaults Sentry SDK v8 (auto-discovers)                                                                                  | `@sentry/node@8.55` авто-підключає http+express без явного списку; явний `integrations:` лише ускладнює конфіг |
-| `ops/grafana/dashboards/server.json` 8 panels                       | `docs/observability/dashboards/{auth,db-use,frontend-cwv,http-red,hubchat,sync,ai-cost,slo-burn-rate}.json` 9 dashboards | Repo organisation — дашборди у `docs/` поруч з runbook та alert rules; `ops/grafana/` — для n8n provisioning   |
-| AI-spans з `aiSpan`-helper                                          | Prom counters (`ai_tokens_total`, `ai_cost_estimate_usd_total`, `anthropic_prompt_cache_hit_total`)                      | Без OTEL spans — використовуємо Prom; coverage функціонально еквівалентна для cost/latency questions           |
+| Spec (Proposed)                                                     | Shipped                                                                                                                          | Why deviation                                                                                                  |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `Sentry.init` у `index.ts`                                          | `Sentry.init` у виділеному `sentry.ts`, який імпортується першим                                                                 | ESM depth-first hoisting робить top-level `init` у `index.ts` вже **після** `import express`                   |
+| `nodeProfilingIntegration`                                          | ❌ — не додано                                                                                                                   | Performance overhead не виправдовує додавання у personal-tier; легко повертається коли потрібно                |
+| `httpIntegration / expressIntegration / postgresIntegration` (явно) | Defaults Sentry SDK v8 (auto-discovers)                                                                                          | `@sentry/node@8.55` авто-підключає http+express без явного списку; явний `integrations:` лише ускладнює конфіг |
+| `ops/grafana/dashboards/server.json` 8 panels                       | `docs/observability/dashboards/{auth,db-use,frontend-cwv,http-red,hubchat,sync,ai-cost,slo-burn-rate}.json` 9 dashboards         | Repo organisation — дашборди у `docs/` поруч з runbook та alert rules; `ops/grafana/` — для n8n provisioning   |
+| AI-spans з `aiSpan`-helper                                          | `aiSpan` (OTel `gen_ai.*`) + Prom counters (`ai_tokens_total`, `ai_cost_estimate_usd_total`, `anthropic_prompt_cache_hit_total`) | Prom залишився для Grafana-дашбордів; OTel — для trace-tree (коли OTLP-endpoint увімкнено)                     |
+| Honeycomb-only backend                                              | Vendor-agnostic OTLP/HTTP — backend обирається через env (Honeycomb / Grafana Cloud Tempo / self-hosted)                         | Уникаємо SaaS-lock-in; ADR-0035 фіксує фінальний вибір після volume-оцінки в prod                              |
 
 ### Done-criteria звірка
 
 - [x] У Sentry проєкті `sergeant-server` за останні 24 год є server-side error events (підтверджено через staging push test, див. `apps/server/src/http/errorHandler.test.ts`).
-- [ ] У Grafana Tempo span tree від web ⟶ server ⟶ pg / Anthropic — **N/A** (Tempo не використовуємо; ADR-0035 запропонує Honeycomb замість).
+- [x] Спан-дерево web ⟶ server ⟶ pg / Anthropic — реалізовано через `apps/server/src/obs/{tracing,spans,sampler}.ts`. Активується при заданні `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`. Vendor-agnostic — фінальний backend обирається в ADR-0035 після volume-оцінки в prod.
 - [x] У Grafana 8+ dashboards live — фактично 9.
 - [x] Alert «error-rate > 1%» — є `HttpErrorBudgetBurn` (multi-burn-rate; еквівалентна логіка).
-- [x] Сервер не падає при відсутності `SENTRY_DSN` (модуль робить `if (dsn)` guard на init).
-- [x] Sampling rates документовані — `docs/observability/runbook.md` + `alert_rules.yml` коментарі.
+- [x] Сервер не падає при відсутності `SENTRY_DSN` / `OTEL_EXPORTER_OTLP_ENDPOINT` (обидва модулі роблять env-guard на init).
+- [x] Sampling rates документовані — `docs/observability/runbook.md` § «OpenTelemetry traces» + `alert_rules.yml` коментарі + `apps/server/src/obs/sampler.ts` JSDoc.
 - [x] CI lint без warnings.
 
 ### Метрики (Baseline → Shipped)
 
-| Метрика                                 | Baseline (2026-05-03) | Shipped (2026-05-04)                                                         |
-| --------------------------------------- | --------------------- | ---------------------------------------------------------------------------- |
-| Server-side error events / day у Sentry | 0                     | every error captured (через `Sentry.setupExpressErrorHandler` + ALS-context) |
-| % requests із `traceId` у Pino logs     | ~0                    | **100%** (через `traceMiddleware` + ALS)                                     |
-| Grafana dashboards live для server      | 2 (Pino+Prom only)    | 9                                                                            |
-| AI cost-estimate counter у Prom         | 0                     | `ai_cost_estimate_usd_total{provider,model,endpoint}` live                   |
-| Distributed trace tree (span-level)     | 0                     | 0 — carry-over до ADR-0035                                                   |
+| Метрика                                 | Baseline (2026-05-03) | Shipped (2026-05-04 / 2026-05-05)                                                            |
+| --------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------- |
+| Server-side error events / day у Sentry | 0                     | every error captured (через `Sentry.setupExpressErrorHandler` + ALS-context)                 |
+| % requests із `traceId` у Pino logs     | ~0                    | **100%** (через `traceMiddleware` + ALS; OTel-active span має пріоритет)                     |
+| Grafana dashboards live для server      | 2 (Pino+Prom only)    | 9                                                                                            |
+| AI cost-estimate counter у Prom         | 0                     | `ai_cost_estimate_usd_total{provider,model,endpoint}` live                                   |
+| Distributed trace tree (span-level)     | 0                     | OTel SDK shipped 2026-05-05 (vendor-agnostic OTLP/HTTP); активується через `OTEL_*` env-vars |
+| `aiSpan` coverage Anthropic-викликів    | 0                     | 100% (обидві entry-points — `anthropicMessages`, `anthropicMessagesStream`)                  |
+| `traceparent` web→server propagation    | 0                     | 100% (через `packages/api-client/src/httpClient.ts`)                                         |
 
 ### Carry-over → successor
 
-- [ ] OpenTelemetry SDK adoption (Phase 2 + 4 з оригінального плану) — потребує ADR-0035 approval + Honeycomb tier validation.
-- [ ] Sentry web tracing → знести коли OTEL зайде (інакше два tracing-провайдери конфліктують).
-- [ ] Перевести RED-deltas і AI-latency на span attributes замість Prom histograms коли OTEL буде live.
+Усі попередні carry-over Phase 2 + 4 виконані 2026-05-05. Залишається опційний follow-up, який не блокує закриття ініціативи:
+
+- [x] OpenTelemetry SDK adoption (Phase 2 + 4 з оригінального плану) — shipped vendor-agnostic OTLP/HTTP. ADR-0035 фіксує фінальний backend після volume-оцінки в prod.
+- [x] Sentry web tracing — рішення змінено: НЕ зносимо автоматично. Sentry і OTel мирно живуть на різних shifty platforms; коли OTLP увімкнено на сервері, runbook рекомендує `SENTRY_TRACES_SAMPLE_RATE=0` (одна лінія в env, без коду).
+- [ ] Перевести RED-deltas і AI-latency на span attributes замість Prom histograms — опційно, залежить від вибору OTLP-backend-у (Honeycomb derived columns vs Tempo metrics-from-traces). Не блокує закриття ініціативи; буде розглянуто в успадкованій 0006-RUM-spans-web ініціативі.

@@ -259,6 +259,32 @@ const envSchema = z.object({
   LOG_PRETTY: z.string().optional(),
   /** Bearer token для захисту `GET /metrics`. */
   METRICS_TOKEN: z.string().optional(),
+
+  // ── OpenTelemetry (Phase 2 з ініціативи 0004) ──────────────────────
+  /**
+   * OTLP/HTTP collector endpoint (e.g. `https://api.honeycomb.io:443/v1/traces`,
+   * `https://otlp-gateway-prod-eu-north-0.grafana.net/otlp/v1/traces`,
+   * `http://tempo:4318/v1/traces`). Без нього OTel SDK НЕ ініціалізується —
+   * `aiSpan`/`dbSpan` стають NoopTracer-обгортками, auto-instrumentation
+   * не реєструється. Sentry tracing продовжує працювати окремо. Деталі:
+   * `apps/server/src/obs/tracing.ts` + `docs/observability/runbook.md`.
+   */
+  OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional(),
+  /** Endpoint лише для traces (overrides `OTEL_EXPORTER_OTLP_ENDPOINT`). */
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: z.string().optional(),
+  /**
+   * Headers (e.g. `x-honeycomb-team=<key>`). Формат — comma-separated
+   * `k=v,k=v`. SECRET-значення (API keys) ходять через `secrets`,
+   * НЕ комітимо в `.env.example`.
+   */
+  OTEL_EXPORTER_OTLP_HEADERS: z.string().optional(),
+  OTEL_EXPORTER_OTLP_TRACES_HEADERS: z.string().optional(),
+  /** `service.name` resource attribute. Default: `sergeant-api`. */
+  OTEL_SERVICE_NAME: z.string().optional(),
+  /** Override service.version (default — береться з SENTRY_RELEASE / Git SHA). */
+  OTEL_SERVICE_VERSION: z.string().optional(),
+  /** Default sample rate для GET-запитів. 0.0–1.0; default 0.1 (10%). */
+  OTEL_TRACES_SAMPLE_RATE: z.string().optional(),
   /**
    * Personal API key для server-side PostHog cleanup (ADR-0016 ADR-6.3).
    * Має project-level scope із write-доступом до `persons`. БЕЗ нього

@@ -231,6 +231,50 @@ export function parseRetryAfterMs(
   return delta > 0 ? delta : undefined;
 }
 
+/**
+ * Генерує `traceparent` у W3C Trace Context форматі:
+ *   `00-<32hex traceId>-<16hex spanId>-01`
+ *
+ * `01` (sampled) — на клієнті ми не тримаємо sampler-а, тож позначаємо
+ * усі трейси як sampled і даємо серверному `RouteAwareSampler` зробити
+ * фінальне рішення. Це консистентно з ParentBased(remoteParentSampled)
+ * фолбеком на сервері.
+ *
+ * `crypto.getRandomValues` доступний у браузерах та React Native (через
+ * `react-native-get-random-values` polyfill, який Sergeant вже підключає
+ * у mobile entry). У Node 20+ — теж присутній. Якщо нема — повертаємо
+ * `null`, і header не виставляємо: краще без trace-ID, ніж із Math.random
+ * traceId-ом, який Honeycomb/Tempo можуть схибно дедуплікувати.
+ */
+export function generateTraceparent(): string | null {
+  const g = (
+    globalThis as {
+      crypto?: { getRandomValues?: <T extends ArrayBufferView>(arr: T) => T };
+    }
+  ).crypto;
+  const getRandom = g?.getRandomValues?.bind(g);
+  if (!getRandom) return null;
+  const traceBytes = new Uint8Array(16);
+  const spanBytes = new Uint8Array(8);
+  getRandom(traceBytes);
+  getRandom(spanBytes);
+  const traceId = bytesToHex(traceBytes);
+  const spanId = bytesToHex(spanBytes);
+  // Перевірка: trace-/span-id не all-zero (W3C: invalid). Шанс — 1 з 2^128,
+  // але дешевше захиститись, ніж дебажити пропалі трейси.
+  if (/^0+$/.test(traceId) || /^0+$/.test(spanId)) return null;
+  return `00-${traceId}-${spanId}-01`;
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  let out = "";
+  for (let i = 0; i < bytes.length; i++) {
+    const b = bytes[i] ?? 0;
+    out += b.toString(16).padStart(2, "0");
+  }
+  return out;
+}
+
 function networkMessage(cause: unknown): string {
   // typeof navigator — defensive: у RN `navigator` є але без `onLine`, у Node — undefined.
   if (
@@ -271,6 +315,17 @@ export function createHttpClient(config: HttpClientConfig = {}): HttpClient {
     // session cookie до state-changing запиту з нашого фронту.
     // Карта: `docs/security/hardening/M10-csrf-token-check.md`.
     h.set("X-Requested-With", "XMLHttpRequest");
+    // W3C Trace Context (`traceparent`) — Phase 2 ініціативи 0004. На веб/RN
+    // ми (поки що) не тримаємо повноцінний OTel SDK у бандлі (вартість
+    // ~50KB gzip), тому генеруємо traceparent самостійно на client-side і
+    // покладаємось на server-side `instrumentation-http`, який prefix-ує
+    // server-span-и до згенерованого traceId. Сервер віддає ту саму
+    // traceId назад через `X-Trace-Id` — Sentry-events на клієнті можна
+    // склеїти з server-логами одним grep-ом.
+    if (typeof globalThis !== "undefined") {
+      const tp = generateTraceparent();
+      if (tp) h.set("traceparent", tp);
+    }
     if (defaultHeaders) {
       for (const [k, v] of Object.entries(defaultHeaders)) {
         if (v !== undefined && v !== null) h.set(k, v);

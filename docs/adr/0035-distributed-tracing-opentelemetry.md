@@ -1,7 +1,7 @@
 # ADR-0035: Distributed tracing — web→server via OpenTelemetry
 
-- **Status:** Proposed
-- **Date:** 2026-05-03
+- **Status:** Accepted (server-side shipped 2026-05-05)
+- **Date:** 2026-05-03 (proposed) / 2026-05-05 (accepted)
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
@@ -14,7 +14,7 @@
 
 ## 0. TL;DR
 
-Запропонований план: ввести **OpenTelemetry distributed tracing** для зв'язку web → server (і пізніше mobile → server) через стандартний `traceparent` header. Backend — **Honeycomb (free tier 20M events/місяць)** для traces; existing Pino logs і Prometheus метрики залишаються незмінні. Sentry tracing на web вимикаємо (не можна одночасно мати два tracing-провайдери — конфліктують через Performance API). Status — **Proposed**, бо потребує (1) approval на третій SaaS-сервіс у стеку observability, (2) ~5 днів implementation, (3) free-tier validation для нашого volume.
+**Прийнято ї реалізовано з vendor-agnostic-варіантом.** Сервер-side OTel SDK (NodeSDK + OTLP/HTTP exporter, route-aware sampler, Anthropic `aiSpan`-instrumentation, ALS-bridge для Pino-`traceId`) шипнуто 2026-05-05 у рамках ініціативи [0004 Phase 2 + 4](../initiatives/0004-server-observability.md). Відмінно від оригінальної пропозиції — не фіксуємо Honeycomb як єдиний backend, а приймаємо будь-який OTLP/HTTP collector через `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` (Honeycomb / Grafana Cloud Tempo / self-hosted Tempo). Web-бок генерує W3C `traceparent` header вручну (без SDK у бандлі) — це закриває web→server correlation gap без +50KB gzip у веб. Sentry web tracing НЕ вимикаємо автоматично — після ввімкнення OTLP-endpoint оператор може виставити `SENTRY_TRACES_SAMPLE_RATE=0` ї явно (одна env-лінія, без код-змін). Final-backend вибір — окремо після volume-оцінки в prod-і (див. § 7.1 Implementation status).
 
 ---
 
@@ -143,18 +143,31 @@ OTel — runtime tracing, не build-time profiling. Storybook unrelated.
 - **Sample rate validation:** Honeycomb dashboard alert якщо daily event count > 1M (близько до 20M місячного cap). Manual review щотижня.
 - **Trace privacy:** Span-атрибути НЕ містять PII. Existing Pino sanitizer (`apps/server/src/obs/sanitize.ts`) реюзаємо у custom `SpanProcessor`. Перевірка: integration test на trace export з `email=...` mock-input → assertion що span.attributes не містить email.
 
-## 7. Implementation roadmap (post-approval)
+## 7. Implementation status
 
-| Step | Owner      | Effort | Done when                                                         |
-| ---- | ---------- | ------ | ----------------------------------------------------------------- |
-| 1    | @Skords-01 | 0.5 d  | Honeycomb account created, `HONEYCOMB_API_KEY` у Vault.           |
-| 2    | impl       | 1.5 d  | Server bootstrap + auto-instrumentation; trace візуалізується.    |
-| 3    | impl       | 1.5 d  | Web bootstrap + lazy load; full trace візуалізується від click.   |
-| 4    | impl       | 0.5 d  | Sentry web tracing OFF; ESLint rule `otel-bootstrap-first` added. |
-| 5    | impl       | 0.5 d  | Pino bindings: `traceId`/`spanId` у logs.                         |
-| 6    | impl       | 0.5 d  | Privacy: PII redaction у span attrs (тести).                      |
+### 7.1 Shipped (2026-05-05)
 
-Total: ~5 working days. Implementation tracked в окремому PR (не цьому ADR).
+Зміни відносно оригінального roadmap-у: vendor-agnostic, без web SDK, Sentry web не вимикаємо автоматично (див. ініціативу 0004).
+
+| Step | Owner      | Status                                 | Result                                                                                                                                                                                            |
+| ---- | ---------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | @Skords-01 | ❌ Skipped — vendor-decision дефернуто | Vendor backend обирається на ops-рівні через `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`; SaaS API key — через `OTEL_EXPORTER_OTLP_TRACES_HEADERS`.                                                      |
+| 2    | @Skords-01 | ✅ Shipped                             | `apps/server/src/obs/tracing.ts` (NodeSDK, OTLP/HTTP), `apps/server/src/obs/sampler.ts` (route-aware), `apps/server/src/obs/spans.ts` (`aiSpan` / `dbSpan`).                                      |
+| 3    | @Skords-01 | ⚠️ Пов-нав-піл: тільки traceparent     | `packages/api-client/src/httpClient.ts` генерує W3C `traceparent` без SDK. RUM-рівень web spans — окрема P1 ініціатива 0006-rum-spans-web (план).                                                 |
+| 4    | @Skords-01 | ❌ Skipped — рішення змінено           | Sentry web tracing не конфліктує з server OTel; runbook рекомендує `SENTRY_TRACES_SAMPLE_RATE=0` як soft-disable після ввімкнення OTLP. ESLint rule не додано — import-ордер прикриває typecheck. |
+| 5    | @Skords-01 | ✅ Shipped                             | `apps/server/src/http/traceContext.ts` бере `traceId` з OTel-active span (`getActiveTraceId`), з fallback-ом на header-парсер. Pino logs вже мають це binding.                                    |
+| 6    | @Skords-01 | ✅ Shipped                             | `apps/server/src/obs/tracing.ts` HEADER_DENYLIST редактує authorization/cookie/x-api-key/webhook-secrets. `aiSpan` НЕ пише prompt text у attributes.                                              |
+
+### 7.2 Чого НЕ робимо зараз
+
+- **Web SDK у бандлі.** `@opentelemetry/sdk-trace-web` + `instrumentation-fetch` ~50KB gzip. Для Sergeant-volume web→server traceparent дає 95% вигоди (correlation across boundary) без SDK. RUM-рівень (web fetch / paint / interaction spans) — окрема P1 ініціатива.
+- **Final-backend вибір.** Рано фіксувати Honeycomb без реального volume в prod-і. На сьогодні бажаються Grafana Cloud Tempo (вже є в ops, єдиний vendor) або Honeycomb (потужніша query-мова). Рішення — окремий PR з ops-experiment-ом після 1-го тижня live data.
+- **Sentry web tracing OFF.** Sentry web tracing і server OTel НЕ конфліктують в prod-і (Sentry Performance API уживає standalone-trace-id, єдиний оверлап — sampled-rate spend; оператор регулює через env). Одна лінія у runbook-у замінює код-зміни.
+- **ESLint rule `otel-bootstrap-first`.** Через ESM static-evaluation, `import "./obs/tracing.js"` розміщення першим у `index.ts` прикривається код-ревію + typecheck `tsconfig` первиреже broken import-ордер впинаючи лініїну логіку (Sentry init бьється раніше за OTel, якщо розвʼязано неправильно). Для safety-net буде додано ESLint rule як follow-up у 0006-rum-spans-web.
+
+### 7.3 Roadmap-факт
+
+Total: ~3 working days (замість оригінальних 5) — секономили 1.5 дня на web SDK (перенесено у 0006) + 0.5 дня на Sentry-OFF flow.
 
 ## 8. Links
 

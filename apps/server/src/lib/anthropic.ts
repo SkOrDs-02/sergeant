@@ -7,6 +7,7 @@ import {
   externalHttpDurationMs,
   externalHttpRequestsTotal,
 } from "../obs/metrics.js";
+import { aiSpan, type AiSpanResultMeta } from "../obs/spans.js";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
@@ -320,9 +321,38 @@ export async function anthropicMessages(
     promptVersion,
   }: AnthropicCallOptions = {},
 ): Promise<AnthropicMessagesResult> {
+  const model = (payload?.model as string) || "unknown";
+  return aiSpan(
+    `anthropic.messages ${endpoint}`,
+    () =>
+      anthropicMessagesInner(
+        apiKey,
+        payload,
+        { timeoutMs, endpoint, signal: externalSignal, promptVersion },
+        model,
+      ),
+    {
+      provider: "anthropic",
+      model,
+      endpoint,
+      promptVersion,
+    },
+  );
+}
+
+async function anthropicMessagesInner(
+  apiKey: string,
+  payload: Record<string, unknown>,
+  {
+    timeoutMs = 20000,
+    endpoint = "unknown",
+    signal: externalSignal,
+    promptVersion,
+  }: AnthropicCallOptions,
+  model: string,
+): Promise<[AnthropicMessagesResult, AiSpanResultMeta]> {
   const maxAttempts = 3;
   const retryDelayMs = [0, 250, 750];
-  const model = (payload?.model as string) || "unknown";
   const overallStart = process.hrtime.bigint();
 
   let lastResponse: Response | null = null;
@@ -365,6 +395,7 @@ export async function anthropicMessages(
       if (shouldRetryStatus(response.status) && attempt < maxAttempts) continue;
 
       const ms = Number(process.hrtime.bigint() - overallStart) / 1e6;
+      const meta = buildSpanMeta(data, response.ok, response.status);
       if (response.ok) {
         recordOutcome("ok", { model, endpoint, ms });
         recordUsage(model, endpoint, data, promptVersion);
@@ -375,7 +406,7 @@ export async function anthropicMessages(
           ms,
         });
       }
-      return { response, data };
+      return [{ response, data }, meta];
     } catch (e: unknown) {
       // На явний timeout (AbortError) краще не "допалювати" запити.
       if (isAbortError(e) || attempt >= maxAttempts) {
@@ -394,7 +425,34 @@ export async function anthropicMessages(
   }
 
   // На випадок якщо цикл завершився без return (теоретично не має статись).
-  return { response: lastResponse, data: lastData };
+  return [{ response: lastResponse, data: lastData }, { outcome: "unknown" }];
+}
+
+function buildSpanMeta(
+  data: AnthropicResponseData,
+  ok: boolean,
+  status: number,
+): AiSpanResultMeta {
+  const usage = data?.usage;
+  const meta: AiSpanResultMeta = {};
+  if (usage) {
+    if (Number.isFinite(usage.input_tokens)) {
+      meta.tokensIn =
+        (usage.input_tokens ?? 0) +
+        (usage.cache_read_input_tokens ?? 0) +
+        (usage.cache_creation_input_tokens ?? 0);
+    }
+    if (Number.isFinite(usage.output_tokens)) {
+      meta.tokensOut = usage.output_tokens;
+    }
+    if (Number.isFinite(usage.cache_read_input_tokens)) {
+      meta.promptCacheHit = (usage.cache_read_input_tokens ?? 0) > 0;
+    }
+  }
+  if (!ok) {
+    meta.outcome = status === 429 ? "rate_limited" : `http_${status}`;
+  }
+  return meta;
 }
 
 /**
@@ -410,13 +468,32 @@ export async function anthropicMessages(
 export async function anthropicMessagesStream(
   apiKey: string,
   payload: Record<string, unknown>,
+  opts: AnthropicCallOptions = {},
+): Promise<AnthropicStreamResult> {
+  const model = (payload?.model as string) || "unknown";
+  const endpoint = opts.endpoint ?? "unknown";
+  return aiSpan(
+    `anthropic.messages.stream ${endpoint}`,
+    () => anthropicMessagesStreamInner(apiKey, payload, opts, model),
+    {
+      provider: "anthropic",
+      model,
+      endpoint,
+      promptVersion: opts.promptVersion,
+    },
+  );
+}
+
+async function anthropicMessagesStreamInner(
+  apiKey: string,
+  payload: Record<string, unknown>,
   {
     endpoint = "unknown",
     timeoutMs = 60000,
     signal: externalSignal,
-  }: AnthropicCallOptions = {},
+  }: AnthropicCallOptions,
+  model: string,
 ): Promise<AnthropicStreamResult> {
-  const model = (payload?.model as string) || "unknown";
   const start = process.hrtime.bigint();
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeoutMs);
