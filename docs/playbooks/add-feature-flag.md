@@ -1,23 +1,23 @@
-# Playbook: Add a Feature Flag
+# Playbook: Додати feature flag
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
-**Trigger:** "Put feature X behind a flag" / any new experimental feature that should be toggleable without a redeploy.
+**Тригер:** «Сховай фічу X за прапорцем» / будь-яка нова експериментальна фіча, яку треба вмикати/вимикати без редеплою.
 
 ## Owner surface
 
 - Primary surface: `apps/web/src/core/lib/featureFlags.ts`
-- Coupled surface: `apps/web/src` (every `useFlag`/`getFlag` call site)
+- Coupled surface: `apps/web/src` (кожен `useFlag` / `getFlag` call site)
 - Governing skill: `sergeant-web-ui`
 
 ---
 
 ## Steps
 
-### 1. Register the flag
+### 1. Зареєструй прапорець
 
-Add an entry to `FLAG_REGISTRY` in `apps/web/src/core/lib/featureFlags.ts`:
+Додай запис у `FLAG_REGISTRY` у `apps/web/src/core/lib/featureFlags.ts`:
 
 ```ts
 {
@@ -29,12 +29,12 @@ Add an entry to `FLAG_REGISTRY` in `apps/web/src/core/lib/featureFlags.ts`:
 }
 ```
 
-- `id` — snake*case, prefixed with the module name (e.g. `finyk*`, `fizruk*`, `nutrition*`, `hub\_`).
-- `defaultValue: false` for experiments, `true` for graduated features (keep the flag until fully rolled out, then remove it).
+- `id` — snake*case з префіксом імені модуля (наприклад, `finyk*`, `fizruk*`, `nutrition*`, `hub\_`).
+- `defaultValue: false` для експериментів, `true` для зрілих фіч (тримай прапорець до повного rollout, потім видаляй).
 
-### 2. Guard the feature in code
+### 2. Захисти фічу в коді
 
-Use the `useFlag` hook in React components:
+Використовуй хук `useFlag` у React-компонентах:
 
 ```tsx
 import { useFlag } from "@shared/../core/lib/featureFlags";
@@ -46,19 +46,19 @@ function MyComponent() {
 }
 ```
 
-For non-React code, use `getFlag("your_flag_name")`.
+Для не-React коду — `getFlag("your_flag_name")`.
 
-### 3. Document the flag
+### 3. Задокументуй прапорець
 
-Create or update `docs/feature-flags.md` with:
+Створи або онови `docs/feature-flags.md` із записом:
 
 | Flag             | Owner   | Default | Expires    | Rollout plan                         |
 | ---------------- | ------- | ------- | ---------- | ------------------------------------ |
 | `your_flag_name` | @author | `false` | YYYY-MM-DD | Enable for beta → monitor → graduate |
 
-### 4. Test both branches
+### 4. Покрий обидві гілки тестами
 
-Write or update tests covering **flag on** and **flag off** behavior:
+Напиши або онови тести, які покривають поведінку **flag on** і **flag off**:
 
 ```ts
 import { setFlag, resetFlags } from "../core/lib/featureFlags";
@@ -76,26 +76,26 @@ it("hides new feature when flag is off", () => {
 });
 ```
 
-### 5. Create the PR
+### 5. Створи PR
 
-- Branch: `devin/<unix-ts>-feat-<flag-name>` or `<author>/<flag-name>`
+- Гілка: `devin/<unix-ts>-feat-<flag-name>` або `<author>/<flag-name>`
 - Commit: `feat(<module>): add <flag_name> feature flag`
-- PR description must include:
-  - Criteria for graduating (`defaultValue → true`): which metric / user feedback
-  - What to monitor after rollout (errors, performance, user complaints)
+- Опис PR має містити:
+  - Критерій випуску прапорця (`defaultValue → true`): яка метрика / який feedback користувачів
+  - Що моніторити після rollout (помилки, performance, скарги користувачів)
 
 ---
 
 ## Verification
 
-- [ ] `pnpm lint` — green
-- [ ] `pnpm typecheck` — green
-- [ ] Tests pass for both flag states
-- [ ] Flag visible in Settings → Experimental (if `experimental: true`)
-- [ ] No hardcoded React Query keys (use factories from `queryKeys.ts` — AGENTS.md rule #2)
+- [ ] `pnpm lint` — зелено
+- [ ] `pnpm typecheck` — зелено
+- [ ] Тести проходять для обох станів прапорця
+- [ ] Прапорець видно в Settings → Experimental (якщо `experimental: true`)
+- [ ] Жодного hardcoded React Query ключа (тільки через factories з `queryKeys.ts` — AGENTS.md правило #2)
 
 ## Notes
 
-- The flag system is client-only (localStorage via `typedStore`). No server-side flags yet.
-- Flags sync across browser tabs automatically via the `typedStore` subscription.
-- When graduating a flag (removing it), follow the [cleanup-dead-code](cleanup-dead-code.md) playbook for the flag entry and all `useFlag`/`getFlag` call sites.
+- Система прапорців — client-only (`localStorage` через `typedStore`). Server-side прапорців поки немає.
+- Прапорці автоматично синхронізуються між вкладками браузера через підписку `typedStore`.
+- При випуску прапорця (видаленні), йди за плейбуком [cleanup-dead-code](cleanup-dead-code.md) для запису прапорця і всіх `useFlag` / `getFlag` call sites.
