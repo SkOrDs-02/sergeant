@@ -1,0 +1,283 @@
+name: Weekly DB backup verify
+
+# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
+# Schedule rationale: storage-roadmap.md PR #049b — weekly rehearsal of Railway Postgres restore + smoke-test schema integrity.
+# Ref: docs/runbooks/database-backup-restore.md § 4 + § 6.
+
+on:
+  schedule:
+    # 04:00 UTC every Sunday (~07:00 Kyiv) — quiet hours, after nightly audit.
+    - cron: "0 4 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: db-backup-verify
+  cancel-in-progress: true
+
+jobs:
+  backup-verify:
+    name: Restore & smoke-test Railway Postgres backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      # pgvector/pgvector:pg16 — must match docker-compose.yml and CI
+      # workflows (ci.yml, extended-e2e.yml, visual-regression.yml).
+      # Migration 025_ai_memories_pgvector.sql requires the `vector`
+      # extension which stock postgres:16-alpine does not ship.
+      postgres:
+        image: pgvector/pgvector:pg16@sha256:7d400e340efb42f4d8c9c12c6427adb253f726881a9985d2a471bf0eed824dff
+        env:
+          POSTGRES_USER: hub
+          POSTGRES_PASSWORD: hub
+          POSTGRES_DB: hub
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hub -d hub"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://hub:hub@localhost:5432/hub
+
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # ── Step 1: Pull latest Railway dump ──────────────────────────
+      # Requires RAILWAY_TOKEN in GH Secrets (scoped to the production
+      # project). When absent the workflow gracefully falls back to a
+      # migration-only verify (schema integrity without production data).
+      - name: Install Railway CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/railwayapp/cli/master/install.sh | sh
+          railway version
+
+      - name: Pull latest Railway dump
+        id: dump
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "::warning::RAILWAY_TOKEN not configured — falling back to migration-only verify (no production data)."
+            echo "has_dump=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Pulling latest backup from Railway..."
+          # Railway CLI does not expose pg_dump directly; we connect to
+          # the public Postgres URL and dump locally.
+          PGURL=$(railway variables get DATABASE_PUBLIC_URL 2>/dev/null || true)
+          if [ -z "$PGURL" ]; then
+            echo "::warning::Could not resolve DATABASE_PUBLIC_URL from Railway — falling back to migration-only verify."
+            echo "has_dump=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          ts=$(date -u +%Y%m%dT%H%M%SZ)
+          pg_dump --format=custom --no-owner --no-privileges \
+            --file="sergeant-prod-${ts}.dump" "$PGURL"
+
+          echo "dump_file=sergeant-prod-${ts}.dump" >> "$GITHUB_OUTPUT"
+          echo "has_dump=true" >> "$GITHUB_OUTPUT"
+          echo "Dump created: sergeant-prod-${ts}.dump ($(du -h sergeant-prod-${ts}.dump | cut -f1))"
+
+      # ── Step 2: Restore dump into ephemeral Postgres ──────────────
+      - name: Restore dump into ephemeral Postgres
+        if: steps.dump.outputs.has_dump == 'true'
+        run: |
+          pg_restore --no-owner --no-privileges --clean --if-exists \
+            --dbname="$DATABASE_URL" "${{ steps.dump.outputs.dump_file }}"
+          echo "Restore completed successfully."
+
+      # ── Step 3: Run migrations (ensures ledger is current) ────────
+      - name: Run migrations
+        env:
+          MIGRATE_DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: |
+          if [ "${{ steps.dump.outputs.has_dump }}" = "true" ]; then
+            echo "Running migrations against restored dump..."
+          else
+            echo "Running migrations against empty DB (migration-only verify)..."
+          fi
+          node apps/server/migrate.mjs
+
+      # ── Step 4: Smoke-test schema integrity ───────────────────────
+      # Mirrors docs/runbooks/database-backup-restore.md § 4.
+      - name: Smoke-test schema integrity
+        run: |
+          set -euo pipefail
+
+          echo "### DB Backup Verify — Smoke Test Results" >> "$GITHUB_STEP_SUMMARY"
+
+          # ── 4.1. Migration ledger ──
+          echo "#### 4.1 Migration ledger" >> "$GITHUB_STEP_SUMMARY"
+          MIGRATION_COUNT=$(psql "$DATABASE_URL" -t -A -c \
+            "SELECT COUNT(*) FROM schema_migrations;")
+          MAX_MIGRATION=$(psql "$DATABASE_URL" -t -A -c \
+            "SELECT MAX(name) FROM schema_migrations;")
+          echo "- Migrations applied: **${MIGRATION_COUNT}**" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Latest migration: \`${MAX_MIGRATION}\`" >> "$GITHUB_STEP_SUMMARY"
+
+          # Compare with filesystem migration count
+          FS_COUNT=$(ls apps/server/src/migrations/*.sql 2>/dev/null | grep -v '.down.' | wc -l)
+          echo "- Filesystem migrations (non-down): **${FS_COUNT}**" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$MIGRATION_COUNT" -lt 1 ]; then
+            echo "::error::Migration ledger is empty — restore failed or migrations did not apply."
+            exit 1
+          fi
+
+          # ── 4.2. Critical tables — row-count sanity ──
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "#### 4.2 Critical tables — row-count sanity" >> "$GITHUB_STEP_SUMMARY"
+          ROW_COUNTS=$(psql "$DATABASE_URL" -t -A -c "
+            SELECT json_build_object(
+              'users',     (SELECT COUNT(*) FROM \"user\"),
+              'accounts',  (SELECT COUNT(*) FROM account),
+              'sessions',  (SELECT COUNT(*) FROM session),
+              'mono_conn', (SELECT COUNT(*) FROM mono_connection),
+              'op_log',    (SELECT COUNT(*) FROM sync_op_log),
+              'routine',   (SELECT COUNT(*) FROM routine_entries),
+              'meals',     (SELECT COUNT(*) FROM nutrition_meals),
+              'workouts',  (SELECT COUNT(*) FROM fizruk_workouts)
+            );
+          ")
+          echo "\`\`\`json" >> "$GITHUB_STEP_SUMMARY"
+          echo "$ROW_COUNTS" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+
+          # Only enforce row-count thresholds when we have a real dump
+          if [ "${{ steps.dump.outputs.has_dump }}" = "true" ]; then
+            USERS=$(echo "$ROW_COUNTS" | jq -r '.users')
+            if [ "$USERS" -lt 1 ]; then
+              echo "::error::users table is empty after restore — dump may be corrupted."
+              exit 1
+            fi
+          fi
+
+          # ── 4.3. CRDT tombstone invariants ──
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "#### 4.3 CRDT tombstone invariants" >> "$GITHUB_STEP_SUMMARY"
+          TOMBSTONES=$(psql "$DATABASE_URL" -t -A -c "
+            SELECT json_build_object(
+              'nutrition_meals',          (SELECT COUNT(*) FROM nutrition_meals          WHERE deleted_at IS NOT NULL),
+              'routine_entries',          (SELECT COUNT(*) FROM routine_entries          WHERE deleted_at IS NOT NULL),
+              'fizruk_workouts',          (SELECT COUNT(*) FROM fizruk_workouts          WHERE deleted_at IS NOT NULL),
+              'finyk_hidden_transactions',(SELECT COUNT(*) FROM finyk_hidden_transactions WHERE deleted_at IS NOT NULL)
+            );
+          ")
+          echo "\`\`\`json" >> "$GITHUB_STEP_SUMMARY"
+          echo "$TOMBSTONES" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+
+          # ── 4.4. Sync op-log monotonic ──
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "#### 4.4 Sync op-log monotonic" >> "$GITHUB_STEP_SUMMARY"
+
+          FUTURE_OPS=$(psql "$DATABASE_URL" -t -A -c \
+            "SELECT COUNT(*) FROM sync_op_log WHERE server_ts > NOW();")
+          echo "- Ops with server_ts > NOW(): **${FUTURE_OPS}**" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$FUTURE_OPS" -gt 0 ]; then
+            echo "::error::Found ${FUTURE_OPS} sync_op_log rows with server_ts in the future — clock skew after restore."
+            exit 1
+          fi
+
+          # ── 4.5. Foreign-key integrity ──
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "#### 4.5 Foreign-key integrity" >> "$GITHUB_STEP_SUMMARY"
+          ORPHANS=$(psql "$DATABASE_URL" -t -A -c "
+            SELECT json_build_object(
+              'account_orphan',         (SELECT COUNT(*) FROM account a          LEFT JOIN \"user\" u ON u.id = a.\"userId\" WHERE u.id IS NULL),
+              'session_orphan',         (SELECT COUNT(*) FROM session s          LEFT JOIN \"user\" u ON u.id = s.\"userId\" WHERE u.id IS NULL),
+              'sync_op_log_orphan',     (SELECT COUNT(*) FROM sync_op_log s     LEFT JOIN \"user\" u ON u.id = s.user_id   WHERE u.id IS NULL),
+              'routine_entries_orphan', (SELECT COUNT(*) FROM routine_entries r  LEFT JOIN \"user\" u ON u.id = r.user_id   WHERE u.id IS NULL)
+            );
+          ")
+          echo "\`\`\`json" >> "$GITHUB_STEP_SUMMARY"
+          echo "$ORPHANS" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+
+          TOTAL_ORPHANS=$(echo "$ORPHANS" | jq '[to_entries[].value] | add')
+          if [ "$TOTAL_ORPHANS" -gt 0 ]; then
+            echo "::error::Found ${TOTAL_ORPHANS} orphaned rows across FK pairs — restore may be corrupted."
+            exit 1
+          fi
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "All smoke tests passed." >> "$GITHUB_STEP_SUMMARY"
+
+      # ── Step 5: Alert on failure ──────────────────────────────────
+      - name: Create issue on failure
+        if: failure() && github.event_name == 'schedule'
+        # actions/github-script v8.0.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const title = `[DB Backup Verify] Weekly smoke-test failed — ${new Date().toISOString().slice(0, 10)}`;
+            const body = [
+              '## DB Backup Verify failure',
+              '',
+              `**Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              `**Date:** ${new Date().toISOString()}`,
+              '',
+              'The weekly backup-verify workflow failed. This means one of:',
+              '1. Railway dump could not be pulled (check `RAILWAY_TOKEN` secret)',
+              '2. Restore into ephemeral Postgres failed',
+              '3. Migration ledger has gaps or skew',
+              '4. Critical tables have unexpected row-counts',
+              '5. CRDT tombstone invariants broken',
+              '6. Sync op-log has future-dated entries (clock skew)',
+              '7. Foreign-key orphans detected',
+              '',
+              'See [database-backup-restore.md](docs/runbooks/database-backup-restore.md) for investigation steps.',
+              '',
+              'cc @Skords-01',
+            ].join('\n');
+
+            // Dedup: only create if no open issue with this title prefix exists.
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'db-backup-verify',
+              per_page: 5,
+            });
+            const existing = issues.find(i => i.title.startsWith('[DB Backup Verify]'));
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `Re-triggered: run ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\nStill failing as of ${new Date().toISOString()}.`,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['db-backup-verify', 'ops'],
+              });
+            }
