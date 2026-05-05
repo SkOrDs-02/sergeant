@@ -6,8 +6,8 @@
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/launch/01-monetization-and-pricing.md`](../launch/01-monetization-and-pricing.md) — бізнес-модель, тіри, ціни.
-  - [`docs/launch/06-monetization-architecture.md`](../launch/06-monetization-architecture.md) — технічний скелетон v2 (PR-розбивка, schema, risk register).
+  - [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md) — бізнес-модель, тіри, ціни.
+  - [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md) — технічний скелетон v2 (PR-розбивка, schema, risk register).
   - [ADR-0003](./0003-refund-and-dispute-handling.md) — refund / dispute flow (закриває open question з ADR-1.11).
   - [ADR-0016](./0016-user-deletion-and-pii-handling.md) — account-deletion flow + Stripe customer cleanup.
 
@@ -38,7 +38,7 @@
 
 ### Phase glossary
 
-ADR посилається на «Phase N» декілька разів. Глосарій (синхронізовано з [`docs/launch/04-launch-readiness.md`](../launch/04-launch-readiness.md)):
+ADR посилається на «Phase N» декілька разів. Глосарій (синхронізовано з [`docs/launch/business/04-launch-readiness.md`](../launch/business/04-launch-readiness.md)):
 
 | Phase | Тригер                                                                                | Що відкривається                                                                                |
 | ----- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
@@ -127,7 +127,7 @@ accepted.
 
 **Single-row-per-user `subscriptions` table.** Аудит-трейл — окрема `subscription_events` table як **follow-up Phase 7** (поза MVP), що append-only-логує кожен webhook-event.
 
-Schema див. [`docs/launch/06-monetization-architecture.md` §3.1](../launch/06-monetization-architecture.md#31-migration-009--subscriptions-правки-v1).
+Schema див. [`docs/launch/business/06-monetization-architecture.md` §3.1](../launch/business/06-monetization-architecture.md#31-migration-009--subscriptions-правки-v1).
 
 ### Consequences
 
@@ -171,7 +171,7 @@ Stale plan = серйозний bug:
 1. **Server LRU cache:** `lru-cache` з `ttl: 300s`, `max: 5_000`. Очищується миттєво через Postgres NOTIFY-trigger `subscription_changed` → server `LISTEN`-loop робить `planCache.delete(userId)`.
 2. **Client RQ cache:** `staleTime: 60s`, `refetchOnWindowFocus: true`. Серверний SSE-stream `/api/me/plan-stream` емітить `updated`-event → клієнт `queryClient.invalidateQueries(billingKeys.plan())`.
 
-Trigger див. [`docs/launch/06-monetization-architecture.md` §3.1](../launch/06-monetization-architecture.md#31-migration-009--subscriptions-правки-v1).
+Trigger див. [`docs/launch/business/06-monetization-architecture.md` §3.1](../launch/business/06-monetization-architecture.md#31-migration-009--subscriptions-правки-v1).
 
 ### Consequences
 

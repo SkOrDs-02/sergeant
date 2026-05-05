@@ -154,13 +154,13 @@ id, reason)` — UPDATE `status='rejected'` + `reject_reason` verbatim
   hardening) і їхні картки вже мали `Status: Closed`; (2) round-13
   burndown для items #6 (localStorage allowlist) / #8 (`useApiForm`
   rollout) / #15 (`noUncheckedIndexedAccess` per app) існував лише
-  narrative-ом у §11.5 burndown-таблиці [`docs/diagnostics/2026-05-03-web-deep-dive/00-overview.md`](docs/diagnostics/2026-05-03-web-deep-dive/00-overview.md),
+  narrative-ом у §11.5 burndown-таблиці [`docs/audits/2026-05-03-web-deep-dive/00-overview.md`](docs/audits/2026-05-03-web-deep-dive/00-overview.md),
   без розпису по AC/LOC/Deps на конкретні PR-и — як це зроблено для
-  Sprint 6 cleanup batch у [`docs/launch/ftux-sprint-plan.md` §7a](docs/launch/ftux-sprint-plan.md).
+  Sprint 6 cleanup batch у [`docs/launch/product-os/ftux-sprint-plan.md` §7a](docs/launch/product-os/ftux-sprint-plan.md).
   Виправлено: README hardening backlog отримав три нові рядки у closed-
   list table (chronological order, з посиланням на PR #1784 і
   «batched M10 + M14 + M19»); створено новий sprint-doc
-  [`docs/diagnostics/2026-05-03-web-deep-dive/round-13-burndown-sprint.md`](docs/diagnostics/2026-05-03-web-deep-dive/round-13-burndown-sprint.md)
+  [`docs/audits/2026-05-03-web-deep-dive/round-13-burndown-sprint.md`](docs/audits/2026-05-03-web-deep-dive/round-13-burndown-sprint.md)
   з 7 PR-розбивкою (R13.1–R13.7) у стилі §7a FTUX cleanup batch — items
   #6 (1 PR), #8 (3 PR до 10/12 mature plateau), #15 (3 PR на apps/server,
   apps/mobile, apps/web з потенційним spill на R13.7a/R13.7b через

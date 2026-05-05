@@ -1,6 +1,6 @@
 # 04. Launch readiness: legal, ops, edge cases, метрики, чеклист
 
-> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 > Pre-MVP draft. Покриває все, що треба перевірити перед запуском платного продукту.
@@ -348,7 +348,7 @@ Web Browser              Server                    Mobile App
 
 Sentry + Prometheus вже є. Потрібно додати **бізнес-алерти**.
 Про те, де саме жити Grafana/Loki (managed vs self-host) і коли мігрувати —
-див. [`docs/architecture/hosting-evolution.md`](../architecture/hosting-evolution.md).
+див. [`docs/architecture/hosting-evolution.md`](../../architecture/hosting-evolution.md).
 
 | Алерт               | Тригер                                  | Поріг                             | Де вимірюється               | Канал                |
 | ------------------- | --------------------------------------- | --------------------------------- | ---------------------------- | -------------------- |

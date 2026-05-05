@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR) — реєстр рішень
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 > Архітектурні рішення Sergeant. Кожен ADR фіксує **рішення з контекстом і альтернативами**, щоб через рік не довелось гадати «чому ми тут зробили так, а не інакше».
@@ -60,7 +60,7 @@ pnpm gen:adr
 1. Заповни секції: Context and Problem Statement / Considered Options / Decision / Rationale / Consequences / Compliance.
 2. Status = `Proposed` поки PR не змерджений.
 3. При мерджі — `Accepted` + дата.
-4. Лінкуй ADR з відповідних дизайн-документів (`docs/launch/06-*`, `docs/audits/*`).
+4. Лінкуй ADR з відповідних дизайн-документів (`docs/launch/business/06-*`, `docs/audits/*`).
 5. Додай рядок у таблицю «Поточні ADR» нижче.
 
 ## Поточні ADR

@@ -1,11 +1,11 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Proposed (decisions locked, scope final; перший PR — цей документ + аудит-сорс + owner-decisions)
 > **Priority:** P0 (Sprint 1–4)
 > **Owner:** `@Skords-01`
 > **ETA:** 4 тижні (фаза 0 — поточний PR; фази 1–6 — 4 спринти по 1 тижню)
-> **Sources:** [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/2026-05-04-revenue-and-marketing-roast.md), [`docs/launch/01-monetization-and-pricing.md`](../launch/01-monetization-and-pricing.md), [`docs/launch/02-go-to-market.md`](../launch/02-go-to-market.md), [`docs/launch/06-monetization-architecture.md`](../launch/06-monetization-architecture.md), [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md)
+> **Sources:** [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/2026-05-04-revenue-and-marketing-roast.md), [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md), [`docs/launch/business/02-go-to-market.md`](../launch/business/02-go-to-market.md), [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md), [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md)
 
 ## TL;DR
 
@@ -16,7 +16,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 - **Ризик зволікання — death by 1000 docs.** За останні 90 днів злито 3 479 комітів і написано 56 466 рядків docs; жоден з них не приніс ₴1 виручки.
 - **Конкуренти живі і ростуть.** personalEverything, LifeShift 360, Phaseo вже у проді з тим самим «all-in-one» value-prop. Кожен тиждень без launch — це CAC, який доведеться платити, щоб відіграти share.
 - **Pricing-модель v1 економічно нежиттєздатна.** ₴99/міс при ≈$5/користувача API costs (Anthropic) = негативна gross margin на Pro tier. Це треба виправити **до** першого Stripe-чека, не після.
-- **Технічний skeleton монетизації** [(`docs/launch/06-monetization-architecture.md`)](../launch/06-monetization-architecture.md) розписаний на 691 рядок без жодного рядка `subscriptions` SQL у `apps/server/src/migrations/`. Час перейти від v2-плану до коду.
+- **Технічний skeleton монетизації** [(`docs/launch/business/06-monetization-architecture.md`)](../launch/business/06-monetization-architecture.md) розписаний на 691 рядок без жодного рядка `subscriptions` SQL у `apps/server/src/migrations/`. Час перейти від v2-плану до коду.
 - **High-friction signup.** Email + password + verify email — це 4 кроки, що дають ~30–50% drop-off на signup-екрані (industry baseline). Apple + Google sign-in (через Better Auth) знизять friction до ≤10%.
 - **OpenClaw і `tools/console` лишаються активними паралельно** до фази 6 — owner ухвалив, що NOT freeze. Просто не блокують revenue track. Mobile: Capacitor залишається primary до завершення Expo-нативки; обидва стеки підтримуються паралельно (рішення зафіксовано в ADR-0047 — фаза 1.2).
 
@@ -70,7 +70,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 #### PR 1.1 `docs-adr-pricing-v3` (scope: `docs`)
 
 - `docs/adr/<0045-pricing-v3-single-tier>.md` — ADR про перехід на 2-тірну модель: **Free + Pro $7/міс / $49/рік, ₴ UA-only на старті, trial безкоштовний без прив'язки картки.**
-- Оновити `docs/launch/01-monetization-and-pricing.md` — додати «Update 2026-05-XX: pricing v3 затверджено» зі статусом «Superseded by ADR-0045» на застарілих секціях (Plus tier, Lifetime ₴2999, pay-per-feature).
+- Оновити `docs/launch/business/01-monetization-and-pricing.md` — додати «Update 2026-05-XX: pricing v3 затверджено» зі статусом «Superseded by ADR-0045» на застарілих секціях (Plus tier, Lifetime ₴2999, pay-per-feature).
 - Додати freshness-update header.
 
 **Залежить від:** Фаза 0.
@@ -263,7 +263,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
   - **Variant B (test):** goal-first single-screen wizard: «Яку фінансову мету хочете досягти?» (3 варіанти: «Зекономити ₴X», «Стати фінансово грамотним», «Контролювати витрати») → одразу Mono OAuth + 5 categorize → dashboard.
 - Перенести fitness/nutrition/routine модулі в «cross-sell» картки на dashboard (для обох variants).
 - PostHog події: `ACTIVATION_V2_HIT`, `ONBOARDING_GOAL_PICKED`, `ONBOARDING_VIBE_PICKED` з dimension `variant`.
-- Carry-over від [`docs/launch/ftux-sprint-plan.md`](../launch/ftux-sprint-plan.md) S5.
+- Carry-over від [`docs/launch/product-os/ftux-sprint-plan.md`](../launch/product-os/ftux-sprint-plan.md) S5.
 - **Decision rule (через 2 тижні після rollout):** залишити variant з вищим `activation_v2` rate. Втрачений variant видалити окремим cleanup-PR.
 
 **Залежить від:** PR 5.1.
@@ -310,7 +310,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 - [ ] EN-локаль працює на `/` і `/pricing`; hero copy фіналізований owner-ом перед merge PR 6.1.
 - [ ] Усі PR-и пройшли CI зелено + a11y axe-core + Lighthouse budget.
 - [ ] Усі нові docs мають freshness header + Status badge (Hard Rule #10).
-- [ ] `docs/launch/01-monetization-and-pricing.md` оновлено: pricing v3 — current state, не план.
+- [ ] `docs/launch/business/01-monetization-and-pricing.md` оновлено: pricing v3 — current state, не план.
 - [x] Ankle-PR `chore-console-move-to-tools` змерджено (`apps/console/` → `tools/console/`).
 
 ## Метрики успіху (вимірюються через 30 днів після фази 6)
@@ -378,11 +378,11 @@ Ankle-PR (поза фазами 1–6, scope: chore):
 ## Посилання
 
 - **Аудит-сорс:** [`docs/audits/2026-05-04-revenue-and-marketing-roast.md`](../audits/2026-05-04-revenue-and-marketing-roast.md).
-- **Поточна pricing-модель (буде оновлена):** [`docs/launch/01-monetization-and-pricing.md`](../launch/01-monetization-and-pricing.md).
-- **GTM (буде звужений):** [`docs/launch/02-go-to-market.md`](../launch/02-go-to-market.md).
-- **Технічний skeleton білінгу:** [`docs/launch/06-monetization-architecture.md`](../launch/06-monetization-architecture.md).
-- **FTUX carry-over:** [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md), [`docs/launch/ftux-sprint-plan.md`](../launch/ftux-sprint-plan.md).
+- **Поточна pricing-модель (буде оновлена):** [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md).
+- **GTM (буде звужений):** [`docs/launch/business/02-go-to-market.md`](../launch/business/02-go-to-market.md).
+- **Технічний skeleton білінгу:** [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md).
+- **FTUX carry-over:** [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md), [`docs/launch/product-os/ftux-sprint-plan.md`](../launch/product-os/ftux-sprint-plan.md).
 - **Mobile picks:** [`docs/initiatives/0002-mobile-platform-decision.md`](./0002-mobile-platform-decision.md).
 - **Better Auth playbook:** [`.agents/skills/better-auth-best-practices/SKILL.md`](../../.agents/skills/better-auth-best-practices/SKILL.md).
-- **OpenClaw roadmap (active parallel, not in scope):** [`docs/launch/openclaw-roadmap.md`](../launch/openclaw-roadmap.md).
+- **OpenClaw roadmap (active parallel, not in scope):** [`docs/launch/tech/openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md).
 - **Releases register (буде заповнюватись по PR):** TBD.

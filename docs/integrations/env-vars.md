@@ -503,7 +503,7 @@ PostHog для mobile FTUX activation funnel (парний до web — той �
 - `source: "mobile-expo"` super-property розділяє mobile-Expo трафік від web / Capacitor-shell у funnel-ах.
 - `EXPO_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com` (default — EU Cloud).
 
-Дивись [`apps/mobile/src/observability/posthog.ts`](../../apps/mobile/src/observability/posthog.ts) і [`docs/launch/ftux-sprint-plan.md`](../launch/ftux-sprint-plan.md) §S0.3.
+Дивись [`apps/mobile/src/observability/posthog.ts`](../../apps/mobile/src/observability/posthog.ts) і [`docs/launch/product-os/ftux-sprint-plan.md`](../launch/product-os/ftux-sprint-plan.md) §S0.3.
 
 ---
 

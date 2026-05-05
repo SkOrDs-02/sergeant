@@ -11,7 +11,7 @@ import type { StorybookConfig } from "@storybook/react-vite";
  *   the app (`src/index.css`). Storybook reuses the Vite plugin pipeline, so
  *   the `@tailwindcss/vite` plugin runs automatically.
  *
- * See `docs/diagnostics/2026-05-03-web-deep-dive/02-frontend-quality.md` —
+ * See `docs/audits/2026-05-03-web-deep-dive/02-frontend-quality.md` —
  * roadmap item #16 (Storybook foundation).
  */
 const config: StorybookConfig = {

@@ -8,7 +8,7 @@
   - [ADR-0030 — Telegram reporting channel structure](./0030-telegram-reporting-channel-structure.md) — forum-mode роутинг.
   - [ADR-0031 — OpenClaw v0 Telegram co-founder](./0031-openclaw-v0-telegram-cofounder.md) — DM bot baseline (escalation-канал).
   - [ADR-0036 — OpenClaw write-tools with approval](./0036-openclaw-write-tools-with-approval.md) — pattern для inline-keyboard callback-handler-у.
-  - [`docs/launch/telegram-improvements-roadmap.md` §3.2](../launch/telegram-improvements-roadmap.md#32-acknowledge-кнопка-на-p0p1-alert-ах--15-min-escalation) — pain P2.
+  - [`docs/launch/tech/telegram-improvements-roadmap.md` §3.2](../launch/tech/telegram-improvements-roadmap.md#32-acknowledge-кнопка-на-p0p1-alert-ах--15-min-escalation) — pain P2.
 
 ---
 
@@ -16,7 +16,7 @@
 
 Зараз `Sergeant_alert_bot` працює як **broadcast-only** канал у супергрупу `Sergeant_ops` (per [ADR-0030](./0030-telegram-reporting-channel-structure.md) §2). 19 n8n workflows fan-out-ять у 7 forum-топіків. Жодної interactivity — повідомлення приходять, founder бачить (або ні) і через 4+ годин уже `🔴 Інциденти` має 12 unread alert-ів без нікого знаючого, **які саме** з них уже були handled, а які ще ні.
 
-Pain (per [telegram-improvements-roadmap §2 P2](../launch/telegram-improvements-roadmap.md#2-pain-points--що-зараз-слабко)):
+Pain (per [telegram-improvements-roadmap §2 P2](../launch/tech/telegram-improvements-roadmap.md#2-pain-points--що-зараз-слабко)):
 
 > P2 — Алерти у супергрупі без accountability — нема трекінгу хто бачив, коли. **Frequency:** щодня. **Severity:** high.
 
@@ -291,5 +291,5 @@ Response: `{ ok: true, alreadyEscalated: boolean }`.
 
 **Context:**
 
-- [`docs/launch/telegram-improvements-roadmap.md` §3.2](../launch/telegram-improvements-roadmap.md#32-acknowledge-кнопка-на-p0p1-alert-ах--15-min-escalation) — pain P2 context.
+- [`docs/launch/tech/telegram-improvements-roadmap.md` §3.2](../launch/tech/telegram-improvements-roadmap.md#32-acknowledge-кнопка-на-p0p1-alert-ах--15-min-escalation) — pain P2 context.
 - [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../ops/n8n-workflows/REPORTING-MATRIX.md) — WF-04/103/104 rows + footnotes ⁽⁵⁾⁽⁶⁾.

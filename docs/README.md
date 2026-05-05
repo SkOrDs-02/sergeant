@@ -27,7 +27,6 @@ Main documentation index for Sergeant.
 | [`audits/`](./audits/README.md)               | Code, architecture, and UX audits with lifecycle status                               |
 | [`deploy/`](./deploy/README.md)               | Deploy walkthroughs (Railway, Vercel, console, etc.)                                  |
 | [`design/`](./design/README.md)               | Design system, brand, accents, dark mode, UI patterns                                 |
-| [`diagnostics/`](./diagnostics/README.md)     | Ad-hoc deep-dives that produce focused roadmaps (separate genre from periodic audits) |
 | [`governance/`](./governance/README.md)       | Hard rules registry, policy docs, feature-flag registry, link-check allowlist         |
 | [`i18n/`](./i18n/README.md)                   | i18n readiness foundation (UA-only today; lightweight scaffolding for future locales) |
 | [`initiatives/`](./initiatives/README.md)     | Numbered multi-PR initiatives with acceptance criteria and progress tables            |

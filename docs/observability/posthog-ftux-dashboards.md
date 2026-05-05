@@ -1,6 +1,6 @@
 # PostHog FTUX dashboards — runbook
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 Operational runbook for PostHog (Cloud EU) dashboards that monitor the
@@ -20,9 +20,9 @@ are normative for all `trackEvent(...)` callsites.
 
 > **Cross-refs:**
 > [`docs/observability/frontend.md`](./frontend.md) — analytics
-> transport · [`docs/launch/ftux-sprint-plan.md` §2](../launch/ftux-sprint-plan.md#2-sprint-0--analytics-live-1-тиждень)
+> transport · [`docs/launch/product-os/ftux-sprint-plan.md` §2](../launch/product-os/ftux-sprint-plan.md#2-sprint-0--analytics-live-1-тиждень)
 > — Sprint 0 deliverable spec (this doc is **S0.5**) ·
-> [`docs/launch/01-monetization-and-pricing.md` §7](../launch/01-monetization-and-pricing.md)
+> [`docs/launch/business/01-monetization-and-pricing.md` §7](../launch/business/01-monetization-and-pricing.md)
 > — activation baseline · [`packages/shared/src/lib/analyticsEvents.ts`](../../packages/shared/src/lib/analyticsEvents.ts)
 > — canonical event names (single source of truth).
 
@@ -168,7 +168,7 @@ informative than a single percentile — bimodal distribution means the
 preset path and the manual path are diverging.
 
 **Targets:** p50 < 90 sec (per
-[`ftux-sprint-plan.md` §8](../launch/ftux-sprint-plan.md#8-roll-up-success-metrics-dashboard)) ·
+[`ftux-sprint-plan.md` §8](../launch/product-os/ftux-sprint-plan.md#8-roll-up-success-metrics-dashboard)) ·
 p95 < 600 sec (10 min) — anything beyond is a stuck user, not a slow
 one.
 
@@ -224,7 +224,7 @@ FTUX sprint. D1 measures whether the user came back at all; D7 measures
 whether the FTUX promise sustained beyond a single session of curiosity.
 
 **Targets:** D1 ≥ 35% · D7 ≥ 15% (baseline TBD in
-[`ftux-sprint-plan.md` §8](../launch/ftux-sprint-plan.md#8-roll-up-success-metrics-dashboard) —
+[`ftux-sprint-plan.md` §8](../launch/product-os/ftux-sprint-plan.md#8-roll-up-success-metrics-dashboard) —
 update both files together when the first 28 days of data land).
 
 **Live insight:** [PostHog → `FTUX — D1/D7 retention by signup-cohort`](https://eu.posthog.com/project/167740/insights/zUCGdOKV)
@@ -248,7 +248,7 @@ users see confetti and then bounce. This funnel quantifies the bounce.
 If step-2 conversion < 50% within 6 hours, the celebration modal is the
 de-facto exit point of the FTUX flow and S3.1 (module-aware
 CelebrationModal headlines, see
-[`ftux-sprint-plan.md` §5](../launch/ftux-sprint-plan.md#5-sprint-3--reward-у-правильний-момент--value-progress-2-тижні))
+[`ftux-sprint-plan.md` §5](../launch/product-os/ftux-sprint-plan.md#5-sprint-3--reward-у-правильний-момент--value-progress-2-тижні))
 needs to ship.
 
 **Live insight:** [PostHog → `FTUX — Celebration drop-off`](https://eu.posthog.com/project/167740/insights/tl8c3e1T)
@@ -348,7 +348,7 @@ and you need a dashboard to monitor it, follow this checklist:
 
 - **Mobile parity (S0.3).** Until `apps/mobile` writes to PostHog
   (planned in
-  [`ftux-sprint-plan.md` §2](../launch/ftux-sprint-plan.md#2-sprint-0--analytics-live-1-тиждень)
+  [`ftux-sprint-plan.md` §2](../launch/product-os/ftux-sprint-plan.md#2-sprint-0--analytics-live-1-тиждень)
   S0.3), all five insights here represent **web-only** users. The
   super-property `platform` is already registered, so insights will
   start segmenting cleanly the moment mobile lands without dashboard

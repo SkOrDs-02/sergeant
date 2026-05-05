@@ -12,7 +12,7 @@ import { useApiForm } from "./useApiForm";
 import { ApiError } from "@shared/api";
 
 /**
- * Тести для `useApiForm` — закривають §3.1 з docs/diagnostics/2026-05-03-web-deep-dive.
+ * Тести для `useApiForm` — закривають §3.1 з docs/audits/2026-05-03-web-deep-dive.
  *
  * Покривають:
  * - Happy path (валідні дані → onSubmit)

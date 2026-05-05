@@ -18,7 +18,7 @@ export interface NoBankBannerProps {
  * expenses + budgets cover the empty-state happy path on their own.
  *
  * The banner offers both actions side-by-side without blocking the
- * underlying Finyk UI, matching S4.4 of `docs/launch/ftux-sprint-plan.md`.
+ * underlying Finyk UI, matching S4.4 of `docs/launch/product-os/ftux-sprint-plan.md`.
  */
 export function NoBankBanner({
   onConnect,

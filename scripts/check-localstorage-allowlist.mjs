@@ -3,7 +3,7 @@
 //
 // CI metric for the `sergeant-design/no-raw-local-storage` allowlist
 // in `eslint.config.js`. Closes diagnostic
-// `docs/diagnostics/2026-05-03-web-deep-dive/02-architecture-and-state.md` §2.2
+// `docs/audits/2026-05-03-web-deep-dive/02-architecture-and-state.md` §2.2
 // (and Hard Rule #20 / `docs/tech-debt/frontend.md` §2).
 //
 // Why a separate script?

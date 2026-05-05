@@ -8,7 +8,7 @@
  * the consumer's parser fails CI here — not in production.
  *
  * Closes diagnostic
- * [`docs/diagnostics/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../../../../../docs/diagnostics/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) §7.4
+ * [`docs/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../../../../../docs/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) §7.4
  * (web↔server contract gap).
  *
  * The matching producer-side test lives in

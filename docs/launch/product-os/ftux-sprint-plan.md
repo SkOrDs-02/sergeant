@@ -11,16 +11,16 @@
 >
 > **Не редагуй цей файл** окрім: (а) `Last validated:` bump, (б) додавання історичних retro-нотаток. Status-update-и поточних спринтів — у master tracker §2.
 
-> Implementation roadmap для 22 рекомендацій з [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md) + 13 раніше прогавлених пунктів (Sprint 6 cleanup batch — див. §7a).
+> Implementation roadmap для 22 рекомендацій з [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../../audits/2026-05-03-ftux-onboarding-roast.md) + 13 раніше прогавлених пунктів (Sprint 6 cleanup batch — див. §7a).
 > 6 спринтів × 2 тижні (+S0 1 тиждень, +S5 опційний) ≈ 12–14 тижнів.
-> Ціль: **2–3× activation funnel** (з baseline >25% до >40-60% per [`01-monetization-and-pricing.md`](./01-monetization-and-pricing.md#7-activation-метрики)).
+> Ціль: **2–3× activation funnel** (з baseline >25% до >40-60% per [`01-monetization-and-pricing.md`](../business/01-monetization-and-pricing.md#7-activation-метрики)).
 >
 > **Cross-refs:**
-> [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md) — джерело рекомендацій ·
-> [`01-monetization-and-pricing.md` §7](./01-monetization-and-pricing.md#7-activation-метрики) — activation baseline ·
-> [`04-launch-readiness.md` §4.2](./04-launch-readiness.md) — funnel definitions ·
-> [`docs/governance/feature-flags.md`](../governance/feature-flags.md) — flag conventions ·
-> [`docs/playbooks/add-onboarding-step.md`](../playbooks/add-onboarding-step.md) — додавання кроку у `ONBOARDING_STEPS`.
+> [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../../audits/2026-05-03-ftux-onboarding-roast.md) — джерело рекомендацій ·
+> [`01-monetization-and-pricing.md` §7](../business/01-monetization-and-pricing.md#7-activation-метрики) — activation baseline ·
+> [`04-launch-readiness.md` §4.2](../business/04-launch-readiness.md) — funnel definitions ·
+> [`docs/governance/feature-flags.md`](../../governance/feature-flags.md) — flag conventions ·
+> [`docs/playbooks/add-onboarding-step.md`](../../playbooks/add-onboarding-step.md) — додавання кроку у `ONBOARDING_STEPS`.
 
 ---
 
@@ -54,7 +54,7 @@
 
 ## 2. Sprint 0 — Analytics live (1 тиждень)
 
-**Goal:** PostHog (або Mixpanel) writing 14+ events з [`01-monetization-and-pricing.md` §7](./01-monetization-and-pricing.md#7-activation-метрики). Live dashboard з activation funnel.
+**Goal:** PostHog (або Mixpanel) writing 14+ events з [`01-monetization-and-pricing.md` §7](../business/01-monetization-and-pricing.md#7-activation-метрики). Live dashboard з activation funnel.
 
 **Чому окремо:** одне інженерне завдання, не змішане з UX. Зробити швидко, не плутати з copy-роботою.
 
@@ -62,12 +62,12 @@
 
 Перевірив код у `main` після перших спроб взяти S0.1 — частина S0 уже зроблена попередніми PR-ами. Після [PR #1570](https://github.com/Skords-01/Sergeant/pull/1570) (S0.5), [PR #1582](https://github.com/Skords-01/Sergeant/pull/1582) (S0.4) і [PR #1704](https://github.com/Skords-01/Sergeant/pull/1704) (S0.3 mobile parity) Sprint 0 повністю закритий. Рекалібрував статус нижче, щоб не дублювати роботу:
 
-- **PostHog SDK уже вмонтовано** у web ([`apps/web/src/core/observability/posthog.ts`](../../apps/web/src/core/observability/posthog.ts)) з lazy `import("posthog-js")`, queue до завершення init, `sanitize_properties`, `identified_only` profiles, EU host default.
-- `posthog-js@^1.372.3` у `apps/web/package.json`, `initPostHog()` викликається з [`apps/web/src/main.tsx`](../../apps/web/src/main.tsx) через `requestIdleCallback`.
-- `identifyPostHogUser` / `resetPostHog` викликаються з [`AuthContext.tsx`](../../apps/web/src/core/auth/AuthContext.tsx) на login/logout з `buildIdentifyTraits` (`vibe`, `plan`, `locale`, `signup_date`).
+- **PostHog SDK уже вмонтовано** у web ([`apps/web/src/core/observability/posthog.ts`](../../../apps/web/src/core/observability/posthog.ts)) з lazy `import("posthog-js")`, queue до завершення init, `sanitize_properties`, `identified_only` profiles, EU host default.
+- `posthog-js@^1.372.3` у `apps/web/package.json`, `initPostHog()` викликається з [`apps/web/src/main.tsx`](../../../apps/web/src/main.tsx) через `requestIdleCallback`.
+- `identifyPostHogUser` / `resetPostHog` викликаються з [`AuthContext.tsx`](../../../apps/web/src/core/auth/AuthContext.tsx) на login/logout з `buildIdentifyTraits` (`vibe`, `plan`, `locale`, `signup_date`).
 - Super-properties (`platform`, `is_capacitor`) реєструються через `posthog.register` всередині `initPostHog`.
-- `<PageviewTracker />` змонтований у [`App.tsx`](../../apps/web/src/core/App.tsx) з `sanitizeUrl()` для magic-link токенів.
-- `.env.example` (root) має закоментовані `VITE_POSTHOG_KEY` / `VITE_POSTHOG_HOST`; setup задокументований у [`docs/observability/frontend.md`](../observability/frontend.md).
+- `<PageviewTracker />` змонтований у [`App.tsx`](../../../apps/web/src/core/App.tsx) з `sanitizeUrl()` для magic-link токенів.
+- `.env.example` (root) має закоментовані `VITE_POSTHOG_KEY` / `VITE_POSTHOG_HOST`; setup задокументований у [`docs/observability/frontend.md`](../../observability/frontend.md).
 - CI workflow `.github/workflows/posthog-release-annotation.yml` уже постить annotation на release.
 
 Що реально лишилось ⇒ див. колонку `Status` у таблиці нижче.
@@ -88,7 +88,7 @@
 
 **Status update 2026-05-04 v3:** Sprint 0 повністю закритий. S0.5 ([PR #1570](https://github.com/Skords-01/Sergeant/pull/1570)) → S0.4 ([PR #1582](https://github.com/Skords-01/Sergeant/pull/1582)) → S0.3 ([PR #1704](https://github.com/Skords-01/Sergeant/pull/1704)) shipped у тому ж порядку (docs → events → mobile). Drive-by hotfix [PR #1755](https://github.com/Skords-01/Sergeant/pull/1755) прибрав duplicate-import регресію, що з'явилася через паралельний rebase двох S0.3-related PR-ів і ламала `pnpm --filter @sergeant/mobile typecheck` на main.
 
-**S0.5 founder-tasks (2026-05-04 v4):** закриті через PostHog API в `Default project` (id `167740`, prod). 5 створено інсайтів під [`Dashboards → FTUX overview`](https://eu.posthog.com/project/167740/dashboard/660031) (без «TBD» в документі); `VITE_POSTHOG_KEY` + `VITE_POSTHOG_HOST` виставлені у Vercel-проєкті `prj_WTfB58gE…` для `production` і `preview` (production = `Default project`, preview = `dev serg`). Скріншоти тайлів наберуть дані автоматично як тільки перший `onboarding_started` прилетить. Деталі: [`docs/observability/posthog-ftux-dashboards.md` §1](../observability/posthog-ftux-dashboards.md#1-where-this-lives-in-posthog) + §3.
+**S0.5 founder-tasks (2026-05-04 v4):** закриті через PostHog API в `Default project` (id `167740`, prod). 5 створено інсайтів під [`Dashboards → FTUX overview`](https://eu.posthog.com/project/167740/dashboard/660031) (без «TBD» в документі); `VITE_POSTHOG_KEY` + `VITE_POSTHOG_HOST` виставлені у Vercel-проєкті `prj_WTfB58gE…` для `production` і `preview` (production = `Default project`, preview = `dev serg`). Скріншоти тайлів наберуть дані автоматично як тільки перший `onboarding_started` прилетить. Деталі: [`docs/observability/posthog-ftux-dashboards.md` §1](../../observability/posthog-ftux-dashboards.md#1-where-this-lives-in-posthog) + §3.
 
 **Hosted vs self-hosted:** для S0 — hosted Cloud EU (10k events/month free). Self-host пізніше, якщо знадобиться (privacy / GDPR).
 
@@ -251,7 +251,7 @@
 
 ## 7a. Sprint 6 — Cleanup batch (раніше прогавлене) (2 тижні)
 
-**Goal:** Закрити 13 пунктів аудиту [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md), що або **не дійшли до P0/P1/P2 numbered-списку** (body-only items у §2.x), або **не дійшли до PR-розбивки у sprint-plan** (numbered, але без рядка). Відкрито після систематичної перевірки 2026-05-04; доповнено 3 пунктами (B-2, B-10, B-11) при ревізії 2026-05-05.
+**Goal:** Закрити 13 пунктів аудиту [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../../audits/2026-05-03-ftux-onboarding-roast.md), що або **не дійшли до P0/P1/P2 numbered-списку** (body-only items у §2.x), або **не дійшли до PR-розбивки у sprint-plan** (numbered, але без рядка). Відкрито після систематичної перевірки 2026-05-04; доповнено 3 пунктами (B-2, B-10, B-11) при ревізії 2026-05-05.
 
 ### Класифікація
 
@@ -323,9 +323,9 @@
 
 ## 9. Що НЕ входить у цей план
 
-- **OpenClaw / founder-tooling.** Це окремий сюрфейс (Telegram), не consumer FTUX. Див. [`openclaw-roadmap.md`](./openclaw-roadmap.md).
+- **OpenClaw / founder-tooling.** Це окремий сюрфейс (Telegram), не consumer FTUX. Див. [`openclaw-roadmap.md`](../tech/openclaw-roadmap.md).
 - **Глибокий cross-module insights** (повноцінна Insights v2). Це окремий проект, що залежить від AI-стеку. Поточний план фокусується на FTUX-funnel'і, не на product expansion. _Note: lightweight cross-module **preview** (одноразовий promo після першого entry) тримається у scope як S6.4 — це не Insights v2, а 150-LOC USP-demonstration без AI._
-- **Paywall / monetization triggers.** Pre-condition: ≥4 спринти FTUX-роботи. Paywall в S6+ — після того як retention стабільний (per [`01-monetization-and-pricing.md` §7](./01-monetization-and-pricing.md#7-activation-метрики)).
+- **Paywall / monetization triggers.** Pre-condition: ≥4 спринти FTUX-роботи. Paywall в S6+ — після того як retention стабільний (per [`01-monetization-and-pricing.md` §7](../business/01-monetization-and-pricing.md#7-activation-метрики)).
 - **Rebrand / module renaming.** «Finyk vs Fizruk inconsistency» — brand-розмова, не FTUX-fix. Окрема ініціатива.
 
 ---

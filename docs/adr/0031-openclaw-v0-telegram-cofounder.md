@@ -8,8 +8,8 @@
   - [ADR-0027 — OpenClaw / Console / MCP policy](./0027-openclaw-console-mcp-policy.md) — security policy (allowlist, fail-closed, read-only by default).
   - [ADR-0028 — pgvector AI memory](./0028-pgvector-ai-memory.md) — vector store backend.
   - [ADR-0030 — Telegram reporting structure](./0030-telegram-reporting-channel-structure.md) — supergroup + topics layout.
-  - [`docs/launch/openclaw-roadmap.md`](../launch/openclaw-roadmap.md) — phasing + scope.
-  - [`docs/launch/05-operations-and-automation.md`](../launch/05-operations-and-automation.md) — operations architecture.
+  - [`docs/launch/tech/openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md) — phasing + scope.
+  - [`docs/launch/business/05-operations-and-automation.md`](../launch/business/05-operations-and-automation.md) — operations architecture.
 
 ---
 
@@ -322,7 +322,7 @@ Forbidden tables: `auth_*`, `ai_usage_daily`, `ai_memories`,
       першого DM до бота).
 - [ ] Tests: allowlist (DM-only, founder-only), `query_app_db` table
       allowlist, budget cap, recall namespace isolation.
-- [ ] Update `docs/launch/openclaw-roadmap.md` §4.3 → Resolved decisions
+- [ ] Update `docs/launch/tech/openclaw-roadmap.md` §4.3 → Resolved decisions
       (link до цього ADR).
 - [ ] Update `tools/console/README.md` — другий bot.
 - [ ] CHANGELOG entry.
@@ -332,4 +332,4 @@ Forbidden tables: `auth_*`, `ai_usage_daily`, `ai_memories`,
 - [ADR-0027 — OpenClaw / Console / MCP policy](./0027-openclaw-console-mcp-policy.md)
 - [ADR-0028 — pgvector AI memory](./0028-pgvector-ai-memory.md)
 - [ADR-0030 — Telegram reporting structure](./0030-telegram-reporting-channel-structure.md)
-- [`docs/launch/openclaw-roadmap.md`](../launch/openclaw-roadmap.md)
+- [`docs/launch/tech/openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md)

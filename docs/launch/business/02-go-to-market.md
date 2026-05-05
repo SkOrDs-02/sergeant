@@ -1,6 +1,6 @@
 # 02. Go-to-market: запуск, промоутинг, growth
 
-> **Last validated:** 2026-05-01 by @devin-ai. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 > Pre-MVP draft. Цифри traffic/CPA/reach — оцінкові, для брейнштормінгу.

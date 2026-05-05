@@ -125,7 +125,7 @@ describe("S6.1 audit-guard", () => {
 
   it("inline hint copy is the exact audit-spec phrasing", () => {
     render(<OnboardingWizard onDone={() => {}} />);
-    // The plan (`docs/launch/ftux-sprint-plan.md` §S6.1 / B-1)
+    // The plan (`docs/launch/product-os/ftux-sprint-plan.md` §S6.1 / B-1)
     // pins this copy. Drift here would silently downgrade the
     // commitment-affordance the audit hypothesis depends on.
     expect(screen.getByText("Обери хоч один модуль")).toBeInTheDocument();

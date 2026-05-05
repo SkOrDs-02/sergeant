@@ -6,7 +6,7 @@
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/planning/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md`](../planning/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md) — original PR-план (premised on bcrypt; superseded by this ADR).
+  - [`docs/initiatives/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md`](../initiatives/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md) — original PR-план (premised on bcrypt; superseded by this ADR).
   - [ADR-0017](./0017-better-auth-choice-and-session-model.md) — вибір Better Auth.
   - [`docs/integrations/env-vars.md`](../integrations/env-vars.md) — `MIN_/MAX_PASSWORD_LENGTH` опис.
 

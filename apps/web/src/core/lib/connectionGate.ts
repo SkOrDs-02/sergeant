@@ -7,7 +7,7 @@
  * we burn the user's data plan while making their *current* navigation
  * slower (browsers serialize prefetches behind active requests).
  *
- * The diagnostics doc (`docs/diagnostics/2026-05-03-web-deep-dive/`
+ * The diagnostics doc (`docs/audits/2026-05-03-web-deep-dive/`
  * §5.2 / §10.4) calls out that `prefetchCriticalModules` previously
  * fired on idle for *every* user regardless of `navigator.connection`.
  * This module is the single gate everywhere we'd kick off an

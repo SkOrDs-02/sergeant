@@ -172,7 +172,7 @@ function applyServerError<TValues extends FieldValues>(
  * ```
  *
  * Refs:
- * - docs/diagnostics/2026-05-03-web-deep-dive §3.1 (рекомендація)
+ * - docs/audits/2026-05-03-web-deep-dive §3.1 (рекомендація)
  * - apps/server/src/http/validate.ts (server `details` shape)
  * - packages/api-client/src/ApiError.ts (`ApiError.body`)
  */

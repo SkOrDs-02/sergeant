@@ -7,7 +7,7 @@ shared between `apps/server` (producer), `packages/api-client`
 ## Why
 
 The diagnostic in
-[`docs/diagnostics/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../../../../docs/diagnostics/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md)
+[`docs/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../../../../docs/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md)
 §7.4 calls out that we have unit tests on each side of the wire but
 **no** test that locks the wire format itself. With the same `Zod`
 schema imported on both sides, drift is theoretically impossible — but

@@ -1,6 +1,6 @@
 # C2 — Containers
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 Деплоймент-топологія Sergeant. Кожен контейнер — окремий процес або deploy target.
@@ -85,7 +85,7 @@ flowchart TB
 | `ai-memory-ingest` | `apps/server/src/modules/ai-memory/ingestQueue.ts` | embeddings (Voyage) для memory-bank entries → Postgres pgvector. |
 | `auth-mail`        | `apps/server/src/lib/jobs/authMail.ts`             | Email magic-link / verification через Better Auth → SMTP.        |
 
-**Ризик** — крах в worker-loop може уронити API. Виокремлення у standalone worker process — у [`docs/diagnostics/2026-05-03-web-deep-dive` §1.6](../../diagnostics/2026-05-03-web-deep-dive/02-architecture-and-state.md). Поки workers in-process, моніторити Sentry на crashes у `bullmq.Worker.run`.
+**Ризик** — крах в worker-loop може уронити API. Виокремлення у standalone worker process — у [`docs/audits/2026-05-03-web-deep-dive` §1.6](../../audits/2026-05-03-web-deep-dive/02-architecture-and-state.md). Поки workers in-process, моніторити Sentry на crashes у `bullmq.Worker.run`.
 
 ## Зовнішні залежності, з яких є SLA-ризик
 

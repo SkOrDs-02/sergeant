@@ -8,7 +8,7 @@ to the central message catalog (`apps/web/src/shared/i18n/uk.ts`) and
 drops the corresponding entries from
 `apps/web/eslint.i18n-allowlist.json`. Long-running burndown for item
 **#18** of the [web deep-dive
-diagnostic](../../../docs/diagnostics/2026-05-03-web-deep-dive/00-overview.md).
+diagnostic](../../../docs/audits/2026-05-03-web-deep-dive/00-overview.md).
 
 Unlike the one-shot codemods next to it (`strip-js-extensions/`,
 `syncedKV/`), this script is meant to be **re-run** every time we widen

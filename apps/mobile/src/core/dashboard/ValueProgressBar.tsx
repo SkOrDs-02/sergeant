@@ -3,7 +3,7 @@
  * pre-first-entry «value-promise» bar (FTUX S3.3a + S3.3b).
  *
  * Closes the S3.3 mobile parity gap explicitly tracked in
- * `docs/launch/ftux-sprint-plan.md` (line 174):
+ * `docs/launch/product-os/ftux-sprint-plan.md` (line 174):
  *
  *   > Mobile parity для `ValueProgressBar` (S3.3) ще не зроблена —
  *   > окрема історія, відкладена як cross-cutting cleanup нижче.

@@ -11,7 +11,7 @@ import { WaitlistForm } from "./pricing/WaitlistForm";
  * тарифів і CTA-формою waitlist-у. Активного білінгу ще немає — задача
  * сторінки виміряти попит до того, як вкладатись у Stripe / Mono jar.
  *
- * План тарифів змавпований із `docs/launch/01-monetization-and-pricing.md`
+ * План тарифів змавпований із `docs/launch/business/01-monetization-and-pricing.md`
  * (варіант Б — три тіри з decoy ефектом). Ціни тут — pre-MVP draft, не
  * біллимо нікого.
  */
@@ -227,7 +227,7 @@ export function PricingPage() {
           <p>
             Деталі плану:{" "}
             <code className="bg-panelHi px-1.5 py-0.5 rounded text-text">
-              docs/launch/01-monetization-and-pricing.md
+              docs/launch/business/01-monetization-and-pricing.md
             </code>
           </p>
         </footer>

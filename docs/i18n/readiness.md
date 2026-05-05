@@ -15,7 +15,7 @@
 
 Цей doc — checklist готовності й operational guide.
 
-Roadmap-довідник: [`docs/diagnostics/2026-05-03-web-deep-dive`](../diagnostics/2026-05-03-web-deep-dive/00-overview.md) item **#18** (score 0.67).
+Roadmap-довідник: [`docs/audits/2026-05-03-web-deep-dive`](../audits/2026-05-03-web-deep-dive/00-overview.md) item **#18** (score 0.67).
 
 ## Foundation (готово — round 10–14)
 

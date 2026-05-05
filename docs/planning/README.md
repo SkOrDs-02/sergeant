@@ -10,5 +10,6 @@ Roadmap-и та плани розвитку.
 | [`dev-stack-roadmap.md`](./dev-stack-roadmap.md)           | Технічний roadmap стеку                                                                                        |
 | [`ai-coding-improvements.md`](./ai-coding-improvements.md) | План покращення AI-coding workflow                                                                             |
 | [`storage-roadmap.md`](./storage-roadmap.md)               | Storage & Sync roadmap до production-ready (SQLite + op-log)                                                   |
-| [`stack-pulse-2026-05/`](./stack-pulse-2026-05/README.md)  | Серія PR-планів зі зрізу стеку 2026-05 (16 PR-ів)                                                              |
 | [`pr-plan-2026-05.md`](./pr-plan-2026-05.md)               | Зведений PR-план 30/60/90/180 днів зі зрізу автоматизації / n8n / Telegram / OpenClaw / AI-як-інфра (48 PR-ів) |
+
+Серія `stack-pulse-2026-05/` (16 PR-планів зі зрізу стеку 2026-05) переїхала в [`docs/initiatives/stack-pulse-2026-05/`](../initiatives/stack-pulse-2026-05/README.md) — це multi-PR program of work з власником і ETA, що по семантиці належить ініціативам, а не дослідницькому планінгу.

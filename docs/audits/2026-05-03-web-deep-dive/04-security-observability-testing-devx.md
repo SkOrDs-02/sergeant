@@ -310,7 +310,7 @@ OK.
 
 ## 9.1 [Good] `docs/audits/*` структура
 
-Періодичні аудити з timestamps — добре. Цей фрейм (поточний deep-dive) лежить у `docs/diagnostics/` як ad-hoc deep-dive — окремо від періодичних аудитів. **Lifecycle:** Active → Superseded by next deep-dive on same topic.
+Періодичні аудити з timestamps — добре. Цей фрейм (поточний deep-dive) лежить у `docs/audits/` як `web-deep-dive` піджанр — окремо від генеральних аудитів, але в тій самій таксономії (раніше — окрема `docs/diagnostics/` секція; злито 2026-05-05). **Lifecycle:** Active → Superseded by next deep-dive on same topic.
 
 ---
 

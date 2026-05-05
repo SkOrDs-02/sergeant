@@ -9,7 +9,7 @@
   - [ADR-0031 — OpenClaw v0 Telegram co-founder bot](./0031-openclaw-v0-telegram-cofounder.md)
   - [ADR-0033 — OpenClaw multi-personas + `/council`](./0033-openclaw-multi-personas-and-council.md)
   - [ADR-0036 — OpenClaw write-tools with approval flow](./0036-openclaw-write-tools-with-approval.md) — Phase 4 baseline.
-  - [`docs/launch/openclaw-roadmap.md`](../launch/openclaw-roadmap.md) — Phase 4.5 section.
+  - [`docs/launch/tech/openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md) — Phase 4.5 section.
 
 ---
 
@@ -205,7 +205,7 @@ Format відповіді — таблиця `recorded | tool | action | persona
 ## Links
 
 - ADR-0036 — write-tools approval baseline.
-- `docs/launch/openclaw-roadmap.md` Phase 4.5 — original deferred bullet.
+- `docs/launch/tech/openclaw-roadmap.md` Phase 4.5 — original deferred bullet.
 - `apps/server/src/migrations/030_openclaw_write_audit.sql` — schema.
 - `apps/server/src/modules/openclaw/store.ts` — `recordWriteAudit`, `listRecentWriteAudits`.
 - `apps/server/src/routes/internal/openclaw.ts` — `/write-audit/log` + `/write-audit/list`.

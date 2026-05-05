@@ -76,7 +76,7 @@ checklist. При появі ownership — створюється файл `pr-N
 
 - [`docs/audits/2026-04-28-implementation-roadmap.md`](../../audits/2026-04-28-implementation-roadmap.md) — попередній roadmap
 - [`docs/tech-debt/`](../../tech-debt/README.md) — living tech-debt registries
-- [`docs/planning/dev-stack-roadmap.md`](../dev-stack-roadmap.md) — топ-15 ROI-roadmap
+- [`docs/planning/dev-stack-roadmap.md`](../../planning/archive/dev-stack-roadmap.md) — топ-15 ROI-roadmap
 
 ---
 

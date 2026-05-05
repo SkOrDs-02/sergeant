@@ -11,7 +11,7 @@
   - [`apps/web/src/core/lib/chatActions/crossActions.ts`](../../apps/web/src/core/lib/chatActions/crossActions.ts) — handler-и tool-ів `remember` / `forget` / `my_profile`.
   - [`apps/web/src/core/lib/hubChatContext.ts`](../../apps/web/src/core/lib/hubChatContext.ts) — інжекція memory у system-prompt.
   - [`apps/web/src/core/cloudSync/config.ts`](../../apps/web/src/core/cloudSync/config.ts) — `SYNC_MODULES.profile.keys = [USER_PROFILE]` (CloudSync контракт).
-  - [`docs/launch/04-launch-readiness.md`](../launch/04-launch-readiness.md) — privacy-classification (PII / AI-context).
+  - [`docs/launch/business/04-launch-readiness.md`](../launch/business/04-launch-readiness.md) — privacy-classification (PII / AI-context).
 
 ---
 
@@ -49,7 +49,7 @@ accepted.
 
 ### Context
 
-Документ `docs/launch/04-launch-readiness.md` (privacy classification) описує Memory Bank як «PostgreSQL (chat context)». Поточна реалізація — навпаки, **local-first** з cloud sync. Розбіжність свідома, цей ADR її пояснює.
+Документ `docs/launch/business/04-launch-readiness.md` (privacy classification) описує Memory Bank як «PostgreSQL (chat context)». Поточна реалізація — навпаки, **local-first** з cloud sync. Розбіжність свідома, цей ADR її пояснює.
 
 Функціональні вимоги:
 
