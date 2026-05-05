@@ -1,16 +1,17 @@
 # M17 — Console rate-limit per Telegram user, no global cap
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** Open
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-04.
+> **Status:** Closed (2026-05-05)
 
-| Field          | Value                           |
-| -------------- | ------------------------------- |
-| **Severity**   | Medium                          |
-| **Sprint**     | [Sprint 3](./sprint-3.md)       |
-| **Owner**      | console                         |
-| **Effort**     | 0.25 person-day                 |
-| **Status**     | Open                            |
-| **Discovered** | 2026-05-03 deep security review |
+| Field          | Value                                                                                                                       |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Severity**   | Medium                                                                                                                      |
+| **Sprint**     | [Sprint 3](./sprint-3.md)                                                                                                   |
+| **Owner**      | console                                                                                                                     |
+| **Effort**     | 0.25 person-day _(closed 2026-05-05 — batched M17 + L8 + L10 hardening PR)_                                                 |
+| **Status**     | Closed (2026-05-05)                                                                                                         |
+| **Discovered** | 2026-05-03 deep security review                                                                                             |
+| **Resolved**   | 2026-05-05 — `FixedWindowRateLimiter` extended with secondary global bucket + `console.global_rate_cap_hit_total{boundary}` |
 
 ## Summary
 

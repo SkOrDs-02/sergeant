@@ -21,6 +21,7 @@ import type { Pool } from "pg";
 import { logger } from "../../obs/logger.js";
 import { env } from "../../env.js";
 import { getOpenclawGithubAuth } from "./github-auth.js";
+import { OpenClawPathTraversalError, safeJoin } from "./safeJoin.js";
 import {
   QUERY_APP_DB_TABLE_ALLOWLIST,
   READ_STRATEGY_DOCS_ALLOWED_PATHS,
@@ -117,8 +118,26 @@ export async function readStrategyDoc(
   input: ReadStrategyDocsInput,
 ): Promise<ReadStrategyDocsOutput> {
   const repoRoot = resolveRepoRoot();
+  // Strip leading slashes so the LLM-supplied `docs/strategy/foo.md` and
+  // `/docs/strategy/foo.md` resolve identically; `safeJoin` itself rejects
+  // truly absolute paths (`/etc/passwd`, `C:\...`) before any traversal
+  // attempt reaches the filesystem.
   const requested = input.path.replace(/^\/+/, "");
-  const resolved = path.resolve(repoRoot, requested);
+  let resolved: string;
+  try {
+    resolved = safeJoin(repoRoot, requested);
+  } catch (err) {
+    if (err instanceof OpenClawPathTraversalError) {
+      // L8 — surface traversal attempts as allowlist violations so the
+      // routes-handler maps them to 4xx (not 5xx via Sentry-fatal).
+      // Wrap rather than re-throw so callers keep one error type to
+      // match against.
+      throw new OpenClawAllowlistError(
+        `Path '${input.path}' is not in read_strategy_docs allowlist (path traversal blocked)`,
+      );
+    }
+    throw err;
+  }
 
   // Prefix-allowlist: resolved-path має починатися з repoRoot/<allowed>.
   const isAllowed = READ_STRATEGY_DOCS_ALLOWED_PATHS.some((prefix) => {

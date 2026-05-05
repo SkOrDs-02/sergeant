@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  CONSOLE_GLOBAL_RATE_LIMIT_KEY,
+  DEFAULT_CONSOLE_GLOBAL_RATE_LIMIT_PER_MIN,
   escapeTelegramMarkdownV2,
   FixedWindowRateLimiter,
   isUserAllowed,
   parseAllowedUserIds,
+  parseGlobalRateLimitPerMinute,
   parseRateLimitPerMinute,
   splitTelegramMessage,
 } from "./security.js";
@@ -95,5 +98,100 @@ describe("console security helpers", () => {
     expect(parseRateLimitPerMinute(undefined)).toBe(12);
     expect(parseRateLimitPerMinute("0")).toBe(12);
     expect(parseRateLimitPerMinute("3")).toBe(3);
+  });
+
+  // M17 — `docs/security/hardening/M17-console-global-rate-cap.md`. The
+  // per-user bucket alone scales linearly with the allowlist size. The
+  // global cap is a secondary bucket every authed user shares, so the
+  // bot's aggregate budget stays bounded as `ALLOWED_USER_IDS` grows.
+  describe("M17 — global rate cap", () => {
+    it("denies once the cross-user cap exhausts even if per-user has room", () => {
+      let now = 1_000;
+      // Per-user 100/min (effectively unlimited for the test); global 4/min.
+      const limiter = new FixedWindowRateLimiter(100, 1_000, () => now, {
+        key: CONSOLE_GLOBAL_RATE_LIMIT_KEY,
+        limit: 4,
+      });
+
+      // Five users hit one request each; fifth must be denied because the
+      // global cap clamped at 4 even though no user reached their bucket.
+      expect(limiter.allow("u1")).toBe(true);
+      expect(limiter.lastDeny()).toBeNull();
+      expect(limiter.allow("u2")).toBe(true);
+      expect(limiter.allow("u3")).toBe(true);
+      expect(limiter.allow("u4")).toBe(true);
+      expect(limiter.allow("u5")).toBe(false);
+      expect(limiter.lastDeny()).toBe("global");
+
+      // Window roll re-opens the global cap.
+      now = 2_001;
+      expect(limiter.allow("u5")).toBe(true);
+      expect(limiter.lastDeny()).toBeNull();
+    });
+
+    it("flags per-user denies separately so metrics stay clean", () => {
+      let now = 1_000;
+      // Per-user budget of 1; global budget of 100 (cannot be the cause).
+      const limiter = new FixedWindowRateLimiter(1, 1_000, () => now, {
+        key: CONSOLE_GLOBAL_RATE_LIMIT_KEY,
+        limit: 100,
+      });
+
+      expect(limiter.allow("u1")).toBe(true);
+      expect(limiter.allow("u1")).toBe(false);
+      expect(limiter.lastDeny()).toBe("per_user");
+      // A different user passes — the global bucket was untouched by the
+      // failed second `u1` request.
+      expect(limiter.allow("u2")).toBe(true);
+      expect(limiter.lastDeny()).toBeNull();
+
+      // Sanity: window roll resets the per-user denial too.
+      now = 2_001;
+      expect(limiter.allow("u1")).toBe(true);
+    });
+
+    it("falls back to single-bucket behaviour when no global cap is configured", () => {
+      const now = 1_000;
+      const limiter = new FixedWindowRateLimiter(2, 1_000, () => now);
+      expect(limiter.allow("u1")).toBe(true);
+      expect(limiter.allow("u1")).toBe(true);
+      expect(limiter.allow("u1")).toBe(false);
+      expect(limiter.lastDeny()).toBe("per_user");
+    });
+
+    it("does not consume the global bucket when the per-user bucket fails", () => {
+      const now = 1_000;
+      const limiter = new FixedWindowRateLimiter(1, 1_000, () => now, {
+        key: CONSOLE_GLOBAL_RATE_LIMIT_KEY,
+        limit: 2,
+      });
+      // u1 spends 1 of 2 global tokens with their first request.
+      expect(limiter.allow("u1")).toBe(true);
+      // u1's second request is rejected on per-user; must NOT charge the
+      // global bucket. Otherwise the global bucket would drain to 0 from
+      // a single user spamming and starve every other allowlisted user.
+      expect(limiter.allow("u1")).toBe(false);
+      expect(limiter.lastDeny()).toBe("per_user");
+      // u2 still has 1 of 2 global tokens left.
+      expect(limiter.allow("u2")).toBe(true);
+      // Now both global tokens are consumed; u3 sees the global denial.
+      expect(limiter.allow("u3")).toBe(false);
+      expect(limiter.lastDeny()).toBe("global");
+    });
+
+    it("parses CONSOLE_GLOBAL_RATE_LIMIT_PER_MIN with a sane default", () => {
+      expect(parseGlobalRateLimitPerMinute(undefined)).toBe(
+        DEFAULT_CONSOLE_GLOBAL_RATE_LIMIT_PER_MIN,
+      );
+      expect(parseGlobalRateLimitPerMinute("0")).toBe(
+        DEFAULT_CONSOLE_GLOBAL_RATE_LIMIT_PER_MIN,
+      );
+      expect(parseGlobalRateLimitPerMinute("not-a-number")).toBe(
+        DEFAULT_CONSOLE_GLOBAL_RATE_LIMIT_PER_MIN,
+      );
+      expect(parseGlobalRateLimitPerMinute("60")).toBe(60);
+      // Non-integer inputs are floored — never half a request.
+      expect(parseGlobalRateLimitPerMinute("12.7")).toBe(12);
+    });
   });
 });

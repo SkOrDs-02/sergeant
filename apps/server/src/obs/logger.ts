@@ -1,5 +1,6 @@
 import pino, { type Logger, type LoggerOptions } from "pino";
 import pinoHttp, { type HttpLogger } from "pino-http";
+import { hashUserId } from "../lib/userIdHash.js";
 import { als } from "./requestContext.js";
 
 /**
@@ -175,7 +176,16 @@ const pinoOptions: LoggerOptions = {
     const out: Record<string, string> = {};
     if (ctx.requestId) out.requestId = ctx.requestId;
     if (ctx.traceId) out.traceId = ctx.traceId;
-    if (ctx.userId) out.userId = ctx.userId;
+    // L10 — `docs/security/hardening/L10-user-id-hash-in-logs.md`. Pino
+    // logs go to Railway/Loki where retention + access policy is looser
+    // than Sentry, so the raw UUID is replaced with a 16-hex prefix of
+    // `sha256(userId)`. Sentry-traces and audit-tables continue to write
+    // the raw `userId` (their access is restricted and PII-policy
+    // already covers it).
+    if (ctx.userId) {
+      const hashed = hashUserId(ctx.userId);
+      if (hashed) out.userIdHash = hashed;
+    }
     if (ctx.module) out.module = ctx.module;
     return out;
   },

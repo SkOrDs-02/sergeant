@@ -3,12 +3,18 @@ import { Bot, GrammyError } from "grammy";
 import Anthropic from "@anthropic-ai/sdk";
 import { parseCommand, dispatchToAgent } from "./agents/router.js";
 import {
+  CONSOLE_GLOBAL_RATE_LIMIT_KEY,
   escapeTelegramMarkdownV2,
   FixedWindowRateLimiter,
   isUserAllowed,
+  parseGlobalRateLimitPerMinute,
   parseRateLimitPerMinute,
   splitTelegramMessage,
 } from "./security.js";
+import {
+  CONSOLE_GLOBAL_RATE_CAP_HIT_TOTAL,
+  incrementCounter,
+} from "./obs/metrics.js";
 import { attachOpenClawHandlers } from "./openclaw/index.js";
 import {
   registerOpenClawWebhook,
@@ -100,8 +106,20 @@ async function main() {
     );
   } else {
     const bot = new Bot(botToken);
+    // M17 — pair the per-user bucket with a cross-user global cap so an
+    // expanded `ALLOWED_USER_IDS` list cannot multiply the bot's
+    // aggregate budget linearly. `console.global_rate_cap_hit_total`
+    // surfaces deny-by-global events for soak tests / dashboards.
     const limiter = new FixedWindowRateLimiter(
       parseRateLimitPerMinute(process.env.CONSOLE_RATE_LIMIT_PER_MIN),
+      60_000,
+      () => Date.now(),
+      {
+        key: CONSOLE_GLOBAL_RATE_LIMIT_KEY,
+        limit: parseGlobalRateLimitPerMinute(
+          process.env.CONSOLE_GLOBAL_RATE_LIMIT_PER_MIN,
+        ),
+      },
     );
     const checkAuth = (userId: number | undefined) =>
       isUserAllowed(userId, process.env);
@@ -126,6 +144,9 @@ async function main() {
       }
       const rateLimitKey = String(ctx.from?.id ?? ctx.chat.id);
       if (!limiter.allow(rateLimitKey)) {
+        if (limiter.lastDeny() === "global") {
+          incrementCounter(CONSOLE_GLOBAL_RATE_CAP_HIT_TOTAL);
+        }
         await ctx.reply("Rate limit exceeded. Try again in a minute.");
         return;
       }
