@@ -73,7 +73,7 @@ Rationale: free 20M events/міс >> наш volume; UI optimized для тест
 **Web (`apps/web`):**
 
 - `@opentelemetry/sdk-trace-web` + `@opentelemetry/instrumentation-fetch` для autoinstrument-у API-fetch-ів.
-- Bootstrap у `apps/web/src/core/observability/tracing.ts` (нове), lazy-loaded як Sentry, щоб не тягти OTel-bundle у hot path.
+- Bootstrap у новому web-OTel-bootstrap файлі (планувалось `apps/web/src/core/observability/`), lazy-loaded як Sentry, щоб не тягти OTel-bundle у hot path. **У фінальній реалізації (див. § 7.1) web SDK не shipped — натомість manual W3C `traceparent` header injection без OTel-bundle у бандлі.**
 - Export: OTLP HTTP до Honeycomb (через CORS-протокол, або через server-side proxy `/api/internal/traces`).
 - Sample rate: 0.05 (5%, less than server бо browser volume вище).
 
@@ -141,7 +141,7 @@ OTel — runtime tracing, не build-time profiling. Storybook unrelated.
 - **Server bootstrap:** `apps/server/src/obs/tracing.ts` має імпортуватися ПЕРЕД будь-яким `import "express"` у `apps/server/src/index.ts` (otel auto-instrumentation вимагає raw require). Перевірка: ESLint правило `sergeant-design/otel-bootstrap-first` (нове, додамо при implementation).
 - **Sentry tracing вимкнений:** `apps/web/src/core/observability/sentry.ts` має умовно НЕ передавати `browserTracingIntegration`, якщо `VITE_OTEL_ENABLED=true`. Перевірка: unit test на `sentry.ts` initialization.
 - **Sample rate validation:** Honeycomb dashboard alert якщо daily event count > 1M (близько до 20M місячного cap). Manual review щотижня.
-- **Trace privacy:** Span-атрибути НЕ містять PII. Existing Pino sanitizer (`apps/server/src/obs/sanitize.ts`) реюзаємо у custom `SpanProcessor`. Перевірка: integration test на trace export з `email=...` mock-input → assertion що span.attributes не містить email.
+- **Trace privacy:** Span-атрибути НЕ містять PII. Existing Pino redaction config (`apps/server/src/obs/logger.ts`, `redactPaths` + `redactKeyNames`) і URL-sanitizer (`apps/server/src/obs/sensitiveUrl.ts`) реюзаємо у custom `SpanProcessor`. Перевірка: integration test на trace export з `email=...` mock-input → assertion що span.attributes не містить email.
 
 ## 7. Implementation status
 

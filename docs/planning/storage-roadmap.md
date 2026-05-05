@@ -1,6 +1,7 @@
 # Storage & Sync — Roadmap до production-ready
 
 > **Last validated:** 2026-05-05 by Devin. **Next review:** 2026-08-01.
+> **Status:** Active
 >
 > **Stage status (one-line summary):**
 >
