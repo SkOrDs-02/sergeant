@@ -26,6 +26,36 @@
 | **Власник / ETA** | Хто веде та орієнтовний дедлайн.                     |
 | **Посилання**     | Аудит-сорс, ADR, tech-debt, релевантні PR-и, issues. |
 
+## Зведений календар follow-up-ів
+
+Усі відкриті carry-over пункти зі всіх ініціатив зведено в один генерований файл — [`follow-ups.md`](./follow-ups.md). Source of truth = блок `### Carry-over → successor` у кожній ініціативі; індекс перебудовується скриптом `scripts/docs/generate-initiative-followups.mjs` і перевіряється в CI (`Initiative follow-ups (in sync)`).
+
+### Carry-over format
+
+У секції `### Carry-over → successor` пишемо top-level bullets з одним з 4 префіксів — парсер скрипта класифікує їх за патерном:
+
+```markdown
+### Carry-over → successor
+
+- [ ] **2026-05-12:** description … # one-shot, due-date (ISO)
+- [ ] **Recurring (weekly):** description … # recurring check
+- [ ] **Після baseline-week:** description … # trigger-based (вільна фраза)
+- [ ] description … # TBD (catch-all)
+```
+
+| Префікс                    | Куди потрапляє у `follow-ups.md`     | Приклад cadence-у                                        |
+| -------------------------- | ------------------------------------ | -------------------------------------------------------- |
+| `**YYYY-MM-DD[ (...)]:**`  | One-shot → колонка `Due` з ISO-датою | `**2026-05-12 (≈ +тиждень):**`                           |
+| `**Recurring (cadence):**` | Recurring → колонка `Cadence`        | `**Recurring (weekly):**`, `**Recurring (monthly):**`    |
+| `**Будь-яка фраза:**`      | One-shot → курсивом у колонці `Due`  | `**Після baseline-week:**`, `**When SLO breach:**`       |
+| Без bold-префіксу          | One-shot → `—` у колонці `Due`       | `Per-route hit-rate breakdown — додати endpoint label …` |
+
+Тільки `- [ ]` (unchecked) пункти потрапляють в індекс — `- [x]` (зроблено) лишається в файлі ініціативи як історія, але з агрегованого календаря випадає.
+
+Nested-bullets (відступ + `-`) **зливаються** у parent-описі — використовуйте їх для деталей кроків rollback / fixture-чеків, без шуму в індексі.
+
+Після правки carry-over: `pnpm docs:gen-initiative-followups` → закомітити оновлений `follow-ups.md` у тому самому PR-і. CI fail-ить, якщо checked-in `follow-ups.md` розходиться з тим, що згенерує скрипт.
+
 ## Активні ініціативи (травень 2026)
 
 | #    | Назва                                                                                                                | Пріоритет | Власник      | ETA                                               | Статус                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |

@@ -20,5 +20,5 @@
     "docs/agents/specs/2026-04-25-assistant-capability-catalogue-design.md": 180
   },
   "explicitInclude": [],
-  "explicitExclude": []
+  "explicitExclude": ["docs/initiatives/follow-ups.md"]
 }

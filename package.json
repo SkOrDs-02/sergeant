@@ -65,6 +65,8 @@
     "docs:check-links": "node scripts/docs/check-markdown-links.mjs",
     "docs:gen-playbook-index": "node scripts/docs/generate-playbook-index.mjs",
     "docs:check-playbook-index": "node scripts/docs/generate-playbook-index.mjs --check",
+    "docs:gen-initiative-followups": "node scripts/docs/generate-initiative-followups.mjs",
+    "docs:check-initiative-followups": "node scripts/docs/generate-initiative-followups.mjs --check",
     "docs:check-playbook-schema": "node scripts/docs/check-playbook-schema.mjs",
     "docs:check-freshness-coverage": "node scripts/docs/check-freshness.mjs --check-coverage",
     "docs:check-adr-graph": "node scripts/docs/check-adr-graph.mjs",
