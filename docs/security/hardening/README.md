@@ -91,6 +91,10 @@
 | [L3](./L3-meta-referrer.md)                    | `index.html` missing `<meta name="referrer">`           | Closed (2026-05-05) — batched L3 + L7 + L11 hardening PR                                                    | [Sprint 4](./sprint-4.md) |
 | [L7](./L7-health-endpoint-info-leak.md)        | Health endpoint info-leak audit                         | Closed (2026-05-05) — batched L3 + L7 + L11 hardening PR                                                    | [Sprint 4](./sprint-4.md) |
 | [L11](./L11-csp-monitoring-allowlist.md)       | CSP must allowlist Sentry / PostHog `connect-src`       | Closed (2026-05-05) — batched L3 + L7 + L11 hardening PR                                                    | [Sprint 4](./sprint-4.md) |
+| [M21](./M21-coep-stripe-compatibility.md)      | COEP `require-corp` may break future iframes            | Closed (2026-05-05, doc-only) — batched L4 + L5 + L6 + M21 hardening PR                                     | [Sprint 3](./sprint-3.md) |
+| [L4](./L4-html-lang-attribute.md)              | `<html lang>` attribute audit                           | Closed (2026-05-05) — batched L4 + L5 + L6 + M21 hardening PR                                               | [Sprint 4](./sprint-4.md) |
+| [L5](./L5-dns-prefetch-control.md)             | Confirm `X-DNS-Prefetch-Control: off`                   | Closed (2026-05-05) — batched L4 + L5 + L6 + M21 hardening PR                                               | [Sprint 4](./sprint-4.md) |
+| [L6](./L6-no-sniff-explicit.md)                | Confirm `X-Content-Type-Options: nosniff`               | Closed (2026-05-05) — batched L4 + L5 + L6 + M21 hardening PR                                               | [Sprint 4](./sprint-4.md) |
 
 ## Cross-references
 

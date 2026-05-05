@@ -1,7 +1,7 @@
 # Міграція Tailwind CSS v3 → v4
 
-> **Last validated:** 2026-05-03. **Next review:** 2026-08-01.
-> **Status:** Phase 1 (web) — ✅ done ([#1495](https://github.com/Skords-01/Sergeant/pull/1495), follow-up [#1499](https://github.com/Skords-01/Sergeant/pull/1499)). Phase 2 (mobile/NativeWind) — blocked, чекаємо NativeWind 5. Phase 3–4 — не розпочато.
+> **Last validated:** 2026-05-05. **Next review:** 2026-08-04.
+> **Status:** Phase 1 (web) — ✅ done ([#1495](https://github.com/Skords-01/Sergeant/pull/1495), follow-up [#1499](https://github.com/Skords-01/Sergeant/pull/1499)). Phase 2 (mobile/NativeWind) — blocked, чекаємо NativeWind 5. Phase 3 (design tokens — preset decision + docs) — ✅ done. Phase 4 (cleanup) — ✅ done крім фінального переключення статусу на Completed (чекає закриття Phase 2).
 > **Owner:** @Skords-01
 > **Пріоритет:** Medium — запланувати на Q3–Q4 2026.
 > **Estimated effort:** 2–3 дні (з automated upgrade tool).
@@ -161,20 +161,19 @@ export default {
 4. Тестувати на iOS simulator та Android emulator
 5. Перевірити dark mode toggle
 
-### Фаза 3: Design tokens пакет — 0.5 дня
+### Фаза 3: Design tokens пакет — ✅ done
 
-1. Вирішити: JS preset (`@config`) чи CSS-first (`@theme`)
-   - **Рекомендація:** зберегти JS preset через `@config` — простіше підтримувати shared tokens між web і mobile
-2. Оновити документацію: `docs/design/module-accent.md`
-3. Перевірити що `brand`, `module-accent`, `status-*` кольори працюють
+1. ✅ **Зафіксовано: JS preset via `@config`.** CSS-first `@theme` дублювався б у Metro-конфізі для NativeWind, який досі на Tailwind 3. Один `packages/design-tokens/tailwind-preset.js` працює в обох runtime-ах. Рішення відображено у [`packages/design-tokens/README.md`](../../packages/design-tokens/README.md) і [`docs/design/module-accent.md`](../design/module-accent.md).
+2. ✅ Оновлено документацію: `docs/design/module-accent.md` (3-layer-діаграма позначає loader per surface; v4-нотатка під Tailwind-API).
+3. ✅ Перевірено що `brand`, `module-accent`, `status-*` кольори працюють — Phase 1 закрив це через Argos visual regression на web; mobile наслідує preset без змін, тож token-семантика збережена до моменту, коли Phase 2 розморозиться.
 
-### Фаза 4: Cleanup — 0.5 дня
+### Фаза 4: Cleanup — ✅ done
 
-1. Видалити `autoprefixer` з `devDependencies` (частково в #1495)
-2. Видалити `postcss-import` якщо є
-3. Оновити `.browserslistrc` (Tailwind 4 підтримує Safari 16.4+, Chrome 111+, Firefox 128+)
-4. Оновити CI: перевірити що build/test проходять
-5. Оновити цей документ: статус → Completed (після завершення Phase 2–3)
+1. ✅ `autoprefixer` видалено з `apps/web/package.json` у [#1495](https://github.com/Skords-01/Sergeant/pull/1495); `knip.json` `apps/web` `ignoreDependencies` зачищено від нього.
+2. ✅ `postcss-import` ніколи не був прямою залежністю — Tailwind 3 у нашому setup-і користувався вбудованим `postcss-import`-у `tailwindcss`-пакеті; pnpm-lock підтверджує відсутність явної залежності, тож видаляти нічого.
+3. ✅ Додано [`apps/web/.browserslistrc`](../../apps/web/.browserslistrc) із Tailwind v4 baseline (Safari 16.4+, Chrome 111+, Firefox 128+, Edge 111+, плюс iOS 16.4+, Chrome Android 111+, Firefox Android 128+, Samsung 23+). Vite/esbuild target лишається у `vite.config.js` — browserslist документує CSS-support contract і живить майбутні tooling-консьюмери (`caniuse-lite`, `eslint-plugin-compat`).
+4. ✅ CI проходить (Phase 1 PR закрив `pnpm lint && typecheck && test && build && size`). Поточний документ-оновлення не змінює рантайм — додавання `.browserslistrc` не консьюмиться жодним білд-степом.
+5. ⏳ Переключення статусу на Completed — лишається відкритим: чекаємо закриття Phase 2 (NativeWind 5 / Tailwind 4 сумісність). Як тільки mobile піде на v4 — оновити `Status:` у шапці і прибрати «Phase 2 — blocked» рядок.
 
 ## Ризики
 

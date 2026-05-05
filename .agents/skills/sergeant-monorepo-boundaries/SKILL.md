@@ -1,6 +1,6 @@
 ---
 name: sergeant-monorepo-boundaries
-description: Use when a Sergeant change could live in more than one app or package, when extracting shared logic, when porting web features to mobile, or when import boundaries and ownership are unclear.
+description: Use when a Sergeant change spans multiple apps/packages, extracts shared logic, or import boundaries are unclear; UA: межі між app/package, спільна логіка в монорепо.
 ---
 
 # Sergeant Monorepo Boundaries

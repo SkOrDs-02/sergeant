@@ -1,6 +1,6 @@
 ---
 name: sergeant-feature-delivery
-description: Use when building a new Sergeant feature, screen, endpoint, workflow, or behavior change that needs design, implementation planning, tests, documentation, and repo-specific verification.
+description: Use when building a new Sergeant feature, screen, endpoint, workflow, or behavior change needing design, planning, tests, docs, and verification; UA: робиш нову фічу/екран/endpoint.
 ---
 
 # Sergeant Feature Delivery

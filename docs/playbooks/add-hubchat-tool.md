@@ -1,9 +1,9 @@
-# Playbook: Add HubChat Tool
+# Playbook: Додати HubChat Tool
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
-**Trigger:** "Дай асистенту нову дію" / "Додай tool в HubChat" / зміна server tool definition, client executor або action card для HubChat orchestration.
+**Trigger:** "Дай асистенту нову дію" / "Додай tool в HubChat" / зміна серверного tool definition, клієнтського executor-а або action card для HubChat orchestration.
 
 ## Owner surface
 
@@ -13,55 +13,55 @@
 ## Required context
 
 - Почни з `sergeant-start-here`, потім відкрий `sergeant-hubchat`.
-- Якщо tool торкає auth/session/account lifecycle, додатково звір `better-auth-best-practices`.
-- Якщо tool робить persistence або API call, звір відповідний surface skill.
+- Якщо tool торкає auth, сесію або життєвий цикл акаунта, додатково звір `better-auth-best-practices`.
+- Якщо tool робить запис у БД або викликає зовнішнє API, звір відповідний skill для тієї поверхні (`sergeant-server-api`, `sergeant-data-and-migrations`).
 
 ## Steps
 
 ### 1. Визнач tool contract
 
-- `name`, `description`, input schema, expected side effect, short success result.
-- Виріши, чи це safe tool, risky tool або purely informational tool.
-- Переконайся, що tool description допомагає моделі викликати його правильно, а не рекламно описує можливість.
+- `name`, `description`, схема вхідних даних, очікуваний side effect, коротке повідомлення про успіх.
+- Виріши, чи це безпечний tool, ризиковий tool, чи суто інформаційний tool — від цього залежить, як його позначити в UI.
+- Переконайся, що `description` допомагає моделі викликати його правильно, а не рекламно описує можливість. Уникай маркетингової мови — пиши про умови, у яких tool слід викликати, і про вхідні поля.
 
-### 2. Додай server-side definition
+### 2. Додай серверне визначення
 
-- Розмісти tool у правильному `toolDefs/<domain>.ts`.
-- Зберігай domain ownership: cross-module tools не клади у випадковий module.
-- Перевір prompt-cache implications, якщо міняється великий shared tool list.
+- Розмісти tool у правильному `toolDefs/<domain>.ts` — за відповідним доменом, до якого він належить.
+- Зберігай domain ownership: cross-module tool-и не клади у випадковий модуль; для них використовуй `toolDefs/_shared.ts` або новий доменний файл.
+- Перевір prompt-cache: якщо змінюєш великий спільний список tool-ів, кешований префікс інвалідується — деплой може стати дорожчим, а перші відповіді — повільнішими.
 
-### 3. Додай client executor path
+### 3. Додай клієнтський executor
 
-- Додай typed action.
-- Реалізуй executor або local action handler.
-- Не роби raw `localStorage`; використовуй Sergeant wrappers.
-- Не ховай server-side side effects у client orchestration без явного контролю.
+- Додай типізовану дію (action) у відповідний реєстр.
+- Реалізуй executor або локальний action handler — той самий шар, де живуть інші tool-и того ж домену.
+- Не роби сирого звертання до `localStorage` — використовуй Sergeant-обгортки (`ls`, `lsSet`, typed-store).
+- Не ховай side effect-и сервера всередині клієнтської оркестрації без явного контролю — інакше тестова матриця стає крихкою, а помилки шукати важко.
 
-### 4. Додай user-facing card або feedback
+### 4. Додай user-facing картку або фідбек
 
-- Якщо tool user-visible, онови action card/title mapping.
-- Для risky tools додай proper labeling.
-- Success і failure states мають відрізнятись текстом і тоном.
+- Якщо tool видимий користувачу, онови action card і відповідний title mapping.
+- Для ризикових tool-ів додай явне маркування — щоб користувач бачив, що дія незворотна або з нетривіальними наслідками.
+- Стан успіху і стан помилки мають відрізнятися і текстом, і тоном — користувач не повинен гадати, що саме сталося.
 
-### 5. Додай tests і regression coverage
+### 5. Додай тести і regression coverage
 
-- Happy path.
-- Error path.
-- Risky labeling або tool registry shape, якщо це є частиною поведінки.
+- Сценарій успіху (happy path).
+- Сценарій помилки (error path) — мінімум один: некоректний вхід або відмова сервера.
+- Маркування ризикового tool-а або форма реєстру tool-ів, якщо це частина поведінки, що тестується окремо.
 
 ## Verification
 
 - [ ] `pnpm lint`
 - [ ] `pnpm typecheck`
 - [ ] `pnpm test`
-- [ ] Tool definition, executor і card path узгоджені
-- [ ] Risky tool позначено правильно, якщо застосовно
-- [ ] Немає raw browser storage або несинхронізованих side effects
+- [ ] Визначення tool-а, executor і картка узгоджені між собою (один і той самий name, той самий контракт)
+- [ ] Ризиковий tool позначено правильно, якщо застосовно
+- [ ] Немає сирого звертання до browser storage і несинхронізованих side-effect-ів
 
 ## When not to use this playbook
 
-- Потрібно лише підкрутити wording system prompt без нового tool surface.
-- Потрібно змінити internal Telegram console agent, а не HubChat.
+- Потрібно лише підкрутити формулювання системного промпта без нової tool-поверхні.
+- Потрібно змінити внутрішнього Telegram-агента в `tools/console`, а не HubChat — це інша поверхня з власним playbook-ом.
 
 ## Related playbooks and skills
 

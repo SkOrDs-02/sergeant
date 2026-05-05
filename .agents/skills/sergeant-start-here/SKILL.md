@@ -1,6 +1,6 @@
 ---
 name: sergeant-start-here
-description: Use when starting any task in the Sergeant repository, especially if the work could touch web, server, mobile, migrations, HubChat, deploys, reviews, or cross-package boundaries.
+description: Use when starting any task in the Sergeant repo — web, server, mobile, migrations, HubChat, deploys, reviews, or cross-package boundaries; UA: будь-яка нова задача в Sergeant.
 ---
 
 # Start Here for Sergeant

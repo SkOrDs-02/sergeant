@@ -1,0 +1,21 @@
+# Tailwind CSS v4 baseline — see docs/planning/tailwind-v4-migration.md.
+#
+# Tailwind v4 features (`@property`, `color-mix()`, container queries, native
+# nesting, modern color tokens) require these minimums; older browsers degrade
+# silently to broken layouts. We pin them here so any tooling that reads
+# browserslist (caniuse-lite, eslint-plugin-compat, future PostCSS plugins)
+# stays aligned with the engine's own support matrix.
+#
+# Vite/esbuild target is configured separately in `vite.config.js`
+# (`build.target` defaults to native ES modules); changing this file does not
+# alter the JS bundle target — it documents the *CSS* support contract for
+# Tailwind utilities and any consumer of the published web app.
+Safari >= 16.4
+iOS >= 16.4
+Chrome >= 111
+ChromeAndroid >= 111
+Firefox >= 128
+FirefoxAndroid >= 128
+Edge >= 111
+Samsung >= 23
+not dead

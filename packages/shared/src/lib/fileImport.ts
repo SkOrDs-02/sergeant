@@ -23,9 +23,12 @@ export interface FileImportAdapter {
 
 function isDev(): boolean {
   try {
-    return (
-      typeof process !== "undefined" && process.env?.NODE_ENV !== "production"
-    );
+    // Read off `globalThis` so the file type-checks under tsconfigs that
+    // don't include `@types/node` (apps/web scopes `types: ["vite/client"]`
+    // only). Mirrors the same guard in `fileDownload.ts:isDev`.
+    const proc = (globalThis as { process?: { env?: { NODE_ENV?: string } } })
+      .process;
+    return typeof proc !== "undefined" && proc.env?.NODE_ENV !== "production";
   } catch {
     return false;
   }

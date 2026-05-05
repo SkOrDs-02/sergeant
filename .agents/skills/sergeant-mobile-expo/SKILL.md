@@ -1,6 +1,6 @@
 ---
 name: sergeant-mobile-expo
-description: Use when editing Sergeant Expo screens, React Native components, mobile navigation, MMKV-backed flows, Capacitor shell integration, or shared web-to-mobile feature ports in apps/mobile or apps/mobile-shell.
+description: Use when editing Sergeant Expo screens, React Native, mobile navigation, MMKV flows, Capacitor shell, or web→mobile ports; UA: правиш Expo/RN/MMKV/Capacitor/mobile-shell.
 ---
 
 # Sergeant Mobile Expo

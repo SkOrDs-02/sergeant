@@ -1,6 +1,6 @@
 ---
 name: sergeant-server-api
-description: Use when editing Sergeant server routes, serializers, modules, shared API contracts, api-client types, React Query hooks for server data, or time-sensitive business logic in apps/server and packages/api-client.
+description: Use when editing Sergeant server routes, serializers, modules, api-client types, React Query server hooks, or time-sensitive logic; UA: правиш роути сервера/серіалізатори/RQ-хуки.
 ---
 
 # Sergeant Server API

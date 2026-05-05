@@ -1,6 +1,6 @@
 ---
 name: sergeant-web-ui
-description: Use when editing Sergeant web UI, PWA shell, React screens, Tailwind classes, accessibility states, localStorage-backed flows, or shared web interaction patterns in apps/web.
+description: Use when editing Sergeant web UI, PWA shell, React screens, Tailwind, accessibility, localStorage flows, or shared web interaction patterns; UA: правиш веб-UI/PWA/Tailwind.
 ---
 
 # Sergeant Web UI

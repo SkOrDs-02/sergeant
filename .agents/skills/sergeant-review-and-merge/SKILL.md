@@ -1,6 +1,6 @@
 ---
 name: sergeant-review-and-merge
-description: Use when reviewing a Sergeant PR, preparing changes for merge, checking commit scope, validating docs freshness, or deciding whether a change is safe to ship.
+description: Use when reviewing a Sergeant PR, preparing for merge, checking commit scope, validating docs freshness, or deciding if a change is safe to ship; UA: ревʼю PR і мердж.
 ---
 
 # Sergeant Review and Merge

@@ -1,6 +1,6 @@
 ---
 name: better-auth-best-practices
-description: Use when editing Sergeant login, signup, session cookies, auth middleware, account lifecycle flows, Better Auth client/server wiring, or auth environment variables in apps/server and apps/web.
+description: Use when editing Sergeant auth — login, signup, session cookies, middleware, account lifecycle, Better Auth wiring; UA: правиш логін, реєстрацію, сесії, кукі, авторизацію в Sergeant.
 ---
 
 # Better Auth in Sergeant
