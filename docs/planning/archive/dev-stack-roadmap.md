@@ -3,10 +3,10 @@
 > **Last validated:** 2026-05-05 by Devin. **Next review:** ніколи (read-only архів).
 > **Status:** Archived (read-only).
 > **Created:** 2026-05-05.
-> **Source:** [`dev-stack-roadmap.md`](./dev-stack-roadmap.md) §«Журнал сесій».
+> **Source:** [`dev-stack-roadmap.md`](../dev-stack-roadmap.md) §«Журнал сесій».
 > **Purpose:** зберегти хронологію early-spring 2026 «інфра-спринтів» (PR-и #714 — #743), не захаращуючи живий роадмап.
 
-Цей файл — read-only. Нові журнали сесій додавайте у [`dev-stack-roadmap.md`](./dev-stack-roadmap.md). Коли «живий» розділ підіймається понад ~80 рядків — переносьте найстаріші записи сюди.
+Цей файл — read-only. Нові журнали сесій додавайте у [`dev-stack-roadmap.md`](../dev-stack-roadmap.md). Коли «живий» розділ підіймається понад ~80 рядків — переносьте найстаріші записи сюди.
 
 ---
 

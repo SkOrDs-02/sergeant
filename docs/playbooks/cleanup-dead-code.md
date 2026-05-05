@@ -77,7 +77,7 @@ grep -rn "from.*<module_path>" .
 
 - Видали запис прапорця з `FLAG_REGISTRY` у `apps/web/src/core/lib/featureFlags.ts`
 - Видали всі call sites `useFlag("flag_name")` / `getFlag("flag_name")`
-- Онови `docs/feature-flags.md`, якщо існує
+- Онови `docs/governance/feature-flags.md`, якщо існує
 
 ### 6. Перевір згадки в документації
 

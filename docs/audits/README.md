@@ -10,7 +10,7 @@ freshness-маркером (див. `scripts/check-tech-debt-freshness.mjs`).
 ## Lifecycle
 
 - **Active** — аудит або трекер усе ще використовується для прийняття рішень / пріоритизації.
-- **Closed** — оцінка завершена, fixes винесені у tracker (зазвичай — `*-implementation-roadmap.md` або `UX-IMPROVEMENT-PLAN.md`); сам документ лишається як historical record.
+- **Closed** — оцінка завершена, fixes винесені у tracker (зазвичай — `*-implementation-roadmap.md` або `2026-04-28-ux-improvement-plan.md`); сам документ лишається як historical record.
 - **Archived** — аудит застарів і фізично переміщений у `docs/audits/archive/`. Канонічні правила тепер живуть у `docs/design/*` або `docs/governance/*`.
 
 ## Як читати таблицю
@@ -31,12 +31,12 @@ freshness-маркером (див. `scripts/check-tech-debt-freshness.mjs`).
 | [`2026-04-28-implementation-roadmap.md`](./2026-04-28-implementation-roadmap.md)                   | План реалізації покращень                                | Active   | —           | —           | self                                                                             |
 | [`2026-05-02-doc-hygiene-audit.md`](./2026-05-02-doc-hygiene-audit.md)                             | Doc-hygiene аудит — структура, freshness, dead code      | Active   | 3/5 ≈       | 2 ≈         | embedded fix list                                                                |
 | [`2026-05-03-readme-gap-analysis.md`](./2026-05-03-readme-gap-analysis.md)                         | README gap analysis — що відсутнє у root README          | Active   | 0/8 ≈       | 8 ≈         | self                                                                             |
-| [`UX-UI-AUDIT-2026.md`](./UX-UI-AUDIT-2026.md)                                                     | UX/UI аудит 2026                                         | Closed   | —           | —           | [`UX-IMPROVEMENT-PLAN.md`](./UX-IMPROVEMENT-PLAN.md)                             |
-| [`UX-IMPROVEMENT-PLAN.md`](./UX-IMPROVEMENT-PLAN.md)                                               | Технічний план покращення UX                             | Active   | —           | —           | self                                                                             |
+| [`2026-04-28-ux-ui-audit.md`](./2026-04-28-ux-ui-audit.md)                                         | UX/UI аудит 2026                                         | Closed   | —           | —           | [`2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md)       |
+| [`2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md)                         | Технічний план покращення UX                             | Active   | —           | —           | self                                                                             |
 | [`2026-05-03-ftux-onboarding-roast.md`](./2026-05-03-ftux-onboarding-roast.md)                     | Web FTUX onboarding roast — 6 P0 + 22 рекомендацій       | Frozen   | 3/6 P0      | 3 P0        | [`docs/launch/ftux-master-tracker.md`](../launch/ftux-master-tracker.md)         |
 | [`2026-05-04-csp-disable-retrospective.md`](./2026-05-04-csp-disable-retrospective.md)             | CSP_DISABLE retrospective audit (initiative 0011 PR 1.4) | Active   | 0/5 ≈       | 5 ≈         | self (Action items §A1–A5)                                                       |
 | [`2026-05-05-dead-code-and-stale-links-audit.md`](./2026-05-05-dead-code-and-stale-links-audit.md) | Dead-code & stale-links прохід (knip / docs:check-links) | Active   | 5/5         | 6 ≈         | embedded §3 (unused deps + exports + duplicate exports for follow-up PRs)        |
-| [`archive/ux-audit-2025.md`](./archive/ux-audit-2025.md)                                           | UX-аудит 2025                                            | Archived | n/a         | n/a         | superseded by [`UX-UI-AUDIT-2026.md`](./UX-UI-AUDIT-2026.md)                     |
+| [`archive/ux-audit-2025.md`](./archive/ux-audit-2025.md)                                           | UX-аудит 2025                                            | Archived | n/a         | n/a         | superseded by [`2026-04-28-ux-ui-audit.md`](./2026-04-28-ux-ui-audit.md)         |
 
 ## Diagnostics (ad-hoc deep-dives)
 
@@ -61,5 +61,5 @@ freshness-маркером (див. `scripts/check-tech-debt-freshness.mjs`).
   `Last validated:` маркер ≤ 60 днів. PR падає, якщо маркер старший за
   поріг — re-validate сторінку (статуси, лічильники, нові аудити) і
   онови дату.
-- Для нових аудитів використовуй шаблон з `docs/audits/UX-UI-AUDIT-2026.md`
+- Для нових аудитів використовуй шаблон з `docs/audits/2026-04-28-ux-ui-audit.md`
   (front-matter блок зверху + Lifecycle-status + явний tracker).

@@ -1,6 +1,6 @@
 # Engineering Metrics
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 Lightweight process observability for the development system itself. The goal is not vanity metrics; it is to detect friction before it turns into slower delivery, hidden risk, or policy drift.
@@ -15,7 +15,7 @@ Lightweight process observability for the development system itself. The goal is
 | Flaky test count              | Measures reliability debt that erodes trust in green builds | Weekly                   | flaky test dashboard, CI reruns                          |
 | Docs/governance gate failures | Detects drift in documentation operating system             | Weekly                   | docs/governance CI jobs                                  |
 | Postmortem action item aging  | Prevents learning from incidents from going stale           | Weekly                   | postmortem follow-up issues                              |
-| Stale feature flags           | Surfaces hidden release debt and dead code                  | Weekly                   | [feature-flags.md](../feature-flags.md)                  |
+| Stale feature flags           | Surfaces hidden release debt and dead code                  | Weekly                   | [feature-flags.md](../governance/feature-flags.md)       |
 | Open security SLA breaches    | Makes unresolved risk visible                               | Weekly                   | [vulnerability-sla.md](../security/vulnerability-sla.md) |
 
 ## Dashboard strategy

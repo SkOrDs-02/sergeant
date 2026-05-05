@@ -19,7 +19,7 @@
 > [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md) — джерело рекомендацій ·
 > [`01-monetization-and-pricing.md` §7](./01-monetization-and-pricing.md#7-activation-метрики) — activation baseline ·
 > [`04-launch-readiness.md` §4.2](./04-launch-readiness.md) — funnel definitions ·
-> [`docs/feature-flags.md`](../feature-flags.md) — flag conventions ·
+> [`docs/governance/feature-flags.md`](../governance/feature-flags.md) — flag conventions ·
 > [`docs/playbooks/add-onboarding-step.md`](../playbooks/add-onboarding-step.md) — додавання кроку у `ONBOARDING_STEPS`.
 
 ---
@@ -32,7 +32,7 @@
 4. **Кожен помітний UX-зсув йде під feature-flag.** Поки немає feature-flag-сервісу — `localStorage.experiment.<name>=on/off` + URL-параметр для QA. Після S0 → PostHog feature flags.
 5. **Mobile parity** до кінця S3 — обов'язкова. Інакше web/mobile FTUX-розривається.
 6. **Copy review.** Усі копірайт-зміни проходять через 1 reviewer не з команди (founder-друг, маркетолог, або хтось з ЦА). Інженер не пише маркетинг.
-7. **Result note після кожного спринту** в `docs/launch/post-mortems/<sprint>-<theme>.md` з PostHog before/after.
+7. **Result note після кожного спринту** в `docs/launch/sprint-retros/<sprint>-<theme>.md` з PostHog before/after.
 
 ---
 
@@ -138,7 +138,7 @@
 **Cross-cutting:**
 
 - Mobile parity для S1.1, S1.2, S1.4 — обов'язково цього спринту. _Update 2026-05-04: S1.4 mobile наразі немає peek-backdrop equivalent (mobile-wizard — одиночний splash без бенто позаду), тому disclaimer введений тільки на web — окремий хвостик для mobile відкладено й треба буде закрити при додаванні mobile-peek (якщо колись з'явиться)._
-- Result note: [`docs/launch/post-mortems/s1-honest-valueprop.md`](./post-mortems/s1-honest-valueprop.md).
+- Result note: [`docs/launch/sprint-retros/s1-honest-valueprop.md`](./sprint-retros/s1-honest-valueprop.md).
 
 ---
 
@@ -236,11 +236,11 @@
 
 ### PR-розбивка
 
-| PR-id    | Назва                                                    | LOC  | Files (≈)                                                                                                      | Deps              | AC / метрики                                                                                                                          |
-| -------- | -------------------------------------------------------- | ---- | -------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| **S5.1** | feat(onboarding): goal-first variant behind feature-flag | ~250 | `apps/web/src/core/onboarding/OnboardingWizard.tsx` (новий step before WelcomeOneScreen) · `OutcomePicker.tsx` | S0 + PostHog FF   | Step 1: «Що тобі важливо зараз?» з 4-6 опціями (економити / рухатись / скинути 3 кг / не забивати на справи / просто подивитись)      |
-| **S5.2** | feat(experiments): A/B 50/50 setup + tracking            | ~80  | `apps/web/src/core/experiments/wizard-variant.ts` (новий)                                                      | S5.1              | half users — current; half — goal-first · PostHog cohort tracked: D1/D7 retention, % з 2+ entries у session 1, TTV                    |
-| **S5.3** | decision: rollout або rollback (PR-only after 2 weeks)   | <50  | feature flag flip                                                                                              | S5.2 + 2 тиж дані | якщо goal-first ≥+5pp retention → flip default · інакше rollback + result-note `docs/launch/post-mortems/s5-goal-first-experiment.md` |
+| PR-id    | Назва                                                    | LOC  | Files (≈)                                                                                                      | Deps              | AC / метрики                                                                                                                           |
+| -------- | -------------------------------------------------------- | ---- | -------------------------------------------------------------------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **S5.1** | feat(onboarding): goal-first variant behind feature-flag | ~250 | `apps/web/src/core/onboarding/OnboardingWizard.tsx` (новий step before WelcomeOneScreen) · `OutcomePicker.tsx` | S0 + PostHog FF   | Step 1: «Що тобі важливо зараз?» з 4-6 опціями (економити / рухатись / скинути 3 кг / не забивати на справи / просто подивитись)       |
+| **S5.2** | feat(experiments): A/B 50/50 setup + tracking            | ~80  | `apps/web/src/core/experiments/wizard-variant.ts` (новий)                                                      | S5.1              | half users — current; half — goal-first · PostHog cohort tracked: D1/D7 retention, % з 2+ entries у session 1, TTV                     |
+| **S5.3** | decision: rollout або rollback (PR-only after 2 weeks)   | <50  | feature flag flip                                                                                              | S5.2 + 2 тиж дані | якщо goal-first ≥+5pp retention → flip default · інакше rollback + result-note `docs/launch/sprint-retros/s5-goal-first-experiment.md` |
 
 **Risks:**
 
@@ -299,7 +299,7 @@
 **Cross-cutting:**
 
 - Mobile parity для S6.1, S6.3, S6.6, S6.7, S6.11 — обов'язкова цього спринту. S6.12 та S6.13 — web-first, mobile parity окремо.
-- Result note: `docs/launch/post-mortems/s6-cleanup-batch.md` (буде створений по завершенню).
+- Result note: `docs/launch/sprint-retros/s6-cleanup-batch.md` (буде створений по завершенню).
 
 ---
 
