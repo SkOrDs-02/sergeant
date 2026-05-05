@@ -159,7 +159,7 @@ jobs:
 
       - name: Check markdown links
         # External URLs are fetched and failures are errors. The default
-        # allowlist at docs/external-link-allowlist.json covers known
+        # allowlist at docs/governance/external-link-allowlist.json covers known
         # link-rot in immutable ADRs and hosts that block automated
         # user-agents (each entry carries a 'reason' field).
         run: node scripts/docs/check-markdown-links.mjs --strict-external

@@ -1,16 +1,16 @@
 # 🛠️ Технічний план покращення UI/UX
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
-**Базується на:** UX-UI-AUDIT-2026.md  
+**Базується на:** 2026-04-28-ux-ui-audit.md  
 **Автор:** v0 AI  
 **Дата:** 28 квітня 2026
 
 > **Code-sync 2026-05-02.** Цей документ тепер є execution tracker для
 > залишкових UI/UX робіт. Канонічні правила живуть у
 > [`docs/design/design-system.md`](../design/design-system.md); історичний
-> аудит і оцінки — у [`UX-UI-AUDIT-2026.md`](./UX-UI-AUDIT-2026.md). Статуси
+> аудит і оцінки — у [`2026-04-28-ux-ui-audit.md`](./2026-04-28-ux-ui-audit.md). Статуси
 > нижче звірені з фактичними файлами `apps/mobile` і `apps/web`.
 
 ## Актуальний стан за кодом (2026-05-02)

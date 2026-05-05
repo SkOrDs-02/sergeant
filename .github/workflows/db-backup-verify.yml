@@ -70,7 +70,7 @@ jobs:
       - name: Install Railway CLI
         run: |
           curl -fsSL https://raw.githubusercontent.com/railwayapp/cli/master/install.sh | sh
-          railway version
+          railway --version
 
       - name: Pull latest Railway dump
         id: dump
@@ -86,7 +86,7 @@ jobs:
           echo "Pulling latest backup from Railway..."
           # Railway CLI does not expose pg_dump directly; we connect to
           # the public Postgres URL and dump locally.
-          PGURL=$(railway variables get DATABASE_PUBLIC_URL 2>/dev/null || true)
+          PGURL=$(railway variable list --kv 2>/dev/null | awk -F= '$1 == "DATABASE_PUBLIC_URL" { print substr($0, length($1) + 2); exit }')
           if [ -z "$PGURL" ]; then
             echo "::warning::Could not resolve DATABASE_PUBLIC_URL from Railway — falling back to migration-only verify."
             echo "has_dump=false" >> "$GITHUB_OUTPUT"
@@ -119,7 +119,7 @@ jobs:
           else
             echo "Running migrations against empty DB (migration-only verify)..."
           fi
-          node apps/server/migrate.mjs
+          pnpm --filter @sergeant/server db:migrate:dev
 
       # ── Step 4: Smoke-test schema integrity ───────────────────────
       # Mirrors docs/runbooks/database-backup-restore.md § 4.

@@ -327,6 +327,72 @@ describe("logger", () => {
             }
           ).config.headers["x-mono-webhook-secret"],
       },
+      // Round 17 — PII paths beyond root-level email/phone. Pino redact
+      // wildcards match exactly one nesting level, so `*.email` covers
+      // `user.email` but NOT `req.body.email`. Each entry below
+      // exercises a distinct path that must be reachable; mutating the
+      // redactPaths array (e.g. dropping `req.body.email`) trips at
+      // least one of these cases.
+      {
+        name: "req.body.email (login flow — explicit 3-level path)",
+        payload: {
+          req: { body: { email: "user@example.com", role: "owner" } },
+        },
+        readRedacted: (p) =>
+          (p["req"] as { body: Record<string, unknown> }).body["email"],
+        readSafe: (p) =>
+          (p["req"] as { body: Record<string, unknown> }).body["role"],
+      },
+      {
+        name: "req.body.phone (OTP / sign-in via SMS)",
+        payload: {
+          req: { body: { phone: "+380991234567", channel: "sms" } },
+        },
+        readRedacted: (p) =>
+          (p["req"] as { body: Record<string, unknown> }).body["phone"],
+        readSafe: (p) =>
+          (p["req"] as { body: Record<string, unknown> }).body["channel"],
+      },
+      {
+        name: "res.body.email (response with user data)",
+        payload: {
+          res: { body: { email: "user@example.com", id: "u-123" } },
+        },
+        readRedacted: (p) =>
+          (p["res"] as { body: Record<string, unknown> }).body["email"],
+        readSafe: (p) =>
+          (p["res"] as { body: Record<string, unknown> }).body["id"],
+      },
+      {
+        name: "res.body.phone (response with user data)",
+        payload: {
+          res: { body: { phone: "+380991234567", id: "u-123" } },
+        },
+        readRedacted: (p) =>
+          (p["res"] as { body: Record<string, unknown> }).body["phone"],
+      },
+      {
+        name: "*.*.email — 2-level wildcard (e.g. result.user.email)",
+        payload: {
+          result: {
+            user: { email: "user@example.com", id: "u-123" },
+          },
+        },
+        readRedacted: (p) =>
+          (p["result"] as { user: Record<string, unknown> }).user["email"],
+        readSafe: (p) =>
+          (p["result"] as { user: Record<string, unknown> }).user["id"],
+      },
+      {
+        name: "*.*.phone — 2-level wildcard (e.g. data.contact.phone)",
+        payload: {
+          data: {
+            contact: { phone: "+380991234567", channel: "sms" },
+          },
+        },
+        readRedacted: (p) =>
+          (p["data"] as { contact: Record<string, unknown> }).contact["phone"],
+      },
     ];
 
     cases.forEach((c) => {

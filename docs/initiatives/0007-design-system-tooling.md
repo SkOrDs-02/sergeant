@@ -20,7 +20,7 @@
 > - **Phase 5** — [`.github/workflows/storybook-deploy.yml`](../../.github/workflows/storybook-deploy.yml) деплоїть Storybook на GitHub Pages (`https://skords-01.github.io/Sergeant/`) при push-і в `main`; PR builds рунають той же build-step + uploadять бандл як artifact (7-денний retention). Написано [`docs/design/storybook.md`](../design/storybook.md) — contributor guide (writing stories, animations / overlays escape hatches, allowlist hygiene).
 > - **ESLint promote** — `sergeant-design/require-stories-for-ui-components` піднято з `warn` до `error` в [`eslint.config.js`](../../eslint.config.js) з оновленим коментарем-rationale.
 >
-> **Sources:** Design Review 2026-05-03 §13 (Design system), [`docs/audits/UX-UI-AUDIT-2026.md`](../audits/UX-UI-AUDIT-2026.md)
+> **Sources:** Design Review 2026-05-03 §13 (Design system), [`docs/audits/2026-04-28-ux-ui-audit.md`](../audits/2026-04-28-ux-ui-audit.md)
 
 ## TL;DR
 
@@ -156,7 +156,7 @@ Sergeant має **топовий design-system на статичному рів�
 ## Посилання
 
 - Design Review 2026-05-03 — §13 Design system
-- [`docs/audits/UX-UI-AUDIT-2026.md`](../audits/UX-UI-AUDIT-2026.md)
+- [`docs/audits/2026-04-28-ux-ui-audit.md`](../audits/2026-04-28-ux-ui-audit.md)
 - [`packages/design-tokens/`](../../packages/design-tokens/)
 - [`packages/eslint-plugin-sergeant-design/`](../../packages/eslint-plugin-sergeant-design/)
 - [Storybook 8 docs](https://storybook.js.org/docs)

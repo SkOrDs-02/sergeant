@@ -36,7 +36,7 @@
 3. **Status registry update-и** в master tracker-ах:
    - [`docs/launch/ftux-master-tracker.md`](../launch/ftux-master-tracker.md) — FTUX SSOT.
    - Інші master-tracker-и якщо з'являться post-freeze.
-4. **Post-mortem-и** завершених PR-серій у `docs/launch/post-mortems/` (1 page max).
+4. **Post-mortem-и** завершених PR-серій у `docs/launch/sprint-retros/` (1 page max).
 5. **Decisions log** — нові entries у §7 master tracker-у.
 6. **Consolidation-PR-и** — об'єднання 2+ існуючих доків в 1 (як [PR #1934 — FTUX consolidation](https://github.com/Skords-01/Sergeant/pull/1934)).
 7. **Архівація** stale audit-tracker-ів з `docs/audits/` → `docs/audits/archive/`.

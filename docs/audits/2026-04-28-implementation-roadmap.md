@@ -5,6 +5,7 @@
 
 > **Update 2026-05-05 (full refresh):** Документ оновлено за актуальним станом кодової бази.
 > Основні зміни від останнього ревʼю:
+>
 > - P0-1 TypeScript strict — ✅ повністю закрито (Phase 4 + Phase 5 cleanup, 13/13 пакетів = 100 % strict).
 > - P0-2 localStorage — масовий прогрес: ESLint `no-raw-local-storage: error` enforcement, allowlist зменшено до ~10 файлів (storage primitives + 4 cloudSync internals). 12+ раундів міграції.
 > - P0-4 Mobile APM — ✅ Sentry RN ініціалізовано (`apps/mobile/src/lib/observability.ts`).
@@ -65,31 +66,31 @@
 
 ### 2.1. Критичні (P0) — блокують production-якість
 
-| ID       | Проблема                       | Файлів                                                                       | Поточний Прогрес                                                                                                                                                                                  |
-| -------- | ------------------------------ | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **P0-1** | `apps/web` strict: false       | 0 TS errors (full `strict: true`, 2026-05-03 post-Phase 5)                   | ✅ **Закрито.** Phase 4 (PR1–PR4 merged) + Phase 5 cleanup (`a7a31703`). `pnpm strict:coverage` = 13/13 = 100 %.                                                                                  |
-| **P0-2** | localStorage без safe wrappers | ~10 файлів у allowlist (storage primitives + 4 cloudSync internals)           | ~85 % мігровано. ESLint `no-raw-local-storage: error` enforced. 12+ раундів міграції. Залишились cloudSync internals (потрібен direct access) та storage primitives (вони і є wrappers).           |
-| **P0-3** | Mobile flaky tests             | 2 тести                                                                      | `isReduceMotionEnabled` mock pattern виправлено; тест-файли існують, потребують верифікації flaky-статусу в CI.                                                                                    |
-| **P0-4** | Mobile APM відсутній           | Sentry RN initialized                                                        | ✅ **Закрито.** `@sentry/react-native` у `apps/mobile/src/lib/observability.ts`, `captureError` + session tracking.                                                                               |
+| ID       | Проблема                       | Файлів                                                              | Поточний Прогрес                                                                                                                                                                         |
+| -------- | ------------------------------ | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P0-1** | `apps/web` strict: false       | 0 TS errors (full `strict: true`, 2026-05-03 post-Phase 5)          | ✅ **Закрито.** Phase 4 (PR1–PR4 merged) + Phase 5 cleanup (`a7a31703`). `pnpm strict:coverage` = 13/13 = 100 %.                                                                         |
+| **P0-2** | localStorage без safe wrappers | ~10 файлів у allowlist (storage primitives + 4 cloudSync internals) | ~85 % мігровано. ESLint `no-raw-local-storage: error` enforced. 12+ раундів міграції. Залишились cloudSync internals (потрібен direct access) та storage primitives (вони і є wrappers). |
+| **P0-3** | Mobile flaky tests             | 2 тести                                                             | `isReduceMotionEnabled` mock pattern виправлено; тест-файли існують, потребують верифікації flaky-статусу в CI.                                                                          |
+| **P0-4** | Mobile APM відсутній           | Sentry RN initialized                                               | ✅ **Закрито.** `@sentry/react-native` у `apps/mobile/src/lib/observability.ts`, `captureError` + session tracking.                                                                      |
 
 ### 2.2. Високі (P1) — значний tech-debt
 
-| ID       | Проблема                       | Деталі           | Статус          |
-| -------- | ------------------------------ | ---------------- | --------------- |
+| ID       | Проблема                       | Деталі           | Статус                                                                                                                                                                                                                                     |
+| -------- | ------------------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **P1-1** | Великі файли (>600 LOC)        | ~8 файлів >600   | Значний прогрес: ProfilePage 1060→95 ✅, HubChat ~800→145 ✅, ActiveWorkoutPanel 949→240 ✅, DesignShowcase 1064→72 ✅. Залишились: HubDashboard (743), Workouts (744), Overview (494), LogCard (736), NutritionApp (728), Progress (692). |
-| **P1-2** | TypeScript 6.0.3 bleeding edge | Tooling ризики   | Monitoring — поки стабільно      |
-| **P1-3** | Capacitor без boundary tests   | 0 тестів         | Не почато       |
-| **P1-4** | Prompt cache не активовано     | $$ waste         | ✅ **Закрито.** `cache_control: { type: "ephemeral" }` у `apps/server/src/modules/chat/chat.ts`. |
-| **P1-5** | Немає distributed tracing      | Debug складність | ✅ **Закрито.** OpenTelemetry у `apps/server/src/obs/{tracing,spans,sampler}.ts` + `@sentry/node`. |
+| **P1-2** | TypeScript 6.0.3 bleeding edge | Tooling ризики   | Monitoring — поки стабільно                                                                                                                                                                                                                |
+| **P1-3** | Capacitor без boundary tests   | 0 тестів         | Не почато                                                                                                                                                                                                                                  |
+| **P1-4** | Prompt cache не активовано     | $$ waste         | ✅ **Закрито.** `cache_control: { type: "ephemeral" }` у `apps/server/src/modules/chat/chat.ts`.                                                                                                                                           |
+| **P1-5** | Немає distributed tracing      | Debug складність | ✅ **Закрито.** OpenTelemetry у `apps/server/src/obs/{tracing,spans,sampler}.ts` + `@sentry/node`.                                                                                                                                         |
 
 ### 2.3. Середні (P2) — DX-покращення
 
-| ID       | Проблема                    | Деталі               |
-| -------- | --------------------------- | -------------------- |
-| **P2-1** | TODO/FIXME без трекінгу     | 10 файлів            | Потребує перевірки        |
-| **P2-2** | No Sentry integration       | Error context loss   | ✅ **Закрито.** Web: lazy `@sentry/react` у `core/observability/sentry.ts`. Mobile: `@sentry/react-native`. Server: `@sentry/node` у `sentry.ts`. |
-| **P2-3** | Mobile debt tracker missing | Hidden accumulation  | Потребує перевірки        |
-| **P2-4** | `as unknown as X` patterns  | 0 у prod-коді       | ✅ **Закрито** для production-коду. Залишились тільки в тестах (~20 файлів) — прийнятно для test fixtures. |
+| ID       | Проблема                    | Деталі              |
+| -------- | --------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P2-1** | TODO/FIXME без трекінгу     | 10 файлів           | Потребує перевірки                                                                                                                                |
+| **P2-2** | No Sentry integration       | Error context loss  | ✅ **Закрито.** Web: lazy `@sentry/react` у `core/observability/sentry.ts`. Mobile: `@sentry/react-native`. Server: `@sentry/node` у `sentry.ts`. |
+| **P2-3** | Mobile debt tracker missing | Hidden accumulation | Потребує перевірки                                                                                                                                |
+| **P2-4** | `as unknown as X` patterns  | 0 у prod-коді       | ✅ **Закрито** для production-коду. Залишились тільки в тестах (~20 файлів) — прийнятно для test fixtures.                                        |
 
 ---
 
@@ -453,13 +454,13 @@ describe("Capacitor Boundary Tests", () => {
 
 Усі `as unknown as X` патерни видалено з production-коду. Залишились тільки у ~20 тестових файлах (test fixtures / mocks), що є прийнятним.
 
-| Файл                         | Кількість | Причина             | Рішення                | Статус      |
-| ---------------------------- | --------- | ------------------- | ---------------------- | ----------- |
-| `useFinykPersonalization.ts` | 6         | API response typing | Add proper Zod schemas | ✅ Закрито  |
-| `App.tsx`                    | 3         | Router typing       | Use typed router       | ✅ Закрито  |
-| `VoiceMicButton.tsx`         | 2         | Web Audio API       | Add proper types       | ✅ Закрито  |
-| `hubChatUtils.ts`            | 2         | Tool definitions    | Type guard functions   | ✅ Закрито  |
-| Server files (5)             | 1 each    | Various             | Case-by-case           | ✅ Закрито  |
+| Файл                         | Кількість | Причина             | Рішення                | Статус     |
+| ---------------------------- | --------- | ------------------- | ---------------------- | ---------- |
+| `useFinykPersonalization.ts` | 6         | API response typing | Add proper Zod schemas | ✅ Закрито |
+| `App.tsx`                    | 3         | Router typing       | Use typed router       | ✅ Закрито |
+| `VoiceMicButton.tsx`         | 2         | Web Audio API       | Add proper types       | ✅ Закрито |
+| `hubChatUtils.ts`            | 2         | Tool definitions    | Type guard functions   | ✅ Закрито |
+| Server files (5)             | 1 each    | Various             | Case-by-case           | ✅ Закрито |
 
 ---
 
@@ -467,13 +468,13 @@ describe("Capacitor Boundary Tests", () => {
 
 **Файли (оновлений стан 2026-05-05):**
 
-| Файл                     | LOC (було) | LOC (зараз) | Статус                                        |
-| ------------------------ | ---------- | ----------- | --------------------------------------------- |
-| `ActiveWorkoutPanel.tsx` | 949        | **240**     | ✅ Закрито                                    |
-| `HubChat.tsx`            | ~800       | **145**     | ✅ Закрито                                    |
-| `Overview.tsx`           | ~750       | **494**     | Частково (ще >400 LOC)                        |
-| `Workouts.tsx`           | 894        | **744**     | Мінімальний прогрес                           |
-| `DesignShowcase.tsx`     | 1064       | **72**      | ✅ Закрито                                    |
+| Файл                     | LOC (було) | LOC (зараз) | Статус                 |
+| ------------------------ | ---------- | ----------- | ---------------------- |
+| `ActiveWorkoutPanel.tsx` | 949        | **240**     | ✅ Закрито             |
+| `HubChat.tsx`            | ~800       | **145**     | ✅ Закрито             |
+| `Overview.tsx`           | ~750       | **494**     | Частково (ще >400 LOC) |
+| `Workouts.tsx`           | 894        | **744**     | Мінімальний прогрес    |
+| `DesignShowcase.tsx`     | 1064       | **72**      | ✅ Закрито             |
 
 ---
 
@@ -494,6 +495,7 @@ describe("Capacitor Boundary Tests", () => {
 **Scope:** `apps/web`, `apps/mobile`, `apps/server`
 
 **Реалізовано:**
+
 - **Web:** lazy-loaded `@sentry/react` у `apps/web/src/core/observability/sentry.ts` (breadcrumbs, captureException)
 - **Mobile:** `@sentry/react-native` у `apps/mobile/src/lib/observability.ts` (captureError + auto session tracking)
 - **Server:** `@sentry/node` у `apps/server/src/sentry.ts` + error handler integration
@@ -505,6 +507,7 @@ describe("Capacitor Boundary Tests", () => {
 **Scope:** `apps/mobile`
 
 **Реалізовано** у `apps/mobile/src/lib/observability.ts`:
+
 - `Sentry.init()` з DSN з `EXPO_PUBLIC_SENTRY_DSN`
 - `captureError()` helper для unified error reporting
 - Auto session tracking enabled
@@ -687,39 +690,39 @@ graph TD
 
 ### 7.1. Критерії завершення Спринту 1
 
-| Метрика                | Було    | Зараз (2026-05-05) | Ціль | Статус        |
-| ---------------------- | ------- | ------------------ | ---- | ------------- |
-| TS errors (apps/web)   | ~495    | **0**              | 0    | ✅ Закрито    |
-| localStorage allowlist | 52      | **~10**            | 42   | ✅ Перевиконано |
-| Flaky tests            | 2       | ~0 (потребує верифікації) | 0 | ~Закрито |
-| ProfilePage LOC        | 1060    | **95**             | <200 | ✅ Закрито    |
+| Метрика                | Було | Зараз (2026-05-05)        | Ціль | Статус          |
+| ---------------------- | ---- | ------------------------- | ---- | --------------- |
+| TS errors (apps/web)   | ~495 | **0**                     | 0    | ✅ Закрито      |
+| localStorage allowlist | 52   | **~10**                   | 42   | ✅ Перевиконано |
+| Flaky tests            | 2    | ~0 (потребує верифікації) | 0    | ~Закрито        |
+| ProfilePage LOC        | 1060 | **95**                    | <200 | ✅ Закрито      |
 
 ### 7.2. Критерії завершення Спринту 2
 
-| Метрика                  | Було | Зараз (2026-05-05) | Ціль | Статус         |
-| ------------------------ | ---- | ------------------ | ---- | -------------- |
-| localStorage allowlist   | 42   | **~10**            | 22   | ✅ Перевиконано |
-| HubDashboard LOC         | 902  | **743**            | <150 | ⏳ В процесі  |
-| HubReports test coverage | 0%   | **~80%** (684 LOC тестів) | 80% | ✅ Закрито |
-| Capacitor boundary tests | 0    | **0**              | 10+  | ❌ Не почато   |
+| Метрика                  | Було | Зараз (2026-05-05)        | Ціль | Статус          |
+| ------------------------ | ---- | ------------------------- | ---- | --------------- |
+| localStorage allowlist   | 42   | **~10**                   | 22   | ✅ Перевиконано |
+| HubDashboard LOC         | 902  | **743**                   | <150 | ⏳ В процесі    |
+| HubReports test coverage | 0%   | **~80%** (684 LOC тестів) | 80%  | ✅ Закрито      |
+| Capacitor boundary tests | 0    | **0**                     | 10+  | ❌ Не почато    |
 
 ### 7.3. Критерії завершення Спринту 3
 
-| Метрика                | Було       | Зараз (2026-05-05) | Ціль | Статус         |
-| ---------------------- | ---------- | ------------------ | ---- | -------------- |
-| localStorage allowlist | 22         | **~10**            | 0    | ⏳ Майже       |
-| `as unknown` allowlist | 9          | **0 (prod)**       | 0    | ✅ Закрито     |
-| Backend duplicate code | 4 patterns | **~1**             | 0    | ⏳ Майже       |
+| Метрика                | Було       | Зараз (2026-05-05) | Ціль | Статус          |
+| ---------------------- | ---------- | ------------------ | ---- | --------------- |
+| localStorage allowlist | 22         | **~10**            | 0    | ⏳ Майже        |
+| `as unknown` allowlist | 9          | **0 (prod)**       | 0    | ✅ Закрито      |
+| Backend duplicate code | 4 patterns | **~1**             | 0    | ⏳ Майже        |
 | Large files (>600 LOC) | 25         | **~8**             | 15   | ✅ Перевиконано |
 
 ### 7.4. Метрики успіху Спринту 4+
 
-| Метрика              | Було    | Зараз (2026-05-05) | Ціль       | Статус      |
-| -------------------- | ------- | ------------------ | ---------- | ----------- |
-| Bundle size          | 615 KB  | Потребує перевірки  | 550 KB     | ⏳          |
-| LCP                  | ~2.5s   | Потребує перевірки  | <2.0s      | ⏳          |
-| Sentry coverage      | 0%      | **~100 %**         | 100%       | ✅ Закрито  |
-| Prompt cache savings | $0      | **Активовано**     | $50+/month | ✅ Закрито  |
+| Метрика              | Було   | Зараз (2026-05-05) | Ціль       | Статус     |
+| -------------------- | ------ | ------------------ | ---------- | ---------- |
+| Bundle size          | 615 KB | Потребує перевірки | 550 KB     | ⏳         |
+| LCP                  | ~2.5s  | Потребує перевірки | <2.0s      | ⏳         |
+| Sentry coverage      | 0%     | **~100 %**         | 100%       | ✅ Закрито |
+| Prompt cache savings | $0     | **Активовано**     | $50+/month | ✅ Закрито |
 
 ---
 
@@ -800,19 +803,19 @@ apps/web/src/routine/
 <details>
 <summary>Click to expand full list</summary>
 
-| #   | File                   | LOC     | Priority        |
-| --- | ---------------------- | ------- | --------------- |
-| 1   | seedFoodsUk.ts         | 1614    | ✅ Done (data file)    |
-| 2   | Assets.tsx             | 1147    | ✅ Done                |
-| 3   | DesignShowcase.tsx     | 1064→72 | ✅ Done                |
-| 4   | ProfilePage.tsx        | 1060→95 | ✅ Done                |
-| 5   | ActiveWorkoutPanel.tsx | 949→240 | ✅ Done                |
-| 6   | seedDemoData.ts        | 907     | Low (data file)        |
-| 7   | HubDashboard.tsx       | 902→743 | ⏳ Частковий прогрес   |
-| 8   | Workouts.tsx           | 894→744 | ⏳ Мінімальний прогрес |
-| 9   | HubChat.tsx            | ~800→145| ✅ Done                |
-| 10  | Overview.tsx           | ~750→494| ⏳ Частковий прогрес   |
-| ... | (решта)                | 600-736 | Ongoing — LogCard (736), NutritionApp (728), Progress (692) |
+| #   | File                   | LOC      | Priority                                                    |
+| --- | ---------------------- | -------- | ----------------------------------------------------------- |
+| 1   | seedFoodsUk.ts         | 1614     | ✅ Done (data file)                                         |
+| 2   | Assets.tsx             | 1147     | ✅ Done                                                     |
+| 3   | DesignShowcase.tsx     | 1064→72  | ✅ Done                                                     |
+| 4   | ProfilePage.tsx        | 1060→95  | ✅ Done                                                     |
+| 5   | ActiveWorkoutPanel.tsx | 949→240  | ✅ Done                                                     |
+| 6   | seedDemoData.ts        | 907      | Low (data file)                                             |
+| 7   | HubDashboard.tsx       | 902→743  | ⏳ Частковий прогрес                                        |
+| 8   | Workouts.tsx           | 894→744  | ⏳ Мінімальний прогрес                                      |
+| 9   | HubChat.tsx            | ~800→145 | ✅ Done                                                     |
+| 10  | Overview.tsx           | ~750→494 | ⏳ Частковий прогрес                                        |
+| ... | (решта)                | 600-736  | Ongoing — LogCard (736), NutritionApp (728), Progress (692) |
 
 </details>
 
@@ -845,14 +848,14 @@ pnpm --filter @sergeant/web build     # Web only
 
 Наступні покращення було реалізовано поза рамками цього roadmap-у:
 
-| Ініціатива | Деталі | PR / коміт |
-| --- | --- | --- |
-| i18n foundation | Phase 1+2+3 — sync/zod migrated + `no-cyrillic-jsx-literal` ESLint rule | #1942 |
-| CloudSync engine | Lifecycle, push loop, scheduler, dead letter recovery, flush-on-reconnect | #1929–#1941 |
-| `pnpm bootstrap` | One-shot dev setup command | `847f74b3` |
-| Mutation testing | Stryker mutation testing for cloudSync/queue | #1930 |
-| FTUX master tracker | Consolidated FTUX docs + sprint registry | #1934 |
-| Agent OS hardening | Initiative 0009 finalized | #1949 |
+| Ініціатива          | Деталі                                                                    | PR / коміт  |
+| ------------------- | ------------------------------------------------------------------------- | ----------- |
+| i18n foundation     | Phase 1+2+3 — sync/zod migrated + `no-cyrillic-jsx-literal` ESLint rule   | #1942       |
+| CloudSync engine    | Lifecycle, push loop, scheduler, dead letter recovery, flush-on-reconnect | #1929–#1941 |
+| `pnpm bootstrap`    | One-shot dev setup command                                                | `847f74b3`  |
+| Mutation testing    | Stryker mutation testing for cloudSync/queue                              | #1930       |
+| FTUX master tracker | Consolidated FTUX docs + sprint registry                                  | #1934       |
+| Agent OS hardening  | Initiative 0009 finalized                                                 | #1949       |
 
 ---
 

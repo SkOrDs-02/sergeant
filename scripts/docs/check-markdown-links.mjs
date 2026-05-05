@@ -93,7 +93,7 @@ const ALWAYS_SKIP_SCHEMES = /^(mailto:|tel:|javascript:|data:|chrome:)/i;
 //     cited as historical references at the time of the decision
 //   - hosts that block automated user-agents (LinkedIn 999, Cloudflare-protected
 //     sites returning 403 to HEAD/GET)
-const DEFAULT_ALLOWLIST_PATH = "docs/external-link-allowlist.json";
+const DEFAULT_ALLOWLIST_PATH = "docs/governance/external-link-allowlist.json";
 
 // HTTP statuses we treat as "URL exists" even though `res.ok` is false:
 //   - 429: rate-limited; the URL exists, the server just doesn't want this

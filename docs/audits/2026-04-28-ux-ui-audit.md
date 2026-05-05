@@ -1,6 +1,6 @@
 # Генеральний аудит дизайну, UI/UX та користувацького досвіду
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 > **Initial audit date:** 2026-04-28 (історичний — секція "Виявлені проблеми").
 
@@ -8,7 +8,7 @@
 **Версія:** 0.1.0  
 **Платформи:** React Native (iOS/Android) + Web
 **Статус:** БАЗОВІ UI/UX ПОКРАЩЕННЯ РЕАЛІЗОВАНІ; ЗАЛИШОК — ВАЛІДАЦІЯ, E2E, A11Y
-**Детальний план реалізації:** [UX-IMPROVEMENT-PLAN.md](./UX-IMPROVEMENT-PLAN.md)
+**Детальний план реалізації:** [2026-04-28-ux-improvement-plan.md](./2026-04-28-ux-improvement-plan.md)
 
 > **Doc-hygiene 2026-05-02.** Раніше шапка містила три розрізнені дати
 > («Last validated», «Дата аудиту», «Дата оновлення») — `lint-staged`
@@ -19,7 +19,7 @@
 > **Code-sync 2026-05-02.** Таблиці реалізованих покращень нижче звірені з
 > фактичними файлами `apps/mobile` і `apps/web`. Секція "Виявлені проблеми"
 > збережена як історичний audit trail від 2026-04-28; для поточного виконання
-> дивись актуальний tracker у [`UX-IMPROVEMENT-PLAN.md`](./UX-IMPROVEMENT-PLAN.md).
+> дивись актуальний tracker у [`2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md).
 > Канонічні правила дизайну мають вищий пріоритет за аудиторські приклади:
 > [`docs/design/design-system.md`](../design/design-system.md).
 
@@ -172,7 +172,7 @@
 
 > **Historical section.** Пункти нижче описують стан на 2026-04-28. Більшість
 > P0/P1 UI-проблем уже закриті у коді; не використовуй цю секцію як поточний
-> backlog без звірки з `UX-IMPROVEMENT-PLAN.md`.
+> backlog без звірки з `2026-04-28-ux-improvement-plan.md`.
 
 ### 🔴 Критичні (P0)
 
