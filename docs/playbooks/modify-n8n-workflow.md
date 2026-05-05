@@ -1,6 +1,6 @@
-# Playbook: Modify or Add an n8n Workflow
+# Playbook: Зміна або додавання n8n-воркфлоу
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 **Trigger:** "Додай новий n8n workflow" / "Зміни логіку workflow X" / зміна в `ops/n8n-workflows/` або `manifest.json`.
@@ -13,52 +13,52 @@
 ## Required context
 
 - Почни з `sergeant-start-here`, потім відкрий `sergeant-deploy-and-observability`.
-- Якщо workflow викликає AI/tooling behavior або console agent surface, звір пов'язаний specialist skill.
-- Пам'ятай: Git є source of truth для n8n workflow artifacts.
+- Якщо воркфлоу викликає AI / tooling behavior або зачіпає поверхню console-агента — звір пов'язаний специалізований skill (`sergeant-hubchat`).
+- Памʼятай: Git є source of truth для n8n-воркфлоу-артефактів. Якщо хтось редагував воркфлоу через UI — синхронізуй назад у репо до того, як накладати свої зміни.
 
-## Steps
+## Кроки
 
-### 1. Визнач клас workflow
+### 1. Визнач клас воркфлоу
 
-- business/product automation
-- devops/CI
-- security/health
-- growth/marketing
-- infra plumbing
+- business / product automation — наприклад нагадування користувачам або side-effect із оплати
+- devops / CI — інфраструктурні чи реліз-помічники
+- security / health — алерти, аудит, ротації
+- growth / marketing — кампанії, lifecycle-листи
+- infra plumbing — внутрішня сантехніка між сервісами
 
-### 2. Онови workflow artifact і metadata разом
+### 2. Онови артефакт воркфлоу і метадані разом
 
-- JSON workflow
-- `manifest.json` — owner, status, risk tier, required env, required credentials
-- [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../ops/n8n-workflows/REPORTING-MATRIX.md) — рядок workflow → topic → cadence → owner → escalation. **Hard rule:** matrix і `manifest.json.riskTier` повинні мати ідентичний tier; mismatch блокує merge (Hard Rule #15).
+- JSON-воркфлоу (експортований із n8n)
+- `manifest.json` — `owner`, `status`, `risk tier`, `required env`, `required credentials`
+- [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../ops/n8n-workflows/REPORTING-MATRIX.md) — рядок воркфлоу: `topic → cadence → owner → escalation`. **Жорстке правило:** матриця і `manifest.json.riskTier` повинні мати однаковий тир; mismatch блокує merge (Hard Rule #15).
 
-### 3. Перевір safe import path
+### 3. Перевір безпечний шлях імпорту
 
-- Dry-run або export/import consistency
-- Немає зашитих secrets
-- Credential references лишаються reference-only
+- Спробуй dry-run або export/import у тестове середовище — переконайся, що JSON туди-сюди не ламається.
+- Жодних зашитих у JSON секретів — лише посилання на credentials по імені.
+- Credential-посилання залишаються reference-only (n8n credential id, а не сам токен).
 
-### 4. Зафіксуй operational impact
+### 4. Зафіксуй operational impact у PR-описі
 
-- Що запускає workflow
-- Які env/credentials потрібні
-- Який blast radius при помилці
-- Чи потребує окремого review від owner
+- Що саме запускає воркфлоу (cron, webhook, manual trigger).
+- Які env / credentials потрібні і де вони мають бути виставлені (Railway, n8n cloud, локальний `.env`).
+- Який blast radius при помилці — кого зачепить, які системи можуть зламатися.
+- Чи потребує окремого ревʼю від owner-а суміжного домену (наприклад фінанси, безпека).
 
 ## Verification
 
 - [ ] `pnpm ops:n8n:validate`
 - [ ] `pnpm lint:governance-sync --strict`
 - [ ] `pnpm format:check`
-- [ ] `manifest.json` синхронізований із workflow artifact
-- [ ] Secrets не закомічені
+- [ ] `manifest.json` синхронізований із workflow-артефактом
+- [ ] Секрети не закомічені (звір `secret-scan` лог)
 
-## When not to use this playbook
+## Коли цей playbook НЕ використовувати
 
-- Потрібно змінити лише application code без workflow artifacts.
-- Працюєш із console agent або HubChat orchestration, а не з n8n.
+- Треба змінити лише application code без n8n-артефактів — використовуй `feature-delivery` чи `add-feature-flag.md`.
+- Працюєш із console-агентом або HubChat orchestration, а не з n8n — використовуй `modify-console-agent.md` чи `add-hubchat-tool.md`.
 
-## Related playbooks and skills
+## Споріднені playbook-и та skills
 
 - [modify-console-agent.md](./modify-console-agent.md)
 - [investigate-alert.md](./investigate-alert.md)
