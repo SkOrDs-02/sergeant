@@ -1,59 +1,59 @@
-# Playbook: Investigate Alert
+# Playbook: Розслідування alert-у
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
-**Trigger:** Prometheus alert спрацював / Sentry issue росте / підозрілі 5xx, latency або health degradation, але ще не очевидно, чи це incident, false positive або transient noise.
+**Trigger:** спрацював Prometheus alert / росте Sentry issue / підозрілі 5xx, latency або деградація health-ендпоїнтів, але ще не очевидно, чи це інцидент, false positive або транзитний шум.
 
 ## Owner surface
 
-- Primary surface: observability and runtime diagnostics
-- Governing skill: `sergeant-deploy-and-observability`
+- Primary surface: observability та runtime-діагностика.
+- Governing skill: `sergeant-deploy-and-observability`.
 
 ## Required context
 
-- Почни з `sergeant-start-here`, потім відкрий `sergeant-deploy-and-observability`.
-- Якщо після triage це вже user-visible outage, переключись на [`hotfix-prod-regression.md`](./hotfix-prod-regression.md).
+- Спершу `sergeant-start-here`, потім `sergeant-deploy-and-observability`.
+- Якщо після triage це вже user-visible outage — перемикай на [`hotfix-prod-regression.md`](./hotfix-prod-regression.md). Якщо потрібно явно оголосити інцидент — [`declare-incident.md`](./declare-incident.md).
 
 ## Steps
 
 ### 1. Збери сигнал
 
-- Назва alert або issue.
-- Початок у часі.
-- Severity, affected surface, deploy/config context.
+- Назва alert-у або Sentry issue.
+- Початок у часі та тривалість порушення.
+- Severity, уражена поверхня (surface), контекст останнього deploy/config-змін.
 
 ### 2. Відокрем signal від noise
 
-- Це одноразовий spike чи стійка деградація.
-- Є impact на users, SLO, health endpoints або revenue path.
-- Це known noisy monitor чи новий failure mode.
+- Чи це одноразовий spike, чи стійка деградація.
+- Чи є вплив на користувачів, SLO, health-ендпоїнти або revenue path.
+- Чи це відомий noisy monitor, чи новий failure mode.
 
 ### 3. Знайди найближчу зміну
 
-- Останній deploy.
-- Env/config changes.
-- External dependency degradation.
-- Migration, cron, n8n або HubChat rollout.
+- Останній deploy відповідної поверхні.
+- Зміни env-змінних або config-файлів.
+- Деградація зовнішніх залежностей.
+- Недавня міграція, cron-робота, n8n або HubChat rollout.
 
 ### 4. Прийми рішення
 
-- close as noise
-- keep observing
-- file follow-up bug
-- escalate to hotfix / incident
+- Закрити як noise.
+- Продовжити спостереження.
+- Завести follow-up баг.
+- Ескалювати до hotfix / incident.
 
 ## Verification
 
-- [ ] Alert класифіковано: noise, follow-up, incident
-- [ ] Є записаний suspected cause або confirmed cause
-- [ ] Якщо потрібен fix, створено або виконано наступний playbook
-- [ ] Runtime evidence зібрана, а не припущена
+- [ ] Alert класифіковано: noise, follow-up або incident.
+- [ ] Записано suspected або confirmed cause.
+- [ ] Якщо потрібен fix — відкрито або виконано наступний playbook (`hotfix-prod-regression.md` / `declare-incident.md`).
+- [ ] Runtime evidence зібрана, а не припущена.
 
-## When not to use this playbook
+## Коли цей playbook не застосовується
 
-- Уже йде активний outage response.
-- Потрібно лагодити конкретний локальний тест або CI.
+- Вже йде активний outage response — відкривай [`declare-incident.md`](./declare-incident.md) або [`hotfix-prod-regression.md`](./hotfix-prod-regression.md).
+- Потрібно полагодити локальний тест або CI — є окремий [`fix-failing-ci.md`](./fix-failing-ci.md).
 
 ## Related playbooks and skills
 
