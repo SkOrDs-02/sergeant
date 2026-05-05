@@ -5,8 +5,6 @@
 > **Status:** Proposal. Цей PR не змінює жодного токена — документ є дизайн-контрактом,
 > якому слідуватиме implementation-PR.
 >
-> **Last reviewed:** 2026-04-26. Reviewer: @Skords-01
->
 > **Драйвер:** PR [#851](https://github.com/Skords-01/Sergeant/pull/851)
 > викинув `/design` (DesignShowcase) зі списку axe-core SURFACES; PR
 > [#852](https://github.com/Skords-01/Sergeant/pull/852) прибрав чотири з п’яти

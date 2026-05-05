@@ -2,7 +2,7 @@
 
 - **Status:** proposed
 - **Date:** 2026-04-27
-- **Last reviewed:** 2026-04-27 by @Skords-01
+- **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**

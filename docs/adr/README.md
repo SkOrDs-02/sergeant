@@ -4,8 +4,6 @@
 > **Status:** Active
 
 > Архітектурні рішення Sergeant. Кожен ADR фіксує **рішення з контекстом і альтернативами**, щоб через рік не довелось гадати «чому ми тут зробили так, а не інакше».
->
-> **Last reviewed: 2026-04-27 by @Skords-01.**
 
 ---
 
@@ -112,8 +110,9 @@ pnpm gen:adr
 | 0043 | CloudSync v1 sunset                             | accepted | 2026-05-04 | RFC 8594 `Sunset:` + `Deprecation: true` + RFC 8288 `Link: rel="successor-version"` headers на v1 routes (`/api/sync/*`); 6-фазний rollout-план; T₀ контролюється env var `CLOUDSYNC_V1_SUNSET_AT`. Реалізує [Initiative 0003 Phase 2](../initiatives/0003-sync-v2-rollout-and-v1-sunset.md). |
 | 0044 | Renovate vs Dependabot роль-дільниця            | accepted | 2026-05-04 | Renovate primary для regular weekly bumps; Dependabot security-only daily fallback. Видаляє ~12 duplicate-PR/тиждень. Закриває [Initiative 0008 Phase 3](../initiatives/0008-platform-hardening.md).                                                                                          |
 | 0045 | Hard Rules taxonomy                             | accepted | 2026-05-04 | Три-категорійна таксономія в реєстрі `hard-rules.json`: `blocker-invariant` / `lint-enforced-convention` / `active-initiative`. Розблоковує slim-down AGENTS.md (Initiative 0009 Phase 3.1) — design-конвенції винесено в окрему секцію без зміни enforcement.                                |
+| 0046 | Storybook visual regression scope               | accepted | 2026-05-05 | Storybook stories залишаються deterministic developer-playground (deploy на GitHub Pages); 56-screenshot Argos-baseline (ADR-0034) — єдине джерело visual-regression. ESLint `sergeant-design/require-stories-for-ui-components` — documentation-contract, не regression-detection.            |
 
-> **Note on next ADR:** наступний номер — **`0046`** (`0040` лишається gap).
+> **Note on next ADR:** наступний номер — **`0047`** (`0040` лишається gap).
 
 > **Note on numbering 0016–0022 jump:** ADRs `0016`–`0022` — це retroactive batch, що був написаний паралельно з `0006`–`0012`. Через паралельне виконання Devin-сесій виникли колізії номерів `0003`–`0012`. Розв'язано через PR `docs(adr): resolve numbering collisions` — same-topic дублі (refund, anthropic, PII) видалено, late-comers перенумеровано в `0016`+.
 
@@ -121,6 +120,6 @@ pnpm gen:adr
 
 > **Note on 0039 reuse:** Номер `0039` спочатку було зарезервовано (gap) під ADR-кандидат «OpenClaw proactive cron-rituals» — імплементацію не стартували; коли Wave 2 пишеться, номер береться наступний вільний (не `0039`). 2026-05-04 номер реусався під [ADR-0039 Anthropic prompt-cache breakpoint policy](./0039-anthropic-prompt-cache-policy.md) (закриття Initiative 0005); `0039` прибрано з `KNOWN_NUMBERING_GAPS`.
 
-> **Note on missing 0040:** Номер `0040` згадувався у коментарях коду (`tools/console/src/openclaw/alerts-format.ts`) і roadmap §3.6 («strategic mode — `/plan` / `/analyze` / `/okr`») як планований ADR для Wave-3 HTML-mode broadcast formatting. Рішення зафіксовано **inline** у Wave-3 PR-ах (#1473 / #1480 / #1503 / #1508) — окремий ADR-файл не дійшов. `0040` лишається **відомим gap** і whitelisted у `KNOWN_NUMBERING_GAPS`. Наступний вільний номер — **`0046`** (`pnpm gen:adr` обчислює `max + 1` через `nextAdrNumber()` у `plopfile.mjs`, тож автоматично пропустить пусті номери).
+> **Note on missing 0040:** Номер `0040` згадувався у коментарях коду (`tools/console/src/openclaw/alerts-format.ts`) і roadmap §3.6 («strategic mode — `/plan` / `/analyze` / `/okr`») як планований ADR для Wave-3 HTML-mode broadcast formatting. Рішення зафіксовано **inline** у Wave-3 PR-ах (#1473 / #1480 / #1503 / #1508) — окремий ADR-файл не дійшов. `0040` лишається **відомим gap** і whitelisted у `KNOWN_NUMBERING_GAPS`. Наступний вільний номер — **`0047`** (`pnpm gen:adr` обчислює `max + 1` через `nextAdrNumber()` у `plopfile.mjs`, тож автоматично пропустить пусті номери).
 
 > **Graph integrity:** Парсинг метаданих ADR (`Status:` / `Supersedes:`, з підтримкою англо- та україномовних назв полів — див. ADR-0026/0027) і перевірка індексу + бідіректіонального supersede-зв'язку автоматизовані: `node scripts/docs/check-adr-graph.mjs` (CI gate в `docs-automation.yml`).
