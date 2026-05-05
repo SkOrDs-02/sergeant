@@ -1,6 +1,6 @@
 # Sergeant Design System
 
-> **Last validated:** 2026-05-02 by @Skords-01. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 Єдина візуальна мова для хаба з 4 модулями: **ФІНІК**, **ФІЗРУК**, **Рутина**,
@@ -633,26 +633,6 @@ const { isHidden, isShrunk, hasBlur } = useScrollHeader({
   minDelta: 8,
 });
 ```
-
-### useFormValidation
-
-Form validation з shake animation та haptic feedback.
-
-```tsx
-const { values, errors, touched, shaking, handleChange, handleBlur, validate } =
-  useFormValidation(
-    {
-      email: "",
-      password: "",
-    },
-    {
-      email: [validationRules.required(), validationRules.email()],
-      password: [validationRules.required(), validationRules.minLength(8)],
-    },
-  );
-```
-
-**Built-in rules:** `required`, `email`, `minLength`, `maxLength`, `pattern`, `numeric`, `matches`
 
 ### useFocusTrap
 
