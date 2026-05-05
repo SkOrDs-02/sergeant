@@ -31,11 +31,12 @@
 //   but does not flag it as a violation.
 //
 // Modes:
-//   default        — exit 1 on violations. Reserved for the gate-on phase
-//                    (initiative 0009 PR 1.2c).
-//   --warn-only    — print violations, but exit 0. Used in PR 1.2a so the
-//                    linter can be wired into `pnpm lint` while the backfill
-//                    happens incrementally in PR 1.2b.
+//   default        — exit 1 on violations. This is the gate-on mode used by
+//                    `pnpm lint` and CI (initiative 0009 PR 1.2c, gate flipped
+//                    after PR 1.2b reduced the warn-list to 0).
+//   --warn-only    — print violations, but exit 0. Retained for ad-hoc local
+//                    debugging when intentionally landing a draft EN file
+//                    that will be translated in a follow-up commit.
 //   --json         — emit machine-readable JSON instead of human output.
 //
 // Linked initiative: docs/initiatives/0009-agent-os-hardening.md (PR 1.2).
@@ -236,7 +237,7 @@ function printHumanReport({ results, violations }, { warnOnly }) {
     return;
   }
   const headline = warnOnly
-    ? `WARN  Playbook + SKILL language: ${violations.length} file(s) below ratio ${MIN_CYRILLIC_RATIO} (warn-only — initiative 0009 PR 1.2a).`
+    ? `WARN  Playbook + SKILL language: ${violations.length} file(s) below ratio ${MIN_CYRILLIC_RATIO} (warn-only — exit code masked).`
     : `FAIL  Playbook + SKILL language: ${violations.length} file(s) below ratio ${MIN_CYRILLIC_RATIO}.`;
   console.error(headline);
   for (const r of violations) {

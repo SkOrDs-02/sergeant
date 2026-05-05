@@ -223,11 +223,22 @@ test("collectSkills picks up SKILL.md in each subdirectory", () => {
   }
 });
 
-test("CLI exits 0 in --warn-only mode even with violations", () => {
-  // We invoke the script with the real repo, which is known to contain
-  // English-only playbooks today (initiative 0009 PR 1.2a is the gate-on
-  // step). The --warn-only flag must keep CI green.
+test("CLI exits 0 in --warn-only mode regardless of violations", () => {
+  // The --warn-only flag is retained for ad-hoc local debugging. The repo
+  // currently has 0 violations (PR 1.2c), so this just confirms the flag
+  // is still wired up and exits cleanly.
   const result = spawnSync(process.execPath, [SCRIPT_PATH, "--warn-only"], {
+    cwd: resolve(__dirname, "..", ".."),
+    encoding: "utf8",
+  });
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test("CLI exits 0 in default (gate-on) mode against the real repo", () => {
+  // PR 1.2c flipped the linter to a blocking gate. The repo on `main` must
+  // stay clean — any EN drift requires either a translation or a `lang: en`
+  // frontmatter opt-out before merge.
+  const result = spawnSync(process.execPath, [SCRIPT_PATH], {
     cwd: resolve(__dirname, "..", ".."),
     encoding: "utf8",
   });

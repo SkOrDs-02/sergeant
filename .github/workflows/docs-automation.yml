@@ -61,11 +61,11 @@ jobs:
         # See scripts/docs/check-playbook-schema.mjs for the exact schema.
         run: node scripts/docs/check-playbook-schema.mjs
 
-      - name: Check playbook + SKILL language (Hard Rule #15) — warn-only
-        # Initiative 0009 PR 1.2a: the linter is wired in --warn-only mode
-        # so violations are visible in CI without breaking main during the
-        # backfill. PR 1.2c flips this to a blocking gate.
-        run: node scripts/check-playbook-language.mjs --warn-only
+      - name: Check playbook + SKILL language (Hard Rule #15) — blocker
+        # Initiative 0009 PR 1.2c: gate-on. Backfill (PR 1.2b) reduced the
+        # warn-list to 0; the linter now exits 1 on violations. The
+        # `--warn-only` flag is still supported for ad-hoc local debugging.
+        run: node scripts/check-playbook-language.mjs
 
   adr-graph:
     name: ADR graph (statuses, supersede, README index)
