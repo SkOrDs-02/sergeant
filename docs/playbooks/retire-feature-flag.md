@@ -1,9 +1,9 @@
 # Playbook: Retire Feature Flag
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
-**Trigger:** a feature flag has graduated, expired, or become dead rollout debt and should be removed from the codebase and registry.
+**Trigger:** feature flag завершив rollout, expired, або перетворився на rollout-debt і його треба прибрати з кодової бази та registry.
 
 ## Owner surface
 
@@ -12,39 +12,39 @@
 
 ## Required context
 
-- Review [feature-flags.md](../feature-flags.md) and [add-feature-flag.md](./add-feature-flag.md).
-- If the flag protects a mobile or backend release, also open the relevant release playbook.
+- Перегляньте [feature-flags.md](../feature-flags.md) і [add-feature-flag.md](./add-feature-flag.md).
+- Якщо прапор захищає mobile- або backend-реліз, відкрийте також відповідний release playbook.
 
 ## Steps
 
-### 1. Confirm retirement conditions
+### 1. Підтвердьте умови retirement
 
-- The rollout decision is done.
-- No active release still relies on the flag as a kill switch.
-- The default state is understood and can become permanent behavior.
+- Rollout-рішення прийнято.
+- Жоден активний реліз не покладається на цей прапор як kill switch.
+- Default-стан зрозумілий і може стати постійною поведінкою.
 
-### 2. Remove the flag end-to-end
+### 2. Приберіть прапор end-to-end
 
-- Delete the registry entry in code.
-- Remove all `useFlag`, `getFlag`, or equivalent branching.
-- Remove tests that only exist for the old branch split, while preserving behavior coverage.
+- Видаліть запис у registry в коді.
+- Приберіть усі `useFlag`, `getFlag` або еквівалентні розгалуження.
+- Видаліть тести, що існують лише для старої гілки розгалуження, зберігши покриття поточної поведінки.
 
-### 3. Clean the operational docs
+### 3. Приберіть operational docs
 
-- Remove the row from [feature-flags.md](../feature-flags.md).
-- Update release notes or playbooks if the flag was documented as a rollback lever.
+- Видаліть рядок із [feature-flags.md](../feature-flags.md).
+- Оновіть release notes або playbooks, якщо прапор був задокументований як rollback-важіль.
 
 ## Verification
 
-- [ ] Flag removed from code registry
-- [ ] Dead branches removed
-- [ ] Registry entry removed from `docs/feature-flags.md`
-- [ ] Verification still covers the surviving behavior
+- [ ] Прапор видалено з code registry
+- [ ] Мертві гілки видалено
+- [ ] Запис у registry видалено з `docs/feature-flags.md`
+- [ ] Verification покриває поведінку, що залишилася
 
 ## When not to use this playbook
 
-- The flag is still actively controlling a risky rollout.
-- The flag is only being introduced, not removed.
+- Прапор все ще активно керує ризиковим rollout.
+- Прапор лише вводиться, а не прибирається.
 
 ## Related playbooks and skills
 
