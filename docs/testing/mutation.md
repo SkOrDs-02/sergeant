@@ -1,6 +1,6 @@
 # Mutation testing у Sergeant
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 ## Чому це є
@@ -15,13 +15,18 @@ Mutation testing запускає тести багато разів, щораз
 - **vitest-runner** (`@stryker-mutator/vitest-runner`) — Stryker запускає наш реальний vitest-suite після кожної мутації.
 - Конфіг — JSON-файли біля `apps/web/`, `package.json`-script-и `test:mutation:*`.
 
-## Що покрито (round-9 baseline)
+## Що покрито
 
-| Модуль                                  | Конфіг                                 | Mutants | Score (baseline) |
-| --------------------------------------- | -------------------------------------- | ------- | ---------------- |
-| `apps/web/src/core/cloudSync/conflict/` | `apps/web/stryker.cloudSync.conf.json` | 109     | **87.16%**       |
+| Модуль                                  | Конфіг                                      | Mutants | Score (baseline) |
+| --------------------------------------- | ------------------------------------------- | ------- | ---------------- |
+| `apps/web/src/core/cloudSync/conflict/` | `apps/web/stryker.cloudSync.conf.json`      | 109     | **87.16%**       |
+| `apps/web/src/core/cloudSync/queue/`    | `apps/web/stryker.cloudSyncQueue.conf.json` | 233     | **64.38%**       |
 
-Стартова точка — `cloudSync/conflict/` (LWW resolution, dirty-skip safety, version compare). Це pure-функціональне ядро split-brain-логіки, помилка в якому призводить до тихої втрати даних. Інші critical-модулі додаються наступними round-ами (див. [TODO](#наступні-критичні-модулі)).
+Стартова точка — `cloudSync/conflict/` (LWW resolution, dirty-skip safety, version compare). Це pure-функціональне ядро split-brain-логіки, помилка в якому призводить до тихої втрати даних.
+
+Друга точка — `cloudSync/queue/` (offline-queue + dead-letter + collect): state-machine навколо `addToOfflineQueue` / `replayOfflineQueue` / `moveToDeadLetter`. Помилка тут призводить до silent retry-storm, втрати dead-letter-ів або replay-deadlock. Baseline 64.38% (above `break: 60`, ramp-up до `low: 70+` йде наступними round-ами через додавання assertions на coalesce-edge-cases у `offlineQueue.ts:207` (pushIndices guard) і replay-error-paths у `offlineQueue.ts:274–280`). По per-file: `collectQueued.ts` 85.29%, `deadLetter.ts` 88.89%, `offlineQueue.ts` 58.01% (саме він і тягне overall score down — `replayOfflineQueue` має багато early-return гілок без явного `expect(queue).toEqual(...)` після відкату).
+
+Інші critical-модулі додаються наступними round-ами (див. [TODO](#наступні-критичні-модулі)).
 
 ## Як запустити локально
 
@@ -30,7 +35,14 @@ cd apps/web
 pnpm test:mutation:cloudSync
 ```
 
-Час: ~3 хв на M1 / ~3–5 хв на CI (4 паралельні раннери). HTML-звіт пишеться у `apps/web/reports/mutation/` (`mutation.html` за замовчуванням Stryker'а).
+Час: ~3 хв на M1 / ~3–5 хв на CI (4 паралельні раннери) для conflict; ~4 хв для queue (233 mutants vs 109). HTML-звіт пишеться у `apps/web/stryker-reports/<module>.html`.
+
+Доступні конфіги:
+
+```bash
+pnpm test:mutation:cloudSync       # conflict resolver
+pnpm test:mutation:cloudSyncQueue  # queue state-machine
+```
 
 > Stryker створює sandbox-копію проєкту в `.stryker-tmp/` — це normal, gitignore його не треба явно додавати, патерн `**/.stryker-tmp/` уже є у root `.gitignore`.
 
@@ -56,7 +68,7 @@ GitHub Actions workflow: [`.github/workflows/mutation-testing.yml`](../../.githu
 
 - **`workflow_dispatch`** — ручний запуск (Actions tab → Mutation testing → Run workflow). Можна передати кастомний config.
 - **`schedule`** — щопонеділка о 04:00 UTC.
-- **`pull_request`** — лише на PR-и, що чіпають `apps/web/src/core/cloudSync/conflict/**` або сам конфіг (paths-фільтр).
+- **`pull_request`** — лише на PR-и, що чіпають `apps/web/src/core/cloudSync/conflict/**`, `apps/web/src/core/cloudSync/queue/**`, відповідні конфіги або сам workflow (paths-фільтр).
 
 Артефакти (HTML-звіт + JSON) зберігаються 14 днів через `actions/upload-artifact`.
 
@@ -88,7 +100,7 @@ src/core/cloudSync/conflict/resolver.ts:79:7
 
 Кандидати (за пріоритетом — order = найбільший impact на silent data corruption):
 
-1. `apps/web/src/core/cloudSync/queue/` (`offlineQueue.ts`, `deadLetter.ts`, `collectQueued.ts`) — queue-state-machine.
+1. **Ramp-up `cloudSync/queue/`** до ≥70% (low) → ≥80% (high). Поточний baseline 64.38%; основний резерв — `offlineQueue.ts` 58% (coalesce-guards + replay-error-paths). Робиться окремими follow-up-PR-ами, кожен +assertions на існуючі тести.
 2. `apps/server/src/jobs/cloudSync*` — server-side LWW apply (потрібен Stryker setup для apps/server).
 3. `apps/web/src/shared/lib/storage/` — після завершення burndown-у (роботою #6 рухається до 0 ключів) можна mutate-нути lwv-resolution helpers.
 4. `apps/web/src/core/auth/` — `translateAuthError`, session-restore. Critical для security-помилок.

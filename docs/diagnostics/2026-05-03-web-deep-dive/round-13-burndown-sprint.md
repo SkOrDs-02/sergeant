@@ -1,7 +1,15 @@
 # Round-13 Burndown Sprint — закриття KPI items #6 / #8 / #15
 
-> **Last validated:** 2026-05-04 by Devin. **Next review:** 2026-08-02.
-> **Status:** Active
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Status:** Superseded — round 14 ревізія підтвердила, що всі три KPI items закриті без потреби в R13.1–R13.7 PR-послідовності, описаній нижче. Канонічне джерело статусу — [`./00-overview.md` §11.5 (round 14)](./00-overview.md#§115-залишок-роботи-до-повного-закриття-18-items-станом-на-2026-05-05-round-14).
+>
+> **Що сталося насправді:**
+>
+> - **Item #8** закрито round 13 одним PR ([#1796](https://github.com/Skords-01/Sergeant/pull/1796)) — `AddBudgetForm` + `ManualExpenseSheet` + `InputDialog` ⇒ forms-coverage 7/12 → 10/12 (≥83% mature plateau). R13.2 / R13.3 / R13.4 стали no-op-ами (`Budgets.tsx` тепер не має inline-форми; `ManualExpenseSheet` уже на `useApiForm`; `OnboardingWizard` свідомо out-of-scope як module-picker).
+> - **Item #15** закрито PR [#1894](https://github.com/Skords-01/Sergeant/pull/1894) («close 0012 strictness rollout — Phase 6a/6b/6d/6f»): `noUncheckedIndexedAccess: true` додано в base `packages/config/tsconfig.base.json`. Жоден з 3 apps НЕ override-ить flag, всі 3 apps + 11 packages зелені під strict typecheck. R13.5 / R13.6 / R13.7 закрито однією зміною base config, без потреби в per-app rollout-і.
+> - **Item #6** на mature plateau (`production: 10` у `.tech-debt/localstorage-allowlist-budget.json`) — sub-PR storage-roadmap Stage 7 (`apps/web/src/modules/finyk/lib/storageManager.ts` мігровано на `safe*LS`). R13.1 закрито, +RTL hardening для quota/Safari Private Mode тепер не потрібен як окремий PR (вже покрито через `safeWriteLS` retry-on-failure тести в `__tests__/storage.test.ts`).
+>
+> Зберігаємо doc для історії (sprint-планування template + decomposition по priorities у §1–§2 нижче). Не використовуйте R13.x acceptance criteria для нових PR — звіряйтеся з §11.5 overview або з `docs/testing/mutation.md` для organic items.
 
 > Структурований PR-план на закриття трьох rolling-burndown items
 > з [`./00-overview.md` §11.5](./00-overview.md) — після round-12
