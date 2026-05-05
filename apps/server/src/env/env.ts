@@ -47,6 +47,19 @@ const envSchema = z.object({
   // ── Database ────────────────────────────────────────────────────────
   /** Postgres connection string. Обов'язкова для всього, окрім health-check. */
   DATABASE_URL: z.string().url().optional(),
+  /**
+   * Pooled Postgres URL (pgBouncer / Supavisor / Neon proxy). PR #046.
+   *
+   * Якщо заданий — runtime pool (`apps/server/src/db.ts`) ходить через
+   * pooler, а `DATABASE_URL` лишається direct-connection і
+   * використовується тільки для міграцій (`MIGRATE_DATABASE_URL`
+   * fallback) та сесійних воркерів, які ламаються в pgBouncer
+   * transaction-mode (advisory locks, `LISTEN/NOTIFY`, named prepared
+   * statements). Без `DATABASE_URL_POOL` поведінка не змінюється —
+   * pool ходить напряму через `DATABASE_URL`. Деталі деплою — у
+   * `docs/runbooks/database-connection-pooling.md`.
+   */
+  DATABASE_URL_POOL: z.string().url().optional(),
   /** Максимум з'єднань у pg Pool. */
   PG_POOL_MAX: coerceInt.positive().default(10),
   /** Поріг повільного запиту (мс) для логування та метрики. */

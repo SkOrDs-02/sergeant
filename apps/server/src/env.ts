@@ -42,6 +42,24 @@ export const env = {
   // ─────────────────────────────────────────────────────────────────────────
   DATABASE_URL: process.env["DATABASE_URL"] || "",
 
+  /**
+   * Pooled Postgres connection string (PR #046 — pgBouncer).
+   *
+   * If set, the runtime app pool (`apps/server/src/db.ts`) routes every
+   * `query()` and `pool.connect()` call here instead of `DATABASE_URL`.
+   * `DATABASE_URL` stays the **direct** Postgres URL and is reserved for
+   * surfaces that pgBouncer transaction-mode breaks: schema migrations
+   * (advisory locks, `BEGIN…COMMIT` across roundtrips that cross
+   * transactions), cron jobs that hold session-scoped state, and any
+   * eventual `LISTEN/NOTIFY` consumer.
+   *
+   * Empty / unset → fall back to `DATABASE_URL` so existing single-URL
+   * deployments keep working without a config change. See
+   * `docs/runbooks/database-connection-pooling.md` for the Railway
+   * pgBouncer deployment shape and the prepared-statement caveat.
+   */
+  DATABASE_URL_POOL: process.env["DATABASE_URL_POOL"] || "",
+
   // ─────────────────────────────────────────────────────────────────────────
   // Auth
   // ─────────────────────────────────────────────────────────────────────────

@@ -21,15 +21,39 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  * - Statement timeout to prevent long-running queries
  * - Idle connection cleanup
  * - Connection validation before use
+ *
+ * Connection routing (PR #046 — pgBouncer pooling):
+ *   `DATABASE_URL_POOL`, якщо заданий, — це pgBouncer / Supavisor / Neon
+ *   pooler URL у transaction-mode. Runtime app-pool ходить туди, а
+ *   `DATABASE_URL` лишається direct-connection і використовується
+ *   тільки міграційним runner-ом (`apps/server/migrate.mjs` через
+ *   `MIGRATE_DATABASE_URL` fallback) і session-mode воркерами, які
+ *   ламаються в transaction-pooled режимі (advisory locks, named
+ *   prepared statements, `LISTEN/NOTIFY`). Якщо `DATABASE_URL_POOL`
+ *   порожній — pool fallback-ить на `DATABASE_URL` без зміни поведінки
+ *   для single-URL деплоїв (Replit, docker-compose, локальний dev).
+ *   Runbook: `docs/runbooks/database-connection-pooling.md`.
  */
+const runtimeConnectionString = env.DATABASE_URL_POOL || env.DATABASE_URL;
+
+/** Whether the runtime pool is routing through a pooler (pgBouncer). */
+export const POOL_VIA_PGBOUNCER: boolean = Boolean(env.DATABASE_URL_POOL);
+
 const pool = new pg.Pool({
-  connectionString: env.DATABASE_URL,
+  connectionString: runtimeConnectionString,
   max: env.PG_POOL_SIZE,
   idleTimeoutMillis: env.PG_IDLE_TIMEOUT_MS,
   connectionTimeoutMillis: env.PG_CONNECTION_TIMEOUT_MS,
   // Set statement_timeout on each connection to prevent runaway queries
   statement_timeout: env.PG_STATEMENT_TIMEOUT_MS,
 });
+
+if (POOL_VIA_PGBOUNCER) {
+  logger.info({
+    msg: "db_pool_via_pgbouncer",
+    hint: "runtime pool uses DATABASE_URL_POOL; migrations stay on DATABASE_URL",
+  });
+}
 
 interface PgErrorLike {
   message?: string;
@@ -195,6 +219,10 @@ export function getPoolStats() {
     totalCount: pool.totalCount,
     idleCount: pool.idleCount,
     waitingCount: pool.waitingCount,
+    /** PR #046: chunked into health output so dashboards can split metrics by routing path. */
+    routedThrough: POOL_VIA_PGBOUNCER
+      ? ("pgbouncer" as const)
+      : ("direct" as const),
   };
 }
 
@@ -254,6 +282,7 @@ async function runPendingSqlMigrations(client: PoolClient): Promise<void> {
     if (rows.length > 0) continue;
 
     const fullPath = path.join(migrationsDir, file);
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- `file` comes from `fs.readdir(migrationsDir)`, not user input; path is server-controlled.
     const sql = (await fs.readFile(fullPath, "utf8")).trim();
     if (!sql) continue;
 

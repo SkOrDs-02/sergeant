@@ -1,9 +1,9 @@
 # Talk-to-your-data: план реалізації для Sergeant
 
 > **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Status:** Draft
 > **Автор:** Devin (для @Skords-01)
 > **Дата:** 2026-05-05
-> **Статус:** Draft / на розгляд
 
 ---
 
@@ -12,6 +12,7 @@
 Перетворити HubChat із "AI-радника, який бачить саммарі даних" на **повноцінний data-інтерфейс**, де користувач може ставити довільні питання по своїх даних і отримувати точні числові відповіді.
 
 **Приклади запитів після реалізації:**
+
 - "Скільки я витратив на каву за останні 3 місяці?"
 - "Порівняй мої витрати на їжу в квітні і травні"
 - "В які дні тижня я пропускаю тренування найчастіше?"
@@ -38,6 +39,7 @@
 ```
 
 **Ключова архітектура (НЕ змінюється):**
+
 - Сервер визначає tool definitions і system prompt
 - Клієнт виконує tool-и (read/write localStorage)
 - RAG context injection (pgvector) вже працює
@@ -50,13 +52,13 @@
 
 ## Ризик-аналіз
 
-| Ризик | Вірогідність | Вплив | Митігація |
-|---|---|---|---|
-| Зламаємо існуючі tools | Мінімальна | Високий | Новий код — окремі файли. Існуючі tools не змінюються. Покриваємо тестами |
-| Prompt cache invalidation | 100% (одноразово) | Низький | Після додавання нових tools у TOOLS[] — одноразовий cache miss (~$0.01). Далі кешується |
-| Розмір context перевищить ліміт | Низька | Середній | Нові tools повертають дані on-demand (tool_result), не збільшують system context |
-| AI quota spike | Низька | Низький | Tool-results повертаються клієнтом, не генерують додаткові API calls |
-| localStorage race conditions | Дуже низька | Низький | Нові tools — read-only (query), не конфліктують із write-tools |
+| Ризик                           | Вірогідність      | Вплив    | Митігація                                                                               |
+| ------------------------------- | ----------------- | -------- | --------------------------------------------------------------------------------------- |
+| Зламаємо існуючі tools          | Мінімальна        | Високий  | Новий код — окремі файли. Існуючі tools не змінюються. Покриваємо тестами               |
+| Prompt cache invalidation       | 100% (одноразово) | Низький  | Після додавання нових tools у TOOLS[] — одноразовий cache miss (~$0.01). Далі кешується |
+| Розмір context перевищить ліміт | Низька            | Середній | Нові tools повертають дані on-demand (tool_result), не збільшують system context        |
+| AI quota spike                  | Низька            | Низький  | Tool-results повертаються клієнтом, не генерують додаткові API calls                    |
+| localStorage race conditions    | Дуже низька       | Низький  | Нові tools — read-only (query), не конфліктують із write-tools                          |
 
 ---
 
@@ -113,6 +115,7 @@ AI форматує відповідь: "За останні 3 місяці ви
    - Snapshot test для toolDef shapes
 
 **Файли, що змінюються:**
+
 - `apps/server/src/modules/chat/toolDefs/queryFinyk.ts` (NEW)
 - `apps/server/src/modules/chat/tools.ts` (додаємо import)
 - `apps/web/src/core/lib/chatActions/queryFinykActions.ts` (NEW)
@@ -123,6 +126,7 @@ AI форматує відповідь: "За останні 3 місяці ви
 **Що НЕ змінюється:** hubChatContext.ts, chat.ts, існуючі toolDefs, існуючі actions.
 
 **Приклади використання після PR 1:**
+
 ```
 "Покажи всі витрати в Сільпо за квітень" → query_transactions
 "Скільки я витратив на транспорт за останній квартал?" → aggregate_spending
@@ -136,11 +140,13 @@ AI форматує відповідь: "За останні 3 місяці ви
 **Scope:** Аналітика тренувань.
 
 **Нові tools:**
+
 - `query_workouts` — пошук тренувань за період, типом вправ, об'ємом
 - `exercise_progress` — прогрес по конкретній вправі (вага, повтори, об'єм) за період
 - `training_stats` — агрегована статистика (частота, улюблені вправи, розподіл по м'язових групах)
 
 **Файли:**
+
 - `apps/server/src/modules/chat/toolDefs/queryFizruk.ts` (NEW)
 - `apps/web/src/core/lib/chatActions/queryFizrukActions.ts` (NEW)
 - `apps/web/src/core/lib/chatActions/queryFizrukActions.test.ts` (NEW)
@@ -149,6 +155,7 @@ AI форматує відповідь: "За останні 3 місяці ви
 - `packages/shared/src/assistantCapabilities.ts`
 
 **Приклади:**
+
 ```
 "Покажи мої тренування за останній тиждень" → query_workouts
 "Як змінилась моя жим лежачи за місяць?" → exercise_progress
@@ -162,12 +169,14 @@ AI форматує відповідь: "За останні 3 місяці ви
 **Scope:** Запити по звичках і харчуванню.
 
 **Нові tools:**
+
 - `query_habits` — детальна статистика по звичці (completion rate, найкращі/найгірші дні тижня, пропуски)
 - `habit_correlation` — кореляція між звичками і іншими модулями ("чи менше я витрачаю коли тренуюсь?")
 - `query_nutrition` — пошук по журналу їжі за період (калорії, макроси, конкретні продукти)
 - `nutrition_averages` — середні показники харчування за період з трендом
 
 **Файли:**
+
 - `apps/server/src/modules/chat/toolDefs/queryRoutine.ts` (NEW)
 - `apps/server/src/modules/chat/toolDefs/queryNutrition.ts` (NEW)
 - `apps/web/src/core/lib/chatActions/queryRoutineActions.ts` (NEW)
@@ -176,6 +185,7 @@ AI форматує відповідь: "За останні 3 місяці ви
 - `tools.ts`, `hubChatActions.ts`, `assistantCapabilities.ts`
 
 **Приклади:**
+
 ```
 "В які дні тижня я пропускаю медитацію?" → query_habits
 "Яка моя середня калорійність за тиждень?" → nutrition_averages
@@ -190,16 +200,19 @@ AI форматує відповідь: "За останні 3 місяці ви
 **Scope:** Покращити відображення data-відповідей у чаті.
 
 **Що робимо:**
+
 - Action card для query-результатів: таблиці, mini-графіки, числа з порівняннями
 - `apps/web/src/core/lib/hubChatActionCards.ts` — нові card types для data-tools
 - Рендеринг таблиць у чат-бульбашці (Markdown-таблиці → компоненти)
 
 **Файли:**
+
 - `apps/web/src/core/lib/hubChatActionCards.ts` (extend)
 - `apps/web/src/core/hub/chat/components/DataResultCard.tsx` (NEW)
 - `apps/web/src/core/hub/chat/components/DataResultCard.test.tsx` (NEW)
 
 **Приклади:**
+
 ```
 Замість: "Ви витратили 2340 грн на їжу, 1200 на транспорт..."
 Покаже: красиву табличку з числами, порівнянням з минулим місяцем, і міні-барчартом
@@ -209,12 +222,12 @@ AI форматує відповідь: "За останні 3 місяці ви
 
 ## Оцінка часу
 
-| PR | Складність | Estimated time |
-|---|---|---|
-| PR 1: Query Finyk | Середня | ~3-4 години |
-| PR 2: Query Fizruk | Середня | ~2-3 години |
-| PR 3: Query Routine + Nutrition | Середня | ~3-4 години |
-| PR 4: Structured responses | Легка-середня | ~2-3 години |
+| PR                              | Складність    | Estimated time |
+| ------------------------------- | ------------- | -------------- |
+| PR 1: Query Finyk               | Середня       | ~3-4 години    |
+| PR 2: Query Fizruk              | Середня       | ~2-3 години    |
+| PR 3: Query Routine + Nutrition | Середня       | ~3-4 години    |
+| PR 4: Structured responses      | Легка-середня | ~2-3 години    |
 
 **Загалом: ~10-14 годин роботи**, розбитих на 4 незалежні PR.
 
