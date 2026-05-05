@@ -45,6 +45,26 @@ vi.mock("./../auth.js", () => ({
   getSessionUserSoft: vi.fn().mockResolvedValue(null),
 }));
 
+// `rateLimitExpress` робить власний `pool.query("INSERT INTO rate_limit_buckets …")`
+// перед handler-ом (див. `apps/server/src/http/rateLimit.ts`). Цей файл тестує
+// саме wiring api-v1 / handler-логіку push-роутів — не лімітер (його тестують
+// `http/rateLimit.test.ts` + `pushTest.test.ts`), тож mock-аємо middleware як
+// passthrough, щоб `queryMock.mock.calls[0]` гарантовано вказував на handler-овий
+// SQL, а не на rate-limit-овий INSERT. Інакше testи "вже вкладені" в #1572,
+// які робили `expect(queryMock).toHaveBeenCalledTimes(1)` падали з "got 2 times"
+// після того як `apps/server/src/routes/push.ts` отримав
+// `rateLimitExpress({ key: "api:push", … })` (PR M14, push-send-audit).
+vi.mock("./../http/rateLimit.js", async () => {
+  const actual = await vi.importActual<typeof import("./../http/rateLimit.js")>(
+    "./../http/rateLimit.js",
+  );
+  return {
+    ...actual,
+    rateLimitExpress: () => (_req: unknown, _res: unknown, next: () => void) =>
+      next(),
+  };
+});
+
 import { createApp } from "./../app.js";
 
 const ENV_KEYS = ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_EMAIL"];

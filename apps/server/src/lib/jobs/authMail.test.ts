@@ -228,9 +228,19 @@ describe("enqueueAuthMail — BullMQ path", () => {
     const addMock = vi.fn().mockResolvedValue({ id: "1" });
     const onMock = vi.fn();
     const closeMock = vi.fn();
+    // `enqueueAuthMail` робить `new Queue(...)` (див. authMail.ts L117).
+    // `vi.fn(() => ({...}))` повертає arrow function, а arrow-функції не можна
+    // викликати з `new` (TypeError "is not a constructor"). Описуємо явну
+    // конструкторну фабрику, щоб `new MockQueue()` повертало shape з add/on/close.
+    function MockQueue(this: unknown) {
+      return { add: addMock, on: onMock, close: closeMock };
+    }
+    function MockWorker(this: unknown) {
+      return { on: vi.fn(), close: vi.fn() };
+    }
     vi.doMock("bullmq", () => ({
-      Queue: vi.fn(() => ({ add: addMock, on: onMock, close: closeMock })),
-      Worker: vi.fn(() => ({ on: vi.fn(), close: vi.fn() })),
+      Queue: MockQueue,
+      Worker: MockWorker,
     }));
 
     // Re-import after mocking bullmq.

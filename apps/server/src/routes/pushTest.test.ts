@@ -17,9 +17,20 @@ import request from "supertest";
  * тестами, які імпортують цей же модуль, і reset-имо стан `beforeEach`.
  */
 
+// Default `queryMock` impl: для будь-якого SQL що матчить `rate_limit_buckets`
+// (це INSERT-on-conflict з `http/rateLimit.ts` checkRateLimitPg) ми кидаємо
+// SQLSTATE `42P01` ("relation does not exist"), щоб `rateLimitExpress` чесно
+// перейшов на in-memory limiter (`checkRateLimit` у тому ж файлі). Інакше
+// queryMock резолвить `{ rows: [] }`, лімітер бачить count=0 і ні перший, ні
+// другий запит у цьому файлі не отримує 429 — тест rate-limit-у фейлить з
+// `expected 200 to be 429`. Усі інші SQL резолвимо як раніше.
+function rateLimitTablePgMissing(sql: unknown): boolean {
+  return typeof sql === "string" && /rate_limit_buckets/.test(sql);
+}
+
 const { mockPool, queryMock, getSessionUserMock, sendToUserMock } = vi.hoisted(
   () => {
-    const queryMock = vi.fn().mockResolvedValue({ rows: [] });
+    const queryMock = vi.fn();
     const mockPool = {
       query: queryMock,
       connect: vi.fn(),
@@ -33,6 +44,21 @@ const { mockPool, queryMock, getSessionUserMock, sendToUserMock } = vi.hoisted(
     return { mockPool, queryMock, getSessionUserMock, sendToUserMock };
   },
 );
+
+function applyDefaultQueryMockImpl() {
+  queryMock.mockImplementation((sql: unknown) => {
+    if (rateLimitTablePgMissing(sql)) {
+      const err: Error & { code?: string } = new Error(
+        'relation "rate_limit_buckets" does not exist',
+      );
+      err.code = "42P01";
+      return Promise.reject(err);
+    }
+    return Promise.resolve({ rows: [] });
+  });
+}
+
+applyDefaultQueryMockImpl();
 
 vi.mock("./../db.js", () => ({
   default: mockPool,
@@ -65,7 +91,7 @@ const nextUser = () => ({ id: `user_push_test_${++userSeq}` });
 
 beforeEach(() => {
   queryMock.mockReset();
-  queryMock.mockResolvedValue({ rows: [] });
+  applyDefaultQueryMockImpl();
   getSessionUserMock.mockReset();
   sendToUserMock.mockReset();
 });

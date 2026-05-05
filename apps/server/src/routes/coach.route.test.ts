@@ -73,6 +73,24 @@ vi.mock("./../push/send.js", () => ({
   sendToUserQuietly: vi.fn().mockResolvedValue(undefined),
 }));
 
+// `coach` router stacks `rateLimitExpress({ key: "api:coach", … })` before the
+// handler (див. `apps/server/src/routes/coach.ts`). Це консьюмить перший
+// `queryMock.mockResolvedValueOnce` (rate-limit Postgres-фолбек), і в результаті
+// handler читає `{ rows: [{ "?column?": 1 }] }` за дефолтом, повертаючи
+// `memory: null` замість підставленого об'єкта. Цей файл тестує route-wiring
+// + handler-shape; rate-limiter має власний `http/rateLimit.test.ts`. Mock-аємо
+// як passthrough.
+vi.mock("./../http/rateLimit.js", async () => {
+  const actual = await vi.importActual<typeof import("./../http/rateLimit.js")>(
+    "./../http/rateLimit.js",
+  );
+  return {
+    ...actual,
+    rateLimitExpress: () => (_req: unknown, _res: unknown, next: () => void) =>
+      next(),
+  };
+});
+
 import { createApp } from "./../app.js";
 
 const SAVED_KEY = process.env["ANTHROPIC_API_KEY"];

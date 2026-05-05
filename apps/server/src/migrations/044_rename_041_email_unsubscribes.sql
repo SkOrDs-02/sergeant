@@ -25,7 +25,23 @@
 -- and the renamed file applies normally as `043_email_unsubscribes.sql`.
 --
 -- Mirrors the prior-art shape from `038_rename_035_rate_limit_buckets.sql`
--- (the same pattern was used to dedupe the 035 collision).
+-- (the same pattern was used to dedupe the 035 collision), including the
+-- `DO $$ … information_schema` guard — required because rollback-sanity /
+-- focused migration tests (`apps/server/src/migrations/__tests__/*.test.ts`)
+-- replay forward migrations against a freshly-dropped public schema without
+-- first running `ensureSchema()`, so `schema_migrations` does not exist in
+-- those test containers. Skipping the DELETE there is correct: the orphan
+-- row is a production-state artifact.
 
-DELETE FROM schema_migrations
- WHERE name = '041_email_unsubscribes.sql';
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'schema_migrations'
+  ) THEN
+    DELETE FROM schema_migrations
+     WHERE name = '041_email_unsubscribes.sql';
+  END IF;
+END$$;

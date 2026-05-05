@@ -153,7 +153,7 @@ describe("barcode handler", () => {
       expect(res.statusCode).toBe(200);
       expect(global.fetch).toHaveBeenCalledOnce();
       // OFF URL має містити нормалізований barcode
-      const url = (!global.fetch as unknown as { mock: { calls: unknown[][] } })
+      const url = (global.fetch as unknown as { mock: { calls: unknown[][] } })
         .mock.calls[0]![0] as string;
       expect(url).toContain("5901234123457");
     });

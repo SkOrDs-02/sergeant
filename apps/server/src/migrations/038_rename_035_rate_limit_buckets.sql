@@ -21,6 +21,25 @@
 --
 -- On a fresh database the row does not exist yet, so the DELETE is a no-op
 -- and the renamed file applies normally as `037_rate_limit_buckets.sql`.
+--
+-- The `DO $$ … information_schema` guard mirrors `034_cleanup_orphan_032_tracking.sql`
+-- and is required because rollback-sanity / focused migration tests
+-- (`apps/server/src/migrations/__tests__/*.test.ts`) apply forward migrations
+-- directly against a freshly-dropped public schema without first running
+-- `ensureSchema()` — so the `schema_migrations` table itself does not exist
+-- when this file is replayed in those tests. Skipping the DELETE in that case
+-- is correct: the orphan row is a production-state artifact that can't appear
+-- in a clean-schema test container.
 
-DELETE FROM schema_migrations
- WHERE name = '035_rate_limit_buckets.sql';
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name = 'schema_migrations'
+  ) THEN
+    DELETE FROM schema_migrations
+     WHERE name = '035_rate_limit_buckets.sql';
+  END IF;
+END$$;
