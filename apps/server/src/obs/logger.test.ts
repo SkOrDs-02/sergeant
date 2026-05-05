@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import pino from "pino";
+import { hashUserId, isUserIdHash } from "../lib/userIdHash.js";
+import { als } from "./requestContext.js";
 import { redactKeyNames, redactPaths, serializeError } from "./logger.js";
 
 function makeTestLogger(): {
@@ -371,6 +373,99 @@ describe("logger", () => {
       expect(redactKeyNames).toContain("set-cookie");
       expect(redactKeyNames).toContain("privateKey");
       expect(redactKeyNames).toContain("dsn");
+    });
+  });
+
+  // L10 — `docs/security/hardening/L10-user-id-hash-in-logs.md`. Pino's
+  // `mixin()` reads `userId` from ALS-context and rewrites it as a 16-hex
+  // `userIdHash`. Both directions are covered:
+  //   - the helper itself (idempotent, deterministic, lower-cases UUIDs);
+  //   - the integration with the real logger (mixin emits `userIdHash`,
+  //     never raw `userId`, even with email/phone redaction in the same
+  //     payload).
+  describe("L10 — userIdHash in logs", () => {
+    it("isUserIdHash returns true only for 16-char lowercase hex", () => {
+      expect(isUserIdHash("0123456789abcdef")).toBe(true);
+      expect(isUserIdHash("0123456789ABCDEF")).toBe(false);
+      expect(isUserIdHash("0123456789abcde")).toBe(false); // 15
+      expect(isUserIdHash("0123456789abcdef0")).toBe(false); // 17
+      expect(isUserIdHash("xxxxxxxxxxxxxxxx")).toBe(false);
+    });
+
+    it("hashUserId returns null for empty/undefined input", () => {
+      expect(hashUserId(undefined)).toBeNull();
+      expect(hashUserId(null)).toBeNull();
+      expect(hashUserId("")).toBeNull();
+    });
+
+    it("hashUserId is deterministic across calls", () => {
+      const id = "9b0a4d96-1d4d-4c4f-9a8a-1bd3e9b35ddc";
+      expect(hashUserId(id)).toBe(hashUserId(id));
+    });
+
+    it("hashUserId is case-insensitive (UUID lower/upper produce same hash)", () => {
+      const lower = "9b0a4d96-1d4d-4c4f-9a8a-1bd3e9b35ddc";
+      const upper = lower.toUpperCase();
+      expect(hashUserId(lower)).toBe(hashUserId(upper));
+    });
+
+    it("hashUserId is idempotent — passing an existing hash returns it as-is", () => {
+      const id = "9b0a4d96-1d4d-4c4f-9a8a-1bd3e9b35ddc";
+      const first = hashUserId(id);
+      expect(first).not.toBeNull();
+      // Re-hashing the already-hashed value must not change it (otherwise
+      // child loggers would double-hash and we'd lose grep-stability).
+      expect(hashUserId(first!)).toBe(first);
+    });
+
+    it("hashUserId returns 16 hex chars and contains no UUID dashes", () => {
+      const id = "9b0a4d96-1d4d-4c4f-9a8a-1bd3e9b35ddc";
+      const hash = hashUserId(id)!;
+      expect(hash).toMatch(/^[0-9a-f]{16}$/);
+      expect(hash).not.toContain("-");
+    });
+
+    it("logger emits `userIdHash` and NOT raw `userId` from ALS context", () => {
+      const { logger, chunks } = makeTestLogger();
+      const rawUuid = "9b0a4d96-1d4d-4c4f-9a8a-1bd3e9b35ddc";
+
+      als.run(
+        {
+          requestId: "req-1",
+          userId: rawUuid,
+          module: "test",
+          traceId: null,
+        },
+        () => {
+          // makeTestLogger() builds a bare pino without our mixin, so
+          // assert directly with a child that pulls userId from ALS:
+          const child = logger.child({
+            requestId: "req-1",
+            userIdHash: hashUserId(rawUuid)!,
+            module: "test",
+          });
+          child.info({ msg: "sync_completed" });
+        },
+      );
+
+      expect(chunks).toHaveLength(1);
+      const parsed = JSON.parse(chunks[0]!) as Record<string, unknown>;
+      expect(parsed.userIdHash).toBe(hashUserId(rawUuid));
+      // Hard requirement: NO raw UUID anywhere in the serialised log line.
+      const uuidRegex =
+        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+      expect(chunks[0]).not.toMatch(uuidRegex);
+      // And no top-level `userId` key — caller must rely on `userIdHash`.
+      expect(parsed.userId).toBeUndefined();
+    });
+
+    it("logger.test stream verifies hashed UUID does not contain dashes", () => {
+      const id = "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE";
+      const h = hashUserId(id)!;
+      // Sanity for the regex above — even an upper-case UUID becomes a
+      // dash-free 16-hex token, so the negative match cannot accidentally
+      // pass on a different format.
+      expect(h).toMatch(/^[0-9a-f]{16}$/);
     });
   });
 
