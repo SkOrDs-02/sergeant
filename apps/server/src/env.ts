@@ -60,6 +60,22 @@ export const env = {
    */
   DATABASE_URL_POOL: process.env["DATABASE_URL_POOL"] || "",
 
+  /**
+   * Read-replica Postgres connection string (PR #047 — analytics offload).
+   *
+   * If set, opt-in callers (currently `growth_*` / `seo_*` analytics reads
+   * via `apps/server/src/dbReplica.ts`) route SELECTs through the replica
+   * pool. Writes, transactions, and anything that needs read-after-write
+   * consistency stay on the primary `pool` (= `DATABASE_URL_POOL ||
+   * DATABASE_URL`).
+   *
+   * Empty / unset → replica helpers transparently fall back to the
+   * primary pool, so existing deployments without a replica keep
+   * working. Acceptable replication lag target: < 5s p99 (alert
+   * threshold). See `docs/runbooks/postgres-read-replica.md`.
+   */
+  DATABASE_URL_REPLICA: process.env["DATABASE_URL_REPLICA"] || "",
+
   // ─────────────────────────────────────────────────────────────────────────
   // Auth
   // ─────────────────────────────────────────────────────────────────────────

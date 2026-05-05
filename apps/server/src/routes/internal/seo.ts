@@ -1,6 +1,7 @@
 import { Router } from "express";
 import type { Pool } from "pg";
 import { asyncHandler } from "../../http/index.js";
+import { queryReplica } from "../../dbReplica.js";
 
 /**
  * SEO snapshot endpoints. Усі записи робить n8n (WF-50…WF-55) через
@@ -179,8 +180,15 @@ export function createSeoInternalRouter({ pool }: { pool: Pool }): Router {
     asyncHandler(async (req, res) => {
       const onlyActive = req.query["onlyActive"] !== "0";
       const where = onlyActive ? "WHERE is_active = TRUE" : "";
-      // eslint-disable-next-line no-restricted-syntax -- `where` is one of two fixed literal SQL fragments; query takes no user input.
-      const { rows } = await pool.query<{
+      // PR #047: SEO keyword list is analytics-style read-only — toleruje
+      // <5s replica lag. queryReplica() прозоро fallback-ить на primary
+      // pool (через `primary` override — щоб тести могли передати свій
+      // mock pool без розгалуження helper-а), якщо DATABASE_URL_REPLICA
+      // не сконфігурований. `where` — один із двох фіксованих SQL-fragment-ів,
+      // user input не приймається; M11 templated-query lint rule
+      // зараз скоупується на `pool.query(`…`)` / `query(`…`)` —
+      // queryReplica додасться у followup, коли rule розширимо.
+      const { rows } = await queryReplica<{
         id: string;
         term: string;
         locale: string;
@@ -193,6 +201,8 @@ export function createSeoInternalRouter({ pool }: { pool: Pool }): Router {
         `SELECT id, term, locale, market, priority, target_url, cluster, is_active
            FROM seo_keywords ${where}
           ORDER BY priority DESC, term ASC`,
+        undefined,
+        { op: "seo_keywords_list", primary: pool },
       );
       res.json({
         keywords: rows.map((row) => ({
