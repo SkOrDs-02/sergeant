@@ -47,6 +47,8 @@ import { useUser } from "@sergeant/api-client/react";
 import {
   getActiveModules,
   getHideInactiveModules,
+  getOnboardingGoals,
+  hasAnyValueProgressBar,
   isActiveModule,
   isFirstActionPending,
   isFirstRealEntryDone,
@@ -64,6 +66,7 @@ import { FirstActionHeroCard } from "./FirstActionHeroCard";
 import { HubInsightsPanel, type InsightItem } from "./HubInsightsPanel";
 import { SoftAuthPromptCard } from "./SoftAuthPromptCard";
 import { TodayFocusCard } from "./TodayFocusCard";
+import { ValueProgressBar } from "./ValueProgressBar";
 import { useDashboardFocus } from "./useDashboardFocus";
 import { useDashboardOrder } from "./useDashboardOrder";
 import { useModulePreviews } from "./useModulePreviews";
@@ -456,6 +459,23 @@ export function HubDashboard() {
             />
           )}
         </View>
+
+        {/* Value-promise bars (S3.3a + S3.3b mobile parity). Pre-FTUX
+            only — reads back the budget / habit / weekly target the
+            user spelled out in the wizard goals step so the empty hub
+            carries explicit intent. The shared helper returns []
+            when no active module has a goal, so we additionally
+            guard the entire row to avoid an empty wrapper view. */}
+        {!hasFirstRealEntry &&
+        hasAnyValueProgressBar({
+          activeModules,
+          goals: getOnboardingGoals(mmkvStore),
+        }) ? (
+          <ValueProgressBar
+            activeModules={activeModules}
+            goals={getOnboardingGoals(mmkvStore)}
+          />
+        ) : null}
 
         <View className="gap-2">
           <Text className="text-sm font-semibold text-fg-muted">Статус</Text>
