@@ -1,150 +1,139 @@
-# ADR-0042: Password hashing strategy — bcrypt 72-byte cap, sha256 pre-hash, Argon2id
+# ADR-0042: Password hashing strategy — scrypt (Better Auth default), `MAX_PASSWORD_LENGTH=256`
 
-- **Status:** proposed
-- **Date:** 2026-05-03
-- **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
+- **Status:** accepted
+- **Date:** 2026-05-03 (initial), 2026-05-04 (revised — scrypt correction)
+- **Last validated:** 2026-05-04 by Devin. **Next review:** 2026-08-04.
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/planning/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md`](../planning/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md) — PR-план C3.
-  - [ADR-0017](./0017-better-auth-choice-and-session-model.md) — вибір Better Auth (bcrypt під капотом).
-  - [`docs/planning/stack-pulse-2026-05/00-overview.md`](../planning/stack-pulse-2026-05/00-overview.md) — критичні знахідки 2026-05.
+  - [`docs/planning/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md`](../planning/stack-pulse-2026-05/pr-03-bcrypt-password-limit.md) — original PR-план (premised on bcrypt; superseded by this ADR).
+  - [ADR-0017](./0017-better-auth-choice-and-session-model.md) — вибір Better Auth.
+  - [`docs/integrations/env-vars.md`](../integrations/env-vars.md) — `MIN_/MAX_PASSWORD_LENGTH` опис.
 
 ---
 
 ## TL;DR
 
-Better Auth (наша auth-бібліотека) використовує **bcrypt** для зберігання паролів. У bcrypt є **72-byte hard limit** на password input — все понад це **мовчки** ігнорується. До цього ADR `MAX_PASSWORD_LENGTH` мав дефолт `128`, що створювало false sense of security: пароль `"a".repeat(72) + "X"` і `"a".repeat(72) + "Y"` дають **однаковий** хеш.
+Better Auth (наша auth-бібліотека, версія `1.6.x` у репо) хешить паролі через **scrypt**, **не bcrypt**. Доказ — `node_modules/@better-auth/utils/dist/password.mjs`:
 
-**Рішення (Phase 1 — immediate):** clamp `MAX_PASSWORD_LENGTH` до 72 байтів через `.max(72)` у zod-схемі `apps/server/src/env/env.ts` і `Math.min(72, ...)` у legacy `apps/server/src/env.ts`. Це не порушує існуючих юзерів — bcrypt-verify все одно truncate-ив їхній input.
+```js
+import { scryptAsync } from "@noble/hashes/scrypt.js";
+const config = { N: 16384, r: 16, p: 1, dkLen: 64 };
+async function generateKey(password, salt) {
+  return scryptAsync(password.normalize("NFKC"), salt, {
+    N,
+    r,
+    p,
+    dkLen,
+    maxmem: 128 * N * r * 2,
+  });
+}
+```
 
-**Рішення (Phase 2 — owner needed):** ADR-0042 фіксує два варіанти переходу від 72-byte cap → довільні паролі:
+scrypt **не має** 72-byte input-ліміту bcrypt. arbitrary-length input унікально впливає на derived key, тому пара `"a".repeat(72) + "X"` / `"a".repeat(72) + "Y"` дає **різні** хеші — silent-truncation, описаний у первинній версії цього ADR, тут **не існує**.
 
-- **Шлях A (sha256 pre-hash):** `bcrypt.hash(base64(sha256(password)))`. Стандартний bcrypt-pre-hash workaround. Потребує dual-verify period.
-- **Шлях B (Argon2id):** Better Auth підтримує через адаптер. Потребує bulk re-hash existing-users (next-login або офлайн-мігратор з тимчасовим dual-format).
+**Рішення:**
 
-Обидва Phase-2 шляхи — окремий PR після призначення owner. До того моменту Phase 1 (cap=72) — це чесний контракт із юзером.
+- `MAX_PASSWORD_LENGTH=256` (default + hard-cap у zod-схемі та legacy-env). Cap — **операційний** (DoS-захист: обмежує CPU/memory одного scrypt-виклику), не криптографічний.
+- 72-byte cap із попередньої версії ADR — **усунено**: воно базувалося на хибному припущенні «Better Auth під капотом — bcrypt», що не відповідає коду `1.6.x`. Cap=72 не ламав security (сам по собі він безпечний), але штучно обмежував UX без причини.
+- Phase 2 (sha256 pre-hash / Argon2id migration), описана у первинній версії як «закриття 72-byte ліміту», — **знімається з roadmap**: scrypt вже без 72-byte ліміту, Argon2id-перехід має самостійні pros/cons, але **не пов'язаний** із цим класом проблеми. Якщо колись буде окремий Argon2id-driver — окреме ADR-форк.
 
 ## Context
 
-### Problem
+### Що ми думали — і чому помилялися (історія)
+
+Початкова версія ADR-0042 (2026-05-03) припускала, що Better Auth використовує bcrypt під капотом — звідси:
+
+- 72-byte cap у `MAX_PASSWORD_LENGTH` (zod `.max(72)` + legacy `Math.min(72, ...)`)
+- Phase 1/Phase 2 plan із sha256-prehash або Argon2id
+- ADR-0017 згадка «Better Auth = bcrypt»
+
+Помилка джерела: припущення без перевірки `node_modules/@better-auth/utils/dist/password.mjs`. Реальна імплементація — scrypt:
 
 ```js
-import bcrypt from "bcryptjs";
-const a = await bcrypt.hash("x".repeat(73), 10);
-await bcrypt.compare("x".repeat(73), a); // true
-await bcrypt.compare("x".repeat(72) + "DIFFERENT", a); // also true 😱
+// @better-auth/utils/dist/password.mjs
+import { scryptAsync } from "@noble/hashes/scrypt.js";
+const config = { N: 16384, r: 16, p: 1, dkLen: 64 };
 ```
 
-bcrypt мовчки ігнорує bytes 73+. До PR-03 наша конфігурація:
+Цей файл імпортується через `node_modules/better-auth/dist/crypto/password.mjs`, який пробрасує `hashPassword` / `verifyPassword` у emailAndPassword-flow `auth.ts`. У репо нема ні `bcryptjs`, ні `bcrypt`, ні `argon2` (`apps/server/package.json` — порожній на ці залежності).
 
-```ts
-// apps/server/src/env.ts (до фіксу)
-MAX_PASSWORD_LENGTH: parseIntEnv("MAX_PASSWORD_LENGTH", 128);
-```
+### scrypt: коротко про властивості
 
-…дозволяла користувачу ввести 100-символьний пароль, бачити в UI «password strength: very strong», а отримувати реальну ентропію ≤72 байт. Це security theatre.
+scrypt — memory-hard KDF (RFC 7914). Параметри Better Auth (`N=16384, r=16, p=1, dkLen=64`) дають ~64 MB peak memory (`128 * N * r = 128 * 16384 * 16 ≈ 32 MB` per block-mix \* 2 буфери) і виконуються ~50–80 ms на сучасному CPU. Це менш «modern» ніж Argon2id, але:
 
-Дефолт `MIN_PASSWORD_LENGTH=10` (вище за NIST 8) показує, що ми свідомо хочемо сильної політики. Стеля 72 — об’єктивна межа bcrypt; усе понад — омана.
+- **Без 72-byte ліміту** — input-довжина не обмежена алгоритмом (тільки операційно — CPU/memory одного виклику).
+- **GPU-resistance** — приблизно еквівалентний bcrypt(work=10), гірший за Argon2id, але прийнятний для 2026 року для застосунків нашого scale (≤10k users).
+- **NFKC-нормалізація** input — Better Auth робить `password.normalize("NFKC")` перед scrypt, що захищає від Unicode-pitfall у passphrase з різних input-method-ів.
 
-### Why bcrypt має 72-byte limit
+### Чому всеж потрібен `MAX_PASSWORD_LENGTH` cap
 
-bcrypt використовує EksBlowfishSetup з 72-байтним key buffer. Це алгоритмічна особливість, не bug. OWASP Password Storage Cheat Sheet рекомендує два workaround-и: (a) sha256 pre-hash, (b) перехід на Argon2id.
+scrypt — лінійний по довжині input на pre-block-mix фазі (HMAC-SHA-256 над всім input-байт-масивом). Без cap-у зловмисник може надіслати 100 MB-string на `/api/auth/sign-up` і змусити сервер виконати multi-second scrypt на одне з'єднання → cheap DoS. Cap=256 chars (= 256–1024 bytes для UTF-8) — комфортний UX (passphrase Diceware = ~64 символи; «correct horse battery staple» = 28; навіть 5-word passphrase з 24-літерних слів влізе) і одночасно гарантований bound на per-request scrypt-роботу.
 
-### Чому не зробити одразу sha256/Argon2id
+256 — добре округле число, не вимагає окремих flag-ів і покриває realistic upper-bound. Тренд passphrase-managers (Bitwarden, 1Password) генерувати 6–10-слівні passphrase-и (60–120 chars) повністю покривається, із запасом.
 
-- **Міграція existing-users.** Будь-який перехід вимагає `dual-verify` period (verify пробує старий формат, при success re-hash у новий) або bulk-офлайн міграції з тимчасовим dual-format. Це 3–5 днів роботи + ризик регрес для існуючих 100% юзерів — не приймемо за ту ж сесію, що й C3.
-- **Better Auth API.** Перехід на Argon2id потребує custom-адаптера. ADR-0017 (Better Auth choice) фіксує bcrypt як дефолт; зміна — окреме ADR-рішення з validation на Phase 2.
-- **Phase 1 фікс надійний.** `MAX_PASSWORD_LENGTH=72` як hard cap не ламає нікого: existing хеші далі verify-яться (input того ж юзера труncate-иться так само); нові юзери не можуть ввести `>72` → отримують осмислену 400 invalid_password.
+### Що було зроблено реально у Phase 1 (2026-05-03)
+
+Стара версія ADR-0042 призвела до закладеного у репо коду:
+
+- `apps/server/src/env/env.ts:132` — `MAX_PASSWORD_LENGTH: coerceInt.positive().max(72).default(72)`
+- `apps/server/src/env.ts:60` — `Math.min(72, parseIntEnv("MAX_PASSWORD_LENGTH", 72))`
+- `apps/server/src/auth.ts:151` — коментар «maxPasswordLength захищає від DoS через надто довгі bcrypt-пейлоади»
+- `docs/integrations/env-vars.md` — згадка про bcrypt 72-byte limit
+
+Це не призводило до жодної реальної security-issue (cap=72 безпечний, просто надмірно жорсткий по UX), але створювало misleading документацію та обмежувало realistic passphrase-юзерів.
 
 ## Decision
 
-### Phase 1 (PR-03, immediate)
+### 1. `MAX_PASSWORD_LENGTH=256` як новий default + hard-cap
 
-1. `apps/server/src/env/env.ts`: `MAX_PASSWORD_LENGTH: coerceInt.positive().max(72).default(72)`. **Fail-fast** при будь-якому override `>72` через env — startup кидає `Invalid environment variables`.
-2. `apps/server/src/env.ts` (legacy duplicate): `Math.min(72, parseIntEnv(...))` як defense-in-depth (на випадок, якщо C1 unify ще не дороблений).
-3. `.env.example`: коментар оновлений з 128 → 72 + посилання на ADR-0042.
-4. **Не міняємо** `apps/server/src/auth.ts` — `maxPasswordLength: env.MAX_PASSWORD_LENGTH` далі коректно тягне з env (тепер ≤72).
-5. Hard-rule `HR-XX`: «`MAX_PASSWORD_LENGTH` локований у env-модулях; не override-ити в app-code» — окремо в registry.
+- `apps/server/src/env/env.ts`: `MAX_PASSWORD_LENGTH: coerceInt.positive().max(256).default(256)`. Operator може **знизити** через env (наприклад `MAX_PASSWORD_LENGTH=128`), але **не може підняти вище за 256** — fail-fast `Invalid environment variables` при startup-і.
+- `apps/server/src/env.ts` (legacy duplicate): `Math.min(256, parseIntEnv("MAX_PASSWORD_LENGTH", 256))` — defence-in-depth.
+- `apps/server/src/auth.ts`: `maxPasswordLength: env.MAX_PASSWORD_LENGTH` (без змін у API-call, тільки коментар оновлено — bcrypt → scrypt).
 
-### Phase 2 (after Phase 1, окремий PR + ADR fork)
+### 2. Документація
 
-Phase 1 — **enabling step**, не фінал. Phase 2 уникає 72-byte стелі через один із двох шляхів. Цей ADR фіксує decision-tree, а не вибір.
+- `docs/integrations/env-vars.md`: розділ `MIN_/MAX_PASSWORD_LENGTH` оновлено з `72 (bcrypt limit)` → `256 (DoS cap, scrypt-based)`. Лінк на цей ADR.
+- ADR-0017 (Better Auth choice) — окремим slot-ом потребує однорядкового patch-у «hash-algo: scrypt (`@better-auth/utils`) / N=16384, r=16, p=1». **Не міняємо** у цьому PR — це окреме ADR-style-touch, не блокує даний фікс.
 
-#### Шлях A — SHA-256 pre-hash + bcrypt
+### 3. Регресивний тест
 
-```ts
-const prehash = base64(sha256(password));
-await bcrypt.hash(prehash, 10);
-```
+`apps/server/src/auth/__tests__/password-hash.test.ts` — фіксує:
 
-- **Pros:** bcrypt лишається; KDF лишається; зміна — однорядковий wrapper.
-- **Cons:** double-hash комплексність; якщо ми колись перейдемо на Argon2id — треба буде ще раз re-hash; sha256 не slow KDF, тому не додає захисту проти GPU brute-force.
-- **Migration:** dual-verify period (1–2 тижні): перший verify — старий bcrypt(input); fallback — bcrypt(sha256-base64(input)); при success — re-hash у новий формат і store у `password_hash_v2`.
+- scrypt дає **різні** хеші для `"a".repeat(72) + "X"` і `"a".repeat(72) + "Y"` (доказ що 72-byte truncation відсутній).
+- 200-char password успішно hash + verify (smoke test для довгих passphrase-ів).
+- Wrong password не verify-ається (sanity).
 
-#### Шлях B — Argon2id
-
-```ts
-import argon2 from "argon2";
-await argon2.hash(password, { type: argon2.argon2id });
-```
-
-- **Pros:** modern KDF, GPU/ASIC-resistant; OWASP-рекомендований дефолт для нових систем; немає 72-byte стелі.
-- **Cons:** Better Auth потребує custom адаптер (Phase 1.5 = ADR-fork про адаптер); migration шлях — bulk re-hash на next-login (1–2 місяці), або офлайн-batch з тимчасовим dual-format.
-- **Параметри (RFC 9106 baseline):** `m=64MB, t=3, p=4`. Перевірити proof-of-work на cold-start endpoint (target: <250ms p99 на Railway production CPU profile).
-
-#### Decision matrix
-
-| Критерій                 | Шлях A (sha256 pre-hash) | Шлях B (Argon2id) |
-| ------------------------ | ------------------------ | ----------------- |
-| Зусилля (інженер-дні)    | 3–5                      | 7–10              |
-| Risk зламати existing    | Low (dual-verify)        | Medium (re-hash)  |
-| Захист vs GPU            | Same as bcrypt           | **Кращий**        |
-| Стандартність 2026       | Acceptable               | **Recommended**   |
-| Зачіпає Better Auth core | Ні                       | Так (адаптер)     |
-| Зворотна сумісність      | Trivial                  | Потребує plan     |
-| Operator complexity      | Low                      | Medium            |
-| Відповідність ADR-0017   | Без змін                 | Doc update        |
-
-### Recommendation
-
-**Phase 1 ⇒ зараз** (PR-03 цього sprint-у).
-
-**Phase 2 ⇒ Шлях B (Argon2id), коли:**
-
-- буде призначений owner із bandwidth ≥7 інженер-днів;
-- є staging environment з реальним production-like load для perf-валідації Argon2id параметрів;
-- розписаний rollback-plan (фліп flag → re-verify через bcrypt-fallback таблицю).
-
-Якщо Phase 2 затримується ≥1 квартал — реалізовуємо Шлях A як defense-in-depth (sha256 pre-hash) і ставимо Argon2id як long-term goal у roadmap.
+Тест імпортує `hashPassword` / `verifyPassword` напряму з `better-auth/crypto`, тому захищає від регресу при оновленні Better Auth (якщо колись upstream поверне bcrypt — тест почне падати миттєво).
 
 ## Consequences
 
 ### Positive
 
-- Юзери з паролями `>72` байтів не отримують false sense of security — отримують осмислений 400.
-- Operator не може випадково підняти cap через env (`.max(72)` fail-fast).
-- ADR фіксує decision-tree для Phase 2 — наступний owner не починає з нуля.
+- Документація відповідає коду (Better Auth = scrypt). Майбутній агент / розробник не починає з bcrypt-припущення.
+- UX: користувачі з 80–256-char passphrase (1Password, Bitwarden, Diceware) можуть зареєструватися без обходу.
+- Регресивний тест блокує silent regression якщо Better Auth колись швидко перейде на bcrypt (або інший алгоритм без NFKC-нормалізації).
+- Hard-cap=256 далі зберігає DoS-захист.
 
 ### Negative
 
-- Cap=72 — компроміс. Ідеально мати arbitrary-length пароль як в Argon2id-системах. Phase 2 закриває.
-- Documentation overhead: треба оновити `.env.example`, security-runbook (як reagovat коли юзер скаржиться на «password too long»), UI копі (`apps/web` форма sign-up).
+- ADR-0017 та `01-session-log-2026-05-03.md` згадують «bcrypt під капотом» — потребують correction-patch (окремий PR-doc-fix, не блокує цей).
+- Прийдеться комунікувати команді/майбутнім агентам, що перша версія ADR-0042 базувалась на хибному припущенні. Це коштує trust, але виправити правильно — обов'язково.
 
 ### Neutral
 
-- Existing хеші лишаються валідними. Bcrypt-verify input того ж юзера труncate-ить так само як раніше → success ratio не падає.
-- `apps/server/src/auth.ts` не змінюється — `maxPasswordLength: env.MAX_PASSWORD_LENGTH` продовжує тягнути з env.
+- Existing scrypt-хеші (всі, що були створені) лишаються валідними — формат `salt:hex` не змінився, `verifyPassword` продовжує працювати.
+- Phase 2 з первинної ADR (sha256-prehash / Argon2id migration) — **знімається**. Якщо колись буде Argon2id-перехід — окреме ADR із самостійним обґрунтуванням (modern KDF preference, GPU-resistance), без зв'язку з 72-byte issue.
 
 ## Compliance
 
-- OWASP Password Storage Cheat Sheet (2024) — recommend Argon2id або pre-hash workaround.
-- NIST SP 800-63B — мінімум 8 (ми тримаємо 10), макс не регламентовано → рішення про cap — наше.
-- Better Auth docs — підтримує `maxPasswordLength` як explicit param.
+- OWASP Password Storage Cheat Sheet (2024) — допускає scrypt (`N≥16384, r=8` мінімум; ми тримаємо `r=16` — більше memory-cost, краще). Argon2id рекомендований як «best», scrypt — «acceptable».
+- NIST SP 800-63B — мін. 8 (тримаємо 10), макс не регламентовано. Cap 256 — наше operational рішення (DoS-budget).
+- Better Auth docs — `maxPasswordLength` — explicit param, no default upper-bound у бібліотеці; cap у зоні відповідальності операторa.
 
 ## Refs
 
-- [bcrypt 72-byte limit explained](https://security.stackexchange.com/questions/39849/does-bcrypt-have-a-maximum-password-length)
+- [`@better-auth/utils` source — `password.mjs`](https://github.com/better-auth/better-auth/blob/main/packages/utils/src/password/index.ts) — реальна імплементація (scrypt).
+- [scrypt — RFC 7914](https://datatracker.ietf.org/doc/html/rfc7914)
 - [OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
-- [Argon2id RFC 9106](https://datatracker.ietf.org/doc/html/rfc9106)
 - [Better Auth — emailAndPassword config](https://www.better-auth.com/docs/concepts/email-and-password)

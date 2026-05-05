@@ -148,7 +148,9 @@ export const auth = betterAuth({
     enabled: true,
     // NIST SP 800-63B рекомендує мінімум 8 символів; 10 — розумний trade-off,
     // що блокує атаки брут-форсом через словники без UX-пенальті для юзера.
-    // maxPasswordLength захищає від DoS через надто довгі bcrypt-пейлоади.
+    // maxPasswordLength (256) — DoS-захист, щоб обмежити CPU/memory одного
+    // scrypt-виклику. Better Auth хешить через scrypt (не bcrypt), тому
+    // 72-byte truncation тут не релевантний; деталі — ADR-0042.
     minPasswordLength: env.MIN_PASSWORD_LENGTH,
     maxPasswordLength: env.MAX_PASSWORD_LENGTH,
     /**

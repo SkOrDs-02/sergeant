@@ -123,13 +123,16 @@ const envSchema = z.object({
   BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION: z.string().optional(),
   MIN_PASSWORD_LENGTH: coerceInt.positive().default(10),
   /**
-   * Hard-capped at 72 because bcrypt silently truncates input beyond 72 bytes.
-   * `.max(72)` makes the policy explicit at startup — an operator who tries to
-   * raise the cap via env gets a fail-fast `Invalid environment variables`
-   * error rather than a silently-degraded security guarantee. Migration path
-   * (sha256 pre-hash or Argon2id) is tracked in ADR-0042.
+   * Hard-capped at 256 as DoS-defence against pathologically long passwords —
+   * **not** a bcrypt 72-byte mitigation. Better Auth (`@better-auth/utils`) hashes
+   * passwords with **scrypt** (`N=16384, r=16, p=1, dkLen=64`), which has no
+   * 72-byte input limit; arbitrary-length input contributes uniquely to the
+   * derived key. The cap exists purely to bound CPU/memory of a single hash
+   * call so a malicious client cannot trigger a multi-second scrypt with, e.g.,
+   * a 10 MB "password". 256 chars covers any realistic passphrase / dice-ware
+   * passphrase use-case while keeping per-request work bounded. See ADR-0042.
    */
-  MAX_PASSWORD_LENGTH: coerceInt.positive().max(72).default(72),
+  MAX_PASSWORD_LENGTH: coerceInt.positive().max(256).default(256),
   /**
    * H6 — soft kill-switch for Better Auth's `requireEmailVerification`.
    *
