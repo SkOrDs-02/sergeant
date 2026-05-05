@@ -1,6 +1,11 @@
+---
+lang: en
+lang-reason: Superseded stub kept only as historical anchor (`Status: Deprecated`); body redirects to `access-governance.md § Periodic access review`. Translating a 308-style stub to UA adds no signal — the canonical playbook is what gets read. Tracked under initiative 0009 PR 1.2b.
+---
+
 # Playbook: Run Access Review
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Deprecated
 
 > **Superseded by:** [access-governance.md § Periodic access review](./access-governance.md#3-periodic-access-review) — merged 2026-05-04 (initiative [0009](../initiatives/0009-agent-os-hardening.md) PR 2.4).

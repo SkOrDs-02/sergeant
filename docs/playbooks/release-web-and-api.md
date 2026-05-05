@@ -1,6 +1,11 @@
+---
+lang: en
+lang-reason: Superseded stub kept only as historical anchor (`Status: Deprecated`); body redirects to `release.md § Web + API`. Translating a 308-style stub to UA adds no signal — the canonical playbook is what gets read. Tracked under initiative 0009 PR 1.2b.
+---
+
 # Playbook: Release Web and API
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Deprecated
 
 > **Superseded by:** [release.md § Web + API](./release.md#1-web--api) — merged 2026-05-04 (initiative [0009](../initiatives/0009-agent-os-hardening.md) PR 2.3).
