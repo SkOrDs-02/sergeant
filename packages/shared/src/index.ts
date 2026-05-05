@@ -99,6 +99,9 @@ export * from "./lib/hints";
 // Daily nudges & re-engagement (Phase 3 — retention).
 export * from "./lib/nudges";
 
+// Cross-module preview — one-shot post-first-entry promo (S6.4).
+export * from "./lib/crossModulePreview";
+
 // A/B testing infrastructure (deterministic variant assignment).
 export * from "./lib/abTest";
 

@@ -14,12 +14,14 @@ import {
   getHideInactiveModules,
   getOnboardingGoals,
   getVibePicks,
+  hasSeenCrossModulePreview,
   isActiveModule,
   normalizeDashboardDensity,
   recordLastActiveDate,
   setHideInactiveModules,
   shouldShowReengagement,
   type DashboardDensity,
+  type DashboardModuleId,
   type User,
 } from "@sergeant/shared";
 import {
@@ -38,7 +40,11 @@ import { AssistantAdviceCard } from "../insights/AssistantAdviceCard";
 import { SoftAuthPromptCard } from "../onboarding/SoftAuthPromptCard";
 import { DemoModeBanner } from "../onboarding/DemoModeBanner";
 import { FirstActionHeroCard } from "../onboarding/FirstActionSheet";
-import { detectFirstRealEntry } from "../onboarding/firstRealEntry";
+import {
+  detectFirstRealEntry,
+  getFirstRealEntryModule,
+} from "../onboarding/firstRealEntry";
+import { CrossModulePreview } from "./CrossModulePreview";
 import {
   getSessionDays,
   isFirstActionPending,
@@ -216,6 +222,21 @@ export function HubDashboard({
   useEffect(() => {
     recordLastActiveDate(localStorageStore);
   }, []);
+
+  // Cross-module preview (S6.4) — one-shot post-first-entry promo.
+  // Snapshotted at mount: source module is taken from `getFirstRealEntryModule`
+  // so the copy stays paired with the *triggering* surface even if a later
+  // entry flips the scan-order winner.
+  const [crossModulePreviewSource, setCrossModulePreviewSource] =
+    useState<DashboardModuleId | null>(() => {
+      if (!hasRealEntry) return null;
+      if (hasSeenCrossModulePreview(localStorageStore)) return null;
+      return getFirstRealEntryModule();
+    });
+  const dismissCrossModulePreview = useCallback(
+    () => setCrossModulePreviewSource(null),
+    [],
+  );
 
   const [nudgeDismissed, setNudgeDismissed] = useState(false);
   const activeNudge = useMemo(() => {
@@ -540,6 +561,12 @@ export function HubDashboard({
                 ) : (
                   <OnboardingProgress activeModules={activeModules} />
                 ))}
+              {hasRealEntry && crossModulePreviewSource && (
+                <CrossModulePreview
+                  sourceModule={crossModulePreviewSource}
+                  onClose={dismissCrossModulePreview}
+                />
+              )}
             </>
           )}
         </div>

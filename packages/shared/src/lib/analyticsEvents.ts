@@ -85,6 +85,22 @@ export const ANALYTICS_EVENTS = Object.freeze({
   REENGAGEMENT_SHOWN: "reengagement_shown",
   REENGAGEMENT_CLICKED: "reengagement_clicked",
 
+  // Cross-module preview (S6.4 — one-shot post-first-entry promo).
+  // Payload contracts:
+  //
+  //   CROSS_MODULE_PREVIEW_SEEN      { source_module: DashboardModuleId,
+  //                                    partner_module: DashboardModuleId }
+  //   CROSS_MODULE_PREVIEW_CLICKED   { source_module: DashboardModuleId,
+  //                                    partner_module: DashboardModuleId }
+  //   CROSS_MODULE_PREVIEW_DISMISSED { source_module: DashboardModuleId,
+  //                                    partner_module: DashboardModuleId }
+  //
+  // Funnel: SEEN ≥ CLICKED + DISMISSED (one-shot, terminal events). The
+  // CLICKED:DISMISSED ratio is the audit's primary success metric.
+  CROSS_MODULE_PREVIEW_SEEN: "cross_module_preview_seen",
+  CROSS_MODULE_PREVIEW_CLICKED: "cross_module_preview_clicked",
+  CROSS_MODULE_PREVIEW_DISMISSED: "cross_module_preview_dismissed",
+
   // Hints / tips system
   HINT_SHOWN: "hint_shown",
   HINT_CLICKED: "hint_clicked",
