@@ -4,12 +4,14 @@ import { AccessibilityInfo } from "react-native";
 import {
   FIRST_ACTION_PENDING_KEY,
   FIRST_ACTION_STARTED_AT_KEY,
+  ONBOARDING_DEFAULT_PICKS_EXPERIMENT,
   ONBOARDING_DONE_KEY,
   VIBE_PICKS_KEY,
+  overrideVariant,
 } from "@sergeant/shared";
 
 import { OnboardingWizard } from "./OnboardingWizard";
-import { _getMMKVInstance } from "@/lib/storage";
+import { _getMMKVInstance, mobileKVStore } from "@/lib/storage";
 
 function resetStore() {
   _getMMKVInstance().clearAll();
@@ -18,6 +20,14 @@ function resetStore() {
 describe("OnboardingWizard", () => {
   beforeEach(() => {
     resetStore();
+    // Pin the legacy `all` arm for the established suite so the
+    // "default = all four modules" expectations stay deterministic.
+    // The S6.1 `none` arm has its own describe block below.
+    overrideVariant(
+      mobileKVStore,
+      ONBOARDING_DEFAULT_PICKS_EXPERIMENT.id,
+      "all",
+    );
     jest
       .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
       .mockResolvedValue(false);
@@ -144,5 +154,73 @@ describe("OnboardingWizard", () => {
       intent: "vibe_empty",
       picks: ["finyk", "routine"],
     });
+  });
+});
+
+describe("OnboardingWizard — S6.1 `none` arm (opt-in)", () => {
+  beforeEach(() => {
+    resetStore();
+    overrideVariant(
+      mobileKVStore,
+      ONBOARDING_DEFAULT_PICKS_EXPERIMENT.id,
+      "none",
+    );
+    jest
+      .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
+      .mockResolvedValue(false);
+    jest
+      .spyOn(AccessibilityInfo, "addEventListener")
+      .mockImplementation(() => ({ remove: () => {} }) as never);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  function renderOnModulesStep(onDone = jest.fn()) {
+    const screen = render(<OnboardingWizard onDone={onDone} />);
+    fireEvent.press(screen.getByTestId("onboarding-next-welcome"));
+    return screen;
+  }
+
+  it("starts the modules step with no module pre-selected", () => {
+    const { getByTestId } = renderOnModulesStep();
+    for (const id of ["finyk", "fizruk", "routine", "nutrition"] as const) {
+      const chip = getByTestId(`onboarding-module-${id}`);
+      expect(chip.props.accessibilityState?.selected).toBe(false);
+    }
+  });
+
+  it("renders the «Обери хоч один модуль» hint instead of the legacy fallback copy", () => {
+    const { getByTestId, queryByText } = renderOnModulesStep();
+    // S6.1 hint must show on initial render (picks empty in the
+    // `none` arm).
+    expect(getByTestId("onboarding-empty-picks-hint")).toBeTruthy();
+    // Audit-guard — the pre-S6.1 «Без вибору — всі 4 модулі» copy
+    // must not coexist with the new hint.
+    expect(queryByText(/Без вибору — всі 4 модулі/)).toBeNull();
+  });
+
+  it("disables «Далі» until at least one module is picked", () => {
+    const { getByTestId } = renderOnModulesStep();
+
+    const cta = getByTestId("onboarding-next-modules");
+    expect(cta.props.accessibilityState?.disabled).toBe(true);
+
+    fireEvent.press(getByTestId("onboarding-module-finyk"));
+    expect(cta.props.accessibilityState?.disabled).toBe(false);
+  });
+
+  it("does not write `vibePicks` or onboarding-done when finish is bypassed with empty picks", () => {
+    const onDone = jest.fn();
+    const mmkv = _getMMKVInstance();
+    renderOnModulesStep(onDone);
+
+    // Defensive — the CTA is disabled in DOM, but assert the contract
+    // holds even if a future refactor exposes a programmatic finish.
+    expect(mmkv.getString(ONBOARDING_DONE_KEY)).toBeUndefined();
+    expect(mmkv.getString(VIBE_PICKS_KEY)).toBeUndefined();
+    expect(mmkv.getString(FIRST_ACTION_PENDING_KEY)).toBeUndefined();
+    expect(onDone).not.toHaveBeenCalled();
   });
 });

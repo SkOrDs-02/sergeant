@@ -123,8 +123,12 @@ export function isSafeShellPath(path: string): boolean {
   // "https://app/")` парситься як `https://evil/x` у багатьох роутерах.
   if (!path.startsWith("/") || path.startsWith("//")) return false;
   if (UNSAFE_SCHEME_RE.test(path)) return false;
-  // `/` (корінь) — окремий валідний випадок.
-  if (path === "/") return true;
+  // `/` (корінь) — окремий валідний випадок. Також приймаємо root з
+  // query/fragment (`/?x=1`, `/#frag`) — це канонічна форма для
+  // `com.sergeant.shell://?x=1` / `://#frag`, де deep-link несе тільки
+  // параметри без path-у.
+  if (path === "/" || path.startsWith("/?") || path.startsWith("/#"))
+    return true;
   for (const prefix of ALLOWED_DEEP_LINK_PATH_PREFIXES) {
     if (path === prefix) return true;
     // Subpath: `/finyk/transactions/123`, `/auth/callback?token=…` тощо.

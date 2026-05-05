@@ -54,8 +54,11 @@ import {
   saveOnboardingGoals,
   type OnboardingGoals,
   ONBOARDING_HERO_COPY_EXPERIMENT,
+  ONBOARDING_DEFAULT_PICKS_EXPERIMENT,
   assignVariant,
   getOnboardingHeroCopy,
+  isOnboardingDefaultPicksVariant,
+  type OnboardingDefaultPicksVariant,
   type OnboardingHeroCopy,
   type OnboardingHeroCopyVariant,
 } from "@sergeant/shared";
@@ -253,12 +256,20 @@ function ModulesStep({
   togglePick,
   onContinue,
   onBack,
+  defaultPicksVariant,
 }: {
   picks: DashboardModuleId[];
   togglePick: (id: DashboardModuleId) => void;
   onContinue: () => void;
   onBack: () => void;
+  /**
+   * S6.1: `none` arm disables «Далі» on empty picks and switches the
+   * inline hint to «Обери хоч один модуль». `all` arm keeps the
+   * pre-S6.1 «Без вибору — всі 4 модулі» fallback message.
+   */
+  defaultPicksVariant: OnboardingDefaultPicksVariant;
 }) {
+  const ctaDisabled = defaultPicksVariant === "none" && picks.length === 0;
   return (
     <View className="items-center gap-4">
       <View className="items-center gap-1">
@@ -333,11 +344,22 @@ function ModulesStep({
           onPress={onContinue}
           testID="onboarding-next-modules"
           className="flex-1"
+          disabled={ctaDisabled}
         >
           Далі
         </Button>
       </View>
-      {picks.length === 0 && (
+      {picks.length === 0 && defaultPicksVariant === "none" && (
+        <Text
+          accessibilityRole="text"
+          accessibilityLabel="Обери хоч один модуль"
+          testID="onboarding-empty-picks-hint"
+          className="text-center text-[11px] text-fg-muted"
+        >
+          Обери хоч один модуль
+        </Text>
+      )}
+      {picks.length === 0 && defaultPicksVariant === "all" && (
         <Text className="text-center text-[11px] text-fg-muted">
           Без вибору — всі 4 модулі.
         </Text>
@@ -508,11 +530,25 @@ export function OnboardingWizard({
   mode = "real",
 }: OnboardingWizardProps) {
   const isTour = mode === "tour";
-  const [state, dispatch] = useReducer(wizardReducer, {
-    step: "welcome",
-    picks: [...ALL_MODULES],
+
+  // Default-picks A/B (S6.1). Mirrors the web wizard: deterministic
+  // per device fingerprint, persisted across renders. Tour replay
+  // short-circuits to the legacy `all` arm so the read-only replay
+  // always renders every module pre-checked.
+  const defaultPicksVariant = useMemo<OnboardingDefaultPicksVariant>(() => {
+    if (isTour) return "all";
+    const raw = assignVariant(
+      mobileKVStore,
+      ONBOARDING_DEFAULT_PICKS_EXPERIMENT,
+    );
+    return isOnboardingDefaultPicksVariant(raw) ? raw : "all";
+  }, [isTour]);
+
+  const [state, dispatch] = useReducer(wizardReducer, undefined, () => ({
+    step: "welcome" as OnboardingStepId,
+    picks: defaultPicksVariant === "none" ? [] : [...ALL_MODULES],
     goals: { ...EMPTY_GOALS },
-  });
+  }));
   const reduceMotion = useReduceMotion();
 
   // FTUX-funnel timestamps (S0.4 mobile parity). `startedAtRef` is the
@@ -567,7 +603,11 @@ export function OnboardingWizard({
       experiment_id: ONBOARDING_HERO_COPY_EXPERIMENT.id,
       variant: heroVariant,
     });
-  }, [isTour, heroVariant]);
+    trackEvent(ANALYTICS_EVENTS.EXPERIMENT_EXPOSED, {
+      experiment_id: ONBOARDING_DEFAULT_PICKS_EXPERIMENT.id,
+      variant: defaultPicksVariant,
+    });
+  }, [isTour, heroVariant, defaultPicksVariant]);
 
   // Per-step view event whenever `state.step` changes. The first paint
   // (welcome) is fired by the mount effect above so the dedupe logic
@@ -614,6 +654,17 @@ export function OnboardingWizard({
       dispatch({ type: "NEXT" });
       return;
     }
+    // S6.1 / B-1: in the `none` arm, the modules step never advances
+    // with an empty picks list. The CTA is disabled in DOM but block
+    // programmatic dispatch as well so the user cannot reach goals
+    // step (and eventually a populated dashboard) without choosing.
+    if (
+      state.step === "modules" &&
+      state.picks.length === 0 &&
+      defaultPicksVariant === "none"
+    ) {
+      return;
+    }
     // Step-completed event fires on the leaving side of the
     // transition. The matching step-viewed event for the next step
     // is emitted by the `state.step` effect above on the next paint.
@@ -634,7 +685,7 @@ export function OnboardingWizard({
       });
     }
     dispatch({ type: "NEXT" });
-  }, [state.step, state.picks, isTour]);
+  }, [state.step, state.picks, isTour, defaultPicksVariant]);
 
   const handleBack = useCallback(() => {
     dispatch({ type: "BACK" });
@@ -656,8 +707,19 @@ export function OnboardingWizard({
       onDone(null, { intent: "tour_replay", picks: [] });
       return;
     }
-    const chosen = buildFinalPicks(state.picks, ALL_MODULES);
     const hadEmptyPicks = state.picks.length === 0;
+
+    // S6.1 / B-1: `none` arm never silently writes ALL_MODULES. The
+    // CTA on modules-step is disabled while picks is empty, and
+    // `handleNext` blocks the dispatch path, so reaching `finish()`
+    // with no picks means the wizard navigated past those guards
+    // (programmatic call, future refactor). Bail out without writing
+    // any state so the user's "I haven't chosen" stays preserved.
+    if (hadEmptyPicks && defaultPicksVariant === "none") {
+      return;
+    }
+
+    const chosen = buildFinalPicks(state.picks, ALL_MODULES);
     saveVibePicks(mobileKVStore, chosen);
     saveOnboardingGoals(mobileKVStore, state.goals);
     markFirstActionStartedAt(mobileKVStore);
@@ -673,7 +735,7 @@ export function OnboardingWizard({
     });
     hapticSuccess();
     onDone(null, { intent: "vibe_empty", picks: chosen });
-  }, [onDone, state.picks, state.goals, state.step, isTour]);
+  }, [onDone, state.picks, state.goals, state.step, isTour, defaultPicksVariant]);
 
   const skipOnboarding = useCallback(() => {
     // Skip with all modules enabled and empty goals
@@ -733,6 +795,7 @@ export function OnboardingWizard({
           togglePick={togglePick}
           onContinue={handleNext}
           onBack={handleBack}
+          defaultPicksVariant={defaultPicksVariant}
         />
       )}
       {state.step === "goals" && (

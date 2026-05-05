@@ -506,9 +506,10 @@ export default [
       // slice without re-firing `enqueueChange` for every key it deletes
       // — that is the only direct `localStorage` access here.
       "apps/web/src/core/cloudSync/enqueue.ts",
-      // Module storage wrappers (legitimate primitives in their own
-      // namespace).
-      "apps/web/src/modules/finyk/lib/storageManager.ts",
+      // PR #054 (storage-roadmap.md Stage 7): finyk storage manager
+      // мігровано на `safeReadStringLS` / `safeWriteLS` / `safeRemoveLS`
+      // у тілі finto→finyk-міграції; dead exports `key`/`getJSON`/`setJSON`
+      // прибрано (нуль consumer-ів). Файл більше не у allowlist-і.
     ],
     rules: {
       "sergeant-design/no-raw-local-storage": "error",

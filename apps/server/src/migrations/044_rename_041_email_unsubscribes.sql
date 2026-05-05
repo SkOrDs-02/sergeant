@@ -1,0 +1,31 @@
+-- One-shot bookkeeping migration to dedupe the previous migration number
+-- collision: both `041_email_unsubscribes.sql` and `041_push_send_audit.sql`
+-- existed simultaneously on `main` (the two PRs that introduced them merged
+-- ~23 seconds apart), which broke `pnpm lint:migrations`
+-- (`Duplicate migration numbers: 041`).
+--
+-- Fix: `041_email_unsubscribes.sql` was renamed to
+-- `043_email_unsubscribes.sql` (042 was already taken by
+-- `042_module_data_partition.sql`). The DDL itself is fully idempotent
+-- (`CREATE TABLE IF NOT EXISTS email_unsubscribes` + `CREATE INDEX IF
+-- NOT EXISTS`), so re-applying the renamed file in any environment is a
+-- no-op for tables.
+--
+-- Bookkeeping detail. On production `schema_migrations` already carries a
+-- row with `name = '041_email_unsubscribes.sql'` from the original deploy.
+-- Migration ordering is by filename, so `043_email_unsubscribes.sql` runs
+-- *first* (re-recording itself as applied via `INSERT INTO
+-- schema_migrations`); we cannot `UPDATE` the old `041_*` row in place to
+-- the new name afterwards, because the primary key on `name` would clash
+-- with the freshly inserted `043_*` row. The clean shape after both
+-- migrations: a single row keyed by `043_email_unsubscribes.sql`. Hence:
+-- delete the dangling `041_*` row.
+--
+-- On a fresh database the row does not exist yet, so the DELETE is a no-op
+-- and the renamed file applies normally as `043_email_unsubscribes.sql`.
+--
+-- Mirrors the prior-art shape from `038_rename_035_rate_limit_buckets.sql`
+-- (the same pattern was used to dedupe the 035 collision).
+
+DELETE FROM schema_migrations
+ WHERE name = '041_email_unsubscribes.sql';
