@@ -1,9 +1,9 @@
 # Playbook: Run Weekly Operator Digest
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
-**Trigger:** weekly operating review for repo health, release discipline, incidents, and process friction.
+**Trigger:** щотижневий operating review здоровʼя репо, release-дисципліни, інцидентів і process-friction.
 
 ## Owner surface
 
@@ -12,41 +12,41 @@
 
 ## Required context
 
-- Review [engineering-metrics.md](../observability/engineering-metrics.md), [feature-flags.md](../feature-flags.md), and [review-checklist.md](../governance/review-checklist.md).
+- Перегляньте [engineering-metrics.md](../observability/engineering-metrics.md), [feature-flags.md](../feature-flags.md) і [review-checklist.md](../governance/review-checklist.md).
 
 ## Steps
 
-### 1. Review flow metrics
+### 1. Перегляньте flow-метрики
 
 - PR lead time
 - review turnaround
 - CI failure rate
-- flaky test count
+- кількість flaky-тестів
 
-### 2. Review operating debt
+### 2. Перегляньте operating debt
 
-- stale feature flags
+- застарілі feature flags
 - aging postmortem actions
-- docs/governance gates that failed during the week
-- open security SLA exceptions
+- docs/governance гейти, що падали протягом тижня
+- відкриті security SLA винятки
 
-### 3. Pick one tightening action
+### 3. Оберіть одну tightening-дію
 
-- update one playbook
-- tune one alert/runbook
-- retire one stale flag
-- fix one recurring CI pain point
+- оновити один playbook
+- підкрутити один alert/runbook
+- retire один застарілий прапор
+- закрити один повторюваний CI pain point
 
 ## Verification
 
-- [ ] Metrics reviewed for the last 7 days
-- [ ] One operating debt item selected for action
-- [ ] Any needed follow-up issue or PR opened
+- [ ] Метрики переглянуті за останні 7 днів
+- [ ] Один operating-debt item обрано для дії
+- [ ] Відкрито потрібний follow-up issue або PR
 
 ## When not to use this playbook
 
-- You are handling an active production incident.
-- You only need a single release checklist, not a weekly operating review.
+- Ви обробляєте активний production-інцидент.
+- Вам потрібен лише release checklist, а не щотижневий operating review.
 
 ## Related playbooks and skills
 
