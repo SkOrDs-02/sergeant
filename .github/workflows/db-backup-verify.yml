@@ -139,7 +139,7 @@ jobs:
           echo "- Latest migration: \`${MAX_MIGRATION}\`" >> "$GITHUB_STEP_SUMMARY"
 
           # Compare with filesystem migration count
-          FS_COUNT=$(ls apps/server/src/migrations/*.sql 2>/dev/null | grep -v '.down.' | wc -l)
+          FS_COUNT=$(find apps/server/src/migrations -maxdepth 1 -name '*.sql' ! -name '*.down.*' 2>/dev/null | wc -l)
           echo "- Filesystem migrations (non-down): **${FS_COUNT}**" >> "$GITHUB_STEP_SUMMARY"
 
           if [ "$MIGRATION_COUNT" -lt 1 ]; then
