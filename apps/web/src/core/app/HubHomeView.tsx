@@ -16,6 +16,7 @@ import { isFirstRealEntryDone } from "../onboarding/vibePicks";
 import { shouldShowOnboarding } from "../onboarding/OnboardingWizard";
 import type { HubNavigation } from "../hooks/useHubNavigation";
 import type { HubUIState } from "../hooks/useHubUIState";
+import { messages } from "@shared/i18n/uk";
 
 export interface HubHomeViewProps {
   ui: HubUIState;
@@ -160,7 +161,7 @@ export function HubHomeView(props: HubHomeViewProps) {
         <FloatingActionButton
           icon="sparkle"
           onClick={() => navigate(CHAT_PATH)}
-          aria-label="Відкрити AI-асистента"
+          aria-label={messages.nav.openAssistant}
           hideOnScroll
           className="bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))]"
         />

@@ -8,6 +8,7 @@ import {
   MODULE_LABELS,
   type HubModuleId,
 } from "@shared/lib/modules/moduleLabels";
+import { messages } from "@shared/i18n/uk";
 
 /**
  * Sticky module header used by Фінік / Фізрук / Рутина.
@@ -437,7 +438,7 @@ export function ModuleSwitcher({ active, className }: ModuleSwitcherProps) {
   return (
     <div
       role="tablist"
-      aria-label="Перемикач модулів"
+      aria-label={messages.nav.moduleSwitcher}
       className={cn("flex items-stretch gap-1 px-3 sm:px-4 pb-2", className)}
     >
       {MODULE_SWITCHER_ORDER.map((id) => {

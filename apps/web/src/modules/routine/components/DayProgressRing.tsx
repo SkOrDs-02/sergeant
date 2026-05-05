@@ -1,3 +1,4 @@
+import { messages } from "@shared/i18n/uk";
 const SIZE = 96;
 const STROKE = 7;
 const RADIUS = (SIZE - STROKE) / 2;
@@ -60,7 +61,7 @@ export function DayProgressRing({
         </div>
       </div>
       <span className="text-2xs text-subtle font-medium group-hover:text-text transition-colors">
-        Денний звіт
+        {messages.routine.dayReport}
       </span>
     </button>
   );

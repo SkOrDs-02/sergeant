@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from "react";
+import { messages } from "@shared/i18n/uk";
 
 interface ModuleErrorBoundaryProps {
   onBackToHub: () => void;
@@ -67,7 +68,7 @@ export default class ModuleErrorBoundary extends Component<
             </svg>
           </div>
           <p className="text-sm text-muted mb-2 text-center">
-            Помилка в модулі
+            {messages.errors.generic.moduleFailed}
           </p>
           <pre className="text-xs text-danger mb-6 max-w-lg w-full overflow-auto whitespace-pre-wrap wrap-break-word">
             {this.state.error.message}
@@ -77,16 +78,16 @@ export default class ModuleErrorBoundary extends Component<
               type="button"
               onClick={this.handleRetry}
               className="flex-1 px-5 py-2.5 rounded-2xl bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-              aria-label="Спробувати ще раз"
+              aria-label={messages.actions.tryAgain}
             >
-              Спробувати ще
+              {messages.sync.retryCta}
             </button>
             <button
               type="button"
               onClick={this.handleBack}
               className="flex-1 px-5 py-2.5 rounded-2xl bg-panel border border-line text-text text-style-label shadow-card hover:shadow-float transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
             >
-              До вибору модуля
+              {messages.errors.generic.backToModulePicker}
             </button>
           </div>
         </div>

@@ -28,6 +28,7 @@ import {
   type OnboardingGoals,
   type ValueProgressBarsInput,
 } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 
 interface ValueProgressBarProps {
   /**
@@ -51,7 +52,7 @@ export function ValueProgressBar({
     <div
       className="flex flex-col gap-2"
       data-testid="value-progress-bars"
-      aria-label="Прогрес до твоїх цілей"
+      aria-label={messages.hub.valueProgressAria}
     >
       {bars.map((bar) => (
         <div

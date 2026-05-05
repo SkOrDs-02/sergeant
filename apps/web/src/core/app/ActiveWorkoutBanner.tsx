@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
+import { messages } from "@shared/i18n/uk";
 
 /**
  * Persistent "return to active workout" CTA.
@@ -59,7 +60,7 @@ export function ActiveWorkoutBanner({ hidden = false }: { hidden?: boolean }) {
         type="button"
         onClick={() => openHubModule("fizruk", "#workouts")}
         className="pointer-events-auto flex items-center gap-2.5 h-12 pl-3 pr-4 rounded-full bg-fizruk-strong text-white shadow-float hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-fizruk/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-        aria-label="Повернутись до активного тренування"
+        aria-label={messages.fizruk.returnToActiveWorkout}
       >
         <span
           className="relative flex w-8 h-8 items-center justify-center rounded-full bg-white/15"

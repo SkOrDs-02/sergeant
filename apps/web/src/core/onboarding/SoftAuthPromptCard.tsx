@@ -11,6 +11,7 @@ import { Button } from "@shared/components/ui/Button";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { dismissSoftAuth } from "./vibePicks";
+import { messages } from "@shared/i18n/uk";
 
 /**
  * Inline dashboard card offering cloud sync *after* the user has logged
@@ -95,14 +96,14 @@ export function SoftAuthPromptCard({
               variant="primary"
               size="sm"
             >
-              Створити акаунт
+              {messages.auth.createAccount}
             </Button>
             <button
               type="button"
               onClick={handleDismiss}
               className="text-xs text-muted hover:text-text px-3 py-2 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45"
             >
-              Пізніше
+              {messages.actions.later}
             </button>
           </div>
         </div>

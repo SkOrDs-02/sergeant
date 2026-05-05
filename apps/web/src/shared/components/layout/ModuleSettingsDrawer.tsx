@@ -3,6 +3,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useSwipeToDismiss } from "@shared/hooks/useSwipeToDismiss";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 
 /**
  * Right-side settings drawer for module "cog" overlays.
@@ -60,7 +61,7 @@ export function ModuleSettingsDrawer({
       <button
         type="button"
         className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
-        aria-label="Закрити налаштування"
+        aria-label={messages.nav.closeSettings}
         onClick={onClose}
       />
       <div
@@ -85,7 +86,7 @@ export function ModuleSettingsDrawer({
             type="button"
             onClick={onClose}
             className="focus-ring w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
-            aria-label="Закрити"
+            aria-label={messages.actions.close}
           >
             <Icon name="close" size={22} />
           </button>

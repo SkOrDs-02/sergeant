@@ -21,6 +21,7 @@ import { useStoriesKeyboard } from "./hooks/useStoriesKeyboard";
 import { useStoriesNavigation } from "./hooks/useStoriesNavigation";
 import { useStoriesPause } from "./hooks/useStoriesPause";
 import { useStoryGestures } from "./hooks/useStoryGestures";
+import { messages } from "@shared/i18n/uk";
 
 interface Props {
   digest: Record<string, unknown> | null;
@@ -95,7 +96,7 @@ export function WeeklyDigestStories({
       className="fixed inset-0 z-600 select-none"
       role="dialog"
       aria-modal="true"
-      aria-label="Щотижневий дайджест — сторіс"
+      aria-label={messages.hub.weeklyDigestTitle}
     >
       <div className="absolute inset-0 bg-black/90" />
       <div

@@ -47,6 +47,7 @@ import { MonthPulseCard } from "./overview/MonthPulseCard";
 import { NetworthSection } from "./overview/NetworthSection";
 import { BudgetAlertsList } from "./overview/BudgetAlertsList";
 import { PlannedFlowsCard } from "./overview/PlannedFlowsCard";
+import { messages } from "@shared/i18n/uk";
 
 const parseLocalDate = (isoDate: string | null | undefined): Date => {
   const [y, m, d] = (isoDate || "").split("-").map(Number);
@@ -484,7 +485,9 @@ export function Overview({
             />
 
             {loadingTx && (
-              <p className="text-center text-xs text-subtle py-4">Оновлення…</p>
+              <p className="text-center text-xs text-subtle py-4">
+                {messages.status.updating}
+              </p>
             )}
           </div>
         </div>

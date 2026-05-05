@@ -268,11 +268,34 @@ function ensureMessagesImport(source) {
     return source.replace(RX_CATALOG_IMPORT, newImport);
   }
 
-  // Insert after the last existing top-level import statement.
-  const allImports = [...source.matchAll(/^import [^\n]*\n/gm)];
-  const last = allImports.length > 0 ? allImports[allImports.length - 1] : null;
-  if (!last) return `${MESSAGES_IMPORT_DEFAULT}\n${source}`;
-  const insertAt = last.index + last[0].length;
+  // Insert after the last top-level ImportDeclaration. We must walk the AST
+  // here (not regex) because multi-line imports like
+  //   import {
+  //     type X,
+  //     y,
+  //   } from "z";
+  // span several lines and a `^import …\n` regex would misidentify the
+  // first `import {` line as the entire statement, causing the injection
+  // to land inside the multi-line import block. (Bug fixed round 16.)
+  const sf = ts.createSourceFile(
+    "tmp.tsx",
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+  let lastImportEnd = -1;
+  for (const stmt of sf.statements) {
+    if (ts.isImportDeclaration(stmt)) {
+      lastImportEnd = stmt.getEnd();
+    }
+  }
+  if (lastImportEnd < 0) return `${MESSAGES_IMPORT_DEFAULT}\n${source}`;
+  // Skip over the trailing newline (if any) after the last import so the
+  // injected line lands on its own line, matching the project's existing
+  // import-block formatting.
+  let insertAt = lastImportEnd;
+  if (source[insertAt] === "\n") insertAt += 1;
   return (
     source.slice(0, insertAt) +
     `${MESSAGES_IMPORT_DEFAULT}\n` +

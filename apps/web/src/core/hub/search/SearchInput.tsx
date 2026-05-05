@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import { Icon } from "@shared/components/ui/Icon";
+import { messages } from "@shared/i18n/uk";
 
 export interface SearchInputProps {
   query: string;
@@ -34,7 +35,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
           <input
             ref={ref}
             type="search"
-            placeholder="Пошук по всіх модулях…"
+            placeholder={messages.nav.searchPlaceholder}
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
             role="combobox"
@@ -50,7 +51,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
           onClick={onClose}
           className="shrink-0 text-sm text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 rounded-xl px-2 py-1"
         >
-          Скасувати
+          {messages.actions.cancel}
         </button>
       </div>
     );

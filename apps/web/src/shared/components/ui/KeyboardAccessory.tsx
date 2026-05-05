@@ -15,6 +15,7 @@
 
 import { type ReactNode } from "react";
 import { cn } from "../../lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 
 export interface QuickFillChip {
   /** Label displayed in the chip */
@@ -85,7 +86,7 @@ export function KeyboardAccessory({
     <div
       className={cn("flex items-center gap-1.5 flex-wrap", className)}
       role="toolbar"
-      aria-label="Швидке заповнення"
+      aria-label={messages.form.quickFill}
     >
       {leading && <div className="mr-1">{leading}</div>}
       {chips.map((chip) => (

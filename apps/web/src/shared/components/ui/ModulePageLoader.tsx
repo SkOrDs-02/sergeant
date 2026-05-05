@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Skeleton, SkeletonText } from "./Skeleton";
+import { messages } from "@shared/i18n/uk";
 
 type ModuleType = "finyk" | "fizruk" | "routine" | "nutrition" | "generic";
 
@@ -25,7 +26,7 @@ export const ModulePageLoader = memo(function ModulePageLoader({
         className,
       )}
       aria-busy="true"
-      aria-label="Завантаження…"
+      aria-label={messages.status.loading}
     >
       <Loader />
     </div>

@@ -4,6 +4,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import type { HubView } from "../hooks/useHubUIState";
+import { messages } from "@shared/i18n/uk";
 
 /**
  * Sergeant Design System — `HubBottomNav`
@@ -224,7 +225,7 @@ export function HubBottomNav({
 
   return (
     <nav
-      aria-label="Розділи хабу"
+      aria-label={messages.nav.hubSections}
       className={cn(
         "shrink-0 relative z-30 safe-area-pb",
         "bg-panel/95 backdrop-blur-xl",

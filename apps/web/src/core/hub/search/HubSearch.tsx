@@ -2,6 +2,7 @@ import { InlineAiRail } from "./InlineAiRail";
 import { SearchInput } from "./SearchInput";
 import { SearchResults } from "./SearchResults";
 import { useSearchEngine } from "./useSearchEngine";
+import { messages } from "@shared/i18n/uk";
 
 export interface HubSearchProps {
   onClose: () => void;
@@ -31,7 +32,7 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
       className="fixed inset-0 z-200 flex flex-col bg-bg safe-area-pt-pb page-enter"
       role="dialog"
       aria-modal="true"
-      aria-label="Глобальний пошук"
+      aria-label={messages.nav.globalSearch}
     >
       <SearchInput
         ref={engine.inputRef}

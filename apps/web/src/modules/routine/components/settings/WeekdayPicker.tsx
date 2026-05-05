@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { ROUTINE_THEME as C, WEEKDAY_LABELS } from "../../lib/routineConstants";
+import { messages } from "@shared/i18n/uk";
 
 export interface WeekdayPickerProps {
   weekdays: number[] | null | undefined;
@@ -14,7 +15,7 @@ export const WeekdayPicker = memo(function WeekdayPicker({
   const active = weekdays || [];
   return (
     <div>
-      <p className="text-xs text-subtle mb-2">Дні тижня</p>
+      <p className="text-xs text-subtle mb-2">{messages.routine.weekdays}</p>
       <div className="flex flex-wrap gap-2">
         {WEEKDAY_LABELS.map((label, wd) => {
           const on = active.includes(wd);

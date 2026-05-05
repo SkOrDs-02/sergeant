@@ -1,6 +1,7 @@
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { formatRestClock } from "@sergeant/fizruk-domain";
+import { messages } from "@shared/i18n/uk";
 
 interface RestTimerState {
   remaining: number;
@@ -62,7 +63,7 @@ export function RestTimerOverlay({
           </div>
           <div>
             <SectionHeading as="div" size="xs">
-              Відпочинок
+              {messages.fizruk.workoutRest}
             </SectionHeading>
             <div
               className={
@@ -80,7 +81,7 @@ export function RestTimerOverlay({
           type="button"
           onClick={onCancel}
         >
-          Скасувати
+          {messages.actions.cancel}
         </Button>
       </div>
     </div>

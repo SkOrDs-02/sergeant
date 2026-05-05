@@ -16,6 +16,7 @@ import {
   type OnboardingGoals,
 } from "@sergeant/shared";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
+import { messages } from "@shared/i18n/uk";
 
 /**
  * @scaffolded — wired from App.tsx module-mount branch.
@@ -286,7 +287,7 @@ export function ModuleFirstRunGoalSheet({
             className="flex-1"
             onClick={closeAndMark}
           >
-            Пропустити
+            {messages.actions.skip}
           </Button>
           <Button
             type="button"
@@ -295,7 +296,7 @@ export function ModuleFirstRunGoalSheet({
             className="flex-1"
             onClick={save}
           >
-            Зберегти
+            {messages.actions.save}
           </Button>
         </div>
       }
