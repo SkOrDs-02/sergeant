@@ -1,6 +1,6 @@
 # 0012 — Perfect TS strictness rollout (`noUncheckedIndexedAccess` + 4 opt-in flags)
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Proposed (Phase 6a in-flight у [`docs/tech-debt/frontend.md` §11.1](../tech-debt/frontend.md))
 > **Priority:** P1 (Sprint 2–4 — після 0010 revenue-first launch стабілізації)
 > **Owner:** `@Skords-01`
@@ -14,7 +14,7 @@ TypeScript-міграція в Sergeant закрита: **0 production `.js`/`.j
 ## Чому зараз
 
 - TS-міграція як «file-rename» закрита 2026-05-03 (PR [#1454](https://github.com/Skords-01/Sergeant/pull/1454) Phase 5c). Більше немає причин відкладати strictness-tuning.
-- `noUncheckedIndexedAccess` уже flipped у [`packages/config/tsconfig.base.json`](../../packages/config/tsconfig.base.json), **9/13 пакетів** мігровано (PR-и [#1635](https://github.com/Skords-01/Sergeant/pull/1635) shared, [#1681](https://github.com/Skords-01/Sergeant/pull/1681) nutrition-domain, [#1689](https://github.com/Skords-01/Sergeant/pull/1689) insights, [#1750](https://github.com/Skords-01/Sergeant/pull/1750) finyk-domain — merged 2026-05-04). Залишок — **4 пакети** з override `false`: `apps/web`, `apps/server`, `apps/mobile`, `packages/fizruk-domain`. Без формального roadmap-у вони лишатимуться в allowlist-у `tools/tsconfig-guard/allowlist.json` нескінченно (`expires: 2026-09-30` уже видно як hard deadline).
+- `noUncheckedIndexedAccess` уже flipped у [`packages/config/tsconfig.base.json`](../../packages/config/tsconfig.base.json), **11/13 пакетів** мігровано (PR-и [#1635](https://github.com/Skords-01/Sergeant/pull/1635) shared, [#1681](https://github.com/Skords-01/Sergeant/pull/1681) nutrition-domain, [#1689](https://github.com/Skords-01/Sergeant/pull/1689) insights, [#1750](https://github.com/Skords-01/Sergeant/pull/1750) finyk-domain, [#1779](https://github.com/Skords-01/Sergeant/pull/1779) fizruk-domain, `0012-phase6a-mobile` apps/mobile — merged 2026-05-04). Залишок — **2 апи** з override `false`: `apps/web`, `apps/server`. Без формального roadmap-у вони лишатимуться в allowlist-у `tools/tsconfig-guard/allowlist.json` нескінченно (`expires: 2026-09-30` уже видно як hard deadline).
 - Інші 4 прапори (`exactOptionalPropertyTypes`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noPropertyAccessFromIndexSignature`) — ще не flipped; baseline не виміряний. Кожен новий PR без guard-а потенційно вносить регрес.
 - Sprint-1 ranking: P0 ініціативи закриті (0001–0005, 0008 у фазі 5). Sprint 2–4 — час підіймати «foundation» якість.
 
@@ -23,7 +23,7 @@ TypeScript-міграція в Sergeant закрита: **0 production `.js`/`.j
 **In:**
 
 - Per-flag rollout 5 опт-ін прапорів strict-mode у канонічному порядку (impact descending → ascending complexity):
-  1. `noUncheckedIndexedAccess` — закрити залишок **4 пакетів** (`apps/web`, `apps/server`, `apps/mobile`, `packages/fizruk-domain`).
+  1. `noUncheckedIndexedAccess` — закрити залишок **2 апів** (`apps/web`, `apps/server`).
   2. `exactOptionalPropertyTypes`.
   3. `noImplicitReturns` + `noFallthroughCasesInSwitch` (один PR — пов'язані семантично).
   4. `noPropertyAccessFromIndexSignature`.
@@ -43,7 +43,7 @@ TypeScript-міграція в Sergeant закрита: **0 production `.js`/`.j
 
 ## План змін
 
-### Phase 6a — `noUncheckedIndexedAccess` rollout (11 PR-ів — IN PROGRESS, 5 done)
+### Phase 6a — `noUncheckedIndexedAccess` rollout (11 PR-ів — IN PROGRESS, 6 done)
 
 Pre-existing baseline (виміряно 2026-05-03 через `npx tsc -p tsconfig.json --noEmit` per-workspace; PR [#1750](https://github.com/Skords-01/Sergeant/pull/1750) finyk-domain merged 2026-05-04 — baseline для решти апів/`fizruk-domain` залишився актуальним для проєкту, але `apps/mobile` re-measure 2026-05-04 під час відкривного PR показав drift +110 errors / +19 файлів через нові hooks/компоненти — фактичний baseline був **135 errors / 33 файли**, а не 25/14):
 
@@ -55,13 +55,13 @@ Pre-existing baseline (виміряно 2026-05-03 через `npx tsc -p tsconf
 | `packages/finyk-domain`  |     73 |    18 | [#1750](https://github.com/Skords-01/Sergeant/pull/1750)                                                    | ✅ Done    |
 | `packages/api-client`    |     45 |     9 | (вже ✅ через base inheritance — без override)                                                              | ✅ Done    |
 | `apps/mobile`            |   135¹ |    33 | PR `0012-phase6a-mobile`                                                                                    | ✅ Done    |
-| `packages/fizruk-domain` |     31 |    12 | PR `decomp-strict-fizruk-domain`                                                                            | 🟡 Pending |
+| `packages/fizruk-domain` |     31 |    12 | [#1779](https://github.com/Skords-01/Sergeant/pull/1779)                                                    | ✅ Done    |
 | `apps/server`            |    335 |    57 | PR `decomp-strict-server-{auth,modules,routes}` (split на 3 sub-PR — занадто великий single PR)             | 🟡 Pending |
 | `apps/web`               |    625 |   147 | PR `decomp-strict-web-{core,modules-finyk,modules-fizruk,modules-routine,modules-nutrition,shared}` (6 PRs) | 🟡 Pending |
 
 ¹ `apps/mobile` re-measured 2026-05-04 під час Phase 6a `mobile` PR (`devin/1777936992-0012-phase6a-mobile`) — фактичний baseline був **135 errors / 33 файли** (а не 25/14 як у 2026-05-03 measurement). Drift +110 errors через нові hooks/components, додані за добу.
 
-**Очікувано (Phase 6a residual):** 1 (`fizruk-domain`) + 3 (`server` split) + 6 (`web` split) = **10 PR-ів** (mobile закрите).
+**Очікувано (Phase 6a residual):** 3 (`server` split) + 6 (`web` split) = **9 PR-ів** (mobile + fizruk-domain закриті).
 
 > **Phase 6a closure criterion:** `tools/tsconfig-guard/allowlist.json` для `noUncheckedIndexedAccess` пустий, override `false` зник у всіх tsconfig-ах apps + packages, `pnpm strict:coverage` показує **13/13 = 100%** для `noUncheckedIndexedAccess` column.
 
@@ -121,7 +121,7 @@ const c2: Config = {}; // ✅ OK
 
 | Phase | Назва                                    | PRs           | Cumulative                |
 | ----- | ---------------------------------------- | ------------- | ------------------------- |
-| 6a    | `noUncheckedIndexedAccess`               | 11 (4 ✅ + 7) | 11                        |
+| 6a    | `noUncheckedIndexedAccess`               | 11 (6 ✅ + 5) | 11                        |
 | 6b    | `exactOptionalPropertyTypes`             | 1–3           | 13–15                     |
 | 6c    | `noImplicitReturns` + `noFallthroughSw.` | 1             | 14–16                     |
 | 6d    | `noPropertyAccessFromIndexSignature`     | 1–2           | 15–18                     |
@@ -181,7 +181,7 @@ const c2: Config = {}; // ✅ OK
 
 > Розділ заповнюватиметься per-phase у міру закриття PR-ів. Зразок — Phase 1 закриття у [`0001-module-decomposition.md` § Outcome](./0001-module-decomposition.md#outcome).
 
-### Phase 6a — `noUncheckedIndexedAccess` rollout (IN PROGRESS — 5 of ~11 PRs done as of 2026-05-04)
+### Phase 6a — `noUncheckedIndexedAccess` rollout (IN PROGRESS — 6 of ~11 PRs done as of 2026-05-04)
 
 Done so far:
 
@@ -190,8 +190,9 @@ Done so far:
 - [#1689](https://github.com/Skords-01/Sergeant/pull/1689) — `packages/insights` (✅ 0 baseline, formal flip; 13 errors / 2 тестових файли закрито через `recs[0]?.x` після `expect(recs).toHaveLength(1)`).
 - [#1750](https://github.com/Skords-01/Sergeant/pull/1750) — `packages/finyk-domain` (73 → 0). Merged 2026-05-04.
 - [`0012-phase6a-mobile`](https://github.com/Skords-01/Sergeant/pulls?q=is%3Apr+0012-phase6a-mobile) — `apps/mobile` (**135 errors / 33 файли → 0**). Re-measured 2026-05-04: фактичний baseline був 135/33, а не 25/14, через drift +110 errors за добу. Patterns: `theme.ts` cascading fix (62 errors fixed via `brandColors.cream[N]!` non-null assertions), test files (58 errors via `!` after `expect().toBeDefined()` / `findIndex >= 0` guards), production hooks/adapters/charts (15 errors via `!` after array access).
+- [#1779](https://github.com/Skords-01/Sergeant/pull/1779) — `packages/fizruk-domain` (31 errors / 12 файлів → 0). Merged 2026-05-04. Override `false` зник з `packages/fizruk-domain/tsconfig.json`; жодної entry не залишилось у `tools/tsconfig-guard/allowlist.json` для пакету. `pnpm --filter @sergeant/fizruk-domain typecheck` чистий.
 
-Naut: **10 / 13 packages done** (post mobile merge 2026-05-04); **3 left** — `apps/web`, `apps/server`, `packages/fizruk-domain`.
+Naut: **11 / 13 packages done** (post fizruk-domain + mobile merge 2026-05-04); **2 left** — `apps/web`, `apps/server`.
 
 ### Phase 6c — `noImplicitReturns` + `noFallthroughCasesInSwitch` (✅ DONE — 1 PR, 2026-05-04)
 
