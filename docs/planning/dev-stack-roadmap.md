@@ -1,9 +1,9 @@
 # Dev stack roadmap — інструменти і поради по всьому ЖЦ розробки
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-05 by Devin. **Next review:** 2026-08-03.
 > **Status:** Active
 
-**Статус:** весь топ-15 закритий. Створено 2026-04-25. Останнє оновлення: 2026-05-03 (**15 з 15 закриті** — Vercel team `team_A96p26fl8eTxCK74fXAWybql` на Pro plan підтверджено через Vercel API: `billing.plan: pro`; Strict TS web rollout повністю завершений: усі 4 PR закриті [#1388, #1391, #1402, PR4 final flip], baseline `419 → 0` помилок (−419, 100 % скоупу), `apps/web/tsconfig.json` тепер на повному `strict: true` + без `allowJs`; PostHog інтегрований у web + server, Sentry DSN-gated; деталі у колонці Статус нижче).
+**Статус:** весь топ-15 закритий + більшість Тиждень 1–4 / Місяць 2 беклогу теж залендено. Створено 2026-04-25. Останнє оновлення 2026-05-05: понад топ-15 додатково закрилися Storybook (44 stories у `apps/web`), Stryker mutation testing (`stryker.cloudSync.conf.json`), Argos visual regression (`@argos-ci/playwright`), Drizzle ORM POC (повноцінний `packages/db-schema` з PG + SQLite адаптерами), Helmet + CSP report-only middleware (`apps/server/src/http/security.ts`), gitleaks secret-scan + CodeQL + Trivy container-scan + release-SBOM, mobile Sentry SDK через `@sentry/react-native` (DSN-gated). Sentry mobile DSN provisioning у Expo EAS Secrets — все ще TODO, решта пунктів TL;DR — закриті. **Архів історичних сесій (2026-04-25 / 2026-04-25 evening):** [`dev-stack-roadmap-archive.md`](./dev-stack-roadmap-archive.md).
 
 **Скоуп:** інструменти, інтеграції, практики для покращення розробки, тестування, CI/CD, проду, безпеки, performance і команди. Specifically для стеку Sergeant: pnpm + Turborepo + Vite/React + Express + Postgres + Railway + Vercel + Expo.
 **Принцип:** не «впровадити все одразу», а **поетапно** — від найдешевших і найважливіших до інвестиційних. Кожен пункт — самостійний tool / practice з ціною, effort-ом, ROI і dep-ами.
@@ -35,7 +35,23 @@
 
 **Сумарно:** ~3-5 робочих днів + ~$50/міс. Це 80% wins за 20% effort-у.
 
-**Прогрес (2026-05-03):** **15 / 15 закрито** (з урахуванням розщеплення #3 на 3a/3b — обидва closed). Закриті: #1 Sentry (інтеграція + DSN виставлено на Railway server + Vercel web; mobile `EXPO_PUBLIC_SENTRY_DSN` — pending EAS provisioning), #2 Knip+depcheck, #3a Strict TS server, **#3b Strict TS web** (Phase 4 final flip — `apps/web/tsconfig.json` має `strict: true` + без `allowJs`; усі 4 PR закриті: #1388, #1391, #1402, PR4; baseline `419 → 0` помилок, 100 % скоупу), #4 Testcontainers (#728), **#5 Vercel Pro plan** (team `skords-01s-projects` на Pro — підтверджено через Vercel API: `billing.plan: pro`), #6 Turbo remote cache, #7 Renovate, #8 AGENTS.md, #9 MSW (#729), #10 Snapshot tests, #11 Pino logging (#738), #12 Playwright E2E, #13 PostHog (web + server SDK, env-gated), #14 size-limit + bundle-analyzer (#740), #15 CONTRIBUTING.md (#726). Роадмап топ-15 — повністю закритий.
+**Прогрес (2026-05-05):** **15 / 15 закрито** (з урахуванням розщеплення #3 на 3a/3b — обидва closed). Закриті: #1 Sentry (інтеграція + DSN виставлено на Railway server + Vercel web; mobile SDK через `@sentry/react-native` теж залендено, але `EXPO_PUBLIC_SENTRY_DSN` у Expo EAS Secrets — pending provisioning), #2 Knip+depcheck, #3a Strict TS server, **#3b Strict TS web** (Phase 4 final flip — `apps/web/tsconfig.json` має `strict: true` + без `allowJs`; усі 4 PR закриті: #1388, #1391, #1402, PR4; baseline `419 → 0` помилок, 100 % скоупу), #4 Testcontainers (#728), **#5 Vercel Pro plan** (team `skords-01s-projects` на Pro — підтверджено через Vercel API: `billing.plan: pro`), #6 Turbo remote cache, #7 Renovate, #8 AGENTS.md, #9 MSW (#729), #10 Snapshot tests, #11 Pino logging (#738), #12 Playwright E2E, #13 PostHog (web + server + mobile SDK, env-gated), #14 size-limit + bundle-analyzer (#740), #15 CONTRIBUTING.md (#726). Роадмап топ-15 — повністю закритий.
+
+**Поза топ-15 (Місяць 2 + Тиждень 4 беклог)** — ✅ done і вже на main:
+
+- **Storybook** для shared компонентів — 44 `*.stories.tsx` у `apps/web`, `pnpm --filter @sergeant/web storybook`, окремий `storybook-deploy.yml` workflow.
+- **Stryker mutation testing** — `apps/web/stryker.cloudSync.conf.json` + `mutation-testing.yml` workflow для CloudSync критичного шляху.
+- **Argos visual regression** — `@argos-ci/playwright` у `apps/web/devDependencies` + `visual-regression.yml` workflow.
+- **Drizzle ORM POC** — повноцінний `packages/db-schema` (Drizzle PG + SQLite) з drizzle-kit, використовується у `apps/server` + `apps/web`. POC закрив §2.2 і Місяць 2 пункт.
+- **Helmet + CSP** — `apps/server/src/http/security.ts` з helmet middleware, HSTS, CSP report-only (M1 hardening card).
+- **Detox mobile E2E** — `detox-android.yml` + `detox-ios.yml` workflows.
+- **Container security** — `container-scan.yml` (Trivy), `release-sbom.yml` (CycloneDX), `codeql.yml` (CodeQL).
+- **Secret scanning** — gitleaks job у `ci.yml` (`Secret scan (gitleaks)`).
+- **prom-client metrics** — `apps/server/src/obs/metrics.ts` ($GRAFANA*CLOUD_PROMETHEUS*\*` env-gated remote_write).
+- **CI hardening** — `concurrency: cancel-in-progress`, `pnpm` cache, SHA-pinned actions, actionlint, pipeline-duration p95 trend.
+- **OpenAPI codegen** — `pnpm api:generate-openapi` + `api:check-openapi-types` (zod-to-openapi-style flow без переходу на tRPC).
+
+Залишковий backlog Q3 2026 — нижче в розділі «Next-up backlog» + у [`stack-pulse-2026-05/`](./stack-pulse-2026-05/README.md) (16 PR-ів).
 
 ---
 
@@ -85,8 +101,8 @@ read & write the shared cache.
 
 **Sergeant-specific:**
 
-- Локальний Postgres вже піднімається через кореневий `docker-compose.yml` (`postgres:16-alpine`, `docker compose up -d` → `DATABASE_URL=postgresql://hub:hub@localhost:5432/hub`). Залишковий win — `pnpm dev:db` shortcut + seed-script, але інфраструктура вже на місці; пропозицію «додати docker-compose» прибрано як виконану.
-- Volta або mise треба, бо `package.json` зараз має `engines.node` але без enforcement.
+- Локальний Postgres піднімається через кореневий `docker-compose.yml` (`pgvector/pgvector:pg16` — не alpine, бо міграція 025 потребує `CREATE EXTENSION vector`). Повний dev cycle — `pnpm dev:db` (піднімає docker + мігрує).
+- **Volta вже в package.json** (`"volta": { "node": "20.20.2", "pnpm": "9.15.1" }`) + `engines.node = "20.x"`. Пункт «must» закритий.
 
 ### 1.2. CLI quality-of-life
 
@@ -158,7 +174,7 @@ read & write the shared cache.
 | **Knip**                   | Find unused exports/files/deps (~50+ findings on first run) | 1 год     | ✅ done [#716](https://github.com/Skords-01/Sergeant/pull/716)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **depcheck**               | Find unused deps в package.json                             | 30 хв     | ✅ done [#716](https://github.com/Skords-01/Sergeant/pull/716)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **size-limit**             | Bundle size budget; fails CI on regression                  | 2 год     | ✅ done [#740](https://github.com/Skords-01/Sergeant/pull/740)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| **CSpell**                 | Spell-checker для коду і коментарів                         | 30 хв     | ⏳ pending                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **CSpell**                 | Spell-checker для коду і коментарів                         | 30 хв     | ⏳ pending (UA + EN dictionaries; оцінити ROI після Tailwind v4 + 0007 design-system закриття)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 **Sergeant-priority:** ~~strict TypeScript. Зараз `strict: false` — це баги waiting to happen.~~ **Резолвед 2026-05-03:** всі 13 пакетів на `strict: true`, silent-drift блокує `tools/tsconfig-guard`.
 
@@ -227,28 +243,28 @@ pnpm --filter @sergeant/web build:analyze
 | **faker**                     | Random test data                         | 30 хв  | nice | ⏳ pending                                                     |
 | **node:test**                 | If відмовляєтесь від Vitest для server   | 1 день | nice | ⏳ pending                                                     |
 
-**Sergeant-priority:** Testcontainers. Зараз у server tests `queryMock.mockResolvedValueOnce(...)` — це не ловить SQL-помилки. Реальний PG ловить.
+**Sergeant-priority:** Testcontainers. Зараз у server tests `queryMock.mockResolvedValueOnce(...)` — це не ловить SQL-помилки. Реальний PG ловить. ✅ реалізовано у [#728](https://github.com/Skords-01/Sergeant/pull/728).
 
 ### 4.2. E2E та visual-тести
 
-| Tool           | What                                                                         | Cost                  |
-| -------------- | ---------------------------------------------------------------------------- | --------------------- |
-| **Playwright** | ✅ активовано на PR ([#717](https://github.com/Skords-01/Sergeant/pull/717)) | $0                    |
-| **Detox**      | Mobile e2e (вже згаданий у Sergeant)                                         | $0                    |
-| **Argos**      | Visual regression on PRs                                                     | Free < 5K screenshots |
-| **Percy**      | BrowserStack-owned visual testing                                            | Free 5K screenshots   |
-| **Chromatic**  | Storybook-integrated visual testing                                          | $149/міс              |
-| **Lost Pixel** | Self-hosted visual testing                                                   | $0                    |
+| Tool           | What                                                                                                                                  | Cost                  |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| **Playwright** | ✅ активовано на PR ([#717](https://github.com/Skords-01/Sergeant/pull/717)) + `extended-e2e.yml` workflow                            | $0                    |
+| **Detox**      | ✅ mobile e2e активний (`detox-android.yml` + `detox-ios.yml`); див. [`docs/planning/mobile-e2e-testing.md`](./mobile-e2e-testing.md) | $0                    |
+| **Argos**      | ✅ впроваджено: `@argos-ci/playwright` + `visual-regression.yml` workflow                                                             | Free < 5K screenshots |
+| **Percy**      | BrowserStack-owned visual testing (не використовується — Argos покриває)                                                              | Free 5K screenshots   |
+| **Chromatic**  | Storybook-integrated visual testing (не використовується — Argos + Storybook deploy)                                                  | $149/міс              |
+| **Lost Pixel** | Self-hosted visual testing                                                                                                            | $0                    |
 
 ### 4.3. Performance та load-тести
 
-| Tool              | What                     | Cost         |
-| ----------------- | ------------------------ | ------------ |
-| **k6**            | Load testing для API     | $0 (Grafana) |
-| **Artillery**     | Same, Node-native        | $0 / $40/міс |
-| **Lighthouse CI** | Performance budget на PR | $0           |
-| **WebPageTest**   | Real-device RUM          | Free quota   |
-| **Stryker**       | Mutation testing         | $0           |
+| Tool              | What                     | Cost         | Статус                                                                                                                                           |
+| ----------------- | ------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **k6**            | Load testing для API     | $0 (Grafana) | ⏳ pending — стоїть після запуску проду; базовий бенчмарк sync v2 endpoint-ів                                                                    |
+| **Artillery**     | Same, Node-native        | $0 / $40/міс | ⏳ pending (k6 приоритетніший через Grafana stack)                                                                                               |
+| **Lighthouse CI** | Performance budget на PR | $0           | ⏳ pending — потенційний backlog після Tailwind v4 міграції; size-limit + Vercel Speed Insights вже покривають bundle + RUM                      |
+| **WebPageTest**   | Real-device RUM          | Free quota   | ⏳ pending                                                                                                                                       |
+| **Stryker**       | Mutation testing         | $0           | ✅ done — `apps/web/stryker.cloudSync.conf.json` + `mutation-testing.yml` workflow для CloudSync; використовує `@stryker-mutator/vitest-runner`. |
 
 ### 4.4. Покриття тестами
 
@@ -266,25 +282,25 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ### 5.1. Оптимізація pipeline-у
 
-| Practice                     | What                                                              | Effort           |
-| ---------------------------- | ----------------------------------------------------------------- | ---------------- |
-| **Matrix builds**            | Паралельні test jobs по `apps/`. Зараз послідовно.                | 2 год            |
-| **Concurrency cancellation** | `concurrency: {group, cancel-in-progress}` — економить compute    | 30 хв            |
-| **Affected-only tests**      | `turbo run test --filter=...[HEAD^]` — тестувати тільки зачеплене | 4 год            |
-| **Cached node_modules**      | `actions/setup-node` з cache                                      | 30 хв (мабуть є) |
-| **Cached pnpm store**        | Окремо від node_modules                                           | 30 хв            |
-| **Required checks rules**    | Branch protection: lint + typecheck + test required               | 30 хв            |
+| Practice                     | What                                                              | Effort           | Статус                                                                                                          |
+| ---------------------------- | ----------------------------------------------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------- |
+| **Matrix builds**            | Паралельні test jobs по `apps/`. Зараз послідовно.                | 2 год            | ⏳ pending — їхали на turbo affected; matrix по окремих jobs поступово (розбити `check` на lint/typecheck/test) |
+| **Concurrency cancellation** | `concurrency: {group, cancel-in-progress}` — економить compute    | 30 хв            | ✅ done — `concurrency: ci-${{ github.ref }}` + `cancel-in-progress: true` у `ci.yml`                           |
+| **Affected-only tests**      | `turbo run test --filter=...[HEAD^]` — тестувати тільки зачеплене | 4 год            | ⏳ pending — все ще «full turbo run»; affected-only оцінити після Turbo remote cache метрик                     |
+| **Cached node_modules**      | `actions/setup-node` з cache                                      | 30 хв (мабуть є) | ✅ done — `actions/setup-node@... cache: pnpm` у всіх jobs                                                      |
+| **Cached pnpm store**        | Окремо від node_modules                                           | 30 хв            | ✅ done — `cache: pnpm` (та сама опція покриває pnpm store)                                                     |
+| **Required checks rules**    | Branch protection: lint + typecheck + test required               | 30 хв            | ✅ done — бранч protection включає `check`, `Test coverage (vitest)`, `Critical-flow E2E` (див. журнал архіву)  |
 
 ### 5.2. Інструменти
 
-| Tool                        | What                                           | Cost      |
-| --------------------------- | ---------------------------------------------- | --------- |
-| **Renovate**                | Auto-PR для оновлень (потужніше за Dependabot) | $0        |
-| **release-please** (Google) | Auto-changelog + auto-versioning monorepo      | $0        |
-| **semantic-release**        | Альтернатива                                   | $0        |
-| **changesets**              | Інтерактивний versioning для monorepo          | $0        |
-| **CodeQL**                  | Security scanning від GitHub                   | $0        |
-| **Codespaces**              | Cloud dev env інтегрована з PR                 | $4-15/міс |
+| Tool                        | What                                           | Cost      | Статус                                                                                          |
+| --------------------------- | ---------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------- |
+| **Renovate**                | Auto-PR для оновлень (потужніше за Dependabot) | $0        | ✅ done [#721](https://github.com/Skords-01/Sergeant/pull/721) + `dependabot-automerge.yml`     |
+| **release-please** (Google) | Auto-changelog + auto-versioning monorepo      | $0        | ⏳ pending — вручну `CHANGELOG.md`, оцінити ROI після виходу в прод                             |
+| **semantic-release**        | Альтернатива                                   | $0        | ⏳ pending (двійник release-please)                                                             |
+| **changesets**              | Інтерактивний versioning для monorepo          | $0        | ⏳ pending — monorepo internal-only, public release flow поки не потрібен                       |
+| **CodeQL**                  | Security scanning від GitHub                   | $0        | ✅ done — `codeql.yml` workflow активний                                                        |
+| **Codespaces**              | Cloud dev env інтегрована з PR                 | $4-15/міс | ⏳ not used — локальний dev (Volta + docker-compose) покриває; оцінити після розширення команди |
 
 **Sergeant-priority:** Renovate (Dependabot тут не справляється з pnpm workspace правильно).
 
@@ -323,7 +339,12 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 **Sergeant-priority:** Sentry. Найбільший single-tool ROI у production. Без error tracking ти дізнаєшся про bug-и тільки коли user скаржиться у чат — як було з #706/#707/#708.
 
-**Статус (2026-05-02):** integration готова на всіх трьох клієнтах. `SENTRY_DSN` виставлено на Railway (server) ✅, `VITE_SENTRY_DSN` виставлено на Vercel (web) ✅. `EXPO_PUBLIC_SENTRY_DSN` (mobile) — ще не виставлено в Expo EAS Secrets, mobile помилки не агрегуються. Beforesend-фільтр у server (`sentry.ts`) стрипає cookies/auth + email хеш-логуючи.
+**Статус (2026-05-05):** integration готова на всіх трьох клієнтах.
+
+- `SENTRY_DSN` виставлено на Railway (server) ✅. Beforesend-фільтр у `apps/server/src/sentry.ts` стрипає cookies/auth + email хеш-логуючи; реліз береться з cascade `SENTRY_RELEASE → RAILWAY_GIT_COMMIT_SHA → VERCEL_GIT_COMMIT_SHA → GITHUB_SHA` (L9 hardening).
+- `VITE_SENTRY_DSN` виставлено на Vercel (web) ✅ + `@sentry/vite-plugin` для source-map upload, динамічний import щоб не блокувати hydration.
+- **Mobile SDK залендено** (`@sentry/react-native` 6.10.0) у `apps/mobile/src/lib/observability.ts` ✅. Поки не виставлено `EXPO_PUBLIC_SENTRY_DSN` у Expo EAS Secrets — SDK раціонально no-op-ить (див. `getSentryDsn`), mobile помилки не агрегуються — єдиний залишок від «повного» #1.
+- Беклог: PR #12 `sentry-traces-sampler.md` у [`stack-pulse-2026-05/`](./stack-pulse-2026-05/pr-12-sentry-traces-sampler.md) — dynamic traces sample-rate по route-pattern.
 
 ### 6.2. APM і tracing
 
@@ -349,14 +370,14 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ### 6.4. Uptime і health-checkи
 
-| Tool                    | What                        | Cost         |
-| ----------------------- | --------------------------- | ------------ |
-| **Better Stack Uptime** | Uptime monitoring + on-call | $34/міс      |
-| **UptimeRobot**         | Безкоштовний uptime ping    | $0           |
-| **Healthchecks.io**     | Cron + heartbeat monitoring | $0 free tier |
-| **Pingdom**             | Premium                     | $15/міс      |
+| Tool                    | What                        | Cost         | Статус                                                                                             |
+| ----------------------- | --------------------------- | ------------ | -------------------------------------------------------------------------------------------------- |
+| **Better Stack Uptime** | Uptime monitoring + on-call | $34/міс      | ⏳ pending                                                                                         |
+| **UptimeRobot**         | Безкоштовний uptime ping    | $0           | ⏳ pending — `/health` і `/healthz` вже покриті regression-тестом L7 (info-leak); ping налаштувати |
+| **Healthchecks.io**     | Cron + heartbeat monitoring | $0 free tier | ⏳ pending — під cron жоби (Renovate, daily-audit) якщо підє mute                                  |
+| **Pingdom**             | Premium                     | $15/міс      | ⏳ pending                                                                                         |
 
-**Sergeant priority:** UptimeRobot на `/health` — настройти за 5 хв.
+**Sergeant priority:** UptimeRobot на `/health` + `/healthz` — настройти за 5 хв. (`/healthz` регресія-тест вже стоїть в [PR #1842](https://github.com/Skords-01/Sergeant/pull/1842) L7 hardening).
 
 ### 6.5. Продуктова аналітика
 
@@ -372,12 +393,12 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ### 6.6. Synthetic / RUM
 
-| Tool                         | What                  |
-| ---------------------------- | --------------------- |
-| **Lighthouse CI**            | Synthetic perf на PR  |
-| **Sentry Performance**       | RUM + traces          |
-| **Vercel Speed Insights**    | Vercel-native RUM     |
-| **Cloudflare Web Analytics** | RUM, privacy-friendly |
+| Tool                         | What                  | Статус                                                                                                  |
+| ---------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Lighthouse CI**            | Synthetic perf на PR  | ⏳ pending (див. §4.3)                                                                                  |
+| **Sentry Performance**       | RUM + traces          | ✅ done — traces sample-rate на всіх 3 клієнтах; backlog — dynamic sampler (PR #12 stack-pulse-2026-05) |
+| **Vercel Speed Insights**    | Vercel-native RUM     | ⏳ pending — evaluate після Tailwind v4 + cut-over                                                      |
+| **Cloudflare Web Analytics** | RUM, privacy-friendly | ⏳ not used (PostHog + Vercel покривають)                                                               |
 
 ---
 
@@ -385,23 +406,23 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ### 7.1. Postgres-інструменти
 
-| Tool                   | What                            | Cost           |
-| ---------------------- | ------------------------------- | -------------- |
-| **PgHero**             | Performance dashboard           | $0             |
-| **pg_stat_statements** | Slow query identification       | $0 (extension) |
-| **pgBouncer**          | Connection pooling              | $0             |
-| **Atlas** (atlasgo.io) | Schema-as-code, drift detection | $0 / $30/міс   |
-| **dbmate**             | Migrations CLI (lightweight)    | $0             |
-| **squawk**             | Lint SQL migrations for safety  | $0             |
-| **Prisma**             | TS ORM з migrations             | $0             |
-| **Drizzle**            | TS ORM, simpler than Prisma     | $0             |
-| **Kysely**             | Type-safe SQL builder, no ORM   | $0             |
+| Tool                   | What                            | Cost           | Статус                                                                                                                                                 |
+| ---------------------- | ------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **PgHero**             | Performance dashboard           | $0             | ⏳ pending                                                                                                                                             |
+| **pg_stat_statements** | Slow query identification       | $0 (extension) | ⏳ pending — включити на Railway PG, додати рубрику у [`docs/observability/runbook.md`](../observability/runbook.md)                                   |
+| **pgBouncer**          | Connection pooling              | $0             | ⏳ pending — PR #13 `postgres-pool-sizing.md` у [stack-pulse-2026-05](./stack-pulse-2026-05/pr-13-postgres-pool-sizing.md) (`pg.Pool.max` поки дефолт) |
+| **Atlas** (atlasgo.io) | Schema-as-code, drift detection | $0 / $30/міс   | ⏳ pending — PR #11 `drizzle-schema-drift-ci.md` у stack-pulse-2026-05 (Drizzle drift CI без повного Atlas)                                            |
+| **dbmate**             | Migrations CLI (lightweight)    | $0             | ⏳ not used — власний `apps/server/migrate.mjs` + sequential `NNN_*.sql` вже покриває                                                                  |
+| **squawk**             | Lint SQL migrations for safety  | $0             | ⏳ pending — власний `scripts/lint-migrations.mjs` вже ловить gaps; squawk додати для `DROP COLUMN` / `ALTER без CONCURRENTLY`                         |
+| **Prisma**             | TS ORM з migrations             | $0             | ⏳ not used (Drizzle обраний, див. [`docs/planning/orm-drizzle-vs-kysely.md`](./orm-drizzle-vs-kysely.md))                                             |
+| **Drizzle**            | TS ORM, simpler than Prisma     | $0             | ✅ done — `packages/db-schema` з PG + SQLite, drizzle-kit для schema generation; використовує `apps/server` + `apps/web` (CloudSync SQLite)            |
+| **Kysely**             | Type-safe SQL builder, no ORM   | $0             | ⏳ not used (Drizzle обраний)                                                                                                                          |
 
 **Sergeant priority:**
 
-- **squawk** lint у CI на migrations — ловить `DROP COLUMN`, `ALTER без CONCURRENTLY` тощо.
+- **squawk** lint у CI на migrations — резервний пункт поверх власного `lint-migrations.mjs` (gap detection вже є, відсутня «lock»-detection для `DROP COLUMN`, `ALTER без CONCURRENTLY`).
 - **pg_stat_statements** на проді — знайти повільні queries (за 1 день логів зазвичай 5+ кандидатів).
-- **Drizzle** як step-up з raw SQL — поетапно, не одразу.
+- **Drizzle** — база вже введена (`packages/db-schema`); наступний крок — schema-drift CI (PR #11).
 
 ### 7.2. Бекапи і recovery
 
@@ -425,29 +446,30 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ### 8.1. Must-have
 
-| Practice                             | Tool                                                                                                        | Effort       |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ------------ |
-| Dependency CVE scanning              | Renovate `vulnerabilityAlerts` (✅ enabled у [#721](https://github.com/Skords-01/Sergeant/pull/721)) / Snyk | 30 хв        |
-| Secrets pre-commit hook              | git-secrets / gitleaks / trufflehog                                                                         | 30 хв        |
-| HTTP security headers                | helmet.js (Express)                                                                                         | 1 год        |
-| CORS strict whitelist                | manual config                                                                                               | 30 хв        |
-| Rate limiting                        | ✅ Власний `apps/server/src/http/rateLimit.ts` (Redis-backed через `ioredis`, in-memory fallback)           | done         |
-| HttpOnly + Secure + SameSite cookies | manual config                                                                                               | 30 хв        |
-| Strong password hashing              | Better Auth (handle-ить argon2)                                                                             | already done |
-| HTTPS everywhere                     | Railway / Vercel automatic                                                                                  | done         |
+| Practice                             | Tool                                                                                                        | Effort       | Статус                                                                                                                       |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| Dependency CVE scanning              | Renovate `vulnerabilityAlerts` (✅ enabled у [#721](https://github.com/Skords-01/Sergeant/pull/721)) / Snyk | 30 хв        | ✅ done — Renovate vulnerabilityAlerts + `pnpm audit --audit-level=critical/high` у кожному PR + nightly-audit + OSV-Scanner |
+| Secrets pre-commit hook              | git-secrets / gitleaks / trufflehog                                                                         | 30 хв        | ✅ done — gitleaks job (`Secret scan (gitleaks)`) у `ci.yml` блокує пуш секретів з supply-chain SHA-pin                      |
+| HTTP security headers                | helmet.js (Express)                                                                                         | 1 год        | ✅ done — `apps/server/src/http/security.ts` використовує `helmet@^8` + HSTS + CSP report-only (M1 hardening)                |
+| CORS strict whitelist                | manual config                                                                                               | 30 хв        | ✅ done — власний `apps/server/src/http/cors.ts` (strict allowlist)                                                          |
+| Rate limiting                        | ✅ Власний `apps/server/src/http/rateLimit.ts` (Redis-backed через `ioredis`, in-memory fallback)           | done         | ✅ done — PR #02 stack-pulse: `rate-limit-fail-closed.md` (fail-closed mode при Redis outage)                                |
+| HttpOnly + Secure + SameSite cookies | manual config                                                                                               | 30 хв        | ✅ done — Better Auth виставляє всі флаги; перевірено у PR #10 `better-auth-security-review.md` (stack-pulse)                |
+| Strong password hashing              | Better Auth (handle-ить argon2)                                                                             | already done | ✅ done; беклог — PR #03 `bcrypt-password-limit.md` (72-байт ліміт як explicit guard)                                        |
+| HTTPS everywhere                     | Railway / Vercel automatic                                                                                  | done         | ✅ done — Railway + Vercel automatic                                                                                         |
 
 ### 8.2. Nice-to-have
 
-| Tool              | What                            | Cost             |
-| ----------------- | ------------------------------- | ---------------- |
-| **Snyk**          | Comprehensive security scanning | $0 / $25/міс     |
-| **OWASP ZAP**     | Penetration testing             | $0               |
-| **trivy**         | Container security              | $0               |
-| **trufflehog**    | Secrets in git history scan     | $0               |
-| **CodeQL**        | GitHub native                   | $0               |
-| **1Password CLI** | Secrets injection in shell      | $3/міс           |
-| **Doppler**       | Centralized secrets             | $0 / $7/user/міс |
-| **Infisical**     | Open-source Doppler alternative | $0 / $9/user/міс |
+| Tool              | What                            | Cost             | Статус                                                                                            |
+| ----------------- | ------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------- |
+| **Snyk**          | Comprehensive security scanning | $0 / $25/міс     | ✅ done — Snyk у supply-chain (разом з OSV-Scanner + pnpm audit, див. stack-pulse «supply chain») |
+| **OWASP ZAP**     | Penetration testing             | $0               | ⏳ pending — резервно після виходу в прод                                                         |
+| **trivy**         | Container security              | $0               | ✅ done — `container-scan.yml` workflow запускає trivy на всі Dockerfile-и                        |
+| **trufflehog**    | Secrets in git history scan     | $0               | ⏳ not used (gitleaks покриває git history)                                                       |
+| **CodeQL**        | GitHub native                   | $0               | ✅ done — `codeql.yml` workflow                                                                   |
+| **release-sbom**  | CycloneDX SBOM на release       | $0               | ✅ done — `release-sbom.yml` workflow публікує SBOM біля релізів                                  |
+| **1Password CLI** | Secrets injection in shell      | $3/міс           | ⏳ not used — Vercel/Railway envs + GitHub Secrets покривають                                     |
+| **Doppler**       | Centralized secrets             | $0 / $7/user/міс | ⏳ not used — як вище                                                                             |
+| **Infisical**     | Open-source Doppler alternative | $0 / $9/user/міс | ⏳ not used                                                                                       |
 
 ### 8.3. Аудити
 
@@ -461,17 +483,17 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ### 9.1. Frontend
 
-| Tool                          | What                        |
-| ----------------------------- | --------------------------- |
-| **rollup-plugin-visualizer**  | Bundle analyzer для Vite    |
-| **Lighthouse CI**             | Perf budget на PR           |
-| **Core Web Vitals tracking**  | LCP, CLS, INP               |
-| **React DevTools Profiler**   | Identify slow renders       |
-| **why-did-you-render**        | Find unnecessary re-renders |
-| **Million.js**                | React optimization compiler |
-| **React Compiler** (React 19) | Auto-memoization            |
+| Tool                          | What                        | Статус                                                                                                                                                  |
+| ----------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **rollup-plugin-visualizer**  | Bundle analyzer для Vite    | ✅ done — `pnpm build:analyze` генерує `dist/bundle-report.html`; integrated з size-limit budget [#740](https://github.com/Skords-01/Sergeant/pull/740) |
+| **Lighthouse CI**             | Perf budget на PR           | ⏳ pending (див. §4.3 + §6.6)                                                                                                                           |
+| **Core Web Vitals tracking**  | LCP, CLS, INP               | ✅ done — `apps/web/src/core/observability/webVitals.ts` (відправляє у PostHog + Sentry)                                                                |
+| **React DevTools Profiler**   | Identify slow renders       | ✅ dev-only (no integration)                                                                                                                            |
+| **why-did-you-render**        | Find unnecessary re-renders | ⏳ not used — React Profiler + Stryker mutation testing дають достатньо signal                                                                          |
+| **Million.js**                | React optimization compiler | ⏳ not used (React 18; Million.js поки не в пріоритеті як «optimization compiler»)                                                                      |
+| **React Compiler** (React 19) | Auto-memoization            | ⏳ pending — після міграції React 18 → 19; беклог окремої ADR                                                                                           |
 
-**Sergeant priority:** Bundle visualizer — швидко знайдеш зайві 100KB.
+**Sergeant priority:** Bundle visualizer + size-limit + Web Vitals tracking — вже на main; наступний крок — React Compiler після React 19 migration.
 
 ### 9.2. Backend
 
@@ -577,14 +599,14 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ### Тиждень 1 — швидкі wins ($46/міс новий cost)
 
-- [ ] Sentry + source maps upload
-- [ ] Vercel Pro plan upgrade
-- [ ] Knip + depcheck + видалення dead code
-- [x] Renovate setup ([#721](https://github.com/Skords-01/Sergeant/pull/721))
-- [ ] Turbo remote cache
-- [ ] AGENTS.md (з #711)
-- [ ] CONTRIBUTING.md з 5-хв quickstart
-- [ ] UptimeRobot на /health
+- [x] **Sentry + source maps upload** — server (Railway DSN) + web (Vercel `VITE_SENTRY_DSN` + `@sentry/vite-plugin`) + mobile SDK (`@sentry/react-native` 6.10.0). Реліз cascade `SENTRY_RELEASE → RAILWAY_GIT_COMMIT_SHA → VERCEL_GIT_COMMIT_SHA → GITHUB_SHA`. Залишок: `EXPO_PUBLIC_SENTRY_DSN` в EAS Secrets (provisioning).
+- [x] **Vercel Pro plan upgrade** — team `skords-01s-projects` на Pro (підтверджено через Vercel API: `billing.plan: pro`).
+- [x] **Knip + depcheck + видалення dead code** — [#716](https://github.com/Skords-01/Sergeant/pull/716).
+- [x] **Renovate setup** — [#721](https://github.com/Skords-01/Sergeant/pull/721) + `dependabot-automerge.yml`.
+- [x] **Turbo remote cache** — активовано через `TURBO_TOKEN` + `TURBO_TEAM` у GitHub Actions.
+- [x] **AGENTS.md** — [#714](https://github.com/Skords-01/Sergeant/pull/714).
+- [x] **CONTRIBUTING.md з 5-хв quickstart** — [#726](https://github.com/Skords-01/Sergeant/pull/726).
+- [ ] **UptimeRobot на /health + /healthz** — pending (єдиний відкритий пункт Тижня 1; ping setup ~5 хв).
 
 ### Тиждень 2 — type safety
 
@@ -601,32 +623,32 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ### Тиждень 3 — testing
 
-- [ ] Testcontainers для server tests
-- [ ] MSW для frontend tests
-- [ ] Activate Playwright E2E на PR
-- [ ] PostHog setup + 5 key events tracking
+- [x] **Testcontainers для server tests** — [#728](https://github.com/Skords-01/Sergeant/pull/728).
+- [x] **MSW для frontend tests** — [#729](https://github.com/Skords-01/Sergeant/pull/729).
+- [x] **Activate Playwright E2E на PR** — [#717](https://github.com/Skords-01/Sergeant/pull/717) + `extended-e2e.yml`.
+- [x] **PostHog setup + key events tracking** — web + server + mobile SDK env-gated; capture-API виключено в dev/test через `enabled` flag.
 
 ### Тиждень 4 — observability
 
-- [ ] Pino structured logging migration (якщо ще не)
-- [ ] pg_stat_statements на проді
-- [ ] squawk lint у CI на migrations
-- [ ] size-limit + bundle-analyzer
+- [x] **Pino structured logging migration** — [#738](https://github.com/Skords-01/Sergeant/pull/738) (`apps/server/src/obs/logger.ts` + `pino-http`).
+- [ ] **pg_stat_statements на проді** — pending (Railway PG conf + runbook).
+- [ ] **squawk lint у CI на migrations** — pending (резерв поверх власного `lint-migrations.mjs` gap-detection).
+- [x] **size-limit + bundle-analyzer** — [#740](https://github.com/Skords-01/Sergeant/pull/740).
 
 ### Місяць 2 — інвестиції
 
-- [ ] Argos visual regression
-- [ ] Storybook setup для shared components
-- [ ] Strict TypeScript повне покриття
-- [ ] Devcontainer для local dev (docker-compose вже на місці — кореневий `docker-compose.yml`)
-- [ ] Drizzle migration POC (один модуль)
+- [x] **Argos visual regression** — `@argos-ci/playwright` + `visual-regression.yml` workflow.
+- [x] **Storybook setup для shared components** — 44 `*.stories.tsx` у `apps/web` + `storybook-deploy.yml` workflow.
+- [x] **Strict TypeScript повне покриття** — Phase 4 final flip ([#1388](https://github.com/Skords-01/Sergeant/pull/1388), [#1391](https://github.com/Skords-01/Sergeant/pull/1391), [#1402](https://github.com/Skords-01/Sergeant/pull/1402), [#1420](https://github.com/Skords-01/Sergeant/pull/1420)) + Phase 5 cleanup ([#1448](https://github.com/Skords-01/Sergeant/pull/1448), [#1452](https://github.com/Skords-01/Sergeant/pull/1452), [#1454](https://github.com/Skords-01/Sergeant/pull/1454)). 13/13 пакетів.
+- [ ] **Devcontainer для local dev** — pending (docker-compose + Volta покривають default flow).
+- [x] **Drizzle migration POC** — повноцінний `packages/db-schema` (Drizzle PG + SQLite) з drizzle-kit, використовує `apps/server` + `apps/web` (CloudSync SQLite). POC закрив §2.2 і Місяць 2 пункт.
 
 ### Підтримка (неперервно)
 
 - [ ] Quarterly security audit
 - [ ] Quarterly recovery drill (DB backup restore)
-- [ ] Monthly tech debt review
-- [ ] Weekly metrics check (CI fail rate, time-to-PR, etc.)
+- [x] **Monthly tech debt review** — проводиться через [`stack-pulse-2026-05/`](./stack-pulse-2026-05/README.md) (16 PR-ів) + цей roadmap рефреш (2026-05-05).
+- [ ] Weekly metrics check (CI fail rate, time-to-PR, etc.) — pending dashboards (PostHog + Grafana Cloud).
 
 ---
 
@@ -666,95 +688,16 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ## Журнал сесій
 
-### 2026-04-25 — інфра-спринт
+Історичні журнали сесій «інфра-спринтів» (2026-04-25 day, 2026-04-25 evening) винесені в [`dev-stack-roadmap-archive.md`](./dev-stack-roadmap-archive.md), щоб роадмап залишався «forward-looking». Див. архів для хронології PR-ів #714 — #743.
 
-8 PR замерджено, 5 пунктів топ-15 закрито. Хронологія:
+### 2026-05-05 — roadmap refresh
 
-| PR                                                     | Що                                                               | Roadmap         | Тривалість |
-| ------------------------------------------------------ | ---------------------------------------------------------------- | --------------- | ---------- |
-| [#714](https://github.com/Skords-01/Sergeant/pull/714) | `AGENTS.md` + PR template "How AI-tested"                        | #8              | паралельно |
-| [#715](https://github.com/Skords-01/Sergeant/pull/715) | AI markers + ESLint rule `sergeant-design/ai-marker-syntax`      | (ai-coding §3)  | паралельно |
-| [#716](https://github.com/Skords-01/Sergeant/pull/716) | Knip + depcheck + first-pass dead-code cleanup                   | #2              | паралельно |
-| [#717](https://github.com/Skords-01/Sergeant/pull/717) | Activate Playwright E2E на PR (Postgres service + browser cache) | #12             | паралельно |
-| [#718](https://github.com/Skords-01/Sergeant/pull/718) | Snapshot tests для `accountsHandler` + `transactionsHandler`     | #10             | паралельно |
-| [#719](https://github.com/Skords-01/Sergeant/pull/719) | Оновлення roadmap-ів зі статусом + Status-колонкою               | (meta)          | sequential |
-| [#720](https://github.com/Skords-01/Sergeant/pull/720) | Fix `vitest.base.ts` ESM (всі 13 пакетів падали на startup)      | (infra unblock) | sequential |
-| [#721](https://github.com/Skords-01/Sergeant/pull/721) | Renovate config (заміна Dependabot)                              | #7              | sequential |
+Стояла вимога аудиту стеку без нових код-змін. Скан репо + workflow + ADR-ів підтвердив: весь топ-15 закритий єдиний «відкритий» хвіст — `EXPO_PUBLIC_SENTRY_DSN` у EAS Secrets. Понад топ-15 раніше незафіксовані в роадмапі done-пункти:
 
-**Bonus discoveries (поза планом):**
+- Storybook (44 stories), Stryker mutation testing (CloudSync `stryker.cloudSync.conf.json`), Argos visual regression, Drizzle ORM POC (`packages/db-schema`), Helmet + CSP report-only (`apps/server/src/http/security.ts`), Detox mobile E2E (`detox-android.yml` + `detox-ios.yml`), Container security (Trivy + CodeQL + CycloneDX SBOM), Gitleaks secret-scan, prom-client metrics (`apps/server/src/obs/metrics.ts`), CI hardening (`concurrency`, `pnpm` cache, SHA-pinned actions), OpenAPI codegen (`pnpm api:generate-openapi`).
+- Mobile Sentry SDK (`@sentry/react-native` 6.10.0) залендено в `apps/mobile/src/lib/observability.ts` (DSN-gated no-op якщо env порожній).
 
-- `pnpm test` на main був повністю зламаний з commit `dab67bdc` через `ERR_UNKNOWN_FILE_EXTENSION` для `packages/config/vitest.base.js`. Native Node ESM loader не вміє резолвити `.ts` через package exports. Fixed у [#720](https://github.com/Skords-01/Sergeant/pull/720): конвертація у `.js` з JSDoc-типами. Без цього #721 (і всі наступні PR) теж не пройшли б CI.
-- AGENTS.md з [#714](https://github.com/Skords-01/Sergeant/pull/714) був закомічений без `prettier --write`; виправлено у [#719](https://github.com/Skords-01/Sergeant/pull/719) разом з doc-апдейтами.
-
-**Що НЕ робили і чому:**
-
-- #1 Sentry, #5 Vercel Pro, #13 PostHog — потребують credentials/credit card мейнтейнера.
-- #3 Strict TypeScript, #4 Testcontainers, #11 Pino — кожне 4-8 годин роботи; залишено на наступні спринти.
-- #15 CONTRIBUTING.md — найдешевший залишковий win, але вирішено зробити Renovate першим (безпека).
-
-**Метрики до/після:**
-
-| Метрика                     | До 2026-04-25               | Після                                  |
-| --------------------------- | --------------------------- | -------------------------------------- |
-| Топ-15 закрито              | 0/15                        | 5/15                                   |
-| `pnpm test` працює          | ❌ (всі 13 пакетів падають) | ✅ (12/13; mobile flaky per AGENTS.md) |
-| Smoke E2E у PR              | ⏭️ skipped                  | ✅ runs                                |
-| `AGENTS.md` контекст для AI | ❌                          | ✅                                     |
-| AI markers convention       | ❌                          | ✅ + lint warn                         |
-| Snapshot захист API форм    | 0 endpoint-ів               | 2 endpoint-и Mono                      |
-| Auto-PR для оновлень        | ❌                          | ✅ Renovate (Mon 6am EU/Kyiv)          |
-| Dead-code detection         | manual                      | Knip + depcheck                        |
-
-**Поточні pre-merge checks на PR:**
-
-1. `Smoke E2E (Playwright)` ([#717](https://github.com/Skords-01/Sergeant/pull/717))
-2. `Test coverage (vitest)` ([dab67bdc](https://github.com/Skords-01/Sergeant/commit/dab67bdc), unblocked by [#720](https://github.com/Skords-01/Sergeant/pull/720))
-3. `check` (`format:check && lint && typecheck && test && build`)
-4. `Vercel — sergeant` (rate-limited на free, потребує #5 Vercel Pro)
-5. CodeRabbit + Devin Review (AI коментарі, не блокують)
-
-**Наступні логічні кроки** (у порядку вартості/користі):
-
-1. **#15 CONTRIBUTING.md + 5-min quickstart** — найдешевший win, ~1 год.
-2. **#11 Pino structured logging** — 4 год, але **розблокує** Sentry і PostHog (треба структуровані логи з request-id перш ніж їх десь агрегувати).
-3. **#4 Testcontainers** — 4 год, посилює #10 (snapshot тести з реальним Postgres у CI ловлять ще більше регресій).
-4. **#6 Turbo remote cache** — 1 год, прискорить CI з ~5 хв до ~1 хв на повторних білдах.
-5. **#9 MSW + #14 size-limit** — frontend тести і bundle budget, по 2-4 год кожне.
-
-**Dependent на платних сервісах** (черга на коли мейнтейнер додасть credit card):
-
-- [ ] #5 Vercel Pro ($20/міс) — розблокує preview deploy на PR
-- [ ] #1 Sentry ($26/міс) — потребує #11 Pino перш ніж приносити користь
-- [ ] #13 PostHog ($0 free tier) — теж краще з #11
-
-### Документи що оновились разом
-
-- `docs/planning/ai-coding-improvements.md` — TL;DR таблиця з Status-колонкою, прогрес-блок, маркери ✅ на блоках 1, 3, 4.2, 4.5, implementation checklist з лінками на PR.
-- `docs/planning/dev-stack-roadmap.md` — TL;DR з Status-колонкою (5/15 done), §3.1 Static analysis і §4.1 Test infrastructure з ✅, §8.1 Security оновлений з Renovate vulnerabilityAlerts.
-- `docs/integrations/renovate-usage.md` — новий файл, як працювати з Renovate-PR-ами щодня.
-
-### 2026-04-25 (вечір) — друга хвиля + продуктова фіча
-
-Запущено три паралельні child-сесії після оновлення статусів у [#733](https://github.com/Skords-01/Sergeant/pull/733), плюс одна продуктова фіча в чаті:
-
-| PR                                                     | Що                                                                                    | Roadmap                |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------- | ---------------------- |
-| [#737](https://github.com/Skords-01/Sergeant/pull/737) | `hotfix-prod-regression.md` + `add-monobank-event-handler.md` playbooks               | ai-coding §2 (✅ full) |
-| [#738](https://github.com/Skords-01/Sergeant/pull/738) | Pino + `pino-http` middleware у `apps/server/src/obs/logger.ts`, regenerated licenses | #11                    |
-| [#740](https://github.com/Skords-01/Sergeant/pull/740) | `size-limit` budget на `apps/web` + `Bundle size guard` CI step                       | #14                    |
-| [#743](https://github.com/Skords-01/Sergeant/pull/743) | HubChat **Quick Actions v1** (chip-секція + action cards у чаті)                      | (продуктова фіча)      |
-
-**Прогрес топ-15:** 9/15 → **11/15**.
-
-**Bonus:**
-
-- Vercel preview rate-limit лишається активний (free tier) — це неблокуюче, бо Smoke E2E запускається проти локально стартованого preview.
-- License policy CI крок один раз падав на #743 через регенерацію `THIRD_PARTY_LICENSES.md` у #738; merge-up закрив проблему.
-
-**Що залишилось без credentials:**
-
-- #3 Strict TypeScript (incremental, починаючи зі `strictNullChecks`).
-- #13 PostHog (free tier) — тепер легко завдяки структурованим логам з #11.
+Додав: status-колонка у §6 (Uptime + Synthetic), §7.1 (Postgres-інструменти), §8.1/§8.2 (Security must-have + nice-to-have), §9.1 (Frontend perf). Винес журнал 2026-04-25 (day + evening) у [`dev-stack-roadmap-archive.md`](./dev-stack-roadmap-archive.md). Чеклісти §«Порядок впровадження» (Тиждень 1–4 + Місяць 2) промарковані згідно реального стану. Наступний review: 2026-08-03.
 
 ---
 
