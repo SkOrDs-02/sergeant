@@ -1,5 +1,5 @@
 {
-  "extends": "@sergeant/config/tsconfig.base.json",
+  "extends": "@sergeant/config/tsconfig.node.json",
   "compilerOptions": {
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
