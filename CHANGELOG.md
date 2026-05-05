@@ -14,6 +14,49 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Sync v2 push-loop orchestrator у `@sergeant/api-client`
+  ([#1926](https://github.com/Skords-01/Sergeant/pull/1926), Stage 5
+  PR #042e-pushloop).** Pure-function, dependency-injected one-tick
+  push-loop, який зв'язує всі вже-залендженi блоки Stage 5 у єдиний
+  entry-point: `drain → map → push → lifecycle`. Public API:
+  `runSyncEnginePushOnce(deps, options) → Promise<{drained, pushed,
+retried, rejected}>`, `mapDrainedRowToSyncV2PushOp(row) → SyncV2PushOp`
+  (reverse PR #042e-mapping узагальнений на всі чотири `SyncV2OpKind`-и),
+  `describePushError(err) → string` (stable low-cardinality bucket
+  scheme для `last_error`: `network` / `aborted` / `parse` /
+  `http_<status>` / `unknown`). DI surface: `DrainSyncOpOutboxFn`,
+  `SyncV2PushFn`, `MarkOutboxSuccessFn`, `MarkOutboxRetryFn`,
+  `MarkOutboxRejectedFn`, `PlanRetryFn`, плюс структурні дзеркала
+  db-schema-shape-ів (`DrainedOutboxRowShape`, `SyncOpRetryPlanShape`)
+  без workspace-залежності на db-schema (PR #042d-builder Risk note).
+  HTTP-success: match по `idempotency_key`, `applied`/`duplicate` →
+  `markSuccess`, `rejected` → `markRejected` (`'unspecified'` fallback
+  на missing/empty reason), unknown forward-compat status → `markRetry`
+  з `last_error="unknown_status:<value>"`, missing result → `markRetry`
+  з `last_error="missing_result"`. HTTP-failure: весь batch → `markRetry`.
+  Clock pin-нутий на тік (single source of truth, deterministic тести,
+  monotonic prod). 24 нові тести (8 груп) у `syncV2.pushLoop.test.ts`,
+  124/124 api-client suite зелена. Жодних callsite-ів у production-коді —
+  wiring у sync-engine boot-path лишається окремим follow-up-ом.
+
+- **`syncOpOutboxLifecycle` helpers у `@sergeant/db-schema`
+  ([#1922](https://github.com/Skords-01/Sergeant/pull/1922), Stage 5
+  PR #042e-lifecycle).** Три SQL-helper-и, які закривають outbox-row
+  lifecycle після server ack-у: `markOutboxSuccess(client, id)` —
+  DELETE по `id` (idempotent на missing row); `markOutboxRetry(client,
+id, plan: SyncOpRetryPlan)` — UPDATE `attempts`/`status`/`next_retry_at`/
+  `last_error` із готового `planRetry`-плану (`'dead_letter'` flip
+  policy лежить у `planRetry`, не в helper-і); `markOutboxRejected(client,
+id, reason)` — UPDATE `status='rejected'` + `reject_reason` verbatim
+  для термінальних reject-ів від сервера (`op_not_supported`,
+  `tombstoned`, …). Усі три відмовляються пересувати не-`pending`
+  рядки (`'rejected'` / `'dead_letter'` рядки лишаються термінальними
+  доти, доки triage не переведе їх назад у `'pending'`). Write-side
+  дзеркало до PR #042e-drain. 20 нових тестів у `sqlite-syncOpOutboxLifecycle.test.ts`,
+  322/322 db-schema suite зелена.
+
 ### Changed
 
 - **Docs: audit + sprint-розбивка прогавлених PR-серій (#6 / #8 / #15
