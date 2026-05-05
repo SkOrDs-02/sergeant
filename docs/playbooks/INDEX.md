@@ -1,6 +1,6 @@
 # Playbooks — Trigger Index
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 > **Auto-generated** by `scripts/docs/generate-playbook-index.mjs`.
@@ -53,6 +53,6 @@ Lookup table for agents and humans: find the playbook that matches a user reques
 | [`run-weekly-operator-digest.md`](./run-weekly-operator-digest.md)                           | Run Weekly Operator Digest                                 | weekly operating review for repo health, release discipline, incidents, and process friction.                                                                                                                             |
 | [`stabilize-flaky-test.md`](./stabilize-flaky-test.md)                                       | Stabilize Flaky Test                                       | «Тест X падає 1 з 5 разів» / у CI red, локально green / тест у списку **«Pre-existing flaky tests»** в AGENTS.md.                                                                                                         |
 | [`sync-rn-migration-progress.md`](./sync-rn-migration-progress.md)                           | Sync RN Migration Progress                                 | після merge порту web → mobile (див. `port-web-screen-to-mobile.md`) — оновити progress tracker `docs/mobile/react-native-migration.md`.                                                                                  |
-| [`test-backup-restore.md`](./test-backup-restore.md)                                         | Test Backup Restore                                        | scheduled recovery rehearsal, backup confidence check, or evidence that snapshots exist but have not been validated recently.                                                                                             |
+| [`test-backup-restore.md`](./test-backup-restore.md)                                         | Тестове відновлення бекапу                                 | планова репетиція відновлення (recovery rehearsal), перевірка довіри до бекапів, або сигнал, що снапшоти існують, але давно не перевірялися на придатність.                                                               |
 | [`tune-system-prompt.md`](./tune-system-prompt.md)                                           | Tune System Prompt                                         | «AI відповідає не так як треба» / «Зміни тон асистента» / «Додай нову інструкцію в системний промпт» / зміна як модель розуміє контекст модулі.                                                                           |
 | [`write-postmortem.md`](./write-postmortem.md)                                               | Write Postmortem                                           | a SEV1/SEV2 incident occurred, a recurring production failure needs formal learning capture, or repo guardrails changed because of an incident.                                                                           |
