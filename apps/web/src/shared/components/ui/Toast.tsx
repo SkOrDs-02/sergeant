@@ -1,6 +1,7 @@
 import { useToast, type ToastType } from "@shared/hooks/useToast";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon, type IconName } from "./Icon";
+import { messages } from "@shared/i18n/uk";
 
 const VARIANT: Record<ToastType, string> = {
   success: "bg-brand-700 text-white",
@@ -79,7 +80,7 @@ export function ToastContainer() {
             type="button"
             onClick={() => dismiss(t.id)}
             className="shrink-0 opacity-70 hover:opacity-100 transition-opacity"
-            aria-label="Закрити"
+            aria-label={messages.actions.close}
           >
             <Icon name="close" size={14} strokeWidth={2.5} aria-hidden />
           </button>

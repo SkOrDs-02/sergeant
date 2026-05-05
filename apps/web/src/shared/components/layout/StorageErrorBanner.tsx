@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Banner } from "@shared/components/ui/Banner";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 
 /**
  * Persistent storage-error banner shared by Sergeant modules.
@@ -68,7 +69,7 @@ export function StorageErrorBanner({
         className="shrink-0 text-xs font-semibold text-danger/80 hover:text-danger"
         aria-label={dismissLabel}
       >
-        Закрити
+        {messages.actions.close}
       </button>
     </Banner>
   );

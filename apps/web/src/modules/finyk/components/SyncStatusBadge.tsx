@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 
 interface SyncStateLike {
   status?: "idle" | "loading" | "success" | "error" | "partial" | string;
@@ -82,7 +83,7 @@ function SyncStatusBadgeComponent({
           disabled={isLoading}
           className="ml-1 px-2 py-1 rounded-xl bg-panel border border-line text-xs font-semibold text-text hover:bg-panelHi transition-colors disabled:opacity-50"
         >
-          Повторити
+          {messages.actions.retry}
         </button>
       )}
       {error && !isLoading && (

@@ -10,6 +10,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
 import { useFocusTrap } from "@shared/hooks/useFocusTrap";
+import { messages } from "@shared/i18n/uk";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CELEBRATION MODAL — Success/Achievement/Level Up Modal System
@@ -303,7 +304,7 @@ export const CelebrationModal = memo(function CelebrationModal({
         type="button"
         className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-default"
         onClick={handleClose}
-        aria-label="Закрити"
+        aria-label={messages.actions.close}
         tabIndex={-1}
       />
 

@@ -14,6 +14,7 @@ import { dateKeyFromDate } from "../lib/hubCalendarAggregate";
 import { HabitForm, type HabitFormErrors } from "./settings/HabitForm";
 import type { Habit, HabitDraft, RoutineState } from "../lib/types";
 import type { Dispatch, SetStateAction } from "react";
+import { messages } from "@shared/i18n/uk";
 
 export interface HabitQuickCreateDialogProps {
   open: boolean;
@@ -176,7 +177,7 @@ export function HabitQuickCreateDialog({
             type="button"
             onClick={onClose}
             className="focus-ring w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
-            aria-label="Закрити"
+            aria-label={messages.actions.close}
           >
             <svg
               width="20"

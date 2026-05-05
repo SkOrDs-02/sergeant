@@ -4,6 +4,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
 import { Switch } from "@shared/components/ui/Switch";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { messages } from "@shared/i18n/uk";
 
 interface ChevronIconProps {
   expanded: boolean;
@@ -187,7 +188,7 @@ export function ConfirmModal({
         type="button"
         className="absolute inset-0 bg-black/60 backdrop-blur-md motion-safe:animate-fade-in"
         onClick={onCancel}
-        aria-label="Закрити"
+        aria-label={messages.actions.close}
       />
       <div
         ref={panelRef}
@@ -211,7 +212,7 @@ export function ConfirmModal({
             className="text-style-label flex-1 py-3.5 rounded-xl border border-line text-muted hover:bg-panelHi hover:text-text transition-colors"
             onClick={onCancel}
           >
-            Скасувати
+            {messages.actions.cancel}
           </button>
           <button
             type="button"
