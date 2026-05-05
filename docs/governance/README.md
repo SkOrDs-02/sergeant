@@ -1,6 +1,6 @@
 # Governance
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 Governance in Sergeant is intentionally split between human-readable policy and machine-readable enforcement.
@@ -15,6 +15,7 @@ Governance in Sergeant is intentionally split between human-readable policy and 
 - [incident-severity-policy.md](./incident-severity-policy.md) - severity model and postmortem threshold.
 - [security-incident-policy.md](./security-incident-policy.md) - access compromise classification and first-response policy.
 - [policy-review.md](./policy-review.md) and [doc-freshness.md](./doc-freshness.md) - cadence and review process.
+- [audit-freeze-2026-05-05.md](./audit-freeze-2026-05-05.md) - active 4-week freeze on new audit/initiative/playbook/ADR files (until 2026-06-02).
 
 ## CI gates
 

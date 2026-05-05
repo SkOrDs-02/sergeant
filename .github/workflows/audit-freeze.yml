@@ -1,0 +1,152 @@
+name: Audit-freeze
+
+# Owner: @Skords-01.
+# Active until 2026-06-02 (per docs/governance/audit-freeze-2026-05-05.md).
+# Behaviour: warns (does not block) when a PR adds new audit/initiative/playbook/ADR files.
+# Override: add `[skip-freeze]` or `[freeze-exception]` to PR title.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+concurrency:
+  group: audit-freeze-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  freeze-warn:
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+
+      - name: Detect new audit-frozen files and post warning
+        # actions/github-script v8.0.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          script: |
+            // Period: 2026-05-05 → 2026-06-02. Skip job after that.
+            const FREEZE_END = new Date('2026-06-02T00:00:00Z');
+            if (Date.now() > FREEZE_END.getTime()) {
+              core.info('Audit-freeze period ended (after 2026-06-02). Skipping.');
+              return;
+            }
+
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.info('No pull_request on context — skipping.');
+              return;
+            }
+
+            // Override path: skip-freeze / freeze-exception in PR title.
+            const title = pr.title || '';
+            if (/\[skip-freeze\]|\[freeze-exception\]/i.test(title)) {
+              core.info(`PR #${pr.number} has freeze-exception marker in title — skipping.`);
+              return;
+            }
+
+            // Patterns that count as "new audit/initiative/playbook/ADR".
+            // Only `added` files; existing files are allowed (edits don't violate freeze).
+            const FROZEN_PATTERNS = [
+              { re: /^docs\/audits\/[^/]+\.md$/, kind: 'audit' },
+              { re: /^docs\/initiatives\/00\d{2}-.+\.md$/, kind: 'initiative' },
+              { re: /^docs\/playbooks\/[^/]+\.md$/, kind: 'playbook' },
+              { re: /^docs\/adr\/00\d{2}-.+\.md$/, kind: 'adr' },
+            ];
+
+            // Allow archive paths and INDEX/README files.
+            const ALLOWLIST = [
+              /^docs\/audits\/archive\//,
+              /^docs\/audits\/README\.md$/,
+              /^docs\/initiatives\/README\.md$/,
+              /^docs\/playbooks\/README\.md$/,
+              /^docs\/playbooks\/INDEX\.md$/,
+              /^docs\/playbooks\/playbook-catalog\.md$/,
+              /^docs\/adr\/README\.md$/,
+              /^docs\/adr\/index\.md$/,
+            ];
+
+            const files = await github.paginate(
+              github.rest.pulls.listFiles,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                per_page: 100,
+              },
+            );
+
+            const violations = [];
+            for (const f of files) {
+              if (f.status !== 'added') continue;
+              if (ALLOWLIST.some((re) => re.test(f.filename))) continue;
+              const match = FROZEN_PATTERNS.find((p) => p.re.test(f.filename));
+              if (match) {
+                violations.push({ filename: f.filename, kind: match.kind });
+              }
+            }
+
+            if (violations.length === 0) {
+              core.info('No new frozen-pathspec files detected.');
+              return;
+            }
+
+            const list = violations.map(
+              (v) => `- \`${v.filename}\` (${v.kind})`,
+            ).join('\n');
+
+            const body = [
+              '⚠️ **Audit-freeze warning** — цей PR додає файли під заборонений pathspec.',
+              '',
+              'Період freeze: **2026-05-05 → 2026-06-02** (детально — [`docs/governance/audit-freeze-2026-05-05.md`](https://github.com/Skords-01/Sergeant/blob/main/docs/governance/audit-freeze-2026-05-05.md)).',
+              '',
+              '**Файли, що тригернули warning:**',
+              '',
+              list,
+              '',
+              '**Як override-нути** (якщо легітимний exception):',
+              '1. Додати `[skip-freeze]` або `[freeze-exception]` у PR title.',
+              '2. Додати у PR-description секцію `## Audit-freeze exception` з обґрунтуванням.',
+              '',
+              'Це **warning, не block** — PR можна merge-нути без override. Але override залишає audit-trail у CI-history. Через 4 тижні (2026-06-02) робимо огляд: extend / refine / release.',
+              '',
+              '_Triggered by [.github/workflows/audit-freeze.yml](https://github.com/Skords-01/Sergeant/blob/main/.github/workflows/audit-freeze.yml)._',
+            ].join('\n');
+
+            // Avoid duplicate warnings: check existing comments.
+            const existing = await github.paginate(
+              github.rest.issues.listComments,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                per_page: 100,
+              },
+            );
+            const already = existing.find(
+              (c) => c.user.type === 'Bot' && c.body && c.body.includes('Audit-freeze warning'),
+            );
+
+            if (already) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: already.id,
+                body,
+              });
+              core.info(`Updated existing audit-freeze comment ${already.id}.`);
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body,
+              });
+              core.info('Posted new audit-freeze warning comment.');
+            }
