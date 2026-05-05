@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { ToastApi } from "@shared/hooks/useToast";
+import { messages } from "@shared/i18n/uk";
 import type { SyncError } from "../types";
 
 /**
@@ -26,13 +27,13 @@ export const SYNC_ERROR_TOAST_DURATION_MS = 8000;
 export function userFacingSyncErrorMessage(detail: SyncError): string {
   switch (detail.type) {
     case "network":
-      return "Не вдалось синхронізувати — перевір з'єднання.";
+      return messages.sync.errorNetwork;
     case "server":
       return detail.retryable
-        ? "Сервер тимчасово не відповідає. Спробуй ще раз."
-        : "Помилка синхронізації. Передивись введення.";
+        ? messages.sync.errorServerRetryable
+        : messages.sync.errorServerNonRetryable;
     default:
-      return "Помилка синхронізації.";
+      return messages.sync.errorGeneric;
   }
 }
 
@@ -85,7 +86,7 @@ export function useSyncErrorToast(
       userFacingSyncErrorMessage(syncErrorDetail),
       SYNC_ERROR_TOAST_DURATION_MS,
       syncErrorDetail.retryable
-        ? { label: "Спробувати ще", onClick: onRetry }
+        ? { label: messages.sync.retryCta, onClick: onRetry }
         : undefined,
     );
   }, [syncErrorDetail, toast, onRetry]);

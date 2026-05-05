@@ -7,35 +7,43 @@ import { Input } from "@shared/components/ui/Input";
 import { useCelebration } from "@shared/components/ui/CelebrationModal";
 import { useToast } from "@shared/hooks/useToast";
 import { useApiForm } from "@shared/forms/useApiForm";
+import { messages } from "@shared/i18n/uk";
 import { BrandLogo } from "../app/BrandLogo";
 import { useAuth } from "./AuthContext";
 
 // Зод-схеми тримаємо поряд з AuthPage, бо вони вузько-локальні (не
 // використовуються більше ніде). Окремий пакет `@sergeant/auth-schemas`
-// був би оверкіл-ом для двох форм. Меседжі — UA, відповідно до
-// AGENTS.md (Hard Rule #15).
+// був би оверкіл-ом для двох форм. Меседжі — з `messages.validation.*`
+// (`apps/web/src/shared/i18n/uk.ts`), див. AGENTS.md (Hard Rule #15) і
+// `docs/i18n/readiness.md`.
 const loginSchema = z.object({
-  email: z.string().min(1, "Введи email").email("Некоректний формат email"),
+  email: z
+    .string()
+    .min(1, messages.validation.emailRequired)
+    .email(messages.validation.emailInvalid),
   // На login-у ми не нав'язуємо мінімальну довжину пароля — користувач
   // міг створити акаунт у епоху 6-символьного мінімуму, а потім стандарт
   // підняли. Перевірка відбувається на сервері; форма просто гарантує,
   // що поле не порожнє.
-  password: z.string().min(1, "Введи пароль"),
+  password: z.string().min(1, messages.validation.passwordRequired),
 });
 type LoginValues = z.infer<typeof loginSchema>;
 
 const registerSchema = z.object({
-  email: z.string().min(1, "Введи email").email("Некоректний формат email"),
+  email: z
+    .string()
+    .min(1, messages.validation.emailRequired)
+    .email(messages.validation.emailInvalid),
   password: z
     .string()
-    .min(10, "Мінімум 10 символів")
+    .min(10, messages.validation.passwordMin10)
     // Better Auth-у достатньо просто довжини, але натякаємо
     // користувачеві, що 10+ символів — нижня межа надійності.
-    .max(128, "Не більше 128 символів"),
+    .max(128, messages.validation.passwordMax128),
   // Імʼя — опціональне; якщо не введене, fallback на `email.split("@")[0]`
   // нижче в `onSubmit`. Залишаємо пустий рядок як валідне значення, щоб
   // RHF не показав помилку «обовʼязкове поле» — це необовʼязкове.
-  name: z.string().max(80, "Не більше 80 символів").optional(),
+  name: z.string().max(80, messages.validation.nameMax80).optional(),
 });
 type RegisterValues = z.infer<typeof registerSchema>;
 

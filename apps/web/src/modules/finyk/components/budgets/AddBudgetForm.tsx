@@ -5,6 +5,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { cn } from "@shared/lib/ui/cn";
 import { useApiForm } from "@shared/forms/useApiForm";
+import { messages } from "@shared/i18n/uk";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
 import { CategorySelector } from "../CategorySelector";
 
@@ -88,16 +89,16 @@ type GoalFormValues = {
 
 const goalFormSchema = z.object({
   type: z.literal("goal"),
-  name: z.string().trim().min(1, "Вкажіть назву цілі"),
+  name: z.string().trim().min(1, messages.validation.goalNameRequired),
   emoji: z.string(),
-  targetAmount: positiveNumberString("Вкажіть суму цілі більше 0"),
+  targetAmount: positiveNumberString(messages.validation.goalAmountRequired),
   // savedAmount порожнє → 0; не порожнє → ≥ 0. Валідатор ловить тільки
   // явно від'ємні значення; конверсія в number — у `onSubmit`.
   savedAmount: z.string().refine((v) => {
     if (!v) return true;
     const n = Number(v);
     return !Number.isNaN(n) && n >= 0;
-  }, "Відкладена сума не може бути від'ємною"),
+  }, messages.validation.goalSavedNonNegative),
   targetDate: z.string(),
 });
 
@@ -132,8 +133,8 @@ function AddBudgetFormComponent({
       z
         .object({
           type: z.literal("limit"),
-          categoryId: z.string().min(1, "Оберіть категорію"),
-          limit: positiveNumberString("Вкажіть ліміт більше 0"),
+          categoryId: z.string().min(1, messages.validation.categoryRequired),
+          limit: positiveNumberString(messages.validation.limitAmountRequired),
         })
         .superRefine((data, ctx) => {
           const dup = existingBudgets.some(

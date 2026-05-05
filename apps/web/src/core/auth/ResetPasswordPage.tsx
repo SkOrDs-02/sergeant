@@ -6,20 +6,23 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
 import { useApiForm } from "@shared/forms/useApiForm";
+import { messages } from "@shared/i18n/uk";
 import { BrandLogo } from "../app/BrandLogo";
 import { resetPassword } from "./authClient";
 
 /**
- * Зод-схема — локальна, як у `AuthPage` (Hard Rule #15: меседжі UA).
- * `confirm` валідуємо через `superRefine` після парсу — стандартний
- * react-hook-form pattern для cross-field перевірок.
+ * Зод-схема — локальна, як у `AuthPage`. Меседжі — з
+ * `messages.validation.*` (`apps/web/src/shared/i18n/uk.ts`), див.
+ * `docs/i18n/readiness.md`. `confirm` валідуємо через `superRefine`
+ * після парсу — стандартний react-hook-form pattern для cross-field
+ * перевірок.
  */
 const resetPasswordSchema = z
   .object({
     password: z
       .string()
-      .min(10, "Пароль має бути мінімум 10 символів.")
-      .max(128, "Не більше 128 символів"),
+      .min(10, messages.validation.passwordResetMin10)
+      .max(128, messages.validation.passwordMax128),
     confirm: z.string(),
   })
   .superRefine((data, ctx) => {
@@ -27,7 +30,7 @@ const resetPasswordSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["confirm"],
-        message: "Паролі не збігаються.",
+        message: messages.validation.passwordsDontMatchDot,
       });
     }
   });

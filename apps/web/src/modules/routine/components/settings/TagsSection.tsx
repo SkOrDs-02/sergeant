@@ -11,6 +11,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
 import { useApiForm } from "@shared/forms/useApiForm";
+import { messages } from "@shared/i18n/uk";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { createTag, deleteTag, updateTag } from "../../lib/routineStorage";
 import type { RoutineState } from "../../lib/types";
@@ -27,7 +28,7 @@ export interface TagsSectionProps {
 // раніше це робив `commitEdit` через `editingTagName.trim()` без валідації як
 // окремий крок, що створювало двозначність при `onBlur` після Backspace до пустого.
 const tagRenameSchema = z.object({
-  tagName: z.string().trim().min(1, "Назва тега не може бути порожньою"),
+  tagName: z.string().trim().min(1, messages.validation.tagNameRequired),
 });
 
 type TagRenameValues = z.infer<typeof tagRenameSchema>;

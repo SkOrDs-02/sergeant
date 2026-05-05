@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import js from "@eslint/js";
 import eslintConfigPrettier from "eslint-config-prettier";
 import globals from "globals";
@@ -8,6 +9,19 @@ import reactHooks from "eslint-plugin-react-hooks";
 import security from "eslint-plugin-security";
 import tseslint from "typescript-eslint";
 import sergeantDesign from "./packages/eslint-plugin-sergeant-design/index.js";
+
+// i18n burndown gate (item #18 Phase 3) — list of files exempt from
+// `sergeant-design/no-cyrillic-jsx-literal`. Each entry is a project-
+// relative path to a file that still has inline cyrillic JSX literals.
+// Migrate strings → `apps/web/src/shared/i18n/uk.ts` and remove the
+// path from the JSON. When the array is empty, promote the rule from
+// "warn" to "error". See `docs/i18n/readiness.md` § Burndown.
+const i18nAllowlist = JSON.parse(
+  readFileSync(
+    new URL("./apps/web/eslint.i18n-allowlist.json", import.meta.url),
+    "utf8",
+  ),
+);
 
 const tsRecommendedScoped = tseslint.configs.recommended.map((cfg) => ({
   ...cfg,
@@ -234,6 +248,17 @@ export default [
       // Bare JSX text with Ukrainian "Поки немає" / "ще немає" phrases must
       // use <EmptyState> / <ModuleEmptyState> — see docs/design/empty-states.md.
       "sergeant-design/no-bare-empty-text": "warn",
+      // `no-cyrillic-jsx-literal` — i18n burndown gate (item #18 Phase 3).
+      // New cyrillic JSX text or attribute string literals must reference
+      // `messages.<group>.<key>` from `apps/web/src/shared/i18n/uk.ts`.
+      // Existing call-sites live in `apps/web/eslint.i18n-allowlist.json`
+      // (loaded at config-import time above). Migrate strings → catalog
+      // → remove path from JSON. When the file becomes `[]`, promote to
+      // "error". See docs/i18n/readiness.md § Burndown.
+      "sergeant-design/no-cyrillic-jsx-literal": [
+        "warn",
+        { allowlist: i18nAllowlist },
+      ],
       // `prefer-text-style` — semantic typography over hand-rolled combos.
       // Replace (text-sm font-medium) with text-style-label etc.
       // See docs/design/design-system.md § Typography.

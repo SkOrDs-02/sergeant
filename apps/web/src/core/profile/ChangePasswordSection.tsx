@@ -5,21 +5,23 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
 import { useApiForm } from "@shared/forms/useApiForm";
+import { messages } from "@shared/i18n/uk";
 import { changePassword } from "../auth/authClient";
 
 /**
- * Зод-схема — локальна, узгоджена за повідомленнями з `ResetPasswordPage`
- * (Hard Rule #15: меседжі UA). `confirm` валідуємо через `superRefine`,
+ * Зод-схема — локальна, узгоджена за повідомленнями з `ResetPasswordPage`.
+ * Меседжі — з `messages.validation.*` (`apps/web/src/shared/i18n/uk.ts`),
+ * див. `docs/i18n/readiness.md`. `confirm` валідуємо через `superRefine`,
  * щоб помилка лягла саме на поле підтвердження — стандартний RHF-pattern
  * для cross-field перевірок.
  */
 const changePasswordSchema = z
   .object({
-    current: z.string().min(1, "Введи поточний пароль"),
+    current: z.string().min(1, messages.validation.passwordCurrentRequired),
     next: z
       .string()
-      .min(10, "Мінімум 10 символів")
-      .max(128, "Не більше 128 символів"),
+      .min(10, messages.validation.passwordMin10)
+      .max(128, messages.validation.passwordMax128),
     confirm: z.string(),
   })
   .superRefine((data, ctx) => {
@@ -27,7 +29,7 @@ const changePasswordSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["confirm"],
-        message: "Паролі не збігаються",
+        message: messages.validation.passwordsDontMatch,
       });
     }
   });

@@ -2266,6 +2266,127 @@ const noBareEmptyText = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
+// `no-cyrillic-jsx-literal` — flag inline cyrillic JSX text/attrs
+// ─────────────────────────────────────────────────────────────────────────
+//
+// docs/i18n/readiness.md describes a "lightweight foundation": every UA
+// string the user sees should live in `apps/web/src/shared/i18n/uk.ts`
+// as `messages.<group>.<key>`. The day-to-day code references that key
+// instead of inlining a literal. When/if the project adds runtime-i18n
+// (item #18 Phase 4 — "deferred until product-required"), the swap to
+// `t('group.key')` is a one-line codemod.
+//
+// This rule is the burndown gate: it catches NEW inline-cyrillic JSX
+// literals so they cannot land outside the catalog. Existing files are
+// listed in `allowlist` (file-relative paths) — they continue to fire
+// as warnings (highlight-in-editor) but do not break CI. Reduce the
+// allowlist as you migrate strings → catalog. Same burndown pattern as
+// `no-raw-local-storage` for item #6.
+//
+// What it flags:
+//   1. JSXText nodes with cyrillic (e.g. `<p>Текст</p>`).
+//   2. JSX attribute string-literal values with cyrillic (e.g.
+//      `<Button title="Закрити">`). Boolean attrs / expression children
+//      / template-literals are NOT flagged here — those go through
+//      `JSXExpressionContainer → Literal`, not `JSXAttribute → Literal`.
+//
+// What it does NOT flag:
+//   - Comments (handled by ESLint's normal comment exclusion).
+//   - Strings inside `messages.<group>.<key>` references — those are
+//     `MemberExpression`s, not `Literal`s.
+//   - Non-JSX string literals (e.g. zod-error messages, console.log,
+//     analytics props). For those, prefer the same catalog by hand —
+//     no automated rule yet, since data files (food seeds, AI prompts)
+//     legitimately contain cyrillic and would be too noisy to flag.
+//   - Files matching `allowlist` (rule option), `**/*.test.{ts,tsx}`,
+//     `**/__tests__/**`, `**/*.stories.tsx`. Tests pin assertions to
+//     literal copy on purpose; stories showcase live strings.
+//
+// Configure as `warn` first; tighten allowlist by removing entries as
+// each file migrates. Once allowlist is empty, switch to `error`.
+
+const NO_CYRILLIC_JSX_LITERAL_MESSAGE =
+  "JSX-літерал з кирилицею має посилатися на messages-каталог. " +
+  "Винеси рядок у `apps/web/src/shared/i18n/uk.ts` (group `messages.<group>.<key>`) " +
+  "і використовуй `messages.<group>.<key>` тут. Див. `docs/i18n/readiness.md`.";
+
+const RX_CYRILLIC = /[\u0400-\u04FF]/;
+
+function isInsideJsxAttribute(node) {
+  let p = node.parent;
+  while (p) {
+    if (p.type === "JSXAttribute") return true;
+    if (p.type === "JSXElement" || p.type === "JSXFragment") return false;
+    p = p.parent;
+  }
+  return false;
+}
+
+const noCyrillicJsxLiteral = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Forbid inline cyrillic JSX text and JSX attribute string literals — extract to messages-каталог.",
+    },
+    schema: [
+      {
+        type: "object",
+        properties: {
+          allowlist: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Project-relative file paths (forward-slash) that are exempt. " +
+              "Burndown: shrink this list as you migrate files.",
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
+    messages: { catalog: NO_CYRILLIC_JSX_LITERAL_MESSAGE },
+  },
+  create(context) {
+    const options = context.options[0] || {};
+    const allowlist = options.allowlist || [];
+    const filename = context.filename || context.getFilename();
+    // Normalize to posix-style absolute path. The allowlist works on
+    // suffix-match so callers can use any of "apps/web/src/foo.tsx",
+    // "src/foo.tsx" or absolute "/repo/apps/web/src/foo.tsx" — all
+    // resolve to the same intent regardless of `eslint .` cwd.
+    const fwd = filename.replace(/\\/g, "/");
+    for (const entry of allowlist) {
+      const norm = entry.replace(/\\/g, "/").replace(/^\.\//, "");
+      if (fwd === norm || fwd.endsWith("/" + norm)) return {};
+    }
+    // Test files & stories — opt out by convention.
+    if (
+      /\.test\.(ts|tsx|js|jsx|mjs|cjs)$/.test(fwd) ||
+      /(^|\/)__tests__\//.test(fwd) ||
+      /\.stories\.(ts|tsx|js|jsx|mjs|cjs)$/.test(fwd)
+    ) {
+      return {};
+    }
+    // Catalog itself (the strings live there by definition).
+    if (/(?:^|\/)apps\/web\/src\/shared\/i18n\//.test(fwd)) return {};
+
+    return {
+      JSXText(node) {
+        const txt = typeof node.value === "string" ? node.value : "";
+        if (!RX_CYRILLIC.test(txt)) return;
+        context.report({ node, messageId: "catalog" });
+      },
+      Literal(node) {
+        if (typeof node.value !== "string") return;
+        if (!RX_CYRILLIC.test(node.value)) return;
+        if (!isInsideJsxAttribute(node)) return;
+        context.report({ node, messageId: "catalog" });
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
 // `prefer-text-style` — semantic typography over hand-rolled combos
 // ─────────────────────────────────────────────────────────────────────────
 //
@@ -3317,6 +3438,7 @@ const plugin = {
     "prefer-focus-visible": preferFocusVisible,
     "no-rounded-lg": noRoundedLg,
     "no-bare-empty-text": noBareEmptyText,
+    "no-cyrillic-jsx-literal": noCyrillicJsxLiteral,
     "prefer-text-style": preferTextStyle,
     "no-arbitrary-text-size": noArbitraryTextSize,
     "no-flat-shared-lib": noFlatSharedLib,
@@ -3350,6 +3472,7 @@ export {
   PREFER_FOCUS_VISIBLE_MESSAGE,
   NO_ROUNDED_LG_MESSAGE,
   NO_BARE_EMPTY_TEXT_MESSAGE,
+  NO_CYRILLIC_JSX_LITERAL_MESSAGE,
   PREFER_TEXT_STYLE_MESSAGE,
   TEXT_STYLE_MAPPINGS,
   NO_ARBITRARY_TEXT_SIZE_MESSAGE,

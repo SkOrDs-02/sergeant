@@ -5,6 +5,7 @@ import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { useToast } from "@shared/hooks/useToast";
 import { useApiForm } from "@shared/forms/useApiForm";
+import { messages } from "@shared/i18n/uk";
 import { waitlistApi } from "@shared/api";
 import { isApiError } from "@sergeant/api-client";
 import {
@@ -68,8 +69,8 @@ const waitlistFormSchema = z.object({
     .string()
     .trim()
     .toLowerCase()
-    .email("Некоректна email-адреса")
-    .max(254, "Не більше 254 символів"),
+    .email(messages.validation.emailInvalidPublic)
+    .max(254, messages.validation.emailMax254),
   tier_interest: WaitlistTierSchema,
 });
 

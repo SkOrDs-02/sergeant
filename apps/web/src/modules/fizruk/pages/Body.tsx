@@ -5,6 +5,7 @@ import { Label } from "@shared/components/ui/FormField";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
 import { useApiForm } from "@shared/forms/useApiForm";
+import { messages } from "@shared/i18n/uk";
 import { useDailyLog } from "../hooks/useDailyLog";
 import { Card } from "@shared/components/ui/Card";
 import { MiniLineChart } from "../components/MiniLineChart";
@@ -54,7 +55,7 @@ const bodyFormSchema = z.object({
       (v) =>
         v === "" ||
         (!Number.isNaN(Number(v)) && Number(v) >= 20 && Number(v) <= 300),
-      "Вага має бути від 20 до 300 кг",
+      messages.validation.weightKgRange,
     ),
   sleepHours: z
     .string()
@@ -62,11 +63,11 @@ const bodyFormSchema = z.object({
       (v) =>
         v === "" ||
         (!Number.isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 24),
-      "Сон має бути від 0 до 24 годин",
+      messages.validation.sleepHoursRange,
     ),
   energyLevel: z.number().int().min(1).max(5).nullable(),
   moodScore: z.number().int().min(1).max(5).nullable(),
-  note: z.string().max(200, "Не більше 200 символів"),
+  note: z.string().max(200, messages.validation.noteMax200),
 });
 
 type BodyFormValues = z.infer<typeof bodyFormSchema>;

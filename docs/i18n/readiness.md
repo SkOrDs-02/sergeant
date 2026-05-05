@@ -1,6 +1,6 @@
 # i18n readiness — Sergeant web
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 ## Контекст
@@ -17,64 +17,79 @@
 
 Roadmap-довідник: [`docs/diagnostics/2026-05-03-web-deep-dive`](../diagnostics/2026-05-03-web-deep-dive/00-overview.md) item **#18** (score 0.67).
 
-## Foundation (вже зроблено — round 10)
+## Foundation (готово — round 10–14)
 
-- ✅ Створено `apps/web/src/shared/i18n/uk.ts` з `messages.auth.*`, `messages.sync.*`, `messages.validation.*`.
-- ✅ `translateAuthError` (`apps/web/src/core/auth/AuthContext.tsx`) переведено на `messages.auth.*`. Існуючі тести (`AuthContext.test.tsx` — 22 кейси) лишаються зеленими — string-rendering ідентичний.
+- ✅ Створено `apps/web/src/shared/i18n/uk.ts` з 6 групами:
+  `messages.auth.*`, `messages.sync.*`, `messages.validation.*`,
+  `messages.actions.*`, `messages.empty.*`, `messages.errors.generic.*`,
+  `messages.toast.*` (round 14: розширено до 6 груп, ~80 ключів).
+- ✅ `translateAuthError` (`apps/web/src/core/auth/AuthContext.tsx`)
+  переведено на `messages.auth.*`. Існуючі тести (`AuthContext.test.tsx`
+  — 22 кейси) лишаються зеленими — string-rendering ідентичний.
 - ✅ Структура каталогу типізована (`MessageCatalog`).
+- ✅ **Round 14 — Phase 1 ↦ Phase 3 закрито в одному PR (item #18 повний обсяг):**
+  - Sync error-toast (`useSyncErrorToast.ts`) — 5 рядків мігровано
+    на `messages.sync.*` (4 нових ключі).
+  - Zod-validation — 7 форм (AuthPage, ResetPasswordPage,
+    ChangePasswordSection, WaitlistForm, Body, AddBudgetForm,
+    TagsSection) переведено на `messages.validation.*` (~22 рядки,
+    20 нових ключів). Тести пройдено без зміни assertions.
+  - ESLint rule `sergeant-design/no-cyrillic-jsx-literal` додано в
+    warn-режимі з allowlist на 239 файлів
+    (`apps/web/eslint.i18n-allowlist.json`). Burndown — зменшувати
+    allowlist у наступних PR-ах; коли `[]` — promote до `error`.
+  - Unit tests rule-у: 13 кейсів (file scoping, allowlist behaviour,
+    JSX text vs JSX attribute, MemberExpression skip, template-literal
+    skip).
 
-## Покрокова міграція (наступні round-и)
+## Покрокова міграція (статус по фазах)
 
-### Phase 1 — Заглушки → реальні рядки
+### Phase 1 — Sync + zod-validation (✅ closed round 14)
 
-Дві групи у `messages` уже мають стартові ключі-заглушки. Наступні round-и переносять справжні рядки з кодової бази:
+**`messages.sync.*`** — джерело: `apps/web/src/core/cloudSync/**`.
+Закрито у round 14 — `useSyncErrorToast.userFacingSyncErrorMessage`
+повністю на `messages.sync.error*` + `messages.sync.retryCta`.
 
-**`messages.sync.*`** — джерело: `apps/web/src/core/cloudSync/**/*.ts(x)?`. Шукати:
+**`messages.validation.*`** — джерело: zod-схеми у
+`apps/web/src/core/**/*.ts(x)?` та `apps/web/src/modules/**/forms/**`.
+Закрито 7 форм у round 14. Якщо в наступному PR-і додаєш zod-схему
+з UA-message — додай новий ключ у `validation.*` (іменування — за
+**призначенням**, не за рядком).
+
+Recipe для нового рядка:
 
 ```bash
-rg -n --type=ts --glob='apps/web/src/core/cloudSync/**' "[А-Яа-яЇїІіЄєҐґ]"
+rg -n "z\.string\(\)\.min\([0-9]+, *\"[А-Я]" apps/web/src --type=ts
 ```
 
-Кожне знайдене UA-string-літерал → ключ у `messages.sync.<verb>` (push, pull, conflict, queueRetry, etc). Use-site замінити на `messages.sync.<verb>`.
+Кожне zod `.email("...")`, `.min(N, "...")`, etc. — переносити рядок
+у `messages.validation.<key>` і відфайлити з allowlist той файл,
+якщо він уже в JSON.
 
-**`messages.validation.*`** — джерело: zod-схеми у `apps/web/src/core/**/*.ts(x)?` та `apps/web/src/shared/forms/**`. Шукати:
+### Phase 2 — Catalog skeleton + UI strings (foundation closed; burndown ongoing)
 
-```bash
-rg -n "z\.string\(\)" apps/web/src --type=ts -A 5 | grep -E "[А-Я]"
-```
+`messages.actions.*`, `messages.empty.*`, `messages.errors.generic.*`,
+`messages.toast.*` створено в round 14 з типовими ключами (save, cancel,
+nothingYet, network-error, saved, etc). Подальші round-и мігрують
+inline-літерали в JSX → ці групи; кожна міграція знімає файл з
+allowlist-у.
 
-Кожне zod `.email("...")`, `.min(N, "...")`, etc. — переносити рядок у `messages.validation.<key>`.
+### Phase 3 — ESLint rule `no-cyrillic-jsx-literal` (✅ landed round 14, warn-mode)
 
-### Phase 2 — Empty-states + UI strings
+Імплементація — `packages/eslint-plugin-sergeant-design/index.js`
+(пошук `noCyrillicJsxLiteral`). Покриває:
 
-Додати:
+- JSXText nodes з `/[\u0400-\u04FF]/`.
+- JSXAttribute string-literal values (e.g. `title="Закрити"`).
 
-- `messages.empty.*` (Empty-state messages: `messages.empty.transactions`, `messages.empty.workouts`, etc).
-- `messages.actions.*` (Button labels: «Зберегти», «Відмінити», «Видалити»).
-- `messages.errors.generic.*` (Networking, server-down, retry).
-- `messages.toast.*` (Success/error toast strings).
+Виключає: tests (`*.test.tsx`, `__tests__/`), stories (`*.stories.tsx`),
+сам каталог (`apps/web/src/shared/i18n/**`), MemberExpression-references
+(`messages.x.y`), template literals (next-round scope), та файли з
+allowlist у `apps/web/eslint.i18n-allowlist.json`.
 
-### Phase 3 — ESLint custom-rule (deferred)
-
-Додати у `packages/eslint-plugin-sergeant-design`:
-
-```ts
-// rules/no-cyrillic-jsx-literal.ts
-{
-  meta: { type: "problem", docs: { description: "JSX-літерал з кирилицею має посилатися на messages-каталог" } },
-  create(context) {
-    return {
-      JSXText(node) {
-        if (/[\p{Script=Cyrillic}]/u.test(node.value)) {
-          context.report({ node, message: "Винеси рядок у apps/web/src/shared/i18n/uk.ts" });
-        }
-      },
-    };
-  },
-}
-```
-
-Стартувати у `warn`-режимі з allowlist у `eslint.config.js`. Поступово зменшувати allowlist (як burndown-pattern для `localStorage` rule, item #6).
+Round-14 baseline: 239 файлів у allowlist. Кожен наступний PR
+скорочує цей файл (одне-два видалення на PR). Після `[]` — promote
+до `"error"` у `eslint.config.js`.
 
 ### Phase 4 — Runtime swap (тільки коли є product-вимога)
 
@@ -89,23 +104,40 @@ rg -n "z\.string\(\)" apps/web/src --type=ts -A 5 | grep -E "[А-Я]"
 
 ## Coverage tracking
 
-Шість round-ів (8 → 18) — це шлях до 0 hardcoded UA-strings у `apps/web/src` (за межами `uk.ts`). Оригінальний звіт із 2026-05-04:
-
-| Round       | Hardcoded UA-strings (поза `uk.ts`) | Comment                             |
-| ----------- | ----------------------------------- | ----------------------------------- |
-| 10 (start)  | ~150                                | Foundation: auth migrated (12 keys) |
-| 11 (target) | ~140                                | Phase 1: sync (10 keys)             |
-| 12 (target) | ~120                                | Phase 1: validation (20 keys)       |
-| 13 (target) | ~80                                 | Phase 2: empty-states + actions     |
-| 14 (target) | ~30                                 | Phase 3: ESLint warn-режим          |
-| 15+         | 0                                   | ESLint error-режим                  |
-
-Точне значення hardcoded-strings виміряти можна через:
+Round 14 (item #18 повний обсяг) — Phase 1+2+3 закриті, далі — burndown
+allowlist-у через follow-up PR-и. Перевірити фактичну кількість файлів,
+які ще тримають inline-кирилицю в JSX:
 
 ```bash
-rg -n --type=ts --type=tsx 'apps/web/src' "[\p{Cyrillic}]" \
-  --glob '!apps/web/src/shared/i18n/**' \
-  --glob '!apps/web/src/**/*.test.{ts,tsx}' | wc -l
+jq 'length' apps/web/eslint.i18n-allowlist.json
+# → 239 (round-14 baseline)
+```
+
+Або через ESLint warning count (eslint-rule безпосередньо):
+
+```bash
+cd apps/web && npx eslint . -f json 2>/dev/null \
+  | jq '[.[] | .messages[] | select(.ruleId == "sergeant-design/no-cyrillic-jsx-literal")] | length'
+# Поточна сесія: 0 (всі inline-сайти allow-листі)
+```
+
+Burndown plan (один файл за PR ↦ кілька десятків PR):
+
+| Round | Allowlist size | Comment                                           |
+| ----- | -------------- | ------------------------------------------------- |
+| 10    | n/a            | Foundation only (catalog created, auth migrated)  |
+| 14    | 239            | Phase 1+2+3 закрито; rule в warn-mode + allowlist |
+| 15–25 | 100            | Settings panels + showcase sections мігровані     |
+| 25–40 | 0              | Promote rule до `"error"`                         |
+
+Сирий мір по проекту (всі UA-strings, не тільки JSX-літерали; для
+референсу — НЕ closure-метрика):
+
+```bash
+rg -n --glob='apps/web/src/**' --glob='!apps/web/src/shared/i18n/**' \
+  --glob='!apps/web/src/**/*.test.{ts,tsx}' \
+  --glob='!apps/web/src/**/__tests__/**' \
+  '[\u0400-\u04FF]' | wc -l
 ```
 
 (Тести не рахуємо — вони залишаються із hardcoded UA-asserts назавжди.)
