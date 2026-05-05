@@ -1,6 +1,6 @@
 # Module-accent — канонічний reference
 
-> **Last validated:** 2026-04-29 by @devin-ai. **Next review:** 2026-07-29.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 > Sergeant — 4 модулі з власним брендовим кольором. Замість того, щоб кожен компонент отримував пропс `module="finyk"` / `module="fizruk"` й мапив це у `bg-finyk` / `bg-fizruk`, ми публікуємо активний акцент як CSS-variable на дереві модуля і маємо одну Tailwind-утиліту, що тягне цей колір у будь-яку поверхню всередині модуля.
@@ -41,10 +41,13 @@
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────┐
-│  Tailwind preset                                        │
+│  Tailwind preset (`@sergeant/design-tokens`)            │
 │  └─ registers:                                         │
 │       module-accent: rgb(var(--module-accent-rgb)/…)   │
 │       module-accent-strong: rgb(var(--…-strong-rgb)/…) │
+│  Loaded:                                                │
+│   • web (Tailwind v4)  → @config "tailwind.config.js"  │
+│   • mobile (NativeWind) → presets: [preset]            │
 └─────────────────────────────────────────────────────────┘
                          │
                          ▼
@@ -179,6 +182,8 @@ ring-module-accent         ring-module-accent-strong
 ```
 
 Усі стандартні Tailwind opacity-modifier-и із зареєстрованої шкали (`0, 5, 8, 10, 15, 20, 25, …`) працюють. Не зареєстровані кроки (`/12`, `/18`) тихо дропаються — див. hard-rule #8 у `AGENTS.md`.
+
+> Web вже на Tailwind v4 ([#1495](https://github.com/Skords-01/Sergeant/pull/1495)); `<alpha-value>`-плейсхолдер у preset-і працює тому, що JS-конфіг підвантажується через `@config`-директиву (`apps/web/src/index.css`). Mobile залишається на NativeWind 4 / Tailwind 3 — токени читаються однаково на обох runtime-ах. Деталі — `docs/planning/tailwind-v4-migration.md`.
 
 ## Тестування
 
