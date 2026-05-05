@@ -1,11 +1,11 @@
 # 03. Сервіси та тулстек
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 > Повний аудит зовнішніх сервісів, інфраструктури, dev-інструментів: що є, що додати, що змінити.
 > Кожен запис — з офіційним посиланням, фактичною ціною (Date checked: 2026-04), статусом у Sergeant.
-> Джерело: `sergeant-services-audit.md` + `sergeant-toolstack.md` + перевірка `package.json`, `railway.toml`, `vercel.json`, `apps/server/src/lib/**`.
+> Джерело: `sergeant-services-audit.md` + `sergeant-toolstack.md` + перевірка `package.json`, `railway.toml`, `vercel.json`, `apps/server/src/lib/**`, `apps/server/src/env.ts`, `ops/`.
 
 ---
 
@@ -16,65 +16,92 @@
               +-------------------+             +---------------------+         +----------------+
               | apps/web          |    HTTPS    | apps/server         |         | PostgreSQL     |
               | Vite + React 18   |------------>| Express + Node 20   |-------->| Railway managed|
-              | PWA (Workbox)     |   API       | Better Auth         |         | Migrations     |
-              | Tailwind CSS      |             | Pino logging        |         | 001-010        |
+              | PWA (Workbox)     |   API       | Better Auth         |         | + pgvector ext.|
+              | Tailwind CSS 4    |             | Pino logging        |         | Migrations 044+|
               | Sentry (@sentry/  |             | Helmet + CSP        |         +----------------+
               |   react)          |             | Sentry (@sentry/    |                |
               | TanStack Query    |             |   node)             |         +----------------+
-              +-------------------+             | prom-client         |         | Redis          |
-              | Vercel (Hobby)    |             +---------------------+         | Railway        |
-              +-------------------+             | Railway             |         | Rate limiting  |
-                                                | (Dockerfile.api)    |         | In-mem fallback|
-                                                +---------------------+         +----------------+
+              | PostHog (posthog- |             | prom-client         |         | Redis          |
+              |   js)             |             | OpenTelemetry SDK   |         | Railway        |
+              | Vercel Analytics  |             | PostHog (server)    |         | Rate limiting  |
+              +-------------------+             | BullMQ + ioredis    |         | BullMQ queues  |
+              | Vercel (Hobby)    |             +---------------------+         | In-mem fallback|
+              +-------------------+             | Railway             |         +----------------+
+                                                | (Dockerfile.api)    |
+                                                +---------------------+
 
               MOBILE                             EXTERNAL APIs
               +-------------------+             +---------------------+
               | apps/mobile       |             | Anthropic Claude    |  AI chat, coach, nutrition
-              | Expo 52 + RN 0.76 |             | Monobank API        |  Банк-синк (webhooks)
+              | Expo 52 + RN 0.76 |             | Voyage AI           |  Embeddings (AI memory)
+              | NativeWind + MMKV |             | Monobank API        |  Банк-синк (webhooks)
               +-------------------+             | USDA FoodData       |  Barcode / nutrition
               | apps/mobile-shell |             | OpenFoodFacts       |  Barcode fallback
               | Capacitor wrapper |             | FCM (Android push)  |  via google-auth-library
               +-------------------+             | APNs (iOS push)     |  via @parse/node-apn
                                                 | Resend              |  Transactional email
-              CI / CD                           | Web Push (VAPID)    |  via web-push
+              OPS / CONSOLE                     | Web Push (VAPID)    |  via web-push
               +-------------------+             +---------------------+
-              | GitHub Actions    |
-              | Turborepo cache   |
-              | Husky + lint-staged|
+              | tools/console     |
+              | grammy (Telegram) |             CI / CD
+              | + OpenClaw bot    |             +-------------------+
+              | Anthropic SDK     |             | GitHub Actions    |
+              +-------------------+             | Turborepo cache   |
+              | n8n (26 workflows |             | Husky + lint-stgd |
+              |   in ops/n8n-…/)  |             | Storybook+Argos CI|
+              +-------------------+             | Detox (Android+iOS)|
+              | Grafana + Alloy + |             +-------------------+
+              | Prometheus scrape |
               +-------------------+
 ```
 
 ### Верифікація стеку проти кодової бази
 
-| Сервіс / бібліотека         | Де в коді                                        | Статус    |
-| --------------------------- | ------------------------------------------------ | --------- |
-| Vite + React 18 SPA         | `apps/web/package.json` → `vite`, `react ^18`    | in use    |
-| Express + Node 20           | `apps/server/package.json` → `express ^4.22`     | in use    |
-| PostgreSQL (pg)             | `apps/server/package.json` → `pg ^8.20`          | in use    |
-| Redis (ioredis)             | `apps/server/src/lib/redis.ts`, `ioredis ^5.6`   | in use    |
-| Better Auth                 | `apps/server/package.json` → `better-auth ^1.6`  | in use    |
-| Anthropic Claude            | `apps/server/src/lib/anthropic.ts`               | in use    |
-| Sentry (web + server)       | `@sentry/react ^8.55`, `@sentry/node ^8.55`      | in use    |
-| Web Push (VAPID)            | `apps/server/package.json` → `web-push ^3.6`     | in use    |
-| APNs                        | `@parse/node-apn ^8.1`                           | in use    |
-| FCM                         | `google-auth-library ^10.6`                      | in use    |
-| Prometheus                  | `prom-client ^15.1`                              | in use    |
-| Pino                        | `pino ^10.3`, `pino-http ^11.0`                  | in use    |
-| Helmet                      | `helmet ^8.1`                                    | in use    |
-| Resend                      | env `RESEND_API_KEY`; `authTransactionalMail.ts` | in use    |
-| Monobank webhook            | env `MONO_WEBHOOK_ENABLED`; `bankProxy.ts`       | in use    |
-| USDA / OpenFoodFacts        | `apps/server/src/lib/nutritionResponse.ts`       | in use    |
-| PWA (vite-plugin-pwa)       | `apps/web/vite.config.js`                        | in use    |
-| Vercel (Hobby)              | `vercel.json` (root + `apps/web`)                | in use    |
-| Railway (Dockerfile.api)    | `railway.toml` → `Dockerfile.api`                | in use    |
-| Turborepo                   | root `package.json` → `turbo ^2.3`               | in use    |
-| TanStack Query              | `@tanstack/react-query ^5.99`                    | in use    |
-| Expo 52 + React Native 0.76 | `apps/mobile/package.json`                       | in use    |
-| Capacitor (mobile-shell)    | `apps/mobile-shell/`                             | in use    |
-| Stripe                      | _немає в коді_                                   | to add    |
-| PostHog                     | _немає в коді_                                   | to add    |
-| BullMQ                      | _немає в коді_                                   | to add    |
-| Cloudflare R2               | _немає в коді_                                   | evaluated |
+| Сервіс / бібліотека         | Де в коді                                                                                                        | Статус    |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------- | --------- |
+| Vite + React 18 SPA         | `apps/web/package.json` → `vite`, `react ^18`                                                                    | in use    |
+| Express + Node 20           | `apps/server/package.json` → `express ^4.22`                                                                     | in use    |
+| PostgreSQL (pg + pgvector)  | `apps/server/package.json` → `pg ^8.20`; `docker-compose.yml` → `pgvector/pgvector:pg16`                         | in use    |
+| Redis (ioredis)             | `apps/server/src/lib/redis.ts`, `ioredis ^5.6`                                                                   | in use    |
+| Better Auth                 | `apps/server/package.json` → `better-auth ^1.6`                                                                  | in use    |
+| Anthropic Claude            | `apps/server/src/lib/anthropic.ts`                                                                               | in use    |
+| **Voyage AI (embeddings)**  | env `VOYAGE_API_KEY`; `apps/server/src/modules/ai-memory/**` (pgvector + RAG)                                    | in use    |
+| Sentry (web + server)       | `@sentry/react ^8.55`, `@sentry/node ^8.55`                                                                      | in use    |
+| **PostHog (web + server)**  | `posthog-js ^1.372`; `apps/server/src/lib/posthog.ts`; `apps/web/src/core/observability/posthog.ts`              | in use    |
+| **PostHog (mobile)**        | `apps/mobile/src/observability/posthog.ts` (env `EXPO_PUBLIC_POSTHOG_KEY`)                                       | in use    |
+| Vercel Analytics            | `@vercel/analytics ^2.0` у `apps/web`                                                                            | in use    |
+| **OpenTelemetry**           | `@opentelemetry/sdk-node ^0.57`; `apps/server/src/obs/tracing.ts`                                                | in use    |
+| Web Push (VAPID)            | `apps/server/package.json` → `web-push ^3.6`                                                                     | in use    |
+| APNs                        | `@parse/node-apn ^8.1`                                                                                           | in use    |
+| FCM                         | `google-auth-library ^10.6`                                                                                      | in use    |
+| Prometheus                  | `prom-client ^15.1`; `ops/prometheus/`                                                                           | in use    |
+| Pino                        | `pino ^10.3`, `pino-http ^11.0`                                                                                  | in use    |
+| Helmet                      | `helmet ^8.1`                                                                                                    | in use    |
+| Resend                      | env `RESEND_API_KEY`; `authTransactionalMail.ts`                                                                 | in use    |
+| Monobank webhook            | env `MONO_WEBHOOK_ENABLED`; `bankProxy.ts`                                                                       | in use    |
+| USDA / OpenFoodFacts        | `apps/server/src/lib/nutritionResponse.ts`                                                                       | in use    |
+| PWA (vite-plugin-pwa)       | `apps/web/vite.config.js`                                                                                        | in use    |
+| Vercel (Hobby)              | `vercel.json` (root + `apps/web`)                                                                                | in use    |
+| Railway (Dockerfile.api)    | `railway.toml` → `Dockerfile.api`                                                                                | in use    |
+| Turborepo                   | root `package.json` → `turbo ^2.9`                                                                               | in use    |
+| TanStack Query              | `@tanstack/react-query ^5.99`                                                                                    | in use    |
+| Expo 52 + React Native 0.76 | `apps/mobile/package.json`                                                                                       | in use    |
+| Capacitor (mobile-shell)    | `apps/mobile-shell/`                                                                                             | in use    |
+| **BullMQ**                  | `apps/server/package.json` → `bullmq ^5.0`; `apps/server/src/lib/jobs/**` (authMail, ftuxDrip, ai-memory ingest) | in use    |
+| **Telegram bot (grammy)**   | `tools/console` → `grammy ^1.31`; OpenClaw cofounder bot (ADR-0031)                                              | in use    |
+| **n8n workflows**           | `ops/n8n-workflows/` — 26 workflow-ів (manifest.json) ; ADR-0026                                                 | in use    |
+| **Grafana + Alloy**         | `ops/grafana/dashboards/**`, `ops/grafana-alloy/` (Prometheus → Grafana Cloud scrape)                            | in use    |
+| **Storybook + Argos**       | `apps/web` → `storybook ^10.3`, `@argos-ci/playwright ^6.6` (visual regression)                                  | in use    |
+| **Detox E2E**               | `.github/workflows/detox-{android,ios}.yml`                                                                      | in use    |
+| **Drizzle ORM**             | `packages/db-schema` → `drizzle-orm ^0.45`                                                                       | in use    |
+| Stripe                      | _немає в коді_                                                                                                   | to add    |
+| React Email                 | _немає в коді_                                                                                                   | to add    |
+| Loops (drip)                | _немає в коді_                                                                                                   | to add    |
+| Crisp                       | _немає в коді_                                                                                                   | to add    |
+| Tally                       | _немає в коді_                                                                                                   | to add    |
+| UptimeRobot                 | _не налаштовано_ (згадано в ops-доках)                                                                           | to add    |
+| Termly / CookieYes          | _не використовується_                                                                                            | to add    |
+| Cloudflare R2               | _немає в коді_                                                                                                   | evaluated |
 
 ---
 
@@ -98,12 +125,13 @@
 
 ### 2.3 Моніторинг / observability
 
-| Сервіс                         | Сайт                                       | Free tier                                                               | Paid tier                                                    | Date checked | Why this / Why not                                                                                                                                                  | Status      |
-| ------------------------------ | ------------------------------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| **Sentry**                     | [sentry.io](https://sentry.io)             | Developer: 1 user, 5K errors/mo, 5M spans, 50 replays, 30-day retention | Team: $26/mo, 50K errors, 90-day retention. Business: $80/mo | 2026-04      | Error tracking web + server. SDK вже інтегровано (`@sentry/react`, `@sentry/node`). Free tier достатній для раннього етапу.                                         | in use      |
-| **Prometheus** + `prom-client` | [prometheus.io](https://prometheus.io)     | Self-hosted, $0                                                         | N/A (open-source)                                            | 2026-04      | HTTP RED metrics, DB, AI quota. `/metrics` ендпоінт вже є.                                                                                                          | in use      |
-| **Grafana Cloud**              | [grafana.com](https://grafana.com)         | Forever free: 10K metrics, 50 GB logs, 50 GB traces                     | Pro: $29/mo + usage                                          | 2026-05      | Дашборди для Prometheus. Безкоштовний tier покриває потреби до ~10K MAU. Конфіг скрейпера — `ops/grafana-alloy/` (Phase 2 trigger).                                 | setup-ready |
-| **UptimeRobot**                | [uptimerobot.com](https://uptimerobot.com) | 50 monitors, 5-min interval                                             | Pro: $7/mo, 1-min interval                                   | 2026-04      | Зовнішній uptime моніторинг + status page. Деталі конфігурації алертів — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-1--product). | to add      |
+| Сервіс                         | Сайт                                         | Free tier                                                               | Paid tier                                                    | Date checked | Why this / Why not                                                                                                                                                  | Status |
+| ------------------------------ | -------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| **Sentry**                     | [sentry.io](https://sentry.io)               | Developer: 1 user, 5K errors/mo, 5M spans, 50 replays, 30-day retention | Team: $26/mo, 50K errors, 90-day retention. Business: $80/mo | 2026-04      | Error tracking web + server. SDK вже інтегровано (`@sentry/react`, `@sentry/node`). Free tier достатній для раннього етапу.                                         | in use |
+| **Prometheus** + `prom-client` | [prometheus.io](https://prometheus.io)       | Self-hosted, $0                                                         | N/A (open-source)                                            | 2026-04      | HTTP RED metrics, DB, AI quota. `/metrics` ендпоінт вже є. Конфіг скрейпера — `ops/prometheus/`.                                                                    | in use |
+| **Grafana + Alloy**            | [grafana.com](https://grafana.com)           | Forever free: 10K metrics, 50 GB logs, 50 GB traces                     | Pro: $29/mo + usage                                          | 2026-05      | Дашборди + alloy collector. Конфіг — `ops/grafana/dashboards/**` + `ops/grafana-alloy/`. Cloud-стек налаштовано (`grafana` секрет у env).                           | in use |
+| **OpenTelemetry**              | [opentelemetry.io](https://opentelemetry.io) | Open-source, $0                                                         | N/A                                                          | 2026-05      | Distributed tracing на сервері (`@opentelemetry/sdk-node`, `apps/server/src/obs/tracing.ts`). Експортер OTLP → Grafana Tempo / Honeycomb / etc.                     | in use |
+| **UptimeRobot**                | [uptimerobot.com](https://uptimerobot.com)   | 50 monitors, 5-min interval                                             | Pro: $7/mo, 1-min interval                                   | 2026-04      | Зовнішній uptime моніторинг + status page. Деталі конфігурації алертів — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-1--product). | to add |
 
 ### 2.4 Платежі
 
@@ -135,14 +163,15 @@
 
 ### 2.6 Аналітика
 
-| Сервіс                    | Сайт                                                                         | Free tier                                                              | Paid tier                                         | Date checked | Why this / Why not                                                                                                                                 | Status    |
-| ------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **PostHog**               | [posthog.com](https://posthog.com/pricing)                                   | 1M events, 5K recordings, 1M feature flag requests, 100K exceptions/mo | Pay-as-you-go: from $0.00005/event past free tier | 2026-04      | Funnels + retention + feature flags + session replay + A/B tests — одна платформа. Рекомендовано замість окремих Mixpanel + Hotjar + LaunchDarkly. | to add    |
-| **Plausible**             | [plausible.io](https://plausible.io)                                         | Немає free tier                                                        | From EUR 9/mo (10K pageviews)                     | 2026-04      | Privacy-first. Простіший, але без funnels/feature flags. Альтернатива, якщо не потрібна глибока аналітика.                                         | evaluated |
-| **Mixpanel**              | [mixpanel.com](https://mixpanel.com)                                         | 20M events/mo                                                          | Growth: from $28/mo (100M events)                 | 2026-04      | Потужна event-аналітика. Складніший за PostHog для одного розробника.                                                                              | evaluated |
-| **Google Search Console** | [search.google.com/search-console](https://search.google.com/search-console) | Повністю безкоштовний                                                  | N/A                                               | 2026-04      | SEO: індексація, позиції, кліки. Обов'язково для landing/blog.                                                                                     | to add    |
+| Сервіс                    | Сайт                                                                         | Free tier                                                              | Paid tier                                         | Date checked | Why this / Why not                                                                                                                                                                       | Status    |
+| ------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **PostHog**               | [posthog.com](https://posthog.com/pricing)                                   | 1M events, 5K recordings, 1M feature flag requests, 100K exceptions/mo | Pay-as-you-go: from $0.00005/event past free tier | 2026-05      | Funnels + retention + feature flags + session replay + A/B tests. EU-host. Інтегровано на трьох поверхнях: web (`posthog-js`), server (`apps/server/src/lib/posthog.ts`), mobile (Expo). | in use    |
+| **Vercel Analytics**      | [vercel.com/analytics](https://vercel.com/analytics)                         | 2.5K events/mo (Hobby)                                                 | Pro: included                                     | 2026-05      | Web Vitals + pageviews. Працює як додатковий privacy-friendly канал поряд з PostHog (`@vercel/analytics ^2.0`).                                                                          | in use    |
+| **Plausible**             | [plausible.io](https://plausible.io)                                         | Немає free tier                                                        | From EUR 9/mo (10K pageviews)                     | 2026-04      | Privacy-first. Простіший, але без funnels/feature flags. Не використовується (PostHog покриває).                                                                                         | evaluated |
+| **Mixpanel**              | [mixpanel.com](https://mixpanel.com)                                         | 20M events/mo                                                          | Growth: from $28/mo (100M events)                 | 2026-04      | Потужна event-аналітика. Складніший за PostHog для одного розробника.                                                                                                                    | evaluated |
+| **Google Search Console** | [search.google.com/search-console](https://search.google.com/search-console) | Повністю безкоштовний                                                  | N/A                                               | 2026-04      | SEO: індексація, позиції, кліки. Обов'язково для landing/blog.                                                                                                                           | to add    |
 
-> **Рекомендація:** PostHog як єдина платформа — funnels, feature flags, A/B, session replay. Зараз `analytics.ts` — stub з localStorage (max 200 events). Swap: замінити transport (~20 рядків). Env: `VITE_POSTHOG_KEY`, `VITE_POSTHOG_HOST`.
+> **Поточний стан:** PostHog активний (project `Default project` на EU-host, секрет `posthog_api`). Web/Mobile event capture (`VITE_POSTHOG_KEY`, `EXPO_PUBLIC_POSTHOG_KEY`), server-side cleanup (`POSTHOG_API_KEY` для GDPR delete-person), GitHub Actions release annotation (`.github/workflows/posthog-release-annotation.yml`), n8n workflow `16-posthog-daily-metrics.json` для Telegram-дайджесту.
 
 ### 2.7 Email
 
@@ -181,13 +210,20 @@
 | **USDA FoodData Central** | [fdc.nal.usda.gov](https://fdc.nal.usda.gov/)               | Безкоштовно (API key, 3 600 req/hr) | N/A       | 2026-04      | Барокод + нутрієнти. Найповніша база для US-продуктів. | in use |
 | **OpenFoodFacts**         | [world.openfoodfacts.org](https://world.openfoodfacts.org/) | Безкоштовно (open data)             | N/A       | 2026-04      | Барокод fallback. Краще покриття EU/UA продуктів.      | in use |
 
-### 2.12 Cron / Scheduled jobs
+### 2.12 Cron / Scheduled jobs / workflow automation
 
-| Сервіс     | Сайт                                      | Free tier                        | Paid tier | Date checked | Why this / Why not                                                                                          | Status |
-| ---------- | ----------------------------------------- | -------------------------------- | --------- | ------------ | ----------------------------------------------------------------------------------------------------------- | ------ |
-| **BullMQ** | [docs.bullmq.io](https://docs.bullmq.io/) | Open-source, $0 (потребує Redis) | N/A       | 2026-04      | Redis вже підключений. Для subscription lifecycle, daily AI briefing push, weekly digest, cleanup sessions. | to add |
+| Сервіс           | Сайт                                                                                 | Free tier                        | Paid tier          | Date checked | Why this / Why not                                                                                                                                                                                          | Status    |
+| ---------------- | ------------------------------------------------------------------------------------ | -------------------------------- | ------------------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **BullMQ**       | [docs.bullmq.io](https://docs.bullmq.io/)                                            | Open-source, $0 (потребує Redis) | N/A                | 2026-05      | Інтегровано (`bullmq ^5.0`). Черги: `auth-mail`, `ftux-drip`, `ai-memory-ingest`, `mono-enrichment`. Worker — у тому ж процесі сервера, fallback на in-process direct dispatch якщо `REDIS_URL` не заданий. | in use    |
+| **n8n**          | [n8n.io](https://n8n.io)                                                             | Self-hosted, $0                  | Cloud: from $20/mo | 2026-05      | 26 workflow-ів у `ops/n8n-workflows/` (billing, failed-payment, sentry routing, backup verification, daily metrics, growth funnel snapshot, etc.). Source-of-truth — git (ADR-0026). Секрет: `n8n_API`.     | in use    |
+| **Railway Cron** | [docs.railway.app/reference/cron-jobs](https://docs.railway.app/reference/cron-jobs) | Включено в Hobby                 | Включено в Pro     | 2026-04      | Альтернатива для простих per-час задач. Зараз не використовується — replaceable через BullMQ repeatable jobs / n8n schedule trigger.                                                                        | evaluated |
 
-> **Альтернативи:** Railway Cron (простіше, але менш гнучко), `node-cron` (in-process, не reliable для prod), Inngest (hosted, складніший). BullMQ — найкращий баланс: Redis вже є, надійні retry, dead-letter queue. Деталі автоматизації — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-6--automation-мета-зона).
+> **Розподіл відповідальності:**
+>
+> - **BullMQ** — internal background jobs всередині сервера (auth email, FTUX drip, AI-memory embedding ingest, Mono-AI enrichment).
+> - **n8n** — cross-system workflow automation (Stripe webhook → DB + Telegram, Sentry alerts → Telegram, daily/weekly digests, GitHub PR stale alerts, security audit).
+>
+> Деталі автоматизації — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-6--automation-мета-зона) і [`ops/n8n-workflows/manifest.json`](../../ops/n8n-workflows/manifest.json).
 
 ### 2.13 File storage (Phase 2+)
 
@@ -197,11 +233,11 @@
 
 ### 2.14 Підтримка юзерів
 
-| Сервіс           | Сайт                                                         | Free tier                               | Paid tier            | Date checked | Why this / Why not                                                                                                       | Status |
-| ---------------- | ------------------------------------------------------------ | --------------------------------------- | -------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------ | ------ |
-| **Crisp**        | [crisp.chat](https://crisp.chat/)                            | 2 оператори, live chat + knowledge base | Pro: $25/mo/operator | 2026-04      | In-app чат. Деталі workflow — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-5--support). | to add |
-| **Canny**        | [canny.io](https://canny.io/)                                | Free до 100 постів                      | Starter: $79/mo      | 2026-04      | Feature requests + голосування.                                                                                          | to add |
-| **Telegram бот** | [core.telegram.org/bots](https://core.telegram.org/bots/api) | Безкоштовно                             | N/A                  | 2026-04      | Підтримка через Telegram — звична для UA-аудиторії.                                                                      | to add |
+| Сервіс           | Сайт                                                         | Free tier                               | Paid tier            | Date checked | Why this / Why not                                                                                                                                                                        | Status |
+| ---------------- | ------------------------------------------------------------ | --------------------------------------- | -------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| **Crisp**        | [crisp.chat](https://crisp.chat/)                            | 2 оператори, live chat + knowledge base | Pro: $25/mo/operator | 2026-04      | In-app чат. Деталі workflow — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-5--support).                                                                  | to add |
+| **Canny**        | [canny.io](https://canny.io/)                                | Free до 100 постів                      | Starter: $79/mo      | 2026-04      | Feature requests + голосування.                                                                                                                                                           | to add |
+| **Telegram бот** | [core.telegram.org/bots](https://core.telegram.org/bots/api) | Безкоштовно                             | N/A                  | 2026-05      | `tools/console` (grammy + Anthropic) — internal ops/marketing console, OpenClaw cofounder bot з memory recall + decision-PR (ADR-0031, ADR-0032). Telegram alert routing через n8n WF-03. | in use |
 
 ### 2.15 Юридичне
 
@@ -235,18 +271,22 @@
 
 ## 3. Що додати (action items)
 
-| #   | Сервіс                         | Пріоритет                         | Owner-нотатка                                                                                                                       | Cross-link                                                                         |
-| --- | ------------------------------ | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| 1   | **Stripe** (payments)          | P0 — блокер монетизації           | Створити акаунт + Product/Price. Міграція `009_subscriptions.sql`. Модуль `billing.ts` + webhook + `requirePlan()` middleware.      | [01 -> paywall](./01-monetization-and-pricing.md#6-технічна-реалізація-paywall)    |
-| 2   | **PostHog** (analytics)        | P0 — потрібен для funnel tracking | Swap transport в `analytics.ts` (~20 рядків). Env: `VITE_POSTHOG_KEY`, `VITE_POSTHOG_HOST`.                                         | —                                                                                  |
-| 3   | **BullMQ** (job queue)         | P1 — subscription lifecycle       | `modules/jobs/` worker. Redis вже є. Задачі: expire past-due, daily briefing, weekly digest, session cleanup.                       | [05 -> automation](./05-operations-and-automation.md#зона-6--automation-мета-зона) |
-| 4   | **React Email** (templates)    | P1 — billing emails               | Welcome, payment confirmation, failed, canceled, weekly digest. Розширити `authTransactionalMail.ts` або створити `billingMail.ts`. | —                                                                                  |
-| 5   | **Grafana Cloud** (dashboards) | P2 — production visibility        | Підключити до Prometheus `/metrics`. Free tier: 10K metrics.                                                                        | [05 -> product zone](./05-operations-and-automation.md#зона-1--product)            |
-| 6   | **Loops** (email marketing)    | P2 — onboarding drip              | Onboarding sequence, re-engagement, winback. Free до 1K contacts.                                                                   | —                                                                                  |
-| 7   | **Termly** + **CookieYes**     | P1 — legal blocker                | Privacy Policy, Terms, Cookie banner. Вимоги: Google Play, Stripe, GDPR.                                                            | [04 -> legal](./04-launch-readiness.md#11-обовязкові-документи)                    |
-| 8   | **Google Search Console**      | P2 — SEO baseline                 | Підключити домен. Безкоштовно.                                                                                                      | —                                                                                  |
-| 9   | **EAS Build**                  | P1 — mobile launch                | Free: 15+15 builds/mo. Для CI/CD мобілки.                                                                                           | —                                                                                  |
-| 10  | **Crisp** + **Telegram бот**   | P2 — support                      | In-app chat + Telegram. Free tier.                                                                                                  | [05 -> support zone](./05-operations-and-automation.md#зона-5--support)            |
+> **Status legend:** `[ ]` — pending, `[x]` — done, `[~]` — partial / in progress.
+>
+> Підсумок (станом на 2026-05-05): **3 з 10 завершено** (PostHog, BullMQ, Telegram бот), **1 partial** (Grafana Cloud — local-config готова, cloud-стек активний), **6 залишилось** (Stripe, React Email, Loops, Termly+CookieYes, Search Console, EAS Build, Crisp). **Stripe** — головний P0 блокер монетизації.
+
+| #   | Сервіс                         | Пріоритет                         | Done? | Owner-нотатка                                                                                                                                                                                                                           | Cross-link                                                                         |
+| --- | ------------------------------ | --------------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 1   | **Stripe** (payments)          | P0 — блокер монетизації           | `[ ]` | Не інтегровано. Створити акаунт + Product/Price. Міграція `subscriptions`. Модуль `billing.ts` + webhook + `requirePlan()` middleware. n8n workflow-и `01-billing-pipeline` / `02-failed-payment-recovery` вже чекають Stripe webhooks. | [01 -> paywall](./01-monetization-and-pricing.md#6-технічна-реалізація-paywall)    |
+| 2   | **PostHog** (analytics)        | P0 — потрібен для funnel tracking | `[x]` | Готово на трьох поверхнях (web/mobile/server) + GitHub release annotation + n8n daily-metrics workflow. EU-host, project `Default project`.                                                                                             | —                                                                                  |
+| 3   | **BullMQ** (job queue)         | P1 — subscription lifecycle       | `[x]` | Інтегровано (`bullmq ^5.0`). Активні черги: `auth-mail`, `ftux-drip`, `ai-memory-ingest`, `mono-enrichment`. Subscription-lifecycle черги — додамо разом зі Stripe.                                                                     | [05 -> automation](./05-operations-and-automation.md#зона-6--automation-мета-зона) |
+| 4   | **React Email** (templates)    | P1 — billing emails               | `[ ]` | Welcome, payment confirmation, failed, canceled, weekly digest. Розширити `authTransactionalMail.ts` або створити `billingMail.ts`. Чекає на Stripe.                                                                                    | —                                                                                  |
+| 5   | **Grafana Cloud** (dashboards) | P2 — production visibility        | `[~]` | Local-конфіг готовий: `ops/grafana/dashboards/n8n-overview.json` + `ops/grafana-alloy/` Prometheus scraper. Cloud-стек налаштовано (`grafana` секрет). Залишилось — провалідувати dashboards активні.                                   | [05 -> product zone](./05-operations-and-automation.md#зона-1--product)            |
+| 6   | **Loops** (email marketing)    | P2 — onboarding drip              | `[ ]` | Onboarding sequence, re-engagement, winback. Free до 1K contacts.                                                                                                                                                                       | —                                                                                  |
+| 7   | **Termly** + **CookieYes**     | P1 — legal blocker                | `[ ]` | Privacy Policy, Terms, Cookie banner. Вимоги: Google Play, Stripe, GDPR.                                                                                                                                                                | [04 -> legal](./04-launch-readiness.md#11-обовязкові-документи)                    |
+| 8   | **Google Search Console**      | P2 — SEO baseline                 | `[ ]` | Підключити домен. Безкоштовно.                                                                                                                                                                                                          | —                                                                                  |
+| 9   | **EAS Build**                  | P1 — mobile launch                | `[ ]` | Free: 15+15 builds/mo. Для CI/CD мобілки.                                                                                                                                                                                               | —                                                                                  |
+| 10  | **Telegram бот** (support)     | P2 — support                      | `[x]` | `tools/console` (grammy) + OpenClaw cofounder bot. Telegram alert routing — n8n WF-03 (Sentry → topic). **Crisp** (in-app webchat) — окремо, ще `[ ]`.                                                                                  | [05 -> support zone](./05-operations-and-automation.md#зона-5--support)            |
 
 ---
 
@@ -318,7 +358,9 @@
 
 ```env
 # Core
-DATABASE_URL=                    # Railway Postgres
+DATABASE_URL=                    # Railway Postgres (direct, для міграцій)
+DATABASE_URL_POOL=               # pgBouncer pool URL (optional, runtime queries)
+DATABASE_URL_REPLICA=            # Read-replica (optional, analytics offload)
 REDIS_URL=                       # Railway Redis (optional, fallback in-memory)
 NODE_ENV=production
 PORT=3000                        # Railway auto
@@ -332,6 +374,11 @@ ALLOWED_ORIGINS=                 # Vercel domain(s)
 ANTHROPIC_API_KEY=               # Claude API
 AI_DAILY_USER_LIMIT=120          # Стане динамічним (plan-based)
 AI_DAILY_ANON_LIMIT=40           # Стане динамічним
+
+# AI memory (pgvector + Voyage)
+AI_MEMORY_ENABLED=               # майстер-вимикач RAG-pipeline
+VOYAGE_API_KEY=                  # Voyage AI embeddings (voyage-3.5-lite)
+VOYAGE_EMBEDDING_MODEL=voyage-3.5-lite
 
 # Push
 VAPID_PUBLIC_KEY=                # Web Push
@@ -348,23 +395,38 @@ MONO_WEBHOOK_ENABLED=
 MONO_TOKEN_ENC_KEY=              # 32-byte hex
 PUBLIC_API_BASE_URL=             # Railway public URL
 
+# Internal API (machine-to-machine, n8n)
+INTERNAL_API_KEY=                # Bearer для /api/internal/* з n8n
+
 # Observability
 SENTRY_DSN=
 METRICS_TOKEN=                   # Bearer for /metrics
+
+# Analytics (PostHog — вже інтегровано)
+VITE_POSTHOG_KEY=                # phc_... (frontend, public)
+VITE_POSTHOG_HOST=               # https://eu.i.posthog.com (default)
+EXPO_PUBLIC_POSTHOG_KEY=         # mobile capture
+EXPO_PUBLIC_POSTHOG_HOST=        # mobile host (default EU)
+POSTHOG_API_KEY=                 # server-side (для GDPR delete-person)
+POSTHOG_PROJECT_ID=              # для release-annotation workflow
+POSTHOG_HOST=                    # server host
+
+# OpenClaw (Telegram cofounder bot)
+OPENCLAW_FOUNDER_USER_ID=
+OPENCLAW_DAILY_USD_BUDGET=5
+OPENCLAW_GITHUB_APP_ID=           # GitHub App для decision PR-ів
+OPENCLAW_GITHUB_APP_PRIVATE_KEY=
+OPENCLAW_GITHUB_APP_INSTALLATION_ID=
 ```
 
 ### Додати під монетизацію
 
 ```env
-# Payments (Stripe)
+# Payments (Stripe) — НЕ інтегровано
 STRIPE_SECRET_KEY=               # sk_live_...
 STRIPE_WEBHOOK_SECRET=           # whsec_...
 STRIPE_PRICE_ID_PRO_MONTHLY=     # price_...
 STRIPE_PRICE_ID_PRO_YEARLY=      # price_...
-
-# Analytics
-VITE_POSTHOG_KEY=                # phc_... (frontend, public)
-VITE_POSTHOG_HOST=               # https://app.posthog.com або self-hosted
 
 # Mobile (коли публікуватимеш)
 GOOGLE_PLAY_SERVICE_ACCOUNT=     # JSON credentials для EAS Submit
@@ -416,19 +478,23 @@ Breakeven subs      ---          ~30 Pro      ~100 Pro     profitable
 
 ### Поточні сервіси: зараз vs після монетизації
 
-| Сервіс             | Зараз ($/mo) | Після монетизації ($/mo) | Примітки                      |
-| ------------------ | ------------ | ------------------------ | ----------------------------- |
-| Vercel (frontend)  | $0           | $0                       | Hobby до 100 GB bandwidth     |
-| Railway (server)   | ~$5          | $10-20                   | Залежить від CPU/memory       |
-| Railway (Postgres) | ~$5          | $5-10                    | Usage-based                   |
-| Railway (Redis)    | ~$3          | $3-5                     | BullMQ збільшить навантаження |
-| Anthropic (AI)     | ~$10-50      | $50-200                  | Залежить від MAU та моделі    |
-| Resend (email)     | $0           | $0                       | Free tier: 3K emails/mo       |
-| Sentry             | $0           | $0                       | Developer: 5K errors/mo       |
-| Stripe             | ---          | 2.9% + 30c               | Per transaction               |
-| PostHog            | ---          | $0                       | Free tier: 1M events/mo       |
-| Firebase / FCM     | $0           | $0                       | Push (безлімітно)             |
-| **TOTAL**          | **~$18-60**  | **~$68-235**             | Breakeven ~30 Pro subs        |
+| Сервіс             | Зараз ($/mo) | Після монетизації ($/mo) | Примітки                                               |
+| ------------------ | ------------ | ------------------------ | ------------------------------------------------------ |
+| Vercel (frontend)  | $0           | $0                       | Hobby до 100 GB bandwidth                              |
+| Railway (server)   | ~$5          | $10-20                   | Залежить від CPU/memory                                |
+| Railway (Postgres) | ~$5          | $5-10                    | Usage-based                                            |
+| Railway (Redis)    | ~$3          | $3-5                     | BullMQ + AI-memory ingest queue збільшать навантаження |
+| Railway (n8n)      | ~$3-5        | $3-5                     | Self-host n8n у тому ж проекті                         |
+| Anthropic (AI)     | ~$10-50      | $50-200                  | Залежить від MAU та моделі                             |
+| Voyage (embed)     | ~$0-5        | $5-15                    | $0.02/1M tokens, lite-tier                             |
+| Resend (email)     | $0           | $0                       | Free tier: 3K emails/mo                                |
+| Sentry             | $0           | $0                       | Developer: 5K errors/mo                                |
+| Grafana Cloud      | $0           | $0                       | Forever-free tier: 10K metrics                         |
+| PostHog            | $0           | $0                       | Free tier: 1M events/mo (вже активний)                 |
+| Vercel Analytics   | $0           | $0                       | 2.5K events/mo                                         |
+| Stripe             | ---          | 2.9% + 30c               | Per transaction (НЕ інтегровано)                       |
+| Firebase / FCM     | $0           | $0                       | Push (безлімітно)                                      |
+| **TOTAL**          | **~$26-68**  | **~$76-260**             | Breakeven ~30 Pro subs                                 |
 
 ---
 
@@ -467,22 +533,33 @@ WEEK 4: Legal + polish + E2E
 ```
 CATEGORY         SERVICE                  COST           STATUS
 -----------      --------------------     -----------    ----------
-Dev              Vercel + Railway + GH    ~$13/mo        in use
-                 Actions + Turborepo
+Dev              Vercel + Railway + GH    ~$13-26/mo     in use
+                 Actions + Turborepo + n8n
 Payments         Stripe                   % per tx       to add
-Analytics        PostHog free tier        $0             to add
-Email            Resend (in use)          $0             in use
+Analytics        PostHog free tier        $0             in use
+                 + Vercel Analytics       $0             in use
+Email            Resend                   $0             in use
                  + Loops free             $0             to add
 Marketing        Telegram + X + Buffer    $0             to add
-Support          Crisp free + TG bot      $0             to add
-Monitoring       Sentry (in use)          $0             in use
+Support          Telegram bot (grammy)    $0             in use
+                 + OpenClaw cofounder     $0             in use
+                 + Crisp free webchat     $0             to add
+AI               Anthropic Claude         $10-50/mo      in use
+                 + Voyage AI (embed)      $0-5/mo        in use
+Monitoring       Sentry                   $0             in use
+                 + Grafana + Alloy        $0             in use
+                 + Prometheus             $0             in use
+                 + OpenTelemetry          $0             in use
                  + UptimeRobot free       $0             to add
-                 + Grafana Cloud free     $0             to add
+QA               Storybook + Argos        $0             in use
+                 + Detox E2E              $0             in use
+Workflow auto    n8n (26 workflows)       $0 (self-host) in use
+                 + BullMQ                 $0 (self-host) in use
 Legal            Termly free              $0             to add
 Feedback         Tally + PostHog replay   $0             to add
 SEO              Google Search Console    $0             to add
 --------------------------------------------------------------
-TOTAL FIXED      ~$13/mo  (infrastructure already paid)
+TOTAL FIXED      ~$26-68/mo  (infrastructure already paid)
                  + Stripe % from transactions
                  + ~5K UAH one-time (legal / FOP)
                  = Practically $0 additional fixed costs

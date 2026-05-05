@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-05 by Devin. **Next review:** 2026-08-03.
 > **Status:** Active
 
-**Статус:** весь топ-15 закритий + більшість Тиждень 1–4 / Місяць 2 беклогу теж залендено. Створено 2026-04-25. Останнє оновлення 2026-05-05: понад топ-15 додатково закрилися Storybook (44 stories у `apps/web`), Stryker mutation testing (`stryker.cloudSync.conf.json`), Argos visual regression (`@argos-ci/playwright`), Drizzle ORM POC (повноцінний `packages/db-schema` з PG + SQLite адаптерами), Helmet + CSP report-only middleware (`apps/server/src/http/security.ts`), gitleaks secret-scan + CodeQL + Trivy container-scan + release-SBOM, mobile Sentry SDK через `@sentry/react-native` (DSN-gated). Sentry mobile DSN provisioning у Expo EAS Secrets — все ще TODO, решта пунктів TL;DR — закриті. **Архів історичних сесій (2026-04-25 / 2026-04-25 evening):** [`dev-stack-roadmap-archive.md`](./dev-stack-roadmap-archive.md).
+**Статус:** весь топ-15 закритий + більшість Тиждень 1–4 / Місяць 2 беклогу теж залендено. Створено 2026-04-25. Останнє оновлення 2026-05-05: понад топ-15 додатково закрилися Storybook (44 stories у `apps/web`), Stryker mutation testing (`stryker.cloudSync.conf.json`), Argos visual regression (`@argos-ci/playwright`), Drizzle ORM POC (повноцінний `packages/db-schema` з PG + SQLite адаптерами), Helmet + CSP report-only middleware (`apps/server/src/http/security.ts`), gitleaks secret-scan + CodeQL + Trivy container-scan + release-SBOM, mobile Sentry SDK через `@sentry/react-native` (DSN-gated). Sentry mobile DSN provisioning у Expo EAS Secrets — все ще TODO, решта пунктів TL;DR — закриті. **Архів історичних сесій (2026-04-25 / 2026-04-25 evening):** [`archive/dev-stack-roadmap.md`](./archive/dev-stack-roadmap.md).
 
 **Скоуп:** інструменти, інтеграції, практики для покращення розробки, тестування, CI/CD, проду, безпеки, performance і команди. Specifically для стеку Sergeant: pnpm + Turborepo + Vite/React + Express + Postgres + Railway + Vercel + Expo.
 **Принцип:** не «впровадити все одразу», а **поетапно** — від найдешевших і найважливіших до інвестиційних. Кожен пункт — самостійний tool / practice з ціною, effort-ом, ROI і dep-ами.
@@ -688,7 +688,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ## Журнал сесій
 
-Історичні журнали сесій «інфра-спринтів» (2026-04-25 day, 2026-04-25 evening) винесені в [`dev-stack-roadmap-archive.md`](./dev-stack-roadmap-archive.md), щоб роадмап залишався «forward-looking». Див. архів для хронології PR-ів #714 — #743.
+Історичні журнали сесій «інфра-спринтів» (2026-04-25 day, 2026-04-25 evening) винесені в [`archive/dev-stack-roadmap.md`](./archive/dev-stack-roadmap.md), щоб роадмап залишався «forward-looking». Див. архів для хронології PR-ів #714 — #743.
 
 ### 2026-05-05 — roadmap refresh
 
@@ -697,7 +697,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 - Storybook (44 stories), Stryker mutation testing (CloudSync `stryker.cloudSync.conf.json`), Argos visual regression, Drizzle ORM POC (`packages/db-schema`), Helmet + CSP report-only (`apps/server/src/http/security.ts`), Detox mobile E2E (`detox-android.yml` + `detox-ios.yml`), Container security (Trivy + CodeQL + CycloneDX SBOM), Gitleaks secret-scan, prom-client metrics (`apps/server/src/obs/metrics.ts`), CI hardening (`concurrency`, `pnpm` cache, SHA-pinned actions), OpenAPI codegen (`pnpm api:generate-openapi`).
 - Mobile Sentry SDK (`@sentry/react-native` 6.10.0) залендено в `apps/mobile/src/lib/observability.ts` (DSN-gated no-op якщо env порожній).
 
-Додав: status-колонка у §6 (Uptime + Synthetic), §7.1 (Postgres-інструменти), §8.1/§8.2 (Security must-have + nice-to-have), §9.1 (Frontend perf). Винес журнал 2026-04-25 (day + evening) у [`dev-stack-roadmap-archive.md`](./dev-stack-roadmap-archive.md). Чеклісти §«Порядок впровадження» (Тиждень 1–4 + Місяць 2) промарковані згідно реального стану. Наступний review: 2026-08-03.
+Додав: status-колонка у §6 (Uptime + Synthetic), §7.1 (Postgres-інструменти), §8.1/§8.2 (Security must-have + nice-to-have), §9.1 (Frontend perf). Винес журнал 2026-04-25 (day + evening) у [`archive/dev-stack-roadmap.md`](./archive/dev-stack-roadmap.md). Чеклісти §«Порядок впровадження» (Тиждень 1–4 + Місяць 2) промарковані згідно реального стану. Наступний review: 2026-08-03.
 
 ---
 

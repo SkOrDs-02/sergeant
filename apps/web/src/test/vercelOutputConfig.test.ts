@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 function readJson(path: string) {
@@ -8,12 +8,14 @@ function readJson(path: string) {
 
 describe("Vercel output configuration", () => {
   it("points Vercel at an output directory inside the selected project root", () => {
-    const repoRootConfig = readJson(
-      resolve(process.cwd(), "../../vercel.json"),
-    );
+    // SSOT lives next to the app — Vercel's Root Directory is `apps/web`, so
+    // it only reads `apps/web/vercel.json`. A repo-root `vercel.json` is
+    // explicitly disallowed and `scripts/check-vercel-config.sh` enforces
+    // that on every PR (see commit 61196120).
     const webRootConfig = readJson(resolve(process.cwd(), "vercel.json"));
-
-    expect(repoRootConfig.outputDirectory).toBe("apps/web/dist");
     expect(webRootConfig.outputDirectory).toBe("dist");
+
+    const repoRootConfigPath = resolve(process.cwd(), "../../vercel.json");
+    expect(existsSync(repoRootConfigPath)).toBe(false);
   });
 });

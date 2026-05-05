@@ -139,15 +139,29 @@ export const redactPaths = [
   "*.*.secret",
   "*.*.clientSecret",
   "*.*.privateKey",
-  // PII — емейл/телефон в корені і всередині `user`/`body`.
+  // PII — емейл/телефон. Pino redact-wildcard матчиться рівно на одну
+  // глибину: `*.email` ловить `user.email` / `body.email` / `ctx.email`,
+  // але НЕ `req.body.email` (це 3 рівні: `req` → `body` → `email`).
+  // Тому 2-level wildcards + явні `req.body.*` / `res.body.*` шляхи
+  // додаються окремо. Round 17 — закриває гап для login/register/OTP
+  // flow-ів, де email/phone приходять як body на API і виходять
+  // як body у response (наприклад, `me`-endpoint, friend-pickers).
+  // Sentry-скрабер ловить ці ж ключі рекурсивно через `redactKeyNames`,
+  // тому за межами `req`/`res`/`body`-ієрархії покриття не страждає.
   "email",
   "phone",
   "*.email",
   "*.phone",
+  "*.*.email",
+  "*.*.phone",
   "user.email",
   "user.phone",
   "body.email",
   "body.phone",
+  "req.body.email",
+  "req.body.phone",
+  "res.body.email",
+  "res.body.phone",
 ];
 
 const usePretty = process.env["LOG_PRETTY"] === "1";

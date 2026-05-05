@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SYNC_EVENT, SYNC_STATUS_EVENT } from "../config";
+
+const notifyEnqueued = vi.fn();
+
+vi.mock("../../syncEngine/singleton", () => ({
+  getSyncEngineWriter: () => ({ notifyEnqueued }),
+}));
+
 import { emitStatusEvent, emitSyncEvent } from "./events";
 
 let dispatched: string[];
@@ -8,6 +15,7 @@ let listener: (e: Event) => void;
 
 beforeEach(() => {
   dispatched = [];
+  notifyEnqueued.mockReset();
   listener = (e: Event) => dispatched.push(e.type);
   window.addEventListener(SYNC_EVENT, listener);
   window.addEventListener(SYNC_STATUS_EVENT, listener);
@@ -22,6 +30,7 @@ describe("emitSyncEvent", () => {
   it("dispatches a SYNC_EVENT on window", () => {
     emitSyncEvent();
     expect(dispatched).toEqual([SYNC_EVENT]);
+    expect(notifyEnqueued).toHaveBeenCalledTimes(1);
   });
 
   it("can be called multiple times", () => {

@@ -19,8 +19,38 @@ import { pluralUa } from "@sergeant/shared";
  */
 export function OfflineBanner() {
   const online = useOnlineStatus();
-  const { queuedCount, dirtyCount } = useSyncStatus();
-  const pending = Math.max(queuedCount, dirtyCount);
+  const {
+    queuedCount,
+    dirtyCount,
+    syncV2PendingCount = 0,
+    syncV2DeadLetterCount = 0,
+    retrySyncV2DeadLetters,
+  } = useSyncStatus();
+  const pending = Math.max(queuedCount, dirtyCount, syncV2PendingCount);
+
+  if (syncV2DeadLetterCount > 0) {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        data-testid="offline-banner"
+        data-state="blocked"
+        className="fixed top-3 right-3 z-300 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-line text-muted text-style-caption shadow-soft backdrop-blur-sm safe-area-pt motion-safe:animate-fade-in"
+      >
+        <Icon name="refresh-cw" size={12} strokeWidth={2.5} aria-hidden />
+        <span>{`${syncV2DeadLetterCount} blocked`}</span>
+        <button
+          type="button"
+          onClick={() => {
+            void retrySyncV2DeadLetters?.();
+          }}
+          className="ml-1 text-style-caption text-accent underline underline-offset-2"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   // Online and nothing waiting — the happy path needs no chrome.
   if (online && pending === 0) return null;

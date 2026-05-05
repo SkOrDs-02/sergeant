@@ -20,11 +20,11 @@ Mutation testing запускає тести багато разів, щораз
 | Модуль                                  | Конфіг                                      | Mutants | Score (baseline) |
 | --------------------------------------- | ------------------------------------------- | ------- | ---------------- |
 | `apps/web/src/core/cloudSync/conflict/` | `apps/web/stryker.cloudSync.conf.json`      | 109     | **87.16%**       |
-| `apps/web/src/core/cloudSync/queue/`    | `apps/web/stryker.cloudSyncQueue.conf.json` | 233     | **64.38%**       |
+| `apps/web/src/core/cloudSync/queue/`    | `apps/web/stryker.cloudSyncQueue.conf.json` | 229     | **75.54%**       |
 
 Стартова точка — `cloudSync/conflict/` (LWW resolution, dirty-skip safety, version compare). Це pure-функціональне ядро split-brain-логіки, помилка в якому призводить до тихої втрати даних.
 
-Друга точка — `cloudSync/queue/` (offline-queue + dead-letter + collect): state-machine навколо `addToOfflineQueue` / `replayOfflineQueue` / `moveToDeadLetter`. Помилка тут призводить до silent retry-storm, втрати dead-letter-ів або replay-deadlock. Baseline 64.38% (above `break: 60`, ramp-up до `low: 70+` йде наступними round-ами через додавання assertions на coalesce-edge-cases у `offlineQueue.ts:207` (pushIndices guard) і replay-error-paths у `offlineQueue.ts:274–280`). По per-file: `collectQueued.ts` 85.29%, `deadLetter.ts` 88.89%, `offlineQueue.ts` 58.01% (саме він і тягне overall score down — `replayOfflineQueue` має багато early-return гілок без явного `expect(queue).toEqual(...)` після відкату).
+Друга точка — `cloudSync/queue/` (offline-queue + dead-letter + collect): state-machine навколо `addToOfflineQueue` / `replayOfflineQueue` / `moveToDeadLetter`. Помилка тут призводить до silent retry-storm, втрати dead-letter-ів або replay-deadlock. Baseline round 14 був 64.38%; round 16 — ramp-up до **75.54%** через `offlineQueue.mutation.test.ts` (16 targeted assertions на `normalizePushEntries` boundary `<= 1`, MAX-attempt aggregation, non-push survivors у `recordReplayBatchFailure`, coalesce-noop preserves attempt-tracking, MAX_OFFLINE_QUEUE strict-greater, dead-letter threshold off-by-one). Per-file: `collectQueued.ts` 85.29%, `deadLetter.ts` 88.89%, `offlineQueue.ts` **72.38%** (з 58.01%). Залишок survived-ів — здебільшого `latestTs || new Date()` fallback (важко тригернути порожній `ts` з runtime API) і кілька `for (let i = 0; i < queue.length; i++)`-mutations у normalize-loop, які тестово вже задані implicitly але ще не killed; піде round 17 за потреби.
 
 Інші critical-модулі додаються наступними round-ами (див. [TODO](#наступні-критичні-модулі)).
 

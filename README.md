@@ -309,7 +309,7 @@ Test stacks by surface:
 
 ## Feature flags
 
-Feature flags are managed via `docs/feature-flags.md`. Each flag controls the visibility of a specific feature.
+Feature flags are managed via `docs/governance/feature-flags.md`. Each flag controls the visibility of a specific feature.
 
 ## Observability
 

@@ -19,6 +19,7 @@
     "docs/agents/specs/2026-04-24-assistant-quick-actions-v1-design.md": 180,
     "docs/agents/specs/2026-04-25-assistant-capability-catalogue-design.md": 180
   },
+  "excludeGlobs": ["docs/initiatives/follow-ups.md"],
   "explicitInclude": [],
   "explicitExclude": []
 }

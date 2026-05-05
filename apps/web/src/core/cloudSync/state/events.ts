@@ -1,4 +1,5 @@
 import { SYNC_EVENT, SYNC_STATUS_EVENT } from "../config";
+import { getSyncEngineWriter } from "../../syncEngine/singleton";
 
 export { SYNC_EVENT, SYNC_STATUS_EVENT };
 
@@ -12,4 +13,5 @@ export function emitStatusEvent(): void {
 
 export function emitSyncEvent(): void {
   window.dispatchEvent(new CustomEvent(SYNC_EVENT));
+  getSyncEngineWriter()?.notifyEnqueued();
 }

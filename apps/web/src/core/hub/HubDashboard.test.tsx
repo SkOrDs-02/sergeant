@@ -309,6 +309,16 @@ describe("HubDashboard", () => {
   });
 
   it("renders module previews from quick stats and empty states for modules without data", () => {
+    // S6.1 / B-1 (`packages/shared/src/lib/activeModules.ts`): empty
+    // vibe picks + `isOnboardingDone == false` now returns `[]`, so every
+    // bento card renders in the `inactive` state and the preview slots
+    // are replaced by «Неактивний — увімкнути в налаштуваннях». Mark all
+    // four modules as active so the preview rendering path is the one
+    // actually exercised by this test.
+    localStorage.setItem(
+      VIBE_PICKS_KEY,
+      JSON.stringify(["finyk", "fizruk", "routine", "nutrition"]),
+    );
     localStorage.setItem(
       STORAGE_KEYS.FINYK_QUICK_STATS,
       JSON.stringify({ todaySpent: 1250, budgetLeft: 7300 }),

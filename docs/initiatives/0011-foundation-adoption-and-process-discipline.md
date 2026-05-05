@@ -1,7 +1,7 @@
 # 0011 — Foundation adoption + process discipline (post-launch sweep)
 
 > **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
-> **Status:** **Phase 1 complete** — 4/4 PR-ів merged станом на 2026-05-04. Phase 2 in flight: 2.2 merged (#1696); 2.4 (#1703) + 2.5 (#1709) + 2.6 (#1713) + 2.7 (#1714) + 2.8 (#1726) opened 2026-05-04 (DataState consumer adoption — finyk + fizruk + nutrition + routine + digest closes the consumer-adoption block); 2.1 ManualExpenseSheet — мігровано round-13 (commit-у-існуючому-PR, не окремий PR); 2.9 ESLint rule і 2.3 deprecation cleanup закриваються round-11 (хук видалено фізично, бо 0 споживачів — див. round-11 progress нижче). Phases 3–4 заплановані пост-0010-launch ≥ 2026-06-01.
+> **Status:** In progress — **Phase 1 complete** (4/4 PR-ів merged станом на 2026-05-04). Phase 2 in flight: 2.2 merged (#1696); 2.4 (#1703) + 2.5 (#1709) + 2.6 (#1713) + 2.7 (#1714) + 2.8 (#1726) opened 2026-05-04 (DataState consumer adoption — finyk + fizruk + nutrition + routine + digest closes the consumer-adoption block); 2.1 ManualExpenseSheet — мігровано round-13 (commit-у-існуючому-PR, не окремий PR); 2.9 ESLint rule і 2.3 deprecation cleanup закриваються round-11 (хук видалено фізично, бо 0 споживачів — див. round-11 progress нижче). Phases 3–4 заплановані пост-0010-launch ≥ 2026-06-01.
 > **Priority:** P1 (subordinate to 0010-revenue-first-launch scope-freeze)
 > **Owner:** `@Skords-01`
 > **ETA:** 7 тижнів (Phase 1 — паралельно з 0010 freeze; Phases 2–4 — після 0010 launch)
