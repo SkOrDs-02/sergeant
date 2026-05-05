@@ -74,31 +74,31 @@ afterEach(() => {
 });
 
 describe("parseDeepLink", () => {
-  it("повертає `/home` для `com.sergeant.shell://home`", async () => {
+  it("повертає `/welcome` для `com.sergeant.shell://welcome`", async () => {
     installCapacitorMocks();
     const { parseDeepLink } = await import("./index.js");
-    expect(parseDeepLink("com.sergeant.shell://home")).toBe("/home");
+    expect(parseDeepLink("com.sergeant.shell://welcome")).toBe("/welcome");
   });
 
-  it("зберігає query+hash: `/home?x=1#frag`", async () => {
+  it("зберігає query+hash: `/welcome?x=1#frag`", async () => {
     installCapacitorMocks();
     const { parseDeepLink } = await import("./index.js");
-    expect(parseDeepLink("com.sergeant.shell://home?x=1#frag")).toBe(
-      "/home?x=1#frag",
+    expect(parseDeepLink("com.sergeant.shell://welcome?x=1#frag")).toBe(
+      "/welcome?x=1#frag",
     );
   });
 
-  it("нормалізує `com.sergeant.shell:///home` → `/home` (не дублює ведучий `/`)", async () => {
+  it("нормалізує `com.sergeant.shell:///welcome` → `/welcome` (не дублює ведучий `/`)", async () => {
     installCapacitorMocks();
     const { parseDeepLink } = await import("./index.js");
-    expect(parseDeepLink("com.sergeant.shell:///home")).toBe("/home");
+    expect(parseDeepLink("com.sergeant.shell:///welcome")).toBe("/welcome");
   });
 
   it.each([
-    "https://sergeant.app/home",
-    "foo://home",
+    "https://sergeant.app/welcome",
+    "foo://welcome",
     "",
-    "com.sergeant.shel://home", // очепятка в схемі
+    "com.sergeant.shel://welcome", // очепятка в схемі
   ])("повертає null для `%s`", async (url) => {
     installCapacitorMocks();
     const { parseDeepLink } = await import("./index.js");
@@ -218,10 +218,10 @@ describe("initNativeShell — deep-link listener", () => {
     const navigate = vi.fn();
 
     const cb = await captureUrlOpenCallback(mocks, { navigate });
-    cb({ url: "com.sergeant.shell://settings" });
+    cb({ url: "com.sergeant.shell://profile" });
 
     expect(navigate).toHaveBeenCalledTimes(1);
-    expect(navigate).toHaveBeenCalledWith("/settings");
+    expect(navigate).toHaveBeenCalledWith("/profile");
   });
 
   it("НЕ викликає navigate для чужого URL (https://…)", async () => {
@@ -249,9 +249,9 @@ describe("initNativeShell — deep-link listener", () => {
 
     try {
       const cb = await captureUrlOpenCallback(mocks);
-      cb({ url: "com.sergeant.shell://home" });
+      cb({ url: "com.sergeant.shell://welcome" });
 
-      expect(w.__sergeantShellDeepLinkQueue).toEqual(["/home"]);
+      expect(w.__sergeantShellDeepLinkQueue).toEqual(["/welcome"]);
     } finally {
       delete w.__sergeantShellNavigate;
       delete w.__sergeantShellDeepLinkQueue;
