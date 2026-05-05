@@ -1,7 +1,7 @@
 # 0011 — Foundation adoption + process discipline (post-launch sweep)
 
 > **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
-> **Status:** In progress — **Phase 1 complete** (4/4 PR-ів merged станом на 2026-05-04). Phase 2 in flight: 2.2 merged (#1696); 2.4 (#1703) + 2.5 (#1709) + 2.6 (#1713) + 2.7 (#1714) + 2.8 (#1726) opened 2026-05-04 (DataState consumer adoption — finyk + fizruk + nutrition + routine + digest closes the consumer-adoption block); 2.1 ManualExpenseSheet — мігровано round-13 (commit-у-існуючому-PR, не окремий PR); 2.9 ESLint rule і 2.3 deprecation cleanup закриваються round-11 (хук видалено фізично, бо 0 споживачів — див. round-11 progress нижче). Phases 3–4 заплановані пост-0010-launch ≥ 2026-06-01.
+> **Status:** In progress — **Phases 1 + 2 complete; Phase 4 closed через handoff у 0007**. **Phase 1** (4/4): [#1688](https://github.com/Skords-01/Sergeant/pull/1688) `validate-pr-body.mjs` Hard Rule #15 strict 3-of-3, [#1691](https://github.com/Skords-01/Sergeant/pull/1691) cross-branch migration-collision guard, [#1697](https://github.com/Skords-01/Sergeant/pull/1697) deploy-config staging-verification gate, [#1699](https://github.com/Skords-01/Sergeant/pull/1699) CSP_DISABLE retrospective audit (5 operational action items A1–A5 на @Skords-01 — due `2026-05-11`, див. § Carry-over). **Phase 2** (DataState consumer adoption + form-engine consolidation): 2.1 ManualExpenseSheet round-13 (commit-у-існуючому-PR), 2.2 ResetPasswordPage merged [#1696](https://github.com/Skords-01/Sergeant/pull/1696), 2.3 `useFormValidation` deprecation закрита round-11 фізичним видаленням 0-споживачевого хука; 2.4 finyk merged [#1703](https://github.com/Skords-01/Sergeant/pull/1703), 2.5 fizruk merged [#1709](https://github.com/Skords-01/Sergeant/pull/1709), 2.6 nutrition merged [#1713](https://github.com/Skords-01/Sergeant/pull/1713), 2.7 routine merged [#1714](https://github.com/Skords-01/Sergeant/pull/1714), 2.8 hubchat/coach/digest merged [#1726](https://github.com/Skords-01/Sergeant/pull/1726); 2.9 prefer-data-state ESLint canary merged [#1823](https://github.com/Skords-01/Sergeant/pull/1823) 2026-05-05 (warn-only, 0 hits across 174 модульних файлів — severity-promote до `error` запланований `2026-06-30`, див. § Carry-over). **Phase 4 closed 2026-05-05** через 0007 round-10 handoff (37/37 `shared/ui` stories non-allowlisted, module-level stories, ADR-0046, `sergeant-design/require-stories-for-ui-components` severity = `error` [#1812](https://github.com/Skords-01/Sergeant/pull/1812)). **Phase 3** (hardening verification + email-verification sweep) — пост-0010-launch ≥ 2026-06-02.
 > **Priority:** P1 (subordinate to 0010-revenue-first-launch scope-freeze)
 > **Owner:** `@Skords-01`
 > **ETA:** 7 тижнів (Phase 1 — паралельно з 0010 freeze; Phases 2–4 — після 0010 launch)
@@ -9,7 +9,7 @@
 
 ## TL;DR
 
-За 100 PR з 2026-05-03/04 ми збудували **4 foundation-инструменти зі змінним adoption-рівнем** (станом на round-7: `useApiForm` — 8 файлів, у т.ч. **3/3 auth-екрани**: AuthPage login + AuthPage register + ResetPasswordPage [#1696](https://github.com/Skords-01/Sergeant/pull/1696); `<DataState>` — 0 реальних споживачів; типізований OpenAPI-клієнт — споживачі мігровані частково; Storybook — **12 stories** на ~50+ UI-компонентів [#1695](https://github.com/Skords-01/Sergeant/pull/1695)) і допустили **3 типи процес-помилок** (порожнє тіло PR-ів, Vercel-конфіг flip-flop без staging-перевірки, ~4 тижні задвоєння Renovate × Dependabot до фіксу). [`0010-revenue-first-launch`](./0010-revenue-first-launch.md) фрізить product-scope на 4 тижні (до ~2026-06-01) для shipping білінгу — **0011 поважає цей freeze**: Phase 1 (process-discipline CI-guards) проходить паралельно (інкрементальні зміни в `.github/workflows/`, не блокує білінг-PR-и), а Phases 2–4 стартують **після** revenue-first launch. Ця ініціатива закриває **adoption-розрив + три CI-guard-и + один retrospective audit** — у двох вікнах: in-freeze (Phase 1) та post-freeze (Phases 2–4).
+За 100 PR з 2026-05-03/04 ми збудували **4 foundation-инструменти зі змінним adoption-рівнем** і допустили **3 типи процес-помилок** (порожнє тіло PR-ів, Vercel-конфіг flip-flop без staging-перевірки, ~4 тижні задвоєння Renovate × Dependabot до фіксу). [`0010-revenue-first-launch`](./0010-revenue-first-launch.md) фрізить product-scope на 4 тижні (до ~2026-06-01) для shipping білінгу — **0011 поважає цей freeze**: Phase 1 (process-discipline CI-guards) пройшла паралельно (інкрементальні зміни в `.github/workflows/`, не блокує білінг-PR-и), Phase 2 (foundation adoption) була завершена дешевше за заплановане вікно (2 дні замість 3 тижнів) — паралельні child-Devin-сесії з вузьким scope-ом, всі 9 PR-equivalents merged за 2026-05-04…05; Phase 4 закрита handoff-ом у 0007 round-10 без проміжного coverage-thermometer-PR. Залишається **Phase 3** (hardening verification — pen-test для H5/H6/H8/H9, integration-test для session-protected routes, e2e transcribe USD-cap, email-verification sweep plan) — пост-0010-launch. **Foundation snapshot 2026-05-05:** `useApiForm` — 6+ active consumers + 3/3 auth-екрани; `<DataState>` — 5/5 модулів migrated (finyk + fizruk + nutrition + routine + hub) + canary ESLint rule (`prefer-data-state` warn-only, 0 hits); типізований OpenAPI-клієнт — 0 raw `fetch()` у `apps/web/src/modules/`; Storybook — 37/37 `shared/ui` non-allowlisted + module-level stories (закрито 0007 round-10). Ця ініціатива закриває **adoption-розрив + три CI-guard-и + один retrospective audit** — у двох вікнах: in-freeze (Phase 1+2 done) та post-freeze (Phase 3).
 
 ## Чому зараз
 
@@ -45,7 +45,7 @@
 
 ### Фаза 1 — Process discipline (CI guards) — 1 тиждень, 2026-05-05 → 2026-05-12 _(паралельно з 0010 freeze — in-scope)_
 
-**Status: 4/4 PR-ів merged станом на 2026-05-04.** Phase 1 завершено повністю; залишаються лише 5 operational action items з PR 1.4 на @Skords-01 з due-date 2026-05-11.
+**Status: 4/4 PR-ів merged станом на 2026-05-04.** Phase 1 завершено повністю; залишаються лише 5 operational action items з PR 1.4 на @Skords-01 з due-date 2026-05-11 (винесені в § [Carry-over → successor](#carry-over--successor) для трекінгу через `follow-ups.md`).
 
 **PR 1.1 — `ci(root): require all Hard Rule #15 boxes ticked in PR body`** (P0) — **MERGED [#1688](https://github.com/Skords-01/Sergeant/pull/1688)**
 
@@ -121,22 +121,24 @@
 
 | PR  | Назва                                                          | Файли (фактичні споживачі)                                                                                                                               | Status                                                                           |
 | --- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| 2.4 | `refactor(web): adopt <DataState> in finyk Mono panels`        | `Overview.tsx`, `budgets/Budgets.tsx`, `transactions/TransactionList.tsx` (+ `TransactionList.test.tsx`)                                                 | **Opened 2026-05-04 — [#1703](https://github.com/Skords-01/Sergeant/pull/1703)** |
-| 2.5 | `refactor(web): adopt <DataState> in fizruk Workouts journal`  | `pages/Workouts.tsx` (єдина Skeleton-based loading site у fizruk модулі)                                                                                 | **Opened 2026-05-04 — [#1709](https://github.com/Skords-01/Sergeant/pull/1709)** |
-| 2.6 | `refactor(web): adopt <DataState> in nutrition panels`         | `NutritionApp.tsx` Menu "plan" tab (єдиний Skeleton-based loading site у nutrition модулі)                                                               | **Opened 2026-05-04 — [#1713](https://github.com/Skords-01/Sergeant/pull/1713)** |
-| 2.7 | `refactor(web): adopt <DataState> in routine panels`           | `RoutineTimeline.tsx` calendar branch (єдиний Skeleton-based loading site у routine модулі)                                                              | **Opened 2026-05-04 — [#1714](https://github.com/Skords-01/Sergeant/pull/1714)** |
-| 2.8 | `refactor(web): adopt <DataState> in HubChat / coach / digest` | `core/insights/WeeklyDigestCard.tsx` `DigestContent` 4-state ladder (єдиний Skeleton-based panel-loading site у HubChat / coach / digest зоні `core/**`) | **Opened 2026-05-04 — [#1726](https://github.com/Skords-01/Sergeant/pull/1726)** |
+| 2.4 | `refactor(web): adopt <DataState> in finyk Mono panels`        | `Overview.tsx`, `budgets/Budgets.tsx`, `transactions/TransactionList.tsx` (+ `TransactionList.test.tsx`)                                                 | **MERGED 2026-05-04 — [#1703](https://github.com/Skords-01/Sergeant/pull/1703)** |
+| 2.5 | `refactor(web): adopt <DataState> in fizruk Workouts journal`  | `pages/Workouts.tsx` (єдина Skeleton-based loading site у fizruk модулі)                                                                                 | **MERGED 2026-05-04 — [#1709](https://github.com/Skords-01/Sergeant/pull/1709)** |
+| 2.6 | `refactor(web): adopt <DataState> in nutrition panels`         | `NutritionApp.tsx` Menu "plan" tab (єдиний Skeleton-based loading site у nutrition модулі)                                                               | **MERGED 2026-05-04 — [#1713](https://github.com/Skords-01/Sergeant/pull/1713)** |
+| 2.7 | `refactor(web): adopt <DataState> in routine panels`           | `RoutineTimeline.tsx` calendar branch (єдиний Skeleton-based loading site у routine модулі)                                                              | **MERGED 2026-05-04 — [#1714](https://github.com/Skords-01/Sergeant/pull/1714)** |
+| 2.8 | `refactor(web): adopt <DataState> in HubChat / coach / digest` | `core/insights/WeeklyDigestCard.tsx` `DigestContent` 4-state ladder (єдиний Skeleton-based panel-loading site у HubChat / coach / digest зоні `core/**`) | **MERGED 2026-05-04 — [#1726](https://github.com/Skords-01/Sergeant/pull/1726)** |
 
 > **Note (2026-05-04):** Файли в колонці «Файли» для 2.4–2.8 — actual landed targets, а не initial guess. Початкові приклади (`MonoTransactionsPanel`, `BudgetPanel`, `MonoAccountsList`, `WorkoutHistoryPanel`, `BiometricsPanel`, `NutritionMealsPanel`, `BarcodeScannerPanel`, `RoutineList`, `StreakCalendarPanel`, `HubChatHistoryPanel`, `CoachInsightsPanel`, `DigestPanel`) виявилися застарілими — фізичних компонентів з такими іменами в репі немає. Замість того ми мігрували реальні Skeleton-based loading sites у кожному модулі: усі три finyk-сторінки з `if (loadingTx && realTx.length === 0)` патерном (PR 2.4); `view === "log" && !workoutsLoaded` guard у `Workouts.tsx` (PR 2.5 — у fizruk саме одне таке місце, інші pages працюють синхронно з local-first MMKV-web даними); день-плановий `dayPlanBusy` skeleton у `NutritionApp.tsx` Menu "plan" branch (PR 2.6 — у nutrition тільки `NutritionApp.tsx` імпортує `@shared/components/ui/Skeleton`, food-search dropdown — inline list-state, не panel-level); calendar `isHabitPending && mainTab === "calendar"` skeleton у `RoutineTimeline.tsx` (PR 2.7 — єдиний Skeleton-importer у routine модулі); `DigestContent` 4-state ladder (skeleton → error → empty → content) у `WeeklyDigestCard.tsx` (PR 2.8 — у HubChat / coach / digest зоні `core/**` тільки `WeeklyDigestCard` має panel-level Skeleton-споживача; `AssistantAdviceCard` без skeleton imports і завжди має кеш last-good insight; `HubChatHistoryDrawer` local-first; `HubChat.tsx` / `HubChatBody` / `HubChatComposer` стрімлять без panel-skeleton-у).
 
 > **Кожен PR — 1 child-Devin-сесія максимум.** Скоуп = 2–4 файли, ~150–300 LOC change. Поведінка не змінюється — той самий empty-state, той самий error-state, той самий retry. Лише уніфікований wrapper.
 
-**PR 2.9 — `chore(web): ESLint rule against ad-hoc isLoading/isError patterns in modules`** (P1, depends on 2.4–2.8)
+**PR 2.9 — `feat(eslint-plugins): add prefer-data-state canary`** (P1, depended on 2.4–2.8) — **MERGED [#1823](https://github.com/Skords-01/Sergeant/pull/1823)**
 
-- Файл: `packages/eslint-plugin-sergeant-design/rules/<no-adhoc-rq-state>.js` (нове).
-- Логіка: warn якщо у `apps/web/src/modules/**` JSX-element має умовний `isLoading` / `isError` / `isPending` з `useQuery` без огортання у `<DataState>`. Allowlist: `app/web/src/shared/components/ui/DataState.tsx`, `app/web/src/core/auth/**` (auth-форми мають свій pattern).
-- ETA для severity `error`: 2026-06-30.
-- **Risk:** середній — false-positives для legitimate ad-hoc patterns. Митиґуємо warn-only старт + allowlist.
+- Файл: `packages/eslint-plugin-sergeant-design/index.js` (rule `prefer-data-state` додано inline у вже існуючий plugin-aggregator) + конфіг у `eslint.config.js` для `apps/web/src/modules/**`.
+- Логіка: warn якщо у `apps/web/src/modules/**` JSX-element має умовний `isLoading` / `isError` / `isPending` ladder з `useQuery`-подібного hook без огортання у `<DataState>`. Allowlist (per-glob через `eslint.config.js`): `apps/web/src/shared/components/ui/DataState.tsx`, `apps/web/src/core/auth/**` (auth-форми мають свій pattern).
+- **0 hits across 174 module-files** на момент merge — ефективна «зелена канарка», що верифікує: PRs 2.4–2.8 повністю мігрували відомі baseline-споживачі (15 файлів з manual-loading-ladder-патерном).
+- Тести у `packages/eslint-plugin-sergeant-design/__tests__/prefer-data-state.test.mjs` (RuleTester valid+invalid кейси).
+- Severity-promote до `error` — запланований `2026-06-30` у Phase 2.9-finalize (one-line PR після baseline-week, якщо warn-rate стабільно ≤ 1; див. § Carry-over).
+- **Risk:** низький (warn-only старт + allowlist; canary вже зелена).
 
 ### Фаза 3 — Hardening verification (для launch readiness) — 2 тижні, 2026-06-23 → 2026-07-07 _(поста-0010-launch)_
 
@@ -175,27 +177,45 @@
 - Документ — підготовча decision-doc; реалізація — у фазі pre-launch (окрема міні-ініціатива або 0011, якщо потрібно).
 - **Risk:** низький (це plan, не реалізація).
 
-### Фаза 4 — Storybook coverage hand-off → 0007 — 1 тиждень, 2026-07-07 → 2026-07-14 _(поста-0010-launch)_
+### Фаза 4 — Storybook coverage hand-off → 0007 — **CLOSED 2026-05-05** через 0007 round-10 handoff
 
-**PR 4.1 — `chore(web): storybook coverage CI baseline + handoff to 0007`** (P2)
+Початковий план Phase 4 (PR 4.1 з ratio-thermometer-скриптом + handoff виконання stories у 0007) виявився непотрібним — 0007 round-10 закрив stories повністю **без проміжного coverage-thermometer-PR**.
 
-- Файл: `scripts/<check-storybook-coverage>.mjs` (новий — placeholder) + новий job у `ci.yml`.
-- Логіка: підрахувати ratio = `(N stories) / (N exported components in apps/web/src/shared/components/ui/**)`. Поточний baseline (2026-05-04): **8 / ~50 = ~16%**. CI-guard падає якщо ratio падає (тобто додаються нові компоненти без stories), але не падає якщо ratio тільки росте.
-- Документ: `docs/initiatives/0007-design-system-tooling.md` оновлюємо посиланням на цей baseline-метрику; **виконання stories** — там, не тут.
-- **Закриває:** Storybook foundation-without-consumers gap.
+**Що шипнуто у 0007 round-10 (closes Storybook foundation-without-consumers gap):**
 
-> **Phase 4 — це лише coverage-baseline + handoff.** Реальне написання stories до high-coverage — окремий план у 0007. Тут ми лише ставимо метрику-thermometer.
+- 37/37 `shared/ui` non-allowlisted stories (100% coverage поза allowlist-ом).
+- Module-level stories для Finyk / Fizruk / Nutrition / Routine / Insights.
+- Storybook GitHub Pages deploy live: https://skords-01.github.io/Sergeant/.
+- [ADR-0046](../adr/0046-storybook-vrt-scope.md) фіксує VRT scope.
+- `sergeant-design/require-stories-for-ui-components` ESLint rule severity = `error` ([#1812](https://github.com/Skords-01/Sergeant/pull/1812)) — сильніший gate, ніж заплановані ratio-based thermometer (нові UI-компоненти без stories провалюють lint безумовно, без потреби коефіцієнт-обчислення).
+
+Coverage-thermometer-PR (`scripts/<check-storybook-coverage>.mjs`) **знятий зі скоупу** — фіксований lint-error в 0007 виконує ту саму функцію strikt-нішим способом.
+
+**Закриває:** Storybook foundation-without-consumers gap.
+
+> **Phase 4 — закрита handoff-ом без виконання заплановного PR 4.1.** Реальне написання stories відбулось у 0007. Lint-rule severity = `error` замінює baseline-thermometer.
+
+## Carry-over → successor
+
+> **Що це.** Open follow-up-и з Phase 1 (PR 1.4 audit operational items) і Phase 2 (severity-promote prefer-data-state). Парситься [`scripts/docs/generate-initiative-followups.mjs`](../../scripts/docs/generate-initiative-followups.mjs) у [`docs/initiatives/follow-ups.md`](./follow-ups.md). CI-гейт `Initiative follow-ups (in sync)` падає, якщо checked-in `follow-ups.md` розходиться з тим, що згенерує скрипт.
+
+- [ ] **2026-05-11:** A1 — підтвердити Railway env-cleanup (production + staging) і записати pre-existing-value у resolution log audit-у [`docs/audits/2026-05-04-csp-disable-retrospective.md`](../audits/2026-05-04-csp-disable-retrospective.md).
+- [ ] **2026-05-11:** A2 — експортувати Railway audit-log за період 2026-04-18 → 2026-05-04 (або зафіксувати tier-limitation, якщо community tier його не зберігає).
+- [ ] **2026-05-11:** A3 — Sentry-query: `event.type:default AND (message:csp_disabled OR message:"csp-report")` для `apps/server` за 2026-04-18 → 2026-05-04. Записати кількість events і чи був ≥1 год gap у CSP-report rate.
+- [ ] **2026-05-11:** A4 — додати retroactive-row у [`docs/security/secret-ownership-register.md`](../security/secret-ownership-register.md) для `CSP_DISABLE` із status `removed 2026-05-04` і lifetime `2026-04-18 → 2026-05-04`.
+- [ ] **2026-05-11:** A5 — verify, що PR 1.3 staging-gate ([#1697](https://github.com/Skords-01/Sergeant/pull/1697)) **НЕ** покриває runtime env-var changes у Railway dashboard (це окремий клас ризику). Відкрити окрему ініціативу для cover Railway env-var change-tracking.
+- [ ] **2026-06-30:** Phase 2.9 finalize — promote `sergeant-design/prefer-data-state` ESLint rule severity з `warn` до `error` (one-line зміна у `eslint.config.js` після baseline-week, якщо warn-rate стабільно ≤ 1).
 
 ## Критерії DONE
 
-- [ ] **PR #1571-type incidents** не повторюються: `pr-quality.yml` ловить порожнє тіло і відсутні Hard Rule #15 чек-бокси у 100% non-bot PR-ів. Зеро merge-ів з failing цього guard за 4 тижні після rollout.
-- [ ] **PR #1652-type collisions** не повторюються: `lint-migrations.mjs` cross-branch перевірка падає в усіх кейсах, де `NNN ≤ max(main:migrations)`. Зеро migration-renumber-fix-ів за 4 тижні.
-- [ ] **PR #1595-type drift** не повторюється: будь-яка зміна `vercel.json` / `fly.toml` / `railway.toml` має `verified-on-staging` лейбл або `verified-on-staging-emergency` з пов'язаним post-mortem.
-- [ ] **CSP_DISABLE retrospective** опубліковано: `docs/incidents/2026-05-04-csp-disable-audit.md` exists, з підтвердженням prod-impact (zero / non-zero) і подальшими діями.
-- [x] **`useFormValidation` дeprecated and migrated:** 0 active consumers; хук видалено фізично разом із export'ами з `apps/web/src/shared/hooks/index.ts` (round-11). Окрема ESLint-rule + runtime-warning не знадобились — TS compile-error замість them.
-- [ ] **`<DataState>` adopted:** усі 15+ baseline manual-loading/error файлів використовують `<DataState>`; ESLint-правило `no-adhoc-rq-state` severity = `error`.
-- [ ] **Hardening verification:** 4 pen-test cases (H5/H6/H8/H9) виконані з документацією результатів; integration-test для session-protected routes зелений; transcribe USD-cap e2e зелений з реальним audio fixture.
-- [ ] **Storybook coverage baseline:** CI-метрика стабільно ≥ 16% (no-regression) і власність передана у 0007.
+- [x] **PR #1571-type incidents shipped guard:** `validate-pr-body.mjs` (PR [#1688](https://github.com/Skords-01/Sergeant/pull/1688)) ловить порожнє тіло і відсутні Hard Rule #15 чек-бокси (3-of-3 strict). Verification window: 4 тижні no-merge-ів з failing guard відлічується після rollout 2026-05-04.
+- [x] **PR #1652-type collisions shipped guard:** `lint-migrations.mjs` cross-branch check (PR [#1691](https://github.com/Skords-01/Sergeant/pull/1691)) падає при `NNN ≤ max(main:migrations)`. Verification window: 4 тижні no-renumber-fix-ів від rollout 2026-05-04.
+- [x] **PR #1595-type drift shipped guard:** deploy-config-staging-gate workflow + playbook (PR [#1697](https://github.com/Skords-01/Sergeant/pull/1697)) гейтить зміни `vercel.json` / `fly.toml` / `railway.toml` / `Dockerfile*` / `Caddyfile` / `apps/server/build.mjs` через `verified-on-staging` (або `verified-on-staging-emergency` з post-mortem-обов'язком).
+- [~] **CSP_DISABLE retrospective опубліковано:** [`docs/audits/2026-05-04-csp-disable-retrospective.md`](../audits/2026-05-04-csp-disable-retrospective.md) (PR [#1699](https://github.com/Skords-01/Sergeant/pull/1699)) — code-side cleanup закрито у [#1631](https://github.com/Skords-01/Sergeant/pull/1631), operational-side prod-impact-confirmation (Q1–Q4) залишається open до A1–A3 (due 2026-05-11, див. § Carry-over). Закриваємо повністю після resolution log update.
+- [x] **`useFormValidation` deprecated and migrated:** 0 active consumers; хук видалено фізично разом із export'ами з `apps/web/src/shared/hooks/index.ts` (round-11). Окрема ESLint-rule + runtime-warning не знадобились — TS compile-error замість них.
+- [x] **`<DataState>` adopted (5/5 modules):** усі baseline Skeleton-based loading sites у finyk + fizruk + nutrition + routine + hubchat/coach/digest мігровані ([#1703](https://github.com/Skords-01/Sergeant/pull/1703) + [#1709](https://github.com/Skords-01/Sergeant/pull/1709) + [#1713](https://github.com/Skords-01/Sergeant/pull/1713) + [#1714](https://github.com/Skords-01/Sergeant/pull/1714) + [#1726](https://github.com/Skords-01/Sergeant/pull/1726)); ESLint-правило `prefer-data-state` warn-only canary merged ([#1823](https://github.com/Skords-01/Sergeant/pull/1823)) — 0 hits across 174 module-files; severity = `error` запланований 2026-06-30 (див. § Carry-over).
+- [ ] **Hardening verification (Phase 3):** 4 pen-test cases (H5/H6/H8/H9) виконані з документацією результатів; integration-test для session-protected routes зелений; transcribe USD-cap e2e зелений з реальним audio fixture; email-verification sweep plan документований.
+- [x] **Storybook coverage baseline:** закрито через 0007 round-10 handoff — 37/37 `shared/ui` non-allowlisted stories + module-level stories + ADR-0046 + `require-stories-for-ui-components` severity = `error` ([#1812](https://github.com/Skords-01/Sergeant/pull/1812)). Власність передана 0007 без проміжного thermometer-PR (lint-error severity сильніший за ratio-gate).
 
 ## Ризики
 
@@ -211,14 +231,14 @@
 
 ## Власник / ETA
 
-- **Власник:** `@Skords-01` (рoll-up; sub-tasks можуть делегуватись через child-Devin-сесії — 1-2 одночасно).
-- **ETA загальна:** 7 тижнів від 0010-launch (2026-05-05 Phase 1 → 2026-07-14 Phase 4).
-- **Phase 1** (CI guards — in 0010 freeze): 2026-05-05 → 2026-05-12 (1 тиждень, 4 PR).
-- **Phase 2** (foundation adoption — пост 0010): 2026-06-02 → 2026-06-23 (3 тижні, 9 PR).
-- **Phase 3** (hardening verification — пост 0010): 2026-06-23 → 2026-07-07 (2 тижні, 4 PR).
-- **Phase 4** (storybook hand-off — пост 0010): 2026-07-07 → 2026-07-14 (1 тиждень, 1 PR).
-- **Буфер до Q3-launch deadline 2026-09-30:** 11 тижнів.
-- **Pre-freeze вікно (2026-05-12 → 2026-06-02):** 0011 вимкнений (очікує 0010 launch). `@Skords-01` доводить 0010 до Stripe-MVP.
+- **Власник:** `@Skords-01` (роll-up; sub-tasks можуть делегуватись через child-Devin-сесії — 1-2 одночасно).
+- **ETA загальна:** оригінально 7 тижнів від 0010-launch — фактично Phase 1+2+4 завершені за 2 дні (2026-05-04…05) через паралельні child-сесії. Залишається Phase 3 + операційні follow-up-и з § Carry-over.
+- **Phase 1** (CI guards — in 0010 freeze): **DONE 2026-05-04** (4/4 PR-ів). Заплановане вікно — 1 тиждень; фактичне — 1 день. 5 operational action items A1–A5 (PR 1.4) — due `2026-05-11`.
+- **Phase 2** (foundation adoption — пост 0010 originally): **DONE 2026-05-04…05** (9/9 PR-equivalents: 2.1 round-13, 2.2 #1696, 2.3 round-11, 2.4 #1703, 2.5 #1709, 2.6 #1713, 2.7 #1714, 2.8 #1726, 2.9 #1823). Заплановане вікно — 3 тижні; фактичне — 2 дні. Severity-promote prefer-data-state до `error` — `2026-06-30`.
+- **Phase 3** (hardening verification — пост 0010): **PLANNED** 2026-06-23 → 2026-07-07 (2 тижні, 4 PR). Стартує після 0010-launch.
+- **Phase 4** (storybook hand-off — пост 0010 originally): **CLOSED 2026-05-05** через 0007 round-10 handoff. Заплановане вікно — 1 тиждень; фактичне — 0 (handoff без проміжного PR).
+- **Буфер до Q3-launch deadline 2026-09-30:** ≥ 17 тижнів (раніше 11; різниця — за рахунок Phase 2+4 раннього завершення).
+- **Pre-freeze вікно (2026-05-06 → 2026-06-02):** 0011 у режимі тільки операційних action items A1–A5 (зайнятість @Skords-01 — мінімальна). `@Skords-01` доводить 0010 до Stripe-MVP.
 
 ## Посилання
 
