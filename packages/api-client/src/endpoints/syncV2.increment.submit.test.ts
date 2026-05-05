@@ -28,11 +28,19 @@ import type { OutboxIncrementInputShape } from "./syncV2.increment.outboxEnqueue
 // or the per-reason-string mapping; we just spot-check the routes
 // stay wired correctly.
 
+// Plain low-entropy fixture-style strings, picked deliberately so the
+// repo's gitleaks scanner does not flag them as `generic-api-key`
+// false-positives. The ULID/uuid character class is fine at runtime —
+// the helper only forwards `idempotencyKey` to the injected `submit`
+// — but a high-entropy literal in a freshly-added file is exactly the
+// shape gitleaks' default rule fires on.
+const FIXTURE_IDEMPOTENCY_KEY = "fixture-routine-streak-incr-001";
+
 const HAPPY_INPUT = {
   table: "routine_streaks",
   delta: 1,
   clientTs: "2026-05-05T00:00:00.000Z",
-  idempotencyKey: "01HXZW8K6T7N4QV5R3J2P1G8AB",
+  idempotencyKey: FIXTURE_IDEMPOTENCY_KEY,
 } as const;
 
 function makeSubmitSpy(
@@ -63,7 +71,7 @@ describe("submitSyncV2IncrementOp — happy path", () => {
       table: "routine_streaks",
       row: { delta: 1 },
       clientTs: "2026-05-05T00:00:00.000Z",
-      idempotencyKey: "01HXZW8K6T7N4QV5R3J2P1G8AB",
+      idempotencyKey: FIXTURE_IDEMPOTENCY_KEY,
     });
   });
 
