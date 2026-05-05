@@ -80,6 +80,18 @@ jobs:
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
 
+      # `pnpm build:web` (vite build) calls Rolldown to resolve the web
+      # bundle's imports. `apps/web/src/modules/{nutrition,fizruk,routine}/lib/clientMigrate.ts`
+      # imports `@sergeant/db-schema/sqlite/migrations`, whose `exports`
+      # map points at `./dist/sqlite/migrations/index.js` — the package's
+      # build artefact. Without this step the resolver errors with
+      # `Rolldown failed to resolve import "@sergeant/db-schema/sqlite/migrations"`
+      # and the whole job aborts before xcodebuild. Mirrors the explicit
+      # prebuild already present in `ci.yml > critical-flow`,
+      # `extended-e2e.yml`, and `visual-regression.yml`.
+      - name: Build @sergeant/db-schema
+        run: pnpm --filter @sergeant/db-schema build
+
       - name: Build web bundle
         run: pnpm build:web
 
