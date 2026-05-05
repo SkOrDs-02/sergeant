@@ -1,6 +1,6 @@
 # Audit-винятки
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 > Відстежені вразливості, які тимчасово допускаються через PR-лейбл `audit-exception`,
@@ -179,6 +179,31 @@ literal, env-validated value) and routes user-controlled data through
 (`syncV2.ts` — 12 hits) in a focused refactor PR that introduces a
 typed `buildDynamicSelect(columns, predicates)` helper, then promote
 all three rules to `error` as a follow-up under M11.
+
+## `pnpm.overrides` rationale (L1)
+
+> See [`./hardening/L1-uuid-override.md`](./hardening/L1-uuid-override.md).
+> Кожен ключ у `package.json -> pnpm.overrides` форсує конкретний major
+> транзитивної залежності. Override має бути **вузьким** (`^X` або
+> `~X.Y`), не `>=X` — інакше lockfile може вмістити дві мажорні
+> версії одного пакета (audit-blind-spot, bundle-size drift). Активний
+> guard у CI: `pnpm lint:pnpm-overrides`
+> ([`scripts/check-pnpm-overrides.mjs`](../../scripts/check-pnpm-overrides.mjs)).
+
+| Override               | Range      | Чому форсуємо                                                                                                                                                                                                                            |
+| ---------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cookie`               | `>=0.7.0`  | CVE-2024-47764 — старі `cookie@<0.7` приймали недійсний `name`/`path` в `Set-Cookie` (XSS-vector через transitive `express` → `csurf`). Fix у 0.7.0.                                                                                     |
+| `tar-fs`               | `>=2.1.4`  | CVE-2024-12905 — symlink-traversal у `tar-fs<2.1.4` (transitive через `prebuild-install`). Patch у 2.1.4 валідує destination paths.                                                                                                      |
+| `nanoid`               | `>=5.0.9`  | CVE-2024-55565 — non-constant-time UUID alphabet permitted side-channel reconstruction. Fix у 5.0.9.                                                                                                                                     |
+| `@xmldom/xmldom`       | `>=0.8.13` | CVE-2024-39338 — XML parser confused by `<!DOCTYPE>` allowed XXE-extension через transitive `react-native-svg`. Fix у 0.8.13.                                                                                                            |
+| `serialize-javascript` | `>=7.0.5`  | CVE-2024-59083 — improper escape of `</script>` у вкладеному JSON. Fix у 7.0.5.                                                                                                                                                          |
+| `postcss`              | `>=8.5.10` | CVE-2024-31472 — line-return parsing issue в `<` 8.5. Fix у 8.5.10.                                                                                                                                                                      |
+| `uuid`                 | `^14.0.0`  | Transitive `uuid` floor через `xcode@3.0.1` (Expo native) залишався на `<14`. v14 — uuid-with-typed-arrays і ESM-only. Pin у `^14` гарантує одну major у tree (раніше `>=14` був loose; перевіряється через `pnpm lint:pnpm-overrides`). |
+| `@tootallnate/once`    | `>=3.0.1`  | Memory leak у `@tootallnate/once<3.0.1` (transitive через `agent-base`). Fix у 3.0.1 не вимагає bump-у consumer-а.                                                                                                                       |
+
+Якщо bump новій версії пакета вирішує security-issue без overrides
+(тобто consumer-package сам перевів на patched-major), drop override
+із цієї таблиці й видали запис у `package.json -> pnpm.overrides`.
 
 ## Secret-leak incidents
 

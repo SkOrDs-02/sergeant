@@ -300,17 +300,79 @@ describe("initNativeShell — backButton listener", () => {
     expect(mocks.App.exitApp).not.toHaveBeenCalled();
   });
 
-  it("коли canGoBack=false → App.exitApp(), window.history.back — НЕ викликається", async () => {
+  // M20 — press-back-twice-to-exit. Перший тап лише диспатчить hint-подію
+  // і виставляє таймер; ТІЛЬКИ другий тап у вікні `BACK_TO_EXIT_WINDOW_MS`
+  // викликає `App.exitApp()`. Це закриває M20 hardening-карту: racy
+  // deep-link / випадковий тап більше не закривають додаток до того, як
+  // стейт-зміна (наприклад, revoke session) зафіксувалась.
+  it("M20: коли canGoBack=false → перший тап НЕ викликає exitApp, лише диспатчить back-hint", async () => {
     const mocks = installCapacitorMocks();
     const historyBackSpy = vi
       .spyOn(window.history, "back")
       .mockImplementation(() => {});
+    const hintListener = vi.fn();
+    window.addEventListener("mobileshell:back-hint", hintListener);
 
     const cb = await captureBackButtonCallback(mocks);
     cb({ canGoBack: false });
 
-    expect(mocks.App.exitApp).toHaveBeenCalledTimes(1);
+    expect(mocks.App.exitApp).not.toHaveBeenCalled();
     expect(historyBackSpy).not.toHaveBeenCalled();
+    expect(hintListener).toHaveBeenCalledTimes(1);
+    const [event] = hintListener.mock.calls[0] as [
+      CustomEvent<{
+        windowMs: number;
+      }>,
+    ];
+    expect(event.detail).toMatchObject({ windowMs: 2000 });
+
+    window.removeEventListener("mobileshell:back-hint", hintListener);
+  });
+
+  it("M20: два тапи у вікні 2с → exitApp() викликається після другого", async () => {
+    const mocks = installCapacitorMocks();
+    const dateSpy = vi.spyOn(Date, "now").mockReturnValue(1_000_000);
+
+    const cb = await captureBackButtonCallback(mocks);
+    cb({ canGoBack: false });
+    expect(mocks.App.exitApp).not.toHaveBeenCalled();
+
+    dateSpy.mockReturnValue(1_000_000 + 1500);
+    cb({ canGoBack: false });
+    expect(mocks.App.exitApp).toHaveBeenCalledTimes(1);
+  });
+
+  it("M20: два тапи з інтервалом > 2с → НЕ виходить, лічильник перезапускається", async () => {
+    const mocks = installCapacitorMocks();
+    const hintListener = vi.fn();
+    window.addEventListener("mobileshell:back-hint", hintListener);
+    const dateSpy = vi.spyOn(Date, "now").mockReturnValue(2_000_000);
+
+    const cb = await captureBackButtonCallback(mocks);
+    cb({ canGoBack: false });
+    dateSpy.mockReturnValue(2_000_000 + 3000); // 3 секунди > 2 секунди
+    cb({ canGoBack: false });
+
+    expect(mocks.App.exitApp).not.toHaveBeenCalled();
+    // Обидва тапи дають hint-подію; вікно скинулось.
+    expect(hintListener).toHaveBeenCalledTimes(2);
+
+    window.removeEventListener("mobileshell:back-hint", hintListener);
+  });
+
+  it("M20: успішний history.back на проміжному екрані скидає лічильник exit-вікна", async () => {
+    const mocks = installCapacitorMocks();
+    vi.spyOn(window.history, "back").mockImplementation(() => {});
+    const dateSpy = vi.spyOn(Date, "now").mockReturnValue(3_000_000);
+
+    const cb = await captureBackButtonCallback(mocks);
+    cb({ canGoBack: false }); // перший тап на корені → виставив таймер
+    dateSpy.mockReturnValue(3_000_000 + 100);
+    cb({ canGoBack: true }); // user перейшов на не-кореневий маршрут і назад
+    dateSpy.mockReturnValue(3_000_000 + 200);
+    cb({ canGoBack: false }); // знову на корені — це має бути нове вікно
+
+    expect(mocks.App.exitApp).not.toHaveBeenCalled();
   });
 
   it("якщо addListener('backButton') падає — інші плагін-ініти НЕ ламаються", async () => {

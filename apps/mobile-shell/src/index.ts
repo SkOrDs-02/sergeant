@@ -35,6 +35,24 @@ const STATUS_BAR_COLOR_DARK = "#171412";
 const DEEP_LINK_SCHEME = "com.sergeant.shell://";
 
 /**
+ * Вікно «press back again to exit» для апаратної кнопки Назад на Android,
+ * коли web-history стек порожній
+ * ([M20](../../../docs/security/hardening/M20-mobile-back-button-confirm.md)).
+ *
+ * Перше натискання на кореневому маршруті лише виставляє таймстемп і
+ * диспатчить `mobileshell:back-hint` подію — web-шар може опційно
+ * показати тост «Натисніть Назад ще раз, щоб вийти». Друге натискання
+ * протягом цього вікна → `App.exitApp()`. Якщо вікно сплило, лічильник
+ * скидається — користувач не виходить випадково з додатку, і racy-deep-link,
+ * що race-ить exit, не встигне його прискорити (потрібно два навмисні натиски
+ * у ≤ 2с).
+ */
+export const BACK_TO_EXIT_WINDOW_MS = 2000;
+
+/** Custom event-ім'я, яке shell диспатчить на `window` перед першим тапом-виходом. */
+export const SHELL_BACK_HINT_EVENT = "mobileshell:back-hint";
+
+/**
  * Allowed top-level path prefixes для shell-deep-link навігації
  * ([M19](../../../docs/security/hardening/M19-mobile-deeplink-sanitize.md)).
  * `parseDeepLink()` повертає `null` для будь-чого, що не починається з
@@ -366,13 +384,44 @@ export async function initNativeShell(
     // а не `options.navigate` хук: back-button — це pure history traversal
     // (React Router сам слухає `popstate`), тоді як `navigate()` робить
     // `push` і плутає з deep-link кейсом, де URL «прибігає збоку» ззовні.
+    //
+    // M20: коли стек порожній, перший тап лише диспатчить
+    // `mobileshell:back-hint` подію (web-шар може показати тост) і виставляє
+    // `lastBackAtRootMs`. Тільки другий тап у вікні `BACK_TO_EXIT_WINDOW_MS`
+    // викликає `App.exitApp()` — щоб racy-deep-link або випадковий рух
+    // пальцем не закривали додаток і не випереджали стейт-флеш типу revoke-
+    // session. Тримаємо лічильник у замиканні listener-а — module-scoped
+    // змінна не потрібна, і HMR (`initialized` re-guard) не залишає
+    // «зависшого» вікна після другого імпорту.
+    let lastBackAtRootMs = 0;
     await App.addListener("backButton", ({ canGoBack }) => {
       if (canGoBack) {
         if (typeof window !== "undefined") {
           window.history.back();
         }
-      } else {
+        lastBackAtRootMs = 0;
+        return;
+      }
+      const now = Date.now();
+      if (
+        lastBackAtRootMs > 0 &&
+        now - lastBackAtRootMs <= BACK_TO_EXIT_WINDOW_MS
+      ) {
+        lastBackAtRootMs = 0;
         void App.exitApp();
+        return;
+      }
+      lastBackAtRootMs = now;
+      if (typeof window !== "undefined") {
+        try {
+          window.dispatchEvent(
+            new CustomEvent(SHELL_BACK_HINT_EVENT, {
+              detail: { windowMs: BACK_TO_EXIT_WINDOW_MS },
+            }),
+          );
+        } catch (err) {
+          console.warn("[mobile-shell] back-hint dispatch failed", err);
+        }
       }
     });
   } catch (err) {

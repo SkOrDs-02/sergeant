@@ -16,7 +16,7 @@
 Вимоги:
 
 - Node.js `20.x`
-- `pnpm 9.15.1`
+- `pnpm 9.15.1` (закріплено через `package.json` → `engines.pnpm: "9.x"` + `packageManager: "pnpm@9.15.1"`; corepack/Volta вмикають саме цю версію)
 - Docker для локального Postgres
 
 ```bash
@@ -26,6 +26,30 @@ pnpm install --frozen-lockfile
 cp .env.example .env
 pnpm dev:db
 ```
+
+### `pnpm install --frozen-lockfile` як дефолт ([L14](./docs/security/hardening/L14-pnpm-frozen-lockfile-dev.md))
+
+CI завжди ставить deps через `--frozen-lockfile` — тобто падає, якщо `pnpm-lock.yaml` хоч на байт відрізняється від того, що зафіксовано в репі. Це supply-chain hardening: `pnpm install` без прапорця може мовчки переписати lockfile (наприклад, після `pnpm add foo` без `pnpm-lock.yaml` у staged-files), і регресія/malicious-bump просочиться у feature-гілку без рев'ю diff-а в lock-файлі.
+
+Локально дотримуйся того ж паттерна:
+
+```bash
+# дефолтний install — точно те, що в lock-файлі
+pnpm install --frozen-lockfile
+
+# додавання нової deps — свідомо оновлює lockfile, додай diff у той самий PR
+pnpm add <pkg> --filter <workspace>
+
+# bump існуючої deps — свідомо оновлює lockfile, ловиться `pnpm audit` у CI
+pnpm update <pkg> --filter <workspace>
+
+# bump усіх deps — використовуй з обережністю, рев'ью diff lockfile-а вручну
+pnpm update -r
+```
+
+Якщо `pnpm install` (без `--frozen-lockfile`) залишив `git diff pnpm-lock.yaml` непустим, а ти не додавав/оновлював deps свідомо — значить, drift. Скинь зміни (`git checkout -- pnpm-lock.yaml`) і перерозберись, чому твоє локальне дерево не сходиться з lockfile (типово — нова версія `pnpm` сама, або забутий `pnpm install --frozen-lockfile` після `git pull`).
+
+Кожен override у `pnpm.overrides` (root `package.json`) трекається окремо — `pnpm lint:pnpm-overrides` падає, якщо range уже не resolves до одного major-а ([L1](./docs/security/hardening/L1-uuid-override.md)).
 
 Запуск локально:
 

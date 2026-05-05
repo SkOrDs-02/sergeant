@@ -95,6 +95,9 @@
 | [L4](./L4-html-lang-attribute.md)              | `<html lang>` attribute audit                           | Closed (2026-05-05) — batched L4 + L5 + L6 + M21 hardening PR                                               | [Sprint 4](./sprint-4.md) |
 | [L5](./L5-dns-prefetch-control.md)             | Confirm `X-DNS-Prefetch-Control: off`                   | Closed (2026-05-05) — batched L4 + L5 + L6 + M21 hardening PR                                               | [Sprint 4](./sprint-4.md) |
 | [L6](./L6-no-sniff-explicit.md)                | Confirm `X-Content-Type-Options: nosniff`               | Closed (2026-05-05) — batched L4 + L5 + L6 + M21 hardening PR                                               | [Sprint 4](./sprint-4.md) |
+| [M20](./M20-mobile-back-button-confirm.md)     | `App.exitApp()` on back without unsaved-state check     | Closed (2026-05-05) — batched M20 + L1 + L14 hardening PR                                                   | [Sprint 3](./sprint-3.md) |
+| [L1](./L1-uuid-override.md)                    | `package.json` overrides — confirm `uuid` resolves      | Closed (2026-05-05) — batched M20 + L1 + L14 hardening PR                                                   | [Sprint 4](./sprint-4.md) |
+| [L14](./L14-pnpm-frozen-lockfile-dev.md)       | `pnpm install --frozen-lockfile` in dev workflow        | Closed (2026-05-05) — batched M20 + L1 + L14 hardening PR                                                   | [Sprint 4](./sprint-4.md) |
 
 ## Cross-references
 

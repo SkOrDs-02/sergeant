@@ -5,7 +5,7 @@
   "type": "module",
   "engines": {
     "node": "20.x",
-    "pnpm": ">=9"
+    "pnpm": "9.x"
   },
   "packageManager": "pnpm@9.15.1",
   "volta": {
@@ -73,6 +73,7 @@
     "lint:ai-legacy": "node scripts/check-ai-legacy.mjs --check",
     "ai-legacy:dashboard": "node scripts/check-ai-legacy.mjs --dashboard dist/ai-legacy-dashboard.html",
     "lint:codeowners": "node scripts/check-codeowners-coverage.mjs",
+    "lint:pnpm-overrides": "node scripts/check-pnpm-overrides.mjs",
     "ci:validate-pr-body": "node scripts/ci/validate-pr-body.mjs"
   },
   "devDependencies": {
@@ -123,7 +124,7 @@
       "@xmldom/xmldom": ">=0.8.13",
       "serialize-javascript": ">=7.0.5",
       "postcss": ">=8.5.10",
-      "uuid": ">=14.0.0",
+      "uuid": "^14.0.0",
       "@tootallnate/once": ">=3.0.1"
     },
     "patchedDependencies": {

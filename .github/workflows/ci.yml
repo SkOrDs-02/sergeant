@@ -81,6 +81,15 @@ jobs:
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'audit-exception') }}
         run: pnpm audit --audit-level=high
 
+      - name: pnpm overrides single-major guard (L1)
+        # Closes hardening card L1
+        # (docs/security/hardening/L1-uuid-override.md). Verifies that
+        # every range in `package.json -> pnpm.overrides` still resolves
+        # to exactly one major across the workspace. Loose ranges like
+        # `>=14` silently fail when a future major lands; tight ranges
+        # like `^14` keep one copy of the dep in the tree.
+        run: pnpm lint:pnpm-overrides
+
       - name: License policy check (production tree)
         # Validates that every package in the production dependency
         # tree of @sergeant/web + @sergeant/server carries an allowed
