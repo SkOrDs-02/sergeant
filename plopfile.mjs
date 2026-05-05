@@ -1,5 +1,11 @@
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -53,6 +59,43 @@ function appendSkillToLock(slug) {
   return `appended ${slug} to .agents/skills-lock.json (hash ${hash.slice(0, 12)}…)`;
 }
 
+/**
+ * Append `/packages/<slug>/  @<owner>` to `.github/CODEOWNERS` keeping the
+ * `/packages/...` block sorted alphabetically. Idempotent: skips the write if
+ * the path is already covered. Without this, `pnpm lint:codeowners` would fail
+ * the next push because every workspace path under `/packages/` must have a
+ * codeowner entry.
+ */
+function appendPackageCodeowner(slug, owner) {
+  const coPath = resolve(__dirname, ".github/CODEOWNERS");
+  const raw = readFileSync(coPath, "utf8");
+  const lines = raw.split("\n");
+  const newRule = `/packages/${slug}/`;
+  if (lines.some((l) => l.trimStart().startsWith(newRule))) {
+    return `CODEOWNERS already covers ${newRule} (skipped)`;
+  }
+  // Find the contiguous run of `/packages/<x>/` lines and re-emit it sorted.
+  const blockStart = lines.findIndex((l) => /^\/packages\//.test(l));
+  if (blockStart === -1) {
+    appendFileSync(coPath, `${newRule.padEnd(40)} @${owner}\n`);
+    return `appended ${newRule} to CODEOWNERS (no existing /packages/ block found)`;
+  }
+  let blockEnd = blockStart;
+  while (blockEnd < lines.length && /^\/packages\//.test(lines[blockEnd])) {
+    blockEnd++;
+  }
+  const block = lines.slice(blockStart, blockEnd);
+  block.push(`${newRule.padEnd(40)} @${owner}`);
+  block.sort();
+  const out = [
+    ...lines.slice(0, blockStart),
+    ...block,
+    ...lines.slice(blockEnd),
+  ].join("\n");
+  writeFileSync(coPath, out);
+  return `inserted ${newRule} into CODEOWNERS /packages/ block (sorted)`;
+}
+
 /** Returns the next zero-padded 4-digit ADR number. */
 function nextAdrNumber() {
   const adrDir = resolve(__dirname, "docs/adr");
@@ -75,6 +118,13 @@ export default function (plop) {
   // lockfile out of sync and CI fails on the very next push.
   plop.setActionType("appendSkillToLock", (answers) => {
     return appendSkillToLock(answers.slug);
+  });
+
+  // Custom action: insert a /packages/<slug>/ entry into .github/CODEOWNERS
+  // (alphabetically within the existing /packages/ block) so that
+  // `pnpm lint:codeowners` passes immediately after `pnpm gen new-package`.
+  plop.setActionType("appendPackageCodeowner", (answers) => {
+    return appendPackageCodeowner(answers.slug, answers.owner);
   });
 
   // ── migration ──────────────────────────────────────────────────────────────
@@ -390,6 +440,106 @@ export default function (plop) {
           "Next steps: (1) flesh out the Steps and Verification sections, " +
           "(2) run `pnpm docs:gen-playbook-index` to refresh docs/playbooks/INDEX.md, " +
           "(3) run `pnpm lint` to verify schema + freshness + language gates.",
+      ];
+    },
+  });
+
+  // ── new-package ────────────────────────────────────────────────────────────
+  plop.setGenerator("new-package", {
+    description:
+      "New workspace package (packages/<slug>/{src,package.json,tsconfig.json,vitest.config.ts,README.md}) with CODEOWNERS entry",
+    prompts: [
+      {
+        type: "input",
+        name: "slug",
+        message:
+          "Package slug (kebab-case; becomes packages/<slug> and @sergeant/<slug>):",
+        validate: (v) => {
+          if (!/^[a-z][a-z0-9-]*[a-z0-9]$/.test(v)) {
+            return "kebab-case only (lowercase letters, digits, hyphens)";
+          }
+          const pkgPath = resolve(__dirname, "packages", v);
+          if (existsSync(pkgPath)) {
+            return `packages/${v} already exists — pick another slug or remove the dir first`;
+          }
+          return true;
+        },
+      },
+      {
+        type: "input",
+        name: "description",
+        message:
+          "One-line description (≤200 chars; lands in src/index.ts and README.md):",
+        validate: (v) => {
+          if (!v.trim()) return "required";
+          if (v.length > 200)
+            return `description is ${v.length} chars (max 200)`;
+          return true;
+        },
+      },
+      {
+        type: "list",
+        name: "kind",
+        message: "Package kind:",
+        choices: [
+          {
+            name: "lib (Node-only TS library — most domain/util packages)",
+            value: "lib",
+          },
+          {
+            name: "react (uses JSX/DOM — extends @sergeant/config/tsconfig.react.json)",
+            value: "react",
+          },
+        ],
+        default: "lib",
+      },
+      {
+        type: "input",
+        name: "owner",
+        message: "Owner GitHub handle for CODEOWNERS (without @):",
+        default: "Skords-01",
+        validate: (v) => /^[A-Za-z0-9-]+$/.test(v) || "GitHub handle only",
+      },
+    ],
+    actions: () => {
+      const base = "packages/{{slug}}";
+      return [
+        {
+          type: "add",
+          path: `${base}/package.json`,
+          templateFile: "plop-templates/new-package/package.json.hbs",
+        },
+        {
+          type: "add",
+          path: `${base}/tsconfig.json`,
+          templateFile: "plop-templates/new-package/tsconfig.json.hbs",
+        },
+        {
+          type: "add",
+          path: `${base}/vitest.config.ts`,
+          templateFile: "plop-templates/new-package/vitest.config.ts.hbs",
+        },
+        {
+          type: "add",
+          path: `${base}/src/index.ts`,
+          templateFile: "plop-templates/new-package/index.ts.hbs",
+        },
+        {
+          type: "add",
+          path: `${base}/src/index.test.ts`,
+          templateFile: "plop-templates/new-package/index.test.ts.hbs",
+        },
+        {
+          type: "add",
+          path: `${base}/README.md`,
+          templateFile: "plop-templates/new-package/README.md.hbs",
+        },
+        { type: "appendPackageCodeowner" },
+        (answers) =>
+          `Next steps: (1) \`pnpm install\` (registers the new workspace package), ` +
+          `(2) replace the stub export in src/index.ts with real surface, ` +
+          `(3) \`pnpm --filter @sergeant/${answers.slug} typecheck && pnpm --filter @sergeant/${answers.slug} test\` to verify, ` +
+          `(4) \`pnpm lint:codeowners\` to confirm the CODEOWNERS entry was inserted correctly.`,
       ];
     },
   });
