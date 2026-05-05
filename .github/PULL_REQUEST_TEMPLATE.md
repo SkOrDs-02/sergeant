@@ -50,6 +50,16 @@ Updated docs:
 - [ ] Internal docs I touched are in Ukrainian.
 - [ ] I did not use `--no-verify`.
 
+## Audit-freeze (until 2026-06-02)
+
+<!-- Per `docs/governance/audit-freeze-2026-05-05.md`. New files under
+docs/audits/, docs/initiatives/, docs/playbooks/, docs/adr/ trigger a
+non-blocking CI warning. If this PR adds such a file, add `[skip-freeze]`
+or `[freeze-exception]` to the PR title and explain below. Otherwise leave
+this section as-is or remove. -->
+
+- [ ] This PR does not add new top-level audit/initiative/playbook/ADR files (or override is justified below).
+
 ## Reviewer Notes
 
 <!-- Flag migrations, env changes, HubChat tools, auth, or anything else that deserves extra reviewer attention. -->
