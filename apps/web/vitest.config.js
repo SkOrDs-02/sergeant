@@ -17,6 +17,7 @@ export default defineConfig({
         ...baseCoverageConfig.exclude,
         "src/test/**",
         "src/sw.ts",
+        "src/sw/**",
         "src/main.tsx",
       ],
       thresholds: {
@@ -25,33 +26,32 @@ export default defineConfig({
         //
         // - 2026-04-25 baseline: lines 17.42 / branches 65.51 / fns 52.42 /
         //   statements 17.42. Floors at the time: 15 / 63 / 50 / 15.
-        // - 2026-05-05 measured (this commit, after the connectionGate +
+        // - 2026-05-05 measured (after the connectionGate +
         //   vercelOutputConfig + HubDashboard test fixes that finally let
         //   `apps/web` test:coverage exit code 0 again):
         //     lines 39.29 / branches 32.83 / fns 29.3 / statements 38.06.
+        //   Floors set then: 37 / 30 / 27 / 36.
         //
-        // Branches (-32.7pp) and functions (-23.1pp) collapsed because two
-        // large untested surfaces were added since the baseline:
-        //   - `src/sw/**` (service-worker cache/debug/messages/notifiedKeys/
-        //     reminders/version — all 0% coverage, ~600 LoC of branchful
-        //     code added in the PWA push reminders work, never imported
-        //     from a test file because the SW context is unreachable from
-        //     vitest jsdom).
-        //   - `src/shared/lib/idb/sergeantDb.ts` (~270 LoC, 17% covered) and
-        //     `src/shared/lib/ui/{amountTone,export,perf}.ts` (~340 LoC,
-        //     0% covered) — both added by the recent finyk/export sprint.
+        // - 2026-05-05 measured (this commit, after excluding `src/sw/**`
+        //   from coverage — option (b) from the previous drift entry):
+        //     lines 39.82 / branches 33.15 / fns 29.69 / statements 38.59.
+        //   Floors raised to 38 / 31 / 28 / 37 (~+1pp ratchet, ~2pp head-
+        //   room kept). The lift from excluding the service-worker is
+        //   smaller than expected (+0.32 to +0.53pp) — the bulk of the
+        //   2026-04-25 → 2026-05-05 collapse is in `src/shared/lib/idb`
+        //   (~17% covered), `src/shared/lib/ui/{amountTone,export,perf}`
+        //   (0% each) and many low-coverage finyk/fizruk/nutrition
+        //   surfaces, not in `sw/**` itself. SW is now treated as
+        //   e2e-only territory (covered by `tests/a11y/sw-smoke.spec.ts`).
         //
         // Floors set ~2pp below current actuals — same pattern as
-        // `apps/server/vitest.config.ts`. Raise per sprint by either
-        // (a) adding direct vitest tests for `sw/**` (probably needs a
-        // node-only suite that imports the SW module factories without
-        // touching `self`), or (b) excluding `src/sw/**` from coverage
-        // entirely and treating it as e2e-only territory. Both are out of
-        // scope for the CI-unblock pass.
-        lines: 37,
-        branches: 30,
-        functions: 27,
-        statements: 36,
+        // `apps/server/vitest.config.ts`. Raise per sprint as the idb /
+        // shared-lib-ui tests land (see docs/testing/2026-05-05-tests-
+        // pr-plan.md → PR-T03 / PR-T04).
+        lines: 38,
+        branches: 31,
+        functions: 28,
+        statements: 37,
       },
     },
   },
