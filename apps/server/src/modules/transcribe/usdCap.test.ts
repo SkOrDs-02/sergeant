@@ -77,11 +77,11 @@ beforeEach(() => {
   infoMock.mockReset();
   warnMock.mockReset();
   capCounterIncMock.mockReset();
-  delete process.env.TRANSCRIBE_USD_CAP_DAILY_MICROS;
+  delete process.env["TRANSCRIBE_USD_CAP_DAILY_MICROS"];
 });
 
 afterEach(() => {
-  delete process.env.TRANSCRIBE_USD_CAP_DAILY_MICROS;
+  delete process.env["TRANSCRIBE_USD_CAP_DAILY_MICROS"];
 });
 
 describe("H9 estimateMicros (linear tariff)", () => {
@@ -114,17 +114,17 @@ describe("H9 dailyCapMicros (env override)", () => {
   });
 
   it("env-override приймається коли ціле невід'ємне", () => {
-    process.env.TRANSCRIBE_USD_CAP_DAILY_MICROS = "5000000";
+    process.env["TRANSCRIBE_USD_CAP_DAILY_MICROS"] = "5000000";
     expect(__testing.dailyCapMicros()).toBe(5_000_000);
   });
 
   it("0 = effectively disabled (синтетика / e2e)", () => {
-    process.env.TRANSCRIBE_USD_CAP_DAILY_MICROS = "0";
+    process.env["TRANSCRIBE_USD_CAP_DAILY_MICROS"] = "0";
     expect(__testing.dailyCapMicros()).toBe(0);
   });
 
   it("invalid → fallback на default + warn", () => {
-    process.env.TRANSCRIBE_USD_CAP_DAILY_MICROS = "not-a-number";
+    process.env["TRANSCRIBE_USD_CAP_DAILY_MICROS"] = "not-a-number";
     expect(__testing.dailyCapMicros()).toBe(__testing.DEFAULT_DAILY_CAP_MICROS);
     expect(warnMock).toHaveBeenCalledWith(
       expect.objectContaining({ msg: "transcribe_usd_cap_invalid_env" }),
@@ -146,7 +146,7 @@ describe("H9 assertTranscribeUsdCap — happy path", () => {
     expect(res.body).toBeUndefined();
     // SELECT параметризований subject_key, day, bucket
     expect(queryMock).toHaveBeenCalledOnce();
-    const sqlArgs = queryMock.mock.calls[0][1];
+    const sqlArgs = queryMock!.mock.calls[0]![1];
     expect(sqlArgs[0]).toBe("u:user-123");
     expect(sqlArgs[2]).toBe(`transcribe:${MODEL}`);
   });
@@ -225,7 +225,7 @@ describe("H9 assertTranscribeUsdCap — fail-open / disabled", () => {
   });
 
   it("cap=0 (disabled) → не виконує SELECT", async () => {
-    process.env.TRANSCRIBE_USD_CAP_DAILY_MICROS = "0";
+    process.env["TRANSCRIBE_USD_CAP_DAILY_MICROS"] = "0";
     const r = await assertTranscribeUsdCap(
       makeReq("u-1"),
       makeRes(),
@@ -258,7 +258,7 @@ describe("H9 recordTranscribeUsdSpend — UPSERT", () => {
     queryMock.mockResolvedValueOnce({ rows: [] });
     await recordTranscribeUsdSpend(makeReq("u-paid"), TEN_MB, MODEL);
     expect(queryMock).toHaveBeenCalledOnce();
-    const [sql, args] = queryMock.mock.calls[0];
+    const [sql, args] = queryMock.mock.calls[0]!;
     expect(sql).toContain("INSERT INTO ai_usage_daily");
     expect(sql).toContain("ON CONFLICT");
     expect(sql).toContain("usd_micros = ai_usage_daily.usd_micros + EXCLUDED");

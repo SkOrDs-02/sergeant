@@ -44,7 +44,7 @@ interface UsageRow {
 }
 
 function dailyCapMicros(): number {
-  const raw = process.env.TRANSCRIBE_USD_CAP_DAILY_MICROS;
+  const raw = process.env["TRANSCRIBE_USD_CAP_DAILY_MICROS"];
   if (raw === undefined || raw === "") return DEFAULT_DAILY_CAP_MICROS;
   const n = Number.parseInt(raw, 10);
   if (!Number.isFinite(n) || n < 0) {
@@ -143,7 +143,7 @@ export async function assertTranscribeUsdCap(
     if (rows.length > 0) {
       // pg `BIGINT` приходить як string — коерсимо у number (AGENTS.md
       // hard rule #1).
-      spent = Number(rows[0].usd_micros) || 0;
+      spent = Number(rows[0]!.usd_micros) || 0;
     }
   } catch (err) {
     // Fail-open: при недоступності DB не блокуємо легітимного юзера.

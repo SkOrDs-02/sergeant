@@ -12,7 +12,7 @@ type WithGroqKey = Request & { groqKey?: string };
  */
 export function requireGroqKey(): RequestHandler {
   return (req, res, next) => {
-    const key = process.env.GROQ_API_KEY;
+    const key = process.env["GROQ_API_KEY"];
     if (!key) {
       res.status(503).json({
         error: "GROQ_API_KEY не сконфігурований",

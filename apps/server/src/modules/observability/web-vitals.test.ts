@@ -211,7 +211,7 @@ describe("webVitalsHandler", () => {
 
         expect(res.statusCode).toBe(204);
         expect(warnSpy).toHaveBeenCalledTimes(1);
-        const logged = warnSpy.mock.calls[0][0] as {
+        const logged = warnSpy!.mock.calls[0]![0] as {
           msg: string;
           ua_family: string;
         };
@@ -238,7 +238,7 @@ describe("webVitalsHandler", () => {
         webVitalsHandler(asReq(req), res);
 
         expect(warnSpy).toHaveBeenCalledTimes(1);
-        const logged = warnSpy.mock.calls[0][0] as { ua_family: string };
+        const logged = warnSpy!.mock.calls[0]![0] as { ua_family: string };
         expect(logged.ua_family).toBe("unknown");
       } finally {
         warnSpy.mockRestore();

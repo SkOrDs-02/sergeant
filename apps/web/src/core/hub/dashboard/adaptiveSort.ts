@@ -182,18 +182,18 @@ export function pickAdaptiveLift({
 
   for (let i = 0; i < order.length; i++) {
     const id = order[i];
-    if (!activeModules.has(id)) continue;
+    if (!activeModules.has(id!)) continue;
 
     let score = 0;
     let reason = "";
 
-    if (modulesWithSignal.has(id)) {
-      const s = signalScore(severityByModule[id]);
+    if (modulesWithSignal.has(id!)) {
+      const s = signalScore(severityByModule[id!]);
       score += s.score;
       reason = s.reason;
     }
 
-    const timeMatch = timeOfDayMatch(id, hour);
+    const timeMatch = timeOfDayMatch(id!, hour);
     if (timeMatch) {
       score += timeMatch.score;
       // Prefer the time-of-day reason when it's the dominant component —
@@ -210,7 +210,7 @@ export function pickAdaptiveLift({
       score > best.score ||
       (score === best.score && i < best.index)
     ) {
-      best = { id, score, reason, index: i };
+      best = { id: id!, score, reason, index: i };
     }
   }
 

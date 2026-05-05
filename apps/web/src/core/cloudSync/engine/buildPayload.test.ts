@@ -31,8 +31,8 @@ describe("buildModulesPayload", () => {
       profile: "2026-04-15T00:00:00.000Z",
     });
     expect(result.profile).toBeDefined();
-    expect(result.profile.clientUpdatedAt).toBe("2026-04-15T00:00:00.000Z");
-    expect(result.profile.data).toMatchObject({
+    expect(result.profile!.clientUpdatedAt!).toBe("2026-04-15T00:00:00.000Z");
+    expect(result.profile!.data!).toMatchObject({
       [STORAGE_KEYS.USER_PROFILE]: { id: 1 },
     });
   });
@@ -42,7 +42,7 @@ describe("buildModulesPayload", () => {
     const before = Date.now();
     const result = buildModulesPayload(["profile"], {});
     const after = Date.now();
-    const ts = Date.parse(result.profile.clientUpdatedAt);
+    const ts = Date.parse(result.profile!.clientUpdatedAt!);
     expect(ts).toBeGreaterThanOrEqual(before);
     expect(ts).toBeLessThanOrEqual(after);
   });

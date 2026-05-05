@@ -17,20 +17,20 @@ export interface GroqTranscribeOptions {
    * ISO-код мови (`uk`, `en`, ...). Якщо `null/undefined` — Whisper
    * визначить автоматично (повільніше і менш точно).
    */
-  language?: string;
+  language?: string | undefined;
   /**
    * Доменна підказка (≤ 1024 токени). Драматично покращує точність
    * на спеціалізованій лексиці: списки вправ, назви продуктів, категорії
    * витрат. Анг + укр одночасно ОК.
    */
-  prompt?: string;
+  prompt?: string | undefined;
   /** Hard timeout у мс для upstream-виклику. */
-  timeoutMs?: number;
+  timeoutMs?: number | undefined;
   /**
    * AbortSignal, що скасовує запит при client-disconnect (Express `req`).
    * Комбінується з внутрішнім timeout.
    */
-  signal?: AbortSignal;
+  signal?: AbortSignal | undefined;
 }
 
 export interface GroqTranscribeResult {

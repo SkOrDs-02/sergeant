@@ -55,7 +55,7 @@ describe("validateBody", () => {
     expect(res.statusCode).toBe(400);
     expect(res.body!.error).toBe("Некоректні дані запиту");
     expect(res.body!.details).toHaveLength(1);
-    expect(res.body!.details![0].path).toBe("a");
+    expect(res!.body!.details![0]!.path).toBe("a");
   });
 
   it("обробляє відсутній body як {}", () => {

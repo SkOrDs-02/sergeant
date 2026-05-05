@@ -59,14 +59,14 @@ describe("applyNutritionDualWriteOps", () => {
       ["m1"],
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0].user_id).toBe(UID);
-    expect(rows[0].eaten_at).toBe("2026-05-01T08:30:00.000Z");
-    expect(rows[0].meal_type).toBe("breakfast");
-    expect(rows[0].kcal).toBe(450);
-    expect(rows[0].protein_g).toBe(18);
-    expect(rows[0].amount_g).toBe(250);
-    expect(rows[0].is_demo).toBe(0);
-    expect(rows[0].deleted_at).toBeNull();
+    expect(rows[0]!.user_id).toBe(UID);
+    expect(rows[0]!.eaten_at).toBe("2026-05-01T08:30:00.000Z");
+    expect(rows[0]!.meal_type).toBe("breakfast");
+    expect(rows[0]!.kcal).toBe(450);
+    expect(rows[0]!.protein_g).toBe(18);
+    expect(rows[0]!.amount_g).toBe(250);
+    expect(rows[0]!.is_demo).toBe(0);
+    expect(rows[0]!.deleted_at).toBeNull();
   });
 
   it("soft-deletes a meal", async () => {
@@ -107,7 +107,7 @@ describe("applyNutritionDualWriteOps", () => {
       "SELECT deleted_at FROM nutrition_meals WHERE id = ?",
       ["m1"],
     );
-    expect(rows[0].deleted_at).toBe(TS2);
+    expect(rows[0]!.deleted_at).toBe(TS2);
   });
 
   it("LWW guard: stale meal upsert is a no-op", async () => {
@@ -166,7 +166,7 @@ describe("applyNutritionDualWriteOps", () => {
       "SELECT name FROM nutrition_meals WHERE id = ?",
       ["m1"],
     );
-    expect(rows[0].name).toBe("latest");
+    expect(rows[0]!.name).toBe("latest");
   });
 
   // --- Pantries ---
@@ -198,10 +198,10 @@ describe("applyNutritionDualWriteOps", () => {
       ["p1"],
     );
     expect(items).toHaveLength(2);
-    expect(items[0].name).toBe("молоко");
-    expect(items[0].qty).toBe(1);
-    expect(items[1].name).toBe("яйця");
-    expect(items[1].sort_order).toBe(1);
+    expect(items[0]!.name).toBe("молоко");
+    expect(items[0]!.qty).toBe(1);
+    expect(items[1]!.name).toBe("яйця");
+    expect(items[1]!.sort_order).toBe(1);
 
     // Remove it2 → should be soft-deleted on next upsert
     const ops2: NutritionDualWriteOp[] = [
@@ -264,13 +264,13 @@ describe("applyNutritionDualWriteOps", () => {
       "SELECT deleted_at FROM nutrition_pantries WHERE id = ?",
       ["p1"],
     );
-    expect(pantries[0].deleted_at).toBe(TS2);
+    expect(pantries[0]!.deleted_at).toBe(TS2);
 
     const items = await handle.client.all<Record<string, unknown>>(
       "SELECT deleted_at FROM nutrition_pantry_items WHERE pantry_id = ?",
       ["p1"],
     );
-    expect(items[0].deleted_at).toBe(TS2);
+    expect(items[0]!.deleted_at).toBe(TS2);
   });
 
   // --- Prefs ---
@@ -297,8 +297,8 @@ describe("applyNutritionDualWriteOps", () => {
       [UID],
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0].active_pantry_id).toBe("p1");
-    expect(rows[0].prefs_json).toBe('{"goal":"maintain","servings":2}');
+    expect(rows[0]!.active_pantry_id).toBe("p1");
+    expect(rows[0]!.prefs_json).toBe('{"goal":"maintain","servings":2}');
   });
 
   it("LWW guard: stale prefs upsert is a no-op", async () => {
@@ -330,7 +330,7 @@ describe("applyNutritionDualWriteOps", () => {
       "SELECT prefs_json FROM nutrition_prefs WHERE user_id = ?",
       [UID],
     );
-    expect(rows[0].prefs_json).toBe('{"goal":"latest"}');
+    expect(rows[0]!.prefs_json).toBe('{"goal":"latest"}');
   });
 
   // --- Recipes ---
@@ -358,8 +358,8 @@ describe("applyNutritionDualWriteOps", () => {
       ["rcp1"],
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0].name).toBe("Омлет");
-    expect(JSON.parse(rows[0].data_json as string)).toMatchObject({
+    expect(rows[0]!.name).toBe("Омлет");
+    expect(JSON.parse(rows[0]!.data_json as string)).toMatchObject({
       title: "Омлет",
     });
 
@@ -376,7 +376,7 @@ describe("applyNutritionDualWriteOps", () => {
       "SELECT deleted_at FROM nutrition_recipes WHERE id = ?",
       ["rcp1"],
     );
-    expect(after[0].deleted_at).toBe(TS2);
+    expect(after[0]!.deleted_at).toBe(TS2);
   });
 
   // --- Error handling ---

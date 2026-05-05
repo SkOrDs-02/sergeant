@@ -49,7 +49,7 @@ export function loadApnsKey(raw: string): string {
 }
 
 function loadConfigFromEnv(): ApnsConfig | null {
-  const raw = process.env.APNS_P8_KEY;
+  const raw = process.env["APNS_P8_KEY"];
   if (!raw || !raw.trim()) {
     if (!warnedDisabled) {
       logger.warn({ msg: "push sender disabled — no APNS_P8_KEY" });
@@ -57,9 +57,9 @@ function loadConfigFromEnv(): ApnsConfig | null {
     }
     return null;
   }
-  const keyId = process.env.APNS_KEY_ID?.trim();
-  const teamId = process.env.APNS_TEAM_ID?.trim();
-  const bundleId = process.env.APNS_BUNDLE_ID?.trim();
+  const keyId = process.env["APNS_KEY_ID"]?.trim();
+  const teamId = process.env["APNS_TEAM_ID"]?.trim();
+  const bundleId = process.env["APNS_BUNDLE_ID"]?.trim();
   if (!keyId || !teamId || !bundleId) {
     // Окремий warn — щоб оператор одразу побачив, якого саме env-а бракує;
     // ставити generic "disabled" без деталей → годинник дебагу в проді.
@@ -85,7 +85,7 @@ function loadConfigFromEnv(): ApnsConfig | null {
     keyId,
     teamId,
     bundleId,
-    production: process.env.APNS_PRODUCTION === "true",
+    production: process.env["APNS_PRODUCTION"] === "true",
   };
 }
 

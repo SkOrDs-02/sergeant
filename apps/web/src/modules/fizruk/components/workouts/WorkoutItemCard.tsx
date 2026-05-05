@@ -136,6 +136,7 @@ export function WorkoutItemCard({
               className="text-style-label text-text truncate text-left hover:underline"
               onClick={() => {
                 if (it.exerciseId)
+                  // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
                   window.location.hash = `#exercise/${it.exerciseId}`;
               }}
             >
@@ -248,7 +249,7 @@ export function WorkoutItemCard({
                 onChange={(e) => {
                   const next = [...(it.sets || [])];
                   next[idx] = {
-                    ...next[idx],
+                    ...next[idx]!,
                     weightKg:
                       e.target.value === "" ? 0 : Number(e.target.value),
                   };
@@ -277,7 +278,7 @@ export function WorkoutItemCard({
                 onChange={(e) => {
                   const next = [...(it.sets || [])];
                   next[idx] = {
-                    ...next[idx],
+                    ...next[idx]!,
                     reps: e.target.value === "" ? 0 : Number(e.target.value),
                   };
                   updateItem(activeWorkout.id, it.id, { sets: next });

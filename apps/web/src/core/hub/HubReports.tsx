@@ -116,7 +116,7 @@ function BarChart({
     <div>
       {selected !== null && (
         <div className="text-style-caption text-center text-text mb-1 h-4">
-          {formatTooltip(dates[selected], vals[selected])}
+          {formatTooltip(dates[selected]!, vals[selected]!)}
         </div>
       )}
       {selected === null && <div className="h-4 mb-1" />}

@@ -199,7 +199,8 @@ export function aggregateHabits(
   for (const dk of dates) {
     const possible = habits.length;
     const done = habits.filter(
-      (h) => Array.isArray(completions[h.id]) && completions[h.id].includes(dk),
+      (h) =>
+        Array.isArray(completions[h.id]) && completions[h.id]!.includes(dk),
     ).length;
     totalPossible += possible;
     totalDone += done;

@@ -24,19 +24,19 @@ import {
 
 const warnMock = logger.warn as unknown as ReturnType<typeof vi.fn>;
 
-const ORIGINAL_ENV = process.env.CLOUDSYNC_V1_SUNSET_AT;
+const ORIGINAL_ENV = process.env["CLOUDSYNC_V1_SUNSET_AT"];
 
 beforeEach(() => {
   __resetSunsetCacheForTest();
   warnMock.mockClear();
-  delete process.env.CLOUDSYNC_V1_SUNSET_AT;
+  delete process.env["CLOUDSYNC_V1_SUNSET_AT"];
 });
 
 afterEach(() => {
   if (ORIGINAL_ENV === undefined) {
-    delete process.env.CLOUDSYNC_V1_SUNSET_AT;
+    delete process.env["CLOUDSYNC_V1_SUNSET_AT"];
   } else {
-    process.env.CLOUDSYNC_V1_SUNSET_AT = ORIGINAL_ENV;
+    process.env["CLOUDSYNC_V1_SUNSET_AT"] = ORIGINAL_ENV;
   }
 });
 
@@ -119,7 +119,7 @@ describe("v1SunsetHeadersMiddleware", () => {
       res as unknown as Parameters<typeof mw>[1],
       next,
     );
-    expect(res.headers.Deprecation).toBe("true");
+    expect(res.headers["Deprecation"]).toBe("true");
     expect(next).toHaveBeenCalledOnce();
   });
 
@@ -131,8 +131,8 @@ describe("v1SunsetHeadersMiddleware", () => {
       res as unknown as Parameters<typeof mw>[1],
       vi.fn(),
     );
-    expect(res.headers.Link).toContain('rel="successor-version"');
-    expect(res.headers.Link).toContain('rel="deprecation"');
+    expect(res.headers["Link"]).toContain('rel="successor-version"');
+    expect(res.headers["Link"]).toContain('rel="deprecation"');
   });
 
   it("does NOT set Sunset when env var is unset", () => {
@@ -143,11 +143,11 @@ describe("v1SunsetHeadersMiddleware", () => {
       res as unknown as Parameters<typeof mw>[1],
       vi.fn(),
     );
-    expect(res.headers.Sunset).toBeUndefined();
+    expect(res.headers["Sunset"]).toBeUndefined();
   });
 
   it("sets Sunset when env var is a valid ISO date", () => {
-    process.env.CLOUDSYNC_V1_SUNSET_AT = "2026-12-31";
+    process.env["CLOUDSYNC_V1_SUNSET_AT"] = "2026-12-31";
     __resetSunsetCacheForTest();
     const mw = v1SunsetHeadersMiddleware();
     const res = fakeRes();
@@ -156,12 +156,12 @@ describe("v1SunsetHeadersMiddleware", () => {
       res as unknown as Parameters<typeof mw>[1],
       vi.fn(),
     );
-    expect(res.headers.Sunset).toContain("Dec 2026");
-    expect(res.headers.Sunset).toMatch(/GMT$/);
+    expect(res.headers["Sunset"]).toContain("Dec 2026");
+    expect(res.headers["Sunset"]).toMatch(/GMT$/);
   });
 
   it("does NOT set Sunset and warns once when env var is malformed", () => {
-    process.env.CLOUDSYNC_V1_SUNSET_AT = "garbage";
+    process.env["CLOUDSYNC_V1_SUNSET_AT"] = "garbage";
     __resetSunsetCacheForTest();
     const mw = v1SunsetHeadersMiddleware();
     const res = fakeRes();
@@ -170,14 +170,14 @@ describe("v1SunsetHeadersMiddleware", () => {
       res as unknown as Parameters<typeof mw>[1],
       vi.fn(),
     );
-    expect(res.headers.Sunset).toBeUndefined();
+    expect(res.headers["Sunset"]).toBeUndefined();
     expect(warnMock).toHaveBeenCalledWith(
       expect.objectContaining({ msg: "cloudsync_v1_sunset_env_invalid" }),
     );
   });
 
   it("does not warn twice for the same env value (cached)", () => {
-    process.env.CLOUDSYNC_V1_SUNSET_AT = "garbage";
+    process.env["CLOUDSYNC_V1_SUNSET_AT"] = "garbage";
     __resetSunsetCacheForTest();
     const mw = v1SunsetHeadersMiddleware();
     for (let i = 0; i < 5; i++) {
@@ -193,23 +193,23 @@ describe("v1SunsetHeadersMiddleware", () => {
   it("re-resolves cache when env value changes", () => {
     const mw = v1SunsetHeadersMiddleware();
 
-    process.env.CLOUDSYNC_V1_SUNSET_AT = "2026-12-31";
+    process.env["CLOUDSYNC_V1_SUNSET_AT"] = "2026-12-31";
     const r1 = fakeRes();
     mw(
       {} as unknown as Parameters<typeof mw>[0],
       r1 as unknown as Parameters<typeof mw>[1],
       vi.fn(),
     );
-    expect(r1.headers.Sunset).toContain("Dec 2026");
+    expect(r1.headers["Sunset"]).toContain("Dec 2026");
 
-    process.env.CLOUDSYNC_V1_SUNSET_AT = "2027-06-15";
+    process.env["CLOUDSYNC_V1_SUNSET_AT"] = "2027-06-15";
     const r2 = fakeRes();
     mw(
       {} as unknown as Parameters<typeof mw>[0],
       r2 as unknown as Parameters<typeof mw>[1],
       vi.fn(),
     );
-    expect(r2.headers.Sunset).toContain("Jun 2027");
+    expect(r2.headers["Sunset"]).toContain("Jun 2027");
   });
 
   it("survives setHeader throw without breaking the request", () => {

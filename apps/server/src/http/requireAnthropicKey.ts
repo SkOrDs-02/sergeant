@@ -12,7 +12,7 @@ type WithAnthropicKey = Request & { anthropicKey?: string };
  */
 export function requireAnthropicKey(): RequestHandler {
   return (req, res, next) => {
-    const key = process.env.ANTHROPIC_API_KEY;
+    const key = process.env["ANTHROPIC_API_KEY"];
     if (!key) {
       res.status(503).json({ error: "ANTHROPIC_API_KEY не сконфігурований" });
       return;

@@ -362,7 +362,7 @@ export function Workouts() {
   const submitRetroWorkout = useCallback(() => {
     const [y, mo, d] = retroDate.split("-").map(Number);
     const [hh, mm] = (retroTime || "12:00").split(":").map(Number);
-    const startedAt = new Date(y, mo - 1, d, hh, mm, 0, 0).toISOString();
+    const startedAt = new Date(y!, mo! - 1, d, hh, mm, 0, 0).toISOString();
     const w = createWorkoutWithTimes({ startedAt });
     setActiveWorkoutId(w.id);
     setRetroOpen(false);

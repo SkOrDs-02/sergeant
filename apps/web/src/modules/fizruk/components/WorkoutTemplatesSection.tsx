@@ -128,7 +128,7 @@ export function WorkoutTemplatesSection({
       const j = idx + dir;
       if (j < 0 || j >= o.length) return o;
       const next = [...o];
-      [next[idx], next[j]] = [next[j], next[idx]];
+      [next[idx], next[j]] = [next[j]!, next[idx]!];
       return next;
     });
   };
@@ -483,7 +483,7 @@ export function WorkoutTemplatesSection({
             removeTemplate(confirmDeleteId);
             if (snapshot && typeof restoreTemplate === "function") {
               showUndoToast(toast, {
-                msg: `Видалено шаблон «${snapshot.template.name}»`,
+                msg: `Видалено шаблон «${snapshot.template!.name!}»`,
                 onUndo: () =>
                   restoreTemplate(snapshot.template, snapshot.index),
               });

@@ -96,7 +96,7 @@ function workoutDayInsight(): Insight | null {
 
   const dowCount = Array<number>(7).fill(0);
   for (const w of workouts) {
-    dowCount[new Date(w.startedAt).getDay()]++;
+    dowCount[new Date(w.startedAt).getDay()]!++;
   }
 
   const maxCount = Math.max(...dowCount);
@@ -107,7 +107,7 @@ function workoutDayInsight(): Insight | null {
     id: "best_workout_day",
     emoji: "📅",
     title: "Найпродуктивніший день для тренувань",
-    stat: DOW_UK[maxIdx],
+    stat: DOW_UK[maxIdx]!,
     detail: `${maxCount} з ${workouts.length} тренувань`,
   };
 }
@@ -247,10 +247,10 @@ function bestHabitMonthInsight(): Insight | null {
 
   for (const mk of months) {
     const [y, m] = mk.split("-").map(Number);
-    const daysInMonth = new Date(y, m, 0).getDate();
+    const daysInMonth = new Date(y!, m!, 0).getDate();
     const total = habits.length * daysInMonth;
     if (total === 0) continue;
-    const pct = Math.round((monthDone[mk] / total) * 100);
+    const pct = Math.round((monthDone[mk]! / total) * 100);
     if (pct > bestPct) {
       bestPct = pct;
       bestMk = mk;
@@ -260,7 +260,7 @@ function bestHabitMonthInsight(): Insight | null {
   if (!bestMk || bestPct < 10) return null;
 
   const [y, m] = bestMk.split("-").map(Number);
-  const label = `${MONTHS_UK[m - 1]} ${y}`;
+  const label = `${MONTHS_UK[m! - 1]} ${y}`;
 
   return {
     id: "best_habit_month",
@@ -358,7 +358,7 @@ function habitWeeksKcalInsight(): Insight | null {
       for (const h of habits) {
         if (
           Array.isArray(completions[h.id]) &&
-          completions[h.id].includes(dk)
+          completions[h.id]!.includes(dk)
         ) {
           habitDone++;
         }

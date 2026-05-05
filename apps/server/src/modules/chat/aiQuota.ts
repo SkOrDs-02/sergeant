@@ -100,7 +100,7 @@ function parseLimit<F extends number | null>(
  * here trusts the startup check and does not re-validate at runtime.
  */
 export function isAiQuotaDisabled(): boolean {
-  const v = process.env.AI_QUOTA_DISABLED?.toLowerCase();
+  const v = process.env["AI_QUOTA_DISABLED"]?.toLowerCase();
   return v === "1" || v === "true";
 }
 
@@ -122,7 +122,7 @@ function toolCost(): number {
  * JSON-і — null + лог-попередження (advisory-фіча не повинна блокувати запити).
  */
 function toolLimit(toolName: string): number | null {
-  const raw = process.env.AI_QUOTA_TOOL_LIMITS;
+  const raw = process.env["AI_QUOTA_TOOL_LIMITS"];
   if (!raw) {
     return parseLimit("AI_QUOTA_TOOL_DEFAULT_LIMIT", null);
   }
@@ -190,7 +190,7 @@ export async function assertAiQuota(
     return false;
   }
 
-  if (!process.env.DATABASE_URL) {
+  if (!process.env["DATABASE_URL"]) {
     logQuotaStoreUnavailable("database_url_missing");
     setRemainingHeader(res, "unknown");
     return true;
@@ -262,7 +262,7 @@ export async function consumeToolQuota(
     return { ok: false, remaining: 0, limit: 0, reason: "disabled" };
   }
 
-  if (!process.env.DATABASE_URL) {
+  if (!process.env["DATABASE_URL"]) {
     logQuotaStoreUnavailable("database_url_missing");
     return { ok: true, remaining: null, limit, reason: "store_unavailable" };
   }
@@ -358,7 +358,7 @@ async function consumeQuota({
   if (r.rows.length === 0) {
     return { ok: false, remaining: 0, limit };
   }
-  const next = r.rows[0].request_count;
+  const next = r!.rows[0]!.request_count;
   return { ok: true, remaining: Math.max(0, limit - next), limit };
 }
 
@@ -369,7 +369,7 @@ async function consumeQuota({
  * refund не повинен ламати відповідь на помилку.
  */
 async function refundConsumed(ticket: ConsumedTicket): Promise<void> {
-  if (!process.env.DATABASE_URL) return;
+  if (!process.env["DATABASE_URL"]) return;
   try {
     await pool.query(
       `UPDATE ai_usage_daily

@@ -75,10 +75,10 @@ describe("signAppJwt", () => {
     expect(sigB64).toBeTruthy();
 
     const header = JSON.parse(
-      Buffer.from(headerB64, "base64url").toString("utf-8"),
+      Buffer.from(headerB64!, "base64url").toString("utf-8"),
     );
     const payload = JSON.parse(
-      Buffer.from(payloadB64, "base64url").toString("utf-8"),
+      Buffer.from(payloadB64!, "base64url").toString("utf-8"),
     );
     expect(header).toEqual({ alg: "RS256", typ: "JWT" });
     expect(payload.iss).toBe("987654");
@@ -92,7 +92,7 @@ describe("signAppJwt", () => {
     verifier.update(`${headerB64}.${payloadB64}`);
     verifier.end();
     expect(
-      verifier.verify(TEST_PUBLIC_KEY, Buffer.from(sigB64, "base64url")),
+      verifier.verify(TEST_PUBLIC_KEY, Buffer.from(sigB64!, "base64url")),
     ).toBe(true);
   });
 
@@ -114,7 +114,7 @@ describe("signAppJwt", () => {
     verifier.update(`${headerB64}.${payloadB64}`);
     verifier.end();
     expect(
-      verifier.verify(TEST_PUBLIC_KEY, Buffer.from(sigB64, "base64url")),
+      verifier.verify(TEST_PUBLIC_KEY, Buffer.from(sigB64!, "base64url")),
     ).toBe(true);
   });
 });
@@ -195,7 +195,7 @@ describe("getOpenclawGithubAuth", () => {
     expect(auth).toEqual({ token: "ghs_install_xyz", source: "app" });
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchSpy.mock.calls[0];
+    const [url, init] = fetchSpy.mock.calls[0]!;
     expect(String(url)).toBe(
       "https://api.github.com/app/installations/222/access_tokens",
     );

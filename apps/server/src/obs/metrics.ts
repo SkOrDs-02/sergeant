@@ -640,18 +640,18 @@ export const appBuildInfo = new client.Gauge({
 
 appBuildInfo
   .labels({
-    version: process.env.npm_package_version || "unknown",
+    version: process.env["npm_package_version"] || "unknown",
     commit: (
-      process.env.RAILWAY_GIT_COMMIT_SHA ||
-      process.env.GIT_COMMIT ||
-      process.env.VERCEL_GIT_COMMIT_SHA ||
+      process.env["RAILWAY_GIT_COMMIT_SHA"] ||
+      process.env["GIT_COMMIT"] ||
+      process.env["VERCEL_GIT_COMMIT_SHA"] ||
       "unknown"
     ).slice(0, 12),
     release:
-      process.env.SENTRY_RELEASE ||
-      process.env.RAILWAY_GIT_COMMIT_SHA ||
+      process.env["SENTRY_RELEASE"] ||
+      process.env["RAILWAY_GIT_COMMIT_SHA"] ||
       "unknown",
-    env: process.env.NODE_ENV || "development",
+    env: process.env["NODE_ENV"] || "development",
     node_version: process.version,
   })
   .set(1);
@@ -861,7 +861,7 @@ export function startPoolSampler(
  * `Authorization: Bearer <token>`. У dev/локально можна не ставити токен.
  */
 export function metricsHandler(req: Request, res: Response): void {
-  const expected = process.env.METRICS_TOKEN;
+  const expected = process.env["METRICS_TOKEN"];
   if (expected) {
     const auth = req.get("authorization") || "";
     const got = auth.startsWith("Bearer ") ? auth.slice(7) : "";

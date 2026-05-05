@@ -224,7 +224,7 @@ async function callAnthropicWithContinuation(
   data: AnthropicMessagesResponseData;
   continued: boolean;
 }> {
-  const baseMessages = (basePayload.messages as Array<unknown>) ?? [];
+  const baseMessages = (basePayload["messages"] as Array<unknown>) ?? [];
   let currentMessages: Array<unknown> = baseMessages.slice();
   const mergedTextChunks: string[] = [];
   let lastResponse: FetchResponse | null = null;
@@ -755,7 +755,7 @@ async function streamAnthropicToSse(
   }, SSE_HEARTBEAT_MS);
   if (typeof heartbeat.unref === "function") heartbeat.unref();
 
-  const baseMessages = (payload.messages as Array<unknown>) ?? [];
+  const baseMessages = (payload["messages"] as Array<unknown>) ?? [];
   let accumulatedAllText = "";
   let currentResponse: FetchResponse = firstResponse;
   let currentRecordEnd = firstRecordEnd;
@@ -776,7 +776,7 @@ async function streamAnthropicToSse(
       // ще до першої події) — лишаємо контракт як був: жодних метрик не
       // інкрементимо, щоб не давати fake-сигналу.
       if (iter.usage) {
-        const iterModel = (payload.model as string) || "unknown";
+        const iterModel = (payload["model"] as string) || "unknown";
         const iterEndpoint =
           continuationsLeft === MAX_TEXT_CONTINUATIONS
             ? endpoint
@@ -864,12 +864,12 @@ function sanitizeMessages(messages: unknown): ClientChatMessage[] {
   // Anthropic вимагає чергування user/assistant і початок з user
   const result: ClientChatMessage[] = [];
   for (const m of cleaned) {
-    if (result.length > 0 && result[result.length - 1].role === m.role)
+    if (result.length > 0 && result[result.length - 1]!.role === m.role)
       continue;
     result.push(m);
   }
-  while (result.length > 0 && result[0].role !== "user") result.shift();
-  while (result.length > 0 && result[result.length - 1].role !== "user")
+  while (result.length > 0 && result[0]!.role !== "user") result.shift();
+  while (result.length > 0 && result[result.length - 1]!.role !== "user")
     result.pop();
 
   return result;

@@ -143,7 +143,7 @@ export function PersonalInfoSection({
     }
   };
 
-  const initial = (user.name || user.email || "?")[0].toUpperCase();
+  const initial = (user.name || user.email || "?")[0]!.toUpperCase();
 
   return (
     <Card radius="lg" padding="none" className="overflow-hidden">

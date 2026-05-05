@@ -18,9 +18,9 @@ import { parseTrustProxy, type TrustProxyValue } from "./lib/trustProxy.js";
 type ServerMode = "railway" | "replit";
 
 function detectMode(): ServerMode {
-  const raw = process.env.SERVER_MODE?.trim().toLowerCase();
+  const raw = process.env["SERVER_MODE"]?.trim().toLowerCase();
   if (raw === "railway" || raw === "replit") return raw;
-  if (process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS) {
+  if (process.env["REPLIT_DEV_DOMAIN"] || process.env["REPLIT_DOMAINS"]) {
     return "replit";
   }
   return "railway";
@@ -64,11 +64,11 @@ interface ServerConfig {
 export const config: Readonly<ServerConfig> = Object.freeze({
   mode,
   role: mode,
-  port: Number(process.env.PORT) || (isReplit ? 5000 : 3000),
+  port: Number(process.env["PORT"]) || (isReplit ? 5000 : 3000),
   servesFrontend: isReplit,
   distPath: isReplit ? join(__dirname, "..", "dist") : null,
   trustProxy: parseTrustProxy({
-    raw: process.env.TRUST_PROXY,
+    raw: process.env["TRUST_PROXY"],
     fallback: isReplit ? undefined : 1,
   }),
 });

@@ -153,8 +153,8 @@ describe("barcode handler", () => {
       expect(res.statusCode).toBe(200);
       expect(global.fetch).toHaveBeenCalledOnce();
       // OFF URL має містити нормалізований barcode
-      const url = (global.fetch as unknown as { mock: { calls: unknown[][] } })
-        .mock.calls[0][0] as string;
+      const url = (!global.fetch as unknown as { mock: { calls: unknown[][] } })
+        .mock.calls[0]![0] as string;
       expect(url).toContain("5901234123457");
     });
   });
@@ -457,40 +457,40 @@ describe("barcode handler", () => {
 
   describe("env config", () => {
     it("читає TTL з env при reset()", async () => {
-      const prevHit = process.env.BARCODE_CACHE_HIT_TTL_MS;
-      const prevMiss = process.env.BARCODE_CACHE_MISS_TTL_MS;
-      const prevMax = process.env.BARCODE_CACHE_MAX_SIZE;
+      const prevHit = process.env["BARCODE_CACHE_HIT_TTL_MS"];
+      const prevMiss = process.env["BARCODE_CACHE_MISS_TTL_MS"];
+      const prevMax = process.env["BARCODE_CACHE_MAX_SIZE"];
       try {
-        process.env.BARCODE_CACHE_HIT_TTL_MS = "12345";
-        process.env.BARCODE_CACHE_MISS_TTL_MS = "67890";
-        process.env.BARCODE_CACHE_MAX_SIZE = "42";
+        process.env["BARCODE_CACHE_HIT_TTL_MS"] = "12345";
+        process.env["BARCODE_CACHE_MISS_TTL_MS"] = "67890";
+        process.env["BARCODE_CACHE_MAX_SIZE"] = "42";
         __barcodeTestHooks().reset();
         const cfg = __barcodeTestHooks().config();
         expect(cfg.hitTtlMs).toBe(12345);
         expect(cfg.missTtlMs).toBe(67890);
         expect(cfg.maxSize).toBe(42);
       } finally {
-        if (prevHit == null) delete process.env.BARCODE_CACHE_HIT_TTL_MS;
-        else process.env.BARCODE_CACHE_HIT_TTL_MS = prevHit;
-        if (prevMiss == null) delete process.env.BARCODE_CACHE_MISS_TTL_MS;
-        else process.env.BARCODE_CACHE_MISS_TTL_MS = prevMiss;
-        if (prevMax == null) delete process.env.BARCODE_CACHE_MAX_SIZE;
-        else process.env.BARCODE_CACHE_MAX_SIZE = prevMax;
+        if (prevHit == null) delete process.env["BARCODE_CACHE_HIT_TTL_MS"];
+        else process.env["BARCODE_CACHE_HIT_TTL_MS"] = prevHit;
+        if (prevMiss == null) delete process.env["BARCODE_CACHE_MISS_TTL_MS"];
+        else process.env["BARCODE_CACHE_MISS_TTL_MS"] = prevMiss;
+        if (prevMax == null) delete process.env["BARCODE_CACHE_MAX_SIZE"];
+        else process.env["BARCODE_CACHE_MAX_SIZE"] = prevMax;
         __barcodeTestHooks().reset();
       }
     });
 
     it("ігнорує невалідні env (нечисловий рядок) і падає назад на default", async () => {
-      const prev = process.env.BARCODE_CACHE_HIT_TTL_MS;
+      const prev = process.env["BARCODE_CACHE_HIT_TTL_MS"];
       try {
-        process.env.BARCODE_CACHE_HIT_TTL_MS = "not-a-number";
+        process.env["BARCODE_CACHE_HIT_TTL_MS"] = "not-a-number";
         __barcodeTestHooks().reset();
         const cfg = __barcodeTestHooks().config();
         // Default = 6h
         expect(cfg.hitTtlMs).toBe(6 * 60 * 60 * 1000);
       } finally {
-        if (prev == null) delete process.env.BARCODE_CACHE_HIT_TTL_MS;
-        else process.env.BARCODE_CACHE_HIT_TTL_MS = prev;
+        if (prev == null) delete process.env["BARCODE_CACHE_HIT_TTL_MS"];
+        else process.env["BARCODE_CACHE_HIT_TTL_MS"] = prev;
         __barcodeTestHooks().reset();
       }
     });

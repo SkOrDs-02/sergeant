@@ -11,15 +11,15 @@ export function makeDefaultPantry(): Pantry {
 function sanitizePantryItem(raw: unknown): PantryItem | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
-  const name = String(r.name || "").trim();
+  const name = String(r["name"] || "").trim();
   if (!name) return null;
-  const qtyNum = Number(r.qty);
-  const qty = r.qty == null || !Number.isFinite(qtyNum) ? null : qtyNum;
+  const qtyNum = Number(r["qty"]);
+  const qty = r["qty"] == null || !Number.isFinite(qtyNum) ? null : qtyNum;
   return {
     name,
     qty,
-    unit: r.unit == null ? null : String(r.unit),
-    notes: r.notes == null ? null : String(r.notes),
+    unit: r["unit"] == null ? null : String(r["unit"]),
+    notes: r["notes"] == null ? null : String(r["notes"]),
   };
 }
 
@@ -30,16 +30,16 @@ export function normalizePantries(raw: unknown): Pantry[] {
   for (const p of raw as unknown[]) {
     if (!p || typeof p !== "object") continue;
     const rp = p as Record<string, unknown>;
-    let id = rp.id != null ? String(rp.id).trim() : "";
+    let id = rp["id"] != null ? String(rp["id"]).trim() : "";
     if (!id || seenIds.has(id)) id = `p_${Date.now()}_${out.length}`;
     seenIds.add(id);
-    const name = String(rp.name || "Склад").trim() || "Склад";
-    const items = Array.isArray(rp.items)
-      ? (rp.items as unknown[])
+    const name = String(rp["name"] || "Склад").trim() || "Склад";
+    const items = Array.isArray(rp["items"])
+      ? (rp["items"] as unknown[])
           .map(sanitizePantryItem)
           .filter((x): x is PantryItem => x != null)
       : [];
-    const text = rp.text == null ? "" : String(rp.text);
+    const text = rp["text"] == null ? "" : String(rp["text"]);
     out.push({ id, name, items, text });
   }
   return out;

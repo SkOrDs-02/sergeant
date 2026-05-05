@@ -142,7 +142,7 @@ export function Programs({
                             onClick={() => {
                               const session =
                                 prog.sessions[todaySession.sessionKey];
-                              onStartWorkout(session, prog);
+                              onStartWorkout(session!, prog);
                             }}
                           >
                             Розпочати сьогодні

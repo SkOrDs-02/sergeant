@@ -258,7 +258,7 @@ export async function bankProxyFetch(
   const start = process.hrtime.bigint();
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const delay = jitteredDelay(state.retryDelaysMs[attempt]);
+    const delay = jitteredDelay(state!.retryDelaysMs[attempt]!);
     if (delay > 0) await sleep(delay);
 
     const controller = new AbortController();

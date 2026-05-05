@@ -100,7 +100,7 @@ describe("normaliseUserAgent", () => {
     for (const ua of samples) {
       const out = normaliseUserAgent(ua);
       const family = out.split(" ")[0];
-      families.add(family);
+      families.add(family!);
     }
     // Очікувані family-токени; "unknown" — для bot/garbage/empty.
     expect(families.size).toBeLessThanOrEqual(8);

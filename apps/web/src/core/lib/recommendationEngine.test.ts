@@ -66,7 +66,7 @@ describe("generateRecommendations", () => {
 
     const recs = generateRecommendations();
     for (let i = 1; i < recs.length; i++) {
-      expect(recs[i - 1].priority).toBeGreaterThanOrEqual(recs[i].priority);
+      expect(recs[i - 1]!.priority).toBeGreaterThanOrEqual(recs[i]!.priority);
     }
   });
 
@@ -572,7 +572,7 @@ describe("generateRecommendations", () => {
         const d = new Date("2026-04-27T22:00:00Z");
         d.setDate(d.getDate() - i);
         const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-        completions[h.id].push(dk);
+        completions[h.id]!.push(dk);
       }
     }
 

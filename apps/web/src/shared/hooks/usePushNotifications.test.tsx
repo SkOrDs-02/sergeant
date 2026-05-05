@@ -231,7 +231,7 @@ describe("usePushNotifications — subscribe via api.push.register", () => {
       expect(registerMock).toHaveBeenCalledTimes(1);
     });
 
-    const payload = registerMock.mock.calls[0][0];
+    const payload = registerMock.mock.calls[0]![0];
     expect(payload).toEqual({
       platform: "web",
       token: "https://fcm.googleapis.com/wp/abc123",
@@ -311,7 +311,7 @@ describe("usePushNotifications — unsubscribe via api.push.unregister", () => {
       expect(unregisterMock).toHaveBeenCalledTimes(1);
     });
 
-    const payload = unregisterMock.mock.calls[0][0];
+    const payload = unregisterMock.mock.calls[0]![0];
     expect(payload).toEqual({
       platform: "web",
       endpoint: "https://fcm.googleapis.com/wp/abc123",
@@ -422,7 +422,7 @@ describe("usePushNotifications — native Capacitor branch", () => {
       expect(registerMock).toHaveBeenCalledTimes(1);
     });
 
-    const payload = registerMock.mock.calls[0][0];
+    const payload = registerMock.mock.calls[0]![0];
     expect(payload).toEqual({ platform: "android", token: "fcm-token-abc" });
     expect(() => PushRegisterRequestSchema.parse(payload)).not.toThrow();
 
@@ -458,7 +458,7 @@ describe("usePushNotifications — native Capacitor branch", () => {
       expect(registerMock).toHaveBeenCalledTimes(1);
     });
 
-    const payload = registerMock.mock.calls[0][0];
+    const payload = registerMock.mock.calls[0]![0];
     expect(payload).toEqual({ platform: "ios", token: "apns-deadbeef" });
     expect(() => PushRegisterRequestSchema.parse(payload)).not.toThrow();
     expect(result.current.subscribed).toBe(true);
@@ -503,7 +503,7 @@ describe("usePushNotifications — native Capacitor branch", () => {
       expect(unregisterMock).toHaveBeenCalledTimes(1);
     });
 
-    const payload = unregisterMock.mock.calls[0][0];
+    const payload = unregisterMock.mock.calls[0]![0];
     expect(payload).toEqual({ platform: "android", token: "fcm-token-abc" });
     expect(() => PushUnregisterRequestSchema.parse(payload)).not.toThrow();
     expect(unsubscribeNativePushMock).toHaveBeenCalledTimes(1);

@@ -31,7 +31,7 @@ export interface OpenInvocationInput {
   founderTgUserId: number;
   trigger: OpenClawTrigger;
   userMessage: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, unknown> | undefined;
 }
 
 /**
@@ -70,14 +70,14 @@ export async function openInvocation(
 export interface FinalizeInvocationInput {
   invocationId: number;
   status: OpenClawStatus;
-  assistantResponse?: string | null;
-  toolCalls?: OpenClawToolCall[];
-  costUsd?: number;
-  durationMs?: number;
-  iterations?: number;
-  errorMessage?: string | null;
-  toneMode?: OpenClawToneMode | null;
-  metadataPatch?: Record<string, unknown>;
+  assistantResponse?: string | null | undefined;
+  toolCalls?: OpenClawToolCall[] | undefined;
+  costUsd?: number | undefined;
+  durationMs?: number | undefined;
+  iterations?: number | undefined;
+  errorMessage?: string | null | undefined;
+  toneMode?: OpenClawToneMode | null | undefined;
+  metadataPatch?: Record<string, unknown> | undefined;
 }
 
 /**
@@ -154,9 +154,9 @@ export interface RecordDecisionInput {
   context: string;
   decision: string;
   rationale: string;
-  alternatives?: string;
-  invocationId?: number;
-  metadata?: Record<string, unknown>;
+  alternatives?: string | undefined;
+  invocationId?: number | undefined;
+  metadata?: Record<string, unknown> | undefined;
 }
 
 /**
@@ -308,18 +308,18 @@ export interface RecordWriteAuditInput {
   tool: string;
   founderUserId: string;
   founderTgUserId: number;
-  invocationId?: number | null;
+  invocationId?: number | null | undefined;
   action: OpenClawWriteAuditAction;
-  input?: Record<string, unknown>;
+  input?: Record<string, unknown> | undefined;
   /** Populated for `executed` rows; ignored for `approved`/`rejected`. */
-  httpStatus?: number | null;
+  httpStatus?: number | null | undefined;
   /** Populated for `executed` rows. */
-  ok?: boolean | null;
+  ok?: boolean | null | undefined;
   /** Populated for `executed` rows. Truncated to `RESPONSE_EXCERPT_MAX_BYTES`. */
-  responseExcerpt?: string | null;
+  responseExcerpt?: string | null | undefined;
   /** Persona that emitted the write-tool call. */
-  persona?: string | null;
-  metadata?: Record<string, unknown>;
+  persona?: string | null | undefined;
+  metadata?: Record<string, unknown> | undefined;
 }
 
 /**
@@ -374,20 +374,20 @@ export async function recordWriteAudit(
 
 export interface ListWriteAuditFilters {
   founderUserId: string;
-  limit?: number;
+  limit?: number | undefined;
   /** Filter by tool name (e.g. `pause_workflow`). */
-  tool?: string;
+  tool?: string | undefined;
   /** Filter by lifecycle action. */
-  action?: OpenClawWriteAuditAction;
+  action?: OpenClawWriteAuditAction | undefined;
   /** Filter by persona that emitted the call. */
-  persona?: string;
+  persona?: string | undefined;
   /**
    * Lower-bound on `recorded_at` (inclusive). Drives the `/audit since=<dur>`
    * time-window query — the console parses `since=24h` / `7d` / `30m` into
    * a wall-clock cutoff and forwards it as ISO. Inclusive `>=` so a row
    * recorded exactly at the cutoff is still returned.
    */
-  recordedAfter?: Date;
+  recordedAfter?: Date | undefined;
 }
 
 /**

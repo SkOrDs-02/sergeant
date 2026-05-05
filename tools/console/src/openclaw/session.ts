@@ -17,11 +17,11 @@ export interface OpenClawSessionState {
   /** Telegram user.id founder-а. */
   userId: number;
   /** Останній invocation-id (для матчу assistant_response → row у audit-log). */
-  lastInvocationId?: number;
+  lastInvocationId?: number | undefined;
   /** Лічильник turn-ів у поточній сесії — для observability. */
   turnCount: number;
   /** Останній tone-mode (для recovery після iteration_cap). */
-  lastToneMode?: "diplomatic" | "direct";
+  lastToneMode?: "diplomatic" | "direct" | undefined;
   /** Timestamp останньої взаємодії. */
   updatedAt: number;
 }

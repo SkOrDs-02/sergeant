@@ -65,7 +65,7 @@ describe("useNutritionLog — delete + undo meal flow", () => {
     act(() => result.current.handleRestoreMeal(date, m));
     const after = result.current.nutritionLog[date]?.meals ?? [];
     expect(after).toHaveLength(1);
-    expect(after[0].id).toBe("m1");
+    expect(after[0]!.id).toBe("m1");
   });
 
   it("handleRestoreMeal скидає pending thumbnail delete (інакше фото видаляється через 6с навіть після undo)", () => {
@@ -92,7 +92,7 @@ describe("useNutritionLog — delete + undo meal flow", () => {
     });
     const after = result.current.nutritionLog[date]?.meals ?? [];
     expect(after).toHaveLength(1);
-    expect(after[0].id).toBe("m2");
+    expect(after[0]!.id).toBe("m2");
   });
 
   it("подвійний restore не дублює запис (ідемпотентність)", () => {

@@ -54,7 +54,7 @@ describe("metrics registry — `app_build_info` gauge", () => {
     // 12 символів = стандартний short-SHA, який Railway/GitHub вставляють
     // у release-таги. Більше — невиправдана cardinality, менше — ризик
     // колізій SHA-prefix-у в великих репах.
-    if (match) expect(match[1].length).toBeLessThanOrEqual(12);
+    if (match) expect(match[1]!.length).toBeLessThanOrEqual(12);
   });
 });
 

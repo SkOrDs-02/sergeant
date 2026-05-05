@@ -49,7 +49,7 @@ export function applyCreateCategory(
   const c: Category = {
     id: routineUid("cat"),
     name: n,
-    emoji: emoji || undefined,
+    ...(emoji ? { emoji } : {}),
   };
   return { ...state, categories: [...state.categories, c] };
 }
@@ -386,8 +386,8 @@ export function applyUpdateCategory(
             ...(patch.name !== undefined
               ? { name: (patch.name || "").trim() || c.name }
               : {}),
-            ...(patch.emoji !== undefined
-              ? { emoji: patch.emoji || undefined }
+            ...(patch.emoji !== undefined && patch.emoji
+              ? { emoji: patch.emoji }
               : {}),
           }
         : c,

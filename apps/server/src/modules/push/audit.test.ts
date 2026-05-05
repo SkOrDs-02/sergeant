@@ -92,7 +92,7 @@ describe("logPushSend — happy path", () => {
       sentCount: 2,
     });
     expect(queryMock).toHaveBeenCalledTimes(1);
-    const [sql, params] = queryMock.mock.calls[0];
+    const [sql, params] = queryMock.mock.calls[0]!;
     expect(sql).toMatch(/INSERT INTO push_send_audit/i);
     expect(sql).toMatch(/\$1::inet/);
     expect(params).toEqual([
@@ -118,9 +118,9 @@ describe("logPushSend — happy path", () => {
       subsCount: 0,
       sentCount: 0,
     });
-    const [, params] = queryMock.mock.calls[0];
-    expect(params[0]).toBeNull();
-    expect(params[2]).toBeNull();
+    const [, params] = queryMock.mock.calls[0]!;
+    expect(params![0]).toBeNull();
+    expect(params![2]).toBeNull();
   });
 });
 
@@ -155,7 +155,7 @@ describe("logPushSend — error swallowing", () => {
 
     // Two failed inserts but only one warn line — by design.
     expect(loggerMock.warn).toHaveBeenCalledTimes(1);
-    expect(loggerMock.warn.mock.calls[0][0]).toMatchObject({
+    expect(loggerMock!.warn.mock.calls[0]![0]).toMatchObject({
       msg: "push_send_audit_table_missing",
     });
   });
@@ -185,7 +185,7 @@ describe("logPushSend — error swallowing", () => {
     });
 
     expect(loggerMock.warn).toHaveBeenCalledTimes(2);
-    expect(loggerMock.warn.mock.calls[0][0]).toMatchObject({
+    expect(loggerMock!.warn.mock.calls[0]![0]).toMatchObject({
       msg: "push_send_audit_write_failed",
       code: "08006",
     });

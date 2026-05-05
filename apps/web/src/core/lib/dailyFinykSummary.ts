@@ -57,7 +57,7 @@ function resolveCatLabel(
   catIdOrMcc: string | number | null | undefined,
   customCategories: Category[],
 ): string {
-  if (!catIdOrMcc || catIdOrMcc === "other") return BUILTIN_LABELS.other;
+  if (!catIdOrMcc || catIdOrMcc === "other") return BUILTIN_LABELS.other!;
   const str = String(catIdOrMcc);
   const byId = [...ALL_CATS, ...(customCategories || [])].find(
     (c) => c.id === str,
@@ -318,7 +318,7 @@ export function computeDailyFinykSummary({
   let topCategory: TopCategory | null = null;
   const catEntries = Object.entries(catAmounts).sort(([, a], [, b]) => b - a);
   if (catEntries.length > 0 && todaySpent > 0) {
-    const [catId, amount] = catEntries[0];
+    const [catId, amount] = catEntries[0]!;
     const roundedAmount = Math.round(amount);
     const pct = todaySpent > 0 ? Math.round((amount / todaySpent) * 100) : 0;
     topCategory = {

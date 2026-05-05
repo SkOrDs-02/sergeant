@@ -159,7 +159,7 @@ describe("useNutritionPantries", () => {
 
       const home = result.current.pantries.find((p: Pantry) => p.id === "home");
       const work = result.current.pantries.find((p: Pantry) => p.id === "work");
-      expect(home!.items[0].name).toBe("молоко");
+      expect(home!.items[0]!.name).toBe("молоко");
       expect(work!.items).toEqual([]);
       // Active remained "work" (user's choice).
       expect(result.current.activePantryId).toBe("work");

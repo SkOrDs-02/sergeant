@@ -71,7 +71,7 @@ export interface MemoryWrite {
   /** Snapshot embedding-метаданих на момент запису. */
   embeddingMeta: EmbeddingMetadata;
   /** Довільні структуровані факти. JSONB у БД. */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, unknown> | undefined;
 }
 
 /**
@@ -104,13 +104,13 @@ export interface MemoryQueryOptions {
   userId: string;
   embedding: Float32Array;
   topK: number;
-  sources?: MemorySource[];
+  sources?: MemorySource[] | undefined;
   /**
    * Optional `ef_search` override (HNSW search-time tuning). Default —
    * `env.AI_MEMORY_HNSW_EF_SEARCH`. Підвищити для query-paths, де recall
    * критичний (наприклад, "знайди всі схожі транзакції за рік").
    */
-  efSearch?: number;
+  efSearch?: number | undefined;
 }
 
 /**

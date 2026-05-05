@@ -38,7 +38,7 @@ describe("crypto", () => {
     it("throws on tampered ciphertext", () => {
       const token = "tamper_test_token";
       const enc = encryptToken(token, VALID_KEY);
-      enc.ciphertext[0] ^= 0xff;
+      enc!.ciphertext[0]! ^= 0xff;
       expect(() => decryptToken(enc, VALID_KEY)).toThrow();
     });
 

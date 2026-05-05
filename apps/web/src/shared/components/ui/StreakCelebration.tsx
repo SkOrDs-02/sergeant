@@ -79,7 +79,7 @@ export const StreakCelebration = memo(function StreakCelebration({
         x: 50 + (Math.random() - 0.5) * 60, // spread from center
         y: 50 + (Math.random() - 0.5) * 40,
         rotation: Math.random() * 360,
-        color: colors[Math.floor(Math.random() * colors.length)],
+        color: colors[Math.floor(Math.random() * colors.length)]!,
         size: 6 + Math.random() * 8,
         delay: Math.random() * 0.3,
       });

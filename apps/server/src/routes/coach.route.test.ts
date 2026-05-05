@@ -75,23 +75,23 @@ vi.mock("./../push/send.js", () => ({
 
 import { createApp } from "./../app.js";
 
-const SAVED_KEY = process.env.ANTHROPIC_API_KEY;
-const SAVED_DISABLED = process.env.AI_QUOTA_DISABLED;
+const SAVED_KEY = process.env["ANTHROPIC_API_KEY"];
+const SAVED_DISABLED = process.env["AI_QUOTA_DISABLED"];
 
 beforeEach(() => {
   queryMock.mockReset();
   queryMock.mockResolvedValue({ rows: [{ "?column?": 1 }] });
   getSessionUserMock.mockReset();
   getSessionUserMock.mockResolvedValue(null);
-  delete process.env.ANTHROPIC_API_KEY;
-  process.env.AI_QUOTA_DISABLED = "1";
+  delete process.env["ANTHROPIC_API_KEY"];
+  process.env["AI_QUOTA_DISABLED"] = "1";
 });
 
 afterAll(() => {
-  if (SAVED_KEY === undefined) delete process.env.ANTHROPIC_API_KEY;
-  else process.env.ANTHROPIC_API_KEY = SAVED_KEY;
-  if (SAVED_DISABLED === undefined) delete process.env.AI_QUOTA_DISABLED;
-  else process.env.AI_QUOTA_DISABLED = SAVED_DISABLED;
+  if (SAVED_KEY === undefined) delete process.env["ANTHROPIC_API_KEY"];
+  else process.env["ANTHROPIC_API_KEY"] = SAVED_KEY;
+  if (SAVED_DISABLED === undefined) delete process.env["AI_QUOTA_DISABLED"];
+  else process.env["AI_QUOTA_DISABLED"] = SAVED_DISABLED;
 });
 
 describe("coach routes — auth guard (unauthenticated → 401)", () => {
@@ -213,7 +213,7 @@ describe("coach routes — POST /memory", () => {
 describe("coach routes — POST /insight", () => {
   it("повертає { insight: string } коли ключ є і snapshot валідний", async () => {
     getSessionUserMock.mockResolvedValue({ id: "u1" });
-    process.env.ANTHROPIC_API_KEY = "test-key";
+    process.env["ANTHROPIC_API_KEY"] = "test-key";
     // SELECT coach memory
     queryMock.mockResolvedValueOnce({ rows: [] });
     // SELECT ai_quota

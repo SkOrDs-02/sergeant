@@ -209,7 +209,7 @@ export async function enqueueFtuxDripMail(
   try {
     await queue.add(data.day, data, {
       jobId: buildJobId(data),
-      delay: data.delayMs > 0 ? data.delayMs : undefined,
+      ...(data.delayMs > 0 ? { delay: data.delayMs } : {}),
     });
     ftuxDripJobsEnqueuedTotal.inc({ mode: "queued", day: data.day });
   } catch (err) {

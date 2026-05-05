@@ -116,10 +116,10 @@ describe("useSyncErrorToast", () => {
 
     expect(toast._errorCalls).toHaveLength(1);
     const [call] = toast._errorCalls;
-    expect(call.duration).toBe(SYNC_ERROR_TOAST_DURATION_MS);
-    expect(call.action?.label).toBe("Спробувати ще");
+    expect(call!.duration).toBe(SYNC_ERROR_TOAST_DURATION_MS);
+    expect(call!.action?.label).toBe("Спробувати ще");
 
-    call.action?.onClick();
+    call!.action?.onClick();
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
@@ -134,7 +134,7 @@ describe("useSyncErrorToast", () => {
     rerender({ err: SERVER_4XX });
 
     expect(toast._errorCalls).toHaveLength(1);
-    expect(toast._errorCalls[0].action).toBeUndefined();
+    expect(toast._errorCalls[0]!.action).toBeUndefined();
   });
 
   it("does not re-fire when the same error stays in place", () => {
@@ -164,7 +164,7 @@ describe("useSyncErrorToast", () => {
     rerender({ err: SERVER_5XX });
 
     expect(toast._errorCalls).toHaveLength(2);
-    expect(toast._dismissed).toEqual([toast._errorCalls[0].id]);
+    expect(toast._dismissed).toEqual([toast._errorCalls[0]!.id]);
   });
 
   it("re-fires after the error clears and a new failure arrives", () => {

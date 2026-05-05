@@ -33,8 +33,8 @@ function recordDomainOutcome(outcome: string): void {
   }
 }
 
-const VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY;
-const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY;
+const VAPID_PUBLIC = process.env["VAPID_PUBLIC_KEY"];
+const VAPID_PRIVATE = process.env["VAPID_PRIVATE_KEY"];
 
 /**
  * Resolve the VAPID contact. Some push services downgrade or drop requests
@@ -44,9 +44,9 @@ const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY;
  * the keys are configured.
  */
 export function resolveVapidEmail(): string | null {
-  const raw = process.env.VAPID_EMAIL?.trim();
+  const raw = process.env["VAPID_EMAIL"]?.trim();
   if (raw) return raw.startsWith("mailto:") ? raw : `mailto:${raw}`;
-  if (process.env.NODE_ENV === "production") {
+  if (process.env["NODE_ENV"] === "production") {
     logger.error({
       msg: "vapid_email_missing",
       hint: "Set VAPID_EMAIL (e.g. mailto:admin@your-domain) to avoid push deliverability issues",
@@ -265,11 +265,14 @@ interface PushSubscriptionRow {
  * abuse), but the defaults match the hardening spec.
  */
 const PUSH_SEND_TARGET_LIMIT = (() => {
-  const raw = Number.parseInt(process.env.PUSH_SEND_TARGET_LIMIT ?? "", 10);
+  const raw = Number.parseInt(process.env["PUSH_SEND_TARGET_LIMIT"] ?? "", 10);
   return Number.isFinite(raw) && raw > 0 ? raw : 10;
 })();
 const PUSH_SEND_TARGET_WINDOW_MS = (() => {
-  const raw = Number.parseInt(process.env.PUSH_SEND_TARGET_WINDOW_MS ?? "", 10);
+  const raw = Number.parseInt(
+    process.env["PUSH_SEND_TARGET_WINDOW_MS"] ?? "",
+    10,
+  );
   return Number.isFinite(raw) && raw > 0 ? raw : 60_000;
 })();
 

@@ -237,7 +237,7 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
           for (const h of habits) {
             if (
               Array.isArray(completions[h.id]) &&
-              completions[h.id].includes(dk)
+              completions[h.id]!.includes(dk)
             )
               totalDone++;
           }

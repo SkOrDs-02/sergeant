@@ -8,8 +8,8 @@
  * programmer error: 500 + `error` + Sentry.
  */
 export interface AppErrorOptions {
-  status?: number;
-  code?: string;
+  status?: number | undefined;
+  code?: string | undefined;
   cause?: unknown;
 }
 

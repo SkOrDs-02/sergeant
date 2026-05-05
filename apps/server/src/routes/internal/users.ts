@@ -19,7 +19,7 @@ export function createUsersInternalRouter({ pool }: { pool: Pool }): Router {
   r.get(
     "/api/internal/users/cohort",
     asyncHandler(async (req, res) => {
-      const daysRaw = Number(req.query.days);
+      const daysRaw = Number(req.query["days"]);
       if (!Number.isFinite(daysRaw) || daysRaw < 0 || daysRaw > 365) {
         res
           .status(400)
@@ -29,7 +29,7 @@ export function createUsersInternalRouter({ pool }: { pool: Pool }): Router {
       const days = Math.trunc(daysRaw);
       const limit = Math.min(
         500,
-        Math.max(1, Math.trunc(Number(req.query.limit) || 200)),
+        Math.max(1, Math.trunc(Number(req.query["limit"]) || 200)),
       );
 
       const { rows } = await pool.query<{

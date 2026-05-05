@@ -131,7 +131,7 @@ export function computeDaySummary(
  */
 export function formatStickyDayLabel(key: string): string {
   const [y, m, da] = key.split("-").map(Number);
-  const d = new Date(y, m - 1, da);
+  const d = new Date(y!, m! - 1, da);
   const t0 = new Date();
   t0.setHours(0, 0, 0, 0);
   const d0 = new Date(d);

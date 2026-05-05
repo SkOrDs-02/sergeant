@@ -23,8 +23,8 @@ export type Category = (typeof CATEGORIES)[number];
 
 export interface CategorizeArgs {
   description: string;
-  amount?: number | null;
-  mcc?: number | null;
+  amount?: number | null | undefined;
+  mcc?: number | null | undefined;
 }
 
 export interface CategorizeResult {
@@ -47,12 +47,12 @@ export function parseCategory(raw: string): CategorizeResult {
   if (!match) return { category: "other", confidence: 0 };
   try {
     const parsed = JSON.parse(match[0]) as Record<string, unknown>;
-    const category = CATEGORIES.includes(parsed.category as Category)
-      ? (parsed.category as Category)
+    const category = CATEGORIES.includes(parsed["category"] as Category)
+      ? (parsed["category"] as Category)
       : "other";
     const confidence =
-      typeof parsed.confidence === "number"
-        ? Math.min(1, Math.max(0, parsed.confidence))
+      typeof parsed["confidence"] === "number"
+        ? Math.min(1, Math.max(0, parsed["confidence"]))
         : 0;
     return { category, confidence };
   } catch {

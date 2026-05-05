@@ -97,9 +97,9 @@ describe("chat handler — tool_use parsing", () => {
         },
       ],
     });
-    expect(asRec(res.body).tool_calls_raw).toHaveLength(2);
+    expect(asRec(res.body)["tool_calls_raw"]).toHaveLength(2);
     // Перевіряємо, що TOOLS передалися
-    const callArg = anthropicMessages.mock.calls[0][1] as {
+    const callArg = anthropicMessages!.mock.calls[0]![1] as {
       tools: unknown[];
     };
     expect(Array.isArray(callArg.tools)).toBe(true);
@@ -148,10 +148,10 @@ describe("chat handler — tool_use parsing", () => {
     await handler(req, res);
 
     expect(res.statusCode).toBe(200);
-    expect(asRec(res.body).text).toContain("видалено");
+    expect(asRec(res.body)["text"]).toContain("видалено");
 
     // Перевіряємо формат повідомлень до Anthropic на другому кроці
-    const payload = anthropicMessages.mock.calls[0][1] as {
+    const payload = anthropicMessages!.mock.calls[0]![1] as {
       messages: Array<{
         role: string;
         content: Array<{ type: string; tool_use_id?: string }>;
@@ -160,8 +160,8 @@ describe("chat handler — tool_use parsing", () => {
     expect(payload.messages).toHaveLength(3);
     expect(payload.messages[0]).toMatchObject({ role: "user" });
     expect(payload.messages[1]).toMatchObject({ role: "assistant" });
-    expect(payload.messages[2].role).toBe("user");
-    expect(payload.messages[2].content[0]).toMatchObject({
+    expect(payload!.messages[2]!.role).toBe("user");
+    expect(payload!.messages[2]!.content[0]).toMatchObject({
       type: "tool_result",
       tool_use_id: "toolu_1",
     });
@@ -302,7 +302,7 @@ describe("chat handler — tool_use parsing", () => {
 
     expect(res.statusCode).toBe(200);
 
-    const payload = anthropicMessages.mock.calls[0][1] as {
+    const payload = anthropicMessages!.mock.calls[0]![1] as {
       messages: Array<{
         role: string;
         content: Array<{
@@ -312,18 +312,18 @@ describe("chat handler — tool_use parsing", () => {
         }>;
       }>;
     };
-    const sentToolResult = payload.messages[2].content[0];
-    expect(sentToolResult.type).toBe("tool_result");
+    const sentToolResult = payload!.messages[2]!.content[0];
+    expect(sentToolResult!.type).toBe("tool_result");
     // Контент скоротився
-    expect(sentToolResult.content).toBeDefined();
-    expect((sentToolResult.content as string).length).toBeLessThan(
+    expect(sentToolResult!.content).toBeDefined();
+    expect((sentToolResult!.content as string).length).toBeLessThan(
       bigBlob.length / 2,
     );
     // Маркер truncation присутній
-    expect(sentToolResult.content).toContain("[…truncated");
+    expect(sentToolResult!.content).toContain("[…truncated");
     // Head/tail збереглися
-    expect(sentToolResult.content).toContain("BIG_RESULT_START");
-    expect(sentToolResult.content).toContain("BIG_RESULT_END");
+    expect(sentToolResult!.content).toContain("BIG_RESULT_START");
+    expect(sentToolResult!.content).toContain("BIG_RESULT_END");
   });
 
   it("M8 — tool_result з 'IGNORE PREVIOUS INSTRUCTIONS' інкрементить chat_prompt_injection_attempt_total", async () => {
@@ -359,10 +359,10 @@ describe("chat handler — tool_use parsing", () => {
     expect(after - before).toBe(1);
 
     // Anthropic отримав content усередині envelope (модель сприйме як data).
-    const payload = anthropicMessages.mock.calls[0][1] as {
+    const payload = anthropicMessages!.mock.calls[0]![1] as {
       messages: Array<{ content: Array<{ content?: string }> }>;
     };
-    const wrapped = payload.messages[2].content[0].content as string;
+    const wrapped = payload!.messages[2]!.content[0]!.content as string;
     expect(wrapped.startsWith(`<tool_output tool="delete_transaction">`)).toBe(
       true,
     );
@@ -392,14 +392,14 @@ describe("chat handler — tool_use parsing", () => {
     const res = makeRes();
     await handler(req, res);
 
-    const payload = anthropicMessages.mock.calls[0][1] as {
+    const payload = anthropicMessages!.mock.calls[0]![1] as {
       messages: Array<{
         role: string;
         content: Array<{ type: string; content?: string }>;
       }>;
     };
     // M8 — envelope додано, оригінал не truncate-нувся (небуло маркера "[…truncated")
-    const wrapped = payload.messages[2].content[0].content as string;
+    const wrapped = payload!.messages[2]!.content[0]!.content as string;
     expect(wrapped).toBe(
       `<tool_output tool="delete_transaction">${smallContent}</tool_output>`,
     );
@@ -535,7 +535,7 @@ describe("chat handler — MAX_TOOL_ITERATIONS cap (M7)", () => {
     await handler(req, res);
 
     expect(res.statusCode).toBe(200);
-    expect(asRec(res.body).tool_calls).toHaveLength(8);
+    expect(asRec(res.body)["tool_calls"]).toHaveLength(8);
   });
 
   it("Клієнт надсилає >MAX tool_use у tool_calls_raw → 422 + інкремент {boundary=client_request}", async () => {
@@ -627,7 +627,7 @@ describe("TOOLS registry — структура нових tools", () => {
         required?: string[];
       };
     }
-    const tools = (anthropicMessages.mock.calls[0][1] as { tools: Tool[] })
+    const tools = (anthropicMessages!.mock.calls[0]![1] as { tools: Tool[] })
       .tools;
     const byName: Record<string, Tool> = Object.fromEntries(
       tools.map((t) => [t.name, t]),
@@ -637,25 +637,31 @@ describe("TOOLS registry — структура нових tools", () => {
         byName[name],
         `tool "${name}" має бути зареєстрований`,
       ).toBeTruthy();
-      expect(byName[name].description).toBeTypeOf("string");
-      expect(byName[name].input_schema.type).toBe("object");
-      expect(byName[name].input_schema.properties).toBeTypeOf("object");
+      expect(byName[name]!.description).toBeTypeOf("string");
+      expect(byName[name]!.input_schema.type).toBe("object");
+      expect(byName[name]!.input_schema.properties).toBeTypeOf("object");
     }
 
     // Обов'язкові required-поля для критичних tools
-    expect(byName.delete_transaction.input_schema.required).toEqual(["tx_id"]);
-    expect(byName.update_budget.input_schema.required).toEqual(["scope"]);
-    expect(byName.mark_debt_paid.input_schema.required).toEqual(["debt_id"]);
-    expect(byName.log_weight.input_schema.required).toEqual(["weight_kg"]);
-    expect(byName.import_monobank_range.input_schema.required).toEqual([
+    expect(byName!["delete_transaction"]!.input_schema.required!).toEqual([
+      "tx_id",
+    ]);
+    expect(byName!["update_budget"]!.input_schema.required!).toEqual(["scope"]);
+    expect(byName!["mark_debt_paid"]!.input_schema.required!).toEqual([
+      "debt_id",
+    ]);
+    expect(byName!["log_weight"]!.input_schema.required!).toEqual([
+      "weight_kg",
+    ]);
+    expect(byName!["import_monobank_range"]!.input_schema.required!).toEqual([
       "from",
       "to",
     ]);
-    expect(byName.create_reminder.input_schema.required).toEqual([
+    expect(byName!["create_reminder"]!.input_schema.required!).toEqual([
       "habit_id",
       "time",
     ]);
-    expect(byName.add_calendar_event.input_schema.required).toEqual([
+    expect(byName!["add_calendar_event"]!.input_schema.required!).toEqual([
       "name",
       "date",
     ]);
@@ -679,7 +685,7 @@ describe("chat handler — system payload (prompt caching)", () => {
     const res = makeRes();
     await handler(req, res);
 
-    const payload = anthropicMessages.mock.calls[0][1] as {
+    const payload = anthropicMessages!.mock.calls[0]![1] as {
       system: Array<{
         type: string;
         text: string;
@@ -688,15 +694,15 @@ describe("chat handler — system payload (prompt caching)", () => {
     };
     expect(Array.isArray(payload.system)).toBe(true);
     expect(payload.system).toHaveLength(2);
-    expect(payload.system[0].type).toBe("text");
-    expect(payload.system[0].cache_control).toEqual({ type: "ephemeral" });
+    expect(payload!.system[0]!.type).toBe("text");
+    expect(payload!.system[0]!.cache_control).toEqual({ type: "ephemeral" });
     // SYSTEM_PREFIX починається з "Ти персональний асистент…"
-    expect(payload.system[0].text).toMatch(/^Ти персональний асистент/);
-    expect(payload.system[1].type).toBe("text");
-    expect(payload.system[1].text).toContain("Алергія на горіхи");
+    expect(payload!.system[0]!.text).toMatch(/^Ти персональний асистент/);
+    expect(payload!.system[1]!.type).toBe("text");
+    expect(payload!.system[1]!.text).toContain("Алергія на горіхи");
     // context-блок НЕ кешується — інакше Anthropic зробить окремий cache slot
     // на кожен різний context, і з кешу не буде сенсу
-    expect(payload.system[1].cache_control).toBeUndefined();
+    expect(payload!.system[1]!.cache_control).toBeUndefined();
   });
 
   it("при порожньому context повертає лише cached SYSTEM_PREFIX (Anthropic відхиляє empty text-блоки)", async () => {
@@ -712,11 +718,11 @@ describe("chat handler — system payload (prompt caching)", () => {
     const res = makeRes();
     await handler(req, res);
 
-    const payload = anthropicMessages.mock.calls[0][1] as {
+    const payload = anthropicMessages!.mock.calls[0]![1] as {
       system: Array<{ text: string; cache_control?: { type: string } }>;
     };
     expect(payload.system).toHaveLength(1);
-    expect(payload.system[0].cache_control).toEqual({ type: "ephemeral" });
+    expect(payload!.system[0]!.cache_control).toEqual({ type: "ephemeral" });
   });
 
   // AI-CONTEXT: SYSTEM_PREFIX сам по собі ~987 токенів, нижче Anthropic-мінімуму
@@ -734,15 +740,15 @@ describe("chat handler — system payload (prompt caching)", () => {
     const res = makeRes();
     await handler(req, res);
 
-    const payload = anthropicMessages.mock.calls[0][1] as {
+    const payload = anthropicMessages!.mock.calls[0]![1] as {
       tools: Array<{ cache_control?: { type: string } }>;
     };
     expect(payload.tools.length).toBeGreaterThan(0);
     const last = payload.tools[payload.tools.length - 1];
-    expect(last.cache_control).toEqual({ type: "ephemeral" });
+    expect(last!.cache_control).toEqual({ type: "ephemeral" });
     // Усі попередні tools — без cache_control (інакше марно палимо breakpoints)
     for (let i = 0; i < payload.tools.length - 1; i++) {
-      expect(payload.tools[i].cache_control).toBeUndefined();
+      expect(payload!.tools[i]!.cache_control).toBeUndefined();
     }
   });
 
@@ -768,11 +774,11 @@ describe("chat handler — system payload (prompt caching)", () => {
     const res = makeRes();
     await handler(req, res);
 
-    const payload = anthropicMessages.mock.calls[0][1] as {
+    const payload = anthropicMessages!.mock.calls[0]![1] as {
       system: Array<{ cache_control?: { type: string } }>;
     };
     expect(Array.isArray(payload.system)).toBe(true);
-    expect(payload.system[0].cache_control).toEqual({ type: "ephemeral" });
+    expect(payload!.system[0]!.cache_control).toEqual({ type: "ephemeral" });
   });
 
   it("два послідовні запити обидва шлють cache_control на system block", async () => {
@@ -803,7 +809,7 @@ describe("chat handler — system payload (prompt caching)", () => {
     expect(anthropicMessages).toHaveBeenCalledTimes(2);
 
     for (let call = 0; call < 2; call++) {
-      const payload = anthropicMessages.mock.calls[call][1] as {
+      const payload = anthropicMessages!.mock.calls[call]![1] as {
         system: Array<{
           type: string;
           text: string;
@@ -812,10 +818,10 @@ describe("chat handler — system payload (prompt caching)", () => {
         tools: Array<{ cache_control?: { type: string } }>;
       };
       expect(Array.isArray(payload.system)).toBe(true);
-      expect(payload.system[0].cache_control).toEqual({ type: "ephemeral" });
-      expect(payload.system[0].text).toMatch(/^Ти персональний асистент/);
+      expect(payload!.system[0]!.cache_control).toEqual({ type: "ephemeral" });
+      expect(payload!.system[0]!.text).toMatch(/^Ти персональний асистент/);
       const lastTool = payload.tools[payload.tools.length - 1];
-      expect(lastTool.cache_control).toEqual({ type: "ephemeral" });
+      expect(lastTool!.cache_control).toEqual({ type: "ephemeral" });
     }
   });
 });
@@ -857,12 +863,12 @@ describe("chat handler — auto-continuation на stop_reason=max_tokens", () =>
     await handler(req, res);
 
     expect(anthropicMessages).toHaveBeenCalledTimes(2);
-    expect(asRec(res.body).text).toBe(
+    expect(asRec(res.body)["text"]).toBe(
       "Перша частина брифінгу… друга частина — кінець.",
     );
 
     // Continuation-виклик отримує partial-text як останнє assistant-повідомлення.
-    const secondCallPayload = anthropicMessages.mock.calls[1][1] as {
+    const secondCallPayload = anthropicMessages!.mock.calls[1]![1] as {
       messages: Array<{ role: string; content: unknown }>;
     };
     const last =
@@ -947,7 +953,7 @@ describe("chat handler — auto-continuation на stop_reason=max_tokens", () =>
     await handler(req, res);
 
     expect(anthropicMessages).toHaveBeenCalledTimes(1);
-    expect(asRec(res.body).tool_calls).toHaveLength(1);
+    expect(asRec(res.body)["tool_calls"]).toHaveLength(1);
   });
 
   it("обмежує кількість continuation викликів (cap)", async () => {
@@ -1006,7 +1012,7 @@ describe("chat handler — auto-continuation на stop_reason=max_tokens", () =>
     await handler(req, res);
 
     expect(anthropicMessages).toHaveBeenCalledTimes(3);
-    const thirdCallMessages = anthropicMessages.mock.calls[2][1].messages;
+    const thirdCallMessages = anthropicMessages!.mock.calls[2]![1].messages;
     // [user, assistant("c1 c2 ")] — рівно один assistant, накопичений текст
     expect(thirdCallMessages).toHaveLength(2);
     expect(thirdCallMessages[0]).toEqual({ role: "user", content: "запит" });
@@ -1046,6 +1052,6 @@ describe("chat handler — auto-continuation на stop_reason=max_tokens", () =>
 
     expect(anthropicMessages).toHaveBeenCalledTimes(2);
     expect(res.statusCode).toBe(200);
-    expect(asRec(res.body).text).toBe("Перша частина… ");
+    expect(asRec(res.body)["text"]).toBe("Перша частина… ");
   });
 });

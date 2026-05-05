@@ -118,7 +118,7 @@ describe("pushDirty", () => {
 
     expect(mockedBuild).toHaveBeenCalledTimes(1);
     expect(onSuccess).toHaveBeenCalledTimes(1);
-    expect(onSuccess.mock.calls[0][0]).toBeInstanceOf(Date);
+    expect(onSuccess.mock.calls[0]![0]).toBeInstanceOf(Date);
     expect(onError).not.toHaveBeenCalled();
     expect(onSettled).toHaveBeenCalledTimes(1);
     // And the dirty bit is cleared on this path.
@@ -168,7 +168,7 @@ describe("pushDirty", () => {
     });
     expect(onSuccess).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledTimes(1);
-    expect(onError.mock.calls[0][0]).toBe("boom");
+    expect(onError.mock.calls[0]![0]).toBe("boom");
   });
 });
 
@@ -182,7 +182,7 @@ describe("pushAll", () => {
 
     expect(onStart).toHaveBeenCalledTimes(1);
     expect(onSuccess).toHaveBeenCalledTimes(1);
-    expect(onSuccess.mock.calls[0][0]).toBeInstanceOf(Date);
+    expect(onSuccess.mock.calls[0]![0]).toBeInstanceOf(Date);
     expect(onError).not.toHaveBeenCalled();
     expect(onSettled).toHaveBeenCalledTimes(1);
     expect(mockedPushAllApi).not.toHaveBeenCalled();

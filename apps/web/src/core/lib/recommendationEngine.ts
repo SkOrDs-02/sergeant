@@ -165,7 +165,7 @@ function buildFizrukRecs(): Rec[] {
   );
 
   const now = new Date();
-  const lastMs = new Date(sorted[0].startedAt).getTime();
+  const lastMs = new Date(sorted[0]!.startedAt).getTime();
   const hoursAgo = (now.getTime() - lastMs) / 3_600_000;
   const daysSinceWorkout = hoursAgo / 24;
 
@@ -234,7 +234,7 @@ function buildRoutineRecs(): Rec[] {
 
   const todayDone = habits.filter(
     (h) =>
-      Array.isArray(completions[h.id]) && completions[h.id].includes(today),
+      Array.isArray(completions[h.id]) && completions[h.id]!.includes(today),
   ).length;
   const total = habits.length;
 
@@ -246,7 +246,8 @@ function buildRoutineRecs(): Rec[] {
   for (let i = 0; i < 365; i++) {
     const dk = localDateKey(d);
     const allDone = habits.every(
-      (h) => Array.isArray(completions[h.id]) && completions[h.id].includes(dk),
+      (h) =>
+        Array.isArray(completions[h.id]) && completions[h.id]!.includes(dk),
     );
     if (!allDone) break;
     streak++;
@@ -366,7 +367,7 @@ function buildNutritionRecs(): Rec[] {
           new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
       );
       const lastHours =
-        (Date.now() - new Date(sorted[0].startedAt).getTime()) / 3_600_000;
+        (Date.now() - new Date(sorted[0]!.startedAt).getTime()) / 3_600_000;
       if (lastHours < 2 && pctProtein < 0.4) {
         recs.push({
           id: "nutrition_post_workout_protein",
@@ -420,7 +421,7 @@ function buildWeeklyDigestRecs(): Rec[] {
         for (const h of habits) {
           if (
             Array.isArray(completions[h.id]) &&
-            completions[h.id].includes(dk)
+            completions[h.id]!.includes(dk)
           )
             done++;
         }

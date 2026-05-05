@@ -69,7 +69,7 @@ function upgradeCategory(raw: string | null | undefined) {
 function stripEmoji(label: string) {
   const str = String(label || "");
   let i = 0;
-  while (i < str.length && !/[\p{L}\p{N}]/u.test(str[i])) i++;
+  while (i < str.length && !/[\p{L}\p{N}]/u.test(str[i]!)) i++;
   return str.slice(i).trim();
 }
 
@@ -250,10 +250,10 @@ export function ManualExpenseSheet({
         } else if (frequentCategories.length > 0) {
           const top = frequentCategories[0];
           const topLabel =
-            top.manualLabel && typeof top.manualLabel === "string"
-              ? upgradeCategory(top.manualLabel)
-              : CANONICAL_TO_MANUAL_LABEL[top.id]
-                ? upgradeCategory(CANONICAL_TO_MANUAL_LABEL[top.id])
+            top!.manualLabel! && typeof top!.manualLabel! === "string"
+              ? upgradeCategory(top!.manualLabel!)
+              : CANONICAL_TO_MANUAL_LABEL[top!.id!]
+                ? upgradeCategory(CANONICAL_TO_MANUAL_LABEL[top!.id!])
                 : null;
           if (topLabel && CATEGORIES.includes(topLabel)) {
             startCategory = topLabel;

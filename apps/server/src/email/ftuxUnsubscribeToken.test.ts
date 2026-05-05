@@ -7,17 +7,17 @@ import {
 } from "./ftuxUnsubscribeToken.js";
 
 describe("ftux unsubscribe token", () => {
-  const ORIGINAL_SECRET = process.env.BETTER_AUTH_SECRET;
+  const ORIGINAL_SECRET = process.env["BETTER_AUTH_SECRET"];
 
   beforeEach(() => {
-    process.env.BETTER_AUTH_SECRET = "test-secret-32-bytes-padded-yyyyyyy";
+    process.env["BETTER_AUTH_SECRET"] = "test-secret-32-bytes-padded-yyyyyyy";
   });
 
   afterEach(() => {
     if (ORIGINAL_SECRET === undefined) {
-      delete process.env.BETTER_AUTH_SECRET;
+      delete process.env["BETTER_AUTH_SECRET"];
     } else {
-      process.env.BETTER_AUTH_SECRET = ORIGINAL_SECRET;
+      process.env["BETTER_AUTH_SECRET"] = ORIGINAL_SECRET;
     }
   });
 
@@ -61,7 +61,7 @@ describe("ftux unsubscribe token", () => {
   });
 
   it("missing_secret коли BETTER_AUTH_SECRET не заданий", () => {
-    delete process.env.BETTER_AUTH_SECRET;
+    delete process.env["BETTER_AUTH_SECRET"];
     expect(signUnsubscribeToken({ userId: "u1" })).toBeNull();
     const v = verifyUnsubscribeToken("u1.dead");
     expect(v.ok).toBe(false);

@@ -151,7 +151,7 @@ export function createVoyageEmbeddings(
       );
       try {
         if (retryDelayMs[attempt - 1]) {
-          await sleep(retryDelayMs[attempt - 1]);
+          await sleep(retryDelayMs[attempt - 1]!);
         }
 
         const response = await fetchFn(VOYAGE_URL, {
@@ -205,22 +205,22 @@ export function createVoyageEmbeddings(
         const result: Float32Array[] = [];
         for (let i = 0; i < sorted.length; i++) {
           const item = sorted[i];
-          if (item.index !== i) {
+          if (item!.index !== i) {
             throw new VoyageContractError(
-              `non-contiguous indices: expected ${i}, got ${item.index}`,
+              `non-contiguous indices: expected ${i}, got ${item!.index}`,
             );
           }
-          if (!Array.isArray(item.embedding)) {
+          if (!Array.isArray(item!.embedding)) {
             throw new VoyageContractError(
               `data[${i}].embedding is not an array`,
             );
           }
-          if (item.embedding.length !== env.VOYAGE_EMBEDDING_DIM) {
+          if (item!.embedding.length !== env.VOYAGE_EMBEDDING_DIM) {
             throw new VoyageContractError(
-              `data[${i}].embedding has dim=${item.embedding.length}, expected ${env.VOYAGE_EMBEDDING_DIM}`,
+              `data[${i}].embedding has dim=${item!.embedding.length}, expected ${env.VOYAGE_EMBEDDING_DIM}`,
             );
           }
-          result.push(Float32Array.from(item.embedding));
+          result.push(Float32Array.from(item!.embedding));
         }
         return result;
       } catch (error) {

@@ -24,7 +24,7 @@ const ALLOWED_GROQ_MODELS = new Set([
 const DEFAULT_GROQ_MODEL = "whisper-large-v3-turbo";
 
 function resolveGroqModel(): string {
-  const raw = process.env.GROQ_TRANSCRIBE_MODEL;
+  const raw = process.env["GROQ_TRANSCRIBE_MODEL"];
   const requested = raw && raw.length > 0 ? raw : DEFAULT_GROQ_MODEL;
   if (!ALLOWED_GROQ_MODELS.has(requested)) {
     throw new Error(
@@ -79,7 +79,7 @@ export { TranscribeQuerySchema };
 function pickMimeType(req: Request): string | null {
   const raw = req.headers["content-type"];
   if (!raw || typeof raw !== "string") return null;
-  const ct = raw.split(";")[0].trim().toLowerCase();
+  const ct = raw!.split(";")[0]!.trim().toLowerCase();
   if (!ct.startsWith("audio/")) return null;
   const normalised = normaliseAudioMime(ct);
   if (!SUPPORTED_AUDIO_MIME.has(normalised)) return null;

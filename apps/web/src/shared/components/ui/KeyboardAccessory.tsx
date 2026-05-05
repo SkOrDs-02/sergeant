@@ -95,8 +95,8 @@ export function KeyboardAccessory({
           onClick={() => onChipPress(chip)}
           className={cn(
             "rounded-full px-2.5 py-1 text-xs font-semibold transition-colors",
-            style.chip,
-            style.chipHover,
+            style!.chip!,
+            style!.chipHover!,
           )}
         >
           {chip.label}

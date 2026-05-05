@@ -203,8 +203,8 @@ export function useChatSessions(): UseChatSessionsResult {
       let nextMessages: ChatMessage[] | null = null;
       if (id === activeId) {
         if (remaining.length > 0) {
-          nextActiveId = remaining[0].id;
-          nextMessages = remaining[0].messages;
+          nextActiveId = remaining[0]!.id;
+          nextMessages = remaining[0]!.messages;
         } else {
           const fresh = createSession();
           remaining.unshift(fresh);

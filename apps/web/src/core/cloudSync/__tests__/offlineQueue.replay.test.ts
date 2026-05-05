@@ -140,16 +140,16 @@ describe("Offline → many writes → coalesce", () => {
 
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].type).toBe("push");
-    expect(Object.keys(q[0].modules).sort()).toEqual([
+    expect(q[0]!.type).toBe("push");
+    expect(Object.keys(q[0]!.modules).sort()).toEqual([
       "_legacy_finyk",
       "profile",
     ]);
-    expect(q[0].modules._legacy_finyk.data).toEqual({
+    expect(q[0]!.modules._legacy_finyk!.data).toEqual({
       budgets: [100],
       subs: ["netflix"],
     });
-    expect(q[0].modules.profile.data).toEqual({ displayName: "sergeant" });
+    expect(q[0]!.modules.profile!.data).toEqual({ displayName: "sergeant" });
   });
 
   it("later write for the same module overwrites the earlier payload", () => {
@@ -174,7 +174,7 @@ describe("Offline → many writes → coalesce", () => {
 
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].modules.profile.data).toEqual({ displayName: "b" });
+    expect(q[0]!.modules.profile!.data).toEqual({ displayName: "b" });
   });
 
   it("identical payloads are idempotent (no extra write/event)", () => {
@@ -262,7 +262,7 @@ describe("Reconnect replay (happy path)", () => {
     await replayOfflineQueue();
 
     expect(mockedPushAll).toHaveBeenCalledTimes(1);
-    const pushed = mockedPushAll.mock.calls[0][0];
+    const pushed = mockedPushAll.mock.calls[0]![0];
     expect(pushed).not.toHaveProperty("finyk");
     expect(pushed).toHaveProperty("profile");
     // Queue should be cleared after successful push
@@ -312,7 +312,7 @@ describe("Reconnect replay (happy path)", () => {
     await replayOfflineQueue();
 
     expect(getOfflineQueue()).toEqual([]);
-    const pushed = mockedPushAll.mock.calls[0][0];
+    const pushed = mockedPushAll.mock.calls[0]![0];
     expect(Object.keys(pushed).sort()).toEqual(["profile"]);
   });
 
@@ -377,7 +377,7 @@ describe("Reconnect replay (server error)", () => {
     // Queue must be preserved for retry later
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].modules.profile.data).toEqual({ displayName: "sergeant" });
+    expect(q[0]!.modules.profile!.data).toEqual({ displayName: "sergeant" });
   });
 
   it("preserves the queue on network error", async () => {
@@ -406,7 +406,7 @@ describe("Reconnect replay (server error)", () => {
 
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].modules.profile.data).toEqual({ displayName: "sergeant" });
+    expect(q[0]!.modules.profile!.data).toEqual({ displayName: "sergeant" });
   });
 
   it("preserves the queue on a 503 Service Unavailable", async () => {
@@ -438,7 +438,7 @@ describe("Reconnect replay (server error)", () => {
 
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].modules.profile.data).toEqual({ habits: ["meditate"] });
+    expect(q[0]!.modules.profile!.data).toEqual({ habits: ["meditate"] });
   });
 
   it("does not crash the caller — replay swallows errors", async () => {
@@ -477,10 +477,10 @@ describe("MAX_OFFLINE_QUEUE overflow", () => {
     expect(q.length).toBeLessThanOrEqual(MAX_OFFLINE_QUEUE);
     // Newest entries are preserved
     const lastEntry = q[q.length - 1];
-    expect(lastEntry.type).toBe(`evt-${MAX_OFFLINE_QUEUE + 19}`);
+    expect(lastEntry!.type!).toBe(`evt-${MAX_OFFLINE_QUEUE + 19}`);
     // Oldest entries are dropped
     const firstEntry = q[0];
-    expect(firstEntry.type).toBe(`evt-${20}`);
+    expect(firstEntry!.type!).toBe(`evt-${20}`);
   });
 
   it("exact boundary: MAX_OFFLINE_QUEUE entries are kept without drop", () => {
@@ -490,8 +490,8 @@ describe("MAX_OFFLINE_QUEUE overflow", () => {
 
     const q = getOfflineQueue();
     expect(q).toHaveLength(MAX_OFFLINE_QUEUE);
-    expect(q[0].type).toBe("item-0");
-    expect(q[q.length - 1].type).toBe(`item-${MAX_OFFLINE_QUEUE - 1}`);
+    expect(q[0]!.type).toBe("item-0");
+    expect(q[q.length - 1]!.type).toBe(`item-${MAX_OFFLINE_QUEUE - 1}`);
   });
 
   it("one over the limit drops exactly one oldest entry", () => {
@@ -501,8 +501,8 @@ describe("MAX_OFFLINE_QUEUE overflow", () => {
 
     const q = getOfflineQueue();
     expect(q).toHaveLength(MAX_OFFLINE_QUEUE);
-    expect(q[0].type).toBe("row-1");
-    expect(q[q.length - 1].type).toBe(`row-${MAX_OFFLINE_QUEUE}`);
+    expect(q[0]!.type).toBe("row-1");
+    expect(q[q.length - 1]!.type).toBe(`row-${MAX_OFFLINE_QUEUE}`);
   });
 
   it("coalescing prevents overflow for consecutive push entries", () => {
@@ -521,8 +521,8 @@ describe("MAX_OFFLINE_QUEUE overflow", () => {
 
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].type).toBe("push");
+    expect(q[0]!.type).toBe("push");
     // Last write wins
-    expect(q[0].modules.finyk.data.version).toBe(MAX_OFFLINE_QUEUE + 49);
+    expect(q[0]!.modules.finyk!.data.version).toBe(MAX_OFFLINE_QUEUE + 49);
   });
 });

@@ -91,7 +91,7 @@ describe("groupEventsForList", () => {
     time: string | null,
     opts: Partial<HubCalendarEvent> = {},
   ): HubCalendarEvent {
-    return {
+    const base: HubCalendarEvent = {
       id,
       source: "routine",
       sourceKind: "habit",
@@ -100,13 +100,15 @@ describe("groupEventsForList", () => {
       title: id,
       subtitle: "",
       sortKey: time ?? "",
-      timeOfDay: time ?? undefined,
       tagLabels: [],
       completed: false,
       fizruk: false,
       finykSub: false,
-      ...opts,
     };
+    if (time !== null) {
+      base.timeOfDay = time;
+    }
+    return { ...base, ...opts };
   }
 
   it("групує за часом доби у фіксованому порядку", () => {
@@ -130,12 +132,10 @@ describe("groupEventsForList", () => {
       habitEvent("a", "08:00"),
       habitEvent("fz1", null, {
         sourceKind: "fizruk",
-        habitId: undefined,
         fizruk: true,
       }),
       habitEvent("fy1", null, {
         sourceKind: "finykSub",
-        habitId: undefined,
         finykSub: true,
       }),
     ];

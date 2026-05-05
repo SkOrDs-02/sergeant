@@ -42,18 +42,18 @@ function makeItemId(): string {
 function sanitizeItem(raw: unknown, seenIds: Set<string>): ShoppingItem | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
-  const itemName = String(r.name || "").trim();
+  const itemName = String(r["name"] || "").trim();
   if (!itemName) return null;
-  let id = r.id != null ? String(r.id).trim() : "";
+  let id = r["id"] != null ? String(r["id"]).trim() : "";
   if (!id || seenIds.has(id)) id = makeItemId();
   while (seenIds.has(id)) id = makeItemId();
   seenIds.add(id);
   return {
     id,
     name: itemName,
-    quantity: String(r.quantity || "").trim(),
-    note: String(r.note || "").trim(),
-    checked: Boolean(r.checked),
+    quantity: String(r["quantity"] || "").trim(),
+    note: String(r["note"] || "").trim(),
+    checked: Boolean(r["checked"]),
   };
 }
 
@@ -77,8 +77,8 @@ export function normalizeShoppingList(raw: unknown): ShoppingList {
     raw && typeof raw === "object" && !Array.isArray(raw)
       ? (raw as Record<string, unknown>)
       : {};
-  const rawCategories = Array.isArray(obj.categories)
-    ? (obj.categories as unknown[])
+  const rawCategories = Array.isArray(obj["categories"])
+    ? (obj["categories"] as unknown[])
     : [];
   const seenIds = new Set<string>();
   const byCategory = new Map<string, CategoryBucket>();
@@ -86,8 +86,8 @@ export function normalizeShoppingList(raw: unknown): ShoppingList {
   for (const cat of rawCategories) {
     if (!cat || typeof cat !== "object") continue;
     const c = cat as Record<string, unknown>;
-    const name = String(c.name || "Інше").trim() || "Інше";
-    const rawItems = Array.isArray(c.items) ? (c.items as unknown[]) : [];
+    const name = String(c["name"] || "Інше").trim() || "Інше";
+    const rawItems = Array.isArray(c["items"]) ? (c["items"] as unknown[]) : [];
 
     const bucket: CategoryBucket = byCategory.get(name) || {
       name,

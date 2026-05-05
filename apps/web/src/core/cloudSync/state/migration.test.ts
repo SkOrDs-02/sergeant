@@ -47,7 +47,7 @@ describe("isMigrationDone / markMigrationDone", () => {
     const raw = localStorage.getItem(MIGRATION_DONE_KEY);
     expect(raw).not.toBeNull();
     const map = JSON.parse(raw as string) as Record<string, string>;
-    const ts = Date.parse(map.u1);
+    const ts = Date.parse(map.u1!);
     expect(ts).toBeGreaterThanOrEqual(before);
     expect(ts).toBeLessThanOrEqual(after);
   });

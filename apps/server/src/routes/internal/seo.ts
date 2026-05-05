@@ -177,8 +177,9 @@ export function createSeoInternalRouter({ pool }: { pool: Pool }): Router {
   r.get(
     "/api/internal/seo/keywords",
     asyncHandler(async (req, res) => {
-      const onlyActive = req.query.onlyActive !== "0";
+      const onlyActive = req.query["onlyActive"] !== "0";
       const where = onlyActive ? "WHERE is_active = TRUE" : "";
+      // eslint-disable-next-line no-restricted-syntax -- `where` is one of two fixed literal SQL fragments; query takes no user input.
       const { rows } = await pool.query<{
         id: string;
         term: string;

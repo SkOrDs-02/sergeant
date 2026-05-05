@@ -43,12 +43,12 @@ describe("deletePostHogPerson — happy path", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     const [url, init] = (
       fetchImpl as unknown as { mock: { calls: [string, RequestInit][] } }
-    ).mock.calls[0];
+    ).mock.calls[0]!;
     expect(url).toBe(
       "https://eu.i.posthog.com/api/projects/42/persons/?distinct_id=user-123",
     );
     expect(init?.method).toBe("DELETE");
-    expect((init?.headers as Record<string, string>).Authorization).toBe(
+    expect((init?.headers as Record<string, string>)["Authorization"]).toBe(
       "Bearer phx_test",
     );
   });
@@ -62,7 +62,7 @@ describe("deletePostHogPerson — happy path", () => {
       fetchImpl,
     });
     const [url] = (fetchImpl as unknown as { mock: { calls: [string][] } }).mock
-      .calls[0];
+      .calls[0]!;
     expect(url).toContain("/api/projects/proj%20id%2Fwith%20space/persons/");
     expect(url).toContain("?distinct_id=user%40example.com");
   });
@@ -76,7 +76,7 @@ describe("deletePostHogPerson — happy path", () => {
       fetchImpl,
     });
     const [url] = (fetchImpl as unknown as { mock: { calls: [string][] } }).mock
-      .calls[0];
+      .calls[0]!;
     expect(url).toBe(
       "https://custom.posthog.example.com/api/projects/1/persons/?distinct_id=u1",
     );
@@ -183,35 +183,35 @@ describe("deletePostHogPerson — config gating", () => {
   });
 
   it("falls back to env vars when options omitted", async () => {
-    const prevKey = process.env.POSTHOG_API_KEY;
-    const prevProj = process.env.POSTHOG_PROJECT_ID;
-    const prevHost = process.env.POSTHOG_HOST;
-    process.env.POSTHOG_API_KEY = "phx_env";
-    process.env.POSTHOG_PROJECT_ID = "777";
-    process.env.POSTHOG_HOST = "https://eu.i.posthog.com";
+    const prevKey = process.env["POSTHOG_API_KEY"];
+    const prevProj = process.env["POSTHOG_PROJECT_ID"];
+    const prevHost = process.env["POSTHOG_HOST"];
+    process.env["POSTHOG_API_KEY"] = "phx_env";
+    process.env["POSTHOG_PROJECT_ID"] = "777";
+    process.env["POSTHOG_HOST"] = "https://eu.i.posthog.com";
     try {
       const fetchImpl = makeFetch(async () => ok(204));
       const r = await deletePostHogPerson("u-env", { fetchImpl });
       expect(r.outcome).toBe("ok");
       const [url, init] = (
         fetchImpl as unknown as { mock: { calls: [string, RequestInit][] } }
-      ).mock.calls[0];
+      ).mock.calls[0]!;
       expect(url).toBe(
         "https://eu.i.posthog.com/api/projects/777/persons/?distinct_id=u-env",
       );
-      expect((init?.headers as Record<string, string>).Authorization).toBe(
+      expect((init?.headers as Record<string, string>)["Authorization"]).toBe(
         "Bearer phx_env",
       );
     } finally {
       // process.env coerces values to string, so assigning `undefined`
       // would set it literally to the string "undefined". `delete` is the
       // only way to actually unset.
-      if (prevKey === undefined) delete process.env.POSTHOG_API_KEY;
-      else process.env.POSTHOG_API_KEY = prevKey;
-      if (prevProj === undefined) delete process.env.POSTHOG_PROJECT_ID;
-      else process.env.POSTHOG_PROJECT_ID = prevProj;
-      if (prevHost === undefined) delete process.env.POSTHOG_HOST;
-      else process.env.POSTHOG_HOST = prevHost;
+      if (prevKey === undefined) delete process.env["POSTHOG_API_KEY"];
+      else process.env["POSTHOG_API_KEY"] = prevKey;
+      if (prevProj === undefined) delete process.env["POSTHOG_PROJECT_ID"];
+      else process.env["POSTHOG_PROJECT_ID"] = prevProj;
+      if (prevHost === undefined) delete process.env["POSTHOG_HOST"];
+      else process.env["POSTHOG_HOST"] = prevHost;
     }
   });
 });

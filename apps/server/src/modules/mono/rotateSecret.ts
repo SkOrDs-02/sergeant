@@ -36,7 +36,7 @@ export interface RotateOneInput {
   encKey: string;
   publicApiBaseUrl: string;
   /** Injectable for tests; defaults to the global `fetch`. */
-  fetchImpl?: typeof fetch;
+  fetchImpl?: typeof fetch | undefined;
   /** Injectable for tests; defaults to `db.ts::query`. */
   query: <R extends Record<string, unknown> = Record<string, unknown>>(
     text: string,
@@ -52,8 +52,9 @@ export interface RotateOneResult {
     | "not_found"
     | "decrypt_failed"
     | "monobank_register_failed"
-    | "monobank_register_timeout";
-  monobankStatus?: number;
+    | "monobank_register_timeout"
+    | undefined;
+  monobankStatus?: number | undefined;
 }
 
 /**
@@ -88,9 +89,9 @@ export async function rotateMonoWebhookSecret(
   try {
     plaintextToken = decryptToken(
       {
-        ciphertext: row.token_ciphertext,
-        iv: row.token_iv,
-        tag: row.token_tag,
+        ciphertext: row!.token_ciphertext,
+        iv: row!.token_iv,
+        tag: row!.token_tag,
       },
       encKey,
     );
@@ -182,19 +183,19 @@ export interface RotateBatchInput {
   encKey: string;
   publicApiBaseUrl: string;
   /** Rotate connections older than this many days. Default 90. */
-  olderThanDays?: number;
+  olderThanDays?: number | undefined;
   /**
    * Connections older than this many days that we still couldn't rotate
    * trigger a Sentry `warning`. Default 100 — gives a 10-day on-call window
    * before the secret is actually overdue.
    */
-  alertAfterDays?: number;
+  alertAfterDays?: number | undefined;
   /** Cap on how many connections to rotate per tick. Default 50. */
-  limit?: number;
+  limit?: number | undefined;
   /** Skip the actual UPDATE / Monobank call. Default false. */
-  dryRun?: boolean;
+  dryRun?: boolean | undefined;
   /** Injectable for tests. */
-  fetchImpl?: typeof fetch;
+  fetchImpl?: typeof fetch | undefined;
   query: RotateOneInput["query"];
 }
 

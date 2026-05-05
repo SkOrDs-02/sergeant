@@ -247,10 +247,10 @@ export function classifyDispatcherCommand(
 }
 
 export function buildDispatcherPayload(input: {
-  taskId?: string;
-  source?: DispatcherPayload["source"];
-  approvalId?: string;
-  statusCallbackWebhookUrl?: string;
+  taskId?: string | undefined;
+  source?: DispatcherPayload["source"] | undefined;
+  approvalId?: string | undefined;
+  statusCallbackWebhookUrl?: string | undefined;
   commandText: string;
   telegramUserId: number;
   telegramChatId: number;
@@ -357,7 +357,7 @@ export async function dispatchToN8n(
   payload: DispatcherPayload,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<string> {
-  const webhookUrl = env.N8N_AGENT_DISPATCHER_WEBHOOK_URL;
+  const webhookUrl = env["N8N_AGENT_DISPATCHER_WEBHOOK_URL"];
   if (!webhookUrl) {
     return [
       "n8n dispatcher webhook is not configured.",

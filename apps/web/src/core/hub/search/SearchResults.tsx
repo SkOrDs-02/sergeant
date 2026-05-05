@@ -67,7 +67,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
       Record<string, { label: string; items: Hit[] }>
     >((acc, r) => {
       if (!acc[r.module]) acc[r.module] = { label: r.moduleLabel, items: [] };
-      acc[r.module].items.push(r);
+      acc[r.module]!.items.push(r);
       return acc;
     }, {});
 

@@ -32,22 +32,22 @@ export type PostHogDeleteOutcome =
 
 export interface PostHogDeletePersonResult {
   outcome: PostHogDeleteOutcome;
-  status?: number;
-  error?: string;
-  ms?: number;
+  status?: number | undefined;
+  error?: string | undefined;
+  ms?: number | undefined;
 }
 
 export interface PostHogDeletePersonOptions {
   /** Personal API key (`POSTHOG_API_KEY`), Bearer-токен. */
-  apiKey?: string;
+  apiKey?: string | undefined;
   /** Числовий ID проєкту (`POSTHOG_PROJECT_ID`). */
-  projectId?: string;
+  projectId?: string | undefined;
   /** Базовий host. Default — EU Cloud, як у клієнтському snippet (`POSTHOG_HOST`). */
-  host?: string;
+  host?: string | undefined;
   /** Per-call timeout (мс). Default 10s — за ADR latency-budget ~1s + slack. */
-  timeoutMs?: number;
+  timeoutMs?: number | undefined;
   /** Inject-нутий fetch (для тестів). */
-  fetchImpl?: typeof fetch;
+  fetchImpl?: typeof fetch | undefined;
 }
 
 const DEFAULT_HOST = "https://eu.i.posthog.com";
@@ -62,11 +62,11 @@ export async function deletePostHogPerson(
     return { outcome: "error", error: "userId is required" };
   }
 
-  const apiKey = options.apiKey ?? process.env.POSTHOG_API_KEY;
-  const projectId = options.projectId ?? process.env.POSTHOG_PROJECT_ID;
+  const apiKey = options.apiKey ?? process.env["POSTHOG_API_KEY"];
+  const projectId = options.projectId ?? process.env["POSTHOG_PROJECT_ID"];
   const host = (
     options.host ??
-    process.env.POSTHOG_HOST ??
+    process.env["POSTHOG_HOST"] ??
     DEFAULT_HOST
   ).replace(/\/+$/, "");
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;

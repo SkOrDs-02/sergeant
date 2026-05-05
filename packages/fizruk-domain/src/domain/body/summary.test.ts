@@ -44,7 +44,7 @@ describe("getLatestMeasurement / getLatestMeasurementValue", () => {
 
   it("skips entries without a finite value for the requested field", () => {
     const entries = [
-      entry("a", 1, { weightKg: undefined, sleepHours: 8 }),
+      entry("a", 1, { sleepHours: 8 }),
       entry("b", 3, { weightKg: 80.5 }),
       entry("c", 5, { weightKg: 82 }),
     ];

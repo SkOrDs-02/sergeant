@@ -288,9 +288,9 @@ export async function disconnectHandler(
       const row = connResult.rows[0];
       const decryptedToken = decryptToken(
         {
-          ciphertext: row.token_ciphertext,
-          iv: row.token_iv,
-          tag: row.token_tag,
+          ciphertext: row!.token_ciphertext,
+          iv: row!.token_iv,
+          tag: row!.token_tag,
         },
         encKey,
       );
@@ -359,17 +359,17 @@ export async function syncStateHandler(
 
   res.status(200).json(
     MonoSyncStateSchema.parse({
-      status: conn.status,
+      status: conn!.status,
       webhookActive:
-        conn.status === "active" && conn.webhook_registered_at != null,
+        conn!.status === "active" && conn!.webhook_registered_at != null,
       lastEventAt:
-        conn.last_event_at instanceof Date
-          ? conn.last_event_at.toISOString()
-          : conn.last_event_at,
+        conn!.last_event_at instanceof Date
+          ? conn!.last_event_at.toISOString()
+          : conn!.last_event_at,
       lastBackfillAt:
-        conn.last_backfill_at instanceof Date
-          ? conn.last_backfill_at.toISOString()
-          : conn.last_backfill_at,
+        conn!.last_backfill_at instanceof Date
+          ? conn!.last_backfill_at.toISOString()
+          : conn!.last_backfill_at,
       accountsCount: Number(countResult.rows[0]?.count ?? 0),
     }),
   );

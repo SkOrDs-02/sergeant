@@ -50,7 +50,7 @@ describe("truncateToolResults — short content (≤ threshold)", () => {
     const out = truncateToolResults([
       { tool_use_id: "obj", content: { ok: true, count: 3 } },
     ]);
-    expect(out[0].content).toBe('{"ok":true,"count":3}');
+    expect(out[0]!.content).toBe('{"ok":true,"count":3}');
   });
 
   it("обробляє content рівно на межі threshold (=2000) — не truncate", () => {
@@ -59,7 +59,7 @@ describe("truncateToolResults — short content (≤ threshold)", () => {
     const out = truncateToolResults([{ tool_use_id: "edge", content: exact }], {
       addBreadcrumb,
     });
-    expect(out[0].content).toBe(exact);
+    expect(out[0]!.content).toBe(exact);
     expect(addBreadcrumb).not.toHaveBeenCalled();
   });
 });
@@ -89,8 +89,8 @@ describe("truncateToolResults — long content (> threshold)", () => {
     });
 
     expect(out).toHaveLength(1);
-    expect(out[0].tool_use_id).toBe("big");
-    const summary = out[0].content;
+    expect(out[0]!.tool_use_id).toBe("big");
+    const summary = out[0]!.content;
     // Head зберігся
     expect(summary).toContain("HEAD_START");
     expect(summary).toContain("_HEAD_END");
@@ -113,7 +113,7 @@ describe("truncateToolResults — long content (> threshold)", () => {
     });
 
     expect(addBreadcrumb).toHaveBeenCalledTimes(1);
-    const bc = addBreadcrumb.mock.calls[0][0];
+    const bc = addBreadcrumb!.mock.calls[0]![0];
     expect(bc.category).toBe("chat.tool_result");
     expect(bc.level).toBe("info");
     expect(bc.message).toMatch(/truncated/i);
@@ -149,7 +149,7 @@ describe("truncateToolResults — long content (> threshold)", () => {
       recordMetric: vi.fn(),
       requestId: "req-123",
     });
-    expect(addBreadcrumb.mock.calls[0][0].data.request_id).toBe("req-123");
+    expect(addBreadcrumb!.mock.calls[0]![0].data.request_id).toBe("req-123");
   });
 
   it("без requestId — поле request_id у breadcrumb відсутнє", () => {
@@ -158,7 +158,7 @@ describe("truncateToolResults — long content (> threshold)", () => {
       addBreadcrumb,
       recordMetric: vi.fn(),
     });
-    expect(addBreadcrumb.mock.calls[0][0].data.request_id).toBeUndefined();
+    expect(addBreadcrumb!.mock.calls[0]![0].data.request_id).toBeUndefined();
   });
 
   it("кастомний threshold — нижчий за стандарт — truncate-ає менші тексти", () => {
@@ -167,7 +167,7 @@ describe("truncateToolResults — long content (> threshold)", () => {
       [{ tool_use_id: "small", content: "x".repeat(1500) }],
       { addBreadcrumb, recordMetric: vi.fn(), threshold: 500 },
     );
-    expect(out[0].content).toContain("[…truncated");
+    expect(out[0]!.content).toContain("[…truncated");
     expect(addBreadcrumb).toHaveBeenCalledTimes(1);
   });
 
@@ -181,8 +181,8 @@ describe("truncateToolResults — long content (> threshold)", () => {
       addBreadcrumb,
       recordMetric: vi.fn(),
     });
-    expect(out[0].content).toMatch(/^\[\{"id":0/); // head зберігся
-    expect(out[0].content).toContain("[…truncated");
+    expect(out[0]!.content).toMatch(/^\[\{"id":0/); // head зберігся
+    expect(out[0]!.content).toContain("[…truncated");
     expect(addBreadcrumb).toHaveBeenCalledTimes(1);
   });
 });

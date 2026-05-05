@@ -41,7 +41,7 @@ function parseCsp(csp: string): CspDirectives {
     const directive = raw.trim();
     if (!directive) continue;
     const [name, ...sources] = directive.split(/\s+/);
-    out[name] = sources;
+    out[name!] = sources;
   }
   return out;
 }
@@ -74,7 +74,7 @@ function readMetaCsp(): string {
   );
   if (!match)
     throw new Error("index.html missing <meta http-equiv> CSP fallback");
-  return match[1];
+  return match[1]!;
 }
 
 const REQUIRED_CONNECT_SRC = [

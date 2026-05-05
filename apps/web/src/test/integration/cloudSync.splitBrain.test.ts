@@ -276,11 +276,11 @@ describe("CloudSync split-brain (integration)", () => {
     await clientA.pushDirty();
 
     const finyk = server.state(USER).finyk;
-    expect(finyk.data).toEqual({ txns: [{ id: "t1", amount: 100 }] });
+    expect(finyk!.data!).toEqual({ txns: [{ id: "t1", amount: 100 }] });
     // version was incremented once or twice (LWW WHERE allows equal ts),
     // but the visible data is byte-identical — ніяких дублювань рядків.
-    expect(finyk.version).toBeGreaterThanOrEqual(1);
-    expect(finyk.version).toBeLessThanOrEqual(2);
+    expect(finyk!.version!).toBeGreaterThanOrEqual(1);
+    expect(finyk!.version!).toBeLessThanOrEqual(2);
   });
 
   it("LWW ordering: A creates at t1, B updates same slice at t2 → B wins", async () => {
@@ -293,7 +293,7 @@ describe("CloudSync split-brain (integration)", () => {
     const { conflicts } = await clientB.pushDirty();
 
     expect(conflicts).toEqual([]);
-    expect(server.state(USER).finyk.data).toEqual({
+    expect(server!.state(USER).finyk!.data!).toEqual({
       txns: [{ id: "t1", amount: 200 }],
     });
   });
@@ -316,7 +316,7 @@ describe("CloudSync split-brain (integration)", () => {
 
     expect(conflicts).toEqual(["finyk"]);
     // Server should still hold A's data — LWW guard rejected B's older push.
-    expect(server.state(USER).finyk.data).toEqual({
+    expect(server!.state(USER).finyk!.data!).toEqual({
       txns: [{ id: "t1", amount: 999 }],
     });
     // B kept its slice dirty for retry (or for next merge after pull).
@@ -333,13 +333,13 @@ describe("CloudSync split-brain (integration)", () => {
     clientA.delete("finyk"); // empty data, t2
     await clientA.pushDirty();
 
-    expect(server.state(USER).finyk.data).toEqual({}); // tombstone
+    expect(server!.state(USER).finyk!.data!).toEqual({}); // tombstone
 
     // B pushes its older update — LWW guard rejects.
     const { conflicts } = await clientB.pushDirty();
     expect(conflicts).toEqual(["finyk"]);
     // Server still empty (tombstone preserved).
-    expect(server.state(USER).finyk.data).toEqual({});
+    expect(server!.state(USER).finyk!.data!).toEqual({});
 
     // Older B's data ignored — newer (later by ts) tombstone reigns.
     void tB;
@@ -348,7 +348,7 @@ describe("CloudSync split-brain (integration)", () => {
   it("no resurrection: A deletes at t1, B creates at t2 → server holds B's create, NOT A's tombstone", async () => {
     clientA.delete("finyk");
     await clientA.pushDirty();
-    expect(server.state(USER).finyk.data).toEqual({});
+    expect(server!.state(USER).finyk!.data!).toEqual({});
 
     // 1 minute later — B creates with same id.
     vi.advanceTimersByTime(60_000);
@@ -356,7 +356,7 @@ describe("CloudSync split-brain (integration)", () => {
     const { conflicts } = await clientB.pushDirty();
 
     expect(conflicts).toEqual([]);
-    expect(server.state(USER).finyk.data).toEqual({
+    expect(server!.state(USER).finyk!.data!).toEqual({
       txns: [{ id: "t1", amount: 50 }],
     });
     // (Це бажана поведінка — без operation-log сервер не може сказати,
@@ -376,7 +376,7 @@ describe("CloudSync split-brain (integration)", () => {
 
     await clientB.pushDirty();
     // Server accepts B's push: ts is "in the future" but greater than A's.
-    expect(server.state(USER).finyk.data).toEqual({
+    expect(server!.state(USER).finyk!.data!).toEqual({
       txns: [{ id: "t1", amount: 200 }],
     });
     expect(new Date(tBClient).getTime()).toBeGreaterThan(Date.now());
@@ -397,7 +397,7 @@ describe("CloudSync split-brain (integration)", () => {
     // rejects.
     expect(conflicts).toEqual(["finyk"]);
     // Server still holds A's data.
-    expect(server.state(USER).finyk.data).toEqual({
+    expect(server!.state(USER).finyk!.data!).toEqual({
       txns: [{ id: "t1", amount: 100 }],
     });
   });
@@ -417,7 +417,7 @@ describe("CloudSync split-brain (integration)", () => {
     const r4 = await clientA.pushDirty();
     expect(r4.errors).toEqual([]);
     expect(clientA.dirty.has("finyk")).toBe(false);
-    expect(server.state(USER).finyk.data).toEqual({
+    expect(server!.state(USER).finyk!.data!).toEqual({
       txns: [{ id: "t1", amount: 100 }],
     });
   });
@@ -463,7 +463,7 @@ describe("CloudSync split-brain (integration)", () => {
     const { conflicts } = await clientB.pushDirty();
     expect(conflicts).toEqual(["finyk"]);
     // Server still holds A's most recent data.
-    expect(server.state(USER).finyk.data).toEqual({
+    expect(server!.state(USER).finyk!.data!).toEqual({
       txns: [{ id: "t1", amount: 999 }],
     });
   });
@@ -497,7 +497,7 @@ describe("CloudSync split-brain (integration)", () => {
     expect(pushSucceeded).toBeGreaterThan(0);
     // All 5 modules should be on server with the LATEST writes.
     for (const mod of modules) {
-      expect(server.state(USER)[mod].data).toEqual({
+      expect(server.state(USER)[mod]!.data).toEqual({
         entries: [{ id: `${mod}-9` }],
       });
     }

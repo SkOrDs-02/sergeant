@@ -62,7 +62,7 @@ export interface MemoryIngestPayload {
    */
   sourceRef: string | null;
   content: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, unknown> | undefined;
 }
 
 /**
@@ -247,9 +247,12 @@ export async function enqueueMemoryIngest(
   }
 
   try {
-    await queue.add(payload.source, payload, {
-      jobId: buildJobId(payload),
-    });
+    const jobId = buildJobId(payload);
+    await queue.add(
+      payload.source,
+      payload,
+      jobId === undefined ? {} : { jobId },
+    );
     aiMemoryIngestEnqueuedTotal.inc({ mode: "queued", source: sourceLabel });
   } catch (err) {
     logger.error({

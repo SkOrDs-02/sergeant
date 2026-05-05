@@ -209,11 +209,11 @@ export function Measurements() {
                     <div
                       className={cn(
                         "text-xs font-semibold mt-1",
-                        deltas[f.id] > 0 ? "text-warning" : "text-success",
+                        deltas[f.id]! > 0 ? "text-warning" : "text-success",
                       )}
                     >
-                      {deltas[f.id] > 0 ? "+" : ""}
-                      {deltas[f.id].toFixed(1)} {f.unit}
+                      {deltas[f.id]! > 0 ? "+" : ""}
+                      {deltas[f.id]!.toFixed(1)} {f.unit}
                     </div>
                   )}
                 </div>

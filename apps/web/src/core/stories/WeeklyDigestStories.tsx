@@ -103,13 +103,13 @@ export function WeeklyDigestStories({
         className="absolute inset-0 transition-[transform,opacity] duration-150 ease-out touch-none"
         {...gestures}
       >
-        {renderSlide(slide)}
+        {renderSlide(slide!)}
         <StoriesProgressHeader
           slides={slides}
           currentIndex={nav.index}
           progress={progress}
           paused={pause.isPaused}
-          activeLabel={slide.label}
+          activeLabel={slide!.label!}
           weekRange={weekRange}
           onClose={handleClose}
         />

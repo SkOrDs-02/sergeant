@@ -212,9 +212,9 @@ describe("offline queue", () => {
     addToOfflineQueue({ module: "finyk", action: "push" });
     const queue = getOfflineQueue();
     expect(queue.length).toBe(1);
-    expect(queue[0].module).toBe("finyk");
-    expect(queue[0].action).toBe("push");
-    expect(typeof queue[0].ts).toBe("string");
+    expect(queue[0]!.module).toBe("finyk");
+    expect(queue[0]!.action).toBe("push");
+    expect(typeof queue[0]!.ts).toBe("string");
   });
 
   it("clearOfflineQueue очищує чергу", () => {
@@ -228,7 +228,7 @@ describe("offline queue", () => {
     addToOfflineQueue({ module: "finyk", action: "push" });
     addToOfflineQueue({ module: "fizruk", action: "push" });
     const q = getOfflineQueue();
-    expect(q[0].module).toBe("finyk");
-    expect(q[1].module).toBe("fizruk");
+    expect(q[0]!.module).toBe("finyk");
+    expect(q[1]!.module).toBe("fizruk");
   });
 });

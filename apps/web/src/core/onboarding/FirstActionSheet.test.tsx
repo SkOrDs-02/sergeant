@@ -65,7 +65,7 @@ describe("FirstActionHeroCard — inline chips (S2.3)", () => {
         ([event]) => event === ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_PICKED,
       );
     expect(calls).toHaveLength(1);
-    expect(calls[0][1]).toMatchObject({
+    expect(calls[0]![1]).toMatchObject({
       module: "finyk",
       primary: "routine",
       via: "chip",
@@ -85,7 +85,7 @@ describe("FirstActionHeroCard — inline chips (S2.3)", () => {
         ([event]) => event === ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_PICKED,
       );
     expect(calls).toHaveLength(1);
-    expect(calls[0][1]).toMatchObject({
+    expect(calls[0]![1]).toMatchObject({
       module: "routine",
       primary: "routine",
       via: "primary",

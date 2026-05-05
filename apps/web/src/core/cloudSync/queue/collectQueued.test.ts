@@ -35,7 +35,7 @@ describe("collectQueuedModules", () => {
     ];
     const result = collectQueuedModules(queue);
     expect(Object.keys(result).sort()).toEqual(["profile"]);
-    expect(result.profile.data).toEqual({ a: 1 });
+    expect(result.profile!.data!).toEqual({ a: 1 });
   });
 
   it("drops the retired fizruk module entries (PR #030)", () => {
@@ -85,7 +85,7 @@ describe("collectQueuedModules", () => {
       { type: "push", modules: { profile: payload({ v: 1 }) } },
       { type: "push", modules: { profile: payload({ v: 2 }) } },
     ];
-    expect(collectQueuedModules(queue).profile.data).toEqual({ v: 2 });
+    expect(collectQueuedModules!(queue).profile!.data!).toEqual({ v: 2 });
   });
 
   it("ignores entries that are not push", () => {
@@ -93,7 +93,7 @@ describe("collectQueuedModules", () => {
       { type: "noop", modules: { profile: payload({ ignored: true }) } },
       { type: "push", modules: { profile: payload({ kept: true }) } },
     ];
-    expect(collectQueuedModules(queue).profile.data).toEqual({ kept: true });
+    expect(collectQueuedModules!(queue).profile!.data!).toEqual({ kept: true });
   });
 
   it("ignores entries without modules object", () => {
@@ -103,7 +103,7 @@ describe("collectQueuedModules", () => {
       { type: "push", modules: "no" },
       { type: "push", modules: { profile: payload({ ok: true }) } },
     ];
-    expect(collectQueuedModules(queue).profile.data).toEqual({ ok: true });
+    expect(collectQueuedModules!(queue).profile!.data!).toEqual({ ok: true });
   });
 
   it("rejects unknown module names", () => {

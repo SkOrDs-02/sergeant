@@ -40,7 +40,7 @@ describe("swControl", () => {
     await Promise.resolve();
 
     expect(controller.postMessage).toHaveBeenCalledTimes(1);
-    const msg = controller.postMessage.mock.calls[0][0];
+    const msg = controller.postMessage.mock.calls[0]![0];
     expect(msg.type).toBe("SW_DEBUG");
     expect(msg.data?.requestId).toMatch(/^sw_debug_/);
 
@@ -66,7 +66,7 @@ describe("swControl", () => {
     await Promise.resolve();
 
     expect(controller.postMessage).toHaveBeenCalledTimes(1);
-    const msg = controller.postMessage.mock.calls[0][0];
+    const msg = controller.postMessage.mock.calls[0]![0];
     expect(msg.type).toBe("CLEAR_SW_CACHES");
     expect(msg.data?.requestId).toMatch(/^sw_clear_/);
 

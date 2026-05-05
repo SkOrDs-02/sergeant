@@ -14,8 +14,8 @@ import { als } from "./requestContext.js";
  *  - В dev можна увімкнути pino-pretty через `LOG_PRETTY=1`.
  */
 
-const isDev = process.env.NODE_ENV !== "production";
-const level = process.env.LOG_LEVEL || (isDev ? "debug" : "info");
+const isDev = process.env["NODE_ENV"] !== "production";
+const level = process.env["LOG_LEVEL"] || (isDev ? "debug" : "info");
 
 // Список шляхів, які pino маскуватиме на `[redacted]`, щоб PII та секрети
 // ніколи не просочувались у JSON-логи. Розширюємо консервативно: email і phone
@@ -150,17 +150,20 @@ export const redactPaths = [
   "body.phone",
 ];
 
-const usePretty = process.env.LOG_PRETTY === "1";
+const usePretty = process.env["LOG_PRETTY"] === "1";
 
 const pinoOptions: LoggerOptions = {
   level,
   base: {
     service: "sergeant-api",
-    env: process.env.NODE_ENV || "development",
-    release:
-      process.env.SENTRY_RELEASE ||
-      process.env.RAILWAY_GIT_COMMIT_SHA ||
-      undefined,
+    env: process.env["NODE_ENV"] || "development",
+    ...(process.env["SENTRY_RELEASE"] || process.env["RAILWAY_GIT_COMMIT_SHA"]
+      ? {
+          release:
+            process.env["SENTRY_RELEASE"] ||
+            process.env["RAILWAY_GIT_COMMIT_SHA"]!,
+        }
+      : {}),
   },
   timestamp: pino.stdTimeFunctions.isoTime,
   redact: { paths: redactPaths, censor: "[redacted]" },
@@ -174,8 +177,8 @@ const pinoOptions: LoggerOptions = {
     const ctx = als.getStore();
     if (!ctx) return {};
     const out: Record<string, string> = {};
-    if (ctx.requestId) out.requestId = ctx.requestId;
-    if (ctx.traceId) out.traceId = ctx.traceId;
+    if (ctx.requestId) out["requestId"] = ctx.requestId;
+    if (ctx.traceId) out["traceId"] = ctx.traceId;
     // L10 — `docs/security/hardening/L10-user-id-hash-in-logs.md`. Pino
     // logs go to Railway/Loki where retention + access policy is looser
     // than Sentry, so the raw UUID is replaced with a 16-hex prefix of
@@ -184,17 +187,19 @@ const pinoOptions: LoggerOptions = {
     // already covers it).
     if (ctx.userId) {
       const hashed = hashUserId(ctx.userId);
-      if (hashed) out.userIdHash = hashed;
+      if (hashed) out["userIdHash"] = hashed;
     }
-    if (ctx.module) out.module = ctx.module;
+    if (ctx.module) out["module"] = ctx.module;
     return out;
   },
-  transport: usePretty
+  ...(usePretty
     ? {
-        target: "pino-pretty",
-        options: { colorize: true, translateTime: "SYS:HH:MM:ss.l" },
+        transport: {
+          target: "pino-pretty",
+          options: { colorize: true, translateTime: "SYS:HH:MM:ss.l" },
+        },
       }
-    : undefined,
+    : {}),
 };
 
 export const logger: Logger = pino(pinoOptions);
@@ -213,17 +218,17 @@ export const httpLogger: HttpLogger = pinoHttp({
 });
 
 export interface SerializedError {
-  name?: string;
+  name?: string | undefined;
   message: string;
-  code?: string;
-  status?: number;
-  stack?: string;
-  cause?: SerializedError;
+  code?: string | undefined;
+  status?: number | undefined;
+  stack?: string | undefined;
+  cause?: SerializedError | undefined;
 }
 
 export interface SerializeErrorOptions {
-  includeStack?: boolean;
-  depth?: number;
+  includeStack?: boolean | undefined;
+  depth?: number | undefined;
 }
 
 type ErrorShape = {

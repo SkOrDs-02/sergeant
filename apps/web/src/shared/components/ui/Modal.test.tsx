@@ -64,7 +64,7 @@ describe("Modal", () => {
     );
     // The overlay button is the first role=button (scrim) — close button is
     // the second (inside the dialog).
-    fireEvent.click(getAllByRole("button")[0]);
+    fireEvent.click(getAllByRole("button")[0]!);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -75,7 +75,7 @@ describe("Modal", () => {
         body
       </Modal>,
     );
-    fireEvent.click(getAllByRole("button")[0]);
+    fireEvent.click(getAllByRole("button")[0]!);
     expect(onClose).not.toHaveBeenCalled();
   });
 

@@ -26,7 +26,7 @@ const {
   enqueueMemoryIngestMock,
   recallMock,
 } = vi.hoisted(() => {
-  process.env.AI_MEMORY_ENABLED = "true";
+  process.env["AI_MEMORY_ENABLED"] = "true";
   const queryMock = vi.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] });
   const mockPool = {
     query: queryMock,
@@ -80,7 +80,7 @@ vi.mock("./../modules/ai-memory/bootstrap.js", () => ({
 
 import { createApp } from "./../app.js";
 
-const SAVED_ENABLED = process.env.AI_MEMORY_ENABLED;
+const SAVED_ENABLED = process.env["AI_MEMORY_ENABLED"];
 
 beforeEach(() => {
   queryMock.mockReset();
@@ -91,12 +91,12 @@ beforeEach(() => {
   enqueueMemoryIngestMock.mockResolvedValue(undefined);
   recallMock.mockReset();
   recallMock.mockResolvedValue([]);
-  process.env.AI_MEMORY_ENABLED = "true";
+  process.env["AI_MEMORY_ENABLED"] = "true";
 });
 
 afterAll(() => {
-  if (SAVED_ENABLED === undefined) delete process.env.AI_MEMORY_ENABLED;
-  else process.env.AI_MEMORY_ENABLED = SAVED_ENABLED;
+  if (SAVED_ENABLED === undefined) delete process.env["AI_MEMORY_ENABLED"];
+  else process.env["AI_MEMORY_ENABLED"] = SAVED_ENABLED;
 });
 
 describe("POST /api/ai-memory/ingest — auth guard", () => {

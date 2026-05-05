@@ -38,7 +38,7 @@ describe("markModuleDirty", () => {
 
     const modifiedTimes = getModuleModifiedTimes();
     expect(Object.keys(modifiedTimes)).toEqual(["profile"]);
-    const ts = Date.parse(modifiedTimes.profile);
+    const ts = Date.parse(modifiedTimes.profile!);
     expect(ts).toBeGreaterThanOrEqual(before);
     expect(ts).toBeLessThanOrEqual(after);
   });

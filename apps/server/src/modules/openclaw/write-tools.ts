@@ -38,7 +38,7 @@ export interface CommitStrategyDocInput {
   /** Short commit message (used in PR title + commit msg). */
   message: string;
   /** Optional repo override (defaults to OPENCLAW_GITHUB_REPO). */
-  repo?: string;
+  repo?: string | undefined;
 }
 
 export interface CommitStrategyDocOutput {
@@ -221,8 +221,8 @@ export async function commitToStrategyDoc(
 export interface CreateGithubIssueInput {
   title: string;
   body: string;
-  labels?: string[];
-  repo?: string;
+  labels?: string[] | undefined;
+  repo?: string | undefined;
 }
 
 export interface CreateGithubIssueOutput {
@@ -315,8 +315,8 @@ export interface PostToTopicInput {
 export interface PostToTopicOutput {
   status: "posted" | "not_configured" | "error";
   topic: string;
-  messageId?: number;
-  note?: string;
+  messageId?: number | undefined;
+  note?: string | undefined;
 }
 
 export async function postToTopic(
@@ -327,9 +327,9 @@ export async function postToTopic(
       `post_to_topic: topic '${input.topic}' is not in allowlist (${[...POST_TO_TOPIC_ALLOWLIST].join(", ")})`,
     );
   }
-  const botToken = process.env.SERGEANT_ALERT_BOT_TOKEN;
-  const chatId = process.env.SERGEANT_OPS_CHAT_ID;
-  const threadIdRaw = process.env[TOPIC_ENV_VAR[input.topic]];
+  const botToken = process.env["SERGEANT_ALERT_BOT_TOKEN"];
+  const chatId = process.env["SERGEANT_OPS_CHAT_ID"];
+  const threadIdRaw = process.env[TOPIC_ENV_VAR[input.topic]!];
   if (!botToken || !chatId || !threadIdRaw) {
     return {
       status: "not_configured",
@@ -385,7 +385,7 @@ export async function postToTopic(
 export interface PauseWorkflowInput {
   workflowId: string;
   /** Optional human reason — recorded in audit-log; n8n doesn't store it. */
-  reason?: string;
+  reason?: string | undefined;
 }
 
 export interface PauseWorkflowOutput {
@@ -397,8 +397,8 @@ export interface PauseWorkflowOutput {
 export async function pauseWorkflow(
   input: PauseWorkflowInput,
 ): Promise<PauseWorkflowOutput> {
-  const baseUrl = process.env.N8N_API_URL;
-  const apiKey = process.env.N8N_API_KEY;
+  const baseUrl = process.env["N8N_API_URL"];
+  const apiKey = process.env["N8N_API_KEY"];
   if (!baseUrl || !apiKey) {
     return {
       status: "not_configured",
@@ -434,20 +434,20 @@ export interface MuteAlertInput {
    * Optional ISO-8601 datetime — when to auto-unmute. If omitted, mute
    * is indefinite until manually changed.
    */
-  untilIso?: string;
+  untilIso?: string | undefined;
 }
 
 export interface MuteAlertOutput {
   status: "muted" | "not_configured" | "error";
   issueId: string;
-  untilIso?: string;
-  note?: string;
+  untilIso?: string | undefined;
+  note?: string | undefined;
 }
 
 export async function muteSentryAlert(
   input: MuteAlertInput,
 ): Promise<MuteAlertOutput> {
-  const token = process.env.SENTRY_AUTH_TOKEN;
+  const token = process.env["SENTRY_AUTH_TOKEN"];
   if (!token) {
     return {
       status: "not_configured",

@@ -36,8 +36,8 @@ describe("wrapAndScanToolResults — envelope shape", () => {
       { recordInjectionAttempt: inc },
     );
     expect(out).toHaveLength(1);
-    expect(out[0].tool_use_id).toBe("toolu_finyk");
-    expect(out[0].content).toBe(
+    expect(out[0]!.tool_use_id).toBe("toolu_finyk");
+    expect(out[0]!.content).toBe(
       `<tool_output tool="find_transaction">amount: 250</tool_output>`,
     );
     expect(inc).not.toHaveBeenCalled();
@@ -50,7 +50,9 @@ describe("wrapAndScanToolResults — envelope shape", () => {
       ORPHAN_RAW,
       { recordInjectionAttempt: inc },
     );
-    expect(out[0].content).toBe(`<tool_output tool="unknown">ok</tool_output>`);
+    expect(out[0]!.content).toBe(
+      `<tool_output tool="unknown">ok</tool_output>`,
+    );
   });
 
   it("ставить tool='unknown' якщо name не в whitelisted TOOLS", () => {
@@ -60,7 +62,9 @@ describe("wrapAndScanToolResults — envelope shape", () => {
       [{ type: "tool_use", id: "toolu_x", name: "fictional_tool" }],
       { recordInjectionAttempt: inc },
     );
-    expect(out[0].content).toBe(`<tool_output tool="unknown">ok</tool_output>`);
+    expect(out[0]!.content).toBe(
+      `<tool_output tool="unknown">ok</tool_output>`,
+    );
   });
 
   it("екранує закриваючий </tool_output> у контенті (env-escape)", () => {
@@ -73,12 +77,12 @@ describe("wrapAndScanToolResults — envelope shape", () => {
     );
     // Не повинен містити "сирий" </tool_output> ВНУТРІ envelope; має бути
     // саме один закриваючий тег у самому кінці.
-    const closingMatches = out[0].content.match(/<\/tool_output>/g) ?? [];
+    const closingMatches = out[0]!.content.match(/<\/tool_output>/g) ?? [];
     expect(closingMatches.length).toBe(1);
     // І має бути саме в кінці.
-    expect(out[0].content.endsWith("</tool_output>")).toBe(true);
+    expect(out[0]!.content.endsWith("</tool_output>")).toBe(true);
     // Зловмисний закриваючий тег має бути замінений (zero-width-space у "</")
-    expect(out[0].content).toMatch(/<\u200B\/tool_output>/);
+    expect(out[0]!.content).toMatch(/<\u200B\/tool_output>/);
   });
 
   it("НЕ мутує вхідний масив", () => {
@@ -86,7 +90,7 @@ describe("wrapAndScanToolResults — envelope shape", () => {
     const out = wrapAndScanToolResults(input, TOOL_USE_RAW, {
       recordInjectionAttempt: vi.fn(),
     });
-    expect(input[0].content).toBe("ok");
+    expect(input[0]!.content).toBe("ok");
     expect(out).not.toBe(input);
   });
 });

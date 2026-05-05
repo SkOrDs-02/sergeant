@@ -67,7 +67,7 @@ describe("initPostHog", () => {
     await mod.initPostHog();
 
     expect(posthogInit).toHaveBeenCalledTimes(1);
-    const [key, opts] = posthogInit.mock.calls[0];
+    const [key, opts] = posthogInit.mock.calls[0]!;
     expect(key).toBe("phc_test_key");
     expect(opts).toMatchObject({
       api_host: "https://eu.i.posthog.com",
@@ -87,7 +87,7 @@ describe("initPostHog", () => {
     const mod = await import("./posthog");
     await mod.initPostHog();
 
-    expect(posthogInit.mock.calls[0][1]).toMatchObject({
+    expect(posthogInit.mock.calls[0]![1]).toMatchObject({
       api_host: "https://eu.i.posthog.com",
     });
   });

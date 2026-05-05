@@ -184,7 +184,7 @@ export function requireInternalIp(
   const built = buildBlockList(opts.entries);
   const allowlistEmpty = isAllowlistEmpty(opts.entries);
   const failClosed =
-    opts.failClosedOnEmpty ?? process.env.NODE_ENV === "production";
+    opts.failClosedOnEmpty ?? process.env["NODE_ENV"] === "production";
 
   return (req: Request, res, next) => {
     if (!built) {

@@ -76,7 +76,7 @@ describe("showUndoToast", () => {
 
     expect(toast.show).toHaveBeenCalledTimes(1);
     const call = (toast.show as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(call[1]).toBe("info");
-    expect(call[2]).toBe(5000);
+    expect(call![1]!).toBe("info");
+    expect(call![2]!).toBe(5000);
   });
 });

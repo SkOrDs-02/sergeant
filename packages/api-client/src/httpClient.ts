@@ -357,12 +357,13 @@ export function createHttpClient(config: HttpClientConfig = {}): HttpClient {
     const headers = await buildHeaders(opts);
     const { signal, cancel } = combineSignals(opts.signal, opts.timeoutMs);
 
+    const reqBody = serializeBody(opts.body);
     const init: RequestInit = {
       method: opts.method ?? (opts.body != null ? "POST" : "GET"),
       credentials: opts.credentials ?? defaultCredentials,
       headers,
-      body: serializeBody(opts.body),
-      signal,
+      ...(reqBody !== undefined ? { body: reqBody } : {}),
+      signal: signal ?? null,
     };
 
     let res: Response;

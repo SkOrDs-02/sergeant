@@ -152,23 +152,23 @@ ${ingredientsList}
   const normalize = (s: string): string =>
     s.toLowerCase().replace(/\s+/g, " ").trim();
 
-  const rawCategories = Array.isArray(obj.categories)
-    ? (obj.categories as unknown[])
+  const rawCategories = Array.isArray(obj["categories"])
+    ? (obj["categories"] as unknown[])
     : [];
 
   const categories: ShoppingCategory[] = rawCategories
     .map((cat): ShoppingCategory | null => {
       if (!cat || typeof cat !== "object") return null;
       const catRec = cat as Record<string, unknown>;
-      const name = String(catRec.name || "Інше").trim();
-      const rawItems = Array.isArray(catRec.items)
-        ? (catRec.items as unknown[])
+      const name = String(catRec["name"] || "Інше").trim();
+      const rawItems = Array.isArray(catRec["items"])
+        ? (catRec["items"] as unknown[])
         : [];
       const items = rawItems
         .map((item): ShoppingItem | null => {
           if (!item || typeof item !== "object") return null;
           const itemRec = item as Record<string, unknown>;
-          const itemName = String(itemRec.name || "").trim();
+          const itemName = String(itemRec["name"] || "").trim();
           if (!itemName) return null;
           const key = normalize(itemName);
           if (seenNames.has(key)) return null;
@@ -176,8 +176,8 @@ ${ingredientsList}
           return {
             id: `si_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
             name: itemName,
-            quantity: String(itemRec.quantity || "").trim(),
-            note: String(itemRec.note || "").trim(),
+            quantity: String(itemRec["quantity"] || "").trim(),
+            note: String(itemRec["note"] || "").trim(),
             checked: false,
           };
         })

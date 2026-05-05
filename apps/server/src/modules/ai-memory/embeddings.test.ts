@@ -15,17 +15,17 @@ const savedEnv: Record<string, string | undefined> = {};
 
 beforeEach(() => {
   for (const k of ENV_VARS) savedEnv[k] = process.env[k];
-  process.env.VOYAGE_API_KEY = "test-key";
-  process.env.VOYAGE_EMBEDDING_MODEL = "voyage-3.5-lite";
-  process.env.VOYAGE_EMBEDDING_DIM = "4"; // менший — простіше для тестів
-  process.env.VOYAGE_TIMEOUT_MS = "1000";
-  process.env.VOYAGE_MAX_RETRIES = "1";
-  process.env.VOYAGE_BATCH_SIZE = "2";
-  process.env.AI_MEMORY_EMBEDDING_VERSION = "1";
+  process.env["VOYAGE_API_KEY"] = "test-key";
+  process.env["VOYAGE_EMBEDDING_MODEL"] = "voyage-3.5-lite";
+  process.env["VOYAGE_EMBEDDING_DIM"] = "4"; // менший — простіше для тестів
+  process.env["VOYAGE_TIMEOUT_MS"] = "1000";
+  process.env["VOYAGE_MAX_RETRIES"] = "1";
+  process.env["VOYAGE_BATCH_SIZE"] = "2";
+  process.env["AI_MEMORY_EMBEDDING_VERSION"] = "1";
   // Високий threshold/довгий reset — щоб circuit-breaker не задихнув
   // концурент тести (тести лежать у одному процесі і шарять instance).
-  process.env.AI_CIRCUIT_BREAKER_THRESHOLD = "100";
-  process.env.AI_CIRCUIT_BREAKER_RESET_MS = "60000";
+  process.env["AI_CIRCUIT_BREAKER_THRESHOLD"] = "100";
+  process.env["AI_CIRCUIT_BREAKER_RESET_MS"] = "60000";
   vi.resetModules();
 });
 
@@ -88,7 +88,7 @@ describe("createVoyageEmbeddings", () => {
       // Перевіряємо payload
       expect(init?.method).toBe("POST");
       const headers = init?.headers as Record<string, string>;
-      expect(headers.Authorization).toBe("Bearer test-key");
+      expect(headers["Authorization"]).toBe("Bearer test-key");
       const body = JSON.parse(String(init?.body));
       expect(body.model).toBe("voyage-3.5-lite");
       expect(body.output_dimension).toBe(4);
@@ -106,7 +106,7 @@ describe("createVoyageEmbeddings", () => {
 
     expect(result).toHaveLength(2);
     expect(result[0]).toBeInstanceOf(Float32Array);
-    expect(Array.from(result[0])).toEqual([
+    expect(Array.from(result[0]!)).toEqual([
       // Float32Array округляє до f32 — порівнюємо приблизно.
       expect.closeTo(0.1, 5),
       expect.closeTo(0.2, 5),
@@ -147,7 +147,7 @@ describe("createVoyageEmbeddings", () => {
   });
 
   it("кидає MissingVoyageApiKeyError якщо VOYAGE_API_KEY не сконфігуровано", async () => {
-    delete process.env.VOYAGE_API_KEY;
+    delete process.env["VOYAGE_API_KEY"];
     const { createVoyageEmbeddings, MissingVoyageApiKeyError } =
       await import("./embeddings.js");
     const fetchFn = vi.fn();
@@ -212,7 +212,7 @@ describe("createVoyageEmbeddings", () => {
   });
 
   it("кидає VoyageHttpError з retryable=false на final 5xx після retry-ів", async () => {
-    process.env.VOYAGE_MAX_RETRIES = "1"; // 2 спроби максимум
+    process.env["VOYAGE_MAX_RETRIES"] = "1"; // 2 спроби максимум
     const { createVoyageEmbeddings, VoyageHttpError } =
       await import("./embeddings.js");
     const fetchFn = vi.fn(async () =>
@@ -278,13 +278,13 @@ describe("createVoyageEmbeddings", () => {
       fetchFn: fetchFn as unknown as typeof fetch,
     });
     const result = await provider.embedBatch(["a", "b"]);
-    expect(Array.from(result[0])).toEqual([
+    expect(Array.from(result[0]!)).toEqual([
       expect.closeTo(0.1, 5),
       expect.closeTo(0.1, 5),
       expect.closeTo(0.1, 5),
       expect.closeTo(0.1, 5),
     ]);
-    expect(Array.from(result[1])).toEqual([
+    expect(Array.from(result[1]!)).toEqual([
       expect.closeTo(0.5, 5),
       expect.closeTo(0.5, 5),
       expect.closeTo(0.5, 5),

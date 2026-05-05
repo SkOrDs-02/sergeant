@@ -304,15 +304,15 @@ describe("readStrategyDoc ENOENT handling (allowlist-prefix exists, target missi
 
   beforeAll(async () => {
     fakeRepoRoot = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-tools-"));
-    originalEnv = process.env.OPENCLAW_REPO_ROOT;
-    process.env.OPENCLAW_REPO_ROOT = fakeRepoRoot;
+    originalEnv = process.env["OPENCLAW_REPO_ROOT"];
+    process.env["OPENCLAW_REPO_ROOT"] = fakeRepoRoot;
   });
 
   afterAll(async () => {
     if (originalEnv === undefined) {
-      delete process.env.OPENCLAW_REPO_ROOT;
+      delete process.env["OPENCLAW_REPO_ROOT"];
     } else {
-      process.env.OPENCLAW_REPO_ROOT = originalEnv;
+      process.env["OPENCLAW_REPO_ROOT"] = originalEnv;
     }
     await fs.rm(fakeRepoRoot, { recursive: true, force: true });
   });

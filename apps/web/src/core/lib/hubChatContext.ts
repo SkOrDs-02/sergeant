@@ -479,7 +479,7 @@ function buildContext(): string {
         const todayDone = habits.filter(
           (h) =>
             Array.isArray(completions[h.id]) &&
-            completions[h.id].includes(todayKey),
+            completions[h.id]!.includes(todayKey),
         );
         lines.push(
           `[Рутина] ${habits.length} активних звичок, виконано сьогодні: ${todayDone.length} з ${habits.length}`,
@@ -489,7 +489,7 @@ function buildContext(): string {
           .map((h) => {
             const done =
               Array.isArray(completions[h.id]) &&
-              completions[h.id].includes(todayKey);
+              completions[h.id]!.includes(todayKey);
             return `${h.emoji || ""} ${h.name} (id:${h.id}): ${done ? "✓" : "✗"}`;
           })
           .join(", ");
@@ -510,7 +510,7 @@ function buildContext(): string {
           for (const h of habits) {
             if (
               Array.isArray(completions[h.id]) &&
-              completions[h.id].includes(dk)
+              completions[h.id]!.includes(dk)
             )
               weekDone++;
           }
@@ -534,7 +534,7 @@ function buildContext(): string {
             habits.every(
               (h) =>
                 Array.isArray(completions[h.id]) &&
-                completions[h.id].includes(dk),
+                completions[h.id]!.includes(dk),
             )
           ) {
             streak++;

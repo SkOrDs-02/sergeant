@@ -31,9 +31,9 @@ describe("Segmented", () => {
       <Segmented items={ITEMS} value="week" onChange={() => {}} />,
     );
     const tabs = getAllByRole("tab");
-    expect(tabs[0].getAttribute("aria-selected")).toBe("false");
-    expect(tabs[1].getAttribute("aria-selected")).toBe("true");
-    expect(tabs[2].getAttribute("aria-selected")).toBe("false");
+    expect(tabs[0]!.getAttribute("aria-selected")).toBe("false");
+    expect(tabs[1]!.getAttribute("aria-selected")).toBe("true");
+    expect(tabs[2]!.getAttribute("aria-selected")).toBe("false");
   });
 
   it("invokes onChange with the clicked item's value", () => {
@@ -41,7 +41,7 @@ describe("Segmented", () => {
     const { getAllByRole } = render(
       <Segmented items={ITEMS} value="day" onChange={onChange} />,
     );
-    fireEvent.click(getAllByRole("tab")[2]);
+    fireEvent.click(getAllByRole("tab")[2]!);
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith("month");
   });
@@ -59,8 +59,8 @@ describe("Segmented", () => {
     const active = getAllByRole("tab")[0];
     // `bg-fizruk-strong` (= teal-700) clears 5.47:1 against text-white.
     // The previous `bg-fizruk` (= teal-500) only cleared ~2.5:1.
-    expect(active.className).toContain("bg-fizruk-strong");
-    expect(active.className).toContain("text-white");
+    expect(active!.className!).toContain("bg-fizruk-strong");
+    expect(active!.className!).toContain("text-white");
   });
 
   it("style='soft' (default) + variant='routine' paints the active tab with routine-soft palette", () => {
@@ -73,7 +73,7 @@ describe("Segmented", () => {
       />,
     );
     const active = getAllByRole("tab")[0];
-    expect(active.className).toContain("bg-routine-surface");
-    expect(active.className).toContain("text-routine-strong");
+    expect(active!.className!).toContain("bg-routine-surface");
+    expect(active!.className!).toContain("text-routine-strong");
   });
 });

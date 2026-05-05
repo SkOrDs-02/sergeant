@@ -194,7 +194,7 @@ function extractWebhookSecret(req: Request): {
   if (typeof headerRaw === "string" && headerRaw.length > 0) {
     return { secret: headerRaw, transport: "header" };
   }
-  const pathSecret = req.params.secret;
+  const pathSecret = req.params["secret"];
   if (typeof pathSecret === "string" && pathSecret.length > 0) {
     return { secret: pathSecret, transport: "legacy_path" };
   }
@@ -244,7 +244,7 @@ export async function webhookHandler(
     return;
   }
 
-  const userId = connResult.rows[0].user_id;
+  const userId = connResult!.rows[0]!.user_id;
 
   // Zod validation replaces hand-rolled type checks. A bad payload (missing
   // required keys, wrong types, oversized strings, NaN/Infinity in numeric

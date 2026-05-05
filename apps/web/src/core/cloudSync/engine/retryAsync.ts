@@ -44,9 +44,9 @@ export async function retryAsync<T>(
     } catch (err) {
       if (attempt >= maxRetries || !isRetryableError(err)) throw err;
       const delay = delays[Math.min(attempt, delays.length - 1)];
-      syncLog.retry({ attempt: attempt + 1, delay, label: opts.label });
+      syncLog.retry({ attempt: attempt + 1, delay: delay!, label: opts.label });
       updateDebugSnapshot({ lastAction: "retry" });
-      await sleep(delay);
+      await sleep(delay!);
       attempt += 1;
     }
   }

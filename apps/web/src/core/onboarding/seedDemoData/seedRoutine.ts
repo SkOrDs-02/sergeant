@@ -82,7 +82,7 @@ export function seedRoutine(): void {
   for (let i = 0; i < pushupPlan.length; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    pushupsByDate[dateKey(d)] = pushupPlan[i];
+    pushupsByDate[dateKey(d)] = pushupPlan[i]!;
   }
 
   const state = {

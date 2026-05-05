@@ -41,8 +41,8 @@ function buildDigestMemoryContent(
     const piece = [summary, comment].filter(Boolean).join(" ");
     if (piece) sections.push(`${key}: ${piece}`);
   }
-  const overall = Array.isArray(safe.overallRecommendations)
-    ? (safe.overallRecommendations as unknown[])
+  const overall = Array.isArray(safe["overallRecommendations"])
+    ? (safe["overallRecommendations"] as unknown[])
         .filter((x): x is string => typeof x === "string" && x.length > 0)
         .join("; ")
     : "";
@@ -63,7 +63,7 @@ function extractJsonObject(raw: unknown): unknown {
   let text = raw.trim();
   // Прибираємо markdown-обгортку ```json ... ``` або ``` ... ```
   const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fence) text = fence[1].trim();
+  if (fence) text = fence[1]!.trim();
 
   const start = text.indexOf("{");
   if (start < 0) return null;

@@ -483,7 +483,7 @@ describe("useDashboardFocus", () => {
 
     expect(result.current.focus?.id).toBe("r1");
     expect(result.current.rest).toHaveLength(1);
-    expect(result.current.rest[0].id).toBe("r2");
+    expect(result.current.rest[0]!.id).toBe("r2");
   });
 
   it("dismiss приховує рекомендацію", () => {

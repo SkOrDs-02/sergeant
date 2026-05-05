@@ -132,7 +132,7 @@ describe("processMemoryIngestJob — processor contract", () => {
     });
 
     expect(remember).toHaveBeenCalledTimes(1);
-    expect(remember.mock.calls[0][0]).toEqual([
+    expect(remember!.mock.calls[0]![0]).toEqual([
       {
         userId: samplePayload.userId,
         source: samplePayload.source,
@@ -229,12 +229,12 @@ describe("enqueueMemoryIngest — fallback path (no Redis)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     __resetMemoryIngestQueueForTesting();
-    process.env.AI_MEMORY_ENABLED = "true";
+    process.env["AI_MEMORY_ENABLED"] = "true";
   });
 
   afterEach(() => {
     __resetMemoryIngestQueueForTesting();
-    delete process.env.AI_MEMORY_ENABLED;
+    delete process.env["AI_MEMORY_ENABLED"];
   });
 
   it("без Redis: викликає remember напряму та інкрементує mode=fallback", async () => {
@@ -256,7 +256,7 @@ describe("enqueueMemoryIngest — fallback path (no Redis)", () => {
   });
 
   it("AI_MEMORY_ENABLED=false: skip без виклику remember", async () => {
-    process.env.AI_MEMORY_ENABLED = "false";
+    process.env["AI_MEMORY_ENABLED"] = "false";
     vi.resetModules();
     const remember = vi.fn().mockResolvedValue(undefined);
     const mod = await import("./ingestQueue.js");

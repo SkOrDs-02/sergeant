@@ -337,7 +337,7 @@ export function Body({ onOpenMeasurements }: BodyProps) {
                   <ScoreButton
                     key={v}
                     value={v}
-                    label={ENERGY_LABELS[v]}
+                    label={ENERGY_LABELS[v]!}
                     selected={energyLevel === v}
                     onClick={(val: number) =>
                       setValue(
@@ -360,7 +360,7 @@ export function Body({ onOpenMeasurements }: BodyProps) {
                   <ScoreButton
                     key={v}
                     value={v}
-                    label={MOOD_LABELS[v]}
+                    label={MOOD_LABELS[v]!}
                     selected={moodScore === v}
                     onClick={(val: number) =>
                       setValue("moodScore", moodScore === val ? null : val, {

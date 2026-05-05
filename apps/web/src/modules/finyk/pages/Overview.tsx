@@ -50,7 +50,7 @@ import { PlannedFlowsCard } from "./overview/PlannedFlowsCard";
 
 const parseLocalDate = (isoDate: string | null | undefined): Date => {
   const [y, m, d] = (isoDate || "").split("-").map(Number);
-  return new Date(y, (m || 1) - 1, d || 1);
+  return new Date(y!, (m || 1) - 1, d || 1);
 };
 const formatDaysLeft = (days: number): string => {
   if (days === 0) return "сьогодні";

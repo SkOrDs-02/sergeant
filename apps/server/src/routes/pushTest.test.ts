@@ -113,7 +113,7 @@ describe("POST /api/v1/push/test", () => {
       errors: [],
     });
     expect(sendToUserMock).toHaveBeenCalledTimes(1);
-    const [calledUserId, calledPayload] = sendToUserMock.mock.calls[0];
+    const [calledUserId, calledPayload] = sendToUserMock.mock.calls[0]!;
     expect(calledUserId).toBe(user.id);
     expect(calledPayload).toEqual({
       title: "Sergeant",

@@ -248,13 +248,14 @@ export function getHintState(store: KVStore, id: HintId): HintState {
   const map = readHintsState(store);
   const s = map[id];
   if (!s || typeof s !== "object") return { shownCount: 0 };
-  return {
+  const out: HintState = {
     shownCount: Number.isFinite(s.shownCount) ? s.shownCount : 0,
-    lastShownAt: s.lastShownAt,
-    dismissedAt: s.dismissedAt,
-    completedAt: s.completedAt,
-    snoozedUntil: s.snoozedUntil,
   };
+  if (s.lastShownAt !== undefined) out.lastShownAt = s.lastShownAt;
+  if (s.dismissedAt !== undefined) out.dismissedAt = s.dismissedAt;
+  if (s.completedAt !== undefined) out.completedAt = s.completedAt;
+  if (s.snoozedUntil !== undefined) out.snoozedUntil = s.snoozedUntil;
+  return out;
 }
 
 export function setHintState(
@@ -367,10 +368,9 @@ export function snoozeHint(
   untilMs: number,
 ): HintState {
   const prev = getHintState(store, id);
-  const next: HintState = {
-    ...prev,
-    snoozedUntil: Number.isFinite(untilMs) ? untilMs : prev.snoozedUntil,
-  };
+  const next: HintState = { ...prev };
+  const resolved = Number.isFinite(untilMs) ? untilMs : prev.snoozedUntil;
+  if (resolved !== undefined) next.snoozedUntil = resolved;
   setHintState(store, id, next);
   return next;
 }

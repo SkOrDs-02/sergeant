@@ -10,12 +10,12 @@ export type ApiErrorKind = "http" | "network" | "parse" | "aborted";
 export interface ApiErrorInit {
   kind: ApiErrorKind;
   message: string;
-  status?: number;
+  status?: number | undefined;
   body?: unknown;
-  bodyText?: string;
+  bodyText?: string | undefined;
   url: string;
   /** Кореляційний ID відповіді (з `X-Request-Id` або `body.requestId`). */
-  requestId?: string;
+  requestId?: string | undefined;
   cause?: unknown;
   /**
    * Мілісекунди до найраніше безпечної повторної спроби, коли сервер повернув
@@ -24,7 +24,7 @@ export interface ApiErrorInit {
    * Значення `0` і негативні нормалізуємо у `undefined`, щоб `instanceof`-чек
    * викликача міг робити просте `if (err.retryAfterMs)`.
    */
-  retryAfterMs?: number;
+  retryAfterMs?: number | undefined;
 }
 
 export class ApiError extends Error {
@@ -38,12 +38,12 @@ export class ApiError extends Error {
   /** URL запиту — зручно логувати без витоку токенів. */
   readonly url: string;
   /** `body?.error`, якщо сервер повернув стандартну форму помилки. */
-  readonly serverMessage?: string;
+  readonly serverMessage?: string | undefined;
   /** Кореляційний ID запиту на сервері, якщо доступний. */
-  readonly requestId?: string;
+  readonly requestId?: string | undefined;
   /** Мс до безпечного retry, якщо upstream віддав `Retry-After`. `undefined`
    *  якщо заголовок не було або він не парситься у додатну величину. */
-  readonly retryAfterMs?: number;
+  readonly retryAfterMs?: number | undefined;
 
   constructor(init: ApiErrorInit) {
     super(init.message, init.cause !== undefined ? { cause: init.cause } : {});

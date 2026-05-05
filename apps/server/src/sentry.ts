@@ -34,10 +34,10 @@ export function resolveSentryRelease(
   env: NodeJS.ProcessEnv = process.env,
 ): string | undefined {
   const candidates = [
-    env.SENTRY_RELEASE,
-    env.RAILWAY_GIT_COMMIT_SHA,
-    env.VERCEL_GIT_COMMIT_SHA,
-    env.GITHUB_SHA,
+    env["SENTRY_RELEASE"],
+    env["RAILWAY_GIT_COMMIT_SHA"],
+    env["VERCEL_GIT_COMMIT_SHA"],
+    env["GITHUB_SHA"],
   ];
   for (const v of candidates) {
     if (typeof v === "string" && v.trim() !== "") return v.trim();
@@ -84,7 +84,7 @@ export function scrubPII(
   }
 }
 
-const dsn = process.env.SENTRY_DSN;
+const dsn = process.env["SENTRY_DSN"];
 
 /**
  * Чистий beforeSend-хук — extracted у named-функцію (а не inline-closure
@@ -155,15 +155,15 @@ export function applyBeforeBreadcrumb(
   breadcrumb: Sentry.Breadcrumb,
 ): Sentry.Breadcrumb | null {
   if (breadcrumb?.category === "http" && breadcrumb.data) {
-    delete breadcrumb.data.request_body_size;
-    delete breadcrumb.data.response_body_size;
+    delete breadcrumb.data["request_body_size"];
+    delete breadcrumb.data["response_body_size"];
     // C1 — http breadcrumb-и несуть `data.url` як key для запитів outbound
     // HTTP (axios/fetch). Якщо колись виявимо, що outbound ходить на чужий
     // API з секрет-у-path-і, той самий хелпер redact-не його. Inbound-leak
     // (`/api/mono/webhook/<secret>`) сюди не потрапляє — Sentry HTTP-breadcrumb-и
     // для inbound-у не створюються.
-    if (typeof breadcrumb.data.url === "string") {
-      breadcrumb.data.url = redactSensitiveUrl(breadcrumb.data.url);
+    if (typeof breadcrumb.data["url"] === "string") {
+      breadcrumb.data["url"] = redactSensitiveUrl(breadcrumb.data["url"]);
     }
     scrubPII(breadcrumb.data);
   }
@@ -180,13 +180,16 @@ export function applyBeforeBreadcrumb(
 // імпортується ПЕРШИМ — завдяки depth-first evaluation ESM-імпортів тіло
 // `sentry.js` виконається до того, як станеться `import express`.
 if (dsn) {
+  const release = resolveSentryRelease();
   Sentry.init({
     dsn,
     environment:
-      process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || "development",
-    release: resolveSentryRelease(),
+      process.env["SENTRY_ENVIRONMENT"] ||
+      process.env["NODE_ENV"] ||
+      "development",
+    ...(release ? { release } : {}),
     // `SENTRY_TRACES_SAMPLE_RATE=0` має вимикати трейсинг — тому не `|| 0.1`.
-    tracesSampleRate: parseRate(process.env.SENTRY_TRACES_SAMPLE_RATE, 0.1),
+    tracesSampleRate: parseRate(process.env["SENTRY_TRACES_SAMPLE_RATE"], 0.1),
     // Приберемо request body зі звітів — там можуть бути фото/паролі.
     sendDefaultPii: false,
     beforeSend: applyBeforeSend,
@@ -200,7 +203,7 @@ if (dsn) {
     JSON.stringify({
       level: "info",
       msg: "sentry_initialized",
-      environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV,
+      environment: process.env["SENTRY_ENVIRONMENT"] || process.env["NODE_ENV"],
     }),
   );
 }

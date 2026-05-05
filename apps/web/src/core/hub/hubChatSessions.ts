@@ -173,7 +173,7 @@ export function ensureActiveSession(
   const found = findSession(sessions, activeId);
   if (found) return { sessions, activeId: found.id };
   if (sessions.length > 0) {
-    return { sessions, activeId: sessions[0].id };
+    return { sessions, activeId: sessions[0]!.id };
   }
   const fresh = createSession();
   return { sessions: [fresh], activeId: fresh.id };

@@ -27,7 +27,7 @@ function readIndexHtml(): string {
 
 function extractHtmlLang(html: string): string | null {
   const match = html.match(/<html\b[^>]*\blang\s*=\s*"([^"]+)"/i);
-  return match ? match[1] : null;
+  return match ? match[1]! : null;
 }
 
 describe("L4: <html lang> attribute", () => {

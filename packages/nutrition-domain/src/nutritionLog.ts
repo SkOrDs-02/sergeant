@@ -37,28 +37,31 @@ function normalizeMacros(mac: unknown): NullableMacros {
 
 export function normalizeMeal(m: unknown, idx: number): Meal {
   const raw = (m && typeof m === "object" ? m : {}) as Record<string, unknown>;
-  let id = raw.id != null && String(raw.id).trim() ? String(raw.id).trim() : "";
+  let id =
+    raw["id"] != null && String(raw["id"]).trim()
+      ? String(raw["id"]).trim()
+      : "";
   if (!id)
     id = `meal_mig_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 8)}`;
 
-  const name = raw.name != null ? String(raw.name).trim() : "";
-  const time = raw.time != null ? String(raw.time).trim() : "";
+  const name = raw["name"] != null ? String(raw["name"]).trim() : "";
+  const time = raw["time"] != null ? String(raw["time"]).trim() : "";
 
-  const mealType = isMealTypeId(raw.mealType)
-    ? raw.mealType
-    : mealTypeFromLabel(raw.label);
+  const mealType = isMealTypeId(raw["mealType"])
+    ? raw["mealType"]
+    : mealTypeFromLabel(raw["label"]);
 
   const label =
-    raw.label != null && String(raw.label).trim()
-      ? String(raw.label).trim()
+    raw["label"] != null && String(raw["label"]).trim()
+      ? String(raw["label"]).trim()
       : labelForMealType(mealType);
 
-  const macros = normalizeMacros(raw.macros);
+  const macros = normalizeMacros(raw["macros"]);
   const source: MealSource =
-    raw.source && String(raw.source) === "photo" ? "photo" : "manual";
+    raw["source"] && String(raw["source"]) === "photo" ? "photo" : "manual";
 
   const rawMacroSource =
-    raw.macroSource != null ? String(raw.macroSource).trim() : "";
+    raw["macroSource"] != null ? String(raw["macroSource"]).trim() : "";
   const macroSource: MealMacroSource =
     rawMacroSource === "manual" ||
     rawMacroSource === "productDb" ||
@@ -70,14 +73,14 @@ export function normalizeMeal(m: unknown, idx: number): Meal {
         : "manual";
 
   const amount_g =
-    raw.amount_g != null &&
-    Number.isFinite(Number(raw.amount_g)) &&
-    Number(raw.amount_g) > 0
-      ? Number(raw.amount_g)
+    raw["amount_g"] != null &&
+    Number.isFinite(Number(raw["amount_g"])) &&
+    Number(raw["amount_g"]) > 0
+      ? Number(raw["amount_g"])
       : null;
   const foodId =
-    raw.foodId != null && String(raw.foodId).trim()
-      ? String(raw.foodId).trim()
+    raw["foodId"] != null && String(raw["foodId"]).trim()
+      ? String(raw["foodId"]).trim()
       : null;
 
   // Pass the FTUX demo flag through untouched. Seeded meals carry
@@ -99,7 +102,7 @@ export function normalizeMeal(m: unknown, idx: number): Meal {
     amount_g,
     foodId,
   };
-  if (raw.demo === true) out.demo = true;
+  if (raw["demo"] === true) out.demo = true;
   return out;
 }
 

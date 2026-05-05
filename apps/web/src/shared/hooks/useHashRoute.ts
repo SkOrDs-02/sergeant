@@ -46,7 +46,7 @@ function parseRaw<TPage extends string>(
     return { page: options.defaultPage, segments: [] };
   }
   const [head, ...rest] = normalized.split("/").filter(Boolean);
-  const aliased = options.aliases?.[head];
+  const aliased = options.aliases?.[head!];
   const candidate = (aliased ?? head) as TPage;
   if (!options.validPages.includes(candidate)) {
     return { page: options.defaultPage, segments: [] };

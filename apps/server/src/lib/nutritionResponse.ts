@@ -73,58 +73,59 @@ export function normalizePhotoResult(
     parsed && typeof parsed === "object" && !Array.isArray(parsed)
       ? (parsed as Record<string, unknown>)
       : ({} as Record<string, unknown>);
-  const dishName = safeString(obj.dishName, "Результат").trim() || "Результат";
-  const confidence = clamp01(obj.confidence);
+  const dishName =
+    safeString(obj["dishName"], "Результат").trim() || "Результат";
+  const confidence = clamp01(obj["confidence"]);
 
-  const portionRaw = obj.portion;
+  const portionRaw = obj["portion"];
   const portion: PhotoPortion | null =
     portionRaw && typeof portionRaw === "object" && !Array.isArray(portionRaw)
       ? {
           label:
             safeString(
-              (portionRaw as Record<string, unknown>).label,
+              (portionRaw as Record<string, unknown>)["label"],
               "",
             ).trim() || null,
           gramsApprox:
-            (portionRaw as Record<string, unknown>).gramsApprox == null
+            (portionRaw as Record<string, unknown>)["gramsApprox"] == null
               ? null
               : safeNumberOrNull(
-                  (portionRaw as Record<string, unknown>).gramsApprox,
+                  (portionRaw as Record<string, unknown>)["gramsApprox"],
                 ),
         }
       : null;
 
-  const ingredients: PhotoIngredient[] = Array.isArray(obj.ingredients)
-    ? (obj.ingredients as unknown[])
+  const ingredients: PhotoIngredient[] = Array.isArray(obj["ingredients"])
+    ? (obj["ingredients"] as unknown[])
         .slice(0, 40)
         .map((x): PhotoIngredient | null => {
           if (!x || typeof x !== "object") return null;
           const rec = x as Record<string, unknown>;
-          const name = safeString(rec.name, "").trim();
+          const name = safeString(rec["name"], "").trim();
           if (!name) return null;
           const notes =
-            rec.notes == null || rec.notes === ""
+            rec["notes"] == null || rec["notes"] === ""
               ? null
-              : safeString(rec.notes, "").trim();
+              : safeString(rec["notes"], "").trim();
           return { name, notes };
         })
         .filter((v): v is PhotoIngredient => Boolean(v))
     : [];
 
-  const macrosRaw = obj.macros;
+  const macrosRaw = obj["macros"];
   const macros =
     macrosRaw && typeof macrosRaw === "object" && !Array.isArray(macrosRaw)
       ? (macrosRaw as Record<string, unknown>)
       : ({} as Record<string, unknown>);
   const outMacros: PhotoMacros = {
-    kcal: safeNonNegNumberOrNull(macros.kcal),
-    protein_g: safeNonNegNumberOrNull(macros.protein_g),
-    fat_g: safeNonNegNumberOrNull(macros.fat_g),
-    carbs_g: safeNonNegNumberOrNull(macros.carbs_g),
+    kcal: safeNonNegNumberOrNull(macros["kcal"]),
+    protein_g: safeNonNegNumberOrNull(macros["protein_g"]),
+    fat_g: safeNonNegNumberOrNull(macros["fat_g"]),
+    carbs_g: safeNonNegNumberOrNull(macros["carbs_g"]),
   };
 
-  const questions: string[] = Array.isArray(obj.questions)
-    ? (obj.questions as unknown[])
+  const questions: string[] = Array.isArray(obj["questions"])
+    ? (obj["questions"] as unknown[])
         .map((q) => safeString(q, "").trim())
         .filter((v): v is string => Boolean(v))
         .slice(0, 6)
@@ -157,19 +158,21 @@ export function normalizePantryItems(parsed: unknown): PantryItem[] {
     .map((x): PantryItem | null => {
       if (!x || typeof x !== "object") return null;
       const rec = x as Record<string, unknown>;
-      const name = safeString(rec.name, "").trim();
+      const name = safeString(rec["name"], "").trim();
       if (!name) return null;
       const qty =
-        rec.qty == null || rec.qty === "" ? null : safeNumberOrNull(rec.qty);
-      let unit: string | null =
-        rec.unit == null || rec.unit === ""
+        rec["qty"] == null || rec["qty"] === ""
           ? null
-          : safeString(rec.unit, "").trim();
+          : safeNumberOrNull(rec["qty"]);
+      let unit: string | null =
+        rec["unit"] == null || rec["unit"] === ""
+          ? null
+          : safeString(rec["unit"], "").trim();
       if (qty != null && unit == null) unit = "шт";
       const notes =
-        rec.notes == null || rec.notes === ""
+        rec["notes"] == null || rec["notes"] === ""
           ? null
-          : safeString(rec.notes, "").trim();
+          : safeString(rec["notes"], "").trim();
       return { name, qty, unit, notes };
     })
     .filter((v): v is PantryItem => Boolean(v));
@@ -186,39 +189,41 @@ export function normalizeRecipes(parsed: unknown): NormalizedRecipe[] {
     .map((r): NormalizedRecipe | null => {
       if (!r || typeof r !== "object") return null;
       const rec = r as Record<string, unknown>;
-      const title = safeString(rec.title, "").trim();
+      const title = safeString(rec["title"], "").trim();
       const timeMinutes =
-        rec.timeMinutes == null ? null : safeNumberOrNull(rec.timeMinutes);
+        rec["timeMinutes"] == null
+          ? null
+          : safeNumberOrNull(rec["timeMinutes"]);
       const servings =
-        rec.servings == null ? null : safeNumberOrNull(rec.servings);
-      const ingredients: string[] = Array.isArray(rec.ingredients)
-        ? (rec.ingredients as unknown[])
+        rec["servings"] == null ? null : safeNumberOrNull(rec["servings"]);
+      const ingredients: string[] = Array.isArray(rec["ingredients"])
+        ? (rec["ingredients"] as unknown[])
             .map((x) => safeString(x, "").trim())
             .filter((v): v is string => Boolean(v))
             .slice(0, 30)
         : [];
-      const steps: string[] = Array.isArray(rec.steps)
-        ? (rec.steps as unknown[])
+      const steps: string[] = Array.isArray(rec["steps"])
+        ? (rec["steps"] as unknown[])
             .map((x) => safeString(x, "").trim())
             .filter((v): v is string => Boolean(v))
             .slice(0, 10)
         : [];
-      const tips: string[] = Array.isArray(rec.tips)
-        ? (rec.tips as unknown[])
+      const tips: string[] = Array.isArray(rec["tips"])
+        ? (rec["tips"] as unknown[])
             .map((x) => safeString(x, "").trim())
             .filter((v): v is string => Boolean(v))
             .slice(0, 8)
         : [];
-      const mRaw = rec.macros;
+      const mRaw = rec["macros"];
       const m =
         mRaw && typeof mRaw === "object" && !Array.isArray(mRaw)
           ? (mRaw as Record<string, unknown>)
           : ({} as Record<string, unknown>);
       const macros: RecipeMacros = {
-        kcal: safeNonNegNumberOrNull(m.kcal),
-        protein_g: safeNonNegNumberOrNull(m.protein_g),
-        fat_g: safeNonNegNumberOrNull(m.fat_g),
-        carbs_g: safeNonNegNumberOrNull(m.carbs_g),
+        kcal: safeNonNegNumberOrNull(m["kcal"]),
+        protein_g: safeNonNegNumberOrNull(m["protein_g"]),
+        fat_g: safeNonNegNumberOrNull(m["fat_g"]),
+        carbs_g: safeNonNegNumberOrNull(m["carbs_g"]),
       };
       return {
         title: title || "Рецепт",

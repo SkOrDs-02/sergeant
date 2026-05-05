@@ -48,7 +48,7 @@ export function useFocusTrap<T extends HTMLElement>(
     if (focusables.length > 0) {
       // Small delay to ensure modal is fully rendered
       requestAnimationFrame(() => {
-        focusables[0].focus();
+        focusables[0]!.focus();
       });
     }
 
@@ -71,14 +71,14 @@ export function useFocusTrap<T extends HTMLElement>(
         // Shift+Tab on first element -> focus last
         if (e.shiftKey && document.activeElement === first) {
           e.preventDefault();
-          last.focus();
+          last!.focus()!;
           return;
         }
 
         // Tab on last element -> focus first
         if (!e.shiftKey && document.activeElement === last) {
           e.preventDefault();
-          first.focus();
+          first!.focus()!;
           return;
         }
       }

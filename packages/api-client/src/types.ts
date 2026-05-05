@@ -11,19 +11,19 @@ export type ParseMode = "json" | "text" | "raw";
 export type QueryValue = string | number | boolean | undefined | null;
 
 export interface RequestOptions {
-  method?: HttpMethod;
+  method?: HttpMethod | undefined;
   /**
    * Тіло запиту. Автоматично JSON.stringify для plain-обʼєктів;
    * `FormData`/`Blob`/`string`/`ArrayBuffer` передаються як є.
    */
   body?: unknown;
-  headers?: Record<string, string>;
-  query?: Record<string, QueryValue>;
-  signal?: AbortSignal;
+  headers?: Record<string, string> | undefined;
+  query?: Record<string, QueryValue> | undefined;
+  signal?: AbortSignal | undefined;
   /** Дефолт — `"include"`. */
-  credentials?: RequestCredentials;
+  credentials?: RequestCredentials | undefined;
   /** Дефолт — `"json"`. */
-  parse?: ParseMode;
+  parse?: ParseMode | undefined;
   /** Якщо задано, запит буде скасовано після N мс. Без дефолту (щоб не ламати SSE). */
-  timeoutMs?: number;
+  timeoutMs?: number | undefined;
 }

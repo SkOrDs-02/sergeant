@@ -151,7 +151,7 @@ function ProgressChart({ points, label, unit, color }: ProgressChartProps) {
     .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
     .join(" ");
 
-  const areaD = `${lineD} L ${mapped[mapped.length - 1].x.toFixed(1)} ${(padT + innerH).toFixed(1)} L ${mapped[0].x.toFixed(1)} ${(padT + innerH).toFixed(1)} Z`;
+  const areaD = `${lineD} L ${mapped[mapped.length - 1]!.x.toFixed(1)} ${(padT + innerH).toFixed(1)} L ${mapped[0]!.x.toFixed(1)} ${(padT + innerH).toFixed(1)} Z`;
 
   const gradId = `prog_${label.replace(/\s/g, "_")}`;
 
@@ -300,7 +300,7 @@ export function Exercise({ exerciseId }: { exerciseId: string }) {
     let lastWorkoutBest1rm = 0;
     let priorBest1rm = 0;
 
-    if (history.length > 0) lastWorkoutId = history[0].workout?.id;
+    if (history.length > 0) lastWorkoutId = history[0]!.workout?.id;
 
     for (const { workout, item } of history) {
       if (item?.type !== "strength") continue;
@@ -656,6 +656,7 @@ export function Exercise({ exerciseId }: { exerciseId: string }) {
             <button
               type="button"
               className="w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white"
+              // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
               onClick={() => (window.location.hash = "#workouts")}
             >
               Перейти до журналу

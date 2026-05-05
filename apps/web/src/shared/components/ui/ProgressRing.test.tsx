@@ -67,8 +67,8 @@ describe("ProgressRing", () => {
     const circles = getByRole("progressbar").querySelectorAll("circle");
     expect(circles.length).toBe(2);
     const filled = circles[1];
-    const circumference = Number(filled.getAttribute("stroke-dasharray"));
-    const offset = Number(filled.getAttribute("stroke-dashoffset"));
+    const circumference = Number(filled!.getAttribute("stroke-dasharray")!);
+    const offset = Number(filled!.getAttribute("stroke-dashoffset")!);
     // 50% → offset is ≈ circumference/2
     expect(offset).toBeCloseTo(circumference / 2, 2);
   });

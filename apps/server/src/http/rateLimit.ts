@@ -162,7 +162,7 @@ export interface RateLimitOptions {
    * monthly quota). Routes that bill against both should keep the two
    * cost models aligned.
    */
-  cost?: (req: Request) => number;
+  cost?: ((req: Request) => number) | undefined;
 }
 
 export interface RateLimitResult {

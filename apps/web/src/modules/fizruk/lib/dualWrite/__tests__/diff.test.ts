@@ -146,8 +146,8 @@ describe("diffFizrukDualWriteOps", () => {
     const ops = diffFizrukDualWriteOps(prev, next);
     // workout-delete + measurement-upsert (exercise is same ref → no op)
     expect(ops).toHaveLength(2);
-    expect(ops[0].kind).toBe("workout-delete");
-    expect(ops[1].kind).toBe("measurement-upsert");
+    expect(ops[0]!.kind).toBe("workout-delete");
+    expect(ops[1]!.kind).toBe("measurement-upsert");
   });
 
   it("sorts ops by id within each entity type", () => {

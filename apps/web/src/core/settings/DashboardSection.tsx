@@ -143,7 +143,7 @@ export function DashboardSection() {
       const next = prev.slice();
       const target = index + direction;
       if (target < 0 || target >= next.length) return prev;
-      [next[index], next[target]] = [next[target], next[index]];
+      [next[index], next[target]] = [next[target]!, next[index]!];
       saveDashboardOrder(next);
       return next;
     });

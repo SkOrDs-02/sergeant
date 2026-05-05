@@ -28,8 +28,8 @@ function quantityUnit(
   omitEmptyQuantity: boolean,
 ): string {
   const qty =
-    record.qty != null && (!omitEmptyQuantity || record.qty !== "")
-      ? String(record.qty)
+    record["qty"] != null && (!omitEmptyQuantity || record["qty"] !== "")
+      ? String(record["qty"])
       : "";
   const unit = truthyField(record, "unit");
   return qty && unit ? `${qty} ${unit}` : qty || unit;

@@ -62,14 +62,14 @@ describe("normalizeShoppingList", () => {
       ],
     });
     const cat = out.categories[0];
-    expect(cat.items.map((i) => i.name.toLowerCase())).toEqual([
+    expect(cat!.items.map((i) => i.name.toLowerCase())!).toEqual([
       "огірок",
       "помідор",
     ]);
     // merged: quantity kept from first, checked OR-ed true from duplicate
-    const cucumber = cat.items[0];
-    expect(cucumber.quantity).toBe("2");
-    expect(cucumber.checked).toBe(true);
+    const cucumber = cat!.items[0]!;
+    expect(cucumber.quantity!).toBe("2");
+    expect(cucumber.checked!).toBe(true);
   });
 
   it("merges categories that share the same name", () => {
@@ -81,11 +81,11 @@ describe("normalizeShoppingList", () => {
       ],
     });
     expect(out.categories).toHaveLength(1);
-    expect(out.categories[0].items.map((i) => i.name)).toEqual([
+    expect(out.categories[0]!.items.map((i) => i.name)).toEqual([
       "Молоко",
       "Сир",
     ]);
-    expect(out.categories[0].items[0].checked).toBe(true);
+    expect(out!.categories[0]!.items[0]!.checked).toBe(true);
   });
 
   it("assigns a fresh id to items missing an id or colliding with an earlier one", () => {
@@ -109,10 +109,10 @@ describe("normalizeShoppingList", () => {
         },
       ],
     });
-    const item = out.categories[0].items[0];
-    expect(item.quantity).toBe("2");
-    expect(item.note).toBe("42");
-    expect(item.checked).toBe(true);
+    const item = out.categories[0]!.items[0];
+    expect(item!.quantity!).toBe("2");
+    expect(item!.note!).toBe("42");
+    expect(item!.checked!).toBe(true);
   });
 });
 
@@ -148,7 +148,7 @@ describe("loadShoppingList", () => {
     );
     const loaded = loadShoppingList();
     expect(loaded.categories).toHaveLength(1);
-    expect(loaded.categories[0].items).toHaveLength(1);
+    expect(loaded.categories[0]!.items).toHaveLength(1);
   });
 });
 
@@ -194,8 +194,8 @@ describe("toggleShoppingItem", () => {
       ],
     };
     const next = toggleShoppingItem(list, "A", "1");
-    expect(next.categories[0].items[0].checked).toBe(true);
-    expect(next.categories[0].items[1].checked).toBe(false);
+    expect(next!.categories[0]!.items[0]!.checked).toBe(true);
+    expect(next!.categories[0]!.items[1]!.checked).toBe(false);
   });
 });
 
@@ -227,7 +227,7 @@ describe("getTotalCount / getCheckedItems / removeCheckedItems", () => {
   it("removes only checked items and drops empty categories", () => {
     const out = removeCheckedItems(list);
     expect(out.categories).toHaveLength(1);
-    expect(out.categories[0].name).toBe("A");
-    expect(out.categories[0].items.map((i) => i.id)).toEqual(["2"]);
+    expect(out.categories[0]!.name).toBe("A");
+    expect(out.categories[0]!.items.map((i) => i.id)).toEqual(["2"]);
   });
 });

@@ -136,14 +136,14 @@ describe("ProfilePage", () => {
     it("shows initial letter when no avatar image", () => {
       renderPage();
       const avatarBtns = screen.getAllByLabelText("Змінити аватар");
-      expect(within(avatarBtns[0]).getByText("Т")).toBeInTheDocument();
+      expect(within(avatarBtns[0]!).getByText("Т")).toBeInTheDocument();
     });
 
     it("shows avatar image when user.image is set", () => {
       mockUser.image = "data:image/webp;base64,abc";
       renderPage();
       const avatarBtns = screen.getAllByLabelText("Змінити аватар");
-      const img = avatarBtns[0].querySelector("img");
+      const img = avatarBtns[0]!.querySelector("img");
       expect(img).toBeTruthy();
       expect(img!.getAttribute("src")).toBe("data:image/webp;base64,abc");
     });
@@ -183,7 +183,7 @@ describe("ProfilePage", () => {
       mockUser.image = "data:image/webp;base64,abc";
       renderPage();
       const links = screen.getAllByText("Видалити фото");
-      fireEvent.click(links[0]);
+      fireEvent.click(links[0]!);
       // Confirm prompt copy changed in #1067 from "Видалити?" to
       // "Видалити фото?".
       expect(screen.getByText("Видалити фото?")).toBeInTheDocument();
@@ -295,7 +295,7 @@ describe("ProfilePage", () => {
       fireEvent.change(nameInput, { target: { value: "Нове ім'я" } });
 
       const saveBtn = screen.getAllByRole("button", { name: "Зберегти" })[0];
-      fireEvent.click(saveBtn);
+      fireEvent.click(saveBtn!);
 
       await waitFor(() =>
         expect(toastErrorMock).toHaveBeenCalledWith("Не вдалося оновити ім'я"),

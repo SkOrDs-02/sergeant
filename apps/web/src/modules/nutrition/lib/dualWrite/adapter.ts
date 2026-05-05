@@ -246,13 +246,13 @@ async function upsertPantry(
          deleted_at = NULL
        WHERE excluded.updated_at > nutrition_pantry_items.updated_at`,
       [
-        it.id,
+        it!.id!,
         p.id,
         userId,
-        it.name ?? "",
-        toRealOrNull(it.qty),
-        it.unit ?? null,
-        it.notes ?? null,
+        it!.name! ?? "",
+        toRealOrNull(it!.qty!),
+        it!.unit! ?? null,
+        it!.notes! ?? null,
         i,
         clientTs,
         clientTs,

@@ -196,7 +196,7 @@ export function handleNutritionAction(
         categories.push({ name: catName, items: [] });
         catIdx = categories.length - 1;
       }
-      const items = (categories[catIdx].items || []).slice();
+      const items = (categories[catIdx]!.items || []).slice();
       const lower = itemName.toLowerCase();
       const itemIdx = items.findIndex(
         (it) =>
@@ -210,9 +210,9 @@ export function handleNutritionAction(
       let createdId: string | null = null;
       if (itemIdx >= 0) {
         items[itemIdx] = {
-          ...items[itemIdx],
-          quantity: qty || items[itemIdx].quantity || "",
-          note: notTxt || items[itemIdx].note || "",
+          ...items[itemIdx]!,
+          quantity: qty || items[itemIdx]!.quantity || "",
+          note: notTxt || items[itemIdx]!.note || "",
         };
         action_msg = "оновлено";
       } else {
@@ -225,7 +225,7 @@ export function handleNutritionAction(
           checked: false,
         });
       }
-      categories[catIdx] = { ...categories[catIdx], items };
+      categories[catIdx] = { ...categories[catIdx]!, items };
       lsSet("nutrition_shopping_list_v1", { ...list, categories });
       const result = `Продукт "${itemName}" ${action_msg} у список покупок${qty ? ` (${qty})` : ""} [${catName}]`;
       if (!createdId) {
@@ -250,11 +250,11 @@ export function handleNutritionAction(
             : [];
           const ci = cats.findIndex((c) => c.name === catName);
           if (ci < 0) return;
-          const its = (cats[ci].items || []).filter((it) => it.id !== newId);
+          const its = (cats[ci]!.items || []).filter((it) => it.id !== newId);
           if (its.length === 0) {
             cats.splice(ci, 1);
           } else {
-            cats[ci] = { ...cats[ci], items: its };
+            cats[ci] = { ...cats[ci]!, items: its };
           }
           lsSet("nutrition_shopping_list_v1", {
             ...cur,
@@ -280,7 +280,7 @@ export function handleNutritionAction(
       if (idx < 0) return `Активну комору (${activeId}) не знайдено.`;
       const pantry = pantries[idx];
       const lower = rawName.toLowerCase();
-      const items = Array.isArray(pantry.items) ? pantry.items : [];
+      const items = Array.isArray(pantry!.items!) ? pantry!.items! : [];
       const before = items.length;
       const nextItems = items.filter(
         (it) =>
@@ -292,9 +292,9 @@ export function handleNutritionAction(
         return `Продукт "${rawName}" у коморі не знайдено.`;
       }
       const next = [...pantries];
-      next[idx] = { ...pantry, items: nextItems };
+      next[idx] = { ...pantry!, items: nextItems };
       lsSet("nutrition_pantries_v1", next);
-      return `Продукт "${rawName}" прибрано з комори "${pantry.name}"`;
+      return `Продукт "${rawName}" прибрано з комори "${pantry!.name!}"`;
     }
     case "set_daily_plan": {
       const { kcal, protein_g, fat_g, carbs_g, water_ml } = (
@@ -421,7 +421,7 @@ export function handleNutritionAction(
         const idx = Number(meal_index);
         if (idx < 0 || idx >= sourceDay.meals.length)
           return `Індекс ${idx} поза межами (є ${sourceDay.meals.length} записів).`;
-        copied = [sourceDay.meals[idx]];
+        copied = [sourceDay.meals[idx]!];
       } else {
         copied = sourceDay.meals;
       }

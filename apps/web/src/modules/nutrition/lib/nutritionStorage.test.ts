@@ -49,7 +49,7 @@ describe("loadPantries", () => {
       NUTRITION_ACTIVE_PANTRY_KEY,
     );
     expect(pantries).toHaveLength(1);
-    expect(pantries[0].text).toBe("x");
+    expect(pantries[0]!.text).toBe("x");
   });
 
   it("migrates from legacy keys when new key missing", () => {
@@ -65,8 +65,8 @@ describe("loadPantries", () => {
       NUTRITION_ACTIVE_PANTRY_KEY,
     );
     expect(pantries).toHaveLength(1);
-    expect(pantries[0].items).toHaveLength(1);
-    expect(pantries[0].text).toBe("яйця");
+    expect(pantries[0]!.items).toHaveLength(1);
+    expect(pantries[0]!.text).toBe("яйця");
     expect(globalThis.localStorage.getItem(NUTRITION_ACTIVE_PANTRY_KEY)).toBe(
       "home",
     );
@@ -97,8 +97,8 @@ describe("normalizeNutritionLog", () => {
       },
     };
     const out = normalizeNutritionLog(raw);
-    expect(out["2026-01-01"].meals[0].mealType).toBe("lunch");
-    expect(out["2026-01-01"].meals[0].macros.kcal).toBe(100);
+    expect(out["2026-01-01"]!.meals[0]!.mealType).toBe("lunch");
+    expect(out["2026-01-01"]!.meals[0]!.macros.kcal).toBe(100);
   });
 
   it("keeps mealType when valid", () => {
@@ -115,7 +115,7 @@ describe("normalizeNutritionLog", () => {
         ],
       },
     });
-    expect(out["2026-02-02"].meals[0].mealType).toBe("dinner");
+    expect(out["2026-02-02"]!.meals[0]!.mealType).toBe("dinner");
   });
 });
 
@@ -130,8 +130,8 @@ describe("loadNutritionLog", () => {
       }),
     );
     const log = loadNutritionLog(NUTRITION_LOG_KEY);
-    expect(log["2026-03-03"].meals[0].mealType).toBe("breakfast");
-    expect(log["2026-03-03"].meals[0].id).toMatch(/^meal_/);
+    expect(log["2026-03-03"]!.meals[0]!.mealType).toBe("breakfast");
+    expect(log["2026-03-03"]!.meals[0]!.id).toMatch(/^meal_/);
   });
 
   it("returns empty log when JSON is corrupted (does not crash UI)", () => {
@@ -160,7 +160,7 @@ describe("loadPantries — reload & edge cases", () => {
       NUTRITION_ACTIVE_PANTRY_KEY,
     );
     expect(pantries).toHaveLength(1);
-    expect(pantries[0].items[0].name).toBe("Молоко");
+    expect(pantries[0]!.items[0]!.name).toBe("Молоко");
     expect(loadActivePantryId(NUTRITION_ACTIVE_PANTRY_KEY)).toBe("home");
   });
 
@@ -171,7 +171,7 @@ describe("loadPantries — reload & edge cases", () => {
       NUTRITION_ACTIVE_PANTRY_KEY,
     );
     expect(pantries).toHaveLength(1);
-    expect(pantries[0].id).toBe("home");
+    expect(pantries[0]!.id).toBe("home");
   });
 
   it("falls back to default pantry when JSON is corrupted", () => {
@@ -181,7 +181,7 @@ describe("loadPantries — reload & edge cases", () => {
       NUTRITION_ACTIVE_PANTRY_KEY,
     );
     expect(pantries).toHaveLength(1);
-    expect(pantries[0].id).toBe("home");
+    expect(pantries[0]!.id).toBe("home");
   });
 });
 
@@ -194,9 +194,9 @@ describe("normalizePantries", () => {
       { items: [{ name: "Сир" }] },
     ]);
     expect(out).toHaveLength(2);
-    expect(out[0].items.map((i) => i.name)).toEqual(["Хліб"]);
-    expect(out[1].name).toBe("Склад");
-    expect(out[1].id).toBeTruthy();
+    expect(out[0]!.items.map((i) => i.name)).toEqual(["Хліб"]);
+    expect(out[1]!.name).toBe("Склад");
+    expect(out[1]!.id).toBeTruthy();
   });
 
   it("deduplicates pantry ids (re-assigns colliding ones)", () => {
@@ -205,7 +205,7 @@ describe("normalizePantries", () => {
       { id: "same", name: "B", items: [] },
     ]);
     expect(out).toHaveLength(2);
-    expect(out[0].id).not.toBe(out[1].id);
+    expect(out[0]!.id).not.toBe(out[1]!.id);
   });
 
   it("returns empty array for non-array input", () => {
@@ -294,6 +294,6 @@ describe("loadNutritionPrefs — prefs survive corrupted / partial data", () => 
     );
     const prefs = loadNutritionPrefs(NUTRITION_PREFS_KEY);
     expect(prefs.mealTemplates).toHaveLength(1);
-    expect(prefs.mealTemplates[0].name).toBe("Омлет");
+    expect(prefs.mealTemplates[0]!.name).toBe("Омлет");
   });
 });

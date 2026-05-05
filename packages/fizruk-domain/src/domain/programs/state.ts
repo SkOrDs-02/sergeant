@@ -37,7 +37,7 @@ export function normalizeActiveProgramState(raw: unknown): ActiveProgramState {
   }
   if (typeof raw === "object") {
     const src = raw as Record<string, unknown>;
-    const id = src.activeProgramId;
+    const id = src["activeProgramId"];
     if (typeof id === "string" && id !== "") {
       return { activeProgramId: id };
     }

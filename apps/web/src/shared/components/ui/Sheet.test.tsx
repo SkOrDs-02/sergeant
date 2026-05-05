@@ -52,7 +52,7 @@ describe("Sheet", () => {
     // Sheet exposes two close-affordance buttons with aria-label="Закрити":
     // the scrim (first) and the header icon button (last). Either should
     // dispatch onClose.
-    fireEvent.click(getAllByRole("button")[0]);
+    fireEvent.click(getAllByRole("button")[0]!);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 

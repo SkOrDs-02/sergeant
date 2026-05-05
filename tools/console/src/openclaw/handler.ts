@@ -103,28 +103,28 @@ function summariseWriteInput(record: ApprovalRecord): string {
   const inp = record.input as Record<string, unknown>;
   switch (record.tool) {
     case "commit_to_strategy_doc": {
-      const path = String(inp.path ?? "?");
-      const message = String(inp.message ?? "?");
+      const path = String(inp["path"] ?? "?");
+      const message = String(inp["message"] ?? "?");
       return `\`${path}\` — ${message}`;
     }
     case "create_github_issue": {
-      const title = String(inp.title ?? "?");
+      const title = String(inp["title"] ?? "?");
       return `«${title}»`;
     }
     case "post_to_topic": {
-      const topic = String(inp.topic ?? "?");
-      const text = String(inp.text ?? "");
+      const topic = String(inp["topic"] ?? "?");
+      const text = String(inp["text"] ?? "");
       const preview = text.length > 80 ? `${text.slice(0, 77)}…` : text;
       return `topic=${topic}: ${preview}`;
     }
     case "pause_workflow": {
-      const wid = String(inp.workflowId ?? "?");
-      const reason = inp.reason ? ` (${String(inp.reason)})` : "";
+      const wid = String(inp["workflowId"] ?? "?");
+      const reason = inp["reason"] ? ` (${String(inp["reason"])})` : "";
       return `workflow=${wid}${reason}`;
     }
     case "mute_alert": {
-      const issue = String(inp.issueId ?? "?");
-      const until = inp.untilIso ? ` until ${String(inp.untilIso)}` : "";
+      const issue = String(inp["issueId"] ?? "?");
+      const until = inp["untilIso"] ? ` until ${String(inp["untilIso"])}` : "";
       return `issue=${issue}${until}`;
     }
   }
@@ -298,10 +298,10 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
 
   const sessions = new OpenClawSessionStore();
   const rateLimiter = new FixedWindowRateLimiter(
-    parseOpenClawRateLimitPerMinute(process.env.OPENCLAW_RATE_LIMIT_PER_MIN),
+    parseOpenClawRateLimitPerMinute(process.env["OPENCLAW_RATE_LIMIT_PER_MIN"]),
   );
   const councilUsdBudget = parseCouncilUsdBudget(
-    process.env.OPENCLAW_COUNCIL_USD_BUDGET,
+    process.env["OPENCLAW_COUNCIL_USD_BUDGET"],
   );
 
   // ADR-0036 (Phase 4): single approval-store shared across all agent
@@ -692,7 +692,7 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
   ): Promise<{ reply: string; ok: boolean }> {
     const userId = ctx.from?.id;
     const founderTgUserId = parseFounderTgUserId(
-      process.env.OPENCLAW_FOUNDER_TG_USER_ID,
+      process.env["OPENCLAW_FOUNDER_TG_USER_ID"],
     );
     if (!userId || !founderTgUserId) {
       await ctx.reply("OpenClaw not configured (missing founder TG id).");
@@ -963,7 +963,8 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
       telegramUserId: userId,
       telegramChatId: chatId,
       messageId,
-      statusCallbackWebhookUrl: process.env.OPENCLAW_AGENT_STATUS_CALLBACK_URL,
+      statusCallbackWebhookUrl:
+        process.env["OPENCLAW_AGENT_STATUS_CALLBACK_URL"],
     });
 
     if (
@@ -979,7 +980,7 @@ export function attachOpenClawHandlers(config: OpenClawBotConfig): {
         telegramChatId: chatId,
         messageId,
         statusCallbackWebhookUrl:
-          process.env.OPENCLAW_AGENT_STATUS_CALLBACK_URL,
+          process.env["OPENCLAW_AGENT_STATUS_CALLBACK_URL"],
       });
       await ctx.reply(formatApprovalPrompt(approvalPayload));
       return;

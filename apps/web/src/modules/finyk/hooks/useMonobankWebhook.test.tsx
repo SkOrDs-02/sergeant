@@ -149,8 +149,8 @@ describe("useMonobankWebhook", () => {
     });
 
     expect(result.current.transactions).toHaveLength(1);
-    expect(result.current.transactions[0].id).toBe("tx1");
-    expect(result.current.transactions[0].amount).toBe(-5000);
+    expect(result.current.transactions[0]!.id).toBe("tx1");
+    expect(result.current.transactions[0]!.amount).toBe(-5000);
     expect(result.current.clientInfo).not.toBeNull();
     expect(result.current.accounts).toHaveLength(1);
   });

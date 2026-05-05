@@ -193,7 +193,7 @@ describe("POST /api/v1/push/register", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, platform: "ios" });
     expect(queryMock).toHaveBeenCalledTimes(1);
-    const [sql, params] = queryMock.mock.calls[0];
+    const [sql, params] = queryMock.mock.calls[0]!;
     expect(String(sql)).toMatch(/INSERT INTO push_devices/);
     expect(String(sql)).toMatch(/ON CONFLICT \(platform, token\)/);
     expect(params).toEqual([user.id, "ios", "t".repeat(64)]);
@@ -210,7 +210,7 @@ describe("POST /api/v1/push/register", () => {
       .send({ platform: "android", token: "fcm-registration-token" });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, platform: "android" });
-    expect(queryMock.mock.calls[0][1]).toEqual([
+    expect(queryMock!.mock.calls[0]![1]).toEqual([
       user.id,
       "android",
       "fcm-registration-token",
@@ -295,7 +295,7 @@ describe("POST /api/v1/push/unregister", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, platform: "web" });
     expect(queryMock).toHaveBeenCalledTimes(1);
-    const [sql, params] = queryMock.mock.calls[0];
+    const [sql, params] = queryMock.mock.calls[0]!;
     expect(String(sql)).toMatch(/UPDATE push_subscriptions/);
     expect(String(sql)).toMatch(/deleted_at = NOW/);
     expect(String(sql)).toMatch(/deleted_at IS NULL/);
@@ -313,7 +313,7 @@ describe("POST /api/v1/push/unregister", () => {
       .send({ platform: "android", token: "fcm-reg-tok" });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, platform: "android" });
-    const [sql, params] = queryMock.mock.calls[0];
+    const [sql, params] = queryMock.mock.calls[0]!;
     expect(String(sql)).toMatch(/UPDATE push_devices/);
     expect(params).toEqual([user.id, "android", "fcm-reg-tok"]);
   });
@@ -463,9 +463,9 @@ describe("H6: /api/mono/connect gate on email verification", () => {
   for (const k of MONO_KEYS) savedMonoFlags[k] = process.env[k];
 
   beforeEach(() => {
-    process.env.MONO_WEBHOOK_ENABLED = "true";
-    process.env.MONO_TOKEN_ENC_KEY = "0".repeat(64);
-    process.env.PUBLIC_API_BASE_URL = "https://api.example.com";
+    process.env["MONO_WEBHOOK_ENABLED"] = "true";
+    process.env["MONO_TOKEN_ENC_KEY"] = "0".repeat(64);
+    process.env["PUBLIC_API_BASE_URL"] = "https://api.example.com";
   });
 
   afterAll(() => {

@@ -571,24 +571,24 @@ export interface OpenClawAgentDeps {
   /** Better Auth user.id of the founder. */
   founderUserId: string;
   /** Telegram user-id of the founder (used to scope approval records). */
-  founderTgUserId?: number;
+  founderTgUserId?: number | undefined;
   /** Optional: invocation id for audit trail. */
-  invocationId?: number;
+  invocationId?: number | undefined;
   /**
    * ADR-0036 (Phase 4): if both `approvalStore` and `pendingCollector`
    * are provided, write-tool calls (commit_to_strategy_doc, …) are
    * intercepted and queued for approval instead of executed. Without
    * either, write-tools return a hard refusal to the LLM (fail-closed).
    */
-  approvalStore?: ApprovalStore;
-  pendingCollector?: PendingApprovalsCollector;
+  approvalStore?: ApprovalStore | undefined;
+  pendingCollector?: PendingApprovalsCollector | undefined;
   /**
    * ADR-0037 (Phase 4.5): persona that initiated the agent turn. Stamped
    * onto every queued approval-record so the persistent audit-log can
    * answer "show me all `pause_workflow` calls emitted by `ops` last
    * week".
    */
-  persona?: string;
+  persona?: string | undefined;
 }
 
 /**
@@ -687,10 +687,10 @@ export function createOpenClawToolExecutor(
 
     // Добавляємо founderUserId до тих route-ів, що його вимагають.
     if (name === "recall_memory" || name === "record_decision") {
-      body.founderUserId = deps.founderUserId;
+      body["founderUserId"] = deps.founderUserId;
     }
     if (name === "record_decision" && deps.invocationId) {
-      body.invocationId = deps.invocationId;
+      body["invocationId"] = deps.invocationId;
     }
 
     try {
@@ -729,7 +729,7 @@ export interface RunOpenClawAgentInput {
    * (full toolset, synthesis voice). Inside `/council`, caller runs each
    * specialist persona separately and then a final `cofounder` synthesis.
    */
-  persona?: OpenClawPersona;
+  persona?: OpenClawPersona | undefined;
 }
 
 export async function runOpenClawAgent(input: RunOpenClawAgentInput): Promise<{
@@ -757,7 +757,7 @@ export async function runOpenClawAgent(input: RunOpenClawAgentInput): Promise<{
   // dispatching so the failure surfaces locally without spending
   // tokens. See `docs/security/hardening/M18-openclaw-per-call-usd-cap.md`.
   const perCallCapUsd = parseMaxPerCallUsd(
-    process.env.OPENCLAW_MAX_PER_CALL_USD,
+    process.env["OPENCLAW_MAX_PER_CALL_USD"],
   );
   try {
     assertPerCallCapAllowed(MODEL, MAX_TOKENS, perCallCapUsd);

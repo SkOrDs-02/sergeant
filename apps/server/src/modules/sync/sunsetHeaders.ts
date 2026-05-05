@@ -58,7 +58,7 @@ export function parseSunsetEnv(
 }
 
 function resolveSunsetHeader(): { raw: string; httpDate: string } | null {
-  const current = process.env.CLOUDSYNC_V1_SUNSET_AT;
+  const current = process.env["CLOUDSYNC_V1_SUNSET_AT"];
   if (current === cachedRawEnv) return cachedSunsetDate;
   cachedRawEnv = current;
   cachedSunsetDate = parseSunsetEnv(current);

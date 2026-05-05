@@ -445,6 +445,41 @@
           "ref": "#18"
         }
       ]
+    },
+    {
+      "id": 19,
+      "title": "Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo",
+      "scope": ["apps/**/tsconfig.json", "packages/**/tsconfig.json"],
+      "severity": "blocker",
+      "category": "active-initiative",
+      "enforced_by": [
+        {
+          "kind": "ci",
+          "ref": "node tools/tsconfig-guard/check.mjs (run by pnpm lint)"
+        },
+        {
+          "kind": "convention",
+          "ref": "tools/tsconfig-guard/allowlist.json — every override of a GUARDED strict-family flag MUST have an entry with path/option/value/reason/expires/owner"
+        },
+        {
+          "kind": "doc",
+          "ref": "docs/initiatives/0012-perfect-strictness-rollout.md (rollout plan, baselines, criteria DONE)"
+        }
+      ],
+      "links": [
+        {
+          "type": "doc",
+          "ref": "docs/initiatives/0012-perfect-strictness-rollout.md"
+        },
+        {
+          "type": "doc",
+          "ref": "docs/tech-debt/frontend.md"
+        },
+        {
+          "type": "agents",
+          "ref": "#19"
+        }
+      ]
     }
   ]
 }

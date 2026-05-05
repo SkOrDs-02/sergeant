@@ -38,8 +38,8 @@ describe("create_habit", () => {
       habits: Array<{ name: string; recurrence: string }>;
     }>("hub_routine_v1", { habits: [] });
     expect(state.habits).toHaveLength(1);
-    expect(state.habits[0].name).toBe("Пити воду");
-    expect(state.habits[0].recurrence).toBe("daily");
+    expect(state.habits[0]!.name).toBe("Пити воду");
+    expect(state.habits[0]!.recurrence).toBe("daily");
   });
 
   it("підтримує recurrence='weekly' з weekdays", () => {
@@ -51,8 +51,8 @@ describe("create_habit", () => {
     const state = readLS<{
       habits: Array<{ recurrence: string; weekdays: number[] }>;
     }>("hub_routine_v1", { habits: [] });
-    expect(state.habits[0].recurrence).toBe("weekly");
-    expect(state.habits[0].weekdays).toEqual([1, 3, 5]);
+    expect(state.habits[0]!.recurrence).toBe("weekly");
+    expect(state.habits[0]!.weekdays).toEqual([1, 3, 5]);
   });
 
   it("відмовляє на порожню назву", () => {
@@ -82,9 +82,9 @@ describe("create_transaction", () => {
       }>
     >("finyk_manual_expenses_v1", []);
     expect(arr).toHaveLength(1);
-    expect(arr[0].amount).toBe(150);
-    expect(arr[0].category).toBe("food");
-    expect(arr[0].type).toBe("expense");
+    expect(arr[0]!.amount).toBe(150);
+    expect(arr[0]!.category).toBe("food");
+    expect(arr[0]!.type).toBe("expense");
   });
 
   it("записує дохід коли type='income'", () => {
@@ -97,8 +97,8 @@ describe("create_transaction", () => {
       "finyk_manual_expenses_v1",
       [],
     );
-    expect(arr[0].type).toBe("income");
-    expect(arr[0].amount).toBe(5000);
+    expect(arr[0]!.type).toBe("income");
+    expect(arr[0]!.amount).toBe(5000);
   });
 
   it("відмовляє на 0 або від'ємну суму", () => {
@@ -139,10 +139,10 @@ describe("log_set", () => {
       }>;
     }>("fizruk_workouts_v1", { workouts: [] });
     expect(saved.workouts).toHaveLength(1);
-    expect(saved.workouts[0].endedAt).toBeNull();
-    expect(saved.workouts[0].items[0].nameUk).toBe("Жим штанги");
-    expect(saved.workouts[0].items[0].sets).toHaveLength(1);
-    expect(saved.workouts[0].items[0].sets[0]).toEqual({
+    expect(saved.workouts[0]!.endedAt).toBeNull();
+    expect(saved!.workouts[0]!.items[0]!.nameUk).toBe("Жим штанги");
+    expect(saved!.workouts[0]!.items[0]!.sets).toHaveLength(1);
+    expect(saved!.workouts[0]!.items[0]!.sets[0]).toEqual({
       reps: 8,
       weightKg: 80,
     });
@@ -150,7 +150,7 @@ describe("log_set", () => {
     // `fizruk_active_workout_id_v1` is stored as a raw string (not JSON), so
     // read it directly via localStorage to match the production storage format.
     const activeId = localStorage.getItem("fizruk_active_workout_id_v1");
-    expect(activeId).toBe(saved.workouts[0].id);
+    expect(activeId).toBe(saved.workouts[0]!.id);
   });
 
   it("додає підходи до існуючої вправи у активному тренуванні", () => {
@@ -168,8 +168,8 @@ describe("log_set", () => {
       }>;
     }>("fizruk_workouts_v1", { workouts: [] });
     expect(saved.workouts).toHaveLength(1);
-    expect(saved.workouts[0].items).toHaveLength(1);
-    expect(saved.workouts[0].items[0].sets).toHaveLength(3);
+    expect(saved.workouts[0]!.items).toHaveLength(1);
+    expect(saved!.workouts[0]!.items[0]!.sets).toHaveLength(3);
   });
 
   it("відмовляє без reps", () => {
@@ -231,12 +231,12 @@ describe("executeActions — паралельне виконання", () => {
       { name: "log_water", input: { amount_ml: 250 } },
     ]);
     expect(results).toHaveLength(3);
-    expect(results[0].name).toBe("create_habit");
-    expect(results[1].name).toBe("create_transaction");
-    expect(results[2].name).toBe("log_water");
-    expect(results[0].result).toContain("Пити воду");
-    expect(results[1].result).toContain("50");
-    expect(results[2].result).toContain("250");
+    expect(results[0]!.name).toBe("create_habit");
+    expect(results[1]!.name).toBe("create_transaction");
+    expect(results[2]!.name).toBe("log_water");
+    expect(results[0]!.result).toContain("Пити воду");
+    expect(results[1]!.result).toContain("50");
+    expect(results[2]!.result).toContain("250");
   });
 
   it("ізолює помилки — один failure не валить інші", async () => {
@@ -245,8 +245,8 @@ describe("executeActions — паралельне виконання", () => {
       { name: "create_habit", input: { name: "Біг" } },
     ]);
     expect(results).toHaveLength(2);
-    expect(results[0].result).toContain("назви");
-    expect(results[1].result).toContain("Біг");
+    expect(results[0]!.result).toContain("назви");
+    expect(results[1]!.result).toContain("Біг");
   });
 
   it("порожній масив → порожній результат", async () => {
@@ -260,6 +260,6 @@ describe("executeActions — паралельне виконання", () => {
     ]);
     expect(promise).toBeInstanceOf(Promise);
     const out = await promise;
-    expect(out[0].result).toContain("100");
+    expect(out[0]!.result).toContain("100");
   });
 });

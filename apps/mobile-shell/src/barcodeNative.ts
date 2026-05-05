@@ -47,11 +47,14 @@ export async function ensureCameraPermission(): Promise<boolean> {
 function firstBarcode(barcodes: Barcode[]): NativeBarcodeResult | null {
   const b = barcodes[0];
   if (!b) return null;
-  return {
+  const result: NativeBarcodeResult = {
     code: b.rawValue ?? b.displayValue ?? "",
     format: String(b.format ?? ""),
-    rawBytes: b.bytes ? new Uint8Array(b.bytes) : undefined,
   };
+  if (b.bytes) {
+    result.rawBytes = new Uint8Array(b.bytes);
+  }
+  return result;
 }
 
 /**

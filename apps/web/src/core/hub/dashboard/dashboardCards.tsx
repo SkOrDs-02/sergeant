@@ -23,7 +23,7 @@ function highestMilestoneCrossed(
 ): number | null {
   for (let i = STREAK_MILESTONES.length - 1; i >= 0; i--) {
     const m = STREAK_MILESTONES[i];
-    if (current >= m && previous < m) return m;
+    if (current >= m! && previous < m!) return m!;
   }
   return null;
 }

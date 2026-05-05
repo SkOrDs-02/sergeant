@@ -47,14 +47,14 @@ function escapeHtmlAttr(s: string): string {
 }
 
 function getBaseURL(): string {
-  if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
-  if (process.env.REPLIT_DEV_DOMAIN)
-    return `https://${process.env.REPLIT_DEV_DOMAIN}`;
-  if (process.env.REPLIT_DOMAINS) {
-    const first = process.env.REPLIT_DOMAINS.split(",")[0]?.trim();
+  if (process.env["BETTER_AUTH_URL"]) return process.env["BETTER_AUTH_URL"];
+  if (process.env["REPLIT_DEV_DOMAIN"])
+    return `https://${process.env["REPLIT_DEV_DOMAIN"]}`;
+  if (process.env["REPLIT_DOMAINS"]) {
+    const first = process.env["REPLIT_DOMAINS"].split(",")[0]?.trim();
     if (first) return `https://${first}`;
   }
-  return `http://localhost:${process.env.PORT || 5000}`;
+  return `http://localhost:${process.env["PORT"] || 5000}`;
 }
 
 /**
@@ -63,7 +63,7 @@ function getBaseURL(): string {
  * Локально http://localhost — без змін (Lax за замовчуванням у better-auth).
  */
 function getAdvancedCookieOptions(): AdvancedCookieOptions | null {
-  if (process.env.BETTER_AUTH_CROSS_SITE_COOKIES === "0") {
+  if (process.env["BETTER_AUTH_CROSS_SITE_COOKIES"] === "0") {
     return null;
   }
   const base = getBaseURL();
@@ -95,8 +95,8 @@ const advancedCookies = getAdvancedCookieOptions();
 function getSocialProviders():
   | { google: { clientId: string; clientSecret: string } }
   | undefined {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const clientId = process.env["GOOGLE_CLIENT_ID"];
+  const clientSecret = process.env["GOOGLE_CLIENT_SECRET"];
   if (!clientId || !clientSecret) return undefined;
   return {
     google: {
@@ -351,7 +351,7 @@ export const auth = betterAuth({
       if (ctx.path !== "/change-password") return;
       const body = ctx.body;
       if (body && typeof body === "object" && !Array.isArray(body)) {
-        (body as Record<string, unknown>).revokeOtherSessions = true;
+        (body as Record<string, unknown>)["revokeOtherSessions"] = true;
       }
     }),
   },
@@ -390,14 +390,14 @@ export const auth = betterAuth({
  * because the only realistic use case is "remove `exp://` even in dev").
  */
 function getTrustedNativeSchemes(): string[] {
-  const override = process.env.BETTER_AUTH_TRUSTED_NATIVE_SCHEMES;
+  const override = process.env["BETTER_AUTH_TRUSTED_NATIVE_SCHEMES"];
   if (override !== undefined) {
     return override
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
   }
-  if (process.env.NODE_ENV === "production") {
+  if (process.env["NODE_ENV"] === "production") {
     return ["sergeant://"];
   }
   return ["sergeant://", "exp://"];
@@ -417,17 +417,17 @@ function getTrustedOrigins(): string[] {
     "http://localhost:8081",
     ...getTrustedNativeSchemes(),
   ];
-  if (process.env.REPLIT_DEV_DOMAIN) {
-    origins.push(`https://${process.env.REPLIT_DEV_DOMAIN}`);
+  if (process.env["REPLIT_DEV_DOMAIN"]) {
+    origins.push(`https://${process.env["REPLIT_DEV_DOMAIN"]}`);
   }
-  if (process.env.REPLIT_DOMAINS) {
-    for (const d of process.env.REPLIT_DOMAINS.split(",")) {
+  if (process.env["REPLIT_DOMAINS"]) {
+    for (const d of process.env["REPLIT_DOMAINS"].split(",")) {
       const trimmed = d.trim();
       if (trimmed) origins.push(`https://${trimmed}`);
     }
   }
-  if (process.env.ALLOWED_ORIGINS) {
-    for (const o of process.env.ALLOWED_ORIGINS.split(",")) {
+  if (process.env["ALLOWED_ORIGINS"]) {
+    for (const o of process.env["ALLOWED_ORIGINS"].split(",")) {
       const trimmed = o.trim();
       if (trimmed) origins.push(trimmed);
     }

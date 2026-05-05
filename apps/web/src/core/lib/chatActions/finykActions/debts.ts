@@ -63,7 +63,7 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
   const debts = ls<Debt[]>("finyk_debts", []);
   const idx = debts.findIndex((d) => d.id === id);
   if (idx < 0) return `Борг ${id} не знайдено.`;
-  const debt = { ...debts[idx] };
+  const debt = { ...debts[idx]! };
   const payAmount =
     amount != null && Number.isFinite(Number(amount))
       ? Math.abs(Number(amount))

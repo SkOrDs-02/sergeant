@@ -184,8 +184,8 @@ describe("connectHandler", () => {
 
     // Verify webhook registration was called
     expect(mockFetch).toHaveBeenCalledTimes(2);
-    const webhookCall = mockFetch.mock.calls[1];
-    expect(webhookCall[0]).toBe("https://api.monobank.ua/personal/webhook");
+    const webhookCall = mockFetch.mock.calls[1]!;
+    expect(webhookCall[0]!).toBe("https://api.monobank.ua/personal/webhook");
   });
 
   it("returns 502 when webhook registration fails", async () => {
@@ -284,9 +284,9 @@ describe("disconnectHandler", () => {
 
     // Verify unregister call with empty webHookUrl
     expect(mockFetch).toHaveBeenCalledTimes(1);
-    const unregisterCall = mockFetch.mock.calls[0];
-    expect(unregisterCall[0]).toBe("https://api.monobank.ua/personal/webhook");
-    const body = JSON.parse(unregisterCall[1].body as string);
+    const unregisterCall = mockFetch.mock.calls[0]!;
+    expect(unregisterCall[0]!).toBe("https://api.monobank.ua/personal/webhook");
+    const body = JSON.parse(unregisterCall[1]!.body as string);
     expect(body.webHookUrl).toBe("");
   });
 

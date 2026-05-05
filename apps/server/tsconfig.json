@@ -4,7 +4,6 @@
     "strict": true,
     "allowJs": false,
     "checkJs": false,
-    "noUncheckedIndexedAccess": false,
     "paths": {
       "@sergeant/shared": ["../../packages/shared/src/index.ts"],
       "@sergeant/shared/*": ["../../packages/shared/src/*"]

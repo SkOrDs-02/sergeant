@@ -141,7 +141,7 @@ describe("diffNutritionDualWriteOps", () => {
     const next: NutritionDualWriteState = { ...EMPTY, pantries: [p2] };
     const ops = diffNutritionDualWriteOps(prev, next);
     expect(ops).toHaveLength(1);
-    expect(ops[0].kind).toBe("pantry-upsert");
+    expect(ops[0]!.kind).toBe("pantry-upsert");
   });
 
   // --- Prefs ---
@@ -240,8 +240,8 @@ describe("diffNutritionDualWriteOps", () => {
     const ops = diffNutritionDualWriteOps(prev, next);
     // meal-delete + prefs-upsert (p, r same ref → no op)
     expect(ops).toHaveLength(2);
-    expect(ops[0].kind).toBe("meal-delete");
-    expect(ops[1].kind).toBe("prefs-upsert");
+    expect(ops[0]!.kind).toBe("meal-delete");
+    expect(ops[1]!.kind).toBe("prefs-upsert");
   });
 
   it("sorts ops by id within each entity type", () => {

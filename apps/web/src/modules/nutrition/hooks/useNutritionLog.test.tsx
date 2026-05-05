@@ -71,7 +71,7 @@ describe("useNutritionLog – defensive imports", () => {
       ok = result.current.mergeLogFromJsonText("not json at all");
     });
     expect(ok).toBe(false);
-    expect(result.current.nutritionLog["2025-01-01"].meals).toHaveLength(1);
+    expect(result.current.nutritionLog["2025-01-01"]!.meals).toHaveLength(1);
   });
 
   it("replaceLogFromJsonText returns true on valid JSON and applies normalized log", async () => {

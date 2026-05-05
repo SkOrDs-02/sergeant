@@ -130,10 +130,10 @@ function fakeVector(salt: number, dim = META.dim): Float32Array {
   let norm = 0;
   for (let i = 0; i < dim; i++) {
     arr[i] = Math.sin(salt * 0.01 + i * 0.001);
-    norm += arr[i] * arr[i];
+    norm += arr[i]! * arr[i]!;
   }
   const len = Math.sqrt(norm);
-  for (let i = 0; i < dim; i++) arr[i] /= len;
+  for (let i = 0; i < dim; i++) arr[i]! /= len;
   return arr;
 }
 
@@ -176,11 +176,11 @@ describe("pgVectorStore integration", () => {
       });
 
       expect(result).toHaveLength(2);
-      expect(result[0].content).toBe("the cat sat on the mat");
-      expect(result[0].score).toBeGreaterThan(result[1].score);
-      expect(result[0].score).toBeGreaterThan(0.99); // майже identical
-      expect(result[0].embeddingMeta).toEqual(META);
-      expect(typeof result[0].id).toBe("number");
+      expect(result[0]!.content).toBe("the cat sat on the mat");
+      expect(result[0]!.score).toBeGreaterThan(result[1]!.score);
+      expect(result[0]!.score).toBeGreaterThan(0.99); // майже identical
+      expect(result[0]!.embeddingMeta).toEqual(META);
+      expect(typeof result[0]!.id).toBe("number");
     },
     TIMEOUT_MS,
   );
@@ -202,7 +202,7 @@ describe("pgVectorStore integration", () => {
         topK: 10,
       });
       expect(resA).toHaveLength(1);
-      expect(resA[0].content).toBe("userA secret");
+      expect(resA[0]!.content).toBe("userA secret");
     },
     TIMEOUT_MS,
   );
@@ -226,7 +226,7 @@ describe("pgVectorStore integration", () => {
         sources: ["finyk"],
       });
       expect(finykOnly).toHaveLength(1);
-      expect(finykOnly[0].source).toBe("finyk");
+      expect(finykOnly[0]!.source).toBe("finyk");
 
       const all = await store.query({
         userId: "uF",
@@ -251,9 +251,9 @@ describe("pgVectorStore integration", () => {
         embedding: fakeVector(400),
         topK: 1,
       });
-      expect(r[0].score).toBeGreaterThanOrEqual(0);
-      expect(r[0].score).toBeLessThanOrEqual(1);
-      expect(r[0].score).toBeGreaterThan(0.99);
+      expect(r[0]!.score).toBeGreaterThanOrEqual(0);
+      expect(r[0]!.score).toBeLessThanOrEqual(1);
+      expect(r[0]!.score).toBeGreaterThan(0.99);
     },
     TIMEOUT_MS,
   );
@@ -302,7 +302,7 @@ describe("pgVectorStore integration", () => {
         topK: 10,
       });
       expect(r).toHaveLength(1);
-      expect(r[0].sourceRef).toBe("tx-2");
+      expect(r[0]!.sourceRef).toBe("tx-2");
     },
     TIMEOUT_MS,
   );
@@ -349,7 +349,7 @@ describe("pgVectorStore integration", () => {
         `SELECT COUNT(*)::text AS count FROM ai_memories WHERE user_id = $1`,
         ["uG"],
       );
-      expect(Number(result.rows[0].count)).toBe(0);
+      expect(Number(result!.rows[0]!.count)).toBe(0);
     },
     TIMEOUT_MS,
   );
@@ -374,7 +374,7 @@ describe("pgVectorStore integration", () => {
         `SELECT COUNT(*)::text AS count FROM ai_memories WHERE user_id = $1`,
         ["uA1"],
       );
-      expect(Number(after.rows[0].count)).toBe(0);
+      expect(Number(after!.rows[0]!.count)).toBe(0);
     },
     TIMEOUT_MS,
   );
@@ -401,7 +401,7 @@ describe("pgVectorStore integration", () => {
         embedding: fakeVector(900),
         topK: 1,
       });
-      expect(r[0].metadata).toEqual(meta);
+      expect(r[0]!.metadata).toEqual(meta);
     },
     TIMEOUT_MS,
   );

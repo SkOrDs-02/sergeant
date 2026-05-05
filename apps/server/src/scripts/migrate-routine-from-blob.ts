@@ -36,13 +36,13 @@ interface ModuleDataRow {
 interface RoutineHabit {
   id: string;
   name: string;
-  createdAt?: string;
-  archived?: boolean;
+  createdAt?: string | undefined;
+  archived?: boolean | undefined;
 }
 
 interface RoutineBlob {
-  habits?: RoutineHabit[];
-  completions?: Record<string, string[]>;
+  habits?: RoutineHabit[] | undefined;
+  completions?: Record<string, string[]> | undefined;
 }
 
 export interface BackfillSummary {
@@ -97,12 +97,12 @@ export function parseRoutineBlob(data: unknown): RoutineBlob | null {
   // wrote it directly at top level (no nested `routine` key); accept both
   // shapes so we don't lose existing user data on backfill.
   const routine =
-    root.routine && typeof root.routine === "object"
-      ? (root.routine as Record<string, unknown>)
+    root["routine"] && typeof root["routine"] === "object"
+      ? (root["routine"] as Record<string, unknown>)
       : root;
 
-  const habitsRaw = routine.habits;
-  const completionsRaw = routine.completions;
+  const habitsRaw = routine["habits"];
+  const completionsRaw = routine["completions"];
 
   const habits: RoutineHabit[] = Array.isArray(habitsRaw)
     ? habitsRaw
@@ -111,10 +111,11 @@ export function parseRoutineBlob(data: unknown): RoutineBlob | null {
             !!h && typeof h === "object" && !Array.isArray(h),
         )
         .map((h) => ({
-          id: typeof h.id === "string" ? h.id : "",
-          name: typeof h.name === "string" ? h.name : "",
-          createdAt: typeof h.createdAt === "string" ? h.createdAt : undefined,
-          archived: h.archived === true,
+          id: typeof h["id"] === "string" ? h["id"] : "",
+          name: typeof h["name"] === "string" ? h["name"] : "",
+          createdAt:
+            typeof h["createdAt"] === "string" ? h["createdAt"] : undefined,
+          archived: h["archived"] === true,
         }))
         .filter((h) => h.id !== "" && h.name !== "")
     : [];
@@ -230,14 +231,14 @@ function computeStreak(
 
   const sortedKeys = [...completionKeys].sort();
   const lastKey = sortedKeys[sortedKeys.length - 1];
-  const lastCompletedAt = dateFromKey(lastKey);
+  const lastCompletedAt = dateFromKey(lastKey!);
 
   // Longest run of consecutive days in the union.
   let longest = 1;
   let current = 1;
   for (let i = 1; i < sortedKeys.length; i++) {
-    const prev = dateFromKey(sortedKeys[i - 1]);
-    const curr = dateFromKey(sortedKeys[i]);
+    const prev = dateFromKey(sortedKeys[i - 1]!);
+    const curr = dateFromKey(sortedKeys[i]!);
     if (!prev || !curr) continue;
     const diffDays = Math.round(
       (curr.getTime() - prev.getTime()) / (24 * 60 * 60 * 1000),
@@ -460,7 +461,7 @@ export async function runRoutineBackfill(
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
 
-  if (!process.env.DATABASE_URL) {
+  if (!process.env["DATABASE_URL"]) {
     console.error(
       JSON.stringify({
         msg: "routine_backfill_missing_database_url",
@@ -470,7 +471,7 @@ async function main() {
     process.exit(1);
   }
 
-  const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+  const pool = new pg.Pool({ connectionString: process.env["DATABASE_URL"] });
   try {
     await runRoutineBackfill(pool, { dryRun });
   } catch (err) {

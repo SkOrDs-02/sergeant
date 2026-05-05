@@ -36,7 +36,7 @@ export function parseNutritionHash(): ParsedNutritionHash {
   const raw = (window.location.hash || "").replace(/^#/, "").trim();
   if (!raw || raw.startsWith("/")) return { page: "start" };
   const [page, sub] = raw.split("/").filter(Boolean);
-  const redirect = LEGACY_REDIRECTS[page];
+  const redirect = LEGACY_REDIRECTS[page!];
   if (redirect) return { page: redirect, redirectFrom: page };
   if (!VALID_NUTRITION_PAGES.includes(page as NutritionPage))
     return { page: "start" };
@@ -58,5 +58,6 @@ export function setNutritionHash(
   const page = next || "start";
   const h = subTab ? `#${page}/${subTab}` : `#${page}`;
   if (window.location.hash === h) return;
+  // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
   window.location.hash = h;
 }

@@ -22,7 +22,7 @@ export function morningBriefing(): string {
     const done = activeHabits.filter(
       (h) =>
         Array.isArray(completions[h.id]) &&
-        completions[h.id].includes(todayKey),
+        completions[h.id]!.includes(todayKey),
     );
     parts.push(`Звички: ${done.length}/${activeHabits.length} виконано`);
   }
@@ -95,7 +95,7 @@ export function weeklySummary(): string {
       ].join("-");
       totalPossible += activeHabits.length;
       for (const h of activeHabits) {
-        if (Array.isArray(completions[h.id]) && completions[h.id].includes(dk))
+        if (Array.isArray(completions[h.id]) && completions[h.id]!.includes(dk))
           totalDone++;
       }
     }

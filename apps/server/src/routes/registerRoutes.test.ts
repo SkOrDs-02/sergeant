@@ -99,9 +99,9 @@ function extractRoutes(app: Express): string[] {
 describe("registerRoutes", () => {
   it("mounts the stable set of /api/* endpoints (snapshot)", async () => {
     // Required env for routers that throw on missing config during module init.
-    process.env.ANTHROPIC_API_KEY = "test-key";
-    process.env.BETTER_AUTH_SECRET = "x".repeat(32);
-    process.env.INTERNAL_API_KEY = "internal-test";
+    process.env["ANTHROPIC_API_KEY"] = "test-key";
+    process.env["BETTER_AUTH_SECRET"] = "x".repeat(32);
+    process.env["INTERNAL_API_KEY"] = "internal-test";
 
     const { registerRoutes } = await import("./index.js");
     const app = express();

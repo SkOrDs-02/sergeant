@@ -39,8 +39,8 @@ function readSource(absolute: string): string {
 function collectStaticImports(absolute: string): string[] {
   const src = readSource(absolute);
   const out: string[] = [];
-  for (const m of src.matchAll(STATIC_IMPORT_RE)) out.push(m[1]);
-  for (const m of src.matchAll(SIDE_EFFECT_IMPORT_RE)) out.push(m[1]);
+  for (const m of src.matchAll(STATIC_IMPORT_RE)) out.push(m[1]!);
+  for (const m of src.matchAll(SIDE_EFFECT_IMPORT_RE)) out.push(m[1]!);
   return out;
 }
 
@@ -70,7 +70,7 @@ describe("core/db/sqlite — lazy-import contract", () => {
       ...src.matchAll(SIDE_EFFECT_IMPORT_RE),
     ]
       .map((m) => m[1])
-      .filter((spec) => spec.startsWith("@sqlite.org/sqlite-wasm"));
+      .filter((spec) => spec!.startsWith("@sqlite.org/sqlite-wasm")!);
 
     expect(
       staticHits,

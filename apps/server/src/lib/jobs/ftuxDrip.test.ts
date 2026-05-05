@@ -43,7 +43,7 @@ describe("isRetryableFtuxDripError", () => {
 describe("enqueueFtuxDripMail (no Redis fallback)", () => {
   beforeEach(() => {
     __resetFtuxDripQueueForTesting();
-    delete process.env.REDIS_URL;
+    delete process.env["REDIS_URL"];
   });
 
   afterEach(() => {

@@ -68,7 +68,7 @@ export function SpotlightQueueProvider({ children }: { children: ReactNode }) {
   const isMyTurn = useCallback(
     (id: string): boolean => {
       if (queue.length === 0) return false;
-      return queue[0].id === id;
+      return queue[0]!.id === id;
     },
     [queue],
   );

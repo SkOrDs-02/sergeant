@@ -78,11 +78,11 @@ describe("scrubPII", () => {
       keep: "keep-me",
     };
     scrubPII(ev);
-    expect(ev.password).toBe("[redacted]");
-    expect(ev.token).toBe("[redacted]");
-    expect(ev.email).toBe("[redacted]");
-    expect(ev.phone).toBe("[redacted]");
-    expect(ev.keep).toBe("keep-me");
+    expect(ev["password"]).toBe("[redacted]");
+    expect(ev["token"]).toBe("[redacted]");
+    expect(ev["email"]).toBe("[redacted]");
+    expect(ev["phone"]).toBe("[redacted]");
+    expect(ev["keep"]).toBe("keep-me");
   });
 
   it("маскує ключі case-insensitive", () => {
@@ -92,7 +92,7 @@ describe("scrubPII", () => {
       "X-CSRF-Token": "csrf-zzz",
     };
     scrubPII(ev);
-    expect(ev.Authorization).toBe("[redacted]");
+    expect(ev["Authorization"]).toBe("[redacted]");
     expect(ev["Set-Cookie"]).toBe("[redacted]");
     expect(ev["X-CSRF-Token"]).toBe("[redacted]");
   });
@@ -113,17 +113,19 @@ describe("scrubPII", () => {
     };
     scrubPII(ev);
     const ctx = ev.contexts.userPayload as Record<string, unknown>;
-    expect(ctx.email).toBe("[redacted]");
-    const profile = ctx.profile as Record<string, unknown>;
-    expect(profile.phone).toBe("[redacted]");
-    expect(profile.token).toBe("[redacted]");
+    expect(ctx["email"]).toBe("[redacted]");
+    const profile = ctx["profile"] as Record<string, unknown>;
+    expect(profile["phone"]).toBe("[redacted]");
+    expect(profile["token"]).toBe("[redacted]");
     const debug = ev.extra.debug as Record<string, unknown>;
-    expect(debug.connectionString).toBe("[redacted]");
+    expect(debug["connectionString"]).toBe("[redacted]");
     const items = ev.extra.items as Array<Record<string, unknown>>;
-    expect(items[0]!.password).toBe("[redacted]");
-    expect(items[1]!.token).toBe("[redacted]");
+    expect(items[0]!["password"]).toBe("[redacted]");
+    expect(items[1]!["token"]).toBe("[redacted]");
     // Не зачіпає neutral поля
-    expect((ev.contexts.runtime as Record<string, unknown>).name).toBe("node");
+    expect((ev.contexts.runtime as Record<string, unknown>)["name"]).toBe(
+      "node",
+    );
   });
 
   it("не падає на циклічних посиланнях", () => {
@@ -147,9 +149,9 @@ describe("scrubPII", () => {
       { token: "t1", keep: "ok" },
     ];
     scrubPII(arr);
-    expect(arr[0]!.password).toBe("[redacted]");
-    expect(arr[1]!.token).toBe("[redacted]");
-    expect(arr[1]!.keep).toBe("ok");
+    expect(arr[0]!["password"]).toBe("[redacted]");
+    expect(arr[1]!["token"]).toBe("[redacted]");
+    expect(arr[1]!["keep"]).toBe("ok");
   });
 
   it("маскує об'єктні значення на null (зберігає shape для Sentry UI)", () => {
@@ -192,8 +194,8 @@ describe("applyBeforeSend", () => {
     });
     const out = applyBeforeSend(ev);
     const headers = out.request!.headers as Record<string, unknown>;
-    expect(headers.authorization).toBe("[redacted]");
-    expect(headers.cookie).toBe("[redacted]");
+    expect(headers["authorization"]).toBe("[redacted]");
+    expect(headers["cookie"]).toBe("[redacted]");
     expect(headers["user-agent"]).toBe("vitest");
   });
 
@@ -236,7 +238,7 @@ describe("applyBeforeSend", () => {
   });
 
   it("C1: працює, коли request.url відсутній (only-error-event)", () => {
-    const ev = makeEvent({ request: undefined });
+    const ev = makeEvent({});
     const out = applyBeforeSend(ev);
     expect(out.request).toBeUndefined();
   });
@@ -261,8 +263,8 @@ describe("applyBeforeSend", () => {
     });
     const out = applyBeforeSend(ev);
     const debug = (out.extra as { debug: Record<string, unknown> }).debug;
-    expect(debug.connectionString).toBe("[redacted]");
-    expect(debug.keep).toBe("ok");
+    expect(debug["connectionString"]).toBe("[redacted]");
+    expect(debug["keep"]).toBe("ok");
   });
 });
 
@@ -277,8 +279,8 @@ describe("applyBeforeBreadcrumb", () => {
       },
     };
     const out = applyBeforeBreadcrumb(bc);
-    expect(out?.data?.request_body_size).toBeUndefined();
-    expect(out?.data?.response_body_size).toBeUndefined();
+    expect(out?.data?.["request_body_size"]).toBeUndefined();
+    expect(out?.data?.["response_body_size"]).toBeUndefined();
   });
 
   it("C1: маскує URL з секретом у http breadcrumb (outbound axios/fetch)", () => {
@@ -290,7 +292,7 @@ describe("applyBeforeBreadcrumb", () => {
       },
     };
     const out = applyBeforeBreadcrumb(bc);
-    expect(out?.data?.url).toBe("/api/mono/webhook/[redacted]");
+    expect(out?.data?.["url"]).toBe("/api/mono/webhook/[redacted]");
   });
 
   it("не чіпає не-http breadcrumb-и (console/navigation)", () => {
@@ -300,7 +302,7 @@ describe("applyBeforeBreadcrumb", () => {
       data: { foo: "bar" },
     };
     const out = applyBeforeBreadcrumb(bc);
-    expect(out?.data?.foo).toBe("bar");
+    expect(out?.data?.["foo"]).toBe("bar");
   });
 
   it("повертає breadcrumb without data незмінним", () => {

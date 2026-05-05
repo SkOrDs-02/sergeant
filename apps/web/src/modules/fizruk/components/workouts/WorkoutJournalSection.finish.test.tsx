@@ -110,7 +110,7 @@ describe("WorkoutJournalSection – Завершити finish flow", () => {
     expect(props.setActiveWorkoutId).toHaveBeenCalledWith(null);
     expect(props.setRestTimer).toHaveBeenCalledWith(null);
     expect(props.setFinishFlash).toHaveBeenCalledTimes(1);
-    const flash = props.setFinishFlash.mock.calls[0][0];
+    const flash = props.setFinishFlash.mock.calls[0]![0];
     expect(flash).toMatchObject({
       step: "wellbeing",
       workoutId: "w-active",

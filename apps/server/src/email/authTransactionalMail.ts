@@ -9,9 +9,9 @@ import { logger } from "../obs/logger.js";
 
 function isDeployedProduction(): boolean {
   return (
-    process.env.NODE_ENV === "production" ||
-    Boolean(process.env.RAILWAY_ENVIRONMENT) ||
-    Boolean(process.env.RAILWAY_SERVICE_NAME)
+    process.env["NODE_ENV"] === "production" ||
+    Boolean(process.env["RAILWAY_ENVIRONMENT"]) ||
+    Boolean(process.env["RAILWAY_SERVICE_NAME"])
   );
 }
 
@@ -59,7 +59,7 @@ export function queueAuthTransactionalEmail(args: {
 async function dispatchAuthTransactionalEmail(
   args: AuthMailJobData,
 ): Promise<void> {
-  const key = process.env.RESEND_API_KEY?.trim();
+  const key = process.env["RESEND_API_KEY"]?.trim();
   if (!key) {
     if (isDeployedProduction()) {
       logger.warn({
@@ -78,7 +78,7 @@ async function dispatchAuthTransactionalEmail(
   }
 
   const from =
-    process.env.RESEND_FROM?.trim() || "Sergeant <onboarding@resend.dev>";
+    process.env["RESEND_FROM"]?.trim() || "Sergeant <onboarding@resend.dev>";
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",

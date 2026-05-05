@@ -205,7 +205,7 @@ describe("update_budget", () => {
     });
     const after = readLS<Array<{ limit?: number }>>("finyk_budgets", []);
     expect(after).toHaveLength(1);
-    expect(after[0].limit).toBe(6000);
+    expect(after[0]!.limit).toBe(6000);
   });
 
   it("створює ціль scope='goal'", () => {
@@ -279,8 +279,8 @@ describe("mark_debt_paid", () => {
       [],
     );
     expect(tx).toHaveLength(1);
-    expect(tx[0].amount).toBe(5000);
-    expect(tx[0].type).toBe("expense");
+    expect(tx[0]!.amount).toBe(5000);
+    expect(tx[0]!.type).toBe("expense");
   });
 
   it("частково гасить борг зі збереженням", () => {
@@ -307,7 +307,7 @@ describe("mark_debt_paid", () => {
       [],
     );
     expect(debts).toHaveLength(1);
-    expect(debts[0].linkedTxIds).toHaveLength(1);
+    expect(debts[0]!.linkedTxIds).toHaveLength(1);
   });
 
   it("повертає помилку для невідомого id", () => {
@@ -344,7 +344,7 @@ describe("add_asset", () => {
       input: { name: "Готівка", amount: 500, currency: "usd" },
     });
     const assets = readLS<Array<{ currency?: string }>>("finyk_assets", []);
-    expect(assets[0].currency).toBe("USD");
+    expect(assets[0]!.currency).toBe("USD");
   });
 
   it("відмовляє на невалідні дані", () => {
@@ -408,12 +408,12 @@ describe("start_workout / finish_workout", () => {
       workouts: Array<{ id: string; endedAt: string | null; note: string }>;
     }>("fizruk_workouts_v1", { workouts: [] });
     expect(saved.workouts).toHaveLength(1);
-    expect(saved.workouts[0].note).toBe("ранкова");
-    expect(saved.workouts[0].endedAt).toBeNull();
+    expect(saved.workouts[0]!.note).toBe("ранкова");
+    expect(saved.workouts[0]!.endedAt).toBeNull();
     // `fizruk_active_workout_id_v1` is stored as a raw string (not JSON), so
     // read it directly via localStorage to match the production storage format.
     const activeId = localStorage.getItem("fizruk_active_workout_id_v1");
-    expect(activeId).toBe(saved.workouts[0].id);
+    expect(activeId).toBe(saved.workouts[0]!.id);
   });
 
   it("start_workout відмовляє якщо вже є активне", () => {
@@ -429,7 +429,7 @@ describe("start_workout / finish_workout", () => {
     const saved = readLS<{
       workouts: Array<{ endedAt: string | null }>;
     }>("fizruk_workouts_v1", { workouts: [] });
-    expect(saved.workouts[0].endedAt).not.toBeNull();
+    expect(saved.workouts[0]!.endedAt).not.toBeNull();
     const activeId = localStorage.getItem("fizruk_active_workout_id_v1");
     expect(activeId).toBeNull();
   });
@@ -452,8 +452,8 @@ describe("log_measurement", () => {
       [],
     );
     expect(arr).toHaveLength(1);
-    expect(arr[0].weightKg).toBe(78.5);
-    expect(arr[0].waistCm).toBe(82);
+    expect(arr[0]!.weightKg).toBe(78.5);
+    expect(arr[0]!.waistCm).toBe(82);
   });
 
   it("ігнорує порожні/невалідні поля, відмовляє якщо нічого", () => {
@@ -486,8 +486,8 @@ describe("add_program_day", () => {
         { name: string; exercises: Array<{ name: string }> }
       >;
     }>("fizruk_plan_template_v1", { days: {} });
-    expect(tpl.days["1"].name).toBe("Груди/трицепс");
-    expect(tpl.days["1"].exercises).toHaveLength(2);
+    expect(tpl.days["1"]!.name).toBe("Груди/трицепс");
+    expect(tpl.days["1"]!.exercises).toHaveLength(2);
   });
 
   it("відмовляє на невалідний weekday", () => {
@@ -520,9 +520,9 @@ describe("log_wellbeing", () => {
       }>
     >("fizruk_daily_log_v1", []);
     expect(arr).toHaveLength(1);
-    expect(arr[0].weightKg).toBe(78);
-    expect(arr[0].sleepHours).toBe(7.5);
-    expect(arr[0].energyLevel).toBe(4);
+    expect(arr[0]!.weightKg).toBe(78);
+    expect(arr[0]!.sleepHours).toBe(7.5);
+    expect(arr[0]!.energyLevel).toBe(4);
   });
 
   it("відмовляє якщо немає жодного поля", () => {
@@ -545,7 +545,7 @@ describe("create_reminder", () => {
     const state0 = readLS<{
       habits: Array<{ id: string }>;
     }>("hub_routine_v1", { habits: [] });
-    const habitId = state0.habits[0].id;
+    const habitId = state0.habits[0]!.id;
     const msg = executeAction({
       name: "create_reminder",
       input: { habit_id: habitId, time: "8:00" },
@@ -554,7 +554,7 @@ describe("create_reminder", () => {
     const state = readLS<{
       habits: Array<{ id: string; reminderTimes: string[] }>;
     }>("hub_routine_v1", { habits: [] });
-    expect(state.habits[0].reminderTimes).toEqual(["08:00"]);
+    expect(state.habits[0]!.reminderTimes).toEqual(["08:00"]);
   });
 
   it("ідемпотентне — не дублює той самий час", () => {
@@ -565,7 +565,7 @@ describe("create_reminder", () => {
     const state0 = readLS<{
       habits: Array<{ id: string }>;
     }>("hub_routine_v1", { habits: [] });
-    const habitId = state0.habits[0].id;
+    const habitId = state0.habits[0]!.id;
     executeAction({
       name: "create_reminder",
       input: { habit_id: habitId, time: "08:00" },
@@ -578,7 +578,7 @@ describe("create_reminder", () => {
     const state = readLS<{
       habits: Array<{ reminderTimes: string[] }>;
     }>("hub_routine_v1", { habits: [] });
-    expect(state.habits[0].reminderTimes).toHaveLength(1);
+    expect(state.habits[0]!.reminderTimes).toHaveLength(1);
   });
 });
 
@@ -588,7 +588,7 @@ describe("complete_habit_for_date + archive_habit", () => {
     const state0 = readLS<{ habits: Array<{ id: string }> }>("hub_routine_v1", {
       habits: [],
     });
-    const id = state0.habits[0].id;
+    const id = state0.habits[0]!.id;
     executeAction({
       name: "complete_habit_for_date",
       input: { habit_id: id, date: "2024-06-10" },
@@ -616,7 +616,7 @@ describe("complete_habit_for_date + archive_habit", () => {
     const state0 = readLS<{ habits: Array<{ id: string }> }>("hub_routine_v1", {
       habits: [],
     });
-    const id = state0.habits[0].id;
+    const id = state0.habits[0]!.id;
     const msg = executeAction({
       name: "archive_habit",
       input: { habit_id: id },
@@ -626,7 +626,7 @@ describe("complete_habit_for_date + archive_habit", () => {
       "hub_routine_v1",
       { habits: [] },
     );
-    expect(state.habits[0].archived).toBe(true);
+    expect(state.habits[0]!.archived).toBe(true);
     const msg2 = executeAction({
       name: "archive_habit",
       input: { habit_id: id, archived: false },
@@ -641,7 +641,7 @@ describe("set_habit_schedule", () => {
     const state = readLS<{ habits: Array<{ id: string }> }>("hub_routine_v1", {
       habits: [],
     });
-    return state.habits[0].id;
+    return state.habits[0]!.id;
   }
 
   it("приймає англ. дні і виставляє Mon-first weekdays + recurrence='weekly'", () => {
@@ -656,8 +656,8 @@ describe("set_habit_schedule", () => {
     const state = readLS<{
       habits: Array<{ id: string; recurrence: string; weekdays: number[] }>;
     }>("hub_routine_v1", { habits: [] });
-    expect(state.habits[0].recurrence).toBe("weekly");
-    expect(state.habits[0].weekdays).toEqual([0, 2, 4]);
+    expect(state.habits[0]!.recurrence).toBe("weekly");
+    expect(state.habits[0]!.weekdays).toEqual([0, 2, 4]);
   });
 
   it("приймає укр. короткі назви та змішаний регістр", () => {
@@ -669,7 +669,7 @@ describe("set_habit_schedule", () => {
     const state = readLS<{
       habits: Array<{ id: string; weekdays: number[] }>;
     }>("hub_routine_v1", { habits: [] });
-    expect(state.habits[0].weekdays).toEqual([0, 2, 4]);
+    expect(state.habits[0]!.weekdays).toEqual([0, 2, 4]);
   });
 
   it("дедуплікує і сортує дні", () => {
@@ -681,7 +681,7 @@ describe("set_habit_schedule", () => {
     const state = readLS<{
       habits: Array<{ id: string; weekdays: number[] }>;
     }>("hub_routine_v1", { habits: [] });
-    expect(state.habits[0].weekdays).toEqual([0, 2, 4]);
+    expect(state.habits[0]!.weekdays).toEqual([0, 2, 4]);
   });
 
   it("повертає помилку коли всі токени невалідні (не змінює стан)", () => {
@@ -697,7 +697,7 @@ describe("set_habit_schedule", () => {
     const after = readLS<{
       habits: Array<{ id: string; recurrence?: string; weekdays?: number[] }>;
     }>("hub_routine_v1", { habits: [] });
-    expect(after.habits[0].weekdays).toEqual(before.habits[0].weekdays);
+    expect(after.habits[0]!.weekdays).toEqual(before.habits[0]!.weekdays);
   });
 
   it("повертає помилку для відсутньої звички / порожніх входів", () => {
@@ -728,7 +728,7 @@ describe("pause_habit", () => {
     const state = readLS<{ habits: Array<{ id: string }> }>("hub_routine_v1", {
       habits: [],
     });
-    return state.habits[0].id;
+    return state.habits[0]!.id;
   }
 
   it("за замовчуванням ставить на паузу та зберігає paused=true", () => {
@@ -742,7 +742,7 @@ describe("pause_habit", () => {
       "hub_routine_v1",
       { habits: [] },
     );
-    expect(state.habits[0].paused).toBe(true);
+    expect(state.habits[0]!.paused).toBe(true);
   });
 
   it("paused=false знімає з паузи", () => {
@@ -757,7 +757,7 @@ describe("pause_habit", () => {
       "hub_routine_v1",
       { habits: [] },
     );
-    expect(state.habits[0].paused).toBe(false);
+    expect(state.habits[0]!.paused).toBe(false);
   });
 
   it("ідемпотентно: повторна пауза — no-op з info-меседжем", () => {
@@ -797,10 +797,10 @@ describe("add_calendar_event", () => {
         timeOfDay: string;
       }>;
     }>("hub_routine_v1", { habits: [] });
-    expect(state.habits[0].recurrence).toBe("once");
-    expect(state.habits[0].startDate).toBe("2024-07-01");
-    expect(state.habits[0].endDate).toBe("2024-07-01");
-    expect(state.habits[0].timeOfDay).toBe("09:30");
+    expect(state.habits[0]!.recurrence).toBe("once");
+    expect(state.habits[0]!.startDate).toBe("2024-07-01");
+    expect(state.habits[0]!.endDate).toBe("2024-07-01");
+    expect(state.habits[0]!.timeOfDay).toBe("09:30");
   });
 });
 
@@ -836,7 +836,7 @@ describe("profile memory actions", () => {
       input: { category: "allergy" },
     });
     expect(profileMsg).toContain("Не їм арахіс");
-    expect(profileMsg).toContain(profile[0].id);
+    expect(profileMsg).toContain(profile[0]!.id);
   });
 
   it("remember оновлює дублі, forget видаляє факт", () => {
@@ -856,12 +856,12 @@ describe("profile memory actions", () => {
       [],
     );
     expect(profile).toHaveLength(1);
-    expect(profile[0].id).toBe(initial[0].id);
-    expect(profile[0].category).toBe("training");
+    expect(profile[0]!.id).toBe(initial[0]!.id);
+    expect(profile[0]!.category).toBe("training");
 
     const forgetMsg = executeAction({
       name: "forget",
-      input: { fact_id: profile[0].id },
+      input: { fact_id: profile[0]!.id },
     });
     expect(forgetMsg).toContain("Забув");
     profile = readLS("hub_user_profile_v1", []);
@@ -884,7 +884,7 @@ describe("add_to_shopping_list", () => {
       }>;
     }>("nutrition_shopping_list_v1", { categories: [] });
     expect(list.categories).toHaveLength(1);
-    expect(list.categories[0].items[0]).toMatchObject({
+    expect(list.categories[0]!.items[0]).toMatchObject({
       name: "Молоко",
       quantity: "1 л",
       checked: false,
@@ -901,8 +901,8 @@ describe("add_to_shopping_list", () => {
         items: Array<{ name: string; quantity: string; checked: boolean }>;
       }>;
     }>("nutrition_shopping_list_v1", { categories: [] });
-    expect(list.categories[0].items).toHaveLength(1);
-    expect(list.categories[0].items[0].quantity).toBe("2 л");
+    expect(list.categories[0]!.items).toHaveLength(1);
+    expect(list!.categories[0]!.items[0]!.quantity).toBe("2 л");
   });
 });
 
@@ -928,7 +928,7 @@ describe("consume_from_pantry", () => {
     const pantries = readLS<
       Array<{ id: string; items: Array<{ name: string }> }>
     >("nutrition_pantries_v1", []);
-    expect(pantries[0].items.map((i) => i.name)).toEqual(["молоко"]);
+    expect(pantries[0]!.items.map((i) => i.name)).toEqual(["молоко"]);
   });
 
   it("повертає повідомлення якщо продукт відсутній (ідемпотентність)", () => {
@@ -974,7 +974,7 @@ describe("log_weight", () => {
     expect(msg).toContain("77.3");
     const arr = readLS<Array<{ weightKg: number }>>("fizruk_daily_log_v1", []);
     expect(arr).toHaveLength(1);
-    expect(arr[0].weightKg).toBe(77.3);
+    expect(arr[0]!.weightKg).toBe(77.3);
   });
 
   it("відмовляє на 0/неч.", () => {

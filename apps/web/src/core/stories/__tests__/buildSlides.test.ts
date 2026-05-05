@@ -24,14 +24,14 @@ const mRoutine = vi.mocked(aggregateRoutine);
 describe("buildSlides", () => {
   it("always includes intro slide", () => {
     const slides = buildSlides(null, "2026-W17", "21–27 квітня");
-    expect(slides[0].kind).toBe("intro");
-    expect(slides[0].weekRange).toBe("21–27 квітня");
+    expect(slides[0]!.kind).toBe("intro");
+    expect(slides[0]!.weekRange).toBe("21–27 квітня");
   });
 
   it("skips module slides when no aggregates and no digest data", () => {
     const slides = buildSlides(null, "2026-W17", undefined);
     expect(slides).toHaveLength(1);
-    expect(slides[0].kind).toBe("intro");
+    expect(slides[0]!.kind).toBe("intro");
   });
 
   it("adds finyk slide when aggregate has txCount > 0", () => {

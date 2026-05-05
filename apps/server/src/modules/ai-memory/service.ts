@@ -32,7 +32,7 @@ export interface RememberInput {
   source: MemorySource;
   sourceRef: string | null;
   content: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, unknown> | undefined;
 }
 
 /**
@@ -42,8 +42,8 @@ export interface RememberInput {
 export interface RecallInput {
   userId: string;
   query: string;
-  topK?: number;
-  sources?: MemorySource[];
+  topK?: number | undefined;
+  sources?: MemorySource[] | undefined;
 }
 
 export interface AiMemoryService {
@@ -111,7 +111,7 @@ export function createAiMemoryService(
           source: input.source,
           sourceRef: input.sourceRef,
           content: input.content,
-          embedding: embeddings[i],
+          embedding: embeddings[i]!,
           embeddingMeta: deps.embeddings.meta,
           metadata: input.metadata,
         })),

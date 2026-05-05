@@ -180,7 +180,7 @@ describe("validateImageBase64 — rejection paths", () => {
   });
 
   it("Не-base64 символи у вході → INVALID_BASE64", () => {
-    const r = validateImageBase64("not base64 at all !!!", "image/jpeg");
+    const r = validateImageBase64("not base64 at all !", "image/jpeg");
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.code).toBe("INVALID_BASE64");

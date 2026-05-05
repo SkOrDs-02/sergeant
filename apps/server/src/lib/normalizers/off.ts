@@ -68,7 +68,7 @@ function round1(v: unknown): number | null {
 
 function firstBrand(raw: string | undefined | null): string | null {
   if (!raw) return null;
-  return String(raw).split(",")[0].trim() || null;
+  return String!(raw).split(",")[0]!.trim() || null;
 }
 
 interface ExtractedMacros {

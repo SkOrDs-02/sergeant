@@ -169,7 +169,7 @@ describe("transcribeHandler", () => {
     expect(res.body?.durationSec).toBe(3.4);
     expect(res.body?.model).toBeTruthy();
     expect(transcribeAudio).toHaveBeenCalledOnce();
-    const callArg = transcribeAudio.mock.calls[0][0];
+    const callArg = transcribeAudio!.mock.calls[0]![0];
     expect(callArg.language).toBe("uk");
     expect(callArg.prompt).toBe("жим, присід, тяга");
     expect(callArg.mimeType).toBe("audio/webm");
@@ -210,7 +210,7 @@ describe("transcribeHandler", () => {
     const res = makeRes();
     await transcribeHandler(req, res);
     expect(res.statusCode).toBe(200);
-    const callArg = transcribeAudio.mock.calls[0][0];
+    const callArg = transcribeAudio!.mock.calls[0]![0];
     expect(callArg.mimeType).toBe(canonical);
   });
 });
@@ -218,31 +218,31 @@ describe("transcribeHandler", () => {
 // M4 — boot-time allowlist for GROQ_TRANSCRIBE_MODEL.
 // See docs/security/hardening/M4-groq-model-allowlist.md.
 describe("M4: GROQ_TRANSCRIBE_MODEL allowlist", () => {
-  const ORIG = process.env.GROQ_TRANSCRIBE_MODEL;
+  const ORIG = process.env["GROQ_TRANSCRIBE_MODEL"];
   afterEach(() => {
-    if (ORIG === undefined) delete process.env.GROQ_TRANSCRIBE_MODEL;
-    else process.env.GROQ_TRANSCRIBE_MODEL = ORIG;
+    if (ORIG === undefined) delete process.env["GROQ_TRANSCRIBE_MODEL"];
+    else process.env["GROQ_TRANSCRIBE_MODEL"] = ORIG;
   });
 
   it("accepts default (env unset)", () => {
-    delete process.env.GROQ_TRANSCRIBE_MODEL;
+    delete process.env["GROQ_TRANSCRIBE_MODEL"];
     expect(__testing.resolveGroqModel()).toBe("whisper-large-v3-turbo");
   });
 
   it("accepts allowlisted alternative model", () => {
-    process.env.GROQ_TRANSCRIBE_MODEL = "whisper-large-v3";
+    process.env["GROQ_TRANSCRIBE_MODEL"] = "whisper-large-v3";
     expect(__testing.resolveGroqModel()).toBe("whisper-large-v3");
   });
 
   it("throws on unknown / experimental model", () => {
-    process.env.GROQ_TRANSCRIBE_MODEL = "whisper-evil-experimental";
+    process.env["GROQ_TRANSCRIBE_MODEL"] = "whisper-evil-experimental";
     expect(() => __testing.resolveGroqModel()).toThrow(
       /Unsupported GROQ_TRANSCRIBE_MODEL/,
     );
   });
 
   it("treats empty-string env as default", () => {
-    process.env.GROQ_TRANSCRIBE_MODEL = "";
+    process.env["GROQ_TRANSCRIBE_MODEL"] = "";
     expect(__testing.resolveGroqModel()).toBe("whisper-large-v3-turbo");
   });
 

@@ -76,13 +76,14 @@ async function executeTool(
   name: string,
   input: Record<string, unknown>,
 ): Promise<string> {
-  const serverUrl = process.env.SERVER_INTERNAL_URL ?? "http://localhost:3000";
-  const apiKey = process.env.INTERNAL_API_KEY ?? "";
+  const serverUrl =
+    process.env["SERVER_INTERNAL_URL"] ?? "http://localhost:3000";
+  const apiKey = process.env["INTERNAL_API_KEY"] ?? "";
 
   if (name === "get_stripe_metrics") {
-    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    const stripeKey = process.env["STRIPE_SECRET_KEY"];
     if (!stripeKey) return "STRIPE_SECRET_KEY not configured";
-    const days = (input.days as number) ?? 7;
+    const days = (input["days"] as number) ?? 7;
     const since = Math.floor(Date.now() / 1000) - days * 86400;
     try {
       const res = await fetch(
@@ -103,11 +104,11 @@ async function executeTool(
   }
 
   if (name === "get_sentry_issues") {
-    const token = process.env.SENTRY_AUTH_TOKEN;
-    const org = process.env.SENTRY_ORG ?? "sergeant";
+    const token = process.env["SENTRY_AUTH_TOKEN"];
+    const org = process.env["SENTRY_ORG"] ?? "sergeant";
     if (!token) return "SENTRY_AUTH_TOKEN not configured";
-    const level = (input.level as string) ?? "error";
-    const limit = (input.limit as number) ?? 10;
+    const level = (input["level"] as string) ?? "error";
+    const limit = (input["limit"] as number) ?? 10;
     try {
       const res = await fetch(
         `https://sentry.io/api/0/organizations/${org}/issues/?query=is:unresolved level:${level}&limit=${limit}`,

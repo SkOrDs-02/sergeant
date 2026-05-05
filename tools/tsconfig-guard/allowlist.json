@@ -1,16 +1,18 @@
 [
   {
     "path": "apps/web",
-    "option": "noUncheckedIndexedAccess",
+    "option": "exactOptionalPropertyTypes",
     "value": false,
-    "reason": "Phase 6a baseline-experiment — 625 errors / 147 files; per-module rollout planned in docs/tech-debt/frontend.md §11.1",
-    "expires": "2026-09-30"
+    "reason": "Phase 6b rollout in progress — apps/web baseline 497 errors / ~150 файлів (виміряно 2026-05-05). Tracked у docs/initiatives/0012-perfect-strictness-rollout.md Phase 6b.",
+    "expires": "2026-09-30",
+    "owner": "@Skords-01"
   },
   {
-    "path": "apps/server",
-    "option": "noUncheckedIndexedAccess",
+    "path": "apps/web",
+    "option": "noPropertyAccessFromIndexSignature",
     "value": false,
-    "reason": "Phase 6a baseline-experiment — 335 errors / 57 files; per-module rollout planned in docs/tech-debt/frontend.md §11.1",
-    "expires": "2026-09-30"
+    "reason": "Phase 6d rollout in progress — apps/web baseline included у комбінованому 497-error baseline вище (виміряно 2026-05-05). Tracked у docs/initiatives/0012-perfect-strictness-rollout.md Phase 6d.",
+    "expires": "2026-09-30",
+    "owner": "@Skords-01"
   }
 ]

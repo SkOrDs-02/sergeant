@@ -50,7 +50,7 @@ export type FinykSchedule = {
 
 export function parseLocalDate(isoDate: string | undefined | null): Date {
   const [y, m, d] = (isoDate || "").split("-").map(Number);
-  return new Date(y, (m || 1) - 1, d || 1);
+  return new Date(y!, (m || 1) - 1, d || 1);
 }
 
 export function getNextBillingDate(billingDay: number, now: Date): Date {

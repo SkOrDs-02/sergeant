@@ -89,18 +89,18 @@ function emailFingerprint(email: string): string {
 
 function isDeployedProduction(): boolean {
   return (
-    process.env.NODE_ENV === "production" ||
-    Boolean(process.env.RAILWAY_ENVIRONMENT) ||
-    Boolean(process.env.RAILWAY_SERVICE_NAME)
+    process.env["NODE_ENV"] === "production" ||
+    Boolean(process.env["RAILWAY_ENVIRONMENT"]) ||
+    Boolean(process.env["RAILWAY_SERVICE_NAME"])
   );
 }
 
 function getAppUrl(): string {
   const candidates = [
-    process.env.PUBLIC_APP_URL,
-    process.env.VITE_PUBLIC_APP_URL,
-    process.env.WEB_APP_URL,
-    process.env.BETTER_AUTH_URL,
+    process.env["PUBLIC_APP_URL"],
+    process.env["VITE_PUBLIC_APP_URL"],
+    process.env["WEB_APP_URL"],
+    process.env["BETTER_AUTH_URL"],
   ];
   for (const c of candidates) {
     const trimmed = c?.trim();
@@ -201,7 +201,7 @@ async function sendViaResend(args: {
   text: string;
   html: string;
 }): Promise<{ providerMessageId: string | null }> {
-  const key = process.env.RESEND_API_KEY?.trim();
+  const key = process.env["RESEND_API_KEY"]?.trim();
   if (!key) {
     if (isDeployedProduction()) {
       logger.warn({
@@ -218,7 +218,7 @@ async function sendViaResend(args: {
   }
 
   const from =
-    process.env.RESEND_FROM?.trim() || "Sergeant <onboarding@resend.dev>";
+    process.env["RESEND_FROM"]?.trim() || "Sergeant <onboarding@resend.dev>";
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",

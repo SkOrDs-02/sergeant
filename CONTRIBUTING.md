@@ -160,6 +160,7 @@ Reviewer checklist живе в [docs/governance/review-checklist.md](./docs/gove
 16. **Typography scale — semantic styles + 12px floor**
 17. **Animation budget — max 2 concurrent, 3 tiers**
 18. **Module-size discipline — `max-lines: 600` for web TS/TSX**
+19. **Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo**
 
 Джерела істини:
 

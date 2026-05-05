@@ -75,9 +75,9 @@ describe("accountsHandler", () => {
     expect(res.statusCode).toBe(200);
     const body = res.body as Array<Record<string, unknown>>;
     expect(body).toHaveLength(1);
-    expect(body[0].monoAccountId).toBe("acc1");
-    expect(body[0].lastSeenAt).toBe("2025-01-01T00:00:00.000Z");
-    expect(body[0].maskedPan).toEqual(["5375****1234"]);
+    expect(body[0]!["monoAccountId"]).toBe("acc1");
+    expect(body[0]!["lastSeenAt"]).toBe("2025-01-01T00:00:00.000Z");
+    expect(body[0]!["maskedPan"]).toEqual(["5375****1234"]);
   });
 
   it("returns empty array when no accounts", async () => {
@@ -136,12 +136,12 @@ describe("accountsHandler", () => {
     await accountsHandler(makeReq(), res);
 
     const body = res.body as Array<Record<string, unknown>>;
-    expect(body[0].balance).toBe(46789);
-    expect(body[0].creditLimit).toBe(0);
-    expect(typeof body[0].balance).toBe("number");
-    expect(typeof body[0].creditLimit).toBe("number");
-    expect(body[1].balance).toBe(-42739);
-    expect(body[1].creditLimit).toBe(4000000);
+    expect(body[0]!["balance"]).toBe(46789);
+    expect(body[0]!["creditLimit"]).toBe(0);
+    expect(typeof body[0]!["balance"]).toBe("number");
+    expect(typeof body[0]!["creditLimit"]).toBe("number");
+    expect(body[1]!["balance"]).toBe(-42739);
+    expect(body[1]!["creditLimit"]).toBe(4000000);
   });
 
   it("preserves null balance/creditLimit", async () => {
@@ -167,8 +167,8 @@ describe("accountsHandler", () => {
     await accountsHandler(makeReq(), res);
 
     const body = res.body as Array<Record<string, unknown>>;
-    expect(body[0].balance).toBeNull();
-    expect(body[0].creditLimit).toBeNull();
+    expect(body[0]!["balance"]).toBeNull();
+    expect(body[0]!["creditLimit"]).toBeNull();
   });
 
   it("accountsHandler response shape matches snapshot", async () => {
@@ -322,7 +322,7 @@ describe("transactionsHandler", () => {
     );
 
     expect(res.statusCode).toBe(200);
-    const sql = queryMock.mock.calls[0][0] as string;
+    const sql = queryMock!.mock.calls[0]![0] as string;
     expect(sql).toContain("t.time >=");
     expect(sql).toContain("t.time <=");
     expect(sql).toContain("t.mono_account_id =");
@@ -340,10 +340,10 @@ describe("transactionsHandler", () => {
     );
 
     expect(res.statusCode).toBe(200);
-    const sql = queryMock.mock.calls[0][0] as string;
+    const sql = queryMock!.mock.calls[0]![0] as string;
     expect(sql).toContain("t.time <");
     expect(sql).toContain("t.mono_tx_id <");
-    const params = queryMock.mock.calls[0][1] as unknown[];
+    const params = queryMock!.mock.calls[0]![1] as unknown[];
     expect(params).toContain("2025-01-15T12:00:00.000Z");
     expect(params).toContain("tx_25");
   });
@@ -392,13 +392,13 @@ describe("transactionsHandler", () => {
 
     const body = res.body as { data: Array<Record<string, unknown>> };
     const tx = body.data[0];
-    expect(tx.amount).toBe(-12345);
-    expect(tx.operationAmount).toBe(-12345);
-    expect(tx.cashbackAmount).toBe(100);
-    expect(tx.commissionRate).toBe(0);
-    expect(tx.balance).toBe(987654);
-    expect(typeof tx.amount).toBe("number");
-    expect(typeof tx.commissionRate).toBe("number");
+    expect(tx!["amount"]).toBe(-12345);
+    expect(tx!["operationAmount"]).toBe(-12345);
+    expect(tx!["cashbackAmount"]).toBe(100);
+    expect(tx!["commissionRate"]).toBe(0);
+    expect(tx!["balance"]).toBe(987654);
+    expect(typeof tx!["amount"]).toBe("number");
+    expect(typeof tx!["commissionRate"]).toBe("number");
   });
 
   it("transactionsHandler response shape matches snapshot", async () => {

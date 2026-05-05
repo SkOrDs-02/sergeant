@@ -59,9 +59,9 @@ export interface ParsedAlertsCommand {
   subcommand: "pending" | "help" | "unknown";
   filters: AlertsPendingFilters;
   /** Verbatim `since=<dur>` token (e.g. `24h`) for echo in the header. */
-  sinceLabel?: string;
+  sinceLabel?: string | undefined;
   /** Set when token parsing detected an unrecoverable error. */
-  error?: string;
+  error?: string | undefined;
 }
 
 const DEFAULT_LIMIT = 20;
@@ -194,8 +194,8 @@ const SUMMARY_MAX_CHARS = 120;
 export interface FormatPendingReplyOptions {
   now: Date;
   /** Verbatim `since=<dur>` echo for the header. */
-  sinceLabel?: string;
-  filters?: AlertsPendingFilters;
+  sinceLabel?: string | undefined;
+  filters?: AlertsPendingFilters | undefined;
 }
 
 /**

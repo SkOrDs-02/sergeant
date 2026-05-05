@@ -102,9 +102,9 @@ function authedUserFromFixture(
     return base;
   }
   if (variant === "string") {
-    base.createdAt = user.createdAt;
+    base["createdAt"] = user.createdAt;
   } else {
-    base.createdAt = new Date(user.createdAt);
+    base["createdAt"] = new Date(user.createdAt);
   }
   return base;
 }

@@ -38,9 +38,9 @@ export function addAsset(action: AddAssetAction): ChatActionResult {
       for (let i = list.length - 1; i >= 0; i--) {
         const e = list[i];
         if (
-          e.name === newEntry.name &&
-          Number(e.amount) === Number(newEntry.amount) &&
-          (e.currency || "UAH") === (newEntry.currency || "UAH")
+          e!.name! === newEntry.name &&
+          Number(e!.amount!) === Number(newEntry.amount) &&
+          (e!.currency! || "UAH") === (newEntry.currency || "UAH")
         ) {
           const next = list.slice();
           next.splice(i, 1);

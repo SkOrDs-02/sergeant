@@ -140,15 +140,15 @@ describe("mono/read — integration (real Postgres)", () => {
       });
 
       // Critical: bigint columns MUST be numbers, not strings.
-      expect(typeof body[0].balance).toBe("number");
-      expect(body[0].balance).toBe(4678900);
-      expect(typeof body[0].creditLimit).toBe("number");
-      expect(body[0].creditLimit).toBe(0);
+      expect(typeof body[0]!["balance"]).toBe("number");
+      expect(body[0]!["balance"]).toBe(4678900);
+      expect(typeof body[0]!["creditLimit"]).toBe("number");
+      expect(body[0]!["creditLimit"]).toBe(0);
 
       // maskedPan should be an array
-      expect(body[0].maskedPan).toEqual(["5375****1234"]);
+      expect(body[0]!["maskedPan"]).toEqual(["5375****1234"]);
       // lastSeenAt should be ISO string
-      expect(body[0].lastSeenAt).toBe("2026-01-15T10:00:00.000Z");
+      expect(body[0]!["lastSeenAt"]).toBe("2026-01-15T10:00:00.000Z");
     });
 
     it("handles null balance/creditLimit from real Postgres", async () => {
@@ -164,8 +164,8 @@ describe("mono/read — integration (real Postgres)", () => {
 
       const body = res.body as Array<Record<string, unknown>>;
       expect(body).toHaveLength(1);
-      expect(body[0].balance).toBeNull();
-      expect(body[0].creditLimit).toBeNull();
+      expect(body[0]!["balance"]).toBeNull();
+      expect(body[0]!["creditLimit"]).toBeNull();
     });
 
     it("returns 401 if no user in request", async () => {
@@ -195,9 +195,9 @@ describe("mono/read — integration (real Postgres)", () => {
       const body = res.body as Array<Record<string, unknown>>;
       expect(body).toHaveLength(3);
       // USD (840) first, then UAH (980) sorted by account id
-      expect(body[0].monoAccountId).toBe("usd_acct");
-      expect(body[1].monoAccountId).toBe("a_acct");
-      expect(body[2].monoAccountId).toBe("z_acct");
+      expect(body[0]!["monoAccountId"]).toBe("usd_acct");
+      expect(body[1]!["monoAccountId"]).toBe("a_acct");
+      expect(body[2]!["monoAccountId"]).toBe("z_acct");
     });
   });
 
@@ -249,20 +249,20 @@ describe("mono/read — integration (real Postgres)", () => {
 
       const tx = data[0];
       // All BIGINT columns must be numbers
-      expect(typeof tx.amount).toBe("number");
-      expect(tx.amount).toBe(-15000);
-      expect(typeof tx.operationAmount).toBe("number");
-      expect(tx.operationAmount).toBe(-15000);
-      expect(typeof tx.cashbackAmount).toBe("number");
-      expect(tx.cashbackAmount).toBe(75);
-      expect(typeof tx.commissionRate).toBe("number");
-      expect(tx.commissionRate).toBe(0);
-      expect(typeof tx.balance).toBe("number");
-      expect(tx.balance).toBe(85000);
+      expect(typeof tx!["amount"]).toBe("number");
+      expect(tx!["amount"]).toBe(-15000);
+      expect(typeof tx!["operationAmount"]).toBe("number");
+      expect(tx!["operationAmount"]).toBe(-15000);
+      expect(typeof tx!["cashbackAmount"]).toBe("number");
+      expect(tx!["cashbackAmount"]).toBe(75);
+      expect(typeof tx!["commissionRate"]).toBe("number");
+      expect(tx!["commissionRate"]).toBe(0);
+      expect(typeof tx!["balance"]).toBe("number");
+      expect(tx!["balance"]).toBe(85000);
 
       // Time fields should be ISO strings
-      expect(tx.time).toBe("2026-04-20T14:30:00.000Z");
-      expect(typeof tx.receivedAt).toBe("string");
+      expect(tx!["time"]).toBe("2026-04-20T14:30:00.000Z");
+      expect(typeof tx!["receivedAt"]).toBe("string");
     });
 
     it("returns cursor-based pagination", async () => {
@@ -300,8 +300,8 @@ describe("mono/read — integration (real Postgres)", () => {
       expect(body.data).toHaveLength(2);
       expect(body.nextCursor).toBeTruthy();
       // Sorted DESC — newest first
-      expect(body.data[0].monoTxId).toBe("tx_page_003");
-      expect(body.data[1].monoTxId).toBe("tx_page_002");
+      expect(body!.data[0]!["monoTxId"]).toBe("tx_page_003");
+      expect(body!.data[1]!["monoTxId"]).toBe("tx_page_002");
     });
 
     it("catches SQL errors from invalid schema assumptions", async () => {

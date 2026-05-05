@@ -232,7 +232,7 @@ describe("syncV2Stream handler — handshake & replay", () => {
     await syncV2Stream(req as Request, res as Response);
 
     // Pool query 2nd argument has the resolved cursor at index 1.
-    const args = pool.query.mock.calls[0][1] as unknown[];
+    const args = pool!.query.mock.calls[0]![1] as unknown[];
     expect(args[1]).toBe(999);
     expect(res.writes[0]).toContain('"since":999');
   });
@@ -247,7 +247,7 @@ describe("syncV2Stream handler — handshake & replay", () => {
     const res = makeRes() as unknown as FakeRes & Response;
 
     await syncV2Stream(req as Request, res as Response);
-    const args = pool.query.mock.calls[0][1] as unknown[];
+    const args = pool!.query.mock.calls[0]![1] as unknown[];
     expect(args[1]).toBe(10);
   });
 
@@ -260,7 +260,7 @@ describe("syncV2Stream handler — handshake & replay", () => {
     const res = makeRes() as unknown as FakeRes & Response;
 
     await syncV2Stream(req as Request, res as Response);
-    const args = pool.query.mock.calls[0][1] as unknown[];
+    const args = pool!.query.mock.calls[0]![1] as unknown[];
     expect(args[2]).toBe("device-B");
   });
 

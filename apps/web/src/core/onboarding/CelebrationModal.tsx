@@ -74,7 +74,7 @@ export function CelebrationModal({
       y: 30 + (Math.random() - 0.5) * 40,
       rotation: Math.random() * 360,
       color:
-        CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+        CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)]!,
       size: 6 + Math.random() * 8,
       delay: Math.random() * 0.3,
     }));

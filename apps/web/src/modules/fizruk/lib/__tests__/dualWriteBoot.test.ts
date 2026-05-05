@@ -42,7 +42,7 @@ describe("bootFizrukDualWrite (web)", () => {
     expect(mockRegister).toHaveBeenCalledTimes(1);
     expect(result).toBe(teardown);
 
-    const ctx = mockRegister.mock.calls[0][0] as {
+    const ctx = mockRegister.mock.calls[0]![0] as {
       isEnabled(): boolean;
       getUserId(): string | null;
     };
@@ -59,7 +59,7 @@ describe("bootFizrukDualWrite (web)", () => {
       getUserId: () => "u",
       isFlagEnabled: () => live,
     });
-    const ctx = mockRegister.mock.calls[0][0] as { isEnabled(): boolean };
+    const ctx = mockRegister.mock.calls[0]![0] as { isEnabled(): boolean };
     expect(ctx.isEnabled()).toBe(false);
     live = true;
     expect(ctx.isEnabled()).toBe(true);
@@ -76,7 +76,7 @@ describe("bootFizrukDualWrite (web)", () => {
       isFlagEnabled: () => true,
     });
 
-    const ctx = mockRegister.mock.calls[0][0] as {
+    const ctx = mockRegister.mock.calls[0]![0] as {
       getMigrationClient(): Promise<unknown>;
     };
     await expect(ctx.getMigrationClient()).resolves.toBe(mockMigrationClient);
@@ -92,7 +92,7 @@ describe("bootFizrukDualWrite (web)", () => {
       getUserId: () => "u",
       isFlagEnabled: () => true,
     });
-    const ctx = mockRegister.mock.calls[0][0] as { getNow(): string };
+    const ctx = mockRegister.mock.calls[0]![0] as { getNow(): string };
     expect(ctx.getNow()).toBe("2026-05-03T12:00:00.000Z");
   });
 });

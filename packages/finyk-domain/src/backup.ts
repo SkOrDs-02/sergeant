@@ -85,44 +85,47 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
     throw new Error("Порожній об'єкт у файлі");
   }
 
-  const version = typeof obj.version === "number" ? obj.version : 1;
+  const version = typeof obj["version"] === "number" ? obj["version"] : 1;
   if (version < 1 || version > 999) {
     throw new Error("Невідома версія бекапу");
   }
 
   const out: FinykBackup = {};
 
-  const b = needArr(obj.budgets, "budgets");
+  const b = needArr(obj["budgets"], "budgets");
   if (b) out.budgets = b;
-  const s = needArr(obj.subscriptions, "subscriptions");
+  const s = needArr(obj["subscriptions"], "subscriptions");
   if (s) out.subscriptions = s;
-  const ma = needArr(obj.manualAssets, "manualAssets");
+  const ma = needArr(obj["manualAssets"], "manualAssets");
   if (ma) out.manualAssets = ma;
-  const md = needArr(obj.manualDebts, "manualDebts");
+  const md = needArr(obj["manualDebts"], "manualDebts");
   if (md) out.manualDebts = md;
-  const r = needArr(obj.receivables, "receivables");
+  const r = needArr(obj["receivables"], "receivables");
   if (r) out.receivables = r;
-  const ha = needArr(obj.hiddenAccounts, "hiddenAccounts");
+  const ha = needArr(obj["hiddenAccounts"], "hiddenAccounts");
   if (ha) out.hiddenAccounts = ha;
-  const ht = needArr(obj.hiddenTxIds, "hiddenTxIds");
+  const ht = needArr(obj["hiddenTxIds"], "hiddenTxIds");
   if (ht) out.hiddenTxIds = ht;
 
-  if (obj.monthlyPlan !== undefined && obj.monthlyPlan !== null) {
-    if (typeof obj.monthlyPlan !== "object" || Array.isArray(obj.monthlyPlan)) {
+  if (obj["monthlyPlan"] !== undefined && obj["monthlyPlan"] !== null) {
+    if (
+      typeof obj["monthlyPlan"] !== "object" ||
+      Array.isArray(obj["monthlyPlan"])
+    ) {
       throw new Error("Поле «monthlyPlan» має бути об'єктом");
     }
-    out.monthlyPlan = obj.monthlyPlan as Record<string, unknown>;
+    out.monthlyPlan = obj["monthlyPlan"] as Record<string, unknown>;
   }
 
-  const tc = needObj(obj.txCategories, "txCategories");
+  const tc = needObj(obj["txCategories"], "txCategories");
   if (tc) out.txCategories = tc;
-  const ts = needObj(obj.txSplits, "txSplits");
+  const ts = needObj(obj["txSplits"], "txSplits");
   if (ts) out.txSplits = ts;
-  const mdl = needObj(obj.monoDebtLinkedTxIds, "monoDebtLinkedTxIds");
+  const mdl = needObj(obj["monoDebtLinkedTxIds"], "monoDebtLinkedTxIds");
   if (mdl) out.monoDebtLinkedTxIds = mdl;
 
-  if (obj.networthHistory !== undefined && obj.networthHistory !== null) {
-    const nh = needArr(obj.networthHistory, "networthHistory");
+  if (obj["networthHistory"] !== undefined && obj["networthHistory"] !== null) {
+    const nh = needArr(obj["networthHistory"], "networthHistory");
     if (nh) {
       for (const row of nh) {
         if (
@@ -137,7 +140,7 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
     }
   }
 
-  const cc = needArr(obj.customCategories, "customCategories");
+  const cc = needArr(obj["customCategories"], "customCategories");
   if (cc) {
     for (const row of cc) {
       const rec = row as { id?: unknown; label?: unknown } | null;
@@ -153,7 +156,7 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
     out.customCategories = cc;
   }
 
-  const dr = needArr(obj.dismissedRecurring, "dismissedRecurring");
+  const dr = needArr(obj["dismissedRecurring"], "dismissedRecurring");
   if (dr) {
     for (const item of dr) {
       if (typeof item !== "string") {
@@ -205,25 +208,25 @@ export function normalizeFinykSyncPayload(data: unknown): FinykBackup {
     return normalizeFinykBackup(withVer);
   }
 
-  const v = typeof d.v === "number" ? d.v : 1;
+  const v = typeof d["v"] === "number" ? d["v"] : 1;
   if (v < 1 || v > 99) {
     throw new Error("Невідома версія синку");
   }
 
   const full: FinykBackup = { version: FINYK_BACKUP_VERSION };
-  if (has("b")) full.budgets = d.b as unknown[];
-  if (has("s")) full.subscriptions = d.s as unknown[];
-  if (has("a")) full.manualAssets = d.a as unknown[];
-  if (has("d")) full.manualDebts = d.d as unknown[];
-  if (has("r")) full.receivables = d.r as unknown[];
-  if (has("h")) full.hiddenAccounts = d.h as unknown[];
-  if (has("mp")) full.monthlyPlan = d.mp as Record<string, unknown>;
-  if (has("tc")) full.txCategories = d.tc as Record<string, unknown>;
-  if (has("ts")) full.txSplits = d.ts as Record<string, unknown>;
-  if (has("md")) full.monoDebtLinkedTxIds = d.md as Record<string, unknown>;
-  if (has("nh")) full.networthHistory = d.nh as unknown[];
-  if (has("cc")) full.customCategories = d.cc as unknown[];
-  if (has("dr")) full.dismissedRecurring = d.dr as unknown[];
+  if (has("b")) full.budgets = d["b"] as unknown[];
+  if (has("s")) full.subscriptions = d["s"] as unknown[];
+  if (has("a")) full.manualAssets = d["a"] as unknown[];
+  if (has("d")) full.manualDebts = d["d"] as unknown[];
+  if (has("r")) full.receivables = d["r"] as unknown[];
+  if (has("h")) full.hiddenAccounts = d["h"] as unknown[];
+  if (has("mp")) full.monthlyPlan = d["mp"] as Record<string, unknown>;
+  if (has("tc")) full.txCategories = d["tc"] as Record<string, unknown>;
+  if (has("ts")) full.txSplits = d["ts"] as Record<string, unknown>;
+  if (has("md")) full.monoDebtLinkedTxIds = d["md"] as Record<string, unknown>;
+  if (has("nh")) full.networthHistory = d["nh"] as unknown[];
+  if (has("cc")) full.customCategories = d["cc"] as unknown[];
+  if (has("dr")) full.dismissedRecurring = d["dr"] as unknown[];
 
   return normalizeFinykBackup(full);
 }

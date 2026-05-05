@@ -41,7 +41,7 @@ const REFRESH_MARGIN_MS = 60_000;
  * sender gracefully degrades instead of crashing boot.
  */
 function loadConfigFromEnv(): FcmConfig | null {
-  const raw = process.env.FCM_SERVICE_ACCOUNT_JSON;
+  const raw = process.env["FCM_SERVICE_ACCOUNT_JSON"];
   if (!raw || !raw.trim()) {
     if (!warnedDisabled) {
       logger.warn({
@@ -76,11 +76,11 @@ function loadConfigFromEnv(): FcmConfig | null {
     return null;
   }
   const projectId =
-    typeof parsed.project_id === "string" ? parsed.project_id : null;
+    typeof parsed["project_id"] === "string" ? parsed["project_id"] : null;
   const clientEmail =
-    typeof parsed.client_email === "string" ? parsed.client_email : null;
+    typeof parsed["client_email"] === "string" ? parsed["client_email"] : null;
   const privateKey =
-    typeof parsed.private_key === "string" ? parsed.private_key : null;
+    typeof parsed["private_key"] === "string" ? parsed["private_key"] : null;
   if (!projectId || !clientEmail || !privateKey) {
     logger.warn({
       msg: "push sender disabled — FCM service account missing fields",

@@ -36,7 +36,7 @@ export interface FrequentCategory {
   /** Останнє використання, ms epoch. */
   lastUsedTs: number;
   /** Підпис manual-категорії як його вводить користувач (якщо є). */
-  manualLabel?: string;
+  manualLabel?: string | undefined;
 }
 
 export interface FrequentMerchant {
@@ -48,9 +48,9 @@ export interface FrequentMerchant {
   total: number;
   lastUsedTs: number;
   /** Найчастіша категорія для цього мерчанта (для prefill у quick add). */
-  suggestedCategoryId?: string;
+  suggestedCategoryId?: string | undefined;
   /** Manual-label, який у ManualExpenseSheet відповідає `suggestedCategoryId`. */
-  suggestedManualCategory?: string;
+  suggestedManualCategory?: string | undefined;
 }
 
 export interface PersonalizationOptions {
@@ -292,7 +292,10 @@ export function getFrequentMerchants(
   const excluded = toExcludedSet(excludedTxIds);
 
   interface Bucket extends FrequentMerchant {
-    categoryCounts: Map<string, { count: number; manualLabel?: string }>;
+    categoryCounts: Map<
+      string,
+      { count: number; manualLabel?: string | undefined }
+    >;
   }
   const byKey = new Map<string, Bucket>();
 

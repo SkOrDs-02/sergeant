@@ -65,7 +65,11 @@ function makeQueryMock(
     values?: unknown[],
     meta?: { op?: string },
   ): Promise<QueryRow> => {
-    calls.push({ sql, values, op: meta?.op });
+    calls.push({
+      sql,
+      ...(values !== undefined ? { values } : {}),
+      ...(meta?.op !== undefined ? { op: meta.op } : {}),
+    });
     const next = responses[i++];
     if (!next) {
       throw new Error(`Unexpected DB call #${i} (op=${meta?.op}): ${sql}`);
@@ -113,7 +117,7 @@ describe("rotateMonoWebhookSecret (one connection)", () => {
     expect(result.userId).toBe("user_1");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toBe("https://api.monobank.ua/personal/webhook");
     const body = JSON.parse(init.body as string);
     expect(body.webHookUrl).toMatch(
@@ -123,11 +127,11 @@ describe("rotateMonoWebhookSecret (one connection)", () => {
 
     // Two DB calls: SELECT ciphertext, then UPDATE.
     expect(query).toHaveBeenCalledTimes(2);
-    expect(query.callsOrdered[0].op).toBe("mono_rotate_select");
-    expect(query.callsOrdered[1].op).toBe("mono_rotate_update");
+    expect(query!.callsOrdered[0]!.op).toBe("mono_rotate_select");
+    expect(query!.callsOrdered[1]!.op).toBe("mono_rotate_update");
 
     // UPDATE values: [userId, newSecret, newSecretHash]
-    const updateValues = query.callsOrdered[1].values as [
+    const updateValues = query!.callsOrdered[1]!.values as [
       string,
       string,
       string,
@@ -159,7 +163,7 @@ describe("rotateMonoWebhookSecret (one connection)", () => {
     const enc = encryptToken("user_personal_token", ENC_KEY);
     // Tamper with the auth tag — decrypt MUST throw.
     const corruptTag = Buffer.from(enc.tag);
-    corruptTag[0] = corruptTag[0] ^ 0xff;
+    corruptTag[0] = corruptTag[0]! ^ 0xff;
     const query = makeQueryMock([
       {
         rows: [
@@ -327,7 +331,7 @@ describe("rotateStaleMonoWebhookSecrets (batch)", () => {
 
     expect(result.stale).toBe(3);
     expect(captureMessageMock).toHaveBeenCalledTimes(1);
-    const [msg, opts] = captureMessageMock.mock.calls[0];
+    const [msg, opts] = captureMessageMock.mock.calls[0]!;
     expect(msg).toMatch(/3/);
     expect(msg).toMatch(/100/);
     expect(opts.level).toBe("warning");

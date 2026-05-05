@@ -427,13 +427,13 @@ async function applyRoutineEntries(
   clientTs: Date,
 ): Promise<AppliedStatus> {
   const row = op.row;
-  const id = typeof row.id === "string" ? row.id : null;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
   // Cross-user ownership check. Якщо клієнт надіслав `user_id` у row,
   // воно мусить збігатись із сесією; якщо ні — підставляємо у DML
   // server-side userId, щоб не дозволяти smuggle через payload.
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -446,14 +446,14 @@ async function applyRoutineEntries(
     [id],
   );
   if (existing.rows.length > 0) {
-    if (existing.rows[0].user_id !== userId) {
+    if (existing!.rows[0]!.user_id !== userId) {
       return { status: "rejected", reason: "fk_violation" };
     }
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
     // Tombstone-resurrection guard — див. док-стрінг.
-    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
       return { status: "rejected", reason: "tombstoned" };
     }
   }
@@ -471,18 +471,18 @@ async function applyRoutineEntries(
     return { status: "applied" };
   }
 
-  const name = typeof row.name === "string" ? row.name : null;
+  const name = typeof row["name"] === "string" ? row["name"] : null;
   if (!name) return { status: "rejected", reason: "missing_name" };
 
-  const completedAt = parseOptionalDate(row.completed_at);
+  const completedAt = parseOptionalDate(row["completed_at"]);
   if (completedAt === "invalid") {
     return { status: "rejected", reason: "invalid_completed_at" };
   }
-  const deletedAt = parseOptionalDate(row.deleted_at);
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
   if (deletedAt === "invalid") {
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
-  const createdAt = parseOptionalDate(row.created_at);
+  const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
     return { status: "rejected", reason: "invalid_created_at" };
   }
@@ -556,23 +556,23 @@ async function applyRoutineStreaks(
   clientTs: Date,
 ): Promise<AppliedStatus> {
   const row = op.row;
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
   if (op.op === "increment") {
-    if (row.delta == null) {
+    if (row["delta"] == null) {
       return { status: "rejected", reason: "missing_delta" };
     }
     if (
-      typeof row.delta !== "number" ||
-      !Number.isFinite(row.delta) ||
-      !Number.isInteger(row.delta) ||
-      Math.abs(row.delta) > INCREMENT_DELTA_MAX_ABS
+      typeof row["delta"] !== "number" ||
+      !Number.isFinite(row["delta"]) ||
+      !Number.isInteger(row["delta"]) ||
+      Math.abs(row["delta"]) > INCREMENT_DELTA_MAX_ABS
     ) {
       return { status: "rejected", reason: "invalid_delta" };
     }
-    const delta = row.delta;
+    const delta = row["delta"];
     // Атомарний upsert. Початковий рядок засіюється з `MAX(0, delta)` —
     // якщо клієнт надіслав `delta=-1` без попереднього insert-а, ми не
     // створюємо рядок із `current_streak = -1` (порушує домен-інваріант),
@@ -608,8 +608,8 @@ async function applyRoutineStreaks(
     [userId],
   );
   if (
-    lwwGuard.rows[0].max_ts &&
-    lwwGuard.rows[0].max_ts.getTime() >= clientTs.getTime()
+    lwwGuard!.rows[0]!.max_ts &&
+    lwwGuard!.rows[0]!.max_ts.getTime() >= clientTs.getTime()
   ) {
     return { status: "rejected", reason: "lww_conflict" };
   }
@@ -621,9 +621,9 @@ async function applyRoutineStreaks(
     return { status: "applied" };
   }
 
-  const currentStreak = toNonNegativeInt(row.current_streak) ?? 0;
-  const longestStreak = toNonNegativeInt(row.longest_streak) ?? 0;
-  const lastCompletedAt = parseOptionalDate(row.last_completed_at);
+  const currentStreak = toNonNegativeInt(row["current_streak"]) ?? 0;
+  const longestStreak = toNonNegativeInt(row["longest_streak"]) ?? 0;
+  const lastCompletedAt = parseOptionalDate(row["last_completed_at"]);
   if (lastCompletedAt === "invalid") {
     return { status: "rejected", reason: "invalid_last_completed_at" };
   }
@@ -733,10 +733,10 @@ async function applyFizrukWorkouts(
   clientTs: Date,
 ): Promise<AppliedStatus> {
   const row = op.row;
-  const id = typeof row.id === "string" ? row.id : null;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -749,15 +749,15 @@ async function applyFizrukWorkouts(
     [id],
   );
   if (existing.rows.length > 0) {
-    if (existing.rows[0].user_id !== userId) {
+    if (existing!.rows[0]!.user_id !== userId) {
       return { status: "rejected", reason: "fk_violation" };
     }
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
     // Tombstone-resurrection guard (PR #043 шаблон) — після soft-delete
     // не дозволяємо `op='insert'`/`op='update'` воскресити ряд.
-    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
       return { status: "rejected", reason: "tombstoned" };
     }
   }
@@ -775,24 +775,24 @@ async function applyFizrukWorkouts(
     return { status: "applied" };
   }
 
-  const startedAt = parseRequiredDate(row.started_at);
+  const startedAt = parseRequiredDate(row["started_at"]);
   if (startedAt === "invalid") {
     return { status: "rejected", reason: "invalid_started_at" };
   }
-  const endedAt = parseOptionalDate(row.ended_at);
+  const endedAt = parseOptionalDate(row["ended_at"]);
   if (endedAt === "invalid") {
     return { status: "rejected", reason: "invalid_ended_at" };
   }
-  const createdAt = parseOptionalDate(row.created_at);
+  const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
     return { status: "rejected", reason: "invalid_created_at" };
   }
-  const deletedAt = parseOptionalDate(row.deleted_at);
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
   if (deletedAt === "invalid") {
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
 
-  const note = typeof row.note === "string" ? row.note : "";
+  const note = typeof row["note"] === "string" ? row["note"] : "";
 
   if (existing.rows.length === 0) {
     await client.query(
@@ -809,10 +809,10 @@ async function applyFizrukWorkouts(
         startedAt,
         endedAt ?? null,
         note,
-        toJsonbParam(row.groups_json),
-        toJsonbParam(row.warmup_json),
-        toJsonbParam(row.cooldown_json),
-        toJsonbParam(row.wellbeing_json),
+        toJsonbParam(row["groups_json"]),
+        toJsonbParam(row["warmup_json"]),
+        toJsonbParam(row["cooldown_json"]),
+        toJsonbParam(row["wellbeing_json"]),
         createdAt ?? clientTs,
         clientTs,
         deletedAt ?? null,
@@ -835,10 +835,10 @@ async function applyFizrukWorkouts(
         startedAt,
         endedAt ?? null,
         note,
-        toJsonbParam(row.groups_json),
-        toJsonbParam(row.warmup_json),
-        toJsonbParam(row.cooldown_json),
-        toJsonbParam(row.wellbeing_json),
+        toJsonbParam(row["groups_json"]),
+        toJsonbParam(row["warmup_json"]),
+        toJsonbParam(row["cooldown_json"]),
+        toJsonbParam(row["wellbeing_json"]),
         clientTs,
         deletedAt ?? null,
         id,
@@ -861,10 +861,10 @@ async function applyFizrukItems(
   clientTs: Date,
 ): Promise<AppliedStatus> {
   const row = op.row;
-  const id = typeof row.id === "string" ? row.id : null;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -877,14 +877,14 @@ async function applyFizrukItems(
     [id],
   );
   if (existing.rows.length > 0) {
-    if (existing.rows[0].user_id !== userId) {
+    if (existing!.rows[0]!.user_id !== userId) {
       return { status: "rejected", reason: "fk_violation" };
     }
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
     // Tombstone-resurrection guard (PR #043 шаблон).
-    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
       return { status: "rejected", reason: "tombstoned" };
     }
   }
@@ -902,36 +902,37 @@ async function applyFizrukItems(
     return { status: "applied" };
   }
 
-  const workoutId = typeof row.workout_id === "string" ? row.workout_id : null;
+  const workoutId =
+    typeof row["workout_id"] === "string" ? row["workout_id"] : null;
   if (!workoutId) {
     return { status: "rejected", reason: "missing_workout_id" };
   }
   const exerciseId =
-    typeof row.exercise_id === "string" ? row.exercise_id : null;
+    typeof row["exercise_id"] === "string" ? row["exercise_id"] : null;
   if (!exerciseId) {
     return { status: "rejected", reason: "missing_exercise_id" };
   }
-  const nameUk = typeof row.name_uk === "string" ? row.name_uk : null;
+  const nameUk = typeof row["name_uk"] === "string" ? row["name_uk"] : null;
   if (nameUk === null) {
     return { status: "rejected", reason: "missing_name_uk" };
   }
   const primaryGroup =
-    typeof row.primary_group === "string" ? row.primary_group : "";
-  const type = typeof row.type === "string" ? row.type : "strength";
-  const sortOrder = toNonNegativeInt(row.sort_order) ?? 0;
-  const durationSec = parseOptionalInt(row.duration_sec);
+    typeof row["primary_group"] === "string" ? row["primary_group"] : "";
+  const type = typeof row["type"] === "string" ? row["type"] : "strength";
+  const sortOrder = toNonNegativeInt(row["sort_order"]) ?? 0;
+  const durationSec = parseOptionalInt(row["duration_sec"]);
   if (durationSec === "invalid") {
     return { status: "rejected", reason: "invalid_duration_sec" };
   }
-  const distanceM = parseOptionalInt(row.distance_m);
+  const distanceM = parseOptionalInt(row["distance_m"]);
   if (distanceM === "invalid") {
     return { status: "rejected", reason: "invalid_distance_m" };
   }
-  const createdAt = parseOptionalDate(row.created_at);
+  const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
     return { status: "rejected", reason: "invalid_created_at" };
   }
-  const deletedAt = parseOptionalDate(row.deleted_at);
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
   if (deletedAt === "invalid") {
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
@@ -954,8 +955,8 @@ async function applyFizrukItems(
         exerciseId,
         nameUk,
         primaryGroup,
-        toJsonbParam(row.muscles_primary),
-        toJsonbParam(row.muscles_secondary),
+        toJsonbParam(row["muscles_primary"]),
+        toJsonbParam(row["muscles_secondary"]),
         type,
         durationSec ?? null,
         distanceM ?? null,
@@ -986,8 +987,8 @@ async function applyFizrukItems(
         exerciseId,
         nameUk,
         primaryGroup,
-        toJsonbParam(row.muscles_primary),
-        toJsonbParam(row.muscles_secondary),
+        toJsonbParam(row["muscles_primary"]),
+        toJsonbParam(row["muscles_secondary"]),
         type,
         durationSec ?? null,
         distanceM ?? null,
@@ -1013,10 +1014,10 @@ async function applyFizrukSets(
   clientTs: Date,
 ): Promise<AppliedStatus> {
   const row = op.row;
-  const id = typeof row.id === "string" ? row.id : null;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -1029,14 +1030,14 @@ async function applyFizrukSets(
     [id],
   );
   if (existing.rows.length > 0) {
-    if (existing.rows[0].user_id !== userId) {
+    if (existing!.rows[0]!.user_id !== userId) {
       return { status: "rejected", reason: "fk_violation" };
     }
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
     // Tombstone-resurrection guard (PR #043 шаблон).
-    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
       return { status: "rejected", reason: "tombstoned" };
     }
   }
@@ -1055,28 +1056,28 @@ async function applyFizrukSets(
   }
 
   const workoutItemId =
-    typeof row.workout_item_id === "string" ? row.workout_item_id : null;
+    typeof row["workout_item_id"] === "string" ? row["workout_item_id"] : null;
   if (!workoutItemId) {
     return { status: "rejected", reason: "missing_workout_item_id" };
   }
-  const weightKg = parseOptionalNumber(row.weight_kg);
+  const weightKg = parseOptionalNumber(row["weight_kg"]);
   if (weightKg === "invalid") {
     return { status: "rejected", reason: "invalid_weight_kg" };
   }
-  const reps = parseOptionalInt(row.reps);
+  const reps = parseOptionalInt(row["reps"]);
   if (reps === "invalid") {
     return { status: "rejected", reason: "invalid_reps" };
   }
-  const rpe = parseOptionalNumber(row.rpe);
+  const rpe = parseOptionalNumber(row["rpe"]);
   if (rpe === "invalid") {
     return { status: "rejected", reason: "invalid_rpe" };
   }
-  const sortOrder = toNonNegativeInt(row.sort_order) ?? 0;
-  const createdAt = parseOptionalDate(row.created_at);
+  const sortOrder = toNonNegativeInt(row["sort_order"]) ?? 0;
+  const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
     return { status: "rejected", reason: "invalid_created_at" };
   }
-  const deletedAt = parseOptionalDate(row.deleted_at);
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
   if (deletedAt === "invalid") {
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
@@ -1138,10 +1139,10 @@ async function applyFizrukCustomExercises(
   clientTs: Date,
 ): Promise<AppliedStatus> {
   const row = op.row;
-  const id = typeof row.id === "string" ? row.id : null;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -1154,14 +1155,14 @@ async function applyFizrukCustomExercises(
     [id],
   );
   if (existing.rows.length > 0) {
-    if (existing.rows[0].user_id !== userId) {
+    if (existing!.rows[0]!.user_id !== userId) {
       return { status: "rejected", reason: "fk_violation" };
     }
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
     // Tombstone-resurrection guard (PR #043 шаблон).
-    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
       return { status: "rejected", reason: "tombstoned" };
     }
   }
@@ -1179,15 +1180,15 @@ async function applyFizrukCustomExercises(
     return { status: "applied" };
   }
 
-  const dataJson = toJsonbParam(row.data_json);
+  const dataJson = toJsonbParam(row["data_json"]);
   if (dataJson === null) {
     return { status: "rejected", reason: "missing_data_json" };
   }
-  const createdAt = parseOptionalDate(row.created_at);
+  const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
     return { status: "rejected", reason: "invalid_created_at" };
   }
-  const deletedAt = parseOptionalDate(row.deleted_at);
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
   if (deletedAt === "invalid") {
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
@@ -1230,10 +1231,10 @@ async function applyFizrukMeasurements(
   clientTs: Date,
 ): Promise<AppliedStatus> {
   const row = op.row;
-  const id = typeof row.id === "string" ? row.id : null;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -1246,14 +1247,14 @@ async function applyFizrukMeasurements(
     [id],
   );
   if (existing.rows.length > 0) {
-    if (existing.rows[0].user_id !== userId) {
+    if (existing!.rows[0]!.user_id !== userId) {
       return { status: "rejected", reason: "fk_violation" };
     }
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
     // Tombstone-resurrection guard (PR #043 шаблон).
-    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
       return { status: "rejected", reason: "tombstoned" };
     }
   }
@@ -1271,47 +1272,47 @@ async function applyFizrukMeasurements(
     return { status: "applied" };
   }
 
-  const measuredAt = parseRequiredDate(row.measured_at);
+  const measuredAt = parseRequiredDate(row["measured_at"]);
   if (measuredAt === "invalid") {
     return { status: "rejected", reason: "invalid_measured_at" };
   }
-  const weightKg = parseOptionalNumber(row.weight_kg);
+  const weightKg = parseOptionalNumber(row["weight_kg"]);
   if (weightKg === "invalid") {
     return { status: "rejected", reason: "invalid_weight_kg" };
   }
-  const waistCm = parseOptionalNumber(row.waist_cm);
+  const waistCm = parseOptionalNumber(row["waist_cm"]);
   if (waistCm === "invalid") {
     return { status: "rejected", reason: "invalid_waist_cm" };
   }
-  const chestCm = parseOptionalNumber(row.chest_cm);
+  const chestCm = parseOptionalNumber(row["chest_cm"]);
   if (chestCm === "invalid") {
     return { status: "rejected", reason: "invalid_chest_cm" };
   }
-  const hipsCm = parseOptionalNumber(row.hips_cm);
+  const hipsCm = parseOptionalNumber(row["hips_cm"]);
   if (hipsCm === "invalid") {
     return { status: "rejected", reason: "invalid_hips_cm" };
   }
-  const bicepCm = parseOptionalNumber(row.bicep_cm);
+  const bicepCm = parseOptionalNumber(row["bicep_cm"]);
   if (bicepCm === "invalid") {
     return { status: "rejected", reason: "invalid_bicep_cm" };
   }
-  const sleepHours = parseOptionalNumber(row.sleep_hours);
+  const sleepHours = parseOptionalNumber(row["sleep_hours"]);
   if (sleepHours === "invalid") {
     return { status: "rejected", reason: "invalid_sleep_hours" };
   }
-  const energyLevel = parseOptionalInt(row.energy_level);
+  const energyLevel = parseOptionalInt(row["energy_level"]);
   if (energyLevel === "invalid") {
     return { status: "rejected", reason: "invalid_energy_level" };
   }
-  const mood = parseOptionalInt(row.mood);
+  const mood = parseOptionalInt(row["mood"]);
   if (mood === "invalid") {
     return { status: "rejected", reason: "invalid_mood" };
   }
-  const createdAt = parseOptionalDate(row.created_at);
+  const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
     return { status: "rejected", reason: "invalid_created_at" };
   }
-  const deletedAt = parseOptionalDate(row.deleted_at);
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
   if (deletedAt === "invalid") {
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
@@ -1421,10 +1422,10 @@ async function applyNutritionMeals(
   clientTs: Date,
 ): Promise<AppliedStatus> {
   const row = op.row;
-  const id = typeof row.id === "string" ? row.id : null;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -1437,10 +1438,10 @@ async function applyNutritionMeals(
     [id],
   );
   if (existing.rows.length > 0) {
-    if (existing.rows[0].user_id !== userId) {
+    if (existing!.rows[0]!.user_id !== userId) {
       return { status: "rejected", reason: "fk_violation" };
     }
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
     // G-set CRDT invariant: tombstone-и монотонні. `op='insert'`
@@ -1448,7 +1449,7 @@ async function applyNutritionMeals(
     // resurrection-attack (зловмисний клієнт), або race з offline
     // editor-ом, що не побачив delete з іншого девайсу. Обидва — no-op,
     // повертаємо явну `tombstoned` причину для observability.
-    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
       return { status: "rejected", reason: "tombstoned" };
     }
   }
@@ -1466,45 +1467,46 @@ async function applyNutritionMeals(
     return { status: "applied" };
   }
 
-  const eatenAt = parseRequiredDate(row.eaten_at);
+  const eatenAt = parseRequiredDate(row["eaten_at"]);
   if (eatenAt === "invalid") {
     return { status: "rejected", reason: "invalid_eaten_at" };
   }
-  const createdAt = parseOptionalDate(row.created_at);
+  const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
     return { status: "rejected", reason: "invalid_created_at" };
   }
-  const deletedAt = parseOptionalDate(row.deleted_at);
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
   if (deletedAt === "invalid") {
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
 
-  const mealType = typeof row.meal_type === "string" ? row.meal_type : "snack";
-  const name = typeof row.name === "string" ? row.name : "";
-  const label = typeof row.label === "string" ? row.label : "";
-  const source = typeof row.source === "string" ? row.source : "manual";
+  const mealType =
+    typeof row["meal_type"] === "string" ? row["meal_type"] : "snack";
+  const name = typeof row["name"] === "string" ? row["name"] : "";
+  const label = typeof row["label"] === "string" ? row["label"] : "";
+  const source = typeof row["source"] === "string" ? row["source"] : "manual";
   const macroSource =
-    typeof row.macro_source === "string" ? row.macro_source : "manual";
-  const foodId = typeof row.food_id === "string" ? row.food_id : null;
-  const isDemo = row.is_demo === true || row.is_demo === 1;
+    typeof row["macro_source"] === "string" ? row["macro_source"] : "manual";
+  const foodId = typeof row["food_id"] === "string" ? row["food_id"] : null;
+  const isDemo = row["is_demo"] === true || row["is_demo"] === 1;
 
-  const kcal = parseOptionalInt(row.kcal);
+  const kcal = parseOptionalInt(row["kcal"]);
   if (kcal === "invalid") {
     return { status: "rejected", reason: "invalid_kcal" };
   }
-  const proteinG = parseOptionalNumber(row.protein_g);
+  const proteinG = parseOptionalNumber(row["protein_g"]);
   if (proteinG === "invalid") {
     return { status: "rejected", reason: "invalid_protein_g" };
   }
-  const fatG = parseOptionalNumber(row.fat_g);
+  const fatG = parseOptionalNumber(row["fat_g"]);
   if (fatG === "invalid") {
     return { status: "rejected", reason: "invalid_fat_g" };
   }
-  const carbsG = parseOptionalNumber(row.carbs_g);
+  const carbsG = parseOptionalNumber(row["carbs_g"]);
   if (carbsG === "invalid") {
     return { status: "rejected", reason: "invalid_carbs_g" };
   }
-  const amountG = parseOptionalNumber(row.amount_g);
+  const amountG = parseOptionalNumber(row["amount_g"]);
   if (amountG === "invalid") {
     return { status: "rejected", reason: "invalid_amount_g" };
   }
@@ -1595,10 +1597,10 @@ async function applyNutritionPantries(
   clientTs: Date,
 ): Promise<AppliedStatus> {
   const row = op.row;
-  const id = typeof row.id === "string" ? row.id : null;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -1611,14 +1613,14 @@ async function applyNutritionPantries(
     [id],
   );
   if (existing.rows.length > 0) {
-    if (existing.rows[0].user_id !== userId) {
+    if (existing!.rows[0]!.user_id !== userId) {
       return { status: "rejected", reason: "fk_violation" };
     }
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
     // Tombstone-resurrection guard — див. PR #043 (`applyNutritionMeals`).
-    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
       return { status: "rejected", reason: "tombstoned" };
     }
   }
@@ -1636,13 +1638,13 @@ async function applyNutritionPantries(
     return { status: "applied" };
   }
 
-  const name = typeof row.name === "string" ? row.name : "";
-  const text = typeof row.text === "string" ? row.text : "";
-  const createdAt = parseOptionalDate(row.created_at);
+  const name = typeof row["name"] === "string" ? row["name"] : "";
+  const text = typeof row["text"] === "string" ? row["text"] : "";
+  const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
     return { status: "rejected", reason: "invalid_created_at" };
   }
-  const deletedAt = parseOptionalDate(row.deleted_at);
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
   if (deletedAt === "invalid") {
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
@@ -1687,10 +1689,10 @@ async function applyNutritionPantryItems(
   clientTs: Date,
 ): Promise<AppliedStatus> {
   const row = op.row;
-  const id = typeof row.id === "string" ? row.id : null;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -1703,14 +1705,14 @@ async function applyNutritionPantryItems(
     [id],
   );
   if (existing.rows.length > 0) {
-    if (existing.rows[0].user_id !== userId) {
+    if (existing!.rows[0]!.user_id !== userId) {
       return { status: "rejected", reason: "fk_violation" };
     }
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
     // Tombstone-resurrection guard — див. PR #043 (`applyNutritionMeals`).
-    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
       return { status: "rejected", reason: "tombstoned" };
     }
   }
@@ -1728,23 +1730,24 @@ async function applyNutritionPantryItems(
     return { status: "applied" };
   }
 
-  const pantryId = typeof row.pantry_id === "string" ? row.pantry_id : null;
+  const pantryId =
+    typeof row["pantry_id"] === "string" ? row["pantry_id"] : null;
   if (!pantryId) {
     return { status: "rejected", reason: "missing_pantry_id" };
   }
-  const name = typeof row.name === "string" ? row.name : "";
-  const qty = parseOptionalNumber(row.qty);
+  const name = typeof row["name"] === "string" ? row["name"] : "";
+  const qty = parseOptionalNumber(row["qty"]);
   if (qty === "invalid") {
     return { status: "rejected", reason: "invalid_qty" };
   }
-  const unit = typeof row.unit === "string" ? row.unit : null;
-  const notes = typeof row.notes === "string" ? row.notes : null;
-  const sortOrder = toNonNegativeInt(row.sort_order) ?? 0;
-  const createdAt = parseOptionalDate(row.created_at);
+  const unit = typeof row["unit"] === "string" ? row["unit"] : null;
+  const notes = typeof row["notes"] === "string" ? row["notes"] : null;
+  const sortOrder = toNonNegativeInt(row["sort_order"]) ?? 0;
+  const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
     return { status: "rejected", reason: "invalid_created_at" };
   }
-  const deletedAt = parseOptionalDate(row.deleted_at);
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
   if (deletedAt === "invalid") {
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
@@ -1819,7 +1822,7 @@ async function applyNutritionPrefs(
 
   const row = op.row;
 
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -1828,14 +1831,16 @@ async function applyNutritionPrefs(
     [userId],
   );
   if (existing.rows.length > 0) {
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
   }
 
-  const prefsJson = toJsonbParam(row.prefs_json) ?? "{}";
+  const prefsJson = toJsonbParam(row["prefs_json"]) ?? "{}";
   const activePantryId =
-    typeof row.active_pantry_id === "string" ? row.active_pantry_id : null;
+    typeof row["active_pantry_id"] === "string"
+      ? row["active_pantry_id"]
+      : null;
 
   if (existing.rows.length === 0) {
     await client.query(
@@ -1868,10 +1873,10 @@ async function applyNutritionRecipes(
   clientTs: Date,
 ): Promise<AppliedStatus> {
   const row = op.row;
-  const id = typeof row.id === "string" ? row.id : null;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -1884,14 +1889,14 @@ async function applyNutritionRecipes(
     [id],
   );
   if (existing.rows.length > 0) {
-    if (existing.rows[0].user_id !== userId) {
+    if (existing!.rows[0]!.user_id !== userId) {
       return { status: "rejected", reason: "fk_violation" };
     }
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
     // Tombstone-resurrection guard — див. PR #043 (`applyNutritionMeals`).
-    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
       return { status: "rejected", reason: "tombstoned" };
     }
   }
@@ -1909,16 +1914,16 @@ async function applyNutritionRecipes(
     return { status: "applied" };
   }
 
-  const name = typeof row.name === "string" ? row.name : "";
-  const dataJson = toJsonbParam(row.data_json);
+  const name = typeof row["name"] === "string" ? row["name"] : "";
+  const dataJson = toJsonbParam(row["data_json"]);
   if (dataJson === null) {
     return { status: "rejected", reason: "missing_data_json" };
   }
-  const createdAt = parseOptionalDate(row.created_at);
+  const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
     return { status: "rejected", reason: "invalid_created_at" };
   }
-  const deletedAt = parseOptionalDate(row.deleted_at);
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
   if (deletedAt === "invalid") {
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
@@ -2004,7 +2009,7 @@ async function applyFinykTombstone(
   const extId = typeof row[extColumn] === "string" ? row[extColumn] : null;
   if (!extId) return { status: "rejected", reason: "missing_ext_id" };
 
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -2017,11 +2022,11 @@ async function applyFinykTombstone(
     [userId, extId],
   );
   if (existing.rows.length > 0) {
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
     // Tombstone-resurrection guard — див. PR #043 (`applyNutritionMeals`).
-    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
       return { status: "rejected", reason: "tombstoned" };
     }
   }
@@ -2040,11 +2045,11 @@ async function applyFinykTombstone(
     return { status: "applied" };
   }
 
-  const createdAt = parseOptionalDate(row.created_at);
+  const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
     return { status: "rejected", reason: "invalid_created_at" };
   }
-  const deletedAt = parseOptionalDate(row.deleted_at);
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
   if (deletedAt === "invalid") {
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
@@ -2117,10 +2122,10 @@ async function applyFinykPerRowBlob(
   table: string,
 ): Promise<AppliedStatus> {
   const row = op.row;
-  const id = typeof row.id === "string" ? row.id : null;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
   if (!id) return { status: "rejected", reason: "missing_id" };
 
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -2133,14 +2138,14 @@ async function applyFinykPerRowBlob(
     id,
   ]);
   if (existing.rows.length > 0) {
-    if (existing.rows[0].user_id !== userId) {
+    if (existing!.rows[0]!.user_id !== userId) {
       return { status: "rejected", reason: "fk_violation" };
     }
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
     // Tombstone-resurrection guard — див. PR #043 (`applyNutritionMeals`).
-    if (existing.rows[0].deleted_at !== null && op.op !== "delete") {
+    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
       return { status: "rejected", reason: "tombstoned" };
     }
   }
@@ -2159,15 +2164,15 @@ async function applyFinykPerRowBlob(
     return { status: "applied" };
   }
 
-  const dataJson = toJsonbParam(row.data_json);
+  const dataJson = toJsonbParam(row["data_json"]);
   if (dataJson === null) {
     return { status: "rejected", reason: "missing_data_json" };
   }
-  const createdAt = parseOptionalDate(row.created_at);
+  const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
     return { status: "rejected", reason: "invalid_created_at" };
   }
-  const deletedAt = parseOptionalDate(row.deleted_at);
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
   if (deletedAt === "invalid") {
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
@@ -2309,10 +2314,10 @@ async function applyFinykTxCategories(
 ): Promise<AppliedStatus> {
   const row = op.row;
   const transactionId =
-    typeof row.transaction_id === "string" ? row.transaction_id : null;
+    typeof row["transaction_id"] === "string" ? row["transaction_id"] : null;
   if (!transactionId) return { status: "rejected", reason: "missing_tx_id" };
 
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -2322,7 +2327,7 @@ async function applyFinykTxCategories(
     [userId, transactionId],
   );
   if (existing.rows.length > 0) {
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
   }
@@ -2337,7 +2342,7 @@ async function applyFinykTxCategories(
   }
 
   const categoryId =
-    typeof row.category_id === "string" ? row.category_id : null;
+    typeof row["category_id"] === "string" ? row["category_id"] : null;
   if (!categoryId) {
     return { status: "rejected", reason: "missing_category_id" };
   }
@@ -2371,10 +2376,10 @@ async function applyFinykPerTxJsonbArray(
 ): Promise<AppliedStatus> {
   const row = op.row;
   const transactionId =
-    typeof row.transaction_id === "string" ? row.transaction_id : null;
+    typeof row["transaction_id"] === "string" ? row["transaction_id"] : null;
   if (!transactionId) return { status: "rejected", reason: "missing_tx_id" };
 
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -2385,7 +2390,7 @@ async function applyFinykPerTxJsonbArray(
     [userId, transactionId],
   );
   if (existing.rows.length > 0) {
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
   }
@@ -2458,12 +2463,12 @@ async function applyFinykNetworthHistory(
   clientTs: Date,
 ): Promise<AppliedStatus> {
   const row = op.row;
-  const month = typeof row.month === "string" ? row.month : null;
+  const month = typeof row["month"] === "string" ? row["month"] : null;
   if (!month || !/^\d{4}-\d{2}$/.test(month)) {
     return { status: "rejected", reason: "invalid_month" };
   }
 
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -2473,7 +2478,7 @@ async function applyFinykNetworthHistory(
     [userId, month],
   );
   if (existing.rows.length > 0) {
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
   }
@@ -2487,11 +2492,11 @@ async function applyFinykNetworthHistory(
     return { status: "applied" };
   }
 
-  const networth = parseOptionalNumber(row.networth);
+  const networth = parseOptionalNumber(row["networth"]);
   if (networth === "invalid") {
     return { status: "rejected", reason: "invalid_networth" };
   }
-  const snapshotJson = toJsonbParam(row.snapshot_json) ?? "{}";
+  const snapshotJson = toJsonbParam(row["snapshot_json"]) ?? "{}";
 
   await client.query(
     `INSERT INTO finyk_networth_history
@@ -2524,7 +2529,7 @@ async function applyFinykPrefs(
   }
 
   const row = op.row;
-  if (row.user_id != null && row.user_id !== userId) {
+  if (row["user_id"] != null && row["user_id"] !== userId) {
     return { status: "rejected", reason: "user_id_mismatch" };
   }
 
@@ -2533,15 +2538,15 @@ async function applyFinykPrefs(
     [userId],
   );
   if (existing.rows.length > 0) {
-    if (existing.rows[0].updated_at.getTime() >= clientTs.getTime()) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
   }
 
-  const prefsJson = toJsonbParam(row.prefs_json) ?? "{}";
-  const monthlyPlanJson = toJsonbParam(row.monthly_plan_json) ?? "{}";
+  const prefsJson = toJsonbParam(row["prefs_json"]) ?? "{}";
+  const monthlyPlanJson = toJsonbParam(row["monthly_plan_json"]) ?? "{}";
   const showBalance =
-    row.show_balance === false || row.show_balance === 0 ? false : true;
+    row["show_balance"] === false || row["show_balance"] === 0 ? false : true;
 
   if (existing.rows.length === 0) {
     await client.query(
@@ -2636,7 +2641,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
       if (dup.rows.length > 0) {
         const r = dup.rows[0];
         // Hard rule #1: BIGINT id → number.
-        const id = Number(r.id);
+        const id = Number(r!.id);
         if (id > lastOpId) lastOpId = id;
         // Кешований результат: повертаємо ОРИГІНАЛЬНИЙ status (applied
         // / rejected), а не "duplicate" — клієнту важливий ефект
@@ -2645,17 +2650,17 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         // appliedCount/rejectedCount.
         results.push({
           idempotency_key: op.idempotency_key,
-          status: r.status,
-          ...(r.reject_reason != null
-            ? { reason: r.reject_reason }
-            : r.status === "duplicate"
+          status: r!.status,
+          ...(r!.reject_reason != null
+            ? { reason: r!.reject_reason }
+            : r!.status === "duplicate"
               ? { reason: "duplicate" }
               : {}),
         });
-        if (r.status === "applied") {
+        if (r!.status === "applied") {
           acceptedCount++;
           appliedCount++;
-        } else if (r.status === "rejected") {
+        } else if (r!.status === "rejected") {
           rejectedCount++;
         }
         // PR #048: per-op outcome counter. Idempotency-replay лічимо
@@ -2764,7 +2769,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         ],
       );
       const insertedRow = inserted.rows[0];
-      const insertedId = Number(insertedRow.id);
+      const insertedId = Number(insertedRow!.id);
       if (insertedId > lastOpId) lastOpId = insertedId;
 
       if (status === "applied") {
@@ -2780,7 +2785,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
           op: op.op,
           row: op.row,
           client_ts: clientTs.toISOString(),
-          server_ts: insertedRow.server_ts.toISOString(),
+          server_ts: insertedRow!.server_ts.toISOString(),
           origin_device_id: originDeviceId,
         });
       } else {
@@ -2920,7 +2925,7 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
     }));
 
     const nextCursor =
-      opsOut.length === limit ? opsOut[opsOut.length - 1].id : null;
+      opsOut.length === limit ? opsOut[opsOut.length - 1]!.id : null;
 
     const bytes = result.rows.reduce((acc, r) => {
       try {
@@ -2944,7 +2949,7 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
     try {
       syncOpLogPullQueueDepth.observe(opsOut.length);
       if (result.rows.length > 0) {
-        const newest = result.rows[result.rows.length - 1].server_ts;
+        const newest = result!.rows[result.rows.length - 1]!.server_ts;
         const lagMs = Date.now() - newest.getTime();
         if (lagMs >= 0 && Number.isFinite(lagMs)) {
           syncOpLogPullLagMs.observe(lagMs);

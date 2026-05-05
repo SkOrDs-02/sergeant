@@ -141,8 +141,8 @@ export function handleFizrukAction(
       let created = false;
       if (targetIdx >= 0) {
         workout = {
-          ...workouts[targetIdx],
-          items: [...workouts[targetIdx].items],
+          ...workouts[targetIdx]!,
+          items: [...workouts[targetIdx]!.items],
         };
       } else {
         created = true;
@@ -165,8 +165,8 @@ export function handleFizrukAction(
         (it) => it.nameUk.trim().toLowerCase() === exerciseNameLower,
       );
       if (itemIdx >= 0) {
-        const item = { ...workout.items[itemIdx] };
-        item.sets = [...item.sets, ...newSets];
+        const item = { ...workout.items[itemIdx]! };
+        item.sets = [...item.sets!, ...newSets];
         workout.items[itemIdx] = item;
       } else {
         workout.items.push({
@@ -257,17 +257,17 @@ export function handleFizrukAction(
       if (!targetId) return "Немає активного тренування для завершення.";
       const idx = workouts.findIndex((w) => w.id === targetId);
       if (idx < 0) return `Тренування ${targetId} не знайдено.`;
-      if (workouts[idx].endedAt) {
+      if (workouts[idx]!.endedAt) {
         if (activeId === targetId) safeRemoveLS("fizruk_active_workout_id_v1");
         return `Тренування ${targetId} вже завершено.`;
       }
       workouts[idx] = {
-        ...workouts[idx],
+        ...workouts[idx]!,
         endedAt: new Date().toISOString(),
       };
       lsSet("fizruk_workouts_v1", { schemaVersion: 1, workouts });
       if (activeId === targetId) safeRemoveLS("fizruk_active_workout_id_v1");
-      const setsCount = workouts[idx].items.reduce(
+      const setsCount = workouts[idx]!.items.reduce(
         (acc, it) => acc + (Array.isArray(it.sets) ? it.sets.length : 0),
         0,
       );
@@ -608,7 +608,7 @@ export function handleFizrukAction(
       const max = Math.max(...weights);
       const first = weights[0];
       const last = weights[weights.length - 1];
-      const diff = last - first;
+      const diff = last! - first!;
       const parts: string[] = [
         `Вага за ${days} днів (${entries.length} записів):`,
         `Перша: ${first} кг → Остання: ${last} кг (${diff >= 0 ? "+" : ""}${diff.toFixed(1)} кг)`,

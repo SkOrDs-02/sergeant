@@ -900,8 +900,8 @@ describe("rateLimitExpress — fail-closed mode", () => {
     );
     // Both `error` and `message` populated for better-fetch / direct
     // fetch callers — same contract as the 429 path.
-    expect(typeof body?.error).toBe("string");
-    expect(typeof body?.message).toBe("string");
+    expect(typeof body?.["error"]).toBe("string");
+    expect(typeof body?.["message"]).toBe("string");
   });
 
   it("refuses with 503 when Redis throws AND Postgres is unavailable", async () => {

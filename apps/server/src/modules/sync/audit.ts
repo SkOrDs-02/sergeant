@@ -173,6 +173,7 @@ export async function listSyncAudit(
   }
   params.push(limit);
 
+  // eslint-disable-next-line no-restricted-syntax -- `where` is composed from fixed literal SQL fragments; user input flows through $-params only.
   const result = await pool.query<AuditLogRow>(
     `SELECT id, user_id, op_type, module, outcome, conflict,
             payload_size_bytes, duration_ms, created_at
@@ -203,6 +204,6 @@ export async function listSyncAudit(
     userId: targetUserId,
     isAdminView: targetUserId !== user.id,
     rows,
-    nextBeforeId: rows.length === limit ? rows[rows.length - 1].id : null,
+    nextBeforeId: rows.length === limit ? rows[rows.length - 1]!.id : null,
   });
 }

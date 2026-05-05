@@ -58,7 +58,7 @@ describe("authMetricsMiddleware structured auth_event log", () => {
       },
       _finish(status: number) {
         this.statusCode = status;
-        listeners.finish?.();
+        listeners["finish"]?.();
       },
     };
     return { req, res: res as TestRes & Response };

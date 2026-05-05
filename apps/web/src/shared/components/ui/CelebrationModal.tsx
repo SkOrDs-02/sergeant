@@ -135,10 +135,10 @@ export const CelebrationModal = memo(function CelebrationModal({
           x: 50 + (Math.random() - 0.5) * 80,
           y: 40 + (Math.random() - 0.5) * 60,
           rotation: Math.random() * 360,
-          color: colors[Math.floor(Math.random() * colors.length)],
+          color: colors[Math.floor(Math.random() * colors.length)]!,
           size: 6 + Math.random() * 10,
           delay: Math.random() * 0.4,
-          shape: shapes[Math.floor(Math.random() * shapes.length)],
+          shape: shapes[Math.floor(Math.random() * shapes.length)]!,
         });
       }
       return newParticles;

@@ -56,11 +56,11 @@ async function executeTool(
   input: Record<string, unknown>,
 ): Promise<string> {
   if (name === "get_posthog_stats") {
-    const apiKey = process.env.POSTHOG_API_KEY;
-    const projectId = process.env.POSTHOG_PROJECT_ID;
+    const apiKey = process.env["POSTHOG_API_KEY"];
+    const projectId = process.env["POSTHOG_PROJECT_ID"];
     if (!apiKey || !projectId)
       return "POSTHOG_API_KEY or POSTHOG_PROJECT_ID not configured";
-    const days = (input.days as number) ?? 7;
+    const days = (input["days"] as number) ?? 7;
     try {
       const res = await fetch(
         `https://app.posthog.com/api/projects/${projectId}/insights/trend/?events=[{"id":"$pageview"}]&date_from=-${days}d`,
@@ -74,7 +74,7 @@ async function executeTool(
   }
 
   if (name === "get_github_releases") {
-    const limit = (input.limit as number) ?? 5;
+    const limit = (input["limit"] as number) ?? 5;
     try {
       const res = await fetch(
         `https://api.github.com/repos/Skords-01/Sergeant/releases?per_page=${limit}`,

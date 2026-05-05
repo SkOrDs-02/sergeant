@@ -93,7 +93,7 @@ describe("mapSyncV2IncrementOpToOutboxInput — happy path", () => {
     // Insertion order pinned: spread of `extraRow` first, then `delta`.
     expect(Object.keys(input.row)).toEqual(["user_id", "aux", "delta"]);
     // Nested object preserved verbatim (no key sorting).
-    const aux = input.row.aux as Record<string, unknown>;
+    const aux = input.row["aux"] as Record<string, unknown>;
     expect(Object.keys(aux)).toEqual(["z", "a"]);
     expect(aux).toEqual({ z: 1, a: 2 });
   });

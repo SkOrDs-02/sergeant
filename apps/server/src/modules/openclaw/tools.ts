@@ -35,7 +35,7 @@ import { getAiMemory } from "../ai-memory/bootstrap.js";
 
 export interface RecallMemoryInput {
   query: string;
-  topK?: number;
+  topK?: number | undefined;
 }
 
 export interface RecallMemoryOutput {
@@ -109,7 +109,7 @@ export interface ReadStrategyDocsOutput {
  * валив 5xx.
  */
 function resolveRepoRoot(): string {
-  const envRoot = process.env.OPENCLAW_REPO_ROOT;
+  const envRoot = process.env["OPENCLAW_REPO_ROOT"];
   if (envRoot) return path.resolve(envRoot);
   return path.resolve(import.meta.dirname ?? __dirname, "../../../../..");
 }
@@ -209,9 +209,9 @@ function isEnoentError(err: unknown): boolean {
 
 export interface QueryAppDbInput {
   sql: string;
-  params?: ReadonlyArray<unknown>;
+  params?: ReadonlyArray<unknown> | undefined;
   /** Hard cap на rows. Default 200, max 1000. */
-  limit?: number;
+  limit?: number | undefined;
 }
 
 export interface QueryAppDbOutput {
@@ -322,14 +322,14 @@ export async function queryAppDb(
 
 export interface ReadGithubInput {
   /** "owner/repo". Default — env.OPENCLAW_GITHUB_REPO. */
-  repo?: string;
+  repo?: string | undefined;
   /** Один з трьох взаємовиключних режимів. */
   mode: "file" | "issue" | "pr";
   /** Для mode='file'. */
-  filePath?: string;
-  ref?: string;
+  filePath?: string | undefined;
+  ref?: string | undefined;
   /** Для mode='issue' або 'pr'. */
-  number?: number;
+  number?: number | undefined;
 }
 
 export interface ReadGithubOutput {
@@ -394,8 +394,8 @@ export async function readGithub(
 export interface ReadWorkflowLogsInput {
   workflowId: string;
   /** ISO-string. */
-  since?: string;
-  limit?: number;
+  since?: string | undefined;
+  limit?: number | undefined;
 }
 
 export interface ReadWorkflowLogsOutput {
@@ -420,8 +420,8 @@ export interface ReadWorkflowLogsOutput {
 export async function readWorkflowLogs(
   input: ReadWorkflowLogsInput,
 ): Promise<ReadWorkflowLogsOutput> {
-  const baseUrl = process.env.N8N_API_URL;
-  const apiKey = process.env.N8N_API_KEY;
+  const baseUrl = process.env["N8N_API_URL"];
+  const apiKey = process.env["N8N_API_KEY"];
   if (!baseUrl || !apiKey) {
     logger.warn({
       msg: "openclaw_read_workflow_logs_not_configured",
@@ -470,8 +470,8 @@ export async function readWorkflowLogs(
 export interface ReadTelegramTopicHistoryInput {
   /** Назва топіка з REPORTING-MATRIX.md ('digest', 'incidents', etc). */
   topic: string;
-  since?: string;
-  limit?: number;
+  since?: string | undefined;
+  limit?: number | undefined;
 }
 
 export interface ReadTelegramTopicHistoryOutput {
@@ -513,7 +513,7 @@ export async function readTelegramTopicHistory(
 
 export interface GetStripeMetricsInput {
   /** Lookback window in days. Default 7, max 90. */
-  days?: number;
+  days?: number | undefined;
 }
 
 export interface GetStripeMetricsOutput {
@@ -528,7 +528,7 @@ export interface GetStripeMetricsOutput {
 export async function getStripeMetrics(
   input: GetStripeMetricsInput,
 ): Promise<GetStripeMetricsOutput> {
-  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const stripeKey = process.env["STRIPE_SECRET_KEY"];
   if (!stripeKey) {
     return {
       notConfigured: true,
@@ -565,8 +565,8 @@ export async function getStripeMetrics(
 export type SentryLevel = "fatal" | "error" | "warning";
 
 export interface GetSentryIssuesInput {
-  level?: SentryLevel;
-  limit?: number;
+  level?: SentryLevel | undefined;
+  limit?: number | undefined;
 }
 
 export interface SentryIssueRecord {
@@ -585,8 +585,8 @@ export interface GetSentryIssuesOutput {
 export async function getSentryIssues(
   input: GetSentryIssuesInput,
 ): Promise<GetSentryIssuesOutput> {
-  const token = process.env.SENTRY_AUTH_TOKEN;
-  const org = process.env.SENTRY_ORG ?? "sergeant";
+  const token = process.env["SENTRY_AUTH_TOKEN"];
+  const org = process.env["SENTRY_ORG"] ?? "sergeant";
   if (!token) {
     return {
       notConfigured: true,
@@ -646,8 +646,9 @@ export interface GetServerStatsOutput {
  *     touching tool code.
  */
 export async function getServerStats(): Promise<GetServerStatsOutput> {
-  const port = process.env.PORT ?? "3000";
-  const baseUrl = process.env.SERVER_INTERNAL_URL ?? `http://localhost:${port}`;
+  const port = process.env["PORT"] ?? "3000";
+  const baseUrl =
+    process.env["SERVER_INTERNAL_URL"] ?? `http://localhost:${port}`;
   const res = await fetch(`${baseUrl.replace(/\/+$/, "")}/healthz`, {
     headers: { Accept: "application/json" },
   });
@@ -661,7 +662,7 @@ export async function getServerStats(): Promise<GetServerStatsOutput> {
 
 export interface GetPostHogStatsInput {
   /** Lookback window in days. Default 7. */
-  days?: number;
+  days?: number | undefined;
 }
 
 export interface GetPostHogStatsOutput {
@@ -673,8 +674,8 @@ export interface GetPostHogStatsOutput {
 export async function getPostHogStats(
   input: GetPostHogStatsInput,
 ): Promise<GetPostHogStatsOutput> {
-  const apiKey = process.env.POSTHOG_API_KEY;
-  const projectId = process.env.POSTHOG_PROJECT_ID;
+  const apiKey = process.env["POSTHOG_API_KEY"];
+  const projectId = process.env["POSTHOG_PROJECT_ID"];
   if (!apiKey || !projectId) {
     return {
       notConfigured: true,
@@ -698,9 +699,9 @@ export async function getPostHogStats(
 
 export interface GetGithubReleasesInput {
   /** Number of releases. Default 5, max 20. */
-  limit?: number;
+  limit?: number | undefined;
   /** owner/repo. Defaults to env.OPENCLAW_GITHUB_REPO. */
-  repo?: string;
+  repo?: string | undefined;
 }
 
 export interface GetGithubReleasesOutput {
@@ -812,7 +813,9 @@ export async function recordDecision(
       context: input.context,
       decision: input.decision,
       rationale: input.rationale,
-      alternatives: input.alternatives,
+      ...(input.alternatives !== undefined
+        ? { alternatives: input.alternatives }
+        : {}),
     });
     await attachDecisionPrUrl(pool, decisionId, prUrl);
     return { decisionId, prUrl };
@@ -843,7 +846,7 @@ function decisionMarkdown(input: {
   context: string;
   decision: string;
   rationale: string;
-  alternatives?: string;
+  alternatives?: string | undefined;
 }): string {
   const date = new Date().toISOString().slice(0, 10);
   return [
@@ -879,7 +882,7 @@ async function openDecisionPr(
     context: string;
     decision: string;
     rationale: string;
-    alternatives?: string;
+    alternatives?: string | undefined;
   },
 ): Promise<string> {
   const repo = env.OPENCLAW_GITHUB_REPO;

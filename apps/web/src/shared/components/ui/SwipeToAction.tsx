@@ -96,8 +96,8 @@ function SwipeToActionImpl({
       // interpreted as a horizontal swipe — ignore entirely.
       if (e.touches.length !== 1) return;
       setCommitted(false);
-      startX.current = e.touches[0].clientX;
-      startY.current = e.touches[0].clientY;
+      startX.current = e.touches[0]!.clientX;
+      startY.current = e.touches[0]!.clientY;
       isHorizontal.current = null;
       setIsDragging(true);
     },
@@ -108,8 +108,8 @@ function SwipeToActionImpl({
     (e: TouchEvent<HTMLDivElement>) => {
       if (!isDragging || startX.current === null || startY.current === null)
         return;
-      const dx = e.touches[0].clientX - startX.current;
-      const dy = e.touches[0].clientY - startY.current;
+      const dx = e.touches[0]!.clientX - startX.current;
+      const dy = e.touches[0]!.clientY - startY.current;
 
       if (isHorizontal.current === null) {
         if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;

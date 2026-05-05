@@ -292,7 +292,7 @@ describe("sendAPNs", () => {
       silent: true,
       data: { kind: "sync" },
     });
-    const [note, token] = apnsProviderSendMock.mock.calls[0];
+    const [note, token] = apnsProviderSendMock.mock.calls[0]!;
     expect(token).toBe("tok1");
     expect(note.pushType).toBe("background");
     expect(note.priority).toBe(5);
@@ -311,7 +311,7 @@ describe("sendAPNs", () => {
       failed: [],
     });
     await sendAPNs("u1", "tok1", { title: "hi", body: "world" });
-    const [note] = apnsProviderSendMock.mock.calls[0];
+    const [note] = apnsProviderSendMock.mock.calls[0]!;
     expect(note.alert).toEqual({ title: "hi", body: "world" });
     expect(note.sound).toBe("default");
     expect(note.pushType).toBeUndefined();
@@ -328,7 +328,7 @@ describe("sendAPNs", () => {
       url: "sergeant://finyk/tx/42",
       data: { url: "ignored-inner", kind: "navigate" },
     });
-    const [note] = apnsProviderSendMock.mock.calls[0];
+    const [note] = apnsProviderSendMock.mock.calls[0]!;
     expect(note.payload).toEqual({
       kind: "navigate",
       url: "sergeant://finyk/tx/42",
@@ -359,7 +359,7 @@ describe("sendFCM", () => {
     const r = await sendFCM("u1", "dev-token", { title: "hi" });
     expect(r.delivered).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toContain("/v1/projects/sergeant-test/messages:send");
     const parsed = JSON.parse((init as RequestInit).body as string);
     expect(parsed.message.token).toBe("dev-token");
@@ -373,7 +373,7 @@ describe("sendFCM", () => {
       data: { n: 1, s: "s", obj: { k: "v" } },
     });
     const body = JSON.parse(
-      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+      (fetchMock.mock.calls[0]![1] as RequestInit).body as string,
     );
     expect(body.message.data).toEqual({
       n: "1",
@@ -495,7 +495,7 @@ describe("sendFCM", () => {
       data: { kind: "sync", count: 3 },
     });
     const body = JSON.parse(
-      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+      (fetchMock.mock.calls[0]![1] as RequestInit).body as string,
     );
     expect(body.message.notification).toBeUndefined();
     expect(body.message.data).toEqual({ kind: "sync", count: "3" });
@@ -513,7 +513,7 @@ describe("sendFCM", () => {
     fetchMock.mockResolvedValueOnce(resp(200, { name: "n" }));
     await sendFCM("u1", "and-tok", { title: "hi", body: "world" });
     const body = JSON.parse(
-      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+      (fetchMock.mock.calls[0]![1] as RequestInit).body as string,
     );
     expect(body.message.notification).toEqual({ title: "hi", body: "world" });
     expect(body.message.android).toBeUndefined();
@@ -528,7 +528,7 @@ describe("sendFCM", () => {
       data: { url: "ignored-inner", kind: "navigate" },
     });
     const body = JSON.parse(
-      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+      (fetchMock.mock.calls[0]![1] as RequestInit).body as string,
     );
     expect(body.message.data).toEqual({
       kind: "navigate",
@@ -718,7 +718,7 @@ describe("sendToUser", () => {
     });
 
     expect(sendWebPushMock).toHaveBeenCalledTimes(1);
-    const payloadJson = sendWebPushMock.mock.calls[0][1] as string;
+    const payloadJson = sendWebPushMock.mock.calls[0]![1] as string;
     const parsed = JSON.parse(payloadJson);
     expect(parsed.data).toEqual({ url: "sergeant://routine/habit/42" });
   });
@@ -758,19 +758,19 @@ describe("sendToUser", () => {
     expect(r.delivered).toEqual({ ios: 1, android: 1, web: 1 });
 
     // APNs — silent-гілка з url у top-level payload
-    const [note] = apnsProviderSendMock.mock.calls[0];
+    const [note] = apnsProviderSendMock.mock.calls[0]!;
     expect(note.pushType).toBe("background");
     expect(note.payload).toEqual({ url: "sergeant://finyk/tx/42" });
 
     // FCM — silent (data-only) з url у data map
     const fcmBody = JSON.parse(
-      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+      (fetchMock.mock.calls[0]![1] as RequestInit).body as string,
     );
     expect(fcmBody.message.notification).toBeUndefined();
     expect(fcmBody.message.data).toEqual({ url: "sergeant://finyk/tx/42" });
 
     // Web — url у data, без зміни поведінки service-worker-а
-    const webPayload = JSON.parse(sendWebPushMock.mock.calls[0][1] as string);
+    const webPayload = JSON.parse(sendWebPushMock.mock.calls[0]![1] as string);
     expect(webPayload.data).toEqual({ url: "sergeant://finyk/tx/42" });
   });
 });

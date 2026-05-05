@@ -148,9 +148,9 @@ async function getDecryptedToken(userId: string): Promise<string | null> {
     const row = rows[0];
     return decryptToken(
       {
-        ciphertext: row.token_ciphertext,
-        iv: row.token_iv,
-        tag: row.token_tag,
+        ciphertext: row!.token_ciphertext,
+        iv: row!.token_iv,
+        tag: row!.token_tag,
       },
       encKey,
     );

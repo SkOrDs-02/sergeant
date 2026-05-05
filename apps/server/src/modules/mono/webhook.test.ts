@@ -226,20 +226,20 @@ describe("webhookHandler", () => {
     // Транзакція виконує 8 client.query-викликів: BEGIN + SAVEPOINT + upsert
     // + RELEASE + UPDATE balance + UPDATE connection + INSERT outbox + COMMIT.
     expect(client.query).toHaveBeenCalledTimes(8);
-    expect(client.query.mock.calls[0][0]).toBe("BEGIN");
-    expect(client.query.mock.calls[1][0]).toMatch(/^SAVEPOINT/);
-    expect(client.query.mock.calls[2][0]).toMatch(
+    expect(client!.query.mock.calls[0]![0]).toBe("BEGIN");
+    expect(client!.query.mock.calls[1]![0]).toMatch(/^SAVEPOINT/);
+    expect(client!.query.mock.calls[2]![0]).toMatch(
       /INSERT INTO mono_transaction/,
     );
-    expect(client.query.mock.calls[3][0]).toMatch(/^RELEASE SAVEPOINT/);
-    expect(client.query.mock.calls[4][0]).toMatch(
+    expect(client!.query.mock.calls[3]![0]).toMatch(/^RELEASE SAVEPOINT/);
+    expect(client!.query.mock.calls[4]![0]).toMatch(
       /UPDATE mono_account[\s\S]+SET balance/,
     );
-    expect(client.query.mock.calls[5][0]).toMatch(/UPDATE mono_connection/);
-    expect(client.query.mock.calls[6][0]).toMatch(
+    expect(client!.query.mock.calls[5]![0]).toMatch(/UPDATE mono_connection/);
+    expect(client!.query.mock.calls[6]![0]).toMatch(
       /INSERT INTO mono_ai_enrichment_queue/,
     );
-    expect(client.query.mock.calls[7][0]).toBe("COMMIT");
+    expect(client!.query.mock.calls[7]![0]).toBe("COMMIT");
     expect(client.release).toHaveBeenCalledTimes(1);
   });
 
@@ -257,8 +257,8 @@ describe("webhookHandler", () => {
 
     expect(res.statusCode).toBe(200);
     expect(sendPushMock).toHaveBeenCalledTimes(1);
-    expect(sendPushMock.mock.calls[0][0]).toBe("user_1");
-    const payload = sendPushMock.mock.calls[0][1];
+    expect(sendPushMock!.mock.calls[0]![0]).toBe("user_1");
+    const payload = sendPushMock!.mock.calls[0]![1];
     // amount=-6500 копійок → -65.00 ₴ → "−65,00 ₴" (U+2212 minus, NBSP separator)
     expect(payload.title).toBe("−65,00 ₴");
     expect(payload.body).toBe("Кава · доступно 15\u00A0000,00 ₴");
@@ -267,7 +267,7 @@ describe("webhookHandler", () => {
       monoTxId: "tx_001",
       monoAccountId: "acc_uah",
     });
-    expect(sendPushMock.mock.calls[0][2]).toEqual({ module: "mono" });
+    expect(sendPushMock!.mock.calls[0]![2]).toEqual({ module: "mono" });
   });
 
   it("does NOT fire push when ON CONFLICT updates existing transaction (Monobank retry)", async () => {
@@ -311,7 +311,7 @@ describe("webhookHandler", () => {
     await Promise.resolve();
 
     expect(sendPushMock).toHaveBeenCalledTimes(1);
-    expect(sendPushMock.mock.calls[0][1].body).toBe(
+    expect(sendPushMock!.mock.calls[0]![1].body).toBe(
       "(резерв) Кава · доступно 15\u00A0000,00 ₴",
     );
   });
@@ -470,8 +470,8 @@ describe("webhookHandler", () => {
 
     // Третій client.query-call — це сам upsert (після BEGIN, SAVEPOINT);
     // останній параметр — categorySlug.
-    const upsertCall = client.query.mock.calls[2];
-    const params = upsertCall[1];
+    const upsertCall = client.query.mock.calls[2]!;
+    const params = upsertCall[1]!;
     expect(params[params.length - 1]).toBe("restaurant");
   });
 
@@ -496,7 +496,7 @@ describe("webhookHandler", () => {
     await webhookHandler(makeReq(VALID_SECRET, unknownMccPayload), res);
     expect(res.statusCode).toBe(200);
 
-    const params = client.query.mock.calls[2][1];
+    const params = client!.query.mock.calls[2]![1];
     expect(params[params.length - 1]).toBeNull();
   });
 
@@ -511,7 +511,7 @@ describe("webhookHandler", () => {
     const res = makeRes();
     await webhookHandler(makeReq(VALID_SECRET), res);
 
-    const sql = client.query.mock.calls[2][0] as string;
+    const sql = client!.query.mock.calls[2]![0] as string;
     // Sanity-check, що SQL містить захист category_overridden.
     expect(sql).toMatch(/category_overridden/);
     expect(sql).toMatch(/category_slug = CASE/);
@@ -581,8 +581,8 @@ describe("webhookHandler", () => {
     expect(calls[rollbackIdx + 1]).toMatch(/INSERT INTO mono_account/);
 
     // Stub використовує currency + balance з самого StatementItem.
-    const stubCall = client.query.mock.calls[rollbackIdx + 1];
-    expect(stubCall[1]).toEqual(["user_1", "acc_uah", 980, 1500000]);
+    const stubCall = client.query.mock.calls[rollbackIdx + 1]!;
+    expect(stubCall[1]!).toEqual(["user_1", "acc_uah", 980, 1500000]);
 
     expect(client.release).toHaveBeenCalledTimes(1);
   });

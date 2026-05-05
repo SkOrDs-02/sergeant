@@ -126,7 +126,7 @@ beforeAll(async () => {
     // надійно: створити тестовий pool на той самий контейнер і інжектити
     // через monkey-patch модуля. Для PR #021 SPIKE простіше: піднімаємо
     // env, переконуємось, що db.js імпортує цей же URL.
-    process.env.DATABASE_URL = uri;
+    process.env["DATABASE_URL"] = uri;
 
     testPool = new pg.Pool({ connectionString: uri, max: 5 });
     await runMigrations(testPool);
@@ -266,7 +266,7 @@ describe("syncV2Push / syncV2Pull integration", () => {
         "stretch",
         "read",
       ]);
-      expect(typeof pullBody.ops[0].id).toBe("number");
+      expect(typeof pullBody!.ops[0]!.id).toBe("number");
       expect(pullBody.next_cursor).toBeNull();
 
       // Пристрій А повинен сам себе виключати по `X-Origin-Device-Id`.
@@ -312,7 +312,7 @@ describe("syncV2Push / syncV2Pull integration", () => {
         results: Array<{ status: string }>;
       };
       expect(r1Body.accepted).toBe(1);
-      expect(r1Body.results[0].status).toBe("applied");
+      expect(r1Body!.results[0]!.status).toBe("applied");
 
       // Повтор — той самий idempotency_key.
       const r2 = makeRes();
@@ -324,20 +324,20 @@ describe("syncV2Push / syncV2Pull integration", () => {
       // accepted=1 бо ми повертаємо кешований applied (а не "duplicate")
       // — для UI clients це коректно, бо first-write мав ефект.
       expect(r2Body.accepted).toBe(1);
-      expect(r2Body.results[0].status).toBe("applied");
+      expect(r2Body!.results[0]!.status).toBe("applied");
 
       // Один рядок у `routine_entries`, один рядок у `sync_op_log`.
       const entryCount = await testPool.query<{ c: string }>(
         `SELECT COUNT(*)::text AS c FROM routine_entries WHERE user_id = $1`,
         ["u-idem"],
       );
-      expect(Number(entryCount.rows[0].c)).toBe(1);
+      expect(Number(entryCount!.rows[0]!.c)).toBe(1);
 
       const logCount = await testPool.query<{ c: string }>(
         `SELECT COUNT(*)::text AS c FROM sync_op_log WHERE user_id = $1`,
         ["u-idem"],
       );
-      expect(Number(logCount.rows[0].c)).toBe(1);
+      expect(Number(logCount!.rows[0]!.c)).toBe(1);
     },
     TIMEOUT_MS,
   );
@@ -407,15 +407,15 @@ describe("syncV2Push / syncV2Pull integration", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(r2Body.accepted).toBe(0);
-      expect(r2Body.results[0].status).toBe("rejected");
-      expect(r2Body.results[0].reason).toBe("lww_conflict");
+      expect(r2Body!.results[0]!.status).toBe("rejected");
+      expect(r2Body!.results[0]!.reason).toBe("lww_conflict");
 
       // У БД — все ще "newer".
       const row = await testPool.query<{ name: string }>(
         `SELECT name FROM routine_entries WHERE id = $1`,
         [idA],
       );
-      expect(row.rows[0].name).toBe("newer");
+      expect(row!.rows[0]!.name).toBe("newer");
     },
     TIMEOUT_MS,
   );
@@ -498,13 +498,13 @@ describe("syncV2Push / syncV2Pull integration", () => {
       };
       // Повертаємо кешований applied — клієнту байдуже, що це "duplicate"
       // в semantic-смислі; перевіряємо що БД не отримала second insert.
-      expect(r3Body.results[0].status).toBe("applied");
+      expect(r3Body!.results[0]!.status).toBe("applied");
 
       const count = await testPool.query<{ c: string }>(
         `SELECT COUNT(*)::text AS c FROM sync_op_log WHERE user_id = $1`,
         ["u-replay"],
       );
-      expect(Number(count.rows[0].c)).toBe(1);
+      expect(Number(count!.rows[0]!.c)).toBe(1);
     },
     TIMEOUT_MS,
   );
@@ -564,8 +564,8 @@ describe("syncV2Push / syncV2Pull integration", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].status).toBe("rejected");
-      expect(body.results[0].reason).toBe("table_not_allowed");
+      expect(body!.results[0]!.status).toBe("rejected");
+      expect(body!.results[0]!.reason).toBe("table_not_allowed");
     },
     TIMEOUT_MS,
   );
@@ -710,7 +710,7 @@ describe("syncV2Push / syncV2Pull integration", () => {
         `SELECT deleted_at FROM routine_entries WHERE id = $1`,
         [id],
       );
-      expect(row.rows[0].deleted_at).not.toBeNull();
+      expect(row!.rows[0]!.deleted_at).not.toBeNull();
     },
     TIMEOUT_MS,
   );
@@ -778,7 +778,7 @@ describe("syncV2Push / syncV2Pull integration", () => {
         `SELECT current_streak FROM routine_streaks WHERE user_id = $1`,
         ["u-streak"],
       );
-      expect(row.rows[0].current_streak).toBe(5);
+      expect(row!.rows[0]!.current_streak).toBe(5);
     },
     TIMEOUT_MS,
   );
@@ -817,7 +817,7 @@ describe("syncV2Push / syncV2Pull integration", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("clock_skew");
+      expect(body!.results[0]!.reason).toBe("clock_skew");
     },
     TIMEOUT_MS,
   );
@@ -910,8 +910,8 @@ describe("syncV2Push — fizruk apply-функції (PR #029)", () => {
         workoutId,
       ]);
       expect(row.rows).toHaveLength(1);
-      expect(row.rows[0].note).toBe("leg day — done");
-      expect(row.rows[0].ended_at).not.toBeNull();
+      expect(row!.rows[0]!.note).toBe("leg day — done");
+      expect(row!.rows[0]!.ended_at).not.toBeNull();
     },
     TIMEOUT_MS,
   );
@@ -979,14 +979,14 @@ describe("syncV2Push — fizruk apply-функції (PR #029)", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(r2Body.accepted).toBe(0);
-      expect(r2Body.results[0].status).toBe("rejected");
-      expect(r2Body.results[0].reason).toBe("lww_conflict");
+      expect(r2Body!.results[0]!.status).toBe("rejected");
+      expect(r2Body!.results[0]!.reason).toBe("lww_conflict");
 
       const row = await testPool.query<{ note: string }>(
         `SELECT note FROM fizruk_workouts WHERE id = $1`,
         [workoutId],
       );
-      expect(row.rows[0].note).toBe("newer");
+      expect(row!.rows[0]!.note).toBe("newer");
     },
     TIMEOUT_MS,
   );
@@ -1050,7 +1050,7 @@ describe("syncV2Push — fizruk apply-функції (PR #029)", () => {
         [workoutId],
       );
       expect(row.rows).toHaveLength(1);
-      expect(row.rows[0].deleted_at).not.toBeNull();
+      expect(row!.rows[0]!.deleted_at).not.toBeNull();
     },
     TIMEOUT_MS,
   );
@@ -1109,7 +1109,7 @@ describe("syncV2Push — fizruk apply-функції (PR #029)", () => {
         `SELECT workout_id FROM fizruk_workout_items WHERE id = $1`,
         [itemId],
       );
-      expect(row.rows[0].workout_id).toBe(workoutId);
+      expect(row!.rows[0]!.workout_id).toBe(workoutId);
     },
     TIMEOUT_MS,
   );
@@ -1187,7 +1187,7 @@ describe("syncV2Push — fizruk apply-функції (PR #029)", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("invalid_measured_at");
+      expect(body!.results[0]!.reason).toBe("invalid_measured_at");
     },
     TIMEOUT_MS,
   );
@@ -1274,8 +1274,8 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
         `SELECT name, kcal FROM nutrition_meals WHERE id = $1`,
         [mealId],
       );
-      expect(row.rows[0].name).toBe("borshch — updated");
-      expect(row.rows[0].kcal).toBe(400);
+      expect(row!.rows[0]!.name).toBe("borshch — updated");
+      expect(row!.rows[0]!.kcal).toBe(400);
     },
     TIMEOUT_MS,
   );
@@ -1343,7 +1343,7 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(r2Body.accepted).toBe(0);
-      expect(r2Body.results[0].reason).toBe("lww_conflict");
+      expect(r2Body!.results[0]!.reason).toBe("lww_conflict");
     },
     TIMEOUT_MS,
   );
@@ -1407,7 +1407,7 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
         `SELECT deleted_at FROM nutrition_meals WHERE id = $1`,
         [mealId],
       );
-      expect(row.rows[0].deleted_at).not.toBeNull();
+      expect(row!.rows[0]!.deleted_at).not.toBeNull();
     },
     TIMEOUT_MS,
   );
@@ -1445,7 +1445,7 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("invalid_eaten_at");
+      expect(body!.results[0]!.reason).toBe("invalid_eaten_at");
     },
     TIMEOUT_MS,
   );
@@ -1539,7 +1539,7 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(r3Body.accepted).toBe(0);
-      expect(r3Body.results[0].reason).toBe("tombstoned");
+      expect(r3Body!.results[0]!.reason).toBe("tombstoned");
 
       // Стан у БД: ряд лишається soft-deleted, ім'я НЕ перезаписане.
       const finalRow = await testPool.query<{
@@ -1549,9 +1549,9 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
       }>(`SELECT deleted_at, name, kcal FROM nutrition_meals WHERE id = $1`, [
         mealId,
       ]);
-      expect(finalRow.rows[0].deleted_at).not.toBeNull();
-      expect(finalRow.rows[0].name).toBe("before-delete");
-      expect(finalRow.rows[0].kcal).toBe(100);
+      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.name).toBe("before-delete");
+      expect(finalRow!.rows[0]!.kcal).toBe(100);
     },
     TIMEOUT_MS,
   );
@@ -1634,9 +1634,9 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
         `SELECT deleted_at FROM nutrition_meals WHERE id = $1`,
         [mealId],
       );
-      expect(finalRow.rows[0].deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
       // deleted_at має бути ≈ tDel2, не tDel1.
-      expect(finalRow.rows[0].deleted_at!.getTime()).toBeGreaterThan(
+      expect(finalRow!.rows[0]!.deleted_at!.getTime()).toBeGreaterThan(
         new Date(tDel1).getTime(),
       );
     },
@@ -1768,7 +1768,7 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
         `SELECT name FROM nutrition_pantries WHERE id = $1`,
         [pantryId],
       );
-      expect(pantryRow.rows[0].name).toBe("Холодильник");
+      expect(pantryRow!.rows[0]!.name).toBe("Холодильник");
 
       const itemRow = await testPool.query<{
         pantry_id: string;
@@ -1778,8 +1778,8 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
         `SELECT pantry_id, name, qty FROM nutrition_pantry_items WHERE id = $1`,
         [itemId],
       );
-      expect(itemRow.rows[0].pantry_id).toBe(pantryId);
-      expect(itemRow.rows[0].name).toBe("Молоко");
+      expect(itemRow!.rows[0]!.pantry_id).toBe(pantryId);
+      expect(itemRow!.rows[0]!.name).toBe("Молоко");
     },
     TIMEOUT_MS,
   );
@@ -1849,8 +1849,8 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
         `SELECT prefs_json, active_pantry_id FROM nutrition_prefs WHERE user_id = $1`,
         ["u-nprefs"],
       );
-      expect(row.rows[0].prefs_json).toEqual({ kcal_target: 2500 });
-      expect(row.rows[0].active_pantry_id).toBe(pantryId);
+      expect(row!.rows[0]!.prefs_json).toEqual({ kcal_target: 2500 });
+      expect(row!.rows[0]!.active_pantry_id).toBe(pantryId);
     },
     TIMEOUT_MS,
   );
@@ -1884,7 +1884,7 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("delete_not_supported");
+      expect(body!.results[0]!.reason).toBe("delete_not_supported");
     },
     TIMEOUT_MS,
   );
@@ -1950,8 +1950,8 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
       }>(`SELECT name, deleted_at FROM nutrition_recipes WHERE id = $1`, [
         recipeId,
       ]);
-      expect(row.rows[0].name).toBe("Борщ");
-      expect(row.rows[0].deleted_at).not.toBeNull();
+      expect(row!.rows[0]!.name).toBe("Борщ");
+      expect(row!.rows[0]!.deleted_at).not.toBeNull();
     },
     TIMEOUT_MS,
   );
@@ -2026,7 +2026,7 @@ describe("syncV2Push — finyk apply-функції (PR #035)", () => {
         ["u-fha", "mono-acc-42"],
       );
       expect(row.rows).toHaveLength(1);
-      expect(row.rows[0].deleted_at).not.toBeNull();
+      expect(row!.rows[0]!.deleted_at).not.toBeNull();
     },
     TIMEOUT_MS,
   );
@@ -2093,7 +2093,7 @@ describe("syncV2Push — finyk apply-функції (PR #035)", () => {
         `SELECT data_json FROM finyk_budgets WHERE id = $1`,
         [budgetId],
       );
-      expect(row.rows[0].data_json.limit).toBe(1500);
+      expect(row!.rows[0]!.data_json.limit).toBe(1500);
 
       // Stale (t1) update must lose to the t2 row already on disk.
       const r3 = makeRes();
@@ -2123,7 +2123,7 @@ describe("syncV2Push — finyk apply-функції (PR #035)", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body3.accepted).toBe(0);
-      expect(body3.results[0].reason).toBe("lww_conflict");
+      expect(body3!.results[0]!.reason).toBe("lww_conflict");
     },
     TIMEOUT_MS,
   );
@@ -2253,8 +2253,8 @@ describe("syncV2Push — finyk apply-функції (PR #035)", () => {
            WHERE user_id = $1 AND month = $2`,
         ["u-fnh", "2026-04"],
       );
-      expect(row.rows[0].month).toBe("2026-04");
-      expect(row.rows[0].networth).toBeCloseTo(1500, 5);
+      expect(row!.rows[0]!.month).toBe("2026-04");
+      expect(row!.rows[0]!.networth).toBeCloseTo(1500, 5);
     },
     TIMEOUT_MS,
   );
@@ -2292,7 +2292,7 @@ describe("syncV2Push — finyk apply-функції (PR #035)", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("invalid_month");
+      expect(body!.results[0]!.reason).toBe("invalid_month");
     },
     TIMEOUT_MS,
   );
@@ -2364,8 +2364,8 @@ describe("syncV2Push — finyk apply-функції (PR #035)", () => {
         `SELECT prefs_json, show_balance FROM finyk_prefs WHERE user_id = $1`,
         ["u-fp"],
       );
-      expect(row.rows[0].prefs_json.defaultCurrency).toBe("USD");
-      expect(row.rows[0].show_balance).toBe(false);
+      expect(row!.rows[0]!.prefs_json.defaultCurrency).toBe("USD");
+      expect(row!.rows[0]!.show_balance).toBe(false);
 
       const r3 = makeRes();
       await syncV2Push(
@@ -2390,7 +2390,7 @@ describe("syncV2Push — finyk apply-функції (PR #035)", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body3.accepted).toBe(0);
-      expect(body3.results[0].reason).toBe("delete_not_supported");
+      expect(body3!.results[0]!.reason).toBe("delete_not_supported");
     },
     TIMEOUT_MS,
   );
@@ -2488,14 +2488,14 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("tombstoned");
+      expect(body!.results[0]!.reason).toBe("tombstoned");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
         name: string;
       }>(`SELECT deleted_at, name FROM routine_entries WHERE id = $1`, [id]);
-      expect(finalRow.rows[0].deleted_at).not.toBeNull();
-      expect(finalRow.rows[0].name).toBe("before-delete");
+      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.name).toBe("before-delete");
     },
     TIMEOUT_MS,
   );
@@ -2580,14 +2580,14 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("tombstoned");
+      expect(body!.results[0]!.reason).toBe("tombstoned");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
         note: string;
       }>(`SELECT deleted_at, note FROM fizruk_workouts WHERE id = $1`, [id]);
-      expect(finalRow.rows[0].deleted_at).not.toBeNull();
-      expect(finalRow.rows[0].note).toBe("before-delete");
+      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.note).toBe("before-delete");
     },
     TIMEOUT_MS,
   );
@@ -2692,7 +2692,7 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("tombstoned");
+      expect(body!.results[0]!.reason).toBe("tombstoned");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -2700,8 +2700,8 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
       }>(`SELECT deleted_at, name_uk FROM fizruk_workout_items WHERE id = $1`, [
         itemId,
       ]);
-      expect(finalRow.rows[0].deleted_at).not.toBeNull();
-      expect(finalRow.rows[0].name_uk).toBe("Присідання");
+      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.name_uk).toBe("Присідання");
     },
     TIMEOUT_MS,
   );
@@ -2819,7 +2819,7 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("tombstoned");
+      expect(body!.results[0]!.reason).toBe("tombstoned");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -2828,8 +2828,8 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         `SELECT deleted_at, weight_kg FROM fizruk_workout_sets WHERE id = $1`,
         [setId],
       );
-      expect(finalRow.rows[0].deleted_at).not.toBeNull();
-      expect(Number(finalRow.rows[0].weight_kg)).toBe(80);
+      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
+      expect(Number(finalRow!.rows[0]!.weight_kg)).toBe(80);
     },
     TIMEOUT_MS,
   );
@@ -2912,7 +2912,7 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("tombstoned");
+      expect(body!.results[0]!.reason).toBe("tombstoned");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -2921,8 +2921,8 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         `SELECT deleted_at, data_json FROM fizruk_custom_exercises WHERE id = $1`,
         [id],
       );
-      expect(finalRow.rows[0].deleted_at).not.toBeNull();
-      expect(finalRow.rows[0].data_json.name).toBe("before-delete");
+      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.data_json.name).toBe("before-delete");
     },
     TIMEOUT_MS,
   );
@@ -3007,7 +3007,7 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("tombstoned");
+      expect(body!.results[0]!.reason).toBe("tombstoned");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -3016,8 +3016,8 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         `SELECT deleted_at, weight_kg FROM fizruk_measurements WHERE id = $1`,
         [id],
       );
-      expect(finalRow.rows[0].deleted_at).not.toBeNull();
-      expect(Number(finalRow.rows[0].weight_kg)).toBe(80);
+      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
+      expect(Number(finalRow!.rows[0]!.weight_kg)).toBe(80);
     },
     TIMEOUT_MS,
   );
@@ -3114,7 +3114,7 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("tombstoned");
+      expect(body!.results[0]!.reason).toBe("tombstoned");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -3124,9 +3124,9 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         `SELECT deleted_at, name, text FROM nutrition_pantries WHERE id = $1`,
         [id],
       );
-      expect(finalRow.rows[0].deleted_at).not.toBeNull();
-      expect(finalRow.rows[0].name).toBe("before-delete");
-      expect(finalRow.rows[0].text).toBe("v1");
+      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.name).toBe("before-delete");
+      expect(finalRow!.rows[0]!.text).toBe("v1");
     },
     TIMEOUT_MS,
   );
@@ -3238,7 +3238,7 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("tombstoned");
+      expect(body!.results[0]!.reason).toBe("tombstoned");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -3246,8 +3246,8 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
       }>(`SELECT deleted_at, name FROM nutrition_pantry_items WHERE id = $1`, [
         itemId,
       ]);
-      expect(finalRow.rows[0].deleted_at).not.toBeNull();
-      expect(finalRow.rows[0].name).toBe("milk");
+      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.name).toBe("milk");
     },
     TIMEOUT_MS,
   );
@@ -3332,7 +3332,7 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("tombstoned");
+      expect(body!.results[0]!.reason).toBe("tombstoned");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -3342,9 +3342,9 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         `SELECT deleted_at, name, data_json FROM nutrition_recipes WHERE id = $1`,
         [id],
       );
-      expect(finalRow.rows[0].deleted_at).not.toBeNull();
-      expect(finalRow.rows[0].name).toBe("Борщ");
-      expect(finalRow.rows[0].data_json.servings).toBe(4);
+      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.name).toBe("Борщ");
+      expect(finalRow!.rows[0]!.data_json.servings).toBe(4);
     },
     TIMEOUT_MS,
   );
@@ -3419,14 +3419,14 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("tombstoned");
+      expect(body!.results[0]!.reason).toBe("tombstoned");
 
       const finalRow = await testPool.query<{ deleted_at: Date | null }>(
         `SELECT deleted_at FROM finyk_hidden_accounts
            WHERE user_id = $1 AND account_id = $2`,
         ["u-fha-tomb", accountId],
       );
-      expect(finalRow.rows[0].deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
     },
     TIMEOUT_MS,
   );
@@ -3510,14 +3510,14 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("tombstoned");
+      expect(body!.results[0]!.reason).toBe("tombstoned");
 
       const finalRow = await testPool.query<{ deleted_at: Date | null }>(
         `SELECT deleted_at FROM finyk_hidden_transactions
            WHERE user_id = $1 AND transaction_id = $2`,
         ["u-fht-tomb", txId],
       );
-      expect(finalRow.rows[0].deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
     },
     TIMEOUT_MS,
   );
@@ -3600,14 +3600,14 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("tombstoned");
+      expect(body!.results[0]!.reason).toBe("tombstoned");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
         data_json: { limit: number };
       }>(`SELECT deleted_at, data_json FROM finyk_budgets WHERE id = $1`, [id]);
-      expect(finalRow.rows[0].deleted_at).not.toBeNull();
-      expect(finalRow.rows[0].data_json.limit).toBe(1000);
+      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.data_json.limit).toBe(1000);
     },
     TIMEOUT_MS,
   );
@@ -3690,7 +3690,7 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("tombstoned");
+      expect(body!.results[0]!.reason).toBe("tombstoned");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -3699,8 +3699,8 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         `SELECT deleted_at, data_json FROM finyk_subscriptions WHERE id = $1`,
         [id],
       );
-      expect(finalRow.rows[0].deleted_at).not.toBeNull();
-      expect(finalRow.rows[0].data_json.monthly).toBe(199);
+      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.data_json.monthly).toBe(199);
     },
     TIMEOUT_MS,
   );
@@ -3762,15 +3762,15 @@ describe("syncV2Push — op='increment' engine-level gate (PR #042a)", () => {
       };
       // Накопичений counter не зайшов: gate спрацював до apply-fn-у.
       expect(body.accepted).toBe(0);
-      expect(body.results[0].status).toBe("rejected");
-      expect(body.results[0].reason).toBe("op_not_supported");
+      expect(body!.results[0]!.status).toBe("rejected");
+      expect(body!.results[0]!.reason).toBe("op_not_supported");
 
       // Рядок не торкнули.
       const row = await testPool.query<{ deleted_at: Date | null }>(
         `SELECT deleted_at FROM routine_entries WHERE id = $1`,
         [id],
       );
-      expect(row.rows[0].deleted_at).toBeNull();
+      expect(row!.rows[0]!.deleted_at).toBeNull();
 
       // sync_op_log запис створено зі status='rejected' +
       // reject_reason='op_not_supported' — щоб RED-dashboard бачив
@@ -3785,9 +3785,9 @@ describe("syncV2Push — op='increment' engine-level gate (PR #042a)", () => {
         ["u-incr-1", "incr-1"],
       );
       expect(log.rows.length).toBe(1);
-      expect(log.rows[0].status).toBe("rejected");
-      expect(log.rows[0].reject_reason).toBe("op_not_supported");
-      expect(log.rows[0].op).toBe("increment");
+      expect(log!.rows[0]!.status).toBe("rejected");
+      expect(log!.rows[0]!.reject_reason).toBe("op_not_supported");
+      expect(log!.rows[0]!.op).toBe("increment");
     },
     TIMEOUT_MS,
   );
@@ -3887,7 +3887,7 @@ describe("syncV2Push — routine_streaks PN-counter apply-fn (PR #042b)", () => 
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(1);
-      expect(body.results[0].status).toBe("applied");
+      expect(body!.results[0]!.status).toBe("applied");
 
       const row = await testPool.query<{
         current_streak: number;
@@ -3898,8 +3898,8 @@ describe("syncV2Push — routine_streaks PN-counter apply-fn (PR #042b)", () => 
         ["u-pn-empty"],
       );
       expect(row.rows.length).toBe(1);
-      expect(row.rows[0].current_streak).toBe(1);
-      expect(row.rows[0].longest_streak).toBe(1);
+      expect(row!.rows[0]!.current_streak).toBe(1);
+      expect(row!.rows[0]!.longest_streak).toBe(1);
     },
     TIMEOUT_MS,
   );
@@ -3957,8 +3957,8 @@ describe("syncV2Push — routine_streaks PN-counter apply-fn (PR #042b)", () => 
           WHERE user_id = $1`,
         ["u-pn-concur"],
       );
-      expect(row.rows[0].current_streak).toBe(2);
-      expect(row.rows[0].longest_streak).toBe(2);
+      expect(row!.rows[0]!.current_streak).toBe(2);
+      expect(row!.rows[0]!.longest_streak).toBe(2);
     },
     TIMEOUT_MS,
   );
@@ -4005,9 +4005,9 @@ describe("syncV2Push — routine_streaks PN-counter apply-fn (PR #042b)", () => 
           WHERE user_id = $1`,
         ["u-pn-dec"],
       );
-      expect(row.rows[0].current_streak).toBe(4);
+      expect(row!.rows[0]!.current_streak).toBe(4);
       // longest_streak — monotonic max, не зменшується разом із current.
-      expect(row.rows[0].longest_streak).toBe(5);
+      expect(row!.rows[0]!.longest_streak).toBe(5);
     },
     TIMEOUT_MS,
   );
@@ -4055,8 +4055,8 @@ describe("syncV2Push — routine_streaks PN-counter apply-fn (PR #042b)", () => 
         ["u-pn-clamp"],
       );
       // 1 + (-5) = -4 → clamped to 0; UI завжди бачить non-negative streak.
-      expect(row.rows[0].current_streak).toBe(0);
-      expect(row.rows[0].longest_streak).toBe(3);
+      expect(row!.rows[0]!.current_streak).toBe(0);
+      expect(row!.rows[0]!.longest_streak).toBe(3);
     },
     TIMEOUT_MS,
   );
@@ -4092,8 +4092,8 @@ describe("syncV2Push — routine_streaks PN-counter apply-fn (PR #042b)", () => 
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].status).toBe("rejected");
-      expect(body.results[0].reason).toBe("missing_delta");
+      expect(body!.results[0]!.status).toBe("rejected");
+      expect(body!.results[0]!.reason).toBe("missing_delta");
     },
     TIMEOUT_MS,
   );
@@ -4154,7 +4154,7 @@ describe("syncV2Push — routine_streaks PN-counter apply-fn (PR #042b)", () => 
         `SELECT COUNT(*)::text AS count FROM routine_streaks WHERE user_id = $1`,
         ["u-pn-invalid"],
       );
-      expect(Number(row.rows[0].count)).toBe(0);
+      expect(Number(row!.rows[0]!.count)).toBe(0);
     },
     TIMEOUT_MS,
   );
@@ -4222,13 +4222,13 @@ describe("syncV2Push — routine_streaks PN-counter apply-fn (PR #042b)", () => 
         results: Array<{ status: string; reason?: string }>;
       };
       expect(incBody.accepted).toBe(1);
-      expect(incBody.results[0].status).toBe("applied");
+      expect(incBody!.results[0]!.status).toBe("applied");
 
       const row = await testPool.query<{ current_streak: number }>(
         `SELECT current_streak FROM routine_streaks WHERE user_id = $1`,
         ["u-pn-lww"],
       );
-      expect(row.rows[0].current_streak).toBe(4);
+      expect(row!.rows[0]!.current_streak).toBe(4);
     },
     TIMEOUT_MS,
   );
@@ -4264,7 +4264,7 @@ describe("syncV2Push — routine_streaks PN-counter apply-fn (PR #042b)", () => 
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
-      expect(body.results[0].reason).toBe("user_id_mismatch");
+      expect(body!.results[0]!.reason).toBe("user_id_mismatch");
     },
     TIMEOUT_MS,
   );

@@ -53,14 +53,14 @@ export interface ApprovalRecord {
   /** TG-user-id of the requester (used to prevent unrelated chats acting). */
   founderTgUserId: number;
   /** Optional invocation id (audit-log linkage). */
-  invocationId?: number;
+  invocationId?: number | undefined;
   /**
    * ADR-0037 (Phase 4.5): persona that emitted the write-tool call.
    * Optional because write-tools may be queued from contexts that don't
    * track persona (legacy or non-persona-routed turns). Surfaced into
    * `openclaw_write_audit.persona` for filterable post-mortem queries.
    */
-  persona?: string;
+  persona?: string | undefined;
   createdAt: number;
   expiresAt: number;
   status: ApprovalStatus;
@@ -71,8 +71,8 @@ export interface ApprovalCreateInput {
   input: Record<string, unknown>;
   founderUserId: string;
   founderTgUserId: number;
-  invocationId?: number;
-  persona?: string;
+  invocationId?: number | undefined;
+  persona?: string | undefined;
 }
 
 export interface ApprovalStoreOptions {

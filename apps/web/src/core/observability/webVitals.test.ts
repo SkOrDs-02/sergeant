@@ -63,10 +63,10 @@ describe("webVitals.flush", () => {
     expect(sendBeaconSpy).toHaveBeenCalledTimes(2);
 
     const firstBatch = JSON.parse(
-      await (sendBeaconSpy.mock.calls[0][1] as Blob).text(),
+      await (sendBeaconSpy.mock.calls[0]![1] as Blob).text(),
     );
     const secondBatch = JSON.parse(
-      await (sendBeaconSpy.mock.calls[1][1] as Blob).text(),
+      await (sendBeaconSpy.mock.calls[1]![1] as Blob).text(),
     );
     expect(firstBatch.metrics).toHaveLength(MAX_BATCH);
     expect(secondBatch.metrics).toHaveLength(total - MAX_BATCH);
@@ -88,7 +88,7 @@ describe("webVitals.flush", () => {
     await waitMicrotasks();
     expect(sendBeaconSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
-    const [, init] = fetchSpy.mock.calls[0];
+    const [, init] = fetchSpy.mock.calls[0]!;
     expect(init).toMatchObject({
       method: "POST",
       keepalive: true,
@@ -136,7 +136,7 @@ describe("webVitals.flush", () => {
     await waitMicrotasks();
     expect(sendBeaconSpy).toHaveBeenCalledTimes(1);
     const payload = JSON.parse(
-      await (sendBeaconSpy.mock.calls[0][1] as Blob).text(),
+      await (sendBeaconSpy.mock.calls[0]![1] as Blob).text(),
     );
     expect(payload.metrics).toHaveLength(2);
     expect(payload.metrics[0]).toMatchObject({ name: "LCP", rating: "good" });
@@ -152,7 +152,7 @@ describe("webVitals.flush", () => {
     await waitMicrotasks();
     expect(sendBeaconSpy).toHaveBeenCalledTimes(1);
     const payload = JSON.parse(
-      await (sendBeaconSpy.mock.calls[0][1] as Blob).text(),
+      await (sendBeaconSpy.mock.calls[0]![1] as Blob).text(),
     );
     expect(payload.metrics[0]).toMatchObject({ name: "LCP", value: 124 });
     expect(payload.metrics[1]).toMatchObject({ name: "CLS", value: 0.1235 });

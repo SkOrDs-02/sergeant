@@ -33,7 +33,7 @@ export function createEmailUnsubscribeRouter({ pool }: { pool: Pool }): Router {
   r.get(
     "/api/email/unsubscribe",
     asyncHandler(async (req, res) => {
-      const raw = typeof req.query.u === "string" ? req.query.u : "";
+      const raw = typeof req.query["u"] === "string" ? req.query["u"] : "";
 
       const verdict = verifyUnsubscribeToken(raw);
       if (!verdict.ok) {

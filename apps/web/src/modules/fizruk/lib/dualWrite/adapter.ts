@@ -170,7 +170,7 @@ async function upsertWorkout(
   // Upsert items
   const items = w.items ?? [];
   for (let i = 0; i < items.length; i++) {
-    await upsertWorkoutItem(client, items[i], w.id, userId, clientTs, i);
+    await upsertWorkoutItem(client, items[i]!, w.id, userId, clientTs, i);
   }
 
   // Soft-delete items that were removed from the workout
@@ -245,7 +245,7 @@ async function upsertWorkoutItem(
       item.id,
       userId,
       clientTs,
-      sets[s],
+      sets[s]!,
       s,
     );
   }

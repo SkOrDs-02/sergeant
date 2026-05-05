@@ -18,17 +18,17 @@ function makeApp(pool: ReturnType<typeof makePool>) {
 }
 
 describe("GET /api/email/unsubscribe", () => {
-  const ORIGINAL_SECRET = process.env.BETTER_AUTH_SECRET;
+  const ORIGINAL_SECRET = process.env["BETTER_AUTH_SECRET"];
 
   beforeEach(() => {
-    process.env.BETTER_AUTH_SECRET = "test-secret-for-unsubscribe-32bytes!!";
+    process.env["BETTER_AUTH_SECRET"] = "test-secret-for-unsubscribe-32bytes!";
   });
 
   afterEach(() => {
     if (ORIGINAL_SECRET === undefined) {
-      delete process.env.BETTER_AUTH_SECRET;
+      delete process.env["BETTER_AUTH_SECRET"];
     } else {
-      process.env.BETTER_AUTH_SECRET = ORIGINAL_SECRET;
+      process.env["BETTER_AUTH_SECRET"] = ORIGINAL_SECRET;
     }
   });
 
@@ -45,7 +45,7 @@ describe("GET /api/email/unsubscribe", () => {
     expect(res.status).toBe(200);
     expect(res.text).toContain("Готово");
     expect(pool.query).toHaveBeenCalledTimes(1);
-    const [sql, values] = pool.query.mock.calls[0];
+    const [sql, values] = pool.query.mock.calls[0]!;
     expect(sql).toContain("INSERT INTO email_unsubscribes");
     expect(sql).toContain("ON CONFLICT");
     expect(values).toEqual(["u-happy", "ftux_drip"]);
@@ -87,7 +87,7 @@ describe("GET /api/email/unsubscribe", () => {
   });
 
   it("без BETTER_AUTH_SECRET: 503 plain text", async () => {
-    delete process.env.BETTER_AUTH_SECRET;
+    delete process.env["BETTER_AUTH_SECRET"];
     const pool = makePool();
     const res = await request(makeApp(pool)).get(
       "/api/email/unsubscribe?u=anything",

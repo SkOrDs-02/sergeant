@@ -212,7 +212,7 @@ describe("coachInsight", () => {
       },
     ];
     expect(payload.model).toMatch(/^claude-/);
-    const user = payload.messages[0].content;
+    const user = payload!.messages[0]!.content;
     expect(user).toContain("ФІНАНСИ ЦЬОГО ТИЖНЯ");
     expect(user).toContain("5000");
   });
@@ -287,7 +287,7 @@ describe("coachInsight", () => {
       unknown,
       { messages: { content: string }[] },
     ];
-    expect(payload.messages[0].content).toContain(
+    expect(payload!.messages[0]!.content).toContain(
       "Даних за поточний тиждень ще немає.",
     );
   });
@@ -317,7 +317,7 @@ describe("coachInsight", () => {
       unknown,
       { messages: { content: string }[] },
     ];
-    const prompt = payload.messages[0].content;
+    const prompt = payload!.messages[0]!.content;
     expect(prompt).toContain("КОНТЕКСТ ДАТИ");
     expect(prompt).toContain("Сьогодні: 2026-04-26, неділя.");
     expect(prompt).toContain(
@@ -339,6 +339,6 @@ describe("coachInsight", () => {
       unknown,
       { messages: { content: string }[] },
     ];
-    expect(payload.messages[0].content).toContain("Поточну дату не передано");
+    expect(payload!.messages[0]!.content).toContain("Поточну дату не передано");
   });
 });

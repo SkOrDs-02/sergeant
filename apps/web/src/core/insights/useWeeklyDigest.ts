@@ -345,7 +345,7 @@ export function aggregateRoutine(weekKey: string): RoutineAggregate | null {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
       const dk = localDateKey(d);
-      if (Array.isArray(completions[h.id]) && completions[h.id].includes(dk)) {
+      if (Array.isArray(completions[h.id]) && completions[h.id]!.includes(dk)) {
         done++;
       }
     }

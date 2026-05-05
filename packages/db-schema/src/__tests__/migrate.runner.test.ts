@@ -18,7 +18,7 @@ import {
 interface FakeAdapterState {
   ledgerExists: boolean;
   applied: { name: string; sql: string }[];
-  failOn?: { name: string; phase: "sql" | "ledger" };
+  failOn?: { name: string; phase: "sql" | "ledger" } | undefined;
   ensureLedgerCalls: number;
   applyCalls: { name: string; sql: string }[];
 }

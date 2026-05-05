@@ -79,9 +79,9 @@ export type WebPushOutcome =
 export interface WebPushSendResult {
   outcome: WebPushOutcome;
   /** Upstream HTTP status, якщо відомо. Timeout/circuit — undefined. */
-  statusCode?: number;
+  statusCode?: number | undefined;
   /** Серіалізоване повідомлення помилки для логування caller-ом. */
-  errorMessage?: string;
+  errorMessage?: string | undefined;
   /** Весь час wrapper-а, включно з breaker-check і retry-sleep-ами. */
   durationMs: number;
   /** Скільки разів реально викликали webpush.sendNotification. */
@@ -184,7 +184,7 @@ async function withTimeout<T>(
 }
 
 interface SendOptions {
-  timeoutMs?: number;
+  timeoutMs?: number | undefined;
 }
 
 /**
@@ -217,7 +217,7 @@ export async function sendWebPush(
   let lastStatus: number | undefined = undefined;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const delay = jitteredDelay(state.retryDelaysMs[attempt]);
+    const delay = jitteredDelay(state!.retryDelaysMs[attempt]!);
     if (delay > 0) await sleep(delay);
 
     const controller = new AbortController();

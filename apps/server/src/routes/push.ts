@@ -84,7 +84,7 @@ export function createPushRouter(): Router {
   r.post(
     "/api/push/send",
     requireInternalIp({
-      entries: process.env.PUSH_INTERNAL_ALLOWED_IPS ?? "",
+      entries: process.env["PUSH_INTERNAL_ALLOWED_IPS"] ?? "",
       onReject: ({ ip, path }) => {
         logger.warn({
           msg: "push_send_ip_rejected",

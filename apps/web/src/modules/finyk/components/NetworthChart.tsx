@@ -41,7 +41,7 @@ function NetworthChartComponent({ data }: NetworthChartProps) {
     `${px(data.length - 1)},${H - PAD.bottom}`,
   ].join(" ");
 
-  const isPositive = values[values.length - 1] >= values[0];
+  const isPositive = values[values.length - 1]! >= values[0]!;
   const color = isPositive ? statusColors.success : statusColors.danger;
 
   const fmt = (v: number) => {
@@ -65,7 +65,7 @@ function NetworthChartComponent({ data }: NetworthChartProps) {
   ];
   const monthLabel = (m: string) => {
     const [, month] = m.split("-");
-    return MONTH_UK[parseInt(month, 10) - 1] || m;
+    return MONTH_UK[parseInt(month!, 10) - 1] || m;
   };
 
   return (

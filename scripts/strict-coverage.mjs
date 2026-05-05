@@ -194,6 +194,9 @@ export function scanStrictCoverage(rootDir) {
     const noImplicitAny =
       opts.noImplicitAny !== undefined ? opts.noImplicitAny === true : strict;
     const noUncheckedIndexedAccess = opts.noUncheckedIndexedAccess === true;
+    const exactOptionalPropertyTypes = opts.exactOptionalPropertyTypes === true;
+    const noPropertyAccessFromIndexSignature =
+      opts.noPropertyAccessFromIndexSignature === true;
     const allowJs = opts.allowJs === true;
 
     packages.push({
@@ -203,6 +206,8 @@ export function scanStrictCoverage(rootDir) {
       strictNullChecks,
       noImplicitAny,
       noUncheckedIndexedAccess,
+      exactOptionalPropertyTypes,
+      noPropertyAccessFromIndexSignature,
       allowJs,
     });
   }
@@ -215,6 +220,18 @@ export function scanStrictCoverage(rootDir) {
   ).length;
   const noUncheckedIndexedAccessPct =
     total > 0 ? Math.round((noUncheckedIndexedAccessCount / total) * 100) : 0;
+  const exactOptionalPropertyTypesCount = packages.filter(
+    (p) => p.exactOptionalPropertyTypes,
+  ).length;
+  const exactOptionalPropertyTypesPct =
+    total > 0 ? Math.round((exactOptionalPropertyTypesCount / total) * 100) : 0;
+  const noPropertyAccessFromIndexSignatureCount = packages.filter(
+    (p) => p.noPropertyAccessFromIndexSignature,
+  ).length;
+  const noPropertyAccessFromIndexSignaturePct =
+    total > 0
+      ? Math.round((noPropertyAccessFromIndexSignatureCount / total) * 100)
+      : 0;
 
   return {
     packages,
@@ -224,6 +241,10 @@ export function scanStrictCoverage(rootDir) {
       pct,
       noUncheckedIndexedAccessCount,
       noUncheckedIndexedAccessPct,
+      exactOptionalPropertyTypesCount,
+      exactOptionalPropertyTypesPct,
+      noPropertyAccessFromIndexSignatureCount,
+      noPropertyAccessFromIndexSignaturePct,
     },
   };
 }
@@ -242,12 +263,18 @@ export function formatMarkdown(result) {
   lines.push(
     `**Phase 6a:** ${summary.noUncheckedIndexedAccessCount} / ${summary.total} packages have \`noUncheckedIndexedAccess: true\` (${summary.noUncheckedIndexedAccessPct}%)`,
   );
-  lines.push("");
   lines.push(
-    "| Package | strict | strictNullChecks | noImplicitAny | noUncheckedIndexedAccess | allowJs |",
+    `**Phase 6b:** ${summary.exactOptionalPropertyTypesCount} / ${summary.total} packages have \`exactOptionalPropertyTypes: true\` (${summary.exactOptionalPropertyTypesPct}%)`,
   );
   lines.push(
-    "| ------- | ------ | ---------------- | ------------- | ------------------------ | ------- |",
+    `**Phase 6d:** ${summary.noPropertyAccessFromIndexSignatureCount} / ${summary.total} packages have \`noPropertyAccessFromIndexSignature: true\` (${summary.noPropertyAccessFromIndexSignaturePct}%)`,
+  );
+  lines.push("");
+  lines.push(
+    "| Package | strict | strictNullChecks | noImplicitAny | noUncheckedIndexedAccess | exactOptionalPropertyTypes | noPropertyAccessFromIndexSignature | allowJs |",
+  );
+  lines.push(
+    "| ------- | ------ | ---------------- | ------------- | ------------------------ | -------------------------- | ---------------------------------- | ------- |",
   );
 
   for (const pkg of packages) {
@@ -257,6 +284,8 @@ export function formatMarkdown(result) {
       pkg.strictNullChecks ? "✅" : "❌",
       pkg.noImplicitAny ? "✅" : "❌",
       pkg.noUncheckedIndexedAccess ? "✅" : "❌",
+      pkg.exactOptionalPropertyTypes ? "✅" : "❌",
+      pkg.noPropertyAccessFromIndexSignature ? "✅" : "❌",
       pkg.allowJs ? "⚠️" : "—",
     ];
     lines.push(`| ${row.join(" | ")} |`);
@@ -268,6 +297,12 @@ export function formatMarkdown(result) {
   );
   lines.push(
     `> noUncheckedIndexedAccess coverage: ${summary.noUncheckedIndexedAccessCount} / ${summary.total} packages (${summary.noUncheckedIndexedAccessPct}%)`,
+  );
+  lines.push(
+    `> exactOptionalPropertyTypes coverage: ${summary.exactOptionalPropertyTypesCount} / ${summary.total} packages (${summary.exactOptionalPropertyTypesPct}%)`,
+  );
+  lines.push(
+    `> noPropertyAccessFromIndexSignature coverage: ${summary.noPropertyAccessFromIndexSignatureCount} / ${summary.total} packages (${summary.noPropertyAccessFromIndexSignaturePct}%)`,
   );
 
   return lines.join("\n");

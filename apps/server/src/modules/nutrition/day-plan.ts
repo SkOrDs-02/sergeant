@@ -77,7 +77,7 @@ function normalizeDayPlan(parsed: unknown): NormalizedDayPlan {
     parsed && typeof parsed === "object" && !Array.isArray(parsed)
       ? (parsed as Record<string, unknown>)
       : ({} as Record<string, unknown>);
-  const meals = Array.isArray(obj.meals) ? (obj.meals as unknown[]) : [];
+  const meals = Array.isArray(obj["meals"]) ? (obj["meals"] as unknown[]) : [];
   const validTypes: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
   const typeLabels: Record<MealType, string> = {
     breakfast: "Сніданок",
@@ -90,32 +90,32 @@ function normalizeDayPlan(parsed: unknown): NormalizedDayPlan {
       .map((m): PlanMeal | null => {
         if (!m || typeof m !== "object") return null;
         const rec = m as Record<string, unknown>;
-        const type: MealType = validTypes.includes(rec.type as MealType)
-          ? (rec.type as MealType)
+        const type: MealType = validTypes.includes(rec["type"] as MealType)
+          ? (rec["type"] as MealType)
           : "snack";
         return {
           type,
-          label: String(rec.label || typeLabels[type]),
-          name: String(rec.name || "").trim(),
-          description: String(rec.description || "").trim(),
-          ingredients: Array.isArray(rec.ingredients)
-            ? (rec.ingredients as unknown[])
+          label: String(rec["label"] || typeLabels[type]),
+          name: String(rec["name"] || "").trim(),
+          description: String(rec["description"] || "").trim(),
+          ingredients: Array.isArray(rec["ingredients"])
+            ? (rec["ingredients"] as unknown[])
                 .map((x) => String(x).trim())
                 .filter(Boolean)
             : [],
-          kcal: numOrNull(rec.kcal),
-          protein_g: numOrNull(rec.protein_g),
-          fat_g: numOrNull(rec.fat_g),
-          carbs_g: numOrNull(rec.carbs_g),
+          kcal: numOrNull(rec["kcal"]),
+          protein_g: numOrNull(rec["protein_g"]),
+          fat_g: numOrNull(rec["fat_g"]),
+          carbs_g: numOrNull(rec["carbs_g"]),
         };
       })
       .filter((v): v is PlanMeal => Boolean(v))
       .slice(0, 6),
-    totalKcal: numOrNull(obj.totalKcal),
-    totalProtein_g: numOrNull(obj.totalProtein_g),
-    totalFat_g: numOrNull(obj.totalFat_g),
-    totalCarbs_g: numOrNull(obj.totalCarbs_g),
-    note: String(obj.note || "").trim(),
+    totalKcal: numOrNull(obj["totalKcal"]),
+    totalProtein_g: numOrNull(obj["totalProtein_g"]),
+    totalFat_g: numOrNull(obj["totalFat_g"]),
+    totalCarbs_g: numOrNull(obj["totalCarbs_g"]),
+    note: String(obj["note"] || "").trim(),
   };
 }
 

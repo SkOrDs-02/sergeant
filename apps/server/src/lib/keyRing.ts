@@ -43,11 +43,11 @@ export interface KeyRing {
 
 export interface ParseKeyRingInput {
   /** Multi-key CSV: `v1:hex,v2:hex,...`. Якщо порожньо/undefined — fallback на legacyKey. */
-  keysCsv?: string | null;
+  keysCsv?: string | null | undefined;
   /** Версія, яка використовується для запису, e.g. `v2`. Якщо порожньо — current = найвища версія у keysCsv. */
-  currentVersion?: string | null;
+  currentVersion?: string | null | undefined;
   /** Legacy single-key env-var (e.g. `MONO_TOKEN_ENC_KEY`). Використовується якщо `keysCsv` порожнє. */
-  legacyKey?: string | null;
+  legacyKey?: string | null | undefined;
   /** Префікс для error-повідомлень (e.g. "MONO_TOKEN_ENC_KEY"). */
   envName: string;
 }

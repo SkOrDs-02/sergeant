@@ -201,11 +201,11 @@ export default function App({
   const swipe = useSwipeNavigation({
     onSwipeLeft: () => {
       const next = curPageIdx + 1;
-      if (next >= 0 && next < NAV_IDS.length) navigate(NAV_IDS[next]);
+      if (next >= 0 && next < NAV_IDS.length) navigate(NAV_IDS[next]!);
     },
     onSwipeRight: () => {
       const next = curPageIdx - 1;
-      if (next >= 0 && next < NAV_IDS.length) navigate(NAV_IDS[next]);
+      if (next >= 0 && next < NAV_IDS.length) navigate(NAV_IDS[next]!);
     },
     threshold: SWIPE_THRESHOLD_PX,
     atStart: curPageIdx === 0,

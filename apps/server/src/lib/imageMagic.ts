@@ -125,10 +125,10 @@ export function detectImageMime(bytes: Uint8Array): string | null {
     bytes[7] === 0x70
   ) {
     const brand = String.fromCharCode(
-      bytes[8],
-      bytes[9],
-      bytes[10],
-      bytes[11],
+      bytes[8]!,
+      bytes[9]!,
+      bytes[10]!,
+      bytes[11]!,
     ).toLowerCase();
     if (
       brand.startsWith("hei") ||
@@ -179,7 +179,7 @@ export function validateImageBase64(
   const maxBytes = opts.maxBytes ?? MAX_DECODED_BYTES;
   const allowed = opts.allowedMimes ?? ALLOWED_PHOTO_MIMES;
   const declaredNormalised = declaredMime
-    ? declaredMime.toLowerCase().split(";")[0].trim()
+    ? declaredMime!.toLowerCase().split(";")[0]!.trim()
     : "";
 
   // Buffer.from з некоректним base64 не кидає (повертає буфер на основі

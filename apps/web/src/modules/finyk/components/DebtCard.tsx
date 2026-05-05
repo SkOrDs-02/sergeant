@@ -5,7 +5,7 @@ function formatDueDate(dueDate: string | null | undefined) {
   if (!dueDate) return null;
   const now = new Date();
   const [y, m, d] = dueDate.split("-").map(Number);
-  const date = new Date(y, (m || 1) - 1, d || 1);
+  const date = new Date(y!, (m || 1) - 1, d || 1);
   if (Number.isNaN(date.getTime())) return null;
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const days = Math.ceil((date.getTime() - today.getTime()) / 86400000);
@@ -18,7 +18,7 @@ function formatDueDate(dueDate: string | null | undefined) {
 function formatDueDateValue(dueDate: string | null | undefined) {
   if (!dueDate) return "";
   const [y, m, d] = dueDate.split("-").map(Number);
-  return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString("uk-UA");
+  return new Date(y!, (m || 1) - 1, d || 1).toLocaleDateString("uk-UA");
 }
 
 interface DebtCardProps {

@@ -157,7 +157,7 @@ describe("handleAsyncChatAction — recall_memory happy path", () => {
     } as unknown as ChatAction;
     await handleAsyncChatAction(action);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [, init] = fetchMock.mock.calls[0];
+    const [, init] = fetchMock.mock.calls[0]!;
     const body = JSON.parse(init.body);
     expect(body).toEqual({
       query: "test",
@@ -173,7 +173,7 @@ describe("handleAsyncChatAction — recall_memory happy path", () => {
       input: { query: "  spaced  ", top_k: -1 },
     } as unknown as ChatAction;
     await handleAsyncChatAction(action);
-    const [, init] = fetchMock.mock.calls[0];
+    const [, init] = fetchMock.mock.calls[0]!;
     const body = JSON.parse(init.body);
     expect(body).toEqual({ query: "spaced" });
   });
@@ -186,7 +186,7 @@ describe("handleAsyncChatAction — recall_memory happy path", () => {
     } as unknown as ChatAction;
     await handleAsyncChatAction(action);
     expect(apiUrlMock).toHaveBeenCalledWith("/api/ai-memory/recall");
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toBe("https://srv.test/api/ai-memory/recall");
     expect(init.method).toBe("POST");
     expect(init.credentials).toBe("include");

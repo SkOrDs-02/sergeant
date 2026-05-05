@@ -31,7 +31,7 @@ describe("hubChatSessions", () => {
 
       const sessions = loadSessions();
       expect(sessions).toHaveLength(1);
-      expect(sessions[0].messages.length).toBeGreaterThanOrEqual(2);
+      expect(sessions[0]!.messages.length).toBeGreaterThanOrEqual(2);
       // After migration the v1 key is populated so subsequent loads
       // don't re-migrate.
       expect(localStorage.getItem(SESSIONS_STORAGE_KEY)).toBeTruthy();
@@ -47,7 +47,7 @@ describe("hubChatSessions", () => {
 
       const next = loadSessions();
       expect(next).toHaveLength(1);
-      expect(next[0].id).toBe(original[0].id);
+      expect(next[0]!.id).toBe(original[0]!.id);
     });
 
     it("returns empty array when there is nothing to migrate", () => {
@@ -83,7 +83,7 @@ describe("hubChatSessions", () => {
       const updated = { ...a, title: "Renamed" };
       const next = upsertSession([a], updated);
       expect(next).toHaveLength(1);
-      expect(next[0].title).toBe("Renamed");
+      expect(next[0]!.title).toBe("Renamed");
     });
 
     it("delete removes only the targeted session", () => {
@@ -111,7 +111,7 @@ describe("hubChatSessions", () => {
     it("creates a fresh session when input list is empty", () => {
       const { sessions, activeId } = ensureActiveSession([], null);
       expect(sessions).toHaveLength(1);
-      expect(activeId).toBe(sessions[0].id);
+      expect(activeId).toBe(sessions[0]!.id);
     });
 
     it("falls back to the most recent session when activeId is missing", () => {

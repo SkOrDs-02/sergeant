@@ -129,21 +129,21 @@ export function createEncryptingAdapter(ring: KeyRing): DBAdapterInstance {
     const wrapped: DBAdapter = {
       ...base,
       id: base.id,
-      async create<T extends Record<string, unknown>, R = T>(args: {
+      async create<T extends Record<string, unknown>, R = T>(data: {
         model: string;
         data: Omit<T, "id">;
-        select?: string[];
-        forceAllowId?: boolean;
+        select?: string[] | undefined;
+        forceAllowId?: boolean | undefined;
       }): Promise<R> {
         const transformed =
-          args.model === ACCOUNT_MODEL
+          data.model === ACCOUNT_MODEL
             ? (encryptTokenFields(
-                args.data as Record<string, unknown>,
+                data.data as Record<string, unknown>,
                 ring,
               ) as Omit<T, "id">)
-            : args.data;
-        const result = await base.create<T, R>({ ...args, data: transformed });
-        return args.model === ACCOUNT_MODEL
+            : data.data;
+        const result = await base.create<T, R>({ ...data, data: transformed });
+        return data.model === ACCOUNT_MODEL
           ? decryptTokenFields(result, ring)
           : result;
       },

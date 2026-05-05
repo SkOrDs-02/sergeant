@@ -41,7 +41,7 @@ function serializeEmbedding(vec: Float32Array): string {
         `Embedding contains non-finite value at index ${i}: ${v}`,
       );
     }
-    parts.push(v.toString());
+    parts.push(v!.toString());
   }
   return `[${parts.join(",")}]`;
 }
@@ -170,6 +170,7 @@ export function createPgVectorStore(pool: pg.Pool): VectorStore {
         // SET LOCAL — no-op, тому BEGIN.
         await client.query("BEGIN");
         const efSearch = opts.efSearch ?? env.AI_MEMORY_HNSW_EF_SEARCH;
+        // eslint-disable-next-line no-restricted-syntax -- SET LOCAL does not accept $-params; efSearch is integer-coerced via Math.floor, source is env-validated.
         await client.query(
           `SET LOCAL hnsw.ef_search = ${Math.floor(efSearch)}`,
         );

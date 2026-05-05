@@ -203,7 +203,7 @@ export async function transactionsHandler(
   // shipped to the api-client.
   if (hasMore) {
     const last = result[result.length - 1];
-    const nextCursor = `${last.time}:${last.monoTxId}`;
+    const nextCursor = `${last!.time}:${last!.monoTxId}`;
     res.json(MonoTransactionsPageSchema.parse({ data: result, nextCursor }));
   } else {
     res.json(

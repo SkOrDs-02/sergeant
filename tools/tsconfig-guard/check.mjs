@@ -27,6 +27,8 @@ const GUARDED_OPTIONS = [
   "noFallthroughCasesInSwitch",
   "noUnusedLocals",
   "noUnusedParameters",
+  "exactOptionalPropertyTypes",
+  "noPropertyAccessFromIndexSignature",
 ];
 
 const PACKAGE_ALIAS_MAP = {

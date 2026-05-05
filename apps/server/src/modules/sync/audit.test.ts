@@ -145,13 +145,13 @@ describe("listSyncAudit — RLS gating", () => {
     expect(res.body.userId).toBe("user_self");
     expect(res.body.isAdminView).toBe(false);
 
-    const [sql, params] = pool.query.mock.calls[0];
+    const [sql, params] = pool.query.mock.calls[0]!;
     expect(sql).toMatch(/FROM sync_audit_log/);
     expect(sql).toMatch(/user_id = \$1/);
     expect(params[0]).toBe("user_self");
     // BIGSERIAL → number у відповіді (Hard Rule #1).
-    expect(res.body.rows![0].id).toBe(10);
-    expect(typeof res.body.rows![0].id).toBe("number");
+    expect(res!.body.rows![0]!.id).toBe(10);
+    expect(typeof res!.body.rows![0]!.id).toBe("number");
   });
 
   it("self via ?user_id=<self>: працює як self-mode (isAdminView=false)", async () => {
@@ -209,9 +209,9 @@ describe("listSyncAudit — RLS gating", () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.userId).toBe("user_other");
     expect(res.body.isAdminView).toBe(true);
-    expect(res.body.rows![0].userId).toBe("user_other");
+    expect(res!.body.rows![0]!.userId).toBe("user_other");
 
-    const [, params] = pool.query.mock.calls[0];
+    const [, params] = pool.query.mock.calls[0]!;
     expect(params[0]).toBe("user_other");
   });
 });
@@ -226,7 +226,7 @@ describe("listSyncAudit — query filters", () => {
       res,
     );
 
-    const [sql, params] = pool.query.mock.calls[0];
+    const [sql, params] = pool.query.mock.calls[0]!;
     expect(sql).toMatch(/op_type = \$/);
     expect(sql).toMatch(/outcome = \$/);
     expect(sql).toMatch(/module = \$/);
@@ -257,7 +257,7 @@ describe("listSyncAudit — query filters", () => {
     const res = makeRes();
     await listSyncAudit(makeReq({}), res);
 
-    const [, params] = pool.query.mock.calls[0];
+    const [, params] = pool.query.mock.calls[0]!;
     expect(params[params.length - 1]).toBe(50);
   });
 
@@ -267,7 +267,7 @@ describe("listSyncAudit — query filters", () => {
     const res = makeRes();
     await listSyncAudit(makeReq({ before_id: "100" }), res);
 
-    const [sql, params] = pool.query.mock.calls[0];
+    const [sql, params] = pool.query.mock.calls[0]!;
     expect(sql).toMatch(/id < \$2/);
     expect(params[1]).toBe(100);
     expect(res.statusCode).toBe(200);

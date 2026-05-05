@@ -23,9 +23,9 @@ export interface WaitlistInsertInput {
   email: string;
   tier_interest: WaitlistTier;
   source: WaitlistSource;
-  locale?: string;
-  user_id?: string | null;
-  user_agent?: string | null;
+  locale?: string | undefined;
+  user_id?: string | null | undefined;
+  user_agent?: string | null | undefined;
 }
 
 export interface WaitlistInsertResult {

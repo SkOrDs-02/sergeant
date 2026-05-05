@@ -85,7 +85,7 @@ export { HELP_TEXT } from "./help-text.js";
 import { HELP_TEXT } from "./help-text.js";
 
 async function main() {
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const anthropicKey = process.env["ANTHROPIC_API_KEY"];
   if (!anthropicKey) {
     console.error("ANTHROPIC_API_KEY is not set");
     process.exit(1);
@@ -98,7 +98,7 @@ async function main() {
   // CONSOLE_BOT_TOKEN is the *expected* state, not a fatal error. Match the
   // OpenClaw fail-closed pattern: warn + skip, keep the process alive for
   // whichever bot is actually configured.
-  const botToken = process.env.CONSOLE_BOT_TOKEN;
+  const botToken = process.env["CONSOLE_BOT_TOKEN"];
   let consolePromise: Promise<void> | undefined;
   if (!botToken) {
     console.warn(
@@ -111,13 +111,13 @@ async function main() {
     // aggregate budget linearly. `console.global_rate_cap_hit_total`
     // surfaces deny-by-global events for soak tests / dashboards.
     const limiter = new FixedWindowRateLimiter(
-      parseRateLimitPerMinute(process.env.CONSOLE_RATE_LIMIT_PER_MIN),
+      parseRateLimitPerMinute(process.env["CONSOLE_RATE_LIMIT_PER_MIN"]),
       60_000,
       () => Date.now(),
       {
         key: CONSOLE_GLOBAL_RATE_LIMIT_KEY,
         limit: parseGlobalRateLimitPerMinute(
-          process.env.CONSOLE_GLOBAL_RATE_LIMIT_PER_MIN,
+          process.env["CONSOLE_GLOBAL_RATE_LIMIT_PER_MIN"],
         ),
       },
     );
@@ -184,10 +184,11 @@ async function main() {
 
   // OpenClaw — DM-only co-founder bot (ADR-0031). Fail-closed якщо env-и не
   // налаштовані — main bot стартує далі, OpenClaw тихо вимкнений з warning-ом.
-  const openclawToken = process.env.OPENCLAW_BOT_TOKEN;
-  const founderUserId = process.env.OPENCLAW_FOUNDER_USER_ID;
-  const serverUrl = process.env.SERVER_INTERNAL_URL ?? "http://localhost:3000";
-  const internalApiKey = process.env.INTERNAL_API_KEY ?? "";
+  const openclawToken = process.env["OPENCLAW_BOT_TOKEN"];
+  const founderUserId = process.env["OPENCLAW_FOUNDER_USER_ID"];
+  const serverUrl =
+    process.env["SERVER_INTERNAL_URL"] ?? "http://localhost:3000";
+  const internalApiKey = process.env["INTERNAL_API_KEY"] ?? "";
 
   let openclawPromise: Promise<void> | undefined;
   if (!openclawToken) {
@@ -209,7 +210,7 @@ async function main() {
       internalApiKey,
       founderUserId,
       maxIterations: parseOpenClawMaxIterations(
-        process.env.OPENCLAW_MAX_ITERATIONS,
+        process.env["OPENCLAW_MAX_ITERATIONS"],
       ),
     });
 
@@ -217,13 +218,14 @@ async function main() {
     // 2-3s (next long-poll cycle) to <500ms. Feature-flag default-off so
     // local dev keeps the long-poll happy path; Railway flips it on per
     // docs/deploy/console.md.
-    const useWebhook = shouldUseWebhook(process.env.OPENCLAW_USE_WEBHOOK);
+    const useWebhook = shouldUseWebhook(process.env["OPENCLAW_USE_WEBHOOK"]);
     if (useWebhook) {
-      const webhookUrl = process.env.OPENCLAW_WEBHOOK_URL;
-      const webhookSecret = process.env.OPENCLAW_WEBHOOK_SECRET;
+      const webhookUrl = process.env["OPENCLAW_WEBHOOK_URL"];
+      const webhookSecret = process.env["OPENCLAW_WEBHOOK_SECRET"];
       const webhookPath =
-        process.env.OPENCLAW_WEBHOOK_PATH ?? DEFAULT_OPENCLAW_WEBHOOK_PATH;
-      const portRaw = process.env.PORT ?? process.env.OPENCLAW_WEBHOOK_PORT;
+        process.env["OPENCLAW_WEBHOOK_PATH"] ?? DEFAULT_OPENCLAW_WEBHOOK_PATH;
+      const portRaw =
+        process.env["PORT"] ?? process.env["OPENCLAW_WEBHOOK_PORT"];
       const port = Number(portRaw);
       if (!webhookUrl) {
         console.error(

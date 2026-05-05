@@ -89,21 +89,23 @@ function summarize(content: string): string {
  * Sentry-стану.
  */
 export interface TruncateOptions {
-  threshold?: number;
-  addBreadcrumb?: (b: {
-    category: string;
-    level: "info" | "warning";
-    message: string;
-    data: Record<string, unknown>;
-  }) => void;
-  recordMetric?: (labels: { reason: string }) => void;
+  threshold?: number | undefined;
+  addBreadcrumb?:
+    | ((b: {
+        category: string;
+        level: "info" | "warning";
+        message: string;
+        data: Record<string, unknown>;
+      }) => void)
+    | undefined;
+  recordMetric?: ((labels: { reason: string }) => void) | undefined;
   /**
    * Optional request-id, який потрапить у breadcrumb-data для зручного
    * grep-у в Sentry. Якщо нема — пишемо без поля (Sentry-side ALS уже
    * прикріплює `requestId`-tag через `beforeSend` у sentry.ts, але
    * breadcrumbs йдуть до `beforeSend` не завжди).
    */
-  requestId?: string;
+  requestId?: string | undefined;
 }
 
 /**

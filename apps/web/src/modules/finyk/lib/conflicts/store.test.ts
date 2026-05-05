@@ -103,8 +103,8 @@ describe("finyk manual-expense conflict store", () => {
     const conflicts = getFinykManualExpenseConflictsSnapshot().conflicts;
     expect(conflicts).toHaveLength(FINYK_MANUAL_EXPENSE_CONFLICT_LIMIT);
     // First 5 (tx-0..tx-4) must have aged out; tail must be the latest record.
-    expect(conflicts[0].transactionId).toBe("tx-5");
-    expect(conflicts[conflicts.length - 1].transactionId).toBe(
+    expect(conflicts[0]!.transactionId).toBe("tx-5");
+    expect(conflicts[conflicts.length - 1]!.transactionId).toBe(
       `tx-${FINYK_MANUAL_EXPENSE_CONFLICT_LIMIT + 4}`,
     );
   });
@@ -122,7 +122,7 @@ describe("finyk manual-expense conflict store", () => {
     expect(listener).toHaveBeenCalledTimes(1);
     const conflicts = getFinykManualExpenseConflictsSnapshot().conflicts;
     expect(conflicts).toHaveLength(1);
-    expect(conflicts[0].transactionId).toBe("tx-2");
+    expect(conflicts[0]!.transactionId).toBe("tx-2");
 
     unsubscribe();
   });

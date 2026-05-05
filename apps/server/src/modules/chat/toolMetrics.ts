@@ -41,9 +41,10 @@ export function recordToolProposals(
     chatToolInvocationsTotal.inc(l),
 ): void {
   for (const block of contentBlocks) {
-    if (block.type !== "tool_use") continue;
-    if (typeof block.name !== "string" || block.name.length === 0) continue;
-    inc({ tool: safeName(block.name), outcome: "proposed" });
+    if (block["type"] !== "tool_use") continue;
+    if (typeof block["name"] !== "string" || block["name"].length === 0)
+      continue;
+    inc({ tool: safeName(block["name"]), outcome: "proposed" });
   }
 }
 

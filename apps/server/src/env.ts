@@ -21,9 +21,9 @@ export const env = {
   // ─────────────────────────────────────────────────────────────────────────
   // Server
   // ─────────────────────────────────────────────────────────────────────────
-  NODE_ENV: process.env.NODE_ENV || "development",
+  NODE_ENV: process.env["NODE_ENV"] || "development",
   PORT: parseIntEnv("PORT", 3000),
-  HOST: process.env.HOST || "0.0.0.0",
+  HOST: process.env["HOST"] || "0.0.0.0",
 
   /** Global request timeout in ms. 0 = disabled. */
   REQUEST_TIMEOUT_MS: parseIntEnv("REQUEST_TIMEOUT_MS", 120_000),
@@ -40,7 +40,7 @@ export const env = {
   // ─────────────────────────────────────────────────────────────────────────
   // Database
   // ─────────────────────────────────────────────────────────────────────────
-  DATABASE_URL: process.env.DATABASE_URL || "",
+  DATABASE_URL: process.env["DATABASE_URL"] || "",
 
   // ─────────────────────────────────────────────────────────────────────────
   // Auth
@@ -76,7 +76,7 @@ export const env = {
   // ─────────────────────────────────────────────────────────────────────────
   // Redis
   // ─────────────────────────────────────────────────────────────────────────
-  REDIS_URL: process.env.REDIS_URL || "",
+  REDIS_URL: process.env["REDIS_URL"] || "",
 
   /** Max reconnect attempts before giving up */
   REDIS_MAX_RETRIES: parseIntEnv("REDIS_MAX_RETRIES", 10),
@@ -119,12 +119,12 @@ export const env = {
   // ─────────────────────────────────────────────────────────────────────────
 
   /** Bearer token that n8n must include when calling /api/internal/* routes. */
-  INTERNAL_API_KEY: process.env.INTERNAL_API_KEY || "",
+  INTERNAL_API_KEY: process.env["INTERNAL_API_KEY"] || "",
 
   // ─────────────────────────────────────────────────────────────────────────
   // AI / Anthropic
   // ─────────────────────────────────────────────────────────────────────────
-  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || "",
+  ANTHROPIC_API_KEY: process.env["ANTHROPIC_API_KEY"] || "",
 
   /** AI request timeout in ms */
   AI_TIMEOUT_MS: parseIntEnv("AI_TIMEOUT_MS", 180_000),
@@ -185,14 +185,14 @@ export const env = {
   // ─────────────────────────────────────────────────────────────────────────
   // Observability
   // ─────────────────────────────────────────────────────────────────────────
-  SENTRY_DSN: process.env.SENTRY_DSN || "",
-  LOG_LEVEL: process.env.LOG_LEVEL || "info",
+  SENTRY_DSN: process.env["SENTRY_DSN"] || "",
+  LOG_LEVEL: process.env["LOG_LEVEL"] || "info",
 
   // ─────────────────────────────────────────────────────────────────────────
   // External Services
   // ─────────────────────────────────────────────────────────────────────────
-  MONO_TOKEN: process.env.MONO_TOKEN || "",
-  RESEND_API_KEY: process.env.RESEND_API_KEY || "",
+  MONO_TOKEN: process.env["MONO_TOKEN"] || "",
+  RESEND_API_KEY: process.env["RESEND_API_KEY"] || "",
 
   // ─────────────────────────────────────────────────────────────────────────
   // Feature Flags
@@ -244,7 +244,7 @@ export const env = {
    * Інтенціонально без UI-toggle: це operational backdoor для
    * incident-response, а не self-service feature.
    */
-  SYNC_AUDIT_ADMIN_USER_IDS: process.env.SYNC_AUDIT_ADMIN_USER_IDS || "",
+  SYNC_AUDIT_ADMIN_USER_IDS: process.env["SYNC_AUDIT_ADMIN_USER_IDS"] || "",
 
   // ─────────────────────────────────────────────────────────────────────────
   // AI memory (pgvector + Voyage embeddings, ADR-0028)
@@ -270,7 +270,7 @@ export const env = {
    * memory-write задачі у queue зі статусом `failed` без повторних
    * спроб у такому разі (щоб не валити Voyage квоту з кожним tick-ом).
    */
-  VOYAGE_API_KEY: process.env.VOYAGE_API_KEY || "",
+  VOYAGE_API_KEY: process.env["VOYAGE_API_KEY"] || "",
 
   /**
    * Voyage embedding model. `voyage-3.5-lite` — multilingual lite-tier
@@ -283,7 +283,7 @@ export const env = {
    * всіх існуючих row-ів (vector spaces різних моделей не сумісні).
    */
   VOYAGE_EMBEDDING_MODEL:
-    process.env.VOYAGE_EMBEDDING_MODEL || "voyage-3.5-lite",
+    process.env["VOYAGE_EMBEDDING_MODEL"] || "voyage-3.5-lite",
 
   /**
    * Розмірність embedding-вектора. Має співпадати з `HALFVEC(N)` у
@@ -298,7 +298,8 @@ export const env = {
    * — модель може лишатися та сама, але якщо ми додаємо метаданий префікс
    * у текст перед embedд'ингом — поточні row-и потрібно re-embed-ити.
    */
-  AI_MEMORY_EMBEDDING_VERSION: process.env.AI_MEMORY_EMBEDDING_VERSION || "1",
+  AI_MEMORY_EMBEDDING_VERSION:
+    process.env["AI_MEMORY_EMBEDDING_VERSION"] || "1",
 
   /**
    * Voyage HTTP timeout (мс). Embedд'инг — fast (зазвичай <1s), тому
@@ -411,7 +412,7 @@ export const env = {
    * (PARTITION BY HASH(user_id)) і запису `openclaw_invocations.founder_user_id`.
    * Окремий від `OPENCLAW_FOUNDER_TG_USER_ID` — Telegram numeric id інший.
    */
-  OPENCLAW_FOUNDER_USER_ID: process.env.OPENCLAW_FOUNDER_USER_ID || "",
+  OPENCLAW_FOUNDER_USER_ID: process.env["OPENCLAW_FOUNDER_USER_ID"] || "",
 
   /**
    * Денний USD cap на Anthropic-token-и через OpenClaw. Pre-call check:
@@ -421,7 +422,7 @@ export const env = {
    *
    * Dollar-string бо NUMERIC(10,4) у БД; parseFloat на read-side.
    */
-  OPENCLAW_DAILY_USD_BUDGET: process.env.OPENCLAW_DAILY_USD_BUDGET || "5",
+  OPENCLAW_DAILY_USD_BUDGET: process.env["OPENCLAW_DAILY_USD_BUDGET"] || "5",
 
   /**
    * Hard cap на Plan→Act→Reflect ітерації у одному виклику. Reach → fail-closed
@@ -436,11 +437,11 @@ export const env = {
    * `"D HH:MM TZ"` для monthly (D = day-of-month).
    */
   OPENCLAW_DAILY_MORNING_AT:
-    process.env.OPENCLAW_DAILY_MORNING_AT || "08:30 Europe/Kyiv",
+    process.env["OPENCLAW_DAILY_MORNING_AT"] || "08:30 Europe/Kyiv",
   OPENCLAW_WEEKLY_REVIEW_AT:
-    process.env.OPENCLAW_WEEKLY_REVIEW_AT || "Fri 18:00 Europe/Kyiv",
+    process.env["OPENCLAW_WEEKLY_REVIEW_AT"] || "Fri 18:00 Europe/Kyiv",
   OPENCLAW_MONTHLY_OKR_AT:
-    process.env.OPENCLAW_MONTHLY_OKR_AT || "1 09:00 Europe/Kyiv",
+    process.env["OPENCLAW_MONTHLY_OKR_AT"] || "1 09:00 Europe/Kyiv",
 
   /**
    * Broadcast policy.
@@ -450,7 +451,7 @@ export const env = {
    *   - `all`: усе у `📊 Дайджести` (для майбутньої team-у).
    */
   OPENCLAW_BROADCAST_MODE: (
-    process.env.OPENCLAW_BROADCAST_MODE || "digest"
+    process.env["OPENCLAW_BROADCAST_MODE"] || "digest"
   ).toLowerCase() as "dm" | "digest" | "all",
 
   /**
@@ -470,7 +471,7 @@ export const env = {
    * `apps/server/src/modules/openclaw/github-auth.ts`.
    */
   OPENCLAW_GITHUB_PAT:
-    process.env.OPENCLAW_GITHUB_PAT || process.env.Git_PAT || "",
+    process.env["OPENCLAW_GITHUB_PAT"] || process.env["Git_PAT"] || "",
 
   /**
    * Feature flag for the GitHub App auth-flow (stack-pulse-2026-05
@@ -489,7 +490,7 @@ export const env = {
    * we never do arithmetic on it. Together with the private key and
    * installation id below, this lets us mint installation-tokens.
    */
-  OPENCLAW_GITHUB_APP_ID: process.env.OPENCLAW_GITHUB_APP_ID || "",
+  OPENCLAW_GITHUB_APP_ID: process.env["OPENCLAW_GITHUB_APP_ID"] || "",
 
   /**
    * GitHub App private key (PEM). Some secret-stores (Vercel, Railway,
@@ -501,7 +502,7 @@ export const env = {
    * Rotation runbook: `docs/playbooks/rotate-openclaw-credentials.md`.
    */
   OPENCLAW_GITHUB_APP_PRIVATE_KEY:
-    process.env.OPENCLAW_GITHUB_APP_PRIVATE_KEY || "",
+    process.env["OPENCLAW_GITHUB_APP_PRIVATE_KEY"] || "",
 
   /**
    * GitHub App installation id (numeric). One App can be installed on
@@ -510,21 +511,21 @@ export const env = {
    * (e.g. installed twice) can't accidentally widen blast radius.
    */
   OPENCLAW_GITHUB_APP_INSTALLATION_ID:
-    process.env.OPENCLAW_GITHUB_APP_INSTALLATION_ID || "",
+    process.env["OPENCLAW_GITHUB_APP_INSTALLATION_ID"] || "",
 
   /**
    * Repo target для decision PR-ів. Default — основний Sergeant repo.
    * Override для тестів / fork-ів.
    */
   OPENCLAW_GITHUB_REPO:
-    process.env.OPENCLAW_GITHUB_REPO || "Skords-01/Sergeant",
+    process.env["OPENCLAW_GITHUB_REPO"] || "Skords-01/Sergeant",
 
   /**
    * Default branch у repo (для decision PR-ів). Якщо змінили на `main` /
    * `master` / `develop` — переоверайдити тут.
    */
   OPENCLAW_GITHUB_BASE_BRANCH:
-    process.env.OPENCLAW_GITHUB_BASE_BRANCH || "main",
+    process.env["OPENCLAW_GITHUB_BASE_BRANCH"] || "main",
 } as const;
 
 export type Env = typeof env;

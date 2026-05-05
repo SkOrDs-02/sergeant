@@ -27,8 +27,8 @@ export interface Transaction {
   date: string;
   categoryId: string;
   type: TransactionType;
-  merchant?: string;
-  note?: string;
+  merchant?: string | undefined;
+  note?: string | undefined;
   source: TransactionSource;
 
   // Legacy/back-compat
@@ -37,13 +37,13 @@ export interface Transaction {
   mcc: number;
   accountId: string | null;
   manual: boolean;
-  manualId?: string;
+  manualId?: string | undefined;
   raw?: unknown;
 
   _source: string;
   _accountId: string | null;
   _manual: boolean;
-  _manualId?: string;
+  _manualId?: string | undefined;
 }
 
 /** Базова категорія витрат / доходів. */

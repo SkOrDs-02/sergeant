@@ -195,7 +195,7 @@ describe("backfillHandler", () => {
     await new Promise((r) => setTimeout(r, 100));
 
     expect(bankProxyFetch).toHaveBeenCalled();
-    const call = bankProxyFetch.mock.calls[0][0];
+    const call = bankProxyFetch!.mock.calls[0]![0];
     expect(call.upstream).toBe("monobank");
     expect(call.path).toContain("/personal/statement/acc1/");
   });
@@ -361,13 +361,13 @@ describe("backfillHandler", () => {
     const finalRes = makeRes();
     await backfillProgressHandler(makeReq(), finalRes);
     const final = finalRes.body as Record<string, unknown>;
-    expect(final.status).toBe("completed");
-    expect(final.accountsTotal).toBe(2);
-    expect(final.accountsProcessed).toBe(2);
-    expect(typeof final.transactionsProcessed).toBe("number");
-    expect((final.transactionsProcessed as number) > 0).toBe(true);
-    expect(final.completedAt).toBeTypeOf("string");
-    expect(final.currentAccountId).toBeNull();
+    expect(final["status"]).toBe("completed");
+    expect(final["accountsTotal"]).toBe(2);
+    expect(final["accountsProcessed"]).toBe(2);
+    expect(typeof final["transactionsProcessed"]).toBe("number");
+    expect((final["transactionsProcessed"] as number) > 0).toBe(true);
+    expect(final["completedAt"]).toBeTypeOf("string");
+    expect(final["currentAccountId"]).toBeNull();
   });
 
   it("captures lastError when background work throws", async () => {
@@ -402,9 +402,9 @@ describe("backfillHandler", () => {
     const progressRes = makeRes();
     await backfillProgressHandler(makeReq(), progressRes);
     const snapshot = progressRes.body as Record<string, unknown>;
-    expect(snapshot.status).toBe("failed");
-    expect(typeof snapshot.lastError).toBe("string");
-    expect(snapshot.lastError as string).toMatch(/Monobank API error/);
+    expect(snapshot["status"]).toBe("failed");
+    expect(typeof snapshot["lastError"]).toBe("string");
+    expect(snapshot["lastError"] as string).toMatch(/Monobank API error/);
   });
 });
 

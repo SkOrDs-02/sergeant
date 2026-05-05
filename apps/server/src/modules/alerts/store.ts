@@ -31,8 +31,8 @@ export interface RecordAlertPostInput {
   alertId: string;
   topic: string;
   severity: TgAlertSeverity;
-  summary?: string | null;
-  metadata?: Record<string, unknown>;
+  summary?: string | null | undefined;
+  metadata?: Record<string, unknown> | undefined;
 }
 
 export interface RecordAlertPostResult {
@@ -190,22 +190,22 @@ export async function markAlertEscalated(
 
 export interface ListPendingAlertsFilters {
   /** Optional forum-topic filter (`incidents`, `revenue`, …). */
-  topic?: string;
+  topic?: string | undefined;
   /** Optional severity filter (P0..P3). */
-  severity?: TgAlertSeverity;
+  severity?: TgAlertSeverity | undefined;
   /**
    * Lower-bound on `posted_at` — alert must be older than this many
    * minutes. WF-103 escalation cron passes `15`. `/alerts pending`
    * slash passes `0` to surface everything.
    */
-  olderThanMinutes?: number;
+  olderThanMinutes?: number | undefined;
   /**
    * When true, exclude rows that already have `escalated_at` set. WF-103
    * passes `true` to avoid double-DM.
    */
-  notYetEscalated?: boolean;
+  notYetEscalated?: boolean | undefined;
   /** 1..100, default 50. */
-  limit?: number;
+  limit?: number | undefined;
 }
 
 /**
@@ -247,6 +247,7 @@ export async function listPendingAlerts(
   const limit = Math.max(1, Math.min(100, filters.limit ?? 50));
   params.push(limit);
 
+  // eslint-disable-next-line no-restricted-syntax -- conditions[] is built from a fixed allow-list of literal SQL fragments; user input flows through $-params only.
   const result = await pool.query(
     `SELECT id, posted_at, alert_id, topic, severity, summary,
             ack_at, ack_by_tg_user_id, ack_action,

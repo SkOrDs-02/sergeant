@@ -30,7 +30,7 @@ describe("PageviewTracker", () => {
     );
 
     expect(captureMock).toHaveBeenCalledTimes(1);
-    const [eventName, payload] = captureMock.mock.calls[0];
+    const [eventName, payload] = captureMock.mock.calls[0]!;
     expect(eventName).toBe("$pageview");
     expect((payload as { $pathname: string }).$pathname).toBe("/welcome");
     expect(typeof (payload as { $current_url: string }).$current_url).toBe(
@@ -99,7 +99,7 @@ describe("PageviewTracker", () => {
       </MemoryRouter>,
     );
 
-    const [, payload] = captureMock.mock.calls[0];
+    const [, payload] = captureMock.mock.calls[0]!;
     const url = (payload as { $current_url: string }).$current_url;
     expect(url).not.toContain("SECRET123");
     expect(url).toContain("token=%5Bredacted%5D");

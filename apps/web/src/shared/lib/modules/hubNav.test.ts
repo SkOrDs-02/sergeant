@@ -27,7 +27,7 @@ describe("openHubModule", () => {
   it("диспатчить CustomEvent з module та hash", () => {
     openHubModule("finyk", "/analytics");
     expect(listener).toHaveBeenCalledTimes(1);
-    const detail = (listener.mock.calls[0][0] as CustomEvent).detail;
+    const detail = (listener.mock.calls[0]![0] as CustomEvent).detail;
     expect(detail).toEqual({ module: "finyk", hash: "/analytics" });
   });
 
@@ -39,7 +39,7 @@ describe("openHubModule", () => {
 
   it("hash за замовчуванням — порожній рядок", () => {
     openHubModule("fizruk");
-    const detail = (listener.mock.calls[0][0] as CustomEvent).detail;
+    const detail = (listener.mock.calls[0]![0] as CustomEvent).detail;
     expect(detail.hash).toBe("");
   });
 });
@@ -57,7 +57,7 @@ describe("openHubModuleWithAction", () => {
 
   it("диспатчить з action", () => {
     openHubModuleWithAction("finyk", "add_expense");
-    const detail = (listener.mock.calls[0][0] as CustomEvent).detail;
+    const detail = (listener.mock.calls[0]![0] as CustomEvent).detail;
     expect(detail.action).toBe("add_expense");
     expect(detail.module).toBe("finyk");
   });

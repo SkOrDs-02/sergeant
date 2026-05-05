@@ -30,7 +30,8 @@ export function HabitLeadersBlock({
     const best = rates[0];
     const worst = rates.length > 1 ? rates[rates.length - 1] : null;
 
-    if (worst && worst.habit.id === best.habit.id) return { best, worst: null };
+    if (worst && worst.habit.id === best!.habit.id!)
+      return { best, worst: null };
 
     return { best, worst };
   }, [habits, completions]);

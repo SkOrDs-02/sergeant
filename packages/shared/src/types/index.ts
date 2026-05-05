@@ -41,19 +41,19 @@ export interface PushPayload {
   /** Заголовок нотифікації. Обов'язковий — всі три канали його вимагають. */
   title: string;
   /** Основний текст нотифікації. Порожній рядок — валідний. */
-  body?: string;
+  body?: string | undefined;
   /** Додаткові дані клієнтського handler-а (серіалізуються у JSON). */
-  data?: Record<string, unknown>;
+  data?: Record<string, unknown> | undefined;
   /** Бейдж iOS (число на іконці застосунку). Нуль скидає бейдж. */
-  badge?: number;
+  badge?: number | undefined;
   /** APNs `thread-id` — групує нотифікації у одному threadі на iOS. */
-  threadId?: string;
+  threadId?: string | undefined;
   /**
    * Deep-link, на який клієнт перейде при тапі. Сервер прокидає у
    * `data.url` без інтерпретації; сам роутинг — на стороні mobile/web
    * handler-а. Top-level `url` має пріоритет над `data.url`.
    */
-  url?: string;
+  url?: string | undefined;
   /**
    * Background/silent push: прокидає дані без UI-банера.
    *
@@ -64,5 +64,5 @@ export interface PushPayload {
    *     плюс `android.priority=high` для wake-up.
    *   - Web:  silent ігнорується (service-worker сам вирішує, що показати).
    */
-  silent?: boolean;
+  silent?: boolean | undefined;
 }

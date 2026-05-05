@@ -139,15 +139,15 @@ describe("runEnrichmentTick — happy path", () => {
     });
 
     // WRITE_BACK SQL отримав правильні params
-    const writeBackCall = pool.query.mock.calls[2];
-    expect(writeBackCall[0]).toMatch(/UPDATE mono_transaction/);
-    expect(writeBackCall[0]).toMatch(/ai_category_slug/);
-    expect(writeBackCall[1]).toEqual(["u1", "tx_001", "groceries", 0.92]);
+    const writeBackCall = pool.query.mock.calls[2]!;
+    expect(writeBackCall[0]!).toMatch(/UPDATE mono_transaction/);
+    expect(writeBackCall[0]!).toMatch(/ai_category_slug/);
+    expect(writeBackCall[1]!).toEqual(["u1", "tx_001", "groceries", 0.92]);
 
     // MARK_DONE отримав id
-    const markDoneCall = pool.query.mock.calls[3];
-    expect(markDoneCall[0]).toMatch(/SET status = 'done'/);
-    expect(markDoneCall[1]).toEqual([42]);
+    const markDoneCall = pool.query.mock.calls[3]!;
+    expect(markDoneCall[0]!).toMatch(/SET status = 'done'/);
+    expect(markDoneCall[1]!).toEqual([42]);
 
     expect(processedInc).toHaveBeenCalledWith({ outcome: "ok" });
   });
@@ -217,13 +217,13 @@ describe("runEnrichmentTick — error / retry", () => {
     expect(result.failed).toBe(1);
     expect(result.ok).toBe(0);
 
-    const markRetry = pool.query.mock.calls[2];
-    expect(markRetry[0]).toMatch(/SET status = \$2/);
+    const markRetry = pool.query.mock.calls[2]!;
+    expect(markRetry[0]!).toMatch(/SET status = \$2/);
     // params: [id, status, lastError, availableAt]
-    expect(markRetry[1][0]).toBe(99);
-    expect(markRetry[1][1]).toBe("pending"); // не вичерпали attempts
-    expect(markRetry[1][2]).toMatch(/upstream timeout/);
-    const availableAt = markRetry[1][3] as Date;
+    expect(markRetry[1]![0]).toBe(99);
+    expect(markRetry[1]![1]).toBe("pending"); // не вичерпали attempts
+    expect(markRetry[1]![2]).toMatch(/upstream timeout/);
+    const availableAt = markRetry[1]![3] as Date;
     expect(availableAt.getTime()).toBeGreaterThan(before);
     expect(availableAt.getTime()).toBeGreaterThan(after); // backoff > 0
 
@@ -250,8 +250,8 @@ describe("runEnrichmentTick — error / retry", () => {
       maxAttempts: 5,
     });
 
-    const markRetry = pool.query.mock.calls[2];
-    expect(markRetry[1][1]).toBe("failed"); // вичерпано
+    const markRetry = pool.query.mock.calls[2]!;
+    expect(markRetry[1]![1]).toBe("failed"); // вичерпано
   });
 
   it("backoff експоненційний: attempts=0 → ~30s, attempts=2 → ~120s", async () => {
@@ -281,8 +281,8 @@ describe("runEnrichmentTick — error / retry", () => {
       maxAttempts: 10,
     });
 
-    const retry1 = pool.query.mock.calls[2][1];
-    const retry2 = pool.query.mock.calls[4][1];
+    const retry1 = pool!.query.mock.calls[2]![1];
+    const retry2 = pool!.query.mock.calls[4]![1];
     const dt1 = (retry1[3] as Date).getTime() - t0;
     const dt2 = (retry2[3] as Date).getTime() - t0;
 
@@ -338,11 +338,11 @@ describe("runEnrichmentTick — SQL invariants", () => {
 
     await runEnrichmentTick(pool as unknown as Pool, { batchSize: 7 });
 
-    const pickSql = pool.query.mock.calls[0][0] as string;
+    const pickSql = pool!.query.mock.calls[0]![0] as string;
     expect(pickSql).toMatch(/FOR UPDATE SKIP LOCKED/);
     expect(pickSql).toMatch(/available_at <= NOW\(\)/);
     expect(pickSql).toMatch(/status IN \('pending', 'failed'\)/);
-    expect(pool.query.mock.calls[0][1]).toEqual([7]);
+    expect(pool!.query.mock.calls[0]![1]).toEqual([7]);
   });
 });
 

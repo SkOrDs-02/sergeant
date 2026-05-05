@@ -187,7 +187,7 @@ describe("addToOfflineQueue coalescing", () => {
     } as never);
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(Object.keys(q[0].modules).sort()).toEqual([
+    expect(Object.keys(q[0]!.modules).sort()).toEqual([
       "_legacy_finyk",
       "profile",
     ]);
@@ -204,7 +204,7 @@ describe("addToOfflineQueue coalescing", () => {
     } as never);
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].modules.profile.data.v).toBe(2);
+    expect(q[0]!.modules.profile!.data.v).toBe(2);
   });
 
   it("caps queue length when many non-coalescing entries accumulate", () => {
@@ -220,7 +220,7 @@ describe("addToOfflineQueue coalescing", () => {
     expect(q.length).toBeLessThanOrEqual(MAX_OFFLINE_QUEUE);
     // Oldest entries should be dropped, newest preserved.
     const last = q[q.length - 1];
-    expect(last.type).toBe(`other-${total - 1}`);
+    expect(last!.type!).toBe(`other-${total - 1}`);
   });
 
   it("does not coalesce into a non-push last entry", () => {
@@ -231,8 +231,8 @@ describe("addToOfflineQueue coalescing", () => {
     } as never);
     const q = getOfflineQueue();
     expect(q).toHaveLength(2);
-    expect(q[0].type).toBe("other");
-    expect(q[1].type).toBe("push");
+    expect(q[0]!.type).toBe("other");
+    expect(q[1]!.type).toBe("push");
   });
 
   it("is idempotent wrt queue contents when coalescing repeated pushes", () => {
@@ -242,7 +242,7 @@ describe("addToOfflineQueue coalescing", () => {
     enqueue({ type: "push", modules: payload } as never);
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].modules.profile.data.v).toBe("same");
+    expect(q[0]!.modules.profile!.data.v).toBe("same");
   });
 });
 

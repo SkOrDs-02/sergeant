@@ -157,9 +157,9 @@ describe("per-entry attempt counter", () => {
     });
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].attemptCount ?? 0).toBe(0);
-    expect(q[0].lastError).toBeUndefined();
-    expect(q[0].lastAttemptAt).toBeUndefined();
+    expect(q[0]!.attemptCount ?? 0).toBe(0);
+    expect(q[0]!.lastError).toBeUndefined();
+    expect(q[0]!.lastAttemptAt).toBeUndefined();
   });
 
   it("recordReplayBatchFailure bumps attemptCount by exactly 1 per call and stamps lastError + lastAttemptAt", () => {
@@ -175,14 +175,14 @@ describe("per-entry attempt counter", () => {
 
     recordReplayBatchFailure(new Error("first failure"));
     let q = getOfflineQueue();
-    expect(q[0].attemptCount).toBe(1);
-    expect(q[0].lastError).toBe("first failure");
-    expect(q[0].lastAttemptAt).toBeTruthy();
+    expect(q[0]!.attemptCount).toBe(1);
+    expect(q[0]!.lastError).toBe("first failure");
+    expect(q[0]!.lastAttemptAt).toBeTruthy();
 
     recordReplayBatchFailure(new Error("second failure"));
     q = getOfflineQueue();
-    expect(q[0].attemptCount).toBe(2);
-    expect(q[0].lastError).toBe("second failure");
+    expect(q[0]!.attemptCount).toBe(2);
+    expect(q[0]!.lastError).toBe("second failure");
   });
 
   it("returns 0 dead-letters before reaching MAX_QUEUE_ATTEMPTS", () => {
@@ -215,7 +215,7 @@ describe("per-entry attempt counter", () => {
       },
     });
     recordReplayBatchFailure(new Error("transient blip"));
-    expect(getOfflineQueue()[0].attemptCount).toBe(1);
+    expect(getOfflineQueue()[0]!.attemptCount).toBe(1);
 
     // New write — coalesces into the same entry. The retry budget
     // must NOT reset just because a fresh module payload arrived.
@@ -230,9 +230,9 @@ describe("per-entry attempt counter", () => {
     });
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].attemptCount).toBe(1);
-    expect(q[0].lastError).toBe("transient blip");
-    expect(q[0].modules.profile.data).toEqual({ displayName: "b" });
+    expect(q[0]!.attemptCount).toBe(1);
+    expect(q[0]!.lastError).toBe("transient blip");
+    expect(q[0]!.modules.profile!.data).toEqual({ displayName: "b" });
   });
 });
 
@@ -264,11 +264,13 @@ describe("dead-letter at MAX_QUEUE_ATTEMPTS", () => {
 
     const dl = getDeadLetterEntries();
     expect(dl).toHaveLength(1);
-    expect(dl[0].type).toBe("dead-letter");
-    expect(dl[0].entry.modules.profile.data).toEqual({ displayName: "doomed" });
-    expect(dl[0].entry.attemptCount).toBe(MAX_QUEUE_ATTEMPTS);
-    expect(dl[0].finalError).toBe(`structural error #${MAX_QUEUE_ATTEMPTS}`);
-    expect(dl[0].deadLetteredAt).toBeTruthy();
+    expect(dl[0]!.type).toBe("dead-letter");
+    expect(dl[0]!.entry.modules.profile!.data).toEqual({
+      displayName: "doomed",
+    });
+    expect(dl[0]!.entry.attemptCount).toBe(MAX_QUEUE_ATTEMPTS);
+    expect(dl[0]!.finalError).toBe(`structural error #${MAX_QUEUE_ATTEMPTS}`);
+    expect(dl[0]!.deadLetteredAt).toBeTruthy();
   });
 
   it("clearDeadLetters wipes the dead-letter store", () => {
@@ -321,9 +323,9 @@ describe("dead-letter at MAX_QUEUE_ATTEMPTS", () => {
     expect(getOfflineQueue()).toEqual([]);
     expect(getDeadLetterCount()).toBe(1);
     const dl = getDeadLetterEntries()[0];
-    expect(dl.entry.modules.profile.data).toEqual({ displayName: "dies" });
-    expect(dl.entry.attemptCount).toBe(MAX_QUEUE_ATTEMPTS);
-    expect(dl.finalError).toContain("Internal Server Error");
+    expect(dl!.entry.modules.profile!.data!).toEqual({ displayName: "dies" });
+    expect(dl!.entry.attemptCount!).toBe(MAX_QUEUE_ATTEMPTS);
+    expect(dl!.finalError!).toContain("Internal Server Error");
   });
 });
 
@@ -344,7 +346,7 @@ describe("crash recovery", () => {
     });
     recordReplayBatchFailure(new Error("blip 1"));
     recordReplayBatchFailure(new Error("blip 2"));
-    expect(getOfflineQueue()[0].attemptCount).toBe(2);
+    expect(getOfflineQueue()[0]!.attemptCount).toBe(2);
 
     // Wait a tick so the fire-and-forget IDB writes from the bumps
     // settle — `setSyncMeta` returns a Promise that's not awaited
@@ -364,11 +366,11 @@ describe("crash recovery", () => {
     await hydrateOfflineQueueFromDisk();
     const q = getOfflineQueue();
     expect(q).toHaveLength(1);
-    expect(q[0].modules.profile.data).toEqual({
+    expect(q[0]!.modules.profile!.data).toEqual({
       displayName: "before crash",
     });
-    expect(q[0].attemptCount).toBe(2);
-    expect(q[0].lastError).toBe("blip 2");
+    expect(q[0]!.attemptCount).toBe(2);
+    expect(q[0]!.lastError).toBe("blip 2");
 
     // A subsequent successful replay drains the queue, confirming
     // the unsent op did reach the server post-restart (AC: kill app
@@ -379,7 +381,7 @@ describe("crash recovery", () => {
     });
     await replay();
     expect(mockedPushAll).toHaveBeenCalledTimes(1);
-    const pushed = mockedPushAll.mock.calls[0][0];
+    const pushed = mockedPushAll.mock.calls[0]![0];
     expect(pushed.profile.data).toEqual({ displayName: "before crash" });
     expect(getOfflineQueue()).toEqual([]);
   });
@@ -413,11 +415,11 @@ describe("crash recovery", () => {
     await hydrateDeadLetterFromDisk();
     const dl = getDeadLetterEntries();
     expect(dl).toHaveLength(1);
-    expect(dl[0].entry.modules.profile.data).toEqual({
+    expect(dl[0]!.entry.modules.profile!.data).toEqual({
       displayName: "doomed",
     });
-    expect(dl[0].entry.attemptCount).toBe(MAX_QUEUE_ATTEMPTS);
-    expect(dl[0].finalError).toBe(`f${MAX_QUEUE_ATTEMPTS}`);
+    expect(dl[0]!.entry.attemptCount).toBe(MAX_QUEUE_ATTEMPTS);
+    expect(dl[0]!.finalError).toBe(`f${MAX_QUEUE_ATTEMPTS}`);
   });
 
   it("first replay after restart sends the unsent payload to the server", async () => {
@@ -450,7 +452,7 @@ describe("crash recovery", () => {
     // (`hydrateOfflineQueueFromDisk` is called before reading the
     // queue) and successfully drained the pre-existing entry.
     expect(mockedPushAll).toHaveBeenCalledTimes(1);
-    const pushed = mockedPushAll.mock.calls[0][0];
+    const pushed = mockedPushAll.mock.calls[0]![0];
     expect(pushed.profile.data).toEqual({ displayName: "from previous run" });
     expect(getOfflineQueue()).toEqual([]);
   });

@@ -139,7 +139,7 @@ describe("PricingPage (Phase 0 monetization rails)", () => {
     const proCta = screen.getAllByRole("button", {
       name: /Хочу дізнатись першим/i,
     });
-    fireEvent.click(proCta[0]);
+    fireEvent.click(proCta[0]!);
     expect(trackEventMock).toHaveBeenCalledWith(
       ANALYTICS_EVENTS.PRICING_CTA_CLICKED,
       expect.objectContaining({ cta: "waitlist" }),

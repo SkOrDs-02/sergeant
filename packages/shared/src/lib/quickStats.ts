@@ -101,25 +101,25 @@ export function selectModulePreview(
 
   switch (moduleId) {
     case "finyk": {
-      const todaySpent = asFiniteNumber(stats.todaySpent);
-      const budgetLeft = asFiniteNumber(stats.budgetLeft);
+      const todaySpent = asFiniteNumber(stats["todaySpent"]);
+      const budgetLeft = asFiniteNumber(stats["budgetLeft"]);
       return {
         main: todaySpent ? formatMoney(todaySpent) : null,
         sub: budgetLeft ? `Залишок: ${formatMoney(budgetLeft)}` : null,
       };
     }
     case "fizruk": {
-      const weekWorkouts = asFiniteNumber(stats.weekWorkouts);
-      const streak = asFiniteNumber(stats.streak);
+      const weekWorkouts = asFiniteNumber(stats["weekWorkouts"]);
+      const streak = asFiniteNumber(stats["streak"]);
       return {
         main: weekWorkouts ? `${weekWorkouts} трен.` : null,
         sub: streak ? `Серія: ${streak} днів` : null,
       };
     }
     case "routine": {
-      const todayDoneRaw = stats.todayDone;
-      const todayTotal = asFiniteNumber(stats.todayTotal);
-      const streak = asFiniteNumber(stats.streak);
+      const todayDoneRaw = stats["todayDone"];
+      const todayTotal = asFiniteNumber(stats["todayTotal"]);
+      const streak = asFiniteNumber(stats["streak"]);
       const todayDone =
         typeof todayDoneRaw === "number" && Number.isFinite(todayDoneRaw)
           ? todayDoneRaw
@@ -139,8 +139,8 @@ export function selectModulePreview(
       };
     }
     case "nutrition": {
-      const todayCal = asFiniteNumber(stats.todayCal);
-      const calGoal = asFiniteNumber(stats.calGoal);
+      const todayCal = asFiniteNumber(stats["todayCal"]);
+      const calGoal = asFiniteNumber(stats["calGoal"]);
       const progress =
         todayCal !== null && calGoal && calGoal > 0
           ? (todayCal / calGoal) * 100

@@ -105,11 +105,11 @@ function resolveServiceVersion(
   env: NodeJS.ProcessEnv = process.env,
 ): string | undefined {
   const candidates = [
-    env.OTEL_SERVICE_VERSION,
-    env.SENTRY_RELEASE,
-    env.RAILWAY_GIT_COMMIT_SHA,
-    env.VERCEL_GIT_COMMIT_SHA,
-    env.GITHUB_SHA,
+    env["OTEL_SERVICE_VERSION"],
+    env["SENTRY_RELEASE"],
+    env["RAILWAY_GIT_COMMIT_SHA"],
+    env["VERCEL_GIT_COMMIT_SHA"],
+    env["GITHUB_SHA"],
   ];
   for (const v of candidates) {
     if (typeof v === "string" && v.trim() !== "") return v.trim();
@@ -121,18 +121,18 @@ export function resolveTracingConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): ResolvedTracingConfig {
   const endpoint =
-    env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT ||
-    env.OTEL_EXPORTER_OTLP_ENDPOINT ||
+    env["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"] ||
+    env["OTEL_EXPORTER_OTLP_ENDPOINT"] ||
     "";
   const enabled = endpoint !== "";
   return {
     endpoint,
-    serviceName: env.OTEL_SERVICE_NAME || "sergeant-api",
+    serviceName: env["OTEL_SERVICE_NAME"] || "sergeant-api",
     serviceVersion: resolveServiceVersion(env),
-    defaultSampleRate: parseRate(env.OTEL_TRACES_SAMPLE_RATE, 0.1),
+    defaultSampleRate: parseRate(env["OTEL_TRACES_SAMPLE_RATE"], 0.1),
     headers: {
-      ...parseHeaders(env.OTEL_EXPORTER_OTLP_HEADERS),
-      ...parseHeaders(env.OTEL_EXPORTER_OTLP_TRACES_HEADERS),
+      ...parseHeaders(env["OTEL_EXPORTER_OTLP_HEADERS"]),
+      ...parseHeaders(env["OTEL_EXPORTER_OTLP_TRACES_HEADERS"]),
     },
     enabled,
   };

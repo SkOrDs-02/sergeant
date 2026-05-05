@@ -18,13 +18,13 @@ export interface CircuitBreakerOptions {
   /** Name for logging/metrics */
   name: string;
   /** Number of failures before opening circuit */
-  threshold?: number;
+  threshold?: number | undefined;
   /** Time in ms before trying half-open state */
-  resetTimeoutMs?: number;
+  resetTimeoutMs?: number | undefined;
   /** Number of successful requests in half-open to close circuit */
-  successThreshold?: number;
+  successThreshold?: number | undefined;
   /** Optional callback when state changes */
-  onStateChange?: (from: CircuitState, to: CircuitState) => void;
+  onStateChange?: ((from: CircuitState, to: CircuitState) => void) | undefined;
 }
 
 /**
@@ -55,10 +55,9 @@ export class CircuitBreaker {
   private readonly threshold: number;
   private readonly resetTimeoutMs: number;
   private readonly successThreshold: number;
-  private readonly onStateChange?: (
-    from: CircuitState,
-    to: CircuitState,
-  ) => void;
+  private readonly onStateChange?:
+    | ((from: CircuitState, to: CircuitState) => void)
+    | undefined;
 
   constructor(options: CircuitBreakerOptions) {
     this.name = options.name;

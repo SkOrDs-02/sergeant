@@ -28,19 +28,19 @@ function normalizeWeekPlan(parsed: unknown): NormalizedWeekPlan {
     parsed && typeof parsed === "object" && !Array.isArray(parsed)
       ? (parsed as Record<string, unknown>)
       : ({} as Record<string, unknown>);
-  const days = Array.isArray(obj.days) ? (obj.days as unknown[]) : [];
-  const shoppingList = Array.isArray(obj.shoppingList)
-    ? (obj.shoppingList as unknown[])
+  const days = Array.isArray(obj["days"]) ? (obj["days"] as unknown[]) : [];
+  const shoppingList = Array.isArray(obj["shoppingList"])
+    ? (obj["shoppingList"] as unknown[])
     : [];
   return {
     days: days.slice(0, 7).map((d, i): WeekDay => {
       if (!d || typeof d !== "object")
         return { label: `День ${i + 1}`, note: "", meals: [] };
       const rec = d as Record<string, unknown>;
-      const label = String(rec.label || `День ${i + 1}`).slice(0, 40);
-      const note = String(rec.note || "").slice(0, 500);
-      const meals = Array.isArray(rec.meals)
-        ? (rec.meals as unknown[])
+      const label = String(rec["label"] || `День ${i + 1}`).slice(0, 40);
+      const note = String(rec["note"] || "").slice(0, 500);
+      const meals = Array.isArray(rec["meals"])
+        ? (rec["meals"] as unknown[])
             .slice(0, 8)
             .map((x) => String(x || "").trim())
             .filter(Boolean)

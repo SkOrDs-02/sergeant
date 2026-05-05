@@ -26,9 +26,9 @@ describe("Tabs", () => {
     const tabs = getAllByRole("tab");
     expect(tabs).toHaveLength(ITEMS.length);
     // Roving tabindex: only active tab is tabIndex=0.
-    expect(tabs[0].getAttribute("tabindex")).toBe("-1");
-    expect(tabs[1].getAttribute("tabindex")).toBe("0");
-    expect(tabs[2].getAttribute("tabindex")).toBe("-1");
+    expect(tabs[0]!.getAttribute("tabindex")).toBe("-1");
+    expect(tabs[1]!.getAttribute("tabindex")).toBe("0");
+    expect(tabs[2]!.getAttribute("tabindex")).toBe("-1");
   });
 
   it("ArrowRight advances selection and wraps at the end", () => {
@@ -37,7 +37,7 @@ describe("Tabs", () => {
       <Tabs items={ITEMS} value="categories" onChange={onChange} />,
     );
     const active = getAllByRole("tab")[2];
-    fireEvent.keyDown(active, { key: "ArrowRight" });
+    fireEvent.keyDown(active!, { key: "ArrowRight" });
     expect(onChange).toHaveBeenCalledWith("overview");
   });
 
@@ -46,7 +46,7 @@ describe("Tabs", () => {
     const { getAllByRole } = render(
       <Tabs items={ITEMS} value="overview" onChange={onChange} />,
     );
-    fireEvent.keyDown(getAllByRole("tab")[0], { key: "ArrowLeft" });
+    fireEvent.keyDown(getAllByRole("tab")[0]!, { key: "ArrowLeft" });
     expect(onChange).toHaveBeenCalledWith("categories");
   });
 
@@ -55,7 +55,7 @@ describe("Tabs", () => {
     const { getAllByRole } = render(
       <Tabs items={ITEMS} value="transactions" onChange={onChange} />,
     );
-    fireEvent.keyDown(getAllByRole("tab")[1], { key: "Home" });
+    fireEvent.keyDown(getAllByRole("tab")[1]!, { key: "Home" });
     expect(onChange).toHaveBeenLastCalledWith("overview");
   });
 
@@ -68,7 +68,7 @@ describe("Tabs", () => {
     const { getAllByRole } = render(
       <Tabs items={ITEMS} value="overview" onChange={onChange} />,
     );
-    fireEvent.keyDown(getAllByRole("tab")[0], { key: "End" });
+    fireEvent.keyDown(getAllByRole("tab")[0]!, { key: "End" });
     expect(onChange).toHaveBeenCalled();
   });
 
@@ -82,7 +82,7 @@ describe("Tabs", () => {
     const { getAllByRole } = render(
       <Tabs items={items} value="a" onChange={onChange} />,
     );
-    fireEvent.keyDown(getAllByRole("tab")[0], { key: "ArrowRight" });
+    fireEvent.keyDown(getAllByRole("tab")[0]!, { key: "ArrowRight" });
     // "b" is disabled → focuses "c" directly.
     expect(onChange).toHaveBeenCalledWith("c");
   });
@@ -97,10 +97,10 @@ describe("Tabs", () => {
       />,
     );
     const active = getAllByRole("tab")[0];
-    expect(active.className).toContain("border-finyk");
+    expect(active!.className!).toContain("border-finyk");
     // `text-finyk-strong` (=emerald-700) clears WCAG AA on cream `bg-bg`;
     // the previous `text-finyk` (=emerald-500) only cleared ~2.4:1.
-    expect(active.className).toContain("text-finyk-strong");
+    expect(active!.className!).toContain("text-finyk-strong");
   });
 
   it("omits aria-controls when no getPanelId is provided (avoids dangling IDREFs)", () => {
@@ -123,11 +123,11 @@ describe("Tabs", () => {
       />,
     );
     const [overview, transactions, categories] = getAllByRole("tab");
-    expect(overview.getAttribute("aria-controls")).toBe("panel-overview");
-    expect(transactions.getAttribute("aria-controls")).toBe(
+    expect(overview!.getAttribute("aria-controls")!).toBe("panel-overview");
+    expect(transactions!.getAttribute("aria-controls")!).toBe(
       "panel-transactions",
     );
-    expect(categories.getAttribute("aria-controls")).toBe("panel-categories");
+    expect(categories!.getAttribute("aria-controls")!).toBe("panel-categories");
   });
 
   it("style='pill' + variant='routine' paints active pill with routine-soft palette", () => {
@@ -141,7 +141,7 @@ describe("Tabs", () => {
       />,
     );
     const active = getAllByRole("tab")[0];
-    expect(active.className).toContain("bg-routine-surface");
-    expect(active.className).toContain("text-routine-strong");
+    expect(active!.className!).toContain("bg-routine-surface");
+    expect(active!.className!).toContain("text-routine-strong");
   });
 });

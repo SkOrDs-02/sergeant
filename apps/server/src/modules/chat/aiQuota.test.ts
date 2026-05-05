@@ -154,7 +154,7 @@ function makeAtomicPoolMock() {
 
 describe("assertAiQuota (default bucket)", () => {
   it("returns true (no-op) when AI_QUOTA_DISABLED=1", async () => {
-    process.env.AI_QUOTA_DISABLED = "1";
+    process.env["AI_QUOTA_DISABLED"] = "1";
     const res = makeRes();
     const ok = await assertAiQuota(makeReq(), res);
     expect(ok).toBe(true);
@@ -164,8 +164,8 @@ describe("assertAiQuota (default bucket)", () => {
   });
 
   it("fails open when DATABASE_URL is missing", async () => {
-    delete process.env.DATABASE_URL;
-    process.env.AI_QUOTA_DISABLED = "0";
+    delete process.env["DATABASE_URL"];
+    process.env["AI_QUOTA_DISABLED"] = "0";
     getSessionUser.mockResolvedValue(null);
     const res = makeRes();
     const ok = await assertAiQuota(makeReq(), res);
@@ -176,8 +176,8 @@ describe("assertAiQuota (default bucket)", () => {
   });
 
   it("fails open when the quota DB call throws", async () => {
-    process.env.DATABASE_URL = "postgres://ignored";
-    process.env.AI_QUOTA_DISABLED = "0";
+    process.env["DATABASE_URL"] = "postgres://ignored";
+    process.env["AI_QUOTA_DISABLED"] = "0";
     getSessionUser.mockResolvedValue(null);
     pool.query.mockRejectedValue(
       Object.assign(new Error("ECONNREFUSED"), { code: "ECONNREFUSED" }),
@@ -191,8 +191,8 @@ describe("assertAiQuota (default bucket)", () => {
   });
 
   it("fails open when getSessionUser throws", async () => {
-    process.env.DATABASE_URL = "postgres://ignored";
-    process.env.AI_QUOTA_DISABLED = "0";
+    process.env["DATABASE_URL"] = "postgres://ignored";
+    process.env["AI_QUOTA_DISABLED"] = "0";
     getSessionUser.mockRejectedValue(new Error("auth db down"));
     pool.query.mockRejectedValue(new Error("db down"));
     const res = makeRes();
@@ -203,9 +203,9 @@ describe("assertAiQuota (default bucket)", () => {
   });
 
   it("returns 429 when daily limit would be exceeded", async () => {
-    process.env.DATABASE_URL = "postgres://ignored";
-    process.env.AI_QUOTA_DISABLED = "0";
-    process.env.AI_DAILY_ANON_LIMIT = "2";
+    process.env["DATABASE_URL"] = "postgres://ignored";
+    process.env["AI_QUOTA_DISABLED"] = "0";
+    process.env["AI_DAILY_ANON_LIMIT"] = "2";
     getSessionUser.mockResolvedValue(null);
     // Емулюємо: поточний count=2, cost=1 → WHERE 2+1<=2 false → 0 рядків.
     pool.query.mockResolvedValue({ rows: [], rowCount: 0 });
@@ -217,9 +217,9 @@ describe("assertAiQuota (default bucket)", () => {
   });
 
   it("returns true and sets remaining header on success", async () => {
-    process.env.DATABASE_URL = "postgres://ignored";
-    process.env.AI_QUOTA_DISABLED = "0";
-    process.env.AI_DAILY_ANON_LIMIT = "10";
+    process.env["DATABASE_URL"] = "postgres://ignored";
+    process.env["AI_QUOTA_DISABLED"] = "0";
+    process.env["AI_DAILY_ANON_LIMIT"] = "10";
     getSessionUser.mockResolvedValue(null);
     pool.query.mockResolvedValue({ rows: [{ request_count: 4 }], rowCount: 1 });
     const res = makeRes();
@@ -229,7 +229,7 @@ describe("assertAiQuota (default bucket)", () => {
     expect(res.headers["X-AI-Quota-Remaining"]).toBe("6");
     // Перевіряємо, що це ATOMIC UPSERT, а не BEGIN/SELECT FOR UPDATE/UPDATE/COMMIT.
     expect(pool.query).toHaveBeenCalledOnce();
-    const [sql, values] = pool.query.mock.calls[0];
+    const [sql, values] = pool.query.mock.calls[0]!;
     expect(sql).toMatch(/INSERT INTO ai_usage_daily/);
     expect(sql).toMatch(/ON CONFLICT \(subject_key, usage_day, bucket\)/);
     expect(sql).toMatch(/DO UPDATE/);
@@ -241,13 +241,13 @@ describe("assertAiQuota (default bucket)", () => {
 
 describe("consumeToolQuota (tool buckets)", () => {
   beforeEach(() => {
-    process.env.DATABASE_URL = "postgres://ignored";
-    process.env.AI_QUOTA_DISABLED = "0";
+    process.env["DATABASE_URL"] = "postgres://ignored";
+    process.env["AI_QUOTA_DISABLED"] = "0";
   });
 
   it("returns ok + unlimited when AI_QUOTA_TOOL_LIMITS is not set", async () => {
-    delete process.env.AI_QUOTA_TOOL_LIMITS;
-    delete process.env.AI_QUOTA_TOOL_DEFAULT_LIMIT;
+    delete process.env["AI_QUOTA_TOOL_LIMITS"];
+    delete process.env["AI_QUOTA_TOOL_DEFAULT_LIMIT"];
     const r = await consumeToolQuota(makeReq(), "change_category");
     expect(r.ok).toBe(true);
     expect(r.limit).toBeNull();
@@ -255,39 +255,39 @@ describe("consumeToolQuota (tool buckets)", () => {
   });
 
   it("uses AI_QUOTA_TOOL_DEFAULT_LIMIT when env JSON is absent", async () => {
-    delete process.env.AI_QUOTA_TOOL_LIMITS;
-    process.env.AI_QUOTA_TOOL_DEFAULT_LIMIT = "12";
-    process.env.AI_QUOTA_TOOL_COST = "3";
+    delete process.env["AI_QUOTA_TOOL_LIMITS"];
+    process.env["AI_QUOTA_TOOL_DEFAULT_LIMIT"] = "12";
+    process.env["AI_QUOTA_TOOL_COST"] = "3";
     getSessionUser.mockResolvedValue(null);
     pool.query.mockResolvedValue({ rows: [{ request_count: 3 }], rowCount: 1 });
     const r = await consumeToolQuota(makeReq(), "change_category");
     expect(r.ok).toBe(true);
     expect(r.limit).toBe(12);
     expect(pool.query).toHaveBeenCalledOnce();
-    const [, values] = pool.query.mock.calls[0];
-    expect(values[2]).toBe("tool:change_category");
-    expect(values[3]).toBe(3); // cost
-    expect(values[4]).toBe(12); // limit
+    const [, values] = pool.query.mock.calls[0]!;
+    expect(values![2]).toBe("tool:change_category");
+    expect(values![3]).toBe(3); // cost
+    expect(values![4]).toBe(12); // limit
   });
 
   it("uses per-tool limit from AI_QUOTA_TOOL_LIMITS JSON", async () => {
-    process.env.AI_QUOTA_TOOL_LIMITS = JSON.stringify({
+    process.env["AI_QUOTA_TOOL_LIMITS"] = JSON.stringify({
       change_category: 20,
       create_debt: 5,
     });
-    process.env.AI_QUOTA_TOOL_COST = "3";
+    process.env["AI_QUOTA_TOOL_COST"] = "3";
     getSessionUser.mockResolvedValue(null);
     pool.query.mockResolvedValue({ rows: [{ request_count: 3 }], rowCount: 1 });
 
     await consumeToolQuota(makeReq(), "create_debt");
-    const [, values] = pool.query.mock.calls[0];
-    expect(values[4]).toBe(5);
-    expect(values[2]).toBe("tool:create_debt");
+    const [, values] = pool.query.mock.calls[0]!;
+    expect(values![4]).toBe(5);
+    expect(values![2]).toBe("tool:create_debt");
   });
 
   it("blocks with reason=limit when tool-bucket is exhausted", async () => {
-    process.env.AI_QUOTA_TOOL_LIMITS = JSON.stringify({ create_debt: 3 });
-    process.env.AI_QUOTA_TOOL_COST = "3";
+    process.env["AI_QUOTA_TOOL_LIMITS"] = JSON.stringify({ create_debt: 3 });
+    process.env["AI_QUOTA_TOOL_COST"] = "3";
     getSessionUser.mockResolvedValue(null);
     pool.query.mockResolvedValue({ rows: [], rowCount: 0 });
 
@@ -298,8 +298,8 @@ describe("consumeToolQuota (tool buckets)", () => {
   });
 
   it("returns ok on broken AI_QUOTA_TOOL_LIMITS JSON (advisory fail-open)", async () => {
-    process.env.AI_QUOTA_TOOL_LIMITS = "{not valid";
-    delete process.env.AI_QUOTA_TOOL_DEFAULT_LIMIT;
+    process.env["AI_QUOTA_TOOL_LIMITS"] = "{not valid";
+    delete process.env["AI_QUOTA_TOOL_DEFAULT_LIMIT"];
     const r = await consumeToolQuota(makeReq(), "change_category");
     expect(r.ok).toBe(true);
     expect(r.limit).toBeNull();
@@ -307,14 +307,16 @@ describe("consumeToolQuota (tool buckets)", () => {
   });
 
   it("does NOT consume from default bucket (separate quota)", async () => {
-    process.env.AI_QUOTA_TOOL_LIMITS = JSON.stringify({ change_category: 30 });
-    process.env.AI_QUOTA_TOOL_COST = "3";
+    process.env["AI_QUOTA_TOOL_LIMITS"] = JSON.stringify({
+      change_category: 30,
+    });
+    process.env["AI_QUOTA_TOOL_COST"] = "3";
     getSessionUser.mockResolvedValue(null);
     pool.query.mockResolvedValue({ rows: [{ request_count: 3 }], rowCount: 1 });
     await consumeToolQuota(makeReq(), "change_category");
-    const [, values] = pool.query.mock.calls[0];
-    expect(values[2]).not.toBe("default");
-    expect(values[2]).toBe("tool:change_category");
+    const [, values] = pool.query.mock.calls[0]!;
+    expect(values![2]).not.toBe("default");
+    expect(values![2]).toBe("tool:change_category");
   });
 });
 

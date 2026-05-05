@@ -91,7 +91,7 @@ export function sanitizeUserImage<T extends Record<string, unknown>>(
     return { data, imageStripped: false, reason: null };
   }
 
-  const value = data.image;
+  const value = data["image"];
 
   // null / undefined / "" / non-string → це валідний «нема аватарки»,
   // або поле не є string і нас не стосується (Better Auth у такому разі

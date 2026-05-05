@@ -84,7 +84,7 @@ export function usePullToRefresh(
 
       // Only activate if at top of scroll
       if (scrollElement.scrollTop <= 0) {
-        touchStartY.current = e.touches[0].clientY;
+        touchStartY.current = e.touches[0]!.clientY;
         touchStartScrollTop.current = scrollElement.scrollTop;
       }
     },
@@ -99,7 +99,7 @@ export function usePullToRefresh(
       const scrollElement = scrollRef.current;
       if (!scrollElement) return;
 
-      const currentY = e.touches[0].clientY;
+      const currentY = e.touches[0]!.clientY;
       const deltaY = currentY - touchStartY.current;
 
       // Only handle pull-down when at top

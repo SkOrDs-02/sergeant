@@ -86,8 +86,8 @@ async function rejectionCount(
   return all
     .filter(
       (v) =>
-        (v.labels as Record<string, string>).reason === reason &&
-        (v.labels as Record<string, string>).endpoint === endpoint,
+        (v.labels as Record<string, string>)["reason"] === reason &&
+        (v.labels as Record<string, string>)["endpoint"] === endpoint,
     )
     .reduce((acc, v) => acc + v.value, 0);
 }
@@ -105,9 +105,9 @@ describe("analyze-photo M6 magic-byte enforcement", () => {
     await analyzeHandler(req, res);
     expect(res.statusCode).toBe(415);
     const body = asRec(res.body);
-    expect(body.code).toBe("MAGIC_MISMATCH");
-    expect(body.declared_mime).toBe("image/jpeg");
-    expect(body.detected_mime).toBe("image/png");
+    expect(body["code"]).toBe("MAGIC_MISMATCH");
+    expect(body["declared_mime"]).toBe("image/jpeg");
+    expect(body["detected_mime"]).toBe("image/png");
     expect(anthropicMessages).not.toHaveBeenCalled();
     expect(
       (await rejectionCount("MAGIC_MISMATCH", "analyze-photo")) - before,
@@ -125,8 +125,8 @@ describe("analyze-photo M6 magic-byte enforcement", () => {
     await analyzeHandler(req, res);
     expect(res.statusCode).toBe(415);
     const body = asRec(res.body);
-    expect(body.code).toBe("MAGIC_MISMATCH");
-    expect(body.detected_mime).toBe("text/xml");
+    expect(body["code"]).toBe("MAGIC_MISMATCH");
+    expect(body["detected_mime"]).toBe("text/xml");
     expect(anthropicMessages).not.toHaveBeenCalled();
   });
 
@@ -141,8 +141,8 @@ describe("analyze-photo M6 magic-byte enforcement", () => {
     await analyzeHandler(req, res);
     expect(res.statusCode).toBe(415);
     const body = asRec(res.body);
-    expect(body.code).toBe("MAGIC_MISMATCH");
-    expect(body.detected_mime).toBe("image/gif");
+    expect(body["code"]).toBe("MAGIC_MISMATCH");
+    expect(body["detected_mime"]).toBe("image/gif");
     expect(anthropicMessages).not.toHaveBeenCalled();
   });
 
@@ -164,12 +164,12 @@ describe("analyze-photo M6 magic-byte enforcement", () => {
     expect(res.statusCode).toBe(200);
     expect(anthropicMessages).toHaveBeenCalledTimes(1);
     // Канонічний MIME, який пішов у Anthropic — image/png (з magic-bytes), не клієнтський.
-    const callArg = anthropicMessages.mock.calls[0][1] as {
+    const callArg = anthropicMessages!.mock.calls[0]![1] as {
       messages: Array<{
         content: Array<{ type: string; source?: { media_type: string } }>;
       }>;
     };
-    const imageBlock = callArg.messages[0].content.find(
+    const imageBlock = callArg!.messages[0]!.content.find(
       (b) => b.type === "image",
     );
     expect(imageBlock?.source?.media_type).toBe("image/png");
@@ -183,14 +183,14 @@ describe("analyze-photo M6 magic-byte enforcement", () => {
     // не triggerує TOO_LARGE без custom cap. Тому замість TOO_LARGE перевіряємо
     // INVALID_BASE64 на симетричному prove-by-rejection шляху:
     const req = makeReq({
-      image_base64: "not_base64_!!! at all in chars".padEnd(200, "?"),
+      image_base64: "not_base64_! at all in chars".padEnd(200, "?"),
       mime_type: "image/jpeg",
       locale: "uk-UA",
     });
     const res = makeRes();
     await analyzeHandler(req, res);
     expect(res.statusCode).toBe(415);
-    expect(asRec(res.body).code).toBe("INVALID_BASE64");
+    expect(asRec(res.body)["code"]).toBe("INVALID_BASE64");
     expect(anthropicMessages).not.toHaveBeenCalled();
   });
 });
@@ -208,9 +208,9 @@ describe("refine-photo M6 magic-byte enforcement", () => {
     await refineHandler(req, res);
     expect(res.statusCode).toBe(415);
     const body = asRec(res.body);
-    expect(body.code).toBe("MAGIC_MISMATCH");
-    expect(body.declared_mime).toBe("image/png");
-    expect(body.detected_mime).toBe("image/jpeg");
+    expect(body["code"]).toBe("MAGIC_MISMATCH");
+    expect(body["declared_mime"]).toBe("image/png");
+    expect(body["detected_mime"]).toBe("image/jpeg");
     expect(anthropicMessages).not.toHaveBeenCalled();
   });
 

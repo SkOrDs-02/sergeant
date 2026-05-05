@@ -135,7 +135,7 @@ export function ActiveHabitsSection({
                 if (fi < 0 || ti < 0) return s;
                 const next = [...ordered];
                 const [row] = next.splice(fi, 1);
-                next.splice(ti, 0, row);
+                next.splice(ti, 0, row!);
                 return setHabitOrder(s, next);
               });
             }}

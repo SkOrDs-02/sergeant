@@ -132,7 +132,8 @@ function resolveCategoryId(input: RawTxInput | null | undefined): string {
     input.raw && typeof input.raw === "object"
       ? (input.raw as Record<string, unknown>)
       : null;
-  const fromRaw = raw && typeof raw.category === "string" ? raw.category : "";
+  const fromRaw =
+    raw && typeof raw["category"] === "string" ? raw["category"] : "";
   const fromInput = typeof input.category === "string" ? input.category : "";
   return fromRaw || fromInput || "";
 }

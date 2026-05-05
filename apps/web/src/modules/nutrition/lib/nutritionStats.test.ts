@@ -188,8 +188,8 @@ describe("nutrition/topMeals", () => {
 
   it("returns meals sorted by frequency desc", () => {
     const result = topMeals(log as unknown as NutritionLog, "2026-01-10", 3);
-    expect(result[0].name).toBe("Гречка");
-    expect(result[0].count).toBe(3);
+    expect(result[0]!.name).toBe("Гречка");
+    expect(result[0]!.count).toBe(3);
   });
 
   it("accumulates kcal for repeated meals", () => {
@@ -281,8 +281,8 @@ describe("nutrition/getRowsForRange", () => {
     };
     const rows = getRowsForRange(log as never, "2026-01-10", 3);
     expect(rows.length).toBe(3);
-    expect(rows[0].date).toBe("2026-01-08");
-    expect(rows[2].date).toBe("2026-01-10");
+    expect(rows[0]!.date).toBe("2026-01-08");
+    expect(rows[2]!.date).toBe("2026-01-10");
   });
 
   it("returns empty-day placeholders for missing dates", () => {

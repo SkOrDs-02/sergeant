@@ -22,9 +22,9 @@ async function makeApp(internalKey: string | undefined, pool = makePool()) {
   vi.doMock("../lib/anthropic.js", () => ({
     anthropicMessages: anthropicMessagesMock,
   }));
-  if (internalKey === undefined) delete process.env.INTERNAL_API_KEY;
-  else process.env.INTERNAL_API_KEY = internalKey;
-  process.env.ANTHROPIC_API_KEY = "anthropic-test-key";
+  if (internalKey === undefined) delete process.env["INTERNAL_API_KEY"];
+  else process.env["INTERNAL_API_KEY"] = internalKey;
+  process.env["ANTHROPIC_API_KEY"] = "anthropic-test-key";
 
   const { createInternalRouter } = await import("./internal/index.js");
   const app = express();
@@ -88,7 +88,7 @@ describe("/api/internal/*", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true });
     expect(pool.query).toHaveBeenCalledTimes(1);
-    const [sql, values] = pool.query.mock.calls[0];
+    const [sql, values] = pool.query.mock.calls[0]!;
     expect(sql).toContain("request_count");
     expect(sql).toContain("input_tokens");
     expect(sql).toContain("output_tokens");
@@ -121,7 +121,7 @@ describe("/api/internal/*", () => {
       ok: true,
       user: { id: "u_1", email: "paid@example.com" },
     });
-    expect(pool.query.mock.calls[0][1]).toEqual(["cus_123"]);
+    expect(pool!.query.mock.calls[0]![1]).toEqual(["cus_123"]);
   });
 
   it("rejects unsafe prompt slugs before reading from disk", async () => {
@@ -149,7 +149,7 @@ describe("/api/internal/*", () => {
     expect(res.status).toBe(502);
     expect(res.body).toEqual({ error: "AI service error" });
     expect(anthropicMessagesMock).toHaveBeenCalledTimes(1);
-    const [, payload] = anthropicMessagesMock.mock.calls[0];
+    const [, payload] = anthropicMessagesMock.mock.calls[0]!;
     expect(JSON.stringify(payload)).not.toContain("test@example.com");
   });
 
@@ -288,7 +288,7 @@ describe("/api/internal/*", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, id: 1 });
-    const [, values] = pool.query.mock.calls[0];
+    const [, values] = pool.query.mock.calls[0]!;
     expect(values[1]).toBe("1234500"); // mrr_cents passed as string per pg bigint protocol
     expect(values[3]).toBe("49900"); // arpu_cents
   });
@@ -376,7 +376,7 @@ describe("/api/internal/*", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.kind).toBe("social");
-    const [, values] = pool.query.mock.calls[0];
+    const [, values] = pool.query.mock.calls[0]!;
     // sentiment is the 8th positional ($8): platform=$1, post_id=$2, url=$3,
     // author_handle=$4, author_followers=$5, text=$6, engagement=$7, sentiment=$8
     expect(values[7]).toBeNull();
@@ -456,7 +456,7 @@ describe("/api/internal/*", () => {
         },
       ],
     });
-    const [sql, values] = pool.query.mock.calls[0];
+    const [sql, values] = pool.query.mock.calls[0]!;
     expect(sql).toContain('FROM "user"');
     expect(values).toEqual([7, 200]);
   });
@@ -492,7 +492,7 @@ describe("/api/internal/*", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, id: 13 });
-    const [sql, values] = pool.query.mock.calls[0];
+    const [sql, values] = pool.query.mock.calls[0]!;
     expect(sql).toContain("hard_rules_violations");
     expect(values[2]).toBe("blocker"); // default severity
     expect(values[3]).toBe(707);

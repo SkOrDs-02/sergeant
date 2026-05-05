@@ -147,8 +147,8 @@ describe("runRoutineBackfill (Stage 2 / PR #020)", () => {
 
     const carolEntries = entries.rows.filter((r) => r.user_id === "u-carol");
     expect(carolEntries).toHaveLength(1);
-    expect(carolEntries[0].completed_at).toBeNull();
-    expect(carolEntries[0].name).toBe("Meditate");
+    expect(carolEntries[0]!.completed_at).toBeNull();
+    expect(carolEntries[0]!.name).toBe("Meditate");
 
     const streaks = await pool.query<RoutineStreakRow>(
       `SELECT user_id, current_streak, longest_streak, last_completed_at

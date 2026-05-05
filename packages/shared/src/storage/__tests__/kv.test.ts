@@ -144,7 +144,7 @@ describe("readJSON / writeJSON", () => {
   it("writeJSON silently no-ops on cyclic input", () => {
     const s = createMemoryKVStore();
     const cyclic: Record<string, unknown> = {};
-    cyclic.self = cyclic;
+    cyclic["self"] = cyclic;
     expect(() => writeJSON(s, "k", cyclic)).not.toThrow();
     expect(s.getString("k")).toBeNull();
   });

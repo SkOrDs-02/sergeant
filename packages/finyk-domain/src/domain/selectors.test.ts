@@ -209,7 +209,7 @@ describe("computeCategorySpendIndex — internal transfers", () => {
       ],
     };
     const index = computeCategorySpendIndex(txs, { txSplits: splits });
-    expect(index.catSpend.food).toBe(300);
+    expect(index.catSpend["food"]).toBe(300);
     expect(index.catSpend[INTERNAL_TRANSFER_ID]).toBeUndefined();
     expect(index.totalSpent).toBe(300);
   });

@@ -27,20 +27,20 @@ type SyncOutcome =
   | "error";
 
 interface RecordSyncOptions {
-  ms?: number;
-  bytes?: number;
-  extra?: Record<string, unknown>;
+  ms?: number | undefined;
+  bytes?: number | undefined;
+  extra?: Record<string, unknown> | undefined;
   /**
    * Якщо виставлений — `recordSync` додатково пише рядок у
    * `sync_audit_log`. Пропускається для early-reject-ів, де жодне
    * `req.user` ще не встигло бути зарезолвленим.
    */
-  userId?: string | null;
+  userId?: string | null | undefined;
   /**
    * Якщо виставлений — буде переданий у audit-рядок; інакше
    * походить від outcome==="conflict".
    */
-  conflict?: boolean;
+  conflict?: boolean | undefined;
 }
 
 interface ModuleDataRow {
@@ -66,10 +66,10 @@ interface PushAllPayloadEntry {
 
 interface PushAllResult {
   ok: boolean;
-  error?: string;
-  conflict?: boolean;
-  serverUpdatedAt?: Date;
-  version?: number;
+  error?: string | undefined;
+  conflict?: boolean | undefined;
+  serverUpdatedAt?: Date | undefined;
+  version?: number | undefined;
 }
 
 function recordConflict(module: string): void {
@@ -106,7 +106,11 @@ function auditSync(
     ms,
     bytes,
     conflict,
-  }: { ms?: number; bytes?: number; conflict?: boolean } = {},
+  }: {
+    ms?: number | undefined;
+    bytes?: number | undefined;
+    conflict?: boolean | undefined;
+  } = {},
 ): void {
   if (!userId) return;
   // `invalid` / `unauthorized` / `too_large` — це валідаційні відмови
@@ -315,8 +319,8 @@ export async function syncPush(req: Request, res: Response): Promise<void> {
     res.json({
       ok: true,
       module,
-      serverUpdatedAt: result.rows[0].server_updated_at,
-      version: result.rows[0].version,
+      serverUpdatedAt: result!.rows[0]!.server_updated_at,
+      version: result!.rows[0]!.version,
     });
   } catch (e: unknown) {
     recordSync("push", module, "error", {
@@ -374,16 +378,16 @@ export async function syncPull(req: Request, res: Response): Promise<void> {
     const row = result.rows[0];
     let data: unknown;
     try {
-      data = typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+      data = typeof row!.data === "string" ? JSON.parse(row!.data) : row!.data;
     } catch {
-      data = row.data;
+      data = row!.data;
     }
 
     const bytes =
-      typeof row.data === "string"
-        ? row.data.length
-        : row.data != null
-          ? JSON.stringify(row.data).length
+      typeof row!.data === "string"
+        ? row!.data.length
+        : row!.data != null
+          ? JSON.stringify(row!.data).length
           : 0;
     recordSync("pull", module, "ok", {
       ms: elapsedMs(start),
@@ -395,9 +399,9 @@ export async function syncPull(req: Request, res: Response): Promise<void> {
       ok: true,
       module,
       data,
-      clientUpdatedAt: row.client_updated_at,
-      serverUpdatedAt: row.server_updated_at,
-      version: row.version,
+      clientUpdatedAt: row!.client_updated_at,
+      serverUpdatedAt: row!.server_updated_at,
+      version: row!.version,
     });
   } catch (e: unknown) {
     recordSync("pull", module, "error", {
@@ -555,8 +559,8 @@ export async function syncPushAll(req: Request, res: Response): Promise<void> {
         pending.push({ module: mod, outcome: "ok", bytes: blob.length });
         results[mod] = {
           ok: true,
-          serverUpdatedAt: r.rows[0].server_updated_at,
-          version: r.rows[0].version,
+          serverUpdatedAt: r!.rows[0]!.server_updated_at,
+          version: r!.rows[0]!.version,
         };
       }
     }

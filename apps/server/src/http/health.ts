@@ -73,13 +73,13 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
       const start = process.hrtime.bigint();
       await pool.query("SELECT 1");
       const latencyMs = elapsedMs(start);
-      checks.database = {
+      checks["database"] = {
         status: "healthy",
         details: { latencyMs, ...getPoolStats() },
       };
     } catch (e) {
       overallHealthy = false;
-      checks.database = {
+      checks["database"] = {
         status: "unhealthy",
         details: { error: e instanceof Error ? e.message : String(e) },
       };
@@ -88,7 +88,7 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
     // Redis check
     const redisStats = getRedisStats();
     const redisHealthy = await pingRedis();
-    checks.redis = {
+    checks["redis"] = {
       status: redisHealthy ? "healthy" : "degraded",
       details: {
         connected: redisStats.connected,
@@ -99,14 +99,14 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
 
     // Background queue
     const queueStats = backgroundQueue.getStats();
-    checks.backgroundQueue = {
+    checks["backgroundQueue"] = {
       status: queueStats.isShuttingDown ? "shutting_down" : "healthy",
       details: queueStats,
     };
 
     // Circuit breakers
     const anthropicCb = anthropicCircuitBreaker.getStats();
-    checks.circuitBreakers = {
+    checks["circuitBreakers"] = {
       status: anthropicCb.state === "open" ? "degraded" : "healthy",
       details: {
         anthropic: anthropicCb,

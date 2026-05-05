@@ -56,11 +56,11 @@ describe("logger", () => {
 
       expect(chunks).toHaveLength(1);
       const parsed = JSON.parse(chunks[0]!) as Record<string, unknown>;
-      expect(parsed.password).toBe("[redacted]");
-      expect(parsed.token).toBe("[redacted]");
-      expect(parsed.email).toBe("[redacted]");
-      expect(parsed.phone).toBe("[redacted]");
-      expect(parsed.safeField).toBe("this-should-remain");
+      expect(parsed["password"]).toBe("[redacted]");
+      expect(parsed["token"]).toBe("[redacted]");
+      expect(parsed["email"]).toBe("[redacted]");
+      expect(parsed["phone"]).toBe("[redacted]");
+      expect(parsed["safeField"]).toBe("this-should-remain");
     });
 
     it("redact wildcard ловить вкладені password/token/apiKey", () => {
@@ -75,12 +75,12 @@ describe("logger", () => {
       });
 
       const parsed = JSON.parse(chunks[0]!) as Record<string, unknown>;
-      const body = parsed.body as { user: Record<string, unknown> };
-      expect(body.user.password).toBe("[redacted]");
-      expect(body.user.apiKey).toBe("[redacted]");
-      const ctx = parsed.ctx as Record<string, unknown>;
-      expect(ctx.secret).toBe("[redacted]");
-      expect(ctx.privateKey).toBe("[redacted]");
+      const body = parsed["body"] as { user: Record<string, unknown> };
+      expect(body.user["password"]).toBe("[redacted]");
+      expect(body.user["apiKey"]).toBe("[redacted]");
+      const ctx = parsed["ctx"] as Record<string, unknown>;
+      expect(ctx["secret"]).toBe("[redacted]");
+      expect(ctx["privateKey"]).toBe("[redacted]");
     });
 
     it("redact ловить sensitive headers у req/res", () => {
@@ -106,8 +106,8 @@ describe("logger", () => {
         req: { headers: Record<string, unknown> };
         res: { headers: Record<string, unknown> };
       };
-      expect(parsed.req.headers.authorization).toBe("[redacted]");
-      expect(parsed.req.headers.cookie).toBe("[redacted]");
+      expect(parsed.req.headers["authorization"]).toBe("[redacted]");
+      expect(parsed.req.headers["cookie"]).toBe("[redacted]");
       expect(parsed.req.headers["x-csrf-token"]).toBe("[redacted]");
       expect(parsed.req.headers["x-api-key"]).toBe("[redacted]");
       // Не маскуємо нейтральні headers — sanity check.
@@ -129,9 +129,9 @@ describe("logger", () => {
       const parsed = JSON.parse(chunks[0]!) as {
         session: Record<string, unknown>;
       };
-      expect(parsed.session.token).toBe("[redacted]");
+      expect(parsed.session["token"]).toBe("[redacted]");
       // userId — не sensitive, лишається.
-      expect(parsed.session.userId).toBe("user-123");
+      expect(parsed.session["userId"]).toBe("user-123");
     });
   });
 
@@ -161,13 +161,13 @@ describe("logger", () => {
         },
         readRedacted: (p) =>
           (
-            p.req as {
+            p["req"] as {
               headers: Record<string, unknown>;
             }
           ).headers["x-mono-webhook-secret"],
         readSafe: (p) =>
           (
-            p.req as {
+            p["req"] as {
               headers: Record<string, unknown>;
             }
           ).headers["user-agent"],
@@ -181,7 +181,7 @@ describe("logger", () => {
         },
         readRedacted: (p) =>
           (
-            p.req as {
+            p["req"] as {
               headers: Record<string, unknown>;
             }
           ).headers["x-openclaw-webhook-secret"],
@@ -195,7 +195,7 @@ describe("logger", () => {
         },
         readRedacted: (p) =>
           (
-            p.req as {
+            p["req"] as {
               headers: Record<string, unknown>;
             }
           ).headers["x-api-secret"],
@@ -209,7 +209,7 @@ describe("logger", () => {
         },
         readRedacted: (p) =>
           (
-            p.req as {
+            p["req"] as {
               headers: Record<string, unknown>;
             }
           ).headers["x-internal-token"],
@@ -217,23 +217,23 @@ describe("logger", () => {
       {
         name: "groqKey у root",
         payload: { groqKey: "gsk_live_xxx" },
-        readRedacted: (p) => p.groqKey,
+        readRedacted: (p) => p["groqKey"],
       },
       {
         name: "anthropicKey у root",
         payload: { anthropicKey: "sk-ant-xxx" },
-        readRedacted: (p) => p.anthropicKey,
+        readRedacted: (p) => p["anthropicKey"],
       },
       {
         name: "voyageKey у root",
         payload: { voyageKey: "pa-voyage-xxx" },
-        readRedacted: (p) => p.voyageKey,
+        readRedacted: (p) => p["voyageKey"],
       },
       {
         name: "groqKey всередині debug-об'єкта (1 рівень)",
         payload: { ctx: { groqKey: "gsk_live_xxx", model: "llama" } },
-        readRedacted: (p) => (p.ctx as Record<string, unknown>).groqKey,
-        readSafe: (p) => (p.ctx as Record<string, unknown>).model,
+        readRedacted: (p) => (p["ctx"] as Record<string, unknown>)["groqKey"],
+        readSafe: (p) => (p["ctx"] as Record<string, unknown>)["model"],
       },
       {
         name: "req.body.password (login flow)",
@@ -241,25 +241,27 @@ describe("logger", () => {
           req: { body: { email: "u@example.com", password: "leak" } },
         },
         readRedacted: (p) =>
-          (p.req as { body: Record<string, unknown> }).body.password,
+          (p["req"] as { body: Record<string, unknown> }).body["password"],
       },
       {
         name: "req.body.token (CSRF / form token)",
         payload: { req: { body: { token: "form-token-xxx" } } },
         readRedacted: (p) =>
-          (p.req as { body: Record<string, unknown> }).body.token,
+          (p["req"] as { body: Record<string, unknown> }).body["token"],
       },
       {
         name: "req.body.currentPassword (change-password endpoint)",
         payload: { req: { body: { currentPassword: "old-pass" } } },
         readRedacted: (p) =>
-          (p.req as { body: Record<string, unknown> }).body.currentPassword,
+          (p["req"] as { body: Record<string, unknown> }).body[
+            "currentPassword"
+          ],
       },
       {
         name: "req.body.newPassword (change-password endpoint)",
         payload: { req: { body: { newPassword: "new-pass" } } },
         readRedacted: (p) =>
-          (p.req as { body: Record<string, unknown> }).body.newPassword,
+          (p["req"] as { body: Record<string, unknown> }).body["newPassword"],
       },
       {
         name: "err.config.headers.Authorization (axios upstream failure)",
@@ -276,13 +278,13 @@ describe("logger", () => {
         },
         readRedacted: (p) =>
           (
-            p.err as {
+            p["err"] as {
               config: { headers: Record<string, unknown> };
             }
-          ).config.headers.Authorization,
+          ).config.headers["Authorization"],
         readSafe: (p) =>
           (
-            p.err as {
+            p["err"] as {
               config: { headers: Record<string, unknown> };
             }
           ).config.headers["Content-Type"],
@@ -294,10 +296,10 @@ describe("logger", () => {
         },
         readRedacted: (p) =>
           (
-            p.err as {
+            p["err"] as {
               config: { headers: Record<string, unknown> };
             }
-          ).config.headers.authorization,
+          ).config.headers["authorization"],
       },
       {
         name: "err.config.headers.Cookie (axios upstream)",
@@ -306,10 +308,10 @@ describe("logger", () => {
         },
         readRedacted: (p) =>
           (
-            p.err as {
+            p["err"] as {
               config: { headers: Record<string, unknown> };
             }
-          ).config.headers.Cookie,
+          ).config.headers["Cookie"],
       },
       {
         name: "err.config.headers['x-mono-webhook-secret'] (axios outbound)",
@@ -320,7 +322,7 @@ describe("logger", () => {
         },
         readRedacted: (p) =>
           (
-            p.err as {
+            p["err"] as {
               config: { headers: Record<string, unknown> };
             }
           ).config.headers["x-mono-webhook-secret"],
@@ -450,13 +452,13 @@ describe("logger", () => {
 
       expect(chunks).toHaveLength(1);
       const parsed = JSON.parse(chunks[0]!) as Record<string, unknown>;
-      expect(parsed.userIdHash).toBe(hashUserId(rawUuid));
+      expect(parsed["userIdHash"]).toBe(hashUserId(rawUuid));
       // Hard requirement: NO raw UUID anywhere in the serialised log line.
       const uuidRegex =
         /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
       expect(chunks[0]).not.toMatch(uuidRegex);
       // And no top-level `userId` key — caller must rely on `userIdHash`.
-      expect(parsed.userId).toBeUndefined();
+      expect(parsed["userId"]).toBeUndefined();
     });
 
     it("logger.test stream verifies hashed UUID does not contain dashes", () => {

@@ -29,7 +29,7 @@ import { FTUX_DRIP_CAMPAIGN_FAMILY } from "./ftuxDripCopy.js";
 const TOKEN_VERSION = "v1";
 
 function getUnsubscribeSecret(): string | null {
-  const secret = process.env.BETTER_AUTH_SECRET?.trim();
+  const secret = process.env["BETTER_AUTH_SECRET"]?.trim();
   if (!secret) return null;
   return secret;
 }

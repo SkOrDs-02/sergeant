@@ -4,7 +4,8 @@
     "strict": true,
     "allowJs": false,
     "checkJs": false,
-    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false,
+    "noPropertyAccessFromIndexSignature": false,
     "types": ["vite/client", "@testing-library/jest-dom", "node"],
     "paths": {
       "@sergeant/shared": ["../../packages/shared/src/index.ts"],

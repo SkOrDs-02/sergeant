@@ -184,7 +184,7 @@ export async function sendAPNs(
   // FCM-гілкою та з комментарем у `PushPayload`.
   const rootPayload: Record<string, unknown> = { ...(payload.data ?? {}) };
   if (typeof payload.url === "string" && payload.url.length > 0) {
-    rootPayload.url = payload.url;
+    rootPayload["url"] = payload.url;
   }
   if (Object.keys(rootPayload).length > 0) {
     note.payload = rootPayload;
@@ -312,7 +312,7 @@ export async function sendFCM(
     ? stringifyDataMap(payload.data)
     : {};
   if (typeof payload.url === "string" && payload.url.length > 0) {
-    dataMap.url = payload.url;
+    dataMap["url"] = payload.url;
   }
 
   // silent — data-only повідомлення. FCM v1:
@@ -332,18 +332,18 @@ export async function sendFCM(
     ...(Object.keys(dataMap).length > 0 ? { data: dataMap } : {}),
   };
   if (payload.silent) {
-    messageCore.android = { priority: "high" };
-    messageCore.apns = {
+    messageCore["android"] = { priority: "high" };
+    messageCore["apns"] = {
       headers: { "apns-push-type": "background", "apns-priority": "5" },
       payload: { aps: { "content-available": 1 } },
     };
   } else {
-    messageCore.notification = {
+    messageCore["notification"] = {
       title: payload.title,
       body: payload.body ?? "",
     };
     if (typeof payload.badge === "number") {
-      messageCore.apns = { payload: { aps: { badge: payload.badge } } };
+      messageCore["apns"] = { payload: { aps: { badge: payload.badge } } };
     }
   }
   const body = { message: messageCore };

@@ -66,9 +66,9 @@ function makeFakeStore(): VectorStore & {
       for (let i = rows.length - 1; i >= 0; i--) {
         const r = rows[i];
         if (
-          r.userId === userId &&
-          r.source === source &&
-          r.sourceRef === sourceRef
+          r!.userId === userId &&
+          r!.source === source &&
+          r!.sourceRef === sourceRef
         ) {
           rows.splice(i, 1);
         }
@@ -77,7 +77,7 @@ function makeFakeStore(): VectorStore & {
     async deleteAllForUser(userId) {
       let count = 0;
       for (let i = rows.length - 1; i >= 0; i--) {
-        if (rows[i].userId === userId) {
+        if (rows[i]!.userId === userId) {
           rows.splice(i, 1);
           count++;
         }
@@ -163,8 +163,8 @@ describe("AiMemoryService — enabled", () => {
     expect(embeddings.calls).toBe(1);
     expect(store.upsertCalls).toBe(1);
     expect(store.rows).toHaveLength(2);
-    expect(store.rows[0].embeddingMeta).toEqual(embeddings.meta);
-    expect(store.rows[0].embedding).toBeInstanceOf(Float32Array);
+    expect(store!.rows[0]!.embeddingMeta).toEqual(embeddings.meta);
+    expect(store!.rows[0]!.embedding).toBeInstanceOf(Float32Array);
   });
 
   it("remember() — no-op для пустого input", async () => {
@@ -224,7 +224,7 @@ describe("AiMemoryService — enabled", () => {
       },
     ]);
     const embeddings = makeFakeEmbeddings();
-    process.env.AI_MEMORY_TOP_K = "5";
+    process.env["AI_MEMORY_TOP_K"] = "5";
     const svc = createAiMemoryService({
       embeddings,
       vectorStore: store,
@@ -234,7 +234,7 @@ describe("AiMemoryService — enabled", () => {
     expect(embeddings.calls).toBe(1);
     expect(store.queryCalls).toBe(1);
     expect(r).toHaveLength(1);
-    expect(r[0].content).toBe("old chat");
+    expect(r[0]!.content).toBe("old chat");
   });
 
   it("recall() — повертає [] якщо topK=0", async () => {
@@ -314,7 +314,7 @@ describe("AiMemoryService — enabled", () => {
     });
     await svc.forgetSource("u1", "finyk", "tx-1");
     expect(store.rows).toHaveLength(1);
-    expect(store.rows[0].sourceRef).toBe("tx-2");
+    expect(store!.rows[0]!.sourceRef).toBe("tx-2");
   });
 
   it("recall() — кидає якщо provider повернув порожній результат", async () => {

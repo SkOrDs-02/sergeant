@@ -55,10 +55,10 @@ export function normalizeMonthlyPlanState(raw: unknown): MonthlyPlanState {
   if (!raw || typeof raw !== "object") return defaultMonthlyPlanState();
   const src = raw as Record<string, unknown>;
   return {
-    reminderEnabled: src.reminderEnabled !== false,
-    reminderHour: clampHour(src.reminderHour),
-    reminderMinute: clampMinute(src.reminderMinute),
-    days: normalizeDays(src.days),
+    reminderEnabled: src["reminderEnabled"] !== false,
+    reminderHour: clampHour(src["reminderHour"]),
+    reminderMinute: clampMinute(src["reminderMinute"]),
+    days: normalizeDays(src["days"]),
   };
 }
 

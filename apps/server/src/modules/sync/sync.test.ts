@@ -269,8 +269,11 @@ describe("syncPushAll metric correctness around transaction boundary", () => {
     );
 
     expect(res.statusCode).toBe(200);
-    expect(res.body.results!.finyk).toEqual({ ok: false, error: "Too large" });
-    expect(res.body.results!.nutrition).toMatchObject({
+    expect(res.body.results!["finyk"]).toEqual({
+      ok: false,
+      error: "Too large",
+    });
+    expect(res.body.results!["nutrition"]).toMatchObject({
       ok: true,
       conflict: true,
       version: 7,
@@ -328,13 +331,13 @@ describe("syncPullAll module filtering", () => {
       /module_data/.test(String(sql)),
     );
     expect(moduleDataCalls).toHaveLength(1);
-    const [sql, params] = moduleDataCalls[0];
+    const [sql, params] = moduleDataCalls[0]!;
     expect(sql).toMatch(/module = ANY\(\$2::text\[\]\)/);
-    expect(params[0]).toBe("user_1");
+    expect(params![0]).toBe("user_1");
     // Параметр $2 має бути рівно множиною VALID_MODULES (без coach).
-    expect(new Set(params[1])).toEqual(VALID_MODULES);
-    expect(params[1]).toContain("profile");
-    expect(params[1]).not.toContain("coach");
+    expect(new Set(params![1] as string[])).toEqual(VALID_MODULES);
+    expect(params![1]).toContain("profile");
+    expect(params![1]).not.toContain("coach");
   });
 });
 
@@ -465,10 +468,10 @@ describe("syncPush (singular) — contract tests", () => {
       /module_data/.test(String(sql)),
     );
     expect(moduleDataCalls).toHaveLength(1);
-    const [sql, params] = moduleDataCalls[0];
+    const [sql, params] = moduleDataCalls[0]!;
     expect(sql).toMatch(/INSERT INTO module_data/);
-    expect(params[0]).toBe("user_1");
-    expect(params[1]).toBe("finyk");
+    expect(params![0]).toBe("user_1");
+    expect(params![1]).toBe("finyk");
   });
 
   it("accepts profile module for AI memory sync", async () => {
@@ -492,7 +495,7 @@ describe("syncPush (singular) — contract tests", () => {
       module: "profile",
       version: 4,
     });
-    const [, params] = pool.query.mock.calls[0];
+    const [, params] = pool.query.mock.calls[0]!;
     expect(params[1]).toBe("profile");
   });
 

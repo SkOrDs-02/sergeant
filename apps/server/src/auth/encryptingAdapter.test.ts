@@ -28,14 +28,14 @@ describe("encryptingAdapter helpers", () => {
         expect(typeof v).toBe("string");
         expect(isEncrypted(v as string)).toBe(true);
       }
-      expect(out.providerId).toBe("google");
+      expect(out["providerId"]).toBe("google");
     });
 
     it("does not double-encrypt already-encrypted values", () => {
       const already = encryptString("ya29.access", KEY);
       const out = encryptTokenFields({ accessToken: already }, RING);
       // identity preserved (no re-encryption)
-      expect(out.accessToken).toBe(already);
+      expect(out["accessToken"]).toBe(already);
     });
 
     it("ignores fields that are missing or non-string", () => {
@@ -49,15 +49,15 @@ describe("encryptingAdapter helpers", () => {
         RING,
       );
       // null/undefined/0 stay verbatim — only strings get touched
-      expect(out.accessToken).toBe(null);
-      expect(out.refreshToken).toBe(undefined);
-      expect(out.idToken).toBe(0);
-      expect(out.accountId).toBe("abc");
+      expect(out["accessToken"]).toBe(null);
+      expect(out["refreshToken"]).toBe(undefined);
+      expect(out["idToken"]).toBe(0);
+      expect(out["accountId"]).toBe("abc");
     });
 
     it("ignores empty-string tokens (Better Auth never queries by them)", () => {
       const out = encryptTokenFields({ accessToken: "" }, RING);
-      expect(out.accessToken).toBe("");
+      expect(out["accessToken"]).toBe("");
     });
 
     it("returns the original reference when nothing to do", () => {
@@ -170,7 +170,7 @@ describe("encryptingAdapter — multi-key (H4 rotation)", () => {
       RING_V1_ONLY,
     );
     const out = decryptTokenFields(old, RING_V1_AND_V2);
-    expect(out.accessToken).toBe("ya29.before-rotation");
+    expect(out["accessToken"]).toBe("ya29.before-rotation");
   });
 
   it("new writes use the current version (v2) when ring is rotated", () => {
@@ -178,7 +178,7 @@ describe("encryptingAdapter — multi-key (H4 rotation)", () => {
       { accessToken: "ya29.after-rotation" },
       RING_V1_AND_V2,
     );
-    const ct = out.accessToken as string;
+    const ct = out["accessToken"] as string;
     // "enc:v2:k2:..." — the second `v2` here is the prefix-format marker,
     // and `k2` is the key version inside the ring.
     expect(ct.startsWith("enc:v2:k2:")).toBe(true);

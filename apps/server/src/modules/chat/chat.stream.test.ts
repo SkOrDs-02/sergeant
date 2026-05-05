@@ -54,8 +54,8 @@ const recordAnthropicUsageMock = _recordAnthropicUsage as unknown as Mock;
 
 interface SseEvent {
   type: string;
-  delta?: { type?: string; text?: string; stop_reason?: string };
-  message?: { usage?: Record<string, number> };
+  delta?: { type?: string; text?: string; stop_reason?: string } | undefined;
+  message?: { usage?: Record<string, number> } | undefined;
   // input_json_delta тощо — лишаємо як index signature
   [key: string]: unknown;
 }
@@ -346,7 +346,7 @@ describe("chat handler — SSE auto-continuation на stop_reason=max_tokens", (
     expect(anthropicMessagesStream).toHaveBeenCalledTimes(2);
     // Continuation отримує partial-text як останнє assistant-повідомлення
     // (Anthropic вимагає user/assistant alternation).
-    const secondPayload = anthropicMessagesStream.mock.calls[1][1] as {
+    const secondPayload = anthropicMessagesStream!.mock.calls[1]![1] as {
       messages: Array<{ role: string; content: unknown }>;
     };
     const last = secondPayload.messages[secondPayload.messages.length - 1];
@@ -356,7 +356,7 @@ describe("chat handler — SSE auto-continuation на stop_reason=max_tokens", (
     });
     // Endpoint-розмітка для другого виклику — `chat-tool-result-cont`,
     // щоб latency-метрики розрізняли continuation від першого виклику.
-    const secondOpts = anthropicMessagesStream.mock.calls[1][2] as {
+    const secondOpts = anthropicMessagesStream!.mock.calls[1]![2] as {
       endpoint: string;
     };
     expect(secondOpts.endpoint).toBe("chat-tool-result-cont");
@@ -433,7 +433,7 @@ describe("chat handler — SSE auto-continuation на stop_reason=max_tokens", (
     await handler(req, res);
 
     expect(anthropicMessagesStream).toHaveBeenCalledTimes(3);
-    const thirdPayload = anthropicMessagesStream.mock.calls[2][1] as {
+    const thirdPayload = anthropicMessagesStream!.mock.calls[2]![1] as {
       messages: Array<{ role: string; content: unknown }>;
     };
     // Останнім має бути ОДИН assistant-msg із усім накопиченим текстом ("p1 p2 ").
@@ -753,11 +753,11 @@ describe("chat handler — SSE prompt-cache metric", () => {
     // Тест мокає `recordAnthropicUsage` цілком і перевіряє лише, що chat.ts
     // викликав його з правильно витягнутим usage-payload-ом.
     expect(recordAnthropicUsageMock).toHaveBeenCalledTimes(1);
-    const call = recordAnthropicUsageMock.mock.calls[0];
+    const call = recordAnthropicUsageMock.mock.calls[0]!;
     // signature: (model, endpoint, usage, promptVersion?)
-    expect(typeof call[1]).toBe("string");
-    expect(call[1].length).toBeGreaterThan(0);
-    expect(call[2]).toMatchObject({ cache_read_input_tokens: 4096 });
+    expect(typeof call[1]!).toBe("string");
+    expect(call[1]!.length).toBeGreaterThan(0);
+    expect(call[2]!).toMatchObject({ cache_read_input_tokens: 4096 });
   });
 
   it("usage із cache_read=0 теж форвардиться у helper (helper сам класифікує hit/miss)", async () => {
@@ -781,8 +781,8 @@ describe("chat handler — SSE prompt-cache metric", () => {
     await handler(req, res);
 
     expect(recordAnthropicUsageMock).toHaveBeenCalledTimes(1);
-    const call = recordAnthropicUsageMock.mock.calls[0];
-    expect(call[2]).toMatchObject({ cache_read_input_tokens: 0 });
+    const call = recordAnthropicUsageMock.mock.calls[0]!;
+    expect(call[2]!).toMatchObject({ cache_read_input_tokens: 0 });
   });
 
   it("output_tokens із message_delta мерджаться з input_tokens із message_start", async () => {
@@ -817,8 +817,8 @@ describe("chat handler — SSE prompt-cache metric", () => {
     await handler(req, res);
 
     expect(recordAnthropicUsageMock).toHaveBeenCalledTimes(1);
-    const call = recordAnthropicUsageMock.mock.calls[0];
-    expect(call[2]).toMatchObject({
+    const call = recordAnthropicUsageMock.mock.calls[0]!;
+    expect(call[2]!).toMatchObject({
       input_tokens: 1000,
       cache_read_input_tokens: 4096,
       output_tokens: 250,

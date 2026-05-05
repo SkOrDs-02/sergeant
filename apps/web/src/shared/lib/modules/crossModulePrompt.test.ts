@@ -123,9 +123,9 @@ describe("tryShowCrossModulePrompt", () => {
     expect(shown).toBe(true);
     expect(toast.show).toHaveBeenCalledTimes(1);
     const call = (toast.show as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(call[0]).toBe("Додай прийом їжі?");
-    expect(call[1]).toBe("info");
-    expect(call[3]?.label).toBe("Додати");
+    expect(call![0]).toBe("Додай прийом їжі?");
+    expect(call![1]).toBe("info");
+    expect(call![3]?.label).toBe("Додати");
   });
 
   it("returns false and does NOT call toast.show when suppressed", () => {

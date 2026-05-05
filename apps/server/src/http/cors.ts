@@ -28,7 +28,7 @@ const DEFAULT_ORIGINS = [
 ];
 
 function getReplitOrigins() {
-  const domains = process.env.REPLIT_DOMAINS || "";
+  const domains = process.env["REPLIT_DOMAINS"] || "";
   return domains
     .split(",")
     .map((d) => d.trim())
@@ -37,7 +37,7 @@ function getReplitOrigins() {
 }
 
 export function getAllowedOrigins() {
-  const extra = (process.env.ALLOWED_ORIGINS || "")
+  const extra = (process.env["ALLOWED_ORIGINS"] || "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
@@ -51,7 +51,7 @@ export function getAllowedOrigins() {
 let cachedRegexSrc: string | null = null;
 let cachedRegex: RegExp | null = null;
 function getAllowedOriginRegex(): RegExp | null {
-  const src = process.env.ALLOWED_ORIGIN_REGEX || "";
+  const src = process.env["ALLOWED_ORIGIN_REGEX"] || "";
   if (src === cachedRegexSrc) return cachedRegex;
   cachedRegexSrc = src;
   if (!src) {
@@ -59,10 +59,11 @@ function getAllowedOriginRegex(): RegExp | null {
     return null;
   }
   try {
+    // eslint-disable-next-line security/detect-non-literal-regexp -- src is operator-controlled env (ALLOWED_ORIGIN_REGEX) by design; pattern is fail-closed (try/catch + null-cache).
     cachedRegex = new RegExp(src);
   } catch (err) {
     cachedRegex = null;
-    if (process.env.NODE_ENV !== "test") {
+    if (process.env["NODE_ENV"] !== "test") {
       const message = err instanceof Error ? err.message : String(err);
       logger.error({
         msg: "cors_invalid_allowed_origin_regex",

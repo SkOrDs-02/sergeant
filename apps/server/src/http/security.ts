@@ -62,7 +62,7 @@ export function apiHelmetMiddleware({
   servesFrontend = false,
 }: ApiHelmetOptions = {}): RequestHandler {
   const cspDisabled = servesFrontend;
-  const reportOnly = process.env.CSP_REPORT_ONLY === "1";
+  const reportOnly = process.env["CSP_REPORT_ONLY"] === "1";
 
   if (reportOnly) {
     logger.info({ msg: "csp_report_only" });
@@ -80,7 +80,7 @@ export function apiHelmetMiddleware({
     // HSTS тільки у production — на localhost він заблокував би всі HTTP-запити
     // у браузері надовго (max-age 1 рік без можливості скинути без devtools).
     hsts:
-      process.env.NODE_ENV === "production"
+      process.env["NODE_ENV"] === "production"
         ? { maxAge: 31536000, includeSubDomains: true, preload: true }
         : false,
   });

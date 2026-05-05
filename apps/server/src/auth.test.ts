@@ -218,8 +218,8 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
     });
     expect(result).toBeTruthy();
     if (result && typeof result === "object" && "data" in result) {
-      expect(result.data.image).toBeNull();
-      expect(result.data.name).toBe("Тест");
+      expect(result.data["image"]).toBeNull();
+      expect(result.data["name"]).toBe("Тест");
     }
   });
 
@@ -245,7 +245,7 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
     const result = await before!({ image: longUrl });
     expect(result).toBeTruthy();
     if (result && typeof result === "object" && "data" in result) {
-      expect(result.data.image).toBeNull();
+      expect(result.data["image"]).toBeNull();
     }
   });
 
@@ -270,7 +270,7 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
     const result = await before!({ image: url });
     expect(result).toBeTruthy();
     if (result && typeof result === "object" && "data" in result) {
-      expect(result.data.image).toBe(url);
+      expect(result.data["image"]).toBe(url);
     }
   });
 
@@ -307,10 +307,10 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
     });
     expect(result).toBeTruthy();
     if (result && typeof result === "object" && "data" in result) {
-      expect(result.data.ipAddress).toBe("203.0.113.0/24");
+      expect(result.data["ipAddress"]).toBe("203.0.113.0/24");
       // userAgent зберігаємо повністю — він не PII у тому ж сенсі, що IP,
       // і потрібен буквально для UA-drift detection.
-      expect(result.data.userAgent).toBe("Mozilla/5.0");
+      expect(result.data["userAgent"]).toBe("Mozilla/5.0");
     }
   });
 
@@ -338,7 +338,7 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
     });
     expect(result).toBeTruthy();
     if (result && typeof result === "object" && "data" in result) {
-      expect(result.data.ipAddress).toBe("2001:db8:0:0::/64");
+      expect(result.data["ipAddress"]).toBe("2001:db8:0:0::/64");
     }
   });
 
@@ -388,7 +388,7 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
       >,
     };
     await (before as (input: unknown) => Promise<unknown>)(ctx);
-    expect(ctx.body.revokeOtherSessions).toBe(true);
+    expect(ctx.body["revokeOtherSessions"]).toBe(true);
   });
 
   it("H3: hooks.before не чіпає інші endpoint-и", async () => {
@@ -402,6 +402,6 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
       body: { email: "x@y.z", password: "p" } as Record<string, unknown>,
     };
     await (before as (input: unknown) => Promise<unknown>)(ctx);
-    expect(ctx.body.revokeOtherSessions).toBeUndefined();
+    expect(ctx.body["revokeOtherSessions"]).toBeUndefined();
   });
 });

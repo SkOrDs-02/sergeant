@@ -12,21 +12,21 @@ import { aiSpan, type AiSpanResultMeta } from "../obs/spans.js";
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
 export interface AnthropicCallOptions {
-  timeoutMs?: number;
-  endpoint?: string;
+  timeoutMs?: number | undefined;
+  endpoint?: string | undefined;
   /**
    * Зовнішній AbortSignal (зазвичай — client-disconnect на Express `req`).
    * Комбінується з внутрішнім timeout-signal через `AbortSignal.any`, тому
    * спрацьовує що завгодно: таймаут, клієнт закрив вкладку, або зовнішній
    * caller вирішив перервати.
    */
-  signal?: AbortSignal;
+  signal?: AbortSignal | undefined;
   /**
    * Версія system prompt (SYSTEM_PROMPT_VERSION). Якщо передано, `recordUsage`
    * інкрементує `anthropic_prompt_cache_hit_total{version, outcome}` —
    * per-request лічильник cache hit/miss.
    */
-  promptVersion?: string;
+  promptVersion?: string | undefined;
 }
 
 /**
@@ -321,7 +321,7 @@ export async function anthropicMessages(
     promptVersion,
   }: AnthropicCallOptions = {},
 ): Promise<AnthropicMessagesResult> {
-  const model = (payload?.model as string) || "unknown";
+  const model = (payload?.["model"] as string) || "unknown";
   return aiSpan(
     `anthropic.messages ${endpoint}`,
     () =>
@@ -335,7 +335,7 @@ export async function anthropicMessages(
       provider: "anthropic",
       model,
       endpoint,
-      promptVersion,
+      ...(promptVersion ? { promptVersion } : {}),
     },
   );
 }
@@ -371,7 +371,7 @@ async function anthropicMessagesInner(
     const signal = composeSignal(controller, externalSignal);
     try {
       if (retryDelayMs[attempt - 1]) {
-        await sleep(retryDelayMs[attempt - 1]);
+        await sleep(retryDelayMs[attempt - 1]!);
       }
 
       const response = await fetch(ANTHROPIC_URL, {
@@ -443,7 +443,7 @@ function buildSpanMeta(
         (usage.cache_creation_input_tokens ?? 0);
     }
     if (Number.isFinite(usage.output_tokens)) {
-      meta.tokensOut = usage.output_tokens;
+      meta.tokensOut = usage.output_tokens ?? 0;
     }
     if (Number.isFinite(usage.cache_read_input_tokens)) {
       meta.promptCacheHit = (usage.cache_read_input_tokens ?? 0) > 0;
@@ -470,7 +470,7 @@ export async function anthropicMessagesStream(
   payload: Record<string, unknown>,
   opts: AnthropicCallOptions = {},
 ): Promise<AnthropicStreamResult> {
-  const model = (payload?.model as string) || "unknown";
+  const model = (payload?.["model"] as string) || "unknown";
   const endpoint = opts.endpoint ?? "unknown";
   return aiSpan(
     `anthropic.messages.stream ${endpoint}`,
@@ -479,7 +479,7 @@ export async function anthropicMessagesStream(
       provider: "anthropic",
       model,
       endpoint,
-      promptVersion: opts.promptVersion,
+      ...(opts.promptVersion ? { promptVersion: opts.promptVersion } : {}),
     },
   );
 }

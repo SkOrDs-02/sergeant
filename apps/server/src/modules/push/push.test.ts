@@ -35,38 +35,38 @@ describe("resolveVapidEmail", () => {
   });
 
   it("returns the env value verbatim when it already has a mailto: prefix", async () => {
-    process.env.VAPID_EMAIL = "mailto:admin@example.org";
+    process.env["VAPID_EMAIL"] = "mailto:admin@example.org";
     const { resolveVapidEmail } = await import("./push.js");
     expect(resolveVapidEmail()).toBe("mailto:admin@example.org");
     expect(loggerMock.error).not.toHaveBeenCalled();
   });
 
   it("prepends mailto: when the env value is a bare address", async () => {
-    process.env.VAPID_EMAIL = "admin@example.org";
+    process.env["VAPID_EMAIL"] = "admin@example.org";
     const { resolveVapidEmail } = await import("./push.js");
     expect(resolveVapidEmail()).toBe("mailto:admin@example.org");
   });
 
   it("trims surrounding whitespace on the env value", async () => {
-    process.env.VAPID_EMAIL = "  mailto:admin@example.org  ";
+    process.env["VAPID_EMAIL"] = "  mailto:admin@example.org  ";
     const { resolveVapidEmail } = await import("./push.js");
     expect(resolveVapidEmail()).toBe("mailto:admin@example.org");
   });
 
   it("returns null and logs an error in production when unset", async () => {
-    delete process.env.VAPID_EMAIL;
-    process.env.NODE_ENV = "production";
+    delete process.env["VAPID_EMAIL"];
+    process.env["NODE_ENV"] = "production";
     const { resolveVapidEmail } = await import("./push.js");
     expect(resolveVapidEmail()).toBeNull();
     expect(loggerMock.error).toHaveBeenCalledTimes(1);
-    expect(loggerMock.error.mock.calls[0][0]).toMatchObject({
+    expect(loggerMock!.error.mock.calls[0]![0]).toMatchObject({
       msg: "vapid_email_missing",
     });
   });
 
   it("returns null in production when VAPID_EMAIL is blank whitespace", async () => {
-    process.env.VAPID_EMAIL = "   ";
-    process.env.NODE_ENV = "production";
+    process.env["VAPID_EMAIL"] = "   ";
+    process.env["NODE_ENV"] = "production";
     const { resolveVapidEmail } = await import("./push.js");
     expect(resolveVapidEmail()).toBeNull();
     expect(loggerMock.error).toHaveBeenCalledWith(
@@ -75,16 +75,16 @@ describe("resolveVapidEmail", () => {
   });
 
   it("falls back to the dev placeholder outside production", async () => {
-    delete process.env.VAPID_EMAIL;
-    process.env.NODE_ENV = "development";
+    delete process.env["VAPID_EMAIL"];
+    process.env["NODE_ENV"] = "development";
     const { resolveVapidEmail } = await import("./push.js");
     expect(resolveVapidEmail()).toBe("mailto:admin@example.com");
     expect(loggerMock.error).not.toHaveBeenCalled();
   });
 
   it("uses the placeholder in test environments too", async () => {
-    delete process.env.VAPID_EMAIL;
-    process.env.NODE_ENV = "test";
+    delete process.env["VAPID_EMAIL"];
+    process.env["NODE_ENV"] = "test";
     const { resolveVapidEmail } = await import("./push.js");
     expect(resolveVapidEmail()).toBe("mailto:admin@example.com");
   });
@@ -122,10 +122,10 @@ describe("push handler VAPID readiness gating", () => {
     // Regression: before this gate only checked VAPID_PUBLIC, so the
     // endpoint happily returned the public key while `setVapidDetails`
     // was silently skipped — all later sends would throw.
-    process.env.NODE_ENV = "production";
-    process.env.VAPID_PUBLIC_KEY = "BPUB";
-    process.env.VAPID_PRIVATE_KEY = "BPRIV";
-    delete process.env.VAPID_EMAIL;
+    process.env["NODE_ENV"] = "production";
+    process.env["VAPID_PUBLIC_KEY"] = "BPUB";
+    process.env["VAPID_PRIVATE_KEY"] = "BPRIV";
+    delete process.env["VAPID_EMAIL"];
 
     const { vapidPublic } = await import("./push.js");
     const res = makeRes();
@@ -136,10 +136,10 @@ describe("push handler VAPID readiness gating", () => {
   });
 
   it("subscribe returns 503 in production when VAPID_EMAIL is missing", async () => {
-    process.env.NODE_ENV = "production";
-    process.env.VAPID_PUBLIC_KEY = "BPUB";
-    process.env.VAPID_PRIVATE_KEY = "BPRIV";
-    delete process.env.VAPID_EMAIL;
+    process.env["NODE_ENV"] = "production";
+    process.env["VAPID_PUBLIC_KEY"] = "BPUB";
+    process.env["VAPID_PRIVATE_KEY"] = "BPRIV";
+    delete process.env["VAPID_EMAIL"];
 
     const { subscribe } = await import("./push.js");
     const res = makeRes();
@@ -148,10 +148,10 @@ describe("push handler VAPID readiness gating", () => {
   });
 
   it("sendPush returns 503 in production when VAPID_EMAIL is missing", async () => {
-    process.env.NODE_ENV = "production";
-    process.env.VAPID_PUBLIC_KEY = "BPUB";
-    process.env.VAPID_PRIVATE_KEY = "BPRIV";
-    delete process.env.VAPID_EMAIL;
+    process.env["NODE_ENV"] = "production";
+    process.env["VAPID_PUBLIC_KEY"] = "BPUB";
+    process.env["VAPID_PRIVATE_KEY"] = "BPRIV";
+    delete process.env["VAPID_EMAIL"];
 
     const { sendPush } = await import("./push.js");
     const res = makeRes();
@@ -160,10 +160,10 @@ describe("push handler VAPID readiness gating", () => {
   });
 
   it("vapidPublic returns the key when all three VAPID pieces are set", async () => {
-    process.env.NODE_ENV = "production";
-    process.env.VAPID_PUBLIC_KEY = "BPUB";
-    process.env.VAPID_PRIVATE_KEY = "BPRIV";
-    process.env.VAPID_EMAIL = "mailto:admin@example.org";
+    process.env["NODE_ENV"] = "production";
+    process.env["VAPID_PUBLIC_KEY"] = "BPUB";
+    process.env["VAPID_PRIVATE_KEY"] = "BPRIV";
+    process.env["VAPID_EMAIL"] = "mailto:admin@example.org";
 
     const { vapidPublic } = await import("./push.js");
     const res = makeRes();

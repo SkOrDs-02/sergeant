@@ -22,13 +22,13 @@ interface AnthropicErrorPayload {
 
 interface WeeklyDigestEntry {
   weekKey: string;
-  weekRange?: string;
+  weekRange?: string | undefined;
   generatedAt: string;
-  finyk?: { summary?: string } | null;
-  fizruk?: { summary?: string } | null;
-  nutrition?: { summary?: string } | null;
-  routine?: { summary?: string } | null;
-  overallRecommendations?: string[];
+  finyk?: { summary?: string } | null | undefined;
+  fizruk?: { summary?: string } | null | undefined;
+  nutrition?: { summary?: string } | null | undefined;
+  routine?: { summary?: string } | null | undefined;
+  overallRecommendations?: string[] | undefined;
 }
 
 interface CoachMemory {
@@ -58,7 +58,7 @@ async function getMemory(userId: string): Promise<CoachMemory | null> {
     [userId],
   );
   if (result.rows.length === 0) return null;
-  const raw = result.rows[0].data;
+  const raw = result!.rows[0]!.data;
   try {
     return (typeof raw === "string" ? JSON.parse(raw) : raw) as CoachMemory;
   } catch {

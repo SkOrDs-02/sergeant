@@ -97,8 +97,8 @@ export function upsertMemoryFact(
   );
 
   if (existingIndex >= 0) {
-    const updated = {
-      ...entries[existingIndex],
+    const updated: MemoryEntry = {
+      ...entries[existingIndex]!,
       fact: normalizedFact,
       category: normalizedCategory,
     };

@@ -235,7 +235,7 @@ function normalizeUSDA(
 }
 
 async function lookupUSDA(barcode: string): Promise<NormalizedProduct | null> {
-  const key = process.env.USDA_FDC_API_KEY || "DEMO_KEY";
+  const key = process.env["USDA_FDC_API_KEY"] || "DEMO_KEY";
   // Search Branded Foods by GTIN/UPC (barcode is stored in gtinUpc field)
   const url = `${FDC_BASE}/foods/search?query=${encodeURIComponent(barcode)}&dataType=Branded&pageSize=5&api_key=${key}`;
   const start = process.hrtime.bigint();

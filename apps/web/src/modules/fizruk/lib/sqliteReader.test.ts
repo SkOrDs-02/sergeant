@@ -82,15 +82,15 @@ describe("refreshFizrukSqliteState", () => {
     const cache = await refreshFizrukSqliteState(handle.client, UID);
     expect(cache.workouts).toHaveLength(1);
     const w = cache.workouts[0];
-    expect(w.id).toBe("w1");
-    expect(w.note).toBe("morning session");
-    expect(w.items).toHaveLength(1);
-    const item = w.items[0];
-    expect(item.id).toBe("i1");
-    expect(item.exerciseId).toBe("bench-press");
-    expect(item.nameUk).toBe("Жим лежачи");
-    expect(item.musclesPrimary).toEqual(["chest"]);
-    expect(item.sets).toEqual([
+    expect(w!.id!).toBe("w1");
+    expect(w!.note!).toBe("morning session");
+    expect(w!.items!).toHaveLength(1);
+    const item = w!.items[0]!;
+    expect(item.id!).toBe("i1");
+    expect(item.exerciseId!).toBe("bench-press");
+    expect(item.nameUk!).toBe("Жим лежачи");
+    expect(item.musclesPrimary!).toEqual(["chest"]);
+    expect(item.sets!).toEqual([
       { weightKg: 80, reps: 8 },
       { weightKg: 85, reps: 6, rpe: 8 },
     ]);
@@ -201,9 +201,9 @@ describe("refreshFizrukSqliteState", () => {
 
     const cache = await refreshFizrukSqliteState(handle.client, UID);
     expect(cache.customExercises).toHaveLength(1);
-    expect(cache.customExercises[0].id).toBe("ex-custom-1");
+    expect(cache.customExercises[0]!.id).toBe("ex-custom-1");
     expect(cache.measurements).toHaveLength(1);
-    expect(cache.measurements[0].id).toBe("m-1");
+    expect(cache.measurements[0]!.id).toBe("m-1");
   });
 });
 

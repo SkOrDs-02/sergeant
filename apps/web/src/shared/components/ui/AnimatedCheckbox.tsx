@@ -104,7 +104,7 @@ export const AnimatedCheckbox = memo(function AnimatedCheckbox({
           id: i,
           x: (Math.random() - 0.5) * 60,
           y: (Math.random() - 0.5) * 60 - 20,
-          color: colors[Math.floor(Math.random() * colors.length)],
+          color: colors[Math.floor(Math.random() * colors.length)]!,
           delay: Math.random() * 0.2,
         }));
         setConfettiParticles(particles);

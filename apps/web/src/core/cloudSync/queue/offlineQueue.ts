@@ -230,7 +230,7 @@ function normalizePushEntries(queue: QueueEntry[]): QueueEntry[] {
   }
   const next: QueueEntry[] = [];
   for (let i = 0; i < queue.length; i++) {
-    if (!isPushEntryWithModules(queue[i])) next.push(queue[i]);
+    if (!isPushEntryWithModules(queue[i])) next.push(queue[i]!);
   }
   next.push({
     type: "push",

@@ -71,9 +71,9 @@ describe("applyFizrukDualWriteOps", () => {
       ["w1"],
     );
     expect(workouts).toHaveLength(1);
-    expect(workouts[0].user_id).toBe(UID);
-    expect(workouts[0].note).toBe("morning session");
-    expect(workouts[0].deleted_at).toBeNull();
+    expect(workouts[0]!.user_id).toBe(UID);
+    expect(workouts[0]!.note).toBe("morning session");
+    expect(workouts[0]!.deleted_at).toBeNull();
 
     // Verify item row
     const items = await handle.client.all<Record<string, unknown>>(
@@ -81,8 +81,8 @@ describe("applyFizrukDualWriteOps", () => {
       ["w1"],
     );
     expect(items).toHaveLength(1);
-    expect(items[0].exercise_id).toBe("bench-press");
-    expect(items[0].name_uk).toBe("Жим лежачи");
+    expect(items[0]!.exercise_id).toBe("bench-press");
+    expect(items[0]!.name_uk).toBe("Жим лежачи");
 
     // Verify set rows
     const sets = await handle.client.all<Record<string, unknown>>(
@@ -90,10 +90,10 @@ describe("applyFizrukDualWriteOps", () => {
       ["i1"],
     );
     expect(sets).toHaveLength(2);
-    expect(sets[0].weight_kg).toBe(80);
-    expect(sets[0].reps).toBe(8);
-    expect(sets[1].weight_kg).toBe(85);
-    expect(sets[1].rpe).toBe(8);
+    expect(sets[0]!.weight_kg).toBe(80);
+    expect(sets[0]!.reps).toBe(8);
+    expect(sets[1]!.weight_kg).toBe(85);
+    expect(sets[1]!.rpe).toBe(8);
   });
 
   it("soft-deletes a workout and cascades to items/sets", async () => {
@@ -146,21 +146,21 @@ describe("applyFizrukDualWriteOps", () => {
       "SELECT deleted_at FROM fizruk_workouts WHERE id = ?",
       ["w1"],
     );
-    expect(workouts[0].deleted_at).toBe(TS2);
+    expect(workouts[0]!.deleted_at).toBe(TS2);
 
     // Items should be soft-deleted too
     const items = await handle.client.all<Record<string, unknown>>(
       "SELECT deleted_at FROM fizruk_workout_items WHERE workout_id = ?",
       ["w1"],
     );
-    expect(items[0].deleted_at).toBe(TS2);
+    expect(items[0]!.deleted_at).toBe(TS2);
 
     // Sets should be soft-deleted too
     const sets = await handle.client.all<Record<string, unknown>>(
       "SELECT deleted_at FROM fizruk_workout_sets WHERE workout_item_id = ?",
       ["i1"],
     );
-    expect(sets[0].deleted_at).toBe(TS2);
+    expect(sets[0]!.deleted_at).toBe(TS2);
   });
 
   it("LWW guard: stale workout upsert is a no-op", async () => {
@@ -212,7 +212,7 @@ describe("applyFizrukDualWriteOps", () => {
       "SELECT note FROM fizruk_workouts WHERE id = ?",
       ["w1"],
     );
-    expect(workouts[0].note).toBe("latest");
+    expect(workouts[0]!.note).toBe("latest");
   });
 
   // --- Custom exercise ops ---
@@ -236,7 +236,7 @@ describe("applyFizrukDualWriteOps", () => {
       ["cex1"],
     );
     expect(rows).toHaveLength(1);
-    expect(JSON.parse(rows[0].data_json as string)).toMatchObject({
+    expect(JSON.parse(rows[0]!.data_json as string)).toMatchObject({
       id: "cex1",
       nameUk: "Моя вправа",
     });
@@ -255,7 +255,7 @@ describe("applyFizrukDualWriteOps", () => {
       "SELECT deleted_at FROM fizruk_custom_exercises WHERE id = ?",
       ["cex1"],
     );
-    expect(after[0].deleted_at).toBe(TS2);
+    expect(after[0]!.deleted_at).toBe(TS2);
   });
 
   // --- Measurement ops ---
@@ -284,8 +284,8 @@ describe("applyFizrukDualWriteOps", () => {
       ["m1"],
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0].weight_kg).toBe(80);
-    expect(rows[0].waist_cm).toBe(85);
+    expect(rows[0]!.weight_kg).toBe(80);
+    expect(rows[0]!.waist_cm).toBe(85);
 
     // Delete
     const delOps: FizrukDualWriteOp[] = [
@@ -301,7 +301,7 @@ describe("applyFizrukDualWriteOps", () => {
       "SELECT deleted_at FROM fizruk_measurements WHERE id = ?",
       ["m1"],
     );
-    expect(after[0].deleted_at).toBe(TS2);
+    expect(after[0]!.deleted_at).toBe(TS2);
   });
 
   // --- Error handling ---
