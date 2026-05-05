@@ -41,6 +41,30 @@
     {
       "pattern": "^https?://claude\\.ai(/.*)?$",
       "reason": "claude.ai gates project pages behind login and returns 403 to anonymous HEAD/GET; cited in docs/launch/05-operations-and-automation.md as a Claude Projects reference, the link is correct for authenticated users."
+    },
+    {
+      "pattern": "^https?://(www\\.)?better-auth\\.com/docs/concepts/email-and-password",
+      "reason": "Cited in docs/adr/0042-password-hashing-strategy.md як референс на bcrypt 72-byte cap у Better Auth docs at time of decision (2026-05-03); ADRs immutable — better-auth restructured docs path tree. Auditable claim — версія/політика на момент ADR."
+    },
+    {
+      "pattern": "^https?://github\\.com/better-auth/better-auth/blob/main/packages/utils/src/password/",
+      "reason": "Цитується в docs/adr/0042-password-hashing-strategy.md як posv-cite на password-utils source (better-auth main branch). main-link rot — файл переіменовано/винесено у sub-package, але ADR прив'язаний до моменту прийняття."
+    },
+    {
+      "pattern": "^https?://cloud\\.google\\.com/apigee/docs/api-platform/develop/deprecation-policy",
+      "reason": "Cited в docs/adr/0043-cloudsync-v1-sunset.md як industry-precedent на 6-фазний deprecation rollout (Apigee policy at time of decision, 2026-05-04). Google rotates Cloud docs URLs регулярно — auditable claim це стандарт-практика, не live URL."
+    },
+    {
+      "pattern": "^https?://reactrouter\\.com/en/main/components/scroll-restoration",
+      "reason": "Cited в docs/initiatives/0006-frontend-routing-and-code-split.md §6 як reference на ScrollRestoration component API at time of initiative draft. React Router restructured docs site (now /6.x/components/...). Pinned-by-version citation — claim audit-able, link rot expected."
+    },
+    {
+      "pattern": "^https?://node-postgres\\.com/api/pool",
+      "reason": "Cited в docs/planning/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md як reference на pg.Pool API at time of planning (2026-05). node-postgres docs site reorganized in 2025 — API surface unchanged, URL path moved to /apis/pool. Historical citation."
+    },
+    {
+      "pattern": "^https?://(www\\.)?npmjs\\.com/package/",
+      "reason": "npm package pages return 403 to non-browser User-Agents (anti-scraping). Pages render correctly in browsers; cited у docs/testing/mutation.md та інших як package-reference. Treated-as-ok вже мав би покрити, але listed тут explicit для PR-reviewer audit."
     }
   ]
 }

@@ -735,7 +735,14 @@ export function OnboardingWizard({
     });
     hapticSuccess();
     onDone(null, { intent: "vibe_empty", picks: chosen });
-  }, [onDone, state.picks, state.goals, state.step, isTour, defaultPicksVariant]);
+  }, [
+    onDone,
+    state.picks,
+    state.goals,
+    state.step,
+    isTour,
+    defaultPicksVariant,
+  ]);
 
   const skipOnboarding = useCallback(() => {
     // Skip with all modules enabled and empty goals
