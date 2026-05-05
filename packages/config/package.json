@@ -7,13 +7,17 @@
     "tsconfig.base.json",
     "tsconfig.node.json",
     "tsconfig.react.json",
-    "vitest.base.js"
+    "vitest.base.js",
+    "vitest.base.d.ts"
   ],
   "exports": {
     "./tsconfig.base.json": "./tsconfig.base.json",
     "./tsconfig.node.json": "./tsconfig.node.json",
     "./tsconfig.react.json": "./tsconfig.react.json",
-    "./vitest.base": "./vitest.base.js"
+    "./vitest.base": {
+      "types": "./vitest.base.d.ts",
+      "default": "./vitest.base.js"
+    }
   },
   "scripts": {
     "typecheck": "echo 'config has no ts sources'",
