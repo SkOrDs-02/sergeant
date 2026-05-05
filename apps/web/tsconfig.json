@@ -5,7 +5,7 @@
     "allowJs": false,
     "checkJs": false,
     "noUncheckedIndexedAccess": false,
-    "types": ["vite/client"],
+    "types": ["vite/client", "@testing-library/jest-dom", "node"],
     "paths": {
       "@sergeant/shared": ["../../packages/shared/src/index.ts"],
       "@sergeant/shared/*": ["../../packages/shared/src/*"],
