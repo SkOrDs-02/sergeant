@@ -33,7 +33,12 @@
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import prettier from "prettier";
+
+// `prettier` is loaded lazily inside `formatMarkdown` so importing this
+// module never requires `node_modules/prettier` on disk. The
+// `Docs-automation scripts unit tests` CI job runs raw `node --test`
+// without `pnpm install`, and the unit tests do not exercise the
+// formatting path — only the CLI does.
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -388,6 +393,7 @@ function initiativeLink(item) {
  * `pnpm format:check`.
  */
 export async function formatMarkdown(content) {
+  const { default: prettier } = await import("prettier");
   const opts = (await prettier.resolveConfig(OUTPUT_PATH)) ?? {};
   return prettier.format(content, { ...opts, parser: "markdown" });
 }
