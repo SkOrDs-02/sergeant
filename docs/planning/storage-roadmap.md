@@ -1,20 +1,20 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-05 by Devin (PR #042e-lifecycle + PR #042e-pushloop). **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-05 by Devin (PR #042e-scheduler + PR #042e-status + PR #042e-recover + PR #042e-flush). **Next review:** 2026-08-01.
 > **Status:** Active
 >
 > **Stage status (one-line summary):**
 >
-> | Stage                          | Status            | Landed PRs (this stage)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Outstanding                                                                                                                                                                            |
-> | ------------------------------ | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-> | 0 — bootstrap dual-write       | ✅ COMPLETE       | [#003](https://github.com/Skords-01/Sergeant/pull/1497)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | —                                                                                                                                                                                      |
-> | 1 — boot wiring                | ✅ COMPLETE (8/8) | #008 `ff217246`, [#010](https://github.com/Skords-01/Sergeant/pull/1543), #013 (×4 sub-PRs)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | —                                                                                                                                                                                      |
-> | 4 — Fizruk module migration    | ✅ COMPLETE (5/5) | #027–#030 + #029a                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | —                                                                                                                                                                                      |
-> | 4 — Nutrition module migration | ✅ COMPLETE       | [#031/#032/#033](https://github.com/Skords-01/Sergeant/pull/1574), [#034](https://github.com/Skords-01/Sergeant/pull/1636)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | —                                                                                                                                                                                      |
-> | 4 — Finyk module migration     | ✅ COMPLETE (5/5) | [#035](https://github.com/Skords-01/Sergeant/pull/1667), [#036](https://github.com/Skords-01/Sergeant/pull/1680), [#037](https://github.com/Skords-01/Sergeant/pull/1694), [#038](https://github.com/Skords-01/Sergeant/pull/1702), [#039](https://github.com/Skords-01/Sergeant/pull/1711)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | —                                                                                                                                                                                      |
-> | 5 — op-log v2 hardening        | 🚧 in flight      | [#040](https://github.com/Skords-01/Sergeant/pull/1717), [#041](https://github.com/Skords-01/Sergeant/pull/1721), [#043](https://github.com/Skords-01/Sergeant/pull/1734), [#043a](https://github.com/Skords-01/Sergeant/pull/1739), [#043b](https://github.com/Skords-01/Sergeant/pull/1743), [#043c](https://github.com/Skords-01/Sergeant/pull/1754), [#044](https://github.com/Skords-01/Sergeant/pull/1780), [#048](https://github.com/Skords-01/Sergeant/pull/1737), [#042a](https://github.com/Skords-01/Sergeant/pull/1769), [#042b](https://github.com/Skords-01/Sergeant/pull/1776), [#042c](https://github.com/Skords-01/Sergeant/pull/1787), [#042d-prep](https://github.com/Skords-01/Sergeant/pull/1804), [#042d-builder](https://github.com/Skords-01/Sergeant/pull/1810), [#042e-mapping](https://github.com/Skords-01/Sergeant/pull/1827), [#042e-submit](https://github.com/Skords-01/Sergeant/pull/1901), [#042e-drain](https://github.com/Skords-01/Sergeant/pull/1913), [#042e-lifecycle](https://github.com/Skords-01/Sergeant/pull/1922), [#042e-pushloop](https://github.com/Skords-01/Sergeant/pull/1926) | **PR #042e sync-engine writer wiring** (boot-time wiring of `runSyncEnginePushOnce` into the engine: periodic timer, online/offline events, push-on-enqueue flush, Sentry breadcrumbs) |
-> | 6 — ops                        | 🚧 partial        | [#049 docs](https://github.com/Skords-01/Sergeant/pull/1757), #049b (weekly backup-verify CI), #050 (`module_data` partition + archival)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | full Stage 6 plan in §6                                                                                                                                                                |
-> | 7 — cleanup                    | ⏳ blocked        | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | depends on Stage 5 close                                                                                                                                                               |
+> | Stage                          | Status            | Landed PRs (this stage)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Outstanding                                                                                                                                                                                                                    |
+> | ------------------------------ | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+> | 0 — bootstrap dual-write       | ✅ COMPLETE       | [#003](https://github.com/Skords-01/Sergeant/pull/1497)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | —                                                                                                                                                                                                                              |
+> | 1 — boot wiring                | ✅ COMPLETE (8/8) | #008 `ff217246`, [#010](https://github.com/Skords-01/Sergeant/pull/1543), #013 (×4 sub-PRs)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | —                                                                                                                                                                                                                              |
+> | 4 — Fizruk module migration    | ✅ COMPLETE (5/5) | #027–#030 + #029a                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | —                                                                                                                                                                                                                              |
+> | 4 — Nutrition module migration | ✅ COMPLETE       | [#031/#032/#033](https://github.com/Skords-01/Sergeant/pull/1574), [#034](https://github.com/Skords-01/Sergeant/pull/1636)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | —                                                                                                                                                                                                                              |
+> | 4 — Finyk module migration     | ✅ COMPLETE (5/5) | [#035](https://github.com/Skords-01/Sergeant/pull/1667), [#036](https://github.com/Skords-01/Sergeant/pull/1680), [#037](https://github.com/Skords-01/Sergeant/pull/1694), [#038](https://github.com/Skords-01/Sergeant/pull/1702), [#039](https://github.com/Skords-01/Sergeant/pull/1711)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | —                                                                                                                                                                                                                              |
+> | 5 — op-log v2 hardening        | 🚧 in flight      | [#040](https://github.com/Skords-01/Sergeant/pull/1717), [#041](https://github.com/Skords-01/Sergeant/pull/1721), [#043](https://github.com/Skords-01/Sergeant/pull/1734), [#043a](https://github.com/Skords-01/Sergeant/pull/1739), [#043b](https://github.com/Skords-01/Sergeant/pull/1743), [#043c](https://github.com/Skords-01/Sergeant/pull/1754), [#044](https://github.com/Skords-01/Sergeant/pull/1780), [#048](https://github.com/Skords-01/Sergeant/pull/1737), [#042a](https://github.com/Skords-01/Sergeant/pull/1769), [#042b](https://github.com/Skords-01/Sergeant/pull/1776), [#042c](https://github.com/Skords-01/Sergeant/pull/1787), [#042d-prep](https://github.com/Skords-01/Sergeant/pull/1804), [#042d-builder](https://github.com/Skords-01/Sergeant/pull/1810), [#042e-mapping](https://github.com/Skords-01/Sergeant/pull/1827), [#042e-submit](https://github.com/Skords-01/Sergeant/pull/1901), [#042e-drain](https://github.com/Skords-01/Sergeant/pull/1913), [#042e-lifecycle](https://github.com/Skords-01/Sergeant/pull/1922), [#042e-pushloop](https://github.com/Skords-01/Sergeant/pull/1926), [#042e-scheduler](https://github.com/Skords-01/Sergeant/pull/1932), [#042e-status](https://github.com/Skords-01/Sergeant/pull/1933), [#042e-recover](https://github.com/Skords-01/Sergeant/pull/1935), [#042e-flush](https://github.com/Skords-01/Sergeant/pull/1938) | **PR #042e sync-engine writer wiring** (boot-time wiring of `runSyncEnginePushOnce` + scheduler + flush-on-reconnect adapter into the engine: push-on-enqueue flush, Sentry breadcrumbs, dev-panel "retry dead-letter" wiring) |
+> | 6 — ops                        | 🚧 partial        | [#049 docs](https://github.com/Skords-01/Sergeant/pull/1757), #049b (weekly backup-verify CI), #050 (`module_data` partition + archival)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | full Stage 6 plan in §6                                                                                                                                                                                                        |
+> | 7 — cleanup                    | ⏳ blocked        | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | depends on Stage 5 close                                                                                                                                                                                                       |
 >
 > **Per-PR scope and Done/Risk/Dep notes** живуть у §3 (PR plans) нижче — таблиця тут лише задля швидкого огляду landed-стану. **Boot-wiring** для `register{Routine,Fizruk,Nutrition,Finyk}DualWriteContext` залендив у [#1491](https://github.com/Skords-01/Sergeant/pull/1491) (Routine + Fizruk web/mobile) + per-module `useNutritionDualWriteBoot` / `useFinykDualWriteBoot` хуки (Nutrition + Finyk web + mobile через `NutritionApp.tsx` / `useStorage.ts`).
 > **Status:** Active
@@ -1671,6 +1671,211 @@ OR next_retry_at <= ?)`) у insertion-order (`id ASC`), з
   PR #042e-mapping (камелкейс ↔ snake_case вже встановлений contract,
   reverse mapper тут — generalisation). PR #042c (envelope-builder)
   і PR #042d-builder (enqueue) — uppstream писачі, не дзеркала.
+
+#### **PR #042e-scheduler — `feat(api-client): syncEnginePushScheduler factory`** ✅ LANDED ([#1932](https://github.com/Skords-01/Sergeant/pull/1932))
+
+- Scope. Pure factory у `@sergeant/api-client`, що обертає
+  `runSyncEnginePushOnce` (PR #042e-pushloop) у `{start, stop, flushNow,
+isRunning, isTicking}` із internal interval-state і concurrency-guard-ом
+  (ніколи не запускає overlapping ticks). Перший крок до boot-path
+  wiring-у Stage 5 sync-engine — periodic timer, але без real timer
+  усередині (DI `setInterval`/`clearInterval` через `SyncEngineSetIntervalFn`
+  / `SyncEngineClearIntervalFn`). Зберігає api-client від workspace-залежності
+  на db-schema.
+- **Done (2026-05-05).** `packages/api-client/src/endpoints/syncV2.pushScheduler.ts`
+  експортує:
+  - `createSyncEnginePushScheduler(deps, options): SyncEnginePushScheduler` —
+    factory. Validate-ить `intervalMs` (positive finite), arms
+    timer лише при `start()`, no-op повторні `start()` між
+    `start`/`stop`. `flushNow()` під час in-flight tick-у вертає
+    той самий pending Promise (concurrency invariant: ≤1 tick at a time).
+    Periodic tick errors дзеркаляться в DI-`onTickError(err)` — НЕ
+    re-throw-ються із timer callback (нікому б їх не зловити). Tick
+    skipped через concurrency-guard → `onSkippedTick(reason: 'periodic-overlap')`.
+    Successful tick → `onTickComplete(result)` (telemetry hook).
+  - DI types — `SyncEnginePushSchedulerDeps` (run + onTickError +
+    onSkippedTick + onTickComplete + setInterval + clearInterval),
+    `SyncEnginePushSchedulerOptions` (extends `SyncEnginePushOptions`
+    - `intervalMs`), `SyncEnginePushScheduler` (start/stop/flushNow/
+      isRunning/isTicking), `SyncEngineSetIntervalFn`, `SyncEngineClearIntervalFn`.
+  - `packages/api-client/src/endpoints/syncV2.pushScheduler.test.ts`:
+    nove тестів покривають validation, idempotent start/stop, periodic
+    fire (Vitest fake timers), concurrency-guard на periodic+flush
+    overlap, error-routing через `onTickError` (periodic) vs throw
+    (flushNow), `isRunning` / `isTicking` introspection, `onSkippedTick`
+    / `onTickComplete` спостерігачі.
+  - Re-export із `packages/api-client/src/index.ts`:
+    `createSyncEnginePushScheduler`, `SyncEnginePushScheduler`,
+    `SyncEnginePushSchedulerDeps`, `SyncEnginePushSchedulerOptions`,
+    `SyncEngineSetIntervalFn`, `SyncEngineClearIntervalFn`.
+  - Locally: 157/157 api-client тестів зелені (33 нові + 124 існуючих),
+    typecheck чистий, lint чистий.
+- **Risk.** None — additive composable surface без callsite-ів у
+  production-коді. Periodic-timer wiring у boot-path-у — окремий
+  follow-up PR (потребує `apps/web` `<App>` mount-time hook +
+  `apps/mobile` shim teardown).
+- **Dep.** PR #042e-pushloop (`runSyncEnginePushOnce` — функція, яку
+  scheduler tick-ає). Композується із PR #042e-flush (DOM-event
+  bridge → `flushNow()`).
+
+#### **PR #042e-status — `feat(db-schema): countOutboxByStatus reader`** ✅ LANDED ([#1933](https://github.com/Skords-01/Sergeant/pull/1933))
+
+- Scope. Маленький read-only helper у `@sergeant/db-schema`, що повертає
+  `{ pending, dead_letter, rejected }` через один `SELECT status, COUNT(*)
+FROM sync_op_outbox GROUP BY status`. Споживачі: UI badge ("X items
+  waiting"), Sentry breadcrumbs (telemetry sample), і engine-side
+  decision-у "чи варто стартувати ще один tick" (якщо все pending=0,
+  scheduler може skip). Read-only, additive, доповнює read-side
+  helper-и (PR #042e-drain).
+- **Done (2026-05-05).** `packages/db-schema/src/sqlite/syncOpOutboxStatus.ts`
+  експортує:
+  - `countOutboxByStatus(client): Promise<OutboxStatusCounts>` — повертає
+    `{ pending: number, dead_letter: number, rejected: number }`. Single
+    `SELECT status, COUNT(*) FROM sync_op_outbox GROUP BY status` query;
+    усі три ключі завжди present (відсутній bucket → `0`). Ігнорує
+    невідомі статуси (forward-compat — нові статуси не валять caller-а).
+  - Type `OutboxStatusCounts` — public structural mirror.
+  - `packages/db-schema/src/__tests__/sqlite-syncOpOutboxStatus.test.ts`:
+    19 нових тестів проти real better-sqlite3: empty bucket → всі
+    нулі, single-status, multiple-statuses, mixed-batches, ignore
+    unknown-status forward-compat, rapid-write race-stub, no-rows-changed
+    side-effect (read-only).
+  - Re-export із `packages/db-schema/src/sqlite/index.ts`:
+    `countOutboxByStatus`, `type OutboxStatusCounts`.
+  - Locally: 341/341 db-schema тестів зелені (19 нових + 322 існуючих),
+    typecheck чистий, lint чистий.
+- **Risk.** None — read-only helper. Один `SELECT` без UPDATE /
+  DELETE; жодного callsite-у у production-коді поки що.
+- **Dep.** None — independent з усіх інших Stage 5 PR-ів. UI badge
+  / Sentry breadcrumbs / scheduler-side "skip empty tick" — окремі
+  wiring PR-и, які цей reader пулять.
+
+#### **PR #042e-recover — `feat(db-schema): recoverDeadLetter helper`** ✅ LANDED ([#1935](https://github.com/Skords-01/Sergeant/pull/1935))
+
+- Scope. Закриває read-side петлю на `sync_op_outbox`: lifecycle helper-и
+  (PR #042e-lifecycle) рухають рядки у термінальні `'dead_letter'` /
+  `'rejected'`; reader (PR #042e-status) показує counts; цей helper
+  переводить `dead_letter` рядки назад у `pending` для re-try. Pure
+  write, без callsite-ів у production-коді поки що.
+- **Done (2026-05-05).** `packages/db-schema/src/sqlite/syncOpOutboxRecover.ts`
+  експортує:
+  - `recoverDeadLetter(client, selector): Promise<RecoverDeadLetterResult>` —
+    public функція. Selector: `{ ids: number[] }` (recover explicit
+    list, для dev-panel "retry these 5 rows" / ops-script-у) або
+    `{ all: true }` (recover усі dead-letter рядки одночасно, для
+    "force flush" workflow після service incident-у). Mutually exclusive —
+    рівно один must be set, runtime-validate-нуто. Ids де-дуплікуються
+    перш ніж SQL; кожен id валідується (finite + integer + non-negative)
+    inline і throw із `JSON.stringify(value)` для дебагу.
+  - Mutation contract: `UPDATE sync_op_outbox SET status='pending',
+attempts=0, next_retry_at=NULL, last_error=NULL WHERE id IN (...)
+AND status='dead_letter'`. `WHERE status='dead_letter'` guard
+    робить helper race-safe — ряд, який інший worker уже забрав із
+    dead-letter, лишається недоторканим (потрапляє у `skipped`).
+    `attempts=0` reset означає: `planRetry` пройде full backoff curve
+    на наступний transient failure (matches user mental model
+    "retry from scratch").
+  - **Чому dead-letter only, не rejected.** `'rejected'` — server-side
+    terminal (server сказав `op_not_supported` / `tombstoned`) — client-driven
+    retry просто bounce-неться об сервер. `'dead_letter'` —
+    client-side terminal (вибрали retry budget проти transient
+    failure-ів); recovery дає їм ще шанс коли user онлайн.
+  - Result `{ recovered: number[], skipped: number[] }` — `recovered`
+    у порядку SELECT-у; `skipped` зберігає natural input order для
+    `ids`-mode-у (полегшує debugging — caller може mapпити input до
+    output 1:1).
+  - Re-export із `packages/db-schema/src/sqlite/index.ts`:
+    `recoverDeadLetter`, `type RecoverDeadLetterResult`,
+    `type RecoverDeadLetterSelector`.
+  - `packages/db-schema/src/__tests__/sqlite-syncOpOutboxRecover.test.ts`:
+    23 нові тести у 5 групах: selector validation
+    (mutual-exclusion, type/sign guards, empty list), id-based recovery
+    (single, multiple, mixed status, missing ids, de-duplication,
+    idempotency), all-mode recovery (empty bucket, batch, status
+    filtering), state-reset invariant (attempts > MAX, future
+    next_retry_at, long last_error), race-safety invariant
+    (concurrent move out of dead-letter, concurrent move to rejected).
+  - Locally: 364/364 db-schema тестів зелені (23 нові + 341 існуючий),
+    typecheck чистий, lint чистий.
+- **Risk.** None — pure write helper, callsite-ів у production-коді
+  поки немає. UI dev-panel "retry" buttons + ops-script-и pull-ять
+  цей helper у follow-up wiring PR-ах.
+- **Dep.** PR #042e-lifecycle (write-side, який кладе рядки у
+  `'dead_letter'`), PR #042e-status (read-side, який повідомляє
+  скільки сидять у dead-letter — UI badge → "retry all" button →
+  `recoverDeadLetter({ all: true })`).
+
+#### **PR #042e-flush — `feat(api-client): syncEngineFlushOnReconnect adapter`** ✅ LANDED ([#1938](https://github.com/Skords-01/Sergeant/pull/1938))
+
+- Scope. DOM-event → scheduler bridge у `@sergeant/api-client`. Обертає
+  `SyncEnginePushScheduler` (PR #042e-scheduler) так, щоб DOM-event
+  source — production: `window`, тести: stub — викликав `scheduler.flushNow()`
+  щойно девайс знову онлайн (або, опційно, щойно вкладка стала visible
+  після backgrounding-у). Pure DI: event target supplied caller-ом, не
+  імпортується — adapter unit-тестується без real `window` і re-usable
+  із service worker-а / web worker-а / `apps/mobile` shim-у, що exposes
+  той самий `addEventListener` shape.
+- **Done (2026-05-05).** `packages/api-client/src/endpoints/syncV2.flushOnReconnect.ts`
+  експортує:
+  - `createSyncEngineFlushOnReconnect(deps, options): SyncEngineFlushOnReconnect` —
+    factory. Subscribe-ить адаптер до DOM event-у за `kind`:
+    `'online'` (default; standard browser `online`), `'visible'`
+    (`visibilitychange`, fires лише на appear edge —
+    `target.document?.visibilityState === 'visible'`), або `'both'`
+    (subscribe до обох; кожен fires `flushNow` незалежно). На кожен
+    matching event handler викликає `scheduler.flushNow()`, route-ить
+    Promise через `onFlushComplete` / `onFlushError` observers
+    (із try/catch — observer-throw swallowed), і повертається
+    синхронно (DOM event listener не може `await`).
+  - **Concurrency invariant delegated to scheduler.** Adapter НЕ
+    додає другий шар де-дуплікації. Два `online` event-и за 100мс
+    → exactly one tick, бо власний concurrency-guard scheduler-а
+    (PR #042e-scheduler) merge-ить overlapping `flushNow()` calls
+    у єдиний in-flight Promise. Pin-ується тестом у групі 7
+    (preserves single-source-of-truth для "is a tick in flight").
+  - **Error policy.** Rejection із `flushNow()` → `onFlushError`
+    (default no-op) → swallowed. DOM event source не має retry channel-а,
+    і ми не хочемо щоб transient sync failure escalated у window-level
+    `unhandledrejection`, що міг би trigger Sentry / surface у
+    devtools. `onFlushError` сам із try/catch — buggy observer
+    не може blow-up event listener.
+  - DI types — `SyncEngineEventTarget` (минимальний `addEventListener`
+    / `removeEventListener` shape; satisfies `window`, `globalThis`,
+    `document`, hand-rolled stub), `SyncEngineFlushOnReconnectDeps`
+    (target + scheduler + optional observers + optional
+    `isDocumentVisible` predicate), `SyncEngineFlushOnReconnectOptions`
+    (`kind?`), `SyncEngineFlushOnReconnect` (`dispose()`),
+    `SyncEngineFlushTriggerKind`.
+  - `dispose()` — idempotent, removes every listener it registered;
+    same handler reference для register і unregister (so removal exact).
+  - `packages/api-client/src/endpoints/syncV2.flushOnReconnect.test.ts`:
+    30 нових тестів у 8 групах: subscription registration (default,
+    each kind, fresh handler refs), flushNow on online (single,
+    multiple, ignores other event types, onFlushComplete invocation),
+    error policy (rejection → onFlushError, no unhandledrejection,
+    observer-throw swallowed in both error and complete paths,
+    silent on missing onFlushError, sync-throw guard), visibility-edge
+    filter (appear fires, hide does not, transition re-evaluates,
+    default predicate degrades on missing document, default predicate
+    fires when `document.visibilityState='visible'`), kind='both'
+    fan-out, dispose lifecycle (removes every listener, idempotent),
+    concurrency invariant delegated to scheduler, interaction із
+    stopped scheduler (flushNow called навіть коли scheduler stopped,
+    per scheduler contract).
+  - Re-export із `packages/api-client/src/index.ts`:
+    `createSyncEngineFlushOnReconnect`, `SyncEngineEventTarget`,
+    `SyncEngineFlushOnReconnect`, `SyncEngineFlushOnReconnectDeps`,
+    `SyncEngineFlushOnReconnectOptions`, `SyncEngineFlushTriggerKind`.
+  - Locally: 187/187 api-client тестів зелені (30 нові + 157 існуючих),
+    typecheck чистий, lint чистий.
+- **Risk.** None — additive composable surface без callsite-ів у
+  production-коді. Wiring у `apps/web` `<App>` boot path + `apps/mobile`
+  shim teardown — follow-up PR разом із рештою `#042e` сім'ї.
+- **Dep.** PR #042e-scheduler (`SyncEnginePushScheduler.flushNow`,
+  який adapter викликає; concurrency-guard scheduler-а — той,
+  завдяки якому adapter не дублює de-dup). Композується із PR
+  #042e-pushloop через scheduler. Майбутній `pushOnEnqueue` adapter
+  буде reuse той самий "fire on event → flushNow" pattern, що тут.
 
 #### **PR #043 — `feat(sync): G-set CRDT for nutrition_meals log`** ✅ LANDED ([#1734](https://github.com/Skords-01/Sergeant/pull/1734))
 

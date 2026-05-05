@@ -16,6 +16,90 @@
 
 ### Added
 
+- **`syncEngineFlushOnReconnect` adapter у `@sergeant/api-client`
+  ([#1938](https://github.com/Skords-01/Sergeant/pull/1938), Stage 5
+  PR #042e-flush).** DOM-event → scheduler bridge, що обертає
+  `SyncEnginePushScheduler` (PR #042e-scheduler) так, щоб DOM event
+  source — production: `window`, тести: stub — викликав
+  `scheduler.flushNow()` щойно девайс знов онлайн (або вкладка стала
+  visible після backgrounding-у). Public API:
+  `createSyncEngineFlushOnReconnect(deps, options) → { dispose }`. Pure
+  DI: event target supplied caller-ом, не імпортується — adapter
+  unit-тестується без real `window`. Subscription kind: `'online'`
+  (default), `'visible'` (`visibilitychange` filtered to appear-edge
+  via `target.document?.visibilityState === 'visible'`), або `'both'`.
+  Adapter НЕ додає другий шар de-dup-у — concurrency-guard scheduler-а
+  (PR #042e-scheduler) merge-ить overlapping `flushNow()` calls у
+  єдиний in-flight Promise. Error policy: rejection із `flushNow` →
+  `onFlushError` (default no-op) → swallowed (DOM не має retry channel-а;
+  не ескалюємо у window-level `unhandledrejection`); buggy
+  `onFlushError` сам із try/catch — observer-throw swallowed.
+  `dispose()` — idempotent, removes every listener with same handler
+  reference. 30 нових тестів (8 груп) у `syncV2.flushOnReconnect.test.ts`,
+  187/187 api-client suite зелена. Без callsite-ів у production-коді —
+  wiring у `apps/web` `<App>` boot path + `apps/mobile` shim teardown
+  лишається follow-up wiring PR-ом.
+
+- **`recoverDeadLetter` helper у `@sergeant/db-schema`
+  ([#1935](https://github.com/Skords-01/Sergeant/pull/1935), Stage 5
+  PR #042e-recover).** Закриває read-side петлю на `sync_op_outbox`:
+  lifecycle helper-и (PR #042e-lifecycle) рухають рядки у термінальні
+  `'dead_letter'`/`'rejected'`; цей helper переводить `dead_letter`
+  рядки назад у `'pending'` для re-try. Public API:
+  `recoverDeadLetter(client, selector) → Promise<{ recovered: number[],
+skipped: number[] }>`. Selector: `{ ids: number[] }` (recover explicit
+  list, для dev-panel "retry these 5 rows" / ops-script-у) або
+  `{ all: true }` (recover усі dead-letter рядки одночасно, для
+  "force flush" workflow після service incident-у). Mutually exclusive,
+  runtime-validated. Ids де-дуплікуються перш ніж SQL; кожен id
+  валідується (finite + integer + non-negative). Mutation contract:
+  `UPDATE sync_op_outbox SET status='pending', attempts=0,
+next_retry_at=NULL, last_error=NULL WHERE id IN (...) AND
+status='dead_letter'`. `WHERE status='dead_letter'` guard робить helper
+  race-safe (concurrent worker, що уже забрав ряд із dead-letter,
+  лишається недоторканим — потрапляє у `skipped`). `attempts=0` reset
+  означає `planRetry` пройде full backoff curve на наступний transient
+  failure (matches user mental model "retry from scratch"). Чому
+  dead-letter only: `'rejected'` — server-final (server сказав
+  `op_not_supported`/`tombstoned`); client-driven retry просто
+  bounce-неться. 23 нові тести (5 груп) у `sqlite-syncOpOutboxRecover.test.ts`,
+  364/364 db-schema suite зелена.
+
+- **`countOutboxByStatus` reader у `@sergeant/db-schema`
+  ([#1933](https://github.com/Skords-01/Sergeant/pull/1933), Stage 5
+  PR #042e-status).** Маленький read-only helper, що повертає
+  `{ pending, dead_letter, rejected }` через один `SELECT status,
+COUNT(*) FROM sync_op_outbox GROUP BY status`. Public API:
+  `countOutboxByStatus(client) → Promise<OutboxStatusCounts>`. Усі три
+  ключі завжди present (відсутній bucket → `0`). Ігнорує невідомі
+  статуси (forward-compat — нові статуси не валять caller-а).
+  Споживачі: UI badge ("X items waiting"), Sentry breadcrumbs
+  (telemetry sample), і engine-side decision-у "чи варто стартувати
+  ще один tick" (якщо все pending=0, scheduler може skip). 19 нових
+  тестів у `sqlite-syncOpOutboxStatus.test.ts`, 341/341 db-schema
+  suite зелена.
+
+- **`syncEnginePushScheduler` factory у `@sergeant/api-client`
+  ([#1932](https://github.com/Skords-01/Sergeant/pull/1932), Stage 5
+  PR #042e-scheduler).** Pure factory, що обертає
+  `runSyncEnginePushOnce` (PR #042e-pushloop) у
+  `{start, stop, flushNow, isRunning, isTicking}` із internal
+  interval-state і concurrency-guard-ом (ніколи не запускає overlapping
+  ticks; `flushNow` під час in-flight tick-у повертає той самий pending
+  Promise — concurrency invariant: ≤1 tick at a time). Public API:
+  `createSyncEnginePushScheduler(deps, options) → SyncEnginePushScheduler`.
+  Validate-ить `intervalMs` (positive finite). DI `setInterval`
+  /`clearInterval` через `SyncEngineSetIntervalFn` /
+  `SyncEngineClearIntervalFn` — без real timer усередині, у тестах
+  Vitest fake timers. Periodic tick errors дзеркаляться у DI-`onTickError(err)` —
+  не re-throw із timer callback (нікому б їх не зловити); flushNow
+  errors throw до caller-а. Tick skipped через concurrency-guard →
+  `onSkippedTick(reason: 'periodic-overlap')`. Successful tick →
+  `onTickComplete(result)`. 33 нових тести у `syncV2.pushScheduler.test.ts`,
+  157/157 api-client suite зелена. Без callsite-ів у production-коді —
+  periodic-timer wiring у boot-path-у `apps/web` / `apps/mobile`
+  лишається follow-up PR-ом.
+
 - **Sync v2 push-loop orchestrator у `@sergeant/api-client`
   ([#1926](https://github.com/Skords-01/Sergeant/pull/1926), Stage 5
   PR #042e-pushloop).** Pure-function, dependency-injected one-tick
