@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-05 by @dmytro.skords. **Next review:** 2026-08-03.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/agents/agent-skills-catalog.md`.
@@ -26,7 +26,7 @@ Repo policy lives here in `AGENTS.md`. Platform-specific wrappers such as `CLAUD
   - `apps/mobile-shell` — Capacitor wrapper for the web app.
   - `tools/console` — Telegram bot (grammy + Anthropic), internal ops/marketing.
 - **Packages** (11): `@sergeant/shared`, `@sergeant/api-client`, `@sergeant/config`, `@sergeant/db-schema`, `@sergeant/design-tokens`, `@sergeant/insights`, `eslint-plugin-sergeant-design`, and 4 domain packages (`@sergeant/finyk-domain`, `@sergeant/fizruk-domain`, `@sergeant/nutrition-domain`, `@sergeant/routine-domain`).
-- Pre-commit: **Husky** runs `lint-staged` (ESLint --fix + Prettier).
+- Pre-commit: **Husky** runs `lint-staged` — ESLint --fix + Prettier for code, `staged-typecheck.mjs` for staged TS/TSX, `bump-last-validated.mjs` for `.md`. Full pipeline matrix lives in [`CONTRIBUTING.md § Pre-commit hooks`](./CONTRIBUTING.md#pre-commit-hooks).
 
 ## Module ownership map
 
@@ -43,7 +43,7 @@ Quick lookup before editing: which path uses which test stack and which conventi
 | `apps/web/src/shared/**`                              | `@Skords-01` | Vitest                                  | factories defined here                | Pure utils. No React.                                                                                                                                                  |
 | `apps/server/src/modules/**`                          | `@Skords-01` | Vitest + Testcontainers (real Postgres) | n/a                                   | Always coerce bigint→number in serializers (rule #1). Update `api-client` types.                                                                                       |
 | `apps/server/src/modules/chat/**`                     | `@Skords-01` | Vitest                                  | n/a                                   | Anthropic tool defs split per domain in `toolDefs/`. See Architecture section.                                                                                         |
-| `apps/server/src/migrations/**`                       | `@Skords-01` | n/a                                     | n/a                                   | Sequential `NNN_*.sql` (currently 001–028). No gaps. Two-phase for DROP — see rule #4.                                                                                 |
+| `apps/server/src/migrations/**`                       | `@Skords-01` | n/a                                     | n/a                                   | Sequential `NNN_*.sql` (currently 001–044). No gaps. Two-phase for DROP — see rule #4.                                                                                 |
 | `apps/mobile/src/core/**`                             | `@Skords-01` | Jest                                    | (mobile RQ uses module-local keys)    | NativeWind (not Tailwind). MMKV (not localStorage). No DOM.                                                                                                            |
 | `apps/mobile/app/**`                                  | `@Skords-01` | Jest                                    | n/a                                   | Expo Router routes. Each `_layout.tsx` is a navigator.                                                                                                                 |
 | `apps/mobile-shell/**`                                | `@Skords-01` | none                                    | n/a                                   | Capacitor wrapper around `apps/web`. No app code lives here, only build glue.                                                                                          |
@@ -67,7 +67,7 @@ Quick lookup before editing: which path uses which test stack and which conventi
 > - **`lint-enforced-convention`** — стилістичне/процесне правило з механічним enforcement (ESLint plugin, commitlint, governance-sync, freshness). Severity blocker, але enforcement — лінтер, не ран-тайм.
 > - **`active-initiative`** — правило з allowlist + дедлайном (див. лінкований `TODO(NNNN-…): YYYY-MM-DD`). Для нового коду — blocker; винятки трекаються окремо.
 >
-> Поточний розподіл (18 правил): 6 `blocker-invariant` (нижче в цьому розділі), 11 `lint-enforced-convention` (5 — нижче, 6 design-конвенцій винесено в § [Lint-enforced design conventions](#lint-enforced-design-conventions)), 1 `active-initiative` (#18). Машино-читабельна матриця: [`docs/governance/hard-rules-matrix.md`](./docs/governance/hard-rules-matrix.md). Семантика категорій — у [`docs/adr/0045-hard-rules-taxonomy.md`](./docs/adr/0045-hard-rules-taxonomy.md). `id` стабільні в обох розділах і `hard-rules.json` — старі PR-описи лінкуються без змін.
+> Поточний розподіл (19 правил): 6 `blocker-invariant` (нижче в цьому розділі), 11 `lint-enforced-convention` (5 — нижче, 6 design-конвенцій винесено в § [Lint-enforced design conventions](#lint-enforced-design-conventions)), 2 `active-initiative` (#18 module-decomposition, #19 noUncheckedIndexedAccess). Машино-читабельна матриця: [`docs/governance/hard-rules-matrix.md`](./docs/governance/hard-rules-matrix.md). Семантика категорій — у [`docs/adr/0045-hard-rules-taxonomy.md`](./docs/adr/0045-hard-rules-taxonomy.md). `id` стабільні в обох розділах і `hard-rules.json` — старі PR-описи лінкуються без змін.
 
 ### 1. DB types: coerce `bigint` to `number` in serializers
 
@@ -112,7 +112,7 @@ Secrets (Mono token, etc.) **must** be hashed via `hashToken()` before going int
 When you change a JSON response shape in `apps/server/src/modules/*`, three things move together:
 
 ```diff
-  // apps/server/src/modules/finyk/transactionsHandler.ts
+  // apps/server/src/modules/mono/read.ts (transactionsHandler)
   return rows.map((r) => ({
     id: Number(r.id),
 +   merchantCategory: r.mcc ? String(r.mcc) : null,
@@ -121,7 +121,7 @@ When you change a JSON response shape in `apps/server/src/modules/*`, three thin
 ```
 
 ```diff
-  // packages/api-client/src/endpoints/finyk.ts
+  // packages/api-client/src/endpoints/mono.ts
   export interface MonoTransaction {
     id: number;
 +   merchantCategory: string | null;
@@ -130,7 +130,7 @@ When you change a JSON response shape in `apps/server/src/modules/*`, three thin
 ```
 
 ```diff
-  // apps/server/src/modules/finyk/transactionsHandler.test.ts
+  // apps/server/src/modules/mono/read.test.ts
   expect(result).toMatchInlineSnapshot(`
     {
       "id": 42,
@@ -144,7 +144,7 @@ If you change only one — CI will pass but consumers break. Always do all three
 
 ### 4. SQL migrations: sequential, no gaps, two-phase for DROP
 
-Files in `apps/server/src/migrations/` use the pattern `NNN_description.sql` (currently 001–028). Pre-deploy: `pnpm db:migrate` (Railway, runs `apps/server/migrate.mjs`). The build step copies them via `apps/server/build.mjs` (fixed in [#704](https://github.com/Skords-01/Sergeant/issues/704)).
+Files in `apps/server/src/migrations/` use the pattern `NNN_description.sql` (currently 001–044). Pre-deploy: `pnpm db:migrate` (Railway, runs `apps/server/migrate.mjs`). The build step copies them via `apps/server/build.mjs` (fixed in [#704](https://github.com/Skords-01/Sergeant/issues/704)).
 
 > **Local Postgres image:** `docker-compose.yml` uses `pgvector/pgvector:pg16`, not stock `postgres:16-alpine`. Migration `025_ai_memories_pgvector.sql` runs `CREATE EXTENSION IF NOT EXISTS vector;` and the alpine image does not ship the extension — `pnpm db:up` would fail at migrate-time. CI workflows (`ci.yml`, `extended-e2e.yml`, `visual-regression.yml`) already pin the same image.
 
@@ -340,7 +340,7 @@ Documentation is part of the change set, not a follow-up. Treat any of the follo
 | Code change                                       | Docs that must move with it                                                                                                                                            |
 | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | New / changed JSON response shape                 | `packages/api-client/**` types **+** the matching contract test (Hard Rule #3). If the response is documented in `docs/api/*.md`, update there too.                    |
-| New SQL migration                                 | `apps/server/src/migrations/README.md` (if present), and any ER-diagram in `docs/architecture/`.                                                                       |
+| New SQL migration                                 | `docs/architecture/data-exchange-storage-audit.md` (DB-level invariants), and any ER-diagram in `docs/architecture/`.                                                  |
 | New / removed npm script                          | `CONTRIBUTING.md § Everyday Commands`, `CLAUDE.md § Quick commands`.                                                                                                   |
 | New Hard Rule, lint rule, or convention           | `AGENTS.md` § Hard Rules (the canonical entry) **+** mirror summary in `CONTRIBUTING.md § Hard rules`. PR template's "AGENTS.md updated?" checkbox **must** be ticked. |
 | New design token, palette, or component           | `docs/design/design-system.md`, `docs/design/brandbook.md`, and the relevant audit (`docs/audits/*-audit-*.md`) if it changes status.                                  |
@@ -369,7 +369,7 @@ If you genuinely change nothing in the doc but its claims still hold, leave the 
 The PR template includes the relevant boxes (`AGENTS.md updated?`, "Docs updated alongside code?"). CI catches the cases that are mechanically detectable:
 
 - `pnpm lint:governance-sync` — fails (error, not warning) on **concrete** dangling `apps/.../*.ts` / `packages/.../*.ts` / `scripts/...` refs in non-aspirational docs (anything outside `docs/launch/`, `docs/planning/`, `docs/integrations/*-roadmap.md`, `docs/audits/*-implementation-roadmap.md`, ADRs with `Status: proposed`). Refs containing glob/placeholder syntax (`*`, `?`, `<>`, `[]`, `{}`) are skipped — those are templates, not concrete claims.
-- `pnpm docs:check-freshness`, `pnpm docs:check-playbook-index`, `pnpm docs:check-playbook-schema`, `pnpm hard-rules:check`, `pnpm api:check-openapi` — supplementary gates per category.
+- `pnpm docs:check-freshness-coverage`, `pnpm docs:check-playbook-index`, `pnpm docs:check-playbook-schema`, `pnpm hard-rules:check`, `pnpm api:check-openapi` — supplementary gates per category.
 
 The remaining categories (api-client type drift, CHANGELOG entries, design-system updates) are still reviewer- and self-discipline-enforced. If a reviewer spots an unchecked-but-required doc update, that's a request-changes signal — not a "follow-up issue". And if `lint:governance-sync` shows a path you renamed/moved, **do not** silence it by adding `<>` placeholders unless the file truly is aspirational — fix the doc to reference the real new path.
 
@@ -417,9 +417,9 @@ If a reviewer sees a new prose paragraph or table cell in English in a doc that'
 }
 ```
 
-**Allowlist.** Існуючі файли-моноліти (16 на 2026-05-03) виключені окремим блоком `eslint.config.js` з `TODO(0001-module-decomposition): deadline 2026-06-15`. Кожна декомпозиція = видалення одного рядка з allowlist (видно у `git blame`). Allowlist — _не_ постійна fixture: dropping rate відстежується в [`docs/initiatives/0001-module-decomposition.md`](docs/initiatives/0001-module-decomposition.md) метрикою «Файлів `apps/web/src/**` ≥600 LOC: 16 → ≤ 2».
+**Allowlist.** Існуючі файли-моноліти (11 на 2026-05-05) виключені окремим блоком `eslint.config.js` з `TODO(0001-module-decomposition): deadline 2026-06-15`. Кожна декомпозиція = видалення одного рядка з allowlist (видно у `git blame`). Allowlist — _не_ постійна fixture: dropping rate відстежується в [`docs/initiatives/0001-module-decomposition.md`](docs/initiatives/0001-module-decomposition.md) метрикою «Файлів `apps/web/src/**` ≥600 LOC: 16 → 11 → ≤ 2».
 
-**Як декомпонувати.** Розкладаємо за роллю, не за алфавітом: окремо state (custom hook / `useReducer` / state-machine), окремо ефекти (один `useEffect` = один named hook), окремо UI (presentational sub-components без логіки). Прецедент — `apps/server/src/modules/chat/agent.ts → agent.handlers.ts / agent.tools.ts / agent.cache.ts`. Для web cookbook див. опис фази 2 в [`docs/initiatives/0001-module-decomposition.md`](docs/initiatives/0001-module-decomposition.md).
+**Як декомпонувати.** Розкладаємо за роллю, не за алфавітом: окремо state (custom hook / `useReducer` / state-machine), окремо ефекти (один `useEffect` = один named hook), окремо UI (presentational sub-components без логіки). Прецедент — `apps/server/src/modules/chat/` (раніше моноліт `agent.ts`): `chat.ts` orchestrator + `tools.ts` + `coach.ts` + `aiQuota.ts` + `toolMetrics.ts` + `toolDefs/<domain>/`. Для web cookbook див. опис фази 2 в [`docs/initiatives/0001-module-decomposition.md`](docs/initiatives/0001-module-decomposition.md).
 
 **Scope rationale.**
 

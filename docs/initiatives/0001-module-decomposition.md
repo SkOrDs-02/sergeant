@@ -1,6 +1,6 @@
 # 0001 — Module decomposition + `max-lines` guard
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @dmytro.skords. **Next review:** 2026-08-03.
 > **Status:** Done (Phase 1 + Phase 2 + Phase 3) — closed 2026-05-04
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
@@ -33,7 +33,7 @@
 
 **Out:**
 
-- Декомпозиція файлів сервера (>600 LOC у `apps/server/src/modules/chat/agent.ts` уже зроблено — інші ліворуч від цієї межі).
+- Декомпозиція файлів сервера (>600 LOC у `apps/server/src/modules/chat/` уже зроблено — раніше моноліт `agent.ts`, тепер `chat.ts/tools.ts/coach.ts/aiQuota.ts/toolMetrics.ts/toolDefs/`; інші серверні файли ліворуч від межі).
 - Файли `apps/mobile/**` — окремий скоуп для ініціативи 0002.
 - Тести й сторібуки до декомпонованих кусків (буде в [0007 — Design-system tooling](./0007-design-system-tooling.md)).
 
@@ -70,7 +70,7 @@
 - [x] `pnpm lint` падає на будь-якому новому файлі ≥600 LOC у `apps/web/src/**/*.tsx`.
 - [ ] У `apps/web/src/**` лишається ≤2 файли в allowlist (тільки ті, що мають документований план в roadmap-і).
 - [x] Декомпонований `RoutineApp` не має `any`-типів та використовує `useReducer`/state-machine для головного потоку.
-- [x] Декомпонований `Icon.tsx`: `pnpm bundle:analyze` показує −15…−25 KB у chunk-і `shared` (бо мертві іконки тепер tree-shake-аються).
+- [x] Декомпонований `Icon.tsx`: `pnpm build:analyze` показує −15…−25 KB у chunk-і `shared` (бо мертві іконки тепер tree-shake-аються).
 - [x] CI job `lint:tech-debt-freshness` пройшов і `LARGE_FILES` зник з `frontend.md` watching-листа.
 - [x] У `AGENTS.md` додано пункт #11 (`max-lines`) з прикладом і покликанням сюди.
 
@@ -106,7 +106,7 @@
 - [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) — секція **LARGE_FILES**
 - [`AGENTS.md`](../../AGENTS.md) — Hard rules (де треба додати #11)
 - ADR-кандидат: «Component-size discipline + `max-lines` lint guard» (буде створений у фазі 1)
-- Прецедент: декомпозиція `apps/server/src/modules/chat/agent.ts` (агент розклали на handlers / tools / cache)
+- Прецедент: декомпозиція `apps/server/src/modules/chat/` (раніше моноліт `agent.ts`, тепер `chat.ts` orchestrator + `tools.ts` + `coach.ts` + `aiQuota.ts` + `toolMetrics.ts` + `toolDefs/<domain>/`)
 
 ## Outcome
 
@@ -247,18 +247,18 @@ API — `contextOrFilename.getFilename is not a function`). Phase 2 неможл
 | `apps/web/src/modules/finyk/pages/AssetsTable.tsx`                 | ≥600 | Drift                                                                                   | same                                                          |
 | `apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx` | ≥600 | Drift                                                                                   | same                                                          |
 
-Ці 12 файлів **залишаються** в `eslint.config.js` allowlist із збереженим коментарем-deadline'ом — `pnpm lint` не червоніє через них, але CI job `lint:tech-debt-freshness` періодично нагадуватиме про потрібну декомпозицію. Hard Rule #18 продовжує блокувати будь-який **новий** ≥ 600 LOC файл.
+Ці 11 файлів (12 під час закриття 0001 → −1 після додаткового drop у `eslint.config.js`) **залишаються** в allowlist із збереженим коментарем-deadline'ом — `pnpm lint` не червоніє через них, але CI job `lint:tech-debt-freshness` періодично нагадуватиме про потрібну декомпозицію. Hard Rule #18 продовжує блокувати будь-який **новий** ≥ 600 LOC файл.
 
 **Done criteria — фінальна звірка:**
 
 - [x] `pnpm lint` падає на будь-якому новому файлі ≥600 LOC у `apps/web/src/**/*.tsx` — primary deliverable.
-- [ ] У `apps/web/src/**` лишається ≤2 файли в allowlist — **не виконано**: 12 файлів. Carry-over до 0009.
+- [ ] У `apps/web/src/**` лишається ≤2 файли в allowlist — **не виконано**: 11 файлів (12 на час закриття 0001, −1 після наступного drop у `eslint.config.js`). Carry-over до 0009.
 - [x] Декомпонований `RoutineApp` не має `any`-типів та використовує `useReducer`/state-machine для головного потоку — `useRoutineTimeState.ts`.
-- [x] Декомпонований `Icon.tsx` — `pnpm bundle:analyze` показує −22 KB у `shared` chunk-і (PR #1596 measurement).
+- [x] Декомпонований `Icon.tsx` — `pnpm build:analyze` показує −22 KB у `shared` chunk-і (PR #1596 measurement).
 - [x] CI job `lint:tech-debt-freshness` пройшов і `LARGE_FILES` зник з `frontend.md` watching-листа (тепер посилається сюди).
 - [x] У `AGENTS.md` додано Hard Rule #18 (`max-lines`) з прикладом і покликанням сюди.
 
-5 з 6 критеріїв виконано. **Критерій №2** (allowlist ≤ 2) переноситься як scope наступної ініціативи — це чітко окремий sprint роботи (12 файлів × ~200 LOC мережево), і змішувати його з фінально-документаційним PR було б неконструктивно.
+5 з 6 критеріїв виконано. **Критерій №2** (allowlist ≤ 2) переноситься як scope наступної ініціативи — це чітко окремий sprint роботи (≈11 файлів × ~200 LOC мережево), і змішувати його з фінально-документаційним PR було б неконструктивно.
 
 **Метрики Phase 3 (final):**
 

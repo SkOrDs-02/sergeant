@@ -992,8 +992,10 @@ export default [
   //
   // Scope rationale:
   // - Limited to `apps/web/src/**` — the audit's red-flag table flagged
-  //   web-only monoliths; `apps/server/src/modules/chat/agent.ts` was
-  //   already decomposed (handlers / tools / cache) and is the precedent.
+  //   web-only monoliths; `apps/server/src/modules/chat/` was already
+  //   decomposed (was a single `agent.ts` monolith, now split into
+  //   `chat.ts` orchestrator + `tools.ts` + `coach.ts` + `aiQuota.ts` +
+  //   `toolMetrics.ts` + `toolDefs/<domain>/`) and is the precedent.
   //   `apps/mobile/**` is out of scope (initiative 0002 owns that surface).
   // - `**/__tests__/**` and `*.{test,spec}.{ts,tsx}` are exempt — large
   //   fixture files and snapshot-style suites are legitimate.
