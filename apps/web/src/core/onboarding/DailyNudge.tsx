@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
+import { Popover, PopoverItem } from "@shared/components/ui/Popover";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import {
   dismissNudge,
@@ -29,34 +30,37 @@ export function DailyNudge({
     });
   }, [nudge.id, sessionDays]);
 
-  const handleDismiss = useCallback(() => {
+  const handlePrimary = useCallback(() => {
     dismissNudge(webKVStore, nudge.id);
-    trackEvent(ANALYTICS_EVENTS.DAILY_NUDGE_DISMISSED, {
+    trackEvent(ANALYTICS_EVENTS.DAILY_NUDGE_ACTION, {
       day: sessionDays,
       nudgeId: nudge.id,
+      type: "primary",
+    });
+    onAction?.();
+    onDismiss();
+  }, [nudge.id, sessionDays, onAction, onDismiss]);
+
+  const handleDismiss = useCallback(() => {
+    dismissNudge(webKVStore, nudge.id);
+    trackEvent(ANALYTICS_EVENTS.DAILY_NUDGE_ACTION, {
+      day: sessionDays,
+      nudgeId: nudge.id,
+      type: "dismiss",
     });
     onDismiss();
   }, [nudge.id, sessionDays, onDismiss]);
 
   const handleSnooze = useCallback(() => {
     snoozeNudge(webKVStore, nudge.id, SNOOZE_DAYS);
-    trackEvent(ANALYTICS_EVENTS.DAILY_NUDGE_DISMISSED, {
+    trackEvent(ANALYTICS_EVENTS.DAILY_NUDGE_ACTION, {
       day: sessionDays,
       nudgeId: nudge.id,
+      type: "snooze",
       snoozeDays: SNOOZE_DAYS,
     });
     onDismiss();
   }, [nudge.id, sessionDays, onDismiss]);
-
-  const handleClick = useCallback(() => {
-    dismissNudge(webKVStore, nudge.id);
-    trackEvent(ANALYTICS_EVENTS.DAILY_NUDGE_CLICKED, {
-      day: sessionDays,
-      nudgeId: nudge.id,
-    });
-    onAction?.();
-    onDismiss();
-  }, [nudge.id, sessionDays, onAction, onDismiss]);
 
   return (
     <section
@@ -69,37 +73,41 @@ export function DailyNudge({
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm text-text leading-relaxed">{nudge.message}</p>
-          <div className="flex flex-wrap items-center gap-2 mt-2.5">
+          <div className="flex items-center gap-2 mt-2.5">
             {onAction && (
-              <Button variant="primary" size="xs" onClick={handleClick}>
+              <Button variant="primary" size="xs" onClick={handlePrimary}>
                 Спробувати
               </Button>
             )}
-            <button
-              type="button"
-              onClick={handleDismiss}
-              className="text-xs text-muted hover:text-text px-2 py-1 rounded-xl transition-colors"
+            <Popover
+              placement="bottom-start"
+              trigger={
+                <button
+                  type="button"
+                  className="w-8 h-8 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45"
+                  aria-label="Інші дії"
+                >
+                  <Icon name="more-horizontal" size={16} />
+                </button>
+              }
+              className="min-w-[200px]"
             >
-              Зрозуміло
-            </button>
-            <button
-              type="button"
-              onClick={handleSnooze}
-              className="text-xs text-muted hover:text-text px-2 py-1 rounded-xl transition-colors inline-flex items-center gap-1"
-              aria-label={`Нагадати через ${SNOOZE_DAYS} днів`}
-            >
-              <Icon name="clock" size={12} aria-hidden />
-              Нагадай за тиждень
-            </button>
+              <PopoverItem
+                icon={<Icon name="clock" size={14} />}
+                onClick={handleSnooze}
+              >
+                Нагадай за тиждень
+              </PopoverItem>
+            </Popover>
           </div>
         </div>
         <button
           type="button"
-          onClick={handleSnooze}
-          className="shrink-0 -mt-1 -mr-1 w-6 h-6 rounded-xl flex items-center justify-center text-muted hover:text-text transition-colors"
-          aria-label={`Сховати на ${SNOOZE_DAYS} днів`}
+          onClick={handleDismiss}
+          className="shrink-0 -mt-1 -mr-1 w-6 h-6 rounded-xl flex items-center justify-center text-muted hover:text-text transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45"
+          aria-label="Закрити"
         >
-          <Icon name="x" size={14} />
+          <Icon name="close" size={14} />
         </button>
       </div>
     </section>

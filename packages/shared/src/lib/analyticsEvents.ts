@@ -77,9 +77,12 @@ export const ANALYTICS_EVENTS = Object.freeze({
   STREAK_MILESTONE_REACHED: "streak_milestone_reached",
 
   // Daily nudges (Phase 3 — retention)
+  //   DAILY_NUDGE_SHOWN  { day: number, nudgeId: string }                 — impression
+  //   DAILY_NUDGE_ACTION { day: number, nudgeId: string,                  — single-primary
+  //                        type: "primary" | "dismiss" | "snooze",           affordance card
+  //                        snoozeDays?: number }                             (S6.7)
   DAILY_NUDGE_SHOWN: "daily_nudge_shown",
-  DAILY_NUDGE_CLICKED: "daily_nudge_clicked",
-  DAILY_NUDGE_DISMISSED: "daily_nudge_dismissed",
+  DAILY_NUDGE_ACTION: "daily_nudge_action",
 
   // Re-engagement (Phase 3 — retention)
   REENGAGEMENT_SHOWN: "reengagement_shown",

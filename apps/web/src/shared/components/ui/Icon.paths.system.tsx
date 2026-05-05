@@ -18,6 +18,16 @@ export const SYSTEM_PATHS: Record<string, ReactNode> = {
       <line x1="6" y1="6" x2="18" y2="18" />
     </>
   ),
+  // Three horizontal dots — Lucide `more-horizontal`. Used as the
+  // overflow / kebab trigger inside cards (e.g. DailyNudge "…" menu —
+  // S6.7 single-primary affordance).
+  "more-horizontal": (
+    <>
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="19" cy="12" r="1" />
+      <circle cx="5" cy="12" r="1" />
+    </>
+  ),
   check: <polyline points="20 6 9 17 4 12" />,
   plus: (
     <>
