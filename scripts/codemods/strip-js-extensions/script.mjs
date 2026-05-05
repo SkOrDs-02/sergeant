@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+// @deprecated  One-shot historical codemod (already applied — see
+// `scripts/codemods/README.md` catalog). Preserved here for forensics +
+// re-run on old branches; not part of the active CI / lint workflow.
+//
 // Codemod: remove `.js` / `.jsx` extensions from relative and path-aliased
 // imports inside `.ts` / `.tsx` files under `apps/web/src`. External
 // package imports (e.g. `@zxing/browser/esm/.../foo.js`) are intentionally

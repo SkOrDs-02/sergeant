@@ -7,7 +7,7 @@
 - **Related:**
   - [`docs/integrations/railway-vercel.md`](../integrations/railway-vercel.md) — operator-орієнтована how-to для обох платформ.
   - [`docs/architecture/platforms.md`](../architecture/platforms.md) — стан web / native / capacitor-shell поверхонь.
-  - [`vercel.json`](../../vercel.json) — `installCommand`, `outputDirectory`, headers, rewrites.
+  - [`apps/web/vercel.json`](../../apps/web/vercel.json) — `installCommand`, `outputDirectory`, headers, rewrites.
   - [`railway.toml`](../../railway.toml), [`Dockerfile.api`](../../Dockerfile.api) — build-контракт Railway.
   - [`apps/web/middleware.ts`](../../apps/web/middleware.ts) — Edge middleware, що проксіює `/api/*` → Railway.
   - [`apps/server/src/auth.ts`](../../apps/server/src/auth.ts) — CORS + Better Auth origin whitelist (`trustedOrigins`).
@@ -40,7 +40,7 @@ accepted.
 ### Context
 
 `apps/web` — це Vite SPA, який збирається у `apps/server/dist/` (див.
-[`vercel.json#outputDirectory`](../../vercel.json)). Реалістичні варіанти
+[`apps/web/vercel.json#outputDirectory`](../../apps/web/vercel.json)). Реалістичні варіанти
 хостингу фронту:
 
 1. **Vercel** — CDN з immutable-cache для `/assets/*`, preview-деплої на кожен
@@ -78,7 +78,7 @@ Edge middleware на Vercel ([`apps/web/middleware.ts`](../../apps/web/middlewar
   перевіряти UI зміни до мерджу.
 - CDN caching для `/assets/*` (`public, max-age=31536000, immutable`) —
   повторні візити моментальні.
-- SPA fallback через `rewrites` у `vercel.json` — глибокі лінки (`/finyk/tx/123`)
+- SPA fallback через `rewrites` у `apps/web/vercel.json` — глибокі лінки (`/finyk/tx/123`)
   не 404-ять.
 
 **Негативні:**
@@ -97,7 +97,7 @@ Edge middleware на Vercel ([`apps/web/middleware.ts`](../../apps/web/middlewar
 **Нейтральні:**
 
 - `outputDirectory: "../server/dist"` — нестандартний шлях, задокументований у
-  [`vercel.json`](../../vercel.json) і
+  [`apps/web/vercel.json`](../../apps/web/vercel.json) і
   [`docs/architecture/platforms.md`](../architecture/platforms.md#1-web--pwa--appsweb). Vite бандл
   навмисно кладеться у server-пакет, щоб Capacitor-shell і Railway-бекенд
   читали з одного місця.
@@ -344,7 +344,7 @@ n/a (operational rule).
 
 | Arte-fact                                                                       | Статус |
 | ------------------------------------------------------------------------------- | ------ |
-| [`vercel.json`](../../vercel.json) + `BACKEND_URL` env                          | live   |
+| [`apps/web/vercel.json`](../../apps/web/vercel.json) + `BACKEND_URL` env        | live   |
 | [`apps/web/middleware.ts`](../../apps/web/middleware.ts) proxy                  | live   |
 | [`railway.toml`](../../railway.toml) + [`Dockerfile.api`](../../Dockerfile.api) | live   |
 | Pre-deploy `db:migrate` на Railway                                              | live   |

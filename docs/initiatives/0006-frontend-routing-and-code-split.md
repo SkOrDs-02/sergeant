@@ -1,6 +1,6 @@
 # 0006 — Frontend routing migration + route-based code-split
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** In progress (Phase 0 — lint canary shipped 2026-05-04)
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
@@ -9,14 +9,14 @@
 
 ## TL;DR
 
-`apps/web` сьогодні стоїть на **самописному hash-router-і** (`useHashRouter` у кожному модулі) + `manualChunks` у `vite.config.js`. Bundle ділиться на vendor-чанки, але кожен модуль все одно завантажується відразу — у `App.tsx` всі `lazyImport`-и матеріалізуються після першого hub-екрану. Це блокує Performance budget (≤820 KB initial), а bundle-gate доводиться раз у раз перенастроювати.
+`apps/web` сьогодні стоїть на **самописному hash-router-і** (`useHashRouter` у кожному модулі) + `manualChunks` у `apps/web/vite.config.js`. Bundle ділиться на vendor-чанки, але кожен модуль все одно завантажується відразу — у `App.tsx` всі `lazyImport`-и матеріалізуються після першого hub-екрану. Це блокує Performance budget (≤820 KB initial), а bundle-gate доводиться раз у раз перенастроювати.
 
 План — мігрувати на `react-router@7` з file-based / object-config routes, ввести **route-based code-split** через `React.lazy` per top-level route, і прибрати `useHashRouter` з модулів. Hash-URL зберігаємо як **fallback** (compat для PWA install / deep-links), але внутрішня навігація — звичайні URL.
 
 ## Чому зараз
 
 - Current hash-router НЕ підтримує: nested routes, route-loaders, scroll-restore, prefetch на hover, нормальні deep-links у share-/push-нотифікаціях.
-- Bundle gate ≤820 KB ([`scripts/bundle-size-guard.ts`](../../scripts/bundle-size-guard.ts)) тримається тільки тому, що ми переписуємо `manualChunks` під кожний реліз — це brittle.
+- Bundle gate ≤820 KB ([`scripts/check-bundle-size.mjs`](../../scripts/check-bundle-size.mjs)) тримається тільки тому, що ми переписуємо `manualChunks` під кожний реліз — це brittle.
 - 165 модулів у `apps/web`. Багато з них (Fizruk Workouts, Nutrition Recipes, Insights) рідко відкривають у одній сесії — їх можна не завантажувати взагалі. Тільки lazy-load доменна папка.
 - `App.tsx` зараз — провайдер-вертоліт + ручна switch-стейт-машина «який модуль зараз активний» (велика частина логіки в `core/app/`). Це **не** навігація, це fragile FSM.
 - Без route-loader-ів prefetch RQ-даних відбувається тільки після того, як модуль уже у frame; UX-stutter на перших переходах.
@@ -104,7 +104,7 @@
 
 **PR `chore-bundle-budget-per-route`:**
 
-- В `scripts/bundle-size-guard.ts` додати per-route budgets.
+- В `scripts/check-bundle-size.mjs` додати per-route budgets.
 - Видалити `manualChunks` правила, які стали зайвими (більшість vendor-розбиття тепер route-driven).
 - Прибрати з `App.tsx` залишки manual FSM «який модуль активний».
 - Підняти ESLint rule `no-hash-router-in-modules` до error глобально (модуль за модулем уже мігрував у фазі 2).
@@ -154,10 +154,10 @@
 - Design Review 2026-05-03 — §6 Frontend UX-arch
 - [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) — запис «hash-router у вебі»
 - [react-router v7 docs](https://reactrouter.com/en/main)
-- [`apps/web/src/shared/hooks/useHashRouter.ts`](../../apps/web/src/shared/hooks/useHashRouter.ts)
+- [`apps/web/src/modules/finyk/hooks/useHashRouter.ts`](../../apps/web/src/modules/finyk/hooks/useHashRouter.ts)
 - [`apps/web/src/core/app/`](../../apps/web/src/core/app/)
-- [`scripts/bundle-size-guard.ts`](../../scripts/bundle-size-guard.ts)
-- [`vite.config.js`](../../vite.config.js)
+- [`scripts/check-bundle-size.mjs`](../../scripts/check-bundle-size.mjs)
+- [`apps/web/vite.config.js`](../../apps/web/vite.config.js)
 
 ## Outcome
 

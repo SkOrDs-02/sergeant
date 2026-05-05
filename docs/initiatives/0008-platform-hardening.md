@@ -38,7 +38,7 @@
    - Перенести limit-конфіг у [`apps/server/src/config/rateLimit.ts`](../../apps/server/src/config/) (per-route map).
    - Додати `Retry-After` header у 429.
    - `RateLimit-*` headers (X-RateLimit-Limit / Remaining / Reset) — RFC 6585.
-   - Тести: інтеграційний у [`apps/server/src/__tests__/`](../../apps/server/src/__tests__/) — флуд auth-route, перевірити 429 + headers.
+   - Тести: інтеграційний у [`apps/server/src/http/`](../../apps/server/src/http/) (напр. `rateLimit.test.ts`, `rateLimit.headers.test.ts`) — флуд auth-route, перевірити 429 + headers.
 3. **Renovate:**
    - `renovate.json` (або `.github/renovate.json5`) з:
      - `extends: ['config:base', 'docker:enableMajor']`
@@ -167,7 +167,7 @@
 ## Власник, ревʼюери
 
 - **Lead:** `@Skords-01`.
-- **Required review:** будь-який PR із змінами у `apps/server/src/middleware/**`, `.github/workflows/**`, або `renovate.json5` потребує review від CODEOWNERS.
+- **Required review:** будь-який PR із змінами у `apps/server/src/http/**`, `.github/workflows/**`, або `renovate.json5` потребує review від CODEOWNERS.
 
 ## Посилання
 
@@ -179,7 +179,7 @@
 - [CycloneDX SBOM](https://cyclonedx.org/)
 - [sigstore](https://www.sigstore.dev/)
 - [`apps/server/src/routes/health.ts`](../../apps/server/src/routes/health.ts)
-- [`apps/server/src/middleware/`](../../apps/server/src/middleware/)
+- [`apps/server/src/http/`](../../apps/server/src/http/)
 - Координується з ініціативою 0004 (server observability) — алерти Grafana використовують ці metric labels.
 
 ## Outcome
