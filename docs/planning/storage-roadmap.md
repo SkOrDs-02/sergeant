@@ -1413,6 +1413,58 @@ recreate indexes`) у `packages/db-schema/src/sqlite/migrations/index.ts`,
   адаптер плоскує), PR #042d-builder (`enqueueOutboxIncrement` —
   consumer ouput-у адаптера; його `OutboxIncrementInput`-shape — mirror-target).
 
+#### **PR #042e-submit — `feat(api-client): submitSyncV2IncrementOp composable build → map → enqueue helper`** ✅ LANDED
+
+- Scope. Composable consumer-side хелпер, який зв'язує три вже-залендженi
+  компоненти у одну функцію: `buildSyncV2IncrementOp` (PR #042c),
+  `mapSyncV2IncrementOpToOutboxInput` (PR #042e-mapping) і
+  ін'єкційну `submit`-функцію (структурно-mirror-нуту з
+  `enqueueOutboxIncrement` із PR #042d-builder). Ціль — мати одну
+  three-step API-поверхню для майбутнього sync-engine writer-а у
+  power-PR #042e (push-loop refactor), щоб callsite-и зводилися до
+  одного виклику замість трьох-шарової композиції.
+- **Done (2026-05-05).** `packages/api-client/src/endpoints/syncV2.increment.submit.ts`
+  експортує:
+  - `submitSyncV2IncrementOp(submit, input)` — async-функція, що повертає
+    discriminated-union `{ ok: true, id, inserted } | { ok: false, reason }`.
+    Build-side reject-и (`op_not_supported` / `missing_delta` /
+    `invalid_delta`) короткозамикаються — `submit` НЕ викликається,
+    жодного outbox-row для envelope-у, який сервер однаково реджектить
+    engine-level. На happy-path `inserted: false` (idempotent replay,
+    знайдено existing row під тим же `idempotencyKey`) пробрасується
+    verbatim — replay-safety-контракт від `enqueueOutboxIncrement`
+    тримається 1:1.
+  - `SubmitSyncV2IncrementOpFn` — DI-функція-shape, що структурно
+    mirror-ить `enqueueOutboxIncrement` (приймає `OutboxIncrementInputShape`,
+    повертає `Promise<{ id, inserted }>`). Inversion-of-control патерн
+    тримає api-client / db-schema незалежними один від одного — adapter
+    на consumer-side у app-коді — це one-liner.
+  - `SubmitSyncV2IncrementOpResult`, `SubmitSyncV2IncrementOpEnqueued`,
+    `SubmitSyncV2IncrementOpRejected` — окремі типи для callsite-ів,
+    що narrow-ять на `result.ok`.
+  - `packages/api-client/src/endpoints/syncV2.increment.submit.test.ts`:
+    12 тестів (4 happy-path кейси з byte-aligned camelCase mapping і
+    insertion-order пресервом + boundary delta=−1000; 6 reject-route
+    кейсів — `op_not_supported`, `missing_delta` × 2 для null/undefined,
+    `invalid_delta` × 3 для non-finite/non-integer/out-of-bound; storage
+    error pass-through; cardinality-lock на 3 reject-reason-літерали).
+  - Re-export із `packages/api-client/src/index.ts`:
+    `submitSyncV2IncrementOp`, `SubmitSyncV2IncrementOpFn`,
+    `SubmitSyncV2IncrementOpResult`, `SubmitSyncV2IncrementOpEnqueued`,
+    `SubmitSyncV2IncrementOpRejected`.
+  - Locally: typecheck + lint + 102/102 api-client тестів зелені.
+- **Risk.** None — additive public surface без callsite-ів за межами
+  тестів. Storage-layer error-и (`submit` throw-ить) пробрасуються
+  callerу, не конвертуються у reject-reason — це тримає cardinality
+  `sync_op_outbox_reject_total{reason}` обмеженою трьома build-reason-ами
+  з PR #042c. Перший production-consumer — sync-engine writer у
+  full-scope PR #042e (push-loop refactor): зчитає payload із
+  dual-write-адаптера, передасть `BuildSyncV2IncrementOpInput` у helper,
+  ін'єктить `(input) => enqueueOutboxIncrement(sqliteClient, input)`
+  як `submit`.
+- **Dep.** PR #042c, PR #042d-builder (mirror-target для `submit`-shape),
+  PR #042e-mapping (mapper, який helper викликає внутрішньо).
+
 #### **PR #043 — `feat(sync): G-set CRDT for nutrition_meals log`** ✅ LANDED ([#1734](https://github.com/Skords-01/Sergeant/pull/1734))
 
 - Scope. `nutrition_meals` — append-only G-set. Видалення через

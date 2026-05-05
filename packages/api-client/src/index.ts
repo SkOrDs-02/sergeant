@@ -73,6 +73,14 @@ export {
 } from "./endpoints/syncV2.increment.outboxEnqueue";
 
 export {
+  submitSyncV2IncrementOp,
+  type SubmitSyncV2IncrementOpEnqueued,
+  type SubmitSyncV2IncrementOpFn,
+  type SubmitSyncV2IncrementOpRejected,
+  type SubmitSyncV2IncrementOpResult,
+} from "./endpoints/syncV2.increment.submit";
+
+export {
   createCoachEndpoints,
   type CoachEndpoints,
   type CoachInsightPayload,
