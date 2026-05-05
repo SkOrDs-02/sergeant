@@ -1,6 +1,6 @@
 # Перші 30 хвилин агента в Sergeant
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 Стартова шпаргалка для AI-агентів (Devin, Claude, локальні моделі) і нових контриб'юторів. Мета — за 30 хвилин довести середовище до стану «можна писати код, не порушуючи hard rules і не падаючи на pre-commit». Для повної repo policy джерело правди — [`AGENTS.md`](../../AGENTS.md). Цей файл — навігація і `quickstart`, не паралельний source-of-truth.
@@ -65,7 +65,8 @@ CI hard-rules ловляться різними механізмами. Стар
 ## 5. Plop generators (boilerplate без копіпаста)
 
 - `pnpm gen:adr` — створює `docs/adr/NNNN-<slug>.md` із валідною шапкою (Status / Date / Reviewers / Supersedes / Related). Номер обчислюється через `nextAdrNumber()` у [`plopfile.mjs`](../../plopfile.mjs), gaps пропускаються.
-- (Майбутнє, Initiative 0009 фаза 5.1) `pnpm gen:skill`, `pnpm gen:playbook`, `pnpm gen:n8n-workflow`, `pnpm gen:console-specialist`, `pnpm gen:package` — інтерактивні prompt'и зі smoke-тестами на shape contract. Слідкуй за оновленням цього розділу.
+- `pnpm gen new-skill` (PR 5.1, [#1796](https://github.com/Skords-01/Sergeant/pull/1796)), `pnpm gen new-playbook` (PR 5.1, [#1796](https://github.com/Skords-01/Sergeant/pull/1796)), `pnpm gen new-package` (PR 5.1b, [#1828](https://github.com/Skords-01/Sergeant/pull/1828)), `pnpm gen new-n8n-workflow` (PR 5.1b extras) — інтерактивні prompt'и зі smoke-тестами на shape contract. `new-n8n-workflow` додатково оновлює `ops/n8n-workflows/manifest.json` так, що `scripts/n8n/validate-n8n-workflows.mjs` проходить одразу після генерації.
+- (Майбутнє, Initiative 0009 фаза 5.1b extras) `pnpm gen new-console-specialist` — генератор для `tools/console/src/agents/`. Слідкуй за оновленням цього розділу.
 
 ## 6. Verification before PR
 

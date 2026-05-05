@@ -32,6 +32,8 @@
 - `manifest.json` — `owner`, `status`, `risk tier`, `required env`, `required credentials`
 - [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../ops/n8n-workflows/REPORTING-MATRIX.md) — рядок воркфлоу: `topic → cadence → owner → escalation`. **Жорстке правило:** матриця і `manifest.json.riskTier` повинні мати однаковий тир; mismatch блокує merge (Hard Rule #15).
 
+> Для нового воркфлоу: `pnpm gen new-n8n-workflow` (Initiative 0009 PR 5.1b extras) — генерує `ops/n8n-workflows/<NN>-<slug>.json` стаб (schedule trigger + Code-нод TODO) і відразу вставляє відповідний запис у `manifest.json` так, що `pnpm exec node scripts/n8n/validate-n8n-workflows.mjs` проходить без додаткових ручних правок. Далі — заміна логіки Code-нода, оновлення `requiredEnv` / `requiredCredentials` під реальні залежності.
+
 ### 3. Перевір безпечний шлях імпорту
 
 - Спробуй dry-run або export/import у тестове середовище — переконайся, що JSON туди-сюди не ламається.

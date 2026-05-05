@@ -96,6 +96,91 @@ function appendPackageCodeowner(slug, owner) {
   return `inserted ${newRule} into CODEOWNERS /packages/ block (sorted)`;
 }
 
+/**
+ * Returns the next 2-digit n8n workflow id prefix. Existing workflows live in
+ * `ops/n8n-workflows/<NN>-<slug>.json` and the prefix follows clusters
+ * (00-19 ops, 20-29 agents, 30-59 ai, 60-69 growth, 90-99 meta,
+ * 100+ control-plane). Defaults to `max(existing) + 1` so the user can either
+ * accept the next sequential number or override it to land in the right
+ * cluster.
+ */
+function nextN8nWorkflowId() {
+  const dir = resolve(__dirname, "ops/n8n-workflows");
+  const files = readdirSync(dir);
+  const nums = files
+    .filter((f) => /^\d{2,}-.+\.json$/.test(f))
+    .map((f) => parseInt(f.slice(0, f.indexOf("-")), 10))
+    .filter((n) => !isNaN(n));
+  const max = nums.length ? Math.max(...nums) : 0;
+  return String(max + 1).padStart(2, "0");
+}
+
+/**
+ * Inserts a new workflow entry into `ops/n8n-workflows/manifest.json` so that
+ * `pnpm exec node scripts/n8n/validate-n8n-workflows.mjs` passes immediately
+ * after `pnpm gen new-n8n-workflow`. Without this, every generator run leaves
+ * the manifest out of sync and the validator fails on the very next push
+ * (`<NN>-<slug>.json: missing manifest entry`).
+ *
+ * The manifest is edited as a string (rather than re-emitted via
+ * `JSON.stringify`) so that existing entries keep their hand-curated
+ * formatting — short `requiredEnv` / `requiredCredentials` arrays stay on
+ * one line, key order is preserved, and entry-cluster ordering (e.g.
+ * `99-heartbeat` before `103-alert-escalation-cron`) is left as-is. The new
+ * entry is appended just before the closing `}` of the `"workflows"` object.
+ */
+function appendN8nWorkflowManifest(entry) {
+  const manifestPath = resolve(__dirname, "ops/n8n-workflows/manifest.json");
+  const raw = readFileSync(manifestPath, "utf8");
+  const parsed = JSON.parse(raw);
+  if (parsed.workflows && parsed.workflows[entry.file]) {
+    return `manifest already has entry for ${entry.file} (skipped)`;
+  }
+
+  // Render the new entry block at 4-space indent (matches the existing
+  // file convention: outer `workflows` is at 2-space, each entry at 4-space).
+  const block = [
+    `    "${entry.file}": {`,
+    `      "owner": "${entry.owner}",`,
+    `      "status": "${entry.status}",`,
+    `      "riskTier": "${entry.riskTier}",`,
+    `      "telegramTopic": "${entry.telegramTopic}",`,
+    `      "audienceTier": "${entry.audienceTier}",`,
+    `      "requiredEnv": [],`,
+    `      "requiredCredentials": [],`,
+    `      "notes": ${JSON.stringify(entry.notes)}`,
+    `    }`,
+  ].join("\n");
+
+  // Locate the last `    }` line that belongs to the workflows object — it is
+  // followed by `  }` (the closing of `"workflows"`) and `}` (the document
+  // root). We insert a `,\n<block>` before that closing.
+  const lines = raw.split("\n");
+  let workflowsEnd = -1;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    // Match the line that closes the LAST entry in `workflows` — it is the
+    // 4-space-indented `}` that is followed by a 2-space-indented `}`.
+    if (lines[i].trimEnd() === "    }" && lines[i + 1]?.trimEnd() === "  }") {
+      workflowsEnd = i;
+      break;
+    }
+  }
+  if (workflowsEnd === -1) {
+    throw new Error(
+      "Could not locate the end of the `workflows` object in manifest.json. " +
+        "If the file shape changed, update appendN8nWorkflowManifest in plopfile.mjs.",
+    );
+  }
+  // Append a `,` to the previous closing brace + insert the new block.
+  lines[workflowsEnd] = `${lines[workflowsEnd].trimEnd()},`;
+  lines.splice(workflowsEnd + 1, 0, block);
+  writeFileSync(manifestPath, lines.join("\n"));
+
+  // Final sanity-check: re-parse to confirm the splice produced valid JSON.
+  JSON.parse(readFileSync(manifestPath, "utf8"));
+  return `appended ${entry.file} to ops/n8n-workflows/manifest.json`;
+}
+
 /** Returns the next zero-padded 4-digit ADR number. */
 function nextAdrNumber() {
   const adrDir = resolve(__dirname, "docs/adr");
@@ -125,6 +210,22 @@ export default function (plop) {
   // `pnpm lint:codeowners` passes immediately after `pnpm gen new-package`.
   plop.setActionType("appendPackageCodeowner", (answers) => {
     return appendPackageCodeowner(answers.slug, answers.owner);
+  });
+
+  // Custom action: insert a manifest entry for the new n8n workflow so that
+  // `scripts/n8n/validate-n8n-workflows.mjs` passes immediately after
+  // `pnpm gen new-n8n-workflow`. Manifest entries stay sorted to match the
+  // validator's `listWorkflowFiles()` iteration order.
+  plop.setActionType("appendN8nWorkflowManifest", (answers) => {
+    return appendN8nWorkflowManifest({
+      file: `${answers.id}-${answers.slug}.json`,
+      owner: answers.owner,
+      status: answers.status,
+      riskTier: answers.riskTier,
+      telegramTopic: answers.telegramTopic,
+      audienceTier: answers.audienceTier,
+      notes: answers.notes,
+    });
   });
 
   // ── migration ──────────────────────────────────────────────────────────────
@@ -540,6 +641,122 @@ export default function (plop) {
           `(2) replace the stub export in src/index.ts with real surface, ` +
           `(3) \`pnpm --filter @sergeant/${answers.slug} typecheck && pnpm --filter @sergeant/${answers.slug} test\` to verify, ` +
           `(4) \`pnpm lint:codeowners\` to confirm the CODEOWNERS entry was inserted correctly.`,
+      ];
+    },
+  });
+
+  // ── new-n8n-workflow ───────────────────────────────────────────────────────
+  plop.setGenerator("new-n8n-workflow", {
+    description:
+      "New n8n workflow stub (ops/n8n-workflows/<NN>-<slug>.json) with manifest entry — matches the schedule-trigger pattern of 99-heartbeat",
+    prompts: [
+      {
+        type: "input",
+        name: "id",
+        message: "Workflow id (2-digit prefix, e.g. 21):",
+        default: () => nextN8nWorkflowId(),
+        validate: (v) => {
+          if (!/^\d{2,}$/.test(v))
+            return "2-or-more digits only (e.g. 21, 105)";
+          const dir = resolve(__dirname, "ops/n8n-workflows");
+          const taken = readdirSync(dir).find((f) => f.startsWith(`${v}-`));
+          if (taken) return `prefix ${v} already used by ${taken}`;
+          return true;
+        },
+      },
+      {
+        type: "input",
+        name: "slug",
+        message:
+          "Workflow slug (kebab-case, becomes <NN>-<slug>.json — e.g. weekly-status-snapshot):",
+        validate: (v) => {
+          if (!/^[a-z][a-z0-9-]*[a-z0-9]$/.test(v)) {
+            return "kebab-case only (lowercase letters, digits, hyphens)";
+          }
+          return true;
+        },
+      },
+      {
+        type: "input",
+        name: "humanName",
+        message:
+          'Human-readable name (used in workflow `name` field — e.g. "Weekly status snapshot"):',
+        validate: (v) => v.trim().length > 0 || "required",
+      },
+      {
+        type: "list",
+        name: "owner",
+        message: "Owner cluster (matches existing manifest entries):",
+        choices: [
+          "ops",
+          "agents",
+          "growth",
+          "marketing",
+          "product",
+          "finyk",
+          "devex",
+          "security",
+        ],
+        default: "ops",
+      },
+      {
+        type: "list",
+        name: "status",
+        message: "Initial status (validate-n8n-workflows.mjs accepts these):",
+        choices: ["draft", "experimental", "prod-ready"],
+        default: "draft",
+      },
+      {
+        type: "list",
+        name: "riskTier",
+        message: "Risk tier (P0 highest):",
+        choices: ["P0", "P1", "P2", "P3"],
+        default: "P2",
+      },
+      {
+        type: "input",
+        name: "telegramTopic",
+        message:
+          "Telegram topic (matches an existing TELEGRAM_TOPIC_* env var, e.g. engineering, meta, growth):",
+        default: "engineering",
+        validate: (v) =>
+          /^[a-z][a-z0-9_-]*$/.test(v) ||
+          "lowercase letters, digits, hyphen/underscore",
+      },
+      {
+        type: "list",
+        name: "audienceTier",
+        message: "Audience tier (who reads the resulting Telegram alert):",
+        choices: ["P0", "P1", "P2", "P3"],
+        default: "P2",
+      },
+      {
+        type: "input",
+        name: "notes",
+        message:
+          "One-line description for manifest.notes (≤300 chars; what triggers it, what it sends, where):",
+        validate: (v) => {
+          if (!v.trim()) return "required";
+          if (v.length > 300) return `notes is ${v.length} chars (max 300)`;
+          return true;
+        },
+      },
+    ],
+    actions: () => {
+      const file = "ops/n8n-workflows/{{id}}-{{slug}}.json";
+      return [
+        {
+          type: "add",
+          path: file,
+          templateFile: "plop-templates/new-n8n-workflow/workflow.json.hbs",
+        },
+        { type: "appendN8nWorkflowManifest" },
+        (answers) =>
+          `Next steps: (1) edit ops/n8n-workflows/${answers.id}-${answers.slug}.json — replace the stub Code node with real logic; ` +
+          `(2) declare any \`$env.<NAME>\` references in manifest.requiredEnv (validator fails otherwise); ` +
+          `(3) declare credentials in manifest.requiredCredentials when nodes start using them; ` +
+          `(4) \`pnpm exec node scripts/n8n/validate-n8n-workflows.mjs\` to confirm shape; ` +
+          `(5) follow docs/playbooks/modify-n8n-workflow.md for the rollout flow.`,
       ];
     },
   });
