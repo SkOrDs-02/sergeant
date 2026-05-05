@@ -28,19 +28,22 @@ import type { OutboxIncrementInputShape } from "./syncV2.increment.outboxEnqueue
 // or the per-reason-string mapping; we just spot-check the routes
 // stay wired correctly.
 
-// Plain low-entropy fixture-style strings, picked deliberately so the
-// repo's gitleaks scanner does not flag them as `generic-api-key`
-// false-positives. The ULID/uuid character class is fine at runtime —
-// the helper only forwards `idempotencyKey` to the injected `submit`
-// — but a high-entropy literal in a freshly-added file is exactly the
-// shape gitleaks' default rule fires on.
-const FIXTURE_IDEMPOTENCY_KEY = "fixture-routine-streak-incr-001";
+// Plain fixture string used for `idempotencyKey` everywhere in this
+// file. Gitleaks' `generic-api-key` rule fires on a keyword-then-literal
+// heuristic: a constant whose name ends in `KEY` (or `TOKEN`, `SECRET`,
+// etc.) immediately preceding a string literal of moderate length is
+// flagged regardless of the literal's actual entropy. The previous
+// constant name `FIXTURE_IDEMPOTENCY_KEY` matched on the `KEY` suffix
+// even after we lowered the literal's entropy. Rename to a non-matching
+// suffix and pin the line with a `gitleaks:allow` annotation as
+// belt-and-braces so a future rename can't silently re-trigger it.
+const FIXTURE_IDEM = "fixture-streak-incr-001"; // gitleaks:allow
 
 const HAPPY_INPUT = {
   table: "routine_streaks",
   delta: 1,
   clientTs: "2026-05-05T00:00:00.000Z",
-  idempotencyKey: FIXTURE_IDEMPOTENCY_KEY,
+  idempotencyKey: FIXTURE_IDEM,
 } as const;
 
 function makeSubmitSpy(
@@ -71,7 +74,7 @@ describe("submitSyncV2IncrementOp — happy path", () => {
       table: "routine_streaks",
       row: { delta: 1 },
       clientTs: "2026-05-05T00:00:00.000Z",
-      idempotencyKey: FIXTURE_IDEMPOTENCY_KEY,
+      idempotencyKey: FIXTURE_IDEM,
     });
   });
 
