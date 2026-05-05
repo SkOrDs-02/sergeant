@@ -41,6 +41,10 @@ export {
   markOutboxRejected,
 } from "./syncOpOutboxLifecycle.js";
 export {
+  countOutboxByStatus,
+  type SyncOpOutboxStatusCounts,
+} from "./syncOpOutboxStatus.js";
+export {
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,
   ROUTINE_SPIKE_CLIENT_MIGRATIONS,
