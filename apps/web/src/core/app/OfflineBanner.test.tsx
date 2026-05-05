@@ -6,9 +6,17 @@ import { render, cleanup, act } from "@testing-library/react";
 // driving the hook return values directly is simpler — and keeps the
 // test stable against changes in the cloudSync engine.
 const onlineRef: { value: boolean } = { value: true };
-const syncStatusRef: { dirtyCount: number; queuedCount: number } = {
+const retrySyncV2DeadLetters = vi.fn();
+const syncStatusRef: {
+  dirtyCount: number;
+  queuedCount: number;
+  syncV2DeadLetterCount: number;
+  retrySyncV2DeadLetters: () => Promise<void>;
+} = {
   dirtyCount: 0,
   queuedCount: 0,
+  syncV2DeadLetterCount: 0,
+  retrySyncV2DeadLetters,
 };
 
 vi.mock("@shared/hooks/useOnlineStatus", () => ({
@@ -25,6 +33,8 @@ beforeEach(() => {
   onlineRef.value = true;
   syncStatusRef.dirtyCount = 0;
   syncStatusRef.queuedCount = 0;
+  syncStatusRef.syncV2DeadLetterCount = 0;
+  retrySyncV2DeadLetters.mockReset();
 });
 afterEach(cleanup);
 
@@ -97,5 +107,21 @@ describe("OfflineBanner", () => {
     });
     rerender(<OfflineBanner />);
     expect(queryByTestId("offline-banner")).toBeNull();
+  });
+
+  it("shows a retry action when sync v2 has dead-letter rows", async () => {
+    onlineRef.value = true;
+    syncStatusRef.syncV2DeadLetterCount = 3;
+    const { getByRole, getByTestId } = render(<OfflineBanner />);
+
+    const pill = getByTestId("offline-banner");
+    expect(pill.getAttribute("data-state")).toBe("blocked");
+    expect(pill.textContent).toContain("3");
+
+    await act(async () => {
+      getByRole("button", { name: /retry/i }).click();
+    });
+
+    expect(retrySyncV2DeadLetters).toHaveBeenCalledTimes(1);
   });
 });

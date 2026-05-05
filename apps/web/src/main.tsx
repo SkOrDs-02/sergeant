@@ -25,12 +25,13 @@ import "@shared/lib/adapters/fileImport";
 import "@shared/hooks/useVisualKeyboardInset";
 import { ErrorBoundary } from "./core/ErrorBoundary.jsx";
 import { installChunkLoadRecover } from "./core/lib/chunkReload.js";
-import { initSentry } from "./core/observability/sentry.js";
+import { captureException, initSentry } from "./core/observability/sentry.js";
 import { initWebVitals } from "./core/observability/webVitals.js";
 import { initPostHog } from "./core/observability/posthog.js";
 import { runDemoCleanupOnce } from "./core/onboarding/cleanupDemoData.js";
 import { runDemoSeedFromUrl } from "./core/onboarding/seedDemoData.js";
 import { isCapacitor } from "@sergeant/shared";
+import { bootSyncEngineWriter } from "./core/syncEngine/singleton.js";
 
 const queryClient = createAppQueryClient();
 // Persistent IDB-backed snapshot для warm-start: на холодному старті
@@ -65,6 +66,7 @@ installChunkLoadRecover();
 runDemoSeedFromUrl();
 storageManager.runAll();
 runDemoCleanupOnce();
+void bootSyncEngineWriter({ captureException });
 
 interface ErrorFallbackProps {
   error: Error;

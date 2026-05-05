@@ -15,6 +15,23 @@
         "../../packages/api-client/src/react/index.ts"
       ],
       "@sergeant/api-client/*": ["../../packages/api-client/src/*"],
+      "@sergeant/db-schema": ["../../packages/db-schema/src/index.ts"],
+      "@sergeant/db-schema/sqlite": [
+        "../../packages/db-schema/src/sqlite/index.ts"
+      ],
+      "@sergeant/db-schema/sqlite/migrations": [
+        "../../packages/db-schema/src/sqlite/migrations/index.ts"
+      ],
+      "@sergeant/db-schema/migrate": [
+        "../../packages/db-schema/src/migrate/index.ts"
+      ],
+      "@sergeant/db-schema/migrate/runner": [
+        "../../packages/db-schema/src/migrate/runner.ts"
+      ],
+      "@sergeant/db-schema/migrate/sqlite": [
+        "../../packages/db-schema/src/migrate/adapters/sqlite.ts"
+      ],
+      "@sergeant/db-schema/*": ["../../packages/db-schema/src/*"],
       "@sergeant/finyk-domain": ["../../packages/finyk-domain/src/index.ts"],
       "@sergeant/finyk-domain/*": ["../../packages/finyk-domain/src/*"],
       "@sergeant/fizruk-domain": ["../../packages/fizruk-domain/src/index.ts"],
