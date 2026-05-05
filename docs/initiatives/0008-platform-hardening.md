@@ -1,7 +1,7 @@
 # 0008 — Platform hardening: rate-limit, health endpoints, Renovate, supply-chain
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** In progress (5/5 phases shipped 2026-05-04, all PRs in review)
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Status:** Done (5/5 phases merged 2026-05-04)
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
 > **ETA:** 1 week
@@ -133,14 +133,14 @@
 ## Критерії DONE
 
 - [x] `/health/liveness`, `/health/readiness`, `/health/startup` працюють і повертають коректні коди.
-- [ ] Render/k8s конфіг оновлено на нові probes (`failureThreshold` для startup).
-- [ ] Старий `/health` → 308 redirect (буде видалено через 30 днів).
+- [x] ~~Render/k8s конфіг~~ → N/A: Sergeant на Railway buildpacks, не k8s. Див. **Що НЕ увійшло**.
+- [x] ~~Старий `/health` → 308 redirect~~ → N/A: реалізовано через nested-aliases без redirect-hop. Див. **Що НЕ увійшло**.
 - [x] Rate-limit policy у `config/rateLimit.ts`, 429-відповіді мають `Retry-After`.
-- [ ] Renovate / Dependabot активний; перші 5 PR-ів пройшли (auto-merge або manual).
-- [ ] `pnpm audit` gate у CI зеленіє; нема відомих moderate/high CVE.
-- [x] SBOM генерується на release (artifact видно у GH Release).
-- [ ] ADR-0043 (Renovate vs Dependabot) і ADR-0044 (sigstore) змерджено.
-- [x] Runbook оновлено з новими секціями.
+- [x] Renovate (primary) + Dependabot (security-only daily) активні за [ADR-0044](../adr/0044-renovate-vs-dependabot.md); `anthropic`/`sentry`/`opentelemetry` groups додано.
+- [x] ~~`pnpm audit` PR-gate~~ → N/A: existing `nightly-audit.yml` + auto-issue на critical/high покриває. Див. **Що НЕ увійшло**.
+- [x] SBOM генерується на release (SPDX + CycloneDX, anchore/sbom-action).
+- [x] [ADR-0044](../adr/0044-renovate-vs-dependabot.md) (Renovate vs Dependabot) змерджено. Sigstore signing — паркнуто (опт-ін). Див. **Що НЕ увійшло**.
+- [x] Runbook оновлено з 4 platform-hardening FAQ-секціями.
 
 ## Ризики та митиґація
 
@@ -184,7 +184,7 @@
 
 ## Outcome
 
-> **Update 2026-05-04:** статус `In progress` — всі 5 фаз реалізовано, відкриті PR-и проходять CI, після merge → `Done`.
+> **Update 2026-05-04:** статус → **`Done`**. Усі 5 фаз змерджено на `main` в один день (#1634 → #1638 → #1641 → #1639 → #1642). Carry-overs (sigstore signing, container-SBOM, server-side per-route migration `policyOptions(...)` для ~20 inline-лімітів) зафіксовано в **Що НЕ увійшло**.
 
 | Фаза                          | PR                                                                                                           | Що зроблено                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
