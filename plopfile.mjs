@@ -761,6 +761,99 @@ export default function (plop) {
     },
   });
 
+  // ── new-console-specialist ─────────────────────────────────────────────────
+  plop.setGenerator("new-console-specialist", {
+    description:
+      "New tools/console specialist agent (tools/console/src/agents/<name>.ts + .test.ts) — mirrors the ops.ts / marketing.ts pattern (system prompt + empty tools + runAgentLoop)",
+    prompts: [
+      {
+        type: "input",
+        name: "name",
+        message:
+          "Specialist name (kebab-case, becomes <name>.ts — e.g. analytics, pricing):",
+        validate: (v) => {
+          if (!/^[a-z][a-z0-9-]*[a-z0-9]$/.test(v)) {
+            return "kebab-case only (lowercase letters, digits, hyphens)";
+          }
+          const filePath = resolve(
+            __dirname,
+            "tools/console/src/agents",
+            `${v}.ts`,
+          );
+          if (existsSync(filePath)) {
+            return `tools/console/src/agents/${v}.ts already exists`;
+          }
+          return true;
+        },
+      },
+      {
+        type: "input",
+        name: "titleName",
+        message:
+          'Title-case name for the system prompt (e.g. "Analytics", "Pricing"):',
+        validate: (v) => v.trim().length > 0 || "required",
+      },
+      {
+        type: "input",
+        name: "role",
+        message:
+          'Short role descriptor for the system prompt (e.g. "data-analytics", "pricing-strategy"):',
+        validate: (v) => v.trim().length > 0 || "required",
+      },
+      {
+        type: "input",
+        name: "roleSummary",
+        message:
+          "One-line ROLE summary for the system prompt (≤200 chars; what this agent does):",
+        validate: (v) => {
+          if (!v.trim()) return "required";
+          if (v.length > 200)
+            return `roleSummary is ${v.length} chars (max 200)`;
+          return true;
+        },
+      },
+      {
+        type: "input",
+        name: "routeCommand",
+        message:
+          "Telegram command prefix (without slash; defaults to specialist name):",
+        default: (answers) => answers.name,
+        validate: (v) =>
+          /^[a-z][a-z0-9-]*$/.test(v) ||
+          "lowercase letters, digits, hyphens only",
+      },
+    ],
+    actions: (data) => {
+      // Convert "snake-case-name" → "SnakeCaseName" for the exported function
+      // name `run<Pascal>Agent`. Done here (not via a Handlebars helper) so
+      // the same value is available for both .ts and .test.ts templates.
+      data.pascalName = data.name
+        .split("-")
+        .map((p) => p[0].toUpperCase() + p.slice(1))
+        .join("");
+      const base = "tools/console/src/agents";
+      return [
+        {
+          type: "add",
+          path: `${base}/{{name}}.ts`,
+          templateFile: "plop-templates/new-console-specialist/agent.ts.hbs",
+        },
+        {
+          type: "add",
+          path: `${base}/{{name}}.test.ts`,
+          templateFile:
+            "plop-templates/new-console-specialist/agent.test.ts.hbs",
+        },
+        (answers) =>
+          `Next steps: (1) edit tools/console/src/agents/${answers.name}.ts — replace the empty \`tools\` array and \`executeTool()\` stub with real surfaces; ` +
+          `(2) wire \`run${answers.pascalName}Agent\` into \`tools/console/src/agents/router.ts\` (extend AgentType + parseCommand) and into \`tools/console/src/index.ts\` (dispatch switch); ` +
+          `(3) extend \`tools/console/src/agents/router.test.ts\` with a /\`${answers.routeCommand}\` route assertion; ` +
+          `(4) \`pnpm --filter @sergeant/console test typecheck lint\` to verify; ` +
+          `(5) update docs/agents/specialists-mapping.md if this specialist needs a governance skill mapping.`,
+      ];
+    },
+  });
+
   // ── adr ────────────────────────────────────────────────────────────────────
   plop.setGenerator("adr", {
     description:

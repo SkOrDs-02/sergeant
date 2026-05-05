@@ -1,0 +1,18 @@
+/**
+ * Smoke test for the generated `{{name}}` console specialist agent.
+ *
+ * Asserts the public surface (function exported, signature matches the
+ * other agents — `run<Name>Agent(client, userMessage): Promise<string>`).
+ * Behavior tests come once the system prompt and tool set stabilize.
+ */
+
+import { describe, it, expect } from "vitest";
+import { run{{pascalName}}Agent } from "./{{name}}.js";
+
+describe("run{{pascalName}}Agent", () => {
+  it("is exported as an async function", () => {
+    expect(typeof run{{pascalName}}Agent).toBe("function");
+    // Must accept (client, userMessage) — i.e. arity 2.
+    expect(run{{pascalName}}Agent.length).toBe(2);
+  });
+});
