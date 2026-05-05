@@ -18,6 +18,7 @@
 
 import path from "node:path";
 import { env } from "../../env.js";
+import { getOpenclawGithubAuth } from "./github-auth.js";
 
 // ─────────────────────────────────────────────────────────────────────────
 // commit_to_strategy_doc — open a GitHub PR with new/updated file in docs/strategy/
@@ -88,13 +89,14 @@ export async function commitToStrategyDoc(
   input: CommitStrategyDocInput,
 ): Promise<CommitStrategyDocOutput> {
   const filePath = assertStrategyDocPath(input.path);
-  const token = env.OPENCLAW_GITHUB_PAT;
-  if (!token) {
+  const auth = await getOpenclawGithubAuth();
+  if (!auth) {
     return {
       status: "not_configured",
-      note: "OPENCLAW_GITHUB_PAT is not configured; PR not opened.",
+      note: "OpenClaw GitHub auth not configured (neither GitHub App nor PAT); PR not opened.",
     };
   }
+  const token = auth.token;
   const repo = input.repo ?? env.OPENCLAW_GITHUB_REPO;
   const baseBranch = env.OPENCLAW_GITHUB_BASE_BRANCH;
   const headers = {
@@ -233,13 +235,14 @@ export interface CreateGithubIssueOutput {
 export async function createGithubIssue(
   input: CreateGithubIssueInput,
 ): Promise<CreateGithubIssueOutput> {
-  const token = env.OPENCLAW_GITHUB_PAT;
-  if (!token) {
+  const auth = await getOpenclawGithubAuth();
+  if (!auth) {
     return {
       status: "not_configured",
-      note: "OPENCLAW_GITHUB_PAT is not configured; issue not opened.",
+      note: "OpenClaw GitHub auth not configured (neither GitHub App nor PAT); issue not opened.",
     };
   }
+  const token = auth.token;
   const repo = input.repo ?? env.OPENCLAW_GITHUB_REPO;
   const res = await fetch(`https://api.github.com/repos/${repo}/issues`, {
     method: "POST",

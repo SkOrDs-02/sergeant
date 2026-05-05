@@ -1,6 +1,6 @@
 # Web deep-dive — Overview
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-05-31.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active (rounds 1–12 tracker; new follow-ups land as numbered round updates inline).
 >
 > **Update 2026-05-04 (round 4):** Tier 1 закрито у foundation-формі — items #8, #9. Roadmap-таблиця нижче помічена done з PR-лінками.
@@ -201,6 +201,12 @@
 - **Realistic 6-month target**: ~7–8 PR-ів (фокус на mandatory + Phase 1 i18n + 1–2 додаткових mutation-target-модулі) — практично співпадає з mandatory-числом, бо #15 на `apps/web` найімовірніше з'їсть найбільше часу.
 
 Усі цифри — теплі estimates із поточних code-метрик; реальна кількість може варіюватися ±2 PR через discovery під час самого rollout-а (наприклад, виявлені під час `noUncheckedIndexedAccess` test-fixup-и часто розділяються на 2 PR через size-limit policy).
+
+> **Round-13 PR-розбивка:** оці ~7 mandatory PR-ів тепер розписані
+> по AC і LOC у [`./round-13-burndown-sprint.md`](./round-13-burndown-sprint.md)
+> (структурований sprint-doc у стилі §7a Sprint 6 cleanup batch з
+> [`docs/launch/ftux-sprint-plan.md`](../../launch/ftux-sprint-plan.md)) —
+> аби round-N follow-up-и не залишалися лише narrative-ом цієї §11.5 таблиці.
 
 ## Один найбільш недооцінений проєктом item
 

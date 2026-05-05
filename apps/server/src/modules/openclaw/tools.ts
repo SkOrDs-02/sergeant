@@ -20,6 +20,7 @@ import path from "node:path";
 import type { Pool } from "pg";
 import { logger } from "../../obs/logger.js";
 import { env } from "../../env.js";
+import { getOpenclawGithubAuth } from "./github-auth.js";
 import { OpenClawPathTraversalError, safeJoin } from "./safeJoin.js";
 import {
   QUERY_APP_DB_TABLE_ALLOWLIST,
@@ -344,12 +345,13 @@ export interface ReadGithubOutput {
 export async function readGithub(
   input: ReadGithubInput,
 ): Promise<ReadGithubOutput> {
-  const token = env.OPENCLAW_GITHUB_PAT;
-  if (!token) {
+  const auth = await getOpenclawGithubAuth();
+  if (!auth) {
     throw new Error(
-      "OPENCLAW_GITHUB_PAT is not configured; read_github disabled",
+      "OpenClaw GitHub auth not configured (neither GitHub App nor PAT); read_github disabled",
     );
   }
+  const token = auth.token;
   const repo = input.repo ?? env.OPENCLAW_GITHUB_REPO;
 
   let url: string;
@@ -717,8 +719,10 @@ export async function getGithubReleases(
   const limit = Math.max(1, Math.min(20, input.limit ?? 5));
   const repo = input.repo ?? env.OPENCLAW_GITHUB_REPO;
   // GitHub allows unauthenticated access for public repo releases (60 RPH);
-  // PAT bumps the rate to 5000 RPH and is required for private repos.
-  const token = env.OPENCLAW_GITHUB_PAT;
+  // any auth (PAT or App-installation token) bumps the rate to 5000 RPH and
+  // is required for private repos.
+  const auth = await getOpenclawGithubAuth();
+  const token = auth?.token ?? "";
 
   const res = await fetch(
     `https://api.github.com/repos/${repo}/releases?per_page=${limit}`,
@@ -790,14 +794,16 @@ export async function recordDecision(
 ): Promise<RecordDecisionResult> {
   const decisionId = await insertDecision(pool, input);
 
-  const token = env.OPENCLAW_GITHUB_PAT;
-  if (!token) {
+  const auth = await getOpenclawGithubAuth();
+  if (!auth) {
     return {
       decisionId,
       prUrl: null,
-      prError: "OPENCLAW_GITHUB_PAT not configured; PR not opened",
+      prError:
+        "OpenClaw GitHub auth not configured (neither GitHub App nor PAT); PR not opened",
     };
   }
+  const token = auth.token;
 
   try {
     const prUrl = await openDecisionPr(token, {

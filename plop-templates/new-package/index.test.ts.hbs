@@ -1,0 +1,9 @@
+import { describe, it, expect } from "vitest";
+import { {{camelCase slug}}PackageVersion } from "./index.js";
+
+describe("@sergeant/{{slug}}", () => {
+  it("exports a non-empty version string", () => {
+    expect(typeof {{camelCase slug}}PackageVersion).toBe("string");
+    expect({{camelCase slug}}PackageVersion.length).toBeGreaterThan(0);
+  });
+});

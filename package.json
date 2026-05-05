@@ -94,6 +94,7 @@
     "openapi-typescript": "^7",
     "plop": "^4.0.5",
     "prettier": "^3.8.2",
+    "tsc-files": "^1.1.4",
     "tsx": "^4.21.0",
     "turbo": "^2.9.8",
     "typescript": "^6.0.3",
@@ -103,6 +104,9 @@
     "*.{js,jsx,ts,tsx,mjs,cjs}": [
       "eslint --fix --max-warnings=0",
       "prettier --write"
+    ],
+    "*.{ts,tsx}": [
+      "node scripts/staged-typecheck.mjs"
     ],
     "*.md": [
       "node scripts/docs/bump-last-validated.mjs",

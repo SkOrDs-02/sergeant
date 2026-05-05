@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/playbooks/README.md](./docs/playbooks/README.md).
@@ -91,8 +91,21 @@ Playbooks - це канонічні покрокові рецепти викон
 
 - Conventional Commits обов'язкові.
 - Scope має описувати touched surface: `web`, `server`, `mobile`, `console`, `docs`, `agents`, `ops`, `shared`, `api-client`.
-- Не використовуй `--no-verify`.
+- Не використовуй `--no-verify` (Hard Rule #7).
 - Не force-push у `main`/`master`.
+
+### Pre-commit hooks
+
+Husky `pre-commit` запускає `lint-staged` з трьома пайплайнами для staged-файлів:
+
+| Pattern                      | Команди                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| `*.{js,jsx,ts,tsx,mjs,cjs}`  | `eslint --fix --max-warnings=0` → `prettier --write`                     |
+| `*.{ts,tsx}`                 | `node scripts/staged-typecheck.mjs` (швидкий `tsc --noEmit` per-project) |
+| `*.md`                       | `node scripts/docs/bump-last-validated.mjs` → `prettier --write`         |
+| `*.{json,css,html,yml,yaml}` | `prettier --write`                                                       |
+
+Скрипт `scripts/staged-typecheck.mjs` групує staged TS/TSX за найближчим `tsconfig.json` (apps/web, apps/server, packages/\*…) і викликає `tsc-files --noEmit --skipLibCheck` під cwd кожного sub-project — це уникнення повного `pnpm typecheck` (16 турбо-task-ів) на кожен коміт. На гарячому кеші проходить за 3–8 сек на 10–20 staged файлів. На холодному (після `git pull` зі змінами в `node_modules` або `tsconfig`) — 15–30 сек. Якщо typecheck падає на staged-файлі, виправ помилку — `--no-verify` залишається забороненим.
 
 Перед відкриттям PR:
 
@@ -143,6 +156,7 @@ pnpm gen migration      # apps/server/src/migrations/<NNN>_<name>.sql + .down.sq
 pnpm gen rq-hook        # apps/web/src/modules/<module>/hooks/use<Name>.ts
 pnpm gen hubchat-tool   # server toolDef stub + web action stub
 pnpm gen endpoint       # server handler + test + api-client stub
+pnpm gen new-package    # packages/<slug>/{src,package.json,tsconfig.json,vitest.config.ts,README.md} + CODEOWNERS entry
 ```
 
 `new-skill` і `new-playbook` за замовчуванням генерують UA-текст (Hard Rule #15). Якщо матеріал свідомо англомовний (зовнішній/user-facing), вибери `lang: en` у промпті — генератор додасть `lang: en` у frontmatter і linter візьме файл у allowlist.

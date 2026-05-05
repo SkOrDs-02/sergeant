@@ -50,14 +50,13 @@ export const env = {
   MIN_PASSWORD_LENGTH: parseIntEnv("MIN_PASSWORD_LENGTH", 10),
 
   /**
-   * Max password length — hard-capped at 72 because bcrypt **silently** truncates
-   * input beyond 72 bytes. Allowing >72 advertises false security: passwords
-   * `"a".repeat(72) + "X"` and `"a".repeat(72) + "Y"` produce identical hashes
-   * and authenticate each other. We clamp the env-supplied value so an operator
-   * cannot accidentally raise the cap; the proper fix (sha256 pre-hash or
-   * Argon2id migration) is tracked in ADR-0042.
+   * Max password length — hard-capped at 256 as DoS-defence (bound per-request
+   * scrypt work). Better Auth uses scrypt under the hood (no 72-byte limit), so
+   * the cap is operational, not cryptographic. We clamp the env-supplied value
+   * with `Math.min(256, …)` as defence-in-depth alongside the zod `.max(256)` in
+   * `apps/server/src/env/env.ts`. See ADR-0042.
    */
-  MAX_PASSWORD_LENGTH: Math.min(72, parseIntEnv("MAX_PASSWORD_LENGTH", 72)),
+  MAX_PASSWORD_LENGTH: Math.min(256, parseIntEnv("MAX_PASSWORD_LENGTH", 256)),
 
   /** PG pool size */
   PG_POOL_SIZE: parseIntEnv("PG_POOL_SIZE", 10),
@@ -459,9 +458,59 @@ export const env = {
    * у `docs/decisions/`. Якщо не задано — `record_decision` пише у
    * `openclaw_decisions` з `git_pr_url=NULL` і логує warn — manual retry
    * через admin endpoint у Phase 2.
+   *
+   * **Phasing out** (stack-pulse-2026-05 PR-06). Phase 1 (this PR) keeps
+   * PAT as the default auth path; the `Git_PAT` fallback exists only so
+   * we don't break the Devin-VM environment mid-rollout. Phase 2
+   * (follow-up PR after a week of staging soak) flips
+   * `OPENCLAW_USE_GITHUB_APP=true` by default and removes both
+   * `OPENCLAW_GITHUB_PAT` and the `Git_PAT` fallback. Until then, do
+   * NOT add new call sites that read `env.OPENCLAW_GITHUB_PAT` directly
+   * — go through `getOpenclawGithubAuth()` in
+   * `apps/server/src/modules/openclaw/github-auth.ts`.
    */
   OPENCLAW_GITHUB_PAT:
     process.env.OPENCLAW_GITHUB_PAT || process.env.Git_PAT || "",
+
+  /**
+   * Feature flag for the GitHub App auth-flow (stack-pulse-2026-05
+   * PR-06, Phase 1). When `true` AND all three `OPENCLAW_GITHUB_APP_*`
+   * env-vars are populated, OpenClaw mints short-lived (1h)
+   * installation-tokens via `apps/server/src/modules/openclaw/github-auth.ts`
+   * instead of using the long-lived PAT. Default `false` until the
+   * Phase 2 PR flips it; that follow-up will also delete the PAT
+   * fallback above and register the «no PAT in production» hard rule.
+   */
+  OPENCLAW_USE_GITHUB_APP: parseBoolEnv("OPENCLAW_USE_GITHUB_APP", false),
+
+  /**
+   * GitHub App ID (numeric, e.g. `123456`). Stored as a string because
+   * GitHub returns it as a string in the App's «App settings» page and
+   * we never do arithmetic on it. Together with the private key and
+   * installation id below, this lets us mint installation-tokens.
+   */
+  OPENCLAW_GITHUB_APP_ID: process.env.OPENCLAW_GITHUB_APP_ID || "",
+
+  /**
+   * GitHub App private key (PEM). Some secret-stores (Vercel, Railway,
+   * 1Password CLI) strip the actual newlines and replace them with
+   * `\n` literals when injecting the value as a single-line env-var;
+   * `github-auth.normalizePrivateKey` repairs that on the way in so
+   * the key parses cleanly with `crypto.createSign('RSA-SHA256')`.
+   *
+   * Rotation runbook: `docs/playbooks/rotate-openclaw-credentials.md`.
+   */
+  OPENCLAW_GITHUB_APP_PRIVATE_KEY:
+    process.env.OPENCLAW_GITHUB_APP_PRIVATE_KEY || "",
+
+  /**
+   * GitHub App installation id (numeric). One App can be installed on
+   * multiple orgs / repos; the installation id picks which one we mint
+   * tokens for. Sergeant pins it explicitly so a misconfigured App
+   * (e.g. installed twice) can't accidentally widen blast radius.
+   */
+  OPENCLAW_GITHUB_APP_INSTALLATION_ID:
+    process.env.OPENCLAW_GITHUB_APP_INSTALLATION_ID || "",
 
   /**
    * Repo target для decision PR-ів. Default — основний Sergeant repo.

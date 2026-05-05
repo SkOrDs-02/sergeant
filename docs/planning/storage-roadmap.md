@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-04 by Devin — **Stage 1 COMPLETE; Stage 4 Finyk Mono mirror in CI; Stage 5 op-log v2 hardening in flight.** Stage 1: all 8/8 PRs landed (PR #008 `ff217246`, PR #010 [#1543](https://github.com/Skords-01/Sergeant/pull/1543), PR #013 via 4 sub-PRs). Stage 4 Fizruk: 5/5 PRs merged (PR #027–#030 + #029a). Stage 4 Nutrition: PR #031 / #032 / #033 LANDED ([#1574](https://github.com/Skords-01/Sergeant/pull/1574)), PR #034 LANDED ([#1636](https://github.com/Skords-01/Sergeant/pull/1636)). Stage 4 Finyk: PR #035 LANDED ([#1667](https://github.com/Skords-01/Sergeant/pull/1667) — schema + apply-fns), PR #036 LANDED ([#1680](https://github.com/Skords-01/Sergeant/pull/1680) — dual-write web + mobile), PR #037 LANDED (`c89870c6` — read-overlay web + mobile under `feature.finyk.sqlite_v2.read_sqlite`, default off), PR #038 IN CI (Mono cache mirror у `finyk_mono_*` SQLite таблицях під `feature.finyk.sqlite_v2.mono_mirror`, default off). Stage 5: PR #040 LANDED (`ec1f3820` — persistent op-log retry policy у SQLite), PR #041 IN CI ([#1721](https://github.com/Skords-01/Sergeant/pull/1721) — SSE pull stream), PR #043 LANDED ([#1734](https://github.com/Skords-01/Sergeant/pull/1734) — G-set CRDT для `nutrition_meals` із tombstone інваріантом + 3 інтеграційні тести), PR #043a LANDED ([#1739](https://github.com/Skords-01/Sergeant/pull/1739) — tombstone-resurrection guard для routine + 5 fizruk apply-функцій + 6 інтеграційних кейсів), PR #043b LANDED ([#1743](https://github.com/Skords-01/Sergeant/pull/1743) — той самий guard для 3 nutrition non-meals apply-функцій + 2 finyk хелперів, які покривають усі 10 finyk soft-delete таблиць + 7 інтеграційних кейсів; разом із PR #043a закриває per-table TODO з PR #043), PR #043c LANDED ([#1754](https://github.com/Skords-01/Sergeant/pull/1754) — typed RejectReason allowlist для syncV2 apply-шляху: 45+4 літерали в exported `as const` масивах + regression-тест пінить cardinality budget), PR #048 LANDED ([#1737](https://github.com/Skords-01/Sergeant/pull/1737) — RED-метрики `sync_op_log_apply_total` / `sync_op_log_pull_lag_ms` / `sync_op_log_pull_queue_depth` + 4 нові Grafana панелі в `sync.json`). **Stage 6 ops:** PR #049 docs portion LANDED ([#1757](https://github.com/Skords-01/Sergeant/pull/1757) — Railway Postgres backup/restore runbook у `docs/runbooks/database-backup-restore.md` із pg_dump/pg_restore-командами, sync-aware row-level restore матрицею, smoke-test SQL); weekly-verify CI deferred до PR #049b (потребує `RAILWAY_TOKEN`). PR #042 PN-counter для `routine_streaks` розгорнуто трифазно: PR #042a LANDED ([#1769](https://github.com/Skords-01/Sergeant/pull/1769) — protocol-only scaffolding: розширений `op` CHECK constraint, zod-енам, engine-level reject `op_not_supported`), PR #042b LANDED ([#1776](https://github.com/Skords-01/Sergeant/pull/1776) — `applyRoutineStreaks` opt-in у `INCREMENT_OP_SUPPORTED_TABLES` + atomic `UPDATE … SET current_streak = current_streak + delta` із `GREATEST(0, …)` clamping та monotonic `longest_streak` оновленням, |delta| ≤ 1000, 6 нових інтеграційних тестів), PR #042c LANDED ([#1787](https://github.com/Skords-01/Sergeant/pull/1787) — typed client-side `buildSyncV2IncrementOp` helper в api-client, дзеркалить серверний engine-gate + apply-fn validation з тими самими reject reasons (`op_not_supported` / `missing_delta` / `invalid_delta`); 25 нових unit-тестів + regression-locks на allowlist length і magnitude bound). PR #044 LANDED ([#1780](https://github.com/Skords-01/Sergeant/pull/1780) — typed module-level conflict store + `useFinykManualExpenseConflicts` hook + `FinykManualExpenseConflictBanner` з UA plural-формами; 18 тестів). Stage 0: PR #003 LANDED ([#1497](https://github.com/Skords-01/Sergeant/pull/1497)). Boot-wiring follow-up для `register{Routine,Fizruk,Nutrition}DualWriteContext` ще не залендили. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-04 by Devin — **Stage 1 COMPLETE; Stage 4 Finyk Mono mirror in CI; Stage 5 op-log v2 hardening in flight.** Stage 1: all 8/8 PRs landed (PR #008 `ff217246`, PR #010 [#1543](https://github.com/Skords-01/Sergeant/pull/1543), PR #013 via 4 sub-PRs). Stage 4 Fizruk: 5/5 PRs merged (PR #027–#030 + #029a). Stage 4 Nutrition: PR #031 / #032 / #033 LANDED ([#1574](https://github.com/Skords-01/Sergeant/pull/1574)), PR #034 LANDED ([#1636](https://github.com/Skords-01/Sergeant/pull/1636)). Stage 4 Finyk: PR #035 LANDED ([#1667](https://github.com/Skords-01/Sergeant/pull/1667) — schema + apply-fns), PR #036 LANDED ([#1680](https://github.com/Skords-01/Sergeant/pull/1680) — dual-write web + mobile), PR #037 LANDED (`c89870c6` — read-overlay web + mobile under `feature.finyk.sqlite_v2.read_sqlite`, default off), PR #038 IN CI (Mono cache mirror у `finyk_mono_*` SQLite таблицях під `feature.finyk.sqlite_v2.mono_mirror`, default off). Stage 5: PR #040 LANDED (`ec1f3820` — persistent op-log retry policy у SQLite), PR #041 IN CI ([#1721](https://github.com/Skords-01/Sergeant/pull/1721) — SSE pull stream), PR #043 LANDED ([#1734](https://github.com/Skords-01/Sergeant/pull/1734) — G-set CRDT для `nutrition_meals` із tombstone інваріантом + 3 інтеграційні тести), PR #043a LANDED ([#1739](https://github.com/Skords-01/Sergeant/pull/1739) — tombstone-resurrection guard для routine + 5 fizruk apply-функцій + 6 інтеграційних кейсів), PR #043b LANDED ([#1743](https://github.com/Skords-01/Sergeant/pull/1743) — той самий guard для 3 nutrition non-meals apply-функцій + 2 finyk хелперів, які покривають усі 10 finyk soft-delete таблиць + 7 інтеграційних кейсів; разом із PR #043a закриває per-table TODO з PR #043), PR #043c LANDED ([#1754](https://github.com/Skords-01/Sergeant/pull/1754) — typed RejectReason allowlist для syncV2 apply-шляху: 45+4 літерали в exported `as const` масивах + regression-тест пінить cardinality budget), PR #048 LANDED ([#1737](https://github.com/Skords-01/Sergeant/pull/1737) — RED-метрики `sync_op_log_apply_total` / `sync_op_log_pull_lag_ms` / `sync_op_log_pull_queue_depth` + 4 нові Grafana панелі в `sync.json`). **Stage 6 ops:** PR #049 docs portion LANDED ([#1757](https://github.com/Skords-01/Sergeant/pull/1757) — Railway Postgres backup/restore runbook у `docs/runbooks/database-backup-restore.md` із pg_dump/pg_restore-командами, sync-aware row-level restore матрицею, smoke-test SQL); weekly-verify CI deferred до PR #049b (потребує `RAILWAY_TOKEN`). PR #042 PN-counter для `routine_streaks` розгорнуто трифазно: PR #042a LANDED ([#1769](https://github.com/Skords-01/Sergeant/pull/1769) — protocol-only scaffolding: розширений `op` CHECK constraint, zod-енам, engine-level reject `op_not_supported`), PR #042b LANDED ([#1776](https://github.com/Skords-01/Sergeant/pull/1776) — `applyRoutineStreaks` opt-in у `INCREMENT_OP_SUPPORTED_TABLES` + atomic `UPDATE … SET current_streak = current_streak + delta` із `GREATEST(0, …)` clamping та monotonic `longest_streak` оновленням, |delta| ≤ 1000, 6 нових інтеграційних тестів), PR #042c LANDED ([#1787](https://github.com/Skords-01/Sergeant/pull/1787) — typed client-side `buildSyncV2IncrementOp` helper в api-client, дзеркалить серверний engine-gate + apply-fn validation з тими самими reject reasons (`op_not_supported` / `missing_delta` / `invalid_delta`); 25 нових unit-тестів + regression-locks на allowlist length і magnitude bound), PR #042d-prep LANDED ([#1804](https://github.com/Skords-01/Sergeant/pull/1804) — `003_sync_op_outbox_increment_op.sql` міграція релаксує SPIKE-era `CHECK (op IN ('insert','update','delete'))` через 12-step ALTER recipe (PR #040 рецепт), додає `'increment'` літерал до `SYNC_OP_OUTBOX_OPS` constants tuple — pinned snapshot-тестом), PR #042d-builder LANDED ([#1810](https://github.com/Skords-01/Sergeant/pull/1810) — durable `enqueueOutboxIncrement` helper у `db-schema/sqlite`: SELECT-then-`INSERT OR IGNORE` на `idempotency_key`, повертає `{ ok, id, inserted }` для inserted/deduped телеметрії, не торкається retry-state колонок на replay; 6 нових інтеграційних тестів проти `:memory:` SQLite із повним SPIKE+#040+#042d-prep migration stack-ом), PR #042e-mapping LANDED ([#1827](https://github.com/Skords-01/Sergeant/pull/1827) — typed `mapSyncV2IncrementOpToOutboxInput` адаптер в api-client + регресія-тест, що пінить `SyncV2PushOp ↔ OutboxIncrementInput` field-name mapping byte-aligned: structural mirror `OutboxIncrementInputShape` (api-client deliberately НЕ depend-ить на db-schema), Object.keys lock на 4-key shape `{ table, row, clientTs, idempotencyKey }`, two-way assignability check, runtime guard на `op !== 'increment'`; залишає тільки sync-engine writer wiring у PR #042e). PR #044 LANDED ([#1780](https://github.com/Skords-01/Sergeant/pull/1780) — typed module-level conflict store + `useFinykManualExpenseConflicts` hook + `FinykManualExpenseConflictBanner` з UA plural-формами; 18 тестів). Stage 0: PR #003 LANDED ([#1497](https://github.com/Skords-01/Sergeant/pull/1497)). Boot-wiring follow-up для `register{Routine,Fizruk,Nutrition}DualWriteContext` ще не залендили. **Next review:** 2026-08-01.
 > **Status:** Active
 
 > Зріз: 2026-05-02. Базується на storage-аудиті + поточний стек:
@@ -1290,11 +1290,133 @@ recreate indexes`) у `packages/db-schema/src/sqlite/migrations/index.ts`,
   regression-locks на allowlist length (1) і magnitude bound (1000),
   early-exit ordering tripwires. Locally: typecheck + lint + 82/82
   api-client тестів зелені.
-- **Risk.** None — public surface без callsite-ів. Перший consumer
-  буде client-side push-loop refactor у наступній PR-і Stage 5 серії,
-  яка зашиє outbox-адаптер для PN-counter-tier таблиць.
+- **Risk.** None — public surface без callsite-ів. Перший consumer —
+  client-side push-loop refactor: `enqueueOutboxIncrement` helper
+  приземлений у PR #042d-builder ([#1810](https://github.com/Skords-01/Sergeant/pull/1810)),
+  адаптер `mapSyncV2IncrementOpToOutboxInput` між envelope-shape-ом
+  цього builder-а і db-schema enqueue-input-ом — у PR #042e-mapping
+  ([#TBD](https://github.com/Skords-01/Sergeant/pulls)),
+  інтеграція в реальний sync-engine writer лишається для PR #042e.
 - **Dep.** PR #042a (engine-gate reasons), PR #042b (apply-fn allowlist
   - magnitude bound).
+
+#### **PR #042d-prep — `feat(db-schema): admit op='increment' in client-side sync_op_outbox CHECK`** ✅ LANDED ([#1804](https://github.com/Skords-01/Sergeant/pull/1804))
+
+- Scope. Підготовче розширення SQLite-схеми `sync_op_outbox` так,
+  щоб PN-counter `op='increment'` envelope-и (PR #042c builder)
+  могли durably сидіти в клієнтському outbox поряд із LWW write-ами.
+  Bundled-міграція `003_sync_op_outbox_increment_op.sql` у
+  `packages/db-schema/src/sqlite/migrations/index.ts` + розширений
+  `SYNC_OP_OUTBOX_OPS` `as const`-tuple у `routine.ts`.
+- **Done (2026-05-04).** SQLite не вміє релаксувати `CHECK` in-place,
+  тому міграція повторює "12-step ALTER" recipe із
+  `002_sync_op_outbox_retry.sql` (PR #040): RENAME → CREATE з релаксованим
+  `CHECK (op IN ('insert','update','delete','increment'))` → INSERT…SELECT
+  всі колонки verbatim → DROP легасі-таблицю → CREATE 3 індекси, які
+  втратили посилання після RENAME (`sync_op_outbox_idem_uniq_lite`,
+  `sync_op_outbox_pending_idx_lite`, `sync_op_outbox_pending_due_idx_lite`).
+  Виконується всередині per-migration `BEGIN/COMMIT` із
+  `applyMigration` — partial failure залишає SPIKE-shape незачепленою.
+  Snapshot-тест у `sqlite-routine-snapshot.test.ts` пінить tuple-shape
+  `SYNC_OP_OUTBOX_OPS` byte-for-byte; integration-тест у
+  `sqlite-routine-spike-migrations.test.ts` ганяє повний SPIKE+#040+#042d-prep
+  стек проти `:memory:` engine-у і round-trip-ить `op='increment'` ряд.
+- **Risk.** Low — лише розширює CHECK allowlist; всі існуючі ряди
+  лишаються валідними. Pre-existing CI failures на main
+  (duplicate migration 041 від #1784/#1786 + lockfile drift від #1795)
+  розблоковані окремими PR-ами #1805/#1806 і не повʼязані з цим PR-ом.
+- **Dep.** PR #040 (12-step ALTER рецепт + retry-state колонки), PR #042a
+  (серверне `'increment'` literal-перше landing).
+
+#### **PR #042d-builder — `feat(db-schema): add enqueueOutboxIncrement outbox writer`** ✅ LANDED ([#1810](https://github.com/Skords-01/Sergeant/pull/1810))
+
+- Scope. Durable enqueue-хелпер для PN-counter `op='increment'`
+  envelope-ів у клієнтський `sync_op_outbox`. Pair-ить із
+  `buildSyncV2IncrementOp` (api-client, PR #042c) — caller-и, які
+  мають validated envelope, flatten-ять його у `OutboxIncrementInput`
+  і викликають хелпер для durable-write-у.
+- **Done (2026-05-05).** `packages/db-schema/src/sqlite/syncOpOutboxEnqueue.ts`
+  експортує `enqueueOutboxIncrement(client, input)` →
+  `Promise<{ ok: true, id, inserted }>`. Idempotency-логіка:
+  pre-check `SELECT … WHERE idempotency_key = ?` shorts-circuits на
+  steady-state replay-ах (один SELECT, нуль INSERT-ів); fresh-key
+  path виконує `INSERT OR IGNORE` як defence-in-depth проти race-у
+  з паралельним адаптером, потім post-check `SELECT` резолвить
+  surviving id. Ніколи не throw-ить на UNIQUE-collision; surfaces
+  unrelated SQL-помилки (e.g. dropped table) verbatim щоб higher-level
+  engine міг dead-letter-ити. `op='increment'` пишеться літерально —
+  caller не може override-нути; `status='pending'`, `attempts=0`,
+  `next_retry_at=NULL`, `last_error=NULL`, `created_at` беруться
+  зі schema-defaults — retry-state колонки належать `planRetry`
+  і пінить це окремий regression-тест. 6 нових integration-тестів
+  у `sqlite-syncOpOutboxEnqueue.test.ts` ганяють повний SPIKE+#040+#042d-prep
+  migration stack-ом проти `:memory:` engine-у: happy-path (всі 11 stored
+  колонок pinned byte-for-byte), replay із different payload (existing
+  id, payload не stomped), distinct keys із monotonic id-ами, nested
+  payload JSON round-trip verbatim (no key sorting), retry-state
+  preservation на same-key replay, schema-corruption error propagation.
+- **Risk.** Low — `db-schema` package без runtime-callsite-ів поза
+  unit/integration тестами; перший production-consumer буде
+  client-side push-loop refactor (PR #042e), який зашиє хелпер
+  у sync-engine writer. Регресія-тест в api-client
+  (`syncV2.increment.outboxEnqueue.test.ts`), що пінить
+  `OutboxIncrementInput` ↔ `SyncV2PushOp` field-name mapping byte-aligned,
+  залендив у PR #042e-mapping ([#1827](https://github.com/Skords-01/Sergeant/pull/1827))
+  (db-schema deliberately НЕ depend-ить на api-client).
+- **Dep.** PR #042c (typed envelope-builder, надає поля які хелпер flatten-ить),
+  PR #042d-prep (CHECK-relaxation, без якого INSERT із `op='increment'`
+  silently-rejected SPIKE-era constraint-ом).
+
+#### **PR #042e-mapping — `feat(api-client): mapSyncV2IncrementOpToOutboxInput adapter + drift-tripwire test`** ✅ LANDED ([#1827](https://github.com/Skords-01/Sergeant/pull/1827))
+
+- Scope. Маленький адаптер між api-client envelope-shape-ом
+  (`SyncV2PushOp` із `op='increment'`, що його будує
+  `buildSyncV2IncrementOp` із PR #042c) і db-schema enqueue-input-shape-ом
+  (`OutboxIncrementInput`, що його споживає `enqueueOutboxIncrement` із
+  PR #042d-builder). Розводить snake_case ↔ camelCase у одному місці на
+  consumer-side (api-client), щоб db-schema лишалося unaware-ним про
+  api-client (по PR #042d-builder Risk note). Pин-аутом drift-у поверх
+  адаптера стоїть регресія-тест, який тримає field-shape-и обох сторін
+  byte-aligned, інакше CI ловить розкол ще до того, як він сяде в
+  push-loop refactor PR #042e.
+- **Done (2026-05-05).** `packages/api-client/src/endpoints/syncV2.increment.outboxEnqueue.ts`
+  експортує:
+  - `SyncV2IncrementPushOp` — `SyncV2PushOp & { op: 'increment' }` narrow-alias.
+  - `OutboxIncrementInputShape` — структурний mirror `OutboxIncrementInput`
+    із db-schema (mirror-imо, а не workspace-deр-аємо, щоб api-client не
+    ріс залежність на db-schema задля одної мапи; mirror тримаємо
+    byte-aligned cross-file-через тест-tripwire).
+  - `mapSyncV2IncrementOpToOutboxInput(op)` — sync-функція, що повертає
+    `{ table, row, clientTs, idempotencyKey }`, **без** `op`-літералу
+    (`enqueueOutboxIncrement` пише `'increment'` сам, тому threading його
+    був би double-source-of-truth-ом). `row` пробрасується тим самим
+    референсом — verbatim-гарантія мапиться на db-schema-контракт
+    "no key sorting, no copy". Runtime-guard: throw-имо синхронно, якщо
+    caller-cast-ом проштовхнув не-`increment` envelope.
+  - `packages/api-client/src/endpoints/syncV2.increment.outboxEnqueue.test.ts`:
+    7 тестів (happy-path snake→camel, 4-key Object.keys lock, row
+    pass-through verbatim з insertion-order та nested-key preservation,
+    boundary delta=±1000, два runtime-assertion-кейси на `update`/`insert`
+    spoof, two-way structural assignability OutboxIncrementInputShape ↔
+    db-schema-mirror-інтерфейс, end-to-end pipeline `buildSyncV2IncrementOp`
+    → mapper → db-schema-shape).
+  - Re-export із `packages/api-client/src/index.ts`:
+    `mapSyncV2IncrementOpToOutboxInput`, `OutboxIncrementInputShape`,
+    `SyncV2IncrementPushOp`.
+  - Locally: typecheck + lint + 90/90 api-client тестів зелені.
+- **Risk.** None — additive public surface без callsite-ів за межами
+  тестів. Drift-tripwire-механізм тримає mirror-shape узгодженим із
+  db-schema-original-ом cross-file-через test-equality + structural
+  assignability. Якщо в `OutboxIncrementInput` (db-schema) додають нове
+  required-поле або перейменовують існуюче — або тест провалюється на
+  `Object.keys`-lock-у, або на структурній несумісності типу. Перший
+  production-consumer цього адаптера — sync-engine writer у PR #042e
+  (push-loop refactor), який зчитує payload із dual-write-адаптера,
+  будує envelope `buildSyncV2IncrementOp`-ом, плоскує його через цей
+  mapper і durably-write-ить через `enqueueOutboxIncrement`.
+- **Dep.** PR #042c (`buildSyncV2IncrementOp` — будує envelope, який
+  адаптер плоскує), PR #042d-builder (`enqueueOutboxIncrement` —
+  consumer ouput-у адаптера; його `OutboxIncrementInput`-shape — mirror-target).
 
 #### **PR #043 — `feat(sync): G-set CRDT for nutrition_meals log`** ✅ LANDED ([#1734](https://github.com/Skords-01/Sergeant/pull/1734))
 

@@ -1,0 +1,15 @@
+{
+  "extends": "@sergeant/config/tsconfig.{{#if (eq kind "react")}}react{{else}}base{{/if}}.json",
+  "compilerOptions": {
+    "allowJs": false,
+    "checkJs": false,
+    "noUncheckedIndexedAccess": true,
+    "lib": [{{#if (eq kind "react")}}"ES2022", "DOM"{{else}}"ES2022"{{/if}}],
+    {{#if (eq kind "react")}}"jsx": "react-jsx",
+    {{/if}}"rootDir": "./src",
+    "outDir": "./dist",
+    "types": ["node"]
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

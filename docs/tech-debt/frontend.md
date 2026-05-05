@@ -725,15 +725,15 @@ in-place перед initiation Phase 4:
 13/13 (100 %), enforced. Але «ідеально» — ні. Backlog opt-in-прапорів
 та залишкових `as unknown as`-каст:
 
-| #   | Прапор / патерн                                                                                                                  | Очікуваний impact                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Статус       |
-| --- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| 1   | `noUncheckedIndexedAccess` (`arr[i]` стає `T \| undefined`)                                                                      | **1225 baseline / 280 файлів** (виміряно 2026-05-03, PR § 6a). Flipped у base, **9 / 13 пакетів** мігровано: routine-domain, db-schema, shared, nutrition-domain, insights, console, mobile-shell, api-client, finyk-domain ([#1750](https://github.com/Skords-01/Sergeant/pull/1750), merged 2026-05-04) — sync через `node scripts/strict-coverage.mjs`. Залишилось 4: `apps/web`, `apps/server`, `apps/mobile`, `packages/fizruk-domain` (rollout трекається у [Initiative 0012 § Phase 6a](../initiatives/0012-perfect-strictness-rollout.md)). | 🟢 in-flight |
-| 2   | `exactOptionalPropertyTypes` (`?:` не дозволяє явний `\| undefined`)                                                             | ~50–150 помилок (зокрема `MonoAccount.balance?: number` після Phase 5b повинен залишитись валідним)                                                                                                                                                                                                                                                                                                                                                                                                                                                 | ⏳ pending   |
-| 3   | `noImplicitReturns` + `noFallthroughCasesInSwitch`                                                                               | **8 baseline / 8 файлів** (виміряно 2026-05-04 — `apps/web` 6, `apps/server` 2, виключно у `useEffect`-cleanup-ах і `RequestHandler`-ах; 0 `noFallthroughCasesInSwitch` violations). Flipped у base 2026-05-04 ([Initiative 0012 § Phase 6c](../initiatives/0012-perfect-strictness-rollout.md)) + extended `tools/tsconfig-guard` GUARDED_OPTIONS.                                                                                                                                                                                                 | ✅ Done      |
-| 4   | `noPropertyAccessFromIndexSignature` (`.foo` на index-signature → `["foo"]`)                                                     | ~50 помилок, переважно у `Record<string, X>`-сервісах                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | ⏳ pending   |
-| 5   | `noUnusedLocals` / `noUnusedParameters` (зараз ESLint-enforced, не TS-enforced)                                                  | **1 baseline / 1 файл** (виміряно 2026-05-04 — `apps/web/src/core/db/__tests__/sqlite-wasm-fake.ts` `cols` field, mortified як dead state). Flipped у base 2026-05-04 ([Initiative 0012 § Phase 6e](../initiatives/0012-perfect-strictness-rollout.md)) + extended `tools/tsconfig-guard` GUARDED_OPTIONS. ESLint `@typescript-eslint/no-unused-vars` залишається активним як doubly-redundant safety net (немає вартості, але ловить runtime-cases типу JSX-imports краще, ніж TS).                                                                | ✅ Done      |
-| 6   | `as unknown as X` у тестах (~50 файлів — mock-каст `vi.fn()`, fake `PointerEvent`, тощо)                                         | mid — нормально для test-коду, але формально strict-violation. Потенційно — типізовані mock-helper-и + `vitest-mock-extended`                                                                                                                                                                                                                                                                                                                                                                                                                       | ⏳ pending   |
-| 7   | `: any` у тест-only allowlisted файлах (e.g. `apps/web/src/core/lib/lazyImport.ts:33-39 type AnyComponent = ComponentType<any>`) | low — навмисно з коментарем, але формально lint-vio                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | ⏳ pending   |
+| #   | Прапор / патерн                                                                                                                  | Очікуваний impact                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Статус       |
+| --- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| 1   | `noUncheckedIndexedAccess` (`arr[i]` стає `T \| undefined`)                                                                      | **1225 baseline / 280 файлів** (виміряно 2026-05-03, PR § 6a). Flipped у base, **11 / 13 пакетів** мігровано: routine-domain, db-schema, shared, nutrition-domain, insights, console, mobile-shell, api-client, finyk-domain ([#1750](https://github.com/Skords-01/Sergeant/pull/1750)), fizruk-domain ([#1779](https://github.com/Skords-01/Sergeant/pull/1779)), apps/mobile (`0012-phase6a-mobile`) — всі merged 2026-05-04, sync через `node scripts/strict-coverage.mjs`. Залишилось 2: `apps/web`, `apps/server` (rollout трекається у [Initiative 0012 § Phase 6a](../initiatives/0012-perfect-strictness-rollout.md)). | 🟢 in-flight |
+| 2   | `exactOptionalPropertyTypes` (`?:` не дозволяє явний `\| undefined`)                                                             | ~50–150 помилок (зокрема `MonoAccount.balance?: number` після Phase 5b повинен залишитись валідним)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | ⏳ pending   |
+| 3   | `noImplicitReturns` + `noFallthroughCasesInSwitch`                                                                               | **8 baseline / 8 файлів** (виміряно 2026-05-04 — `apps/web` 6, `apps/server` 2, виключно у `useEffect`-cleanup-ах і `RequestHandler`-ах; 0 `noFallthroughCasesInSwitch` violations). Flipped у base 2026-05-04 ([Initiative 0012 § Phase 6c](../initiatives/0012-perfect-strictness-rollout.md)) + extended `tools/tsconfig-guard` GUARDED_OPTIONS.                                                                                                                                                                                                                                                                            | ✅ Done      |
+| 4   | `noPropertyAccessFromIndexSignature` (`.foo` на index-signature → `["foo"]`)                                                     | ~50 помилок, переважно у `Record<string, X>`-сервісах                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | ⏳ pending   |
+| 5   | `noUnusedLocals` / `noUnusedParameters` (зараз ESLint-enforced, не TS-enforced)                                                  | **1 baseline / 1 файл** (виміряно 2026-05-04 — `apps/web/src/core/db/__tests__/sqlite-wasm-fake.ts` `cols` field, mortified як dead state). Flipped у base 2026-05-04 ([Initiative 0012 § Phase 6e](../initiatives/0012-perfect-strictness-rollout.md)) + extended `tools/tsconfig-guard` GUARDED_OPTIONS. ESLint `@typescript-eslint/no-unused-vars` залишається активним як doubly-redundant safety net (немає вартості, але ловить runtime-cases типу JSX-imports краще, ніж TS).                                                                                                                                           | ✅ Done      |
+| 6   | `as unknown as X` у тестах (~50 файлів — mock-каст `vi.fn()`, fake `PointerEvent`, тощо)                                         | mid — нормально для test-коду, але формально strict-violation. Потенційно — типізовані mock-helper-и + `vitest-mock-extended`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | ⏳ pending   |
+| 7   | `: any` у тест-only allowlisted файлах (e.g. `apps/web/src/core/lib/lazyImport.ts:33-39 type AnyComponent = ComponentType<any>`) | low — навмисно з коментарем, але формально lint-vio                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | ⏳ pending   |
 
 **Phase 6a baseline-experiment (PR 2026-05-03):**
 
@@ -751,7 +751,7 @@ Baseline (виміряно через `npx tsc -p tsconfig.json --noEmit` per-wo
 | `packages/finyk-domain`     |       73 |      18 | `false`  |
 | `packages/api-client`       |       45 |       9 | `false`  |
 | `packages/insights`         |     ✅ 0 |       — | `true`   |
-| `packages/fizruk-domain`    |       31 |      12 | `false`  |
+| `packages/fizruk-domain`    |     ✅ 0 |       — | `true`   |
 | `packages/nutrition-domain` |       31 |       9 | `false`  |
 | `packages/shared`           |       26 |       7 | `false`  |
 | `apps/mobile`               |       25 |      14 | `false`  |
@@ -766,11 +766,12 @@ Baseline (виміряно через `npx tsc -p tsconfig.json --noEmit` per-wo
 `Object.keys()` для notes-prefix-filter, explicit array swap з
 undefined-guard. Без `!` non-null assertions.
 
-**Follow-up міграції (round 7):**
+**Follow-up міграції (round 7+):**
 
 - `packages/shared` — `noUncheckedIndexedAccess: true` (PR [#1635](https://github.com/Skords-01/Sergeant/pull/1635)).
 - `packages/nutrition-domain` — `true` (PR [#1681](https://github.com/Skords-01/Sergeant/pull/1681)), 10 errors / 4 файли закрито через `!` після `findIndex >= 0` guard.
 - `packages/insights` — `true` (Item 15 round-7 follow-up, PR [#1689](https://github.com/Skords-01/Sergeant/pull/1689)), 13 errors / 2 тестових файли закрито через `recs[0]?.x` після `expect(recs).toHaveLength(1)`.
+- `packages/fizruk-domain` — `true` (PR [#1779](https://github.com/Skords-01/Sergeant/pull/1779), merged 2026-05-04), 31 errors / 12 файлів → 0. Оверрайд `false` знято з [`packages/fizruk-domain/tsconfig.json`](../../packages/fizruk-domain/tsconfig.json); allowlist-ентрі в [`tools/tsconfig-guard/allowlist.json`](../../tools/tsconfig-guard/allowlist.json) не залишилося.
 
 [`tools/tsconfig-guard`](../../tools/tsconfig-guard/check.mjs) розширено:
 `noUncheckedIndexedAccess` додано у `GUARDED_OPTIONS`. Allowlist
@@ -782,25 +783,25 @@ undefined-guard. Без `!` non-null assertions.
 розширено: новий column `noUncheckedIndexedAccess` + summary `Phase 6a:
 N / 13 packages` у markdown-output (видно у `$GITHUB_STEP_SUMMARY`).
 
-**Per-module rollout план (наступні PR-и):**
+**Per-module rollout план (решта PR-ів — 2 апи):**
 
-1. `packages/shared` — 26 errors / 7 файлів. Найвищий пріоритет: shared
-   є transitive-залежністю всіх інших пакетів, fix-и каскадно зменшать
-   error count для consumers. Patterns: `abTest.ts` (variant pick),
-   `dashboard.ts` (lookup), `dashboardFocus.ts` (selectedKey),
-   `speechParsers.ts` (regex matches → `match[i]?`).
-2. `packages/api-client` — 45 errors / 9 файлів. Domain isolation
-   benefit — query-key access, response[i] patterns.
-3. `apps/mobile` — 25 errors / 14 файлів. Найменший surface, дозволить
-   повернути override відрізкам швидко.
-4. `packages/insights` + `packages/fizruk-domain` + `packages/nutrition-domain`
-   - `packages/finyk-domain` — 169 errors / 46 файлів. Domain shards
-     можна паралелити (1 PR per shard).
-5. `apps/server` — 335 errors / 57 файлів. Server-side тести найбільш
-   inhomogeneous; розбити на ~3 PR per route group.
-6. `apps/web` — 625 errors / 147 файлів. Розбити по `core/`,
+1. `apps/server` — 335 errors / 57 файлів. Server-side тести найбільш
+   inhomogeneous; розбити на ~3 PR per route group (`auth/`,
+   `modules/`, `routes/`).
+2. `apps/web` — 625 errors / 147 файлів. Розбити по `core/`,
    `modules/finyk/`, `modules/fizruk/`, `modules/routine/`,
    `modules/nutrition/`, `shared/components/` (≥6 PR per module).
+
+Спліт `apps/server` + `apps/web` бажано розводити в часі від великих
+[`0010-revenue-first-launch`](../initiatives/0010-revenue-first-launch.md)
+Stripe/auth/paywall PR-ів — конфлікти merge будуть болючі. Phase 6a
+закінчується одночасно з або після 0010 Phase 4 (auth migration).
+
+_Закриті міграції (2026-05-04 round-up):_ `packages/shared` (#1635),
+`packages/api-client` (inherit), `packages/nutrition-domain` (#1681),
+`packages/insights` (#1689), `packages/finyk-domain` (#1750),
+`packages/fizruk-domain` (#1779), `apps/mobile` (`0012-phase6a-mobile`).
+11 з 13 пакетів покрито.
 
 Each rollout PR видаляє `noUncheckedIndexedAccess: false` override з
 `{app}/tsconfig.json` (та відповідну entry з `allowlist.json` для
