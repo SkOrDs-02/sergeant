@@ -290,7 +290,16 @@ export function renderFollowUps(items, { today = todayISO() } = {}) {
   lines.push("# Initiative follow-ups");
   lines.push("");
   lines.push(
-    `> **Last validated:** ${today} by @devin-ai. **Next review:** ${addDays(today, 90)}.`,
+    // Stamp the canonical owner handle (matches the pattern used by the
+    // sibling generator `generate-hard-rules-matrix.mjs`). The husky hook
+    // `bump-last-validated.mjs` rewrites the handle on commit to the
+    // committer's resolved handle, so any value that does not match what
+    // the hook will produce causes the `--check` CI gate to flag drift.
+    // `excludeGlobs` would normally let the hook skip this file, but it
+    // matches relative paths only and lint-staged invokes the hook with
+    // absolute paths — so we keep both belts AND suspenders by stamping
+    // the same handle the hook would.
+    `> **Last validated:** ${today} by @Skords-01. **Next review:** ${addDays(today, 90)}.`,
   );
   lines.push("> **Status:** Active");
   lines.push("");
