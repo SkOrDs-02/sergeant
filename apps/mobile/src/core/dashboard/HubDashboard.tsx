@@ -46,9 +46,11 @@ import { colors } from "@/theme";
 import { useUser } from "@sergeant/api-client/react";
 import {
   getActiveModules,
+  getFirstRealEntryModule,
   getHideInactiveModules,
   getOnboardingGoals,
   hasAnyValueProgressBar,
+  hasSeenCrossModulePreview,
   isActiveModule,
   isFirstActionPending,
   isFirstRealEntryDone,
@@ -57,6 +59,7 @@ import {
   type DashboardModuleId,
 } from "@sergeant/shared";
 
+import { CrossModulePreview } from "./CrossModulePreview";
 import { DraggableDashboard } from "./DraggableDashboard";
 import {
   DASHBOARD_MODULE_ROUTES,
@@ -297,6 +300,22 @@ export function HubDashboard() {
     hasFirstRealEntry,
   });
 
+  // Cross-module preview (S6.4 mobile parity) — one-shot post-first-entry
+  // promo. Source module is snapshotted at mount via
+  // `getFirstRealEntryModule` so the copy stays paired with the
+  // *triggering* surface even if a later entry flips the scan-order
+  // winner. Mirrors the web HubDashboard render path exactly.
+  const [crossModulePreviewSource, setCrossModulePreviewSource] =
+    useState<DashboardModuleId | null>(() => {
+      if (!hasFirstRealEntry) return null;
+      if (hasSeenCrossModulePreview(mmkvStore)) return null;
+      return getFirstRealEntryModule(mmkvStore);
+    });
+  const dismissCrossModulePreview = useCallback(
+    () => setCrossModulePreviewSource(null),
+    [],
+  );
+
   const openModule = useCallback((id: DashboardModuleId) => {
     // `DASHBOARD_MODULE_ROUTES` holds validated Expo-Router hrefs. We
     // cast to `Href` so the router's typed-href helper accepts them
@@ -474,6 +493,18 @@ export function HubDashboard() {
           <ValueProgressBar
             activeModules={activeModules}
             goals={getOnboardingGoals(mmkvStore)}
+          />
+        ) : null}
+
+        {/* Cross-module preview (S6.4 mobile parity). One-shot
+            post-first-entry promo — shown the frame the user crosses
+            from FTUX into "real" usage. Persistence flag lives in
+            shared (`hub_cross_module_preview_seen_v1`). Hidden once
+            the user taps the CTA or X. */}
+        {hasFirstRealEntry && crossModulePreviewSource ? (
+          <CrossModulePreview
+            sourceModule={crossModulePreviewSource}
+            onClose={dismissCrossModulePreview}
           />
         ) : null}
 
