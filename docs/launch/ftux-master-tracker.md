@@ -46,7 +46,7 @@
 
 ## 1. TL;DR
 
-> **PR-status (snapshot 2026-05-05 19:50 UTC):** PR-00 merged. PR-01, PR-02 відкриті і чекають review. Детально — §3 PR-план.
+> **PR-status (snapshot 2026-05-05 21:30 UTC):** PR-00, PR-01, PR-02 + status-bump #1939 — merged. PR-03 (`pnpm bootstrap`) і PR-04 (`disciplined hero copy`) — open. Детально — §3 PR-план.
 
 **Стан 2026-05-05:**
 
@@ -111,17 +111,17 @@
 
 ### 3.1. Хвиля 1 — Quick wins (Week 1, 8 PR)
 
-| PR        | Назва                                                        | LOC          | Deps  | Метрика                                                    | Стан                                                                                            |
-| --------- | ------------------------------------------------------------ | ------------ | ----- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| **PR-00** | docs(launch): consolidate FTUX into master tracker           | ~530         | —     | SSOT існує; redirect-stub-и у старих файлах                | ✅ [Merged #1934](https://github.com/Skords-01/Sergeant/pull/1934)                              |
-| **PR-01** | chore(docs): audit freeze + PR-template warning              | ~320         | —     | 0 нових audit/initiative-доків 4 тижні                     | 🚧 [Open #1936](https://github.com/Skords-01/Sergeant/pull/1936)                                |
-| **PR-02** | docs(readme): hero image + GIF + product overview            | ~95 (struct) | —     | First-impression 60s test                                  | 🚧 [Open #1937](https://github.com/Skords-01/Sergeant/pull/1937) (struct only; assets у PR-02b) |
-| **PR-03** | feat(scripts): pnpm bootstrap one-shot setup                 | ~180         | —     | First-run from clone до browser ≤ 5 хв                     | ⏳ Wave 1                                                                                       |
-| **PR-04** | feat(welcome): hero copy A/B variants — disciplined helper   | ~80          | —     | Wizard→first-entry conversion + 5pp за 14 днів             | ⏳ Wave 1                                                                                       |
-| **PR-05** | feat(welcome): demo mode as first-class CTA                  | ~60          | PR-04 | Demo share-of-traffic ≥ 15%                                | ⏳ Wave 1                                                                                       |
-| **PR-06** | feat(brand): canonical Cyrillic naming sweep                 | ~150         | —     | UI label uniformity (Фінік / Фізрук / Рутина / Харчування) | ⏳ Wave 1                                                                                       |
-| **PR-07** | feat(pwa): install prompt banner                             | ~140         | —     | `pwa_installed / first_real_entry ≥ 8%`                    | ⏳ Wave 1                                                                                       |
-| **PR-08** | chore(docs): cleanup — archive stale audits + delete .replit | -2200        | —     | `find docs/audits -maxdepth 1 -name '*.md'` ≤ 6            | ⏳ Wave 1                                                                                       |
+| PR        | Назва                                                        | LOC          | Deps  | Метрика                                                    | Стан                                                                                               |
+| --------- | ------------------------------------------------------------ | ------------ | ----- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **PR-00** | docs(launch): consolidate FTUX into master tracker           | ~530         | —     | SSOT існує; redirect-stub-и у старих файлах                | ✅ [Merged #1934](https://github.com/Skords-01/Sergeant/pull/1934)                                 |
+| **PR-01** | chore(docs): audit freeze + PR-template warning              | ~320         | —     | 0 нових audit/initiative-доків 4 тижні                     | ✅ [Merged #1936](https://github.com/Skords-01/Sergeant/pull/1936)                                 |
+| **PR-02** | docs(readme): hero image + GIF + product overview            | ~95 (struct) | —     | First-impression 60s test                                  | ✅ [Merged #1937](https://github.com/Skords-01/Sergeant/pull/1937) (struct only; assets у PR-02b)  |
+| **PR-03** | feat(root): pnpm bootstrap one-shot setup                    | ~510         | —     | First-run from clone до browser ≤ 5 хв                     | 🚧 [Open #1943](https://github.com/Skords-01/Sergeant/pull/1943) (seed-dev-user → PR-03b)          |
+| **PR-04** | feat(shared): hero copy A/B variants — disciplined helper    | ~107         | —     | Wizard→first-entry conversion + 5pp за 14 днів             | 🚧 [Open #1944](https://github.com/Skords-01/Sergeant/pull/1944) (v2 split, 4-way 0.4/0.2/0.2/0.2) |
+| **PR-05** | feat(welcome): demo mode as first-class CTA                  | ~60          | PR-04 | Demo share-of-traffic ≥ 15%                                | ⏳ Wave 1                                                                                          |
+| **PR-06** | feat(brand): canonical Cyrillic naming sweep                 | ~150         | —     | UI label uniformity (Фінік / Фізрук / Рутина / Харчування) | ⏳ Wave 1                                                                                          |
+| **PR-07** | feat(pwa): install prompt banner                             | ~140         | —     | `pwa_installed / first_real_entry ≥ 8%`                    | ⏳ Wave 1                                                                                          |
+| **PR-08** | chore(docs): cleanup — archive stale audits + delete .replit | -2200        | —     | `find docs/audits -maxdepth 1 -name '*.md'` ≤ 6            | ⏳ Wave 1                                                                                          |
 
 ### 3.2. Хвиля 2 — Product UX (Week 2-3, 6 PR)
 
@@ -166,7 +166,7 @@
 ## 4. Hero copy variants
 
 > Theme: «Дисциплінований помічник». Tone: спокійна влада, без пафосу, без надмірних обіцянок.
-> PR: **PR-04**. PostHog FF: `onboarding_hero_copy_v3`. 4 arms (current + 3 нові), 25/25/25/25 split, 14-day measurement, winner promote.
+> PR: **PR-04** ([#1944](https://github.com/Skords-01/Sergeant/pull/1944)). PostHog FF: `onboarding_hero_copy_v2` (id-bump v1→v2 в PR-04 через додавання disciplined arm). 4 arms (`outcome` / `safe` / `bold` / `disciplined`), weights `[0.4, 0.2, 0.2, 0.2]` (outcome — carry-over mainline 40%, три альтернативи по 20%), 14-day measurement, winner promote через flip weights без чергового id-bump-у.
 
 ### Variant A — Calm authority
 
@@ -325,14 +325,14 @@ slos:
 ### Onboarding-Dev
 
 - **README:** додаємо hero-image + GIF + production URL (PR-02).
-- **Bootstrap:** новий `pnpm bootstrap` script з verify-versions + docker + migrate + seed dev-user + open-browser (PR-03).
+- **Bootstrap:** новий `pnpm bootstrap` script з verify-versions + docker + migrate ([PR-03 #1943](https://github.com/Skords-01/Sergeant/pull/1943)). Seed dev-user (`SERGEANT_DEV_USER=1`) і auto-open-browser виносяться у PR-03b — потребують server-side зміни (Better Auth password hashing, idempotent INSERT user).
 - **AGENTS.md:** не розколюємо, лише додаємо TOC + `quick-reference.md` (PR-22).
 - **Mobile-shell deadline:** parked.
 
 ### Onboarding-Product
 
 - **Demo mode:** secondary CTA на `/welcome` (PR-05).
-- **Hero copy:** 3 disciplined-helper варіанти (PR-04, див. §4).
+- **Hero copy:** disciplined-helper variant («Менше хаосу. Більше зробленого.») в існуючий 4-way A/B ([PR-04 #1944](https://github.com/Skords-01/Sergeant/pull/1944), див. §4). Experiment id bumped `v1`→`v2`, weights re-balanced на `[0.4, 0.2, 0.2, 0.2]`.
 - **Wizard confetti:** **вже видалено** (S1.3 / PR #1609). CelebrationModal лишається тільки на `first_real_entry` (S3.2 / PR #1630). Manual QA треба прогнати.
 - **Goal-first wizard:** робимо (PR-13, S5.1).
 - **Orchestrator:** incremental — `useOnboardingState()` shared store + `usePrimaryAffordance()` priority queue, **не** видаляємо 14 компонентів (PR-12).
@@ -372,14 +372,14 @@ slos:
 
 ### 8.1. P0 з 2026-05-03 roast
 
-| #   | Проблема                                          | Файл                           | Стан       | Кроки                                                              |
-| --- | ------------------------------------------------- | ------------------------------ | ---------- | ------------------------------------------------------------------ |
-| 1   | Hero copy продає features, не результат           | `OnboardingWizard.tsx:237-264` | ⏳ Open    | PR-04 (3 disciplined variants A/B)                                 |
-| 2   | Confetti до першої цінності (wizard finish)       | `OnboardingWizard.tsx:388-401` | ✅ Closed  | S1.3 / [PR #1609](https://github.com/Skords-01/Sergeant/pull/1609) |
-| 3   | «Відкрити Sergeant» закидає на порожній dashboard | post-wizard navigation         | ⏳ Open    | PR-09 (outcome-card replaces empty TODO)                           |
-| 4   | Жорсткий пріоритет `routine` ігнорує goals        | `FirstActionSheet.tsx:59-75`   | ✅ Closed  | S2.1 / [PR #1740](https://github.com/Skords-01/Sergeant/pull/1740) |
-| 5   | Peek backdrop disclaimer                          | `WelcomeScreen.tsx:78-81`      | ✅ Closed  | S1.4 / [PR #1610](https://github.com/Skords-01/Sergeant/pull/1610) |
-| 6   | PresetSheet bait-and-switch                       | `PresetSheet.tsx:80-145`       | 🚧 Partial | S2.2a/S2.2b — blocked by S1.1 copy-reviewer                        |
+| #   | Проблема                                          | Файл                           | Стан         | Кроки                                                                                       |
+| --- | ------------------------------------------------- | ------------------------------ | ------------ | ------------------------------------------------------------------------------------------- |
+| 1   | Hero copy продає features, не результат           | `OnboardingWizard.tsx:237-264` | 🚧 In flight | [PR-04 #1944](https://github.com/Skords-01/Sergeant/pull/1944) (disciplined arm у v2 split) |
+| 2   | Confetti до першої цінності (wizard finish)       | `OnboardingWizard.tsx:388-401` | ✅ Closed    | S1.3 / [PR #1609](https://github.com/Skords-01/Sergeant/pull/1609)                          |
+| 3   | «Відкрити Sergeant» закидає на порожній dashboard | post-wizard navigation         | ⏳ Open      | PR-09 (outcome-card replaces empty TODO)                                                    |
+| 4   | Жорсткий пріоритет `routine` ігнорує goals        | `FirstActionSheet.tsx:59-75`   | ✅ Closed    | S2.1 / [PR #1740](https://github.com/Skords-01/Sergeant/pull/1740)                          |
+| 5   | Peek backdrop disclaimer                          | `WelcomeScreen.tsx:78-81`      | ✅ Closed    | S1.4 / [PR #1610](https://github.com/Skords-01/Sergeant/pull/1610)                          |
+| 6   | PresetSheet bait-and-switch                       | `PresetSheet.tsx:80-145`       | 🚧 Partial   | S2.2a/S2.2b — blocked by S1.1 copy-reviewer                                                 |
 
 ### 8.2. P1 з 2026-05-03 roast
 
