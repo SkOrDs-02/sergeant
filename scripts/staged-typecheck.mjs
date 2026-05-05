@@ -12,6 +12,16 @@
 // paths rewritten relative to that directory. That keeps `paths`/`extends`
 // resolution faithful to each sub-project (apps/web, apps/server, packages/*).
 //
+// `tsc-files` rewrites the project's `tsconfig.json` with `include: []` and
+// only the staged files in `files`. That drops any global type-augmentation
+// `.d.ts` that the project relies on through its `include` list (e.g. mobile's
+// `nativewind-env.d.ts` reference, which makes `className` valid on RN
+// `View`/`Text`/`Pressable`). Without it every staged mobile change would fail
+// pre-commit with TS2769 "No overload matches this call. Property 'className'
+// does not exist". We re-add those globals via `EXTRA_INPUTS_BY_TSCONFIG`,
+// keyed by the tsconfig's path relative to the repo root, so they ship as
+// extra `files` entries to `tsc-files`.
+//
 // Usage (from `lint-staged`):
 //   "*.{ts,tsx}": ["node scripts/staged-typecheck.mjs"]
 //
@@ -44,6 +54,17 @@ function findTsconfig(absFile) {
 }
 
 const TS_RE = /\.(ts|tsx)$/;
+
+/**
+ * Per-project global `.d.ts` references whose `include`-driven loading is
+ * stripped by `tsc-files`. Keyed by the tsconfig path relative to the repo
+ * root; each value is a list of paths relative to the same tsconfig's
+ * directory. Files listed here are appended to every `tsc-files` invocation
+ * for that group so the global type augmentations they bring in stay in scope.
+ */
+const EXTRA_INPUTS_BY_TSCONFIG = {
+  "apps/mobile/tsconfig.json": ["nativewind-env.d.ts"],
+};
 
 function main() {
   const staged = process.argv
@@ -80,12 +101,17 @@ function main() {
   for (const [tsconfig, files] of groups) {
     const dir = dirname(tsconfig);
     const rel = files.map((f) => relative(dir, f));
+    const tsconfigKey = relative(REPO_ROOT, tsconfig).replaceAll("\\", "/");
+    const extras = (EXTRA_INPUTS_BY_TSCONFIG[tsconfigKey] ?? []).filter(
+      (p) => existsSync(join(dir, p)) && !rel.includes(p),
+    );
     console.log(
-      `[staged-typecheck] ${rel.length} file(s) → ${relative(REPO_ROOT, tsconfig)}`,
+      `[staged-typecheck] ${rel.length} file(s) → ${tsconfigKey}` +
+        (extras.length ? ` (+${extras.length} global d.ts)` : ""),
     );
     const result = spawnSync(
       "pnpm",
-      ["exec", "tsc-files", "--noEmit", "--skipLibCheck", ...rel],
+      ["exec", "tsc-files", "--noEmit", "--skipLibCheck", ...rel, ...extras],
       {
         stdio: "inherit",
         cwd: dir,
