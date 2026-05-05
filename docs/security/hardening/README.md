@@ -82,6 +82,9 @@
 | [M16](./M16-telegram-markdown-v2.md)           | Telegram `parse_mode: "Markdown"` is the legacy variant | Closed (2026-05-04) — PR [#1765](https://github.com/Skords-01/Sergeant/pull/1765)                          | [Sprint 3](./sprint-3.md) |
 | [M18](./M18-openclaw-per-call-usd-cap.md)      | OpenClaw daily $5 budget without per-call cap           | Closed (2026-05-04) — PR [#1760](https://github.com/Skords-01/Sergeant/pull/1760)                          | [Sprint 3](./sprint-3.md) |
 | [I1](./I1-codeql-workflow.md)                  | Add CodeQL SAST workflow                                | Closed (2026-05-04) — PR [#1749](https://github.com/Skords-01/Sergeant/pull/1749)                          | [Sprint 3](./sprint-3.md) |
+| [M10](./M10-csrf-token-check.md)               | No CSRF token check on state-changing routes            | Closed (2026-05-04) — PR [#1784](https://github.com/Skords-01/Sergeant/pull/1784) (batched M10 + M14 + M19) | [Sprint 3](./sprint-3.md) |
+| [M14](./M14-internal-push-ip-allowlist.md)     | Internal `/api/push/send` has no IP allowlist           | Closed (2026-05-04) — PR [#1784](https://github.com/Skords-01/Sergeant/pull/1784) (batched M10 + M14 + M19) | [Sprint 3](./sprint-3.md) |
+| [M19](./M19-mobile-deeplink-sanitize.md)       | Mobile shell deep-link query/fragment unsanitised       | Closed (2026-05-04) — PR [#1784](https://github.com/Skords-01/Sergeant/pull/1784) (batched M10 + M14 + M19) | [Sprint 3](./sprint-3.md) |
 
 ## Cross-references
 

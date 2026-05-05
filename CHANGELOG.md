@@ -14,6 +14,37 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Docs: audit + sprint-розбивка прогавлених PR-серій (#6 / #8 / #15
+  burndown + M10/M14/M19 hardening closure).** Систематична перевірка
+  `docs/` проти `main` після round-12 виявила два класи прогалин у
+  трекінгу: (1) `docs/security/hardening/README.md` § «Closed Medium /
+  Low cards» не містив M10 (CSRF token check on state-changing routes),
+  M14 (Internal `/api/push/send` IP allowlist) і M19 (Mobile shell
+  deep-link sanitisation), хоча всі троє закриті PR
+  [#1784](https://github.com/Skords-01/Sergeant/pull/1784) (batched
+  hardening) і їхні картки вже мали `Status: Closed`; (2) round-13
+  burndown для items #6 (localStorage allowlist) / #8 (`useApiForm`
+  rollout) / #15 (`noUncheckedIndexedAccess` per app) існував лише
+  narrative-ом у §11.5 burndown-таблиці [`docs/diagnostics/2026-05-03-web-deep-dive/00-overview.md`](docs/diagnostics/2026-05-03-web-deep-dive/00-overview.md),
+  без розпису по AC/LOC/Deps на конкретні PR-и — як це зроблено для
+  Sprint 6 cleanup batch у [`docs/launch/ftux-sprint-plan.md` §7a](docs/launch/ftux-sprint-plan.md).
+  Виправлено: README hardening backlog отримав три нові рядки у closed-
+  list table (chronological order, з посиланням на PR #1784 і
+  «batched M10 + M14 + M19»); створено новий sprint-doc
+  [`docs/diagnostics/2026-05-03-web-deep-dive/round-13-burndown-sprint.md`](docs/diagnostics/2026-05-03-web-deep-dive/round-13-burndown-sprint.md)
+  з 7 PR-розбивкою (R13.1–R13.7) у стилі §7a FTUX cleanup batch — items
+  #6 (1 PR), #8 (3 PR до 10/12 mature plateau), #15 (3 PR на apps/server,
+  apps/mobile, apps/web з потенційним spill на R13.7a/R13.7b через
+  300-LOC cap), а також rationale, blocker chain (R13.5 → R13.7 через
+  contract-схеми), risks (mobile parity для R13.6, audit-guard tests),
+  success metrics dashboard і «що НЕ входить» (organic items #17 / #18).
+  §11.5 overview-таблиці отримала cross-link на новий sprint-doc, тож
+  reviewer бачить залишок до closure без читання full-overview.
+  Жодних code-змін; все три файли pass `pnpm docs:check-links` і
+  `pnpm lint:governance-sync --strict`.
+
 ### Fixed
 
 - **AI memory: default `VOYAGE_EMBEDDING_MODEL` переведено з `voyage-3-lite` на

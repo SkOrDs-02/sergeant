@@ -202,6 +202,12 @@
 
 Усі цифри — теплі estimates із поточних code-метрик; реальна кількість може варіюватися ±2 PR через discovery під час самого rollout-а (наприклад, виявлені під час `noUncheckedIndexedAccess` test-fixup-и часто розділяються на 2 PR через size-limit policy).
 
+> **Round-13 PR-розбивка:** оці ~7 mandatory PR-ів тепер розписані
+> по AC і LOC у [`./round-13-burndown-sprint.md`](./round-13-burndown-sprint.md)
+> (структурований sprint-doc у стилі §7a Sprint 6 cleanup batch з
+> [`docs/launch/ftux-sprint-plan.md`](../../launch/ftux-sprint-plan.md)) —
+> аби round-N follow-up-и не залишалися лише narrative-ом цієї §11.5 таблиці.
+
 ## Один найбільш недооцінений проєктом item
 
 > **Pino redact для PII у логах** ([04 §6.5](./04-security-observability-testing-devx.md)). П'ять рядків коду, але запобігає накопиченню паролів/токенів у логах за роки роботи. Цей risk росте монотонно з кожним днем без mitigation.
