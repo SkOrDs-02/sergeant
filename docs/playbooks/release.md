@@ -1,37 +1,37 @@
-# Playbook: Release
+# Playbook: Реліз
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
-**Trigger:** ship a release-bearing change to any production surface — `apps/web`, `apps/server`, `apps/mobile-shell` (Capacitor), or `apps/mobile` (Expo). Includes EAS updates, store builds, and coordinated cross-surface deploys.
+**Trigger:** «Виконати реліз» / реліз-несуча зміна на продакшні — `apps/web`, `apps/server`, `apps/mobile-shell` (Capacitor) або `apps/mobile` (Expo); EAS-апдейти, store-білди, скоординовані крос-поверхневі деплої.
 
 ## Owner surface
 
-- Primary surface: production deploy pipeline across web/API, mobile shell, and Expo
+- Primary surface: production deploy pipeline через web/API, mobile shell і Expo
 - Coupled surfaces: `apps/server`, `apps/web`, `apps/mobile-shell`, `apps/mobile`
 - Governing skill: `sergeant-deploy-and-observability`
 
 ## Required context
 
-- Start with `sergeant-start-here`, then load `sergeant-deploy-and-observability` (web/API and Capacitor) or `sergeant-mobile-expo` (Expo).
-- Review [release-policy.md](../governance/release-policy.md) for the merge-only / coordinated / high-risk taxonomy.
-- Review [service-catalog.md](../architecture/service-catalog.md) for the rollback path and tier of the touched surface.
-- Review [platforms.md](../architecture/platforms.md) when the change crosses Capacitor or Expo.
-- If a migration is involved, also open [add-sql-migration.md](./add-sql-migration.md).
+- Стартуй з `sergeant-start-here`, тоді завантаж `sergeant-deploy-and-observability` (для web/API і Capacitor) або `sergeant-mobile-expo` (для Expo).
+- Перечитай [release-policy.md](../governance/release-policy.md) — таксономію merge-only / coordinated / high-risk.
+- Перечитай [service-catalog.md](../architecture/service-catalog.md) — щоб знати rollback-шлях і tier поверхні, яку зачіпаєш.
+- Перечитай [platforms.md](../architecture/platforms.md), якщо зміна перетинає Capacitor або Expo.
+- Якщо у релізі є міграція — додатково відкрий [add-sql-migration.md](./add-sql-migration.md).
 
-## Decision tree — which surface are you releasing?
+## Дерево рішень — яку поверхню релізиш?
 
 ```mermaid
 flowchart TD
-    Q1{"Q1: Which production surface ships?"}
-    Q1 -- "apps/web and/or apps/server" --> WEBAPI["§ Web + API"]
+    Q1{"Q1: Яка продакшн-поверхня шипиться?"}
+    Q1 -- "apps/web та/або apps/server" --> WEBAPI["§ Web + API"]
     Q1 -- "Capacitor shell (apps/mobile-shell)" --> SHELL["§ Mobile shell (Capacitor)"]
     Q1 -- "Expo native (apps/mobile)" --> EXPO["§ Expo"]
-    Q1 -- "Multiple at once" --> MULTI["Treat each surface as its own loop, sequence by deploy order"]
+    Q1 -- "Кілька одразу" --> MULTI["Кожна поверхня — окремий цикл, упорядкований за послідовністю деплою"]
 
-    WEBAPI --> CLASSIFY1["1.1 Classify the release"]
-    SHELL --> CLASSIFY2["2.1 Confirm shell scope"]
-    EXPO --> CLASSIFY3["3.1 Classify the mobile release"]
+    WEBAPI --> CLASSIFY1["1.1 Класифікуй реліз"]
+    SHELL --> CLASSIFY2["2.1 Підтверди скоуп shell-у"]
+    EXPO --> CLASSIFY3["3.1 Класифікуй мобільний реліз"]
     MULTI --> WEBAPI
 
     CLASSIFY1 --> VERIFY["Verification"]
@@ -39,118 +39,118 @@ flowchart TD
     CLASSIFY3 --> VERIFY
 ```
 
-If the change is docs-only or internal-only with no runtime effect, this playbook does not apply — proceed with a normal merge.
+Якщо зміна — лише docs або внутрішня без рантайм-ефекту, цей playbook не застосовний — мерджи звичайним порядком.
 
 ## 1. Web + API
 
-For coordinated `apps/web` + `apps/server` deploys.
+Для скоординованих деплоїв `apps/web` + `apps/server`.
 
-### 1.1 Classify the release
+### 1.1 Класифікуй реліз
 
-- Identify whether the change is merge-only, coordinated, or high-risk per [release-policy.md](../governance/release-policy.md).
-- Name the touched surfaces and deploy targets in the PR.
-- Confirm rollback path before merging.
+- Визнач, що це: merge-only, coordinated чи high-risk — за [release-policy.md](../governance/release-policy.md).
+- У PR явно назви зачеплені поверхні і деплой-таргети.
+- Підтверди rollback-шлях **до** мерджу.
 
-### 1.2 Freeze the deploy order
+### 1.2 Зафіксуй порядок деплою
 
-- Apply env changes before code only if the new values are backward-compatible.
-- Apply migrations before app deploy only when the schema change is additive and backward-compatible.
-- Deploy API before web if the UI depends on new contract behavior.
-- Deploy web before API only when the API is fully backward-compatible and the UI is the risky surface.
+- Env-зміни — перед кодом, **тільки** якщо нові значення зворотно сумісні.
+- Міграції — перед деплоєм застосунку, **тільки** коли зміна схеми адитивна і зворотно сумісна (див. Hard Rule #4 — двофазний DROP).
+- Спершу API, тоді web — якщо UI залежить від нової контрактної поведінки.
+- Спершу web, тоді API — лише коли API повністю зворотно сумісне, а UI — ризикова поверхня.
 
-### 1.3 Verify release gates
+### 1.3 Перевір реліз-гейти
 
-- CI for the changed surfaces is green.
-- No blocking incident or red error budget on the same dependency chain unless this release is the mitigation.
-- Feature flags and kill switches are documented.
+- CI на змінених поверхнях — зелений.
+- Немає блокуючого інциденту чи червоного error-budget на тому ж dependency-ланцюжку (винятком є випадок, коли цей реліз — і є мітигація).
+- Feature-флаги і kill-switch-і задокументовані.
 
-### 1.4 Execute deploy
+### 1.4 Виконай деплой
 
-- Merge intentionally.
-- Deploy in the documented order.
-- Keep a note of the deployment IDs or release references used.
+- Мерджи свідомо.
+- Деплой — у задокументованому порядку.
+- Зафіксуй deployment ID або release-посилання, які використано.
 
-### 1.5 Run post-release verification
+### 1.5 Прожени post-release верифікацію
 
-- Check `/health` and one user-critical flow end-to-end.
-- Verify error rates, latency, and Sentry noise on the changed surfaces.
-- Confirm the feature flag state matches the rollout plan.
+- Перевір `/health` і один user-critical flow end-to-end.
+- Звір error rate, latency і шум у Sentry на змінених поверхнях.
+- Підтверди, що стан feature-флагу збігається з планом rollout-у.
 
 ## 2. Mobile shell (Capacitor)
 
-For `apps/mobile-shell` builds, store metadata, or native wrapper behavior.
+Для білдів `apps/mobile-shell`, метаданих сторів або поведінки нативної обгортки.
 
-### 2.1 Confirm shell scope
+### 2.1 Підтверди скоуп shell-у
 
-- Separate shell-only changes from embedded web changes.
-- If web artifact changed too, run § Web + API first to ship the underlying web build.
-- Confirm whether iOS, Android, or both need shipping.
+- Відокремлюй shell-only зміни від змін у вбудованому web-артефакті.
+- Якщо web-артефакт теж змінився — спершу виконай § Web + API, щоб шипнути базовий web-білд.
+- Підтверди, що саме шипиться: iOS, Android чи обидва.
 
-### 2.2 Prepare release notes and rollback
+### 2.2 Підготуй release-нотатки і rollback
 
-- Record build numbers and version bump.
-- Document store lane, staged rollout choice, and prior stable build reference.
-- Verify whether any feature flag or server-side kill switch can reduce blast radius.
+- Зафіксуй build numbers і bump версії.
+- Задокументуй store-лейн, вибір staged-rollout і референс попереднього стабільного білду.
+- Перевір, чи є feature-флаг або server-side kill switch, який може зменшити blast radius.
 
-### 2.3 Build and submit
+### 2.3 Збери і подай білд
 
-- Produce the release candidate build.
-- Smoke test install, launch, auth bootstrap, and one critical deep-link or notification path.
-- Submit to the intended store lane or internal track.
+- Зроби release-candidate білд.
+- Прожени smoke на: інсталяцію, запуск, auth-bootstrap і один критичний deep-link або notification-flow.
+- Подай у відповідний store-лейн або internal track.
 
-### 2.4 Post-release verification
+### 2.4 Post-release верифікація
 
-- Confirm availability in the target lane.
-- Re-run install/open smoke on the published build.
-- Monitor crash and auth signals after rollout begins.
+- Підтверди наявність у цільовому лейні.
+- Перепрожени install/open smoke на опублікованому білді.
+- Стеж за crash- і auth-сигналами після старту rollout-у.
 
 ## 3. Expo
 
-For `apps/mobile` builds, EAS updates, or release-channel changes.
+Для білдів `apps/mobile`, EAS-апдейтів або змін release-channel-у.
 
-### 3.1 Classify the mobile release
+### 3.1 Класифікуй мобільний реліз
 
-- Determine whether this is an OTA/channel update, a new build, or both.
-- Confirm whether the release depends on new API behavior or feature flags.
+- Визнач: це OTA/channel-апдейт, новий білд чи обидва.
+- Підтверди, чи реліз залежить від нової поведінки API чи від feature-флагів.
 
-### 3.2 Prepare rollout
+### 3.2 Підготуй rollout
 
-- Capture build or update identifiers.
-- Record target channel, cohort, and rollback method.
-- Make sure auth bootstrap and one mobile-only flow are part of the smoke plan.
+- Захопи build- або update-identifier-и.
+- Зафіксуй цільовий канал, cohort і метод rollback-у.
+- Переконайся, що auth-bootstrap і один mobile-only flow — у плані smoke-у.
 
-### 3.3 Execute release
+### 3.3 Виконай реліз
 
-- Ship the build or update to the intended lane.
-- Verify that the correct config/env was used.
-- If the release depends on server changes, run § Web + API for the API piece first.
+- Шипни білд або апдейт у задуманий лейн.
+- Перевір, що використано правильний config/env.
+- Якщо реліз залежить від server-side змін — спершу прожени § Web + API для API-частини.
 
-### 3.4 Verify and monitor
+### 3.4 Верифікація і моніторинг
 
-- Install or update the published artifact.
-- Run auth, one primary screen load, and one mobile-only interaction.
-- Watch crash/error signals and support feedback during rollout.
+- Встанови або онови опублікований артефакт.
+- Прожени auth, один основний screen-load і одну mobile-only взаємодію.
+- Стеж за crash/error-сигналами і support-фідбеком під час rollout-у.
 
 ## Verification
 
-- [ ] Primary surface named in the PR
-- [ ] Deploy order documented when more than one surface is involved
-- [ ] Rollback path documented (web/API: previous Vercel/Railway deploy; shell: prior store build; Expo: prior channel update)
-- [ ] Post-release smoke completed for the touched surface (`/health` + critical flow for web/API; install + auth for shell; auth + one mobile-only flow for Expo)
-- [ ] Any migration/env ordering captured in the PR or release note
-- [ ] Build/version/channel identifiers recorded for mobile releases
+- [ ] Основну поверхню названо у PR
+- [ ] Порядок деплою задокументовано, якщо зачеплено більше однієї поверхні
+- [ ] Rollback-шлях задокументовано (web/API: попередній Vercel/Railway деплой; shell: попередній store-білд; Expo: попередній channel-апдейт)
+- [ ] Post-release smoke завершено для зачепленої поверхні (`/health` + критичний flow для web/API; install + auth для shell; auth + один mobile-only flow для Expo)
+- [ ] Будь-яке упорядкування міграцій/env зафіксовано у PR або release-нотатці
+- [ ] Build/version/channel identifier-и зафіксовано для мобільних релізів
 
-## When not to use this playbook
+## Коли цей playbook **не** застосовний
 
-- Change is docs-only or internal-only with no runtime effect.
-- Production regression that needs an immediate hotfix → [hotfix-prod-regression.md](./hotfix-prod-regression.md).
-- Pure feature-flag retirement without code changes → [retire-feature-flag.md](./retire-feature-flag.md).
+- Зміна — лише docs або внутрішня без рантайм-ефекту.
+- Продакшн-регресія, що вимагає негайного hotfix-у → [hotfix-prod-regression.md](./hotfix-prod-regression.md).
+- Чисте retire feature-флагу без коду → [retire-feature-flag.md](./retire-feature-flag.md).
 
-## Related playbooks and skills
+## Суміжні playbook'и і скіли
 
 - [hotfix-prod-regression.md](./hotfix-prod-regression.md)
-- [add-sql-migration.md](./add-sql-migration.md) — when the release ships schema changes.
-- [port-web-screen-to-mobile.md](./port-web-screen-to-mobile.md) — when the release lifts a web flow into Expo.
+- [add-sql-migration.md](./add-sql-migration.md) — коли реліз шипить зміни схеми.
+- [port-web-screen-to-mobile.md](./port-web-screen-to-mobile.md) — коли реліз піднімає web-flow в Expo.
 - Skill: `sergeant-deploy-and-observability`
 - Skill: `sergeant-server-api`
 - Skill: `sergeant-web-ui`
