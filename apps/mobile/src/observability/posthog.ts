@@ -21,7 +21,7 @@
  *   most of which are not yet in `apps/mobile/package.json` and would
  *   require config-plugin work + `expo prebuild`. We only need the
  *   capture / identify / reset surface for the FTUX activation funnel
- *   (see `docs/launch/ftux-sprint-plan.md` §S0.3), so a minimal
+ *   (see `docs/launch/product-os/ftux-sprint-plan.md` §S0.3), so a minimal
  *   `fetch`-based client keeps the dependency surface tight and works
  *   in both Expo Go and dev-client builds.
  *

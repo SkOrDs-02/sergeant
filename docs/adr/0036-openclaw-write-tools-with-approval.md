@@ -11,7 +11,7 @@
   - [ADR-0032 — Console consolidated into OpenClaw](./0032-console-consolidated-into-openclaw.md)
   - [ADR-0033 — OpenClaw multi-personas + `/council`](./0033-openclaw-multi-personas-and-council.md)
   - [ADR-0037 — OpenClaw write-audit persistence (Phase 4.5)](./0037-openclaw-write-audit-persistence.md) — closes the audit-trail debt from §4 below.
-  - [`docs/launch/openclaw-roadmap.md`](../launch/openclaw-roadmap.md) — Phase 4 section.
+  - [`docs/launch/tech/openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md) — Phase 4 section.
 
 ---
 

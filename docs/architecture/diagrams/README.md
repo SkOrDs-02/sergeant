@@ -1,9 +1,9 @@
 # C4 діаграми Sergeant
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
-GitHub-renderable Mermaid діаграми. Чотири рівні C4 + ключові sequence-flows. Запит виник у [`docs/diagnostics/2026-05-03-web-deep-dive` §9.2](../../diagnostics/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md).
+GitHub-renderable Mermaid діаграми. Чотири рівні C4 + ключові sequence-flows. Запит виник у [`docs/audits/2026-05-03-web-deep-dive` §9.2](../../audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md).
 
 ## Як читати C4
 

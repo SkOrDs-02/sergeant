@@ -1,6 +1,6 @@
 # Telegram surfaces — план покращень
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 > Поетапний план покращень Telegram-частини Sergeant — двох ботів
@@ -13,11 +13,11 @@
 >
 > Пов'язане:
 > [openclaw-roadmap.md](./openclaw-roadmap.md) (фази OpenClaw),
-> [05-operations-and-automation.md](./05-operations-and-automation.md#62-телеграм-як-control-room) (Telegram як control-room),
-> [ADR-0030](../adr/0030-telegram-reporting-channel-structure.md) (forum-mode роутинг),
-> [ADR-0031](../adr/0031-openclaw-v0-telegram-cofounder.md) (OpenClaw v0 baseline),
-> [ADR-0036](../adr/0036-openclaw-write-tools-with-approval.md) (write-tools approval),
-> [ADR-0037](../adr/0037-openclaw-write-audit-persistence.md) (write-audit persistence).
+> [05-operations-and-automation.md](../business/05-operations-and-automation.md#62-телеграм-як-control-room) (Telegram як control-room),
+> [ADR-0030](../../adr/0030-telegram-reporting-channel-structure.md) (forum-mode роутинг),
+> [ADR-0031](../../adr/0031-openclaw-v0-telegram-cofounder.md) (OpenClaw v0 baseline),
+> [ADR-0036](../../adr/0036-openclaw-write-tools-with-approval.md) (write-tools approval),
+> [ADR-0037](../../adr/0037-openclaw-write-audit-persistence.md) (write-audit persistence).
 
 ---
 
@@ -53,7 +53,7 @@
 
 - `Sergeant_alert_bot` — **broadcast / control-room**. Шумний, без діалогу.
 - `OpenClaw_sergeant_bot` — **тихий co-founder DM**. Multi-turn, з пам'яттю.
-- Боти **не діляться** функціоналом (per [ADR-0031 §НЕ робимо](../adr/0031-openclaw-v0-telegram-cofounder.md)).
+- Боти **не діляться** функціоналом (per [ADR-0031 §НЕ робимо](../../adr/0031-openclaw-v0-telegram-cofounder.md)).
 
 ---
 
@@ -112,13 +112,13 @@
 
 **Status:** **ack-button + escalation cron live** (Wave 3, 2 PR-и мерджені 2026-05-03):
 
-- W3 PR-1 — [#1473](https://github.com/Skords-01/Sergeant/pull/1473) — [ADR-0038](../adr/0038-tg-alert-acks-and-escalation.md) + `tg_alert_acks` table + 4 internal endpoint-и (`/post`/`/ack`/`/pending`/`/escalate`) + 26 unit/route tests.
+- W3 PR-1 — [#1473](https://github.com/Skords-01/Sergeant/pull/1473) — [ADR-0038](../../adr/0038-tg-alert-acks-and-escalation.md) + `tg_alert_acks` table + 4 internal endpoint-и (`/post`/`/ack`/`/pending`/`/escalate`) + 26 unit/route tests.
 - W3 PR-2 — [#1480](https://github.com/Skords-01/Sergeant/pull/1480) — WF-04 wired як reference (Build alert payload → `/api/internal/alerts/post` → 3-кнопковий inline-keyboard) + WF-104 callback router + WF-103 5-min escalation cron + manifest/REPORTING-MATRIX.
 
 Усі три workflow-ї (WF-04/103/104) в git з `"active": false` — потребують staging смоук-у + ручного toggle у n8n. Решта 17 broadcast workflows (WF-03/15/18/22/...) дотягають ack-row у mechanical follow-up sub-PR-у — pattern зафіксований у WF-04. OpenClaw `/alerts pending` slash залишається у W3 PR-3.
 
 **Pain закриває:** P2.
-**ADR:** [ADR-0038](../adr/0038-tg-alert-acks-and-escalation.md) ("Alert acknowledgement + escalation").
+**ADR:** [ADR-0038](../../adr/0038-tg-alert-acks-and-escalation.md) ("Alert acknowledgement + escalation").
 
 **Що:** WF-03 / WF-15 / WF-18 / WF-22 шлють alert у топік → `@Sergeant_alert_bot` додає inline-keyboard:
 
@@ -207,7 +207,7 @@ CREATE INDEX idx_tg_alert_acks_unacked
 **Acceptance:**
 
 - 0 `Bad request` errors у WF-15 за 7-day window після merge — track через `n8n_API` `/executions?status=error&workflowId=CygZ4vLxTm2ltuRW`.
-- Railway webhook payload-schema задокументовано у [`ops/n8n-workflows/15-railway-deployment-notify.README.md`](../../ops/n8n-workflows/15-railway-deployment-notify.README.md).
+- Railway webhook payload-schema задокументовано у [`ops/n8n-workflows/15-railway-deployment-notify.README.md`](../../../ops/n8n-workflows/15-railway-deployment-notify.README.md).
 
 **Bundle з §3.7 alert dedup** для повного fix story (без dedup нова правильна версія може теж spam-нути).
 
@@ -217,7 +217,7 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 **Status:** ✅ shipped і live in production (з 2026-05-03 21:26 UTC). Local dev лишається на long-poll (env-default-off).
 **Pain закриває:** P4.
-**ADR:** [ADR-0041 — OpenClaw Telegram delivery via webhook](../adr/0041-openclaw-telegram-webhook.md) §5 (production rollout) + race-condition note.
+**ADR:** [ADR-0041 — OpenClaw Telegram delivery via webhook](../../adr/0041-openclaw-telegram-webhook.md) §5 (production rollout) + race-condition note.
 
 **Що зроблено:** feature-flag webhook-режим у `tools/console`. Замість Express в `apps/server` хостимо `node:http`-listener в самому console-процесі (там же де `ApprovalStore`/agent-loop) і використовуємо grammy `webhookCallback("http", { secretToken })`. Long-poll лишається дефолтом для local dev (`pnpm console:dev`); production Railway env має `OPENCLAW_USE_WEBHOOK=true` + `OPENCLAW_WEBHOOK_URL=https://sergeant-hubchat-production.up.railway.app/webhook/openclaw` + `OPENCLAW_WEBHOOK_SECRET=<48-char hex>`. `Sergeant_alert_bot` лишається long-poll (broadcast-only, без callback latency-issue).
 
@@ -329,8 +329,8 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 ## 6. Non-goals — що навмисно НЕ робимо
 
-- **OpenClaw в group chats.** DM-only — фіксація per [ADR-0031](../adr/0031-openclaw-v0-telegram-cofounder.md) і [openclaw-roadmap.md §1](./openclaw-roadmap.md). Co-founder режим — приватний.
-- **HubChat ↔ OpenClaw інтеграція.** [ADR-0032](../adr/0032-console-consolidated-into-openclaw.md) фіксує: HubChat = end-user surface; OpenClaw = founder DM. Spillover — anti-pattern.
+- **OpenClaw в group chats.** DM-only — фіксація per [ADR-0031](../../adr/0031-openclaw-v0-telegram-cofounder.md) і [openclaw-roadmap.md §1](./openclaw-roadmap.md). Co-founder режим — приватний.
+- **HubChat ↔ OpenClaw інтеграція.** [ADR-0032](../../adr/0032-console-consolidated-into-openclaw.md) фіксує: HubChat = end-user surface; OpenClaw = founder DM. Spillover — anti-pattern.
 - **Telegram Mini-App для OpenClaw.** DM з tool-loop і approval-кнопками покриває >95% use-cases.
 - **Multi-language responses.** Internal docs українською (per AGENTS.md hard-rule #15); LLM-responses адаптивні до prompt-language; не форсимо UI-локалізацію.
 - **Public commands для `Sergeant_alert_bot`.** Бот broadcast-only; інтерактивність через callback-keyboards (§3.2, B.3, B.4) — exception, не норма.
@@ -339,14 +339,14 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 ## 7. References
 
-- [ADR-0030 — Telegram reporting channel structure](../adr/0030-telegram-reporting-channel-structure.md)
-- [ADR-0031 — OpenClaw v0 Telegram co-founder](../adr/0031-openclaw-v0-telegram-cofounder.md)
-- [ADR-0032 — Console consolidated into OpenClaw](../adr/0032-console-consolidated-into-openclaw.md)
-- [ADR-0033 — OpenClaw multi-personas + council](../adr/0033-openclaw-multi-personas-and-council.md)
-- [ADR-0036 — OpenClaw write-tools with approval](../adr/0036-openclaw-write-tools-with-approval.md)
-- [ADR-0037 — OpenClaw write-audit persistence](../adr/0037-openclaw-write-audit-persistence.md)
+- [ADR-0030 — Telegram reporting channel structure](../../adr/0030-telegram-reporting-channel-structure.md)
+- [ADR-0031 — OpenClaw v0 Telegram co-founder](../../adr/0031-openclaw-v0-telegram-cofounder.md)
+- [ADR-0032 — Console consolidated into OpenClaw](../../adr/0032-console-consolidated-into-openclaw.md)
+- [ADR-0033 — OpenClaw multi-personas + council](../../adr/0033-openclaw-multi-personas-and-council.md)
+- [ADR-0036 — OpenClaw write-tools with approval](../../adr/0036-openclaw-write-tools-with-approval.md)
+- [ADR-0037 — OpenClaw write-audit persistence](../../adr/0037-openclaw-write-audit-persistence.md)
 - [openclaw-roadmap.md — phase plan](./openclaw-roadmap.md)
-- [05-operations-and-automation.md §6.2](./05-operations-and-automation.md#62-телеграм-як-control-room) — Telegram як control-room
+- [05-operations-and-automation.md §6.2](../business/05-operations-and-automation.md#62-телеграм-як-control-room) — Telegram як control-room
 - `tools/console/src/openclaw/handler.ts` — DM bot entry-point
 - `apps/server/src/modules/openclaw/store.ts` — write-audit persistence
 - `ops/n8n-workflows/` — 19 active workflows

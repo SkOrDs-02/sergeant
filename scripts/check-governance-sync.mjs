@@ -17,8 +17,8 @@
 //    or target-state file structures whose refs naturally drift as code lands
 //    or is decomposed. Their dangling refs are reported as WARNINGS only:
 //      - docs/launch/                          (launch plans)
-//      - docs/planning/                        (stack-pulse, sprint plans)
-//      - docs/diagnostics/                     (deep-dive recommendations)
+//      - docs/planning/                        (sprint plans)
+//      - docs/audits/*-deep-dive/              (deep-dive recommendations)
 //      - docs/integrations/*-roadmap.md        (integration roadmaps)
 //      - docs/audits/*-implementation-roadmap.md (audit roadmaps)
 //      - docs/initiatives/                     (multi-phase initiative trackers)
@@ -204,13 +204,14 @@ function checkDanglingRefs() {
   function isAspirational(relPath) {
     if (relPath.startsWith("docs/launch/")) return true;
     if (relPath.startsWith("docs/planning/")) return true;
-    // `docs/diagnostics/` describe deep-dive recommendations — refs to
-    // suggested-but-not-yet-created files (`scripts/<new>.mjs`,
+    // Deep-dive directories under `docs/audits/*-deep-dive/` (formerly
+    // `docs/diagnostics/`, merged 2026-05-05) describe recommendations —
+    // refs to suggested-but-not-yet-created files (`scripts/<new>.mjs`,
     // `apps/web/tests/integration/<new>.test.ts`, etc.) are part of the
-    // recommendation surface, not Hard Rule #15 violations. Diagnostic
-    // docs are graduated into trackers in `docs/audits/` /
+    // recommendation surface, not Hard Rule #15 violations. Deep-dives
+    // graduate into trackers in `docs/audits/*-implementation-roadmap.md` /
     // `docs/tech-debt/` once accepted.
-    if (relPath.startsWith("docs/diagnostics/")) return true;
+    if (/^docs\/audits\/[^/]+-deep-dive\//.test(relPath)) return true;
     // `docs/initiatives/` track multi-phase work; refs may describe
     // pre-decomposition structure (e.g., `agent.ts` before being split),
     // upcoming-phase target files, or historical "before" state. The

@@ -51,7 +51,7 @@
 - **CI hardening** — `concurrency: cancel-in-progress`, `pnpm` cache, SHA-pinned actions, actionlint, pipeline-duration p95 trend.
 - **OpenAPI codegen** — `pnpm api:generate-openapi` + `api:check-openapi-types` (zod-to-openapi-style flow без переходу на tRPC).
 
-Залишковий backlog Q3 2026 — нижче в розділі «Next-up backlog» + у [`stack-pulse-2026-05/`](./stack-pulse-2026-05/README.md) (16 PR-ів).
+Залишковий backlog Q3 2026 — нижче в розділі «Next-up backlog» + у [`stack-pulse-2026-05/`](../initiatives/stack-pulse-2026-05/README.md) (16 PR-ів).
 
 ---
 
@@ -344,7 +344,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 - `SENTRY_DSN` виставлено на Railway (server) ✅. Beforesend-фільтр у `apps/server/src/sentry.ts` стрипає cookies/auth + email хеш-логуючи; реліз береться з cascade `SENTRY_RELEASE → RAILWAY_GIT_COMMIT_SHA → VERCEL_GIT_COMMIT_SHA → GITHUB_SHA` (L9 hardening).
 - `VITE_SENTRY_DSN` виставлено на Vercel (web) ✅ + `@sentry/vite-plugin` для source-map upload, динамічний import щоб не блокувати hydration.
 - **Mobile SDK залендено** (`@sentry/react-native` 6.10.0) у `apps/mobile/src/lib/observability.ts` ✅. Поки не виставлено `EXPO_PUBLIC_SENTRY_DSN` у Expo EAS Secrets — SDK раціонально no-op-ить (див. `getSentryDsn`), mobile помилки не агрегуються — єдиний залишок від «повного» #1.
-- Беклог: PR #12 `sentry-traces-sampler.md` у [`stack-pulse-2026-05/`](./stack-pulse-2026-05/pr-12-sentry-traces-sampler.md) — dynamic traces sample-rate по route-pattern.
+- Беклог: PR #12 `sentry-traces-sampler.md` у [`stack-pulse-2026-05/`](../initiatives/stack-pulse-2026-05/pr-12-sentry-traces-sampler.md) — dynamic traces sample-rate по route-pattern.
 
 ### 6.2. APM і tracing
 
@@ -406,17 +406,17 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 ### 7.1. Postgres-інструменти
 
-| Tool                   | What                            | Cost           | Статус                                                                                                                                                 |
-| ---------------------- | ------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **PgHero**             | Performance dashboard           | $0             | ⏳ pending                                                                                                                                             |
-| **pg_stat_statements** | Slow query identification       | $0 (extension) | ⏳ pending — включити на Railway PG, додати рубрику у [`docs/observability/runbook.md`](../observability/runbook.md)                                   |
-| **pgBouncer**          | Connection pooling              | $0             | ⏳ pending — PR #13 `postgres-pool-sizing.md` у [stack-pulse-2026-05](./stack-pulse-2026-05/pr-13-postgres-pool-sizing.md) (`pg.Pool.max` поки дефолт) |
-| **Atlas** (atlasgo.io) | Schema-as-code, drift detection | $0 / $30/міс   | ⏳ pending — PR #11 `drizzle-schema-drift-ci.md` у stack-pulse-2026-05 (Drizzle drift CI без повного Atlas)                                            |
-| **dbmate**             | Migrations CLI (lightweight)    | $0             | ⏳ not used — власний `apps/server/migrate.mjs` + sequential `NNN_*.sql` вже покриває                                                                  |
-| **squawk**             | Lint SQL migrations for safety  | $0             | ⏳ pending — власний `scripts/lint-migrations.mjs` вже ловить gaps; squawk додати для `DROP COLUMN` / `ALTER без CONCURRENTLY`                         |
-| **Prisma**             | TS ORM з migrations             | $0             | ⏳ not used (Drizzle обраний, див. [`docs/planning/orm-drizzle-vs-kysely.md`](./orm-drizzle-vs-kysely.md))                                             |
-| **Drizzle**            | TS ORM, simpler than Prisma     | $0             | ✅ done — `packages/db-schema` з PG + SQLite, drizzle-kit для schema generation; використовує `apps/server` + `apps/web` (CloudSync SQLite)            |
-| **Kysely**             | Type-safe SQL builder, no ORM   | $0             | ⏳ not used (Drizzle обраний)                                                                                                                          |
+| Tool                   | What                            | Cost           | Статус                                                                                                                                                              |
+| ---------------------- | ------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **PgHero**             | Performance dashboard           | $0             | ⏳ pending                                                                                                                                                          |
+| **pg_stat_statements** | Slow query identification       | $0 (extension) | ⏳ pending — включити на Railway PG, додати рубрику у [`docs/observability/runbook.md`](../observability/runbook.md)                                                |
+| **pgBouncer**          | Connection pooling              | $0             | ⏳ pending — PR #13 `postgres-pool-sizing.md` у [stack-pulse-2026-05](../initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md) (`pg.Pool.max` поки дефолт) |
+| **Atlas** (atlasgo.io) | Schema-as-code, drift detection | $0 / $30/міс   | ⏳ pending — PR #11 `drizzle-schema-drift-ci.md` у stack-pulse-2026-05 (Drizzle drift CI без повного Atlas)                                                         |
+| **dbmate**             | Migrations CLI (lightweight)    | $0             | ⏳ not used — власний `apps/server/migrate.mjs` + sequential `NNN_*.sql` вже покриває                                                                               |
+| **squawk**             | Lint SQL migrations for safety  | $0             | ⏳ pending — власний `scripts/lint-migrations.mjs` вже ловить gaps; squawk додати для `DROP COLUMN` / `ALTER без CONCURRENTLY`                                      |
+| **Prisma**             | TS ORM з migrations             | $0             | ⏳ not used (Drizzle обраний, див. [`docs/planning/orm-drizzle-vs-kysely.md`](./orm-drizzle-vs-kysely.md))                                                          |
+| **Drizzle**            | TS ORM, simpler than Prisma     | $0             | ✅ done — `packages/db-schema` з PG + SQLite, drizzle-kit для schema generation; використовує `apps/server` + `apps/web` (CloudSync SQLite)                         |
+| **Kysely**             | Type-safe SQL builder, no ORM   | $0             | ⏳ not used (Drizzle обраний)                                                                                                                                       |
 
 **Sergeant priority:**
 
@@ -647,7 +647,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 
 - [ ] Quarterly security audit
 - [ ] Quarterly recovery drill (DB backup restore)
-- [x] **Monthly tech debt review** — проводиться через [`stack-pulse-2026-05/`](./stack-pulse-2026-05/README.md) (16 PR-ів) + цей roadmap рефреш (2026-05-05).
+- [x] **Monthly tech debt review** — проводиться через [`stack-pulse-2026-05/`](../initiatives/stack-pulse-2026-05/README.md) (16 PR-ів) + цей roadmap рефреш (2026-05-05).
 - [ ] Weekly metrics check (CI fail rate, time-to-PR, etc.) — pending dashboards (PostHog + Grafana Cloud).
 
 ---

@@ -9,7 +9,7 @@
   - [ADR-0030 — Telegram reporting structure](./0030-telegram-reporting-channel-structure.md)
   - [ADR-0031 — OpenClaw v0 Telegram co-founder bot](./0031-openclaw-v0-telegram-cofounder.md)
   - [ADR-0032 — Console consolidated into OpenClaw](./0032-console-consolidated-into-openclaw.md)
-  - [`docs/launch/openclaw-roadmap.md`](../launch/openclaw-roadmap.md) — Phase 2.5 section.
+  - [`docs/launch/tech/openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md) — Phase 2.5 section.
 
 ---
 
@@ -140,6 +140,6 @@ Sequential, не parallel — навмисно:
 4. ✅ Code: `OPENCLAW_COUNCIL_USD_BUDGET` env-config + pre-budget check у `/council` handler-і.
 5. ✅ Tests: `personas.test.ts` (16 cases) + extend `openclaw.test.ts` з persona-aware prompt-тестами.
 6. ✅ ADR-0033 (this).
-7. ✅ Update `docs/launch/openclaw-roadmap.md`: Phase 2.5 → shipped.
+7. ✅ Update `docs/launch/tech/openclaw-roadmap.md`: Phase 2.5 → shipped.
 8. ✅ Update `tools/console/.env.example`: додати `OPENCLAW_COUNCIL_USD_BUDGET=2`.
 9. Phase 4 (окремий PR після цього): write-tools з approval-button + per-persona allowlist-и для write-tool-ів.

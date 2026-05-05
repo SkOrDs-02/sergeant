@@ -1,7 +1,7 @@
 # Sergeant Operations Stack — n8n
 
 Self-hosted n8n для автоматизації ops-задач Sergeant.
-Повний контекст — [docs/launch/05-operations-and-automation.md](../docs/launch/05-operations-and-automation.md).
+Повний контекст — [docs/launch/business/05-operations-and-automation.md](../docs/launch/business/05-operations-and-automation.md).
 
 > **Routing & ownership matrix:** [`n8n-workflows/REPORTING-MATRIX.md`](./n8n-workflows/REPORTING-MATRIX.md) — workflow → Telegram topic → audience → cadence → escalation. Архітектурне обґрунтування — [`docs/observability/telegram-control-plane.md`](../docs/observability/telegram-control-plane.md), формальне рішення — [ADR-0030](../docs/adr/0030-telegram-reporting-channel-structure.md).
 

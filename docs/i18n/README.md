@@ -25,5 +25,5 @@ runtime-i18n до того, як з'явиться product-вимога, ми т
 
 - Source каталог: [`apps/web/src/shared/i18n/uk.ts`](../../apps/web/src/shared/i18n/uk.ts).
 - Burndown codemod: [`scripts/codemods/i18n-burndown/`](../../scripts/codemods/i18n-burndown/README.md).
-- Web deep-dive item #18: [`docs/diagnostics/2026-05-03-web-deep-dive/00-overview.md`](../diagnostics/2026-05-03-web-deep-dive/00-overview.md).
+- Web deep-dive item #18: [`docs/audits/2026-05-03-web-deep-dive/00-overview.md`](../audits/2026-05-03-web-deep-dive/00-overview.md).
 - Allowlist file: [`apps/web/eslint.i18n-allowlist.json`](../../apps/web/eslint.i18n-allowlist.json).

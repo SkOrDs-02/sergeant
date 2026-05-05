@@ -24,7 +24,7 @@ import {
  * consumer test fails on missing field in the fixture, producer test
  * fails on missing field in the response.
  *
- * Closes diagnostic §7.4 (`docs/diagnostics/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`).
+ * Closes diagnostic §7.4 (`docs/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`).
  */
 
 const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {

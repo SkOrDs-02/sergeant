@@ -9,7 +9,7 @@
   - [`apps/server/src/migrations/003_baseline_schema.sql`](../../apps/server/src/migrations/003_baseline_schema.sql) — таблиці з `ON DELETE CASCADE` на `user(id)`.
   - [`apps/server/src/migrations/007_module_data_user_fk.sql`](../../apps/server/src/migrations/007_module_data_user_fk.sql) — FK на `module_data.user_id`.
   - [`apps/server/src/migrations/008_mono_integration.sql`](../../apps/server/src/migrations/008_mono_integration.sql) — Mono FK з cascade.
-  - [`docs/launch/04-launch-readiness.md`](../launch/04-launch-readiness.md#14-gdpr--data-rights) — § 1.4 GDPR / Data rights.
+  - [`docs/launch/business/04-launch-readiness.md`](../launch/business/04-launch-readiness.md#14-gdpr--data-rights) — § 1.4 GDPR / Data rights.
   - [`docs/adr/0017-better-auth-choice-and-session-model.md`](./0017-better-auth-choice-and-session-model.md) — auth-stack rationale.
 
 ---

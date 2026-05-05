@@ -21,7 +21,7 @@
 > per package/app)**.
 >
 > Цей документ — те саме, що §7a Sprint 6 cleanup batch у
-> [`docs/launch/ftux-sprint-plan.md`](../../launch/ftux-sprint-plan.md):
+> [`docs/launch/product-os/ftux-sprint-plan.md`](../../launch/product-os/ftux-sprint-plan.md):
 > прогавлені моменти, які раніше жили лише narrative-ом у §11.5
 > overview-таблиці, без розпису по PR-ах. Дванадцять round-N follow-up
 > PR-ів виконувались ad-hoc, без єдиного sprint-доку, тож reviewer не
@@ -191,4 +191,4 @@ contract-schema), R13.6 — паралельно. R13.1–R13.4 — парале
 - [`./02-architecture-and-state.md` §1.0 / §2.2](./02-architecture-and-state.md) — Items #15 / #6.
 - [`docs/i18n/readiness.md`](../../i18n/readiness.md) — Item #18 organic roadmap.
 - [`docs/testing/mutation.md`](../../testing/mutation.md) — Item #17 organic roadmap.
-- [`docs/launch/ftux-sprint-plan.md` §7a](../../launch/ftux-sprint-plan.md) — еталонний pattern «Sprint cleanup batch».
+- [`docs/launch/product-os/ftux-sprint-plan.md` §7a](../../launch/product-os/ftux-sprint-plan.md) — еталонний pattern «Sprint cleanup batch».

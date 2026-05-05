@@ -16,7 +16,7 @@ import { mobileKVStore } from "@/lib/storage";
  *     `[]` — that prevents an existing PostHog person profile from
  *     being clobbered when a returning user re-installs the app.
  *   - `plan` — current subscription tier. Stripe / billing isn't wired
- *     yet (see `docs/launch/01-monetization-and-pricing.md`), so all
+ *     yet (see `docs/launch/business/01-monetization-and-pricing.md`), so all
  *     identified users are `"free"`. When subscriptions land, this is
  *     the single place where the real source plugs in.
  *   - `locale` — best-effort device language string capped at 16 chars.

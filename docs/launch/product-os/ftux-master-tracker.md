@@ -7,17 +7,17 @@
 >
 > **Замінює (як SSOT для FTUX):**
 >
-> - [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка (історія, frozen).
+> - [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../../audits/2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка (історія, frozen).
 > - [`docs/launch/ftux-sprint-plan.md`](./ftux-sprint-plan.md) — sprint-roadmap (історія, frozen).
 > - Зовнішня прожарка 2026-05-05 (`reports/sergeant-onboarding-ux-roast-2026-05-05.md`) — новий зріз, **інкорпорований** сюди.
 >
 > **Cross-refs:**
-> [`01-monetization-and-pricing.md` §7](./01-monetization-and-pricing.md#7-activation-метрики) — activation baseline ·
-> [`04-launch-readiness.md` §4.2](./04-launch-readiness.md) — funnel definitions ·
-> [`docs/observability/posthog-ftux-dashboards.md`](../observability/posthog-ftux-dashboards.md) — PostHog dashboards runbook ·
-> [`docs/governance/feature-flags.md`](../governance/feature-flags.md) — flag conventions ·
-> [`docs/playbooks/add-onboarding-step.md`](../playbooks/add-onboarding-step.md) — додавання кроку у `ONBOARDING_STEPS` ·
-> [`docs/design/empty-states.md`](../design/empty-states.md) — 3-tier empty states ·
+> [`01-monetization-and-pricing.md` §7](../business/01-monetization-and-pricing.md#7-activation-метрики) — activation baseline ·
+> [`04-launch-readiness.md` §4.2](../business/04-launch-readiness.md) — funnel definitions ·
+> [`docs/observability/posthog-ftux-dashboards.md`](../../observability/posthog-ftux-dashboards.md) — PostHog dashboards runbook ·
+> [`docs/governance/feature-flags.md`](../../governance/feature-flags.md) — flag conventions ·
+> [`docs/playbooks/add-onboarding-step.md`](../../playbooks/add-onboarding-step.md) — додавання кроку у `ONBOARDING_STEPS` ·
+> [`docs/design/empty-states.md`](../../design/empty-states.md) — 3-tier empty states ·
 > `docs/governance/audit-freeze-2026-05-05.md` — freeze правила (4 тижні; з'явиться у PR-01).
 
 > **Audit-freeze contract.** Цей документ — **legal during freeze** (2026-05-05 → 2026-06-02), бо це **consolidation**, не нова прожарка. У freeze-period дозволено:
@@ -423,7 +423,7 @@ slos:
 
 > **Frozen references** (NE редагуємо вище ↑ — вищі відмітки оновлюються тут).
 
-- [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка з повним body. Цитати в §8.1-8.3 — з неї. Має redirect-banner на цей master tracker.
+- [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../../audits/2026-05-03-ftux-onboarding-roast.md) — оригінальна прожарка з повним body. Цитати в §8.1-8.3 — з неї. Має redirect-banner на цей master tracker.
 - [`docs/launch/ftux-sprint-plan.md`](./ftux-sprint-plan.md) — оригінальний sprint-plan з повним PR-розписом (Sprint 0-5 + 6 cleanup batch). Деталі implementation per sprint-item — там. Має redirect-banner на цей master tracker.
 - `reports/sergeant-onboarding-ux-roast-2026-05-05.md` (поза репо) — мега-прожарка 2026-05-05. Інкорпорована в §8.4.
 - `reports/sergeant-pr-plan-2026-05-05.md` (поза репо) — PR-план. Інкорпорований в §3.
@@ -435,7 +435,7 @@ slos:
 ## Editing rules (для майбутніх агентів)
 
 1. **Редагуй тут** — оновлення статусів, нові findings (post-freeze), нові decisions.
-2. **Не редагуй frozen sources** ([`2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md), [`ftux-sprint-plan.md`](./ftux-sprint-plan.md)) — вони лишаються як history. Виняток — bump `Last validated:` (через `bump-last-validated.mjs`) і додання redirect-banner.
+2. **Не редагуй frozen sources** ([`2026-05-03-ftux-onboarding-roast.md`](../../audits/2026-05-03-ftux-onboarding-roast.md), [`ftux-sprint-plan.md`](./ftux-sprint-plan.md)) — вони лишаються як history. Виняток — bump `Last validated:` (через `bump-last-validated.mjs`) і додання redirect-banner.
 3. **Status legend:**
    - ✅ Closed — shipped to `main`
    - 🚧 Partial / Mitigation — частково або в роботі

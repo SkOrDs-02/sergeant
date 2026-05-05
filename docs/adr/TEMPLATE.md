@@ -5,7 +5,7 @@
 - **Deciders:** @Skords-01 <!-- GitHub handles of people who approved the decision -->
 - **Supersedes:** — <!-- ADR-MMMM if this replaces an older record, otherwise — -->
 - **Related:**
-  - <!-- e.g. [`docs/launch/06-monetization-architecture.md`](../launch/06-monetization-architecture.md) -->
+  - <!-- e.g. [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md) -->
 
 ---
 

@@ -1,6 +1,6 @@
 # OpenClaw — roadmap до v0 і далі
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 > Поетапний план побудови OpenClaw — AI-партнера для founder-а Sergeant-у.
@@ -13,15 +13,15 @@
 > Source-of-truth для майбутніх PR-ів які торкаються OpenClaw — завжди
 > звіряти з цим файлом і з ADR-ами нижче.
 >
-> Пов'язане: [ADR-0027](../adr/0027-openclaw-console-mcp-policy.md) (політика console / MCP),
-> [ADR-0028](../adr/0028-pgvector-ai-memory.md) (pgvector AI memory),
-> [ADR-0030](../adr/0030-telegram-reporting-channel-structure.md) (forum-mode роутинг),
-> [ADR-0031](../adr/0031-openclaw-v0-telegram-cofounder.md) (OpenClaw v0 baseline),
-> [ADR-0032](../adr/0032-console-consolidated-into-openclaw.md) (Sergeant Console
+> Пов'язане: [ADR-0027](../../adr/0027-openclaw-console-mcp-policy.md) (політика console / MCP),
+> [ADR-0028](../../adr/0028-pgvector-ai-memory.md) (pgvector AI memory),
+> [ADR-0030](../../adr/0030-telegram-reporting-channel-structure.md) (forum-mode роутинг),
+> [ADR-0031](../../adr/0031-openclaw-v0-telegram-cofounder.md) (OpenClaw v0 baseline),
+> [ADR-0032](../../adr/0032-console-consolidated-into-openclaw.md) (Sergeant Console
 > consolidated into OpenClaw — slash-commands + ops/marketing tools live в OpenClaw),
-> [ADR-0033](../adr/0033-openclaw-multi-personas-and-council.md) (multi-personas +
+> [ADR-0033](../../adr/0033-openclaw-multi-personas-and-council.md) (multi-personas +
 > `/council` round-table — Phase 2.5 architecture),
-> [05 — Operations and Automation](./05-operations-and-automation.md) (узагальнена картина
+> [05 — Operations and Automation](../business/05-operations-and-automation.md) (узагальнена картина
 > n8n + OpenClaw).
 
 ---
@@ -64,7 +64,7 @@ service, агентний loop, read-only ops/product/codebase tools.
                      └──────────────────────────────────┘
 ```
 
-**Принцип розділення** (з [05-operations-and-automation.md §6.1](./05-operations-and-automation.md#61-розділення-відповідальності)):
+**Принцип розділення** (з [05-operations-and-automation.md §6.1](../business/05-operations-and-automation.md#61-розділення-відповідальності)):
 
 - **n8n** = детермінізм. "Stripe webhook → Telegram message". Без думання.
 - **OpenClaw** = синтез + co-founder dialogue. "Чому MRR впав? Що робимо?
@@ -368,7 +368,7 @@ sentry,server,posthog}` + `/api/internal/openclaw/github/releases`) з
 **Ціль:** OpenClaw може діяти, не тільки думати — кожна mutating дія
 потребує human-approval inline (per ADR-0027 + ADR-0036).
 
-**Архітектура:** [ADR-0036](../adr/0036-openclaw-write-tools-with-approval.md) — server-side
+**Архітектура:** [ADR-0036](../../adr/0036-openclaw-write-tools-with-approval.md) — server-side
 endpoints + console-side `ApprovalStore` (in-memory, 10-min TTL) + executor
 interception (`createOpenClawToolExecutor` детектить write-tool name → queue
 до `PendingApprovalsCollector` → handler `drain()` після turn-у → пост inline-keyboard
@@ -480,7 +480,7 @@ session кожні 2-3 дні.
 ### 4.3 Resolved decisions (2026-05-02 by @Skords-01)
 
 Всі 6 open questions для Phase 1 закриті. Канонічна референція цих рішень —
-[ADR-0031](../adr/0031-openclaw-v0-telegram-cofounder.md). Реплікація сюди
+[ADR-0031](../../adr/0031-openclaw-v0-telegram-cofounder.md). Реплікація сюди
 для self-contained roadmap-у.
 
 1. **Memory namespace — strict isolation.** OpenClaw читає / пише тільки

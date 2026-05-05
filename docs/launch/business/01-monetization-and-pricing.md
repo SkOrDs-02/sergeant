@@ -1,6 +1,6 @@
 # 01. Монетизація і ціноутворення
 
-> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 > Pre-MVP draft. Числа орієнтовні, тіри/ціни — для брейнштормінгу і A/B-тесту.

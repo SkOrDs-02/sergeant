@@ -20,11 +20,11 @@
     },
     {
       "pattern": "^https?://firstpagesage\\.com/reports/saas-conversion-rate-benchmarks/",
-      "reason": "Cited as a SaaS conversion benchmark source in docs/launch/01-monetization-and-pricing.md; First Page Sage rotates report URLs per quarter, the citation pins the report+year (2021–2025) which is the auditable claim."
+      "reason": "Cited as a SaaS conversion benchmark source in docs/launch/business/01-monetization-and-pricing.md; First Page Sage rotates report URLs per quarter, the citation pins the report+year (2021–2025) which is the auditable claim."
     },
     {
       "pattern": "^https?://appalize\\.com/reports/retention-2026/",
-      "reason": "Cited as a mobile retention benchmark in docs/launch/01-monetization-and-pricing.md; the report+year is the auditable claim, not the live URL — host has had stability issues throughout 2026."
+      "reason": "Cited as a mobile retention benchmark in docs/launch/business/01-monetization-and-pricing.md; the report+year is the auditable claim, not the live URL — host has had stability issues throughout 2026."
     },
     {
       "pattern": "^https?://(www\\.)?producthunt\\.com/(directory/upcoming|coming-soon)",
@@ -40,7 +40,7 @@
     },
     {
       "pattern": "^https?://claude\\.ai(/.*)?$",
-      "reason": "claude.ai gates project pages behind login and returns 403 to anonymous HEAD/GET; cited in docs/launch/05-operations-and-automation.md as a Claude Projects reference, the link is correct for authenticated users."
+      "reason": "claude.ai gates project pages behind login and returns 403 to anonymous HEAD/GET; cited in docs/launch/business/05-operations-and-automation.md as a Claude Projects reference, the link is correct for authenticated users."
     },
     {
       "pattern": "^https?://(www\\.)?better-auth\\.com/docs/concepts/email-and-password",
@@ -60,7 +60,7 @@
     },
     {
       "pattern": "^https?://node-postgres\\.com/api/pool",
-      "reason": "Cited в docs/planning/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md як reference на pg.Pool API at time of planning (2026-05). node-postgres docs site reorganized in 2025 — API surface unchanged, URL path moved to /apis/pool. Historical citation."
+      "reason": "Cited в docs/initiatives/stack-pulse-2026-05/pr-13-postgres-pool-sizing.md як reference на pg.Pool API at time of planning (2026-05). node-postgres docs site reorganized in 2025 — API surface unchanged, URL path moved to /apis/pool. Historical citation."
     },
     {
       "pattern": "^https?://(www\\.)?npmjs\\.com/package/",

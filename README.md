@@ -34,9 +34,9 @@ Web (PWA), iOS, Android. Працює офлайн. Дані — на твоєм
 
 - **Локальний запуск:** [§ Quickstart](#quickstart) нижче — ~5 хвилин від клонування до live UI на `http://localhost:5173`.
 - **Демо-режим без реєстрації:** після bootstrap відкрий `http://localhost:5173/welcome?demo=1` — побачиш приклад інтерфейсу з seed-даними, без створення акаунта.
-  _(Public production URL ще не лінкується — додасться, коли launch-readiness допиляється; див. [`docs/launch/04-launch-readiness.md`](./docs/launch/04-launch-readiness.md))._
-- **Огляд продукту:** [`docs/launch/01-monetization-and-pricing.md`](./docs/launch/01-monetization-and-pricing.md) — бізнес-модель + позиціонування.
-- **Поточний стан FTUX:** [`docs/launch/ftux-master-tracker.md`](./docs/launch/ftux-master-tracker.md) — sprint registry + відкриті проблеми.
+  _(Public production URL ще не лінкується — додасться, коли launch-readiness допиляється; див. [`docs/launch/business/04-launch-readiness.md`](./docs/launch/business/04-launch-readiness.md))._
+- **Огляд продукту:** [`docs/launch/business/01-monetization-and-pricing.md`](./docs/launch/business/01-monetization-and-pricing.md) — бізнес-модель + позиціонування.
+- **Поточний стан FTUX:** [`docs/launch/product-os/ftux-master-tracker.md`](./docs/launch/product-os/ftux-master-tracker.md) — sprint registry + відкриті проблеми.
 
 > Хочеш контриб'ютити, а не просто юзати? → [§ For Contributors and Agents](#for-contributors-and-agents) у кінці.
 

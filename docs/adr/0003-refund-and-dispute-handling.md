@@ -6,8 +6,8 @@
 - **Supersedes:** —
 - **Related:**
   - [`docs/adr/0001-monetization-architecture.md`](./0001-monetization-architecture.md) — ADR-1.1 (Stripe primary), ADR-1.8 (webhook event-id retention), ADR-1.11 (cancel-at-period-end).
-  - [`docs/launch/01-monetization-and-pricing.md`](../launch/01-monetization-and-pricing.md) — тіри і ціни (Pro ₴99/міс, ₴799/рік).
-  - [`docs/launch/06-monetization-architecture.md`](../launch/06-monetization-architecture.md) — risk register #8 («нічого про refund / proration»).
+  - [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md) — тіри і ціни (Pro ₴99/міс, ₴799/рік).
+  - [`docs/launch/business/06-monetization-architecture.md`](../launch/business/06-monetization-architecture.md) — risk register #8 («нічого про refund / proration»).
 
 ---
 
@@ -113,7 +113,7 @@ await pool.query(
 **Негативні:**
 
 - 24h SLA на support — хто його закриває коли founder спить? Документуємо
-  у `docs/launch/05-operations-and-automation.md` як "support manual,
+  у `docs/launch/business/05-operations-and-automation.md` як "support manual,
   best-effort 24h"; не SLA-обіцянка.
 - Юзер після refund-у залишається Pro до кінця оплаченого періоду — це
   trade-off на користь simplicity.

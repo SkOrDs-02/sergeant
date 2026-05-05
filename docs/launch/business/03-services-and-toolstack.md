@@ -223,7 +223,7 @@
 > - **BullMQ** — internal background jobs всередині сервера (auth email, FTUX drip, AI-memory embedding ingest, Mono-AI enrichment).
 > - **n8n** — cross-system workflow automation (Stripe webhook → DB + Telegram, Sentry alerts → Telegram, daily/weekly digests, GitHub PR stale alerts, security audit).
 >
-> Деталі автоматизації — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-6--automation-мета-зона) і [`ops/n8n-workflows/manifest.json`](../../ops/n8n-workflows/manifest.json).
+> Деталі автоматизації — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-6--automation-мета-зона) і [`ops/n8n-workflows/manifest.json`](../../../ops/n8n-workflows/manifest.json).
 
 ### 2.13 File storage (Phase 2+)
 
@@ -572,5 +572,5 @@ TOTAL FIXED      ~$26-68/mo  (infrastructure already paid)
 - Бізнес-модель, тіри, payment provider порівняння -> [01-monetization-and-pricing.md](./01-monetization-and-pricing.md)
 - Маркетингові канали, growth engine, partnerships -> [02-go-to-market.md](./02-go-to-market.md)
 - Legal, GDPR, billing edge cases, метрики, чеклист -> [04-launch-readiness.md](./04-launch-readiness.md)
-- Коли мігрувати між managed / self-host (фази 1-4, тригери) -> [architecture/hosting-evolution.md](../architecture/hosting-evolution.md)
+- Коли мігрувати між managed / self-host (фази 1-4, тригери) -> [architecture/hosting-evolution.md](../../architecture/hosting-evolution.md)
 - Операційні зони, алерти, n8n/OpenClaw автоматизація -> [05-operations-and-automation.md](./05-operations-and-automation.md)

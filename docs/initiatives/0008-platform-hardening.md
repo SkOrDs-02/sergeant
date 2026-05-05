@@ -24,7 +24,7 @@
 - Auth-flow атакували brute-force (~ 200 req/sec за 5 хв) — rate-limit спрацював, але без `Retry-After` клієнти retry-ять у тугому циклі. Кращий UX — `Retry-After: 60`.
 - За 2026-04 був CVE у `@anthropic-ai/sdk` (medium); ми його взяли на третій день після disclosure. Renovate / Dependabot би в auto-PR за годину.
 - Supply-chain: ми вже pin-нули actions по SHA, але **тільки під час** Q4 2025 incident response. Немає policy. `pnpm audit` running-у в CI нема.
-- Готуємось до growth (FTUX rollout згідно [`docs/launch/ftux-sprint-plan.md`](../launch/ftux-sprint-plan.md)). Operational baseline треба перед, не після, scale-up.
+- Готуємось до growth (FTUX rollout згідно [`docs/launch/product-os/ftux-sprint-plan.md`](../launch/product-os/ftux-sprint-plan.md)). Operational baseline треба перед, не після, scale-up.
 
 ## Скоуп
 

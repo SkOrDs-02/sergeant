@@ -267,8 +267,8 @@ export function WaitlistForm({
 
         <p className="text-xs text-muted">
           Без спаму. Один лист, коли Pro запуститься. Ціни теж покажемо
-          фіналізовано — поки в `docs/launch/01-monetization-and-pricing.md`
-          лише драфт.
+          фіналізовано — поки в
+          `docs/launch/business/01-monetization-and-pricing.md` лише драфт.
         </p>
       </div>
     </form>

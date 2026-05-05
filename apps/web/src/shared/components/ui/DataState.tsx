@@ -15,7 +15,7 @@ import { SkeletonCard } from "./SkeletonCard";
  *
  * **Why a wrapper instead of one-off conditionals?**
  *
- * The diagnostic in `docs/diagnostics/2026-05-03-web-deep-dive/01-frontend-ergonomics.md`
+ * The diagnostic in `docs/audits/2026-05-03-web-deep-dive/01-frontend-ergonomics.md`
  * §3.2 calls out that we have neither a system-wide skeleton policy nor
  * a uniform empty/error contract. Each page owns its own loading text,
  * empty-state copy, and retry button — drift is constant and AI agents

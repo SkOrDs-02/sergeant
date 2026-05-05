@@ -1,6 +1,6 @@
 # C3 — CloudSync (web)
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 Внутрішня структура CloudSync у `apps/web`. Це **local-first sync v1** — UI пише в локальне сховище (localStorage), сервер обробляє push-блоби й pull-блоби з LWW-резолюцією.
@@ -74,7 +74,7 @@ flowchart LR
 ## Ризики (з diagnostic §2.3)
 
 - **Split-brain** — два пристрої одночасно edit-ять той самий зріз → LWW дає переможцю по часу, але є вікно «обидва виграли локально». Тестів на цей сценарій ще немає (item #9 у roadmap).
-- **localStorage quota** на main thread → блокує UI під час великих pushes. Розмір нинішнього footprint-у відстежується через `pnpm lint:localstorage-allowlist` ([item #6 done](../../diagnostics/2026-05-03-web-deep-dive/00-overview.md)).
+- **localStorage quota** на main thread → блокує UI під час великих pushes. Розмір нинішнього footprint-у відстежується через `pnpm lint:localstorage-allowlist` ([item #6 done](../../audits/2026-05-03-web-deep-dive/00-overview.md)).
 - **v2 vs v1 sync coexistence** — v1 досі primary; v2 з operation-log частково розгорнуто. Cleanup у §2.3.
 
 ## Як змінити

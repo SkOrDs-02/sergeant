@@ -4,7 +4,7 @@
  * BullMQ / Resend залежностей.
  *
  * Тон: pragmatic, без emoji, без artificial cheer (цього вимагає S1
- * post-mortem — `docs/launch/sprint-retros/s1-honest-valueprop.md`). Кожен
+ * post-mortem — `docs/launch/product-os/sprint-retros/s1-honest-valueprop.md`). Кожен
  * лист має одну дію (CTA + контекст) і footer з opt-out-link-ою.
  *
  * Copy-review: KEEP-AS-IS поки founder-friend не схвалить альтернативи

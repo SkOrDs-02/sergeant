@@ -10,7 +10,7 @@ name: Mutation testing (Stryker)
 #   - щотижневий schedule (понеділок 04:00 UTC = 06:00 Київ),
 #   - PR-и, що чіпають mutated-файли (paths-фільтр).
 # Threshold у конфігах: high=80 / low=70 / break=60. Падіння break → CI fails.
-# Roadmap-довідник: docs/diagnostics/2026-05-03-web-deep-dive item #17.
+# Roadmap-довідник: docs/audits/2026-05-03-web-deep-dive item #17.
 # Документація: docs/testing/mutation.md.
 
 on:

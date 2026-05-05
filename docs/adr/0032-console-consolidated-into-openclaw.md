@@ -8,7 +8,7 @@
   - [ADR-0027 — OpenClaw / Console / MCP policy](./0027-openclaw-console-mcp-policy.md) — оригінальна політика console + OpenClaw.
   - [ADR-0030 — Telegram reporting structure](./0030-telegram-reporting-channel-structure.md) — supergroup + 7 топіків.
   - [ADR-0031 — OpenClaw v0 Telegram co-founder bot](./0031-openclaw-v0-telegram-cofounder.md) — v0 scope, allowlist, audit-log.
-  - [`docs/launch/openclaw-roadmap.md`](../launch/openclaw-roadmap.md) — phasing.
+  - [`docs/launch/tech/openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md) — phasing.
   - [`docs/architecture/apps-status-matrix.md`](../architecture/apps-status-matrix.md) — console deployment row.
 
 ---
@@ -130,7 +130,7 @@ ADR-0027 ввів дві окремі поверхні Telegram-автомати
 2. ✅ ADR-0032 (this).
 3. ✅ Update `docs/architecture/apps-status-matrix.md`: console row → `Status: dormant (consolidated into OpenClaw, ADR-0032)`.
 4. ✅ Update `docs/deploy/console.md`: rename intent to `sergeant-hubchat` deployment, додати ENV-list для нових tool-ів.
-5. ✅ Update `docs/launch/openclaw-roadmap.md`: Phase 1 scope включає `/status`, `/metrics`, `/digest`, `/logs`, `/review`.
+5. ✅ Update `docs/launch/tech/openclaw-roadmap.md`: Phase 1 scope включає `/status`, `/metrics`, `/digest`, `/logs`, `/review`.
 6. ✅ Update `docs/runbooks/openclaw-runbook.md`: команди + troubleshooting + persona-roadmap.
 7. ✅ Update `tools/console/.env.example`: 5 нових tool-ENV (Stripe / Sentry / PostHog / GitHub PAT) як optional.
 8. Sprint 1 (окремий PR): видалити `tools/console/src/agents/`, `tools/console/src/dispatcher/`, `tools/console/src/router*.ts` і перейменувати package на `@sergeant/openclaw-bot`.

@@ -5,7 +5,7 @@
 // from `apps/web/eslint.i18n-allowlist.json`.
 //
 // This is the long-running burndown codemod for item #18 of
-// `docs/diagnostics/2026-05-03-web-deep-dive/00-overview.md`. Unlike the
+// `docs/audits/2026-05-03-web-deep-dive/00-overview.md`. Unlike the
 // one-shot codemods next to it (`strip-js-extensions/`, `syncedKV/`),
 // this script is meant to be **re-run** every time we widen the catalog
 // or want to pull more files out of the allowlist. It is idempotent — a

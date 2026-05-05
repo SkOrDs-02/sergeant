@@ -146,5 +146,5 @@ set in production`) — fires the moment the misconfig hits.
   fail-closed pattern for bcrypt 72-byte cap).
 - `docs/security/rate-limit-failure-mode.md` — same fail-closed mental
   model for `/api/auth/*`.
-- `docs/planning/stack-pulse-2026-05/pr-15-ai-quota-disabled-hardblock.md`
+- `docs/initiatives/stack-pulse-2026-05/pr-15-ai-quota-disabled-hardblock.md`
   — original plan record.
