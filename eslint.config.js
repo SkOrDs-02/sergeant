@@ -313,6 +313,27 @@ export default [
       "sergeant-design/require-stories-for-ui-components": "warn",
     },
   },
+  // DataState adoption canary — initiative 0011 Phase 2.9 (foundation
+  // adoption — DataState rollout). Phases 2.4–2.8 мігрували існуючі
+  // manual-ladder callsite-и у `apps/web/src/modules/**` на
+  // `<DataState>` (finyk Mono / fizruk Workouts / nutrition Menu /
+  // routine Timeline / digest). Поки 0 active manual ladders у modules,
+  // rule працює як **warn-only canary**: підсвічує нові callsite-и, де
+  // код повертає JSX рано через `if (X.isLoading|isError|isPending)
+  // return <…/>`, але НЕ блокує. Після того, як 100% modules
+  // підтверджені clean і Storybook + visual regression покрив
+  // `<DataState>` permutations (success-criterion з
+  // `docs/initiatives/0011-foundation-adoption-and-process-discipline.md`
+  // § 6 — `<DataState>` adopted), rule піднімається до `error`. Default
+  // allowlist (DataState.tsx сама + `apps/web/src/core/auth/**` для
+  // auth-form patterns) живе у самому правилі
+  // (`packages/eslint-plugin-sergeant-design/index.js` § prefer-data-state).
+  {
+    files: ["apps/web/src/modules/**/*.{ts,tsx}"],
+    rules: {
+      "sergeant-design/prefer-data-state": "warn",
+    },
+  },
   // Import-extension hygiene — bans `.js`/`.jsx`/`.ts`/`.tsx`/`.mjs`/`.cjs`
   // suffixes in import specifiers for the bundler-fed frontend apps. Codemod
   // #3 stripped 436 historical extension-suffixed imports in `apps/web/src`

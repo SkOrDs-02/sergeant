@@ -3009,6 +3009,226 @@ const requireStoriesForUiComponents = {
   },
 };
 
+// ─── prefer-data-state ──────────────────────────────────────────────────
+//
+// Initiative 0011 Phase 2.9 (Foundation adoption — DataState rollout).
+// `<DataState>` (`apps/web/src/shared/components/ui/DataState.tsx`) — це
+// канонічний wrapper для loading/empty/error/stale станів React Query
+// resultata. Phases 2.4–2.8 мігрували існуючі manual-ladder callsite-и
+// (finyk Mono, fizruk Workouts, nutrition Menu, routine Timeline,
+// HubChat / digest) на `<DataState>`. Поки ad-hoc patterns не повернулися
+// у `apps/web/src/modules/**`, ця rule працює як **warn-only canary**:
+// підсвічує нові callsite-и, де код повертає JSX рано через
+// `if (X.isLoading) return <…/>` / `if (X.isError) return <…/>` /
+// `if (X.isPending) return <…/>`, але НЕ блокує існуючі. Після того, як
+// 100% modules підтверджені без manual ladders (sucess-criterion з
+// `docs/initiatives/0011-foundation-adoption-and-process-discipline.md`
+// § 6 — `<DataState>` adopted), rule піднімається до `error`.
+//
+// Детектимо тільки **early return JSX** pattern, тому що це канонічна
+// форма ladder-у, яку DataState замінює. Інші callsite-и (button
+// disable, badge color, optional element rendering) часто не мають
+// заміни через DataState, тому rule НЕ flag-ає:
+//   - `disabled={X.isLoading}` (button-disable)
+//   - `<Badge tone={isError ? "danger" : "info"} />` (UI tonal)
+//   - `{X.isLoading && <Spinner />}` inline (можна було б flag-ити, але
+//     тут більше false-positive-ів — оптимізуємо на precision у Phase 2.9)
+//   - `useMutation` callsite-и (вони не fetch і не мають data слоту)
+//
+// Allowlist (basename / prefix-path POSIX):
+//   - `apps/web/src/shared/components/ui/DataState.tsx` — сама компонента.
+//   - `apps/web/src/core/auth/**` — auth-форми мають свій pattern
+//     (useApiForm + AuthErrorBanner, не DataState).
+//   - Files matching `*.test.tsx` / `*.spec.tsx` / `__tests__/` — тести
+//     навмисно мокають всі гілки.
+
+const PREFER_DATA_STATE_MESSAGE =
+  "Manual `if ({{kind}}) return <…/>` ladder у `apps/web/src/modules/**` дублює loading/error policy, який `<DataState>` (`@shared/components/ui/DataState`) інкапсулює. Initiative 0011 Phase 2 (foundation adoption) вимагає міграцію на `<DataState query={…} skeleton={…} error={…}>{(data) => …}</DataState>` — див. `apps/web/src/modules/finyk/pages/transactions/TransactionList.tsx` як reference. Якщо твій callsite принципово НЕ fetch-side (mutation / coordinator hook без data), додай шлях у `allowlist` опції правила в `eslint.config.js`.";
+
+const PREFER_DATA_STATE_PATH_RE = /(?:^|\/)apps\/web\/src\/modules\//;
+const PREFER_DATA_STATE_TEST_RE =
+  /(?:\.test|\.spec)\.tsx?$|(?:^|\/)__tests__\//;
+
+// Default allowlist — repo-relative POSIX prefixes. Файли з шляхом, що
+// СТАРТУЄ з будь-якого з цих префіксів, ігноруються rule. Default
+// allowlist вибраний так, щоб з коробки закрити known-non-DataState
+// patterns: сам DataState (на випадок re-import у modules), auth-forms
+// (useApiForm), shared-bands (вони НЕ у scope, але дублюємо для safety).
+const DEFAULT_PREFER_DATA_STATE_ALLOWLIST = [
+  "apps/web/src/shared/components/ui/DataState.tsx",
+  "apps/web/src/core/auth/",
+];
+
+// Loading / error / pending property names, які rule вважає сигналом
+// "manual ladder". `isFetching` навмисно НЕ включаємо — це stale-flag,
+// у `<DataState>` він живе у `stale` слоті, але manual-ladder rare-ly
+// використовує його як early-return.
+const LADDER_PROPERTY_NAMES = new Set(["isLoading", "isError", "isPending"]);
+
+// Перевіряє, чи будь-де в test-вираженні `IfStatement.test` згадується
+// одне з ladder-property імен (як Identifier або property access).
+function findLadderPropertyName(testNode) {
+  if (!testNode) return null;
+
+  // Прямий Identifier: `if (isLoading) ...`
+  if (
+    testNode.type === "Identifier" &&
+    LADDER_PROPERTY_NAMES.has(testNode.name)
+  ) {
+    return testNode.name;
+  }
+  // MemberExpression: `query.isLoading`, `query["isLoading"]`,
+  // `chain.foo.bar.isLoading`. Беремо `property` як останню ланку.
+  if (testNode.type === "MemberExpression") {
+    if (
+      !testNode.computed &&
+      testNode.property?.type === "Identifier" &&
+      LADDER_PROPERTY_NAMES.has(testNode.property.name)
+    ) {
+      return testNode.property.name;
+    }
+    if (
+      testNode.computed &&
+      testNode.property?.type === "Literal" &&
+      typeof testNode.property.value === "string" &&
+      LADDER_PROPERTY_NAMES.has(testNode.property.value)
+    ) {
+      return testNode.property.value;
+    }
+    // Recurse into object — `chain.foo.isLoading.something` fallback.
+    const nested = findLadderPropertyName(testNode.object);
+    if (nested) return nested;
+  }
+  // LogicalExpression / BinaryExpression / UnaryExpression — рекурсивно
+  // шукаємо у обох операндах. Покриває `isLoading || isError`,
+  // `!isLoading && data`, `q.isLoading === true`, etc.
+  if (
+    testNode.type === "LogicalExpression" ||
+    testNode.type === "BinaryExpression"
+  ) {
+    return (
+      findLadderPropertyName(testNode.left) ||
+      findLadderPropertyName(testNode.right)
+    );
+  }
+  if (testNode.type === "UnaryExpression") {
+    return findLadderPropertyName(testNode.argument);
+  }
+  if (testNode.type === "ChainExpression") {
+    return findLadderPropertyName(testNode.expression);
+  }
+  return null;
+}
+
+// Перевіряє, чи у `consequent` гілці IfStatement є ReturnStatement, що
+// повертає JSX (елемент або фрагмент). Підтримує і прямий
+// `return <X/>`, і блок `{ return <X/>; }`.
+function consequentReturnsJsx(consequent) {
+  if (!consequent) return false;
+  if (consequent.type === "ReturnStatement") {
+    return isJsxLike(consequent.argument);
+  }
+  if (consequent.type === "BlockStatement") {
+    for (const stmt of consequent.body) {
+      if (stmt.type === "ReturnStatement" && isJsxLike(stmt.argument)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function isJsxLike(node) {
+  if (!node) return false;
+  if (node.type === "JSXElement" || node.type === "JSXFragment") return true;
+  // ConditionalExpression: `return X ? <A/> : <B/>` теж JSX-like.
+  if (node.type === "ConditionalExpression") {
+    return isJsxLike(node.consequent) || isJsxLike(node.alternate);
+  }
+  // LogicalExpression: `return cond && <A/>` — допускаємо.
+  if (node.type === "LogicalExpression") {
+    return isJsxLike(node.left) || isJsxLike(node.right);
+  }
+  // ParenthesizedExpression / TSAsExpression / TSNonNullExpression
+  // прозоро дивимось у нутро.
+  if (
+    node.type === "ParenthesizedExpression" ||
+    node.type === "TSAsExpression" ||
+    node.type === "TSNonNullExpression" ||
+    node.type === "TSTypeAssertion"
+  ) {
+    return isJsxLike(node.expression);
+  }
+  return false;
+}
+
+function toPreferDataStateRelativePath(filename) {
+  if (!filename) return "";
+  const norm = filename.replace(/\\/g, "/");
+  const idx = norm.indexOf("/apps/web/src/");
+  if (idx === -1) return norm.replace(/^\/+/, "");
+  return norm.slice(idx + 1);
+}
+
+const preferDataState = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Warn on manual `if (X.isLoading|isError|isPending) return <JSX/>` ladder in `apps/web/src/modules/**` — `<DataState>` (Initiative 0011 Phase 2) is the canonical replacement.",
+    },
+    schema: [
+      {
+        type: "object",
+        properties: {
+          allowlist: {
+            type: "array",
+            items: { type: "string" },
+            uniqueItems: true,
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
+    messages: { manualLadder: PREFER_DATA_STATE_MESSAGE },
+  },
+  create(context) {
+    const filename = context.filename ?? context.getFilename?.() ?? "";
+    if (!filename) return {};
+    const norm = filename.replace(/\\/g, "/");
+
+    // Path scope — modules-only.
+    if (!PREFER_DATA_STATE_PATH_RE.test(norm)) return {};
+
+    // Test-file skip.
+    if (PREFER_DATA_STATE_TEST_RE.test(norm)) return {};
+
+    // Allowlist (built-in + user-supplied) — prefix match on relative path.
+    const opts = context.options[0] ?? {};
+    const allowPrefixes = [
+      ...DEFAULT_PREFER_DATA_STATE_ALLOWLIST,
+      ...(Array.isArray(opts.allowlist) ? opts.allowlist : []),
+    ];
+    const rel = toPreferDataStateRelativePath(filename);
+    for (const prefix of allowPrefixes) {
+      if (rel === prefix || rel.startsWith(prefix)) return {};
+    }
+
+    return {
+      IfStatement(node) {
+        const ladderName = findLadderPropertyName(node.test);
+        if (!ladderName) return;
+        if (!consequentReturnsJsx(node.consequent)) return;
+        context.report({
+          node: node.test,
+          messageId: "manualLadder",
+          data: { kind: ladderName },
+        });
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
@@ -3036,6 +3256,7 @@ const plugin = {
     "no-hash-router-in-modules": noHashRouterInModules,
     "no-legacy-telegram-parse-mode": noLegacyTelegramParseMode,
     "require-stories-for-ui-components": requireStoriesForUiComponents,
+    "prefer-data-state": preferDataState,
   },
 };
 
