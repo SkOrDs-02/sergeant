@@ -1,6 +1,8 @@
 ---
 name: sergeant-bugfix-and-regression
 description: Use when fixing a Sergeant bug, regression, flaky test, broken deploy, or production issue where the fix depends on reproducing the failure first; UA: фіксиш баг, регресію, флакі-тест.
+lang: en
+lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
 ---
 
 # Sergeant Bugfix and Regression
