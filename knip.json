@@ -8,12 +8,7 @@
     "apps/web": {
       "entry": ["src/sw.ts"],
       "project": ["src/**/*.{js,jsx,ts,tsx}"],
-      "ignoreDependencies": [
-        "autoprefixer",
-        "postcss",
-        "tailwindcss",
-        "web-vitals"
-      ]
+      "ignoreDependencies": ["tailwindcss", "web-vitals"]
     },
     "apps/server": {
       "entry": ["src/index.ts", "build.mjs", "migrate.mjs"],
