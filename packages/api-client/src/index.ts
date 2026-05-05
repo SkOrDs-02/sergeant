@@ -67,6 +67,12 @@ export {
 } from "./endpoints/syncV2.increment";
 
 export {
+  mapSyncV2IncrementOpToOutboxInput,
+  type OutboxIncrementInputShape,
+  type SyncV2IncrementPushOp,
+} from "./endpoints/syncV2.increment.outboxEnqueue";
+
+export {
   createCoachEndpoints,
   type CoachEndpoints,
   type CoachInsightPayload,
