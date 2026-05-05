@@ -3,12 +3,12 @@
 > **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
-**Тригер:** щотижневий операційний огляд (operating review) здоров'я репозиторію, релізної дисципліни, інцидентів і процесного тертя (process friction).
+**Trigger:** щотижневий операційний огляд (operating review) здоров'я репозиторію, релізної дисципліни, інцидентів і процесного тертя (process friction).
 
-## Власник поверхні
+## Owner surface
 
-- Базова поверхня: інженерна операційна система (engineering operating system).
-- Керівний skill: `sergeant-review-and-merge`.
+- Primary surface: інженерна операційна система (engineering operating system).
+- Governing skill: `sergeant-review-and-merge`.
 
 ## Потрібний контекст
 
@@ -37,7 +37,7 @@
 - ретайрніть один застарілий feature-прапор
 - закрийте одну повторювану CI-проблему (recurring CI pain point)
 
-## Перевірка
+## Verification
 
 - [ ] Метрики переглянуті за останні 7 днів
 - [ ] Один пункт операційного боргу обрано для дії
