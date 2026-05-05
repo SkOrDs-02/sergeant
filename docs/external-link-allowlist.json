@@ -65,6 +65,10 @@
     {
       "pattern": "^https?://(www\\.)?npmjs\\.com/package/",
       "reason": "npm package pages return 403 to non-browser User-Agents (anti-scraping). Pages render correctly in browsers; cited у docs/testing/mutation.md та інших як package-reference. Treated-as-ok вже мав би покрити, але listed тут explicit для PR-reviewer audit."
+    },
+    {
+      "pattern": "^https?://(www\\.)?nivo\\.rocks(/.*)?$",
+      "reason": "nivo.rocks returns 402 (Payment Required, anti-bot) to non-browser User-Agents; pages render correctly in browsers. Cited в docs/planning/tools-research-2026-05.md як charting-library reference (Nivo, 13k ⭐)."
     }
   ]
 }
