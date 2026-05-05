@@ -44,7 +44,10 @@ describe("ValueProgressBar (S3.3a)", () => {
     const bar = screen.getByTestId("value-progress-bar-routine");
     expect(bar).toBeInTheDocument();
     expect(bar).toHaveAttribute("aria-valuenow", "0");
-    expect(bar).toHaveAttribute("aria-label", "Звичка «Пити воду» — 0/30 днів");
+    expect(bar).toHaveAttribute(
+      "aria-label",
+      "«Пити воду» — через 30 днів автоматично — Зараз: 0/30",
+    );
   });
 
   it("renders a finyk bar with the budget formatted in thousands", () => {
@@ -72,7 +75,7 @@ describe("ValueProgressBar (S3.3a)", () => {
     );
     expect(screen.getByTestId("value-progress-bar-routine")).toHaveAttribute(
       "aria-label",
-      "Звичка «Своя звичка» — 0/30 днів",
+      "«Своя звичка» — через 30 днів автоматично — Зараз: 0/30",
     );
   });
 
@@ -205,5 +208,61 @@ describe("hasAnyValueBar (S3.3a)", () => {
         goals: { ...EMPTY_GOALS, finykBudget: 30000 },
       }),
     ).toBe(false);
+  });
+});
+
+describe("ValueProgressBar — outcome-first copy (S6.6 audit-guard)", () => {
+  // The previous routine bar read «Звичка «Пити воду» · 0/30 днів» — a
+  // *mechanism* readout. Audit B-4 asked us to lead with the outcome
+  // (an automatic habit after N днів) so 0/30 stops feeling like a
+  // 0-streak shame indicator. These tests lock that frame so the
+  // mechanism-first phrasing cannot quietly come back through a
+  // copy-tweak PR.
+  const banned = [
+    /\bСерія днів\b/i,
+    /\bстрик\b/i,
+    /\bstreak\b/i,
+    // The exact pre-S6.6 routine label / current — should never reappear
+    // verbatim, even if a refactor accidentally restores them.
+    /Звичка «[^»]+» — \d+\/\d+ днів/,
+  ];
+
+  it("routine bar leads with outcome («автоматично») — not «Серія днів»", () => {
+    render(
+      <ValueProgressBar
+        activeModules={["routine"]}
+        goals={{ ...EMPTY_GOALS, routineFirstHabit: "water" }}
+      />,
+    );
+    const bar = screen.getByTestId("value-progress-bar-routine");
+    const ariaLabel = bar.getAttribute("aria-label") ?? "";
+    // Outcome words present.
+    expect(ariaLabel).toMatch(/автоматично/);
+    expect(ariaLabel).toMatch(/30/);
+    // Banned mechanism phrasings absent.
+    for (const pattern of banned) {
+      expect(ariaLabel).not.toMatch(pattern);
+      expect(document.body.textContent ?? "").not.toMatch(pattern);
+    }
+  });
+
+  it("works for every habit preset — outcome frame never decays", () => {
+    for (const habit of ["water", "exercise", "reading", "custom"] as const) {
+      cleanup();
+      render(
+        <ValueProgressBar
+          activeModules={["routine"]}
+          goals={{ ...EMPTY_GOALS, routineFirstHabit: habit }}
+        />,
+      );
+      const ariaLabel =
+        screen
+          .getByTestId("value-progress-bar-routine")
+          .getAttribute("aria-label") ?? "";
+      expect(ariaLabel, `habit=${habit}`).toMatch(/автоматично/);
+      for (const pattern of banned) {
+        expect(ariaLabel, `habit=${habit}`).not.toMatch(pattern);
+      }
+    }
   });
 });
