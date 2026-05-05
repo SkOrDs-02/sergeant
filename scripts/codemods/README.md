@@ -1,6 +1,6 @@
 # Codemods
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-05 by @Skords-01 / Devin. **Next review:** 2026-08-03.
 > **Status:** Active
 
 Одноразові міграційні скрипти, які запускались **один раз** у певному PR, виконали structural rewrite у репі і більше не потрібні в нормальному workflow. Зберігаються тут для:
@@ -20,9 +20,10 @@
 
 ## Caталог
 
-| Codemod                                          | Запущено      | Що робив                                                                          | Long-term enforcement                                          |
-| ------------------------------------------------ | ------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| [`strip-js-extensions/`](./strip-js-extensions/) | до 2026-05-03 | Видалив `.js` / `.jsx` з 436 first-party-імпортів у 180 файлах під `apps/web/src` | `eslint-plugin-import` + `import/extensions: never` (PR #1411) |
+| Codemod                                          | Запущено      | Що робив                                                                                                                                                                                 | Long-term enforcement                                                                                                                                                                                                   |
+| ------------------------------------------------ | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`strip-js-extensions/`](./strip-js-extensions/) | до 2026-05-03 | Видалив `.js` / `.jsx` з 436 first-party-імпортів у 180 файлах під `apps/web/src`                                                                                                        | `eslint-plugin-import` + `import/extensions: never` (PR #1411)                                                                                                                                                          |
+| [`syncedKV/`](./syncedKV/)                       | 2026-05-03    | Перевів `safeWriteLS(<sync-tracked key>, …)` на `safeWriteSyncedLS(…)` після видалення `localStorage.setItem` monkey-patch (PR #008 — `refactor(web): replace … with useSyncedKVStore`). | Dry-run codemod-as-CI-drift-check (exit 1 якщо знайдено новий call-site `safeWriteLS` зі sync-tracked ключем) + planned AST ESLint guard у PR #013. Скрипт сам несе `// @deprecated` маркер для `pnpm dead-code:files`. |
 
 ## Adding a new codemod
 
