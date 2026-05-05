@@ -111,10 +111,10 @@ describe("deep-link bridge — preference order", () => {
 
     const optionsNav = vi.fn();
     const cb = await captureUrlOpenCallback(mocks, { navigate: optionsNav });
-    cb({ url: "com.sergeant.shell://settings" });
+    cb({ url: "com.sergeant.shell://profile" });
 
     expect(optionsNav).toHaveBeenCalledTimes(1);
-    expect(optionsNav).toHaveBeenCalledWith("/settings");
+    expect(optionsNav).toHaveBeenCalledWith("/profile");
     expect(bridgeNav).not.toHaveBeenCalled();
   });
 
@@ -209,7 +209,7 @@ describe("deep-link bridge — resilience", () => {
     });
 
     const cb = await captureUrlOpenCallback(mocks, { navigate });
-    expect(() => cb({ url: "com.sergeant.shell://home" })).not.toThrow();
+    expect(() => cb({ url: "com.sergeant.shell://welcome" })).not.toThrow();
 
     expect(navigate).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalled();
@@ -226,7 +226,7 @@ describe("deep-link bridge — resilience", () => {
     });
 
     const cb = await captureUrlOpenCallback(mocks);
-    expect(() => cb({ url: "com.sergeant.shell://settings" })).not.toThrow();
+    expect(() => cb({ url: "com.sergeant.shell://profile" })).not.toThrow();
 
     expect(warnSpy).toHaveBeenCalled();
     const warnArg = String(warnSpy.mock.calls[0]?.[0]);
@@ -243,11 +243,11 @@ describe("deep-link bridge — resilience", () => {
     // яке стирало б раніше накопичені cold-start події.
     const mocks = installCapacitorMocks();
     const w = window as BridgeWindow;
-    w.__sergeantShellDeepLinkQueue = ["/prev"];
+    w.__sergeantShellDeepLinkQueue = ["/welcome"];
 
     const cb = await captureUrlOpenCallback(mocks);
-    cb({ url: "com.sergeant.shell://home" });
+    cb({ url: "com.sergeant.shell://profile" });
 
-    expect(w.__sergeantShellDeepLinkQueue).toEqual(["/prev", "/home"]);
+    expect(w.__sergeantShellDeepLinkQueue).toEqual(["/welcome", "/profile"]);
   });
 });

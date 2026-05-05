@@ -1,14 +1,9 @@
----
-lang: en
-lang-reason: Active deploy-pipeline reference triggered by the `Deploy-config staging gate` CI failure on PRs touching `vercel.json` / `fly.toml` / `railway.toml` / `Dockerfile*` / `Caddyfile` / `apps/server/build.mjs`. Body walks through vendor-CLI invocations, GitHub Actions step names, and rollback semantics — all English-native nomenclature mirrored from the vendor docs the playbook already links to. UA translation would re-translate vendor terminology already canonical in the linked docs, adding maintenance cost without operational benefit. Tracked under initiative 0009 PR 1.2b.
----
-
-# Playbook: Deploy-config change (vercel / fly / railway / Dockerfile)
+# Playbook: Зміна deploy-конфігу (vercel / fly / railway / Dockerfile)
 
 > **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
-**Trigger:** PR has non-comment changes to deploy-config files (`vercel.json`, `fly.toml`, `railway.toml`, `Dockerfile*`, `Caddyfile`, `apps/server/build.mjs`) — `Deploy-config staging gate` CI fails without a verification label.
+**Trigger:** PR має non-comment зміни у deploy-config файлах (`vercel.json`, `fly.toml`, `railway.toml`, `Dockerfile*`, `Caddyfile`, `apps/server/build.mjs`) — CI-job `Deploy-config staging gate` падає без verification-лейбла.
 
 ## Owner surface
 
@@ -17,116 +12,116 @@ lang-reason: Active deploy-pipeline reference triggered by the `Deploy-config st
 
 ## Required context
 
-- Start with `sergeant-start-here`, then open `sergeant-deploy-and-observability`.
-- Review [vercel.md](../deploy/vercel.md), [service-catalog.md](../architecture/service-catalog.md), [release-policy.md](../governance/release-policy.md).
-- Vercel SSOT note: `apps/web/vercel.json` is canonical. Vercel Project «Root Directory» = `apps/web`. Adding a second `vercel.json` (e.g. at the monorepo root) is forbidden — `pnpm lint` enforces this via `scripts/check-vercel-config.sh`.
+- Стартуй з `sergeant-start-here`, тоді відкрий `sergeant-deploy-and-observability`.
+- Перечитай [vercel.md](../deploy/vercel.md), [service-catalog.md](../architecture/service-catalog.md), [release-policy.md](../governance/release-policy.md).
+- Vercel SSOT-нотатка: `apps/web/vercel.json` — канонічний. У Vercel Project «Root Directory» = `apps/web`. Додавати другий `vercel.json` (наприклад, у корені monorepo) **заборонено** — `pnpm lint` енфорсить це через `scripts/check-vercel-config.sh`.
 
-## Why this playbook exists
+## Чому існує цей playbook
 
-PR #1595 → PR #1600 — «Vercel SSOT-flip». A deploy-config edit at the monorepo root passed all CI but broke production immediately because no human had verified the change against a real edge-cached Vercel deploy. CI cannot replace human verification of edge-served / edge-cached config — humans must.
+PR #1595 → PR #1600 — «Vercel SSOT-flip». Edit deploy-конфігу у корені monorepo пройшов увесь CI, але одразу зламав продакшн, бо жодна людина не верифікувала зміну на реальному edge-cached Vercel-деплої. CI **не може** замінити людську верифікацію edge-served / edge-cached конфігу — мусять люди.
 
-This playbook defines what «verified on staging» means for each deploy-config surface and how to apply the verification label so [`deploy-config-staging-gate.yml`](../../.github/workflows/deploy-config-staging-gate.yml) passes.
+Цей playbook визначає, що означає «verified on staging» для кожної deploy-config поверхні і як ставити verification-лейбл, щоб [`deploy-config-staging-gate.yml`](../../.github/workflows/deploy-config-staging-gate.yml) проходив.
 
-## Decision Tree
+## Дерево рішень
 
-**Q1: Is this a true production hotfix that cannot be exercised on staging?**
+**Q1: Чи це справжній production hotfix, який неможливо прокатати на staging?**
 
-- No → continue to Q2 (normal flow).
-- Yes → [§4 Emergency escape-hatch](#4-emergency-escape-hatch). Requires a post-mortem commitment in the PR body.
+- Ні → продовжуй до Q2 (нормальний flow).
+- Так → [§4 Emergency escape-hatch](#4-emergency-escape-hatch). Потрібне зобовʼязання написати post-mortem у тілі PR.
 
-**Q2: Which surface does the change touch?**
+**Q2: Яку поверхню зачіпає зміна?**
 
-- `apps/web/vercel.json` → [§1 Verify Vercel preview](#1-verify-vercel-preview).
-- `Dockerfile.api`, `apps/server/build.mjs`, `fly.toml` (api) → [§2 Verify staging API deploy](#2-verify-staging-api-deploy).
-- `Dockerfile.console`, `railway.toml` (console / alloy) → [§3 Verify Railway service](#3-verify-railway-service).
-- Multiple — apply each relevant section before labelling.
+- `apps/web/vercel.json` → [§1 Перевір Vercel preview](#1-перевір-vercel-preview).
+- `Dockerfile.api`, `apps/server/build.mjs`, `fly.toml` (api) → [§2 Перевір staging-деплой API](#2-перевір-staging-деплой-api).
+- `Dockerfile.console`, `railway.toml` (console / alloy) → [§3 Перевір Railway-сервіс](#3-перевір-railway-сервіс).
+- Кілька — застосуй кожну релевантну секцію перед тим, як ставити лейбл.
 
 ```mermaid
 flowchart TD
-    Q1{"Hotfix, no staging path?"}
-    Q1 -- "No" --> Q2{"Which surface?"}
-    Q1 -- "Yes" --> EMERG["§4 Emergency"]
+    Q1{"Hotfix без staging-шляху?"}
+    Q1 -- "Ні" --> Q2{"Яка поверхня?"}
+    Q1 -- "Так" --> EMERG["§4 Emergency"]
 
     Q2 -- "vercel.json" --> WEB["§1 Vercel preview"]
     Q2 -- "Dockerfile.api / build.mjs / fly.toml" --> API["§2 Staging API"]
-    Q2 -- "Dockerfile.console / railway.toml" --> RAILWAY["§3 Railway service"]
+    Q2 -- "Dockerfile.console / railway.toml" --> RAILWAY["§3 Railway-сервіс"]
 
-    WEB --> LABEL["Apply verified-on-staging"]
+    WEB --> LABEL["Постав verified-on-staging"]
     API --> LABEL
     RAILWAY --> LABEL
-    EMERG --> LABEL_E["Apply verified-on-staging-emergency<br/>+ post-mortem"]
+    EMERG --> LABEL_E["Постав verified-on-staging-emergency<br/>+ post-mortem"]
 ```
 
 ---
 
-## Steps
+## Кроки
 
-### 1. Verify Vercel preview
+### 1. Перевір Vercel preview
 
-1. Wait for the Vercel preview deploy to publish on the PR (status check «Vercel» = success, link in PR comments).
-2. Open the preview URL. Smoke-test the critical-flow page that depends on the changed config:
-   - Headers (`Content-Security-Policy`, `Permissions-Policy`, `Strict-Transport-Security`) — use DevTools «Network» panel; compare against current production.
-   - Rewrites / redirects you changed — manually navigate the affected paths.
-   - Edge-cached pages — hard-reload (Cmd+Shift+R / Ctrl+Shift+R) and check `cache-control` header.
-3. Verify the build artifacts on the preview don't contain unexpected files (`/api/*`, hidden dotfiles, etc.). Use the «Vercel Inspect» link or `curl -I`.
-4. Watch Vercel logs (Project → Logs) for ~30 seconds: no 5xx spike, no edge-config errors.
-5. If everything is green, apply label `verified-on-staging`.
+1. Дочекайся, поки Vercel preview-деплой опублікується на PR (статус-чек «Vercel» = success, лінк у коментарях PR).
+2. Відкрий preview URL. Прожени smoke на сторінку критичного flow, що залежить від зміненого конфігу:
+   - Заголовки (`Content-Security-Policy`, `Permissions-Policy`, `Strict-Transport-Security`) — використай DevTools «Network» panel; порівняй з поточним продакшном.
+   - Rewrites / redirects, які ти змінив — пройди вручну зачеплені шляхи.
+   - Edge-cached сторінки — hard-reload (Cmd+Shift+R / Ctrl+Shift+R) і перевір `cache-control`.
+3. Перевір build-артефакти на preview, щоб не було несподіваних файлів (`/api/*`, hidden dotfiles тощо). Використай «Vercel Inspect» або `curl -I`.
+4. Подивись Vercel-логи (Project → Logs) ~30 секунд: жодного 5xx-сплеска, жодних edge-config помилок.
+5. Якщо все зелене — постав лейбл `verified-on-staging`.
 
-### 2. Verify staging API deploy
+### 2. Перевір staging-деплой API
 
-1. Push the branch, wait for CI to pass.
-2. Manually trigger a deploy to staging Fly app (`fly deploy --app sergeant-api-staging --config fly.staging.toml --image-label devin-test`) **or** ask a maintainer to deploy your branch to staging.
-3. Smoke-test:
-   - `/health` returns 200 with expected JSON shape.
-   - `/health/liveness`, `/health/readiness`, `/health/startup` (if relevant) — see [add-sql-migration.md](./add-sql-migration.md) for migration-aware probes.
-   - Run one auth flow end-to-end via the staging web client.
-4. Watch staging Fly logs for ~5 minutes (or two deploy cycles, whichever is longer). No 5xx, no migration loop, no boot-loop.
-5. If everything is green, apply label `verified-on-staging`.
+1. Запушай гілку, дочекайся проходження CI.
+2. Вручну тригерни deploy на staging Fly-app (`fly deploy --app sergeant-api-staging --config fly.staging.toml --image-label devin-test`) **або** попроси maintainer-а задеплоїти твою гілку на staging.
+3. Smoke:
+   - `/health` повертає 200 з очікуваною формою JSON.
+   - `/health/liveness`, `/health/readiness`, `/health/startup` (якщо релевантно) — див. [add-sql-migration.md](./add-sql-migration.md) для migration-aware probe-ів.
+   - Прожени один auth-flow end-to-end через staging web-клієнт.
+4. Подивись staging Fly-логи ~5 хвилин (або два deploy-цикли — що довше). Жодних 5xx, migration-loop або boot-loop.
+5. Якщо все зелене — постав лейбл `verified-on-staging`.
 
-### 3. Verify Railway service
+### 3. Перевір Railway-сервіс
 
-1. Apply the change to a staging Railway project (or a temporary fork). Configuration changes in `railway.toml` (start commands, env, replica count) MUST be cycled through a real deploy.
-2. Confirm the service starts cleanly (Railway → Service → Deployments → latest → no restart loop).
-3. If the service is `tools/console` (Telegram bot), verify with a `/help` ping in the staging Telegram bot. If the service is `ops/grafana-alloy`, verify metrics ingestion in staging Grafana.
-4. Apply label `verified-on-staging`.
+1. Застосуй зміну до staging Railway-проекту (або тимчасового форку). Зміни конфігу в `railway.toml` (start commands, env, replica count) **обовʼязково** мають пройти через реальний deploy.
+2. Підтверди, що сервіс стартує чисто (Railway → Service → Deployments → latest → жодного restart-loop).
+3. Якщо сервіс — `tools/console` (Telegram-бот), верифікуй `/help` ping-ом у staging Telegram-бот. Якщо `ops/grafana-alloy` — верифікуй ingestion метрик у staging Grafana.
+4. Постав лейбл `verified-on-staging`.
 
 ### 4. Emergency escape-hatch
 
-True production hotfixes that cannot be exercised on staging (e.g. CDN-edge config that only Vercel applies, kill-switch toggling) may use the `verified-on-staging-emergency` label. The label is **not** a free pass:
+Справжні prod-хотфікси, які неможливо прокатати на staging (наприклад, CDN-edge конфіг, який лише Vercel застосовує; toggling kill-switch-у), можуть використати лейбл `verified-on-staging-emergency`. Цей лейбл — **не** free pass:
 
-1. The PR body MUST include:
-   - Why staging cannot be exercised (e.g. «only the production Vercel project has the edge-config binding»).
-   - Mitigation plan if the change misbehaves (rollback commit SHA, kill-switch path, on-call rotation).
-   - Commitment to a post-mortem within 7 calendar days, linked in `docs/incidents/`.
-2. At least one second pair of eyes from `@Skords-01` (or designated reviewer) on the PR before merge.
-3. Watch production logs / Sentry for the first 30 minutes after deploy.
-4. File the post-mortem; reference this PR.
+1. Тіло PR **обовʼязково** містить:
+   - Чому staging неможливо задіяти (наприклад, «лише production Vercel-проєкт має edge-config binding»).
+   - План мітигації, якщо зміна поведе себе погано (rollback commit SHA, шлях kill-switch, on-call rotation).
+   - Зобовʼязання написати post-mortem протягом 7 календарних днів, з лінком у `docs/incidents/`.
+2. Принаймні один додатковий reviewer від `@Skords-01` (або призначений reviewer) на PR перед merge.
+3. Стеж за prod-логами / Sentry перші 30 хвилин після деплою.
+4. Напиши post-mortem; полінкуй цей PR.
 
 ---
 
 ## Verification
 
-- [ ] Surface identified (web / API / Railway service / multiple).
-- [ ] Smoke test on the matching staging environment passed.
-- [ ] Logs / Sentry watched for the relevant window without anomalies.
-- [ ] Label applied: `verified-on-staging` OR `verified-on-staging-emergency` + post-mortem commitment.
-- [ ] CI job `Deploy-config staging gate` passes.
+- [ ] Поверхню ідентифіковано (web / API / Railway-сервіс / кілька).
+- [ ] Smoke на відповідному staging-середовищі пройшов.
+- [ ] Логи / Sentry перевірено за відповідне вікно без аномалій.
+- [ ] Лейбл поставлено: `verified-on-staging` АБО `verified-on-staging-emergency` + зобовʼязання post-mortem.
+- [ ] CI-job `Deploy-config staging gate` зеленіє.
 
-## When not to use this playbook
+## Коли цей playbook **не** застосовний
 
-- Change is docs-only / comment-only inside a deploy-config file — the gate auto-skips it (every changed line is a comment in the file's syntax).
-- Change is purely in source code that happens to be _imported_ by `apps/server/build.mjs` (e.g. `apps/server/src/...`). Only `build.mjs` itself is gated.
-- Adding a brand-new app's deploy-config (treat as an architecture change, write an ADR first).
+- Зміна — лише docs / коментарі всередині deploy-config файлу — гейт auto-skip-ить її (кожна змінена лінія — коментар у синтаксисі цього файлу).
+- Зміна — суто у вихідному коді, який _імпортується_ з `apps/server/build.mjs` (наприклад, `apps/server/src/...`). Гейт стосується лише самого `build.mjs`.
+- Додавання deploy-config для зовсім нового app — це архітектурна зміна, спершу пиши ADR.
 
-## Related playbooks and skills
+## Суміжні playbook'и і скіли
 
-- [release-web-and-api.md](./release-web-and-api.md) — full release flow that includes deploy-config changes.
-- [hotfix-prod-regression.md](./hotfix-prod-regression.md) — how to recover when the gate is bypassed and the change broke prod.
-- [write-postmortem.md](./write-postmortem.md) — required after `verified-on-staging-emergency`.
+- [release.md](./release.md) — повний release-flow, включно зі змінами deploy-config-у (§ Web + API).
+- [hotfix-prod-regression.md](./hotfix-prod-regression.md) — як відновлюватися, коли гейт обійшли і зміна зламала prod.
+- [write-postmortem.md](./write-postmortem.md) — обовʼязковий після `verified-on-staging-emergency`.
 - Skill: `sergeant-deploy-and-observability`
 
-## Notes
+## Нотатки
 
-- The CI job source: [`.github/workflows/deploy-config-staging-gate.yml`](../../.github/workflows/deploy-config-staging-gate.yml). Logic: [`scripts/ci/check-deploy-config-staging-gate.mjs`](../../scripts/ci/check-deploy-config-staging-gate.mjs).
+- Джерело CI-job: [`.github/workflows/deploy-config-staging-gate.yml`](../../.github/workflows/deploy-config-staging-gate.yml). Логіка: [`scripts/ci/check-deploy-config-staging-gate.mjs`](../../scripts/ci/check-deploy-config-staging-gate.mjs).
 - Initiative ref: [`docs/initiatives/0011-foundation-adoption-and-process-discipline.md`](../initiatives/0011-foundation-adoption-and-process-discipline.md) §Фаза 1 → PR 1.3.
-- Closes type-incident PR #1595 → PR #1600.
+- Закриває type-incident PR #1595 → PR #1600.

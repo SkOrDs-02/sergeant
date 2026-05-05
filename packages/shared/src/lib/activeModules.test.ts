@@ -10,12 +10,13 @@ import {
   setHideInactiveModules,
   toggleHideInactiveModules,
 } from "./activeModules";
+import { markOnboardingDone } from "./onboarding";
 import { ALL_MODULES, VIBE_PICKS_KEY, saveVibePicks } from "./vibePicks";
 
 describe("activeModules — getActiveModules", () => {
-  it("falls back to ALL_MODULES on a fresh store", () => {
+  it("returns [] on a fresh store (S6.1: no auto-fallback before onboarding)", () => {
     const store = createMemoryKVStore();
-    expect(getActiveModules(store)).toEqual([...ALL_MODULES]);
+    expect(getActiveModules(store)).toEqual([]);
   });
 
   it("returns the saved subset when the user picked modules", () => {
@@ -24,10 +25,17 @@ describe("activeModules — getActiveModules", () => {
     expect(getActiveModules(store)).toEqual(["finyk", "routine"]);
   });
 
-  it("falls back to ALL_MODULES when stored picks are empty", () => {
+  it("legacy onboarding-done users with empty picks keep the ALL_MODULES fallback", () => {
     const store = createMemoryKVStore();
+    markOnboardingDone(store);
     saveVibePicks(store, []);
     expect(getActiveModules(store)).toEqual([...ALL_MODULES]);
+  });
+
+  it("returns [] when picks empty AND onboarding not yet done (S6.1: opt-in path)", () => {
+    const store = createMemoryKVStore();
+    saveVibePicks(store, []);
+    expect(getActiveModules(store)).toEqual([]);
   });
 
   it("filters unknown ids out via sanitization", () => {
@@ -44,8 +52,9 @@ describe("activeModules — setActiveModules", () => {
     expect(getActiveModules(store)).toEqual(["fizruk"]);
   });
 
-  it("an empty selection falls back to ALL_MODULES on read", () => {
+  it("legacy onboarding-done user clearing all picks keeps ALL_MODULES on read", () => {
     const store = createMemoryKVStore();
+    markOnboardingDone(store);
     setActiveModules(store, ["finyk"]);
     setActiveModules(store, []);
     expect(getActiveModules(store)).toEqual([...ALL_MODULES]);

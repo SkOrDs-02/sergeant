@@ -25,6 +25,7 @@
 
 import { type DashboardModuleId } from "./dashboard";
 import { type KVStore } from "../storage/kv";
+import { isOnboardingDone } from "./onboarding";
 import { ALL_MODULES, getVibePicks, saveVibePicks } from "./vibePicks";
 
 /**
@@ -36,13 +37,35 @@ export const HIDE_INACTIVE_MODULES_KEY = "hub_hide_inactive_modules_v1";
 
 /**
  * Return the set of modules the user marked as active during
- * onboarding (or via Hub Settings). Falls back to {@link ALL_MODULES}
- * when the picks list is missing or empty so legacy accounts and
- * fresh installs render every module by default.
+ * onboarding (or via Hub Settings).
+ *
+ * Empty-picks fallback policy (S6.1 / B-1):
+ *
+ *   - **Already-onboarded legacy users** (`isOnboardingDone(store)`
+ *     is true but the picks list is empty — possible on devices that
+ *     completed onboarding before S6.1, or after the user manually
+ *     unticked everything in Hub Settings): fall back to
+ *     {@link ALL_MODULES} so the dashboard does not suddenly empty
+ *     out from under them.
+ *
+ *   - **New users** (onboarding not yet finished, picks empty): return
+ *     `[]`. The S6.1 wizard now disables its primary CTA in that
+ *     state, so the empty-picks branch should never reach a populated
+ *     dashboard for someone in the `none` arm of
+ *     `onboarding_default_picks_v1`.
+ *
+ * The change is intentional — pre-S6.1 the wizard silently fell back
+ * to "all four modules" on tap-through, producing a populated hub the
+ * user never actually chose. The audit (`docs/audits/2026-05-03-…`)
+ * traced that to a measurable D7 retention drop. Keeping the fallback
+ * for legacy onboarding-done users avoids breaking existing accounts
+ * while the new behaviour ships behind the A/B flag.
  */
 export function getActiveModules(store: KVStore): DashboardModuleId[] {
   const picks = getVibePicks(store);
-  return picks.length > 0 ? picks : [...ALL_MODULES];
+  if (picks.length > 0) return picks;
+  if (isOnboardingDone(store)) return [...ALL_MODULES];
+  return [];
 }
 
 /**

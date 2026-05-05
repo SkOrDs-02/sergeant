@@ -1,31 +1,9 @@
 import { storageManager as baseStorageManager } from "@shared/lib/storage/storageManager";
-
-const STORAGE_PREFIX = "finyk_";
-
-function key(name: string): string {
-  const normalized = String(name || "").trim();
-  return normalized.startsWith(STORAGE_PREFIX)
-    ? normalized
-    : `${STORAGE_PREFIX}${normalized}`;
-}
-
-function getJSON<T>(storageKey: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(storageKey);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function setJSON(storageKey: string, value: unknown): boolean {
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(value));
-    return true;
-  } catch {
-    return false;
-  }
-}
+import {
+  safeReadStringLS,
+  safeRemoveLS,
+  safeWriteLS,
+} from "@shared/lib/storage/storage";
 
 baseStorageManager.register({
   id: "finyk_002_rename_finto_user_data",
@@ -45,23 +23,15 @@ baseStorageManager.register({
       ["finto_mono_debt_linked", "finyk_mono_debt_linked"],
       ["finto_networth_history", "finyk_networth_history"],
       ["finto_tx_splits", "finyk_tx_splits"],
-    ]) {
-      try {
-        const old = localStorage.getItem(oldKey);
-        if (old !== null && localStorage.getItem(newKey) === null) {
-          localStorage.setItem(newKey, old);
-        }
-        if (old !== null) localStorage.removeItem(oldKey);
-      } catch {
-        /* ignore migration item errors */
+    ] as const) {
+      const old = safeReadStringLS(oldKey);
+      if (old === null) continue;
+      if (safeReadStringLS(newKey) === null) {
+        safeWriteLS(newKey, old);
       }
+      safeRemoveLS(oldKey);
     }
   },
 });
 
-export const finykStorageManager = {
-  ...baseStorageManager,
-  key,
-  getJSON,
-  setJSON,
-};
+export const finykStorageManager = baseStorageManager;
