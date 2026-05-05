@@ -60,6 +60,18 @@ const envSchema = z.object({
    * `docs/runbooks/database-connection-pooling.md`.
    */
   DATABASE_URL_POOL: z.string().url().optional(),
+  /**
+   * Read-replica Postgres URL (PR #047 — analytics offload).
+   *
+   * Якщо заданий — opt-in caller-и через `apps/server/src/dbReplica.ts`
+   * (зараз `growth_*` / `seo_*` analytics SELECT-и) ходять у replica
+   * pool. Writes, транзакції і будь-що з read-after-write semantic-ою
+   * лишаються на primary pool. Без `DATABASE_URL_REPLICA` replica
+   * helper-и прозоро fallback-ять на primary, тому існуючі деплоїменти
+   * без replica працюють так, як і раніше. Acceptable replication lag
+   * target: < 5s p99. Деталі — `docs/runbooks/postgres-read-replica.md`.
+   */
+  DATABASE_URL_REPLICA: z.string().url().optional(),
   /** Максимум з'єднань у pg Pool. */
   PG_POOL_MAX: coerceInt.positive().default(10),
   /** Поріг повільного запиту (мс) для логування та метрики. */
