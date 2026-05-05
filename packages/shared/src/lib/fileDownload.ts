@@ -24,10 +24,14 @@ function isDev(): boolean {
   try {
     // Works under Vite (define'd), Metro, Node, and plain browser —
     // `process` may be undefined in some bundler configs, hence the
-    // try/catch + optional chain.
-    return (
-      typeof process !== "undefined" && process.env?.NODE_ENV !== "production"
-    );
+    // try/catch + optional chain. Read off `globalThis` instead of the
+    // bare `process` identifier so the file type-checks under tsconfigs
+    // that don't include `@types/node` (e.g. `apps/web/tsconfig.json`,
+    // which scopes `types: ["vite/client"]` only — see initiative 0009
+    // PR 1.3 staged-typecheck guard).
+    const proc = (globalThis as { process?: { env?: { NODE_ENV?: string } } })
+      .process;
+    return typeof proc !== "undefined" && proc.env?.NODE_ENV !== "production";
   } catch {
     return false;
   }

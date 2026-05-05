@@ -36,7 +36,7 @@ export function ReEngagementCard({
         <div className="space-y-1">
           <h3 className="text-base font-bold text-text">Давно не бачились!</h3>
           <p className="text-xs text-muted leading-relaxed max-w-xs">
-            Ти був відсутній {daysInactive}{" "}
+            Тебе не було {daysInactive}{" "}
             {daysInactive === 1 ? "день" : daysInactive < 5 ? "дні" : "днів"}.
             Все збережено — продовжуй звідки зупинився.
           </p>
