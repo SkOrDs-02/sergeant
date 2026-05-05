@@ -445,13 +445,27 @@ Schedule env (TZ-aware human-readable strings; Phase 2 wires actual cron):
 
 Broadcast policy: `dm` | `digest` (default — weekly+monthly у 📊 Дайджести) | `all`.
 
-### `OPENCLAW_GITHUB_PAT`, `OPENCLAW_GITHUB_REPO`, `OPENCLAW_GITHUB_BASE_BRANCH` _(optional)_
+### `OPENCLAW_USE_GITHUB_APP`, `OPENCLAW_GITHUB_APP_ID`, `OPENCLAW_GITHUB_APP_PRIVATE_KEY`, `OPENCLAW_GITHUB_APP_INSTALLATION_ID` _(optional, Phase 1 of stack-pulse-2026-05 PR-06)_
 
-GitHub PAT з `contents:write` для opening PR-ів з decision markdown у `docs/decisions/`.
+Авт-флоу через GitHub App — короткоживучі (1 година) installation-токени замість довгоживучих PAT-ів. **Phase 1** (тривкий tip-of-tree станом на 2026-05): App-flow доступний паралельно з PAT-flow, гейт `OPENCLAW_USE_GITHUB_APP=false` (default). **Phase 2** (через тиждень soak): default flips → `true`, PAT-flow видаляється разом з `Git_PAT`-fallback-ом, реєструється hard-rule «no PAT in production».
+
+- `OPENCLAW_USE_GITHUB_APP` — `true|false`, default `false`. Без `true` решта `OPENCLAW_GITHUB_APP_*` — no-op.
+- `OPENCLAW_GITHUB_APP_ID` — числовий ID App-у (з `Settings → Developer settings → GitHub Apps → Sergeant OpenClaw`).
+- `OPENCLAW_GITHUB_APP_PRIVATE_KEY` — PEM-приватник App-у. Деякі secret-store-и (Vercel, Railway, 1Password CLI) розплющують `\n` → `github-auth.ts` репарює `\\n → \n` перед `crypto.createSign('RSA-SHA256')`.
+- `OPENCLAW_GITHUB_APP_INSTALLATION_ID` — installation id (один App може стояти на кількох орг-ах; pin-имо явно щоб blast radius був однозначний).
+
+Реалізація: [`apps/server/src/modules/openclaw/github-auth.ts`](../../apps/server/src/modules/openclaw/github-auth.ts) — мінт + кеш installation-токена з 5-хв headroom-ом до експайру. Rotation runbook — [`docs/playbooks/rotate-openclaw-credentials.md`](../playbooks/rotate-openclaw-credentials.md).
+
+Failure-mode (Phase 1): якщо App-flow ввімкнений АЛЕ exchange падає (HTTP 401, expired key, etc.) — повертаємо `null`, **не** silently fallback-имо на PAT (це маскувало б config-drift); caller бачить `not_configured` у audit-логу і операторне сповіщення спрацьовує негайно.
+
+### `OPENCLAW_GITHUB_PAT`, `OPENCLAW_GITHUB_REPO`, `OPENCLAW_GITHUB_BASE_BRANCH` _(optional, legacy — phasing out)_
+
+GitHub PAT з `contents:write` для opening PR-ів з decision markdown у `docs/decisions/`. **Phasing out** (Phase 2 of stack-pulse-2026-05 PR-06).
 
 - Якщо не задано — `record_decision` пише у Postgres з `git_pr_url=NULL` (manual retry у Phase 2).
-- Fallback на `Git_PAT` якщо існує.
+- Fallback на `Git_PAT` якщо існує (Devin-VM-only convention; production codepath не повинен залежати від цього).
 - `OPENCLAW_GITHUB_REPO=Skords-01/Sergeant`, `OPENCLAW_GITHUB_BASE_BRANCH=main`.
+- **Не** додавати нові call-сайти на `env.OPENCLAW_GITHUB_PAT` — використовуй `getOpenclawGithubAuth()` з [`apps/server/src/modules/openclaw/github-auth.ts`](../../apps/server/src/modules/openclaw/github-auth.ts).
 
 ---
 
