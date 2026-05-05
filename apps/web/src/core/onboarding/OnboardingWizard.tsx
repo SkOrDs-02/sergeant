@@ -27,8 +27,11 @@ import {
   ONBOARDING_VIBE_ICONS,
   ONBOARDING_VIBE_TEASERS,
   ONBOARDING_HERO_COPY_EXPERIMENT,
+  ONBOARDING_DEFAULT_PICKS_EXPERIMENT,
   assignVariant,
   getOnboardingHeroCopy,
+  isOnboardingDefaultPicksVariant,
+  type OnboardingDefaultPicksVariant,
   type OnboardingHeroCopy,
   type OnboardingHeroCopyVariant,
 } from "@sergeant/shared";
@@ -56,9 +59,28 @@ interface PersistedPicksState {
   picks: string[];
 }
 
-function loadPersistedPicks(): string[] {
+/**
+ * Read the user's persisted module picks from localStorage. The
+ * empty-state default depends on the {@link defaultPicksVariant}:
+ *
+ *  - `"none"` (S6.1 opt-in arm): missing / malformed / empty payload
+ *    returns `[]`. The wizard then disables its primary CTA until
+ *    the user picks ≥1 module — no silent ALL_MODULES fallback.
+ *
+ *  - `"all"` (legacy control arm): missing / malformed / empty payload
+ *    returns `[...ALL_MODULES]`. Pre-S6.1 behaviour.
+ *
+ * Valid persisted picks are returned filtered against the known
+ * module list regardless of variant; only the empty-state branch
+ * differs.
+ */
+function loadPersistedPicks(
+  defaultPicksVariant: OnboardingDefaultPicksVariant,
+): string[] {
+  const emptyDefault = (): string[] =>
+    defaultPicksVariant === "none" ? [] : [...ALL_MODULES];
   const raw = safeReadStringLS(ONBOARDING_PICKS_STATE_KEY);
-  if (!raw) return [...ALL_MODULES];
+  if (!raw) return emptyDefault();
   try {
     const data = JSON.parse(raw) as PersistedPicksState;
     if (
@@ -67,14 +89,14 @@ function loadPersistedPicks(): string[] {
       !Array.isArray(data.picks) ||
       data.picks.length === 0
     ) {
-      return [...ALL_MODULES];
+      return emptyDefault();
     }
     const allowed: ReadonlySet<string> = new Set(ALL_MODULES);
     return data.picks.filter(
       (p): p is string => typeof p === "string" && allowed.has(p),
     );
   } catch {
-    return [...ALL_MODULES];
+    return emptyDefault();
   }
 }
 
@@ -232,6 +254,8 @@ function WelcomeOneScreen({
   onToggleExpanded,
   copy,
   ctaLabelOverride,
+  ctaDisabled,
+  emptyPicksHint,
 }: {
   picks: string[];
   togglePick: (id: string) => void;
@@ -246,6 +270,16 @@ function WelcomeOneScreen({
    * `copy.primaryCta` so the experiment arm controls the text.
    */
   ctaLabelOverride?: string;
+  /**
+   * S6.1: disable the primary CTA when the user is in the `none` arm
+   * of `onboarding_default_picks_v1` and has no module selected.
+   */
+  ctaDisabled?: boolean;
+  /**
+   * S6.1: inline hint rendered below the CTA when {@link ctaDisabled}
+   * is true. Tells the user why the button is inactive.
+   */
+  emptyPicksHint?: string;
 }) {
   return (
     <div className="flex flex-col items-center text-center space-y-5">
@@ -302,10 +336,21 @@ function WelcomeOneScreen({
         variant="primary"
         size="lg"
         className="w-full"
+        disabled={ctaDisabled}
       >
         {ctaLabelOverride ?? copy.primaryCta}
         <Icon name="chevron-right" size={16} />
       </Button>
+
+      {ctaDisabled && emptyPicksHint ? (
+        <p
+          className="text-xs text-muted -mt-2"
+          role="status"
+          aria-live="polite"
+        >
+          {emptyPicksHint}
+        </p>
+      ) : null}
 
       <button
         type="button"
@@ -361,8 +406,21 @@ export function OnboardingWizard({
   mode?: "real" | "tour";
 }) {
   const isTour = mode === "tour";
+
+  // Default-picks A/B (S6.1). Assignment is deterministic per device
+  // fingerprint and persists across renders, so the user always sees
+  // the same arm — no mid-flight flip from "all pre-selected" to
+  // "empty" between paints. Tour replay short-circuits to the legacy
+  // `all` arm so the read-only replay always shows every module
+  // pre-checked, matching the screenshot we ship in marketing.
+  const defaultPicksVariant = useMemo<OnboardingDefaultPicksVariant>(() => {
+    if (isTour) return "all";
+    const raw = assignVariant(webKVStore, ONBOARDING_DEFAULT_PICKS_EXPERIMENT);
+    return isOnboardingDefaultPicksVariant(raw) ? raw : "all";
+  }, [isTour]);
+
   const [picks, setPicks] = useState<string[]>(() =>
-    isTour ? [...ALL_MODULES] : loadPersistedPicks(),
+    isTour ? [...ALL_MODULES] : loadPersistedPicks(defaultPicksVariant),
   );
   const [expanded, setExpanded] = useState(false);
 
@@ -416,10 +474,21 @@ export function OnboardingWizard({
       return;
     }
 
-    // Empty selection falls back to all modules: the lazy "tap-through"
-    // path leaves every module visible on the hub instead of producing
-    // a useless dashboard.
     const hadEmptyPicks = picks.length === 0;
+
+    // S6.1 / B-1: in the `none` arm we never silently fall back to
+    // ALL_MODULES — the primary CTA is disabled while picks is empty,
+    // so reaching this branch means the wizard component bypassed the
+    // disable (keyboard-driven submit, programmatic call, etc.). Bail
+    // out without writing any state so the user's choice (none yet)
+    // is preserved and they stay on the splash.
+    if (hadEmptyPicks && defaultPicksVariant === "none") {
+      return;
+    }
+
+    // `all` arm (legacy): empty selection falls back to all modules
+    // so the lazy "tap-through" path leaves every module visible on
+    // the hub instead of producing a useless dashboard.
     const chosen = hadEmptyPicks ? [...ALL_MODULES] : picks;
     saveVibePicks(chosen as never[]);
 
@@ -452,7 +521,7 @@ export function OnboardingWizard({
       intent: hadEmptyPicks ? "vibe_empty" : "vibe_picked",
       picks: chosen,
     });
-  }, [picks, onDone, isTour]);
+  }, [picks, onDone, isTour, defaultPicksVariant]);
 
   // Hero copy A/B (S1.1 + S1.2). Assignment is deterministic per
   // device fingerprint and persists across renders, so the user always
@@ -475,7 +544,7 @@ export function OnboardingWizard({
 
   // Fire `EXPERIMENT_EXPOSED` on the same render the user actually sees
   // the variant. Real wizard only — tour replay must not contaminate
-  // the experiment dataset. Effect runs once because `heroVariant` is
+  // the experiment dataset. Effects run once because both variants are
   // stable for the lifetime of the wizard mount.
   useEffect(() => {
     if (isTour) return;
@@ -483,7 +552,17 @@ export function OnboardingWizard({
       experiment_id: ONBOARDING_HERO_COPY_EXPERIMENT.id,
       variant: heroVariant,
     });
-  }, [isTour, heroVariant]);
+    trackEvent(ANALYTICS_EVENTS.EXPERIMENT_EXPOSED, {
+      experiment_id: ONBOARDING_DEFAULT_PICKS_EXPERIMENT.id,
+      variant: defaultPicksVariant,
+    });
+  }, [isTour, heroVariant, defaultPicksVariant]);
+
+  // S6.1: only the `none` arm disables the CTA on empty picks. Tour
+  // replay never disables the CTA — replay always renders all four
+  // pre-checked, so the disabled state would be unreachable noise.
+  const ctaDisabled =
+    !isTour && defaultPicksVariant === "none" && picks.length === 0;
 
   const content = useMemo(
     () => (
@@ -495,9 +574,20 @@ export function OnboardingWizard({
         onToggleExpanded={toggleExpanded}
         copy={heroCopy}
         ctaLabelOverride={isTour ? "Закрити" : undefined}
+        ctaDisabled={ctaDisabled}
+        emptyPicksHint="Обери хоч один модуль"
       />
     ),
-    [picks, togglePick, finish, expanded, toggleExpanded, heroCopy, isTour],
+    [
+      picks,
+      togglePick,
+      finish,
+      expanded,
+      toggleExpanded,
+      heroCopy,
+      isTour,
+      ctaDisabled,
+    ],
   );
 
   if (variant === "fullPage") {

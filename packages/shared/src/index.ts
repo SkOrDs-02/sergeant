@@ -60,6 +60,11 @@ export * from "./lib/onboardingGoals";
 // OnboardingWizard hero copy A/B (S1.1 + S1.2).
 export * from "./lib/onboardingHeroCopy";
 
+// S6.1: 50/50 A/B between `none` (opt-in, new behaviour) and `all`
+// (legacy ALL_MODULES fallback). Wizard reads `assignVariant` to
+// decide whether the splash starts with empty picks or pre-selected.
+export * from "./lib/onboardingDefaultPicks";
+
 // Reset helpers for Settings ("Restart onboarding").
 export * from "./lib/onboardingReset";
 
