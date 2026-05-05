@@ -15,10 +15,6 @@ import {
   getCurrentMonthContext,
   getMonthlyPlanUsage,
   calculateTotalExpenseFact,
-  validateLimitBudgetForm,
-  validateGoalBudgetForm,
-  type LimitFormInput,
-  type GoalFormInput,
 } from "@sergeant/finyk-domain/domain/budget";
 import { filterStatTransactions } from "@sergeant/finyk-domain/domain/transactions";
 import { getMonthlySummary } from "@sergeant/finyk-domain/domain/selectors";
@@ -33,10 +29,7 @@ import {
 import { BudgetsLimitsSection } from "./BudgetsLimitsSection";
 import { BudgetsGoalsSection } from "./BudgetsGoalsSection";
 import { useProactiveAdvice } from "./useProactiveAdvice";
-import type {
-  BudgetFormType,
-  NewBudgetDraft,
-} from "../../components/budgets/AddBudgetForm";
+import type { NewBudgetDraft } from "../../components/budgets/AddBudgetForm";
 import type {
   Budget,
   Category,
@@ -136,17 +129,6 @@ export function Budgets({
   const factIncome = monthlySummary.income;
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [formType, setFormType] = useState<BudgetFormType>("limit");
-  const [newB, setNewB] = useState<NewBudgetDraft>({
-    type: "limit",
-    categoryId: "",
-    limit: "",
-    name: "",
-    emoji: "🎯",
-    targetAmount: "",
-    targetDate: "",
-    savedAmount: "",
-  });
 
   const now = useMemo(() => new Date(), []);
   const { monthStart } = getCurrentMonthContext(now);
@@ -176,8 +158,6 @@ export function Budgets({
     [statTx, txSplits],
   );
   const factSavings = factIncome - totalExpenseFact;
-
-  const [formError, setFormError] = useState("");
 
   // Upcoming-schedule feed for the stats strip (reuses the same
   // computation as the Активи page so Сума підписок + Наступний платіж
@@ -273,41 +253,29 @@ export function Budgets({
       now,
     });
 
-  const resetForm = () => {
-    setNewB({
-      type: "limit",
-      categoryId: "",
-      limit: "",
-      name: "",
-      emoji: "🎯",
-      targetAmount: "",
-      targetDate: "",
-      savedAmount: "",
-    });
-    setFormType("limit");
-    setFormError("");
-    setShowForm(false);
-  };
+  // Item #8 round-13: AddBudgetForm власняє форм-state через `useApiForm` +
+  // zod (дві окремі схеми для limit/goal); калл-сайт лиш отримує normalized
+  // draft із вже перевіреними number-ами. dedup-чек (`Ліміт для цієї
+  // категорії вже існує`) живе в схемі через superRefine із closure на
+  // `existingBudgets`, тож результат отриманий тут вже безпечно додавати без
+  // додаткової валідації.
+  const handleAddBudget = useCallback(
+    (draft: NewBudgetDraft) => {
+      setBudgets((b) => [...b, { ...draft, id: crypto.randomUUID() }]);
+      trackEvent(
+        ANALYTICS_EVENTS.BUDGET_SET,
+        draft.type === "limit"
+          ? { type: "limit", categoryId: draft.categoryId }
+          : { type: "goal" },
+      );
+      setShowForm(false);
+    },
+    [setBudgets],
+  );
 
-  const addBudget = () => {
-    setFormError("");
-    const { error, normalized } =
-      newB.type === "limit"
-        ? validateLimitBudgetForm(newB as LimitFormInput, budgets)
-        : validateGoalBudgetForm(newB as GoalFormInput);
-    if (error || !normalized) {
-      setFormError(error || "Помилка валідації");
-      return;
-    }
-    setBudgets((b) => [...b, { ...normalized, id: crypto.randomUUID() }]);
-    trackEvent(
-      ANALYTICS_EVENTS.BUDGET_SET,
-      normalized.type === "limit"
-        ? { type: "limit", categoryId: normalized.categoryId }
-        : { type: "goal" },
-    );
-    resetForm();
-  };
+  const handleCancelForm = useCallback(() => {
+    setShowForm(false);
+  }, []);
 
   // DataState contract: `data === undefined` triggers the skeleton slot.
   // First-paint of the Budgets page treats "loading and no realTx yet" as
@@ -412,14 +380,10 @@ export function Budgets({
 
             {showForm ? (
               <AddBudgetForm
-                formType={formType}
-                newB={newB}
-                onChangeFormType={setFormType}
-                onChangeNewB={setNewB}
+                existingBudgets={budgets}
                 expenseCategoryList={expenseCategoryList}
-                formError={formError}
-                onSubmit={addBudget}
-                onCancel={resetForm}
+                onSubmit={handleAddBudget}
+                onCancel={handleCancelForm}
               />
             ) : (
               <button

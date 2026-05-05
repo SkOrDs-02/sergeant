@@ -1,23 +1,33 @@
-import { memo } from "react";
-import type { Dispatch, SetStateAction } from "react";
+import { memo, useMemo, useState } from "react";
+import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { cn } from "@shared/lib/ui/cn";
+import { useApiForm } from "@shared/forms/useApiForm";
+import type { Budget } from "@sergeant/finyk-domain/domain/types";
 import { CategorySelector } from "../CategorySelector";
 
 export type BudgetFormType = "limit" | "goal";
 
-export type NewBudgetDraft = {
-  type: BudgetFormType;
-  categoryId?: string;
-  limit?: string;
-  emoji?: string;
-  name?: string;
-  targetAmount?: string;
-  savedAmount?: string;
-  targetDate?: string;
-};
+/**
+ * Normalized output shape — те, що `Budgets.tsx` додає в стан
+ * `setBudgets`. id призначається на call-site (через `crypto.randomUUID()`).
+ */
+export type NewBudgetDraft =
+  | {
+      type: "limit";
+      categoryId: string;
+      limit: number;
+    }
+  | {
+      type: "goal";
+      name: string;
+      emoji: string;
+      targetAmount: number;
+      savedAmount: number;
+      targetDate: string;
+    };
 
 export interface ExpenseCategoryOption {
   id: string;
@@ -25,13 +35,9 @@ export interface ExpenseCategoryOption {
 }
 
 interface AddBudgetFormProps {
-  formType: BudgetFormType;
-  newB: NewBudgetDraft;
-  onChangeFormType: (type: BudgetFormType) => void;
-  onChangeNewB: Dispatch<SetStateAction<NewBudgetDraft>>;
+  existingBudgets: readonly Budget[];
   expenseCategoryList: readonly ExpenseCategoryOption[];
-  formError?: string | null;
-  onSubmit: () => void;
+  onSubmit: (draft: NewBudgetDraft) => void;
   onCancel: () => void;
 }
 
@@ -48,27 +54,147 @@ const GOAL_EMOJIS = [
   "💰",
 ];
 
-// Form for creating a new limit or goal budget. State is lifted to parent
-// (Budgets.jsx) so that form submission can access the full `budgets` array
-// for validation (e.g. dedupe by category).
+// Item #8 round-13: form-engine — `useApiForm` + zod для inline-create
+// limit/goal-бюджету. Раніше state жив у `Budgets.tsx` (`newB`, `formError`),
+// валідація крутилась у legacy-функціях `validateLimitBudgetForm` /
+// `validateGoalBudgetForm` із `@sergeant/finyk-domain`. Тепер схема
+// дублює ті ж правила як zod-резолвер: помилки кріпляться до конкретних
+// полів, `categoryId`-dedup → `superRefine` із closure на
+// `existingBudgets`, без top-level error-banner.
+//
+// Goal/limit мають різні набори полів, тож тримаємо два окремі
+// `useApiForm`-інстанси замість discriminated union на одній схемі —
+// uniform pattern, ще й RHF-state не зміщується між type-toggle-ами.
+const positiveNumberString = (message: string) =>
+  z.string().refine((v) => {
+    const n = Number(v);
+    return v.length > 0 && !Number.isNaN(n) && n > 0;
+  }, message);
+
+type LimitFormValues = {
+  type: "limit";
+  categoryId: string;
+  limit: string;
+};
+
+type GoalFormValues = {
+  type: "goal";
+  name: string;
+  emoji: string;
+  targetAmount: string;
+  savedAmount: string;
+  targetDate: string;
+};
+
+const goalFormSchema = z.object({
+  type: z.literal("goal"),
+  name: z.string().trim().min(1, "Вкажіть назву цілі"),
+  emoji: z.string(),
+  targetAmount: positiveNumberString("Вкажіть суму цілі більше 0"),
+  // savedAmount порожнє → 0; не порожнє → ≥ 0. Валідатор ловить тільки
+  // явно від'ємні значення; конверсія в number — у `onSubmit`.
+  savedAmount: z.string().refine((v) => {
+    if (!v) return true;
+    const n = Number(v);
+    return !Number.isNaN(n) && n >= 0;
+  }, "Відкладена сума не може бути від'ємною"),
+  targetDate: z.string(),
+});
+
+const LIMIT_DEFAULTS: LimitFormValues = {
+  type: "limit",
+  categoryId: "",
+  limit: "",
+};
+
+const GOAL_DEFAULTS: GoalFormValues = {
+  type: "goal",
+  name: "",
+  emoji: "🎯",
+  targetAmount: "",
+  savedAmount: "",
+  targetDate: "",
+};
+
 function AddBudgetFormComponent({
-  formType,
-  newB,
-  onChangeFormType,
-  onChangeNewB,
+  existingBudgets,
   expenseCategoryList,
-  formError,
   onSubmit,
   onCancel,
 }: AddBudgetFormProps) {
+  const [formType, setFormType] = useState<BudgetFormType>("limit");
+
+  // Schema із dedup-check бере замикання на `existingBudgets`. Memoize,
+  // щоб resolver-reference не змінювався на кожен parent-render
+  // (інакше RHF буде reinit-ити internal-state).
+  const limitFormSchema = useMemo(
+    () =>
+      z
+        .object({
+          type: z.literal("limit"),
+          categoryId: z.string().min(1, "Оберіть категорію"),
+          limit: positiveNumberString("Вкажіть ліміт більше 0"),
+        })
+        .superRefine((data, ctx) => {
+          const dup = existingBudgets.some(
+            (b) => b?.type === "limit" && b.categoryId === data.categoryId,
+          );
+          if (dup) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ["categoryId"],
+              message: "Ліміт для цієї категорії вже існує",
+            });
+          }
+        }),
+    [existingBudgets],
+  );
+
+  const limitForm = useApiForm<LimitFormValues, void>({
+    schema: limitFormSchema,
+    defaultValues: LIMIT_DEFAULTS,
+    onSubmit: async (values) => {
+      onSubmit({
+        type: "limit",
+        categoryId: values.categoryId,
+        limit: Number(values.limit),
+      });
+    },
+  });
+
+  const goalForm = useApiForm<GoalFormValues, void>({
+    schema: goalFormSchema,
+    defaultValues: GOAL_DEFAULTS,
+    onSubmit: async (values) => {
+      onSubmit({
+        type: "goal",
+        name: values.name.trim(),
+        emoji: values.emoji,
+        targetAmount: Number(values.targetAmount),
+        savedAmount: values.savedAmount ? Number(values.savedAmount) : 0,
+        targetDate: values.targetDate,
+      });
+    },
+  });
+
+  const limitCategoryError = limitForm.formState.errors.categoryId?.message;
+  const limitAmountError = limitForm.formState.errors.limit?.message;
+  const goalNameError = goalForm.formState.errors.name?.message;
+  const goalAmountError = goalForm.formState.errors.targetAmount?.message;
+  const goalSavedError = goalForm.formState.errors.savedAmount?.message;
+
+  const goalEmoji = goalForm.watch("emoji");
+  const limitCategoryId = limitForm.watch("categoryId");
+
+  const isSubmitting =
+    formType === "limit" ? limitForm.isSubmitting : goalForm.isSubmitting;
+
   return (
     <Card radius="lg" padding="lg" className="space-y-3">
       <div className="flex gap-2">
         <button
-          onClick={() => {
-            onChangeFormType("limit");
-            onChangeNewB((b) => ({ ...b, type: "limit" }));
-          }}
+          type="button"
+          onClick={() => setFormType("limit")}
           className={cn(
             "flex-1 py-2 text-style-label rounded-xl border transition-colors",
             formType === "limit"
@@ -79,10 +205,8 @@ function AddBudgetFormComponent({
           🔴 Ліміт
         </button>
         <button
-          onClick={() => {
-            onChangeFormType("goal");
-            onChangeNewB((b) => ({ ...b, type: "goal" }));
-          }}
+          type="button"
+          onClick={() => setFormType("goal")}
           className={cn(
             "flex-1 py-2 text-style-label rounded-xl border transition-colors",
             formType === "goal"
@@ -94,85 +218,179 @@ function AddBudgetFormComponent({
         </button>
       </div>
       {formType === "limit" ? (
-        <>
-          <CategorySelector
-            value={newB.categoryId}
-            onChange={(val) => onChangeNewB((b) => ({ ...b, categoryId: val }))}
-            categories={expenseCategoryList.filter((c) => c.id !== "income")}
-            placeholder="Вибери категорію"
-          />
-          <Input
-            placeholder="Ліміт ₴"
-            type="number"
-            value={newB.limit}
-            onChange={(e) =>
-              onChangeNewB((b) => ({ ...b, limit: e.target.value }))
-            }
-          />
-        </>
+        <form
+          onSubmit={limitForm.submit}
+          noValidate
+          className="space-y-3"
+          aria-label="Новий ліміт бюджету"
+        >
+          <div>
+            <CategorySelector
+              value={limitCategoryId}
+              onChange={(val) =>
+                limitForm.setValue("categoryId", val, {
+                  shouldDirty: true,
+                  shouldValidate: Boolean(limitCategoryError),
+                })
+              }
+              categories={expenseCategoryList.filter((c) => c.id !== "income")}
+              placeholder="Вибери категорію"
+            />
+            {limitCategoryError && (
+              <p
+                className="mt-1 text-xs text-danger bg-danger-soft rounded-xl px-3 py-2"
+                role="alert"
+              >
+                {limitCategoryError}
+              </p>
+            )}
+          </div>
+          <div>
+            <Input
+              placeholder="Ліміт ₴"
+              type="number"
+              aria-label="Ліміт"
+              aria-invalid={limitAmountError ? true : undefined}
+              disabled={isSubmitting}
+              {...limitForm.register("limit")}
+            />
+            {limitAmountError && (
+              <p
+                className="mt-1 text-xs text-danger bg-danger-soft rounded-xl px-3 py-2"
+                role="alert"
+              >
+                {limitAmountError}
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="submit"
+              className="flex-1"
+              size="sm"
+              disabled={isSubmitting}
+            >
+              Додати
+            </Button>
+            <Button
+              type="button"
+              className="flex-1"
+              size="sm"
+              variant="ghost"
+              onClick={onCancel}
+            >
+              Скасувати
+            </Button>
+          </div>
+        </form>
       ) : (
-        <>
+        <form
+          onSubmit={goalForm.submit}
+          noValidate
+          className="space-y-3"
+          aria-label="Нова ціль бюджету"
+        >
           <div className="flex flex-wrap gap-2">
             {GOAL_EMOJIS.map((e) => (
               <button
                 key={e}
-                onClick={() => onChangeNewB((b) => ({ ...b, emoji: e }))}
+                type="button"
+                onClick={() =>
+                  goalForm.setValue("emoji", e, { shouldDirty: true })
+                }
                 className={cn(
                   "text-xl p-1.5 rounded-xl border transition-colors",
-                  newB.emoji === e
+                  goalEmoji === e
                     ? "border-primary bg-primary/10"
                     : "border-transparent",
                 )}
+                aria-label={`Емодзі ${e}${goalEmoji === e ? " (вибрано)" : ""}`}
+                aria-pressed={goalEmoji === e}
               >
                 {e}
               </button>
             ))}
           </div>
-          <Input
-            placeholder="Назва цілі"
-            value={newB.name}
-            onChange={(e) =>
-              onChangeNewB((b) => ({ ...b, name: e.target.value }))
-            }
-          />
-          <Input
-            placeholder="Сума цілі ₴"
-            type="number"
-            value={newB.targetAmount}
-            onChange={(e) =>
-              onChangeNewB((b) => ({ ...b, targetAmount: e.target.value }))
-            }
-          />
-          <Input
-            placeholder="Вже відкладено ₴"
-            type="number"
-            value={newB.savedAmount}
-            onChange={(e) =>
-              onChangeNewB((b) => ({ ...b, savedAmount: e.target.value }))
-            }
-          />
+          <div>
+            <Input
+              placeholder="Назва цілі"
+              aria-label="Назва цілі"
+              aria-invalid={goalNameError ? true : undefined}
+              disabled={isSubmitting}
+              {...goalForm.register("name")}
+            />
+            {goalNameError && (
+              <p
+                className="mt-1 text-xs text-danger bg-danger-soft rounded-xl px-3 py-2"
+                role="alert"
+              >
+                {goalNameError}
+              </p>
+            )}
+          </div>
+          <div>
+            <Input
+              placeholder="Сума цілі ₴"
+              type="number"
+              aria-label="Сума цілі"
+              aria-invalid={goalAmountError ? true : undefined}
+              disabled={isSubmitting}
+              {...goalForm.register("targetAmount")}
+            />
+            {goalAmountError && (
+              <p
+                className="mt-1 text-xs text-danger bg-danger-soft rounded-xl px-3 py-2"
+                role="alert"
+              >
+                {goalAmountError}
+              </p>
+            )}
+          </div>
+          <div>
+            <Input
+              placeholder="Вже відкладено ₴"
+              type="number"
+              aria-label="Вже відкладено"
+              aria-invalid={goalSavedError ? true : undefined}
+              disabled={isSubmitting}
+              {...goalForm.register("savedAmount")}
+            />
+            {goalSavedError && (
+              <p
+                className="mt-1 text-xs text-danger bg-danger-soft rounded-xl px-3 py-2"
+                role="alert"
+              >
+                {goalSavedError}
+              </p>
+            )}
+          </div>
           <Input
             type="date"
-            value={newB.targetDate}
-            onChange={(e) =>
-              onChangeNewB((b) => ({ ...b, targetDate: e.target.value }))
-            }
+            aria-label="Дедлайн"
+            disabled={isSubmitting}
+            {...goalForm.register("targetDate")}
           />
-        </>
+          <div className="flex gap-2">
+            <Button
+              type="submit"
+              className="flex-1"
+              size="sm"
+              disabled={isSubmitting}
+            >
+              Додати
+            </Button>
+            <Button
+              type="button"
+              className="flex-1"
+              size="sm"
+              variant="ghost"
+              onClick={onCancel}
+            >
+              Скасувати
+            </Button>
+          </div>
+        </form>
       )}
-      {formError && (
-        <p className="text-xs text-danger bg-danger-soft rounded-xl px-3 py-2">
-          {formError}
-        </p>
-      )}
-      <div className="flex gap-2">
-        <Button className="flex-1" size="sm" onClick={onSubmit}>
-          Додати
-        </Button>
-        <Button className="flex-1" size="sm" variant="ghost" onClick={onCancel}>
-          Скасувати
-        </Button>
-      </div>
     </Card>
   );
 }
