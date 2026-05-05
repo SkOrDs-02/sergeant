@@ -1,144 +1,144 @@
-# Playbook: Cleanup Dead Code
+# Playbook: Прибирання dead code
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
-**Trigger:** "Remove X and all its usages" / deleting a deprecated module, component, utility, or feature flag.
+**Тригер:** «Видали X і всі його використання» / видалення застарілого модуля, компонента, утиліти або feature flag.
 
 ## Owner surface
 
-- Primary surface: any directory under `apps/` or `packages/` containing the dead symbol
+- Primary surface: будь-яка директорія під `apps/` або `packages/`, що містить мертвий символ
 - Coupled surface: `apps/web/src/shared/lib/api/queryKeys.ts`, `packages/api-client`, `docs/`
 - Governing skill: `sergeant-monorepo-boundaries`
 
 ---
 
-## Step 0. Verify the file isn't scaffolding
+## Step 0. Перевір, що файл — не scaffolding
 
-> Added 2026-04-29 in response to PR [#1143](https://github.com/Skords-01/Sergeant/pull/1143). See AGENTS.md → Hard Rule #10.
-> Also see Hard Rule #15 — read governance before coding; update docs alongside code.
+> Додано 2026-04-29 у відповідь на PR [#1143](https://github.com/Skords-01/Sergeant/pull/1143). Див. AGENTS.md → Hard Rule #10.
+> Також див. Hard Rule #15 — читай governance перед кодом; оновлюй docs разом із кодом.
 
-Before deleting **anything** flagged by `pnpm knip`, check whether it carries a lifecycle marker:
+Перш ніж видаляти **будь-що**, що позначене `pnpm knip`, перевір, чи має файл lifecycle-маркер:
 
 ```bash
-# 1. Use the marker-aware wrapper instead of raw knip
+# 1. Використовуй marker-aware wrapper замість сирого knip
 pnpm dead-code:files
 
-# 2. For each candidate file, look for a JSDoc lifecycle tag in the first ~30 lines
+# 2. Для кожного кандидата подивись JSDoc lifecycle-теги в перших ~30 рядках
 head -30 <file> | grep -E '@scaffolded|@deprecated|@experimental'
 
-# 3. Also check git log — was it added as feat(...)? When? By whom?
+# 3. Подивись git log — чи додано як feat(...)? Коли? Ким?
 git log --follow --oneline -- <file>
 ```
 
-A file that:
+Файл, який:
 
-- Has a `@scaffolded` JSDoc block → **leave it alone**, even if knip says zero importers. It's intentional pre-wired infrastructure.
-- Has `@deprecated` with a future `@removeBy` date → leave until that date, then remove (along with consumers).
-- Was added in a recent `feat(...)` commit (< 90 days) and has no marker → **add the marker, do not delete**. The author likely just forgot to mark it. Open a follow-up to ask the owner whether to wire it or remove it.
-- Has no marker, no recent author, no consumers, AND `git log --follow` shows it sat untouched for > 12 months → safe to delete.
+- Має JSDoc-блок `@scaffolded` → **не чіпай**, навіть якщо knip каже «нуль імпортерів». Це навмисна попередньо-проведена інфраструктура.
+- Має `@deprecated` із майбутньою датою `@removeBy` → залиш до тієї дати, потім видали (разом зі споживачами).
+- Доданий нещодавнім `feat(...)` комітом (< 90 днів) і не має маркера → **додай маркер, не видаляй**. Автор скоріш за все просто забув маркер. Відкрий follow-up і спитай у власника, доводити до використання чи видаляти.
+- Не має маркера, не має нещодавнього автора, не має споживачів **і** `git log --follow` показує що файл не торкали > 12 місяців → можна видаляти.
 
 ---
 
 ## Steps
 
-### 1. Find all references
+### 1. Знайди всі references
 
 ```bash
-# Search the entire monorepo for the symbol/file name
+# Шукай по всьому monorepo за іменем символу/файла
 grep -rn "<symbol_or_filename>" --include="*.{ts,tsx,js,jsx,mjs,cjs,json,md}" .
 
-# Also check for re-exports and barrel files
+# Перевір ре-експорти і barrel-файли
 grep -rn "from.*<module_path>" .
 ```
 
-Make a list of every file that imports, references, or tests the target.
+Склади список усіх файлів, які імпортують, посилаються або тестують ціль.
 
-### 2. Delete the implementation
+### 2. Видали реалізацію
 
-Remove the source file(s) or the specific export/function. If the target lives inside a larger file, remove only the relevant code — do not refactor unrelated sections.
+Видали source-файл(и) або конкретний експорт/функцію. Якщо ціль живе всередині більшого файла — видаляй тільки релевантний код, не рефактори решту.
 
-### 3. Remove all imports and usages
+### 3. Видали всі імпорти і використання
 
-Go through the reference list from step 1 and remove:
+Пройди списком references зі step 1 і прибери:
 
 - `import` / `require` statements
-- Call sites and JSX usages
+- Call sites і JSX usages
 - Type references
-- Re-exports from barrel/index files
+- Re-exports із barrel/index файлів
 
-### 4. Remove associated tests and fixtures
+### 4. Видали пов'язані тести і fixtures
 
-Delete test files (`*.test.ts`, `*.test.tsx`) that exclusively tested the removed code. If a test file covers multiple things, remove only the relevant `describe`/`it` blocks.
+Видали test-файли (`*.test.ts`, `*.test.tsx`), що тестували виключно прибраний код. Якщо тест-файл покриває кілька речей — видаляй тільки релевантні `describe` / `it` блоки.
 
-### 5. Check for feature flags
+### 5. Перевір feature flags
 
-If the removed code was gated behind a feature flag:
+Якщо прибраний код був за feature flag:
 
-- Remove the flag entry from `FLAG_REGISTRY` in `apps/web/src/core/lib/featureFlags.ts`
-- Remove all `useFlag("flag_name")` / `getFlag("flag_name")` call sites
-- Update `docs/feature-flags.md` if it exists
+- Видали запис прапорця з `FLAG_REGISTRY` у `apps/web/src/core/lib/featureFlags.ts`
+- Видали всі call sites `useFlag("flag_name")` / `getFlag("flag_name")`
+- Онови `docs/feature-flags.md`, якщо існує
 
-### 6. Check for documentation references
+### 6. Перевір згадки в документації
 
-Search docs for mentions of the removed code:
+Шукай у docs згадки про прибраний код:
 
 ```bash
 grep -rn "<symbol_or_filename>" docs/ README.md CONTRIBUTING.md AGENTS.md
 ```
 
-Update or remove stale references.
+Онови або прибери застарілі references.
 
-### 7. Check for React Query key factories
+### 7. Перевір React Query key factories
 
-If the removed code used React Query, ensure the corresponding key factory in `apps/web/src/shared/lib/api/queryKeys.ts` is cleaned up too (AGENTS.md rule #2).
+Якщо прибраний код використовував React Query — переконайся, що відповідну key factory у `apps/web/src/shared/lib/api/queryKeys.ts` теж прибрано (AGENTS.md правило #2).
 
-### 8. Check for API contract changes
+### 8. Перевір зміни API contract
 
-If the removed code included an API endpoint or response field:
+Якщо прибраний код мав API endpoint або поле відповіді:
 
-- Update types in `packages/api-client/src/endpoints/*` (AGENTS.md rule #3)
-- Add or update a test to confirm the field/endpoint no longer exists
-- If a migration is needed, create sequential `NNN_*.sql` in `apps/server/src/migrations/` (AGENTS.md rule #4)
+- Онови типи в `packages/api-client/src/endpoints/*` (AGENTS.md правило #3)
+- Додай або онови тест, який підтверджує, що поля/ендпоінта більше немає
+- Якщо потрібна міграція — створи послідовний `NNN_*.sql` у `apps/server/src/migrations/` (AGENTS.md правило #4)
 
-### 9. Verify
+### 9. Перевір
 
 ```bash
-pnpm lint          # must be green
-pnpm typecheck     # must be green
-pnpm test          # must be green
-pnpm build         # must succeed
+pnpm lint          # має бути зеленим
+pnpm typecheck     # має бути зеленим
+pnpm test          # має бути зеленим
+pnpm build         # має успішно пройти
 ```
 
-### 10. Create the PR
+### 10. Створи PR
 
-- Branch: `devin/<unix-ts>-chore-remove-<thing>`
-- Commit: `chore(<scope>): remove <thing>` (Conventional Commits — AGENTS.md rule #5)
-- PR description must include:
-  - Summary of files/lines deleted
-  - Why the code is dead (no longer used, superseded by X, flag graduated)
-  - Confirmation that all references were removed (paste grep output showing zero hits)
+- Гілка: `devin/<unix-ts>-chore-remove-<thing>`
+- Commit: `chore(<scope>): remove <thing>` (Conventional Commits — AGENTS.md правило #5)
+- Опис PR має містити:
+  - Підсумок видалених файлів/рядків
+  - Чому код мертвий (не використовується, замінено на X, флаг graduated)
+  - Підтвердження, що всі references прибрано (paste grep-output, що показує нуль збігів)
 
 ---
 
 ## Verification
 
-- [ ] `grep -rn "<symbol>"` returns zero hits across the monorepo
-- [ ] `pnpm lint` — green
-- [ ] `pnpm typecheck` — green
-- [ ] `pnpm test` — green (excluding known flaky mobile tests per AGENTS.md)
-- [ ] `pnpm build` — succeeds
-- [ ] No orphaned query key factories in `queryKeys.ts`
-- [ ] No orphaned API client types in `packages/api-client`
-- [ ] Documentation updated (if applicable)
+- [ ] `grep -rn "<symbol>"` повертає нуль збігів по monorepo
+- [ ] `pnpm lint` — зелено
+- [ ] `pnpm typecheck` — зелено
+- [ ] `pnpm test` — зелено (виключаючи відомі flaky mobile-тести згідно з AGENTS.md)
+- [ ] `pnpm build` — успішний
+- [ ] Жодних осиротілих query key factories у `queryKeys.ts`
+- [ ] Жодних осиротілих типів API client у `packages/api-client`
+- [ ] Документацію оновлено (де доречно)
 
 ## Tools
 
-- **Knip** (`pnpm knip`) — automated dead code / unused export detection. Run before and after to confirm the cleanup is complete. Knip is the single dead-code tool after initiative 0009 PR 4.2 (#TBD); `depcheck` and `ts-prune` were retired in favour of a single source of truth.
-- **`pnpm dead-code:files`** — wrapper around `knip` that respects `@scaffolded` lifecycle markers (Hard Rule #10). Use this instead of raw `knip` when triaging files for deletion.
+- **Knip** (`pnpm knip`) — автоматичне виявлення dead code / невикористаних експортів. Запускай до і після, щоб підтвердити повноту прибирання. Knip — єдиний dead-code інструмент після initiative 0009 PR 4.2 (#TBD); `depcheck` і `ts-prune` виведено з обігу заради єдиного джерела істини.
+- **`pnpm dead-code:files`** — wrapper над `knip`, що поважає `@scaffolded` lifecycle-маркери (Hard Rule #10). Використовуй замість сирого `knip` під час triage файлів для видалення.
 
 ## Notes
 
-- Always delete in a separate PR — do not mix with feature work (AGENTS.md soft rule).
-- If removing a file, first confirm it is not dynamically imported (check for `import()` expressions).
-- When in doubt, `pnpm check` (the full CI suite) is the definitive verification.
+- Завжди видаляй окремим PR — не змішуй із feature-роботою (AGENTS.md soft rule).
+- Якщо видаляєш файл — спочатку переконайся, що він не імпортується динамічно (шукай `import()` вирази).
+- Якщо є сумніви — `pnpm check` (повний CI-набір) — це остаточна верифікація.
