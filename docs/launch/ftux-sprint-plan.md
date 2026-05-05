@@ -1,7 +1,15 @@
 # FTUX sprint plan — від прожарки до PR-ів
 
-> **Last validated:** 2026-05-05 by @Skords-01 (S1.3 + S1.4 + S1.5 + S2.4 + S3.4 + S3.5 + S3.1 + S3.2 + S4.4 + S4.5 + S2.3 (web) + S4.1 + S2.3 (mobile parity) + S0.3 + S2.1 + S3.3a + S3.3b + S4.3 + **S6.1** + **S6.2** + **S6.4** (web #1875) + **S6.6** (#1854) + **S6.7** (#1852) + **S6.9** (#1870) + **S3.3 mobile parity (#1905)** + **S6.4 mobile parity (#1907)** виконані — 27 sprint-items done (з них S0.1 + S0.2 pre-existing in main) + Sprint 6 cleanup batch розписаний для 13 раніше прогавлених пунктів аудиту (3 додано при ревізії 2026-05-05)). **Next review:** 2026-08-01.
-> **Status:** Active
+> **Last validated:** 2026-05-05 by @Skords-01 / Devin (consolidated into master tracker). **Next review:** 2026-08-03.
+> **Status:** Frozen reference — see [`docs/launch/ftux-master-tracker.md`](./ftux-master-tracker.md) for current state.
+
+> ### 📦 Consolidated 2026-05-05
+>
+> Sprint registry (статуси S0.X / S1.X / … / S6.X), PR plan, freeze rules, hero copy variants, outcome-card sketch, SLO, decisions log — усе живе в **[`docs/launch/ftux-master-tracker.md`](./ftux-master-tracker.md)**.
+>
+> Цей файл лишається **frozen** як history-reference: оригінальна sprint-розбивка з PR-таблицями та status-check-ами по кожному спринту. Цитати з нього у §2 master tracker-у.
+>
+> **Не редагуй цей файл** окрім: (а) `Last validated:` bump, (б) додавання історичних retro-нотаток. Status-update-и поточних спринтів — у master tracker §2.
 
 > Implementation roadmap для 22 рекомендацій з [`docs/audits/2026-05-03-ftux-onboarding-roast.md`](../audits/2026-05-03-ftux-onboarding-roast.md) + 13 раніше прогавлених пунктів (Sprint 6 cleanup batch — див. §7a).
 > 6 спринтів × 2 тижні (+S0 1 тиждень, +S5 опційний) ≈ 12–14 тижнів.

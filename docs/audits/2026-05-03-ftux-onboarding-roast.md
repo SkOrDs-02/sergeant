@@ -1,7 +1,15 @@
 # Web FTUX onboarding roast (2026-05-03)
 
-> **Last validated:** 2026-05-03 by @Skords-01. **Next review:** 2026-08-01.
-> **Status:** Active
+> **Last validated:** 2026-05-05 by @Skords-01 / Devin (consolidated into master tracker). **Next review:** 2026-08-03.
+> **Status:** Frozen reference — see [`docs/launch/ftux-master-tracker.md`](../launch/ftux-master-tracker.md) for current state.
+
+> ### 📦 Consolidated 2026-05-05
+>
+> Цей файл переміщено у режим **frozen reference**. Поточний стан FTUX (закриті/відкриті проблеми, sprint registry, PR plan, hero copy variants, outcome-card sketch, SLO, decisions log) живе в **[`docs/launch/ftux-master-tracker.md`](../launch/ftux-master-tracker.md)**.
+>
+> Для history-шукальника: вся оригінальна прожарка нижче — недоторкана. Цитати з неї у §8.1-8.3 master tracker-у.
+>
+> **Не редагуй цей файл** окрім: (а) `Last validated:` bump через `bump-last-validated.mjs`, (б) додавання нового errata-блоку з посиланням на master tracker. Усі змістовні оновлення статусів — у master tracker §2 (sprint registry) і §8 (findings registry).
 
 > Критичний UX-аудит web-онбордингу очима користувача-новачка, який не знає продукт і дає продукту ≤30 секунд перш ніж піти.
 > Перспектива: product-led growth, FTUX-оптимізація, behavioral design.
