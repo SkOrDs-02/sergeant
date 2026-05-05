@@ -5,45 +5,45 @@ lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
 ---
 
-# Sergeant Bugfix and Regression
+# Bugfix і регресії в Sergeant
 
-Do not blind-patch Sergeant bugs. Reproduce, isolate, add a failing check, then land the smallest fix that prevents recurrence.
+Не патч баг наосліп. Відтвори, ізолюй, додай failing-перевірку, потім виливай найменший фікс, що запобігає повторенню.
 
-## Required Sequence
+## Обовʼязкова послідовність
 
-1. Capture the failing behavior: test, log, screenshot, curl call, or exact reproduction path.
-2. Identify the owning surface and load its Sergeant skill.
-3. Add a failing test or reproducible verification step before changing behavior.
-4. Implement the minimal fix.
-5. Re-run the original failure and one nearby regression check.
+1. Зафіксуй failing-поведінку: тест, лог, скриншот, curl-виклик або точний шлях відтворення.
+2. Визнач поверхню-власника і завантаж її Sergeant-skill.
+3. Додай failing-тест або відтворюваний verification-крок перш ніж змінювати поведінку.
+4. Імплементуй мінімальний фікс.
+5. Перепрогон оригінального failure і ще однієї сусідньої regression-перевірки.
 
-## Acceptable Reproduction Artifacts
+## Прийнятні артефакти відтворення
 
-- Vitest/Jest test
-- contract test for API shape
-- migration command output
-- `curl` reproduction for server or HubChat flows
-- browser/mobile reproduction notes when automated coverage is not yet available
+- Vitest/Jest-тест
+- контракт-тест для API-форми
+- вивід команди міграції
+- `curl`-відтворення для server- або HubChat-flows
+- нотатки відтворення для браузера/мобільного, коли автоматизованого покриття ще немає
 
-## Red Flags
+## Червоні прапорці
 
-- "The bug is obvious, I'll patch it quickly"
-- "I'll add tests after the fix"
-- "I can't reproduce it, but I know the likely line"
+- «Баг очевидний, швидко запатчу»
+- «Додам тести після фіксу»
+- «Не можу відтворити, але знаю, який рядок»
 
-If you hear those thoughts, stop and reproduce first.
+Якщо чуєш такі думки — стоп, спершу відтвори.
 
-## Common Routes
+## Куди роутити далі
 
-- flaky or broken UI state -> `sergeant-web-ui`
-- serializer or route regression -> `sergeant-server-api`
-- schema / deploy crash -> `sergeant-data-and-migrations`
-- mobile-only behavior -> `sergeant-mobile-expo`
-- chat tool failure -> `sergeant-hubchat`
+- флакі або зламана UI-state → `sergeant-web-ui`
+- регресія серіалізатора чи роута → `sergeant-server-api`
+- schema- або deploy-крах → `sergeant-data-and-migrations`
+- mobile-only поведінка → `sergeant-mobile-expo`
+- chat-tool fail → `sergeant-hubchat`
 
 ## Playbooks
 
-- `docs/playbooks/hotfix-prod-regression.md` — production regression triage and fix.
-- `docs/playbooks/declare-incident.md` — when the bug rises to incident severity.
-- `docs/playbooks/write-postmortem.md` — after-the-fact postmortem.
-- Catalog: `docs/agents/agent-skills-catalog.md`.
+- `docs/playbooks/hotfix-prod-regression.md` — triage і фікс production-регресій.
+- `docs/playbooks/declare-incident.md` — коли баг доростає до рівня інциденту.
+- `docs/playbooks/write-postmortem.md` — postmortem постфактум.
+- Каталог: `docs/agents/agent-skills-catalog.md`.

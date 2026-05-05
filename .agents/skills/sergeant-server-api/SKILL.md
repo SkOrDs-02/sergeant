@@ -5,44 +5,44 @@ lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
 ---
 
-# Sergeant Server API
+# Server API у Sergeant
 
-Server work in Sergeant is contract work. The API is correct only when serializers, client types, tests, and time rules move together.
+Робота на сервері в Sergeant — це робота з контрактом. API правильний лише тоді, коли серіалізатори, клієнтські типи, тести і time-правила йдуть разом.
 
-## Covers
+## Що покриває
 
 - `apps/server/src/modules/**`, `apps/server/src/routes/**`, `apps/server/src/http/**`
 - `packages/api-client/**`
-- web query hooks that depend on server responses
+- web query-hook-и, що залежать від server-відповідей
 
-## Hard Rules
+## Жорсткі правила
 
-- Coerce every `bigint` field to `number` in the serializer.
-- If a response shape changes, update the server serializer, `packages/api-client`, and the contract test in the same PR.
-- Use `Europe/Kyiv` day boundaries; do not derive day keys from raw UTC ISO slicing.
-- Better Auth user ids are opaque strings.
+- Coerce кожне `bigint`-поле у `number` всередині серіалізатора.
+- Якщо змінюється форма відповіді — онови server-серіалізатор, `packages/api-client` і contract-тест в одному PR.
+- Використовуй `Europe/Kyiv` day boundaries; не деривуй day-ключі raw UTC ISO-нарізкою.
+- Better Auth user-id-и — непрозорі рядки.
 
-## Placement
+## Розміщення
 
-- Route wiring belongs in `apps/server/src/routes/**`.
-- Domain logic belongs in `apps/server/src/modules/<domain>/**`.
-- Shared wire types live in `packages/api-client/**` and shared schemas under `packages/shared/**`.
+- Route-обвʼязка живе у `apps/server/src/routes/**`.
+- Domain-логіка — у `apps/server/src/modules/<domain>/**`.
+- Спільні wire-типи живуть у `packages/api-client/**`, а спільні схеми — під `packages/shared/**`.
 
-## Testing Expectations
+## Очікування з тестування
 
-- Server modules: Vitest + Testcontainers when real Postgres behavior matters.
-- Response-shape changes: inline snapshot or equivalent contract assertions.
-- Query-hook updates: use the existing web key factories, never inline arrays.
+- Server-модулі: Vitest + Testcontainers, коли важлива реальна поведінка Postgres.
+- Зміни форми відповіді: inline-snapshot або еквівалентні contract-перевірки.
+- Оновлення query-hook-ів: використовуй наявні web key-фабрики, ніколи — інлайн-масиви.
 
-## Route Further
+## Куди роутити далі
 
-- auth/session/cookies -> `better-auth-best-practices`
-- SQL schema or rollout sequencing -> `sergeant-data-and-migrations`
-- HubChat tool integration -> `sergeant-hubchat`
+- auth/session/cookies → `better-auth-best-practices`
+- SQL-схема або rollout-послідовність → `sergeant-data-and-migrations`
+- інтеграція HubChat-tool-у → `sergeant-hubchat`
 
 ## Playbooks
 
-- `docs/playbooks/add-api-endpoint.md` — handler + route + api-client + tests in lockstep.
-- `docs/playbooks/add-sql-migration.md` — when the endpoint needs schema changes.
-- `docs/playbooks/release.md` — canonical release playbook (web + API section).
-- Catalog: `docs/agents/agent-skills-catalog.md`.
+- `docs/playbooks/add-api-endpoint.md` — handler + route + api-client + тести синхронно.
+- `docs/playbooks/add-sql-migration.md` — коли endpoint потребує schema-змін.
+- `docs/playbooks/release.md` — canonical release-playbook (секція web + API).
+- Каталог: `docs/agents/agent-skills-catalog.md`.

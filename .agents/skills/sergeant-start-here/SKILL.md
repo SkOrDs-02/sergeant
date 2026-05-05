@@ -5,41 +5,41 @@ lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
 ---
 
-# Start Here for Sergeant
+# Стартова точка для Sergeant
 
-This is the mandatory entrypoint for Sergeant. First orient in the repo, then route to one Sergeant-specific skill instead of improvising from generic ecosystem knowledge.
+Це обовʼязковий entrypoint для Sergeant. Спершу зорієнтуйся в репо, потім роутся в один Sergeant-specific skill — а не імпровізуй із generic ecosystem-знань.
 
-## Quick Orientation
+## Швидке орієнтування
 
-- Read `AGENTS.md` for hard rules and path ownership.
-- Read `docs/README.md` for repo docs and `docs/agents/agent-skills-catalog.md` for skill routing.
-- Treat Sergeant as a `pnpm` + Turborepo monorepo with `apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`, `tools/console`, and shared packages.
+- Прочитай `AGENTS.md` для жорстких правил і власників шляхів.
+- Прочитай `docs/README.md` для repo-доків і `docs/agents/agent-skills-catalog.md` для skill-роутингу.
+- Sergeant — це `pnpm` + Turborepo monorepo з `apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell`, `tools/console` і спільними packages.
 
-## Non-Negotiable Rules
+## Не-узгоджувані правила
 
-- Coerce Postgres `bigint` fields to `number` in server serializers.
-- Move API response shape changes together: server serializer, `packages/api-client`, and contract test.
-- Use React Query key factories from `apps/web/src/shared/lib/api/queryKeys.ts`; never invent inline keys.
-- Use sequential migrations and two-phase DROP.
-- Do not skip Husky with `--no-verify`.
-- Use allowed commit scopes from `AGENTS.md`.
+- Coerce Postgres-`bigint` поля у `number` усередині server-серіалізаторів.
+- Зміни форми API-відповіді переміщуй разом: server-серіалізатор, `packages/api-client` і contract-тест.
+- Використовуй React Query key-фабрики з `apps/web/src/shared/lib/api/queryKeys.ts`; не вигадуй inline-ключі.
+- Послідовні міграції і двофазний DROP.
+- Не пропускай Husky через `--no-verify`.
+- Використовуй дозволені commit-scope-и з `AGENTS.md`.
 
-## Route Immediately
+## Роутся одразу
 
-| Situation | Skill |
-| --- | --- |
-| New feature, new screen, behavior change | `sergeant-feature-delivery` |
-| Bug, regression, flaky behavior, hotfix | `sergeant-bugfix-and-regression` |
-| PR review, merge readiness, pre-merge checks | `sergeant-review-and-merge` |
-| Web UI, PWA shell, Tailwind, accessibility | `sergeant-web-ui` |
-| Server routes, serializers, api-client, contracts | `sergeant-server-api` |
-| SQL, schema, query design, migrations, Railway DB rollout | `sergeant-data-and-migrations` |
-| Expo, React Native, mobile-shell, MMKV, deep links | `sergeant-mobile-expo` |
-| HubChat tool defs, executors, prompt cache, action cards | `sergeant-hubchat` |
-| Unsure where code belongs in the monorepo | `sergeant-monorepo-boundaries` |
-| Deploy, env vars, health checks, Sentry, Railway/Vercel, n8n | `sergeant-deploy-and-observability` |
-| Login/session/cookies/account lifecycle | `better-auth-best-practices` |
+| Ситуація                                                         | Skill                              |
+| ---------------------------------------------------------------- | ---------------------------------- |
+| Нова фіча, новий екран, behavior-зміна                           | `sergeant-feature-delivery`        |
+| Баг, регресія, флакі-поведінка, hotfix                           | `sergeant-bugfix-and-regression`   |
+| Ревʼю PR, готовність до merge, pre-merge-перевірки               | `sergeant-review-and-merge`        |
+| Web-UI, PWA-shell, Tailwind, accessibility                       | `sergeant-web-ui`                  |
+| Server-роути, серіалізатори, api-client, контракти               | `sergeant-server-api`              |
+| SQL, схема, дизайн запитів, міграції, Railway DB rollout         | `sergeant-data-and-migrations`     |
+| Expo, React Native, mobile-shell, MMKV, deep-link-и              | `sergeant-mobile-expo`             |
+| HubChat tool-defs, executors, prompt cache, action cards         | `sergeant-hubchat`                 |
+| Незрозуміло, де саме код має жити в монорепо                     | `sergeant-monorepo-boundaries`     |
+| Деплой, env-vars, health checks, Sentry, Railway/Vercel, n8n     | `sergeant-deploy-and-observability`|
+| Логін/сесія/кукі/account lifecycle                               | `better-auth-best-practices`       |
 
-## Generic Skill Policy
+## Політика generic-skill-ів
 
-Do not rely on repo-owned generic browser, design, or meta-skill wrappers. Use your platform's built-in browsing, planning, testing, or design capabilities, then apply the Sergeant skill that governs the touched surface.
+Не покладайся на repo-owned обгортки generic-browser-, design- чи meta-skill-ів. Використовуй вбудовані у платформу можливості browsing, planning, testing або design — потім застосовуй той Sergeant-skill, що керує зачепленою поверхнею.

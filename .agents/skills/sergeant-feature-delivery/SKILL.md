@@ -5,45 +5,45 @@ lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
 ---
 
-# Sergeant Feature Delivery
+# Доставка фіч у Sergeant
 
-Feature work in Sergeant should move as a disciplined slice, not as scattered edits. Design first, then implement the smallest coherent change that respects repo rules.
+Робота над фічами в Sergeant має рухатися як дисциплінований slice, а не як розкидані правки. Спершу design, потім — найменша звʼязна зміна, що дотримується правил репо.
 
 ## Flow
 
-1. Read `AGENTS.md`, the relevant specialist skill, and any matching playbook in `docs/playbooks/`.
-2. Write or update a design/spec in `docs/agents/specs/` when the change is non-trivial or product-facing.
-3. Decide where code belongs with `sergeant-monorepo-boundaries` before adding files.
-4. Add tests first where behavior changes: unit, contract, UI, or migration verification as appropriate.
-5. Implement the minimum end-to-end slice.
-6. Update docs only where operator or contributor behavior changed.
-7. Run targeted verification before claiming done.
+1. Перечитай `AGENTS.md`, відповідний specialist skill і будь-який relevant playbook у `docs/playbooks/`.
+2. Запиши або онови design/spec у `docs/agents/specs/`, коли зміна нетривіальна або product-facing.
+3. Визнач, де живе код, через `sergeant-monorepo-boundaries` ще до додавання файлів.
+4. Спершу додай тести там, де змінюється поведінка: unit, контракт, UI або migration verification — за релевантністю.
+5. Імплементуй мінімальний end-to-end slice.
+6. Онови доки лише там, де змінилася operator- або contributor-поведінка.
+7. Прогон цільову верифікацію перед тим, як казати «готово».
 
-## Always Cover
+## Завжди покривай
 
-- User-facing success path
-- One failure or empty-state path
-- Regression risk on the touched surface
-- Docs or spec sync if the change introduces a new workflow, endpoint, or deployment requirement
+- Користувацький success-шлях
+- Один failure- або empty-state шлях
+- Ризик регресії на зачепленій поверхні
+- Sync доків/spec-у, якщо зміна вводить новий workflow, endpoint або deployment requirement
 
-## Route for Surface Rules
+## Куди роутити по поверхнях
 
 - Web/PWA: `sergeant-web-ui`
 - Server/API: `sergeant-server-api`
-- DB/migrations: `sergeant-data-and-migrations`
+- БД/міграції: `sergeant-data-and-migrations`
 - Mobile/Expo: `sergeant-mobile-expo`
 - HubChat: `sergeant-hubchat`
 - Auth: `better-auth-best-practices`
 
-## Common Mistakes
+## Поширені помилки
 
-- Starting in `apps/web` or `apps/server` before deciding if logic belongs in a shared package
-- Shipping behavior changes without touching the matching tests
-- Updating docs as a changelog dump instead of only the affected canonical doc
+- Починати в `apps/web` чи `apps/server` ще до того, як вирішено, чи логіка має жити у спільному package
+- Виливати behavior-зміни без правок відповідних тестів
+- Оновлювати доки як changelog dump замість того, щоб правити лише зачеплений canonical doc
 
 ## Playbooks
 
-- `docs/playbooks/add-api-endpoint.md` — server contract + api-client + tests in lockstep.
-- `docs/playbooks/add-feature-flag.md` — flag-gated rollout of new behavior.
-- `docs/playbooks/add-onboarding-step.md` — when the feature touches onboarding.
-- Catalog: `docs/agents/agent-skills-catalog.md`.
+- `docs/playbooks/add-api-endpoint.md` — server-контракт + api-client + тести в одному кроці.
+- `docs/playbooks/add-feature-flag.md` — flag-gated rollout нової поведінки.
+- `docs/playbooks/add-onboarding-step.md` — коли фіча торкається onboarding-у.
+- Каталог: `docs/agents/agent-skills-catalog.md`.

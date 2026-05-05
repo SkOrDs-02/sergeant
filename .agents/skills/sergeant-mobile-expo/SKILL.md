@@ -5,36 +5,36 @@ lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
 ---
 
-# Sergeant Mobile Expo
+# Mobile Expo у Sergeant
 
-Sergeant mobile is not a thin copy of the web app. It uses Expo Router, NativeWind, mobile storage patterns, and platform-specific constraints that should stay distinct from `apps/web`.
+Sergeant mobile — не тонка копія web-app-у. Він використовує Expo Router, NativeWind, mobile-storage-патерни і platform-specific обмеження, які мають лишатися окремими від `apps/web`.
 
-## Covers
+## Що покриває
 
 - `apps/mobile/**`
 - `apps/mobile-shell/**`
-- shared domain packages when the change is mobile-driven
+- shared domain-packages, коли зміна mobile-driven
 
-## Hard Rules
+## Жорсткі правила
 
-- Treat NativeWind and Tailwind as related but not interchangeable.
-- Use mobile storage conventions such as MMKV or the existing persistence layer; do not port raw web localStorage assumptions.
-- Keep DOM or browser-only APIs out of mobile code.
-- Each `_layout.tsx` is a navigation boundary; route changes should respect Expo Router structure.
+- Трактуй NativeWind і Tailwind як споріднені, але не взаємозамінні.
+- Використовуй mobile-storage-конвенції (MMKV або наявний persistence-шар); не переноси припущення raw web-localStorage.
+- Тримай DOM- і browser-only API подалі від mobile-коду.
+- Кожен `_layout.tsx` — навігаційна межа; route-зміни мають дотримуватися структури Expo Router.
 
-## Placement
+## Розміщення
 
-- cross-platform business logic -> domain packages under `packages/*-domain`
-- mobile app UI and navigation -> `apps/mobile/**`
-- Capacitor packaging glue only -> `apps/mobile-shell/**`
+- cross-platform бізнес-логіка → domain-packages під `packages/*-domain`
+- mobile-app UI і навігація → `apps/mobile/**`
+- Capacitor packaging-glue лише → `apps/mobile-shell/**`
 
-## Verify
+## Верифікація
 
-- Run the nearest Jest coverage for the touched mobile surface.
-- If navigation or deep links changed, inspect the matching docs in `docs/mobile/`.
-- If the change ports a web feature, confirm which parts stay shared and which remain platform-specific.
+- Прогон найближчого Jest-покриття для зачепленої mobile-поверхні.
+- Якщо змінилися навігація чи deep-link-и — перевір відповідні доки у `docs/mobile/`.
+- Якщо зміна — це порт web-фічі, підтверди, які частини лишаються спільними, а які — platform-specific.
 
 ## Playbooks
 
-- `docs/playbooks/release.md` — canonical release playbook (Expo and Capacitor shell sections).
-- Catalog: `docs/agents/agent-skills-catalog.md`.
+- `docs/playbooks/release.md` — canonical release-playbook (секції Expo і Capacitor shell).
+- Каталог: `docs/agents/agent-skills-catalog.md`.

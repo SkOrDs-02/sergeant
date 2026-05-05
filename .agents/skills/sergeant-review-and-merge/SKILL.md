@@ -5,40 +5,40 @@ lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
 ---
 
-# Sergeant Review and Merge
+# Ревʼю і мердж у Sergeant
 
-Review for production safety first, polish second. A Sergeant review is not complete until repo governance risks are checked alongside code quality.
+Спершу — production-safety, потім — поліровка. Ревʼю в Sergeant не вважається завершеним, поки governance-ризики репо не перевірені поряд з якістю коду.
 
-## Review Checklist
+## Чекліст ревʼю
 
-- Correct surface skill was followed for the changed area
-- Tests cover the changed behavior, not just implementation details
-- API shape changes moved with `api-client` and tests
-- Migration safety is explicit if SQL changed
-- Docs are updated only when canonical docs actually changed
-- Commit scope matches `AGENTS.md`
-- No `--no-verify`, no skipped hooks, no unsafe deploy sequencing
+- Для зачепленої поверхні застосовано правильний specialist skill
+- Тести покривають змінену поведінку, а не лише деталі імплементації
+- Зміни API-форми йшли разом із `api-client` і тестами
+- Migration safety явно обговорена, якщо змінювався SQL
+- Доки оновлені лише там, де насправді змінився canonical doc
+- Commit scope відповідає `AGENTS.md`
+- Без `--no-verify`, без skip-hook-ів, без небезпечного порядку деплою
 
-## Merge Readiness Triggers
+## Тригери merge-готовності
 
-Pay extra attention when the diff touches:
+Звертай особливу увагу, коли diff торкається:
 
 - `apps/server/src/migrations/**`
-- `apps/server/src/modules/**` with `packages/api-client/**`
+- `apps/server/src/modules/**` разом із `packages/api-client/**`
 - `apps/web/src/shared/lib/api/queryKeys.ts`
 - `apps/web/src/core/lib/hubChat*`
-- auth wiring, env docs, or deploy docs
+- auth-обвʼязки, env-доків або deploy-доків
 - `.agents/**`, `docs/agents/**`, `.github/**`
 
-## Findings Priority
+## Пріоритети знахідок
 
-- Breakage or data loss risk
-- Contract drift or missing test coverage
-- Deploy or rollback hazard
-- Docs, maintainability, or clarity gaps
+- Ризик breakage або data loss
+- Drift контракту або відсутнє покриття тестами
+- Deploy- або rollback-небезпека
+- Прогалини в доках, підтримуваності, ясності
 
 ## Playbooks
 
-- `docs/playbooks/release.md` — canonical release playbook (web + API, Capacitor shell, Expo) with decision tree.
-- `docs/playbooks/declare-incident.md` — escalation when a merge regresses prod.
-- Catalog: `docs/agents/agent-skills-catalog.md`.
+- `docs/playbooks/release.md` — canonical release-playbook (web + API, Capacitor shell, Expo) з decision-tree.
+- `docs/playbooks/declare-incident.md` — ескалація, коли merge зламав прод.
+- Каталог: `docs/agents/agent-skills-catalog.md`.

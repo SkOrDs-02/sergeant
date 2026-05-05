@@ -5,37 +5,37 @@ lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
 ---
 
-# Sergeant Monorepo Boundaries
+# Межі монорепо в Sergeant
 
-Most bad Sergeant edits start with code landing in the wrong layer. Decide the owning boundary before writing files.
+Більшість поганих правок у Sergeant починаються з того, що код опиняється не у тому шарі. Спершу визнач власну межу — потім пиши файли.
 
-## Boundary Rules
+## Правила меж
 
-- App-specific UI stays in the owning app.
-- Cross-platform business logic goes to the matching domain package.
-- Shared schemas, wire types, and cross-app utilities belong in `packages/shared` or `packages/api-client`, not duplicated in apps.
-- `apps/mobile-shell` is packaging glue, not a feature surface.
-- If a helper is only used inside one module, keep it co-located until reuse is proven.
+- App-specific UI лишається в app-і-власнику.
+- Cross-platform бізнес-логіка йде у відповідний domain-package.
+- Спільні схеми, wire-типи і cross-app утиліти живуть у `packages/shared` або `packages/api-client`, не дублюються в app-ах.
+- `apps/mobile-shell` — це packaging-glue, а не feature-surface.
+- Якщо хелпер використовується лише в одному модулі — тримай його co-located, поки повторне використання не доведено.
 
-## Fast Decisions
+## Швидкі рішення
 
-| If the change is... | Put it in... |
-| --- | --- |
-| React screen, sheet, page, or shell behavior for web | `apps/web/**` |
-| Express route or server-side domain logic | `apps/server/**` |
-| Shared API client or response typing | `packages/api-client/**` |
-| Shared domain math, selectors, normalization | `packages/*-domain/**` |
-| Generic schema or utility reused by many apps | `packages/shared/**` |
-| Expo-only UI or navigation | `apps/mobile/**` |
-| Capacitor packaging or native shell config | `apps/mobile-shell/**` |
+| Якщо зміна — це...                                       | Клади у...                  |
+| -------------------------------------------------------- | --------------------------- |
+| React-екран, sheet, сторінка чи shell-поведінка для веба | `apps/web/**`               |
+| Express-роут або server-side domain-логіка               | `apps/server/**`            |
+| Спільний API-клієнт або response-типізація               | `packages/api-client/**`    |
+| Спільна domain-математика, селектори, нормалізація       | `packages/*-domain/**`      |
+| Генерична схема чи утиліта, що використовується багатьма | `packages/shared/**`        |
+| Expo-only UI або навігація                               | `apps/mobile/**`            |
+| Capacitor packaging або native-shell config              | `apps/mobile-shell/**`      |
 
-## Common Mistakes
+## Поширені помилки
 
-- Putting reusable domain logic directly into `apps/web`
-- Porting browser APIs into `apps/mobile`
-- Adding a shared package for code that is only used once
+- Класти reusable domain-логіку напряму в `apps/web`
+- Переносити browser-API у `apps/mobile`
+- Додавати спільний package заради коду, що використовується лише раз
 
 ## Playbooks
 
-- `docs/playbooks/cleanup-dead-code.md` — when extracting/retiring shared modules.
-- Catalog: `docs/agents/agent-skills-catalog.md`.
+- `docs/playbooks/cleanup-dead-code.md` — коли витягуєш чи виводиш з обігу спільні модулі.
+- Каталог: `docs/agents/agent-skills-catalog.md`.

@@ -5,38 +5,38 @@ lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
 ---
 
-# Sergeant Data and Migrations
+# Дані і міграції в Sergeant
 
-Sergeant uses raw `pg` plus sequential SQL migrations. Database changes must be safe for Railway pre-deploys and for the old app version that may still serve traffic briefly.
+Sergeant використовує raw `pg` плюс послідовні SQL-міграції. Зміни в БД мають бути безпечними для Railway pre-deploy і для старої версії app-у, яка ще може коротко обслуговувати трафік.
 
-## Covers
+## Що покриває
 
 - `apps/server/src/migrations/**`
-- `packages/db-schema/**` (Drizzle ORM schemas + migration runner shared with `apps/server`)
-- SQL in server modules
-- query design, indexing, rollout order, local DB verification
+- `packages/db-schema/**` (Drizzle ORM схеми + migration runner, спільний з `apps/server`)
+- SQL у серверних модулях
+- дизайн запитів, індексація, порядок rollout-у, локальна верифікація БД
 
-## Hard Rules
+## Жорсткі правила
 
-- Create migrations with `pnpm gen migration --name <description>`.
-- Keep numbering sequential with no gaps.
-- Add columns as `NULL`-able or `DEFAULT`-ed unless a stricter rollout is already staged.
-- Use two-phase DROP or rename: add/backfill/write-both first, remove later in a separate deploy.
-- Production never relies on `down.sql`.
+- Створюй міграції через `pnpm gen migration --name <description>`.
+- Тримай нумерацію послідовною, без пропусків.
+- Додавай колонки як `NULL`-able або з `DEFAULT`, якщо не запланований жорсткіший rollout.
+- Для DROP або rename — двофазно: спершу додай/backfill/пиши в обидві колонки, видаляй пізніше окремим деплоєм.
+- Прод НІКОЛИ не покладається на `down.sql`.
 
-## Postgres Rules
+## Postgres-правила
 
-- Parameterize queries.
-- Coerce `bigint` in serializers after query execution.
-- Use Kyiv-local day bucketing when reporting by date.
+- Параметризуй запити.
+- Coerce `bigint` у серіалізаторах після виконання запиту.
+- Використовуй Kyiv-local day bucketing при репортингу по даті.
 
-## Verify
+## Верифікація
 
-- `pnpm db:up` for local Postgres if needed.
-- `pnpm db:migrate` after adding or editing migration files.
-- Re-check any API contract drift with `sergeant-server-api`.
+- `pnpm db:up` для локального Postgres, якщо потрібно.
+- `pnpm db:migrate` після додавання або правки migration-файлів.
+- Перевір контракт API на drift через `sergeant-server-api`.
 
-## Useful Docs
+## Корисні доки
 
 - [docs/playbooks/add-sql-migration.md](../../../docs/playbooks/add-sql-migration.md)
 - [docs/playbooks/pre-merge-migration-checklist.md](../../../docs/playbooks/pre-merge-migration-checklist.md)
