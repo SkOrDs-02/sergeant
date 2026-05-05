@@ -25,6 +25,12 @@ export {
   type SyncOpRetryPlan,
 } from "./syncOpRetry.js";
 export {
+  enqueueOutboxIncrement,
+  type OutboxIncrementInput,
+  type EnqueueOutboxIncrementOk,
+  type EnqueueOutboxIncrementResult,
+} from "./syncOpOutboxEnqueue.js";
+export {
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,
   ROUTINE_SPIKE_CLIENT_MIGRATIONS,
