@@ -45,4 +45,32 @@ module.exports = {
     // `node_modules/.pnpm/<scope>+<pkg>@<ver>/node_modules/…` layout.
     "node_modules/(?!(\\.pnpm/(?:.*\\+)?)?((jest-)?react-native(-.*)?|@react-native(-community)?(/.*)?|expo(nent)?|@expo(nent)?(/.*)?|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|nativewind|react-native-css-interop|victory(-.*)?))",
   ],
+  // Coverage floors. Mirror the per-package convention used by web/server
+  // (`apps/{web,server}/vitest.config*`): pin a low floor that current
+  // baseline already clears (~60/45/65/62 measured 2026-05-05 across
+  // 115 suites / 562 passing tests) so future drops fail CI instead of
+  // sliding silently. Per-file shape mirrors Jest's docs:
+  // https://jestjs.io/docs/configuration#coveragethreshold-object
+  //
+  // Drift log:
+  // - 2026-05-05 baseline (apps/mobile): lines 62.94 / branches 45.86 /
+  //   functions 65.55 / statements 60.69. Floor pinned at 30/25/30/30
+  //   (≥ ~30pp head-room). Revisit when raising — owner: @Skords-01.
+  collectCoverageFrom: [
+    "src/**/*.{ts,tsx}",
+    "!src/**/*.test.{ts,tsx}",
+    "!src/**/__tests__/**",
+    "!src/**/__mocks__/**",
+    "!src/**/types.ts",
+    "!src/**/*.d.ts",
+  ],
+  coverageReporters: ["text-summary", "lcov", "json", "json-summary"],
+  coverageThreshold: {
+    global: {
+      lines: 30,
+      branches: 25,
+      functions: 30,
+      statements: 30,
+    },
+  },
 };
