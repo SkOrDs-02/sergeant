@@ -101,11 +101,9 @@ function buildAmountSuggestions(
 
 // Сортує доступні підписи категорій за персональною частотою, зберігаючи
 // стабільний порядок для категорій без статистики.
-// Item #8 round-13: form-engine — міграція із легасі `useFormValidation`
-// (єдиний лишок у apps/web) на `useApiForm` + zod. amount є як string
-// (бо Input value="" легше описується як string), refine перевіряє parsing
-// + > 0; description/category/date — вільні string-поля, жодних обов'язкових
-// валідаторів — бо UI дає дефолти і легасі поведінка була такою ж.
+// `amount` зберігається як string (бо Input value="" легше описується як
+// string); refine перевіряє parse + > 0. description / category / date —
+// вільні string-поля без mandatory-валідаторів, бо UI дає дефолти.
 const expenseFormSchema = z.object({
   description: z.string(),
   amount: z

@@ -40,7 +40,7 @@ function lint(code, filename) {
 const WEB_FILE = abs("apps/web/src/modules/finyk/pages/Overview.tsx");
 const WEB_SHARED_BARREL = abs("apps/web/src/shared/lib/index.ts");
 const WEB_SHARED_API = abs("apps/web/src/shared/lib/api/queryClient.ts");
-const WEB_HOOK = abs("apps/web/src/shared/hooks/useFormValidation.ts");
+const WEB_HOOK = abs("apps/web/src/shared/hooks/useFocusTrap.ts");
 const MOBILE_FILE = abs("apps/mobile/src/modules/fizruk/screens/Workout.tsx");
 const SERVER_FILE = abs("apps/server/src/modules/finyk/transactionsHandler.ts");
 
@@ -174,7 +174,7 @@ describe("no-flat-shared-lib – allows the canonical paths", () => {
     assert.equal(messages.length, 0);
   });
 
-  it("allows `@shared/hooks/useFormValidation` from within shared/hooks", () => {
+  it("allows nested `@shared/hooks/<name>` imports from within shared/hooks", () => {
     const messages = lint(
       `import { something } from "@shared/hooks/other";`,
       WEB_HOOK,
