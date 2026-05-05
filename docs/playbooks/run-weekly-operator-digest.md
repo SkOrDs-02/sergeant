@@ -1,54 +1,54 @@
-# Playbook: Run Weekly Operator Digest
+# Playbook: Тижневий operator-дайджест
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 **Trigger:** щотижневий operating review здоровʼя репо, release-дисципліни, інцидентів і process-friction.
 
 ## Owner surface
 
-- Primary surface: engineering operating system
+- Primary surface: інженерна operating-система (engineering operating system)
 - Governing skill: `sergeant-review-and-merge`
 
 ## Required context
 
 - Перегляньте [engineering-metrics.md](../observability/engineering-metrics.md), [feature-flags.md](../feature-flags.md) і [review-checklist.md](../governance/review-checklist.md).
 
-## Steps
+## Кроки
 
 ### 1. Перегляньте flow-метрики
 
-- PR lead time
-- review turnaround
-- CI failure rate
-- кількість flaky-тестів
+- час від відкриття PR до merge (lead time)
+- час реакції на ревʼю (review turnaround)
+- частота падінь CI (CI failure rate)
+- кількість флакі-тестів за тиждень
 
-### 2. Перегляньте operating debt
+### 2. Перегляньте operating-debt
 
-- застарілі feature flags
-- aging postmortem actions
+- застарілі feature-прапори (feature flags), які пора прибрати
+- просрочені post-mortem action items
 - docs/governance гейти, що падали протягом тижня
 - відкриті security SLA винятки
 
-### 3. Оберіть одну tightening-дію
+### 3. Оберіть одну посилюючу (tightening) дію
 
 - оновити один playbook
-- підкрутити один alert/runbook
-- retire один застарілий прапор
-- закрити один повторюваний CI pain point
+- підкрутити один alert або runbook
+- ретайрити один застарілий прапор
+- закрити одну повторювану CI-проблему (recurring CI pain point)
 
 ## Verification
 
 - [ ] Метрики переглянуті за останні 7 днів
-- [ ] Один operating-debt item обрано для дії
+- [ ] Один operating-debt пункт обрано для дії
 - [ ] Відкрито потрібний follow-up issue або PR
 
-## When not to use this playbook
+## Коли цей playbook НЕ використовувати
 
-- Ви обробляєте активний production-інцидент.
-- Вам потрібен лише release checklist, а не щотижневий operating review.
+- Ви обробляєте активний production-інцидент — використовуйте `declare-incident.md`.
+- Вам потрібен лише release-чеклист, а не щотижневий operating review — використовуйте `release.md`.
 
-## Related playbooks and skills
+## Споріднені playbook-и та skills
 
 - [release.md](./release.md)
 - [write-postmortem.md](./write-postmortem.md)
