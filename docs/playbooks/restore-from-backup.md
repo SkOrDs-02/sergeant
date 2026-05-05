@@ -1,9 +1,9 @@
 # Playbook: Restore from Backup
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
-**Trigger:** critical data must be recovered after corruption, destructive migration, provider incident, or unrecoverable runtime state loss.
+**Trigger:** критичні дані треба відновити після corruption, destructive міграції, provider-інциденту або невідновлюваної втрати runtime-стану.
 
 ## Owner surface
 
@@ -12,43 +12,43 @@
 
 ## Required context
 
-- Review [disaster-recovery.md](../security/disaster-recovery.md), [service-catalog.md](../architecture/service-catalog.md), and [incident-severity-policy.md](../governance/incident-severity-policy.md).
-- If the event is active in production, open [declare-incident.md](./declare-incident.md) first.
+- Перегляньте [disaster-recovery.md](../security/disaster-recovery.md), [service-catalog.md](../architecture/service-catalog.md) і [incident-severity-policy.md](../governance/incident-severity-policy.md).
+- Якщо подія активна в production, спершу відкрийте [declare-incident.md](./declare-incident.md).
 
 ## Steps
 
-### 1. Freeze the blast radius
+### 1. Заморозьте blast radius
 
-- Stop or pause the workflow that keeps writing bad state.
-- Decide whether service should be degraded, read-only, or rolled back before restore.
+- Зупиніть або поставте на паузу workflow, який продовжує писати поганий стан.
+- Вирішіть, чи має сервіс бути degraded, read-only або rolled back до restore.
 
-### 2. Select restore point
+### 2. Оберіть restore point
 
-- Identify the newest backup or snapshot that satisfies the recovery target.
-- Confirm what data will be lost between backup time and failure time.
+- Визначте найновіший backup або snapshot, що відповідає recovery target.
+- Підтвердьте, які дані буде втрачено між часом backup і моментом збою.
 
-### 3. Execute restore
+### 3. Виконайте restore
 
-- Restore into a safe environment first when time permits.
-- Validate schema compatibility and migration state.
-- Promote the restored state only after targeted checks pass.
+- За можливості спершу restore у safe environment.
+- Перевірте сумісність схеми та стан міграцій.
+- Промоутьте відновлений стан лише після того, як таргетовані перевірки пройдуть.
 
-### 4. Reconcile and communicate
+### 4. Reconcile і комунікація
 
-- Re-enable traffic in a controlled order.
-- Record lost-data window, compensating steps, and follow-up actions.
+- Поверніть трафік у контрольованому порядку.
+- Зафіксуйте вікно втрачених даних, компенсуючі кроки і follow-up дії.
 
 ## Verification
 
-- [ ] Restore point timestamp recorded
-- [ ] Expected data-loss window recorded
-- [ ] Targeted data integrity checks passed
-- [ ] Incident log or recovery note updated
+- [ ] Timestamp restore point зафіксовано
+- [ ] Очікуване вікно data-loss зафіксовано
+- [ ] Таргетовані data-integrity перевірки пройдено
+- [ ] Incident log або recovery note оновлено
 
 ## When not to use this playbook
 
-- A normal deploy rollback or feature-flag disable will solve the issue without data restore.
-- The task is only a rehearsal; use [test-backup-restore.md](./test-backup-restore.md).
+- Звичайний deploy rollback або вимкнення feature flag вирішить проблему без data restore.
+- Задача — лише rehearsal; використовуйте [test-backup-restore.md](./test-backup-restore.md).
 
 ## Related playbooks and skills
 
