@@ -81,6 +81,23 @@ export {
 } from "./endpoints/syncV2.increment.submit";
 
 export {
+  runSyncEnginePushOnce,
+  mapDrainedRowToSyncV2PushOp,
+  describePushError,
+  type DrainSyncOpOutboxFn,
+  type DrainedOutboxRowShape,
+  type MarkOutboxRejectedFn,
+  type MarkOutboxRetryFn,
+  type MarkOutboxSuccessFn,
+  type PlanRetryFn,
+  type SyncEnginePushDeps,
+  type SyncEnginePushOptions,
+  type SyncEnginePushResult,
+  type SyncOpRetryPlanShape,
+  type SyncV2PushFn,
+} from "./endpoints/syncV2.pushLoop";
+
+export {
   createCoachEndpoints,
   type CoachEndpoints,
   type CoachInsightPayload,
