@@ -92,6 +92,15 @@ jobs:
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
 
+      # Vite/Rolldown needs `@sergeant/db-schema`'s `dist/` to resolve
+      # `@sergeant/db-schema/sqlite/migrations` from the web bundle (see
+      # `apps/web/src/modules/{nutrition,fizruk,routine}/lib/clientMigrate.ts`).
+      # The exports map only ships built artefacts; without this step
+      # `pnpm --filter @sergeant/mobile-shell build:web` errors with
+      # `Rolldown failed to resolve import "@sergeant/db-schema/sqlite/migrations"`.
+      - name: Build @sergeant/db-schema
+        run: pnpm --filter @sergeant/db-schema build
+
       - name: Build web bundle
         # `VITE_TARGET=capacitor` via `@sergeant/mobile-shell#build:web`
         # disables vite-plugin-pwa for the shell build. Emits to
