@@ -46,6 +46,8 @@
 
 ## 1. TL;DR
 
+> **PR-status (snapshot 2026-05-05 19:50 UTC):** PR-00 merged. PR-01, PR-02 відкриті і чекають review. Детально — §3 PR-план.
+
 **Стан 2026-05-05:**
 
 - **Sprint 0 (analytics транспорт):** ✅ web — done. ❌ mobile — open (PR-15 заплановано).
@@ -109,17 +111,17 @@
 
 ### 3.1. Хвиля 1 — Quick wins (Week 1, 8 PR)
 
-| PR        | Назва                                                        | LOC          | Deps  | Метрика                                                    | Стан                  |
-| --------- | ------------------------------------------------------------ | ------------ | ----- | ---------------------------------------------------------- | --------------------- |
-| **PR-00** | docs(launch): consolidate FTUX into master tracker           | 700+         | —     | SSOT існує; redirect-stub-и у старих файлах                | 🚧 In flight (цей PR) |
-| **PR-01** | chore(docs): audit freeze + PR-template warning              | ~60          | —     | 0 нових audit/initiative-доків 4 тижні                     | ⏳ Next               |
-| **PR-02** | docs(readme): hero image + GIF + product overview            | ~80 + assets | —     | First-impression 60s test                                  | ⏳ Next               |
-| **PR-03** | feat(scripts): pnpm bootstrap one-shot setup                 | ~180         | —     | First-run from clone до browser ≤ 5 хв                     | ⏳ Wave 1             |
-| **PR-04** | feat(welcome): hero copy A/B variants — disciplined helper   | ~80          | —     | Wizard→first-entry conversion + 5pp за 14 днів             | ⏳ Wave 1             |
-| **PR-05** | feat(welcome): demo mode as first-class CTA                  | ~60          | PR-04 | Demo share-of-traffic ≥ 15%                                | ⏳ Wave 1             |
-| **PR-06** | feat(brand): canonical Cyrillic naming sweep                 | ~150         | —     | UI label uniformity (Фінік / Фізрук / Рутина / Харчування) | ⏳ Wave 1             |
-| **PR-07** | feat(pwa): install prompt banner                             | ~140         | —     | `pwa_installed / first_real_entry ≥ 8%`                    | ⏳ Wave 1             |
-| **PR-08** | chore(docs): cleanup — archive stale audits + delete .replit | -2200        | —     | `find docs/audits -maxdepth 1 -name '*.md'` ≤ 6            | ⏳ Wave 1             |
+| PR        | Назва                                                        | LOC          | Deps  | Метрика                                                    | Стан                                                                                            |
+| --------- | ------------------------------------------------------------ | ------------ | ----- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **PR-00** | docs(launch): consolidate FTUX into master tracker           | ~530         | —     | SSOT існує; redirect-stub-и у старих файлах                | ✅ [Merged #1934](https://github.com/Skords-01/Sergeant/pull/1934)                              |
+| **PR-01** | chore(docs): audit freeze + PR-template warning              | ~320         | —     | 0 нових audit/initiative-доків 4 тижні                     | 🚧 [Open #1936](https://github.com/Skords-01/Sergeant/pull/1936)                                |
+| **PR-02** | docs(readme): hero image + GIF + product overview            | ~95 (struct) | —     | First-impression 60s test                                  | 🚧 [Open #1937](https://github.com/Skords-01/Sergeant/pull/1937) (struct only; assets у PR-02b) |
+| **PR-03** | feat(scripts): pnpm bootstrap one-shot setup                 | ~180         | —     | First-run from clone до browser ≤ 5 хв                     | ⏳ Wave 1                                                                                       |
+| **PR-04** | feat(welcome): hero copy A/B variants — disciplined helper   | ~80          | —     | Wizard→first-entry conversion + 5pp за 14 днів             | ⏳ Wave 1                                                                                       |
+| **PR-05** | feat(welcome): demo mode as first-class CTA                  | ~60          | PR-04 | Demo share-of-traffic ≥ 15%                                | ⏳ Wave 1                                                                                       |
+| **PR-06** | feat(brand): canonical Cyrillic naming sweep                 | ~150         | —     | UI label uniformity (Фінік / Фізрук / Рутина / Харчування) | ⏳ Wave 1                                                                                       |
+| **PR-07** | feat(pwa): install prompt banner                             | ~140         | —     | `pwa_installed / first_real_entry ≥ 8%`                    | ⏳ Wave 1                                                                                       |
+| **PR-08** | chore(docs): cleanup — archive stale audits + delete .replit | -2200        | —     | `find docs/audits -maxdepth 1 -name '*.md'` ≤ 6            | ⏳ Wave 1                                                                                       |
 
 ### 3.2. Хвиля 2 — Product UX (Week 2-3, 6 PR)
 
