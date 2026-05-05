@@ -1,6 +1,6 @@
 # ADR-0035: Distributed tracing — web→server via OpenTelemetry
 
-- **Status:** Accepted (server-side shipped 2026-05-05)
+- **Status:** accepted
 - **Date:** 2026-05-03 (proposed) / 2026-05-05 (accepted)
 - **Deciders:** @Skords-01
 - **Supersedes:** —
