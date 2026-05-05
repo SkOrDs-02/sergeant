@@ -36,7 +36,14 @@ export const FIRST_ENTRY_CELEBRATIONS: Record<
   },
   routine: {
     headline: "Звичка стартувала",
-    subtext: "Перший день рахується. Streak з'явиться після другого підряд.",
+    // Outcome-first frame (S6.6 / B-4): сказати, що користувач *купує*
+    // регулярністю — автоматизм без сили волі — а не просто розповісти
+    // про мехнику ("Streak з'явиться", «Серія днів: 0»). Поріг 30 синхро-
+    // нізований з `ROUTINE_TARGET_DAYS` у `ValueProgressBar.tsx`; якщо
+    // число почне дрейфувати — винесемо в спільну константу. Audit-guard
+    // у `onboardingCelebrations.test.ts` блокує повернення слова
+    // «Streak / Серія» у subtext (mechanism-first regression).
+    subtext: "Перший день у банку. Через 30 підряд це стає автоматичним.",
   },
   nutrition: {
     headline: "Перший прийом їжі залогований",

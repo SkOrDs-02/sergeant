@@ -88,13 +88,18 @@ function buildBars(props: ValueProgressBarProps): BarData[] {
   const bars: BarData[] = [];
 
   // Routine first — lowest-friction, matches FIRST_ACTION_PRIORITY.
+  // Outcome-first frame (S6.6 / B-4): the *label* names what the user
+  // is buying (an automatic habit after `ROUTINE_TARGET_DAYS` подряд),
+  // not the mechanism («Серія днів», «Streak»). The *current* slot is
+  // the position counter — kept terse so 0/N reads as "where you are
+  // on the way to automatic" rather than as a 0-streak shame indicator.
   if (active.has("routine") && goals.routineFirstHabit) {
     const habitLabel =
       ROUTINE_HABIT_LABELS[goals.routineFirstHabit] ?? "Своя звичка";
     bars.push({
       testId: "value-progress-bar-routine",
-      label: `Звичка «${habitLabel}»`,
-      current: `0/${ROUTINE_TARGET_DAYS} днів`,
+      label: `«${habitLabel}» — через ${ROUTINE_TARGET_DAYS} днів автоматично`,
+      current: `Зараз: 0/${ROUTINE_TARGET_DAYS}`,
       percent: 0,
     });
   }

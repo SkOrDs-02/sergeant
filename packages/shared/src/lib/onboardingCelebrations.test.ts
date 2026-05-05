@@ -44,4 +44,25 @@ describe("onboardingCelebrations", () => {
       FIRST_ENTRY_CELEBRATIONS.default,
     );
   });
+
+  it("routine subtext leads with outcome — not «Серія / Streak» mechanism (S6.6)", () => {
+    // Audit B-4: routine first-entry copy used to be «Перший день
+    // рахується. Streak з'явиться після другого підряд.» The «Streak
+    // з'явиться» / «Серія днів: N» framing is *mechanism-first* and
+    // reads as a 0-streak shame indicator on day 1. Outcome-first
+    // re-frames the same idea around what the user is buying with
+    // persistence — an automatic habit. These guards lock the frame
+    // so a copy-tweak PR cannot quietly bring the mechanism back.
+    const { subtext } = FIRST_ENTRY_CELEBRATIONS.routine;
+    expect(subtext).toMatch(/автоматичн/);
+    const banned = [
+      /\bстрик\b/i,
+      /\bstreak\b/i,
+      /\bСерія днів\b/i,
+      /Streak з'явиться/i,
+    ];
+    for (const pattern of banned) {
+      expect(subtext).not.toMatch(pattern);
+    }
+  });
 });
