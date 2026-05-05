@@ -1,58 +1,58 @@
-# Playbook: Declare Incident
+# Playbook: Оголошення інциденту
 
-> **Last validated:** 2026-05-02 by @claude. **Next review:** 2026-07-31.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
-**Trigger:** a production issue has moved beyond alert triage and now requires explicit severity, owner, mitigation, or rollback coordination.
+**Trigger:** продакшн-проблема вийшла за межі alert triage і вимагає явної severity, owner-а, шляху мітигації або координації rollback-у.
 
 ## Owner surface
 
-- Primary surface: incident coordination
-- Governing skill: `sergeant-deploy-and-observability`
+- Primary surface: координація інциденту.
+- Governing skill: `sergeant-deploy-and-observability`.
 
 ## Required context
 
-- Start with `sergeant-start-here`, then open `sergeant-deploy-and-observability`.
-- Review [incident-severity-policy.md](../governance/incident-severity-policy.md) and [service-catalog.md](../architecture/service-catalog.md).
+- Спершу `sergeant-start-here`, потім `sergeant-deploy-and-observability`.
+- Перечитати [incident-severity-policy.md](../governance/incident-severity-policy.md) і [service-catalog.md](../architecture/service-catalog.md).
 
 ## Steps
 
-### 1. Classify severity
+### 1. Класифікувати severity
 
-- Use the severity matrix, not intuition alone.
-- Record affected surface, impact, and confidence.
+- Користуйся severity-матрицею, а не лише інтуїцією.
+- Запиши уражену поверхню (surface), impact і рівень впевненості.
 
-### 2. Open one incident log
+### 2. Відкрити один incident log
 
-- Use the PR, issue, or ops thread that will remain the canonical timeline.
-- Record start time, owner, current mitigation path, and the next verification check.
+- Використовуй PR, issue або ops-тред, що залишиться канонічним таймлайном.
+- Запиши час старту, owner-а, поточний шлях мітигації і наступний крок верифікації.
 
-### 3. Stabilize
+### 3. Стабілізувати
 
-- Decide between rollback, feature-flag mitigation, env rollback, or targeted hotfix.
-- Minimize blast radius before deeper cleanup.
+- Обери між rollback, feature-flag mitigation, env rollback або точковим hotfix.
+- Спершу мінімізуй blast radius, лише потім переходь до глибшого cleanup-у.
 
-### 4. Verify recovery
+### 4. Верифікувати відновлення
 
-- Confirm the symptom is gone on the affected surface.
-- Watch the related alert/metric long enough to avoid a false recovery claim.
+- Підтверди, що симптом зник на ураженій поверхні.
+- Дивись на пов'язаний alert/метрику достатньо довго, щоб не оголосити false recovery.
 
-### 5. Route follow-up
+### 5. Маршрутизувати фоллов-ап
 
-- If postmortem is required, immediately open [write-postmortem.md](./write-postmortem.md).
-- If the issue was only a noisy alert, update the runbook or alert tuning note.
+- Якщо потрібен postmortem — одразу відкривай [write-postmortem.md](./write-postmortem.md).
+- Якщо проблема була лише шумним alert-ом — онови runbook або alert-tuning нотатку.
 
 ## Verification
 
-- [ ] Severity recorded
-- [ ] Canonical incident log exists
-- [ ] Mitigation or rollback decision recorded
-- [ ] Recovery verified on the user-facing surface or metric
+- [ ] Severity записано.
+- [ ] Канонічний incident log існує.
+- [ ] Рішення про мітигацію або rollback зафіксовано.
+- [ ] Відновлення верифіковано на user-facing поверхні або метриці.
 
-## When not to use this playbook
+## Коли цей playbook не застосовується
 
-- The event is still only an investigation with no confirmed user impact or mitigation need.
-- The issue is purely local CI or staging noise.
+- Подія ще на стадії розслідування — підтвердженого user impact-у або потреби в мітигації немає.
+- Проблема — лише локальний CI- або staging-шум.
 
 ## Related playbooks and skills
 
