@@ -2853,6 +2853,162 @@ const noLegacyTelegramParseMode = {
   },
 };
 
+// ─── require-stories-for-ui-components ──────────────────────────────────
+//
+// Initiative 0007 (Design-system tooling: Storybook + visual regression).
+// Storybook каталог у `apps/web/.storybook/` — основний playground для
+// `apps/web/src/shared/components/ui/**`. Кожен top-level UI-компонент
+// (PascalCase, default-export або named-export з функції/класу) повинен
+// мати сусідній `<Name>.stories.tsx` файл, інакше:
+//   - Дизайн-партнери / нові розробники не бачать компонента у каталозі.
+//   - Visual regression (Phase 4) не покриває компонент.
+//   - При декомпозиції (initiative 0001) ламаємо рендер без сигналу.
+//
+// Поки coverage <100%, rule працює як **warn-only canary**. Перевіряє
+// тільки файли в default scope (`apps/web/src/shared/components/ui/*.tsx`):
+//   - skip `*.stories.tsx`, `*.test.tsx`, `*.spec.tsx`, `__tests__/`.
+//   - skip файли з крапкою у basename (`Icon.paths.content.tsx` —
+//     допоміжний sub-module, не самостійний UI-компонент).
+//   - skip `index.tsx` (re-export barrel, не компонент).
+//   - skip lower-case basename (PascalCase = публічний API).
+//   - skip явний opt-out у `allowlist` опції rule (e.g. helper-файли
+//     `EmptyStateIllustrations.tsx`, що ре-експортують ілюстрації для
+//     інших компонентів).
+//
+// Якщо файл проходить фільтри, але сусіднього `.stories.tsx` нема —
+// репортимо один раз на `Program` з посиланням на initiative 0007.
+// Перевірка існування файлу — sync `existsSync`, як у `tsconfig-guard`;
+// перевірка дешева (1 syscall на файл, які проходять фільтр).
+
+import { existsSync } from "node:fs";
+import { dirname, basename, join } from "node:path";
+
+const REQUIRE_STORIES_MESSAGE =
+  "UI-компонент `{{name}}` не має сусіднього `{{stories}}` файлу. Initiative 0007 (Design-system tooling) вимагає Storybook-coverage для кожного `apps/web/src/shared/components/ui/*.tsx` — це playground + baseline для visual regression. Додай `<Name>.stories.tsx` поряд з компонентом. Якщо файл навмисно НЕ компонент (helper / illustration / sub-module), додай шлях у `allowlist` опції правила в `eslint.config.js`.";
+
+// Default scope — `apps/web/src/shared/components/ui/<Name>.tsx`.
+// Налаштовується через rule options (`pathPattern`) для майбутнього
+// розширення на mobile / module-level каталоги.
+const DEFAULT_REQUIRE_STORIES_PATH_RE =
+  /(?:^|\/)apps\/web\/src\/shared\/components\/ui\/[^/]+\.tsx$/;
+
+// Default allowlist — basename-only (POSIX). Файли, які живуть у
+// `shared/components/ui/`, але навмисно НЕ окремі сторі-кандидати:
+//   - `index.tsx` — barrel re-export.
+//   - `Icon.paths.*.tsx` — sub-module з SVG path-ами, рендериться через
+//     `<Icon>` (який має власну стори через initiative 0007 round-9).
+//   - `EmptyStateIllustrations.tsx` — колекція SVG-ілюстрацій для
+//     `EmptyState` (вже має `.stories.tsx`).
+//   - `Icon.paths.system.tsx` etc. — як вище.
+const DEFAULT_REQUIRE_STORIES_ALLOWLIST = new Set([
+  "apps/web/src/shared/components/ui/EmptyStateIllustrations.tsx",
+  "apps/web/src/shared/components/ui/Icon.paths.content.tsx",
+  "apps/web/src/shared/components/ui/Icon.paths.domain.tsx",
+  "apps/web/src/shared/components/ui/Icon.paths.status.tsx",
+  "apps/web/src/shared/components/ui/Icon.paths.system.tsx",
+]);
+
+const REQUIRE_STORIES_TEST_RE = /(?:\.test|\.spec)\.tsx?$|(?:^|\/)__tests__\//;
+
+function isStoriesFile(filename) {
+  return /\.stories\.tsx?$/.test(filename);
+}
+
+function toRequireStoriesRelativePath(filename) {
+  if (!filename) return "";
+  const norm = filename.replace(/\\/g, "/");
+  const idx = norm.indexOf("/apps/web/src/shared/components/ui/");
+  if (idx === -1) return norm.replace(/^\/+/, "");
+  return norm.slice(idx + 1);
+}
+
+const requireStoriesForUiComponents = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Require sibling `<Name>.stories.tsx` for every top-level UI-component file in `apps/web/src/shared/components/ui/`. Initiative 0007 (Design-system tooling) — warn-only canary while Storybook coverage rolls toward 100%.",
+    },
+    schema: [
+      {
+        type: "object",
+        properties: {
+          pathPattern: { type: "string" },
+          allowlist: {
+            type: "array",
+            items: { type: "string" },
+            uniqueItems: true,
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
+    messages: { missingStory: REQUIRE_STORIES_MESSAGE },
+  },
+  create(context) {
+    const filename = context.filename ?? context.getFilename?.() ?? "";
+    if (!filename) return {};
+    const norm = filename.replace(/\\/g, "/");
+
+    // Path scope — default OR custom from options.pathPattern.
+    const opts = context.options[0] ?? {};
+    const pathRe =
+      typeof opts.pathPattern === "string" && opts.pathPattern.length > 0
+        ? new RegExp(opts.pathPattern)
+        : DEFAULT_REQUIRE_STORIES_PATH_RE;
+    if (!pathRe.test(norm)) return {};
+
+    // Skip stories themselves + tests.
+    if (isStoriesFile(norm)) return {};
+    if (REQUIRE_STORIES_TEST_RE.test(norm)) return {};
+
+    // Skip non-component file shapes by basename:
+    //   - `index.tsx` (barrel)
+    //   - lowercase first letter (not a public component)
+    //   - dotted basename (`Icon.paths.content.tsx`) — sub-module
+    const base = basename(norm);
+    const stem = base.replace(/\.tsx?$/, "");
+    if (stem === "index") return {};
+    const firstChar = stem.charAt(0);
+    if (
+      firstChar !== firstChar.toUpperCase() ||
+      firstChar === firstChar.toLowerCase()
+    ) {
+      // first char is not an uppercase letter — skip non-PascalCase.
+      return {};
+    }
+    if (stem.includes(".")) return {};
+
+    // Repo-relative path for allowlist matching.
+    const rel = toRequireStoriesRelativePath(filename);
+    const allowlist = new Set([
+      ...DEFAULT_REQUIRE_STORIES_ALLOWLIST,
+      ...(Array.isArray(opts.allowlist) ? opts.allowlist : []),
+    ]);
+    if (allowlist.has(rel)) return {};
+
+    // Sibling `.stories.tsx` filesystem check (sync — 1 syscall per
+    // qualifying file; lint runs on a small subset so impact is
+    // negligible). Tests pass `filename` as an absolute path; if the
+    // file is virtual (e.g. RuleTester without disk-backing), we skip
+    // the existence check and trust the test fixture path.
+    const dir = dirname(filename);
+    const storiesBase = `${stem}.stories.tsx`;
+    const storiesAbs = join(dir, storiesBase);
+    if (existsSync(storiesAbs)) return {};
+
+    return {
+      Program(node) {
+        context.report({
+          node,
+          messageId: "missingStory",
+          data: { name: stem, stories: storiesBase },
+        });
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
@@ -2879,6 +3035,7 @@ const plugin = {
     "forbid-shell-only-feature": forbidShellOnlyFeature,
     "no-hash-router-in-modules": noHashRouterInModules,
     "no-legacy-telegram-parse-mode": noLegacyTelegramParseMode,
+    "require-stories-for-ui-components": requireStoriesForUiComponents,
   },
 };
 
