@@ -1,5 +1,8 @@
 # Sync Engine Writer Wiring Implementation Plan
 
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Status:** Active
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Wire the sync v2 writer engine into the web runtime and close the Stage 5 outstanding roadmap item.
