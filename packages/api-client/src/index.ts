@@ -107,6 +107,15 @@ export {
 } from "./endpoints/syncV2.pushScheduler";
 
 export {
+  createSyncEngineFlushOnReconnect,
+  type SyncEngineEventTarget,
+  type SyncEngineFlushOnReconnect,
+  type SyncEngineFlushOnReconnectDeps,
+  type SyncEngineFlushOnReconnectOptions,
+  type SyncEngineFlushTriggerKind,
+} from "./endpoints/syncV2.flushOnReconnect";
+
+export {
   createCoachEndpoints,
   type CoachEndpoints,
   type CoachInsightPayload,
