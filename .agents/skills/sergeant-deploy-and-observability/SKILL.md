@@ -1,6 +1,8 @@
 ---
 name: sergeant-deploy-and-observability
 description: Use when a Sergeant change touches deploy config, env vars, Railway/Vercel, health checks, Sentry, n8n, or production verification; UA: деплой, env, Railway, Vercel, Sentry, n8n.
+lang: en
+lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
 ---
 
 # Sergeant Deploy and Observability

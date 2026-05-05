@@ -1,6 +1,11 @@
+---
+lang: en
+lang-reason: Active deploy-pipeline reference triggered by the `Deploy-config staging gate` CI failure on PRs touching `vercel.json` / `fly.toml` / `railway.toml` / `Dockerfile*` / `Caddyfile` / `apps/server/build.mjs`. Body walks through vendor-CLI invocations, GitHub Actions step names, and rollback semantics — all English-native nomenclature mirrored from the vendor docs the playbook already links to. UA translation would re-translate vendor terminology already canonical in the linked docs, adding maintenance cost without operational benefit. Tracked under initiative 0009 PR 1.2b.
+---
+
 # Playbook: Deploy-config change (vercel / fly / railway / Dockerfile)
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 **Trigger:** PR has non-comment changes to deploy-config files (`vercel.json`, `fly.toml`, `railway.toml`, `Dockerfile*`, `Caddyfile`, `apps/server/build.mjs`) — `Deploy-config staging gate` CI fails without a verification label.

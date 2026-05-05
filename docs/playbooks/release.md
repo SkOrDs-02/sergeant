@@ -1,6 +1,11 @@
+---
+lang: en
+lang-reason: Active multi-surface release runbook covering web/API, mobile-shell (Capacitor), and Expo flows. References EAS update channels, Vercel deployment promotion, Railway pre-deploy migrations, and store-build coordination — terminology mirrored from vendor docs the on-call cross-references in real time during high-stakes releases. Translating step-by-step vendor procedures to UA would create a divergent vocabulary surface for the same content the release coordinator must reconcile against vendor docs anyway. Tracked under initiative 0009 PR 1.2b.
+---
+
 # Playbook: Release
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 **Trigger:** ship a release-bearing change to any production surface — `apps/web`, `apps/server`, `apps/mobile-shell` (Capacitor), or `apps/mobile` (Expo). Includes EAS updates, store builds, and coordinated cross-surface deploys.

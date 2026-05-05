@@ -1,6 +1,11 @@
+---
+lang: en
+lang-reason: Active operational reference for privileged-access governance and security-incident response across Sergeant's Tier 0/1 vendor consoles (GitHub, Railway, Vercel, Mono). Body steps through vendor-CLI invocations, audit-trail conventions, and external-auditor-friendly evidence chains — all English-native vocabulary mirrored from vendor docs the on-call cross-references in real time during privileged-access events. Translating these step-by-step flows to UA would introduce a divergent terminology surface for the same content without improving operational fidelity. Tracked under initiative 0009 PR 1.2b.
+---
+
 # Playbook: Access governance
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 **Trigger:** any privileged-access governance event in Sergeant — granting new privileged access, revoking it, running a periodic Tier 0/1 access review, or responding to a suspected account or credential compromise.

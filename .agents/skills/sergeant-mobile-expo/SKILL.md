@@ -1,6 +1,8 @@
 ---
 name: sergeant-mobile-expo
 description: Use when editing Sergeant Expo screens, React Native, mobile navigation, MMKV flows, Capacitor shell, or web→mobile ports; UA: правиш Expo/RN/MMKV/Capacitor/mobile-shell.
+lang: en
+lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
 ---
 
 # Sergeant Mobile Expo
