@@ -2893,19 +2893,87 @@ const DEFAULT_REQUIRE_STORIES_PATH_RE =
   /(?:^|\/)apps\/web\/src\/shared\/components\/ui\/[^/]+\.tsx$/;
 
 // Default allowlist — basename-only (POSIX). Файли, які живуть у
-// `shared/components/ui/`, але навмисно НЕ окремі сторі-кандидати:
-//   - `index.tsx` — barrel re-export.
-//   - `Icon.paths.*.tsx` — sub-module з SVG path-ами, рендериться через
-//     `<Icon>` (який має власну стори через initiative 0007 round-9).
-//   - `EmptyStateIllustrations.tsx` — колекція SVG-ілюстрацій для
-//     `EmptyState` (вже має `.stories.tsx`).
-//   - `Icon.paths.system.tsx` etc. — як вище.
+// `shared/components/ui/`, але навмисно НЕ окремі сторі-кандидати.
+//
+// Дві групи allowlist-у:
+//
+//   A) Sub-module / barrel — фактично не компонент:
+//      - `index.tsx` — barrel re-export (skipped через basename rule).
+//      - `Icon.paths.*.tsx` — sub-module з SVG path-ами, рендериться
+//        через `<Icon>` (який має власну стори).
+//      - `EmptyStateIllustrations.tsx` — колекція SVG-ілюстрацій для
+//        `EmptyState` (`EmptyState.stories.tsx` покриває їх).
+//
+//   B) Utility / wrapper / a11y / gesture — "невидимі" або вже покриті
+//      story композицій-host-у. Initiative 0007 round-10 закриває
+//      shared/ui coverage до 80%+; ці файли не дають окремого visual
+//      sample-у і ловляться візуально лише в композиціях:
+//
+//      Visual-агностичні (логіка / a11y wrappers / hidden-by-default):
+//      - `PageTransition.tsx` — fragment-обгортка над route-children.
+//      - `ScreenReaderAnnouncer.tsx` — `aria-live` без visible UI.
+//      - `SkipLink.tsx` — прихований до фокусу a11y-helper.
+//      - `SectionErrorBoundary.tsx` — error boundary, fallback тестується
+//        у `DataState.stories.tsx`.
+//      - `SuspenseWithMinDelay.tsx` — `<Suspense>` wrapper із min-delay,
+//        візуально = `<Spinner>` (вже story).
+//      - `ModulePageLoader.tsx` — module-tinted spinner; чисто loader,
+//        візуально = `<Spinner>` варіанти.
+//      - `SpotlightQueue.tsx` — context provider для `FeatureSpotlight`,
+//        без власного UI.
+//      - `StreakProtection.tsx` — pure-logic компонент (state machine
+//        для streak insurance), UI рендериться через `<Banner>`/`<Modal>`.
+//
+//      Gesture / mobile-only / native-input wrappers:
+//      - `KeyboardAccessory.tsx` — мобільний keyboard-accessory bar,
+//        non-functional у Storybook iframe (нема visual viewport API).
+//      - `PullToRefresh.tsx` — pure gesture-обгортка; візуальний
+//        індикатор живе у `PullToRefreshIndicator`.
+//      - `PullToRefreshIndicator.tsx` — внутрішній child `PullToRefresh`,
+//        стандалоном не рендериться (потрібні координати pull-state).
+//      - `OptimizedImage.tsx` — `<img>` із LQIP/skeleton; візуально =
+//        `<Skeleton>` (вже story) + native image rendering.
+//      - `SwipeToAction.tsx` — pure gesture-обгортка над list-item-ом,
+//        статичний state не несе візуальної цінності.
+//      - `QuickActionsMenu.tsx` — radial-меню, відкривається лише через
+//        long-press touch event; portal-render у `document.body` поза
+//        iframe-ом story-я ламає visual regression.
+//
+//      Transient / overlay / context-залежні:
+//      - `CelebrationModal.tsx` — повноекранний overlay із 3-сек
+//        animation-ом; візуальна цінність = `<StreakCelebration>` (story).
+//      - `FeatureSpotlight.tsx` — anchor через CSS-selector у DOM-і
+//        host-app-у; не рендериться без real `targetSelector`.
+//      - `KeyboardShortcutsModal.tsx` — UI зчитує реєстр гарячих клавіш
+//        host-app-у через context, недоступний у Storybook isolation.
+//      - `VoiceMicButton.tsx` — потребує MediaRecorder + voice-recognition
+//        infra; візуально = `<IconButton>` (вже story).
 const DEFAULT_REQUIRE_STORIES_ALLOWLIST = new Set([
   "apps/web/src/shared/components/ui/EmptyStateIllustrations.tsx",
   "apps/web/src/shared/components/ui/Icon.paths.content.tsx",
   "apps/web/src/shared/components/ui/Icon.paths.domain.tsx",
   "apps/web/src/shared/components/ui/Icon.paths.status.tsx",
   "apps/web/src/shared/components/ui/Icon.paths.system.tsx",
+  // Initiative 0007 round-10 — utility / wrapper allowlist. See block
+  // comment above for the rationale per file.
+  "apps/web/src/shared/components/ui/PageTransition.tsx",
+  "apps/web/src/shared/components/ui/ScreenReaderAnnouncer.tsx",
+  "apps/web/src/shared/components/ui/SkipLink.tsx",
+  "apps/web/src/shared/components/ui/SectionErrorBoundary.tsx",
+  "apps/web/src/shared/components/ui/SuspenseWithMinDelay.tsx",
+  "apps/web/src/shared/components/ui/ModulePageLoader.tsx",
+  "apps/web/src/shared/components/ui/SpotlightQueue.tsx",
+  "apps/web/src/shared/components/ui/StreakProtection.tsx",
+  "apps/web/src/shared/components/ui/KeyboardAccessory.tsx",
+  "apps/web/src/shared/components/ui/PullToRefresh.tsx",
+  "apps/web/src/shared/components/ui/PullToRefreshIndicator.tsx",
+  "apps/web/src/shared/components/ui/OptimizedImage.tsx",
+  "apps/web/src/shared/components/ui/SwipeToAction.tsx",
+  "apps/web/src/shared/components/ui/QuickActionsMenu.tsx",
+  "apps/web/src/shared/components/ui/CelebrationModal.tsx",
+  "apps/web/src/shared/components/ui/FeatureSpotlight.tsx",
+  "apps/web/src/shared/components/ui/KeyboardShortcutsModal.tsx",
+  "apps/web/src/shared/components/ui/VoiceMicButton.tsx",
 ]);
 
 const REQUIRE_STORIES_TEST_RE = /(?:\.test|\.spec)\.tsx?$|(?:^|\/)__tests__\//;

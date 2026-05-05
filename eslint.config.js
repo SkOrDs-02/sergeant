@@ -293,24 +293,32 @@ export default [
       "sergeant-design/no-hash-router-in-modules": "warn",
     },
   },
-  // Storybook coverage canary — initiative 0007 (Design-system tooling:
-  // Storybook + visual regression). Кожен top-level UI-компонент у
-  // `apps/web/src/shared/components/ui/` має сусідній `<Name>.stories.tsx`,
-  // інакше Storybook playground і visual regression baseline (Phase 4) не
-  // покривають компонент. Поточний coverage ≈35% (21 / ~57 публічних
-  // компонентів станом на 2026-05-04 — див. round-9 Phase 1 у
-  // `docs/initiatives/0007-design-system-tooling.md`). Поки coverage
-  // <100%, rule працює як **warn-only canary**: підсвічує нові
-  // компоненти без stories у lint-staged та CI, але НЕ блокує existing
-  // gap-ах. Після завершення Phase 2 (write-stories pass на 100% UI
-  // компонентів) rule піднімається до `error`. Default scope/allowlist
-  // живуть у самому правилі (`packages/eslint-plugin-sergeant-design/
-  // index.js` § require-stories-for-ui-components) — `Icon.paths.*.tsx`
-  // і `EmptyStateIllustrations.tsx` не вимагають окремої сторі.
+  // Storybook coverage enforcement — initiative 0007 (Design-system
+  // tooling: Storybook + visual regression). Кожен top-level
+  // UI-компонент у `apps/web/src/shared/components/ui/` має сусідній
+  // `<Name>.stories.tsx`, інакше Storybook playground і visual
+  // regression baseline не покривають компонент.
+  //
+  // Round-10 (2026-05-05) закрив Phase 2: shared/ui coverage піднято
+  // з 35% до 100% non-allowlisted (37 stories на 37 компонентів-
+  // кандидатів — див. § Outcome у
+  // `docs/initiatives/0007-design-system-tooling.md`). Решта 23
+  // файли — barrel / Icon.paths sub-modules / utility / gesture /
+  // transient overlay-компоненти — навмисно allowlisted у самому
+  // правилі (`packages/eslint-plugin-sergeant-design/index.js` §
+  // require-stories-for-ui-components, секція `DEFAULT_REQUIRE_STORIES_
+  // ALLOWLIST`) із per-file rationale.
+  //
+  // Severity: **error**. Коли додаєш новий публічний компонент у
+  // `apps/web/src/shared/components/ui/`, додай поряд `<Name>.stories.tsx`
+  // (мінімум — Default story). Якщо файл навмисно НЕ компонент
+  // (helper / illustration / sub-module / gesture-обгортка / transient
+  // overlay), додай шлях у `DEFAULT_REQUIRE_STORIES_ALLOWLIST` із
+  // коментарем-обґрунтуванням у тому ж commit-і.
   {
     files: ["apps/web/src/shared/components/ui/**/*.tsx"],
     rules: {
-      "sergeant-design/require-stories-for-ui-components": "warn",
+      "sergeant-design/require-stories-for-ui-components": "error",
     },
   },
   // DataState adoption canary — initiative 0011 Phase 2.9 (foundation
