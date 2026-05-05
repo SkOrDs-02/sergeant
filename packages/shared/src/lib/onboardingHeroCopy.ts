@@ -10,30 +10,43 @@
  *
  * The new mainline (`outcome`) is outcome-first: it leads with what the
  * user *gets* in the next 30 seconds, not with the product's category.
- * Two alternative arms are kept for A/B-testing:
- *   - `safe`  — conservative rewrite that just removes "хаб"
- *   - `bold`  — provocative framing that targets the "втомився забувати"
- *               cohort. Higher conversion-or-bounce variance expected.
+ * Three alternative arms are kept for A/B-testing:
+ *   - `safe`         — conservative rewrite that just removes "хаб"
+ *   - `bold`         — provocative framing that targets the "втомився забувати"
+ *                       cohort. Higher conversion-or-bounce variance expected.
+ *   - `disciplined`  — "disciplined helper" tone (PR-04, master tracker §4):
+ *                       «Менше хаосу. Більше зробленого.» Targets the cohort
+ *                       that wants a coach-tone, not a product-tone.
  *
- * `assignVariant(ONBOARDING_HERO_COPY_EXPERIMENT)` defaults to 100% `outcome`
- * (`weights: [1, 0, 0]`); flip the weights or call `overrideVariant` to
- * start a real split. Per `docs/launch/posthog-ftux-dashboards.md`, the
- * winning metric is `wizard_started → wizard_completed` per-arm.
+ * Experiment id was bumped to `onboarding_hero_copy_v2` when the
+ * `disciplined` variant landed (PR-04). Existing v1 assignments remain in
+ * KVStore but are not surfaced — `assignVariant` keys on `experiment.id`,
+ * so v1 users get re-rolled into the v2 split on first /welcome render.
+ *
+ * Default weights ([0.4, 0.2, 0.2, 0.2]) keep `outcome` favoured (since it
+ * has been the production mainline) while exposing the three alternatives
+ * across ~60% of new traffic. Per `docs/launch/posthog-ftux-dashboards.md`,
+ * the winning metric is `wizard_started → wizard_completed` per-arm.
  */
 
 import type { ExperimentDefinition } from "./abTest";
 
 /**
  * Experiment definition for the OnboardingWizard hero copy A/B.
- * `outcome` is the mainline; `safe` and `bold` are preserved for testing.
+ * `outcome` stays the mainline (40%). `safe`, `bold`, `disciplined` each
+ * receive 20% of new assignments for the v2 split.
  */
 export const ONBOARDING_HERO_COPY_EXPERIMENT: ExperimentDefinition = {
-  id: "onboarding_hero_copy_v1",
-  variants: ["outcome", "safe", "bold"] as const,
-  weights: [1, 0, 0] as const,
+  id: "onboarding_hero_copy_v2",
+  variants: ["outcome", "safe", "bold", "disciplined"] as const,
+  weights: [0.4, 0.2, 0.2, 0.2] as const,
 };
 
-export type OnboardingHeroCopyVariant = "outcome" | "safe" | "bold";
+export type OnboardingHeroCopyVariant =
+  | "outcome"
+  | "safe"
+  | "bold"
+  | "disciplined";
 
 export interface OnboardingHeroCopy {
   /** Hero headline (h2). ≤ 64 chars. */
@@ -59,6 +72,7 @@ export function getOnboardingHeroCopy(
 ): OnboardingHeroCopy {
   if (variant === "safe") return SAFE_COPY;
   if (variant === "bold") return BOLD_COPY;
+  if (variant === "disciplined") return DISCIPLINED_COPY;
   return OUTCOME_COPY;
 }
 
@@ -102,4 +116,21 @@ const BOLD_COPY: OnboardingHeroCopy = {
     "Записуй один раз — Sergeant пам'ятає за тебе. Офлайн, без акаунта.",
   badges: ["Без реєстрації", "Без cloud-у", "Без реклами"],
   primaryCta: "Спробувати — 30 секунд",
+};
+
+/**
+ * Variant `disciplined` — "disciplined helper" tone (PR-04 / master
+ * tracker §4 decision). Frames Sergeant as a coach who keeps you in
+ * line, not a tool that organises four domains. Headline trades the
+ * outcome-first promise for a value-prop the disciplined cohort
+ * actually believes («менше хаосу — більше зробленого»). CTA stays
+ * action-orientated; subtitle keeps the no-account / no-cloud
+ * commitments to avoid drift from the verifiable badges.
+ */
+const DISCIPLINED_COPY: OnboardingHeroCopy = {
+  title: "Менше хаосу. Більше зробленого.",
+  subtitle:
+    "Один екран для грошей, тіла, звичок і їжі. Без акаунта. Без cloud-у.",
+  badges: ["Без реєстрації", "Без cloud-у", "Без реклами"],
+  primaryCta: "Розпочати — 30 секунд",
 };

@@ -39,8 +39,9 @@ import type { ExperimentDefinition } from "./abTest";
  *
  * 50/50 split is intentional — both arms produce valid wizard
  * completions, so neither needs a "safety net" weighting like
- * `onboarding_hero_copy_v1` (which keeps `outcome` at 100% until
- * the copy reviewer signs off the alternative arms).
+ * `onboarding_hero_copy_v2` (which keeps `outcome` at 40% as
+ * the carry-over mainline while disciplined / safe / bold split
+ * the remaining 60%).
  */
 export const ONBOARDING_DEFAULT_PICKS_EXPERIMENT: ExperimentDefinition = {
   id: "onboarding_default_picks_v1",

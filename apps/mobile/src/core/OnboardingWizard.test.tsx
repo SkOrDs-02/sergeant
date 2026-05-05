@@ -6,6 +6,7 @@ import {
   FIRST_ACTION_STARTED_AT_KEY,
   ONBOARDING_DEFAULT_PICKS_EXPERIMENT,
   ONBOARDING_DONE_KEY,
+  ONBOARDING_HERO_COPY_EXPERIMENT,
   VIBE_PICKS_KEY,
   overrideVariant,
 } from "@sergeant/shared";
@@ -27,6 +28,15 @@ describe("OnboardingWizard", () => {
       mobileKVStore,
       ONBOARDING_DEFAULT_PICKS_EXPERIMENT.id,
       "all",
+    );
+    // PR-04 bumped hero copy to a 4-way split (outcome / safe / bold /
+    // disciplined). Pin `outcome` for the established suite — the
+    // "renders the outcome-variant hero copy" assertion below expects
+    // outcome's exact title/subtitle copy.
+    overrideVariant(
+      mobileKVStore,
+      ONBOARDING_HERO_COPY_EXPERIMENT.id,
+      "outcome",
     );
     jest
       .spyOn(AccessibilityInfo, "isReduceMotionEnabled")

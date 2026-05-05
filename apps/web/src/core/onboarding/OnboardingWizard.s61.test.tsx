@@ -4,6 +4,7 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 
 import {
   ONBOARDING_DEFAULT_PICKS_EXPERIMENT,
+  ONBOARDING_HERO_COPY_EXPERIMENT,
   overrideVariant,
 } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
@@ -18,6 +19,12 @@ import { OnboardingWizard } from "./OnboardingWizard";
  * deterministically via `overrideVariant` so we can assert the
  * branch-specific contract (CTA disabled vs. legacy ALL fallback)
  * without depending on the random fingerprint.
+ *
+ * Hero copy is also pinned to the `outcome` arm because all
+ * assertions match the «Розпочати …» CTA, which is shared by the
+ * outcome / safe / disciplined arms but NOT by `bold` (which uses
+ * «Спробувати …»). Without the pin, the v2 4-way split (PR-04)
+ * would make a 20% of runs flake on the bold arm.
  */
 describe("OnboardingWizard — S6.1 default-picks A/B", () => {
   afterEach(cleanup);
@@ -25,6 +32,7 @@ describe("OnboardingWizard — S6.1 default-picks A/B", () => {
   beforeEach(() => {
     localStorage.clear();
     vi.restoreAllMocks();
+    overrideVariant(webKVStore, ONBOARDING_HERO_COPY_EXPERIMENT.id, "outcome");
   });
 
   describe("`none` arm (opt-in, new behaviour)", () => {

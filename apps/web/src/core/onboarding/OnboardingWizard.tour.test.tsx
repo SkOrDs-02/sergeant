@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import {
+  ONBOARDING_HERO_COPY_EXPERIMENT,
+  overrideVariant,
+} from "@sergeant/shared";
+import { webKVStore } from "@shared/lib/storage/storage";
 import { OnboardingWizard } from "./OnboardingWizard";
 
 /**
@@ -66,9 +71,12 @@ describe("OnboardingWizard — tour mode (read-only replay)", () => {
   });
 
   it("default mode renders the outcome-variant CTA (mainline post-S1.1)", () => {
+    // PR-04 bumped the experiment to v2 (4-way split, weights [0.4, 0.2,
+    // 0.2, 0.2]) so a fresh fingerprint can land on any arm. Pin the
+    // outcome arm explicitly so this test asserts what it claims to —
+    // that the CTA copy is wired up — instead of relying on a 100% lock.
+    overrideVariant(webKVStore, ONBOARDING_HERO_COPY_EXPERIMENT.id, "outcome");
     render(<OnboardingWizard onDone={() => {}} />);
-    // `weights: [1, 0, 0]` ships outcome at 100%, so a fresh fingerprint
-    // always lands on the outcome arm: «Розпочати — 30 секунд».
     expect(
       screen.getByRole("button", { name: /Розпочати/i }),
     ).toBeInTheDocument();
