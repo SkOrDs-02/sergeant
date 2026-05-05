@@ -36,6 +36,11 @@ export {
   type DrainedOutboxRow,
 } from "./syncOpOutboxDrain.js";
 export {
+  markOutboxSuccess,
+  markOutboxRetry,
+  markOutboxRejected,
+} from "./syncOpOutboxLifecycle.js";
+export {
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,
   ROUTINE_SPIKE_CLIENT_MIGRATIONS,
