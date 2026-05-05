@@ -182,4 +182,5 @@ jobs:
             scripts/docs/__tests__/check-adr-graph.test.mjs \
             scripts/docs/__tests__/check-playbook-schema.test.mjs \
             scripts/__tests__/check-playbook-language.test.mjs \
+            scripts/__tests__/bootstrap.test.mjs \
             scripts/ci/__tests__/validate-pr-body.test.mjs

@@ -128,7 +128,30 @@ Fizruk and Routine modules follow a **local-first** approach: data is stored loc
 
 ## Quickstart
 
-### 1. Clone and install
+### Fast path: `pnpm bootstrap` (~5 хв)
+
+```bash
+git clone https://github.com/Skords-01/Sergeant.git
+cd Sergeant
+corepack enable && corepack prepare pnpm@9.15.1 --activate   # one-time
+pnpm bootstrap
+```
+
+`pnpm bootstrap` робить:
+
+1. Перевіряє Node 20.x + pnpm 9.15.1 + Docker daemon (з підказкою як виправити, якщо щось не так).
+2. `pnpm install --frozen-lockfile` (skip-неться, якщо `node_modules` свіжий).
+3. `cp .env.example .env`, якщо `.env` ще нема (existing `.env` не чіпається).
+4. `pnpm dev:db` — піднімає Postgres у Docker і прокачує всі міграції.
+5. Друкує блок «next steps» з командами для запуску API + Web.
+
+Тільки prerequisites без install/docker: `pnpm bootstrap:check`.
+
+Прапорці: `--skip-install`, `--skip-db` (для CI / повторних прогонів). Кроки нижче — manual fallback, якщо bootstrap не запускається.
+
+### Manual fallback
+
+#### 1. Clone and install
 
 ```bash
 git clone https://github.com/Skords-01/Sergeant.git
@@ -138,7 +161,7 @@ pnpm install --frozen-lockfile
 
 `--frozen-lockfile` installs the exact versions recorded in the lockfile without modifying it.
 
-### 2. Configure environment variables
+#### 2. Configure environment variables
 
 ```bash
 cp .env.example .env
@@ -155,7 +178,7 @@ Open `.env` in your editor. Most values are pre-filled for local development. Ke
 | `VITE_API_PROXY_TARGET`                     | No        | Dev proxy target (default `http://127.0.0.1:3000`)                                                                                                                              |
 | Others                                      | No        | See [`docs/integrations/env-vars.md`](./docs/integrations/env-vars.md) — full reference for all 100+ optional variables (Sentry, PostHog, Voyage, Mono, OpenClaw, AI quotas, …) |
 
-### 3. Start the database
+#### 3. Start the database
 
 ```bash
 pnpm dev:db
@@ -165,7 +188,7 @@ This runs `docker compose up -d` + `pnpm db:migrate` — starts PostgreSQL 16 in
 
 To stop the database: `pnpm db:down` (or `docker compose down`).
 
-### 4. Start the server and web app
+#### 4. Start the server and web app
 
 ```bash
 # In one terminal:
@@ -180,7 +203,7 @@ Local URLs:
 - Web: `http://localhost:5173`
 - API: `http://localhost:3000`
 
-### 5. (Optional) Mobile app
+#### 5. (Optional) Mobile app
 
 ```bash
 # Expo (React Native)
@@ -190,7 +213,7 @@ pnpm --filter @sergeant/mobile start
 # First build web, then open in Xcode / Android Studio
 ```
 
-### 6. (Optional) Telegram bot
+#### 6. (Optional) Telegram bot
 
 ```bash
 pnpm --filter @sergeant/console dev
@@ -220,6 +243,8 @@ Requires a Telegram Bot Token in `tools/console/.env`.
 | `pnpm gen`              | Generate boilerplate (plop)                                 |
 | `pnpm gen:adr`          | Generate a new ADR (Architecture Decision Record)           |
 | `pnpm docs:check-links` | Verify documentation links                                  |
+| `pnpm bootstrap`        | One-shot dev bootstrap (verify env + install + docker + db) |
+| `pnpm bootstrap:check`  | Verify Node/pnpm/Docker prerequisites only                  |
 
 ## Testing
 
