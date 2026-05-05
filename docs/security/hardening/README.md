@@ -1,6 +1,6 @@
 # Security Hardening Backlog
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 Беклог посилення безпеки (security hardening) — структурований список знахідок із внутрішнього security-review від 2026-05-03. Кожна знахідка живе у власному файлі-картці (`<id>-<slug>.md`), згрупована у спринти за пріоритетом усунення.
@@ -82,6 +82,9 @@
 | [M16](./M16-telegram-markdown-v2.md)           | Telegram `parse_mode: "Markdown"` is the legacy variant | Closed (2026-05-04) — PR [#1765](https://github.com/Skords-01/Sergeant/pull/1765)                          | [Sprint 3](./sprint-3.md) |
 | [M18](./M18-openclaw-per-call-usd-cap.md)      | OpenClaw daily $5 budget without per-call cap           | Closed (2026-05-04) — PR [#1760](https://github.com/Skords-01/Sergeant/pull/1760)                          | [Sprint 3](./sprint-3.md) |
 | [I1](./I1-codeql-workflow.md)                  | Add CodeQL SAST workflow                                | Closed (2026-05-04) — PR [#1749](https://github.com/Skords-01/Sergeant/pull/1749)                          | [Sprint 3](./sprint-3.md) |
+| [M17](./M17-console-global-rate-cap.md)        | Console rate-limit per Telegram user, no global cap     | Closed (2026-05-05) — batched M17 + L8 + L10 hardening PR                                                  | [Sprint 3](./sprint-3.md) |
+| [L8](./L8-openclaw-repo-root-traversal.md)     | OpenClaw `OPENCLAW_REPO_ROOT` path-traversal guard      | Closed (2026-05-05) — batched M17 + L8 + L10 hardening PR                                                  | [Sprint 4](./sprint-4.md) |
+| [L10](./L10-user-id-hash-in-logs.md)           | `recordSync*` logs raw `userId` instead of hash         | Closed (2026-05-05) — batched M17 + L8 + L10 hardening PR                                                  | [Sprint 4](./sprint-4.md) |
 
 ## Cross-references
 
