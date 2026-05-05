@@ -47,3 +47,17 @@ export function resetMetricsForTesting(): void {
  */
 export const OPENCLAW_PER_CALL_CAP_HIT_TOTAL =
   "openclaw.per_call_cap_hit_total";
+
+/**
+ * Incremented every time the cross-user console rate-limit (M17) rejects
+ * a Telegram message because the aggregate bot budget is exhausted, even
+ * though the originating user's per-user bucket still had headroom. See
+ * `tools/console/src/security.ts` `FixedWindowRateLimiter` and
+ * `docs/security/hardening/M17-console-global-rate-cap.md`.
+ *
+ * A non-zero value across a soak test signals that the allowlist has
+ * grown to the point where individual buckets multiply faster than the
+ * global cap; tune `CONSOLE_GLOBAL_RATE_LIMIT_PER_MIN` accordingly.
+ */
+export const CONSOLE_GLOBAL_RATE_CAP_HIT_TOTAL =
+  "console.global_rate_cap_hit_total";
