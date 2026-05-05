@@ -46,7 +46,9 @@
 
 ## 1. TL;DR
 
-> **PR-status (snapshot 2026-05-05 21:30 UTC):** PR-00, PR-01, PR-02 + status-bump #1939 — merged. PR-03 (`pnpm bootstrap`) і PR-04 (`disciplined hero copy`) — open. Детально — §3 PR-план.
+> **PR-status (snapshot 2026-05-05 23:25 UTC):** PR-00, PR-01, PR-02 + status-bump #1939 — merged. PR-03 (`pnpm bootstrap`) і PR-04 (`disciplined hero copy`) — open. Детально — §3 PR-план.
+>
+> **Module-readiness update 2026-05-05:** Fizruk shipped progress charts + exercise catalog + workout notes ([PR #19](https://github.com/Skords-01/Sergeant/pull/19)) і Workouts/Dashboard refactor + journal pagination ([PR #20](https://github.com/Skords-01/Sergeant/pull/20)) — інкорпоровано у §3.5 (FTUX-relevant infra) + §5.3 / §5.4 (Fizruk visual references); §4.1 розширено 6 hero copy variants для наступної ротації + §4.2 selection rubric.
 
 **Стан 2026-05-05:**
 
@@ -152,7 +154,18 @@
 | **PR-21** | feat(mobile): FTUX parity sweep                             | ~350     | PR-09, PR-11, PR-15         | Mobile FTUX coverage ≥ 90%                   |
 | **PR-22** | docs(agents): TOC + read-time annotations + quick-reference | ~180     | —                           | New-agent first-PR success rate (subjective) |
 
-### 3.5. Свідомі НЕ-роблення
+### 3.5. Module-level інфраструктура — вже в `main` (FTUX-relevant context)
+
+> Не FTUX-PR-и, але вже-merged інфраструктура, яку FTUX-флоу (cold-start outcome-card §5, mobile FTUX parity §3.3) лінкуватиме напряму. Перелік оновлюється по мірі того, як модулі шиплять value-surface, що ми хочемо teaser-ити у FTUX.
+
+| Модуль | Що з'явилось                                                                                                                                                                                                                                                                                                | PR                                                                                                 | FTUX-споживач                                                                                                                                                                            |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fizruk | `MiniLineChart` (SVG line chart для weight / body-fat trends) + `WellbeingChart` (grouped bar chart для energy/mood per workout); pushup stats widget; 65+ exercises у catalog (chest/back/shoulders/arms/core/legs/glutes/cardio/full_body); workout-notes textarea на active workout + display у history. | [PR #19](https://github.com/Skords-01/Sergeant/pull/19) (catalog + charts + notes)                 | **PR-09 (outcome-card)** §5.3 Fizruk visual / §5.4 post-first-entry transformation; **PR-21 (mobile FTUX parity)** §3.3 (mobile-side chart parity).                                      |
+| Fizruk | Zero-input forms + grouped picker (categories) на Workouts; quick-start CTA вилучено; weekly chart перенесений у Progress; journal «show more» pagination.                                                                                                                                                  | [PR #20](https://github.com/Skords-01/Sergeant/pull/20) (Workouts/Dashboard refactor + pagination) | **PR-09 (outcome-card)** §5.3 Fizruk CTA «Запланувати тренування →» тепер веде на чистіший grouped-picker UX; **PR-12 (orchestrator)** — менше дублюючих CTA на Dashboard після cleanup. |
+
+> **Принцип:** перш ніж писати FTUX-сюрфейс для модуля, перевір тут — можливо, потрібний компонент вже існує і його достатньо обгорнути у FTUX-обгортку (FF, copy-A/B, empty-state).
+
+### 3.6. Свідомі НЕ-роблення
 
 - ❌ AGENTS.md split на 3 файли (per Q7 — overkill для solo+agents).
 - ❌ Mobile-shell deprecation deadline (per Q8 — skip).
@@ -189,7 +202,62 @@
 - **CTA primary:** «Почати»
 - **CTA secondary:** «Подивитись приклад»
 
-> Усі три — UA-only (per Q4 answer).
+### 4.1. Drafts для наступної ротації (post-PR-04 winner)
+
+> Не в активному 4-way A/B зараз. Кандидати на наступну ротацію після того, як PR-04 promote-не winner. Tone match — той самий disciplined-helper («спокійна влада, без пафосу, без надмірних обіцянок»), різні axis-i: brand, empathy, friction acknowledgment, privacy, identity. Усі — UA-only (per Q4).
+
+#### Variant D — Brand-aligned (military-light, без overdoing)
+
+- **Hero:** «Дисципліна — не покарання, а ритм.»
+- **Sub:** «Sergeant веде облік: гроші, тіло, звички, їжа. Без сварок за пропуски — лише чесна картина тижня.»
+- **CTA primary:** «Стати в стрій»
+- **CTA secondary:** «Подивитись приклад»
+
+#### Variant E — Empathetic / anti-guilt coaching
+
+- **Hero:** «Ти вже досить себе картаєш. Тепер — рахуємо.»
+- **Sub:** «Один запис на день — і вже наступного тижня побачиш, на що дійсно йшли твої гроші, час і сили.»
+- **CTA primary:** «Один запис сьогодні»
+- **CTA secondary:** «Демо без акаунта»
+
+#### Variant F — Pragmatic friction acknowledgment
+
+- **Hero:** «5 додатків — забагато. Sergeant — один.»
+- **Sub:** «Гроші, фітнес, звички, харчування — в одному хабі. Local-first, без cloud-залежності за замовчуванням.»
+- **CTA primary:** «Почати з одного модуля»
+- **CTA secondary:** «Подивитись приклад»
+
+#### Variant G — Self-sovereignty / privacy-first
+
+- **Hero:** «Твої дані — у тебе. Звіт — про тебе.»
+- **Sub:** «Sergeant працює офлайн і нічого не відправляє без дозволу. Запиши день — побачиш свій pattern сам, без третіх сторін.»
+- **CTA primary:** «Записати свій день»
+- **CTA secondary:** «Подивитись приклад»
+
+#### Variant H — Identity / «завтрашнє Я»
+
+- **Hero:** «Твоє «завтрашнє Я» питає, де гроші, де тренування, де звички.»
+- **Sub:** «Один хаб без зайвих сповіщень — щоб у п'ятницю не доводилось вгадувати, що сталося за тиждень.»
+- **CTA primary:** «Дати відповідь»
+- **CTA secondary:** «Подивитись приклад»
+
+#### Variant I — Outcome-as-evidence (для пост-FTUX cohort, дисциплінована альтернатива до C)
+
+- **Hero:** «Тиждень — це 7 шансів побачити себе.»
+- **Sub:** «Sergeant збирає твої щоденні записи у тижневий зріз: фінанси, тренування, звички, їжа. Без оцінок — лише дані.»
+- **CTA primary:** «Зібрати свій тиждень»
+- **CTA secondary:** «Подивитись приклад»
+
+> Усі — UA-only (per Q4 answer). Перш ніж рекрутувати у наступний 4-way A/B — мають пройти copy-reviewer (S1.1 unblock) і не повторювати вже-програшні axis-и попередніх раундів.
+
+### 4.2. Selection rubric (для copy-reviewer)
+
+При виборі наступного 4-way A/B-set із §4.1 кандидатів — мінімум 1 кандидат на кожну вісь:
+
+- **Tone:** spectrum від `safe` (тиха влада) до `bold` (action-driven). Якщо winner PR-04 був `disciplined` — наступний раунд має 1 `safe` + 2 `disciplined-adjacent` + 1 `bold`.
+- **Promise type:** `feature-led` ↔ `outcome-led` ↔ `identity-led`. Не дублюй два variant-и однієї категорії в одному раунді.
+- **CTA pair:** `primary CTA` має різнитися дієсловом від попереднього winner-а (anti-fatigue правило — користувач, що повертається, не має бачити той самий CTA двічі за 14 днів).
+- **A11y:** жоден варіант не повинен покладатись на metaphor, що ламається при VoiceOver/TalkBack озвученні (S6 a11y-sweep guidance, PR-16).
 
 ---
 
@@ -235,12 +303,12 @@
 
 ### 5.3. Per-module promise content
 
-| Module primary | Заголовок                       | Body                                                         | Visual                                     | CTA                         |
-| -------------- | ------------------------------- | ------------------------------------------------------------ | ------------------------------------------ | --------------------------- |
-| Routine        | «Твій тиждень тут»              | «Обери звичку → виконай завтра → стрік запалився.»           | Faded weekly calendar з 1 highlighted cell | «Створити звичку зараз →»   |
-| Finyk          | «Твоя зарплата на радарі»       | «Додай суму витрати → побачиш скільки лишилося до зарплати.» | Faded line-chart балансу                   | «Записати першу витрату →»  |
-| Fizruk         | «Сили вистачить — якщо рахуємо» | «Признач 1 тренування → у п'ятницю побачимо, що зробив.»     | Faded weekly schedule з 1 cell             | «Запланувати тренування →»  |
-| Nutrition      | «Що з'їв сьогодні?»             | «Скани штрих-код → і за тиждень побачиш свій pattern.»       | Faded daily timeline                       | «Сьогоднішній прийом їжі →» |
+| Module primary | Заголовок                       | Body                                                         | Visual                                                                                                                                                                             | CTA                                                                                                                       |
+| -------------- | ------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Routine        | «Твій тиждень тут»              | «Обери звичку → виконай завтра → стрік запалився.»           | Faded weekly calendar з 1 highlighted cell                                                                                                                                         | «Створити звичку зараз →»                                                                                                 |
+| Finyk          | «Твоя зарплата на радарі»       | «Додай суму витрати → побачиш скільки лишилося до зарплати.» | Faded line-chart балансу                                                                                                                                                           | «Записати першу витрату →»                                                                                                |
+| Fizruk         | «Сили вистачить — якщо рахуємо» | «Признач 1 тренування → у п'ятницю побачимо, що зробив.»     | Faded weekly schedule з 1 cell (зараз — `WeeklyChart` у Progress, перенесений у [PR #20](https://github.com/Skords-01/Sergeant/pull/20); cold-start FTUX-обгортка над ним — PR-09) | «Запланувати тренування →» (веде на grouped-picker workouts UX з [PR #20](https://github.com/Skords-01/Sergeant/pull/20)) |
+| Nutrition      | «Що з'їв сьогодні?»             | «Скани штрих-код → і за тиждень побачиш свій pattern.»       | Faded daily timeline                                                                                                                                                               | «Сьогоднішній прийом їжі →»                                                                                               |
 
 ### 5.4. Post-first-entry transformation
 
@@ -248,7 +316,7 @@
 
 - Routine: «3 з 7 днів — ти на півдорозі. Стрік: 3 дні.»
 - Finyk: «Цього тижня витратив: 1240 ₴. До зарплати: 8 760 ₴.»
-- Fizruk: «На цьому тижні: 1 з 3 запланованих тренувань.»
+- Fizruk: «На цьому тижні: 1 з 3 запланованих тренувань.» _(real-data рендер тепер може лінкувати `MiniLineChart` для weight/fat trend і `WellbeingChart` для energy/mood per workout — обидва в `apps/web/src/modules/fizruk/components/`, додані [PR #19](https://github.com/Skords-01/Sergeant/pull/19); PR-09 wrap-iть їх у HeroOutcomeCard)._
 - Nutrition: «Сьогодні: 1 200 ккал. Тиждень: середнє 1 580.»
 
 ---
