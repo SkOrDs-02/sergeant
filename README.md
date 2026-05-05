@@ -6,20 +6,39 @@
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01 / Devin. **Next review:** 2026-08-03.
 > **Status:** Active
 
-Sergeant is a personal hub platform for finance, habits, sport, nutrition, and AI-assisted day-to-day workflows. The product lives in one `pnpm` + `Turborepo` monorepo and ships across web/PWA, mobile, and internal ops surfaces.
+> **Гроші, тіло, звички, їжа — в одному додатку. Local-first. Приватно.**
+> Sergeant — це особистий hub для дисциплінованої щоденки: один додаток замість п'яти, з AI-коучем, що бачить весь твій день.
 
-## Modules
+<!-- Hero asset slot: replace this comment with `<img src="docs/assets/sergeant-hero.png" alt="Sergeant dashboard preview" width="1280" />` after PR-02b lands the asset (see docs/assets/README.md). -->
 
-| Module    | What it does                                                     |
-| --------- | ---------------------------------------------------------------- |
-| Finyk     | Finance: Monobank integration, transactions, budgets, debts      |
-| Fizruk    | Fitness: workouts, sets, biometrics, planning                    |
-| Routine   | Habits: habit tracker, streaks, calendar                         |
-| Nutrition | Food: meal logging, barcode scanning, AI analysis                |
-| HubChat   | AI assistant: chat with Claude, execute actions via conversation |
+<p align="center"><em>(Hero screenshot pending — see <a href="./docs/assets/README.md">docs/assets/</a> capture instructions; PR-02b adds the actual file.)</em></p>
+
+## Що це?
+
+Sergeant обʼєднує 5 модулів, які раніше жили в окремих додатках:
+
+| Модуль         | Що робить                                                 |
+| -------------- | --------------------------------------------------------- |
+| **Фінік**      | Фінанси: Monobank-інтеграція, транзакції, бюджети, борги  |
+| **Фізрук**     | Фітнес: тренування, підходи, біометрія, планування        |
+| **Рутина**     | Звички: трекер habit-ів, стріки, календар                 |
+| **Харчування** | Їжа: meal-логи, сканер штрих-кодів, AI-аналіз             |
+| **HubChat**    | AI-помічник: чат з Claude, який виконує дії через розмову |
+
+Web (PWA), iOS, Android. Працює офлайн. Дані — на твоєму пристрої.
+
+## Спробувати
+
+- **Локальний запуск:** [§ Quickstart](#quickstart) нижче — ~5 хвилин від клонування до live UI на `http://localhost:5173`.
+- **Демо-режим без реєстрації:** після bootstrap відкрий `http://localhost:5173/welcome?demo=1` — побачиш приклад інтерфейсу з seed-даними, без створення акаунта.
+  _(Public production URL ще не лінкується — додасться, коли launch-readiness допиляється; див. [`docs/launch/04-launch-readiness.md`](./docs/launch/04-launch-readiness.md))._
+- **Огляд продукту:** [`docs/launch/01-monetization-and-pricing.md`](./docs/launch/01-monetization-and-pricing.md) — бізнес-модель + позиціонування.
+- **Поточний стан FTUX:** [`docs/launch/ftux-master-tracker.md`](./docs/launch/ftux-master-tracker.md) — sprint registry + відкриті проблеми.
+
+> Хочеш контриб'ютити, а не просто юзати? → [§ For Contributors and Agents](#for-contributors-and-agents) у кінці.
 
 ## Tech Stack
 
