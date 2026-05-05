@@ -220,7 +220,7 @@ const { foo } = await validateBody(schema, req); // throws BadRequestError
 
 **Recommendation / fix points.**
 
-1. Раз на квартал прогнати `vite-bundle-visualizer` і додати artifact в CI (`pnpm build && pnpm bundle-stats`).
+1. Раз на квартал прогнати `vite-bundle-visualizer` і додати artifact в CI (`pnpm build:analyze` — генерує `apps/web/dist/bundle-report.html` через `rollup-plugin-visualizer` за `ANALYZE=1`).
 2. Запровадити budget per-chunk через `size-limit`:
 
    ```json
