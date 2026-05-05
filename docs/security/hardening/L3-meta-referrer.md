@@ -1,16 +1,17 @@
 # L3 — `index.html` missing `<meta name="referrer">`
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** Open
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-04.
+> **Status:** Closed (2026-05-05)
 
-| Field          | Value                           |
-| -------------- | ------------------------------- |
-| **Severity**   | Low                             |
-| **Sprint**     | [Sprint 4](./sprint-4.md)       |
-| **Owner**      | frontend                        |
-| **Effort**     | 0.1 person-day                  |
-| **Status**     | Open                            |
-| **Discovered** | 2026-05-03 deep security review |
+| Field          | Value                                                                                                                                                                   |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Severity**   | Low                                                                                                                                                                     |
+| **Sprint**     | [Sprint 4](./sprint-4.md)                                                                                                                                               |
+| **Owner**      | frontend                                                                                                                                                                |
+| **Effort**     | 0.1 person-day _(closed 2026-05-05 — batched L3 + L7 + L11 hardening PR)_                                                                                               |
+| **Status**     | Closed (2026-05-05)                                                                                                                                                     |
+| **Discovered** | 2026-05-03 deep security review                                                                                                                                         |
+| **Resolved**   | 2026-05-05 — `<meta name="referrer" content="strict-origin-when-cross-origin">` mirrors the Vercel `Referrer-Policy` header for file:// / Vite-preview / proxy contexts |
 
 ## Summary
 

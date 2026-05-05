@@ -15,6 +15,15 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
     />
+    <!--
+      L3 — `docs/security/hardening/L3-meta-referrer.md`. Vercel sends
+      `Referrer-Policy: strict-origin-when-cross-origin` from `vercel.json`
+      headers. The duplicate `<meta name="referrer">` is defense-in-depth
+      so the same policy still applies if the page is ever served without
+      Vercel's response headers (file://, local Vite preview, dev proxy
+      that strips headers). Keep it in sync with `vercel.json`.
+    -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta

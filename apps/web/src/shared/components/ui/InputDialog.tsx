@@ -1,15 +1,15 @@
 import {
   useRef,
-  useState,
   useEffect,
   useId,
-  type FormEvent,
   type HTMLInputTypeAttribute,
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import { z } from "zod";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { cn } from "@shared/lib/ui/cn";
+import { useApiForm } from "@shared/forms/useApiForm";
 import { Button } from "./Button";
 
 export interface InputDialogProps {
@@ -25,6 +25,17 @@ export interface InputDialogProps {
   onCancel?: () => void;
 }
 
+// Item #8 round-13: form-engine — навіть утилітарний `InputDialog` тепер
+// проганяється через `useApiForm`. Схема — мінімальна (вільний string), бо
+// callers самі вирішують, що з value робити (для паролю, наприклад,
+// довжина не валідується тут — це на боці виклику). isSubmitting
+// допомагає блокувати повторний submit, якщо `onConfirm` async.
+const inputDialogSchema = z.object({
+  value: z.string(),
+});
+
+type InputDialogValues = z.infer<typeof inputDialogSchema>;
+
 export function InputDialog({
   open,
   title = "Введи значення",
@@ -38,19 +49,34 @@ export function InputDialog({
   onCancel,
 }: InputDialogProps) {
   const ref = useRef<HTMLFormElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [value, setValue] = useState(defaultValue);
+  // Mutable cell so we can merge our local ref with RHF's `register().ref`
+  // callback ref (which writes into our ref via the callback below). React's
+  // overload for `useRef<T>(null)` returns the read-only `RefObject<T>`,
+  // hence the `| null` to opt into the mutable variant.
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const titleId = useId();
+
+  const { register, submit, reset, isSubmitting } = useApiForm<
+    InputDialogValues,
+    void
+  >({
+    schema: inputDialogSchema,
+    defaultValues: { value: defaultValue },
+    onSubmit: async (values) => {
+      onConfirm?.(values.value);
+    },
+  });
 
   useDialogFocusTrap(open, ref, { onEscape: onCancel });
 
   useEffect(() => {
     if (open) {
-      setValue(defaultValue);
+      reset({ value: defaultValue });
       const timer = setTimeout(() => inputRef.current?.focus(), 60);
       return () => clearTimeout(timer);
     }
     return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, defaultValue]);
 
   useEffect(() => {
@@ -64,17 +90,14 @@ export function InputDialog({
 
   if (!open) return null;
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    onConfirm?.(value);
-  };
-
   const handleScrimKey = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       onCancel?.();
     }
   };
+
+  const valueRegister = register("value");
 
   return (
     <div
@@ -94,8 +117,9 @@ export function InputDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        onSubmit={handleSubmit}
+        onSubmit={submit}
         onPointerDown={(e) => e.stopPropagation()}
+        noValidate
         className={cn(
           "relative z-10 w-full max-w-sm mx-4 mb-4 sm:mb-0 overscroll-contain",
           "bg-panel rounded-3xl shadow-float border border-line p-6",
@@ -114,11 +138,14 @@ export function InputDialog({
           </p>
         )}
         <input
-          ref={inputRef}
+          {...valueRegister}
+          ref={(el) => {
+            valueRegister.ref(el);
+            inputRef.current = el;
+          }}
           type={type}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
+          disabled={isSubmitting}
           className={cn(
             "w-full h-12 rounded-xl bg-bg border border-line px-4 text-sm text-text placeholder:text-subtle mb-4",
             "transition-colors",
@@ -131,6 +158,7 @@ export function InputDialog({
           <Button
             type="submit"
             className="w-full h-12 bg-primary! text-bg! border-0"
+            disabled={isSubmitting}
           >
             {confirmLabel}
           </Button>
@@ -139,6 +167,7 @@ export function InputDialog({
             variant="ghost"
             className="w-full h-12"
             onClick={onCancel}
+            disabled={isSubmitting}
           >
             {cancelLabel}
           </Button>

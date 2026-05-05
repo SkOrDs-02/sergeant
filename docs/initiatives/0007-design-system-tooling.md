@@ -1,14 +1,16 @@
 # 0007 — Design-system tooling: Storybook + visual regression
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** In Progress (Phase 1 готовий — каталог 21 компонент shared/ui, Phase 2+ ще)
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Status:** In Progress (Phase 1 + Phase 2 ESLint rule готові — каталог 21 компонент shared/ui; Phase 3 module-level стартував — Finyk 2 stories; Phase 4–5 ще)
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks
 
 > **Progress (round-7, 2026-05-04):** Каталог Storybook у `apps/web/.storybook/` (а не у новому пакеті — рішення фази 1) тепер містить **12 компонентів** (60 % від цілі ≥ 20): `Button`, `Badge`, `Card` (foundation [#1647](https://github.com/Skords-01/Sergeant/pull/1647)) → +`Banner`, `Skeleton`, `Tooltip`, `DataState`, `Modal` (8 компонентів, [#1678](https://github.com/Skords-01/Sergeant/pull/1678)) → +`Input` / `Spinner` / `Switch` / `Tabs` (12 компонентів, [#1695](https://github.com/Skords-01/Sergeant/pull/1695)).
 >
-> **Progress (round-8, 2026-05-04):** Каталог розширено до **21 компонента** shared/ui (мітка ≥ 20 перевершена). Між round-7 і round-8 у `main` уже додані `Avatar`, `Select`, `Stat`, `Segmented` (commit `5963a01c`) + `EmptyState`, `IconButton`, `ProgressRing`, `SkeletonCard` (отдельні commit-и); цей PR закриває останнє зі списку round-7 — `Toast`. Через те, що `<ToastContainer>` тригерить toasts через `useToast()` context, додано **глобальний decorator у `apps/web/.storybook/preview.tsx`** з `<ToastProvider>` + `<ToastContainer />`; інші stories ігнорують контекст без перформансу. Залишок Phase 2: module-level (`FinykCard` / `FizrukCard` / `NutritionCard` / `RoutineCard` / `InsightsCard`) + ESLint правило `require-stories-for-ui-components` (warn-only). Phase 4–5 (Chromatic vs Playwright VRT decision + deploy live) — поки `Out`.
+> **Progress (round-8, 2026-05-04):** Каталог розширено до **21 компонента** shared/ui (мітка ≥ 20 перевершена). Між round-7 і round-8 у `main` уже додані `Avatar`, `Select`, `Stat`, `Segmented` (commit `5963a01c`) + `EmptyState`, `IconButton`, `ProgressRing`, `SkeletonCard` (отдельні commit-и); цей PR закриває останнє зі списку round-7 — `Toast`. Через те, що `<ToastContainer>` тригерить toasts через `useToast()` context, додано **глобальний decorator у `apps/web/.storybook/preview.tsx`** з `<ToastProvider>` + `<ToastContainer />`; інші stories ігнорують контекст без перформансу. ESLint правило `sergeant-design/require-stories-for-ui-components` (warn-only) merged у [#1812](https://github.com/Skords-01/Sergeant/pull/1812).
+>
+> **Progress (round-9, 2026-05-05):** Phase 3 (module-level stories) стартував з модуля **Finyk** — [#1836](https://github.com/Skords-01/Sergeant/pull/1836) додає `apps/web/src/modules/finyk/components/DebtCard.stories.tsx` (8 stories: Default / PaidOff / Receivable / Overdue / DueToday / HiddenBalance / WithLinkAction / WithDeleteAction — покривають payable/receivable polarity, due-date варіанти, privacy-mode, CTA wiring) + `BackfillProgressPill.stories.tsx` (5 stories для всіх чотирьох `progress.status`: idle / running / completed / failed + transient-варіант для transactions screen). Stories — render-only (без domain mocks, без app-runtime imports), `chromatic.viewports` сконфігуровано для VRT breakpoint матриці (375 / 768 / 1280). Залишок Phase 3: Fizruk / Nutrition / Routine / Insights (по 1 PR на модуль). Phase 4–5 (Chromatic vs Playwright VRT decision + deploy live) — поки `Out`.
 >
 > **Sources:** Design Review 2026-05-03 §13 (Design system), [`docs/audits/UX-UI-AUDIT-2026.md`](../audits/UX-UI-AUDIT-2026.md)
 

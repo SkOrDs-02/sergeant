@@ -85,9 +85,12 @@
 | [M10](./M10-csrf-token-check.md)               | No CSRF token check on state-changing routes            | Closed (2026-05-04) — PR [#1784](https://github.com/Skords-01/Sergeant/pull/1784) (batched M10 + M14 + M19) | [Sprint 3](./sprint-3.md) |
 | [M14](./M14-internal-push-ip-allowlist.md)     | Internal `/api/push/send` has no IP allowlist           | Closed (2026-05-04) — PR [#1784](https://github.com/Skords-01/Sergeant/pull/1784) (batched M10 + M14 + M19) | [Sprint 3](./sprint-3.md) |
 | [M19](./M19-mobile-deeplink-sanitize.md)       | Mobile shell deep-link query/fragment unsanitised       | Closed (2026-05-04) — PR [#1784](https://github.com/Skords-01/Sergeant/pull/1784) (batched M10 + M14 + M19) | [Sprint 3](./sprint-3.md) |
-| [M17](./M17-console-global-rate-cap.md)        | Console rate-limit per Telegram user, no global cap     | Closed (2026-05-05) — batched M17 + L8 + L10 hardening PR                                                   | [Sprint 3](./sprint-3.md) |
-| [L8](./L8-openclaw-repo-root-traversal.md)     | OpenClaw `OPENCLAW_REPO_ROOT` path-traversal guard      | Closed (2026-05-05) — batched M17 + L8 + L10 hardening PR                                                   | [Sprint 4](./sprint-4.md) |
-| [L10](./L10-user-id-hash-in-logs.md)           | `recordSync*` logs raw `userId` instead of hash         | Closed (2026-05-05) — batched M17 + L8 + L10 hardening PR                                                   | [Sprint 4](./sprint-4.md) |
+| [M17](./M17-console-global-rate-cap.md)        | Console rate-limit per Telegram user, no global cap     | Closed (2026-05-05) — PR [#1824](https://github.com/Skords-01/Sergeant/pull/1824) (batched M17 + L8 + L10)  | [Sprint 3](./sprint-3.md) |
+| [L8](./L8-openclaw-repo-root-traversal.md)     | OpenClaw `OPENCLAW_REPO_ROOT` path-traversal guard      | Closed (2026-05-05) — PR [#1824](https://github.com/Skords-01/Sergeant/pull/1824) (batched M17 + L8 + L10)  | [Sprint 4](./sprint-4.md) |
+| [L10](./L10-user-id-hash-in-logs.md)           | `recordSync*` logs raw `userId` instead of hash         | Closed (2026-05-05) — PR [#1824](https://github.com/Skords-01/Sergeant/pull/1824) (batched M17 + L8 + L10)  | [Sprint 4](./sprint-4.md) |
+| [L3](./L3-meta-referrer.md)                    | `index.html` missing `<meta name="referrer">`           | Closed (2026-05-05) — batched L3 + L7 + L11 hardening PR                                                    | [Sprint 4](./sprint-4.md) |
+| [L7](./L7-health-endpoint-info-leak.md)        | Health endpoint info-leak audit                         | Closed (2026-05-05) — batched L3 + L7 + L11 hardening PR                                                    | [Sprint 4](./sprint-4.md) |
+| [L11](./L11-csp-monitoring-allowlist.md)       | CSP must allowlist Sentry / PostHog `connect-src`       | Closed (2026-05-05) — batched L3 + L7 + L11 hardening PR                                                    | [Sprint 4](./sprint-4.md) |
 
 ## Cross-references
 

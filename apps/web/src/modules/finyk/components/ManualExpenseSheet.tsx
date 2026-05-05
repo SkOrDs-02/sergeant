@@ -1,7 +1,8 @@
 import { useState, useEffect, useId, useMemo } from "react";
+import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
-import { useFormValidation } from "@shared/hooks/useFormValidation";
+import { useApiForm } from "@shared/forms/useApiForm";
 import { Label } from "@shared/components/ui/FormField";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
@@ -100,6 +101,25 @@ function buildAmountSuggestions(
 
 // Сортує доступні підписи категорій за персональною частотою, зберігаючи
 // стабільний порядок для категорій без статистики.
+// Item #8 round-13: form-engine — міграція із легасі `useFormValidation`
+// (єдиний лишок у apps/web) на `useApiForm` + zod. amount є як string
+// (бо Input value="" легше описується як string), refine перевіряє parsing
+// + > 0; description/category/date — вільні string-поля, жодних обов'язкових
+// валідаторів — бо UI дає дефолти і легасі поведінка була такою ж.
+const expenseFormSchema = z.object({
+  description: z.string(),
+  amount: z
+    .string()
+    .refine(
+      (v) => Boolean(v) && !Number.isNaN(parseFloat(v)) && parseFloat(v) > 0,
+      "Вкажи суму більше 0",
+    ),
+  category: z.string().min(1),
+  date: z.string(),
+});
+
+type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
+
 function sortCategoriesByFrequency(
   frequentCategories: FrequentCategory[] = [],
 ) {
@@ -169,29 +189,45 @@ export function ManualExpenseSheet({
   const catLabelId = `${formId}-cat-label`;
   const kbInsetPx = useVisualKeyboardInset(open);
   const isEditing = !!initialExpense?.id;
-  const [form, setForm] = useState<{
-    description: string;
-    amount: string;
-    category: string;
-    date: string;
-    showDateField?: boolean;
-  }>({
-    description: "",
-    amount: "",
-    category: DEFAULT_CATEGORY,
-    date: toLocalISODate(),
-  });
-  const amountValidation = useFormValidation({
-    amount: {
-      rules: [
-        {
-          validate: (v: string) =>
-            Boolean(v) && !isNaN(parseFloat(v)) && parseFloat(v) > 0,
-          message: "Вкажи суму більше 0",
-        },
-      ],
-    },
-  });
+
+  const { register, submit, reset, setValue, watch, formState, isSubmitting } =
+    useApiForm<ExpenseFormValues, void>({
+      schema: expenseFormSchema,
+      defaultValues: {
+        description: "",
+        amount: "",
+        category: DEFAULT_CATEGORY,
+        date: toLocalISODate(),
+      },
+      onSubmit: async (values) => {
+        const trimmedDesc = values.description.trim();
+        const description = trimmedDesc || stripEmoji(values.category);
+        hapticSuccess();
+        onSave?.({
+          ...(initialExpense?.id ? { id: String(initialExpense.id) } : {}),
+          description,
+          amount: parseFloat(values.amount),
+          category: values.category,
+          // "YYYY-MM-DD" як local date може з'їхати при toISOString() в UTC.
+          // Ставимо полудень, щоб стабільно зберігати правильний день.
+          date: values.date
+            ? new Date(`${values.date}T12:00:00`).toISOString()
+            : new Date().toISOString(),
+        });
+        onClose();
+      },
+    });
+
+  const description = watch("description");
+  const category = watch("category");
+  const date = watch("date");
+  const amountError = formState.errors.amount?.message;
+
+  // showDateField — UI-only, не частина zod-схеми. Раніше жило в
+  // form-state, але то був лиш toggle для видимості поля — без валідації
+  // чи подачі на сервер. Тримаємо окремо, щоб схема лишалася
+  // чистою (description/amount/category/date).
+  const [showDateField, setShowDateField] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -199,7 +235,7 @@ export function ManualExpenseSheet({
         const d = initialExpense.date
           ? new Date(initialExpense.date)
           : new Date();
-        setForm({
+        reset({
           description: String(initialExpense.description || ""),
           amount:
             initialExpense.amount != null ? String(initialExpense.amount) : "",
@@ -225,7 +261,7 @@ export function ManualExpenseSheet({
             startCategory = topLabel;
           }
         }
-        setForm({
+        reset({
           description:
             typeof initialDescription === "string" ? initialDescription : "",
           amount: "",
@@ -233,13 +269,13 @@ export function ManualExpenseSheet({
           date: toLocalISODate(),
         });
       }
-      amountValidation.reset();
       // UI-only state (категорії розгорнуті / фокус у полі Назва) зберігається
       // між відкриттями, бо компонент змонтований постійно (FinykApp тримає
       // його як always-rendered). Скидаємо до дефолтів, щоб новий «Додати
       // витрату» не успадковував стан попереднього відкриття.
       setCategoriesExpanded(false);
       setDescFocused(false);
+      setShowDateField(false);
     }
     // frequentCategories/initialCategory/initialDescription лише задають
     // стартовий стан при відкритті — навмисно не реагуємо на їхні
@@ -260,11 +296,11 @@ export function ManualExpenseSheet({
   const visibleCategories = useMemo(() => {
     if (categoriesExpanded) return sortedCategories;
     const base = sortedCategories.slice(0, CATEGORY_COLLAPSED_COUNT);
-    if (form.category && !base.includes(form.category)) {
-      return [form.category, ...base].slice(0, CATEGORY_COLLAPSED_COUNT);
+    if (category && !base.includes(category)) {
+      return [category, ...base].slice(0, CATEGORY_COLLAPSED_COUNT);
     }
     return base;
-  }, [sortedCategories, categoriesExpanded, form.category]);
+  }, [sortedCategories, categoriesExpanded, category]);
   const hasHiddenCategories =
     sortedCategories.length > CATEGORY_COLLAPSED_COUNT;
 
@@ -280,41 +316,23 @@ export function ManualExpenseSheet({
   // перевантажувати аркуш, коли користувач уже обрав назву.
   const merchantSuggestions = useMemo(() => {
     if (!frequentMerchants.length) return [];
-    const currentKey = (form.description || "")
-      .trim()
-      .toLocaleLowerCase("uk-UA");
+    const currentKey = (description || "").trim().toLocaleLowerCase("uk-UA");
     return frequentMerchants
       .filter((m) => m.name && m.name.toLocaleLowerCase("uk-UA") !== currentKey)
       .slice(0, 5);
-  }, [frequentMerchants, form.description]);
+  }, [frequentMerchants, description]);
   const [descFocused, setDescFocused] = useState(false);
   const showMerchantHints =
     merchantSuggestions.length > 0 &&
-    (descFocused || form.description.trim() === "");
+    (descFocused || description.trim() === "");
 
   if (!open) return null;
 
+  // Sheet рендерить footer окремо від body, тож submit-кнопка не сидить в
+  // <form>. `useApiForm.submit` приймає опціональний event і все одно
+  // проходить zod-валідацію + isSubmitting флаг.
   const handleSubmit = () => {
-    if (!amountValidation.validateAll({ amount: form.amount })) return;
-    // Description is now optional: if empty we fall back to the category
-    // label (without the emoji prefix) so the ledger still has a
-    // human-readable line. Keeps the 5-second-add promise while staying
-    // searchable.
-    const trimmedDesc = form.description.trim();
-    const description = trimmedDesc || stripEmoji(form.category);
-    hapticSuccess();
-    onSave?.({
-      ...(initialExpense?.id ? { id: String(initialExpense.id) } : {}),
-      description,
-      amount: parseFloat(form.amount),
-      category: form.category,
-      // "YYYY-MM-DD" як local date може з’їхати при toISOString() в UTC.
-      // Ставимо полудень, щоб стабільно зберігати правильний день.
-      date: form.date
-        ? new Date(`${form.date}T12:00:00`).toISOString()
-        : new Date().toISOString(),
-    });
-    onClose();
+    void submit();
   };
 
   return (
@@ -327,10 +345,19 @@ export function ManualExpenseSheet({
       bodyClassName="space-y-4"
       footer={
         <div className="flex gap-3">
-          <Button variant="ghost" className="flex-1" onClick={onClose}>
+          <Button
+            variant="ghost"
+            className="flex-1"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
             Скасувати
           </Button>
-          <Button className="flex-1" onClick={handleSubmit}>
+          <Button
+            className="flex-1"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
             {isEditing ? "Зберегти" : "Додати"}
           </Button>
         </div>
@@ -357,7 +384,10 @@ export function ManualExpenseSheet({
                     key={`${personal ? "f" : "q"}-${value}`}
                     type="button"
                     onClick={() =>
-                      setForm((f) => ({ ...f, amount: String(value) }))
+                      setValue("amount", String(value), {
+                        shouldDirty: true,
+                        shouldValidate: Boolean(amountError),
+                      })
                     }
                     className={
                       personal
@@ -388,12 +418,10 @@ export function ManualExpenseSheet({
               placeholder="0"
               min="0"
               step="0.01"
-              value={form.amount}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, amount: e.target.value }))
-              }
-              helperText={amountValidation.fields.amount.error ?? undefined}
-              {...amountValidation.getFieldProps("amount")}
+              aria-invalid={amountError ? true : undefined}
+              disabled={isSubmitting}
+              helperText={amountError ?? undefined}
+              {...register("amount")}
             />
           </div>
           {/* Mic-only icon was indistinguishable from the rest of the form
@@ -412,14 +440,15 @@ export function ManualExpenseSheet({
               onResult={(transcript) => {
                 const parsed = parseExpenseSpeech(transcript);
                 if (!parsed) return;
-                setForm((f) => ({
-                  ...f,
-                  description: parsed.name || f.description,
-                  amount:
-                    parsed.amount != null
-                      ? String(Math.round(parsed.amount))
-                      : f.amount,
-                }));
+                if (parsed.name) {
+                  setValue("description", parsed.name, { shouldDirty: true });
+                }
+                if (parsed.amount != null) {
+                  setValue("amount", String(Math.round(parsed.amount)), {
+                    shouldDirty: true,
+                    shouldValidate: Boolean(amountError),
+                  });
+                }
               }}
             />
             <span className="text-2xs text-subtle select-none" aria-hidden>
@@ -435,16 +464,15 @@ export function ManualExpenseSheet({
           <Input
             id={descId}
             placeholder="Кава, продукти, таксі…"
-            value={form.description}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, description: e.target.value }))
-            }
-            onFocus={() => setDescFocused(true)}
-            onBlur={() => setDescFocused(false)}
+            disabled={isSubmitting}
             aria-controls={
               showMerchantHints ? `${formId}-merchants` : undefined
             }
             aria-autocomplete="list"
+            {...register("description", {
+              onBlur: () => setDescFocused(false),
+            })}
+            onFocus={() => setDescFocused(true)}
           />
           {showMerchantHints && (
             <div
@@ -458,20 +486,19 @@ export function ManualExpenseSheet({
                   key={m.key}
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() =>
-                    setForm((f) => {
-                      const next = { ...f, description: m.name };
-                      // Якщо є впевнений підпис manual-категорії для цього
-                      // мерчанта — підставляємо його, щоб економити тапи.
-                      const suggested =
-                        m.suggestedManualCategory &&
-                        CATEGORIES.includes(m.suggestedManualCategory)
-                          ? m.suggestedManualCategory
-                          : null;
-                      if (suggested) next.category = suggested;
-                      return next;
-                    })
-                  }
+                  onClick={() => {
+                    setValue("description", m.name, { shouldDirty: true });
+                    // Якщо є впевнений підпис manual-категорії для цього
+                    // мерчанта — підставляємо його, щоб економити тапи.
+                    const suggested =
+                      m.suggestedManualCategory &&
+                      CATEGORIES.includes(m.suggestedManualCategory)
+                        ? m.suggestedManualCategory
+                        : null;
+                    if (suggested) {
+                      setValue("category", suggested, { shouldDirty: true });
+                    }
+                  }}
                   className="px-2.5 py-1 rounded-full text-style-caption bg-panelHi text-muted border border-line hover:border-muted/50 transition-colors"
                   title={`${m.count} разів · ${formatMoney(m.total)}`}
                 >
@@ -487,20 +514,20 @@ export function ManualExpenseSheet({
             was already true. Collapse behind a chip; reveal only when the
             user explicitly says "not today" or when editing an older
             entry where the date is already not today. */}
-        {form.date !== toLocalISODate() || form.showDateField ? (
+        {date !== toLocalISODate() || showDateField ? (
           <div>
             <Label htmlFor={dateId}>Дата</Label>
             <Input
               id={dateId}
               type="date"
-              value={form.date}
-              onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+              disabled={isSubmitting}
+              {...register("date")}
             />
           </div>
         ) : (
           <button
             type="button"
-            onClick={() => setForm((f) => ({ ...f, showDateField: true }))}
+            onClick={() => setShowDateField(true)}
             className="text-xs text-muted hover:text-text underline decoration-dotted underline-offset-2 transition-colors"
           >
             Не сьогодні? Змінити дату
@@ -524,9 +551,9 @@ export function ManualExpenseSheet({
               <button
                 key={cat}
                 type="button"
-                onClick={() => setForm((f) => ({ ...f, category: cat }))}
+                onClick={() => setValue("category", cat, { shouldDirty: true })}
                 className={`px-3 py-1.5 rounded-full text-style-caption border transition-[background-color,border-color,color,opacity,transform] duration-150 ease-smooth active:scale-95 ${
-                  form.category === cat
+                  category === cat
                     ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
                     : "bg-panelHi text-muted border-line hover:border-muted/50 hover:bg-panelHi/80"
                 }`}
