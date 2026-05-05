@@ -31,6 +31,11 @@ export {
   type EnqueueOutboxIncrementResult,
 } from "./syncOpOutboxEnqueue.js";
 export {
+  drainSyncOpOutbox,
+  type DrainSyncOpOutboxOptions,
+  type DrainedOutboxRow,
+} from "./syncOpOutboxDrain.js";
+export {
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,
   ROUTINE_SPIKE_CLIENT_MIGRATIONS,
