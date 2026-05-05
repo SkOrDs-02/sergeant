@@ -83,7 +83,7 @@
 > **Related:**
 >
 > - `docs/audits/2026-04-28-sergeant-comprehensive-audit.md` — попередній комплексний аудит (Closed).
-> - `docs/audits/UX-UI-AUDIT-2026.md`, `docs/audits/UX-IMPROVEMENT-PLAN.md` — UX план.
+> - `docs/audits/2026-04-28-ux-ui-audit.md`, `docs/audits/2026-04-28-ux-improvement-plan.md` — UX план.
 > - `docs/tech-debt/frontend.md`, `docs/tech-debt/backend.md` — поточний tech-debt.
 
 Це **fresh second opinion**: автор свідомо читав код первинно, а не існуючі звіти, щоб бачити те, що могло «закам'яніти» в командному рутіні. Звірка з попередніми аудитами — у §11.

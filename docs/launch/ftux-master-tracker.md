@@ -15,7 +15,7 @@
 > [`01-monetization-and-pricing.md` §7](./01-monetization-and-pricing.md#7-activation-метрики) — activation baseline ·
 > [`04-launch-readiness.md` §4.2](./04-launch-readiness.md) — funnel definitions ·
 > [`docs/observability/posthog-ftux-dashboards.md`](../observability/posthog-ftux-dashboards.md) — PostHog dashboards runbook ·
-> [`docs/feature-flags.md`](../feature-flags.md) — flag conventions ·
+> [`docs/governance/feature-flags.md`](../governance/feature-flags.md) — flag conventions ·
 > [`docs/playbooks/add-onboarding-step.md`](../playbooks/add-onboarding-step.md) — додавання кроку у `ONBOARDING_STEPS` ·
 > [`docs/design/empty-states.md`](../design/empty-states.md) — 3-tier empty states ·
 > `docs/governance/audit-freeze-2026-05-05.md` — freeze правила (4 тижні; з'явиться у PR-01).
@@ -26,7 +26,7 @@
 > - додавати retro-нотатки у §7 (decisions log)
 > - інкорпорувати завершені PR-и у §3 (PR plan progress)
 >
-> **Заборонено** під час freeze: нові аудиторські файли в `docs/audits/`, нові ініціативи в `docs/initiatives/`. Виняток — post-mortems завершених PR-серій (1 page max, в `docs/launch/post-mortems/`).
+> **Заборонено** під час freeze: нові аудиторські файли в `docs/audits/`, нові ініціативи в `docs/initiatives/`. Виняток — post-mortems завершених PR-серій (1 page max, в `docs/launch/sprint-retros/`).
 
 ---
 
@@ -349,7 +349,7 @@ slos:
 ### Документація
 
 - **`THIRD_PARTY_LICENSES.md`:** автогенерація через `license-checker` (PR-17).
-- **Архів стейл audit-tracker-ів:** `UX-UI-AUDIT-2026.md`, `UX-IMPROVEMENT-PLAN.md`, `2026-04-28-implementation-roadmap.md` → `docs/audits/archive/` (PR-08).
+- **Архів стейл audit-tracker-ів:** `2026-04-28-ux-ui-audit.md`, `2026-04-28-ux-improvement-plan.md`, `2026-04-28-implementation-roadmap.md` → `docs/audits/archive/` (PR-08).
 - **`.replit`:** видалити (PR-08).
 - **What's new:** `docs/whats-new/` + `<WhatsNewModal />` (PR-18).
 

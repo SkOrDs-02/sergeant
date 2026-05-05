@@ -21,10 +21,11 @@ docs/launch/
 ├── ftux-master-tracker.md           FTUX SSOT — стан, sprint registry, PR plan, hero copy, sketch, SLO, decisions
 ├── ftux-sprint-plan.md               (frozen reference — superseded by ftux-master-tracker.md)
 ├── openclaw-roadmap.md               OpenClaw v0 → v1 поетапний план у 4 фази
-└── telegram-improvements-roadmap.md  Telegram-surfaces (DM + supergroup) — 4-wave PR-план
+├── telegram-improvements-roadmap.md  Telegram-surfaces (DM + supergroup) — 4-wave PR-план
+└── sprint-retros/                    Per-sprint launch retrospectives (postmortems завершених PR-серій)
 ```
 
-> **Конвенція файлів:** `01-..-06-` — це **послідовний launch-milestone sequence** (бізнес-модель → GTM → стек → readiness → ops → архітектура paywall-у). Файли **без числового префіксу** — це **independent roadmaps** окремих ініціатив (AI-memory, OpenClaw, Telegram), які не вкладаються в milestone-послідовність і живуть власним темпом. Вони навмисно лишаються без префіксу, щоб (а) сигналізувати незалежність і (б) не ламати посилання з 5 ADR-ів та `docs/feature-flags.md`. Якщо колись ці roadmap-и завершаться або злиються в milestone — тоді префікс додасться разом з оновленням всіх крос-лінків.
+> **Конвенція файлів:** `01-..-06-` — це **послідовний launch-milestone sequence** (бізнес-модель → GTM → стек → readiness → ops → архітектура paywall-у). Файли **без числового префіксу** — це **independent roadmaps** окремих ініціатив (AI-memory, OpenClaw, Telegram), які не вкладаються в milestone-послідовність і живуть власним темпом. Вони навмисно лишаються без префіксу, щоб (а) сигналізувати незалежність і (б) не ламати посилання з 5 ADR-ів та `docs/governance/feature-flags.md`. Якщо колись ці roadmap-и завершаться або злиються в milestone — тоді префікс додасться разом з оновленням всіх крос-лінків.
 
 ## Як читати
 

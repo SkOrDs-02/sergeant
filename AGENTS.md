@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last validated:** 2026-05-05 by @dmytro.skords. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/agents/agent-skills-catalog.md`.
@@ -579,7 +579,7 @@ Enforced by `sergeant-design/prefer-focus-visible` (`error`), scoped to `apps/we
 
 ### 16. Typography scale — semantic styles + 12px floor
 
-> Why a hard rule? Drift on the type scale is invisible until it isn't. Two PRs landed `text-3xs` (9px) on touch targets despite Hard Rule #4-style review (`docs/audits/UX-UI-AUDIT-2026.md` § Typography utilities неконсистентні). Codifying the floor and the named-style contract closes the gap.
+> Why a hard rule? Drift on the type scale is invisible until it isn't. Two PRs landed `text-3xs` (9px) on touch targets despite Hard Rule #4-style review (`docs/audits/2026-04-28-ux-ui-audit.md` § Typography utilities неконсистентні). Codifying the floor and the named-style contract closes the gap.
 
 **Use one of the semantic `.text-style-*` utilities whenever a slot has a documented role.** The utilities live in `packages/design-tokens/tailwind-preset.js → plugins.semanticTypography` and bundle font-size, line-height, weight, letter-spacing, and casing so layouts can't drift on any single axis (e.g. shipping the hero size with the wrong weight).
 
@@ -814,7 +814,7 @@ Real regressions we've shipped — do not repeat:
 | `nightly-audit.yml`              | Daily 03:00 UTC / dispatch  | No         | Full `pnpm audit` (all severities) + OSV-Scanner dependency check + optional Snyk. Fails on critical/high; creates GitHub issue on failure. See [docs/security/nightly-audit.md](docs/security/nightly-audit.md)                                                                                                                                           |
 | `posthog-release-annotation.yml` | push to `main` / dispatch   | No         | Posts a release annotation to PostHog API (`/api/projects/<id>/annotations/`) so deploys show up as vertical markers on every dashboard. Graceful no-op when `POSTHOG_PERSONAL_API_KEY` / `POSTHOG_PROJECT_ID` секрети не виставлені. See [docs/observability/frontend.md](docs/observability/frontend.md#release-annotations-github-actions--posthog-api) |
 
-> Markdown link checker (in `docs-automation.yml`) runs with `--strict-external` against `docs/external-link-allowlist.json`. New external link rot fails the PR. To allow a URL the script cannot verify (immutable ADRs, anti-bot hosts, localhost-only references), add an entry with a non-trivial `reason` to the allowlist — empty/short reasons are rejected by the loader.
+> Markdown link checker (in `docs-automation.yml`) runs with `--strict-external` against `docs/governance/external-link-allowlist.json`. New external link rot fails the PR. To allow a URL the script cannot verify (immutable ADRs, anti-bot hosts, localhost-only references), add an entry with a non-trivial `reason` to the allowlist — empty/short reasons are rejected by the loader.
 
 ## Deployment
 

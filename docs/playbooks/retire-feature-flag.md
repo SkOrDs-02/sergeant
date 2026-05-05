@@ -12,7 +12,7 @@
 
 ## Required context
 
-- Перегляньте [feature-flags.md](../feature-flags.md) і [add-feature-flag.md](./add-feature-flag.md).
+- Перегляньте [feature-flags.md](../governance/feature-flags.md) і [add-feature-flag.md](./add-feature-flag.md).
 - Якщо прапор захищає mobile- або backend-реліз, відкрийте також відповідний release playbook.
 
 ## Steps
@@ -31,14 +31,14 @@
 
 ### 3. Приберіть operational docs
 
-- Видаліть рядок із [feature-flags.md](../feature-flags.md).
+- Видаліть рядок із [feature-flags.md](../governance/feature-flags.md).
 - Оновіть release notes або playbooks, якщо прапор був задокументований як rollback-важіль.
 
 ## Verification
 
 - [ ] Прапор видалено з code registry
 - [ ] Мертві гілки видалено
-- [ ] Запис у registry видалено з `docs/feature-flags.md`
+- [ ] Запис у registry видалено з `docs/governance/feature-flags.md`
 - [ ] Verification покриває поведінку, що залишилася
 
 ## When not to use this playbook

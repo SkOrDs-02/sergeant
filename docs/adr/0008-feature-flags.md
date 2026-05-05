@@ -150,7 +150,7 @@ accepted.
 
 **Лайфцикл явно описаний у playbook `add-feature-flag.md`:**
 
-1. **Створення.** Новий flag → `defaultValue: false`, `experimental: true`. PR має містити `Expires: YYYY-MM-DD` у `docs/feature-flags.md` (або в PR-description) — дата, до якої flag має graduate-нути або бути видалений.
+1. **Створення.** Новий flag → `defaultValue: false`, `experimental: true`. PR має містити `Expires: YYYY-MM-DD` у `docs/governance/feature-flags.md` (або в PR-description) — дата, до якої flag має graduate-нути або бути видалений.
 2. **Rollout-моніторинг.** Якщо flag вмикає server-call (наприклад, `mono_webhook`), додай метрику `feature_flag_enabled_total{flag, value}` у Pino-лог — для подальшого product-аналізу частоти увімкнення (PostHog-replacement, поки PostHog не інтегровано).
 3. **Graduation.** Коли експеримент стабільний:
    - Якщо feature просто стає default-on → `defaultValue: true`, `experimental` зняти. Flag живе ще ~1 sprint як kill-switch.
@@ -167,7 +167,7 @@ accepted.
 
 **Негативні:**
 
-- `Expires`-дата — best-effort; не enforced автоматично. Можна додати CI-job, що фейлить, якщо у `docs/feature-flags.md` є entrі з минулою датою — поки не зробили (low ROI; з 3 поточних flag-ів усі under control).
+- `Expires`-дата — best-effort; не enforced автоматично. Можна додати CI-job, що фейлить, якщо у `docs/governance/feature-flags.md` є entrі з минулою датою — поки не зробили (low ROI; з 3 поточних flag-ів усі under control).
 
 ### Alternatives considered
 
@@ -182,7 +182,7 @@ accepted.
 - ✅ Тести: `featureFlags.test.ts` (флаги), `typedStore.test.ts` (LS sync, validation).
 - ✅ Settings-UI рендерить `experimental: true`-flag-и в окремій секції.
 - ✅ Playbook `add-feature-flag.md` — крок-за-кроком з чек-лістом верифікації.
-- ⏳ `docs/feature-flags.md` як централізована таблиця (Owner / Default / Expires / Rollout) — поки писалося ad-hoc у PR-описах.
+- ⏳ `docs/governance/feature-flags.md` як централізована таблиця (Owner / Default / Expires / Rollout) — поки писалося ad-hoc у PR-описах.
 
 ## Open questions
 
