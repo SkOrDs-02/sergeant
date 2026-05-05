@@ -47,6 +47,54 @@ export type SpecialistAgent =
    */
   | "security";
 
+/**
+ * Specialist → governance skill mapping.
+ *
+ * Mirrors the canonical table in `docs/agents/specialists-mapping.md`. The
+ * Telegram dispatcher uses this to render «Loading skill: `<skill>`» in the
+ * status callback so reviewers (and the agent itself) can see exactly which
+ * `.agents/skills/<name>/SKILL.md` is loaded for a given `/assign` task.
+ *
+ * `null` means the specialist has no dedicated skill yet — the table
+ * marks these with `_(extra — …)_` and either points at a playbook or at
+ * `sergeant-start-here` as a routing fallback. Update both this map AND
+ * `docs/agents/specialists-mapping.md` together (the file is the source of
+ * truth; this map is the runtime mirror).
+ */
+export const SPECIALIST_SKILL_MAP: Record<SpecialistAgent, string | null> = {
+  "product-roadmap": "sergeant-start-here",
+  "repo-architect": "sergeant-monorepo-boundaries",
+  "web-ui": "sergeant-web-ui",
+  "server-api": "sergeant-server-api",
+  "data-migrations": "sergeant-data-and-migrations",
+  mobile: "sergeant-mobile-expo",
+  "hubchat-ai": "sergeant-hubchat",
+  "n8n-automation": null,
+  "growth-marketing": null,
+  "qa-release": "sergeant-deploy-and-observability",
+  security: "better-auth-best-practices",
+};
+
+export function getGoverningSkill(specialist: SpecialistAgent): string | null {
+  return SPECIALIST_SKILL_MAP[specialist];
+}
+
+/**
+ * Render the «Loading skill: …» status line for a Telegram callback.
+ *
+ * Examples:
+ *   getGoverningSkill("web-ui")           → "sergeant-web-ui"
+ *   formatSkillStatusLine("web-ui")       → "Loading skill: `sergeant-web-ui`"
+ *   formatSkillStatusLine("n8n-automation") →
+ *     "Loading skill: (no dedicated skill — see docs/agents/specialists-mapping.md)"
+ */
+export function formatSkillStatusLine(specialist: SpecialistAgent): string {
+  const skill = getGoverningSkill(specialist);
+  return skill === null
+    ? "Loading skill: (no dedicated skill — see docs/agents/specialists-mapping.md)"
+    : `Loading skill: \`${skill}\``;
+}
+
 export type RiskTier = "P0" | "P1" | "P2";
 export type DispatchMode = "read-only" | "mutation";
 
@@ -303,6 +351,7 @@ export function formatApprovalPrompt(payload: DispatcherPayload): string {
     ...(payload.approvalId ? [`Approval: ${payload.approvalId}`] : []),
     `Action: ${payload.action}`,
     `Specialist: ${payload.specialist}`,
+    formatSkillStatusLine(payload.specialist),
     `Risk: ${payload.riskTier}`,
     "",
     `Run /approve ${payload.commandText} to continue.`,
@@ -357,6 +406,7 @@ export async function dispatchToN8n(
   payload: DispatcherPayload,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<string> {
+  const skillLine = formatSkillStatusLine(payload.specialist);
   const webhookUrl = env["N8N_AGENT_DISPATCHER_WEBHOOK_URL"];
   if (!webhookUrl) {
     return [
@@ -364,6 +414,7 @@ export async function dispatchToN8n(
       "",
       `Task: ${payload.commandText}`,
       `Specialist: ${payload.specialist}`,
+      skillLine,
       `Risk: ${payload.riskTier}`,
     ].join("\n");
   }
@@ -378,6 +429,7 @@ export async function dispatchToN8n(
     return `n8n dispatcher failed: HTTP ${response.status}`;
   }
 
-  const text = await response.text();
-  return text.trim() || "Task accepted by n8n dispatcher.";
+  const text = (await response.text()).trim();
+  const accepted = text || "Task accepted by n8n dispatcher.";
+  return `${skillLine}\n${accepted}`;
 }
