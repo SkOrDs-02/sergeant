@@ -98,6 +98,15 @@ export {
 } from "./endpoints/syncV2.pushLoop";
 
 export {
+  createSyncEnginePushScheduler,
+  type SyncEngineClearIntervalFn,
+  type SyncEnginePushScheduler,
+  type SyncEnginePushSchedulerDeps,
+  type SyncEnginePushSchedulerOptions,
+  type SyncEngineSetIntervalFn,
+} from "./endpoints/syncV2.pushScheduler";
+
+export {
   createCoachEndpoints,
   type CoachEndpoints,
   type CoachInsightPayload,
