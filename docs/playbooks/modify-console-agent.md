@@ -1,6 +1,6 @@
-# Playbook: Modify or Add a Console Agent
+# Playbook: Зміна або додавання console-агента
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 **Trigger:** "Додай нового агента в Telegram bot" / "Зміни system prompt ops/marketing агента" / "Додай tool для console agent" / будь-яка зміна в `tools/console/src/agents/`.
@@ -13,48 +13,48 @@
 ## Required context
 
 - Почни з `sergeant-start-here`, потім звір `sergeant-hubchat`.
-- Якщо зміна торкає runtime integrations, env vars або ops tooling, додатково звір `sergeant-deploy-and-observability`.
+- Якщо зміна торкає runtime-інтеграції, env vars або ops-тулінг, додатково звір `sergeant-deploy-and-observability`.
 
-## Steps
+## Кроки
 
 ### 1. Визнач тип зміни
 
 - новий агент
 - новий tool
-- зміна prompt / routing
+- зміна system-промпту або правил роутингу
 - зміна read-only data source
 
-### 2. Тримай routing прозорим
+### 2. Тримай роутинг прозорим
 
-- Router має явно знати, коли відправляти в нового агента.
-- Help text, classifier hints і tests мають рухатись разом.
-- Не вводь приховану магію або implicit behavior без test coverage.
+- Роутер має явно знати, коли відправляти в нового агента.
+- Help text, classifier hints і тести мають рухатись разом.
+- Не вводь приховану магію чи implicit behavior без покриття тестами.
 
 ### 3. Тримай tools безпечними
 
 - Read-only за замовчуванням.
-- Ніяких непомітних production mutations через bot.
-- Secrets лише через env, не в prompt або code literals.
+- Жодних непомітних production-мутацій через бота.
+- Секрети — лише через env, не в промпті чи code literals.
 
-### 4. Онови prompt і constraints разом
+### 4. Онови промпт і constraints разом
 
-- Tone, allowed actions, forbidden actions, response format мають бути узгоджені.
-- Якщо tool змінює capability surface, це має бути відображено і в prompt, і в tests.
+- Тон, allowed actions, forbidden actions, response format мають бути узгоджені.
+- Якщо tool змінює capability surface — це має бути відображено і в промпті, і в тестах.
 
 ## Verification
 
 - [ ] `pnpm lint`
 - [ ] `pnpm typecheck`
 - [ ] `pnpm --filter @sergeant/console exec vitest run`
-- [ ] Router, help text і tests синхронізовані
+- [ ] Роутер, help text і тести синхронізовані
 - [ ] Нові tools не роблять прихованих write-side effects
 
-## When not to use this playbook
+## Коли цей playbook НЕ використовувати
 
-- Працюєш із HubChat всередині web app, а не з Telegram console bot.
-- Змінюється лише n8n workflow або external automation.
+- Працюєш із HubChat всередині web-додатка, а не з Telegram console-ботом — використовуй `add-hubchat-tool.md`.
+- Змінюється лише n8n workflow чи external automation — використовуй `modify-n8n-workflow.md`.
 
-## Related playbooks and skills
+## Споріднені playbook-и та skills
 
 - [modify-n8n-workflow.md](./modify-n8n-workflow.md)
 - [add-hubchat-tool.md](./add-hubchat-tool.md)

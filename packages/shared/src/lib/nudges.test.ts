@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 import { createMemoryKVStore } from "../storage/kv";
 import {
@@ -8,6 +10,7 @@ import {
   getDaysInactive,
   shouldShowReengagement,
   markReengagementShown,
+  REENGAGEMENT_INACTIVE_DAYS,
 } from "./nudges";
 
 describe("getActiveNudge", () => {
@@ -98,15 +101,27 @@ describe("re-engagement", () => {
     expect(getDaysInactive(store, now)).toBe(9);
   });
 
-  it("shouldShowReengagement returns false if < 7 days", () => {
+  it("shouldShowReengagement returns false on day 1 (still within active window)", () => {
     const store = createMemoryKVStore();
-    const past = new Date("2025-01-05T12:00:00Z");
+    const past = new Date("2025-01-07T12:00:00Z");
     recordLastActiveDate(store, past);
     const now = new Date("2025-01-08T12:00:00Z");
-    expect(shouldShowReengagement(store, now).show).toBe(false);
+    const result = shouldShowReengagement(store, now);
+    expect(result.show).toBe(false);
+    expect(result.daysInactive).toBe(1);
   });
 
-  it("shouldShowReengagement returns true if >= 7 days", () => {
+  it("shouldShowReengagement returns true on day 2 (early-loop threshold)", () => {
+    const store = createMemoryKVStore();
+    const past = new Date("2025-01-06T12:00:00Z");
+    recordLastActiveDate(store, past);
+    const now = new Date("2025-01-08T12:00:00Z");
+    const result = shouldShowReengagement(store, now);
+    expect(result.show).toBe(true);
+    expect(result.daysInactive).toBe(2);
+  });
+
+  it("shouldShowReengagement still surfaces deep into the inactive window (>= 7 days)", () => {
     const store = createMemoryKVStore();
     const past = new Date("2025-01-01T12:00:00Z");
     recordLastActiveDate(store, past);
@@ -124,5 +139,26 @@ describe("re-engagement", () => {
     expect(shouldShowReengagement(store, now).show).toBe(true);
     markReengagementShown(store, now);
     expect(shouldShowReengagement(store, now).show).toBe(false);
+  });
+});
+
+describe("re-engagement audit-guard (S6.9)", () => {
+  it("REENGAGEMENT_INACTIVE_DAYS is the 2-day early-loop threshold", () => {
+    // Audit-guard: changing this constant is a product decision
+    // (re-engagement window). If you bump it, also update
+    // `docs/launch/ftux-sprint-plan.md` S6.9 row and re-run baseline.
+    expect(REENGAGEMENT_INACTIVE_DAYS).toBe(2);
+  });
+
+  it("nudges.ts source has no stale 7-day re-engagement threshold", () => {
+    const src = readFileSync(
+      fileURLToPath(new URL("./nudges.ts", import.meta.url)),
+      "utf-8",
+    );
+    // Audit-guard: pre-S6.9 code branched on `daysInactive < 7`. Block any
+    // accidental rollback by failing if either the literal `< 7` or the
+    // older comparison form re-appears in the same function.
+    expect(src).not.toMatch(/daysInactive\s*<\s*7\b/);
+    expect(src).toContain("REENGAGEMENT_INACTIVE_DAYS");
   });
 });

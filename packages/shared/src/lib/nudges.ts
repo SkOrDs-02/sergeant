@@ -18,6 +18,15 @@ const NUDGE_SNOOZE_KEY = "hub_nudge_snooze_v1";
 const LAST_ACTIVE_DATE_KEY = "hub_last_active_date_v1";
 const REENGAGEMENT_SHOWN_KEY = "hub_reengagement_shown_v1";
 
+/**
+ * Number of consecutive inactive days before the in-app re-engagement card
+ * surfaces. Day-2 is the earliest meaningful loop: D1 covers itself with the
+ * primary daily nudge, while D7+ is owned by the email drip (S4.3) and push
+ * scheduling (S4.2). The 1-per-day rate limit (`REENGAGEMENT_SHOWN_KEY`) keeps
+ * the card from re-firing within the same UTC day.
+ */
+export const REENGAGEMENT_INACTIVE_DAYS = 2;
+
 // ---------------------------------------------------------------------------
 // Daily nudge definitions
 // ---------------------------------------------------------------------------
@@ -182,7 +191,8 @@ export function shouldShowReengagement(
   now?: Date,
 ): { show: boolean; daysInactive: number } {
   const daysInactive = getDaysInactive(store, now);
-  if (daysInactive < 7) return { show: false, daysInactive };
+  if (daysInactive < REENGAGEMENT_INACTIVE_DAYS)
+    return { show: false, daysInactive };
 
   const shownDate = store.getString(REENGAGEMENT_SHOWN_KEY);
   if (shownDate === todayKey(now)) return { show: false, daysInactive };

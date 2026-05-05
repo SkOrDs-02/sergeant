@@ -1,7 +1,7 @@
 # 0011 — Foundation adoption + process discipline (post-launch sweep)
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** **Phase 1 complete** — 4/4 PR-ів merged станом на 2026-05-04. Phase 2 in flight: 2.2 merged (#1696); 2.4 (#1703) + 2.5 (#1709) + 2.6 (#1713) + 2.7 (#1714) + 2.8 (#1726) opened 2026-05-04 (DataState consumer adoption — finyk + fizruk + nutrition + routine + digest closes the consumer-adoption block; 2.9 ESLint rule і 2.1 ManualExpenseSheet залишаються). Phases 3–4 заплановані пост-0010-launch ≥ 2026-06-01.
+> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Status:** **Phase 1 complete** — 4/4 PR-ів merged станом на 2026-05-04. Phase 2 in flight: 2.2 merged (#1696); 2.4 (#1703) + 2.5 (#1709) + 2.6 (#1713) + 2.7 (#1714) + 2.8 (#1726) opened 2026-05-04 (DataState consumer adoption — finyk + fizruk + nutrition + routine + digest closes the consumer-adoption block); 2.1 ManualExpenseSheet — мігровано round-13 (commit-у-існуючому-PR, не окремий PR); 2.9 ESLint rule і 2.3 deprecation cleanup закриваються round-11 (хук видалено фізично, бо 0 споживачів — див. round-11 progress нижче). Phases 3–4 заплановані пост-0010-launch ≥ 2026-06-01.
 > **Priority:** P1 (subordinate to 0010-revenue-first-launch scope-freeze)
 > **Owner:** `@Skords-01`
 > **ETA:** 7 тижнів (Phase 1 — паралельно з 0010 freeze; Phases 2–4 — після 0010 launch)
@@ -89,37 +89,31 @@
 
 ### Фаза 2 — Foundation adoption (consumer migrations) — 3 тижні, 2026-06-02 → 2026-06-23 _(поста-0010-launch)_
 
-**Реальні цифри baseline (2026-05-04):**
+**Реальні цифри baseline (2026-05-05, після round-11 cleanup):**
 
-- `useFormValidation`: **2 active consumers** (`ManualExpenseSheet.tsx`, `ResetPasswordPage.tsx`). Решта вже на `useApiForm` або не мають форм.
-- `useApiForm`: **6 active consumers** з [#1614](https://github.com/Skords-01/Sergeant/pull/1614).
+- `useFormValidation`: **0 active consumers** — хук видалено фізично разом з його export'ами з `apps/web/src/shared/hooks/index.ts` (round-11). Попередня цифра 2 (станом на 2026-05-04) — застаріла; обидва legacy-споживачі (`ManualExpenseSheet.tsx`, `ResetPasswordPage.tsx`) уже були мігровані до round-13/round-7-форма-engine роботи. PR 2.1 / 2.2 / 2.3 закриті фактом видалення (запланований runtime-warning не потрібен — нема чого попереджати).
+- `useApiForm`: **6+ active consumers** з [#1614](https://github.com/Skords-01/Sergeant/pull/1614).
 - `<DataState>`: **0 active consumers** (тільки сама компонента + storybook + test).
 - Manual `isLoading || isError` патерни: **15 файлів** з 31 RQ-користувачів.
 - Raw `fetch('/api/...')` у `apps/web/src/modules/`: **0 файлів** (вже на типізованому клієнті).
-- Storybook: **8 stories** (з [#1647](https://github.com/Skords-01/Sergeant/pull/1647) +5).
+- Storybook: **37 shared/ui + 5 module-level stories** (закрито 0007 round-10, см. [`0007-design-system-tooling.md`](./0007-design-system-tooling.md)).
 
-**PR 2.1 — `refactor(web): migrate ManualExpenseSheet from useFormValidation to useApiForm`** (P0)
+**PR 2.1 — `refactor(web): migrate ManualExpenseSheet from useFormValidation to useApiForm`** (P0) — **DONE (round-13, без окремого PR)**
 
-- Файл: `apps/web/src/modules/finyk/components/ManualExpenseSheet.tsx`.
-- Скоуп: замінити `useFormValidation(...)` на `useApiForm({ schema: ManualExpenseSchema, defaultValues, onSubmit })`. Field-level errors — через RHF `formState.errors`.
-- Тест: оновити existing snapshot/RTL-test на новий error-pattern.
-- **Risk:** низький — це 1 файл, форма проста.
+- Файл: `apps/web/src/modules/finyk/components/ManualExpenseSheet.tsx` уже на `useApiForm({ schema, defaultValues, onSubmit })` зі звичайним RHF `formState.errors` mapping (див. inline-коментар у файлі: «Item #8 round-13: form-engine — міграція із легасі `useFormValidation`»).
 
-**PR 2.2 — `refactor(web): migrate ResetPasswordPage from useFormValidation to useApiForm`** (P0)
+**PR 2.2 — `refactor(web): migrate ResetPasswordPage from useFormValidation to useApiForm`** (P0) — **DONE**
 
-- Файл: `apps/web/src/core/auth/ResetPasswordPage.tsx`.
-- Скоуп: аналогічно 2.1. Особлива увага — server-side error mapping (`USER_NOT_FOUND`, `EMAIL_NOT_VERIFIED`, `RESET_TOKEN_EXPIRED`) на field-level з `setError('email', ...)` / `setError('root', ...)`.
-- Тест: е2е-сценарій (existing) має пройти.
-- **Risk:** низький-середній — це auth-flow, треба зберегти server-error-маппінг exact.
+- Файл: `apps/web/src/core/auth/ResetPasswordPage.tsx` на `useApiForm` (server-side error mapping — `USER_NOT_FOUND`, `EMAIL_NOT_VERIFIED`, `RESET_TOKEN_EXPIRED` — через `setError('email' | 'root', …)` нативно у `applyServerError` з `useApiForm.ts`).
 
-**PR 2.3 — `chore(web): deprecate useFormValidation — runtime warning + ESLint rule`** (P0, depends on 2.1+2.2)
+**PR 2.3 — `chore(web): deprecate useFormValidation`** (P0) — **DONE (round-11) як фізичне видалення**
 
-- Файли:
-  - `apps/web/src/shared/hooks/useFormValidation.ts` — додати `console.warn('[deprecation] useFormValidation is deprecated; migrate to useApiForm')` у dev-mode.
-  - `packages/eslint-plugin-sergeant-design/rules/<no-form-validation-hook>.js` — нове правило, severity `warn` поки що, з `TODO(0010): YYYY-MM-DD` deadline = 2026-06-15.
-  - `packages/eslint-plugin-sergeant-design/__tests__/<no-form-validation-hook>.test.mjs` — unit tests.
-- ETA для перемикання severity → `error`: 2026-06-15 (через 4 тижні після цього PR; буфер для будь-яких нових споживачів).
-- **Risk:** низький, але вимагає `pnpm lint:plugins` зеленим.
+- Замість runtime-warning + ESLint rule: оскільки 0 споживачів — хук видалено повністю.
+- `apps/web/src/shared/hooks/useFormValidation.ts` — видалено.
+- `apps/web/src/shared/hooks/index.ts` — прибрано `export { useFormValidation, validationRules }` + `export type { UseFormValidationReturn }`.
+- `docs/design/design-system.md` — секцію `useFormValidation` видалено.
+- ESLint rule + warn-only-time-window не потрібні: канонічний form-engine — `useApiForm` (єдиний); якщо новий контриб'ютор спробує імпортувати `useFormValidation` — TS-error на etape compile, бо файлу й експорту нема.
+- **Risk:** нульовий (`grep useFormValidation apps/web/src` після видалення — порожньо; жодного споживача).
 
 **PR 2.4–2.X — DataState consumer migrations (5 PR-ів, batched по доменах)**
 
@@ -198,7 +192,7 @@
 - [ ] **PR #1652-type collisions** не повторюються: `lint-migrations.mjs` cross-branch перевірка падає в усіх кейсах, де `NNN ≤ max(main:migrations)`. Зеро migration-renumber-fix-ів за 4 тижні.
 - [ ] **PR #1595-type drift** не повторюється: будь-яка зміна `vercel.json` / `fly.toml` / `railway.toml` має `verified-on-staging` лейбл або `verified-on-staging-emergency` з пов'язаним post-mortem.
 - [ ] **CSP_DISABLE retrospective** опубліковано: `docs/incidents/2026-05-04-csp-disable-audit.md` exists, з підтвердженням prod-impact (zero / non-zero) і подальшими діями.
-- [ ] **`useFormValidation` дeprecated and migrated:** 0 active consumers поза legacy `useFormValidation.ts` файлом; ESLint-правило severity = `error`; runtime-warning видалено разом з самим хуком.
+- [x] **`useFormValidation` дeprecated and migrated:** 0 active consumers; хук видалено фізично разом із export'ами з `apps/web/src/shared/hooks/index.ts` (round-11). Окрема ESLint-rule + runtime-warning не знадобились — TS compile-error замість them.
 - [ ] **`<DataState>` adopted:** усі 15+ baseline manual-loading/error файлів використовують `<DataState>`; ESLint-правило `no-adhoc-rq-state` severity = `error`.
 - [ ] **Hardening verification:** 4 pen-test cases (H5/H6/H8/H9) виконані з документацією результатів; integration-test для session-protected routes зелений; transcribe USD-cap e2e зелений з реальним audio fixture.
 - [ ] **Storybook coverage baseline:** CI-метрика стабільно ≥ 16% (no-regression) і власність передана у 0007.

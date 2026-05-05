@@ -75,9 +75,6 @@ export type {
 
 export { useFocusTrap } from "./useFocusTrap";
 
-export { useFormValidation, validationRules } from "./useFormValidation";
-export type { UseFormValidationReturn } from "./useFormValidation";
-
 export { useCountUp, useFormattedCountUp } from "./useCountUp";
 
 export type { DarkModeSchedule, UseDarkModeReturn } from "./useDarkMode";

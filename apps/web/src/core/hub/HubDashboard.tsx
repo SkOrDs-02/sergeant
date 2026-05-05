@@ -454,9 +454,10 @@ export function HubDashboard({
   }
 
   // ONE-HERO + ONE-SECONDARY RULE:
-  // • Returning user (7+ days inactive) → ReEngagementCard acts as the
-  //   hero, suppressing the regular TodayFocus / FirstAction / SoftAuth
-  //   candidates so we never stack two "primary" cards.
+  // • Returning user (2+ days inactive — see REENGAGEMENT_INACTIVE_DAYS in
+  //   `nudges.ts`) → ReEngagementCard acts as the hero, suppressing the
+  //   regular TodayFocus / FirstAction / SoftAuth candidates so we never
+  //   stack two "primary" cards.
   // • DailyNudge is the optional secondary nudge; it already hides when
   //   re-engagement is showing (see below), and now supports a 7-day
   //   snooze via `snoozeNudge()` on top of permanent dismiss.
