@@ -1,6 +1,6 @@
 ---
 name: sergeant-bugfix-and-regression
-description: Use when fixing a Sergeant bug, regression, flaky test, broken deploy behavior, or production issue where the correct fix depends on reproducing the failure first.
+description: Use when fixing a Sergeant bug, regression, flaky test, broken deploy, or production issue where the fix depends on reproducing the failure first; UA: фіксиш баг, регресію, флакі-тест.
 ---
 
 # Sergeant Bugfix and Regression

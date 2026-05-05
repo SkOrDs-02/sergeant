@@ -1,6 +1,6 @@
 ---
 name: sergeant-hubchat
-description: Use when creating, modifying, reviewing, or debugging Sergeant HubChat tool definitions, client executors, action cards, prompt-cache-sensitive tool metadata, or chat-side effects across apps/server and apps/web.
+description: Use when creating, modifying, reviewing, or debugging Sergeant HubChat tool defs, executors, action cards, or chat side effects; UA: правиш HubChat tool/executor/action card/chat.
 ---
 
 # Sergeant HubChat

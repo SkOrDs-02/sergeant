@@ -1,6 +1,6 @@
 ---
 name: sergeant-data-and-migrations
-description: Use when changing Sergeant SQL, Postgres schema, query behavior, migration numbering, database rollout safety, or Railway pre-deploy data paths in apps/server/src/migrations and related server modules.
+description: Use when changing Sergeant SQL, Postgres schema, query behavior, migration numbering, or Railway pre-deploy data paths; UA: правиш SQL, схему БД, міграції, rollout даних.
 ---
 
 # Sergeant Data and Migrations

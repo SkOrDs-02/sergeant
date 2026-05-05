@@ -1,6 +1,6 @@
 ---
 name: sergeant-deploy-and-observability
-description: Use when a Sergeant change touches deploy configuration, environment variables, Railway or Vercel behavior, health checks, Sentry, n8n workflows, readiness endpoints, or production verification.
+description: Use when a Sergeant change touches deploy config, env vars, Railway/Vercel, health checks, Sentry, n8n, or production verification; UA: деплой, env, Railway, Vercel, Sentry, n8n.
 ---
 
 # Sergeant Deploy and Observability
