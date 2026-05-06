@@ -1,6 +1,6 @@
 # 0005 — AI cost optimisation (Anthropic prompt cache + AI-ops dashboards)
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Done (2026-05-04). Prompt-cache на 2 breakpoints (system + last tool), token / cost / cache-hit Prom counters, 7-panel `ai-cost` Grafana dashboard, alerts на cost / quota — усе шипнуто. Policy зафіксована у [ADR-0039](../adr/0039-anthropic-prompt-cache-policy.md).
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
@@ -182,7 +182,7 @@ Sergeant досить агресивно використовує Anthropic Clau
 - [`docs/observability/metrics.md`](../observability/metrics.md) — реєстр метрик (`ai_tokens_total`, `anthropic_prompt_cache_hit_total`, `ai_cost_estimate_usd_total`).
 - [`docs/observability/runbook.md` § Troubleshooting](../observability/runbook.md#troubleshooting) — як інтерпретувати порожні Anthropic-spans + AI-алерти.
 - [`apps/server/src/modules/chat/`](../../apps/server/src/modules/chat/) — `chat.ts`, `tools.ts`, `toolDefs/systemPrompt.ts`.
-- Координується з ініціативою [0004 — server observability](./0004-server-observability.md) — `aiSpan` помічатиме `cache_hit` як attribute.
+- Координується з ініціативою [0004 — server observability](./_0004-server-observability.md) — `aiSpan` помічатиме `cache_hit` як attribute.
 - [`docs/tech-debt/backend.md`](../tech-debt/backend.md) — запис про AI cost (раніше «not measured»; зараз закритий, prompt-caching активний з [#864](https://github.com/Skords-01/Sergeant/pull/864), per-endpoint cost-метрики з [#1247](https://github.com/Skords-01/Sergeant/pull/1247)).
 
 ## Outcome (2026-05-04)

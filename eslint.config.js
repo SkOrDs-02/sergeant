@@ -327,7 +327,7 @@ export default [
   // Round-10 (2026-05-05) закрив Phase 2: shared/ui coverage піднято
   // з 35% до 100% non-allowlisted (37 stories на 37 компонентів-
   // кандидатів — див. § Outcome у
-  // `docs/initiatives/0007-design-system-tooling.md`). Решта 23
+  // `docs/initiatives/_0007-design-system-tooling.md`). Решта 23
   // файли — barrel / Icon.paths sub-modules / utility / gesture /
   // transient overlay-компоненти — навмисно allowlisted у самому
   // правилі (`packages/eslint-plugin-sergeant-design/index.js` §
@@ -1013,7 +1013,7 @@ export default [
   // a single TS/TSX file in the web bundle must not exceed 600 LOC
   // (skipBlankLines + skipComments). New violations fail CI; existing
   // monoliths are explicitly allowlisted with a deadline TODO so the
-  // queue stays visible. See `docs/initiatives/0001-module-decomposition.md`.
+  // queue stays visible. See `docs/initiatives/_0001-module-decomposition.md`.
   //
   // Scope rationale:
   // - Limited to `apps/web/src/**` — the audit's red-flag table flagged
@@ -1043,7 +1043,7 @@ export default [
   },
   // Allowlist for existing >600 LOC monoliths in `apps/web/src/**`.
   // Each entry MUST stay paired with a Phase 2 PR in
-  // `docs/initiatives/0001-module-decomposition.md`. When a file is
+  // `docs/initiatives/_0001-module-decomposition.md`. When a file is
   // decomposed below 600 LOC, drop its entry from this list — the
   // top-level rule above will then enforce it going forward.
   //

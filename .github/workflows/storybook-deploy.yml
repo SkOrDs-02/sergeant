@@ -1,7 +1,7 @@
 name: Storybook deploy
 
 # Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
-# Initiative: docs/initiatives/0007-design-system-tooling.md (Phase 5).
+# Initiative: docs/initiatives/_0007-design-system-tooling.md (Phase 5).
 #
 # Builds the @sergeant/web Storybook on every push to `main` and publishes
 # the static output to GitHub Pages so reviewers + designers always have a

@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load exactly one Sergeant specialist skill for the touched surface. The routing catalog lives in `docs/agents/agent-skills-catalog.md`.
@@ -417,9 +417,9 @@ If a reviewer sees a new prose paragraph or table cell in English in a doc that'
 }
 ```
 
-**Allowlist.** Існуючі файли-моноліти (11 на 2026-05-05) виключені окремим блоком `eslint.config.js` з `TODO(0001-module-decomposition): deadline 2026-06-15`. Кожна декомпозиція = видалення одного рядка з allowlist (видно у `git blame`). Allowlist — _не_ постійна fixture: dropping rate відстежується в [`docs/initiatives/0001-module-decomposition.md`](docs/initiatives/0001-module-decomposition.md) метрикою «Файлів `apps/web/src/**` ≥600 LOC: 16 → 11 → ≤ 2».
+**Allowlist.** Існуючі файли-моноліти (11 на 2026-05-05) виключені окремим блоком `eslint.config.js` з `TODO(0001-module-decomposition): deadline 2026-06-15`. Кожна декомпозиція = видалення одного рядка з allowlist (видно у `git blame`). Allowlist — _не_ постійна fixture: dropping rate відстежується в [`docs/initiatives/_0001-module-decomposition.md`](docs/initiatives/_0001-module-decomposition.md) метрикою «Файлів `apps/web/src/**` ≥600 LOC: 16 → 11 → ≤ 2».
 
-**Як декомпонувати.** Розкладаємо за роллю, не за алфавітом: окремо state (custom hook / `useReducer` / state-machine), окремо ефекти (один `useEffect` = один named hook), окремо UI (presentational sub-components без логіки). Прецедент — `apps/server/src/modules/chat/` (раніше моноліт `agent.ts`): `chat.ts` orchestrator + `tools.ts` + `coach.ts` + `aiQuota.ts` + `toolMetrics.ts` + `toolDefs/<domain>/`. Для web cookbook див. опис фази 2 в [`docs/initiatives/0001-module-decomposition.md`](docs/initiatives/0001-module-decomposition.md).
+**Як декомпонувати.** Розкладаємо за роллю, не за алфавітом: окремо state (custom hook / `useReducer` / state-machine), окремо ефекти (один `useEffect` = один named hook), окремо UI (presentational sub-components без логіки). Прецедент — `apps/server/src/modules/chat/` (раніше моноліт `agent.ts`): `chat.ts` orchestrator + `tools.ts` + `coach.ts` + `aiQuota.ts` + `toolMetrics.ts` + `toolDefs/<domain>/`. Для web cookbook див. опис фази 2 в [`docs/initiatives/_0001-module-decomposition.md`](docs/initiatives/_0001-module-decomposition.md).
 
 **Scope rationale.**
 
@@ -461,7 +461,7 @@ CI запускає `node tools/tsconfig-guard/check.mjs` (через `pnpm lint
 - Інші TS-прапори, які не входять у `GUARDED_OPTIONS` (e.g. `noImplicitOverride`, `useDefineForClassFields`).
 - Allowlist-entries з активним `expires` у майбутньому — це temporary debt, і саме для цього існує allowlist.
 
-Tracked у [Initiative 0012 — Perfect TS strictness rollout](./docs/initiatives/0012-perfect-strictness-rollout.md) і живий burndown — у [`docs/tech-debt/frontend.md` §11.1](./docs/tech-debt/frontend.md).
+Tracked у [Initiative 0012 — Perfect TS strictness rollout](./docs/initiatives/_0012-perfect-strictness-rollout.md) і живий burndown — у [`docs/tech-debt/frontend.md` §11.1](./docs/tech-debt/frontend.md).
 
 ## Lint-enforced design conventions
 

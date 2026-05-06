@@ -1,6 +1,6 @@
 # 0004 — Server observability (Sentry server-side + OpenTelemetry traces)
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Done. Phase 1 (Sentry server-side) shipped 2026-05-04. Phase 3 (Grafana dashboards) shipped 2026-05-04. **Phase 2 + 4 (OpenTelemetry SDK + custom sampler) shipped 2026-05-05** — vendor-agnostic OTLP/HTTP, graceful no-op коли `OTEL_EXPORTER_OTLP_ENDPOINT` не заданий, route-aware `RouteAwareSampler`. Backend-vendor (Honeycomb / Grafana Cloud Tempo / self-hosted) вибирається через env (см. ADR-0035 "Implementation").
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`

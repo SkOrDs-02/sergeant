@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 // scripts/check-initiative-status-sync.mjs
 //
-// CI guard for `docs/initiatives/README.md` ↔ `docs/initiatives/[0-9]{4}-*.md`
+// CI guard for `docs/initiatives/README.md` ↔ `docs/initiatives/[_]?[0-9]{4}-*.md`
 // status synchronization.
 //
 // Validates three invariants:
-//   1. Every `NNNN-*.md` file in `docs/initiatives/` is referenced by a row
-//      in README.md (active table + recently-completed table + archive
-//      stub list).
+//   1. Every `NNNN-*.md` (or `_NNNN-*.md` for completed-prefix files) in
+//      `docs/initiatives/` is referenced by a row in README.md (active table
+//      + recently-completed table + archive stub list). The leading `_`
+//      marks `Done` / `Closed` files so `ls` clearly separates active from
+//      completed; both forms parse to the same NNNN id.
 //   2. Every README row (`| NNNN | ...`) has a matching file (or, in the
 //      Archive section, an explicit `archive/...` redirect-stub).
 //   3. The status keyword in the README cell matches the canonical
@@ -40,7 +42,7 @@ const REPO_ROOT = resolve(__dirname, "..");
 const INITIATIVES_DIR = resolve(REPO_ROOT, "docs/initiatives");
 const README_PATH = join(INITIATIVES_DIR, "README.md");
 
-const RE_INITIATIVE_FILE = /^(\d{4})-[a-z0-9-]+\.md$/i;
+const RE_INITIATIVE_FILE = /^_?(\d{4})-[a-z0-9-]+\.md$/i;
 const RE_TABLE_ROW = /^\|\s*(\d{4})\s*\|/;
 const RE_STATUS_LINE = /^>\s*\*\*Status:\*\*\s*(.+?)\s*$/im;
 const HEADER_LINE_LIMIT = 30;
@@ -146,8 +148,10 @@ export function parseStatusesFromReadme(content) {
     result.set(id, status);
   }
   // Archive redirect-stubs: `[archive/NNNN-slug.md] — archived YYYY-MM-DD`
+  // (or `[archive/_NNNN-slug.md]` if the file kept its completed-prefix
+  // when moved into the archive).
   const reArchiveStub =
-    /^\s*[-*]?\s*\[?archive\/(\d{4})-[a-z0-9-]+\.md\]?\s*[—-]\s*archived\b/i;
+    /^\s*[-*]?\s*\[?archive\/_?(\d{4})-[a-z0-9-]+\.md\]?\s*[—-]\s*archived\b/i;
   for (const line of lines) {
     const m = line.match(reArchiveStub);
     if (m) result.set(m[1], "Archived");

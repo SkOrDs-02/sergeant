@@ -231,6 +231,29 @@ describe("renderFollowUps", () => {
     assert.match(out, /Last validated:\*\* 2026-05-05/);
     assert.match(out, /Next review:\*\* 2026-08-03/);
   });
+
+  it("strips the leading `_` from completed-prefix files when rendering the link id", () => {
+    const completed = [
+      {
+        file: "_0005-ai-cost-and-prompt-cache.md",
+        title: "AI cost",
+        kind: "one-shot-dated",
+        key: "2026-05-12",
+        description: "перевірити cache-hit-rate",
+      },
+    ];
+    const out = renderFollowUps(completed, { today: "2026-05-05" });
+    assert.match(
+      out,
+      /\[0005\]\(\.\/_0005-ai-cost-and-prompt-cache\.md\)/,
+      "link text is the bare id (0005), but href keeps the `_` prefix",
+    );
+    assert.doesNotMatch(
+      out,
+      /\[_0005\]/,
+      "link text must NOT include the `_` prefix",
+    );
+  });
 });
 
 describe("addDays", () => {

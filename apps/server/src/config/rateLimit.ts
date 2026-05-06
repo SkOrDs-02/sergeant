@@ -1,7 +1,7 @@
 /**
  * Centralized rate-limit policies.
  *
- * Initiative: docs/initiatives/0008-platform-hardening.md § Phase 2.
+ * Initiative: docs/initiatives/_0008-platform-hardening.md § Phase 2.
  *
  * Why a registry:
  *   До цього кожен роут передавав літерали `{ key, limit, windowMs }` у

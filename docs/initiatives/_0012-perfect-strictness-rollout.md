@@ -1,6 +1,6 @@
 # 0012 — Perfect TS strictness rollout (`noUncheckedIndexedAccess` + 4 opt-in flags)
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Closed (Phase 6a/6c/6e/6f ✅ Done; Phase 6b/6d enabled у `tsconfig.base.json` з allowlist-residual у `apps/web` — tracked у [`docs/tech-debt/frontend.md` §11.1](../tech-debt/frontend.md))
 > **Priority:** P1 (Sprint 2–4 — після 0010 revenue-first launch стабілізації)
 > **Owner:** `@Skords-01`
@@ -179,7 +179,7 @@ const c2: Config = {}; // ✅ OK
 
 ## Outcome
 
-> Розділ заповнюватиметься per-phase у міру закриття PR-ів. Зразок — Phase 1 закриття у [`0001-module-decomposition.md` § Outcome](./0001-module-decomposition.md#outcome).
+> Розділ заповнюватиметься per-phase у міру закриття PR-ів. Зразок — Phase 1 закриття у [`_0001-module-decomposition.md` § Outcome](./_0001-module-decomposition.md#outcome).
 
 ### Phase 6a — `noUncheckedIndexedAccess` rollout (✅ DONE — 2026-05-05)
 

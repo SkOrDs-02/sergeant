@@ -11,7 +11,7 @@ name: Release SBOM
 #   - workflow_dispatch — manual rerun коли треба перегенерувати SBOM
 #     для попереднього тегу (наприклад, audit після CVE).
 #
-# Ініціатива: docs/initiatives/0008-platform-hardening.md § Phase 4.
+# Ініціатива: docs/initiatives/_0008-platform-hardening.md § Phase 4.
 #
 # Чому окремий workflow, а не extend nightly-audit:
 #   nightly-audit перевіряє runtime-vulnerabilities у живому lockfile-і

@@ -46,7 +46,11 @@ const REPO_ROOT = resolve(__dirname, "../..");
 const INITIATIVES_DIR = resolve(REPO_ROOT, "docs/initiatives");
 const OUTPUT_PATH = join(INITIATIVES_DIR, "follow-ups.md");
 
-const RE_INITIATIVE_FILE = /^\d{4}-.+\.md$/;
+// Matches both active (`NNNN-...md`) and completed-prefix (`_NNNN-...md`)
+// initiative files. The leading `_` is added when an initiative goes
+// `Done` / `Closed` so `ls docs/initiatives/` separates active from done
+// — see `docs/initiatives/README.md` § Гайдлайн → completed-prefix.
+const RE_INITIATIVE_FILE = /^_?\d{4}-.+\.md$/;
 const RE_H1 = /^#\s+(.+?)\s*$/m;
 // Carry-over heading we recognise. Both `###` and `##` levels supported so
 // authors aren't forced to a specific depth.
@@ -392,7 +396,10 @@ export function renderFollowUps(items, { today = todayISO() } = {}) {
 }
 
 function initiativeLink(item) {
-  const num = item.file.slice(0, 4);
+  // `item.file` may be `NNNN-slug.md` or `_NNNN-slug.md` for completed
+  // initiatives. Strip the optional leading `_` when extracting the id.
+  const m = /^_?(\d{4})/.exec(item.file);
+  const num = m ? m[1] : item.file.slice(0, 4);
   return `[${num}](./${item.file})`;
 }
 

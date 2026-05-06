@@ -1,6 +1,6 @@
 # 0008 — Platform hardening: rate-limit, health endpoints, Renovate, supply-chain
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Closed (5/5 phases merged 2026-05-04; carry-overs у § Що НЕ увійшло)
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`

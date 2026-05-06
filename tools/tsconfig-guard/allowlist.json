@@ -3,7 +3,7 @@
     "path": "apps/web",
     "option": "exactOptionalPropertyTypes",
     "value": false,
-    "reason": "Phase 6b rollout in progress — apps/web baseline 497 errors / ~150 файлів (виміряно 2026-05-05). Tracked у docs/initiatives/0012-perfect-strictness-rollout.md Phase 6b.",
+    "reason": "Phase 6b rollout in progress — apps/web baseline 497 errors / ~150 файлів (виміряно 2026-05-05). Tracked у docs/initiatives/_0012-perfect-strictness-rollout.md Phase 6b.",
     "expires": "2026-09-30",
     "owner": "@Skords-01"
   },
@@ -11,7 +11,7 @@
     "path": "apps/web",
     "option": "noPropertyAccessFromIndexSignature",
     "value": false,
-    "reason": "Phase 6d rollout in progress — apps/web baseline included у комбінованому 497-error baseline вище (виміряно 2026-05-05). Tracked у docs/initiatives/0012-perfect-strictness-rollout.md Phase 6d.",
+    "reason": "Phase 6d rollout in progress — apps/web baseline included у комбінованому 497-error baseline вище (виміряно 2026-05-05). Tracked у docs/initiatives/_0012-perfect-strictness-rollout.md Phase 6d.",
     "expires": "2026-09-30",
     "owner": "@Skords-01"
   }

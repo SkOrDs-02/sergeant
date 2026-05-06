@@ -35,7 +35,7 @@
 **Out:**
 
 - Сам RN-порт; він уже tracks у [`docs/mobile/react-native-migration.md`](../mobile/react-native-migration.md).
-- Декомпозиція `apps/mobile/` файлів — ініціатива [0001](./0001-module-decomposition.md) бере тільки web.
+- Декомпозиція `apps/mobile/` файлів — ініціатива [0001](./_0001-module-decomposition.md) бере тільки web.
 - Mobile e2e на CI — окрема ініціатива (буде додана), see [`docs/planning/mobile-e2e-testing.md`](../planning/mobile-e2e-testing.md).
 
 ## План змін
