@@ -39,29 +39,29 @@ mega-PR — кожен має власний рівень ризику і rollba
 
 ## Критичні (Critical) — Sprint 1, наступні 2 тижні
 
-| PR  | План                                                                                                   | Severity | Effort  |
-| --- | ------------------------------------------------------------------------------------------------------ | -------- | ------- |
-| 01  | [Уніфікувати env-модулі сервера](./pr-01-unify-env-modules.md)                                         | Critical | 1–2 дні |
-| 02  | [Rate-limit fail-closed на `/api/auth/*`](./pr-02-rate-limit-fail-closed.md)                           | Critical | 1 день  |
-| 03  | [`MAX_PASSWORD_LENGTH` = 72 (bcrypt-стеля) або міграція на Argon2id](./pr-03-bcrypt-password-limit.md) | Critical | 1–2 дні |
-| 04  | [Secondary owners + knowledge-transfer plan](./pr-04-bus-factor-secondary-owners.md)                   | Critical | 1 тижд. |
-| 05  | [`@types/node` ↓ 20.x + ADR на TS 6 vs 5.x](./pr-05-typescript-types-node-downgrade.md)                | Critical | 1 день  |
-| 06  | [OpenClaw → GitHub App, прибрати `Git_PAT` fallback](./pr-06-openclaw-github-app.md)                   | Critical | 2–3 дні |
+| PR  | План                                                                                    | Severity | Effort  | Status                                                                                          |
+| --- | --------------------------------------------------------------------------------------- | -------- | ------- | ----------------------------------------------------------------------------------------------- |
+| 01  | [Уніфікувати env-модулі сервера](./pr-01-unify-env-modules.md)                          | Critical | 1–2 дні | Planned                                                                                         |
+| 02  | [Rate-limit fail-closed на `/api/auth/*`](./pr-02-rate-limit-fail-closed.md)            | Critical | 1 день  | Closed — merged [#1552](https://github.com/Skords-01/Sergeant/pull/1552)                        |
+| 03  | [`MAX_PASSWORD_LENGTH` policy correction](./pr-03-bcrypt-password-limit.md)             | Critical | 1–2 дні | Closed — merged [#1550](https://github.com/Skords-01/Sergeant/pull/1550)                        |
+| 04  | [Secondary owners + knowledge-transfer plan](./pr-04-bus-factor-secondary-owners.md)    | Critical | 1 тижд. | Planned                                                                                         |
+| 05  | [`@types/node` ↓ 20.x + ADR на TS 6 vs 5.x](./pr-05-typescript-types-node-downgrade.md) | Critical | 1 день  | Planned                                                                                         |
+| 06  | [OpenClaw → GitHub App, прибрати `Git_PAT` fallback](./pr-06-openclaw-github-app.md)    | Critical | 2–3 дні | In progress / partial — Phase 1 merged [#1816](https://github.com/Skords-01/Sergeant/pull/1816) |
 
 ## Високі (High) — Sprint 2–3, поточний квартал
 
-| PR  | План                                                                                               | Severity | Effort  |
-| --- | -------------------------------------------------------------------------------------------------- | -------- | ------- |
-| 07  | [Declarative body-size policy](./pr-07-body-size-declarative-policy.md)                            | High     | 0.5 дня |
-| 08  | [API versioning consolidation (видалити v1-rewrite-shim)](./pr-08-api-versioning-consolidation.md) | High     | 0.5 дня |
-| 09  | [`@parse/node-apn` review (ADR-only)](./pr-09-apns-library-adr.md) — ADR-0048 in review            | High     | 0.5 дня |
-| 10  | [Better Auth security review + Safari/Webkit E2E](./pr-10-better-auth-security-review.md)          | High     | 2–3 дні |
-| 11  | [Drizzle schema ↔ SQL drift CI gate](./pr-11-drizzle-schema-drift-ci.md)                           | High     | 1–2 дні |
-| 12  | [Sentry tracesSampler dynamic per-route](./pr-12-sentry-traces-sampler.md)                         | High     | 0.5 дня |
-| 13  | [PG pool sizing + monitoring + alerts](./pr-13-postgres-pool-sizing.md)                            | High     | 1 день  |
-| 14  | [Vercel COEP review (require-corp)](./pr-14-vercel-coep-review.md) — closed by M21                 | High     | 0.5 дня |
-| 15  | [`AI_QUOTA_DISABLED=1` hard-block у production](./pr-15-ai-quota-disabled-hardblock.md)            | High     | 0.5 дня |
-| 16  | [Pino redaction policy + ESLint guard](./pr-16-pino-redaction-policy.md)                           | High     | 1 день  |
+| PR  | План                                                                                               | Severity | Effort  | Status                                                                                |
+| --- | -------------------------------------------------------------------------------------------------- | -------- | ------- | ------------------------------------------------------------------------------------- |
+| 07  | [Declarative body-size policy](./pr-07-body-size-declarative-policy.md)                            | High     | 0.5 дня | Planned                                                                               |
+| 08  | [API versioning consolidation (видалити v1-rewrite-shim)](./pr-08-api-versioning-consolidation.md) | High     | 0.5 дня | Planned                                                                               |
+| 09  | [`@parse/node-apn` review (ADR-only)](./pr-09-apns-library-adr.md)                                 | High     | 0.5 дня | ADR-0048 in review                                                                    |
+| 10  | [Better Auth security review + Safari/Webkit E2E](./pr-10-better-auth-security-review.md)          | High     | 2–3 дні | Planned                                                                               |
+| 11  | [Drizzle schema ↔ SQL drift CI gate](./pr-11-drizzle-schema-drift-ci.md)                           | High     | 1–2 дні | Planned                                                                               |
+| 12  | [Sentry tracesSampler dynamic per-route](./pr-12-sentry-traces-sampler.md)                         | High     | 0.5 дня | Planned                                                                               |
+| 13  | [PG pool sizing + monitoring + alerts](./pr-13-postgres-pool-sizing.md)                            | High     | 1 день  | Planned                                                                               |
+| 14  | [Vercel COEP review (require-corp)](./pr-14-vercel-coep-review.md)                                 | High     | 0.5 дня | Closed by M21                                                                         |
+| 15  | [`AI_QUOTA_DISABLED=1` hard-block у production](./pr-15-ai-quota-disabled-hardblock.md)            | High     | 0.5 дня | In review — [#1567](https://github.com/Skords-01/Sergeant/pull/1567)                  |
+| 16  | [Pino redaction policy + ESLint guard](./pr-16-pino-redaction-policy.md)                           | High     | 1 день  | Planned                                                                               |
 
 ---
 

@@ -1,7 +1,7 @@
 # 0002 — Mobile platform decision: lock the deprecation deadline
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** In progress (Phase 1 done — sunset locked, lint guard live, shell-tax script ready; Phase 2 — weekly cron live)
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+> **Status:** In progress (Phase 1/2 shipped; sunset decision needs reconciliation with 0010 owner decision before further deprecation work)
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks (рішення + 1 ADR + комунікація)
@@ -9,6 +9,8 @@
 > **Sources:** Design Review 2026-05-03 §10, ADR-0010, [`docs/architecture/platforms.md`](../architecture/platforms.md), [`docs/mobile/react-native-migration.md`](../mobile/react-native-migration.md)
 
 ## TL;DR
+
+> **Update 2026-05-06:** ця ініціатива фіксувала напрямок на shell sunset, але [0010 revenue-first launch](./0010-revenue-first-launch.md) пізніше зафіксувала owner decision: Capacitor лишається primary до Expo feature parity, обидва mobile stacks підтримуються паралельно, deprecate жодного. До окремого ADR-0047 / successor decision не цитувати дедлайн shell deprecation з цього файлу як active outcome.
 
 [ADR-0010](../adr/0010-mobile-dual-track-capacitor-expo.md) дозволяє dual-track (Capacitor shell + Expo RN), але **без жорсткого дедлайну** на deprecation shell-у. У результаті ми платимо подвійну ціну (підтримка двох пайплайнів, два store-listing-и, два набори Sentry-проєктів, дві QA-матриці) **без зворотного відліку**. Ця ініціатива не обирає інший стек — вона **формалізує дедлайн**: проставити фіксовану дату «freeze shell, RN-only» на основі feature-parity gating і опублікувати її в ADR-0010 як **Exit decision**.
 

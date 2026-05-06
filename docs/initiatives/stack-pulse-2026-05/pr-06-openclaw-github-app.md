@@ -1,7 +1,7 @@
 # PR-06: OpenClaw → GitHub App, прибрати `Git_PAT` fallback
 
-> **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
-> **Status:** Planned
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+> **Status:** In progress / partial — Phase 1 GitHub App auth-flow merged [#1816](https://github.com/Skords-01/Sergeant/pull/1816); PAT fallback removal pending
 
 |              |                                                                              |
 | ------------ | ---------------------------------------------------------------------------- |
@@ -12,6 +12,8 @@
 | **Touches**  | `apps/server/src/openclaw/`, `apps/server/src/env*`, secrets                 |
 
 ## Контекст
+
+> **Update 2026-05-06:** [#1816](https://github.com/Skords-01/Sergeant/pull/1816) додав GitHub App auth-flow паралельно до legacy PAT-path і feature-flag `OPENCLAW_USE_GITHUB_APP` з default `false`. Цей PR-план ще не закритий: Phase 2 має flip-нути default, видалити `OPENCLAW_GITHUB_PAT` / `Git_PAT` production-path і зареєструвати no-PAT production rule.
 
 ```ts
 // apps/server/src/env.ts:413–414

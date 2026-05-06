@@ -1,6 +1,6 @@
 # PR-15: `AI_QUOTA_DISABLED=1` hard-block у production
 
-> **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
 > **Status:** In review — [PR #1567](https://github.com/Skords-01/Sergeant/pull/1567)
 
 |              |                                                            |
