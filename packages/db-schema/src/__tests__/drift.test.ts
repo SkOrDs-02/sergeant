@@ -4,7 +4,8 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(__dirname, "../../../../..");
+// __dirname = packages/db-schema/src/__tests__ → 4 levels up to repo root.
+const ROOT = resolve(__dirname, "../../../..");
 
 /**
  * Integration smoke-test for scripts/check-schema-drift.mjs (PR-11).
@@ -31,7 +32,10 @@ describe("Drizzle schema ↔ SQL migration drift", () => {
       exitCode = e.status ?? 1;
     }
 
-    let result: { ok: boolean; issues: Array<{ kind: string; message: string }> };
+    let result: {
+      ok: boolean;
+      issues: Array<{ kind: string; message: string }>;
+    };
     try {
       result = JSON.parse(output);
     } catch {
