@@ -59,12 +59,7 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     throw new Error("sync v2 writer boot requires a browser window");
   }
 
-  const [
-    { getSqliteDb },
-    { apiClient },
-    sentry,
-    dbSchema,
-  ] = await Promise.all([
+  const [{ getSqliteDb }, { apiClient }, sentry, dbSchema] = await Promise.all([
     import("../db/sqlite"),
     import("@shared/api"),
     import("../observability/sentry"),
