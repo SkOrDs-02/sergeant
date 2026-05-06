@@ -16,6 +16,7 @@
     "test:coverage": "vitest run --coverage",
     "test:a11y": "playwright test",
     "test:visual": "playwright test --config playwright.visual.config.ts",
+    "e2e:auth": "playwright test --config playwright.smoke.config.ts --grep @auth",
     "size": "size-limit",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"

@@ -20,10 +20,23 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
+  // Webkit + mobile-safari додані у PR-48 (`docs/initiatives/stack-pulse-2026-05/pr-10-better-auth-security-review.md`).
+  // На local запуску браузерні движки tree-shake-аються через `--project chromium` за замовчуванням
+  // (див. webServer config). У CI extended-e2e.yml prov-ить webkit на nightly-cron-i; для PR-у
+  // з `extended-e2e` label-ом це теж активується. Локально webkit працює тільки після `pnpm exec
+  // playwright install webkit`, тож chromium лишається default-project-ом для DX.
   projects: [
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
+    },
+    {
+      name: "mobile-safari",
+      use: { ...devices["iPhone 14"] },
     },
   ],
   webServer: process.env.PW_SKIP_WEBSERVER
