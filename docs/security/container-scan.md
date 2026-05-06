@@ -1,6 +1,6 @@
 # Сканування container-image — Trivy
 
-> **Last validated:** 2026-04-30 by @devin-ai. **Next review:** 2026-07-30.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 ## Огляд
@@ -80,16 +80,42 @@ Workflow [`.github/workflows/container-scan.yml`](../../.github/workflows/contai
 Лежать вони в одному файлі `audit-exceptions.md` — просто не плодь
 дві окремі лінії для одного CVE.
 
+## Platform invariant
+
+`hub-api:scan` **завжди** будується для `linux/amd64` — це Railway runtime
+arch (closes hardening card
+[L13](./hardening/L13-docker-platform-pin.md)).
+
+- `Dockerfile.api` — `FROM --platform=linux/amd64 node:20.20.2-alpine` на
+  обох stage-ах (builder + runtime).
+- `.github/workflows/container-scan.yml` — `platforms: linux/amd64` у
+  `docker/build-push-action` + `Confirm scanned image is linux/amd64`
+  guard step (`docker image inspect` arch-check), який валить job якщо
+  loaded image не `linux/amd64`.
+
+Без цього invariant дев на Apple Silicon локально отримує arm64-image,
+Trivy сканує arm64-шар, а Railway деплоїть amd64 — drift проходить
+повз nightly-audit і виявляється тільки коли arm64 lockfile-version
+розходиться з amd64. Не міняй це без оновлення обох сторін
+(Dockerfile + workflow) і відповідного запису в
+[`./audit-exceptions.md`](./audit-exceptions.md).
+
 ## Як локально відтворити
 
 ```bash
-# 1. Build image
-docker build -f Dockerfile.api -t hub-api:scan .
+# 1. Build image (явно amd64 — інакше локально на Apple Silicon отримаєш
+# arm64-image, що не збігається з тим, що сканується в CI / деплоїться
+# на Railway).
+docker buildx build --platform linux/amd64 -f Dockerfile.api -t hub-api:scan .
 
-# 2. Install Trivy locally (один раз)
+# 2. Перевір arch (defense-in-depth, як у workflow).
+docker image inspect hub-api:scan --format '{{.Os}}/{{.Architecture}}'
+# Очікуване: linux/amd64
+
+# 3. Install Trivy locally (один раз)
 brew install trivy   # або см. https://aquasecurity.github.io/trivy/
 
-# 3. Scan
+# 4. Scan
 trivy image \
   --severity CRITICAL,HIGH \
   --ignore-unfixed \

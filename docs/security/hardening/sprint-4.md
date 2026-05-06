@@ -1,6 +1,6 @@
 # Sprint 4 — Low severity sweep and structural hardening
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Planned
 
 Sprint 4 closes the **Low-severity sweep** (L1–L14 — paper cuts, defence in
@@ -27,7 +27,7 @@ posture from "secure for an MVP" to "auditable for a paid product".
 | [L10](./L10-user-id-hash-in-logs.md)       | `recordSync*` logs raw `userId` instead of hash      | Low      | backend  | 0.25 d                                                                                                                                                                                                                                    |
 | [L11](./L11-csp-monitoring-allowlist.md)   | CSP must allowlist Sentry / PostHog `connect-src`    | Low      | frontend | 0.25 d _(closed 2026-05-05 — batched L3 + L7 + L11 hardening PR; `apps/web/src/test/cspMonitoringAllowlist.test.ts` asserts vercel.json + index.html parity, required Sentry/PostHog hosts present, no bare wildcards in `connect-src`)_  |
 | [L12](./L12-ios-app-transport-security.md) | iOS `NSAppTransportSecurity` audit                   | Low      | mobile   | 0.1 d                                                                                                                                                                                                                                     |
-| [L13](./L13-docker-platform-pin.md)        | `Dockerfile.api` platform pin in CI                  | Low      | platform | 0.25 d                                                                                                                                                                                                                                    |
+| [L13](./L13-docker-platform-pin.md)        | `Dockerfile.api` platform pin in CI                  | Low      | platform | 0.25 d _(closed 2026-05-06 — `Dockerfile.api` `FROM` lines pin `--platform=linux/amd64`; `.github/workflows/container-scan.yml` build step pins `platforms: linux/amd64` + `docker image inspect` arch guard)_                            |
 | [L14](./L14-pnpm-frozen-lockfile-dev.md)   | `pnpm install --frozen-lockfile` in dev workflow     | Low      | platform | 0.1 d                                                                                                                                                                                                                                     |
 | [I3](./I3-sbom-generation.md)              | Generate SBOM during container build                 | Info     | platform | 0.5 d                                                                                                                                                                                                                                     |
 | [I4](./I4-security-txt.md)                 | `/.well-known/security.txt` content + expiry refresh | Info     | platform | 0.1 d _(closed 2026-05-04)_                                                                                                                                                                                                               |

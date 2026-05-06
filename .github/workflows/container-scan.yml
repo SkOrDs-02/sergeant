@@ -55,11 +55,32 @@ jobs:
         with:
           context: .
           file: Dockerfile.api
+          # `platforms: linux/amd64` робить платформу образу явною
+          # (closes hardening card L13 — `docs/security/hardening/L13-docker-platform-pin.md`).
+          # Railway runtime — amd64; без явного pin-а локальний build на
+          # Apple Silicon видає arm64-image, який не збігається з production,
+          # а Trivy сканує те, що зібрав buildx, тож drift проходить
+          # повз nightly-audit.
+          platforms: linux/amd64
           load: true
           push: false
           tags: hub-api:scan
           cache-from: type=gha,scope=container-scan
           cache-to: type=gha,mode=max,scope=container-scan
+
+      - name: Confirm scanned image is linux/amd64
+        run: |
+          # Defense-in-depth: якщо хтось у майбутньому забере `platforms`
+          # вище, цей крок упаде до Trivy і пояснить чому. Inspect format
+          # друкує саме arch шару, який пройшов docker load.
+          arch="$(docker image inspect hub-api:scan --format '{{.Architecture}}')"
+          os="$(docker image inspect hub-api:scan --format '{{.Os}}')"
+          echo "hub-api:scan platform = ${os}/${arch}"
+          if [[ "${os}/${arch}" != "linux/amd64" ]]; then
+            echo "::error::hub-api:scan was built for ${os}/${arch}, expected linux/amd64."
+            echo "See docs/security/hardening/L13-docker-platform-pin.md."
+            exit 1
+          fi
 
       # aquasecurity/trivy-action v0.36.0 (SHA-pinned)
       # Один прогін генерує SARIF (для code-scanning + артефакту) і

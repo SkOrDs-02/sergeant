@@ -1,6 +1,13 @@
 # Мінімальний образ лише для Hub API (Railway / Docker).
-# Збірка: docker build -f Dockerfile.api -t hub-api .
-FROM node:20.20.2-alpine AS builder
+# Збірка: docker buildx build --platform linux/amd64 -f Dockerfile.api -t hub-api .
+#
+# `--platform=linux/amd64` піниться явно на FROM-рівні (closes hardening card
+# L13 — `docs/security/hardening/L13-docker-platform-pin.md`). Railway runtime
+# це amd64, і dev-машина на Apple Silicon (arm64) без явного pin-у
+# зібрала б arm64-image, який локально проходить smoke, але на Railway
+# падає з "exec format error". На amd64-хостах buildx ігнорує цей рядок
+# (image нативний), тож overhead нульовий.
+FROM --platform=linux/amd64 node:20.20.2-alpine AS builder
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
@@ -45,7 +52,7 @@ RUN pnpm build
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Runtime image
-FROM node:20.20.2-alpine AS runtime
+FROM --platform=linux/amd64 node:20.20.2-alpine AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production
