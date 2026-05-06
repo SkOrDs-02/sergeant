@@ -423,6 +423,35 @@ Webhook-based server-side integration added in PR2. Key components:
 
 ---
 
+## Operational visibility — Railway env-var changes
+
+> **Контекст.** Action item §A5 з [`docs/audits/2026-05-04-csp-disable-retrospective.md`](../audits/2026-05-04-csp-disable-retrospective.md) — закриття A5 показало, що PR 1.3 staging-gate ([#1697](https://github.com/Skords-01/Sergeant/pull/1697)) ловить deploy-config drift у репо (`vercel.json`, `fly.toml`, `Dockerfile`, `build.mjs`), але **НЕ** ловить runtime env-var changes у Railway dashboard. Це окремий клас ризику; його повний fix — окрема ініціатива; поки тримаємо тут у backlog.
+
+**Gap-у поточного tier-у Railway** (community/team), підтверджені під час A2-перевірки 2026-05-06:
+
+- `auditLogs` GraphQL API трекає лише `Shared Variable.{created,updated,deleted}` (workspace-scope) — service-level env-vars НЕ потрапляють у audit-log. Якщо runtime-flag типу `CSP_DISABLE` був би виставлений як service-var — у audit-log його б не було.
+- Немає webhook-події «env-var changed in production project». Найближчий аналог — Sentry breadcrumb через manual integration; не існує з коробки.
+- Немає built-in change-detection-ом dashboard-у Railway («показати мені зараз різницю між env-state-ом сьогодні і тиждень тому»). Тільки snapshot-режим у CLI/GraphQL.
+
+**Що зробити (high-level — деталі ініціативи пізніше):**
+
+| Крок | Дія                                                                                                                                                                                                                    | Артефакт                                                                                                                        |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | Periodic snapshot (e.g. cron-job у `apps/server/scripts/`) Railway env-vars → SHA-256-hash-set, зберігається у Redis або postgres-таблиці `railway_env_snapshots`. Запит — щогодини або раз на день.                   | `apps/server/scripts/railway-env-snapshot.ts` + cron у `worker.ts` або n8n-workflow                                             |
+| 2    | Diff-detection vs попереднього snapshot-у; на change → Sentry breadcrumb level=`info` + Slack/email-alert на `@Skords-01`.                                                                                             | Новий Sentry-tag `railway_env_change`; alert-rule у Slack-webhook.                                                              |
+| 3    | Persist diff (без значень — лише keys + hash + timestamp) у `railway_env_changelog` таблиці для governance/SOC2-evidence — окремий audit-log, який compensate-ить tier-limitation.                                     | Migration `XXX_railway_env_changelog.sql` + admin-endpoint для перегляду.                                                       |
+| 4    | Hard-rule або lint-gate: будь-який новий `*_DISABLE` / `*_BYPASS` / `*_OVERRIDE` env-var у `EnvSchema.ts` MUST мати entry у `secret-ownership-register.md` retroactively, якщо runtime-config не cover-нутий audit-ом. | Розширити `docs/governance/hard-rules.json` категорією `security-flag-sunset` (вже згаданий у audit Process recommendation №1). |
+
+**Owner:** `@Skords-01` після Phase 3 ініціативи 0011 (≥ 2026-06-02). **Trigger перетворення на ініціативу** — або новий env-var-related incident, або плановий SOC2-audit в межах 6 місяців.
+
+**Альтернативи розглянуті і відкинуті:**
+
+- _Upgrade Railway tier для service-level audit-log_ — вартість vs. value не виправдана для solo-dev стадії; повертаємось коли > 1 contributor matter-ить.
+- _Перенесення runtime-flag-ів у Vault/Doppler_ — overengineering для поточного surface; зайвий operational overhead для одного env-source.
+- _Forbid runtime security-knobs повністю_ — частково вже зроблено через `access-policy.md` § «Runtime security knobs»; повна заборона неможлива (legitimate use-cases типу `CSP_REPORT_ONLY` toggle).
+
+---
+
 ## Status log
 
 | Дата       | PR                                                     | Тема                                 | Результат                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
