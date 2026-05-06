@@ -22,7 +22,7 @@ export interface FizrukNavItem extends ModuleBottomNavItem {
 export const FIZRUK_NAV: readonly FizrukNavItem[] = [
   {
     id: "dashboard",
-    label: "Сьогодні",
+    label: "Огляд",
     icon: (
       <svg {...NAV_SVG_PROPS}>
         <circle cx="12" cy="12" r="10" />

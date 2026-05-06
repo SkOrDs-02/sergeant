@@ -14,7 +14,7 @@ interface RoutineNavItem extends ModuleBottomNavItem {
 const NAV: readonly RoutineNavItem[] = [
   {
     id: "calendar",
-    label: "Календар",
+    label: "Огляд",
     panelId: "routine-panel-calendar",
     icon: (
       <svg

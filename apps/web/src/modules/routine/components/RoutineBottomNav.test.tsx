@@ -16,6 +16,14 @@ describe("RoutineBottomNav", () => {
     expect(onSelectTab).toHaveBeenCalledWith("stats");
   });
 
+  it("uses unified «Огляд» label for the landing tab (UX roast 2026-Q2 C1)", () => {
+    render(<RoutineBottomNav mainTab="calendar" onSelectTab={() => {}} />);
+    expect(screen.getByRole("tab", { name: /Огляд/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("tab", { name: /^Календар$/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("does not render a Settings tab (settings moved to Hub Settings)", () => {
     render(<RoutineBottomNav mainTab="calendar" onSelectTab={() => {}} />);
     expect(
