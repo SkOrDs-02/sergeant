@@ -1,6 +1,6 @@
 # 0001 — Module decomposition + `max-lines` guard
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Done (Phase 1 + Phase 2 + Phase 3) — closed 2026-05-04
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
@@ -155,7 +155,9 @@ PR `decomp-finalize` видаляє `overrides` allowlist цілком і зак
 
 Відхилення від плану: жодних — Phase 1 пройшла рівно за описом, без зсувів.
 
-### Фаза 2 — топ-4 декомпозиція (IN PROGRESS — 4 of 5 PRs відкрито 2026-05-04)
+### Фаза 2 — топ-4 декомпозиція (DONE — 2026-05-04)
+
+> Цей підрозділ описує першу пачку з 4 PR-ів, відкритих 2026-05-04 (#1593, #1594, #1596, #1597). П'ятий файл Phase 2 (`RoutineApp.tsx`) виведено в окремий PR #1603 — див. наступний підрозділ.
 
 Pre-requisite: `eslint` бамп до 10.x з [#1572](https://github.com/Skords-01/Sergeant/pull/1572) ламав
 Husky pre-commit hook (`eslint-plugin-react@7.37.5` ще не сумісний з ESLint 10
@@ -165,17 +167,17 @@ API — `contextOrFilename.getFilename is not a function`). Phase 2 неможл
 - **[#1592 — `chore(deps): pin eslint to ^9.39.4 …`](https://github.com/Skords-01/Sergeant/pull/1592)**
   повертає `eslint` + `@eslint/js` на 9.x, поки впереднього `eslint-plugin-react@7.38+` (Issue #6018) ще не вийшло. Усі 4 decomp-PR-и нижче базуються на цій гілці.
 
-| #   | Файл                       | LOC до | Розклали на                                                                                                                                                                          | LOC після      | PR                                                       |
-| --- | -------------------------- | -----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- | -------------------------------------------------------- |
-| 1   | `useStorage.ts` (finyk)    |    685 | composition root + `useStorage.types.ts` (73), `useStorage.persist.ts` (37), `useFinykStorageSlots.ts` (175), `useFinykStorageMutations.ts` (343), `useFinykBackupSync.ts` (187)     | **174** entry  | [#1593](https://github.com/Skords-01/Sergeant/pull/1593) |
-| 2   | `chatActions/types.ts`     |    672 | barrel + `types.result.ts` (34), `types.finyk.ts` (188), `types.fizruk.ts` (135), `types.routine.ts` (85), `types.nutrition.ts` (103), `types.cross.ts` (116)                        | **281** barrel | [#1594](https://github.com/Skords-01/Sergeant/pull/1594) |
-| 3   | `Icon.tsx`                 |    660 | composition root + 4 path-shards: `Icon.paths.system.tsx` (141, 27 glyphs), `Icon.paths.status.tsx` (180, 25), `Icon.paths.domain.tsx` (154, 21), `Icon.paths.content.tsx` (111, 15) | **109** entry  | [#1596](https://github.com/Skords-01/Sergeant/pull/1596) |
-| 4   | `sw.ts`                    |    643 | entry + 6 шарів: `sw/version.ts` (19), `sw/cache.ts` (122), `sw/notifiedKeys.ts` (140), `sw/reminders.ts` (267), `sw/debug.ts` (74), `sw/messages.ts` (126)                          | **100** entry  | [#1597](https://github.com/Skords-01/Sergeant/pull/1597) |
-| 5   | `RoutineApp.tsx` (745 LOC) |        | _залишається на наступний sprint_ — найбільший ризик регресії, потребує `useReducer`/state-machine рефакторингу + happy-path RTL fixture перед розбиттям.                            | _pending_      | (не відкрито)                                            |
+| #   | Файл                    | LOC до | Розклали на                                                                                                                                                                             | LOC після      | PR                                                       |
+| --- | ----------------------- | -----: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------------- |
+| 1   | `useStorage.ts` (finyk) |    685 | composition root + `useStorage.types.ts` (73), `useStorage.persist.ts` (37), `useFinykStorageSlots.ts` (215), `useFinykStorageMutations.ts` (346), `useFinykBackupSync.ts` (187)        | **195** entry  | [#1593](https://github.com/Skords-01/Sergeant/pull/1593) |
+| 2   | `chatActions/types.ts`  |    672 | barrel + `types.result.ts` (34), `types.finyk.ts` (188), `types.fizruk.ts` (135), `types.routine.ts` (85), `types.nutrition.ts` (103), `types.cross.ts` (116)                           | **281** barrel | [#1594](https://github.com/Skords-01/Sergeant/pull/1594) |
+| 3   | `Icon.tsx`              |    660 | composition root + 4 path-shards: `Icon.paths.system.tsx` (157, 27 glyphs), `Icon.paths.status.tsx` (180, 25), `Icon.paths.domain.tsx` (154, 21), `Icon.paths.content.tsx` (111, 15)    | **111** entry  | [#1596](https://github.com/Skords-01/Sergeant/pull/1596) |
+| 4   | `sw.ts`                 |    643 | entry + 6 шарів: `sw/version.ts` (19), `sw/cache.ts` (122), `sw/notifiedKeys.ts` (140), `sw/reminders.ts` (267), `sw/debug.ts` (71), `sw/messages.ts` (127)                             | **100** entry  | [#1597](https://github.com/Skords-01/Sergeant/pull/1597) |
+| 5   | `RoutineApp.tsx`        |    745 | винесено в окремий PR `decomp-routine-app` — найбільший ризик регресії, потребував `useReducer`/state-machine + happy-path RTL fixture перед розбиттям. Деталі у наступному підрозділі. | **88** entry   | [#1603](https://github.com/Skords-01/Sergeant/pull/1603) |
 
 Що саме збережено / змінено:
 
-- **Public API stability:** для всіх 4 декомпонованих файлів зовнішні консьюмери НЕ змінюються:
+- **Public API stability:** для всіх 4 декомпонованих в цій пачці файлів зовнішні консьюмери НЕ змінюються:
   - `useStorage()` повертає той самий tuple, що раніше; усі 14 persisted-state slots і 15 mutation-функцій — ті самі.
   - `import { ChatAction } from "./types"` resolves у тип-юніон з усіх 6 доменів через barrel.
   - `<Icon name="..." />` рендериться так само — `IconName` далі типобезпечно derives з `keyof typeof PATHS` (тепер це spread 4 path-shards).
@@ -183,17 +185,17 @@ API — `contextOrFilename.getFilename is not a function`). Phase 2 неможл
 - **Behavior identity:** `vite build` емітує SW bundle 32.39 kB (gzip 10.75 kB) — байт-в-байт ідентично до baseline. 99 finyk vitest, 293 chatActions vitest, 144 ui vitest — all green, без жодного diff в snapshots.
 - **Lint cleanup:** `useFinykStorageMutations.ts` мав raw `localStorage.getItem/setItem` (порушення `sergeant-design/no-raw-local-storage`) — виправлено через `safeReadStringLS`/`safeWriteLS` з `shared/lib/storage`.
 
-Метрики Phase 2 (станом на 2026-05-04, після відкриття 4 PR-ів):
+Метрики Phase 2 (проміжний зріз 2026-05-04, після першої пачки з 4 PR-ів; фінал — у підрозділі `decomp-routine-app` нижче):
 
-| Метрика                                       | Phase 1 (post-#1555)   | Phase 2 (post-1593/1594/1596/1597)                                                                                                     | Target (2026-06-15) |
-| --------------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| Файлів `apps/web/src/**` ≥600 LOC у allowlist | 7                      | **3** (`fizrukActions.ts`, `Exercise.tsx`, `AssetsTable.tsx`, `RoutineApp.tsx`, `RoutineCalendarPanel.tsx` — підмножина того, що було) | ≤ 2                 |
-| Найбільший файл у allowlist                   | 745 (`RoutineApp.tsx`) | 745 (`RoutineApp.tsx` — поки на наступний sprint)                                                                                      | ≤ 600               |
-| Сумарний LOC у allowlist                      | ~4500                  | ~3100                                                                                                                                  | ≤ 1500              |
+| Метрика                                       | Phase 1 (post-#1555)   | Phase 2 (post-1593/1594/1596/1597)                                                                                                                                     | Target (2026-06-15) |
+| --------------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| Файлів `apps/web/src/**` ≥600 LOC у allowlist | 7                      | **3** з списку Top-7 (`fizrukActions.ts`, `Exercise.tsx`, `AssetsTable.tsx`) + `RoutineApp.tsx` + `RoutineCalendarPanel.tsx` — сукупно 5 в allowlist до розбиття #1603 | ≤ 2                 |
+| Найбільший файл у allowlist                   | 745 (`RoutineApp.tsx`) | 745 (`RoutineApp.tsx` — розбивається у наступному PR цієї ж фази)                                                                                                      | ≤ 600               |
+| Сумарний LOC у allowlist                      | ~4500                  | ~3100                                                                                                                                                                  | ≤ 1500              |
 
-Що далі:
+Що залишалося на цей момент (після #1597, перед #1603):
 
-1. PR `decomp-routine-app` (RoutineApp.tsx 745 → ≤200 LOC по компонентах + `useRoutineAppState.ts`) — наступний sprint, з RTL happy-path fixture перед розбиттям.
+1. PR `decomp-routine-app` (RoutineApp.tsx 745 → ≤200 LOC по компонентах + `useRoutineAppState.ts`) — з RTL happy-path fixture перед розбиттям. Відкрито того ж дня як [#1603](https://github.com/Skords-01/Sergeant/pull/1603) — деталі в наступному підрозділі.
 2. Phase 3 (`decomp-finalize`) — після PR `decomp-routine-app`, видалити `overrides` allowlist цілком і закрити цю ініціативу як **Done**.
 
 ### Фаза 2 — `decomp-routine-app` (DONE — 2026-05-04)
@@ -202,17 +204,17 @@ API — `contextOrFilename.getFilename is not a function`). Phase 2 неможл
 
 Останній файл Phase 2 (`RoutineApp.tsx` 745 LOC) розкладено на 8 шардів, кожен ≤ 350 LOC, всі під 600-LOC lint-гардом:
 
-| Файл                          |  LOC | Роль                                                                                                  |
-| ----------------------------- | ---: | ----------------------------------------------------------------------------------------------------- |
-| `RoutineApp.tsx`              |   88 | Тонкий composition root — тільки wires `useRoutineAppState` до візуальних шардів.                     |
-| `RoutineApp.helpers.ts`       |  100 | Чисті date/grouping helpers, без React.                                                               |
-| `useRoutineAppState.ts`       | ~350 | Orchestrator: routine state, main tab, filters, quick-add, deep-link / PWA effects, callbacks.        |
-| `useRoutineTimeState.ts`      |  212 | `useReducer` state-machine для `timeMode` + `monthCursor` + `selectedDay`.                            |
-| `useRoutineDerivedData.ts`    |  267 | Чисті derived memos: range, events, filtered, listEvents, grouped, dayCounts, tagChips, monthTitle, … |
-| `RoutineHeader.tsx`           |   57 | Module header bar.                                                                                    |
-| `RoutineTimeline.tsx`         |  115 | Calendar/stats body + storage-error banner + pull-to-refresh.                                         |
-| `RoutineActions.tsx`          |   53 | Bottom nav + quick-add dialog.                                                                        |
-| `useRoutineTimeState.test.ts` |  200 | Новий test fixture (14 кейсів) фіксує state-machine.                                                  |
+| Файл                          | LOC | Роль                                                                                                  |
+| ----------------------------- | --: | ----------------------------------------------------------------------------------------------------- |
+| `RoutineApp.tsx`              |  87 | Тонкий composition root — тільки wires `useRoutineAppState` до візуальних шардів.                     |
+| `RoutineApp.helpers.ts`       | 100 | Чисті date/grouping helpers, без React.                                                               |
+| `useRoutineAppState.ts`       | 350 | Orchestrator: routine state, main tab, filters, quick-add, deep-link / PWA effects, callbacks.        |
+| `useRoutineTimeState.ts`      | 201 | `useReducer` state-machine для `timeMode` + `monthCursor` + `selectedDay`.                            |
+| `useRoutineDerivedData.ts`    | 267 | Чисті derived memos: range, events, filtered, listEvents, grouped, dayCounts, tagChips, monthTitle, … |
+| `RoutineHeader.tsx`           |  57 | Module header bar.                                                                                    |
+| `RoutineTimeline.tsx`         | 130 | Calendar/stats body + storage-error banner + pull-to-refresh.                                         |
+| `RoutineActions.tsx`          |  53 | Bottom nav + quick-add dialog.                                                                        |
+| `useRoutineTimeState.test.ts` | 200 | Новий test fixture (14 кейсів) фіксує state-machine.                                                  |
 
 **Public API stability:** `RoutineApp` default export і `RoutineAppProps` interface не змінилися — жоден consumer (App-shell, lazy router, tests) не оновлював імпорти.
 
