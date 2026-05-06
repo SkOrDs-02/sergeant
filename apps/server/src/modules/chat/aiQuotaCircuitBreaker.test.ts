@@ -5,14 +5,38 @@ vi.mock("../../db.js", () => {
   return { default: pool, pool };
 });
 
+const { captureMessageMock } = vi.hoisted(() => ({
+  captureMessageMock: vi.fn(),
+}));
+vi.mock("../../sentry.js", () => ({
+  Sentry: { captureMessage: captureMessageMock },
+}));
+
 import { resetDbErrorWindow } from "./aiQuotaHealth.js";
 import {
   AiQuotaCircuitBreaker,
   CircuitState,
 } from "./aiQuotaCircuitBreaker.js";
+import { aiQuotaCircuitOpenTotal } from "../../obs/metrics.js";
+
+async function readCounter(labels: Record<string, string>): Promise<number> {
+  // prom-client `Counter#get()` повертає Promise з агрегованим snapshot-ом
+  // (`{ values: [{ value, labels }] }`). Для тестів зручніше дочекатись,
+  // ніж лізти у внутрішній `hashMap`.
+  const out = (await aiQuotaCircuitOpenTotal.get()) as {
+    values: Array<{ value: number; labels: Record<string, string> }>;
+  };
+  if (!out || !Array.isArray(out.values)) return 0;
+  const row = out.values.find((v) =>
+    Object.entries(labels).every(([k, val]) => v.labels[k] === val),
+  );
+  return row?.value ?? 0;
+}
 
 beforeEach(() => {
   resetDbErrorWindow();
+  aiQuotaCircuitOpenTotal.reset();
+  captureMessageMock.mockClear();
   vi.clearAllMocks();
 });
 
@@ -190,5 +214,115 @@ describe("AiQuotaCircuitBreaker", () => {
     });
     expect(() => breaker.recordFailure()).not.toThrow();
     expect(breaker.getState()).toBe(CircuitState.OPEN);
+  });
+
+  // ────────────────── PR-05: metric + Sentry alert ──────────────────
+
+  it("PR-05: increments ai_quota_circuit_open_total{from=closed} on close→open", async () => {
+    const breaker = new AiQuotaCircuitBreaker({
+      threshold: 1,
+      openDurationMs: 60_000,
+    });
+    expect(await readCounter({ from: "closed" })).toBe(0);
+    breaker.recordFailure();
+    expect(breaker.getState()).toBe(CircuitState.OPEN);
+    expect(await readCounter({ from: "closed" })).toBe(1);
+    expect(await readCounter({ from: "half-open" })).toBe(0);
+  });
+
+  it("PR-05: increments ai_quota_circuit_open_total{from=half-open} on half_open→open flap", async () => {
+    let nowMs = 0;
+    const now = () => nowMs;
+    const breaker = new AiQuotaCircuitBreaker({
+      threshold: 1,
+      openDurationMs: 1_000,
+      now,
+    });
+    breaker.recordFailure();
+    nowMs += 1_500;
+    breaker.isAllowing(); // → HALF_OPEN
+    expect(breaker.getState()).toBe(CircuitState.HALF_OPEN);
+
+    breaker.recordFailure();
+    expect(breaker.getState()).toBe(CircuitState.OPEN);
+    expect(await readCounter({ from: "closed" })).toBe(1);
+    expect(await readCounter({ from: "half-open" })).toBe(1);
+  });
+
+  it("PR-05: does NOT increment counter on transitions that are not into OPEN", async () => {
+    let nowMs = 0;
+    const now = () => nowMs;
+    const breaker = new AiQuotaCircuitBreaker({
+      threshold: 1,
+      openDurationMs: 1_000,
+      now,
+    });
+    breaker.recordFailure(); // closed→open (1)
+    nowMs += 1_500;
+    breaker.isAllowing(); // open→half-open (no inc)
+    breaker.recordSuccess(); // half-open→closed (no inc)
+    expect(await readCounter({ from: "closed" })).toBe(1);
+    expect(await readCounter({ from: "half-open" })).toBe(0);
+  });
+
+  it("PR-05: captures Sentry message on close→open with correct tags + extra", () => {
+    const breaker = new AiQuotaCircuitBreaker({
+      threshold: 2,
+      windowMs: 30_000,
+      openDurationMs: 120_000,
+    });
+    breaker.recordFailure(new Error("ECONNREFUSED"));
+    expect(captureMessageMock).not.toHaveBeenCalled();
+    breaker.recordFailure(new Error("ECONNREFUSED"));
+    expect(captureMessageMock).toHaveBeenCalledTimes(1);
+    const [msg, opts] = captureMessageMock.mock.calls[0]!;
+    expect(msg).toMatch(/AI-quota DB circuit-breaker opened/);
+    expect(msg).toMatch(/closed→open/);
+    expect(opts).toMatchObject({
+      level: "error",
+      tags: {
+        module: "chat",
+        op: "ai_quota_circuit_open",
+        breaker: "ai_quota",
+        from: "closed",
+      },
+      extra: {
+        threshold: 2,
+        windowMs: 30_000,
+        openDurationMs: 120_000,
+      },
+    });
+  });
+
+  it("PR-05: captures Sentry message on half_open→open with from=half-open", () => {
+    let nowMs = 0;
+    const now = () => nowMs;
+    const breaker = new AiQuotaCircuitBreaker({
+      threshold: 1,
+      openDurationMs: 1_000,
+      now,
+    });
+    breaker.recordFailure();
+    captureMessageMock.mockClear();
+    nowMs += 1_500;
+    breaker.isAllowing();
+    breaker.recordFailure();
+    expect(captureMessageMock).toHaveBeenCalledTimes(1);
+    const [msg, opts] = captureMessageMock.mock.calls[0]!;
+    expect(msg).toMatch(/half-open→open/);
+    expect(opts.tags.from).toBe("half-open");
+  });
+
+  it("PR-05: breaker still opens even if Sentry.captureMessage throws", async () => {
+    captureMessageMock.mockImplementationOnce(() => {
+      throw new Error("sentry boom");
+    });
+    const breaker = new AiQuotaCircuitBreaker({
+      threshold: 1,
+      openDurationMs: 60_000,
+    });
+    expect(() => breaker.recordFailure()).not.toThrow();
+    expect(breaker.getState()).toBe(CircuitState.OPEN);
+    expect(await readCounter({ from: "closed" })).toBe(1);
   });
 });

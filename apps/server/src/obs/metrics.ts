@@ -212,6 +212,30 @@ export const aiQuotaFailOpenTotal = new client.Counter({
 });
 
 /**
+ * PR-05 — Counter that ticks every time the AI-quota DB circuit-breaker
+ * transitions INTO the OPEN state (either from CLOSED after `threshold`
+ * DB-errors in the sliding window, or from HALF-OPEN when the probe
+ * request itself fails). One sample per OPEN-trip — re-arm during HALF-OPEN
+ * does not double-count.
+ *
+ * Labels:
+ *   - `from`: closed | half-open — which state we tripped from. Useful to
+ *     distinguish a real DB outage burst (`from=closed`) from a flap during
+ *     recovery (`from=half-open`).
+ *
+ * Pairs with the generic `circuit_breaker_state{name="ai_quota"}` gauge —
+ * this counter is the trip-rate signal feeding the Sentry alert
+ * `ai_quota_circuit_opened` and the Alertmanager rule
+ * `AIQuotaCircuitOpenedRecently` (see `docs/observability/alerts/`).
+ */
+export const aiQuotaCircuitOpenTotal = new client.Counter({
+  name: "ai_quota_circuit_open_total",
+  help: "AI-quota DB circuit-breaker transitions into OPEN (fail-closed start)",
+  labelNames: ["from"], // closed | half-open
+  registers: [register],
+});
+
+/**
  * H9 — `/api/transcribe` USD-cap circuit breaker. `outcome` лейбл:
  *   - `cap_hit` — pre-charge відсіяв виклик до Groq (402 у клієнта).
  *   - `store_unavailable` — DB недоступна, fail-open (логуємо для

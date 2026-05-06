@@ -1,9 +1,11 @@
 import { env } from "../../env.js";
 import { logger } from "../../obs/logger.js";
 import {
+  aiQuotaCircuitOpenTotal,
   circuitBreakerState,
   circuitBreakerTripsTotal,
 } from "../../obs/metrics.js";
+import { Sentry } from "../../sentry.js";
 import { CircuitState, CircuitOpenError } from "../../lib/circuitBreaker.js";
 import {
   getDbErrorCount,
@@ -184,6 +186,42 @@ export class AiQuotaCircuitBreaker {
       });
     } catch {
       /* metrics never break breaker */
+    }
+    if (next === CircuitState.OPEN) {
+      try {
+        aiQuotaCircuitOpenTotal.inc({ from: STATE_NAMES[prev] });
+      } catch {
+        /* metrics never break breaker */
+      }
+      // PR-05 — Sentry alert. Single capture per OPEN-trip; we deliberately
+      // do NOT capture during HALF-OPEN→OPEN flap differently — Sentry
+      // group-by-message will fold flap-storms into one issue, while the
+      // `from` tag still tells SRE whether it's a fresh outage or recovery
+      // failure. `level=error` so this routes to the on-call channel.
+      try {
+        Sentry.captureMessage(
+          `AI-quota DB circuit-breaker opened (${STATE_NAMES[prev]}→open)`,
+          {
+            level: "error",
+            tags: {
+              module: "chat",
+              op: "ai_quota_circuit_open",
+              breaker: this.name,
+              from: STATE_NAMES[prev],
+            },
+            extra: {
+              threshold: this.threshold,
+              windowMs: this.windowMs,
+              openDurationMs: this.openDurationMs,
+            },
+          },
+        );
+      } catch (e) {
+        logger.warn({
+          msg: "ai_quota_circuit_sentry_capture_failed",
+          err: { message: (e as Error)?.message || String(e) },
+        });
+      }
     }
     this.updateMetrics();
     try {
