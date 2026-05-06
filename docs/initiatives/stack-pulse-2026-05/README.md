@@ -50,18 +50,18 @@ mega-PR — кожен має власний рівень ризику і rollba
 
 ## Високі (High) — Sprint 2–3, поточний квартал
 
-| PR  | План                                                                                               | Severity | Effort  | Status                                                                                |
-| --- | -------------------------------------------------------------------------------------------------- | -------- | ------- | ------------------------------------------------------------------------------------- |
-| 07  | [Declarative body-size policy](./pr-07-body-size-declarative-policy.md)                            | High     | 0.5 дня | Planned                                                                               |
-| 08  | [API versioning consolidation (видалити v1-rewrite-shim)](./pr-08-api-versioning-consolidation.md) | High     | 0.5 дня | Planned                                                                               |
-| 09  | [`@parse/node-apn` review (ADR-only)](./pr-09-apns-library-adr.md)                                 | High     | 0.5 дня | ADR-0048 in review                                                                    |
-| 10  | [Better Auth security review + Safari/Webkit E2E](./pr-10-better-auth-security-review.md)          | High     | 2–3 дні | Planned                                                                               |
-| 11  | [Drizzle schema ↔ SQL drift CI gate](./pr-11-drizzle-schema-drift-ci.md)                           | High     | 1–2 дні | Planned                                                                               |
-| 12  | [Sentry tracesSampler dynamic per-route](./pr-12-sentry-traces-sampler.md)                         | High     | 0.5 дня | Planned                                                                               |
-| 13  | [PG pool sizing + monitoring + alerts](./pr-13-postgres-pool-sizing.md)                            | High     | 1 день  | Planned                                                                               |
-| 14  | [Vercel COEP review (require-corp)](./pr-14-vercel-coep-review.md)                                 | High     | 0.5 дня | Closed by M21                                                                         |
-| 15  | [`AI_QUOTA_DISABLED=1` hard-block у production](./pr-15-ai-quota-disabled-hardblock.md)            | High     | 0.5 дня | In review — [#1567](https://github.com/Skords-01/Sergeant/pull/1567)                  |
-| 16  | [Pino redaction policy + ESLint guard](./pr-16-pino-redaction-policy.md)                           | High     | 1 день  | Planned                                                                               |
+| PR  | План                                                                                               | Severity | Effort  | Status                                                               |
+| --- | -------------------------------------------------------------------------------------------------- | -------- | ------- | -------------------------------------------------------------------- |
+| 07  | [Declarative body-size policy](./pr-07-body-size-declarative-policy.md)                            | High     | 0.5 дня | Planned                                                              |
+| 08  | [API versioning consolidation (видалити v1-rewrite-shim)](./pr-08-api-versioning-consolidation.md) | High     | 0.5 дня | Planned                                                              |
+| 09  | [`@parse/node-apn` review (ADR-only)](./pr-09-apns-library-adr.md)                                 | High     | 0.5 дня | ADR-0048 in review                                                   |
+| 10  | [Better Auth security review + Safari/Webkit E2E](./pr-10-better-auth-security-review.md)          | High     | 2–3 дні | Planned                                                              |
+| 11  | [Drizzle schema ↔ SQL drift CI gate](./pr-11-drizzle-schema-drift-ci.md)                           | High     | 1–2 дні | Planned                                                              |
+| 12  | [Sentry tracesSampler dynamic per-route](./pr-12-sentry-traces-sampler.md)                         | High     | 0.5 дня | Planned                                                              |
+| 13  | [PG pool sizing + monitoring + alerts](./pr-13-postgres-pool-sizing.md)                            | High     | 1 день  | Planned                                                              |
+| 14  | [Vercel COEP review (require-corp)](./pr-14-vercel-coep-review.md)                                 | High     | 0.5 дня | Closed by M21                                                        |
+| 15  | [`AI_QUOTA_DISABLED=1` hard-block у production](./pr-15-ai-quota-disabled-hardblock.md)            | High     | 0.5 дня | In review — [#1567](https://github.com/Skords-01/Sergeant/pull/1567) |
+| 16  | [Pino redaction policy + ESLint guard](./pr-16-pino-redaction-policy.md)                           | High     | 1 день  | Planned                                                              |
 
 ---
 

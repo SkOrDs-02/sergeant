@@ -18,9 +18,9 @@
 
 ## Identity / brand
 
-| Документ                         | Опис                                                            |
-| -------------------------------- | --------------------------------------------------------------- |
-| [`brandbook.md`](./brandbook.md) | Бренд-голос, ім'я, hero-градієнти, marketing-references         |
+| Документ                         | Опис                                                    |
+| -------------------------------- | ------------------------------------------------------- |
+| [`brandbook.md`](./brandbook.md) | Бренд-голос, ім'я, hero-градієнти, marketing-references |
 
 ## Canonical contract
 
@@ -30,14 +30,14 @@
 
 ## Спеціалізовані патерни
 
-| Документ                                                       | Опис                                                                       |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| [`cross-module-prompts.md`](./cross-module-prompts.md)         | Cross-module nudges із anti-nag-механікою                                  |
-| [`empty-states.md`](./empty-states.md)                         | Правила empty / error / zero-data станів (3 tier-и)                        |
-| [`module-accent.md`](./module-accent.md)                       | Module-accent CSS variables, ESLint containment, Tailwind utilities        |
-| [`radius-rhythm.md`](./radius-rhythm.md)                       | Size-driven border-radius scale (Swatch / Marker / Control / Card / Hero)  |
-| [`undo-pattern.md`](./undo-pattern.md)                         | Soft-delete + 5-секундний undo-toast для destructive-дій                   |
-| [`unified-bottom-nav.md`](./unified-bottom-nav.md)             | Єдиний bottom-nav патерн для hub / modules                                 |
+| Документ                                               | Опис                                                                      |
+| ------------------------------------------------------ | ------------------------------------------------------------------------- |
+| [`cross-module-prompts.md`](./cross-module-prompts.md) | Cross-module nudges із anti-nag-механікою                                 |
+| [`empty-states.md`](./empty-states.md)                 | Правила empty / error / zero-data станів (3 tier-и)                       |
+| [`module-accent.md`](./module-accent.md)               | Module-accent CSS variables, ESLint containment, Tailwind utilities       |
+| [`radius-rhythm.md`](./radius-rhythm.md)               | Size-driven border-radius scale (Swatch / Marker / Control / Card / Hero) |
+| [`undo-pattern.md`](./undo-pattern.md)                 | Soft-delete + 5-секундний undo-toast для destructive-дій                  |
+| [`unified-bottom-nav.md`](./unified-bottom-nav.md)     | Єдиний bottom-nav патерн для hub / modules                                |
 
 ## Tooling / process
 
@@ -48,7 +48,7 @@
 
 ## Audit / history
 
-| Документ                                                                   | Опис                                                                          |
-| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| [`dark-mode-audit.md`](./dark-mode-audit.md)                               | Closed audit trail міграції raw dark palette (Wave 1b → 2a → 2b → 2c)         |
-| [`brand-palette-wcag-aa-proposal.md`](./brand-palette-wcag-aa-proposal.md) | Implemented: WCAG AA `-strong`-tier для brand palette (PR #851 → #857)        |
+| Документ                                                                   | Опис                                                                   |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| [`dark-mode-audit.md`](./dark-mode-audit.md)                               | Closed audit trail міграції raw dark palette (Wave 1b → 2a → 2b → 2c)  |
+| [`brand-palette-wcag-aa-proposal.md`](./brand-palette-wcag-aa-proposal.md) | Implemented: WCAG AA `-strong`-tier для brand palette (PR #851 → #857) |
