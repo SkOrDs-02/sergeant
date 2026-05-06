@@ -117,9 +117,12 @@ describe("OfflineBanner", () => {
     const pill = getByTestId("offline-banner");
     expect(pill.getAttribute("data-state")).toBe("blocked");
     expect(pill.textContent).toContain("3");
+    // The pill must be UA-only (no English fallback strings).
+    expect(pill.textContent).toContain("помилки синхронізації");
+    expect(pill.textContent).not.toMatch(/blocked/i);
 
     await act(async () => {
-      getByRole("button", { name: /retry/i }).click();
+      getByRole("button", { name: /Повторити/i }).click();
     });
 
     expect(retrySyncV2DeadLetters).toHaveBeenCalledTimes(1);

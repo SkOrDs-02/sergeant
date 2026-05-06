@@ -2,6 +2,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { useSyncStatus } from "../cloudSync/useCloudSync";
 import { pluralUa } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 
 /**
  * Subtle connectivity-and-sync indicator — a small floating pill in the
@@ -38,7 +39,11 @@ export function OfflineBanner() {
         className="fixed top-3 right-3 z-300 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-line text-muted text-style-caption shadow-soft backdrop-blur-sm safe-area-pt motion-safe:animate-fade-in"
       >
         <Icon name="refresh-cw" size={12} strokeWidth={2.5} aria-hidden />
-        <span>{`${syncV2DeadLetterCount} blocked`}</span>
+        <span>{`${syncV2DeadLetterCount} ${pluralUa(syncV2DeadLetterCount, {
+          one: "помилка синхронізації",
+          few: "помилки синхронізації",
+          many: "помилок синхронізації",
+        })}`}</span>
         <button
           type="button"
           onClick={() => {
@@ -46,7 +51,7 @@ export function OfflineBanner() {
           }}
           className="ml-1 text-style-caption text-accent underline underline-offset-2"
         >
-          Retry
+          {messages.actions.retry}
         </button>
       </div>
     );
