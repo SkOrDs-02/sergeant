@@ -195,9 +195,9 @@ describe("httpClient — помилки", () => {
 describe("httpClient — apiPrefix versioning", () => {
   it("за замовчуванням /api/* → /api/v1/*", async () => {
     const fn = mockFetchOnce(jsonResponse({ ok: true }));
-    await http.get("/api/sync/push-all");
+    await http.get("/api/example");
     const url = firstCall(fn)[0] as string;
-    expect(url).toBe("/api/v1/sync/push-all");
+    expect(url).toBe("/api/v1/example");
   });
 
   it("/api/auth/* НЕ версіонується (Better Auth basePath)", async () => {
@@ -221,8 +221,8 @@ describe("httpClient — apiPrefix versioning", () => {
   it("apiPrefix: '/api' — legacy-режим, без версіонування (escape hatch)", async () => {
     const legacy = createHttpClient({ apiPrefix: "/api" });
     const fn = mockFetchOnce(jsonResponse({ ok: true }));
-    await legacy.get("/api/sync/push-all");
-    expect(firstCall(fn)[0]).toBe("/api/sync/push-all");
+    await legacy.get("/api/example");
+    expect(firstCall(fn)[0]).toBe("/api/example");
   });
 
   it("кастомний apiPrefix: /api/v2 → /api/v2/foo", async () => {

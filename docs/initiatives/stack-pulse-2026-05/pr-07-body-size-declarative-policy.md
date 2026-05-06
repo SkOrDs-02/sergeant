@@ -1,7 +1,7 @@
 # PR-07: Declarative body-size policy
 
 > **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
-> **Status:** In review — [#2081](https://github.com/Skords-01/Sergeant/pull/2081)
+> **Status:** Closed — merged [#2081](https://github.com/Skords-01/Sergeant/pull/2081)
 
 |              |                                              |
 | ------------ | -------------------------------------------- |

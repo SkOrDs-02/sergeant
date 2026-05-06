@@ -1,6 +1,6 @@
 import { Icon } from "@shared/components/ui/Icon";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
-import { useSyncStatus } from "../cloudSync/useCloudSync";
+import { useSyncStatus } from "../cloudSync/hook/useSyncStatus";
 import { pluralUa } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 

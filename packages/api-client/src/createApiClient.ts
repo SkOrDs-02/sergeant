@@ -3,7 +3,6 @@ import {
   type HttpClient,
   type HttpClientConfig,
 } from "./httpClient";
-import { createSyncEndpoints, type SyncEndpoints } from "./endpoints/sync";
 import {
   createSyncV2Endpoints,
   type SyncV2Endpoints,
@@ -68,7 +67,6 @@ export type ApiClientConfig = HttpClientConfig;
 export interface ApiClient {
   http: HttpClient;
   me: MeEndpoints;
-  sync: SyncEndpoints;
   syncV2: SyncV2Endpoints;
   coach: CoachEndpoints;
   chat: ChatEndpoints;
@@ -90,7 +88,6 @@ export function createApiClient(config: ApiClientConfig = {}): ApiClient {
   return {
     http,
     me: createMeEndpoints(http),
-    sync: createSyncEndpoints(http),
     syncV2: createSyncV2Endpoints(http),
     coach: createCoachEndpoints(http),
     chat: createChatEndpoints(http),

@@ -85,9 +85,6 @@ export interface HubMainContentProps {
   iosVisible: boolean;
   onDismissIos: () => void;
   hubView: HubView;
-  syncing: boolean;
-  onSync: () => void;
-  onPull: () => void;
   user: User | null;
   onShowAuth: () => void;
   inFtuxSession?: boolean;
@@ -103,9 +100,6 @@ export const HubMainContent = memo(function HubMainContent({
   iosVisible,
   onDismissIos,
   hubView,
-  syncing,
-  onSync,
-  onPull,
   user,
   onShowAuth,
   inFtuxSession = false,
@@ -237,12 +231,7 @@ export const HubMainContent = memo(function HubMainContent({
               role="tabpanel"
               aria-labelledby="hub-tab-settings"
             >
-              <HubSettingsPage
-                syncing={syncing}
-                onSync={onSync}
-                onPull={onPull}
-                user={user}
-              />
+              <HubSettingsPage user={user} />
             </div>
           </ErrorBoundary>
         )}

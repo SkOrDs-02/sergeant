@@ -23,7 +23,7 @@ vi.mock("@shared/hooks/useOnlineStatus", () => ({
   useOnlineStatus: () => onlineRef.value,
 }));
 
-vi.mock("../cloudSync/useCloudSync", () => ({
+vi.mock("../cloudSync/hook/useSyncStatus", () => ({
   useSyncStatus: () => ({ ...syncStatusRef, isOnline: onlineRef.value }),
 }));
 

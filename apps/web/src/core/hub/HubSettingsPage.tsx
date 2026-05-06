@@ -59,18 +59,10 @@ function groupForSection(sectionId: string | null) {
 }
 
 export interface HubSettingsPageProps {
-  syncing: boolean;
-  onSync: () => void;
-  onPull: () => void;
   user: User | null;
 }
 
-export function HubSettingsPage({
-  syncing,
-  onSync,
-  onPull,
-  user,
-}: HubSettingsPageProps) {
+export function HubSettingsPage({ user }: HubSettingsPageProps) {
   const [tab, setTab] = useState<string>(() => {
     const sectionId = readSettingsSectionHash();
     return groupForSection(sectionId)?.id ?? "general";
@@ -97,14 +89,7 @@ export function HubSettingsPage({
         title: "Загальні",
         keywords:
           "загальні онбординг onboarding welcome синхронізація акаунт sync cloud",
-        render: () => (
-          <GeneralSection
-            syncing={syncing}
-            onSync={onSync}
-            onPull={onPull}
-            user={user}
-          />
-        ),
+        render: () => <GeneralSection user={user} />,
       },
       {
         id: "notifications",
@@ -174,7 +159,7 @@ export function HubSettingsPage({
         render: () => <ExperimentalSection />,
       },
     ],
-    [syncing, onSync, onPull, user],
+    [user],
   );
 
   const q = query.trim().toLowerCase();

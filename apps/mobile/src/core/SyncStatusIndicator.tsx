@@ -21,9 +21,8 @@
  *
  * Error state lives behind a prop rather than the hook because
  * `useSyncStatus()` deliberately stays read-only (dirtyCount /
- * queuedCount / isOnline). Parents that already hold a
- * `useCloudSync()` instance can feed its `syncError` / `pullAll`
- * into `error` / `onRetry`.
+ * queuedCount / isOnline). A parent with a future explicit retry
+ * command can feed its message and handler into `error` / `onRetry`.
  *
  * Accessibility:
  *  - Respects `AccessibilityInfo.isReduceMotionEnabled()` for the
@@ -58,14 +57,12 @@ export interface SyncStatusIndicatorProps {
   variant?: SyncStatusIndicatorVariant;
   /**
    * Latest sync-error message. When truthy the indicator switches
-   * to the danger state regardless of connectivity. Mirrors the
-   * shape of `useCloudSync(user).syncError`.
+   * to the danger state regardless of connectivity.
    */
   error?: string | null;
   /**
    * Retry handler. When provided *and* `error` is truthy, renders a
-   * ghost `Button` next to the error message. Typically wired to
-   * `useCloudSync(user).pullAll` or `pushAll`.
+   * ghost `Button` next to the error message.
    */
   onRetry?: () => void;
   className?: string;

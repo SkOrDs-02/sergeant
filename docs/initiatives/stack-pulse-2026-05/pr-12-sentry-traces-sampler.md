@@ -1,7 +1,7 @@
 # PR-12: Sentry tracesSampler dynamic per-route
 
 > **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
-> **Status:** In review — [#2086](https://github.com/Skords-01/Sergeant/pull/2086)
+> **Status:** Closed — merged [#2086](https://github.com/Skords-01/Sergeant/pull/2086)
 
 |              |                                                             |
 | ------------ | ----------------------------------------------------------- |

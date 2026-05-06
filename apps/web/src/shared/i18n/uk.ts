@@ -49,7 +49,7 @@ export const messages = {
   },
 
   sync: {
-    // User-facing copy (рендериться в `useSyncErrorToast.ts`). Цикл:
+    // Reserved legacy sync error copy. Historical retry cycle:
     //   network                → перевір з'єднання
     //   server retryable       → 5xx → invite-retry
     //   server non-retryable   → 4xx / parse → no-retry, ask to check input
@@ -62,7 +62,7 @@ export const messages = {
 
     // Reserved для майбутніх migration-round-ів — narrative-strings, які
     // ще живуть inline у `cloudSync/**`. Поточний baseline (round 14) —
-    // лише п'ять рядків вище (`useSyncErrorToast.ts`).
+    // above; no current renderer should revive CloudSync v1 toast plumbing.
     conflictResolved: "Конфлікт автоматично вирішено.",
     pushFailed: "Не вдалося синхронізувати. Спробуємо ще раз.",
     offlineQueueRecovered: "Відновлено з офлайн-черги.",
@@ -272,9 +272,9 @@ export const messages = {
   loadingActions: {
     // Round 17 — first-person singular для transient action-button busy
     // states. Уніфікує раніше inconsistent inline-копію («Зачекайте…»,
-    // «Зберігаємо…», «Виходимо…», «Підключення…», «Завантаження…»),
-    // зводячи voice до «що *я* зараз роблю» замість passive 3rd-person
-    // («ми…») або noun-form («Завантаження…»).
+    // «Виходимо…», «Підключення…»), зводячи voice до «що *я* зараз
+    // роблю» замість passive 3rd-person plural («ми…») або noun-form
+    // («Підключення…»).
     //
     // Відрізняється від `status.loading` (= "Завантаження…", noun-form
     // для generic-spinner-ів без action-context). Якщо у тебе кнопка
@@ -282,8 +282,6 @@ export const messages = {
     // якщо просто spinner у пустому section-і — там `status.loading`.
     //
     // PR-30 / §C5 з docs/audits/2026-05-06-ux-roast-pr-plan.md.
-    saving: "Зберігаю…",
-    downloading: "Завантажую…",
     exiting: "Виходжу…",
     signingIn: "Входжу…",
     registering: "Реєструю…",

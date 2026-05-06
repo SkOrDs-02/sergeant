@@ -11,18 +11,15 @@ import { PWA_ACTION_KEY } from "./pwaAction";
 import type { PwaAction } from "../hooks/usePwaActions";
 import type { HubUIState } from "../hooks/useHubUIState";
 import type { HubNavigation } from "../hooks/useHubNavigation";
-import type { useCloudSync } from "../cloudSync/useCloudSync";
 import type { useAuth } from "../auth/AuthContext";
 import { prefetchCriticalModules } from "../lib/useRoutePrefetch";
 import { CHAT_PATH } from "./appPaths";
 
 type AuthUser = ReturnType<typeof useAuth>["user"];
-type CloudSyncState = ReturnType<typeof useCloudSync>;
 
 export interface AppEffectsDeps {
   user: AuthUser;
   ui: HubUIState;
-  sync: CloudSyncState;
   openModule: HubNavigation["openModule"];
   navigate: NavigateFunction;
   setPwaAction: (value: PwaAction | null) => void;
@@ -34,8 +31,7 @@ export interface AppEffectsDeps {
 // CustomEvent) into the React tree. Grouped into a single hook so
 // `App.tsx` stays a thin composition shell.
 export function useAppEffects(deps: AppEffectsDeps): void {
-  const { user, ui, sync, openModule, navigate, setPwaAction, validActions } =
-    deps;
+  const { user, ui, openModule, navigate, setPwaAction, validActions } = deps;
 
   // Prefetch critical module chunks once the main thread is free.
   // Previously hard-coded to `setTimeout(2000)`, which over-paid on fast
@@ -82,26 +78,16 @@ export function useAppEffects(deps: AppEffectsDeps): void {
     return undefined;
   }, [openModule]);
 
-  // Bridge module-level pull-to-refresh gestures to the App-level
-  // cloud-sync engine. Modules dispatch `REQUEST_PULL_EVENT` and we run
-  // `sync.pullAll()` on their behalf, then emit a completion event so
-  // the requesting component can resolve its spinner. See
-  // `shared/lib/cloudPullRequest.ts` for the contract.
+  // Legacy module-level pull-to-refresh gestures used to call CloudSync
+  // v1 pullAll. v1 is gone; settle the historical event so older module
+  // refresh controls do not hang while they migrate to v2-aware refresh.
   useEffect(() => {
-    const handler = async () => {
-      try {
-        await sync.pullAll();
-      } catch {
-        // Errors are surfaced via `useSyncErrorToast`; the requester
-        // only cares that we settled, so swallow here and emit the
-        // completion event regardless.
-      } finally {
-        emitCloudPullComplete();
-      }
+    const handler = () => {
+      emitCloudPullComplete();
     };
     window.addEventListener(REQUEST_PULL_EVENT, handler);
     return () => window.removeEventListener(REQUEST_PULL_EVENT, handler);
-  }, [sync]);
+  }, []);
 
   // Global signal to open chat from any page (e.g. ProfilePage memory
   // bank, AssistantCataloguePage, hint toasts). Now routes to the

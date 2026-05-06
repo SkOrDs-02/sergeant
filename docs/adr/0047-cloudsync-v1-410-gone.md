@@ -80,7 +80,7 @@ ADR-0043 свідомо НЕ committed-фіксував T₀-дату ("rollout-
 
 - AGENTS.md hard rule #4 (двофазний DROP для column delete): `module_data` колонка має бути drop-нута окремим release-ом після того, як код перестав туди писати. Цей ADR — "код перестав туди писати". Drop-міграція — наступний PR (#051).
 - Видалення `modules/sync/sync.ts` + `apps/web/src/core/cloudSync/` + `apps/mobile/src/sync/` — це багатосотрядковий refactor (35+ файлів тільки у `cloudSync/`). Розміщення його в окремий PR-цикл після того, як 410 захардифікований — стабільніше і audit-trail-friendly.
-- Web/Mobile клієнти все ще містять v1 path. Вимкнення серверу + поетапне зняття клієнтів — стандартний pattern для API sunset (Stripe, GitHub, Google).
+- Web/Mobile клієнти вже не містять active v1 push/pull path; лишилися v2 status surfaces і server-side sunset/audit compatibility.
 
 ## Consequences
 
@@ -93,17 +93,20 @@ ADR-0043 свідомо НЕ committed-фіксував T₀-дату ("rollout-
 
 ### Negative
 
-- Web/Mobile клієнти, що мають active `useCloudSync(user)` orchestrator (всі поточні білди до cleanup PR-у), отримуватимуть 410-error-toast при кожному push/pull. Mitigation: один користувач у production, який це знає; наступний PR зніме client-side path.
+- Старі білди з active `useCloudSync(user)` orchestrator отримуватимуть 410 при кожному push/pull. Поточний web/mobile код вже зняв цей client-side path.
 - Dead-code `syncPush*`/`syncPull*` лишається у `modules/sync/sync.ts` ще на 1-2 PR-цикли. Linter не любить, але governance-sync уже знає про це через ADR.
 
 ### Risks / Followups
 
 - **PR #051 (drop `module_data`)** — потребує окремого release-cycle після того, як цей ADR landed (per hard rule #4). Migration `999_drop_module_data.{sql,down.sql}`.
-- **PR #052 (`chore: remove cloudSync v1 engine`)** — видаляє `apps/web/src/core/cloudSync/`, `apps/mobile/src/sync/`, dead handler-и у server-side `modules/sync/sync.ts`. Великий diff; розіб'ємо на 2-3 sub-PR-и (web, mobile, server) для review-ability. **Update (2026-05-06):** server-side частину виконано — v1 handler-и видалені разом із `module_data` колонкою (commit `75dcdd5c` — `feat(server): drop module_data column + remove v1 sync handlers`). Web/mobile sub-PR-и — наступні.
+- **PR #052 (`chore: remove cloudSync v1 engine`)** — видаляє dead handler-и у server-side `modules/sync/sync.ts` і фінальний schema debt. **Update (2026-05-06):** web/mobile client cleanup виконано: `useCloudSync`/`CloudSyncProvider` network facades and manual `/api/sync/*` buttons are gone. Server-side 410/audit compatibility remains until final data cleanup.
 - **Rollback** — якщо production показує regression, revert цього PR-у миттєво поверне v1 у живий стан. Жодних схема-changes у цьому ADR немає, тому rollback безризиковий.
 
 ## Status (2026-05-06)
 
 - 410 handler landed і unit-tests пройдені (11/11 у `sunsetGone.test.ts`).
+- Client v1 cleanup landed in follow-up work: web/mobile no longer expose
+  `useCloudSync`/`CloudSyncProvider` network facades or manual `/api/sync/*`
+  push/pull controls. Server-side 410/audit compatibility remains by design.
 - Production env vars (`CLOUDSYNC_V1_GONE_SINCE`, `CLOUDSYNC_V1_SUNSET_AT`) — Дмитро виставить у Railway після merge.
-- Initiative 0003 status оновлений: Phase 5 server-side complete; client-side cutover (PR #052) — наступний.
+- Initiative 0003 status оновлений: Phase 5 server-side complete; Phase 6 client cleanup complete; remaining work is server/data cleanup.
