@@ -26,7 +26,7 @@ env:
 
 jobs:
   extended-flow:
-    name: Extended-flow E2E (Playwright)
+    name: Extended-flow E2E (Playwright, ${{ matrix.browser }})
     runs-on: ubuntu-latest
     # On pull_request, only run when the 'extended-e2e' label is present.
     if: >-
@@ -34,6 +34,20 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' && github.event.label.name == 'extended-e2e')
     timeout-minutes: 30
+    strategy:
+      # Webkit / mobile-safari додані у PR-48 (Better Auth security review).
+      # На chromium запускаються `@extended` + `@auth` по grep-у; на webkit /
+      # mobile-safari тільки `@auth` (Safari ITP / cookie regression). Якщо
+      # webkit стане флакі — переводимо на schedule-only через окремий job.
+      fail-fast: false
+      matrix:
+        include:
+          - browser: chromium
+            grep: "@extended"
+          - browser: webkit
+            grep: "@auth"
+          - browser: mobile-safari
+            grep: "@auth"
     services:
       # pgvector/pgvector:pg16 — Postgres 16 + the `vector` extension
       # required by migration 025_ai_memories_pgvector.sql. Plain
@@ -89,6 +103,17 @@ jobs:
         # drizzle.ts. Cheap (~5s, tsc only) and skips on remote-cache hit.
         run: pnpm --filter @sergeant/db-schema build
 
+      - name: Resolve Playwright browser binary
+        id: pw-bin
+        # Mobile-safari використовує webkit binary (тільки інша emulation
+        # config); тому матриця ставить webkit для обох mobile-safari і webkit.
+        run: |
+          if [ "${{ matrix.browser }}" = "mobile-safari" ]; then
+            echo "binary=webkit" >> "$GITHUB_OUTPUT"
+          else
+            echo "binary=${{ matrix.browser }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Get Playwright version
         id: pw-version
         run: echo "version=$(pnpm --filter @sergeant/web exec playwright --version | head -1)" >> "$GITHUB_OUTPUT"
@@ -99,15 +124,15 @@ jobs:
         id: pw-cache
         with:
           path: ~/.cache/ms-playwright
-          key: pw-${{ runner.os }}-${{ steps.pw-version.outputs.version }}
+          key: pw-${{ runner.os }}-${{ steps.pw-version.outputs.version }}-${{ steps.pw-bin.outputs.binary }}
 
-      - name: Install Playwright Chromium
+      - name: Install Playwright browser
         if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter @sergeant/web exec playwright install --with-deps chromium
+        run: pnpm --filter @sergeant/web exec playwright install --with-deps ${{ steps.pw-bin.outputs.binary }}
 
       - name: Install Playwright system deps (cached browsers)
         if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: pnpm --filter @sergeant/web exec playwright install-deps chromium
+        run: pnpm --filter @sergeant/web exec playwright install-deps ${{ steps.pw-bin.outputs.binary }}
 
       - name: Run database migrations
         run: pnpm --filter @sergeant/server db:migrate:dev
@@ -130,7 +155,7 @@ jobs:
           echo "Both servers ready."
 
       - name: Run extended-flow E2E suite
-        run: pnpm --filter @sergeant/web exec playwright test -c playwright.smoke.config.ts --grep @extended
+        run: pnpm --filter @sergeant/web exec playwright test -c playwright.smoke.config.ts --project=${{ matrix.browser }} --grep ${{ matrix.grep }}
         env:
           CI: "true"
           PW_SKIP_WEBSERVER: "1"
@@ -141,7 +166,7 @@ jobs:
         # actions/upload-artifact v4.4.3 (SHA-pinned)
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
-          name: playwright-extended-flow-report
+          name: playwright-extended-flow-report-${{ matrix.browser }}
           path: apps/web/playwright-report
           if-no-files-found: ignore
           retention-days: 14
