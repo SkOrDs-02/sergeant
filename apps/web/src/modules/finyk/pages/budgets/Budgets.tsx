@@ -314,7 +314,16 @@ export function Budgets({
   );
 
   return (
-    <DataState query={budgetsQuery} skeleton={budgetsLoadingSkeleton}>
+    // See comment in Overview.tsx — FinykApp's tab body is a vertical
+    // flex chain, so `<DataState>`'s wrapper div needs to participate in
+    // it (`flex-1 flex flex-col min-h-0`) for the inner `flex-1
+    // overflow-y-auto` scroller to size against the viewport. Without
+    // these classes the page becomes unscrollable on Budgets too.
+    <DataState
+      query={budgetsQuery}
+      skeleton={budgetsLoadingSkeleton}
+      className="flex-1 flex flex-col min-h-0"
+    >
       {() => (
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
