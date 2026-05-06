@@ -7,6 +7,7 @@
  */
 
 import {
+  detectFirstActionCompletedPerModule as sharedDetectFirstActionCompletedPerModule,
   detectFirstRealEntry as sharedDetectFirstRealEntry,
   getFirstRealEntryModule as sharedGetFirstRealEntryModule,
   hasAnyRealEntry as sharedHasAnyRealEntry,
@@ -33,6 +34,18 @@ export function hasAnyRealEntry(): boolean {
  */
 export function detectFirstRealEntry(): boolean {
   return sharedDetectFirstRealEntry(webKVStore, { trackEvent });
+}
+
+/**
+ * PR-08 — call on every render of the dashboard alongside
+ * `detectFirstRealEntry`. Fires `first_action_completed { module }`
+ * exactly once per module that just got its first non-demo entry.
+ *
+ * Returns the modules whose flag flipped during this call (rare —
+ * usually empty after the first activation in each module).
+ */
+export function detectFirstActionCompletedPerModule(): DashboardModuleId[] {
+  return sharedDetectFirstActionCompletedPerModule(webKVStore, { trackEvent });
 }
 
 /**

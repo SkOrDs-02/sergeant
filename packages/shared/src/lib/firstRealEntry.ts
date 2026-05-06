@@ -15,13 +15,15 @@ import {
   FIRST_ACTION_STARTED_AT_KEY,
   TTV_MS_KEY,
   getFirstActionStartedAt,
+  isFirstActionCompletedForModule,
   isFirstRealEntryDone,
+  markFirstActionCompletedForModule,
   markFirstRealEntryDone,
   saveTimeToValueMs,
 } from "./vibePicks";
 import { ANALYTICS_EVENTS } from "./analyticsEvents";
 import { readJSON, type KVStore } from "../storage/kv";
-import type { DashboardModuleId } from "./dashboard";
+import { DASHBOARD_MODULE_IDS, type DashboardModuleId } from "./dashboard";
 
 // Storage keys inspected by `hasAnyRealEntry`. Centralised here so
 // the web and mobile adapters don't drift.
@@ -39,6 +41,69 @@ function hasNonDemoItem(list: unknown): boolean {
     (item) =>
       item && typeof item === "object" && !(item as { demo?: unknown }).demo,
   );
+}
+
+/**
+ * PR-08 — per-module non-demo presence check. Used by `hasAnyRealEntry`,
+ * `getFirstRealEntryModule` *and* `detectFirstActionCompletedPerModule`
+ * so the four scan branches stay in lockstep across read paths and
+ * across modules. Pure (no side effects) and cheap (only the slot for
+ * the requested module is read).
+ */
+export function moduleHasRealEntry(
+  store: KVStore,
+  moduleId: DashboardModuleId,
+): boolean {
+  if (moduleId === "finyk") {
+    const manual = readJSON(store, FIRST_REAL_ENTRY_SOURCES.FINYK_MANUAL);
+    if (hasNonDemoItem(manual)) return true;
+    const finykCache = readJSON<{ transactions?: unknown[] }>(
+      store,
+      FIRST_REAL_ENTRY_SOURCES.FINYK_TX_CACHE,
+    );
+    return Boolean(
+      finykCache &&
+      Array.isArray(finykCache.transactions) &&
+      finykCache.transactions.length > 0,
+    );
+  }
+  if (moduleId === "fizruk") {
+    const fizruk = readJSON<unknown[] | { workouts?: unknown[] }>(
+      store,
+      FIRST_REAL_ENTRY_SOURCES.FIZRUK_WORKOUTS,
+    );
+    const workouts = Array.isArray(fizruk)
+      ? fizruk
+      : fizruk && Array.isArray(fizruk.workouts)
+        ? fizruk.workouts
+        : [];
+    return hasNonDemoItem(workouts);
+  }
+  if (moduleId === "routine") {
+    const routine = readJSON<{ habits?: unknown[] }>(
+      store,
+      FIRST_REAL_ENTRY_SOURCES.ROUTINE,
+    );
+    return Boolean(routine && hasNonDemoItem(routine.habits));
+  }
+  if (moduleId === "nutrition") {
+    const nutrition = readJSON<Record<string, { meals?: unknown }>>(
+      store,
+      FIRST_REAL_ENTRY_SOURCES.NUTRITION_LOG,
+    );
+    if (
+      !nutrition ||
+      typeof nutrition !== "object" ||
+      Array.isArray(nutrition)
+    ) {
+      return false;
+    }
+    for (const day of Object.values(nutrition)) {
+      if (hasNonDemoItem(day?.meals)) return true;
+    }
+    return false;
+  }
+  return false;
 }
 
 /**
@@ -282,6 +347,52 @@ export function detectFirstRealEntry(
     });
   }
   return true;
+}
+
+export interface DetectFirstActionCompletedPerModuleOptions {
+  /**
+   * Fire-and-forget analytics callback. Called once per module that
+   * just flipped from "no real entry" → "has real entry". Implementations
+   * should not throw.
+   */
+  trackEvent?: (name: string, payload?: Record<string, unknown>) => void;
+}
+
+/**
+ * PR-08 — per-module flip-and-report. On every call:
+ *
+ *   1. Iterate the four modules in `DASHBOARD_MODULE_IDS` order.
+ *   2. For each module that has a non-demo entry **and** whose
+ *      `hub_first_action_completed_v1:<module>` flag is not yet set,
+ *      flip the flag and fire `first_action_completed { module }` once.
+ *   3. Modules already flagged in storage (from a previous render) are
+ *      cheap no-ops — only one `getString(...)` per module.
+ *
+ * Returns the list of modules whose flag flipped during this call —
+ * useful for tests; production call-sites typically ignore it.
+ *
+ * Designed to be called alongside `detectFirstRealEntry` from the
+ * dashboard render path. Both functions read storage on every render;
+ * once the per-module flags are set the work degenerates to four
+ * `getString` calls.
+ */
+export function detectFirstActionCompletedPerModule(
+  store: KVStore,
+  options: DetectFirstActionCompletedPerModuleOptions = {},
+): DashboardModuleId[] {
+  const { trackEvent } = options;
+  const flipped: DashboardModuleId[] = [];
+
+  for (const moduleId of DASHBOARD_MODULE_IDS) {
+    if (isFirstActionCompletedForModule(store, moduleId)) continue;
+    if (!moduleHasRealEntry(store, moduleId)) continue;
+
+    markFirstActionCompletedForModule(store, moduleId);
+    flipped.push(moduleId);
+    trackEvent?.(ANALYTICS_EVENTS.FIRST_ACTION_COMPLETED, { module: moduleId });
+  }
+
+  return flipped;
 }
 
 // Re-export the keys so adapters that read the raw timestamps don't

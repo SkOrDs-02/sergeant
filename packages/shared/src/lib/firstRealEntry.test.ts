@@ -5,11 +5,18 @@ import {
   FIRST_ACTION_STARTED_AT_KEY,
   FIRST_REAL_ENTRY_EVENTS,
   FIRST_REAL_ENTRY_SOURCES,
+  detectFirstActionCompletedPerModule,
   detectFirstRealEntry,
   getFirstRealEntryModule,
   hasAnyRealEntry,
+  moduleHasRealEntry,
 } from "./firstRealEntry";
-import { FIRST_REAL_ENTRY_KEY, TTV_MS_KEY } from "./vibePicks";
+import {
+  FIRST_ACTION_COMPLETED_KEY_PREFIX,
+  FIRST_REAL_ENTRY_KEY,
+  TTV_MS_KEY,
+} from "./vibePicks";
+import { ANALYTICS_EVENTS } from "./analyticsEvents";
 
 function storeWith(data: Record<string, unknown>) {
   const s = createMemoryKVStore();
@@ -180,6 +187,164 @@ describe("getFirstRealEntryModule", () => {
       [FIRST_REAL_ENTRY_SOURCES.FIZRUK_WORKOUTS]: [{ id: "w" }],
     });
     expect(getFirstRealEntryModule(s)).toBe("finyk");
+  });
+});
+
+describe("moduleHasRealEntry", () => {
+  it("returns false on an empty store for every module", () => {
+    const s = createMemoryKVStore();
+    expect(moduleHasRealEntry(s, "finyk")).toBe(false);
+    expect(moduleHasRealEntry(s, "fizruk")).toBe(false);
+    expect(moduleHasRealEntry(s, "routine")).toBe(false);
+    expect(moduleHasRealEntry(s, "nutrition")).toBe(false);
+  });
+
+  it("isolates modules — a finyk entry doesn't leak into fizruk", () => {
+    const s = storeWith({
+      [FIRST_REAL_ENTRY_SOURCES.FINYK_MANUAL]: [{ id: "real" }],
+    });
+    expect(moduleHasRealEntry(s, "finyk")).toBe(true);
+    expect(moduleHasRealEntry(s, "fizruk")).toBe(false);
+    expect(moduleHasRealEntry(s, "routine")).toBe(false);
+    expect(moduleHasRealEntry(s, "nutrition")).toBe(false);
+  });
+
+  it("ignores demo-only payloads per module", () => {
+    const s = storeWith({
+      [FIRST_REAL_ENTRY_SOURCES.FIZRUK_WORKOUTS]: [{ id: "w", demo: true }],
+      [FIRST_REAL_ENTRY_SOURCES.ROUTINE]: {
+        habits: [{ id: "h", demo: true }],
+      },
+    });
+    expect(moduleHasRealEntry(s, "fizruk")).toBe(false);
+    expect(moduleHasRealEntry(s, "routine")).toBe(false);
+  });
+
+  it("detects nutrition via any day in the meal log", () => {
+    const s = storeWith({
+      [FIRST_REAL_ENTRY_SOURCES.NUTRITION_LOG]: {
+        "2025-01-01": { meals: [{ id: "m", demo: true }] },
+        "2025-01-02": { meals: [{ id: "real" }] },
+      },
+    });
+    expect(moduleHasRealEntry(s, "nutrition")).toBe(true);
+  });
+
+  it("detects finyk via the synced monobank cache when no manual entries", () => {
+    const s = storeWith({
+      [FIRST_REAL_ENTRY_SOURCES.FINYK_TX_CACHE]: {
+        transactions: [{ id: "tx" }],
+      },
+    });
+    expect(moduleHasRealEntry(s, "finyk")).toBe(true);
+  });
+});
+
+describe("detectFirstActionCompletedPerModule", () => {
+  it("returns an empty list and fires no events on an empty store", () => {
+    const s = createMemoryKVStore();
+    const trackEvent = vi.fn();
+    expect(detectFirstActionCompletedPerModule(s, { trackEvent })).toEqual([]);
+    expect(trackEvent).not.toHaveBeenCalled();
+  });
+
+  it("flips the per-module flag exactly once and fires first_action_completed", () => {
+    const s = storeWith({
+      [FIRST_REAL_ENTRY_SOURCES.FINYK_MANUAL]: [{ id: "real" }],
+    });
+    const trackEvent = vi.fn();
+
+    expect(detectFirstActionCompletedPerModule(s, { trackEvent })).toEqual([
+      "finyk",
+    ]);
+    expect(s.getString(`${FIRST_ACTION_COMPLETED_KEY_PREFIX}finyk`)).toBe("1");
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.FIRST_ACTION_COMPLETED,
+      { module: "finyk" },
+    );
+
+    // Re-running with the flag already set is a cheap no-op — module
+    // не повинен fire-ити подію вдруге, інакше PostHog funnel роздуме
+    // активацію в N рендерів дашборду.
+    trackEvent.mockClear();
+    expect(detectFirstActionCompletedPerModule(s, { trackEvent })).toEqual([]);
+    expect(trackEvent).not.toHaveBeenCalled();
+  });
+
+  it("fires once per module when multiple modules race", () => {
+    const s = storeWith({
+      [FIRST_REAL_ENTRY_SOURCES.FINYK_MANUAL]: [{ id: "real" }],
+      [FIRST_REAL_ENTRY_SOURCES.FIZRUK_WORKOUTS]: [{ id: "w" }],
+      [FIRST_REAL_ENTRY_SOURCES.ROUTINE]: { habits: [{ id: "h" }] },
+      [FIRST_REAL_ENTRY_SOURCES.NUTRITION_LOG]: {
+        "2025-01-01": { meals: [{ id: "real" }] },
+      },
+    });
+    const trackEvent = vi.fn();
+    const flipped = detectFirstActionCompletedPerModule(s, { trackEvent });
+
+    expect(flipped.sort()).toEqual(["finyk", "fizruk", "nutrition", "routine"]);
+    expect(trackEvent).toHaveBeenCalledTimes(4);
+    const modules = trackEvent.mock.calls.map(
+      (c) => (c[1] as { module: string }).module,
+    );
+    expect(modules.sort()).toEqual(["finyk", "fizruk", "nutrition", "routine"]);
+  });
+
+  it("emits only for newly-flipped modules — adding fizruk later doesn't refire finyk", () => {
+    const s = storeWith({
+      [FIRST_REAL_ENTRY_SOURCES.FINYK_MANUAL]: [{ id: "real" }],
+    });
+    const trackEvent = vi.fn();
+    detectFirstActionCompletedPerModule(s, { trackEvent });
+    trackEvent.mockClear();
+
+    // Юзер додає fizruk-workout пізніше, на наступному рендері
+    // дашборду. `finyk` уже flag-нутий, тож подія для нього НЕ
+    // повинна повторитись — лише `fizruk` випущає `first_action_completed`.
+    s.setString(
+      FIRST_REAL_ENTRY_SOURCES.FIZRUK_WORKOUTS,
+      JSON.stringify([{ id: "w" }]),
+    );
+    expect(detectFirstActionCompletedPerModule(s, { trackEvent })).toEqual([
+      "fizruk",
+    ]);
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.FIRST_ACTION_COMPLETED,
+      { module: "fizruk" },
+    );
+  });
+
+  it("is safe when no trackEvent callback is provided", () => {
+    const s = storeWith({
+      [FIRST_REAL_ENTRY_SOURCES.ROUTINE]: { habits: [{ id: "h" }] },
+    });
+    expect(() => detectFirstActionCompletedPerModule(s)).not.toThrow();
+    expect(s.getString(`${FIRST_ACTION_COMPLETED_KEY_PREFIX}routine`)).toBe(
+      "1",
+    );
+  });
+
+  it("is independent of FIRST_REAL_ENTRY_KEY — already-set global flag still fires per-module", () => {
+    // PR-08 контракт: per-module event тримає своє джерело правди в
+    // `hub_first_action_completed_v1:<module>`. Якщо global
+    // FIRST_REAL_ENTRY_KEY уже стоїть (наприклад, акаунт мігрував з
+    // pre-PR-08 версії), per-module прапори ще не існують — потрібно,
+    // щоб подія однаково спрацювала на першому ж дашборд-рендері.
+    const s = createMemoryKVStore({
+      [FIRST_REAL_ENTRY_KEY]: "1",
+      [FIRST_REAL_ENTRY_SOURCES.FINYK_MANUAL]: JSON.stringify([{ id: "r" }]),
+    });
+    const trackEvent = vi.fn();
+    expect(detectFirstActionCompletedPerModule(s, { trackEvent })).toEqual([
+      "finyk",
+    ]);
+    expect(trackEvent).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.FIRST_ACTION_COMPLETED,
+      { module: "finyk" },
+    );
   });
 });
 

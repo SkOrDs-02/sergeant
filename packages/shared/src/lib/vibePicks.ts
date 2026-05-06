@@ -26,6 +26,18 @@ export const LAST_SESSION_DAY_KEY = "hub_last_session_day_v1";
 export const FIRST_ACTION_STARTED_AT_KEY = "hub_first_action_started_at_v1";
 export const TTV_MS_KEY = "hub_ftux_ttv_ms_v1";
 
+/**
+ * PR-08 — per-module first-action-completed prefix. Concrete key is
+ * `${PREFIX}${moduleId}` (e.g. `hub_first_action_completed_v1:finyk`).
+ *
+ * Окремий per-module flag замість одного big-blob — мінімізує race-вікна
+ * між модулями (одночасні виклики `markFirstActionCompletedForModule`
+ * пишуть у різні KV-keys, тож на кінцевому стані не б'ються) і дозволяє
+ * клієнтам читати один модуль без deserialize цілого об'єкта.
+ */
+export const FIRST_ACTION_COMPLETED_KEY_PREFIX =
+  "hub_first_action_completed_v1:";
+
 /** Canonical set of module ids accepted as a "vibe pick". */
 export const ALL_MODULES: readonly DashboardModuleId[] = DASHBOARD_MODULE_IDS;
 
@@ -78,6 +90,28 @@ export function markFirstRealEntryDone(store: KVStore): void {
 
 export function isFirstRealEntryDone(store: KVStore): boolean {
   return store.getString(FIRST_REAL_ENTRY_KEY) === "1";
+}
+
+/**
+ * PR-08 — flip the per-module first-action flag. Idempotent at the
+ * storage layer, but callers should still gate on
+ * `isFirstActionCompletedForModule` first to avoid firing a duplicate
+ * analytics event on every dashboard render.
+ */
+export function markFirstActionCompletedForModule(
+  store: KVStore,
+  moduleId: DashboardModuleId,
+): void {
+  store.setString(`${FIRST_ACTION_COMPLETED_KEY_PREFIX}${moduleId}`, "1");
+}
+
+export function isFirstActionCompletedForModule(
+  store: KVStore,
+  moduleId: DashboardModuleId,
+): boolean {
+  return (
+    store.getString(`${FIRST_ACTION_COMPLETED_KEY_PREFIX}${moduleId}`) === "1"
+  );
 }
 
 export function isSoftAuthDismissed(store: KVStore): boolean {

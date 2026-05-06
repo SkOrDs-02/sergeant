@@ -42,6 +42,20 @@ export const ANALYTICS_EVENTS = Object.freeze({
   FIRST_REAL_ENTRY: "first_real_entry",
   FTUX_TIME_TO_VALUE: "ftux_time_to_value",
 
+  // PR-08 — per-module first-action completion. `FIRST_REAL_ENTRY` вище
+  // фіксує тільки саме перше «справжнє» збереження *десь* у хабі (один
+  // раз за акаунт). Цього недостатньо для growth-funnel-у, який мусить
+  // відрізнити «активований у Фініку» від «активований у Рутині» — то
+  // дві різні гіпотези на retention. `FIRST_ACTION_COMPLETED` стріляє
+  // рівно один раз на module (idempotent через
+  // `hub_first_action_completed_v1:<module>` flag у KV) з payload-ом
+  // `{ module: "finyk" | "fizruk" | "routine" | "nutrition" }`. Назву
+  // події не міняти — залежать дашборди WF-60 та pre-launch funnel у
+  // PostHog (див. `docs/observability/posthog-ftux-dashboards.md`).
+  //
+  //   FIRST_ACTION_COMPLETED { module: DashboardModuleId }
+  FIRST_ACTION_COMPLETED: "first_action_completed",
+
   // Soft auth prompt (post-value)
   AUTH_PROMPT_SHOWN: "auth_prompt_shown",
   AUTH_PROMPT_DISMISSED: "auth_prompt_dismissed",
