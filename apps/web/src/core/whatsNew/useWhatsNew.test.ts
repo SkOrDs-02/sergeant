@@ -100,7 +100,7 @@ describe("useWhatsNew", () => {
   });
 
   it("does not re-open after lastSeenId persists across remounts", () => {
-    const { result, rerender, unmount } = renderHook(() =>
+    const { result, unmount } = renderHook(() =>
       useWhatsNew({ enabled: true }),
     );
     act(() => {
@@ -118,9 +118,5 @@ describe("useWhatsNew", () => {
     });
     expect(second.result.current.open).toBe(false);
     expect(trackEventMock).not.toHaveBeenCalled();
-
-    // Rerender of the original hook host shouldn't matter — included for
-    // completeness so the renderHook handle does not leak warnings.
-    rerender();
   });
 });

@@ -1,3 +1,6 @@
+/**
+ * @vitest-environment jsdom
+ */
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   WHATS_NEW_LAST_SEEN_KEY,
