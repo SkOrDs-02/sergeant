@@ -238,6 +238,19 @@ function checkDanglingRefs() {
     // planned target catalogs (e.g., `apps/web/src/shared/i18n/en.ts`)
     // that don't exist until the corresponding migration phase lands.
     if (relPath.startsWith("docs/i18n/")) return true;
+    // `docs/testing/<date>-tests-pr-plan.md` and
+    // `docs/testing/<date>-tests-review.md` are dated test-PR plans and
+    // analyses — same shape as `docs/planning/`: refs describe upcoming
+    // test files (`apps/server/src/.../foo.test.ts`,
+    // `apps/web/tests/smoke/<flow>.spec.ts`) that the PRs they plan will
+    // create. The README + mutation.md in the same directory describe
+    // current behaviour and remain non-aspirational.
+    if (
+      /^docs\/testing\/\d{4}-\d{2}-\d{2}-tests-(pr-plan|review)\.md$/.test(
+        relPath,
+      )
+    )
+      return true;
     if (
       relPath.startsWith("docs/integrations/") &&
       relPath.endsWith("-roadmap.md")

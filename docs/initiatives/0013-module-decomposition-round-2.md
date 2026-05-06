@@ -5,7 +5,7 @@
 > **Priority:** P2 (subordinate to 0010-revenue-first-launch scope-freeze; pre-launch work паралельно лише на adjacent-touch — див. § Чому зараз)
 > **Owner:** `@Skords-01`
 > **ETA:** 3 sprints (≈3 тижні), **8–11 PR-ів** (по 1 PR на файл, плюс finalize-PR з drop-allowlist)
-> **Sources:** [`docs/initiatives/0001-module-decomposition.md`](./0001-module-decomposition.md) (predecessor — Phase 3 closure 2026-05-04, carry-over список нижче), [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) (`LARGE_FILES` секція, що посилається сюди), [`AGENTS.md`](../../../AGENTS.md) Hard Rule #18 (`max-lines: [error, 600]`).
+> **Sources:** [`docs/initiatives/0001-module-decomposition.md`](./0001-module-decomposition.md) (predecessor — Phase 3 closure 2026-05-04, carry-over список нижче), [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) (`LARGE_FILES` секція, що посилається сюди), [`AGENTS.md`](../../AGENTS.md) Hard Rule #18 (`max-lines: [error, 600]`).
 
 ## TL;DR
 
@@ -124,7 +124,7 @@ PR-и:
 ## Посилання
 
 - [`docs/initiatives/0001-module-decomposition.md`](./0001-module-decomposition.md) — predecessor (carry-over → cюди); зокрема [§ Outcome → Phase 3 → Що НЕ зроблено](./0001-module-decomposition.md) з повним списком файлів.
-- [`AGENTS.md`](../../../AGENTS.md) Hard Rule #18 — `max-lines: [error, 600]` ESLint правило, що залишається діючим контрактом.
+- [`AGENTS.md`](../../AGENTS.md) Hard Rule #18 — `max-lines: [error, 600]` ESLint правило, що залишається діючим контрактом.
 - [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) — `LARGE_FILES` секція, де поточний статус 11-файлового drift-у відображено.
 - [`eslint.config.js`](../../eslint.config.js) — поточний `overrides` allowlist (≈11 entries з deadline-коментарями, що цілять у цю ініціативу).
 - [`scripts/check-bundle-size.mjs`](../../scripts/check-bundle-size.mjs) — bundle-gate, який перевіряє delta після decomp-у.

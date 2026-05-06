@@ -176,7 +176,7 @@ railway logs --service sergeant-api | grep '"email"\|"password"'
 
 ## Cross-references
 
-- [`docs/diagnostics/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../diagnostics/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) §6.5 (origin)
+- [`docs/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`](../audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md) §6.5 (origin)
 - [`docs/security/hardening/M3-pino-redact-paths.md`](./hardening/M3-pino-redact-paths.md) (round 14 closure)
 - [`docs/security/hardening/L10-user-id-hash-in-logs.md`](./hardening/L10-user-id-hash-in-logs.md) (userId hashing)
 - [`docs/security/hardening/C1-mono-webhook-secret-in-url.md`](./hardening/C1-mono-webhook-secret-in-url.md) (URL redaction)
