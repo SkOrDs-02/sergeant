@@ -1,9 +1,11 @@
 # Sergeant — стан тестів і що покращити
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 >
 > Repo: `Skords-01/Sergeant`. Тип: аналіз без змін у коді. Парний документ — [`2026-05-05-tests-pr-plan.md`](./2026-05-05-tests-pr-plan.md).
+>
+> **Зміни після початкового аудиту (Wave A прогрес):** PR-T01 (#1967, mobile floor), PR-T02 (#1970, sw exclude + e2e), PR-T03 (#1971, idb через fake-indexeddb), PR-T04 (#1992, ui utils 100%) — merged. PR-T05 (#1996, weekly-digest 95% lines/branches/fns) і PR-T06 (#2001, syncV2 no-DB unit) — open. Прогалини P0 #1, #2, #4, #5 з нижнього списку — частково або повністю закриті; floors у `vitest.config.{js,ts}` ще не підняті — це окремий PR після merge всієї Wave A.
 
 ## TL;DR
 
@@ -94,7 +96,13 @@ lines: 60   branches: 48   functions: 63   statements: 59
 
 _Drift: з 2026-04-25 baseline lines/statements 67.13 / branches 79.31 / fns 72.80 → 2026-05-05 lines 60.51 / branches 48.97 / fns 63.97 / statements 59.54._
 
-`apps/mobile`: `coverageThreshold` **не сконфігуровано** — `jest --passWithNoTests`, тобто немає floor.
+`apps/mobile/jest.config.js` (з [#1967](https://github.com/Skords-01/Sergeant/pull/1967), 2026-05-05):
+
+```
+lines: 30   branches: 25   functions: 30   statements: 30
+```
+
+_До 2026-05-05 `coverageThreshold` був не сконфігуровано (`jest --passWithNoTests`); тепер CI lane `coverage` піднімає mobile-jest з артефактом `mobile-coverage-summary` і падає на drift._
 
 Інші пакети: per-package threshold у відповідних `vitest.config.ts` (рекомендований стандарт у `packages/config/vitest.base.js`: lines/fn/stmt ≥ 60, branches ≥ 55).
 
@@ -107,8 +115,10 @@ _Drift: з 2026-04-25 baseline lines/statements 67.13 / branches 79.31 / fns 72.
 1. **`src/sw/**`— ~600 LoC, 0% покриття.** Service-worker (cache, debug, messages, notifiedKeys, reminders, version) додавався під PWA push reminders і ніколи не імпортується з vitest, бо jsdom не дає`self`. Два валідні шляхи (з коментаря в `vitest.config.js`):
    - **(a)** node-only suite, що імпортує SW-фактори без `self` (передавати скоуп явно як параметр), або
    - **(b)** виключити `src/sw/**` з coverage і вкласти весь захист у Playwright `tests/a11y/sw-smoke.spec.ts` + розширити його до повноцінного e2e (cache hit / offline navigation / SW-update / push reminder fire).
+   - **Status (2026-05-06): закрито** — варіант (b) реалізовано в [#1970](https://github.com/Skords-01/Sergeant/pull/1970): `src/sw/**` виключено з coverage, sw-smoke e2e розширений.
 
 2. **`apps/server/src/modules/digest/weekly-digest.ts`** — 0 тестів на 1 src-файл. Weekly digest формує важливий e-mail/повідомлення; регресії невидимі до релізу.
+   - **Status (2026-05-06): закрито у відкритому PR** — [#1996](https://github.com/Skords-01/Sergeant/pull/1996) дає 95.19% statements / 82.81% branches / 100% functions / 95.65% lines на цьому файлі (22 тести; Anthropic + memory-queue замоковано через `vi.mock`, без DB).
 
 3. **AI-tool handlers (`apps/server/src/modules/nutrition/*` + `openclaw/{tools,write-tools}.ts`)** — гілки rolejob → Anthropic → DB, кожен — 0–15% покриття. Це поверхня, яка буде розростатися (нові tool definitions). Мінімум: для кожного tool — happy path + один failure path (Anthropic error / invalid args / БД-RLS). Таблиця:
 
@@ -124,8 +134,10 @@ _Drift: з 2026-04-25 baseline lines/statements 67.13 / branches 79.31 / fns 72.
    | `openclaw/tools.ts`, `write-tools.ts` | низьке  | unit: registry, dispatch, write-перевірка авторизації            |
 
 4. **`apps/server/src/modules/sync/syncV2.ts`** — ~0–1% line coverage, при тому що це серверна сторона, симетрична до `apps/web/src/core/cloudSync/queue/` (де вже є Stryker з 64% mutation score). Сильна асиметрія: клієнт перевіряємо мутаціями, сервер — майже ніяк.
+   - **Status (2026-05-06): частково закрито у відкритому PR** — [#2001](https://github.com/Skords-01/Sergeant/pull/2001) додає 21 no-DB unit-тест: frozen-contract reject reasons, validation gates push/pull, idempotency-replay (duplicate-only batch), pull happy-path з coerce bigint→number і trim `X-Origin-Device-Id`, ROLLBACK + release при throw, без SSE-emit на failed COMMIT. Цим файлом ~13% lines/stmts; решта (DB-coupled apply-функції) вкривається `syncV2.integration.test.ts` під Testcontainers. Доведення `syncV2.ts` до ≥ 60% потребуватиме виокремлення pure-функцій з прямого `pool`/`PoolClient` access (запланована наступна ітерація).
 
 5. **`apps/mobile` без enforcement coverage.** 115 тестів — не мало, але немає `coverageThreshold` у `jest.config.js`, тож регресії не помітяться. Мінімум — додати floor навіть низький (наприклад 30/25/30/30) і fail CI на drift.
+   - **Status (2026-05-06): закрито** — [#1967](https://github.com/Skords-01/Sergeant/pull/1967) ставить mobile-jest floor (lines 30 / branches 25 / fns 30 / stmts 30) і додає `test:coverage` script у CI lane `coverage`.
 
 ### P1 — додає реальну цінність
 

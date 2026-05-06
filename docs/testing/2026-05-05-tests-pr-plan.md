@@ -1,9 +1,24 @@
 # Sergeant — PR-план для тестів
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 >
 > Repo: `Skords-01/Sergeant`. Базується на [`2026-05-05-tests-review.md`](./2026-05-05-tests-review.md) (попередній аналіз).
+
+## Прогрес-журнал
+
+> Оновлюється при merge кожного PR з цього плану. Коли всі Wave A merged — переоцінити drift logs у `apps/web/vitest.config.js` та `apps/server/vitest.config.ts` і підняти floors одним окремим PR.
+
+| PR      | Тема                                                   | Статус      | PR / merged                                                                       |
+| ------- | ------------------------------------------------------ | ----------- | --------------------------------------------------------------------------------- |
+| PR-T01  | Mobile `coverageThreshold` (Jest)                      | merged      | [#1967](https://github.com/Skords-01/Sergeant/pull/1967) — 2026-05-05             |
+| PR-T02  | SW coverage rebaseline (exclude + e2e harness)         | merged      | [#1970](https://github.com/Skords-01/Sergeant/pull/1970) — 2026-05-05 (варіант B) |
+| PR-T03  | `sergeantDb.ts` через `fake-indexeddb`                 | merged      | [#1971](https://github.com/Skords-01/Sergeant/pull/1971) — 2026-05-05             |
+| PR-T04  | `shared/lib/ui/{amountTone,export,perf}` юніти         | merged      | [#1992](https://github.com/Skords-01/Sergeant/pull/1992) — 2026-05-06             |
+| PR-T05  | `digest/weekly-digest` no-DB юніти                     | open        | [#1996](https://github.com/Skords-01/Sergeant/pull/1996)                          |
+| PR-T06  | `sync/syncV2` no-DB юніти                              | open        | [#2001](https://github.com/Skords-01/Sergeant/pull/2001)                          |
+| PR-T07  | `sync/syncV2.integration.test.ts` доповнення           | not started | —                                                                                 |
+| PR-T08+ | Wave B+ (Anthropic-mock harness, openclaw, nutrition…) | not started | —                                                                                 |
 
 ## Як читати
 
@@ -19,6 +34,7 @@
 
 ### PR-T01 — `coverageThreshold` для `apps/mobile`
 
+- **Status:** **merged** ([#1967](https://github.com/Skords-01/Sergeant/pull/1967), 2026-05-05).
 - **Branch:** `devin/{ts}-mobile-coverage-floor`
 - **Files:** `apps/mobile/jest.config.js`, `apps/mobile/package.json` (script `test:coverage`)
 - **Scope:** додати `coverageThreshold` (consensus floor: lines 30 / branches 25 / fns 30 / stmts 30 — на 1pp нижче поточного факту, як і у web/server). Додати `test:coverage` script. Підвʼязати у `ci.yml` lane `coverage` (паралельно до vitest job).
@@ -28,6 +44,7 @@
 
 ### PR-T02 — Service-worker testability (`apps/web/src/sw/**`)
 
+- **Status:** **merged** ([#1970](https://github.com/Skords-01/Sergeant/pull/1970), 2026-05-05) — обрано варіант B (exclude + e2e harness).
 - **Branch:** `devin/{ts}-web-sw-coverage-decision`
 - **Files:** додати `apps/web/src/sw/__tests__/*.test.ts` АБО `apps/web/vitest.config.js` (виключення).
 - **Scope (варіант A — preferred):** перепис SW-факторів так, щоб `self`/registration/clients передавалися як параметр (DI). Юніт-тестуємо `cache.ts`, `messages.ts`, `notifiedKeys.ts`, `reminders.ts`, `version.ts` без `self`. (`debug.ts` — суто proxy, можна виключити.)
@@ -38,6 +55,7 @@
 
 ### PR-T03 — Тести для `apps/web/src/shared/lib/idb/sergeantDb.ts`
 
+- **Status:** **merged** ([#1971](https://github.com/Skords-01/Sergeant/pull/1971), 2026-05-05).
 - **Branch:** `devin/{ts}-web-idb-tests`
 - **Files:** `apps/web/src/shared/lib/idb/sergeantDb.test.ts`, можливо `apps/web/src/test/setup.ts` (fake-indexeddb).
 - **Scope:** покрити open/upgrade/version-migration/CRUD на кожному store. Використати `fake-indexeddb` (популярний).
@@ -47,6 +65,7 @@
 
 ### PR-T04 — Тести для `apps/web/src/shared/lib/ui/{amountTone,export,perf}.ts`
 
+- **Status:** **merged** ([#1992](https://github.com/Skords-01/Sergeant/pull/1992), 2026-05-06) — досягнуто 100% lines на всіх трьох файлах (45 нових тестів).
 - **Branch:** `devin/{ts}-web-shared-ui-utils-tests`
 - **Files:** три `*.test.ts` поряд з джерелом.
 - **Scope:** pure-utils, тривіальні юніт-кейси (всі гілки + edge cases: 0, NaN, від'ємні, локалі для `export`, raf для `perf`).
@@ -56,6 +75,7 @@
 
 ### PR-T05 — Тести для `apps/server/src/modules/digest/weekly-digest.ts`
 
+- **Status:** **open** ([#1996](https://github.com/Skords-01/Sergeant/pull/1996)) — досягнуто statements 95.19 / branches 82.81 / functions 100 / lines 95.65 (22 нових тести); Anthropic + memory-queue замоковано через `vi.mock`, без DB.
 - **Branch:** `devin/{ts}-server-weekly-digest-tests`
 - **Files:** `apps/server/src/modules/digest/weekly-digest.test.ts`, можливо fixtures у `apps/server/src/modules/digest/__fixtures__/`.
 - **Scope:** мокати DB (vi.mock pg) і Anthropic (для summary), перевірити: empty-week branch, partial data, full data, formatting locale, повторний запуск idempotent.
@@ -65,6 +85,7 @@
 
 ### PR-T06 — Server `sync/syncV2.ts` юніт-тести (no-DB)
 
+- **Status:** **open** ([#2001](https://github.com/Skords-01/Sergeant/pull/2001)) — фокус навмисно вузький: frozen-contract для `APPLY_REJECT_REASONS`/`ENGINE_REJECT_REASONS`/`SYNC_V2_SUPPORTED_TABLES`, валідаційні гейти `syncV2Push`/`syncV2Pull`, idempotency-replay (duplicate-only batch), pull happy-path з coerce bigint→number і trim `X-Origin-Device-Id`, ROLLBACK + release on throw, без SSE-emit на failed COMMIT. 21 тест. Coverage по `syncV2.ts` цим файлом ~13% (apply-функції залишаються в `syncV2.integration.test.ts` під Testcontainers — дублювати їх mock-stack-ом крихко). Початкова acceptance ≥ 60% переноситься на майбутнє і потребуватиме виокремлення pure-функцій (DI замість прямого `pool`/`PoolClient` access).
 - **Branch:** `devin/{ts}-server-syncv2-unit`
 - **Files:** `apps/server/src/modules/sync/syncV2.test.ts`.
 - **Scope:** виокремити чисті функції (pull-merge, conflict-resolution, version-vector update). Мокати pg-pool. Покрити: pull empty, pull with deltas, push happy, push conflict (server-newer / client-newer), idempotency-key replay, dirty-skip.
@@ -411,6 +432,7 @@ T39    └─ PR-T39 (console bot e2e) — independent
 ## Порядок мерджу (рекомендований)
 
 1. **Wave A першим:** T01, T03, T04, T05, T06 → T07, T02 — підіймає floor, відкриває drift log.
+   - **Прогрес 2026-05-06:** T01/T02/T03/T04 — merged. T05 [#1996](https://github.com/Skords-01/Sergeant/pull/1996), T06 [#2001](https://github.com/Skords-01/Sergeant/pull/2001) — open. T07 (sync integration extension) ще не стартовано.
 2. **Wave B після Anthropic-mock-harness (T08):** T09 → T10 → T11 → T12 — піднімає server thresholds.
 3. **Wave C/D паралельно** (web smoke + mobile detox).
 4. **Wave E (mutation):** T23 → T25 → T26 → T24 → T27.
