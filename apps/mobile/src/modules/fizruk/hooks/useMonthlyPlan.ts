@@ -31,7 +31,6 @@ import {
 } from "@sergeant/fizruk-domain/domain/plan/index";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
-import { enqueueChange } from "@/sync/enqueue";
 
 /** Read and normalise the monthly plan state from MMKV. */
 export function loadMonthlyPlanState(): MonthlyPlanState {
@@ -100,7 +99,6 @@ export function useMonthlyPlan(): UseMonthlyPlanReturn {
         const next = applySetDayTemplate(prev, dateKey, templateId);
         if (next === prev) return prev;
         saveMonthlyPlanState(next);
-        enqueueChange(MONTHLY_PLAN_STORAGE_KEY);
         return next;
       });
     },
@@ -113,7 +111,6 @@ export function useMonthlyPlan(): UseMonthlyPlanReturn {
         const next = applySetReminder(prev, hour, minute);
         if (next === prev) return prev;
         saveMonthlyPlanState(next);
-        enqueueChange(MONTHLY_PLAN_STORAGE_KEY);
         return next;
       });
     },
@@ -127,7 +124,6 @@ export function useMonthlyPlan(): UseMonthlyPlanReturn {
       const next = applySetReminderEnabled(prev, enabled);
       if (next === prev) return prev;
       saveMonthlyPlanState(next);
-      enqueueChange(MONTHLY_PLAN_STORAGE_KEY);
       return next;
     });
   }, []);

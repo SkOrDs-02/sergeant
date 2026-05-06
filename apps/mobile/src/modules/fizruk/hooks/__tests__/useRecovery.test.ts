@@ -10,17 +10,10 @@ import { renderHook } from "@testing-library/react-native";
 import { _getMMKVInstance, safeWriteLS } from "@/lib/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
-const mockEnqueueChange = jest.fn();
-
-jest.mock("@/sync/enqueue", () => ({
-  enqueueChange: (...args: unknown[]) => mockEnqueueChange(...args),
-}));
-
 import { useRecovery } from "../useRecovery";
 
 beforeEach(() => {
   _getMMKVInstance().clearAll();
-  mockEnqueueChange.mockClear();
 });
 
 describe("useRecovery", () => {

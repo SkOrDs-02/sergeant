@@ -30,7 +30,7 @@ import {
 } from "@sergeant/fizruk-domain/domain";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
-import { useSyncedStorage } from "@/sync/useSyncedStorage";
+import { useLocalStorage } from "@/lib/storage";
 
 import {
   getCachedFizrukSqliteState,
@@ -129,13 +129,13 @@ export interface UseMeasurementsResult {
  * `@sergeant/fizruk-domain/domain/measurements`.
  */
 export function useMeasurements(): UseMeasurementsResult {
-  const [raw, setRaw, removeRaw] = useSyncedStorage<
+  const [raw, setRaw, removeRaw] = useLocalStorage<
     readonly MobileMeasurementEntry[]
   >(STORAGE_KEY, EMPTY);
 
   // Stage 4 PR #029a: under `feature.fizruk.sqlite_v2.read_sqlite`,
   // overlay measurements from the local SQLite cache once it's warm.
-  // The MMKV-backed `useSyncedStorage` read above stays as the
+  // The MMKV-backed `useLocalStorage` read above stays as the
   // synchronous fallback so the first paint never blocks on SQLite.
   // Writes still go through `setRaw` / `removeRaw` exactly as today —
   // PR #029a does NOT change the write path.

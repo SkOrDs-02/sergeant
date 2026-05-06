@@ -6,7 +6,7 @@
  * `apps/web/src/modules/fizruk/hooks/useWorkoutTemplates.ts` writes to.
  *
  * Templates carry `{ id, name, exerciseIds, groups, updatedAt,
- * lastUsedAt? }`. Mutators no-op (skip `enqueueChange`) when invoked
+ * lastUsedAt? }`. Mutators no-op (skip the MMKV write) when invoked
  * with an unknown id (`update`, `remove`, `markUsed`) or when restoring
  * a template whose id is already present.
  */
@@ -15,7 +15,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
-import { enqueueChange } from "@/sync/enqueue";
 
 const STORAGE_KEY = STORAGE_KEYS.FIZRUK_TEMPLATES;
 
@@ -79,7 +78,6 @@ export function useWorkoutTemplates(): UseWorkoutTemplatesResult {
       if (next === prev) return;
       stateRef.current = next;
       safeWriteLS(STORAGE_KEY, next);
-      enqueueChange(STORAGE_KEY);
       setTemplates(next);
     },
     [],

@@ -10,15 +10,14 @@
  * `upsertForDate` is no-op-guarded by deep equality: when the patch
  * leaves every persisted field unchanged (e.g. the form was reopened
  * and resaved without edits), the in-memory list stays referentially
- * identical and `enqueueChange` is **not** called. `removeForDate` is
- * silent when no entry exists for the given date.
+ * identical and the MMKV write is skipped. `removeForDate` is silent
+ * when no entry exists for the given date.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
-import { enqueueChange } from "@/sync/enqueue";
 
 const STORAGE_KEY = STORAGE_KEYS.FIZRUK_WELLBEING;
 
@@ -93,7 +92,6 @@ export function useWellbeing(): UseWellbeingResult {
       if (next === prev) return;
       stateRef.current = next;
       safeWriteLS(STORAGE_KEY, next);
-      enqueueChange(STORAGE_KEY);
       setEntries(next);
     },
     [],
@@ -111,7 +109,7 @@ export function useWellbeing(): UseWellbeingResult {
       }
       const merged: WellbeingEntry = { ...prev[idx]!, ...patch, date };
       // Skip the timestamp bump and the write entirely when nothing
-      // user-visible changed — keeps cloud-sync quiet on idempotent
+      // user-visible changed — keeps the MMKV slot stable on idempotent
       // re-saves of the daily sheet.
       const { updatedAt: _prevTs, ...prevSansTs } = prev[idx]!;
       const { updatedAt: _mergedTs, ...mergedSansTs } = merged;

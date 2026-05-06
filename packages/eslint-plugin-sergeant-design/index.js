@@ -3418,6 +3418,130 @@ const preferDataState = {
   },
 };
 
+// ─── no-inline-body-size-limit ──────────────────────────────────────────
+//
+// Stack-pulse PR-07 (Body-size declarative policy). Усі route-specific
+// `express.json({ limit })` / `express.raw({ ..., limit })` mount-и мусять
+// жити у `apps/server/src/http/bodySizePolicy.ts` як декларативна
+// `BODY_SIZE_POLICY`-таблиця. Inline-mount у `app.ts` чи доменному
+// router-і — це регресія: порядок mount-ів стає крихким (specific-shrут
+// мусить йти ДО глобального дефолтного), а сам ліміт перестає бути
+// auditable з одного місця. Rule ловить використання `.json({ limit })`
+// та `.raw({ ..., limit })` поза policy-файлом.
+//
+// File-scope: rule НЕ срацьовує у самому `bodySizePolicy.ts` і його
+// тесті (єдині легітимні місця, де inline-options валідні). Усе інше
+// під забороною.
+
+const NO_INLINE_BODY_SIZE_LIMIT_MESSAGE =
+  "Inline `express.{{method}}({ limit })` is not allowed outside `apps/server/src/http/bodySizePolicy.ts`. Add a rule to `BODY_SIZE_POLICY` instead — that file is the single source of truth, and `applyBodySizePolicy()` mounts everything in specificity-descending order. ESLint guard from stack-pulse PR-07.";
+
+const BODY_SIZE_POLICY_PATH_RE =
+  /(?:^|\/)apps\/server\/src\/http\/bodySizePolicy(?:\.test)?\.ts$/;
+
+// Розмір тіла у body-парсерах express завжди записується або
+// рядком формату `"<число><b|kb|mb|gb>"` (canonical), або голим
+// числом байтів. Рядкове `result.limit` у Response.json-payload-і
+// (відповідь сервера типу `{ limit: 200 }`) НЕ підпадає під цей
+// формат — тому такого виду перевірка вузить scope без false-positive.
+const BODY_SIZE_LIMIT_LITERAL_RE = /^\d+\s*(?:b|kb|mb|gb)$/i;
+
+function isBodySizeLimitValue(valueNode) {
+  if (!valueNode) return false;
+  if (
+    valueNode.type === "Literal" &&
+    typeof valueNode.value === "string" &&
+    BODY_SIZE_LIMIT_LITERAL_RE.test(valueNode.value)
+  ) {
+    return true;
+  }
+  if (valueNode.type === "Literal" && typeof valueNode.value === "number") {
+    // Numeric byte-count form (legacy, але body-парсери приймають number).
+    return true;
+  }
+  if (
+    valueNode.type === "TemplateLiteral" &&
+    valueNode.quasis.length === 1 &&
+    typeof valueNode.quasis[0].value.cooked === "string" &&
+    BODY_SIZE_LIMIT_LITERAL_RE.test(valueNode.quasis[0].value.cooked)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function isLimitedBodyParserCall(node) {
+  // node — CallExpression. Ми очікуємо callee на кшталт
+  // `express.json({ limit })` або `express.raw({ ..., limit })`. Без
+  // обов'язкового імені модуля `express`, бо хтось може робити
+  // `import { json } from "express"` і потім `json({ limit })`.
+  if (node.type !== "CallExpression") return null;
+  const args = node.arguments;
+  if (!args.length || args[0].type !== "ObjectExpression") return null;
+  const limitProp = args[0].properties.find(
+    (p) =>
+      p.type === "Property" &&
+      !p.computed &&
+      ((p.key.type === "Identifier" && p.key.name === "limit") ||
+        (p.key.type === "Literal" && p.key.value === "limit")),
+  );
+  if (!limitProp) return null;
+  // Звужуємо: значення `limit` мусить виглядати як body-size, інакше
+  // це Response.json-payload (`res.status(429).json({ limit: x })`),
+  // де `limit` — це поле бізнес-помилки (квота, ліміт суми, etc.),
+  // а не body-парсер.
+  if (!isBodySizeLimitValue(limitProp.value)) return null;
+
+  // Match `express.json(...)` / `express.raw(...)`.
+  const callee = node.callee;
+  if (
+    callee.type === "MemberExpression" &&
+    !callee.computed &&
+    callee.property.type === "Identifier" &&
+    (callee.property.name === "json" || callee.property.name === "raw")
+  ) {
+    return callee.property.name;
+  }
+
+  // Match bare `json({...})` / `raw({...})` after a destructured import.
+  if (
+    callee.type === "Identifier" &&
+    (callee.name === "json" || callee.name === "raw")
+  ) {
+    return callee.name;
+  }
+
+  return null;
+}
+
+const noInlineBodySizeLimit = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid inline `express.json({ limit })` / `express.raw({ ..., limit })` outside `apps/server/src/http/bodySizePolicy.ts`. Mount through `applyBodySizePolicy()` instead.",
+    },
+    schema: [],
+    messages: { inline: NO_INLINE_BODY_SIZE_LIMIT_MESSAGE },
+  },
+  create(context) {
+    const filename = context.filename ?? context.getFilename?.() ?? "";
+    const norm = filename.replace(/\\/g, "/");
+    if (BODY_SIZE_POLICY_PATH_RE.test(norm)) return {};
+    return {
+      CallExpression(node) {
+        const method = isLimitedBodyParserCall(node);
+        if (!method) return;
+        context.report({
+          node,
+          messageId: "inline",
+          data: { method },
+        });
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
@@ -3447,6 +3571,7 @@ const plugin = {
     "no-legacy-telegram-parse-mode": noLegacyTelegramParseMode,
     "require-stories-for-ui-components": requireStoriesForUiComponents,
     "prefer-data-state": preferDataState,
+    "no-inline-body-size-limit": noInlineBodySizeLimit,
   },
 };
 

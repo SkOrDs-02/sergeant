@@ -8,6 +8,7 @@ import type {
 } from "express";
 
 import { pool } from "./db.js";
+import { applyBodySizePolicy } from "./http/bodySizePolicy.js";
 import {
   apiCorsMiddleware,
   apiHelmetMiddleware,
@@ -126,68 +127,12 @@ export function createApp({
   app.use(apiVersionRewrite);
   app.use(apiHelmetMiddleware({ servesFrontend }));
 
-  // Body-size policy: tight default, explicit loosening on routes that
-  // legitimately carry large payloads.
-  //
-  // Контекст. Раніше глобально стояв `express.json({ limit: "12mb" })`, що
-  // робило будь-який POST-ендпоінт потенційним каналом для 12MB сміття
-  // (OOM-amplifier, повільний парс, зайва RSS на Railway-інстансі з
-  // скромним лімітом пам'яті). 99% наших ендпоінтів обмінюються пейлоадами
-  // <4KB — дефолт 128KB дає комфортний запас навіть під великий textarea
-  // і одразу закриває 413 до того, як handler/zod навіть побачать тіло.
-  //
-  // Порядок важливий. Mount-и на конкретні шляхи мусять іти ПЕРЕД
-  // глобальним мініатюрним, інакше 128KB-парсер спрацює першим і вб'є
-  // великий legit-payload. `express.json()` no-op-ить, якщо body вже
-  // розпарсене, тож другий виклик на тому самому request-і безпечний.
-  //
-  // Ліміти підібрані: schema-level max + невеликий запас під JSON-оверхед:
-  //   analyze-photo / refine-photo : 10mb (schema допускає base64 до ~7MB)
-  //   backup-upload                : 4mb  (internal cap 2.5MB post-stringify)
-  //   sync push/pull               : 6mb  (MAX_BLOB_SIZE = 5MB)
-  //   coach memory                 : 6mb  (той самий MAX_BLOB_SIZE)
-  //   chat                         : 1mb  (ChatRequestSchema: context 40KB +
-  //                                        50 messages × 8KB + 20 tool_results ×
-  //                                        8KB + 20 tool_calls_raw ≈ до ~1MB
-  //                                        на активній сесії з tool-calling)
-  app.use("/api/nutrition/analyze-photo", express.json({ limit: "10mb" }));
-  app.use("/api/nutrition/refine-photo", express.json({ limit: "10mb" }));
-  app.use("/api/nutrition/backup-upload", express.json({ limit: "4mb" }));
-  app.use("/api/sync", express.json({ limit: "6mb" }));
-  app.use("/api/coach/memory", express.json({ limit: "6mb" }));
-  app.use("/api/chat", express.json({ limit: "1mb" }));
-  app.use("/api/mono/webhook", express.json({ limit: "32kb" }));
-  app.use(
-    "/api/billing/stripe-webhook",
-    express.raw({ type: "application/json", limit: "128kb" }),
-  );
-  // M12 — web-vitals beacon legitimately ships ≤10 metrics × ~120B JSON ≈ 2KB
-  // у нормі. 10kb cap дає 5×запас від легітимного payload-у і одразу б'є 413
-  // на спроби пхнути великі об'єкти (raw JS-помилка з stacktrace, PII, інше
-  // сміття) у анонімний sessionless endpoint. Mount-имо ПЕРЕД глобальним
-  // 128kb-парсером — порядок mount-ів у Express важливий.
-  app.use("/api/metrics/web-vitals", express.json({ limit: "10kb" }));
-  // CSP-violation reports come from browsers with non-default content-types
-  // (`application/csp-report` for legacy `report-uri`, `application/reports+json`
-  // for the modern Reporting-API). Mount type-aware parsers ahead of the
-  // global `express.json({ limit: "128kb" })` so the report body lands in
-  // `req.body` regardless of which wire format the browser chose. The 16kb
-  // ceiling matches Sentry's own CSP-ingest limit and is well above any
-  // legitimate single-violation payload (~1–2kb in practice).
-  app.use(
-    "/api/csp-report",
-    express.json({ type: "application/csp-report", limit: "16kb" }),
-  );
-  app.use(
-    "/api/csp-report",
-    express.json({ type: "application/reports+json", limit: "16kb" }),
-  );
-  app.use("/api/csp-report", express.json({ limit: "16kb" }));
-  // Voice transcription: raw audio blob, NOT JSON. Mount раніше за глобальний
-  // `express.json({ limit: "128kb" })`, щоб 10mb-блоб не різався 128KB-парсером
-  // (хоч `express.json()` no-op-ить на не-JSON, явний raw-парсер чіткіший).
-  app.use("/api/transcribe", express.raw({ type: "audio/*", limit: "10mb" }));
-  app.use(express.json({ limit: "128kb" }));
+  // Body-size policy: declarative table в `http/bodySizePolicy.ts` — єдине
+  // джерело правди про per-route ліміти. ESLint-rule
+  // `sergeant-design/no-inline-body-size-limit` блокує inline
+  // `express.json({ limit })` поза тим файлом, щоб новий route випадково
+  // не обійшов policy і не зламав specificity-order.
+  applyBodySizePolicy(app);
 
   // Global CORS for the whole /api surface. Individual handlers may re-set
   // headers (e.g. to widen allow-headers) — `setCorsHeaders` is idempotent.
