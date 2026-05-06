@@ -33,22 +33,22 @@
 Один рядок на фазу. Деталі по фазах — у §2.4 («Останні приземлення»),
 повний план — у §4. Per-module статуси портів — у §5.x.
 
-| Фаза | Назва                                | Статус         | Останні landed PR-и                                                                                                                                                                                |
-| ---- | ------------------------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0    | Скафолд `apps/mobile`                | ✅ Done        | [#401](https://github.com/Skords-01/Sergeant/pull/401)                                                                                                                                             |
-| 1    | UI-основа (NativeWind + MMKV + UI-8) | ✅ Done        | [#403](https://github.com/Skords-01/Sergeant/pull/403)–[#427](https://github.com/Skords-01/Sergeant/pull/427)                                                                                      |
-| 2    | Hub-ядро                             | 🔵 In progress | [#480](https://github.com/Skords-01/Sergeant/pull/480), [#482](https://github.com/Skords-01/Sergeant/pull/482), [#483](https://github.com/Skords-01/Sergeant/pull/483); HubChat / HubSearch — TODO |
-| 3    | CloudSync + офлайн-черга             | 🔵 In progress | [#420](https://github.com/Skords-01/Sergeant/pull/420), [#477](https://github.com/Skords-01/Sergeant/pull/477), [#478](https://github.com/Skords-01/Sergeant/pull/478)                             |
-| 4    | Модуль Фінік + Detox E2E             | 🔵 In progress | усі 5 сторінок портовано, Detox iOS зелений; Android CI follow-up                                                                                                                                  |
-| 5    | Модуль Рутина                        | 🔵 In progress | весь функціонал портовано; чекає stabilization на real device                                                                                                                                      |
-| 6    | Модуль Фізрук                        | 🔵 In progress | усі основні сторінки портовано; залишився `WorkoutTemplates` drawer                                                                                                                                |
-| 7    | Модуль Харчування                    | 🔵 In progress | shell + Dashboard / Log / Water / Pantry / Shopping / Recipe + barcode + photo-аналіз                                                                                                              |
-| 8    | AI-шар (HubChat / Coach / Digest)    | ⏸ Not started  | —                                                                                                                                                                                                  |
-| 9    | Hub-пошук + звіти                    | ⏸ Not started  | —                                                                                                                                                                                                  |
-| 10   | Deep links + shortcuts               | 🔵 In progress | `useDeepLinks` + Android intent filters + Android shortcuts / iOS quick actions                                                                                                                    |
-| 11   | EAS prod + App Store / Play Store    | ⏸ Blocked      | чекає Apple Developer + Google Play Console (Q2)                                                                                                                                                   |
-| 12   | Monitoring + Analytics               | 🔵 In progress | `@sentry/react-native` ([#469](https://github.com/Skords-01/Sergeant/pull/469)) + PostHog observability wired                                                                                      |
-| 13   | Sunset-план для `apps/web`           | ⏸ Not started  | див. Q1                                                                                                                                                                                            |
+| Фаза | Назва                                    | Статус         | Останні landed PR-и                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ---- | ---------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | Скафолд `apps/mobile`                    | ✅ Done        | [#401](https://github.com/Skords-01/Sergeant/pull/401)                                                                                                                                                                                                                                                                                                                                                                                            |
+| 1    | UI-основа (NativeWind + MMKV + UI-8)     | ✅ Done        | [#403](https://github.com/Skords-01/Sergeant/pull/403)–[#427](https://github.com/Skords-01/Sergeant/pull/427)                                                                                                                                                                                                                                                                                                                                     |
+| 2    | Hub-ядро                                 | 🔵 In progress | [#480](https://github.com/Skords-01/Sergeant/pull/480), [#482](https://github.com/Skords-01/Sergeant/pull/482), [#483](https://github.com/Skords-01/Sergeant/pull/483); HubChat / HubSearch — TODO                                                                                                                                                                                                                                                |
+| 3    | CloudSync v1 → Sync v2 (op-log + outbox) | 🔵 In progress | v1 client cut-over ([#2010](https://github.com/Skords-01/Sergeant/pull/2010)) + mobile engine drop ([`20793ad`](https://github.com/Skords-01/Sergeant/commit/20793adb)) + сервер `module_data` / v1 handlers видалено ([`75dcdd5`](https://github.com/Skords-01/Sergeant/commit/75dcdd5c)). Mobile writer-wiring трекає [plan 2026-05-06](../superpowers/plans/2026-05-06-sync-engine-writer-wiring.md). Деталі — Q13 + storage-roadmap Stage 5–7 |
+| 4    | Модуль Фінік + Detox E2E                 | 🔵 In progress | усі 5 сторінок портовано, Detox iOS зелений; Android CI follow-up                                                                                                                                                                                                                                                                                                                                                                                 |
+| 5    | Модуль Рутина                            | 🔵 In progress | весь функціонал портовано; чекає stabilization на real device                                                                                                                                                                                                                                                                                                                                                                                     |
+| 6    | Модуль Фізрук                            | 🔵 In progress | усі основні сторінки портовано; залишився `WorkoutTemplates` drawer                                                                                                                                                                                                                                                                                                                                                                               |
+| 7    | Модуль Харчування                        | 🔵 In progress | shell + Dashboard / Log / Water / Pantry / Shopping / Recipe + barcode + photo-аналіз                                                                                                                                                                                                                                                                                                                                                             |
+| 8    | AI-шар (HubChat / Coach / Digest)        | ⏸ Not started  | —                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 9    | Hub-пошук + звіти                        | ⏸ Not started  | —                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 10   | Deep links + shortcuts                   | 🔵 In progress | `useDeepLinks` + Android intent filters + Android shortcuts / iOS quick actions                                                                                                                                                                                                                                                                                                                                                                   |
+| 11   | EAS prod + App Store / Play Store        | ⏸ Blocked      | чекає Apple Developer + Google Play Console (Q2)                                                                                                                                                                                                                                                                                                                                                                                                  |
+| 12   | Monitoring + Analytics                   | 🔵 In progress | `@sentry/react-native` ([#469](https://github.com/Skords-01/Sergeant/pull/469)) + PostHog observability wired                                                                                                                                                                                                                                                                                                                                     |
+| 13   | Sunset-план для `apps/web`               | ⏸ Not started  | див. Q1                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 Рішення по **Q1–Q14** зафіксовані у §13 (історично — у
 [PR #402](https://github.com/Skords-01/Sergeant/pull/402); Q11–Q14 додано пізніше).
@@ -172,19 +172,34 @@ NativeWind + RN-core. Поверх — додаткові примітиви в 
   mobile splash-Modal + wire у `app/(tabs)/_layout.tsx` через
   first-launch прапорець.
 
-**CloudSync (`apps/mobile/src/sync/*`)** — Phase 3:
+**Sync (`apps/mobile/src/sync/*`)** — Phase 3:
 
-- Інфра: engine + queue + `<CloudSyncProvider>` + unit-тести
-  ([#420](https://github.com/Skords-01/Sergeant/pull/420)) +
-  refcount / clear на зміну user-id
-  ([#429](https://github.com/Skords-01/Sergeant/pull/429)).
-- React Query теплий-старт через `PersistQueryClientProvider` +
-  MMKV-персистер. Ключі префіксуються `mobile:` у
-  `@sergeant/shared/storageKeys`.
-- `useSyncedStorage` (авто-wiring MMKV → cloud-sync) + ESLint-правило
-  `sergeant-design/no-raw-tracked-storage`
-  ([#478](https://github.com/Skords-01/Sergeant/pull/478)) — нові
-  споживачі більше не пишуть руками `enqueueChange`.
+- **CloudSync v1 — викошений.** Сервер віддає `410 Gone`
+  ([ADR-0047](../adr/0047-cloudsync-v1-410-gone.md)), `module_data` колонку
+  та v1-handlers видалено ([`75dcdd5`](https://github.com/Skords-01/Sergeant/commit/75dcdd5c));
+  web-клієнт стабнув ентрі-пойнт у фінальному cut-over-і ([#2010](https://github.com/Skords-01/Sergeant/pull/2010));
+  mobile-engine видалено ([`20793ad`](https://github.com/Skords-01/Sergeant/commit/20793adb)).
+  Старі PR-и v1-інфри ([#420](https://github.com/Skords-01/Sergeant/pull/420),
+  [#429](https://github.com/Skords-01/Sergeant/pull/429),
+  [#478](https://github.com/Skords-01/Sergeant/pull/478)) — історичний
+  контекст.
+- **Поточний стан `apps/mobile/src/sync/`** — тонкий шар стабів
+  (`useCloudSync` / `useSyncStatus` / `useSyncedStorage` / `enqueueChange`)
+  з тією ж public-shape, що тримає 17+ module-store call-sites зеленими
+  на час перехідного періоду. Видалення цього каталогу заплановано
+  у Stage 7 storage-roadmap-у. React Query теплий-старт через
+  `PersistQueryClientProvider` + MMKV-персистер залишається повноцінним.
+  Ключі префіксуються `mobile:` у `@sergeant/shared/storageKeys`.
+- **Sync v2 op-log на mobile.** Per-module dual-write адаптери
+  (`apps/mobile/src/modules/{routine,fizruk,nutrition,finyk}/lib/dualWrite`)
+  пишуть у локальний SQLite-outbox через `@sergeant/db-schema`
+  (`syncOpOutbox*`); writer-loop / scheduler / reconnect-flush живуть
+  у `@sergeant/api-client` (`syncV2 pushLoop`, `syncEnginePushScheduler`,
+  `syncEngineFlushOnReconnect`). Mobile writer-runtime у boot-pipeline
+  ще не змонтований — план у
+  [`docs/superpowers/plans/2026-05-06-sync-engine-writer-wiring.md`](../superpowers/plans/2026-05-06-sync-engine-writer-wiring.md).
+  ESLint `sergeant-design/no-raw-tracked-storage` залишається активним
+  guard-ом проти повернення raw `enqueueChange`-патернів.
 
 **Модулі — детальні статуси у §5.x.** Ключові точки нижче.
 
@@ -463,17 +478,33 @@ Per module — які файли `apps/web` переносяться і в що 
 
 ### 6.1 Локальне сховище і sync
 
-Web використовує `localStorage` + `indexedDB` + офлайн-чергу у
-`useCloudSync.ts`. На мобілці — `react-native-mmkv` (Q3) — sync,
-швидко, працює на New Architecture без обмежень.
+Web — `localStorage` для UI prefs / hot keys, `@sqlite.org/sqlite-wasm`
+(OPFS-SAH worker) для доменних даних (Q12). На мобілці —
+`react-native-mmkv` (Q3) для UI prefs + `expo-sqlite` v15 через
+`drizzle-orm/expo-sqlite` для доменних даних (Q11). Sync —
+op-log v2 через `/v2/sync/{push,pull}` + SSE pull (Q13), не
+старий `module_data` LWW push/pull.
 
 - **Малі значення** (токени) → `expo-secure-store`.
-- **Великі JSON-блоби** (module-data) — MMKV + adapter у
+- **UI prefs / hot keys** — MMKV + adapter у
   `apps/mobile/src/lib/storage.ts` зі shape web-API.
-- **Офлайн-черга** — `NetInfo` + MMKV-backed queue, дзеркалить
-  web-чергу. LWW-резолвер живе на сервері.
+- **Доменні дані** (routine / fizruk / nutrition / finyk) — локальний
+  SQLite через `@sergeant/db-schema` (TEXT-uuid, JSON-as-TEXT, `_lite`
+  суфікс на індексах). Per-module cut-over reads виконано за фіче-флагом
+  `feature.<m>.sqlite_v2.read_sqlite` (storage-roadmap Stage 4); templates
+  / saved recipes / weekPlan ще на legacy LS/MMKV-слоті.
+- **Офлайн-черга** — `syncOpOutbox*` у локальному SQLite через
+  `@sergeant/db-schema`, не MMKV. Writer-loop орхеструє
+  `syncV2 pushLoop` + `syncEnginePushScheduler`
+  (`@sergeant/api-client`); NetInfo-flush — через
+  `syncEngineFlushOnReconnect`. Mobile writer-runtime у boot-pipeline
+  ще не змонтований (див. §2.4 + writer-wiring plan).
+- **CRDT.** Streaks-лічильники — PN-counter (op `increment`); решта —
+  per-row apply-fns на сервері з ідемпотентністю по `idempotency-key`
+  (Q13).
 - **React Query persister** —
-  `@tanstack/query-sync-storage-persister` + MMKV для теплого старту.
+  `@tanstack/query-sync-storage-persister` + MMKV для теплого старту
+  React Query (UI shape, не доменні дані).
 
 Ключі сховища префіксуються `mobile:` у
 `@sergeant/shared/storageKeys`, щоб уникнути колізій із shared
@@ -683,6 +714,14 @@ pnpm e2e:test:ios`. Тригер: `pull_request` + `push` на `main`
 - Android: Google Play Console, internal testing track, Data Safety
   form, notification channel declarations.
 - Legal: Privacy Policy URL, Terms of Use.
+- Billing: Stripe billing-контракт ([`48458c9`](https://github.com/Skords-01/Sergeant/commit/48458c9a))
+  додає категорію «Purchases / Financial Info» у Apple privacy labels та
+  Google Data Safety (тип «Payment info: Purchase history»). Перед першою
+  публікацією — узгодити з App Store Review Guidelines §3.1: цифрові
+  підписки потребують StoreKit (iOS) / Google Play Billing (Android), а не
+  Stripe Checkout. Stripe залишаємо лише для не-IAP сценаріїв (фіз. товари /
+  послуги поза app-ом). Деталі IAP-стратегії — окремий документ перед
+  Phase 11.
 - Assets: іконка, splash, screenshots (5.5″ / 6.5″ iOS, Android
   phone / tablet).
 
