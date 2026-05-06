@@ -33,6 +33,24 @@
 
 ---
 
+## Status — shipped (станом на 2026-05-06)
+
+| PR    | Title                                                            | Sprint | Status  | Landing                                                                               |
+| ----- | ---------------------------------------------------------------- | ------ | ------- | ------------------------------------------------------------------------------------- |
+| PR-4  | Уніфікація landing tab → «Огляд» (4 модулі) [C1]                 | 1      | ✅ done | [#2103](https://github.com/Skords-01/Sergeant/pull/2103) (commit `9889e4ae`)          |
+| PR-5  | Copy bundle: OfflineBanner UA + DataExport + Pricing [C2/C3/A13] | 1      | ✅ done | commit [`bc4b9251`](https://github.com/Skords-01/Sergeant/commit/bc4b9251) (PR #2102) |
+| PR-21 | Прибрати reveal-toast Reports tab [R1]                           | 2      | ✅ done | [#2105](https://github.com/Skords-01/Sergeant/pull/2105)                              |
+| PR-27 | Forgot-password autoclose / «Назад до входу» [A14]               | 3      | ✅ done | [#2106](https://github.com/Skords-01/Sergeant/pull/2106)                              |
+
+**Прогрес:** 4 з 43 виконавчих PR-ів змерджено. Деталі у відповідних розділах нижче.
+
+**Заблоковані напрямки:**
+
+- **Sprint 0 (PR-0 telemetry)** — не стартував. Блокує A1 (App-lock), A4, A8 та решту PR-ів, що залежать від подій.
+- **PR-11 (CSV export)** і **PR-28 (Avatar upload)** — на паузі до отримання S3/R2 credentials.
+
+---
+
 ## Sprint 0 — Enabling
 
 ### PR-0 · Telemetry & ADR foundation
@@ -157,7 +175,7 @@
   **Size:** S
   **Depends on:** PR-0
 
-### PR-4 · Уніфікація landing-табу до «Огляд» [C1]
+### PR-4 · Уніфікація landing-табу до «Огляд» [C1] — ✅ DONE [#2103](https://github.com/Skords-01/Sergeant/pull/2103)
 
 **Items covered:** C1, §1.1.
 **Scope:**
@@ -183,7 +201,7 @@
   **Size:** M
   **Depends on:** PR-0
 
-### PR-5 · Copy fixes bundle (UA OfflineBanner + DataExport + Pricing) [C2 + C3 + §15]
+### PR-5 · Copy fixes bundle (UA OfflineBanner + DataExport + Pricing) [C2 + C3 + §15] — ✅ DONE commit [`bc4b9251`](https://github.com/Skords-01/Sergeant/commit/bc4b9251) (PR #2102)
 
 **Items covered:** C2, C3, §15 (Pricing «Звички» → «Рутина»).
 **Scope:**
@@ -514,7 +532,7 @@
   **Size:** M
   **Depends on:** PR-3 (subtitles)
 
-### PR-21 · Прибрати toast про Reports tab [R1]
+### PR-21 · Прибрати toast про Reports tab [R1] — ✅ DONE [#2105](https://github.com/Skords-01/Sergeant/pull/2105)
 
 **Items covered:** R1, §1.4.
 **Scope:**
@@ -617,7 +635,7 @@
   **Size:** S
   **Depends on:** —
 
-### PR-27 · Forgot-password autoclose / "До входу" [A14]
+### PR-27 · Forgot-password autoclose / "До входу" [A14] — ✅ DONE [#2106](https://github.com/Skords-01/Sergeant/pull/2106)
 
 **Items covered:** A14, §4.5.
 **Scope:**

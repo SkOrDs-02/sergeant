@@ -272,6 +272,13 @@ function checkDanglingRefs() {
       relPath.endsWith("-implementation-roadmap.md")
     )
       return true;
+    // `docs/audits/<date>-<slug>-pr-plan.md` are PR-by-PR plans attached to
+    // a `<date>-<slug>.md` audit. Refs describe target file layouts for PRs
+    // that have not landed yet (e.g. `apps/web/src/core/security/AppLock.tsx`
+    // before PR-1a). The plan's PR-link / status table is the source of
+    // truth for shipped work; concrete refs are part of the roadmap surface.
+    if (relPath.startsWith("docs/audits/") && relPath.endsWith("-pr-plan.md"))
+      return true;
     return false;
   }
 
