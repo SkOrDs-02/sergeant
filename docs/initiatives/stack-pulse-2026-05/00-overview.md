@@ -1,6 +1,6 @@
 # Overview — stack pulse 2026-05
 
-> **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
 > **Status:** Active
 
 Скорочена картина зрізу стеку, без розгорнутих PR-планів. Деталі — у
@@ -51,31 +51,31 @@
 | --- | ------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------ |
 | H1  | Body-size policy order-dependent                 | [PR-07](./pr-07-body-size-declarative-policy.md) | Planned                                                                  |
 | H2  | API-version rewrite committed to v1 forever      | [PR-08](./pr-08-api-versioning-consolidation.md) | Planned                                                                  |
-| H3  | `@parse/node-apn` non-canonical maintainer       | [PR-09](./pr-09-apns-library-adr.md)             | Planned                                                                  |
+| H3  | `@parse/node-apn` non-canonical maintainer       | [PR-09](./pr-09-apns-library-adr.md)             | **In review** — ADR-0048 added                                           |
 | H4  | Better Auth security review (own-crypto adapter) | [PR-10](./pr-10-better-auth-security-review.md)  | Planned                                                                  |
 | H5  | Drizzle schema ↔ SQL drift untracked             | [PR-11](./pr-11-drizzle-schema-drift-ci.md)      | Planned                                                                  |
 | H6  | Sentry tracesSampleRate static 0.1               | [PR-12](./pr-12-sentry-traces-sampler.md)        | Planned                                                                  |
 | H7  | PG pool size 10 — undersized для AI ingestion    | [PR-13](./pr-13-postgres-pool-sizing.md)         | Planned                                                                  |
-| H8  | Vercel COEP `require-corp` — broad blast radius  | [PR-14](./pr-14-vercel-coep-review.md)           | Planned                                                                  |
+| H8  | Vercel COEP `require-corp` — broad blast radius  | [PR-14](./pr-14-vercel-coep-review.md)           | **Closed** — M21 + Vercel compatibility matrix                           |
 | H9  | `AI_QUOTA_DISABLED=1` ризик у production         | [PR-15](./pr-15-ai-quota-disabled-hardblock.md)  | **In review** ([#1567](https://github.com/Skords-01/Sergeant/pull/1567)) |
 | H10 | Pino без enforced redaction policy               | [PR-16](./pr-16-pino-redaction-policy.md)        | Planned                                                                  |
 
 ### Medium (без окремих PR-плані поки не призначений owner)
 
-| ID  | Заголовок                                                            | Owner | Trigger to convert into PR   |
-| --- | -------------------------------------------------------------------- | ----- | ---------------------------- |
-| M1  | 80+ env-vars — мігрувати feature-flag-toggle у DB-таблицю            | TBD   | при додаванні 90-ї змінної   |
-| M2  | Detox path-trigger пропускає server-shape changes                    | TBD   | next mobile API breakage     |
-| M3  | Workers без централізованого health-registry                         | TBD   | next stalled-worker incident |
-| M4  | `patches/` — patch debt без README                                   | TBD   | next Expo SDK upgrade        |
-| M5  | Service Worker `prompt`-mode без auto-update on inactivity           | TBD   | next major web release       |
-| M6  | Mobile зашиван Expo SDK 52 (RN 0.76)                                 | TBD   | до Q3 2026 (SDK 53 GA)       |
-| M7  | OpenAPI-spec не contract-tested vs runtime                           | TBD   | при першому contract-bug     |
-| M8  | Embedding-vendor lock-in (`voyage-3.5-lite`)                         | TBD   | при появі quality regression |
-| M9  | `fizruk.vercel.app` + `sergeant.vercel.app` — два production origins | TBD   | clarification needed         |
-| M10 | DR runbook відсутній                                                 | TBD   | до production launch         |
-| M11 | CSP без `report-uri` / `report-to`                                   | TBD   | при першому unknown CSP-bug  |
-| M12 | `INTERNAL_API_KEY` без rotation-механізму                            | TBD   | next n8n credential breach   |
+| ID  | Заголовок                                                            | Owner | Trigger to convert into PR                                |
+| --- | -------------------------------------------------------------------- | ----- | --------------------------------------------------------- |
+| M1  | 80+ env-vars — мігрувати feature-flag-toggle у DB-таблицю            | TBD   | при додаванні 90-ї змінної                                |
+| M2  | Detox path-trigger пропускає server-shape changes                    | TBD   | next mobile API breakage                                  |
+| M3  | Workers без централізованого health-registry                         | TBD   | next stalled-worker incident                              |
+| M4  | `patches/` — patch debt без README                                   | TBD   | next Expo SDK upgrade                                     |
+| M5  | Service Worker `prompt`-mode без auto-update on inactivity           | TBD   | next major web release                                    |
+| M6  | Mobile зашиван Expo SDK 52 (RN 0.76)                                 | TBD   | до Q3 2026 (SDK 53 GA)                                    |
+| M7  | OpenAPI-spec не contract-tested vs runtime                           | TBD   | при першому contract-bug                                  |
+| M8  | Embedding-vendor lock-in (`voyage-3.5-lite`)                         | TBD   | при появі quality regression                              |
+| M9  | `fizruk.vercel.app` + `sergeant.vercel.app` — два production origins | TBD   | clarification needed                                      |
+| M10 | DR runbook documented                                                | Done  | `docs/security/disaster-recovery.md` + operations runbook |
+| M11 | CSP без `report-uri` / `report-to`                                   | TBD   | при першому unknown CSP-bug                               |
+| M12 | `INTERNAL_API_KEY` без rotation-механізму                            | TBD   | next n8n credential breach                                |
 
 ### Low (поліровка, не блокують)
 
@@ -116,13 +116,13 @@
 
 | #    | Що                                       | Запропонована дія                                 |
 | ---- | ---------------------------------------- | ------------------------------------------------- |
-| MS1  | `docs/operations/disaster-recovery.md`   | DR runbook + monthly drill cron                   |
+| MS1  | `docs/security/disaster-recovery.md`     | Done — DR runbook + drill cadence documented      |
 | MS2  | `/api/health/workers` endpoint           | реалізувати в межах M3                            |
 | MS3  | Contract testing (Pact / Schemathesis)   | топ-10 endpoint-ів                                |
 | MS4  | `actions/dependency-review-action` на PR | додати у `ci.yml`                                 |
 | MS5  | E2E на mobile-shell (Capacitor)          | iOS-Capacitor pipeline через Maestro              |
 | MS6  | Performance budget per route             | `metrics/p95.test.ts` з threshold                 |
-| MS7  | Threat model document (STRIDE)           | 1-сторінка у `docs/security/`                     |
+| MS7  | Threat model document (STRIDE)           | Done — `docs/security/threat-model.md`            |
 | MS8  | Migration `down.sql` rollback drill у CI | applied → run down → re-run forward → diff schema |
 | MS9  | Cost monitoring dashboard                | Grafana `cost_per_user_per_module`                |
 | MS10 | Public status page                       | self-hosted instatus у `tools/console`            |

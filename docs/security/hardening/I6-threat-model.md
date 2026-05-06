@@ -1,16 +1,16 @@
 # I6 — Document the STRIDE threat model per module
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** Open
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+> **Status:** Closed (2026-05-06, doc-only) — see Resolution log.
 
-| Field          | Value                           |
-| -------------- | ------------------------------- |
-| **Severity**   | Informational / hardening       |
-| **Sprint**     | [Sprint 4](./sprint-4.md)       |
-| **Owner**      | platform                        |
-| **Effort**     | 1 person-day                    |
-| **Status**     | Open                            |
-| **Discovered** | 2026-05-03 deep security review |
+| Field          | Value                             |
+| -------------- | --------------------------------- |
+| **Severity**   | Informational / hardening         |
+| **Sprint**     | [Sprint 4](./sprint-4.md)         |
+| **Owner**      | platform                          |
+| **Effort**     | 1 person-day                      |
+| **Status**     | **Closed** (2026-05-06, doc-only) |
+| **Discovered** | 2026-05-03 deep security review   |
 
 ## Summary
 
@@ -54,3 +54,12 @@ Author `docs/security/threat-model.md` with a section per module:
 - [`../README.md`](../README.md)
 - All cards in [`./README.md`](./README.md) — the threat model summarises
   them.
+
+## Resolution log
+
+### 2026-05-06 — closed (doc-only)
+
+Added [`docs/security/threat-model.md`](../threat-model.md), a STRIDE map for
+the web PWA, API, mobile clients, Console/OpenClaw, n8n workflows, and data
+stores. The document links the highest-risk paths back to the existing
+hardening cards, secret register, Vercel COEP matrix, and DR runbooks.

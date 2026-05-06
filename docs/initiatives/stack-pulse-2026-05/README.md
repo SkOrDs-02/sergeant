@@ -1,6 +1,6 @@
 # Stack pulse — 2026-05
 
-> **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
 > **Status:** Active
 
 Серія планів-PR-ів для виправлення слабких місць стеку Sergeant, виявлених
@@ -54,12 +54,12 @@ mega-PR — кожен має власний рівень ризику і rollba
 | --- | -------------------------------------------------------------------------------------------------- | -------- | ------- |
 | 07  | [Declarative body-size policy](./pr-07-body-size-declarative-policy.md)                            | High     | 0.5 дня |
 | 08  | [API versioning consolidation (видалити v1-rewrite-shim)](./pr-08-api-versioning-consolidation.md) | High     | 0.5 дня |
-| 09  | [`@parse/node-apn` review (ADR-only)](./pr-09-apns-library-adr.md)                                 | High     | 0.5 дня |
+| 09  | [`@parse/node-apn` review (ADR-only)](./pr-09-apns-library-adr.md) — ADR-0048 in review            | High     | 0.5 дня |
 | 10  | [Better Auth security review + Safari/Webkit E2E](./pr-10-better-auth-security-review.md)          | High     | 2–3 дні |
 | 11  | [Drizzle schema ↔ SQL drift CI gate](./pr-11-drizzle-schema-drift-ci.md)                           | High     | 1–2 дні |
 | 12  | [Sentry tracesSampler dynamic per-route](./pr-12-sentry-traces-sampler.md)                         | High     | 0.5 дня |
 | 13  | [PG pool sizing + monitoring + alerts](./pr-13-postgres-pool-sizing.md)                            | High     | 1 день  |
-| 14  | [Vercel COEP review (require-corp)](./pr-14-vercel-coep-review.md)                                 | High     | 0.5 дня |
+| 14  | [Vercel COEP review (require-corp)](./pr-14-vercel-coep-review.md) — closed by M21                 | High     | 0.5 дня |
 | 15  | [`AI_QUOTA_DISABLED=1` hard-block у production](./pr-15-ai-quota-disabled-hardblock.md)            | High     | 0.5 дня |
 | 16  | [Pino redaction policy + ESLint guard](./pr-16-pino-redaction-policy.md)                           | High     | 1 день  |
 

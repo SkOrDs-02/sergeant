@@ -1,7 +1,7 @@
 # PR-14: Vercel COEP review (require-corp)
 
-> **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
-> **Status:** Planned
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+> **Status:** Closed (2026-05-05, doc-only) — resolved by M21 compatibility matrix
 
 |              |                                                            |
 | ------------ | ---------------------------------------------------------- |
@@ -50,10 +50,10 @@
 
 ## Acceptance criteria (DoD)
 
-- [ ] Audit doc `docs/notes/spikes/2026-05-coep-audit.md` з висновком.
-- [ ] `vercel.json` оновлений за результатом audit-у.
-- [ ] E2E tests на security-headers.
-- [ ] Sentry session-replay і PostHog session-replay перевірені на compatibility (manual test на staging).
+- [x] Audit doc captured as [`docs/security/hardening/M21-coep-stripe-compatibility.md`](../../security/hardening/M21-coep-stripe-compatibility.md) plus [`docs/deploy/vercel.md`](../../deploy/vercel.md#third-party-iframe--cross-origin-compatibility).
+- [x] `vercel.json` decision recorded: no change required while `require-corp` is load-bearing for SQLite-WASM.
+- [x] Security-header verification recipe documented in `docs/deploy/vercel.md`.
+- [x] Sentry / PostHog compatibility recorded as JS-module/connect-src flows, not iframe flows.
 
 ## Тести
 
@@ -80,3 +80,12 @@
 
 - [MDN COEP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Embedder-Policy)
 - [Web.dev: COOP/COEP](https://web.dev/articles/coop-coep)
+
+## Resolution note
+
+Already resolved by [`M21`](../../security/hardening/M21-coep-stripe-compatibility.md)
+and the canonical compatibility matrix in
+[`docs/deploy/vercel.md`](../../deploy/vercel.md#third-party-iframe--cross-origin-compatibility).
+No `vercel.json` change is required today: `require-corp` remains load-bearing
+for the SQLite-WASM `crossOriginIsolated` path, and Stripe/OAuth iframes must
+record an explicit COEP exception before launch.

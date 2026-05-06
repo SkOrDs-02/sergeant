@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR) — реєстр рішень
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
 > **Status:** Active
 
 > Архітектурні рішення Sergeant. Кожен ADR фіксує **рішення з контекстом і альтернативами**, щоб через рік не довелось гадати «чому ми тут зробили так, а не інакше».
@@ -112,7 +112,12 @@ pnpm gen:adr
 | 0045 | Hard Rules taxonomy                             | accepted | 2026-05-04 | Три-категорійна таксономія в реєстрі `hard-rules.json`: `blocker-invariant` / `lint-enforced-convention` / `active-initiative`. Розблоковує slim-down AGENTS.md (Initiative 0009 Phase 3.1) — design-конвенції винесено в окрему секцію без зміни enforcement.                                |
 | 0046 | Storybook visual regression scope               | accepted | 2026-05-05 | Storybook stories залишаються deterministic developer-playground (deploy на GitHub Pages); 56-screenshot Argos-baseline (ADR-0034) — єдине джерело visual-regression. ESLint `sergeant-design/require-stories-for-ui-components` — documentation-contract, не regression-detection.           |
 
-> **Note on next ADR:** наступний номер — **`0047`** (`0040` лишається gap).
+| #    | Назва                 | Статус   | Створено   | Контекст                                                                                                                                     |
+| ---- | --------------------- | -------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0047 | CloudSync v1 410 Gone | accepted | 2026-05-06 | Executes ADR-0043 Phase 5: legacy `/api/sync/*` push/pull endpoints return `410 Gone` with successor metadata.                               |
+| 0048 | APNs provider library | proposed | 2026-05-06 | Keeps `@parse/node-apn` behind the current `apnsClient` wrapper with explicit re-open triggers; closes stack-pulse PR-09 as ADR-only review. |
+
+> **Note on next ADR:** наступний номер — **`0049`** (`0040` лишається gap).
 
 > **Note on numbering 0016–0022 jump:** ADRs `0016`–`0022` — це retroactive batch, що був написаний паралельно з `0006`–`0012`. Через паралельне виконання Devin-сесій виникли колізії номерів `0003`–`0012`. Розв'язано через PR `docs(adr): resolve numbering collisions` — same-topic дублі (refund, anthropic, PII) видалено, late-comers перенумеровано в `0016`+.
 
@@ -120,6 +125,6 @@ pnpm gen:adr
 
 > **Note on 0039 reuse:** Номер `0039` спочатку було зарезервовано (gap) під ADR-кандидат «OpenClaw proactive cron-rituals» — імплементацію не стартували; коли Wave 2 пишеться, номер береться наступний вільний (не `0039`). 2026-05-04 номер реусався під [ADR-0039 Anthropic prompt-cache breakpoint policy](./0039-anthropic-prompt-cache-policy.md) (закриття Initiative 0005); `0039` прибрано з `KNOWN_NUMBERING_GAPS`.
 
-> **Note on missing 0040:** Номер `0040` згадувався у коментарях коду (`tools/console/src/openclaw/alerts-format.ts`) і roadmap §3.6 («strategic mode — `/plan` / `/analyze` / `/okr`») як планований ADR для Wave-3 HTML-mode broadcast formatting. Рішення зафіксовано **inline** у Wave-3 PR-ах (#1473 / #1480 / #1503 / #1508) — окремий ADR-файл не дійшов. `0040` лишається **відомим gap** і whitelisted у `KNOWN_NUMBERING_GAPS`. Наступний вільний номер — **`0047`** (`pnpm gen:adr` обчислює `max + 1` через `nextAdrNumber()` у `plopfile.mjs`, тож автоматично пропустить пусті номери).
+> **Note on missing 0040:** Номер `0040` згадувався у коментарях коду (`tools/console/src/openclaw/alerts-format.ts`) і roadmap §3.6 («strategic mode — `/plan` / `/analyze` / `/okr`») як планований ADR для Wave-3 HTML-mode broadcast formatting. Рішення зафіксовано **inline** у Wave-3 PR-ах (#1473 / #1480 / #1503 / #1508) — окремий ADR-файл не дійшов. `0040` лишається **відомим gap** і whitelisted у `KNOWN_NUMBERING_GAPS`. Наступний вільний номер — **`0049`** (`pnpm gen:adr` обчислює `max + 1` через `nextAdrNumber()` у `plopfile.mjs`, тож автоматично пропустить пусті номери).
 
 > **Graph integrity:** Парсинг метаданих ADR (`Status:` / `Supersedes:`, з підтримкою англо- та україномовних назв полів — див. ADR-0026/0027) і перевірка індексу + бідіректіонального supersede-зв'язку автоматизовані: `node scripts/docs/check-adr-graph.mjs` (CI gate в `docs-automation.yml`).

@@ -1,6 +1,6 @@
 # Довідник Prometheus-метрик
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
 > **Status:** Active
 
 Каталог усіх Prometheus-метрик бекенду Sergeant (`GET /metrics`, bearer `METRICS_TOKEN`).
@@ -96,10 +96,10 @@ sum(rate(auth_attempts_total{outcome="error"}[5m])) / sum(rate(auth_attempts_tot
 
 | Metric                         | Type      | Labels                        | Emitter                                                             |
 | ------------------------------ | --------- | ----------------------------- | ------------------------------------------------------------------- |
-| `sync_operations_total`        | Counter   | `op` · `module` · `outcome`   | [sync.ts:91](../../apps/server/src/modules/sync/sync.ts#L91)        |
-| `sync_duration_ms`             | Histogram | `op` · `module`               | [sync.ts:92](../../apps/server/src/modules/sync/sync.ts#L92)        |
-| `sync_payload_bytes`           | Histogram | `op` · `module`               | [sync.ts:93](../../apps/server/src/modules/sync/sync.ts#L93)        |
-| `sync_conflicts_total`         | Counter   | `module`                      | [sync.ts:66](../../apps/server/src/modules/sync/sync.ts#L66)        |
+| `sync_operations_total`        | Counter   | `op` · `module` · `outcome`   | [syncV2.ts](../../apps/server/src/modules/sync/syncV2.ts)           |
+| `sync_duration_ms`             | Histogram | `op` · `module`               | [syncV2.ts](../../apps/server/src/modules/sync/syncV2.ts)           |
+| `sync_payload_bytes`           | Histogram | `op` · `module`               | [syncV2.ts](../../apps/server/src/modules/sync/syncV2.ts)           |
+| `sync_conflicts_total`         | Counter   | `module`                      | [syncV2.ts](../../apps/server/src/modules/sync/syncV2.ts)           |
 | `sync_op_log_apply_total`      | Counter   | `table` · `status` · `reason` | [syncV2.ts](../../apps/server/src/modules/sync/syncV2.ts) (PR #048) |
 | `sync_op_log_pull_lag_ms`      | Histogram | —                             | [syncV2.ts](../../apps/server/src/modules/sync/syncV2.ts) (PR #048) |
 | `sync_op_log_pull_queue_depth` | Histogram | —                             | [syncV2.ts](../../apps/server/src/modules/sync/syncV2.ts) (PR #048) |

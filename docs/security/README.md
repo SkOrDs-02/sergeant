@@ -1,6 +1,6 @@
 # Security
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
 > **Status:** Active
 
 Security policy, vulnerability response, audits, and recovery discipline.
@@ -14,6 +14,7 @@ Security policy, vulnerability response, audits, and recovery discipline.
 | [`container-scan.md`](./container-scan.md)                       | Trivy scanning for the API image                       |
 | [`codeql.md`](./codeql.md)                                       | CodeQL SAST taint-flow analysis for TypeScript         |
 | [`nightly-audit.md`](./nightly-audit.md)                         | Nightly dependency and audit triage                    |
+| [`threat-model.md`](./threat-model.md)                           | STRIDE threat map by surface                           |
 | [`disaster-recovery.md`](./disaster-recovery.md)                 | Disaster classes, RPO/RTO targets, restore discipline  |
 | [`vulnerability-sla.md`](./vulnerability-sla.md)                 | Response and remediation SLA                           |
 | [`hardening/`](./hardening/README.md)                            | Living security hardening backlog (per-finding cards)  |

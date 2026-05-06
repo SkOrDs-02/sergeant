@@ -2,7 +2,8 @@
 
 - **Status:** accepted
 - **Date:** 2026-05-03 (initial), 2026-05-04 (revised — scrypt correction)
-- **Last validated:** 2026-05-04 by Devin. **Next review:** 2026-08-04.
+- **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+  > **Status:** Active
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**

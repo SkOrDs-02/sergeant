@@ -6,7 +6,7 @@
 - **Supersedes:** —
 - **Related:**
   - [`apps/server/src/http/requireSession.ts`](../../apps/server/src/http/requireSession.ts) — router-level middleware, `req.user`.
-  - [`apps/server/src/modules/sync/sync.ts`](../../apps/server/src/modules/sync/sync.ts) — приклад `WHERE user_id = $1` layer.
+  - [`apps/server/src/modules/sync/syncV2.ts`](../../apps/server/src/modules/sync/syncV2.ts) — приклад `WHERE user_id = $1` layer.
   - [`apps/server/src/migrations/007_module_data_user_fk.sql`](../../apps/server/src/migrations/007_module_data_user_fk.sql) — FK до `"user"`, precondition для RLS.
   - [`docs/security/audit-exceptions.md`](../security/audit-exceptions.md) — поточні виключення.
   - ADR-0011 — local-first storage (server зберігає blob per user_id).

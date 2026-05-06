@@ -1,15 +1,15 @@
 # PR-09: `@parse/node-apn` review (ADR-only)
 
-> **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
-> **Status:** Planned
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+> **Status:** In review — ADR-only implementation in this docs sweep
 
-|              |                                                                 |
-| ------------ | --------------------------------------------------------------- |
-| **Severity** | High (H3)                                                       |
-| **Owner**    | TBD                                                             |
-| **Effort**   | 0.5 дня (research + ADR)                                        |
-| **Risk**     | Low (ADR-only)                                                  |
-| **Touches**  | `docs/adr/0045-apns-library-choice.md`, `apps/server/src/push/` |
+|              |                                                                   |
+| ------------ | ----------------------------------------------------------------- |
+| **Severity** | High (H3)                                                         |
+| **Owner**    | TBD                                                               |
+| **Effort**   | 0.5 дня (research + ADR)                                          |
+| **Risk**     | Low (ADR-only)                                                    |
+| **Touches**  | `docs/adr/0048-apns-provider-library.md`, `apps/server/src/push/` |
 
 ## Контекст
 
@@ -29,7 +29,7 @@
 
 ## Scope
 
-- **ADR-0045** з порівнянням `@parse/node-apn` vs `apns2` vs FCM-as-bridge.
+- **ADR-0048** з порівнянням `@parse/node-apn` vs `apns2` vs FCM-as-bridge.
 - Decision criteria:
   - Maintainership age (last commit, issue response time).
   - HTTP/2 + JWT-token-auth fully supported.
@@ -43,9 +43,9 @@
 
 ## Acceptance criteria (DoD)
 
-- [ ] ADR-0045 з secured-vote section — який саме library.
-- [ ] Comparison table: 3 features × 4 metrics.
-- [ ] Якщо decision = stay on `@parse/node-apn` → додати monitoring правило: «Якщо last release > 12 months — re-open ADR».
+- [x] ADR-0048 з decision section — який саме library.
+- [x] Comparison table: `@parse/node-apn` / `apns2` / `firebase-admin` / hand-rolled APNs.
+- [x] Якщо decision = stay on `@parse/node-apn` → monitoring правило: re-open if last release > 12 months, high/critical advisory, auth/signing defect, or Node runtime breakage.
 
 ## Тести
 
@@ -54,6 +54,13 @@
 ## Rollout
 
 - ADR-only PR, no runtime impact.
+
+## Resolution note
+
+Implemented as [`ADR-0048`](../../adr/0048-apns-provider-library.md) instead of
+`ADR-0045`, because `0045` is already the Hard Rules taxonomy ADR. Current
+decision: keep `@parse/node-apn`; re-open on stale release (>12 months),
+high/critical advisory, APNs auth/signing defect, or Node runtime breakage.
 
 ## Risks & mitigations
 
@@ -65,7 +72,7 @@
 
 - `apps/server/package.json:22`
 - `apps/server/src/push/` — APNs sender code
-- `docs/adr/0045-apns-library-choice.md` — новий
+- `docs/adr/0048-apns-provider-library.md` — новий
 
 ## Refs
 

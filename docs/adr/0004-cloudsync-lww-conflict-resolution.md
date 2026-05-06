@@ -6,7 +6,7 @@
 - **Supersedes:** —
 - **Related:**
   - [`apps/web/src/core/cloudSync/`](../../apps/web/src/core/cloudSync/) — engine / queue / conflict / state, ~16 файлів, ~4400 рядків коду + тестів.
-  - [`apps/server/src/modules/sync/sync.ts`](../../apps/server/src/modules/sync/sync.ts) — серверні `push`/`pull`/`pushAll`/`pullAll` хендлери з LWW guard.
+  - [`apps/server/src/modules/sync/syncV2.ts`](../../apps/server/src/modules/sync/syncV2.ts) — поточні op-log sync v2 хендлери.
   - [`apps/server/src/migrations/003_baseline_schema.sql`](../../apps/server/src/migrations/003_baseline_schema.sql) — таблиця `module_data`.
   - [`apps/server/src/migrations/007_module_data_user_fk.sql`](../../apps/server/src/migrations/007_module_data_user_fk.sql) — FK + cascade on user delete.
 
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS module_data (
 );
 ```
 
-`VALID_MODULES` явно whitelist-ує імена (`apps/server/src/modules/sync/sync.ts:125`),
+`VALID_MODULES` явно whitelist-ує імена (`apps/server/src/modules/sync/syncV2.ts`),
 тож `module_data` залишається ізольованою — інші not-sync-фічі (Coach memory)
 використовують ту саму таблицю, але з іншими ключами і pull-ом не зачіпаються.
 
@@ -183,7 +183,7 @@ conflict-detection.
 
 `clientUpdatedAt` обов'язкове у `SyncPushSchema` — раніше fallback на
 `new Date()` мовчки переписував свіжіший серверний запис, бо
-`client_updated_at <= NOW()` завжди true ([sync.ts:163](../../apps/server/src/modules/sync/sync.ts#L161-L164) коментар).
+`client_updated_at <= NOW()` завжди true ([syncV2.ts](../../apps/server/src/modules/sync/syncV2.ts) коментар).
 
 ### Consequences
 
