@@ -1,6 +1,6 @@
 # Dark-mode audit
 
-> **Last validated:** 2026-05-02 by @Codex.
+> **Last validated:** 2026-05-02 by @Codex. **Next review:** N/A (closed audit).
 > **Status:** Closed (Wave 2c shipped, lint-guardrail на `error`)
 > **Аудиторія:** усі, хто чіпає Tailwind-класи в `apps/web`.
 > **Ціль:** скаталогізувати всі місця, де dark-mode виражений як явний `dark:` override над сирим palette-кольором, щоб мігрувати їх у single-token-семантичні утиліти (`bg-success-soft`, `bg-finyk-surface`, `border-brand-strong`, …) і дати preset-у володіти light/dark-парою в **одному** місці.

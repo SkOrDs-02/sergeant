@@ -1,20 +1,26 @@
 # Brand-палітра → WCAG AA — пропозиція
 
-> **Last validated:** 2026-04-28 by @Skords-01. **Next review:** 2026-07-27.
-
-> **Status:** Proposal. Цей PR не змінює жодного токена — документ є дизайн-контрактом,
-> якому слідуватиме implementation-PR.
+> **Last validated:** 2026-05-06 by @Skords-01.
+> **Status:** Implemented — historical contract. Поточна канонічна реалізація
+> описана в [`brandbook.md` § Кольорова система → WCAG-AA `-strong`-тір](./brandbook.md#wcag-aa-тір--strong)
+> та [`design-system.md` § 2](./design-system.md). Цей документ зберігається
+> як audit trail обґрунтування `-strong`-tier-пропозиції.
 >
-> **Драйвер:** PR [#851](https://github.com/Skords-01/Sergeant/pull/851)
-> викинув `/design` (DesignShowcase) зі списку axe-core SURFACES; PR
-> [#852](https://github.com/Skords-01/Sergeant/pull/852) прибрав чотири з п’яти
-> родин правил, які падали. Що залишилося — `color-contrast` (60 nodes, serious),
-> властивий самій brand-палітрі, і є предметом цієї пропозиції.
-> Його виправлення ре-вмикає `/design` у axe-core-гейті.
+> **Implementation closed:** PR-серія [#851](https://github.com/Skords-01/Sergeant/pull/851) →
+> [#857](https://github.com/Skords-01/Sergeant/pull/857) ввела `-strong`-tier
+> для `brand` / `success` / `warning` / `danger` / `info` / `accent` (alias
+> `accent-strong → brand-strong`) і всіх module-родин
+> (`finyk` / `fizruk` / `routine` / `nutrition`). Tailwind-utility-и вивезені
+> через `packages/design-tokens/tailwind-preset.js` як для web (Tailwind), так
+> і для mobile (NativeWind). ESLint-rule
+> `sergeant-design/no-low-contrast-text-on-fill` піднято до `error`
+> (AGENTS.md Hard-rule #9). Showcase-роут `/design` повернутий до axe-core
+> SURFACES (`apps/web/tests/a11y/axe.spec.ts`); 60 серйозних color-contrast-нодів
+> закриті.
 >
 > **Поза скоупом:** chart-палітри, типографія, motion, dark-mode-робота
-> (dark-тема вже пройшла audit наприкінці 2025 — див.
-> [`docs/design/brandbook.md`](./brandbook.md#dark-mode)).
+> (dark-тема пройшла окремий audit — див.
+> [`dark-mode-audit.md`](./dark-mode-audit.md)).
 
 ---
 

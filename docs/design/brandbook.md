@@ -1,11 +1,13 @@
 # Sergeant Brandbook & Design-система
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
-> **Версія:** 2.0
-> **Last Updated:** April 2026
-> **Дизайн-філософія:** Soft & Organic з Emerald/Teal-акцентом
+Дизайн-філософія Sergeant — **Soft & Organic** з Emerald/Teal-акцентом.
+Цей документ описує бренд-ідентичність, голос і marketing-asset-и.
+**Для UI-коду** — починай із [`design-system.md`](./design-system.md): саме він
+тримає канонічні токени, type-scale, компоненти і ESLint-контракти. Якщо щось
+у брендбуку розходиться з дизайн-системою — перемагає дизайн-система.
 
 ---
 
@@ -170,17 +172,26 @@ font-family:
 
 ### Type-scale
 
-| Назва | Size | Line Height | Weight   | Сфера              |
-| ----- | ---- | ----------- | -------- | ------------------ |
-| 2xs   | 10px | 14px        | Medium   | Крихітні лейбли    |
-| xs    | 12px | 16px        | Medium   | Caption-и, badge-і |
-| sm    | 14px | 20px        | Regular  | Body small, кнопки |
-| base  | 16px | 24px        | Regular  | Body-текст         |
-| lg    | 18px | 28px        | Medium   | Large body         |
-| xl    | 20px | 28px        | Semibold | Заголовки карток   |
-| 2xl   | 24px | 32px        | Bold     | Заголовки секцій   |
-| 3xl   | 30px | 36px        | Bold     | Заголовки сторінок |
-| 4xl   | 36px | 40px        | Bold     | Hero-заголовки     |
+Мінімум для будь-якого user-facing-тексту — **12px (`text-xs`)** (AGENTS.md
+Hard-rule #16). `text-2xs` (10px) зарезервований під chart axis ticks і
+декоративні meta-badge-counts; **ніколи не використовувати для primary content**.
+Повний контракт + ESLint-rule `sergeant-design/no-sub-12px-utility` —
+у [`design-system.md` § 3](./design-system.md#3-типографічна-шкала).
+Для семантичних use-case-ів використовуй утиліти `.text-style-*`
+(`.text-style-meta`, `.text-style-caption`, `.text-style-body-sm`, …) — вони
+прив'язані до slots, а не до сирих pixel-розмірів.
+
+| Назва | Size | Line Height | Weight   | Сфера                                              |
+| ----- | ---- | ----------- | -------- | -------------------------------------------------- |
+| 2xs   | 10px | 14px        | Medium   | **Reserved:** chart axis ticks, decorative badges  |
+| xs    | 12px | 16px        | Medium   | Caption-и, badge-і, метадата (мінімум для UI-text) |
+| sm    | 14px | 20px        | Regular  | Body small, кнопки                                 |
+| base  | 16px | 24px        | Regular  | Body-текст                                         |
+| lg    | 18px | 28px        | Medium   | Large body                                         |
+| xl    | 20px | 28px        | Semibold | Заголовки карток                                   |
+| 2xl   | 24px | 32px        | Bold     | Заголовки секцій                                   |
+| 3xl   | 30px | 36px        | Bold     | Заголовки сторінок                                 |
+| 4xl   | 36px | 40px        | Bold     | Hero-заголовки                                     |
 
 ### Товщина шрифту
 
@@ -224,6 +235,13 @@ xl:   12px  (Small buttons, chips)
 full: 9999px (Pills, avatars)
 ```
 
+> **Канонічний контракт:** рав-розміри вище — референс-таблиця. У
+> продакшн-коді використовуй size-driven semantic-утиліти
+> (`rounded-swatch` / `rounded-marker` / `rounded-control` / `rounded-card` /
+> `rounded-hero` / `rounded-pill`) з [`radius-rhythm.md`](./radius-rhythm.md);
+> ESLint-rule `sergeant-design/no-raw-rounded-utility` забороняє сирі
+> `rounded-2xl` в `apps/web` (`error`).
+
 ---
 
 ## Тіні
@@ -253,6 +271,11 @@ box-shadow:
 ```css
 box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
 ```
+
+> **Канонічний контракт:** в коді не пиши inline `box-shadow` —
+> використовуй токени `shadow-card` / `shadow-float` / `shadow-glow`,
+> вивезені через `packages/design-tokens/tailwind-preset.js`. Повний
+> список + dark-mode-варіанти — у [`design-system.md` § 4.6](./design-system.md).
 
 ---
 
@@ -478,9 +501,11 @@ background: linear-gradient(150deg, #fdf9f3 0%, #fefdfb 50%, #f0fdfa 100%);
 ```
 
 > Contrast intent: `muted` / `subtle` / `line` були підняті після WCAG-аудиту
-> (див. PR-серію підняття контрасту темної теми). Dark-mode border тепер
-> читається на `--c-panel` ≥3:1, а `--c-subtle` забезпечує ≥4.5:1 на всіх
-> поверхнях.
+> (PR-серія dark-mode contrast lift: [#316](https://github.com/Skords-01/Sergeant/pull/316),
+> [#550](https://github.com/Skords-01/Sergeant/pull/550); подальші точкові
+> патчі див. у [`dark-mode-audit.md`](./dark-mode-audit.md)). Dark-mode border
+> тепер читається на `--c-panel` ≥3:1, а `--c-subtle` забезпечує ≥4.5:1
+> на всіх поверхнях.
 
 ---
 
@@ -524,10 +549,11 @@ background: linear-gradient(150deg, #fdf9f3 0%, #fefdfb 50%, #f0fdfa 100%);
 
 ## Native-патерни (iOS / Android)
 
-> Скоуп: лише `apps/mobile`. Ця секція **розширює** наявну бренд-ідентичність
-> native-специфічними гайдансами; web look & feel не змінюється —
-> ті самі токени, та сама палітра, той самий voice. Рішення, що породило
-> цю секцію, див. у [`react-native-migration.md` §13, Q9](../mobile/react-native-migration.md#13-прийняті-рішення-q1q10).
+> **Скоуп:** лише `apps/mobile`. Ця секція є канонічною довідкою патернів
+> для mobile (фокус на brand-узгодженій native-поведінці); migration-план
+> і фази лежать окремо в [`react-native-migration.md`](../mobile/react-native-migration.md)
+> (рішення Q9 / §13 фіксує, чому native-специфіка живе в брендбуку).
+> Токени, палітра, voice, type-scale — web і mobile ділять.
 
 ### Safe-area & layout
 

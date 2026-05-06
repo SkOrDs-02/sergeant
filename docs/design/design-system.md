@@ -81,6 +81,15 @@ Back-compat: старі токени `panel` / `panelHi` / `line` продовж
 `bg-finyk-surface`, `bg-fizruk-surface`, `bg-routine-surface`,
 `bg-nutrition-surface` (світла тінт поверхня під hero-картку модуля).
 
+> **`accent-strong`-alias.** `accent-strong` (вживане в audit-документах і
+> module-accent контракті) — це alias на `brand-strong` (`#047857`,
+> emerald-700, ≥4.5:1 проти `text-white`). Окремого CSS-змінного `--c-accent-strong`
+> нема: brand-палітра і accent у Sergeant — це той самий emerald,
+> тому WCAG-AA-companion живе під канонічною назвою `bg-brand-strong` /
+> `text-brand-strong`. Module-варіант — `bg-module-accent-strong` (резолвиться
+> з `--module-accent-strong-rgb`, який публікує `ModuleAccentProvider`;
+> див. [`module-accent.md`](./module-accent.md)).
+
 ### 2.4 Статуси
 
 | Token     | Solid     | Soft (bg)      | Використання       |

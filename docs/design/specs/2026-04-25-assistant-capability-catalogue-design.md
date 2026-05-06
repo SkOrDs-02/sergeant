@@ -13,7 +13,7 @@
 > server system prompt будується з реджистру через `buildModuleToolList()` у
 > `apps/server/src/modules/chat/toolDefs/systemPrompt.ts` (`SYSTEM_PROMPT_VERSION = "v6"`);
 > `/help` редіректить на каталог через `onOpenCatalogue` у `HubChat.tsx`.
-> Залишковий борг закрито: `apps/web/src/core/lib/<hubChatQuickActions>.ts` видалено (файлу немає);
+> Залишковий борг закрито: `apps/web/src/core/lib/<hubChatQuickActions>.ts` видалено (файлу немає; `<>` — governance-sync-skip-маркер для історичної референції);
 > `ChatQuickActions.tsx` читає реджистр напряму через `ASSISTANT_CAPABILITIES` із
 > [`packages/shared/src/lib/assistantCatalogue.ts`](../../../packages/shared/src/lib/assistantCatalogue.ts).
 
@@ -23,7 +23,7 @@ HubChat має 60 серверних tool definitions, ~50-рядковий `HEL
 
 - `apps/server/src/modules/chat/toolDefs/{finyk,fizruk,nutrition,routine,crossModule,memory,utility}.ts` — 60 tool definitions для Anthropic API. Це для моделі, юзер їх не бачить.
 - `apps/web/src/core/lib/hubChatUtils.ts` `HELP_TEXT` — markdown-стіна з ~50 командних прикладів, групованих по модулях. Виводиться коли юзер пише `/help`.
-- `apps/web/src/core/lib/<hubChatQuickActions>.ts` (історичний; видалено після міграції на capability catalogue) — 10 chips під полем вводу в чаті, із власним polled prompt + `requiresOnline` + module-aware filtering.
+- `apps/web/src/core/lib/<hubChatQuickActions>.ts` (історичний; видалено після міграції на capability catalogue; `<>` — governance-skip-маркер) — 10 chips під полем вводу в чаті, із власним polled prompt + `requiresOnline` + module-aware filtering.
 
 Кожен новий tool вимагає синхронної правки в усіх трьох — і часто розробники додають у toolDefs, але забувають про `HELP_TEXT` чи chip. Юзер бачить лише chips (10 з 60) і не знає, що інші 50 можливостей існують.
 
