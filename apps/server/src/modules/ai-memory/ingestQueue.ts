@@ -436,6 +436,71 @@ async function sampleMemoryIngestQueueDepth(): Promise<void> {
   }
 }
 
+/**
+ * Snapshot AI-memory-ingest worker/queue stats для `/health/workers`. Не
+ * пише метрики, не ходить у serviceOverride. Безпечний для виклику з HTTP
+ * handler-а — `getJobCounts()` йде у Redis, тож обертається у try/catch
+ * і повертає `jobCounts: null` + `error` повідомлення без stack-у. Ніколи
+ * не throw-ить — health-endpoint має лишатись reachable навіть у
+ * Redis-incident.
+ */
+export interface MemoryIngestWorkerStats {
+  enabled: boolean;
+  started: boolean;
+  fallbackMode: boolean;
+  concurrency: number;
+  attempts: number;
+  jobCounts: {
+    waiting: number;
+    active: number;
+    delayed: number;
+    failed: number;
+  } | null;
+  error?: string;
+}
+
+export async function getMemoryIngestWorkerStats(): Promise<MemoryIngestWorkerStats> {
+  const enabled = env.AI_MEMORY_ENABLED;
+  const started = state.worker !== null;
+  // Якщо `AI_MEMORY_ENABLED=true`, але `startMemoryIngestWorker()` повернув
+  // null (Redis недоступний) — у production це degraded-стан: producer-и
+  // падають у in-process direct dispatch (`runDirectDispatch`).
+  const fallbackMode = enabled && !started;
+  const base: Omit<MemoryIngestWorkerStats, "jobCounts" | "error"> = {
+    enabled,
+    started,
+    fallbackMode,
+    concurrency: env.AI_MEMORY_INGEST_CONCURRENCY,
+    attempts: env.AI_MEMORY_INGEST_ATTEMPTS,
+  };
+  if (!state.queue) {
+    return { ...base, jobCounts: null };
+  }
+  try {
+    const counts = await state.queue.getJobCounts(
+      "waiting",
+      "active",
+      "delayed",
+      "failed",
+    );
+    return {
+      ...base,
+      jobCounts: {
+        waiting: Number(counts["waiting"] ?? 0),
+        active: Number(counts["active"] ?? 0),
+        delayed: Number(counts["delayed"] ?? 0),
+        failed: Number(counts["failed"] ?? 0),
+      },
+    };
+  } catch (err) {
+    return {
+      ...base,
+      jobCounts: null,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 async function closeMemoryIngestModule(): Promise<void> {
   if (state.inflightFallbacks.size > 0) {
     await Promise.allSettled([...state.inflightFallbacks]);

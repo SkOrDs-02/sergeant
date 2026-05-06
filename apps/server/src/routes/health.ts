@@ -3,6 +3,7 @@ import type { Pool } from "pg";
 import {
   createReadyzHandler,
   createHealthzHandler,
+  createWorkersHealthHandler,
   livezHandler,
   startupzHandler,
 } from "../http/index.js";
@@ -27,6 +28,13 @@ import { metricsHandler } from "../obs/metrics.js";
  * залишаючи короткі `/livez|/readyz|/startupz` для існуючих manifest-ів.
  *
  * `/healthz` — детальний JSON endpoint для debugging/monitoring (не probe).
+ *
+ * `/health/workers` (PR-31) — per-queue/worker breakdown для дашбордів і
+ * runbook-ів: ai-memory ingest BullMQ + mono enrichment SQL queue +
+ * background queue. Окремий endpoint, бо `/healthz` лишається фокусованим
+ * на DB/Redis ping; worker-incident-и потребують глибшого breakdown
+ * (waiting/active/delayed/failed по черзі) без того, щоб роздути
+ * platform-probe `readyz`.
  */
 export function createHealthRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
@@ -45,6 +53,7 @@ export function createHealthRouter({ pool }: { pool: Pool }): Router {
   r.get("/health/startup", startupzHandler);
 
   r.get("/healthz", createHealthzHandler(pool));
+  r.get("/health/workers", createWorkersHealthHandler(pool));
   r.get("/metrics", metricsHandler);
   return r;
 }

@@ -7,6 +7,7 @@ import {
 import { logger, serializeError } from "../../obs/logger.js";
 import { categorizeTransaction } from "../../routes/internal/categorize.js";
 import type { CategorizeResult } from "../../routes/internal/categorize.js";
+import { env } from "../../env.js";
 
 /**
  * Polling consumer для outbox-таблиці `mono_ai_enrichment_queue`.
@@ -292,6 +293,78 @@ export async function sampleEnrichmentQueueDepth(pool: Pool): Promise<void> {
       msg: "mono_enrichment_depth_sample_failed",
       err: serializeError(err, { includeStack: false }),
     });
+  }
+}
+
+/**
+ * Snapshot mono-AI-enrichment-queue стану для `/health/workers`. Читає
+ * `mono_ai_enrichment_queue` згрупований за `status`, повертає dict
+ * `{ pending, processing, done, failed, dead_letter, total }`. Якщо
+ * SQL-запит фейлить — повертає `null` queueDepth + `error`. Не throw-ить
+ * — health-endpoint має лишатись reachable навіть у DB-incident.
+ *
+ * `enabled` — env-flag `MONO_ENRICHMENT_WORKER_ENABLED && ANTHROPIC_API_KEY`,
+ * віддзеркалює інваріант з `index.ts` (worker запускається лише коли
+ * обидва true). Це proxy для "очікуваний live-worker", бо worker сам
+ * не реєструється у appState.
+ */
+export interface MonoEnrichmentWorkerStatus {
+  enabled: boolean;
+  intervalMs: number;
+  queueDepth: {
+    pending: number;
+    processing: number;
+    done: number;
+    failed: number;
+    dead_letter: number;
+    total: number;
+  } | null;
+  error?: string;
+}
+
+export async function getMonoEnrichmentWorkerStatus(
+  pool: Pool,
+): Promise<MonoEnrichmentWorkerStatus> {
+  // Читаємо process.env напряму (не закешований `env`-snapshot), щоб health-
+  // endpoint відображав фактичний стан process-у — Railway теоретично може
+  // підмінити vars через `set` без рестарту, та й тести легше пишуться без
+  // module-reset танців.
+  const flagRaw = process.env["MONO_ENRICHMENT_WORKER_ENABLED"]?.toLowerCase();
+  const flagOn = flagRaw === "true" || flagRaw === "1";
+  const apiKeyPresent = Boolean(process.env["ANTHROPIC_API_KEY"]);
+  const enabled = flagOn && apiKeyPresent;
+  const intervalMs = env.MONO_ENRICHMENT_INTERVAL_MS;
+  try {
+    const res = await pool.query<{ status: string; count: number | string }>(
+      `SELECT status, COUNT(*)::bigint AS count
+         FROM mono_ai_enrichment_queue
+        GROUP BY status`,
+    );
+    const depth = {
+      pending: 0,
+      processing: 0,
+      done: 0,
+      failed: 0,
+      dead_letter: 0,
+      total: 0,
+    };
+    for (const r of res.rows) {
+      const n = Number(r.count) || 0;
+      depth.total += n;
+      if (r.status === "pending") depth.pending = n;
+      else if (r.status === "processing") depth.processing = n;
+      else if (r.status === "done") depth.done = n;
+      else if (r.status === "failed") depth.failed = n;
+      else if (r.status === "dead_letter") depth.dead_letter = n;
+    }
+    return { enabled, intervalMs, queueDepth: depth };
+  } catch (err) {
+    return {
+      enabled,
+      intervalMs,
+      queueDepth: null,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }
 

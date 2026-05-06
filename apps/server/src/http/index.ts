@@ -20,6 +20,7 @@ export {
   startupzHandler,
   createReadyzHandler,
   createHealthzHandler,
+  createWorkersHealthHandler,
 } from "./health.js";
 
 export { errorHandler } from "./errorHandler.js";

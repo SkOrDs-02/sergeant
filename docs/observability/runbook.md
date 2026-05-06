@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 Інструкції "що робити, коли спрацював алерт" для правил з
@@ -249,6 +249,59 @@ session-check чекає слот.
    - Перевір `rate_limit_degraded_total{mode=closed}` — якщо росте, всі auth-роути серверу будуть 503. Залежить від `failMode: "closed"` policy.
    - Швидкий патч (не для prod): `RATE_LIMIT_FAIL_CLOSED_AUTH=false` env-var → revert до open-mode без redeploy. **УВАГА:** це послабляє credential-stuffing захист, тримай не довше за hour.
 5. **Не перезавантажуй pod-и просто щоб «спробувати»** — startup probe з `failureThreshold: 30` сам перезапустить, якщо warmup застряг.
+
+## `/health/workers` — worker fleet snapshot
+
+`GET /health/workers` (PR-31) повертає JSON з per-queue/worker breakdown. **Не** є platform-probe-ом — Railway його не використовує. Призначення: дашборди, runbook-investigation, alert-channel debug.
+
+```bash
+curl https://api.sergeant/health/workers | jq
+```
+
+Контракт відповіді:
+
+```json
+{
+  "status": "healthy" | "unhealthy",
+  "timestamp": "2026-05-06T08:30:00.000Z",
+  "workers": {
+    "aiMemoryIngest": {
+      "enabled": true,           // env: AI_MEMORY_ENABLED
+      "started": true,           // BullMQ Worker.start() succeeded
+      "fallbackMode": false,     // true коли enabled+!started → in-process direct dispatch
+      "concurrency": 4,
+      "attempts": 5,
+      "jobCounts": { "waiting": 0, "active": 0, "delayed": 0, "failed": 0 }
+    },
+    "monoEnrichment": {
+      "enabled": true,           // env: MONO_ENRICHMENT_WORKER_ENABLED && ANTHROPIC_API_KEY
+      "intervalMs": 5000,
+      "queueDepth": {
+        "pending": 5, "processing": 1, "done": 4242,
+        "failed": 0, "dead_letter": 0, "total": 4248
+      }
+    },
+    "backgroundQueue": {
+      "status": "healthy",
+      "queued": 0,
+      "running": 0,
+      "concurrency": 5,
+      "isShuttingDown": false
+    }
+  }
+}
+```
+
+Status-code mapping:
+
+- **200** — обидві worker-sample-функції повернулися без `error`. Worker-disabled / fallback / порожня черга — все ще healthy.
+- **503** — хоч одна повернула `error` (Redis/DB unreachable). На worker-у, що зафейлив, `jobCounts`/`queueDepth` буде `null` і додасться поле `error` зі stripped message (без stack-trace — L7 invariant).
+
+**Коли користуватись:**
+
+1. **Alert "ai-memory-ingest queue depth growing":** перевір `aiMemoryIngest.jobCounts.failed` + `delayed`. Якщо `failed > 0` за 5min — Anthropic/Voyage incident, runbook → `docs/launch/tech/ai-memory-activation.md §Outage`.
+2. **Alert "mono enrichment lag":** перевір `monoEnrichment.queueDepth.pending` + `processing`. Якщо pending росте, але processing=0 — worker не стартував у одній з replic-ів. Перевір `MONO_ENRICHMENT_WORKER_ENABLED` env у Railway.
+3. **Reproduce CI flakiness:** `aiMemoryIngest.fallbackMode=true` означає Redis недоступний — у CI це норма, у production sign of disaster.
 
 ## Як обробити Renovate PR із breaking change
 
