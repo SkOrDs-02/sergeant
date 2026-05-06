@@ -436,16 +436,18 @@ export function HubDashboard() {
             <FirstActionHeroCard
               onAction={(id) => openModule(id)}
               onDismiss={bumpHero}
-              onShown={({ primary, picks }) => {
+              onShown={({ primary, picks, primaryReason }) => {
                 trackEvent(ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_SHOWN, {
                   picks,
                   primary,
+                  primary_reason: primaryReason,
                 });
               }}
-              onPicked={({ module, via }) => {
+              onPicked={({ module, via, primaryReason }) => {
                 trackEvent(ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_PICKED, {
                   module,
                   via,
+                  primary_reason: primaryReason,
                 });
               }}
             />

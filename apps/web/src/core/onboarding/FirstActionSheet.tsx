@@ -7,7 +7,11 @@ import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { clearFirstActionPending, getVibePicks } from "./vibePicks";
 import { PresetSheet, getPresetModule } from "./PresetSheet";
 import type { ModuleId } from "./presetApply";
-import { getOnboardingGoals, pickPrimaryFirstAction } from "@sergeant/shared";
+import {
+  getOnboardingGoals,
+  rankFirstActionCandidates,
+  type FirstActionRanking,
+} from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
 
 type IconName = Parameters<typeof Icon>[0]["name"];
@@ -71,14 +75,16 @@ function isModuleId(id: string): id is ModuleId {
 }
 
 /**
- * Goal-aware primary picker for the FTUX hero (S2.1). Reads the
- * onboarding goals once per render and delegates the goal vs static
- * priority decision to `@sergeant/shared` so web and mobile resolve
- * the primary identically. Falls back to `routine` if `picks` is
- * empty (matches pre-S2.1 behaviour).
+ * Goal-aware primary + chip ordering + analytics reason for the FTUX
+ * hero (PR-11). Reads the onboarding goals once per render and delegates
+ * to `rankFirstActionCandidates` so web and mobile resolve the primary
+ * and the alt-module chip-row order identically. The returned `reason`
+ * is forwarded to PostHog through `onboarding_first_action_*` events so
+ * the SLO dashboard can break first-entry rate down by selection mode
+ * (`single-goal` vs `multi-goal-vibe` vs `multi-pick-static`).
  */
-function pickPrimary(picks: string[]): ModuleId {
-  return pickPrimaryFirstAction(picks, getOnboardingGoals(webKVStore));
+function rankPrimary(picks: string[]): FirstActionRanking {
+  return rankFirstActionCandidates(picks, getOnboardingGoals(webKVStore));
 }
 
 /**
@@ -136,18 +142,16 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
     return raw.length > 0 ? raw : Object.keys(ACTIONS);
   }, []);
 
-  // `pickPrimary` reads onboarding goals once and runs a trivial
+  // `rankPrimary` reads onboarding goals once and runs a trivial
   // 4-module scan; memoising would add more bookkeeping than it
   // saves. The goals payload is stable for the FTUX session — once
   // wizard.finish() persists them they won't mutate until reset.
-  const primaryId = pickPrimary(picks);
+  const ranking = rankPrimary(picks);
+  const primaryId = ranking.primary;
   const primary = ACTIONS[primaryId];
   const others = useMemo<ModuleId[]>(
-    () =>
-      picks.filter(
-        (id: string): id is ModuleId => id !== primaryId && isModuleId(id),
-      ),
-    [picks, primaryId],
+    () => ranking.others.filter((id): id is ModuleId => isModuleId(id)),
+    [ranking.others],
   );
 
   // Module id whose PresetSheet is currently open, or `null` if closed.
@@ -160,8 +164,9 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_SHOWN, {
       picks,
       primary: primaryId,
+      primary_reason: ranking.reason,
     });
-  }, [picks, primaryId]);
+  }, [picks, primaryId, ranking.reason]);
 
   const dismiss = () => {
     clearFirstActionPending();
@@ -173,6 +178,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_PICKED, {
       module: id,
       primary: primaryId,
+      primary_reason: ranking.reason,
       // S2.3: "chip" replaces the legacy "expand" tag now that the inline
       // chip row is always-visible. PostHog dashboards reading the raw
       // event can compute switch-rate as `count(via="chip") /
