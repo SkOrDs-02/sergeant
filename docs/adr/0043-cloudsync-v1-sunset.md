@@ -7,7 +7,7 @@
 - **Related:**
   - [ADR-0004 — CloudSync LWW conflict resolution](./0004-cloudsync-lww-conflict-resolution.md) — це v1, що ми збираємось sunset-нути.
   - [Initiative 0003 — Sync v2 rollout & v1 sunset](../initiatives/0003-sync-v2-rollout-and-v1-sunset.md) — rationale-документ із 6-фазним планом.
-  - [`apps/server/src/modules/sync/sync.ts`](../../apps/server/src/modules/sync/sync.ts) — v1 LWW-blob handlers (`syncPush` / `syncPull` / `syncPushAll`).
+  - [`apps/server/src/modules/sync/sunsetGone.ts`](../../apps/server/src/modules/sync/sunsetGone.ts) — v1 410 Gone handler after the legacy LWW handlers were removed.
   - [`apps/server/src/modules/sync/syncV2.ts`](../../apps/server/src/modules/sync/syncV2.ts) — v2 op-log handlers (Stage 2 / PR #021).
   - [`apps/server/src/modules/sync/sunsetHeaders.ts`](../../apps/server/src/modules/sync/sunsetHeaders.ts) — middleware, що реалізує цей ADR.
   - [`apps/server/src/modules/sync/clientSurvey.ts`](../../apps/server/src/modules/sync/clientSurvey.ts) — Phase 1 measurement counter.

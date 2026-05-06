@@ -1,6 +1,6 @@
 # Sprint 4 — Low severity sweep and structural hardening
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
 > **Status:** Planned
 
 Sprint 4 closes the **Low-severity sweep** (L1–L14 — paper cuts, defence in
@@ -32,7 +32,7 @@ posture from "secure for an MVP" to "auditable for a paid product".
 | [I3](./I3-sbom-generation.md)              | Generate SBOM during container build                 | Info     | platform | 0.5 d                                                                                                                                                                                                                                     |
 | [I4](./I4-security-txt.md)                 | `/.well-known/security.txt` content + expiry refresh | Info     | platform | 0.1 d _(closed 2026-05-04)_                                                                                                                                                                                                               |
 | [I5](./I5-pre-commit-secret-detection.md)  | Pre-commit hooks for secret detection                | Info     | platform | 0.25 d                                                                                                                                                                                                                                    |
-| [I6](./I6-threat-model.md)                 | Document the STRIDE threat model per module          | Info     | platform | 1 d                                                                                                                                                                                                                                       |
+| [I6](./I6-threat-model.md)                 | Document the STRIDE threat model per module          | Info     | platform | 1 d _(closed 2026-05-06 — `docs/security/threat-model.md` adds the STRIDE map by surface and links controls back to the hardening backlog)_                                                                                               |
 | [I7](./I7-security-events-openclaw.md)     | Push security events to OpenClaw                     | Info     | backend  | 1 d                                                                                                                                                                                                                                       |
 | [I8](./I8-periodic-external-pentest.md)    | Schedule a periodic external pentest                 | Info     | founder  | —                                                                                                                                                                                                                                         |
 

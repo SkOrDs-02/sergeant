@@ -1,6 +1,6 @@
 # 0003 — Sync v2 rollout & v1 sunset
 
-> **Last validated:** 2026-05-06 by @dmytro.skords. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
 > **Status:** In progress (Phase 1 + 2 shipped 2026-05-04)
 > **Priority:** P0 (Sprint 1–2)
 > **Owner:** `@Skords-01`
@@ -162,7 +162,7 @@ Sergeant зараз **паралельно тримає два sync-механі
 - [ADR-0004 CloudSync LWW conflict resolution](../adr/0004-cloudsync-lww-conflict-resolution.md)
 - [`docs/planning/storage-roadmap.md`](../planning/storage-roadmap.md) — Stage 5 sync-v2
 - [`docs/tech-debt/backend.md`](../tech-debt/backend.md) — запис «CloudSync v1/v2 dual-stack»
-- [`apps/server/src/modules/sync/sync.ts`](../../apps/server/src/modules/sync/sync.ts) — v1-handlers
+- [`apps/server/src/modules/sync/sunsetGone.ts`](../../apps/server/src/modules/sync/sunsetGone.ts) — v1 410 Gone handler
 - [`apps/web/src/core/cloudSync/`](../../apps/web/src/core/cloudSync/) — v2 outbox
 - RFC 8594 — `Sunset` HTTP header
 

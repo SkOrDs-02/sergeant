@@ -1,6 +1,6 @@
 # Security Hardening Backlog
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
 > **Status:** Active
 
 Беклог посилення безпеки (security hardening) — структурований список знахідок із внутрішнього security-review від 2026-05-03. Кожна знахідка живе у власному файлі-картці (`<id>-<slug>.md`), згрупована у спринти за пріоритетом усунення.
@@ -103,6 +103,9 @@
 
 ## Cross-references
 
+- Closed 2026-05-06: [I6](./I6-threat-model.md) is resolved by
+  [`docs/security/threat-model.md`](../threat-model.md), the canonical STRIDE
+  map for the main product surfaces.
 - [docs/security/vulnerability-sla.md](../vulnerability-sla.md) — SLA на реакцію + дедлайн усунення.
 - [docs/security/audit-exceptions.md](../audit-exceptions.md) — затверджені винятки з security findings.
 - [docs/governance/security-incident-policy.md](../../governance/security-incident-policy.md) — incident-policy.

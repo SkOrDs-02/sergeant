@@ -2,7 +2,8 @@
 
 - **Status:** Accepted
 - **Date:** 2026-05-04
-- **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+- **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+  > **Status:** Active
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**

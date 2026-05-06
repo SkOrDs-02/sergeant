@@ -1,6 +1,6 @@
 # Disaster Recovery
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
 > **Status:** Active
 
 Disaster recovery defines how Sergeant recovers from catastrophic runtime or data loss events. This document keeps the expectations lightweight but explicit for a Founder+1 operating model.
@@ -41,6 +41,23 @@ Disaster recovery defines how Sergeant recovers from catastrophic runtime or dat
 - [restore-from-backup.md](../playbooks/restore-from-backup.md)
 - [test-backup-restore.md](../playbooks/test-backup-restore.md)
 - [hotfix-prod-regression.md](../playbooks/hotfix-prod-regression.md)
+
+## Recovery scenarios
+
+| Scenario                                      | First action                                                                                                     | Canonical runbook                                                                                                             | Target                           |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| PostgreSQL data loss or corruption            | Stop write-heavy deploys, preserve current snapshot, restore latest verified backup into a fresh database        | [`database-backup-restore.md`](../runbooks/database-backup-restore.md)                                                        | RPO <= 24h, RTO <= 4h            |
+| Bad migration on production                   | Do not run `down.sql`; ship a compensating migration or restore into a fresh DB if data is corrupt               | [`database-backup-restore.md`](../runbooks/database-backup-restore.md) + AGENTS.md hard rule #4                               | RTO depends on data impact       |
+| Railway API/runtime outage                    | Roll back or redeploy `apps/server` before rebuilding infra; verify `/healthz` and `/health/workers`             | [`operations-runbook.md`](../runbooks/operations-runbook.md)                                                                  | RTO <= 1h                        |
+| Vercel web deploy/header regression           | Promote previous green deployment or revert the header PR; verify COOP/COEP/CSP headers                          | [`../deploy/vercel.md`](../deploy/vercel.md)                                                                                  | RTO <= 1h                        |
+| n8n workflow corruption or accidental UI edit | Re-import the JSON from `ops/n8n-workflows/`, then validate the manifest and smoke-trigger the affected workflow | [`operations-runbook.md`](../runbooks/operations-runbook.md)                                                                  | RTO <= 4h                        |
+| Secret compromise                             | Rotate the provider key, redeploy affected surfaces, and record the incident/exception trail                     | [`rotate-secrets.md`](../playbooks/rotate-secrets.md), [`encryption-key-rotation.md`](../runbooks/encryption-key-rotation.md) | RTO <= 4h for auth/provider keys |
+
+## Drill cadence
+
+- PostgreSQL restore drill: every 6 months, using [`test-backup-restore.md`](../playbooks/test-backup-restore.md).
+- Operations table-top: every quarter, start from [`operations-runbook.md`](../runbooks/operations-runbook.md) and walk the five runtime scenarios above.
+- After each drill, update this document only if the target, owner, or canonical runbook changed.
 
 ## Operational runbooks
 
