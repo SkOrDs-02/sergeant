@@ -52,6 +52,22 @@ vi.mock("./authClient.js", () => ({
     forgetPassword(args),
 }));
 
+// Capture analytics events fired by AuthContext без реальної transport.
+const trackEventMock: ReturnType<
+  typeof vi.fn<(name: string, payload?: Record<string, unknown>) => void>
+> = vi.fn();
+
+vi.mock("../observability/analytics", async () => {
+  const real = await vi.importActual<
+    typeof import("../observability/analytics")
+  >("../observability/analytics");
+  return {
+    ...real,
+    trackEvent: (name: string, payload?: Record<string, unknown>) =>
+      trackEventMock(name, payload),
+  };
+});
+
 // Mock `useUser` from `@sergeant/api-client/react`. The AuthContext must
 // drive off this hook — NOT off `better-auth/react#useSession`. The mock
 // keeps `apiQueryKeys` intact so invalidation assertions can compare
@@ -135,6 +151,7 @@ describe("AuthContext", () => {
     signOut.mockClear();
     forgetPassword.mockClear();
     useUserMock.mockReset();
+    trackEventMock.mockClear();
   });
 
   it("drives `user`/`status` off useUser() — not better-auth/useSession", () => {
@@ -215,6 +232,41 @@ describe("AuthContext", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: apiQueryKeys.me.current(),
     });
+  });
+
+  // WF-60 growth funnel читає `signup_completed` як перехід visit → signup
+  // (`ops/n8n-workflows/60-growth-funnel-snapshot.json`). Без цієї події
+  // funnel'у-крок зчитується як 0; контракт фіксуємо тут, щоб майбутній
+  // refactor реєстрації не зніс інструментацію мовчки.
+  it("fires signup_completed analytics event after successful email register", async () => {
+    setUser({ data: undefined });
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    await act(async () => {
+      const ok = await result.current.register("a@b.c", "pw", "A");
+      expect(ok).toBe(true);
+    });
+    expect(trackEventMock).toHaveBeenCalledWith("signup_completed", {
+      method: "email",
+    });
+  });
+
+  it("does NOT fire signup_completed when register fails", async () => {
+    setUser({ data: undefined });
+    signUpEmail.mockResolvedValueOnce({
+      data: null,
+      error: { message: "User already exists" },
+    } as unknown as Awaited<ReturnType<typeof signUpEmail>>);
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    await act(async () => {
+      const ok = await result.current.register("a@b.c", "pw", "A");
+      expect(ok).toBe(false);
+    });
+    expect(trackEventMock).not.toHaveBeenCalledWith(
+      "signup_completed",
+      expect.anything(),
+    );
   });
 
   it("invalidates apiQueryKeys.me.current() on logout, even if signOut throws", async () => {

@@ -33,6 +33,8 @@ describe("ANALYTICS_EVENTS registry", () => {
       "sync_conflict_resolved",
     );
 
+    expect(ANALYTICS_EVENTS.SIGNUP_COMPLETED).toBe("signup_completed");
+
     expect(ANALYTICS_EVENTS.SUBSCRIPTION_STARTED).toBe("subscription_started");
     expect(ANALYTICS_EVENTS.SUBSCRIPTION_CANCELED).toBe(
       "subscription_canceled",

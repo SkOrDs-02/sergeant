@@ -14,6 +14,7 @@ import type { User } from "@sergeant/shared";
 import { signIn, signUp, signOut, forgetPassword } from "./authClient";
 import { identifyPostHogUser, resetPostHog } from "../observability/posthog";
 import { buildIdentifyTraits } from "../observability/identifyTraits";
+import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { messages } from "../../shared/i18n/uk";
 
 /**
@@ -246,6 +247,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setAuthError(translateAuthError(result.error, "Помилка реєстрації"));
           return false;
         }
+        // WF-60 growth funnel рахує цю подію як перехід
+        // visit → signup. Fire-and-forget — `trackEvent` ловить власні
+        // помилки і ніколи не кидає. Викликаємо до `invalidateMe`, щоб
+        // ивент полетів навіть якщо рефетч `me` зависне.
+        trackEvent(ANALYTICS_EVENTS.SIGNUP_COMPLETED, { method: "email" });
         await invalidateMe();
         return true;
       } catch (err) {
