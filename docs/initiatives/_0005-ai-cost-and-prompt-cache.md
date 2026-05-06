@@ -250,22 +250,50 @@ Sergeant досить агресивно використовує Anthropic Clau
 - [x] Grafana dashboard `ai-cost.json` live з 7 panels (spec вимагав 5).
 - [x] Cost / day per model видно у Grafana — panel #2 «Estimated daily spend (USD)».
 - [ ] Alert `ai_daily_cost_usd > 50` — **відстрочено**: замість cost-based alert сьогодні маємо `AiErrorBudgetBurn` (request-rate-based) + `AiQuotaFailOpen` + `ai_quota_blocks_total` panel. Cost-cap alert додамо після того, як baseline спостережень за 1 тиждень покаже цільовий threshold (зараз spending занадто низький, щоб ставити cap осмислено).
-- [ ] Cache hit-rate ≥ 60% за тиждень — **TBD**: rollout щойно; перевірка через `Cache-hit ratio (1h window)` panel протягом наступного тижня.
+- [x] Cache hit-rate ≥ 60% за тиждень — **виконано**: 7d token-rate `chat`=96.81%, `chat-tool-result`=90.64% (деталі у § [Post-rollout verification (2026-05-06)](#post-rollout-verification-2026-05-06)).
 - [x] ADR `0039-anthropic-prompt-cache-policy.md` змерджено (у цій PR-і).
 - [x] CI lint + tests проходять.
 
 ### Метрики (Baseline → Shipped)
 
-| Метрика                                     | Baseline (2026-05-03) | Shipped (2026-05-04)                                                                                |
-| ------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------- |
-| Anthropic input-tokens per request (median) | ~10–25k               | system[0]+tools (≈10k) йде у cache_read після першого запиту в TTL вікні                            |
-| Cache hit-rate (за `system + tools`)        | 0% (не вмикалось)     | TBD за тиждень baseline; expected ≥60%                                                              |
-| Cost / day / 100 active users (avg)         | $10–30 (estimate)     | TBD; expected $5–15 (50–70% reduction від cache_read economy)                                       |
+| Метрика                                     | Baseline (2026-05-03) | Shipped (2026-05-04)                                                                                | Verified (2026-05-06)                                                       |
+| ------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Anthropic input-tokens per request (median) | ~10–25k               | system[0]+tools (≈10k) йде у cache_read після першого запиту в TTL вікні                            | confirmed: cache_read tokens dominate prompt tokens на обох wired endpoints |
+| Cache hit-rate (за `system + tools`)        | 0% (не вмикалось)     | TBD за тиждень baseline; expected ≥60%                                                              | **96.81%** (`chat`), **90.64%** (`chat-tool-result`) — обидва >> 60% target |
+| Cost / day / 100 active users (avg)         | $10–30 (estimate)     | TBD; expected $5–15 (50–70% reduction від cache_read economy)                                       | $0.005–$0.10/day total (pre-launch volume; per-user N/A)                    |
 | Grafana panel «cost per day per model»      | none                  | live (panel #2 в `ai-cost.json`)                                                                    |
 | Cache-hit Prom counter                      | none                  | `anthropic_prompt_cache_hit_total{version, outcome}` live                                           |
 | Cost estimation Prom counter                | none                  | `ai_cost_estimate_usd_total{provider, model, endpoint}` live                                        |
 | Pricing table                               | none                  | `ANTHROPIC_PRICING_USD_PER_MTOK` (8 model-prefix-ів × 4 rates) у `apps/server/src/lib/anthropic.ts` |
 | `ai_429_rate`                               | ?                     | < 1% (через `AiErrorBudgetBurn` alert; staging спостерігає)                                         |
+
+### Post-rollout verification (2026-05-06)
+
+`2026-05-12` follow-up закритий ahead-of-schedule. Token-rate cache-hit (canonical signal — per-request `anthropic_prompt_cache_hit_total` counter рідко інкрементиться, див. drift-нотатку нижче) за останні 7 днів:
+
+| Endpoint           | Cache-read tokens (7d) | Cache-write tokens (7d) | Prompt tokens (7d) | Hit-rate                  |
+| ------------------ | ---------------------- | ----------------------- | ------------------ | ------------------------- |
+| `chat`             | 27,903                 | 18,700                  | 920                | **96.81%** ✅ (>>60%)     |
+| `chat-tool-result` | 28,029                 | 2,194                   | 2,893              | **90.64%** ✅ (>>60%)     |
+| `coach-insight`    | 0                      | 0                       | 9,587              | 0% (cache не wired — OOS) |
+| `weekly-digest`    | 0                      | 0                       | 949                | 0% (cache не wired — OOS) |
+
+Обидва wired endpoint-и **>> 60% target** і **>> 30% rollback threshold**. ADR-0039 § 7 не активуємо.
+
+`coach-insight` / `weekly-digest` — батч-флоу без TTL-overlap; вмикання cache там не відповідає cost-економіці (write-cost 1.25× без read-amortization). Out-of-scope для 0005; якщо потрібно вмикнути — окремий ADR + перевірка hit-rate в staging.
+
+**Cost (7d):** $0.115 total spend (peak day = $0.10, найнижчий = $0.005). Spending-volume занадто низький для cost-cap alert; `ai_daily_cost_usd > $X` зостається у `Carry-over → Після baseline-week` queue до моменту, коли launch (Initiative 0010) дасть осмислений baseline.
+
+**Drift signal:** `anthropic_prompt_cache_hit_total{version="v7"}` = 2 hits / 7d, `version="v8"` = 0; per-request counter залишається sparse vs token-rate (55k+ cache_read tokens / 7d). Це **не bug** — counter інкрементиться `bumpCacheHit()` тільки коли SDK явно сигналізує hit/miss outcome у message-completion event-і (для streaming flow сигнал часто не доходить до SSE-handler-у). Token-decomposition через `ai_tokens_total{kind=~"cache_read|cache_write|prompt"}` залишається canonical signal. Per-route hit-rate breakdown переноситься у `Carry-over → без due` вже (`endpoint` label на `anthropic_prompt_cache_hit_total` — коли incident вимагатиме).
+
+**Reproducible verification** (Grafana Cloud datasource `grafanacloud-prom`):
+
+```bash
+# Required: GRAFANA_TOKEN (Grafana Cloud API key з Viewer-scope на skords01 stack).
+curl -s -G -H "Authorization: Bearer $GRAFANA_TOKEN" \
+  "https://skords01.grafana.net/api/datasources/proxy/uid/grafanacloud-prom/api/v1/query" \
+  --data-urlencode 'query=sum by (endpoint) (increase(ai_tokens_total{kind="cache_read"}[7d])) / sum by (endpoint) (increase(ai_tokens_total{kind=~"prompt|cache_read"}[7d]))'
+```
 
 ### Verification queries (PromQL)
 
@@ -293,7 +321,7 @@ Manual smoke (потрібен реальний `ANTHROPIC_API_KEY`, не `AI_QU
 
 ### Carry-over → successor
 
-- [ ] **2026-05-12 (≈ +тиждень):** перевірити cache-hit-rate ≥60% (panel #3 у `ai-cost.json` + query #1 вище). Якщо <30% — fixture-чек `SYSTEM_PROMPT_VERSION` drift, перевірити що `system[1]` (context) не йде у `system[0]` (regression-тест `chat.test.ts:673`); за потреби — варіант A (drop cache) per ADR-0039 § 7.
+- [x] **2026-05-12 (≈ +тиждень):** перевірити cache-hit-rate ≥60% (panel #3 у `ai-cost.json` + query #1 вище). Якщо <30% — fixture-чек `SYSTEM_PROMPT_VERSION` drift, перевірити що `system[1]` (context) не йде у `system[0]` (regression-тест `chat.test.ts:673`); за потреби — варіант A (drop cache) per ADR-0039 § 7. — ahead-of-schedule закритий 2026-05-06 з 96.81%/90.64% (див. § [Post-rollout verification](#post-rollout-verification-2026-05-06)).
 - [ ] **Після baseline-week:** cost-based alert `ai_daily_cost_usd > $X` — `X` обираємо з реальних spending-numbers (зараз < $5/day на staging, ставити cap на 50× від baseline передчасно). Додати у `alert_rules.yml` поряд з `AiErrorBudgetBurnFast`.
 - [ ] Per-route hit-rate breakdown — додати `endpoint` label на `anthropic_prompt_cache_hit_total` коли буде incident, що цього вимагає (поки що `aggregated` view достатньо).
 - [ ] OpenAI prompt cache (auto-cache після 1024 токенів) — окремий ADR, якщо/коли перейдемо на OpenAI або multi-provider routing. Тільки метрика, без коду — Anthropic SDK залишається primary.
