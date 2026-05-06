@@ -297,6 +297,27 @@ export default [
       "sergeant-design/no-inline-body-size-limit": "error",
     },
   },
+  // Stack-pulse PR-16 — Pino redaction policy.
+  // Pino logger у `apps/server/src/obs/logger.ts` має
+  // `redact: { paths: [...] }` зі списком ~50 sensitive-полів
+  // (Authorization, Cookie, password, email, …). Але redact-paths
+  // працюють тільки на КЛЮЧАХ, які явно перераховані. Якщо хтось
+  // пише `logger.info(req)` — у JSON-output потрапляють УСІ поля
+  // Express Request, включно з тими, що не у redact-list (custom
+  // proxy headers, `req.signedCookies`, `req.user` від Better Auth,
+  // `req.body` для нових endpoint-ів). Це rule змушує робити явний
+  // destructure (`logger.info({ url: req.url, status: res.statusCode },
+  // 'msg')`) — контракт стає видимим у diff. Доповнення до
+  // redact-paths, не заміна. Test-файли свідомо лишаємо у scope:
+  // тести теж не мають логувати raw req/res. Скоупимо виключно у
+  // `apps/server/**` — лише там живе Pino-stack. Hard rule #21,
+  // докладніше у `docs/security/logging-redaction-policy.md`.
+  {
+    files: ["apps/server/**/*.{ts,js,mjs}"],
+    rules: {
+      "sergeant-design/no-raw-req-in-pino-log": "error",
+    },
+  },
   // Mobile-shell sunset guardrail — initiative 0002 (mobile platform
   // decision). `apps/mobile-shell/` is on the locked-in deprecation
   // schedule defined in ADR-0010 § Sunset schedule (T₀ 2026-09-01,

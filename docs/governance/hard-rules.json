@@ -515,6 +515,41 @@
           "ref": "#20"
         }
       ]
+    },
+    {
+      "id": 21,
+      "title": "Pino redaction policy enforced",
+      "scope": ["apps/server/src/obs/logger.ts", "apps/server/src/**"],
+      "severity": "blocker",
+      "category": "blocker-invariant",
+      "enforced_by": [
+        {
+          "kind": "eslint-rule",
+          "ref": "sergeant-design/no-raw-req-in-pino-log (scope: apps/server/**/*.{ts,js,mjs})"
+        },
+        {
+          "kind": "test",
+          "ref": "apps/server/src/obs/__tests__/logger.test.ts (redactPaths + redactKeyNames coverage)"
+        },
+        {
+          "kind": "convention",
+          "ref": "apps/server/src/obs/logger.ts → pinoOptions.redact (paths + censor) — додавай нове sensitive-поле сюди ДО того, як код почне його логувати"
+        },
+        {
+          "kind": "doc",
+          "ref": "docs/security/logging-redaction-policy.md"
+        }
+      ],
+      "links": [
+        {
+          "type": "doc",
+          "ref": "docs/initiatives/stack-pulse-2026-05/pr-16-pino-redaction-policy.md"
+        },
+        {
+          "type": "agents",
+          "ref": "#21"
+        }
+      ]
     }
   ]
 }
