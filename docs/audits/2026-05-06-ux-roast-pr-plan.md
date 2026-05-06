@@ -1,6 +1,6 @@
 # Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06)
 
-> **Last validated:** 2026-05-06 by @Skords-01 / Devin. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-06 by @Skords-01 / Devin (housekeeping pass — викреслено PR-13/PR-37, оновлено Status / PR-22 заголовок). **Next review:** 2026-08-04.
 > **Status:** Active
 
 > **Cross-refs:**
@@ -8,9 +8,14 @@
 > [`2026-04-28-ux-improvement-plan.md`](./2026-04-28-ux-improvement-plan.md) — попередній UX execution tracker ·
 > [`docs/launch/product-os/ftux-master-tracker.md`](../launch/product-os/ftux-master-tracker.md) — sprint registry онбордингу.
 
-**Контекст:** виходимо з документа [`2026-05-06-ux-roast.md`](./2026-05-06-ux-roast.md). Жоден пункт не упущено: усі **17 add (A1–A17)**, **16 change (C1–C16)** та **6 remove (R1–R6)** з §14 покриті. Додатково — пункти з §7 (perf), §11 (privacy), §12 (mobile) і §15 (pricing). Усього **43 PR** у 3 спринтах + 1 enabling-PR (PR-0).
+**Контекст:** виходимо з документа [`2026-05-06-ux-roast.md`](./2026-05-06-ux-roast.md). Жоден пункт не упущено: усі **17 add (A1–A17)**, **16 change (C1–C16)** та **6 remove (R1–R6)** з §14 покриті. Додатково — пункти з §7 (perf), §11 (privacy), §12 (mobile) і §15 (pricing). Загальна виконавча шкала — **41 PR** у 3 спринтах + 1 enabling-PR (PR-0). Початково було 43; PR-13 і PR-37 закриті як obsolete-by-drift після Stage 7 storage cleanup і dark-mode toggle consolidation (див. розділи нижче).
 
-> **Update 2026-05-06:** PR-1 (App-lock, XL) розбито на **PR-1a** (base PIN-flow) + **PR-1b** (biometric add-on) — щоб знизити ризик XL-merge. Загальна кількість виконавчих PR-ів виросла з 42 до 43.
+> **Update 2026-05-06:** PR-1 (App-lock, XL) розбито на **PR-1a** (base PIN-flow) + **PR-1b** (biometric add-on) — щоб знизити ризик XL-merge.
+>
+> **Update 2026-05-06 (housekeeping):** після перегляду стану main викреслено два пункти, бо їх фундамент уже відсутній:
+>
+> - **PR-13** «Module-context у sync-error toast [A15]» — cloudSync v1 engine tree dropped у Stage 7 ([#2046](https://github.com/Skords-01/Sergeant/pull/2046), `core/cloudSync/index.ts` тепер експортує лише `useSyncStatus`). `useSyncErrorToast.ts`, модульні `useCloudSync.ts` та supporting plumbing видалені — PR-13 ні до чого прив'язати.
+> - **PR-37** «Прибрати dark-mode дубль у Settings [R3]» — дубля більше немає: `DarkModeToggle` хостить рівно одна точка (`apps/web/src/core/app/HubHeader.tsx`), у `apps/web/src/core/settings/*` жоден файл не імпортує `useDarkMode` / `DarkModeToggle`.
 
 **Конвенції:**
 
@@ -35,14 +40,21 @@
 
 ## Status — shipped (станом на 2026-05-06)
 
-| PR    | Title                                                            | Sprint | Status  | Landing                                                                               |
-| ----- | ---------------------------------------------------------------- | ------ | ------- | ------------------------------------------------------------------------------------- |
-| PR-4  | Уніфікація landing tab → «Огляд» (4 модулі) [C1]                 | 1      | ✅ done | [#2103](https://github.com/Skords-01/Sergeant/pull/2103) (commit `9889e4ae`)          |
-| PR-5  | Copy bundle: OfflineBanner UA + DataExport + Pricing [C2/C3/A13] | 1      | ✅ done | commit [`bc4b9251`](https://github.com/Skords-01/Sergeant/commit/bc4b9251) (PR #2102) |
-| PR-21 | Прибрати reveal-toast Reports tab [R1]                           | 2      | ✅ done | [#2105](https://github.com/Skords-01/Sergeant/pull/2105)                              |
-| PR-27 | Forgot-password autoclose / «Назад до входу» [A14]               | 3      | ✅ done | [#2106](https://github.com/Skords-01/Sergeant/pull/2106)                              |
+| PR    | Title                                                            | Sprint | Status              | Landing                                                                                   |
+| ----- | ---------------------------------------------------------------- | ------ | ------------------- | ----------------------------------------------------------------------------------------- |
+| PR-4  | Уніфікація landing tab → «Огляд» (4 модулі) [C1]                 | 1      | ✅ done             | [#2103](https://github.com/Skords-01/Sergeant/pull/2103) (commit `9889e4ae`)              |
+| PR-5  | Copy bundle: OfflineBanner UA + DataExport + Pricing [C2/C3/A13] | 1      | ✅ done             | commit [`bc4b9251`](https://github.com/Skords-01/Sergeant/commit/bc4b9251) (PR #2102)     |
+| PR-21 | Прибрати reveal-toast Reports tab [R1]                           | 2      | ✅ done             | [#2105](https://github.com/Skords-01/Sergeant/pull/2105)                                  |
+| PR-27 | Forgot-password autoclose / «Назад до входу» [A14]               | 3      | ✅ done             | [#2106](https://github.com/Skords-01/Sergeant/pull/2106)                                  |
+| PR-29 | Delta arrow ▲▼ для colorblind [A10]                              | 3      | ✅ done             | [#2111](https://github.com/Skords-01/Sergeant/pull/2111)                                  |
+| PR-33 | PWA reset cache → variant=danger [C11]                           | 3      | ✅ done             | [#2115](https://github.com/Skords-01/Sergeant/pull/2115)                                  |
+| PR-34 | «Готово, [name]!» register success copy [C13]                    | 3      | ✅ done             | [#2114](https://github.com/Skords-01/Sergeant/pull/2114)                                  |
+| PR-38 | Stagger reduce [R4]                                              | 3      | ✅ done (zero-diff) | [#2116](https://github.com/Skords-01/Sergeant/pull/2116) (тільки коментарі)               |
+| PR-39 | Bar-grow cap 600 ms [R5]                                         | 3      | ✅ done             | [#2119](https://github.com/Skords-01/Sergeant/pull/2119)                                  |
+| PR-13 | Module-context у sync-error toast [A15]                          | 2      | ❌ obsolete         | cloudSync v1 dropped у Stage 7 ([#2046](https://github.com/Skords-01/Sergeant/pull/2046)) |
+| PR-37 | Прибрати dark-mode дубль у Settings [R3]                         | 3      | ❌ obsolete         | дубля немає, `DarkModeToggle` лише в `core/app/HubHeader.tsx`                             |
 
-**Прогрес:** 4 з 43 виконавчих PR-ів змерджено. Деталі у відповідних розділах нижче.
+**Прогрес:** 9 із 41 виконавчих PR-ів змерджено; 2 (PR-13, PR-37) закриті як obsolete-by-drift. Деталі у відповідних розділах нижче.
 
 **Заблоковані напрямки:**
 
@@ -376,22 +388,17 @@
   **Size:** S
   **Depends on:** —
 
-### PR-13 · Module-context у sync-error toast [A15]
+### PR-13 · Module-context у sync-error toast [A15] — ❌ OBSOLETE-BY-DRIFT
 
-**Items covered:** A15, §4.3.
-**Scope:**
+**Status:** Закрито без реалізації після Stage 7 storage cleanup. Усі файли, які мали бути зачеплені, **вилучені з кодової бази**:
 
-- `useSyncErrorToast.ts` — приймати optional `module: ModuleAccent`.
-- Кожен виклик з cloud-sync шарів модулів (finyk/fizruk/nutrition/routine) — передає свій `module`.
-- Toast копія: `«Фінік: помилка синхронізації. Передивись введення.»` (або скорочений варіант для multi-error).
-  **Files:**
-- `core/cloudSync/useSyncErrorToast.ts`
-- 4 модульні `useCloudSync.ts` / `useUnifiedFinanceData.ts` (передати module)
-- i18n: переписати `sync.error*` як шаблон з `{module}` плейсхолдером
-  **Acceptance:**
-- Тест: помилка cloud-push з Фініка → toast prefix-ається «Фінік:».
-  **Size:** S
-  **Depends on:** —
+- `core/cloudSync/useSyncErrorToast.ts` — видалено разом з v1 cloudSync engine tree drop ([#2046](https://github.com/Skords-01/Sergeant/pull/2046), commit [`a97b8cc8`](https://github.com/Skords-01/Sergeant/commit/a97b8cc8)).
+- Модульні `useCloudSync.ts` (finyk/fizruk/nutrition/routine) — теж видалені у тому ж drop-і.
+- `useUnifiedFinanceData.ts` залишився, але це тепер чистий dedupe/merge утиліт без sync-error plumbing.
+- `core/cloudSync/index.ts` тепер експортує **лише `useSyncStatus`**.
+- Server-side `module_data` table dropped + v1 `syncPush*`/`syncPull*` handler-и видалені (commit [`75dcdd5c`](https://github.com/Skords-01/Sergeant/commit/75dcdd5c), PR #051+#052a з storage-roadmap-у).
+
+**Items covered → переведено на v2 writer-runtime:** якщо v2 sync layer надасть власний error-surface, новий PR можна буде відкрити з нуля (новий toast component + нові i18n keys). До того моменту цей пункт залишається у плані тільки як історичний reference на A15.
 
 ### PR-14 · Request-ID в ModuleErrorBoundary [A16]
 
@@ -548,13 +555,13 @@
   **Size:** S
   **Depends on:** —
 
-### PR-22 · Performance — lazy Insights/Digest, FinykOverview lazy секції [§7]
+### PR-22 · Performance — lazy Insights/Digest, finyk Overview lazy секції [§7]
 
 **Items covered:** §7.1, §7.4.
 **Scope:**
 
 - `HubDashboard` — секції Insights / Weekly Digest / Re-engagement → `<Suspense fallback={<Skeleton/>}>` + `lazy(() => import(...))`.
-- FinykOverview — `MonthPulseCard` / `NetworthSection` / `BudgetAlertsList` / `PlannedFlowsCard` → lazy.
+- `modules/finyk/pages/Overview.tsx` (раніше `FinykOverview`) — `MonthPulseCard` / `NetworthSection` / `BudgetAlertsList` / `PlannedFlowsCard` → lazy.
 - Реалізувати IntersectionObserver-ефект як trigger для нижніх секцій (не лише `requestIdleCallback`).
 - Vitest perf-snapshot: bundle-size delta.
   **Files:**
@@ -793,24 +800,15 @@
   **Size:** S
   **Depends on:** —
 
-### PR-37 · Прибрати dark-mode дубль у Settings [R3]
+### PR-37 · Прибрати dark-mode дубль у Settings [R3] — ❌ OBSOLETE-BY-DRIFT
 
-**Items covered:** R3, §12.3.
-**Scope:**
+**Status:** Закрито без реалізації — дубля немає. Поточний стан main:
 
-- Перевірити `DashboardSection.tsx` (settings) на присутність dark-mode toggle.
-- Якщо є — прибрати; залишити лише в `HubHeader.tsx`.
-- Альтернативно: у Settings зробити tri-state «light / dark / system» — оце дай-у-Settings, в header — тільки toggle 2-state? Так буде краще, ніж голе видалення.
-- Рекомендовано: реалізувати tri-state у Settings, header лишити simple toggle (приймає system → перемикає на manual).
-  **Files:**
-- `core/settings/DashboardSection.tsx`
-- `core/app/DarkModeToggle.tsx`
-- new pref в `hubPrefs.schema.ts`: `theme: "light" | "dark" | "system"`
-  **Acceptance:**
-- Settings: tri-state radio.
-- Header: toggle (light↔dark).
-  **Size:** S
-  **Depends on:** —
+- `DarkModeToggle` хостить **рівно одна точка** — `apps/web/src/core/app/HubHeader.tsx` (1 використання).
+- У `apps/web/src/core/settings/*` (включно з `DashboardSection.tsx`, який план хотів зачепити) **жоден файл не імпортує** `useDarkMode` чи `DarkModeToggle`. Перевірено `grep -r "useDarkMode\|DarkModeToggle" apps/web/src/core/settings/`.
+- Сам `useDarkMode` хук живе у `apps/web/src/shared/hooks/useDarkMode.ts` як shared-utility, але споживає його тільки одна UI-точка.
+
+**Original Scope:** план хотів tri-state «light / dark / system» у Settings + toggle 2-state у header. Якщо цей tri-state у майбутньому захочеться — треба нову прожарку (R-пункт), бо контекст і tone-of-voice 2026-Q2 цей напрямок не покривають як standalone-need.
 
 ### PR-38 · Stagger reduce [R4]
 
@@ -941,62 +939,62 @@
 
 ## Підсумкова матриця: пункт прожарки → PR
 
-| Pop quiz id | Description                        | PR                              |
-| ----------- | ---------------------------------- | ------------------------------- |
-| A1          | App-lock                           | PR-1a (PIN) + PR-1b (biometric) |
-| A2          | Module gear-icon                   | PR-2                            |
-| A3          | Bento subtitles                    | PR-3                            |
-| A4          | EmptyState Reports                 | PR-6                            |
-| A5          | Permissions overview               | PR-7                            |
-| A6          | Hub notifications sub-group        | PR-8                            |
-| A7          | Sessions «Цей пристрій»            | PR-10                           |
-| A8          | CSV / email export                 | PR-11                           |
-| A9          | KeyboardSensor dnd-kit             | PR-12                           |
-| A10         | Delta arrow ▲▼                     | PR-29                           |
-| A11         | Avatar upload                      | PR-28                           |
-| A12         | Empty chat state                   | PR-26                           |
-| A13         | Backup copy «Харчування»           | PR-5                            |
-| A14         | Forgot-password autoclose          | PR-27                           |
-| A15         | Module-context sync error          | PR-13                           |
-| A16         | Request-ID ModuleErrorBoundary     | PR-14                           |
-| A17         | Default reminder time              | PR-7                            |
-| C1          | «Огляд» в усіх модулях             | PR-4                            |
-| C2          | UA «blocked»/«Retry»               | PR-5                            |
-| C3          | DataExport copy                    | PR-5                            |
-| C4          | Reminder-time UI унифікація        | PR-9                            |
-| C5          | Loading-state copy                 | PR-30                           |
-| C6          | «Введи X» в zod                    | PR-31                           |
-| C7          | Mono error розрізнення             | PR-32                           |
-| C8          | Password-strength entropy          | PR-15                           |
-| C9          | MemoryBank → Settings              | PR-16                           |
-| C10         | Logout primary в Profile           | PR-17                           |
-| C11         | PWA reset cache danger             | PR-33                           |
-| C12         | Tour vs Restart copy               | PR-18                           |
-| C13         | «Готово, [name]!»                  | PR-34                           |
-| C14         | aria-live конфлікти                | PR-19                           |
-| C15         | FTUX bento «Що тут буде»           | PR-20                           |
-| C16         | EmptyState в HubReports            | PR-6                            |
-| R1          | Toast про Reports tab              | PR-21                           |
-| R2          | Діагностика SW із UI               | PR-35                           |
-| R3          | Dark-mode дубль                    | PR-37                           |
-| R4          | Stagger reduce                     | PR-38                           |
-| R5          | Bar-grow cap                       | PR-39                           |
-| R6          | Дубльовані permissions toast       | PR-7 (consolidated)             |
-| §7.1        | Lazy Insights/Digest               | PR-22                           |
-| §7.2        | Layout shift Reports tab           | PR-23                           |
-| §7.3        | PostHog/Sentry defer               | PR-25                           |
-| §7.4        | FinykOverview lazy-секції          | PR-22                           |
-| §11.1       | App-lock                           | PR-1a + PR-1b                   |
-| §11.2       | Chat privacy explanation           | PR-26 (можна domknути)          |
-| §11.3       | «Token у браузері» — оновити копію | PR-32                           |
-| §11.4       | CSV / email-mine                   | PR-11                           |
-| §12.1       | iOS install banner safe-area       | PR-24                           |
-| §12.2       | 100dvh + safe-area-inset-bottom    | PR-24                           |
-| §12.3       | Dark-mode дубль                    | PR-37                           |
-| §13.1       | Stagger reduce                     | PR-38                           |
-| §13.2       | Bar-grow cap                       | PR-39                           |
-| §15         | Pricing chat-counter               | PR-42                           |
-| §15         | Pricing «Звички» → «Рутина»        | PR-5                            |
+| Pop quiz id | Description                        | PR                                         |
+| ----------- | ---------------------------------- | ------------------------------------------ |
+| A1          | App-lock                           | PR-1a (PIN) + PR-1b (biometric)            |
+| A2          | Module gear-icon                   | PR-2                                       |
+| A3          | Bento subtitles                    | PR-3                                       |
+| A4          | EmptyState Reports                 | PR-6                                       |
+| A5          | Permissions overview               | PR-7                                       |
+| A6          | Hub notifications sub-group        | PR-8                                       |
+| A7          | Sessions «Цей пристрій»            | PR-10                                      |
+| A8          | CSV / email export                 | PR-11                                      |
+| A9          | KeyboardSensor dnd-kit             | PR-12                                      |
+| A10         | Delta arrow ▲▼                     | PR-29                                      |
+| A11         | Avatar upload                      | PR-28                                      |
+| A12         | Empty chat state                   | PR-26                                      |
+| A13         | Backup copy «Харчування»           | PR-5                                       |
+| A14         | Forgot-password autoclose          | PR-27                                      |
+| A15         | Module-context sync error          | PR-13 (❌ obsolete — cloudSync v1 dropped) |
+| A16         | Request-ID ModuleErrorBoundary     | PR-14                                      |
+| A17         | Default reminder time              | PR-7                                       |
+| C1          | «Огляд» в усіх модулях             | PR-4                                       |
+| C2          | UA «blocked»/«Retry»               | PR-5                                       |
+| C3          | DataExport copy                    | PR-5                                       |
+| C4          | Reminder-time UI унифікація        | PR-9                                       |
+| C5          | Loading-state copy                 | PR-30                                      |
+| C6          | «Введи X» в zod                    | PR-31                                      |
+| C7          | Mono error розрізнення             | PR-32                                      |
+| C8          | Password-strength entropy          | PR-15                                      |
+| C9          | MemoryBank → Settings              | PR-16                                      |
+| C10         | Logout primary в Profile           | PR-17                                      |
+| C11         | PWA reset cache danger             | PR-33                                      |
+| C12         | Tour vs Restart copy               | PR-18                                      |
+| C13         | «Готово, [name]!»                  | PR-34                                      |
+| C14         | aria-live конфлікти                | PR-19                                      |
+| C15         | FTUX bento «Що тут буде»           | PR-20                                      |
+| C16         | EmptyState в HubReports            | PR-6                                       |
+| R1          | Toast про Reports tab              | PR-21                                      |
+| R2          | Діагностика SW із UI               | PR-35                                      |
+| R3          | Dark-mode дубль                    | PR-37 (❌ obsolete — дубля немає)          |
+| R4          | Stagger reduce                     | PR-38                                      |
+| R5          | Bar-grow cap                       | PR-39                                      |
+| R6          | Дубльовані permissions toast       | PR-7 (consolidated)                        |
+| §7.1        | Lazy Insights/Digest               | PR-22                                      |
+| §7.2        | Layout shift Reports tab           | PR-23                                      |
+| §7.3        | PostHog/Sentry defer               | PR-25                                      |
+| §7.4        | finyk Overview lazy-секції         | PR-22 (`modules/finyk/pages/Overview.tsx`) |
+| §11.1       | App-lock                           | PR-1a + PR-1b                              |
+| §11.2       | Chat privacy explanation           | PR-26 (можна domknути)                     |
+| §11.3       | «Token у браузері» — оновити копію | PR-32                                      |
+| §11.4       | CSV / email-mine                   | PR-11                                      |
+| §12.1       | iOS install banner safe-area       | PR-24                                      |
+| §12.2       | 100dvh + safe-area-inset-bottom    | PR-24                                      |
+| §12.3       | Dark-mode дубль                    | PR-37 (❌ obsolete — дубля немає)          |
+| §13.1       | Stagger reduce                     | PR-38                                      |
+| §13.2       | Bar-grow cap                       | PR-39                                      |
+| §15         | Pricing chat-counter               | PR-42                                      |
+| §15         | Pricing «Звички» → «Рутина»        | PR-5                                       |
 
 **Що додано поза §14 з прожарки:** PR-22, PR-23, PR-24, PR-25 (perf/mobile/observability — §7, §12, §13). PR-X1–X4 (governance/tests) — щоб робота не регресувала.
 
