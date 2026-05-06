@@ -1,13 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { Virtuoso } from "react-virtuoso";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Badge } from "@shared/components/ui/Badge";
 import { Input } from "@shared/components/ui/Input";
 import { cn } from "@shared/lib/ui/cn";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
-import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { Icon } from "@shared/components/ui/Icon";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import {
@@ -35,7 +32,7 @@ import {
   summarizeRows,
   topMeals,
 } from "../lib/nutritionStats";
-import { getMealThumbnailBlob } from "../lib/mealPhotoStorage";
+import { VirtualMealList } from "./VirtualMealList";
 
 interface LogCardProps {
   log: NutritionLog;
@@ -74,35 +71,6 @@ function groupByMealType(meals: Meal[]): Record<MealTypeId, Meal[]> {
     groups[mealType]!.push(meal);
   }
   return groups as Record<MealTypeId, Meal[]>;
-}
-
-function MealThumb({ mealId }: { mealId: string }) {
-  const [url, setUrl] = useState<string | null>(null);
-  useEffect(() => {
-    let u: string | undefined;
-    (async () => {
-      const b = await getMealThumbnailBlob(mealId);
-      if (b) {
-        u = URL.createObjectURL(b);
-        setUrl(u);
-      }
-    })();
-    return () => {
-      if (u) URL.revokeObjectURL(u);
-    };
-  }, [mealId]);
-  if (!url) return null;
-  return (
-    <img
-      src={url}
-      alt=""
-      loading="lazy"
-      decoding="async"
-      width="40"
-      height="40"
-      className="w-10 h-10 rounded-xl object-cover shrink-0 border border-line"
-    />
-  );
 }
 
 export function LogCard({
@@ -561,176 +529,5 @@ export function LogCard({
         onCancel={() => setTrimConfirm(false)}
       />
     </>
-  );
-}
-
-const MEAL_ROW_HEIGHT = 68;
-const MEAL_HEADER_HEIGHT = 32;
-const MAX_MEAL_LIST_HEIGHT = MEAL_ROW_HEIGHT * 8;
-
-interface VirtualMealListProps {
-  groups: Record<MealTypeId, Meal[]>;
-  meals: Meal[];
-  selectedDate: string;
-  onRemoveMeal?: (date: string, meal: Meal) => void;
-  onEditMeal?: (date: string, meal: Meal) => void;
-}
-
-type MealListItem =
-  | { kind: "header"; type: MealTypeId }
-  | { kind: "meal"; type: MealTypeId; meal: Meal };
-
-function VirtualMealList({
-  groups,
-  meals,
-  selectedDate,
-  onRemoveMeal,
-  onEditMeal,
-}: VirtualMealListProps) {
-  const activeTypes = MEAL_ORDER.filter(
-    (t: MealTypeId) => groups[t]?.length,
-  ) as MealTypeId[];
-  const flatItems = useMemo<MealListItem[]>(() => {
-    const items: MealListItem[] = [];
-    for (const type of activeTypes) {
-      items.push({ kind: "header", type });
-      for (const meal of groups[type]) {
-        items.push({ kind: "meal", type, meal });
-      }
-    }
-    return items;
-  }, [groups, activeTypes]);
-
-  const listHeight = Math.min(
-    meals.length * MEAL_ROW_HEIGHT + activeTypes.length * MEAL_HEADER_HEIGHT,
-    MAX_MEAL_LIST_HEIGHT,
-  );
-
-  return (
-    <Virtuoso
-      style={{ height: listHeight }}
-      data={flatItems}
-      itemContent={(_, item) => {
-        if (item.kind === "header") {
-          const meta = MEAL_META[item.type];
-          return (
-            <div className="flex items-center gap-2 pt-2 pb-1">
-              <span className="text-base">{meta.emoji}</span>
-              <SectionHeading as="span" size="sm">
-                {meta.label}
-              </SectionHeading>
-            </div>
-          );
-        }
-        return (
-          <div className="mb-1.5">
-            <SwipeToAction
-              onSwipeLeft={() => onRemoveMeal?.(selectedDate, item.meal)}
-              rightLabel="🗑 Видалити"
-              rightColor="bg-danger"
-            >
-              <MealRow
-                meal={item.meal}
-                onEdit={
-                  onEditMeal
-                    ? () => onEditMeal(selectedDate, item.meal)
-                    : undefined
-                }
-                onRemove={() => onRemoveMeal?.(selectedDate, item.meal)}
-              />
-            </SwipeToAction>
-          </div>
-        );
-      }}
-    />
-  );
-}
-
-interface MealRowProps {
-  meal: Meal;
-  onRemove?: () => void;
-  onEdit?: () => void;
-}
-
-function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
-  const mac = meal.macros ?? {
-    kcal: null,
-    protein_g: null,
-    fat_g: null,
-    carbs_g: null,
-  };
-  const macroSource = String(meal?.macroSource || "manual");
-  const sourceLabel =
-    macroSource === "photoAI"
-      ? "AI"
-      : macroSource === "recipeAI"
-        ? "AI-рецепт"
-        : macroSource === "productDb"
-          ? "DB"
-          : "";
-  return (
-    <div className="flex items-center gap-3 bg-panelHi rounded-2xl px-3 py-2.5 group">
-      <MealThumb mealId={meal.id} />
-      <button
-        type="button"
-        onClick={onEdit}
-        disabled={!onEdit}
-        className={cn(
-          "flex flex-col flex-1 min-w-0 text-left",
-          onEdit ? "cursor-pointer" : "cursor-default",
-        )}
-        aria-label={onEdit ? "Редагувати запис" : undefined}
-      >
-        <div className="flex items-baseline gap-2">
-          <span className="text-style-label text-text truncate">
-            {meal.name}
-          </span>
-          {meal.time && (
-            <span className="text-xs text-subtle shrink-0">{meal.time}</span>
-          )}
-          {sourceLabel && (
-            <Badge
-              variant="neutral"
-              tone="soft"
-              size="xs"
-              className="shrink-0 rounded-full uppercase tracking-wider"
-              title="Походження КБЖВ"
-            >
-              {sourceLabel}
-            </Badge>
-          )}
-        </div>
-        <div className="flex gap-2 mt-0.5 flex-wrap">
-          {mac.kcal != null && (
-            <span className="text-xs text-nutrition-strong dark:text-nutrition font-bold">
-              {Math.round(mac.kcal)} ккал
-            </span>
-          )}
-          {mac.protein_g != null && (
-            <span className="text-xs text-subtle">
-              Б {Math.round(mac.protein_g)}г
-            </span>
-          )}
-          {mac.fat_g != null && (
-            <span className="text-xs text-subtle">
-              Ж {Math.round(mac.fat_g)}г
-            </span>
-          )}
-          {mac.carbs_g != null && (
-            <span className="text-xs text-subtle">
-              В {Math.round(mac.carbs_g)}г
-            </span>
-          )}
-        </div>
-      </button>
-      <button
-        type="button"
-        onClick={onRemove}
-        className="w-8 h-8 flex items-center justify-center rounded-full text-muted hover:text-danger hover:bg-danger/10 transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-        aria-label="Видалити запис"
-      >
-        ✕
-      </button>
-    </div>
   );
 }

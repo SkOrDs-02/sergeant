@@ -295,7 +295,6 @@ Codemod ідемпотентний: повторний запуск дасть `
 
 | Рядків | Файл                                                  |
 | ------ | ----------------------------------------------------- |
-| 733    | `modules/nutrition/components/LogCard.tsx`            |
 | 732    | `modules/routine/RoutineApp.tsx`                      |
 | 697    | `modules/fizruk/pages/Progress.tsx`                   |
 | 685    | `modules/finyk/hooks/useStorage.ts`                   |
