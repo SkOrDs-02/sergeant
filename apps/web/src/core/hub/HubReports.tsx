@@ -421,7 +421,7 @@ export function HubReports() {
 
       <div className="grid grid-cols-1 gap-3">
         <StatCard
-          title="Тренування (Фізрук)"
+          title="Фізрук (тренування)"
           icon="🏋️"
           storageKey="hub_reports_collapsed_v1:workouts"
           current={data.workouts.cur.count}
@@ -440,7 +440,7 @@ export function HubReports() {
         />
 
         <StatCard
-          title="Витрати (Фінік)"
+          title="Фінік (витрати)"
           icon="💳"
           storageKey="hub_reports_collapsed_v1:spending"
           current={data.spending.cur.total}
@@ -459,7 +459,7 @@ export function HubReports() {
         />
 
         <StatCard
-          title="Виконання звичок (Рутина)"
+          title="Рутина (виконання звичок)"
           icon="✅"
           storageKey="hub_reports_collapsed_v1:habits"
           current={data.habits.cur.pct}
@@ -479,7 +479,7 @@ export function HubReports() {
         />
 
         <StatCard
-          title="Середньо ккал/день (Харчування)"
+          title="Харчування (ккал/день)"
           icon="🥗"
           storageKey="hub_reports_collapsed_v1:kcal"
           current={data.kcal.cur.avg}

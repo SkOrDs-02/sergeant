@@ -150,7 +150,7 @@ export function NotificationsSection() {
 
       <PushNotificationToggle className="p-3 rounded-xl bg-bg border border-line" />
 
-      <SettingsSubGroup title="Звички (Рутина)" defaultOpen>
+      <SettingsSubGroup title="Рутина (звички)" defaultOpen>
         <ToggleRow
           label="Нагадування про звички"
           description="Спрацьовує у встановлений в кожній звичці час, навіть коли застосунок закрито."
@@ -159,7 +159,7 @@ export function NotificationsSection() {
         />
       </SettingsSubGroup>
 
-      <SettingsSubGroup title="Тренування (Фізрук)" defaultOpen>
+      <SettingsSubGroup title="Фізрук (тренування)" defaultOpen>
         <ToggleRow
           label="Нагадування про тренування"
           description="Надсилається о вказаній годині, якщо на сьогодні призначено тренування."

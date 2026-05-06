@@ -221,7 +221,7 @@ export function NotificationsSection() {
         ) : null}
       </Card>
 
-      <SettingsSubGroup title="Звички (Рутина)">
+      <SettingsSubGroup title="Рутина (звички)">
         <ToggleRow
           label="Нагадування про звички"
           description="Спрацьовує у встановлений в кожній звичці час. Повноцінне планування нагадувань підключиться з портом модуля Рутина (Phase 5) — зараз значення зберігається і буде підхоплено автоматично."
@@ -240,7 +240,7 @@ export function NotificationsSection() {
           the Fizruk module is ported — reminderEnabled + reminderHour /
           reminderMinute picker, analogue to web `NotificationsSection`
           Фізрук sub-group. */}
-      <SettingsSubGroup title="Тренування (Фізрук)">
+      <SettingsSubGroup title="Фізрук (тренування)">
         <DeferredNotice>
           Нагадування про тренування підключаться з портом модуля Фізрук (Phase
           6).

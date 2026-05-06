@@ -59,7 +59,7 @@ export function useNutritionReminders(prefs: NutritionReminderPrefs): void {
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.ready
             .then((reg) => {
-              reg.showNotification("🥗 Харчування", {
+              reg.showNotification("Харчування", {
                 body: "Час записати прийоми їжі.",
                 tag: `nutrition-reminder-${key}`,
                 icon: "/icon-192.png",
@@ -69,12 +69,12 @@ export function useNutritionReminders(prefs: NutritionReminderPrefs): void {
               });
             })
             .catch(() => {
-              new Notification("🥗 Харчування", {
+              new Notification("Харчування", {
                 body: "Час записати прийоми їжі.",
               });
             });
         } else {
-          new Notification("🥗 Харчування", {
+          new Notification("Харчування", {
             body: "Час записати прийоми їжі.",
           });
         }

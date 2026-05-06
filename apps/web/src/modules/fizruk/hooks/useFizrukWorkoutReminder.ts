@@ -81,7 +81,7 @@ export function useFizrukWorkoutReminder({
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.ready
             .then((reg) => {
-              reg.showNotification("🏋️ Фізрук — тренування", {
+              reg.showNotification("Фізрук — тренування", {
                 body: "Заплановане тренування на сьогодні. Відкрий застосунок, щоб стартувати.",
                 tag: `fizruk-plan-${dayStr}`,
                 icon: "/icon-192.png",
@@ -91,13 +91,13 @@ export function useFizrukWorkoutReminder({
               });
             })
             .catch(() => {
-              new Notification("🏋️ Фізрук — тренування", {
+              new Notification("Фізрук — тренування", {
                 body: "Заплановане тренування на сьогодні. Відкрий застосунок, щоб стартувати.",
                 tag: "fizruk-plan",
               });
             });
         } else {
-          new Notification("🏋️ Фізрук — тренування", {
+          new Notification("Фізрук — тренування", {
             body: "Заплановане тренування на сьогодні. Відкрий застосунок, щоб стартувати.",
             tag: "fizruk-plan",
           });
