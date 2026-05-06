@@ -9,11 +9,11 @@
 
 ## 📋 Поверхні на один погляд
 
-| Поверхня | Де живе | Технології | Статус |
-|----------|---------|-----------|--------|
-| **Web / PWA** (канонічна апка) | `apps/web` | React 18 + Vite + PWA | **Production** (live) |
-| **Native RN** (iOS / Android) | `apps/mobile` | Expo SDK 52 + Expo Router | **Internal dev-client** — цільовий клієнт після T₀ |
-| **Capacitor shell** (WebView) | `apps/mobile-shell` | Capacitor 7 + Android Java | **MVP — sunset T₀ = 2026-09-01** |
+| Поверхня                       | Де живе             | Технології                 | Статус                                             |
+| ------------------------------ | ------------------- | -------------------------- | -------------------------------------------------- |
+| **Web / PWA** (канонічна апка) | `apps/web`          | React 18 + Vite + PWA      | **Production** (live)                              |
+| **Native RN** (iOS / Android)  | `apps/mobile`       | Expo SDK 52 + Expo Router  | **Internal dev-client** — цільовий клієнт після T₀ |
+| **Capacitor shell** (WebView)  | `apps/mobile-shell` | Capacitor 7 + Android Java | **MVP — sunset T₀ = 2026-09-01**                   |
 
 ---
 
@@ -21,35 +21,35 @@
 
 > **Snapshot:** 2026-05-06. Колонки відображають _функціональну_ parity (юзер може зробити цю дію), не code-parity (різна реалізація допустима).  
 > **Легенда:** `✅` — повна parity; `🟡` — часткова / smoke-only / без edge-cases; `🟥` — не реалізовано; `n/a` — поза скоупом.
-> 
+>
 > Таблиця оновлюється на кожен Phase-2 PR ініціативи 0002 і повинна бути «свіжою» в межах 7 днів — це **gating сигнал** для рішення про зсув T₀ (див. [`docs/initiatives/0002-mobile-platform-decision.md` § Ризики](../initiatives/0002-mobile-platform-decision.md#ризики-та-митиґація)).
 
-| Capability / module | Web (`apps/web`) | Capacitor shell | RN (`apps/mobile`) | Notes |
-|-----|-----|-----|-----|-----|
-| **Auth (Better)** — sign in/out | ✅ | ✅ | ✅ | Bearer-контракт уніфікований; web — cookies, native + shell — ASWebAuthenticationSession / Custom Tab |
-| **Auth — Google OAuth** | ✅ | ✅ | ✅ | Shell і RN ходять через ASWebAuthenticationSession / Custom Tab |
-| **Hub dashboard** | ✅ | ✅ | ✅ | RN-варіант — `apps/mobile/src/core/dashboard/` |
-| **Hub chat (text)** | ✅ | ✅ | ✅ | Один `/api/v1/coach/*` контракт для всіх трьох |
-| **Hub voice (STT + TTS)** | ✅ | 🟡 | 🟥 | Shell успадковує web (Web Speech API працює тільки в iOS 14.5+) |
-| **Hub search** | ✅ | ✅ | ✅ | RN — `apps/mobile/src/core/hub/search/` |
-| **OnboardingWizard** | ✅ | ✅ | 🟡 | RN-stack має скорочений wizard; повний крок «AI-customize» — Phase 7 |
-| **WeeklyDigestCard** | ✅ | ✅ | ✅ | Усі три тримають `getWeeklyDigest()` через api-client |
-| **Push (web-push VAPID)** | ✅ | 🟡 | n/a | Shell-WebView push працює тільки на iOS ≥ 16.4; Android Chrome + PWA install |
-| **Push (native APNs/FCM)** | n/a | ✅ | ✅ | Shell — `@capacitor/push-notifications` (PR #512); RN — `expo-notifications` |
-| **Deep links (custom scheme)** | ✅ | ✅ | ✅ | `parseDeepLink()` ідентичний; shell диспатчить через window hook |
-| **Universal / App Links (HTTPS)** | ✅ | ✅ | 🟡 | RN — налаштовано в `app.config.ts`, але `apple-app-site-association` — Phase 7 |
-| **Offline / sync (CloudSync)** | ✅ | ✅ | ✅ | Один `useCloudSync` контракт; shell — те саме що web |
-| **Фінік** — Overview/Tx/Budgets | ✅ | ✅ | ✅ | RN — `apps/mobile/src/modules/finyk/` |
-| **Фізрук** — Workouts/Programs | ✅ | ✅ | ✅ | RN — `apps/mobile/src/modules/fizruk/` |
-| **Рутина** — Habits/Heatmap | ✅ | ✅ | ✅ | RN — `apps/mobile/src/modules/routine/` |
-| **Харчування** — log/water/meal | ✅ | ✅ | 🟡 | RN: AddMealSheet + scanner готові; shopping/pantry — Phase 7 |
-| **Харчування** — barcode scan | ✅ | ✅ | ✅ | Web — ZXing/native BarcodeDetector; shell — `@capacitor-mlkit/barcode` |
-| **Харчування** — pantry | ✅ | ✅ | ✅ | RN: `useNutritionPantries` + `pages/Pantry` готові |
-| **Харчування** — shopping list | ✅ | ✅ | 🟡 | RN: ручний список; AI-генерація з рецептів — Phase 7 |
-| **Харчування** — recipes (AI)** | ✅ | ✅ | 🟥 | RN: `recipe/[id].tsx` — заглушка, Phase 7 |
-| **Харчування** — photo-AI** | ✅ | ✅ | 🟥 | RN — Phase 7+ (camera-input → `/api/v1/nutrition/photo`) |
-| **Detox / e2e on CI** | n/a | n/a | 🟡 | `detox-ios.yml` / `detox-android.yml` — smoke-build; реальні сценарії待機 |
-| **Native UX** (haptics, sheets) | 🟡 | 🟡 | ✅ | Web — обмежено (`navigator.vibrate`); shell — Capacitor Haptics; RN — `react-native-haptics` |
+| Capability / module               | Web (`apps/web`) | Capacitor shell | RN (`apps/mobile`) | Notes                                                                                                 |
+| --------------------------------- | ---------------- | --------------- | ------------------ | ----------------------------------------------------------------------------------------------------- |
+| **Auth (Better)** — sign in/out   | ✅               | ✅              | ✅                 | Bearer-контракт уніфікований; web — cookies, native + shell — ASWebAuthenticationSession / Custom Tab |
+| **Auth — Google OAuth**           | ✅               | ✅              | ✅                 | Shell і RN ходять через ASWebAuthenticationSession / Custom Tab                                       |
+| **Hub dashboard**                 | ✅               | ✅              | ✅                 | RN-варіант — `apps/mobile/src/core/dashboard/`                                                        |
+| **Hub chat (text)**               | ✅               | ✅              | ✅                 | Один `/api/v1/coach/*` контракт для всіх трьох                                                        |
+| **Hub voice (STT + TTS)**         | ✅               | 🟡              | 🟥                 | Shell успадковує web (Web Speech API працює тільки в iOS 14.5+)                                       |
+| **Hub search**                    | ✅               | ✅              | ✅                 | RN — `apps/mobile/src/core/hub/search/`                                                               |
+| **OnboardingWizard**              | ✅               | ✅              | 🟡                 | RN-stack має скорочений wizard; повний крок «AI-customize» — Phase 7                                  |
+| **WeeklyDigestCard**              | ✅               | ✅              | ✅                 | Усі три тримають `getWeeklyDigest()` через api-client                                                 |
+| **Push (web-push VAPID)**         | ✅               | 🟡              | n/a                | Shell-WebView push працює тільки на iOS ≥ 16.4; Android Chrome + PWA install                          |
+| **Push (native APNs/FCM)**        | n/a              | ✅              | ✅                 | Shell — `@capacitor/push-notifications` (PR #512); RN — `expo-notifications`                          |
+| **Deep links (custom scheme)**    | ✅               | ✅              | ✅                 | `parseDeepLink()` ідентичний; shell диспатчить через window hook                                      |
+| **Universal / App Links (HTTPS)** | ✅               | ✅              | 🟡                 | RN — налаштовано в `app.config.ts`, але `apple-app-site-association` — Phase 7                        |
+| **Offline / sync (CloudSync)**    | ✅               | ✅              | ✅                 | Один `useCloudSync` контракт; shell — те саме що web                                                  |
+| **Фінік** — Overview/Tx/Budgets   | ✅               | ✅              | ✅                 | RN — `apps/mobile/src/modules/finyk/`                                                                 |
+| **Фізрук** — Workouts/Programs    | ✅               | ✅              | ✅                 | RN — `apps/mobile/src/modules/fizruk/`                                                                |
+| **Рутина** — Habits/Heatmap       | ✅               | ✅              | ✅                 | RN — `apps/mobile/src/modules/routine/`                                                               |
+| **Харчування** — log/water/meal   | ✅               | ✅              | 🟡                 | RN: AddMealSheet + scanner готові; shopping/pantry — Phase 7                                          |
+| **Харчування** — barcode scan     | ✅               | ✅              | ✅                 | Web — ZXing/native BarcodeDetector; shell — `@capacitor-mlkit/barcode`                                |
+| **Харчування** — pantry           | ✅               | ✅              | ✅                 | RN: `useNutritionPantries` + `pages/Pantry` готові                                                    |
+| **Харчування** — shopping list    | ✅               | ✅              | 🟡                 | RN: ручний список; AI-генерація з рецептів — Phase 7                                                  |
+| **Харчування** — recipes (AI)\*\* | ✅               | ✅              | 🟥                 | RN: `recipe/[id].tsx` — заглушка, Phase 7                                                             |
+| **Харчування** — photo-AI\*\*     | ✅               | ✅              | 🟥                 | RN — Phase 7+ (camera-input → `/api/v1/nutrition/photo`)                                              |
+| **Detox / e2e on CI**             | n/a              | n/a             | 🟡                 | `detox-ios.yml` / `detox-android.yml` — smoke-build; реальні сценарії待機                             |
+| **Native UX** (haptics, sheets)   | 🟡               | 🟡              | ✅                 | Web — обмежено (`navigator.vibrate`); shell — Capacitor Haptics; RN — `react-native-haptics`          |
 
 ### 🚨 Exit dashboard (для ADR-0010 § Sunset schedule)
 
@@ -66,6 +66,7 @@
 **Що є:** усі чотири модулі (Фінік, Фізрук, Рутина, Харчування) + весь Hub-функціонал (auth, chat, voice, search, dashboard, weekly digest, coaching, recommendations), PWA з Service Worker + Web Push через VAPID, офлайн-синхронізація через `useCloudSync`.
 
 **Build & Deploy:**
+
 - Statika на Vercel (edge nodes, immutable cache, preview deploys на кожен PR)
 - `/api/*` поінтовує на Railway (`apps/server`)
 
@@ -83,7 +84,8 @@
 
 ## 📱 2. Native RN — `apps/mobile`
 
-**Що є:** 
+**Що є:**
+
 - Expo Router скафолд (tabs + (auth) modal)
 - Better Auth bearer на SecureStore
 - `PushRegistrar` з native APNs/FCM токеном
@@ -91,6 +93,7 @@
 - Усі **чотири** модулі в табах
 
 **Модулі:**
+
 - `apps/mobile/src/modules/finyk/*` — pages (Overview, Transactions, Analytics, Budgets, Assets), components, hooks, lib + tests
 - `apps/mobile/src/modules/fizruk/*` — pages, components (workouts, programs, body, progress), hooks + tests
 - `apps/mobile/src/modules/routine/*` — pages (Habits, Heatmap), components, hooks, lib + tests
@@ -123,15 +126,18 @@
 - `@capacitor/push-notifications` — APNs/FCM — [#512](https://github.com/Skords-01/Sergeant/pull/512)
 
 **Auth & Deep links:**
+
 - Bearer у `auth-storage.ts`, barcode у `barcodeNative.ts` — підключаються динамічним `import()` за guard-ом `isCapacitor()`
 - Deep links: shell диспатчить parsed path через `window.__sergeantShellNavigate` з буфером для cold-start сценарію
 - HTTPS Universal Links / App Links теж підтримуються — див. `docs/mobile/capacitor-deep-links.md`
 
-**Android:** 
+**Android:**
+
 - CI workflow [`mobile-shell-android.yml`](../../.github/workflows/mobile-shell-android.yml) — debug-APK на PR
 - Release-лейн [`mobile-shell-android-release.yml`](../../.github/workflows/mobile-shell-android-release.yml) — `sergeant-shell-release-aab` (Play Store) + `sergeant-shell-release-apk` (sideload)
 
 **iOS:**
+
 - `ios/` НЕ закомічено — `cap add ios` робиться в CI на `macos-latest`
 - Release workflow [`mobile-shell-ios-release.yml`](../../.github/workflows/mobile-shell-ios-release.yml) — tag-push + TestFlight через `apple-actions/upload-testflight-build`
 - Потребує Apple-secrets для першого реального запуску

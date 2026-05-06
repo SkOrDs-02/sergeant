@@ -112,7 +112,8 @@ const WHITELIST = [
   {
     table: "user",
     column: "emailverified",
-    reason: "SQL uses quoted camelCase `emailVerified`; Drizzle JS key lowercases it",
+    reason:
+      "SQL uses quoted camelCase `emailVerified`; Drizzle JS key lowercases it",
   },
   {
     table: "user",
@@ -192,9 +193,18 @@ function normId(raw) {
 
 // Skip keywords that appear in constraint lines (not column names)
 const CONSTRAINT_KEYWORDS = new Set([
-  "primary", "unique", "foreign", "check", "constraint", "index",
+  "primary",
+  "unique",
+  "foreign",
+  "check",
+  "constraint",
+  "index",
   // Multi-line clauses that get parsed as separate lines
-  "on", "references", "not", "default", "with",
+  "on",
+  "references",
+  "not",
+  "default",
+  "with",
 ]);
 
 /**

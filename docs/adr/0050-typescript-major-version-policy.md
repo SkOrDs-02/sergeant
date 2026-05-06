@@ -33,11 +33,13 @@ If Node runtime is upgraded (e.g., to Node 22 LTS), bump `@types/node` to the ma
 ### 2. TypeScript 6.x at root — accepted, with fallback plan
 
 TypeScript 6.0 is a first major release. We accept it for the benefits:
+
 - Improved inference for discriminated unions.
 - Better error messages.
 - `--isolatedDeclarations` (used in `packages/shared`).
 
 Known risk mitigations:
+
 - `apps/mobile` is pinned to TS 5.9 (Expo SDK hard constraint) — separate tsconfig, no shared compilation target.
 - `tools/console` will be bumped to TS 6.x in a follow-up PR once `@anthropic-ai/sdk` ships TS 6 compat types.
 - Any tooling (ESLint plugin, vitest) that is incompatible will get `resolutions`/`overrides` in the affected workspace until the ecosystem catches up.
