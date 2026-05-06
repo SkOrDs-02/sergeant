@@ -7,7 +7,9 @@
 >
 > **Зміни після початкового аудиту (Wave A прогрес):** PR-T01 (#1967, mobile floor), PR-T02 (#1970, sw exclude + e2e), PR-T03 (#1971, idb через fake-indexeddb), PR-T04 (#1992, ui utils 100%), PR-T05 (#1996, weekly-digest 95% lines/branches/fns), PR-T06 (#2001, syncV2 no-DB unit ~13% по файлу) — merged. Прогалини P0 #1, #2, #4, #5 — повністю або частково закриті.
 >
-> **Wave G прогрес (2026-05-06):** PR-T31 (#2015, `spendingVelocity` 0% → 100% lines/stmts/fns) та PR-T32 (#2019, `nutrition-domain` pure helpers 0% → 100% / 50% пакетного stmts) — open. Прогалина P2 #11 (insights/nutrition-domain) — частково закрита.
+> **Wave B старт (2026-05-06):** PR-T08 (#2012, Anthropic-mock harness `apps/server/src/test/__mocks__/anthropic.ts` + `anthropic.test.ts` 19 кейсів + README) — merged. Розблоковує T09–T12 (nutrition tools + openclaw) без copy-paste mock-stack-у. Прогалина P0 #2 (server AI-tool handlers) — інфраструктура готова.
+>
+> **Wave G прогрес (2026-05-06):** PR-T31 (#2013, `spendingVelocity` 19 кейсів + barrel-gate + smoke index → пакет coverage 95.41 stmts / 83.44 branches / 95.83 fns / 98.29 lines), PR-T32 (#2019, `nutrition-domain` pure helpers 0% → 100% / 50% пакетного stmts), PR-T39 (#2022, `tools/console` bot e2e через `bot.handleUpdate(...)` 9 кейсів покривають security/rate-limit/dispatch happy + error paths) — merged. Прогалини P2 #11 (insights/nutrition-domain) і дешевий console-e2e — закриті.
 >
 > Floors у `vitest.config.{js,ts}` ще не підняті — це окремий ratchet-PR після merge всієї Wave A + закриття T07.
 

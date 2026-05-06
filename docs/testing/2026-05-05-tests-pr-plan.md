@@ -9,18 +9,20 @@
 
 > Оновлюється при merge кожного PR з цього плану. Коли всі Wave A merged — переоцінити drift logs у `apps/web/vitest.config.js` та `apps/server/vitest.config.ts` і підняти floors одним окремим PR.
 
-| PR      | Тема                                                   | Статус      | PR / merged                                                                       |
-| ------- | ------------------------------------------------------ | ----------- | --------------------------------------------------------------------------------- |
-| PR-T01  | Mobile `coverageThreshold` (Jest)                      | merged      | [#1967](https://github.com/Skords-01/Sergeant/pull/1967) — 2026-05-05             |
-| PR-T02  | SW coverage rebaseline (exclude + e2e harness)         | merged      | [#1970](https://github.com/Skords-01/Sergeant/pull/1970) — 2026-05-05 (варіант B) |
-| PR-T03  | `sergeantDb.ts` через `fake-indexeddb`                 | merged      | [#1971](https://github.com/Skords-01/Sergeant/pull/1971) — 2026-05-05             |
-| PR-T04  | `shared/lib/ui/{amountTone,export,perf}` юніти         | merged      | [#1992](https://github.com/Skords-01/Sergeant/pull/1992) — 2026-05-06             |
-| PR-T05  | `digest/weekly-digest` no-DB юніти                     | merged      | [#1996](https://github.com/Skords-01/Sergeant/pull/1996) — 2026-05-06             |
-| PR-T06  | `sync/syncV2` no-DB юніти (partial)                    | merged      | [#2001](https://github.com/Skords-01/Sergeant/pull/2001) — 2026-05-06             |
-| PR-T07  | `sync/syncV2.integration.test.ts` доповнення           | not started | —                                                                                 |
-| PR-T08+ | Wave B+ (Anthropic-mock harness, openclaw, nutrition…) | not started | —                                                                                 |
-| PR-T31  | `packages/insights` `spendingVelocity` юніти (partial) | open        | [#2015](https://github.com/Skords-01/Sergeant/pull/2015) — 2026-05-06             |
-| PR-T32  | `packages/nutrition-domain` pure helpers (partial)     | open        | [#2019](https://github.com/Skords-01/Sergeant/pull/2019) — 2026-05-06             |
+| PR      | Тема                                                | Статус      | PR / merged                                                                       |
+| ------- | --------------------------------------------------- | ----------- | --------------------------------------------------------------------------------- |
+| PR-T01  | Mobile `coverageThreshold` (Jest)                   | merged      | [#1967](https://github.com/Skords-01/Sergeant/pull/1967) — 2026-05-05             |
+| PR-T02  | SW coverage rebaseline (exclude + e2e harness)      | merged      | [#1970](https://github.com/Skords-01/Sergeant/pull/1970) — 2026-05-05 (варіант B) |
+| PR-T03  | `sergeantDb.ts` через `fake-indexeddb`              | merged      | [#1971](https://github.com/Skords-01/Sergeant/pull/1971) — 2026-05-05             |
+| PR-T04  | `shared/lib/ui/{amountTone,export,perf}` юніти      | merged      | [#1992](https://github.com/Skords-01/Sergeant/pull/1992) — 2026-05-06             |
+| PR-T05  | `digest/weekly-digest` no-DB юніти                  | merged      | [#1996](https://github.com/Skords-01/Sergeant/pull/1996) — 2026-05-06             |
+| PR-T06  | `sync/syncV2` no-DB юніти (partial)                 | merged      | [#2001](https://github.com/Skords-01/Sergeant/pull/2001) — 2026-05-06             |
+| PR-T07  | `sync/syncV2.integration.test.ts` доповнення        | not started | —                                                                                 |
+| PR-T08  | Anthropic-mock harness для server tools             | merged      | [#2012](https://github.com/Skords-01/Sergeant/pull/2012) — 2026-05-06             |
+| PR-T09+ | Wave B+ (openclaw, nutrition tool tests)            | not started | — (deps: T08 ✓)                                                                   |
+| PR-T31  | `packages/insights` per-rule + barrel + smoke index | merged      | [#2013](https://github.com/Skords-01/Sergeant/pull/2013) — 2026-05-06             |
+| PR-T32  | `packages/nutrition-domain` pure helpers (partial)  | merged      | [#2019](https://github.com/Skords-01/Sergeant/pull/2019) — 2026-05-06             |
+| PR-T39  | `tools/console` bot e2e через `handleUpdate`        | merged      | [#2022](https://github.com/Skords-01/Sergeant/pull/2022) — 2026-05-06             |
 
 ## Як читати
 
@@ -110,6 +112,7 @@
 
 ### PR-T08 — Anthropic-mock harness для server tools
 
+- **Status:** **merged** ([#2012](https://github.com/Skords-01/Sergeant/pull/2012), 2026-05-06) — `apps/server/src/test/__mocks__/anthropic.ts` (286 LoC harness), `anthropic.test.ts` (215 LoC, 19 кейсів) і `README.md`. Експортує `createAnthropicMockHandle()`, `anthropicResponses.{text,toolUse,empty}`, `anthropicError()`, `streamingBody()` — стандартизує програмовані відповіді для T09–T12 і прибирає copy-paste з `me.contract.test.ts`/`coach.test.ts`.
 - **Branch:** `devin/{ts}-server-anthropic-mock-harness`
 - **Files:** `apps/server/src/test/__mocks__/anthropic.ts`, `apps/server/src/test/anthropicFixtures/*.json`, маленький README.
 - **Scope:** єдиний reusable mock для `@anthropic-ai/sdk` з програмованими responses (tool_use turn / text / error). Звільняє T09–T11 від copy-paste.
@@ -326,7 +329,7 @@
 
 ### PR-T31 — Підняти `packages/insights` (3 → ~12 тестів)
 
-- **Status:** **open (partial)** ([#2015](https://github.com/Skords-01/Sergeant/pull/2015), 2026-05-06).
+- **Status:** **merged** ([#2013](https://github.com/Skords-01/Sergeant/pull/2013), 2026-05-06) — додано per-rule покриття для `spendingVelocityRule` (314 LoC, 19 кейсів — DOW guard, ratio thresholds, hidden/transfer/income filters, manualExpenses aggregation), barrel-gate тест `recommendations/finance/index.test.ts` (FINANCE_RULES has all 6 rules з унікальними id) і smoke-тест публічної surface `packages/insights/src/index.test.ts` (search namespace, Recommendations namespace). Усі 6 finance-rules тепер мають per-rule або обʼєднане покриття; coverage на пакет: 95.41 stmts / 83.44 branches / 95.83 fns / 98.29 lines. Розблоковано T27, T35. (PR #2015 з тим самим scope-ом — superseded.)
 - **Branch:** `devin/{ts}-insights-tests`
 - **Files:** `packages/insights/src/**/*.test.ts`.
 - **Scope:** unit-coverage для кожної pure-функції агрегації. Додати fast-check (див. T35).
@@ -336,7 +339,7 @@
 
 ### PR-T32 — Підняти `packages/nutrition-domain` (4 → ~12)
 
-- **Status:** **open (partial)** ([#2019](https://github.com/Skords-01/Sergeant/pull/2019), 2026-05-06).
+- **Status:** **merged** ([#2019](https://github.com/Skords-01/Sergeant/pull/2019), 2026-05-06) — partial coverage по pure helpers.
 - **Branch:** `devin/{ts}-nutrition-domain-tests`
 - **Files:** `packages/nutrition-domain/src/**/*.test.ts`.
 - **Size:** ~200 LoC.
@@ -393,10 +396,11 @@
 
 ### PR-T39 — `tools/console` end-to-end бот-сценарій
 
+- **Status:** **merged** ([#2022](https://github.com/Skords-01/Sergeant/pull/2022), 2026-05-06) — `tools/console/src/__tests__/bot.e2e.test.ts` (340 LoC, 9 кейсів) feed-ить синтетичні Telegram update-и через `bot.handleUpdate(...)` без long-poll/мережі/`ANTHROPIC_API_KEY`. Покриває `/start`, `/help` (allow / deny), `message:text` dispatch (parseCommand → dispatchToAgent → typing chat-action → escaped MarkdownV2), `splitTelegramMessage` chunking >4096, rate-limit deny шлях, `Agent error` шлях. Винесено handler-логіку у `tools/console/src/bot.ts` (`attachConsoleHandlers`), `index.ts` -58 LoC. Грамі-API мокається через `bot.api.config.use(transformer)`.
 - **Branch:** `devin/{ts}-console-bot-e2e`
-- **Files:** `tools/console/src/__tests__/bot.e2e.test.ts`.
+- **Files:** `tools/console/src/__tests__/bot.e2e.test.ts`, `tools/console/src/bot.ts` (extract).
 - **Scope:** mock grammy update → assert reply text + side effects. Не блокує core продукт, дешевий PR.
-- **Size:** ~150 LoC.
+- **Size:** ~150 LoC (factual: 340 LoC test + 100 LoC `bot.ts` extract — більше, бо покрили security/rate-limit gates).
 - **Deps:** —.
 
 ---
