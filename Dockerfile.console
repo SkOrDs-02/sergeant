@@ -1,10 +1,11 @@
 # Мінімальний образ для tools/console (Telegram bot runtime).
 #
 # Шлях `tools/console` (раніше `apps/console`) — internal ops tool, не product
-# surface. Сам Railway service `sergeant-hubchat` і ім'я npm-пакету
-# `@sergeant/console` НЕ змінюються, лише monorepo placement.
+# surface. Ім'я npm-пакету `@sergeant/console` НЕ змінюється; Railway service
+# був перейменований `sergeant-hubchat` → `sergeant-openclaw` per ADR-0032 /
+# Pain P10 (див. docs/launch/tech/telegram-improvements-roadmap.md §C.5).
 #
-# Розгортається як окремий Railway service `sergeant-hubchat`
+# Розгортається як окремий Railway service `sergeant-openclaw`
 # (див. docs/architecture/service-catalog.md рядок про Console agents).
 # Хостить два long-poll grammy-боти в одному процесі:
 #   1. `@sergeant_console_bot` (ADR-0027) — multi-agent ops/marketing.

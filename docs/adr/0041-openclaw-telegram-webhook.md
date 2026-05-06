@@ -68,42 +68,42 @@ Long-poll path is byte-for-byte identical to before, plus a defensive `deleteWeb
 
 ### 3. Env vars (production)
 
-| Name                      | Default             | Required when                | Notes                                                                             |
-| ------------------------- | ------------------- | ---------------------------- | --------------------------------------------------------------------------------- |
-| `OPENCLAW_USE_WEBHOOK`    | `false`             | always                       | `true` / `1` / `yes` → webhook; anything else → long-poll. Fail-closed.           |
-| `OPENCLAW_WEBHOOK_URL`    | —                   | `OPENCLAW_USE_WEBHOOK=true`  | E.g. `https://sergeant-hubchat.up.railway.app/webhook/openclaw`. Must be `https`. |
-| `OPENCLAW_WEBHOOK_SECRET` | —                   | `OPENCLAW_USE_WEBHOOK=true`  | ≥32 chars, `/^[A-Za-z0-9_-]+$/`. Telegram echoes it; mismatch → 401.              |
-| `OPENCLAW_WEBHOOK_PATH`   | `/webhook/openclaw` | webhook mode (override only) | Path obscurity; not security on its own.                                          |
-| `PORT`                    | (Railway-provided)  | webhook mode                 | Falls back to `OPENCLAW_WEBHOOK_PORT`, then `8080`.                               |
+| Name                      | Default             | Required when                | Notes                                                                                                                                                        |
+| ------------------------- | ------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `OPENCLAW_USE_WEBHOOK`    | `false`             | always                       | `true` / `1` / `yes` → webhook; anything else → long-poll. Fail-closed.                                                                                      |
+| `OPENCLAW_WEBHOOK_URL`    | —                   | `OPENCLAW_USE_WEBHOOK=true`  | E.g. `https://sergeant-openclaw.up.railway.app/webhook/openclaw` (Railway service renamed from `sergeant-hubchat` per ADR-0032 / Pain P10). Must be `https`. |
+| `OPENCLAW_WEBHOOK_SECRET` | —                   | `OPENCLAW_USE_WEBHOOK=true`  | ≥32 chars, `/^[A-Za-z0-9_-]+$/`. Telegram echoes it; mismatch → 401.                                                                                         |
+| `OPENCLAW_WEBHOOK_PATH`   | `/webhook/openclaw` | webhook mode (override only) | Path obscurity; not security on its own.                                                                                                                     |
+| `PORT`                    | (Railway-provided)  | webhook mode                 | Falls back to `OPENCLAW_WEBHOOK_PORT`, then `8080`.                                                                                                          |
 
 ### 4. Rollout / backout
 
 - Merge with flag default-off → no production behaviour change.
-- Set Railway env vars on `sergeant-hubchat` service (per `docs/deploy/console.md`).
+- Set Railway env vars on `sergeant-openclaw` service (renamed from `sergeant-hubchat` per ADR-0032 / Pain P10; per `docs/deploy/console.md`).
 - Redeploy → `setWebhook` runs once → bot delivers via webhook.
 - Verify approval-button p95 latency in PostHog / manual smoke (<500 ms).
 - **Backout:** unset `OPENCLAW_USE_WEBHOOK` and redeploy. `unregisterOpenClawWebhook` runs idempotently and bot is back on long-poll. Healthcheck path must also be reverted from `/healthz` to the `pgrep` command, otherwise the long-poll container fails healthcheck and Railway kills it.
 
 ### 5. Production rollout (2026-05-03 21:26 UTC)
 
-Activated on Railway service `sergeant-hubchat` (project `humorous-eagerness`, environment `production`):
+Activated on Railway service `sergeant-openclaw` (project `humorous-eagerness`, environment `production`; service was renamed from `sergeant-hubchat` per ADR-0032 / Pain P10 — see `docs/deploy/console.md` rename runbook):
 
-- `serviceDomainCreate` → `sergeant-hubchat-production.up.railway.app:8080` (no domain previously since long-poll did not need one).
-- `variableUpsert × 3` → `OPENCLAW_USE_WEBHOOK=true`, `OPENCLAW_WEBHOOK_URL=https://sergeant-hubchat-production.up.railway.app/webhook/openclaw`, `OPENCLAW_WEBHOOK_SECRET=<48-char hex>`.
+- `serviceDomainCreate` → `sergeant-openclaw-production.up.railway.app:8080` (no domain previously since long-poll did not need one; original domain at activation time was `sergeant-hubchat-production.up.railway.app`).
+- `variableUpsert × 3` → `OPENCLAW_USE_WEBHOOK=true`, `OPENCLAW_WEBHOOK_URL=https://sergeant-openclaw-production.up.railway.app/webhook/openclaw`, `OPENCLAW_WEBHOOK_SECRET=<48-char hex>`.
 - `serviceInstanceUpdate` → `healthcheckPath=/healthz`.
 - `serviceInstanceRedeploy` (explicit, to migrate state cleanly).
 
 Verification matrix (all green at 21:30 UTC):
 
-| Check                                                          | Result                                                                                                                                                               |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Railway deploy `74e6148c`                                      | SUCCESS                                                                                                                                                              |
-| Bot logs                                                       | `OpenClaw starting in webhook mode on :8080/webhook/openclaw…` + `[openclaw] webhook registered with Telegram`                                                       |
-| Telegram `getWebhookInfo`                                      | `url=https://sergeant-hubchat-production.up.railway.app/webhook/openclaw`, `secret_token` set, `allowed_updates=[message, callback_query]`, `pending_update_count=0` |
-| `GET /healthz`                                                 | `200 ok`                                                                                                                                                             |
-| `POST /webhook/openclaw` без `X-Telegram-Bot-Api-Secret-Token` | `401 secret token is wrong`                                                                                                                                          |
-| `POST /webhook/openclaw` з вірним секретом                     | `200`                                                                                                                                                                |
-| `GET /foo`                                                     | `404`                                                                                                                                                                |
+| Check                                                          | Result                                                                                                                                                                |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Railway deploy `74e6148c`                                      | SUCCESS                                                                                                                                                               |
+| Bot logs                                                       | `OpenClaw starting in webhook mode on :8080/webhook/openclaw…` + `[openclaw] webhook registered with Telegram`                                                        |
+| Telegram `getWebhookInfo`                                      | `url=https://sergeant-openclaw-production.up.railway.app/webhook/openclaw`, `secret_token` set, `allowed_updates=[message, callback_query]`, `pending_update_count=0` |
+| `GET /healthz`                                                 | `200 ok`                                                                                                                                                              |
+| `POST /webhook/openclaw` без `X-Telegram-Bot-Api-Secret-Token` | `401 secret token is wrong`                                                                                                                                           |
+| `POST /webhook/openclaw` з вірним секретом                     | `200`                                                                                                                                                                 |
+| `GET /foo`                                                     | `404`                                                                                                                                                                 |
 
 #### Initial long-poll → webhook race (one-shot)
 

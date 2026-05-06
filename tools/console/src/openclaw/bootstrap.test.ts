@@ -115,7 +115,7 @@ describe("validateWebhookConfig", () => {
   it("accepts a valid https url + 32-char alphanumeric/dash/underscore secret", () => {
     expect(() =>
       validateWebhookConfig({
-        url: "https://sergeant-hubchat.up.railway.app/webhook/openclaw",
+        url: "https://sergeant-openclaw.up.railway.app/webhook/openclaw",
         secretToken: "Abc-DEF_123-".repeat(3) + "abc", // 39 chars, valid
       }),
     ).not.toThrow();
@@ -175,10 +175,10 @@ describe("registerOpenClawWebhook", () => {
     expect(getWebhookInfo).toHaveBeenCalledTimes(2);
     // Subsequent setWebhook attempts skip drop_pending_updates so we
     // don't lose queued updates that arrived between attempts.
-    expect(setWebhook.mock.calls[0][1]).toMatchObject({
+    expect(setWebhook.mock.calls[0]?.[1]).toMatchObject({
       drop_pending_updates: true,
     });
-    expect(setWebhook.mock.calls[1][1]).toMatchObject({
+    expect(setWebhook.mock.calls[1]?.[1]).toMatchObject({
       drop_pending_updates: false,
     });
   });

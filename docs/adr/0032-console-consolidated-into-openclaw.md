@@ -72,7 +72,7 @@ ADR-0027 ввів дві окремі поверхні Telegram-автомати
 
 ### Naming + deployment
 
-- Railway service для bot-процесу: `sergeant-hubchat` (config-as-code path `railway.console.toml`, Dockerfile `Dockerfile.console`). Ім'я `hubchat` залишається з epoch `tools/console` нейминг-а; перейменовувати — Phase 1.5 task разом з повним видаленням `tools/console/src/agents/`.
+- Railway service для bot-процесу: `sergeant-openclaw` (config-as-code path `railway.console.toml`, Dockerfile `Dockerfile.console`). Раніше сервіс називався `sergeant-hubchat` (epoch `tools/console`); перейменовано у PR-47 (Pain P10 з [`telegram-improvements-roadmap.md` §C.5](../launch/tech/telegram-improvements-roadmap.md#c-5)). Рунбук самого rename-у — [`docs/deploy/console.md` §«Railway service rename runbook»](../deploy/console.md).
 - Логи: `console.log("Sergeant Console starting…")` лишається у `index.ts` під `if (botToken)` гілкою — спрощує grep-по-логах. Коли console-код буде видалено повністю, замінимо на `console.log("OpenClaw bot starting…")`.
 
 ## Consequences
@@ -80,7 +80,7 @@ ADR-0027 ввів дві окремі поверхні Telegram-автомати
 ### Positive
 
 - **Один surface, один guardrail-set.** Founder бачить metrics (`/status`, `/metrics`), digests (`/digest`), logs (`/logs`), reviews (`/review`), і вільний DM-діалог в одному чаті, з audit-row на кожен запит, $5/добу cap, і MarkdownV2 escape.
-- **Менше Railway slot-ів.** Один service `sergeant-hubchat` замість двох.
+- **Менше Railway slot-ів.** Один service `sergeant-openclaw` (раніше `sergeant-hubchat`) замість двох.
 - **Lower cognitive load.** Коли founder задає питання, він не вибирає бота — пише в OpenClaw і LLM обере правильний tool-set.
 - **Plan-prerollout test surface.** Ті ж 5 нових tool-ів використовуються Phase 2 ритуалами (morning ritual / weekly review / monthly OKR) без подвійного коду.
 
@@ -129,8 +129,9 @@ ADR-0027 ввів дві окремі поверхні Telegram-автомати
 1. ✅ Code: `CONSOLE_BOT_TOKEN` optional, 5 tools ported, 5 routes added, 5 slash-команд додано в OpenClaw.
 2. ✅ ADR-0032 (this).
 3. ✅ Update `docs/architecture/apps-status-matrix.md`: console row → `Status: dormant (consolidated into OpenClaw, ADR-0032)`.
-4. ✅ Update `docs/deploy/console.md`: rename intent to `sergeant-hubchat` deployment, додати ENV-list для нових tool-ів.
+4. ✅ Update `docs/deploy/console.md`: rename intent to `sergeant-openclaw` deployment (Railway service перейменовано у PR-47, раніше `sergeant-hubchat`), додати ENV-list для нових tool-ів.
 5. ✅ Update `docs/launch/tech/openclaw-roadmap.md`: Phase 1 scope включає `/status`, `/metrics`, `/digest`, `/logs`, `/review`.
 6. ✅ Update `docs/runbooks/openclaw-runbook.md`: команди + troubleshooting + persona-roadmap.
 7. ✅ Update `tools/console/.env.example`: 5 нових tool-ENV (Stripe / Sentry / PostHog / GitHub PAT) як optional.
 8. Sprint 1 (окремий PR): видалити `tools/console/src/agents/`, `tools/console/src/dispatcher/`, `tools/console/src/router*.ts` і перейменувати package на `@sergeant/openclaw-bot`.
+9. ✅ PR-47 (Pain P10): rename Railway service `sergeant-hubchat` → `sergeant-openclaw` (config-as-code посилання, runbook-и, webhook URL у ADR-0041). Набор команд для фактичної зміни на Railway side — у [`docs/deploy/console.md`](../deploy/console.md) §«Railway service rename runbook».

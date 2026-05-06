@@ -1,4 +1,5 @@
-# Railway config-as-code для console-сервісу (`sergeant-hubchat`).
+# Railway config-as-code для console-сервісу (`sergeant-openclaw`,
+# раніше `sergeant-hubchat` per ADR-0032 / Pain P10).
 #
 # Цей файл вказується у Railway Service settings → "Config-as-code Path" =
 # `railway.console.toml`. API-сервіс (`Sergeant`) використовує дефолтний

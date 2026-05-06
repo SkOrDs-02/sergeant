@@ -1,6 +1,6 @@
 # Telegram surfaces — план покращень
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 > Поетапний план покращень Telegram-частини Sergeant — двох ботів
@@ -70,7 +70,7 @@
 | P7  | Нема `/help` discovery — нові оператори не знатимуть command-set                      | OpenClaw DM                    | при onboarding  | low      |
 | P8  | `read_telegram_topic_history` — Phase 1 stub, повертає empty                          | OpenClaw → tool-call           | при tool-use    | low      |
 | P9  | Бот падає → 6+ хв backoff retry без leader-election                                   | OpenClaw DM                    | епізодично      | low      |
-| P10 | Console-service на Railway досі `sergeant-hubchat` (legacy ім'я per ADR-0032)         | Railway / DevOps               | постійно        | very low |
+| P10 | Console-service на Railway перейменовано → `sergeant-openclaw` (PR-47, per ADR-0032)  | Railway / DevOps               | —               | resolved |
 
 ---
 
@@ -219,7 +219,7 @@ CREATE INDEX idx_tg_alert_acks_unacked
 **Pain закриває:** P4.
 **ADR:** [ADR-0041 — OpenClaw Telegram delivery via webhook](../../adr/0041-openclaw-telegram-webhook.md) §5 (production rollout) + race-condition note.
 
-**Що зроблено:** feature-flag webhook-режим у `tools/console`. Замість Express в `apps/server` хостимо `node:http`-listener в самому console-процесі (там же де `ApprovalStore`/agent-loop) і використовуємо grammy `webhookCallback("http", { secretToken })`. Long-poll лишається дефолтом для local dev (`pnpm console:dev`); production Railway env має `OPENCLAW_USE_WEBHOOK=true` + `OPENCLAW_WEBHOOK_URL=https://sergeant-hubchat-production.up.railway.app/webhook/openclaw` + `OPENCLAW_WEBHOOK_SECRET=<48-char hex>`. `Sergeant_alert_bot` лишається long-poll (broadcast-only, без callback latency-issue).
+**Що зроблено:** feature-flag webhook-режим у `tools/console`. Замість Express в `apps/server` хостимо `node:http`-listener в самому console-процесі (там же де `ApprovalStore`/agent-loop) і використовуємо grammy `webhookCallback("http", { secretToken })`. Long-poll лишається дефолтом для local dev (`pnpm console:dev`); production Railway env має `OPENCLAW_USE_WEBHOOK=true` + `OPENCLAW_WEBHOOK_URL=https://sergeant-openclaw-production.up.railway.app/webhook/openclaw` + `OPENCLAW_WEBHOOK_SECRET=<48-char hex>` (URL оновлена після rename `sergeant-hubchat` → `sergeant-openclaw` у PR-47). `Sergeant_alert_bot` лишається long-poll (broadcast-only, без callback latency-issue).
 
 **Чому:** callback-кнопки (Phase 4 approval, §3.2 ack-button) latency 1-3с. Webhook → <500ms. UX-помітно.
 
@@ -293,13 +293,13 @@ CREATE INDEX idx_tg_alert_acks_unacked
 
 ### 4.3. Cross-bot / infra
 
-| ID  | Ідея                                                                         | Pain | Effort | ADR  | Wave  |
-| --- | ---------------------------------------------------------------------------- | ---- | ------ | ---- | ----- |
-| C.1 | Multi-instance fail-over / Postgres advisory leader                          | P9   | L      | 0042 | Later |
-| C.2 | Sentry breadcrumbs у tool-calls                                              | —    | XS     | —    | W2    |
-| C.3 | Bot token rotation policy + drain-period env vars                            | —    | M      | 0043 | Later |
-| C.4 | Alert-on-bot-failure heartbeat (WF-104)                                      | P9   | S      | —    | Later |
-| C.5 | Console-service rename `sergeant-hubchat → sergeant-openclaw` (per ADR-0032) | P10  | XS     | —    | Later |
+| ID  | Ідея                                                                         | Pain | Effort | ADR  | Wave     |
+| --- | ---------------------------------------------------------------------------- | ---- | ------ | ---- | -------- |
+| C.1 | Multi-instance fail-over / Postgres advisory leader                          | P9   | L      | 0042 | Later    |
+| C.2 | Sentry breadcrumbs у tool-calls                                              | —    | XS     | —    | W2       |
+| C.3 | Bot token rotation policy + drain-period env vars                            | —    | M      | 0043 | Later    |
+| C.4 | Alert-on-bot-failure heartbeat (WF-104)                                      | P9   | S      | —    | Later    |
+| C.5 | Console-service rename `sergeant-hubchat → sergeant-openclaw` (per ADR-0032) | P10  | XS     | —    | ✅ PR-47 |
 
 ---
 
@@ -319,7 +319,8 @@ CREATE INDEX idx_tg_alert_acks_unacked
 | W4    | (i) | A.6 + A.7 (`/help` + persona quick-row)                                | S      | —         | planned                                                                                                                                                                           |
 | Later | …   | A.2 (Phase 3), A.3, A.4, A.5, A.8, A.10, A.11, A.12, A.13              | varies | 0040+     | backlog                                                                                                                                                                           |
 | Later | …   | B.2..B.8                                                               | varies | varies    | backlog                                                                                                                                                                           |
-| Later | …   | C.1, C.3, C.4, C.5                                                     | varies | 0042/0043 | backlog                                                                                                                                                                           |
+| Later | …   | C.1, C.3, C.4                                                          | varies | 0042/0043 | backlog                                                                                                                                                                           |
+| Later | C.5 | Console-service rename `sergeant-hubchat → sergeant-openclaw`          | XS     | —         | ✅ PR-47 (Pain P10 closed)                                                                                                                                                        |
 
 **Total для топ-4 хвиль:** ~12 робочих днів, 9 PR-ів, 3 нові ADR-и (0038, 0039, 0041).
 
