@@ -284,6 +284,19 @@ export default [
       "sergeant-design/no-flat-shared-lib": "error",
     },
   },
+  // Stack-pulse PR-07 — body-size declarative policy.
+  // Inline `express.json({ limit })` / `express.raw({ ..., limit })`
+  // у server-коді (поза `apps/server/src/http/bodySizePolicy.ts`)
+  // обходить декларативну `BODY_SIZE_POLICY`-таблицю — додавай rule
+  // у policy замість того, щоб mount-ити inline-парсер. Скоупимо
+  // виключно у `apps/server/**`, бо лише там Express body-парсери
+  // мають значення (web/mobile не мають Express-сервера).
+  {
+    files: ["apps/server/**/*.{ts,js,mjs}"],
+    rules: {
+      "sergeant-design/no-inline-body-size-limit": "error",
+    },
+  },
   // Mobile-shell sunset guardrail — initiative 0002 (mobile platform
   // decision). `apps/mobile-shell/` is on the locked-in deprecation
   // schedule defined in ADR-0010 § Sunset schedule (T₀ 2026-09-01,
