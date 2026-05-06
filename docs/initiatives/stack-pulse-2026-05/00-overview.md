@@ -47,33 +47,18 @@
 
 ### High (PR-07..16)
 
-<<<<<<< devin/1778103643-pr08-api-v1-shim-removal
-| ID  | Заголовок                                        | PR-план                                          | Статус                                                                                              |
-| --- | ------------------------------------------------ | ------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| H1  | Body-size policy order-dependent                 | [PR-07](./pr-07-body-size-declarative-policy.md) | **In review** ([#2081](https://github.com/Skords-01/Sergeant/pull/2081))                            |
-| H2  | API-version rewrite committed to v1 forever      | [PR-08](./pr-08-api-versioning-consolidation.md) | **Closed** — research, decision = keep mirror ([ADR-0053](../../adr/0053-api-versioning-policy.md)) |
-| H3  | `@parse/node-apn` non-canonical maintainer       | [PR-09](./pr-09-apns-library-adr.md)             | **In review** — ADR-0048 added                                                                      |
-| H4  | Better Auth security review (own-crypto adapter) | [PR-10](./pr-10-better-auth-security-review.md)  | Planned                                                                                             |
-| H5  | Drizzle schema ↔ SQL drift untracked             | [PR-11](./pr-11-drizzle-schema-drift-ci.md)      | Planned                                                                                             |
-| H6  | Sentry tracesSampleRate static 0.1               | [PR-12](./pr-12-sentry-traces-sampler.md)        | **In review** ([#2086](https://github.com/Skords-01/Sergeant/pull/2086))                            |
-| H7  | PG pool size 10 — undersized для AI ingestion    | [PR-13](./pr-13-postgres-pool-sizing.md)         | Planned                                                                                             |
-| H8  | Vercel COEP `require-corp` — broad blast radius  | [PR-14](./pr-14-vercel-coep-review.md)           | **Closed** — M21 + Vercel compatibility matrix                                                      |
-| H9  | `AI_QUOTA_DISABLED=1` ризик у production         | [PR-15](./pr-15-ai-quota-disabled-hardblock.md)  | **In review** ([#1567](https://github.com/Skords-01/Sergeant/pull/1567))                            |
-| H10 | Pino без enforced redaction policy               | [PR-16](./pr-16-pino-redaction-policy.md)        | Planned                                                                                             |
-=======
-| ID  | Заголовок                                        | PR-план                                          | Статус                                                                                                                       |
-| --- | ------------------------------------------------ | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| H1  | Body-size policy order-dependent                 | [PR-07](./pr-07-body-size-declarative-policy.md) | **Closed** ([#2081](https://github.com/Skords-01/Sergeant/pull/2081))                                                        |
-| H2  | API-version rewrite committed to v1 forever      | [PR-08](./pr-08-api-versioning-consolidation.md) | Planned                                                                                                                      |
-| H3  | `@parse/node-apn` non-canonical maintainer       | [PR-09](./pr-09-apns-library-adr.md)             | **Closed** — ADR-0048 merged                                                                                                 |
-| H4  | Better Auth security review (own-crypto adapter) | [PR-10](./pr-10-better-auth-security-review.md)  | **Closed** — implemented in PR-48                                                                                            |
-| H5  | Drizzle schema ↔ SQL drift untracked             | [PR-11](./pr-11-drizzle-schema-drift-ci.md)      | **Closed** — drift CI gate in main ([#2089](https://github.com/Skords-01/Sergeant/pull/2089))                                |
-| H6  | Sentry tracesSampleRate static 0.1               | [PR-12](./pr-12-sentry-traces-sampler.md)        | **Closed** ([#2086](https://github.com/Skords-01/Sergeant/pull/2086))                                                        |
-| H7  | PG pool size 10 — undersized для AI ingestion    | [PR-13](./pr-13-postgres-pool-sizing.md)         | Planned                                                                                                                      |
-| H8  | Vercel COEP `require-corp` — broad blast radius  | [PR-14](./pr-14-vercel-coep-review.md)           | **Closed** — M21 + Vercel compatibility matrix                                                                               |
-| H9  | `AI_QUOTA_DISABLED=1` ризик у production         | [PR-15](./pr-15-ai-quota-disabled-hardblock.md)  | **Closed** ([#1567](https://github.com/Skords-01/Sergeant/pull/1567))                                                        |
-| H10 | Pino без enforced redaction policy               | [PR-16](./pr-16-pino-redaction-policy.md)        | **Implemented (PR pending)** — Hard Rule #21 + ESLint `no-raw-req-in-pino-log` + `docs/security/logging-redaction-policy.md` |
->>>>>>> main
+| ID  | Заголовок                                        | PR-план                                          | Статус                                                                                                                                                                |
+| --- | ------------------------------------------------ | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| H1  | Body-size policy order-dependent                 | [PR-07](./pr-07-body-size-declarative-policy.md) | **Closed** ([#2081](https://github.com/Skords-01/Sergeant/pull/2081))                                                                                                 |
+| H2  | API-version rewrite committed to v1 forever      | [PR-08](./pr-08-api-versioning-consolidation.md) | **Closed** — research, decision = keep mirror ([ADR-0053](../../adr/0053-api-versioning-policy.md) + [spike](../../notes/spikes/2026-05-api-v1-usage.md))             |
+| H3  | `@parse/node-apn` non-canonical maintainer       | [PR-09](./pr-09-apns-library-adr.md)             | **Closed** — ADR-0048 merged                                                                                                                                          |
+| H4  | Better Auth security review (own-crypto adapter) | [PR-10](./pr-10-better-auth-security-review.md)  | **Closed** — implemented in PR-48                                                                                                                                     |
+| H5  | Drizzle schema ↔ SQL drift untracked             | [PR-11](./pr-11-drizzle-schema-drift-ci.md)      | **Closed** — drift CI gate in main ([#2089](https://github.com/Skords-01/Sergeant/pull/2089))                                                                         |
+| H6  | Sentry tracesSampleRate static 0.1               | [PR-12](./pr-12-sentry-traces-sampler.md)        | **Closed** ([#2086](https://github.com/Skords-01/Sergeant/pull/2086))                                                                                                 |
+| H7  | PG pool size 10 — undersized для AI ingestion    | [PR-13](./pr-13-postgres-pool-sizing.md)         | Planned                                                                                                                                                               |
+| H8  | Vercel COEP `require-corp` — broad blast radius  | [PR-14](./pr-14-vercel-coep-review.md)           | **Closed** — M21 + Vercel compatibility matrix                                                                                                                        |
+| H9  | `AI_QUOTA_DISABLED=1` ризик у production         | [PR-15](./pr-15-ai-quota-disabled-hardblock.md)  | **Closed** ([#1567](https://github.com/Skords-01/Sergeant/pull/1567))                                                                                                 |
+| H10 | Pino без enforced redaction policy               | [PR-16](./pr-16-pino-redaction-policy.md)        | **Closed** ([#2125](https://github.com/Skords-01/Sergeant/pull/2125)) — Hard Rule #21 + ESLint `no-raw-req-in-pino-log` + `docs/security/logging-redaction-policy.md` |
 
 ### Medium (без окремих PR-плані поки не призначений owner)
 
