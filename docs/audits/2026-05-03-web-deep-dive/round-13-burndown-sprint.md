@@ -1,6 +1,6 @@
 # Round-13 Burndown Sprint — закриття KPI items #6 / #8 / #15
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Superseded — round 14 ревізія підтвердила, що всі три KPI items закриті без потреби в R13.1–R13.7 PR-послідовності, описаній нижче. Канонічне джерело статусу — [`./00-overview.md` §11.5 (round 14)](./00-overview.md#§115-залишок-роботи-до-повного-закриття-18-items-станом-на-2026-05-05-round-14).
 >
 > **Що сталося насправді:**
@@ -9,7 +9,7 @@
 > - **Item #15** закрито PR [#1894](https://github.com/Skords-01/Sergeant/pull/1894) («close 0012 strictness rollout — Phase 6a/6b/6d/6f»): `noUncheckedIndexedAccess: true` додано в base `packages/config/tsconfig.base.json`. Жоден з 3 apps НЕ override-ить flag, всі 3 apps + 11 packages зелені під strict typecheck. R13.5 / R13.6 / R13.7 закрито однією зміною base config, без потреби в per-app rollout-і.
 > - **Item #6** на mature plateau (`production: 10` у `.tech-debt/localstorage-allowlist-budget.json`) — sub-PR storage-roadmap Stage 7 (`apps/web/src/modules/finyk/lib/storageManager.ts` мігровано на `safe*LS`). R13.1 закрито, +RTL hardening для quota/Safari Private Mode тепер не потрібен як окремий PR (вже покрито через `safeWriteLS` retry-on-failure тести в `__tests__/storage.test.ts`).
 >
-> Зберігаємо doc для історії (sprint-планування template + decomposition по priorities у §1–§2 нижче). Не використовуйте R13.x acceptance criteria для нових PR — звіряйтеся з §11.5 overview або з `docs/testing/mutation.md` для organic items.
+> Зберігаємо doc для історії (sprint-планування template + decomposition по priorities у §1–§2 нижче). Не використовуйте R13.x acceptance criteria для нових PR — звіряйтеся з §11.5 overview (mutation-testing roadmap-ом колись описаним у `docs/testing/mutation.md` користуватись не варто — файл видалено разом з cloudSync v1 Stryker infra у PR #052b).
 
 > Структурований PR-план на закриття трьох rolling-burndown items
 > з [`./00-overview.md` §11.5](./00-overview.md) — після round-12
@@ -32,8 +32,8 @@
 > [`./01-frontend-ergonomics.md` §3.1](./01-frontend-ergonomics.md) — Item #8 джерело ·
 > [`./02-architecture-and-state.md` §1.0 / §2.2](./02-architecture-and-state.md) —
 > Items #15 / #6 джерело · [`docs/i18n/readiness.md`](../../i18n/readiness.md) —
-> Item #18 organic roadmap · [`docs/testing/mutation.md`](../../testing/mutation.md) —
-> Item #17 organic roadmap.
+> Item #18 organic roadmap · `docs/testing/mutation.md` (видалений у PR #052b
+> разом з cloudSync v1 Stryker infra) — Item #17 organic roadmap.
 
 ---
 
@@ -190,5 +190,5 @@ contract-schema), R13.6 — паралельно. R13.1–R13.4 — парале
 - [`./01-frontend-ergonomics.md` §3.1](./01-frontend-ergonomics.md) — Item #8 architecture rationale.
 - [`./02-architecture-and-state.md` §1.0 / §2.2](./02-architecture-and-state.md) — Items #15 / #6.
 - [`docs/i18n/readiness.md`](../../i18n/readiness.md) — Item #18 organic roadmap.
-- [`docs/testing/mutation.md`](../../testing/mutation.md) — Item #17 organic roadmap.
+- `docs/testing/mutation.md` — Item #17 organic roadmap (файл видалений у PR #052b разом з cloudSync v1 Stryker infra; mutation testing для retired cloudSync engine більше не релевантний).
 - [`docs/launch/product-os/ftux-sprint-plan.md` §7a](../../launch/product-os/ftux-sprint-plan.md) — еталонний pattern «Sprint cleanup batch».
