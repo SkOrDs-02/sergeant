@@ -25,7 +25,7 @@ vi.mock("../../lib/anthropic.js", () => ({
 import _pool from "../../db.js";
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
 import { coachInsight, coachMemoryGet, coachMemoryPost } from "./coach.js";
-import { MAX_BLOB_SIZE } from "../sync/sync.js";
+import { MAX_BLOB_SIZE } from "./coach.js";
 import { ExternalServiceError } from "../../obs/errors.js";
 
 const pool = _pool as unknown as { query: Mock };

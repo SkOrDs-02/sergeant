@@ -50,7 +50,7 @@ export const DATABASE_NAME = "sergeant.db";
 /**
  * Re-exported schema bag so callers can do
  *   `import { schema } from "@/core/db/sqlite"`
- * and reach `schema.moduleData` etc. without a second import line.
+ * and reach `schema.routineEntries` etc. without a second import line.
  */
 export { schema };
 
@@ -189,8 +189,8 @@ export function getSqliteDb(): SqliteDb {
  * function itself must be synchronous, matching Drizzle's contract:
  * ```ts
  * await withTransaction((tx) => {
- *   tx.insert(schema.moduleData).values({ ... }).run();
- *   const rows = tx.select().from(schema.moduleData).all();
+ *   tx.insert(schema.routineEntries).values({ ... }).run();
+ *   const rows = tx.select().from(schema.routineEntries).all();
  *   return rows;
  * });
  * ```

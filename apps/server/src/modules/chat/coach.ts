@@ -5,7 +5,6 @@ import {
   extractAnthropicText,
 } from "../../lib/anthropic.js";
 import { sendToUserQuietly } from "../../push/send.js";
-import { MAX_BLOB_SIZE } from "../sync/sync.js";
 import { validateBody } from "../../http/validate.js";
 import {
   CoachInsightSchema,
@@ -68,6 +67,14 @@ async function getMemory(userId: string): Promise<CoachMemory | null> {
     return raw as CoachMemory;
   }
 }
+
+// Maximum size for the JSONB blob persisted in `coach_memory.data`.
+// Історично жив у `apps/server/src/modules/sync/sync.ts` як спільна
+// межа для v1 cloudSync push payload-у і coach memory write-у. Після
+// 410-Gone-у v1 sync-handler-ів і drop-у `module_data` (PR #2003 +
+// PR #2010 + PR #2018 + цей PR) ліміт ре-локалізовано у власника-
+// читача — coach module, єдиного активного writer-а jsonb-блоб-у.
+export const MAX_BLOB_SIZE = 5 * 1024 * 1024;
 
 // Власний тип помилки, щоб handler міг відрізнити overflow від інших DB-фейлів
 // і повернути 413 замість 500.

@@ -56,9 +56,9 @@ export function createSyncRouter(): Router {
   r.use("/api/sync", v1SunsetHeadersMiddleware());
   // Initiative 0003 Phase 5 / ADR-0047 — T₀ executed. Усі v1 push/pull
   // endpoint-и повертають 410 Gone із successor pointer-ом (`/api/v2/sync`).
-  // Handler-и `syncPush*`/`syncPull*` залишаються в `modules/sync/sync.ts`
-  // як dead-code до Stage 7 / PR #052 — їхні tests все ще валідують
-  // shape-контракт, що допомагає burn-in перевірці v2.
+  // Handler-и `syncPush*`/`syncPull*` видалено разом із backing-таблицею
+  // `module_data` (Stage 7 final, цей PR). Лишився тільки 410-stub з
+  // sunset/deprecation headers.
   r.post("/api/sync/push", asyncHandler(respondV1Gone));
   r.post("/api/sync/pull", asyncHandler(respondV1Gone));
   r.get("/api/sync/pull-all", asyncHandler(respondV1Gone));

@@ -9,16 +9,6 @@
 export const WAITLIST_TIERS = ["free", "plus", "pro", "unsure"] as const;
 export type WaitlistTier = (typeof WAITLIST_TIERS)[number];
 
-/** Allowed module values for module_data (migration 024 CHECK constraint). */
-export const MODULE_DATA_MODULES = [
-  "finyk",
-  "fizruk",
-  "routine",
-  "nutrition",
-  "profile",
-] as const;
-export type ModuleDataModule = (typeof MODULE_DATA_MODULES)[number];
-
 /** Allowed sync_audit_log op_type values (migration 023). */
 export const SYNC_OP_TYPES = ["push", "pull", "push_all", "pull_all"] as const;
 export type SyncOpType = (typeof SYNC_OP_TYPES)[number];

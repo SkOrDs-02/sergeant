@@ -1,0 +1,80 @@
+-- 046: Drop legacy `module_data` table — Stage 7 cleanup, final phase.
+--
+-- ─── Context ──────────────────────────────────────────────────────────
+--
+-- `module_data` був blob-таблицею v1 cloudSync (jsonb-per-(user_id, module))
+-- з епохи перед per-row decomposition-ом (Stage 4 з storage-roadmap-у). На
+-- момент 2026-05-06 single-source-of-truth-у тут більше немає:
+--
+-- - **`coach`** — мігрував у `coach_memory` міграцією 045 (PR #2018).
+-- - **`profile`** — 0 server-side reader-ів. Був чисто client-side cloud-
+--   synced module через v1 endpoints, які тепер повертають 410 Gone (PR
+--   #2003 + ADR-0047). Row-и у `module_data WHERE module='profile'`
+--   списуються разом із цим drop-ом (data-loss свідомий — pre-launch,
+--   single internal user @Skords-01).
+-- - **`finyk` / `fizruk` / `routine` / `nutrition`** — мігрували у власні
+--   per-row tables у Stage 4 (#031, #033, #036, #038); v1 blob був
+--   read-only shadow після того як domains перейшли на dedicated
+--   tables.
+--
+-- Перший напіврівень `cloudSync` engine-а стопнув запис у v1 у:
+-- - PR #2003 (server: route → 410 Gone via `respondV1Gone`)
+-- - PR #2010 (web client: `useCloudSync` hook stub-нуто; engine-fetch не
+--   викликається)
+-- - PR #2010 (mobile client: `useCloudSync` hook stub-нуто аналогічно)
+--
+-- Per AGENTS.md hard rule #4 (двофазний DROP): код припинив писати у v1
+-- канал у попередніх release-cycle-ах; цей PR — другий фазис, drop
+-- column через окрему міграцію у наступному release-cycle.
+--
+-- ─── Strategy ─────────────────────────────────────────────────────────
+--
+-- Міграція 042 partition-ила `module_data` через RENAME-pattern:
+--   - стара non-partitioned таблиця → `module_data_legacy`
+--   - new partitioned table → `module_data` (RANGE on `client_updated_at`)
+-- + helper function `create_module_data_partition(year, month)`
+-- + default partition `module_data_default` для NULL/out-of-range
+--
+-- Drop-послідовність:
+--   1. `DROP TABLE IF EXISTS module_data CASCADE` — каскадно дроп-ає
+--      всі partition-и (включаючи `module_data_default` і всі monthly
+--      partitions `module_data_yYYYY_mMM`). FK з #007 (`module_data
+--      .user_id → user.id ON DELETE CASCADE`) дроп-ається разом із
+--      таблицею. Index-и (`idx_module_data_user`, UNIQUE на
+--      `(user_id, module, client_updated_at)`) — теж.
+--   2. `DROP TABLE IF EXISTS module_data_legacy` — non-partitioned shadow
+--      з legacy-data (зберігалося як rollback-buffer для 042).
+--   3. `DROP FUNCTION IF EXISTS create_module_data_partition(INT, INT)`
+--      — helper більше не потрібний.
+--
+-- Усі команди idempotent (`IF EXISTS`) — повторний запуск не падає.
+--
+-- ─── No-rollback ──────────────────────────────────────────────────────
+--
+-- `046_drop_module_data.down.sql` НЕ існує. Pre-launch single-user, дані
+-- у `module_data WHERE module='profile'` свідомо discard-яться (вже не
+-- читаються нікуди, не пишуться нікуди), `coach` row-а вже скопійована
+-- у `coach_memory` міграцією 045. Restore не має сенсу. Per AGENTS.md
+-- production не виконує `down.sql` — отже відсутність down-файлу
+-- технічно дозволена.
+--
+-- ─── Verification ─────────────────────────────────────────────────────
+--
+--   SELECT relname FROM pg_class
+--     WHERE relname LIKE 'module_data%' OR relname = 'module_data';
+--   -- 0 rows
+--
+--   SELECT proname FROM pg_proc WHERE proname = 'create_module_data_partition';
+--   -- 0 rows
+
+-- ALLOW_DROP: Stage 7 cleanup. Two-phase DROP per AGENTS.md hard rule #4 —
+-- writers stopped в попередніх release-cycle-ах: server v1 sync handlers
+-- стали unreachable у PR #2003 (route returns 410 Gone before handler);
+-- web/mobile useCloudSync hook stub-нуто у PR #2010 (engine-fetch не
+-- викликається); coach memory мігрував у coach_memory у PR #2018.
+-- profile module не мав server-side reader-ів — discard-яється свідомо
+-- (pre-launch single internal user @Skords-01).
+
+DROP TABLE IF EXISTS module_data CASCADE;
+DROP TABLE IF EXISTS module_data_legacy CASCADE;
+DROP FUNCTION IF EXISTS create_module_data_partition(INT, INT);
