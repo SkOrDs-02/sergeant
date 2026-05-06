@@ -1,7 +1,7 @@
 # 0006 — Frontend routing migration + route-based code-split
 
 > **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-03.
-> **Status:** In progress (Phase 2.b — `/finyk/*` shipped 2026-05-06; nutrition + finyk migrated, fizruk + routine pending)
+> **Status:** In progress — Phases 0+1+2.a+2.b shipped ([#1657](https://github.com/Skords-01/Sergeant/pull/1657), [#2100](https://github.com/Skords-01/Sergeant/pull/2100), [#2104](https://github.com/Skords-01/Sergeant/pull/2104), [#2108](https://github.com/Skords-01/Sergeant/pull/2108)). Phase 2 next: fizruk + routine. Phases 3–5 pending.
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks
@@ -112,16 +112,16 @@
 
 ## Критерії DONE
 
-- [x] `react-router@^7` встановлений, `<RouterProvider />` у root.
-- [ ] Усі 8 top-level routes (Hub, Finyk, Fizruk, Nutrition, Routine, Insights, Settings, Onboarding) — окремі lazy-chunks.
-- [ ] Initial bundle ≤ 350 KB (gzip).
+- [x] `react-router@^7` встановлений, `<RouterProvider />` у root (Phase 1, [#2100](https://github.com/Skords-01/Sergeant/pull/2100)).
+- [ ] Усі 8 top-level routes (Hub, Finyk, Fizruk, Nutrition, Routine, Insights, Settings, Onboarding) — окремі lazy-chunks. _Прогрес: 2/8 — `/nutrition/*` ([#2104](https://github.com/Skords-01/Sergeant/pull/2104)) + `/finyk/*` ([#2108](https://github.com/Skords-01/Sergeant/pull/2108)). Hub `/`, Fizruk `/fizruk/*`, Routine `/routine/*` лишаються через legacy `?module=` query-param + catch-all `path: "*"`._
+- [ ] Initial bundle ≤ 350 KB (gzip). _Прогрес: 666 KB / 194 KB gzip після Phase 2.b — реальний chunk-split move-ається у Phase 5._
 - [ ] Per-route bundle ≤ 250 KB (gzip) — для більшості; крупніші документуються.
-- [ ] `useHashRouter` повністю видалено з `apps/web/src/**`.
-- [ ] Hash-URL compat shim тестується e2e (1 Playwright test).
-- [ ] Route-loaders використовуються щонайменше у 4 модулях (prefetch RQ-data).
-- [ ] PostHog подія `route_change` логується для метрики p95.
-- [ ] Bundle-size guard оновлено — per-route budgets.
-- [ ] ESLint rule `no-hash-router-in-modules` — error level.
+- [ ] `useHashRouter` повністю видалено з `apps/web/src/**`. _Прогрес: 2/4 — `nutrition/hooks/useNutritionHashRoute.ts` ([#2104](https://github.com/Skords-01/Sergeant/pull/2104)) і `finyk/hooks/useHashRouter.ts` ([#2108](https://github.com/Skords-01/Sergeant/pull/2108)) видалені. `apps/web/src/shared/hooks/useHashRoute.ts` (singular) лишається активним для fizruk + routine._
+- [ ] Hash-URL compat shim тестується e2e (1 Playwright test). _Phase 3._
+- [ ] Route-loaders використовуються щонайменше у 4 модулях (prefetch RQ-data). _Phase 2/4 — поточно 0; route-loaders не введені бо Phase 2 PR-и тримали NOOP-міграцію без поведінкових регресій._
+- [ ] PostHog подія `route_change` логується для метрики p95. _Phase 4._
+- [ ] Bundle-size guard оновлено — per-route budgets. _Phase 5._
+- [ ] ESLint rule `no-hash-router-in-modules` — error level. _Phase 5; baseline 18 → 12 warning-ів (всі в `fizruk/`) після Phase 2.b. Promotion гейт: 0 warning-ів у `apps/web/src/modules/**`._
 
 ## Ризики та митиґація
 
@@ -154,7 +154,10 @@
 - Design Review 2026-05-03 — §6 Frontend UX-arch
 - [`docs/tech-debt/frontend.md`](../tech-debt/frontend.md) — запис «hash-router у вебі»
 - [react-router v7 docs](https://reactrouter.com/en/main)
-- [`apps/web/src/modules/finyk/hooks/useHashRouter.ts`](../../apps/web/src/modules/finyk/hooks/useHashRouter.ts)
+- [`apps/web/src/modules/finyk/hooks/useFinykRoute.ts`](../../apps/web/src/modules/finyk/hooks/useFinykRoute.ts) — Phase 2.b path-router (replaces deleted `hooks/useHashRouter.ts`)
+- [`apps/web/src/modules/finyk/lib/finykRouter.ts`](../../apps/web/src/modules/finyk/lib/finykRouter.ts) — Phase 2.b parser/builder + legacy hash-compat dictionary
+- [`apps/web/src/modules/nutrition/hooks/useNutritionRoute.ts`](../../apps/web/src/modules/nutrition/hooks/useNutritionRoute.ts) — Phase 2.a path-router (replaces deleted `hooks/useNutritionHashRoute.ts`)
+- [`apps/web/src/shared/hooks/useHashRoute.ts`](../../apps/web/src/shared/hooks/useHashRoute.ts) — shared (singular) hash-route hook still in use by fizruk + routine until their Phase 2 PRs land
 - [`apps/web/src/core/app/`](../../apps/web/src/core/app/)
 - [`scripts/check-bundle-size.mjs`](../../scripts/check-bundle-size.mjs)
 - [`apps/web/vite.config.js`](../../apps/web/vite.config.js)
