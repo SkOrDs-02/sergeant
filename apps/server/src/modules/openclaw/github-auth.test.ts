@@ -24,13 +24,17 @@ import { env } from "../../env.js";
  * Pattern: tests stash the original values, mutate the frozen `env`
  * with `Object.defineProperty`, and restore in `afterEach` so we
  * don't bleed state across tests in the same file.
+ *
+ * Phase 2 (stack-pulse-2026-05 PR-06) removed `OPENCLAW_GITHUB_PAT` and
+ * its `Git_PAT` fallback. The remaining surface is the `OPENCLAW_USE_*`
+ * flag plus the three App-credential env-vars; cases that used to feed
+ * a PAT through `getOpenclawGithubAuth()` are gone.
  */
 const originalEnv = {
   OPENCLAW_USE_GITHUB_APP: env.OPENCLAW_USE_GITHUB_APP,
   OPENCLAW_GITHUB_APP_ID: env.OPENCLAW_GITHUB_APP_ID,
   OPENCLAW_GITHUB_APP_PRIVATE_KEY: env.OPENCLAW_GITHUB_APP_PRIVATE_KEY,
   OPENCLAW_GITHUB_APP_INSTALLATION_ID: env.OPENCLAW_GITHUB_APP_INSTALLATION_ID,
-  OPENCLAW_GITHUB_PAT: env.OPENCLAW_GITHUB_PAT,
 };
 
 function patchEnv(overrides: Partial<typeof originalEnv>): void {
@@ -135,52 +139,50 @@ describe("getOpenclawGithubAuth", () => {
     _clearOpenclawGithubAuthCacheForTests();
   });
 
-  it("returns null when neither App nor PAT is configured", async () => {
+  it("returns null when App credentials are not configured (Phase 2 — no PAT fallback)", async () => {
     patchEnv({
-      OPENCLAW_USE_GITHUB_APP: false,
+      OPENCLAW_USE_GITHUB_APP: true,
       OPENCLAW_GITHUB_APP_ID: "",
       OPENCLAW_GITHUB_APP_PRIVATE_KEY: "",
       OPENCLAW_GITHUB_APP_INSTALLATION_ID: "",
-      OPENCLAW_GITHUB_PAT: "",
     });
     expect(await getOpenclawGithubAuth()).toBeNull();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("returns the legacy PAT when feature flag is off", async () => {
-    patchEnv({
-      OPENCLAW_USE_GITHUB_APP: false,
-      // App credentials present — must NOT be used while flag=false
-      OPENCLAW_GITHUB_APP_ID: "1",
-      OPENCLAW_GITHUB_APP_PRIVATE_KEY: TEST_PRIVATE_KEY,
-      OPENCLAW_GITHUB_APP_INSTALLATION_ID: "2",
-      OPENCLAW_GITHUB_PAT: "ghp_legacy_pat",
-    });
-    const auth = await getOpenclawGithubAuth();
-    expect(auth).toEqual({ token: "ghp_legacy_pat", source: "pat" });
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
-  it("falls back to PAT when flag is on but App creds are incomplete", async () => {
+  it("returns null when App credentials are partial (one of three missing)", async () => {
     patchEnv({
       OPENCLAW_USE_GITHUB_APP: true,
       OPENCLAW_GITHUB_APP_ID: "1",
       OPENCLAW_GITHUB_APP_PRIVATE_KEY: "", // missing — must not attempt App-flow
       OPENCLAW_GITHUB_APP_INSTALLATION_ID: "2",
-      OPENCLAW_GITHUB_PAT: "ghp_legacy_pat",
     });
-    const auth = await getOpenclawGithubAuth();
-    expect(auth).toEqual({ token: "ghp_legacy_pat", source: "pat" });
+    expect(await getOpenclawGithubAuth()).toBeNull();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("mints an installation-token via the GitHub App flow when configured", async () => {
+  it("returns null when OPENCLAW_USE_GITHUB_APP=false (development opt-out)", async () => {
+    // The flag is `true` by default since Phase 2; setting it to `false`
+    // is supported only in dev tooling that genuinely cannot register a
+    // GitHub App (read-only mocks). In that case `getOpenclawGithubAuth()`
+    // returns null without attempting any network call, and callers
+    // surface `status: 'not_configured'` to the user.
+    patchEnv({
+      OPENCLAW_USE_GITHUB_APP: false,
+      OPENCLAW_GITHUB_APP_ID: "1",
+      OPENCLAW_GITHUB_APP_PRIVATE_KEY: TEST_PRIVATE_KEY,
+      OPENCLAW_GITHUB_APP_INSTALLATION_ID: "2",
+    });
+    expect(await getOpenclawGithubAuth()).toBeNull();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("mints an installation-token via the GitHub App flow", async () => {
     patchEnv({
       OPENCLAW_USE_GITHUB_APP: true,
       OPENCLAW_GITHUB_APP_ID: "111",
       OPENCLAW_GITHUB_APP_PRIVATE_KEY: TEST_PRIVATE_KEY,
       OPENCLAW_GITHUB_APP_INSTALLATION_ID: "222",
-      OPENCLAW_GITHUB_PAT: "ghp_should_not_be_used",
     });
 
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
@@ -211,7 +213,6 @@ describe("getOpenclawGithubAuth", () => {
       OPENCLAW_GITHUB_APP_ID: "111",
       OPENCLAW_GITHUB_APP_PRIVATE_KEY: TEST_PRIVATE_KEY,
       OPENCLAW_GITHUB_APP_INSTALLATION_ID: "222",
-      OPENCLAW_GITHUB_PAT: "",
     });
 
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
@@ -233,17 +234,16 @@ describe("getOpenclawGithubAuth", () => {
     );
   });
 
-  it("returns null (does NOT silently fall back to PAT) when App-flow fails", async () => {
-    // Falling back to PAT on an App failure would mask config drift —
-    // e.g. an expired private key keeping production limping on the
-    // legacy path forever. Surfacing null forces the caller to return
-    // 'not_configured' which an operator will notice in audit-logs.
+  it("returns null on App-flow failure (no PAT fallback after Phase 2)", async () => {
+    // The previous implementation fell back to PAT on App-flow failure;
+    // Phase 2 removed that. A failing App-flow now surfaces null so the
+    // caller produces `status: 'not_configured'` and the operator
+    // notices instead of silently limping on a legacy path.
     patchEnv({
       OPENCLAW_USE_GITHUB_APP: true,
       OPENCLAW_GITHUB_APP_ID: "111",
       OPENCLAW_GITHUB_APP_PRIVATE_KEY: TEST_PRIVATE_KEY,
       OPENCLAW_GITHUB_APP_INSTALLATION_ID: "222",
-      OPENCLAW_GITHUB_PAT: "ghp_legacy_pat_should_not_save_us",
     });
 
     fetchSpy.mockResolvedValueOnce(

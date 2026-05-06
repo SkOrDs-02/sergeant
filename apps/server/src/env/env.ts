@@ -451,6 +451,31 @@ export function assertStartupEnv(): void {
     );
   }
 
+  // Hard Rule #20 (stack-pulse-2026-05 PR-06 Phase 2): OpenClaw must
+  // authenticate to GitHub via the GitHub App-flow only. The legacy PAT
+  // (`OPENCLAW_GITHUB_PAT`) and its `Git_PAT` fallback have been removed
+  // from the env schema, but a stale value in Railway / Vercel
+  // environment storage still leaks into `process.env`. We hard-block
+  // production startup if either is present so the misconfig is caught
+  // at boot — and so the operator is forced to scrub the secret-store
+  // instead of leaving a long-lived token sitting around. Read raw
+  // `process.env` (not the zod-typed `env`) precisely because the
+  // schema dropped these keys; we need to spot the leftover regardless.
+  if (isProduction) {
+    const leftoverPats: string[] = [];
+    if (process.env["OPENCLAW_GITHUB_PAT"]) {
+      leftoverPats.push("OPENCLAW_GITHUB_PAT");
+    }
+    if (process.env["Git_PAT"]) {
+      leftoverPats.push("Git_PAT");
+    }
+    if (leftoverPats.length > 0) {
+      throw new Error(
+        `Hard Rule #20 violated: ${leftoverPats.join(", ")} present in production. OpenClaw must authenticate via the GitHub App-flow only — set OPENCLAW_GITHUB_APP_{ID,PRIVATE_KEY,INSTALLATION_ID} and remove the legacy PAT(s) from the secret-store. See docs/playbooks/rotate-openclaw-credentials.md.`,
+      );
+    }
+  }
+
   if (env.MONO_WEBHOOK_ENABLED) {
     if (!env.MONO_TOKEN_ENC_KEY) {
       throw new Error(

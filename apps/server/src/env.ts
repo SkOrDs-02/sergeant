@@ -515,34 +515,23 @@ export const env = {
   ).toLowerCase() as "dm" | "digest" | "all",
 
   /**
-   * GitHub PAT з `contents:write` для opening PR-ів з decision markdown
-   * у `docs/decisions/`. Якщо не задано — `record_decision` пише у
-   * `openclaw_decisions` з `git_pr_url=NULL` і логує warn — manual retry
-   * через admin endpoint у Phase 2.
+   * Feature flag for the GitHub App auth-flow (stack-pulse-2026-05 PR-06).
+   * When `true` (default since Phase 2) AND all three
+   * `OPENCLAW_GITHUB_APP_*` env-vars are populated, OpenClaw mints
+   * short-lived (1h) installation-tokens via
+   * `apps/server/src/modules/openclaw/github-auth.ts` and never falls
+   * back to a long-lived PAT.
    *
-   * **Phasing out** (stack-pulse-2026-05 PR-06). Phase 1 (this PR) keeps
-   * PAT as the default auth path; the `Git_PAT` fallback exists only so
-   * we don't break the Devin-VM environment mid-rollout. Phase 2
-   * (follow-up PR after a week of staging soak) flips
-   * `OPENCLAW_USE_GITHUB_APP=true` by default and removes both
-   * `OPENCLAW_GITHUB_PAT` and the `Git_PAT` fallback. Until then, do
-   * NOT add new call sites that read `env.OPENCLAW_GITHUB_PAT` directly
-   * — go through `getOpenclawGithubAuth()` in
-   * `apps/server/src/modules/openclaw/github-auth.ts`.
+   * Setting this to `false` is supported only in `NODE_ENV=development`
+   * tooling that genuinely cannot register a GitHub App (local dry-runs
+   * with read-only mocks). In production the App-flow is mandatory:
+   * `OPENCLAW_GITHUB_PAT` and the `Git_PAT` fallback have been removed,
+   * and `assertStartupEnv()` in `env/env.ts` hard-blocks startup if the
+   * legacy PAT env-vars are still present (Hard Rule #20 — «No OpenClaw
+   * PATs in production»). Rotation runbook:
+   * `docs/playbooks/rotate-openclaw-credentials.md`.
    */
-  OPENCLAW_GITHUB_PAT:
-    process.env["OPENCLAW_GITHUB_PAT"] || process.env["Git_PAT"] || "",
-
-  /**
-   * Feature flag for the GitHub App auth-flow (stack-pulse-2026-05
-   * PR-06, Phase 1). When `true` AND all three `OPENCLAW_GITHUB_APP_*`
-   * env-vars are populated, OpenClaw mints short-lived (1h)
-   * installation-tokens via `apps/server/src/modules/openclaw/github-auth.ts`
-   * instead of using the long-lived PAT. Default `false` until the
-   * Phase 2 PR flips it; that follow-up will also delete the PAT
-   * fallback above and register the «no PAT in production» hard rule.
-   */
-  OPENCLAW_USE_GITHUB_APP: parseBoolEnv("OPENCLAW_USE_GITHUB_APP", false),
+  OPENCLAW_USE_GITHUB_APP: parseBoolEnv("OPENCLAW_USE_GITHUB_APP", true),
 
   /**
    * GitHub App ID (numeric, e.g. `123456`). Stored as a string because

@@ -1,25 +1,16 @@
 /**
- * OpenClaw GitHub authentication — Phase 1 of GitHub App migration
- * (stack-pulse-2026-05 PR-06).
+ * OpenClaw GitHub authentication — GitHub App auth-flow (stack-pulse-2026-05
+ * PR-06, Phase 2: now the only flow).
  *
- * Goal: stop authenticating to GitHub from production code with a plain
- * personal access token (`OPENCLAW_GITHUB_PAT`, with a `Git_PAT` fallback
- * inherited from Devin's VM environment). Move to a GitHub App that mints
- * short-lived (1h) installation-tokens scoped to a single installation.
- *
- * Rollout (per ADR-0042-style two-phase plan):
- *
- *   Phase 1 — **this PR.** Add App-flow alongside PAT-flow, gated by the
- *   feature flag `OPENCLAW_USE_GITHUB_APP`. Default `false` for at least
- *   one week of staging soak. Production behaviour is unchanged unless an
- *   operator explicitly flips the flag.
- *
- *   Phase 2 — follow-up PR (Day 30 of stack-pulse-2026-05). Default flips
- *   to `true`, the PAT-flow is deleted, the `Git_PAT` fallback is removed
- *   from `apps/server/src/env.ts`, and the «no PAT in production»
- *   hard-rule is registered in `docs/governance/hard-rules.json`. Doing
- *   that registration **before** the PAT-flow is gone would lie to the
- *   reader — the rule is only defensible once it is true.
+ * Goal: never authenticate to GitHub from production with a long-lived
+ * personal access token. The App-flow mints short-lived (1h) installation
+ * tokens scoped to a single installation, with cache + auto-refresh
+ * 5 minutes before expiry. The legacy PAT-flow (`OPENCLAW_GITHUB_PAT` and
+ * its `Git_PAT` fallback) was removed in Phase 2 together with the «no
+ * PAT in production» Hard Rule #20 in `docs/governance/hard-rules.json` —
+ * `assertStartupEnv()` in `apps/server/src/env/env.ts` now refuses to
+ * boot the server in production if `OPENCLAW_GITHUB_PAT` or `Git_PAT` is
+ * still present in `process.env`.
  *
  * Why a custom auth helper instead of `@octokit/auth-app`:
  *
@@ -91,49 +82,49 @@ export interface OpenclawGithubAuth {
   /** Token to drop into `Authorization: Bearer ${token}`. */
   token: string;
   /**
-   * Provenance for logging / error-attribution. `app` = freshly minted
-   * (or cached) installation-token from the GitHub App flow. `pat` =
-   * legacy Personal Access Token from `env.OPENCLAW_GITHUB_PAT`.
+   * Provenance for logging / error-attribution. Always `"app"` since
+   * Phase 2 — kept as a literal type instead of a plain string so any
+   * call site that grew a `if (auth.source === "pat")` branch during
+   * the migration window now fails the type-check loud.
    */
-  source: "app" | "pat";
+  source: "app";
 }
 
 /**
  * Returns a GitHub authentication token suitable for the OpenClaw scope
- * (read repo, open PRs/issues, list releases). When the App-flow is
- * enabled and credentials are present, mints (or returns cached)
- * installation-token; otherwise falls back to PAT.
+ * (read repo, open PRs/issues, list releases). Mints (or returns cached)
+ * an installation-token via the GitHub App-flow.
  *
- * If neither flow is configured, returns `null`. Callers MUST handle
- * `null` with the same fail-soft semantics they use today for missing
- * PAT (`status: 'not_configured'`, `note: 'GitHub auth not configured'`,
+ * Returns `null` when the App-flow is disabled (`OPENCLAW_USE_GITHUB_APP=false`,
+ * supported only in `NODE_ENV=development`), when App credentials are
+ * incomplete, or when the App-flow fetch fails. Callers MUST handle
+ * `null` with the same fail-soft semantics they use today
+ * (`status: 'not_configured'`, `note: 'GitHub auth not configured'`,
  * etc.) — we deliberately do NOT throw, because OpenClaw's contract is
  * that missing creds produce an audit-log row rather than a 500.
  */
 export async function getOpenclawGithubAuth(): Promise<OpenclawGithubAuth | null> {
-  if (env.OPENCLAW_USE_GITHUB_APP && hasAppCredentials()) {
-    try {
-      const token = await getInstallationToken();
-      return { token, source: "app" };
-    } catch (err) {
-      // App-flow failure must not silently fall through to PAT — that
-      // would mask config drift (e.g. expired private key) and let
-      // production keep limping on the legacy path indefinitely. Log
-      // loud, return null, let the caller surface 'not_configured'.
-      logger.error({
-        msg: "openclaw_github_app_auth_failed",
-        err: err instanceof Error ? err.message : String(err),
-      });
-      return null;
-    }
+  if (!env.OPENCLAW_USE_GITHUB_APP) {
+    return null;
   }
-
-  const pat = env.OPENCLAW_GITHUB_PAT;
-  if (pat) {
-    return { token: pat, source: "pat" };
+  if (!hasAppCredentials()) {
+    return null;
   }
-
-  return null;
+  try {
+    const token = await getInstallationToken();
+    return { token, source: "app" };
+  } catch (err) {
+    // App-flow failure must not silently fall through — we used to fall
+    // back to a long-lived PAT here, which masked config drift (e.g.
+    // expired private key) and let production keep limping on the
+    // legacy path indefinitely. Phase 2 removed the PAT-flow entirely;
+    // log loud, return null, let the caller surface 'not_configured'.
+    logger.error({
+      msg: "openclaw_github_app_auth_failed",
+      err: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
 }
 
 function hasAppCredentials(): boolean {

@@ -1,20 +1,22 @@
 # Playbook: Ротація OpenClaw GitHub credentials
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 **Trigger:** ротація будь-якого OpenClaw GitHub credential —
 
 - планова квартальна ротація private key GitHub App (`OPENCLAW_GITHUB_APP_PRIVATE_KEY`),
-- emergency-ротація після підозри витоку (App private key, App ID, installation, або — поки не приземлиться Phase 2 — legacy `OPENCLAW_GITHUB_PAT` / `Git_PAT`),
+- emergency-ротація після підозри витоку (App private key, App ID або installation),
 - передача GitHub-org membership (founder hand-off), коли новий адмін має перевипустити App.
+
+Phase 2 (stack-pulse-2026-05 PR-06) видалив legacy PAT-flow: `OPENCLAW_GITHUB_PAT` / `Git_PAT` більше не приймаються кодом, а `assertStartupEnv()` у `apps/server/src/env/env.ts` тепер хард-блокує production-старт, якщо хоч один з них досі в `process.env` (Hard Rule #20). Якщо ти ротуєш у відповідь на витік старого PAT-у — див. § Emergency.
 
 Цей runbook покриває **лише** OpenClaw → GitHub auth surface. Ширша privileged-access posture (які ще інтеграції Sergeant потребують ротації, хто за яку відповідає, як планується ревʼю) — у [`access-governance.md`](./access-governance.md).
 
 ## Owner surface
 
-- Primary surface: OpenClaw → GitHub auth (App-flow + legacy PAT-flow на час migration window).
-- Coupled surfaces: `apps/server` (Vercel/Railway env vars), `apps/server/src/modules/openclaw/github-auth.ts`, `apps/server/src/env.ts`, `docs/integrations/env-vars.md`.
+- Primary surface: OpenClaw → GitHub auth (GitHub App-flow only after Phase 2).
+- Coupled surfaces: `apps/server` (Vercel/Railway env vars), `apps/server/src/modules/openclaw/github-auth.ts`, `apps/server/src/env.ts`, `apps/server/src/env/env.ts` (assertStartupEnv hard-block), `docs/integrations/env-vars.md`.
 - Governing skill: `sergeant-deploy-and-observability` (secrets + env-vars rollout).
 - Governing ADR / план: [`docs/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](../initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md).
 
@@ -69,12 +71,13 @@ flowchart TD
 1. **Зупини кровотечу.**
    - **App private key витік:** GitHub UI → App → видали скомпрометований `.pem` негайно. GitHub перестане приймати JWT, підписані тим ключем, протягом секунд. Далі — крок 2.
    - **Installation token витік (рідко — вони живуть ≤1 години):** відклич через `DELETE /installation/token` ([API ref](https://docs.github.com/en/rest/apps/installations#revoke-an-installation-access-token)) свіжим App JWT.
-   - **`OPENCLAW_GITHUB_PAT` / `Git_PAT` витік** (ще можливо у вікні Phase 1 migration):
+   - **Legacy `OPENCLAW_GITHUB_PAT` / `Git_PAT` ще десь живий** (Phase 2 видалив код, що їх читав, але стале значення може лежати в Vercel/Railway secret-store):
      - GitHub UI → `Settings → Developer settings → Personal access tokens → Fine-grained tokens` → відклич конкретний PAT.
-     - Також скинь Vercel / Railway env-vars (значення вже публічне — затри його у secret-менеджерах і CI-дашбордах).
+     - Затри змінну в Vercel / Railway / Devin VM secret-store. `assertStartupEnv()` тепер відмовиться стартувати prod, поки змінна там лежить (Hard Rule #20) — це навмисно, щоб ти не зміг забути крок 2.
+     - Не створюй новий PAT як заміну. Перейди на App-flow (§1).
 2. **Згенеруй свіжі credentials.**
    - Для App-flow: процедура §1 з планової ротації (новий `.pem`; **не** видаляй скомпрометований до redeploy — GitHub його вже й так інвалідував).
-   - Для PAT-flow: створи новий fine-grained PAT із мінімальними scopes (`contents: read`, `pull-requests: write`, `issues: write`); не перевикористовуй стару назву.
+   - PAT-flow більше не існує — Phase 2 видалив його з коду. Якщо ти прийшов сюди по ротацію legacy PAT-у — стартуй міграцію команди / середовища на App-flow.
 3. **Деплой одним пушем у всі середовища.** Пропусти staging-soak з planned-path — швидкість тут важливіша за обережність, бо стара credential уже відкликана.
 4. **Аудит blast-radius.**
    - Подивись audit log GitHub App: `Settings → Audit log` → фільтр `actor:sergeant-openclaw[bot]` за останні 7 днів. Усе, що не співпадає з відомою OpenClaw-approved write-дією (Telegram approval message + Postgres-рядок `openclaw_invocations`), — підозріле.
@@ -102,14 +105,14 @@ flowchart TD
 
 ## Де живе кожне значення
 
-| Variable                              | Production secret store           | Staging secret store              | Notes                                                                               |
-| ------------------------------------- | --------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------- |
-| `OPENCLAW_GITHUB_APP_ID`              | Vercel/Railway prod env           | Vercel preview env                | Числовий. Видно у налаштуваннях App — не зовсім секрет, але поводься як з секретом. |
-| `OPENCLAW_GITHUB_APP_PRIVATE_KEY`     | Vercel/Railway prod env           | Vercel preview env                | PEM. Багаторядковий; екранізуй `\n`, якщо твій secret-store злипає переноси.        |
-| `OPENCLAW_GITHUB_APP_INSTALLATION_ID` | Vercel/Railway prod env           | Vercel preview env                | Числовий. Пінь явно — щоб неправильно конфігурований App не розширив blast radius.  |
-| `OPENCLAW_USE_GITHUB_APP`             | Vercel/Railway prod env           | Vercel preview env                | Feature-прапор, дефолт `false`. Phase 2 переключить дефолт на `true`.               |
-| `OPENCLAW_GITHUB_PAT`                 | Vercel/Railway prod env (legacy)  | Vercel preview env (legacy)       | Поетапно прибираємо. Phase 2 видалить це і `Git_PAT` fallback.                      |
-| `Git_PAT`                             | Devin VM org-secret only (legacy) | Devin VM org-secret only (legacy) | Конвенція з Devin; не виставляй у production. Phase 2 видалить fallback.            |
+| Variable                              | Production secret store            | Staging secret store        | Notes                                                                                                             |
+| ------------------------------------- | ---------------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `OPENCLAW_GITHUB_APP_ID`              | Vercel/Railway prod env            | Vercel preview env          | Числовий. Видно у налаштуваннях App — не зовсім секрет, але поводься як з секретом.                               |
+| `OPENCLAW_GITHUB_APP_PRIVATE_KEY`     | Vercel/Railway prod env            | Vercel preview env          | PEM. Багаторядковий; екранізуй `\n`, якщо твій secret-store злипає переноси.                                      |
+| `OPENCLAW_GITHUB_APP_INSTALLATION_ID` | Vercel/Railway prod env            | Vercel preview env          | Числовий. Пінь явно — щоб неправильно конфігурований App не розширив blast radius.                                |
+| `OPENCLAW_USE_GITHUB_APP`             | Vercel/Railway prod env            | Vercel preview env          | Feature-прапор, дефолт `true` після Phase 2. Може бути `false` лише для NODE_ENV=development мок-сесій.           |
+| `OPENCLAW_GITHUB_PAT`                 | **REMOVED** — не виставляти        | **REMOVED** — не виставляти | Phase 2 видалила і код, і env-схему. Hard Rule #20: prod-старт падає, якщо змінна лежить у secret-store.          |
+| `Git_PAT`                             | **REMOVED** — не виставляти у prod | Devin VM org-secret OK      | Devin VM org-secret тримати можна (для CLI git operations), але `assertStartupEnv()` хард-блокує її в production. |
 
 ---
 
@@ -120,7 +123,7 @@ flowchart TD
 - [ ] `curl https://api.sergeant.app/health` повертає 200 (App-flow-регресія його не зламає — виклик неавторизований — але це підтверджує, що деплой пройшов).
 - [ ] У логах prod-додатку пошук `openclaw_github_app_auth_failed` за останню годину — має бути порожньо.
 - [ ] Тригерни read-only tool через OpenClaw (наприклад у Telegram: «openclaw, покажи останні 3 PR») і підтверди, що GitHub-відповіді приходять.
-- [ ] Тригерни write-tool з очевидно тривіальним side-effect — наприклад `create_github_issue` відкриває issue `chore: rotation smoke-test`, founder закриває її руками через 2 хвилини. Підтверди, що `actor` на issue — `sergeant-openclaw[bot]` (App-flow) або твій org-PAT user (legacy PAT-flow).
+- [ ] Тригерни write-tool з очевидно тривіальним side-effect — наприклад `create_github_issue` відкриває issue `chore: rotation smoke-test`, founder закриває її руками через 2 хвилини. Підтверди, що `actor` на issue — `sergeant-openclaw[bot]` (App-flow). Якщо побачиш user-актора замість бота — десь ще лежить legacy PAT, перевір secret-store і Hard Rule #20.
 - [ ] Додай рядок «rotation completed» у [`access-governance.md`](./access-governance.md) §"Routine review log".
 
 ---

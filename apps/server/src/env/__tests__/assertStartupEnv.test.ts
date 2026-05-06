@@ -101,3 +101,72 @@ describe("assertStartupEnv — AI_QUOTA_DISABLED hard-block (H9)", () => {
     expect(() => assertStartupEnv()).not.toThrow();
   });
 });
+
+describe("assertStartupEnv — Hard Rule #20: no OpenClaw PAT in production", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("throws in production when OPENCLAW_GITHUB_PAT is set", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      OPENCLAW_GITHUB_PAT: "ghp_legacy_token_left_in_railway",
+    });
+    expect(() => assertStartupEnv()).toThrow(/Hard Rule #20/);
+    expect(() => assertStartupEnv()).toThrow(/OPENCLAW_GITHUB_PAT/);
+  });
+
+  it("throws in production when Git_PAT is set (Devin VM convention bleed)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      Git_PAT: "ghp_devin_vm_token",
+    });
+    expect(() => assertStartupEnv()).toThrow(/Hard Rule #20/);
+    expect(() => assertStartupEnv()).toThrow(/Git_PAT/);
+  });
+
+  it("lists both PATs when both are present", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      OPENCLAW_GITHUB_PAT: "ghp_a",
+      Git_PAT: "ghp_b",
+    });
+    expect(() => assertStartupEnv()).toThrow(/OPENCLAW_GITHUB_PAT, Git_PAT/);
+  });
+
+  it("throws under Railway prod even without NODE_ENV=production", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      NODE_ENV: "test",
+      RAILWAY_ENVIRONMENT: "production",
+      OPENCLAW_GITHUB_PAT: "ghp_a",
+    });
+    expect(() => assertStartupEnv()).toThrow(/Hard Rule #20/);
+  });
+
+  it("does NOT throw in production when no legacy PAT is set", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv(PROD_BASELINE);
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("allows OPENCLAW_GITHUB_PAT in NODE_ENV=development (legacy local tooling)", async () => {
+    // Phase 2 only hard-blocks production. Local dev environments still
+    // see Devin's `Git_PAT` org-secret in `process.env`, and a developer
+    // running `pnpm dev` against staging shouldn't have the server
+    // refuse to boot because of it.
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "development",
+      OPENCLAW_GITHUB_PAT: "ghp_local_dev",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("allows OPENCLAW_GITHUB_PAT in NODE_ENV=test (CI runs on the same VM)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      NODE_ENV: "test",
+      OPENCLAW_GITHUB_PAT: "ghp_ci_token",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+});

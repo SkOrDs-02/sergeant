@@ -480,6 +480,41 @@
           "ref": "#19"
         }
       ]
+    },
+    {
+      "id": 20,
+      "title": "No OpenClaw PATs in production",
+      "scope": [
+        "apps/server/src/env.ts",
+        "apps/server/src/env/env.ts",
+        "apps/server/src/modules/openclaw/**"
+      ],
+      "severity": "blocker",
+      "category": "blocker-invariant",
+      "enforced_by": [
+        {
+          "kind": "test",
+          "ref": "apps/server/src/env/__tests__/assertStartupEnv.test.ts (Hard Rule #20 suite)"
+        },
+        {
+          "kind": "convention",
+          "ref": "apps/server/src/env/env.ts → assertStartupEnv() throws when OPENCLAW_GITHUB_PAT or Git_PAT is present in production"
+        },
+        {
+          "kind": "doc",
+          "ref": "docs/playbooks/rotate-openclaw-credentials.md"
+        }
+      ],
+      "links": [
+        {
+          "type": "doc",
+          "ref": "docs/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md"
+        },
+        {
+          "type": "agents",
+          "ref": "#20"
+        }
+      ]
     }
   ]
 }

@@ -463,6 +463,31 @@ CI запускає `node tools/tsconfig-guard/check.mjs` (через `pnpm lint
 
 Tracked у [Initiative 0012 — Perfect TS strictness rollout](./docs/initiatives/_0012-perfect-strictness-rollout.md) і живий burndown — у [`docs/tech-debt/frontend.md` §11.1](./docs/tech-debt/frontend.md).
 
+### 20. No OpenClaw PATs in production
+
+> Why a hard rule? До stack-pulse-2026-05 PR-06 OpenClaw авторизувався у GitHub довго-живущим PAT-ом (`OPENCLAW_GITHUB_PAT`, з Devin-конвенційним `Git_PAT` fallback-ом). PAT-и не мають TTL, видно за актором у audit log як user а не bot, і витік дає атакеру `contents:read` + `pull-requests:write` на репо до моменту, коли хтось помітить аномалію в логах. Phase 1 (PR #1816) завів App-flow поряд з PAT-flow за feature-прапором; Phase 2 (поточний PR) — видалив PAT-flow з коду й env-схеми та підняв `assertStartupEnv()`, що не дає prod-серверу стартувати, поки залишок PAT-у лежить у secret-store.
+
+**Rule.** У production (`NODE_ENV=production` або `RAILWAY_ENVIRONMENT=production`) OpenClaw авторизується у GitHub **виключно** через GitHub App-flow (`OPENCLAW_GITHUB_APP_ID` + `OPENCLAW_GITHUB_APP_PRIVATE_KEY` + `OPENCLAW_GITHUB_APP_INSTALLATION_ID`). Жодне з:
+
+- `OPENCLAW_GITHUB_PAT`
+- `Git_PAT`
+
+— не має бути виставлене у production-середовищі. Якщо виставлене — `assertStartupEnv()` (див. [`apps/server/src/env/env.ts`](./apps/server/src/env/env.ts)) кидає `Hard Rule #20 violated: …`, сервер не стартує, операторові видно misconfig до того, як він стане інцидентом.
+
+**Що блокує:**
+
+- `OPENCLAW_GITHUB_PAT=ghp_…` у production env-vars (Vercel / Railway / будь-яке `process.env`) — startup throw.
+- `Git_PAT=ghp_…` у production env-vars — startup throw (Devin-конвенція не повинна тікти у prod).
+- `source: "pat"` у `OpenclawGithubAuth` — типи Phase 2 фіксують `source: "app"` як literal-type, тому будь-який легасі `if (auth.source === "pat")` падає на `tsc`.
+
+**What this rule does NOT block:**
+
+- `Git_PAT` у Devin VM org-secret для CLI git operations поза prod-сервером — це конвенція, що живе на VM, а не у Sergeant production.
+- `OPENCLAW_GITHUB_PAT` у `NODE_ENV=development` / `NODE_ENV=test` — локальні dev-сервери і CI можуть мати legacy токен у `process.env`, hard-block спрацьовує лише у prod.
+- Відсутність `OPENCLAW_GITHUB_APP_*` змінних — це окрема failure mode (`getOpenclawGithubAuth()` повертає null, caller бачить `status: 'not_configured'`), не violation цього правила.
+
+Procedure для ротації / емержансі — [`docs/playbooks/rotate-openclaw-credentials.md`](./docs/playbooks/rotate-openclaw-credentials.md). Migration-план — [`docs/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md`](./docs/initiatives/stack-pulse-2026-05/pr-06-openclaw-github-app.md).
+
 ## Lint-enforced design conventions
 
 > Дизайн-конвенції з механічним enforcement: винесено зі списку Hard Rules, щоб повернути вагу терміну «hard rule». `id` стабільні (зберігаються в [`docs/governance/hard-rules.json`](./docs/governance/hard-rules.json) із `category: lint-enforced-convention`), номери у заголовках лишаються тими ж, на які посилаються старі PR-описи. CI-правила, що ловлять порушення, ті самі — `pnpm lint:plugins` (custom ESLint plugin) + governance-sync. Категорійна семантика — у [`docs/adr/0045-hard-rules-taxonomy.md`](./docs/adr/0045-hard-rules-taxonomy.md), повна enforcement-матриця — у [`docs/governance/hard-rules-matrix.md`](./docs/governance/hard-rules-matrix.md).
