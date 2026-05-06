@@ -79,9 +79,9 @@ describe("NotificationsSection", () => {
     });
 
     expect(getByText("Push-сповіщення")).toBeTruthy();
-    expect(getByText("Звички (Рутина)")).toBeTruthy();
+    expect(getByText("Рутина (звички)")).toBeTruthy();
     expect(getByText("Нагадування про звички")).toBeTruthy();
-    expect(getByText("Тренування (Фізрук)")).toBeTruthy();
+    expect(getByText("Фізрук (тренування)")).toBeTruthy();
     expect(
       getByText(
         "Нагадування про тренування підключаться з портом модуля Фізрук (Phase 6).",

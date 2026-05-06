@@ -85,9 +85,17 @@ function habitScheduledOnDateSW(h: SwRoutineHabit, dk: string) {
     return Array.isArray(h.weekdays) && h.weekdays.includes(wd);
   }
   if (rec === "monthly") {
-    const startDay = h.startDate ? parseInt(h.startDate.split("-")[2], 10) : 1;
-    const dkDay = parseInt(dk.split("-")[2], 10);
-    const [y, m] = dk.split("-").map(Number);
+    // `?? "01"` / `?? 0` defaults are unreachable — both `dk` and
+    // `h.startDate` are produced by `todayKey()` / ISO-date inputs,
+    // so the `YYYY-MM-DD` split always has 3 parts. They exist only
+    // to satisfy `noUncheckedIndexedAccess: true` in the host
+    // tsconfig that the staged pre-commit typecheck walks up to
+    // (the SW build itself uses the looser `tsconfig.sw.json`).
+    const startDay = h.startDate
+      ? parseInt(h.startDate.split("-")[2] ?? "01", 10)
+      : 1;
+    const dkDay = parseInt(dk.split("-")[2] ?? "01", 10);
+    const [y = 0, m = 0] = dk.split("-").map(Number);
     const lastDay = new Date(y, m, 0).getDate();
     return startDay > lastDay ? dkDay === lastDay : dkDay === startDay;
   }
@@ -166,7 +174,7 @@ function checkFizrukReminders() {
   recordNotified(storageKey);
 
   self.registration
-    .showNotification("🏋️ Фізрук — тренування", {
+    .showNotification("Фізрук — тренування", {
       body: "Заплановане тренування на сьогодні. Відкрий застосунок, щоб стартувати.",
       tag: storageKey,
       icon: "/icon-192.png",
@@ -194,7 +202,7 @@ function checkNutritionReminders() {
   recordNotified(storageKey);
 
   self.registration
-    .showNotification("🥗 Харчування", {
+    .showNotification("Харчування", {
       body: "Час відмітити прийом їжі! Відкрий застосунок.",
       tag: storageKey,
       icon: "/icon-192.png",

@@ -9,10 +9,16 @@ import { useCallback } from "react";
 // `/welcome`. Renders a 2×2 bento grid matching `HubDashboard`'s module
 // cards so the blurred silhouette under the splash accurately teases the
 // real dashboard layout new users are about to see.
+//
+// PR-06 — canonical Cyrillic without emoji. Module labels are bare brand
+// names (`Фінік / Фізрук / Рутина / Харчування`) — the colored module-icon
+// bubble already carries the visual association, so emoji prefixed to the
+// text was duplicative and broke uniformity vs the hub bottom-nav and
+// settings groups.
 const PEEK_CARDS = [
   {
     id: "finyk",
-    label: "💰 Фінік",
+    label: "Фінік",
     cardBg: "bg-finyk-soft/40 dark:bg-finyk-surface-dark/8",
     iconClass: "bg-finyk-soft text-finyk dark:bg-finyk-surface-dark/15",
     icon: "credit-card",
@@ -21,7 +27,7 @@ const PEEK_CARDS = [
   },
   {
     id: "fizruk",
-    label: "💪 Фізрук",
+    label: "Фізрук",
     cardBg: "bg-fizruk-soft/40 dark:bg-fizruk-surface-dark/8",
     iconClass: "bg-fizruk-soft text-fizruk dark:bg-fizruk-surface-dark/15",
     icon: "dumbbell",
@@ -30,7 +36,7 @@ const PEEK_CARDS = [
   },
   {
     id: "routine",
-    label: "✅ Рутина",
+    label: "Рутина",
     cardBg: "bg-routine-surface/40 dark:bg-routine-surface-dark/8",
     iconClass:
       "bg-routine-surface text-routine dark:bg-routine-surface-dark/15",
@@ -40,7 +46,7 @@ const PEEK_CARDS = [
   },
   {
     id: "nutrition",
-    label: "🥗 Харчування",
+    label: "Харчування",
     cardBg: "bg-nutrition-soft/40 dark:bg-nutrition-surface-dark/8",
     iconClass:
       "bg-nutrition-soft text-nutrition dark:bg-nutrition-surface-dark/15",
