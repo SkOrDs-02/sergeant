@@ -13,6 +13,7 @@ import { ApiClientProvider } from "@sergeant/api-client/react";
 
 import { apiClient } from "@/api/apiClient";
 import { SyncStatusOverlay } from "@/core/SyncStatusOverlay";
+import { bootSyncEngineWriter } from "@/core/syncEngine/singleton";
 import { ColorSchemeBridge } from "@/core/theme/ColorSchemeBridge";
 import { AnalyticsIdentityBridge } from "@/features/analytics/AnalyticsIdentityBridge";
 import { PushRegistrar } from "@/features/push/PushRegistrar";
@@ -144,6 +145,14 @@ export default function RootLayout() {
         SplashScreen.hideAsync().catch(() => {
           /* race with auto-hide — non-fatal */
         });
+        // Sync v2 writer-runtime boot. Fire-and-forget — the
+        // singleton internally `.catch`-es boot failures and routes
+        // them through `captureException`, so a missing SQLite
+        // handle (e.g. simulator without the native module) cannot
+        // break the React tree. Mirrors `apps/web/src/main.tsx`
+        // where `bootSyncEngineWriter` runs after storage migrations.
+        // See `apps/mobile/src/core/syncEngine/singleton.ts`.
+        void bootSyncEngineWriter({ captureException: captureError });
       });
 
     return () => {

@@ -1181,6 +1181,23 @@ show_balance, updated_at, deleted_at)` — об'єднує
 > опційно показує dead-letter count в `OfflineBanner` + retry-action через
 > `useSyncStatus`. Stage 7 cleanup лишається ⏳ blocked до завершення burn-in
 > у проді.
+>
+> **2026-05-06 mobile parity note.** Mobile boot отримав той самий
+> writer-runtime: `apps/mobile/src/core/syncEngine/{syncEngineWriter,singleton,netInfoEventTarget}.ts`
+> композує ту саму `@sergeant/api-client` пару scheduler+reconnect поверх
+> того ж `@sergeant/db-schema/sqlite` outbox-API, але читає міграційний
+> handle через `getSqliteMigrationClient()` (expo-sqlite) і слухає
+> reconnect через NetInfo-bridge (`createNetInfoEventTarget`) із
+> `kind: 'online'` — RN не має `document.visibilityState`, тому
+> visibility-гілка вебу там завжди була б no-op-ом.
+> `bootSyncEngineWriter({ captureException: captureError })` викликається
+> у `apps/mobile/app/_layout.tsx` після того, як `bootstrapEncryptedStorage`
+> завершився і `setStorageReady(true)` зняв splash-screen-gate. Status-surface
+> (`apps/mobile/src/sync/hook/useSyncStatus.ts`) бридж-ить `runtime.getStatus()`
+> на існуючий shape `{queuedCount, dirtyCount, isOnline}`, який споживає
+> `SyncStatusIndicator`/`SyncStatusOverlay`. Stage 7 mobile-cleanup
+> (`useCloudSync` stub-shim, `CloudSyncProvider`) лишається ⏳ — burn-in
+> після writer-runtime-boot, потім deprecate і видалити.
 
 #### **PR #040 — `feat(migrations): persistent op-log retry policy in SQLite`** ✅ LANDED — [#1717](https://github.com/Skords-01/Sergeant/pull/1717)
 

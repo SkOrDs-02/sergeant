@@ -68,6 +68,23 @@ export function captureError(
   console.error("[observability] captureError", error, context);
 }
 
+/**
+ * Lazy-forward `Sentry.addBreadcrumb`. No-op when the SDK is not yet
+ * initialised — mirrors the web `addSentryBreadcrumb` helper so the
+ * sync v2 writer runtime can wire telemetry breadcrumbs (`sync.v2.push`
+ * tick complete / skipped) symmetrically across platforms.
+ */
+export function addSentryBreadcrumb(
+  breadcrumb: Parameters<typeof Sentry.addBreadcrumb>[0],
+): void {
+  if (!initialized) return;
+  try {
+    Sentry.addBreadcrumb(breadcrumb);
+  } catch {
+    // Observer faults must never break the host app.
+  }
+}
+
 /** Test-only reset. Exported from a `__test__` prefix so it's obvious
  *  at call-sites that this is not for production use. */
 export function __resetObservabilityForTests(): void {

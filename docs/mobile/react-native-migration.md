@@ -195,11 +195,21 @@ NativeWind + RN-core. Поверх — додаткові примітиви в 
   пишуть у локальний SQLite-outbox через `@sergeant/db-schema`
   (`syncOpOutbox*`); writer-loop / scheduler / reconnect-flush живуть
   у `@sergeant/api-client` (`syncV2 pushLoop`, `syncEnginePushScheduler`,
-  `syncEngineFlushOnReconnect`). Mobile writer-runtime у boot-pipeline
-  ще не змонтований — план у
-  [`docs/superpowers/plans/2026-05-06-sync-engine-writer-wiring.md`](../superpowers/plans/2026-05-06-sync-engine-writer-wiring.md).
-  ESLint `sergeant-design/no-raw-tracked-storage` залишається активним
-  guard-ом проти повернення raw `enqueueChange`-патернів.
+  `syncEngineFlushOnReconnect`). Mobile writer-runtime тепер
+  **змонтований у boot-pipeline**:
+  `apps/mobile/src/core/syncEngine/{syncEngineWriter,singleton,netInfoEventTarget}.ts`
+  - виклик `bootSyncEngineWriter({ captureException: captureError })` у
+    `apps/mobile/app/_layout.tsx` після того, як storage-encryption
+    bootstrap зняв splash-screen-gate (`setStorageReady(true)`). Reconnect-
+    flush слухає NetInfo через тонкий `createNetInfoEventTarget` адаптер
+    (`kind: 'online'` — `document.visibilityState` у RN відсутній).
+    `useSyncStatus` бридж-ить `runtime.getStatus()` (pending / rejected /
+    dead_letter counts) на існуючий `SyncStatusIndicator`/`SyncStatusOverlay`.
+    Документація патерну й web-counterpart-у —
+    [`docs/superpowers/plans/2026-05-06-sync-engine-writer-wiring.md`](../superpowers/plans/2026-05-06-sync-engine-writer-wiring.md)
+  - storage-roadmap §Stage 5. ESLint `sergeant-design/no-raw-tracked-storage`
+    залишається активним guard-ом проти повернення raw
+    `enqueueChange`-патернів.
 
 **Модулі — детальні статуси у §5.x.** Ключові точки нижче.
 

@@ -63,7 +63,12 @@ const TS_RE = /\.(ts|tsx)$/;
  * for that group so the global type augmentations they bring in stay in scope.
  */
 const EXTRA_INPUTS_BY_TSCONFIG = {
-  "apps/mobile/tsconfig.json": ["nativewind-env.d.ts"],
+  // `nativewind-env.d.ts` brings the `className` augmentations onto RN
+  // primitives. `expo-env.d.ts` triple-slash-references `expo/types`
+  // which declares `*.css` / `*.module.css` side-effect imports — without
+  // it, `app/_layout.tsx`'s `import "../global.css"` (NativeWind v4)
+  // trips TS2882 the moment any sibling .ts(x) file is staged.
+  "apps/mobile/tsconfig.json": ["nativewind-env.d.ts", "expo-env.d.ts"],
 };
 
 function main() {
