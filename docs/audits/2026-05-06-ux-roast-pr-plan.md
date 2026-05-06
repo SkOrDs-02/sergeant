@@ -51,10 +51,11 @@
 | PR-34 | «Готово, [name]!» register success copy [C13]                    | 3      | ✅ done             | [#2114](https://github.com/Skords-01/Sergeant/pull/2114)                                  |
 | PR-38 | Stagger reduce [R4]                                              | 3      | ✅ done (zero-diff) | [#2116](https://github.com/Skords-01/Sergeant/pull/2116) (тільки коментарі)               |
 | PR-39 | Bar-grow cap 600 ms [R5]                                         | 3      | ✅ done             | [#2119](https://github.com/Skords-01/Sergeant/pull/2119)                                  |
+| PR-30 | Loading-state copy unify (1-а особа однини) [C5]                 | 3      | ✅ done             | [#2124](https://github.com/Skords-01/Sergeant/pull/2124)                                  |
 | PR-13 | Module-context у sync-error toast [A15]                          | 2      | ❌ obsolete         | cloudSync v1 dropped у Stage 7 ([#2046](https://github.com/Skords-01/Sergeant/pull/2046)) |
 | PR-37 | Прибрати dark-mode дубль у Settings [R3]                         | 3      | ❌ obsolete         | дубля немає, `DarkModeToggle` лише в `core/app/HubHeader.tsx`                             |
 
-**Прогрес:** 9 із 41 виконавчих PR-ів змерджено; 2 (PR-13, PR-37) закриті як obsolete-by-drift. Деталі у відповідних розділах нижче.
+**Прогрес:** 10 із 41 виконавчих PR-ів змерджено; 2 (PR-13, PR-37) закриті як obsolete-by-drift. Деталі у відповідних розділах нижче.
 
 **Заблоковані напрямки:**
 
@@ -555,22 +556,26 @@
   **Size:** S
   **Depends on:** —
 
-### PR-22 · Performance — lazy Insights/Digest, finyk Overview lazy секції [§7]
+### PR-22 · Performance — lazy Insights/Digest + sub-section split у HubDashboard / finyk Overview [§7]
 
 **Items covered:** §7.1, §7.4.
+
+> **Контекст vs. initiative 0006 (frontend routing):** route-level lazy boundaries для цілих модулів (`/finyk/*`, `/nutrition/*`) вже реалізовані у [`core/app/router.tsx`](../../apps/web/src/core/app/router.tsx) (Phase 1+2.b — `lazy: () => import("../../modules/<mod>/route")`). Phase 5 ([0006](../initiatives/0006-frontend-routing-and-code-split.md)) додатково замінить `element: <App />` на `<Lazy>` навколо `<FinykApp />`. Це **інша площина**: 0006 розщеплює per-module page-tree, PR-22 розщеплює **sub-cards усередині вже-mount-нутих сторінок** (Overview, HubDashboard hero) — щоб LCP не блокувався heavy data-fetch-ами в `MonthPulseCard` / `NetworthSection` / `BudgetAlertsList`. Доповнюючі ефекти, не дублюючі.
+
 **Scope:**
 
-- `HubDashboard` — секції Insights / Weekly Digest / Re-engagement → `<Suspense fallback={<Skeleton/>}>` + `lazy(() => import(...))`.
-- `modules/finyk/pages/Overview.tsx` (раніше `FinykOverview`) — `MonthPulseCard` / `NetworthSection` / `BudgetAlertsList` / `PlannedFlowsCard` → lazy.
-- Реалізувати IntersectionObserver-ефект як trigger для нижніх секцій (не лише `requestIdleCallback`).
-- Vitest perf-snapshot: bundle-size delta.
+- `HubDashboard` — секції Insights / Weekly Digest / Re-engagement → `<Suspense fallback={<Skeleton/>}>` + `lazy(() => import(...))` (component-level, бо HubDashboard — частина основного bundle-а через catch-all route у `router.tsx`).
+- `modules/finyk/pages/Overview.tsx` (раніше `FinykOverview`) — `MonthPulseCard` / `NetworthSection` / `BudgetAlertsList` / `PlannedFlowsCard` → lazy. Цей файл уже всередині finyk-route chunk-а ([initiative 0006 Phase 2.b](../initiatives/0006-frontend-routing-and-code-split.md)); тут робимо вторинний split на рівні sub-cards.
+- IntersectionObserver як trigger для нижніх секцій (не лише `requestIdleCallback`); `MonthPulseCard` / hero-card — eager.
+- Vitest perf-snapshot: bundle-size delta + chunk-list assertion (через `vite-bundle-visualizer` або `rollup-plugin-visualizer` snapshot).
   **Files:**
-- `core/hub/HubDashboard.tsx`
-- `modules/finyk/pages/Overview.tsx`
-- new: `shared/hooks/useInViewport.ts`
+- `apps/web/src/core/hub/HubDashboard.tsx`
+- `apps/web/src/modules/finyk/pages/Overview.tsx`
+- new: `apps/web/src/shared/hooks/useInViewport.ts`
   **Acceptance:**
 - LCP покращується ≥ 100 ms у Lighthouse profile (mobile slow-3G simul).
-- Bundle-stats: `dashboard.lazy.js` видно як окремий chunk.
+- Bundle-stats: `Insights.lazy.js`, `WeeklyDigest.lazy.js`, `BudgetAlertsList.lazy.js`, `PlannedFlowsCard.lazy.js` видно як окремі chunks (через `pnpm --filter web build` + Rollup output analysis).
+- Не дублювати `lazy()`-обгортки, що вже є в [`core/app/StandaloneRoutes.tsx`](../../apps/web/src/core/app/StandaloneRoutes.tsx) і `ActiveModuleView.tsx` для FinykApp/NutritionApp/тощо — PR-22 додає **новий** layer, не переписує існуючий.
   **Size:** M
   **Depends on:** PR-3, PR-20
 
