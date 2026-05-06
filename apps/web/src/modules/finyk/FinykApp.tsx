@@ -42,8 +42,7 @@ const Analytics = lazyImport(() => import("./pages/Analytics"), "Analytics");
 import { ManualExpenseSheet } from "./components/ManualExpenseSheet";
 import { FinykLoginScreen } from "./components/FinykLoginScreen";
 import { NAV_ICONS, NAV_IDS, NAV_ITEMS } from "./components/finykNav";
-// eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite (initiative 0006 Phase 2 migration на react-router-dom ще не дійшла до FinykApp shell-роутера).
-import { useHashRouter, useHashQueryParam } from "./hooks/useHashRouter";
+import { useFinykRoute, useFinykQueryParam } from "./hooks/useFinykRoute";
 import { useUnifiedFinanceData } from "./hooks/useUnifiedFinanceData";
 import { useFinykPersonalization } from "./hooks/useFinykPersonalization";
 import { useMonoTokenMigration } from "./hooks/useMonoTokenMigration";
@@ -72,12 +71,13 @@ export default function App({
   // collapsed everything except `error` to `success`, which blocked any
   // `warning`/`info`/`action` usage from the shared Toast module.
   const storage = useStorage({ toast });
-  // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite (initiative 0006 Phase 2 migration на react-router-dom ще не дійшла до FinykApp shell-роутера).
-  const [page, navigate] = useHashRouter();
+  const [page, navigate] = useFinykRoute();
   // Підтримка глибоких лінків на конкретний ліміт із Hub-інсайту
-  // (`#budgets?cat=smoking`). Передається у Budgets, щоб одразу
-  // підсвітити та проскролити потрібну картку.
-  const focusLimitCategoryId = useHashQueryParam("cat");
+  // (`/finyk/budgets?cat=smoking`, або legacy `#budgets?cat=smoking`,
+  // який `useFinykRoute` піднімає у URL search-params на mount).
+  // Передається у Budgets, щоб одразу підсвітити та проскролити
+  // потрібну картку.
+  const focusLimitCategoryId = useFinykQueryParam("cat");
   const [tokenInput, setTokenInput] = useState("");
   const [showToken, setShowToken] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
@@ -144,20 +144,13 @@ export default function App({
       setShowExpenseSheet(true);
       onPwaActionConsumed?.();
     }
-    // `navigate` — стабільна локальна функція useHashRouter, не ре-створюється між рендерами.
+    // `navigate` — стабільна локальна функція useFinykRoute, не ре-створюється між рендерами.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pwaAction, onPwaActionConsumed]);
 
-  useEffect(() => {
-    const h = window.location.hash;
-    if (h === "#/payments" || h === "#payments") {
-      window.history.replaceState(
-        null,
-        "",
-        `${window.location.pathname}#budgets`,
-      );
-    }
-  }, []);
+  // Legacy `#payments` → `#budgets` redirect був перенесений у
+  // `useFinykRoute` як частина `parseLegacyFinykHash` → `LEGACY_REDIRECTS`
+  // у `lib/finykRouter.ts` (initiative 0006 §Phase 2.b).
 
   const { mergedMono } = useUnifiedFinanceData({ mono, privat });
 

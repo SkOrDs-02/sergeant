@@ -42,6 +42,13 @@ export const router = createBrowserRouter([
     },
   },
   {
+    path: "/finyk/*",
+    lazy: async () => {
+      const m = await import("../../modules/finyk/route");
+      return m.route;
+    },
+  },
+  {
     path: "*",
     element: <App />,
   },
