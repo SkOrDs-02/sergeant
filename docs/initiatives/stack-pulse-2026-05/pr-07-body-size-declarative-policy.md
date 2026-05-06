@@ -1,12 +1,12 @@
 # PR-07: Declarative body-size policy
 
-> **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
-> **Status:** Planned
+> **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
+> **Status:** In review — [#2081](https://github.com/Skords-01/Sergeant/pull/2081)
 
 |              |                                              |
 | ------------ | -------------------------------------------- |
 | **Severity** | High (H1)                                    |
-| **Owner**    | TBD                                          |
+| **Owner**    | @Skords-01                                   |
 | **Effort**   | 0.5 дня                                      |
 | **Risk**     | Low                                          |
 | **Touches**  | `apps/server/src/app.ts`, `routes/` mounting |
@@ -70,10 +70,16 @@ export function applyBodySizePolicy(app: Express): void {
 
 ## Acceptance criteria (DoD)
 
-- [ ] `BODY_SIZE_POLICY` як єдине джерело правди.
-- [ ] `apps/server/src/app.ts` не містить inline `express.json({ limit })` поза `applyBodySizePolicy`.
-- [ ] ESLint-rule (custom або grep-CI) забороняє `express.json({ limit:` поза `bodySizePolicy.ts`.
-- [ ] Тест перевіряє: `/api/photo` приймає 9.9mb (200), не приймає 11mb (413); `/api/users` не приймає 200kb (413).
+- [x] `BODY_SIZE_POLICY` як єдине джерело правди — `apps/server/src/http/bodySizePolicy.ts` з 14 правилами, longest-prefix-first sort.
+- [x] `apps/server/src/app.ts` не містить inline `express.json({ limit })` поза `applyBodySizePolicy(app)` (~40 рядків inline mounts замінено одним викликом).
+- [x] ESLint-rule (custom) забороняє `express.json({ limit:` поза `bodySizePolicy.ts` — `sergeant-design/no-inline-body-size-limit` (literal-only narrowing щоб не false-positive-ити Response.json payloads з полем `limit`).
+- [x] Тест перевіряє: supertest 413-behavior для кожного prefix-а у `apps/server/src/http/bodySizePolicy.test.ts`.
+
+## Outcome
+
+- Single source of truth у `apps/server/src/http/bodySizePolicy.ts` (BODY_SIZE_POLICY з 14 правил: `/api/photo`@10mb, `/api/import`@6mb, `/api/upload`@10mb, `/api/openclaw/webhook`@1mb, `/api/auth/*`@128kb, ..., default `/api/`@128kb).
+- ESLint rule + 8 unit-тестів у `packages/eslint-plugin-sergeant-design/__tests__/no-inline-body-size-limit.test.mjs`.
+- Regex-narrowing: перевіряє `limit` як літеральну body-size величину (`/^\d+\s*(?:b|kb|mb|gb)$/i` або числовий byte-count) — не тригериться на `res.status(429).json({ limit: result.limit })`.
 
 ## Тести
 

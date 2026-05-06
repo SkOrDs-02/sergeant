@@ -49,7 +49,7 @@
 
 | ID  | Заголовок                                        | PR-план                                          | Статус                                                                   |
 | --- | ------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------ |
-| H1  | Body-size policy order-dependent                 | [PR-07](./pr-07-body-size-declarative-policy.md) | Planned                                                                  |
+| H1  | Body-size policy order-dependent                 | [PR-07](./pr-07-body-size-declarative-policy.md) | **In review** ([#2081](https://github.com/Skords-01/Sergeant/pull/2081)) |
 | H2  | API-version rewrite committed to v1 forever      | [PR-08](./pr-08-api-versioning-consolidation.md) | Planned                                                                  |
 | H3  | `@parse/node-apn` non-canonical maintainer       | [PR-09](./pr-09-apns-library-adr.md)             | **In review** — ADR-0048 added                                           |
 | H4  | Better Auth security review (own-crypto adapter) | [PR-10](./pr-10-better-auth-security-review.md)  | Planned                                                                  |
