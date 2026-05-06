@@ -414,7 +414,19 @@ export function Overview({
   });
 
   return (
-    <DataState query={overviewQuery} skeleton={overviewLoadingSkeleton}>
+    // `className` propagates to the wrapper `<div>` `<DataState>` puts
+    // around its children. FinykApp's tab body is a vertical flex
+    // (`flex-1 flex flex-col min-h-0 overflow-hidden`) and the inner
+    // scroll container below relies on `flex-1` against that flex chain
+    // — without these classes here, DataState's plain `<div>` breaks the
+    // flex chain and `overflow-y-auto` collapses → the page becomes
+    // unscrollable (regression from PR `9bd7b4f0`, "adopt <DataState>
+    // in finyk Mono panels").
+    <DataState
+      query={overviewQuery}
+      skeleton={overviewLoadingSkeleton}
+      className="flex-1 flex flex-col min-h-0"
+    >
       {() => (
         <div className="flex-1 overflow-y-auto overscroll-contain">
           <div className="px-4 pt-4 page-tabbar-pad space-y-4 max-w-4xl mx-auto">
