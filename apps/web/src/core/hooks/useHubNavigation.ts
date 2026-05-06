@@ -14,10 +14,10 @@ const VALID_MODULES = new Set(["finyk", "fizruk", "routine", "nutrition"]);
  *
  * When a module migrates in a later 0006 PR, add its id here and ensure
  * `apps/web/src/modules/<id>/route.tsx` exists and is wired into
- * `core/app/router.tsx` **before** the catch-all. Order: nutrition (this
- * PR), then finyk, fizruk, routine.
+ * `core/app/router.tsx` **before** the catch-all. Order: nutrition (PR
+ * #2104), finyk (this PR), then fizruk, routine.
  */
-const PATH_BASED_MODULES = new Set<HubModuleId>(["nutrition"]);
+const PATH_BASED_MODULES = new Set<HubModuleId>(["nutrition", "finyk"]);
 
 export type HubModuleId = ModuleAccent;
 
