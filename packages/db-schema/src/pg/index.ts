@@ -1,5 +1,6 @@
 export { waitlistEntries } from "./waitlistEntries.js";
 export { moduleData } from "./moduleData.js";
+export { coachMemory } from "./coachMemory.js";
 export { user, session, account, verification } from "./auth.js";
 export { syncAuditLog } from "./syncAuditLog.js";
 export { syncOpLog } from "./syncOpLog.js";

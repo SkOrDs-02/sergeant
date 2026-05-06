@@ -51,10 +51,13 @@ interface IncomingMemory {
 }
 
 async function getMemory(userId: string): Promise<CoachMemory | null> {
-  // EXPLAIN ANALYZE: Index Scan using module_data_user_id_module_key
-  //   на UNIQUE(user_id, module) — point-lookup, O(log N), < 1мс.
+  // EXPLAIN ANALYZE: Index Scan using coach_memory_pkey на PRIMARY KEY
+  //   (user_id) — point-lookup, O(log N), < 1мс.
+  // До 2026-05-06 row жив у `module_data WHERE module='coach'`; перенесено
+  // у власну таблицю міграцією 045 як precondition для Stage 7 drop-у
+  // module_data column-у.
   const result = await pool.query<{ data: unknown }>(
-    `SELECT data FROM module_data WHERE user_id = $1 AND module = 'coach'`,
+    `SELECT data FROM coach_memory WHERE user_id = $1`,
     [userId],
   );
   if (result.rows.length === 0) return null;
@@ -79,16 +82,17 @@ export class CoachMemoryTooLargeError extends Error {
 
 async function saveMemory(userId: string, memory: CoachMemory): Promise<void> {
   const blob = JSON.stringify(memory);
-  // Ділимо той самий `MAX_BLOB_SIZE`, що й sync: це один стовпчик `module_data.data`
-  // і той самий пейлоад-транспорт, тож будь-яке різне ліміти-рішення буде сюрпризом.
+  // Ділимо той самий `MAX_BLOB_SIZE`, що й історично жив у `module_data.data`
+  // — один стовпчик jsonb, той самий пейлоад-транспорт, тож будь-яке
+  // різне ліміти-рішення буде сюрпризом.
   if (blob.length > MAX_BLOB_SIZE) {
     throw new CoachMemoryTooLargeError(blob.length);
   }
   await pool.query(
-    `INSERT INTO module_data (user_id, module, data, client_updated_at, version)
-     VALUES ($1, 'coach', $2, NOW(), 1)
-     ON CONFLICT (user_id, module) DO UPDATE
-       SET data = $2, server_updated_at = NOW(), version = module_data.version + 1`,
+    `INSERT INTO coach_memory (user_id, data, client_updated_at, version)
+     VALUES ($1, $2, NOW(), 1)
+     ON CONFLICT (user_id) DO UPDATE
+       SET data = $2, server_updated_at = NOW(), version = coach_memory.version + 1`,
     [userId, blob],
   );
 }

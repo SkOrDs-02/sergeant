@@ -154,7 +154,7 @@ describe("coach routes — key guard", () => {
 describe("coach routes — GET /memory", () => {
   it("повертає { memory: null } коли coach-рядка ще нема", async () => {
     getSessionUserMock.mockResolvedValue({ id: "u1" });
-    // Перший query — module_data SELECT для memory; повертає порожній масив.
+    // Перший query — coach_memory SELECT для memory; повертає порожній масив.
     queryMock.mockResolvedValueOnce({ rows: [] });
 
     const app = createApp();

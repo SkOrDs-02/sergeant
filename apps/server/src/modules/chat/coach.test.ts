@@ -121,7 +121,7 @@ describe("coachMemoryPost blob-size guard", () => {
     expect(res.body).toEqual({ ok: true });
     expect(pool.query).toHaveBeenCalledTimes(2);
     const insertCall = pool.query.mock.calls[1] as [string, unknown[]];
-    expect(insertCall[0]).toMatch(/INSERT INTO module_data/);
+    expect(insertCall[0]).toMatch(/INSERT INTO coach_memory/);
     expect(insertCall[1][0]).toBe("user_1");
   });
 
