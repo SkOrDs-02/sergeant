@@ -308,7 +308,6 @@ Codemod ідемпотентний: повторний запуск дасть `
 | 663    | `modules/nutrition/components/DailyPlanCard.tsx`      |
 | 660    | `shared/components/ui/Icon.tsx`                       |
 | 651    | `modules/nutrition/NutritionApp.tsx`                  |
-| 647    | `modules/fizruk/pages/Exercise.tsx`                   |
 | 612    | `sw.ts`                                               |
 | 602    | `modules/routine/components/RoutineCalendarPanel.tsx` |
 

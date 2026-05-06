@@ -113,6 +113,8 @@
   "apps/web/src/modules/finyk/pages/transactions/TransactionsBatchToolbar.tsx",
   "apps/web/src/modules/finyk/pages/transactions/TransactionsHeader.tsx",
   "apps/web/src/modules/fizruk/components/BodyAtlas.tsx",
+  "apps/web/src/modules/fizruk/components/ExerciseProgressChart.tsx",
+  "apps/web/src/modules/fizruk/components/LoadCalculator.tsx",
   "apps/web/src/modules/fizruk/components/MiniLineChart.tsx",
   "apps/web/src/modules/fizruk/components/RecoveryFocusCard.tsx",
   "apps/web/src/modules/fizruk/components/TodayPlanCard.tsx",

@@ -1,7 +1,7 @@
 # 0013 — Module decomposition round 2 (`apps/web` allowlist drain)
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
-> **Status:** In progress (Sprint 1 — 1/4 PR-ів)
+> **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
+> **Status:** In progress (Sprint 1 — 2/4 PR-ів merged: `Workouts.tsx` 744→567, `Exercise.tsx` 669→427; `LogCard.tsx` + `FinykApp.tsx` pending)
 > **Priority:** P2 (subordinate to 0010-revenue-first-launch scope-freeze; pre-launch work паралельно лише на adjacent-touch — див. § Чому зараз)
 > **Owner:** `@Skords-01`
 > **ETA:** 3 sprints (≈3 тижні), **8–11 PR-ів** (по 1 PR на файл, плюс finalize-PR з drop-allowlist)
@@ -61,10 +61,10 @@
 
 PR-и:
 
-- `decomp-r2-workouts` — `Workouts.tsx` (717 → ≤599 + 2-3 child компоненти).
-- `decomp-r2-logcard` — `LogCard.tsx` (580 → ≤599; швидкий, бо вже близько).
-- `decomp-r2-exercise` — `Exercise.tsx` (≥600 → ≤599).
-- `decomp-r2-finykapp` — `FinykApp.tsx` (559 → ≤599; швидкий, але хочемо запобігти drift-у назад).
+- `decomp-r2-workouts` — `Workouts.tsx` (744 → 567) — **merged** ([#2002](https://github.com/Skords-01/Sergeant/pull/2002), commit `61a8afff`).
+- `decomp-r2-exercise` — `Exercise.tsx` (669 → 427) — extract `LoadCalculator` + `ExerciseProgressChart` + `lib/numberFmt.ts`. **Sprint 1 PR #2.**
+- `decomp-r2-logcard` — `LogCard.tsx` (drift до 736 LOC) — pending.
+- `decomp-r2-finykapp` — `FinykApp.tsx` (559 → ≤599; швидкий, але хочемо запобігти drift-у назад) — pending; може бути відкладено на post-0010-launch (див. § Ризики).
 
 ### Sprint 2 — drift drain (5 PR-и)
 
