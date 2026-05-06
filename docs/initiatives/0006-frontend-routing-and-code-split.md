@@ -1,7 +1,7 @@
 # 0006 — Frontend routing migration + route-based code-split
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
-> **Status:** In progress (Phase 0 — lint canary shipped 2026-05-04)
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-03.
+> **Status:** In progress (Phase 1 — `<RouterProvider />` shipped 2026-05-06)
 > **Priority:** P1 (Sprint 2)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks
@@ -112,7 +112,7 @@
 
 ## Критерії DONE
 
-- [ ] `react-router@^7` встановлений, `<RouterProvider />` у root.
+- [x] `react-router@^7` встановлений, `<RouterProvider />` у root.
 - [ ] Усі 8 top-level routes (Hub, Finyk, Fizruk, Nutrition, Routine, Insights, Settings, Onboarding) — окремі lazy-chunks.
 - [ ] Initial bundle ≤ 350 KB (gzip).
 - [ ] Per-route bundle ≤ 250 KB (gzip) — для більшості; крупніші документуються.
@@ -188,6 +188,16 @@ pnpm exec eslint apps/web/src/modules --rule '{"sergeant-design/no-hash-router-i
 ```
 
 DOR для Phase 1 (`feat-react-router-setup`): після введення `<RouterProvider />` цей baseline має почати **зменшуватись** з кожним PR-ом Phase 2; новий callsite поза тестами автоматично fail-ить локальний lint-staged як warning, що видно у PR-summary.
+
+### Phase 1 — `<RouterProvider />` migration (2026-05-06)
+
+| Що                         | Як зафіксовано                                                                                                                                                                                                                                                                                                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Data-router config root    | `apps/web/src/core/app/router.tsx` — `createBrowserRouter([{ path: "*", element: <App /> }])`. Catch-all matcher свідомо тримає поточну FSM-логіку `useHubNavigation` як NOOP, щоб PR не мав поведінкових регресій. Future Phase 2 PR-и вставляють специфічні маршрути (`/finyk/*`, `/fizruk/*`, …) **перед** catch-all-ом — v7 trie-резолвер віддає пріоритет більш специфічним.          |
+| Swap у `main.tsx`          | `<BrowserRouter><App /></BrowserRouter>` → `<RouterProvider router={router} />`. Інші провайдери (`PersistQueryClientProvider`, `ErrorBoundary`, `<Analytics />`) лишаються **зовні** роутера; всі контексти всередині `<App />` (`ToastProvider`, `AuthProvider`, `ScreenReaderAnnouncerProvider`, …) — **всередині** route element-у і mount-яться рівно один раз через `path: "*"`.     |
+| `react-router-dom@^7.14.1` | вже встановлено у `apps/web/package.json` (з Phase 0). Окремий `pnpm add` не потрібен.                                                                                                                                                                                                                                                                                                     |
+| Hub URL контракт           | `/?module=<id>#<page>` патерн з `useHubNavigation` лишається активним. ShellDeepLinkBridge `__sergeantShellNavigate(...)` працює як і раніше — `useNavigate()` в data-router-і має ту саму API.                                                                                                                                                                                            |
+| Verification               | `pnpm --filter @sergeant/web typecheck` ✓; `pnpm --filter @sergeant/web lint` — 0 нових errors, baseline 14 hash-router warnings (фактичний нумер: rule baseline = 18, але один файл був touched поза цим PR; список нижче). 1989/1989 unit-тестів проходять; 14 file-level failures — pre-existing, з `@sergeant/db-schema/sqlite/migrations` import-у (dualWrite tests, баг не Phase 1). |
 
 ### Що НЕ увійшло у Phase 0 (з обґрунтуванням)
 

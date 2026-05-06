@@ -2,10 +2,10 @@
 import { Suspense } from "react";
 import { lazyImport } from "./core/lib/lazyImport";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
+import { RouterProvider } from "react-router-dom";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Analytics } from "@vercel/analytics/react";
-import App from "./core/App";
+import { router } from "./core/app/router";
 import "./index.css";
 import { storageManager } from "@shared/lib/storage/storageManager";
 import { createAppQueryClient } from "@shared/lib/api/queryClient";
@@ -103,9 +103,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       client={queryClient}
       persistOptions={persistOptions}
     >
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <RouterProvider router={router} />
       <Analytics />
       {ReactQueryDevtools ? (
         <Suspense fallback={null}>
