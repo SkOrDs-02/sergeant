@@ -45,12 +45,8 @@ import {
   getFirstRealEntryModule,
 } from "../onboarding/firstRealEntry";
 import { CrossModulePreview } from "./CrossModulePreview";
-import {
-  getSessionDays,
-  isFirstActionPending,
-  isSoftAuthDismissed,
-  recordSessionDay,
-} from "../onboarding/vibePicks";
+import { getSessionDays, recordSessionDay } from "../onboarding/vibePicks";
+import { useOnboardingState } from "../onboarding/useOnboardingState";
 import { useFirstEntryCelebration } from "../onboarding/useFirstEntryCelebration";
 import { CelebrationModal } from "../onboarding/CelebrationModal";
 import { DailyNudge } from "../onboarding/DailyNudge";
@@ -182,10 +178,6 @@ export function HubDashboard({
   const density = useDashboardDensity();
   useMondayAutoDigest();
 
-  const [firstActionVisible, setFirstActionVisible] = useState(() =>
-    isFirstActionPending(),
-  );
-
   const hasRealEntry = detectFirstRealEntry();
   const celebration = useFirstEntryCelebration(hasRealEntry);
   const [sessionDays, setSessionDays] = useState(-1);
@@ -196,25 +188,7 @@ export function HubDashboard({
   useEffect(() => {
     setSessionDays(recordSessionDay() || getSessionDays());
   }, []);
-  const SOFT_AUTH_SESSION_DAYS_THRESHOLD = 3;
-  // Скільки сеансів-днів має минути після першого реального запису, перш
-  // ніж показати SoftAuth. `1` означає «не на тому ж дні»: користувач,
-  // що щойно завершив `FirstActionHeroCard` → `CelebrationModal`, не
-  // отримує одразу прохання створити акаунт. Картка чекає наступного
-  // повернення (sessionDays ≥ 2). Це зберігає «win-момент» цілим, а
-  // самій картці дає вищий signal-to-noise: якщо юзер повернувся —
-  // він уже залучений.
-  const SOFT_AUTH_AFTER_ENTRY_MIN_SESSION_DAYS = 2;
-  const [softAuthDismissed, setSoftAuthDismissed] = useState(() =>
-    isSoftAuthDismissed(),
-  );
   const entryCount = useMemo(() => countRealEntries(localStorageStore), []);
-  const showSoftAuth =
-    !user &&
-    !softAuthDismissed &&
-    typeof onShowAuth === "function" &&
-    ((hasRealEntry && sessionDays >= SOFT_AUTH_AFTER_ENTRY_MIN_SESSION_DAYS) ||
-      sessionDays >= SOFT_AUTH_SESSION_DAYS_THRESHOLD);
 
   const [reengagement, setReengagement] = useState(() =>
     shouldShowReengagement(localStorageStore),
@@ -222,6 +196,30 @@ export function HubDashboard({
   useEffect(() => {
     recordLastActiveDate(localStorageStore);
   }, []);
+
+  // Single source of truth for the FTUX hero slot (PR-12). Wraps the
+  // pure `resolveOnboardingHero` resolver from `@sergeant/shared` and
+  // owns the `firstActionVisible` / `softAuthDismissed` storage flags
+  // that used to be inline `useState`s here. Behavioural contract is
+  // identical to the previous `if/else` ladder; the gain is that the
+  // single-hero invariant lives in one tested place and mobile can
+  // share the resolver in PR-21 (FTUX parity sweep).
+  //
+  // The `useDashboardFocus()` hook is invoked further below — we
+  // re-call it inline to read `focus !== null` for the resolver and
+  // then destructure once more after the hook so we keep variable
+  // names stable. Both calls share the same memoised state because
+  // `useLocalStorageState` is keyed by the dismissed-map storage key
+  // (`hub_recs_dismissed_v1`).
+  const focusProbe = useDashboardFocus();
+  const onboardingState = useOnboardingState({
+    user,
+    hasRealEntry,
+    sessionDays,
+    todayFocusAvailable: focusProbe.focus !== null,
+    reengagementEligible: reengagement.show,
+    onShowAuth,
+  });
 
   // Cross-module preview (S6.4) — one-shot post-first-entry promo.
   // Snapshotted at mount: source module is taken from `getFirstRealEntryModule`
@@ -278,7 +276,7 @@ export function HubDashboard({
     [order, activeModules, hideInactive],
   );
 
-  const { focus, rest, dismiss } = useDashboardFocus();
+  const { focus, rest, dismiss } = focusProbe;
 
   // Insights з deep-link (`actionHash`) повинні відкрити модуль рівно
   // на потрібній вкладці/елементі — не на дефолтному Огляді. Якщо
@@ -447,19 +445,24 @@ export function HubDashboard({
     | "nutrition"
     | undefined;
   const showChecklist =
-    primaryModule && hasRealEntry && !firstActionVisible && sessionDays <= 7;
+    primaryModule &&
+    hasRealEntry &&
+    !onboardingState.showFirstAction &&
+    sessionDays <= 7;
 
-  // ONE-HERO RULE
+  // ONE-HERO RULE — the resolver in `useOnboardingState` already
+  // narrowed the candidates to a single winner. We just dispatch on
+  // its `show*` flags and let the resolver carry the priority logic.
   let hero: React.ReactNode;
-  if (firstActionVisible) {
+  if (onboardingState.showFirstAction) {
     hero = (
-      <FirstActionHeroCard onDismiss={() => setFirstActionVisible(false)} />
+      <FirstActionHeroCard onDismiss={onboardingState.dismissFirstAction} />
     );
-  } else if (showSoftAuth) {
+  } else if (onboardingState.showSoftAuth) {
     hero = (
       <SoftAuthPromptCard
         onOpenAuth={onShowAuth}
-        onDismiss={() => setSoftAuthDismissed(true)}
+        onDismiss={onboardingState.dismissSoftAuth}
         entryCount={entryCount}
         sessionDays={sessionDays}
       />
@@ -523,7 +526,8 @@ export function HubDashboard({
                * the hero card produced the «card avalanche» the IA pass
                * is fixing — streak still re-appears once the hero falls
                * back to TodayFocus or the default state. */}
-              {!firstActionVisible && !showSoftAuth && <StreakIndicator />}
+              {!onboardingState.showFirstAction &&
+                !onboardingState.showSoftAuth && <StreakIndicator />}
               {hero}
               {showChecklist && primaryModule && (
                 <ModuleChecklist

@@ -56,6 +56,7 @@ export * from "./lib/onboarding";
 
 // Onboarding goal-setting (multi-step v2).
 export * from "./lib/onboardingGoals";
+export * from "./lib/onboardingHero";
 
 // Pre-first-entry value-promise bars (S3.3 shared logic — used by
 // the web `<ValueProgressBar>` and the mobile RN port).
