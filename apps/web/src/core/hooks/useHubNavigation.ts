@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { recordModuleOpen } from "../lib/recentModules";
+import { PATH_BASED_MODULE_IDS } from "../app/appPaths";
 
 const VALID_MODULES = new Set(["finyk", "fizruk", "routine", "nutrition"]);
 
@@ -12,12 +13,11 @@ const VALID_MODULES = new Set(["finyk", "fizruk", "routine", "nutrition"]);
  * `activeModule = id` and (b) emit clean `/<id>` URLs from
  * `openModule(id, { hash })` instead of `/?module=<id>#<hash>`.
  *
- * When a module migrates in a later 0006 PR, add its id here and ensure
- * `apps/web/src/modules/<id>/route.tsx` exists and is wired into
- * `core/app/router.tsx` **before** the catch-all. Order: nutrition (PR
- * #2104), finyk (this PR), then fizruk, routine.
+ * Single source of truth lives in `core/app/appPaths.ts` so the App
+ * shell's standalone-route 404 fallback (`renderStandaloneRoute`) and
+ * this hook agree on which URLs are owned by a module.
  */
-const PATH_BASED_MODULES = new Set<HubModuleId>(["nutrition", "finyk"]);
+const PATH_BASED_MODULES = PATH_BASED_MODULE_IDS;
 
 export type HubModuleId = ModuleAccent;
 
