@@ -1,5 +1,8 @@
 # `@sergeant/mobile-shell` — Capacitor shell
 
+> **Last validated:** 2026-05-06 by @claude. **Next review:** 2026-08-04.
+> **Mobile strategy:** Capacitor shell — primary до Expo feature parity; sunset-дати T₀/T₁/T₂ не є active commitments — [ADR-0052](../../docs/adr/0052-mobile-strategy-capacitor-primary.md).
+
 Тонкий native-shell навколо `@sergeant/web`. Спочатку задумувався як PoC
 («чи запуститься поточний веб-код у WebView»), але зараз доріс до MVP:
 bearer-auth, нативний barcode-сканер і UX-поліш (status bar, splash,

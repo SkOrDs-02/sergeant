@@ -1,7 +1,9 @@
 # 0002 — Mobile platform decision: lock the deprecation deadline
 
-> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
-> **Status:** In progress (Phase 1/2 shipped; sunset decision needs reconciliation with 0010 owner decision before further deprecation work)
+> **Last validated:** 2026-05-06 by @claude. **Next review:** 2026-08-04.
+> **Status:** In progress (Phase 1/2 shipped; sunset schedule superseded — see Update below)
+>
+> **Update 2026-05-06:** owner decision зафіксовано в [ADR-0052](../adr/0052-mobile-strategy-capacitor-primary.md). Sunset-дати T₀/T₁/T₂ **не є active commitments** у period 0010 revenue launch. Обидва стеки (Capacitor + Expo) підтримуються паралельно. Deprecation-трек активується окремим ADR, коли Expo досягне feature parity з web (тригер: ≥18/22 рядків у `docs/architecture/platforms.md` = ✅). До цього — не цитувати shell-sunset з цього файлу як active outcome.
 > **Priority:** P0 (Sprint 1)
 > **Owner:** `@Skords-01`
 > **ETA:** 2 weeks (рішення + 1 ADR + комунікація)
