@@ -3,20 +3,20 @@
  *
  * Owns the persisted list of workout sessions under
  * `STORAGE_KEYS.FIZRUK_WORKOUTS` (`fizruk_workouts_v1`) — the same
- * MMKV / cloud-sync slot that the web hook
+ * MMKV slot that the web hook
  * `apps/web/src/modules/fizruk/hooks/useWorkouts.ts` writes to.
  *
  * The shape mirrors the web port (workouts hold `items`, `groups`,
  * optional `warmup` / `cooldown` checklists, a free-form `note`, and
  * lifecycle timestamps `startedAt` / `endedAt`). The hook is kept
  * intentionally generic — pure UI affordances live in their callers —
- * but every mutator routes through a single `persist()` that calls
- * `enqueueChange(FIZRUK_WORKOUTS)` so cloud-sync picks the change up.
+ * but every mutator routes through a single `persist()` that writes
+ * to MMKV and re-renders consumers.
  *
  * No-op guard: when a mutator is asked to operate on an unknown id
  * (e.g. `updateWorkout("missing-id", …)`) or when an `endWorkout`
  * call hits an already-ended session, the in-memory state stays
- * referentially identical and `enqueueChange` is **not** called. This
+ * referentially identical and the MMKV write is skipped. This
  * matches the existing `useMeasurements` / `usePrograms` hooks and the
  * `routine-domain` reducer pattern (see Task #5).
  */
@@ -26,7 +26,6 @@ import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain/domain";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
-import { enqueueChange } from "@/sync/enqueue";
 
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadGate } from "../lib/sqliteReadGate";
@@ -146,7 +145,7 @@ export function useFizrukWorkouts(): UseFizrukWorkoutsResult {
   // `addItem(...)`) see each other's effects without waiting for a
   // re-render. Critical for the no-op guards: we have to know the
   // *current* state at call time to decide whether anything actually
-  // changed (and therefore whether to fire `enqueueChange`).
+  // changed (and therefore whether to skip the MMKV write).
   const stateRef = useRef<FizrukWorkout[]>(workouts);
 
   // React to out-of-band writes (cloud-sync pull, settings reset, etc).
@@ -183,7 +182,6 @@ export function useFizrukWorkouts(): UseFizrukWorkoutsResult {
       if (next === prev) return;
       stateRef.current = next;
       safeWriteLS(STORAGE_KEY, next);
-      enqueueChange(STORAGE_KEY);
       setWorkouts(next);
     },
     [],

@@ -2362,6 +2362,61 @@ client_updated_at)` (Postgres requirement для partitioned tables).
   5. ADR graph + governance-sync зелені (нічого не зачіпає, але CI має
      підтвердити).
 
+#### **PR #053b — `chore(mobile): drop enqueueChange callsites in fizruk hooks`** ⏳ IN PR
+
+- **Scope.** Mobile fizruk wave of PR #053 KVStore deprecate. Видаляє
+  10 fizruk-hook call-sites `enqueueChange(STORAGE_KEY)` (no-op після
+  PR #052c v1-engine sunset) і свопає `useMeasurements` з
+  `useSyncedStorage` на raw `useLocalStorage`. Mobile-side
+  `apps/mobile/src/sync/{enqueue,index,useSyncedStorage}.ts` shim
+  тримається до PR #053c (nutrition + finyk + routine + dashboard /
+  settings — 16 call-sites лишається).
+- **Files modified (10 fizruk hooks).**
+  - `useMonthlyPlan.ts` — drop import + 3 `enqueueChange(MONTHLY_PLAN_STORAGE_KEY)`.
+  - `useCustomExercises.ts` — drop import + 1 call у `persist`; JSDoc оновлено.
+  - `useFizrukWorkouts.ts` — drop import + 1 call у `persist`; JSDoc + 2 inline-коментарі оновлено.
+  - `useActiveFizrukWorkout.ts` — drop import + 1 call у `setActiveWorkoutId`.
+  - `useWorkoutTemplates.ts` — drop import + 1 call у `persist`; JSDoc оновлено.
+  - `useDailyLog.ts` — drop import + 1 call у `persist`; JSDoc оновлено.
+  - `useWellbeing.ts` — drop import + 1 call у `persist`; JSDoc + inline-коментар оновлено.
+  - `usePlanTemplate.ts` — drop import + 1 call; JSDoc + return-doc оновлено.
+  - `usePrograms.ts` — drop import + 1 call у `persist`.
+  - `useMeasurements.ts` — `useSyncedStorage` → `useLocalStorage` (raw
+    MMKV-backed hook без enqueue-callback hook), JSDoc-коментар
+    оновлено. Single fizruk consumer of `useSyncedStorage`.
+- **Files deleted (10 \*.enqueue.test.ts).** Тестували, що кожен мутатор
+  кричить `enqueueChange` точно з потрібним ключем — контракт що тепер
+  no-op. Вузли no-op-guard semantic-у (skip on `next === prev`) лишаються
+  імпліцитно покритими hook-сирим contract-ом + продовжать тестуватися
+  у sqliteOverlay-тестах.
+  - `useActiveFizrukWorkout.enqueue.test.ts`
+  - `useCustomExercises.enqueue.test.ts`
+  - `useDailyLog.enqueue.test.ts`
+  - `useFizrukWorkouts.enqueue.test.ts`
+  - `useMeasurements.enqueue.test.ts`
+  - `useMonthlyPlan.enqueue.test.ts`
+  - `usePlanTemplate.enqueue.test.ts`
+  - `usePrograms.enqueue.test.ts`
+  - `useWellbeing.enqueue.test.ts`
+  - `useWorkoutTemplates.enqueue.test.ts`
+- **Files modified (tests).**
+  - `useRecovery.test.ts` — drop unused `mockEnqueueChange` (recovery —
+    pure computation hook, ніколи не писав).
+- **Done criteria.**
+  1. Нуль `enqueueChange` / `notifySyncDirty` / `useSyncedStorage`
+     references під `apps/mobile/src/modules/fizruk/**` (grep).
+  2. `pnpm lint` зелений.
+  3. `pnpm typecheck` зелений.
+  4. `pnpm --filter @sergeant/mobile test` зелений.
+  5. governance-sync + ADR graph зелені.
+- **Out of scope (для PR #053c).**
+  - Mobile sync-engine writer-runtime wiring у boot-path (counterpart до
+    web `apps/web/src/core/syncEngine/syncEngineWriter.ts` [#1953](https://github.com/Skords-01/Sergeant/pull/1953)).
+  - Решта 16 mobile module-store call-sites: 5 nutrition hooks, 1
+    routine, 3 finyk store-и, 5 dashboard / settings / observability,
+    `apps/mobile/src/sync/{enqueue,index,useSyncedStorage}.ts` shim
+    deletion + `apps/mobile/src/lib/storage.ts` allowlist budget.
+
 #### **PR #054 final — `chore: final localStorage burndown — eslint allowlist = []`** ⏳ ROADMAP
 
 > **Поточний стан (2026-05-06, main `077c738f`).** Allowlist budget 6

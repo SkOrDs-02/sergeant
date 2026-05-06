@@ -10,16 +10,15 @@
  * `setPlanTemplate(next)` is no-op-guarded by deep equality (same
  * `JSON.stringify` pattern used by `routine-domain` `applyUpdateHabit`,
  * see Task #5): if `next` round-trips to the same JSON as the current
- * value, the in-memory state stays referentially identical and
- * `enqueueChange` is **not** called. This keeps the cloud-sync queue
- * quiet when a UI re-saves an unchanged form.
+ * value, the in-memory state stays referentially identical and the
+ * MMKV write is skipped. This keeps the slot stable on idempotent
+ * re-saves of the same form.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
-import { enqueueChange } from "@/sync/enqueue";
 
 const STORAGE_KEY = STORAGE_KEYS.FIZRUK_PLAN_TEMPLATE;
 
@@ -53,8 +52,8 @@ export interface UsePlanTemplateResult {
   planTemplate: PlanTemplate | null;
   /**
    * Replace the slot. Pass `null` to clear it. Returns `true` if the
-   * slot actually changed (and `enqueueChange` fired), `false` for a
-   * no-op write.
+   * slot actually changed (and was persisted), `false` for a no-op
+   * write.
    */
   setPlanTemplate(next: PlanTemplate | null): boolean;
   /** Convenience for `setPlanTemplate(null)`. */
@@ -86,7 +85,6 @@ export function usePlanTemplate(): UsePlanTemplateResult {
       // clearing — write `null` rather than removing the key, so the
       // cross-source listener still fires consistently.
       safeWriteLS(STORAGE_KEY, next);
-      enqueueChange(STORAGE_KEY);
       setPlan(next);
       return true;
     },

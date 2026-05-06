@@ -4,8 +4,8 @@
  *
  * Port of `apps/web/src/modules/fizruk/hooks/useDailyLog.ts`.
  * Uses MMKV (via `@/lib/storage`) instead of localStorage.
- * Every mutator routes through `persist()` which calls
- * `enqueueChange` for cloud-sync.
+ * Every mutator routes through `persist()` so writes share a single
+ * code path.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -13,7 +13,6 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 import type { DailyLogEntry } from "@sergeant/fizruk-domain";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
-import { enqueueChange } from "@/sync/enqueue";
 
 const STORAGE_KEY = STORAGE_KEYS.FIZRUK_DAILY_LOG;
 
@@ -56,7 +55,6 @@ export function useDailyLog(): UseDailyLogResult {
       if (next === prev) return;
       stateRef.current = next;
       safeWriteLS(STORAGE_KEY, next);
-      enqueueChange(STORAGE_KEY);
       setEntries(next);
     },
     [],

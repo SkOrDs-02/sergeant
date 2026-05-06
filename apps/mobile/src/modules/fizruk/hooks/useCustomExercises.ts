@@ -3,19 +3,18 @@
  * (user-created entries layered on top of the built-in catalogue).
  *
  * Persists under `STORAGE_KEYS.FIZRUK_CUSTOM_EXERCISES`
- * (`fizruk_custom_exercises_v1`), the same MMKV / cloud-sync slot
- * already declared in `apps/mobile/src/sync/config.ts`. Every mutator
- * routes through `persist()` which calls `enqueueChange` so the
- * scheduler picks the change up. Mutators are no-op-guarded: passing
- * an unknown id to `update` / `remove` keeps the in-memory state
- * referentially identical and skips `enqueueChange`.
+ * (`fizruk_custom_exercises_v1`), the same MMKV slot already declared
+ * in `apps/mobile/src/sync/config.ts`. Every mutator routes through
+ * `persist()` so writes share a single code path. Mutators are
+ * no-op-guarded: passing an unknown id to `update` / `remove` keeps
+ * the in-memory state referentially identical and skips the MMKV
+ * write entirely.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
-import { enqueueChange } from "@/sync/enqueue";
 
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadGate } from "../lib/sqliteReadGate";
@@ -101,7 +100,6 @@ export function useCustomExercises(): UseCustomExercisesResult {
       if (next === prev) return;
       stateRef.current = next;
       safeWriteLS(STORAGE_KEY, next);
-      enqueueChange(STORAGE_KEY);
       setExercises(next);
     },
     [],
