@@ -26,6 +26,7 @@ import {
   QUERY_APP_DB_TABLE_ALLOWLIST,
   READ_STRATEGY_DOCS_ALLOWED_PATHS,
 } from "./types.js";
+import { listTopicMessages } from "../topic-archive/index.js";
 
 // ─────────────────────────────────────────────────────────────────────────
 // recall_memory — wrapper над AiMemoryService з хардкодом source='cofounder'
@@ -480,25 +481,62 @@ export interface ReadTelegramTopicHistoryOutput {
     messageId: number;
     text: string;
     sentAt: string;
+    /**
+     * Writer kind that produced the row (`alert`, `post_to_topic`, …).
+     * Surfaced so the LLM can distinguish n8n broadcasts from persona-
+     * authored posts when summarizing a topic.
+     */
+    source: string;
   }>;
   /**
-   * Phase 1 stub: Telegram Bot API не дає bulk-history-API без Premium
-   * MTProto user account. Поки що повертаємо порожній список + note.
-   * Phase 2 wires або (a) MTProto-user-bot, або (b) `tg_topic_archive`
-   * таблицю, заповнювану Sergeant_alert_bot-ом on-message.
+   * Optional advisory note when the result is unusual (empty list, etc.).
+   * Stable archive rows never carry a note — the LLM can rely on the
+   * structured `messages` array for everything else.
    */
   note?: string;
 }
 
+/**
+ * Reads the most recent rows from `tg_topic_archive` (migration 047).
+ * Backs the LLM tool `read_telegram_topic_history` (ADR-0031 §5;
+ * OpenClaw roadmap Phase 3 / Pain P8).
+ *
+ * The archive is populated by:
+ *   1. `recordAlertPost` route — n8n workflows posting to forum topics.
+ *   2. `postToTopic` route — OpenClaw `post_to_topic` write-tool
+ *      (ADR-0036).
+ *
+ * Topics that have not seen a write since the table was provisioned
+ * yield an empty array + note rather than a stub error. That is by
+ * design: we'd rather the LLM see "nothing happened in `incidents`
+ * for the last 24h" than synthesize a hallucinated history.
+ */
 export async function readTelegramTopicHistory(
+  pool: Pool,
   input: ReadTelegramTopicHistoryInput,
 ): Promise<ReadTelegramTopicHistoryOutput> {
-  // Phase 1: stub. Реалізація — Phase 2.
-  return {
+  const rows = await listTopicMessages(pool, {
     topic: input.topic,
-    messages: [],
-    note: "read_telegram_topic_history is not yet wired in Phase 1; returns empty list. See ADR-0031 §11 (re-evaluation triggers).",
-  };
+    sinceIso: input.since,
+    limit: input.limit,
+  });
+
+  const messages = rows.map((r) => ({
+    messageId: r.messageId,
+    text: r.text,
+    sentAt: r.sentAt,
+    source: r.source,
+  }));
+
+  if (messages.length === 0) {
+    return {
+      topic: input.topic,
+      messages,
+      note: "tg_topic_archive returned no rows for this topic + window. The archive only sees alerts (n8n /alerts/post) and OpenClaw post_to_topic write-tool calls — manual sends from other accounts are not captured.",
+    };
+  }
+
+  return { topic: input.topic, messages };
 }
 
 // ─────────────────────────────────────────────────────────────────────────

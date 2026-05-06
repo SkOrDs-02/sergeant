@@ -63,6 +63,7 @@ import {
   recordWriteAudit,
   listRecentWriteAudits,
 } from "../../modules/openclaw/index.js";
+import { recordTopicMessage } from "../../modules/topic-archive/index.js";
 import type {
   OpenClawStatus,
   OpenClawToneMode,
@@ -402,7 +403,7 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
     asyncHandler(async (req, res) => {
       const parsed = validateBody(TelegramBody, req, res);
       if (!parsed.ok) return;
-      const result = await readTelegramTopicHistory(parsed.data);
+      const result = await readTelegramTopicHistory(pool, parsed.data);
       res.json(result);
     }),
   );
@@ -600,6 +601,25 @@ export function createOpenClawInternalRouter({ pool }: { pool: Pool }): Router {
           topic: parsed.data.topic,
           text: parsed.data.text,
         });
+        // Mirror successful posts into `tg_topic_archive` so
+        // `read_telegram_topic_history` can surface them later
+        // (OpenClaw roadmap Phase 3 / Pain P8). We skip the
+        // `not_configured` and `error` paths — there was no actual
+        // post, so the archive must not pretend otherwise.
+        if (result.status === "posted") {
+          await recordTopicMessage(pool, {
+            topic: parsed.data.topic,
+            text: parsed.data.text,
+            source: "post_to_topic",
+            messageId: result.messageId ?? null,
+            // No stable dedupe key — manual posts can repeat verbatim
+            // (e.g. two daily heads-ups). Partial UNIQUE index treats
+            // NULL as distinct so we never collide.
+            dedupeKey: null,
+            metadata:
+              result.messageId != null ? { messageId: result.messageId } : {},
+          });
+        }
         res.json(result);
       } catch (err) {
         if (err instanceof OpenClawWriteAllowlistError) {

@@ -37,6 +37,7 @@ import {
   recordAlertAck,
   recordAlertPost,
 } from "../../modules/alerts/index.js";
+import { recordTopicMessage } from "../../modules/topic-archive/index.js";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Zod schemas
@@ -112,6 +113,24 @@ export function createAlertsInternalRouter({ pool }: { pool: Pool }): Router {
         summary: parsed.data.summary ?? null,
         metadata: parsed.data.metadata,
       });
+      // Mirror the alert into `tg_topic_archive` so
+      // `read_telegram_topic_history` can surface it (OpenClaw roadmap
+      // Phase 3 / Pain P8). Skip when the alert had no `summary` —
+      // empty rows are useless to the LLM. Skip on retry path
+      // (`alreadyPosted`) — the archive write is idempotent on its own
+      // dedupe key but we'd waste a roundtrip.
+      if (parsed.data.summary && !result.alreadyPosted) {
+        await recordTopicMessage(pool, {
+          topic: parsed.data.topic,
+          text: parsed.data.summary,
+          source: "alert",
+          dedupeKey: parsed.data.alertId,
+          metadata: {
+            severity: parsed.data.severity,
+            ...(parsed.data.metadata ?? {}),
+          },
+        });
+      }
       res.json({
         ok: true,
         id: result.id,

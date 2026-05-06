@@ -305,7 +305,7 @@ export const openClawTools: Tool[] = [
   {
     name: "read_telegram_topic_history",
     description:
-      "Read recent messages from a Sergeant Ops supergroup topic. Phase 1 stub — returns empty list with a note.",
+      "Read recent messages from a Sergeant Ops supergroup forum topic. Backed by the `tg_topic_archive` table (migration 047), populated by alert posts (n8n) and `post_to_topic` write-tool calls. Manual sends from other accounts are NOT captured.",
     input_schema: {
       type: "object",
       properties: {
