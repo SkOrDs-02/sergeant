@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { useToast } from "@shared/hooks/useToast";
 import {
   swClearCaches,
@@ -11,6 +12,23 @@ import { SettingsGroup } from "./SettingsPrimitives";
 export function PWASection() {
   const toast = useToast();
   const [swBusy, setSwBusy] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const performClearCaches = async () => {
+    setConfirmOpen(false);
+    setSwBusy(true);
+    try {
+      const res = await swClearCaches();
+      console.log("[sw] caches cleared", res);
+      toast.success("Кеш PWA скинуто. Перезавантажуємо…", 4000);
+      setTimeout(() => window.location.reload(), 300);
+    } catch (err) {
+      toast.error("Не вдалося скинути кеш PWA");
+      console.warn("[sw] clear caches failed", err);
+    } finally {
+      setSwBusy(false);
+    }
+  };
 
   return (
     <SettingsGroup title="PWA та офлайн" emoji="📡">
@@ -44,28 +62,25 @@ export function PWASection() {
         </Button>
         <Button
           type="button"
-          variant="ghost"
+          variant="danger"
           size="sm"
           className="h-10 flex-1"
           disabled={swBusy || !("serviceWorker" in navigator)}
-          onClick={async () => {
-            setSwBusy(true);
-            try {
-              const res = await swClearCaches();
-              console.log("[sw] caches cleared", res);
-              toast.success("Кеш PWA скинуто. Перезавантажуємо…", 4000);
-              setTimeout(() => window.location.reload(), 300);
-            } catch (err) {
-              toast.error("Не вдалося скинути кеш PWA");
-              console.warn("[sw] clear caches failed", err);
-            } finally {
-              setSwBusy(false);
-            }
-          }}
+          onClick={() => setConfirmOpen(true)}
         >
           Скинути кеш PWA
         </Button>
       </div>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Скинути кеш PWA?"
+        description="Service Worker очистить локальні кеші, після чого сторінка перезавантажиться. Несинхронізовані зміни в офлайн-черзі можуть бути втрачені."
+        confirmLabel="Скинути та перезавантажити"
+        cancelLabel="Скасувати"
+        danger
+        onConfirm={performClearCaches}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </SettingsGroup>
   );
 }
