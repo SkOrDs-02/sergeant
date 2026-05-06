@@ -1,6 +1,6 @@
 # Playbooks — Trigger Index
 
-> **Last validated:** 2026-05-05 by @devin-ai. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 > **Auto-generated** by `scripts/docs/generate-playbook-index.mjs`.
@@ -37,6 +37,7 @@ Lookup table for agents and humans: find the playbook that matches a user reques
 | [`modify-console-agent.md`](./modify-console-agent.md)                                       | Зміна або додавання console-агента                         | "Додай нового агента в Telegram bot" / "Зміни system prompt ops/marketing агента" / "Додай tool для console agent" / будь-яка зміна в `tools/console/src/agents/`.                                                                    |
 | [`modify-n8n-workflow.md`](./modify-n8n-workflow.md)                                         | Зміна або додавання n8n-воркфлоу                           | "Додай новий n8n workflow" / "Зміни логіку workflow X" / зміна в `ops/n8n-workflows/` або `manifest.json`.                                                                                                                            |
 | [`onboard-external-api.md`](./onboard-external-api.md)                                       | Onboard External API                                       | "Інтегрувати нову зовнішню API" / додати новий third-party сервіс / нова банківська інтеграція / новий AI-провайдер.                                                                                                                  |
+| [`operational-continuity.md`](./operational-continuity.md)                                   | Operational continuity                                     | @Skords-01 is unavailable (vacation, illness, emergency). You need to keep Sergeant running.                                                                                                                                          |
 | [`port-web-screen-to-mobile.md`](./port-web-screen-to-mobile.md)                             | Порт web-екрану в mobile                                   | "Перенести екран з `apps/web` у `apps/mobile`" / чергова фаза RN migration / mobile-фіча повинна повторити існуючий web capability без дублювання domain-логіки.                                                                      |
 | [`pre-merge-migration-checklist.md`](./pre-merge-migration-checklist.md)                     | Pre-Merge Migration Checklist                              | PR містить файли в `apps/server/src/migrations/` (новий `NNN_*.sql` або зміна існуючого `*.down.sql`).                                                                                                                                |
 | [`prettier-pass-on-docs.md`](./prettier-pass-on-docs.md)                                     | Prettier Pass on `docs/`                                   | `pnpm format:check` фейлиться на `docs/**/*.md` / треба прогнати prettier по одному / кільком doc-файлах (як [PR #447](https://github.com/Skords-01/Sergeant/pull/447)).                                                              |
