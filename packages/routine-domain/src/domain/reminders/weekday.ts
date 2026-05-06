@@ -79,11 +79,15 @@ export function parseReminderTime(hm: string | undefined | null): {
 }
 
 /**
- * Expo weekly-repeating trigger descriptor.
+ * Expo weekly-repeating trigger descriptor — domain-shape (Expo-agnostic).
  *
- * Intentionally narrow (no `channelId`, no `seconds`) — the hook
- * spreads this into the actual `Notifications.scheduleNotificationAsync`
- * call so extra platform-specific fields can be layered on top.
+ * Intentionally narrow: just the three fields routine-domain owns
+ * (`weekday`, `hour`, `minute`). The mobile adapter layers Expo's
+ * `type: SchedulableTriggerInputTypes.WEEKLY` discriminator on top at
+ * the call site so this package stays free of `expo-notifications`
+ * imports. The week-after-week repetition is implicit — Expo's
+ * `WeeklyTriggerInput` does not take a `repeats` flag (that field is
+ * specific to `TimeIntervalTriggerInput`).
  */
 export interface ExpoWeeklyTrigger {
   /** Expo weekday (1=Sun..7=Sat). */
@@ -92,8 +96,6 @@ export interface ExpoWeeklyTrigger {
   hour: number;
   /** Local wall-clock minute (0..59). */
   minute: number;
-  /** Always `true` — we want week-after-week repetition. */
-  repeats: true;
 }
 
 /**
@@ -109,7 +111,6 @@ export function computeTriggerForHabitWeekday(
     weekday: routineWeekdayToExpoWeekday(routineWeekday),
     hour: clampHour(hour),
     minute: clampMinute(minute),
-    repeats: true,
   };
 }
 

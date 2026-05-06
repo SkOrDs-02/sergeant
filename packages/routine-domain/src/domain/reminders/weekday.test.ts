@@ -124,7 +124,6 @@ describe("computeTriggerForHabitWeekday", () => {
       weekday: 2,
       hour: 8,
       minute: 30,
-      repeats: true,
     });
   });
 
@@ -133,7 +132,6 @@ describe("computeTriggerForHabitWeekday", () => {
       weekday: 2, // routineWeekday 99 → Mon → Expo 2
       hour: 0,
       minute: 0,
-      repeats: true,
     });
   });
 
@@ -142,7 +140,6 @@ describe("computeTriggerForHabitWeekday", () => {
       weekday: 1,
       hour: 20,
       minute: 0,
-      repeats: true,
     });
   });
 });

@@ -191,11 +191,16 @@ async function scheduleHabit(h: Habit): Promise<string[]> {
             body: "Нагадування про звичку",
             data: { habitId: h.id, routineWeekday: rw, time: hm },
           },
-          // `expo-notifications` accepts the weekly trigger shape
-          // produced by `computeTriggerForHabitWeekday`. The cast
-          // keeps the call strictly typed without us re-declaring
-          // Expo's union.
-          trigger: trigger as unknown as Notifications.NotificationTriggerInput,
+          // Layer Expo's `WeeklyTriggerInput` discriminator on top of
+          // the domain shape produced by `computeTriggerForHabitWeekday`
+          // (which deliberately stays Expo-agnostic). The expanded
+          // object matches `WeeklyTriggerInput` exactly, so no cast.
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+            weekday: trigger.weekday,
+            hour: trigger.hour,
+            minute: trigger.minute,
+          },
         });
         if (typeof id === "string") out.push(id);
       } catch {

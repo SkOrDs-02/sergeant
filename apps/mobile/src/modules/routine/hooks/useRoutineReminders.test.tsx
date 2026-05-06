@@ -35,6 +35,18 @@ jest.mock("expo-notifications", () => {
   return {
     __esModule: true,
     IosAuthorizationStatus: { PROVISIONAL: 3 },
+    // Mirror the runtime enum value (`SchedulableTriggerInputTypes.WEEKLY = "weekly"`).
+    // The hook reads `Notifications.SchedulableTriggerInputTypes.WEEKLY` to
+    // build the typed `WeeklyTriggerInput` discriminator at the call site.
+    SchedulableTriggerInputTypes: {
+      CALENDAR: "calendar",
+      DAILY: "daily",
+      WEEKLY: "weekly",
+      MONTHLY: "monthly",
+      YEARLY: "yearly",
+      DATE: "date",
+      TIME_INTERVAL: "timeInterval",
+    },
     getPermissionsAsync,
     requestPermissionsAsync,
     scheduleNotificationAsync,
@@ -204,10 +216,10 @@ describe("useRoutineReminders", () => {
     );
     expect(firstCall).toBeTruthy();
     expect(firstCall![0].trigger).toMatchObject({
+      type: "weekly",
       weekday: 2,
       hour: 8,
       minute: 0,
-      repeats: true,
     });
     expect(firstCall![0].content).toMatchObject({
       title: "✓ Drink water",
