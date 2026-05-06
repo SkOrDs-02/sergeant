@@ -54,7 +54,7 @@
 | H3  | `@parse/node-apn` non-canonical maintainer       | [PR-09](./pr-09-apns-library-adr.md)             | **In review** — ADR-0048 added                                           |
 | H4  | Better Auth security review (own-crypto adapter) | [PR-10](./pr-10-better-auth-security-review.md)  | Planned                                                                  |
 | H5  | Drizzle schema ↔ SQL drift untracked             | [PR-11](./pr-11-drizzle-schema-drift-ci.md)      | Planned                                                                  |
-| H6  | Sentry tracesSampleRate static 0.1               | [PR-12](./pr-12-sentry-traces-sampler.md)        | Planned                                                                  |
+| H6  | Sentry tracesSampleRate static 0.1               | [PR-12](./pr-12-sentry-traces-sampler.md)        | **In review** ([#2086](https://github.com/Skords-01/Sergeant/pull/2086)) |
 | H7  | PG pool size 10 — undersized для AI ingestion    | [PR-13](./pr-13-postgres-pool-sizing.md)         | Planned                                                                  |
 | H8  | Vercel COEP `require-corp` — broad blast radius  | [PR-14](./pr-14-vercel-coep-review.md)           | **Closed** — M21 + Vercel compatibility matrix                           |
 | H9  | `AI_QUOTA_DISABLED=1` ризик у production         | [PR-15](./pr-15-ai-quota-disabled-hardblock.md)  | **In review** ([#1567](https://github.com/Skords-01/Sergeant/pull/1567)) |

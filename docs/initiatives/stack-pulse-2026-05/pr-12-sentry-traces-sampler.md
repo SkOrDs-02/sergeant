@@ -1,12 +1,12 @@
 # PR-12: Sentry tracesSampler dynamic per-route
 
-> **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
-> **Status:** Planned
+> **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
+> **Status:** In review — [#2086](https://github.com/Skords-01/Sergeant/pull/2086)
 
 |              |                                                             |
 | ------------ | ----------------------------------------------------------- |
 | **Severity** | High (H6)                                                   |
-| **Owner**    | TBD                                                         |
+| **Owner**    | @Skords-01                                                  |
 | **Effort**   | 0.5 дня                                                     |
 | **Risk**     | Low                                                         |
 | **Touches**  | `apps/server/src/sentry.ts`, `apps/web/src/...`/sentry init |
@@ -59,9 +59,15 @@ Sentry.init({
 
 ## Acceptance criteria (DoD)
 
-- [ ] `tracesSampler` функція в server + web sentry init.
-- [ ] `docs/observability/sentry-sampling.md` з таблицею per-route.
-- [ ] Sentry quota usage (через Sentry-API) перевірити: до зміни → після зміни (target: same total events, краща розподіленість).
+- [x] `tracesSampler` функція в server (`apps/server/src/sentry.ts`) + web (`apps/web/src/core/observability/sentry.ts`).
+- [x] `docs/observability/sentry-sampling.md` з таблицею per-route + rationale.
+- [ ] Sentry quota usage (через Sentry-API) перевірити: до зміни → після зміни (target: same total events, краща розподіленість). Пост-merge: порівняти тижневу quota базову лінію (T-7 vs T+0 vs T+7).
+
+## Outcome
+
+- Server: `SENTRY_SAMPLING_RULES` (6 rules) + `pickTracesSampleRate` pure fn (0.001 для `/health`, 1.0 для `/auth/*` + `/account/recovery` + `/admin/*`, 0.5 для `/photo/analyze`, 0.01 для `/sync/poll`, 0.05 default).
+- Web: `pickWebTracesSampleRate` per-op (1.0 для `pageload`, 0.1 для `navigation`, 0.01 для `http.client`).
+- Unit-test: `apps/server/src/__tests__/sentry-sampler.test.ts` + `apps/web/src/core/observability/sentry.test.ts`.
 
 ## Тести
 
