@@ -7,8 +7,8 @@
 - **Related:**
   - [`packages/shared/src/lib/storageKeys.ts`](../../packages/shared/src/lib/storageKeys.ts) — централізований реєстр ключів.
   - [`packages/shared/src/lib/kvStore.ts`](../../packages/shared/src/lib/kvStore.ts) — DOM-free `KVStore` контракт.
-  - [`apps/web/src/core/cloudSync/config.ts`](../../apps/web/src/core/cloudSync/config.ts) — `SYNC_MODULES` реєстр.
-  - [`apps/web/src/core/cloudSync/useCloudSync.ts`](../../apps/web/src/core/cloudSync/useCloudSync.ts) — LWW-reconciler + offline queue.
+  - [`packages/shared/src/sync/modules.ts`](../../packages/shared/src/sync/modules.ts) — `SYNC_MODULES` реєстр (single source of truth для web + mobile, shared registry).
+  - [`apps/web/src/core/cloudSync/useCloudSync.ts`](../../apps/web/src/core/cloudSync/useCloudSync.ts) — LWW-reconciler + offline queue (v1 cloudSync engine знятий у [ADR-0047](./0047-cloudsync-v1-410-gone.md) + PR #052b — цей hook лишається як shim до PR #053).
   - [`docs/mobile/react-native-migration.md`](../mobile/react-native-migration.md) §6 — mobile sync-subsystem.
   - ADR-0010 — mobile dual-track (platform storage адаптери).
   - ADR-0012 — RLS як authz-межа (server-side чекає `user_id`-filter).
@@ -223,7 +223,7 @@ accepted.
 ### Decision
 
 **Module-level LWW.** `SYNC_MODULES` реєстр (див.
-[`cloudSync/config.ts`](../../apps/web/src/core/cloudSync/config.ts)) визначає,
+[`packages/shared/src/sync/modules.ts`](../../packages/shared/src/sync/modules.ts)) визначає,
 які STORAGE_KEYS належать до якого модуля:
 
 ```ts
@@ -296,8 +296,9 @@ accepted.
 
 ### Decision
 
-Hard cap `MAX_OFFLINE_QUEUE = 50` (див.
-[`cloudSync/config.ts:76`](../../apps/web/src/core/cloudSync/config.ts)).
+Hard cap `MAX_OFFLINE_QUEUE` (див.
+[`packages/shared/src/sync/modules.ts`](../../packages/shared/src/sync/modules.ts)
+— PR #009 підняв з 50 до 10 000 після переходу offline queue на IDB).
 Коли черга досягає cap-у, **найстаріші записи drop-аються** з
 `offline_queue_drops_total{reason="overflow"}` метрикою. Це прийнятно, бо
 module-level LWW робить старі записи redundant: останній push включає

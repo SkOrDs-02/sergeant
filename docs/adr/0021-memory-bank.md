@@ -10,7 +10,7 @@
   - [`apps/web/src/core/profile/types.ts`](../../apps/web/src/core/profile/types.ts) — `MemoryEntry` shape.
   - [`apps/web/src/core/lib/chatActions/crossActions.ts`](../../apps/web/src/core/lib/chatActions/crossActions.ts) — handler-и tool-ів `remember` / `forget` / `my_profile`.
   - [`apps/web/src/core/lib/hubChatContext.ts`](../../apps/web/src/core/lib/hubChatContext.ts) — інжекція memory у system-prompt.
-  - [`apps/web/src/core/cloudSync/config.ts`](../../apps/web/src/core/cloudSync/config.ts) — `SYNC_MODULES.profile.keys = [USER_PROFILE]` (CloudSync контракт).
+  - [`packages/shared/src/sync/modules.ts`](../../packages/shared/src/sync/modules.ts) — `SYNC_MODULES.profile.keys = [USER_PROFILE]` (CloudSync контракт, shared registry для web + mobile).
   - [`docs/launch/business/04-launch-readiness.md`](../launch/business/04-launch-readiness.md) — privacy-classification (PII / AI-context).
 
 ---

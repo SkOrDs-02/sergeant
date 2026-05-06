@@ -132,7 +132,10 @@ instance `id: "sergeant.mobile.v1"`.
 ### Cloud-sync дисципліна
 
 `useLocalStorage` (RN-варіант) зобов'язаний викликати `enqueueChange(key)`
-після кожного запису для tracked-keys у `apps/mobile/src/sync/config.ts`.
+після кожного запису для tracked-keys із shared registry
+[`packages/shared/src/sync/modules.ts`](../../packages/shared/src/sync/modules.ts)
+(після PR #052c mobile-side `sync/config.ts` видалений
+разом з рештою v1 engine tree — `SYNC_MODULES` тепер тільки в shared).
 Альтернатива — `useSyncedStorage` обгортка, яка робить це автоматично.
 ESLint правило [`sergeant-design/no-raw-tracked-storage`](../../packages/eslint-plugin-sergeant-design/index.js)
 блокує `useLocalStorage` з tracked-keys поза `useSyncedStorage`. **Стан: OK** —

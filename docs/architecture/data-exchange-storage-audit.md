@@ -31,19 +31,19 @@ Sergeant зараз має гібридну data-архітектуру:
 
 1. Модулі пишуть state у `localStorage` через `safeWriteSyncedLS` / `syncedKV.setString` (`apps/web/src/shared/lib/storage/syncedKV.ts`) — тонкий wrapper навколо `webKVStore`, що вшитий через `createSyncedKVStore` із `@sergeant/shared` (`packages/shared/src/sync/syncedKV.ts`).
 2. На кожен write до tracked-key wrapper кличе `enqueueChange(key)` (`apps/web/src/core/cloudSync/enqueue.ts`): визначає module за ключем, ставить dirty flag і емiтить sync event. До PR #008 цю роль грав `storagePatch.ts` через monkey-patch `localStorage.setItem/removeItem` + `__hubSyncPatched` global; тепер opt-in явний — тільки writes через `syncedKV` маркують модулі брудними.
-3. `SYNC_MODULES` визначає, які ключі входять у `finyk`, `nutrition`, `profile` (`packages/shared/src/sync/modules.ts`, реекспортний у `apps/web/src/core/cloudSync/config.ts`). Routine знятий у PR #026 (Stage 4 cleanup), Fizruk — у PR #030; обидва модулі тепер їздять виключно через v2 op-log.
-4. `pushDirty()` збирає dirty modules, робить `syncApi.pushAll(modules)`, а якщо offline/error — додає payload в offline queue (`apps/web/src/core/cloudSync/engine/push.ts`).
-5. Offline queue коалесить послідовні push-и і має hard cap `MAX_OFFLINE_QUEUE = 10 000` (`apps/web/src/core/cloudSync/queue/offlineQueue.ts`). Після Stage 1 PR #009 черга живе в IDB (durable backing) з LS dual-write best-effort до 100 записів; ліміт ~5 MB localStorage більше не є stop-the-world.
+3. `SYNC_MODULES` визначає, які ключі входять у `finyk`, `nutrition`, `profile` (`packages/shared/src/sync/modules.ts`, історично реекспортувався у web `cloudSync/config.ts` — видалений у PR #052b). Routine знятий у PR #026 (Stage 4 cleanup), Fizruk — у PR #030, Nutrition — у PR #034, Finyk — у PR #039; усі модулі тепер їздять виключно через v2 op-log.
+4. `pushDirty()` збирав dirty modules, робив `syncApi.pushAll(modules)`, а якщо offline/error — додавав payload в offline queue (web v1 `cloudSync/engine/push.ts`, видалений у PR #052b — successor у v2 op-log це [`apps/web/src/core/syncEngine/syncEngineWriter.ts`](../../apps/web/src/core/syncEngine/syncEngineWriter.ts), який intercepts SQLite mutations і пише їх у `sync_op_outbox`).
+5. Offline queue коалесила послідовні push-и і мала hard cap `MAX_OFFLINE_QUEUE = 10 000` (web v1 `cloudSync/queue/offlineQueue.ts`, видалений у PR #052b разом з рештою v1 engine tree — successor у v2 outbox це server-side таблиця `sync_op_outbox` через [`apps/server/src/migrations/027_sync_op_log.sql`](../../apps/server/src/migrations/027_sync_op_log.sql)). Після Stage 1 PR #009 v1-черга жила в IDB (durable backing) з LS dual-write best-effort до 100 записів; ліміт ~5 MB localStorage більше не є stop-the-world.
 6. Server пише module payload в `module_data` як JSONB blob з `version`, `client_updated_at`, `server_updated_at` (`apps/server/src/migrations/003_baseline_schema.sql`).
 
-Модель конфліктів v1: **last-write-wins на рівні цілого module blob-а**. Це просто і добре для швидкого offline-first UX, але погано для одночасних правок різних частин одного модуля з різних пристроїв.
+Модель конфліктів v1 була: **last-write-wins на рівні цілого module blob-а**. Це просто і добре для швидкого offline-first UX, але погано для одночасних правок різних частин одного модуля з різних пристроїв — саме тому в Stage 4 ми перейшли на per-row op-log v2, а у Stage 7 (ADR-0047) повністю зняли v1 engine.
 
 ### 2.3. Mobile local-first sync v1
 
 Mobile дзеркалить web-підхід, але замість `localStorage` має MMKV:
 
-- `SYNC_MODULES` на mobile реекспортує той самий shared registry (`packages/shared/src/sync/modules.ts`) — після PR #026 / PR #030 cleanup це `finyk`, `nutrition`, `profile`; routine та fizruk вже зняті з v1 cloud-sync (`apps/mobile/src/sync/config.ts`).
-- Mobile API seam реекспортує `apiClient.sync` як `syncApi`, щоб engine-и читались як web (`apps/mobile/src/sync/api.ts`).
+- `SYNC_MODULES` на mobile реекспортував той самий shared registry (`packages/shared/src/sync/modules.ts`) — після PR #026 / PR #030 / PR #034 / PR #039 cleanup лишився лише `profile`; routine, fizruk, nutrition і finyk вже зняті з v1 cloud-sync. Mobile-side `sync/config.ts` був реекспортом цього shared registry і видалений у PR #052c разом з рештою mobile v1 engine tree.
+- Mobile API seam `sync/api.ts` реекспортував `apiClient.sync` як `syncApi`, щоб engine-и читались як web — теж видалений у PR #052c.
 - Через MMKV немає глобального patch як у web, тому tracked writes мають явно викликати `enqueueChange`; для цього додали `useSyncedStorage()` як safer wrapper (`apps/mobile/src/sync/useSyncedStorage.ts`).
 
 ### 2.4. Sync v2 / operation log

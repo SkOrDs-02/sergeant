@@ -1,14 +1,13 @@
 # ADR-0004: CloudSync — LWW conflict resolution
 
-- **Status:** accepted
+- **Status:** superseded by [ADR-0047](./0047-cloudsync-v1-410-gone.md) (CloudSync v1 → 410 Gone, T₀ executed 2026-05-06)
 - **Date:** 2026-04-27
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
+- **Superseded by:** [ADR-0047 — CloudSync v1 — T₀ executed (410 Gone)](./0047-cloudsync-v1-410-gone.md). Per-row op-log v2 (`/api/v2/sync/*`) replaces per-module LWW; all production sync traffic now flows through op-log writers ([`apps/web/src/core/syncEngine/syncEngineWriter.ts`](../../apps/web/src/core/syncEngine/syncEngineWriter.ts) + [`apps/server/src/modules/sync/syncV2.ts`](../../apps/server/src/modules/sync/syncV2.ts)). The v1 engine tree (`apps/web/src/core/cloudSync/{engine,queue,conflict,state,logger}`, `apps/mobile/src/sync/{engine,queue,config,api}`) was deleted in PR #052b/#052c (storage-roadmap Stage 7). The decision-record below stays as historical context for why per-module LWW was chosen for the MVP and what trade-offs the v2 op-log shift addresses.
 - **Related:**
-  - [`apps/web/src/core/cloudSync/`](../../apps/web/src/core/cloudSync/) — engine / queue / conflict / state, ~16 файлів, ~4400 рядків коду + тестів.
-  - [`apps/server/src/modules/sync/syncV2.ts`](../../apps/server/src/modules/sync/syncV2.ts) — поточні op-log sync v2 хендлери.
-  - [`apps/server/src/migrations/003_baseline_schema.sql`](../../apps/server/src/migrations/003_baseline_schema.sql) — таблиця `module_data`.
-  - [`apps/server/src/migrations/007_module_data_user_fk.sql`](../../apps/server/src/migrations/007_module_data_user_fk.sql) — FK + cascade on user delete.
+  - [`apps/server/src/modules/sync/syncV2.ts`](../../apps/server/src/modules/sync/syncV2.ts) — current op-log sync v2 хендлери (successor channel).
+  - [`apps/server/src/migrations/003_baseline_schema.sql`](../../apps/server/src/migrations/003_baseline_schema.sql) — `module_data` table (column dropped у PR #051).
 
 ---
 
@@ -238,8 +237,9 @@ cloud — ні (юзер створив акаунт після onboarding); (в
 
 ### Decision
 
-`apps/web/src/core/cloudSync/conflict/resolver.ts` — pure-функція
-`resolveInitialSync(inputs) → InitialSyncPlan` з 4 явними гілками:
+**Історично** (до v1 sunset у ADR-0047 + PR #052b) реалізовано як pure-функцію
+`resolveInitialSync(inputs) → InitialSyncPlan` у видаленому модулі
+`cloudSync/conflict/resolver.ts` (web v1 tree) з 4 явними гілками:
 
 ```ts
 type InitialSyncPlan =
@@ -262,9 +262,9 @@ type InitialSyncPlan =
 Без цього skip — `applyModuleData(cloud)` затирав би локальні зміни ще
 ДО push-у, і наступний push ніс би вже втрачений (cloud-)стан.
 
-Resolver — **pure**, без I/O. Тестується без fetch-mock-ів;
-`apps/web/src/core/cloudSync/cloudSyncHelpers.test.ts` покриває всі
-4 гілки явно.
+Resolver — **pure**, без I/O. Тестувався без fetch-mock-ів;
+видалений тест-файл `cloudSync/cloudSyncHelpers.test.ts` (web v1 tree, знятий
+разом з v1 engine у PR #052b) покривав усі 4 гілки явно.
 
 ### Consequences
 
@@ -313,7 +313,10 @@ finyk-blob.
 
 ### Decision
 
-`apps/web/src/core/cloudSync/queue/offlineQueue.ts`:
+**Історично** реалізовано в видаленому модулі
+`cloudSync/queue/offlineQueue.ts` (web v1 tree, знятий разом з v1
+engine у PR #052b — successor у v2 op-log це outbox-таблиця
+`sync_op_outbox` через [`apps/web/src/core/syncEngine/syncEngineWriter.ts`](../../apps/web/src/core/syncEngine/syncEngineWriter.ts)):
 
 1. **Coalesce consecutive pushes.** Якщо новий entry — `push` і черга
    закінчується теж на `push`, мерджимо `modules` в останній. Кожен модуль

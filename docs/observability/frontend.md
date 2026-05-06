@@ -1,6 +1,6 @@
 # Frontend-observability — web і mobile
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 Observability-стек для web- і mobile-клієнтів Sergeant: error tracking,
@@ -228,9 +228,17 @@ voice vs typed сценарії у funnels; `tool` — канонічне ім'�
 
 ### CloudSync-події
 
-**Файл:** `apps/web/src/core/cloudSync/hook/useSyncCallbacks.ts` — lifecycle
-(start/success/fail). **Файли:** `engine/push.ts`, `engine/initialSync.ts` —
-conflict-резолюція.
+**Історично** (до v1 sunset у [ADR-0047](../adr/0047-cloudsync-v1-410-gone.md))
+файл `cloudSync/hook/useSyncCallbacks.ts` (web v1 tree) обробляв
+lifecycle (start/success/fail), а файли `engine/push.ts` /
+`engine/initialSync.ts` — conflict-резолюцію. Усі ці модулі видалено у
+PR #052b разом із рештою v1 engine tree (storage-roadmap Stage 7).
+
+У v2 op-log тих самих події емітить writer / replayer:
+[`apps/web/src/core/syncEngine/syncEngineWriter.ts`](../../apps/web/src/core/syncEngine/syncEngineWriter.ts)
+— intercepts SQLite mutations, пише у `sync_op_outbox`, fire-ить
+`sync_started` / `sync_succeeded` / `sync_failed` через ту саму PostHog
+обгортку.
 
 | Event                    | Коли                                                      | Payload                                        |
 | ------------------------ | --------------------------------------------------------- | ---------------------------------------------- |
