@@ -43,7 +43,14 @@ module.exports = {
     // contain Flow / TSX / ESM syntax that Jest needs to transpile. The
     // extra `.pnpm/(?:.*\\+)?` segment accommodates pnpm's nested
     // `node_modules/.pnpm/<scope>+<pkg>@<ver>/node_modules/…` layout.
-    "node_modules/(?!(\\.pnpm/(?:.*\\+)?)?((jest-)?react-native(-.*)?|@react-native(-community)?(/.*)?|expo(nent)?|@expo(nent)?(/.*)?|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|nativewind|react-native-css-interop|victory(-.*)?))",
+    //
+    // `@sergeant/design-tokens` is workspace-published as `"type": "module"`
+    // with raw `export const ...` statements (see `packages/design-tokens/
+    // tokens.js` and `mobile.js`); without a transform hole Jest evaluates
+    // the file as CJS, the `export` parse fails, and `brandColors` lands
+    // as `undefined` — which crashes `apps/mobile/src/theme.ts` at import
+    // and cascades into ~13 unrelated mobile suites.
+    "node_modules/(?!(\\.pnpm/(?:.*\\+)?)?((jest-)?react-native(-.*)?|@react-native(-community)?(/.*)?|expo(nent)?|@expo(nent)?(/.*)?|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|nativewind|react-native-css-interop|victory(-.*)?|@sergeant/design-tokens(/.*)?))",
   ],
   // Coverage floors. Mirror the per-package convention used by web/server
   // (`apps/{web,server}/vitest.config*`): pin a low floor that current
