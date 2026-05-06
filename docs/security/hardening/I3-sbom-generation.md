@@ -1,16 +1,16 @@
 # I3 — Generate SBOM during container build
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
-> **Status:** Phase 1 implemented (workspace-level SBOM on release)
+> **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
+> **Status:** Phase 1 + Phase 3 implemented (workspace-level SBOM + SLSA L1 build-provenance attestation on release)
 
-| Field          | Value                                                        |
-| -------------- | ------------------------------------------------------------ |
-| **Severity**   | Informational / hardening                                    |
-| **Sprint**     | [Sprint 4](./sprint-4.md)                                    |
-| **Owner**      | platform                                                     |
-| **Effort**     | 0.5 person-day                                               |
-| **Status**     | Phase 1 (workspace SBOM) live; container-SBOM lишається open |
-| **Discovered** | 2026-05-03 deep security review                              |
+| Field          | Value                                                                        |
+| -------------- | ---------------------------------------------------------------------------- |
+| **Severity**   | Informational / hardening                                                    |
+| **Sprint**     | [Sprint 4](./sprint-4.md)                                                    |
+| **Owner**      | platform                                                                     |
+| **Effort**     | 0.5 person-day                                                               |
+| **Status**     | Phase 1 + 3 live (workspace SBOM + SLSA L1 attest); Phase 2 (container) open |
+| **Discovered** | 2026-05-03 deep security review                                              |
 
 ## Summary
 
@@ -41,8 +41,23 @@ purposes.
   (Vercel + Railway buildpacks), workspace-SBOM покриває 100% deps; перехід
   на container-SBOM буде опційно через `docker buildx --sbom=true` додатковим
   кроком у тому самому workflow.
-- **Phase 3 (Open, optional):** sigstore signing release artifacts
-  (`cosign attest --predicate sbom.spdx.json --type spdxjson`).
+- **Phase 3 (DONE — PR-45 / pr-plan-2026-05 §Security row #45):** sigstore-signed
+  SLSA Build Provenance v1.0 attestation для кожного SBOM-файлу через
+  `actions/attest-build-provenance@v2.4.0`. Workflow вже мав `id-token: write`
+  під коментарем «на майбутнє»; PR-45 додав `attestations: write` і власне
+  attest-step між `Summarize SBOM` і `Upload SBOM artifacts`. Attestation-bundle
+  (in-toto) пишеться у GitHub Attestations API і прив'язаний до repo. Перевірка
+  після релізу:
+
+  ```sh
+  gh attestation verify sergeant-vX.Y.Z.spdx.json --repo Skords-01/Sergeant
+  gh attestation verify sergeant-vX.Y.Z.cdx.json  --repo Skords-01/Sergeant
+  ```
+
+  SLSA Level vs L2/L3: L1 = «documented + automated build provenance», що `actions/
+attest-build-provenance` дає out-of-box (predicate `https://slsa.dev/provenance/v1`,
+  signed by Sigstore short-lived OIDC cert). L2/L3 потребують SLSA-3-generic
+  generator workflow + reusable provenance flow — окремий PR коли з'явиться need.
 
 ## Correction points
 
@@ -54,10 +69,16 @@ purposes.
 
 ## Verification
 
-- **CI:** every container release publishes a non-empty
-  `SBOM.spdx.json`.
-- **Manual:** download the SBOM, run `trivy sbom SBOM.spdx.json` to
-  cross-validate against the latest CVE feed.
+- **CI:** every release publishes non-empty `sergeant-vX.Y.Z.spdx.json` +
+  `sergeant-vX.Y.Z.cdx.json` artefacts AND a SLSA L1 build-provenance
+  attestation through GitHub Attestations API (visible at
+  `https://github.com/Skords-01/Sergeant/attestations`).
+- **Manual:** download the SBOM, run `trivy sbom sergeant-vX.Y.Z.spdx.json`
+  to cross-validate against the latest CVE feed.
+- **Attestation:** `gh attestation verify sergeant-vX.Y.Z.spdx.json
+--repo Skords-01/Sergeant` (asserts the SBOM file came from this repo's
+  `release-sbom.yml` workflow run, signed by Sigstore — required for
+  «SLSA L1» property at audit time).
 
 ## Cross-references
 

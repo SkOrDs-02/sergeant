@@ -1,23 +1,38 @@
-name: Release SBOM
+name: Release SBOM + SLSA L1 provenance
 
 # Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. docs/initiatives/0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
 # Генерує Software Bill of Materials (SBOM) у форматах SPDX (NTIA-compliant)
-# і CycloneDX (OWASP) для production-артефактів. Тригериться на:
+# і CycloneDX (OWASP) + SLSA Build Provenance L1 attestation (in-toto, signed
+# by Sigstore через `actions/attest-build-provenance`) для production-
+# артефактів. Тригериться на:
 #   - GitHub Release published — артефакти прикріплюються до релізу;
 #   - git tag `v*.*.*` (push) — fallback для тегів без GitHub Release;
 #   - workflow_dispatch — manual rerun коли треба перегенерувати SBOM
 #     для попереднього тегу (наприклад, audit після CVE).
 #
-# Ініціатива: docs/initiatives/_0008-platform-hardening.md § Phase 4.
+# Ініціатива: docs/initiatives/_0008-platform-hardening.md § Phase 4
+# (SBOM I3 Phase 1) + docs/security/hardening/I3-sbom-generation.md § Phase 3
+# (sigstore signing — закрито у PR-45 / pr-plan-2026-05 §«Security & supply
+# chain» row #45 «SLSA Level 1 / SBOM via syft»).
 #
 # Чому окремий workflow, а не extend nightly-audit:
 #   nightly-audit перевіряє runtime-vulnerabilities у живому lockfile-і
 #   щодня. SBOM — це snapshot замороженого release-artifact-у,
 #   який потім можна звіряти проти CVE-фідів через місяці після релізу.
 #   Семантично різні артефакти, різний lifecycle, різний retention.
+#
+# SLSA Level 1 vs L2/L3:
+#   L1 ("documented build process") = build is scripted + provenance is
+#   generated automatically. Це SAME thing, що `actions/attest-build-
+#   provenance` робить out-of-box: predicate `https://slsa.dev/provenance/v1`
+#   binding (subject = sha256(SBOM-file), builder.id = github actions,
+#   buildType = github-actions-workflow), signed by Sigstore.
+#   L2 додав би tamper-resistance build platform; L3 — hosted/non-falsifiable
+#   build. На GH Actions L1 "free", L2/L3 потребують SLSA-3-generic generator
+#   workflow + reusable provenance flow — окремий PR коли з'явиться need.
 
 on:
   release:
@@ -35,7 +50,8 @@ on:
 
 permissions:
   contents: write # для attach-у SBOM-файлів до GitHub Release
-  id-token: write # на майбутнє — для sigstore signing (Phase 4 опт-ін)
+  id-token: write # для sigstore short-lived OIDC signing token
+  attestations: write # для запису attestation-у через GH attestations API
 
 concurrency:
   # Унікальний по ref-у — паралельні release-и не б'ються,
@@ -124,6 +140,20 @@ jobs:
             COUNT=$(jq '.components | length' "$CDX" 2>/dev/null || echo "?")
             echo "| CycloneDX-JSON | \`$CDX\` | $SIZE | $COUNT |" >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      # actions/attest-build-provenance v2.4.0 (SHA-pinned for supply-chain
+      # hardening). Generates SLSA Provenance v1.0 predicate for each SBOM
+      # file (subject = sha256(file)), signs with a short-lived Sigstore
+      # OIDC certificate, and writes the attestation to the GH Attestations
+      # API. Verifiable post-publish via:
+      #   gh attestation verify <file> --repo Skords-01/Sergeant
+      # See docs/security/hardening/I3-sbom-generation.md § Phase 3.
+      - name: Attest SBOM build provenance (SLSA L1)
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
+        with:
+          subject-path: |
+            sergeant-*.spdx.json
+            sergeant-*.cdx.json
 
       # actions/upload-artifact v4.4.3 (SHA-pinned)
       - name: Upload SBOM artifacts (90-day retention)
