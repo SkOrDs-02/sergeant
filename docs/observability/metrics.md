@@ -48,14 +48,15 @@ histogram_quantile(0.95, sum by (le, path) (rate(http_request_duration_ms_bucket
 
 ## 2. Postgres (USE)
 
-| Metric                  | Type      | Labels | Emitter                                                                                    |
-| ----------------------- | --------- | ------ | ------------------------------------------------------------------------------------------ |
-| `db_query_duration_ms`  | Histogram | `op`   | [db.ts:86](../../apps/server/src/db.ts#L86)                                                |
-| `db_errors_total`       | Counter   | `code` | [db.ts:46](../../apps/server/src/db.ts#L46), [db.ts:108](../../apps/server/src/db.ts#L108) |
-| `db_slow_queries_total` | Counter   | `op`   | [db.ts:92](../../apps/server/src/db.ts#L92)                                                |
-| `db_pool_total`         | Gauge     | —      | [metrics.ts:341](../../apps/server/src/obs/metrics.ts#L341) `startPoolSampler()`           |
-| `db_pool_idle`          | Gauge     | —      | ↑                                                                                          |
-| `db_pool_waiting`       | Gauge     | —      | ↑                                                                                          |
+| Metric                        | Type      | Labels | Emitter                                                                                                                                                                        |
+| ----------------------------- | --------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `db_query_duration_ms`        | Histogram | `op`   | [db.ts:86](../../apps/server/src/db.ts#L86)                                                                                                                                    |
+| `db_errors_total`             | Counter   | `code` | [db.ts:46](../../apps/server/src/db.ts#L46), [db.ts:108](../../apps/server/src/db.ts#L108)                                                                                     |
+| `db_slow_queries_total`       | Counter   | `op`   | [db.ts:92](../../apps/server/src/db.ts#L92)                                                                                                                                    |
+| `db_pool_total`               | Gauge     | —      | [metrics.ts:341](../../apps/server/src/obs/metrics.ts#L341) `startPoolSampler()`                                                                                               |
+| `db_pool_idle`                | Gauge     | —      | ↑                                                                                                                                                                              |
+| `db_pool_waiting`             | Gauge     | —      | ↑                                                                                                                                                                              |
+| `db_slow_pool_connects_total` | Counter   | —      | [db.ts](../../apps/server/src/db.ts) `instrumentedConnect` (PR-13) — `pool.connect()` довший за `PG_SLOW_CONNECT_MS`. Sizing/debug — [pg-pool-sizing.md](./pg-pool-sizing.md). |
 
 Buckets duration: `1, 5, 25, 100, 250, 1000, 5000` ms. Slow threshold: `DB_SLOW_MS` (default 200 ms). Pool sampler кожні 10 с, запускається з [index.ts:44](../../apps/server/src/index.ts#L44).
 

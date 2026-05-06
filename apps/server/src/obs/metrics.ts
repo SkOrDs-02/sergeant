@@ -87,6 +87,12 @@ export const dbPoolWaiting = new client.Gauge({
   registers: [register],
 });
 
+export const dbSlowPoolConnectsTotal = new client.Counter({
+  name: "db_slow_pool_connects_total",
+  help: "PG `pool.connect()` checkouts slower than PG_SLOW_CONNECT_MS — leading indicator of pool saturation before `db_pool_waiting > 0` sustains.",
+  registers: [register],
+});
+
 // ───────────────────────── Domain ─────────────────────────────
 export const aiTokensTotal = new client.Counter({
   name: "ai_tokens_total",

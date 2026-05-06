@@ -173,10 +173,34 @@ const envSchema = z.object({
    * target: < 5s p99. Деталі — `docs/runbooks/postgres-read-replica.md`.
    */
   DATABASE_URL_REPLICA: optionalUrl(),
-  /** Максимум з'єднань у pg Pool. */
-  PG_POOL_SIZE: intFromEnv(10),
+  /**
+   * Максимум з'єднань у pg Pool.
+   *
+   * Default 20 (stack-pulse PR-13). Старий default був 10, але
+   * peak-навантаження з 5–15 active HTTP-запитів + 3–5 BullMQ AI ingest
+   * jobs + auth-mail/push воркерів регулярно тиснуло у 12–25
+   * concurrent connections — `pool.connect()` тоді вистоював у черзі і
+   * виглядав як latency-spikes на `/api/*` без явної причини.
+   *
+   * 20 співмірно з pgBouncer `DEFAULT_POOL_SIZE=20` + Postgres
+   * `max_connections=100` (Railway default) ÷ ~2 replicas з headroom під
+   * migrations/superuser. Sizing rationale:
+   * `docs/observability/pg-pool-sizing.md`.
+   */
+  PG_POOL_SIZE: intFromEnv(20),
   /** PG connect timeout (мс). */
   PG_CONNECTION_TIMEOUT_MS: intFromEnv(5_000),
+  /**
+   * Поріг "повільного" `pool.connect()` (мс). Якщо checkout
+   * connection-у з пулу займає більше — пишемо Pino warn,
+   * Sentry breadcrumb (`category: db.pool.slow_connect`) і інкрементимо
+   * `db_slow_pool_connects_total`. Default 500 — достатньо щоб не
+   * шуміти у dev (TLS handshake до Railway Postgres сам по собі ~50–
+   * 200 мс), але ловити реальні pool-saturation episodes до того, як
+   * `db_pool_waiting > 0` сидить 5хв і трігерить
+   * `DbPoolWaitingSustained`.
+   */
+  PG_SLOW_CONNECT_MS: intFromEnv(500),
   /** PG idle timeout (мс). */
   PG_IDLE_TIMEOUT_MS: intFromEnv(30_000),
   /** PG statement timeout (мс) — захист від runaway queries. */
