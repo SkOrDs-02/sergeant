@@ -297,10 +297,11 @@ function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
       }
       return ok;
     },
-    onSuccess: () => {
+    onSuccess: (_ok, values) => {
+      const name = values.name?.trim() || values.email.split("@")[0] || "";
       achievement(
-        "Ласкаво просимо!",
-        "Твій акаунт створено. Тепер дані синхронізуються між пристроями.",
+        `Готово, ${name}!`,
+        "Твої дані тепер з тобою на всіх пристроях.",
         [
           { icon: "🔐", label: "Захищений акаунт" },
           { icon: "🔄", label: "Синхронізація" },
