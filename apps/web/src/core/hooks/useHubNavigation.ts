@@ -1,9 +1,23 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { recordModuleOpen } from "../lib/recentModules";
 
 const VALID_MODULES = new Set(["finyk", "fizruk", "routine", "nutrition"]);
+
+/**
+ * Subset of {@link VALID_MODULES} which has graduated from the legacy
+ * `?module=<id>` URL contract to a top-level path-based one (initiative
+ * 0006 §Phase 2). For these modules we (a) recognize `/<id>[/...]` as
+ * `activeModule = id` and (b) emit clean `/<id>` URLs from
+ * `openModule(id, { hash })` instead of `/?module=<id>#<hash>`.
+ *
+ * When a module migrates in a later 0006 PR, add its id here and ensure
+ * `apps/web/src/modules/<id>/route.tsx` exists and is wired into
+ * `core/app/router.tsx` **before** the catch-all. Order: nutrition (this
+ * PR), then finyk, fizruk, routine.
+ */
+const PATH_BASED_MODULES = new Set<HubModuleId>(["nutrition"]);
 
 export type HubModuleId = ModuleAccent;
 
@@ -23,11 +37,36 @@ function parseModule(value: string | null): HubModuleId | null {
   return null;
 }
 
+/**
+ * Path-based module detection. `/<id>` and `/<id>/...` count; `/<id>foo`
+ * does not (would otherwise alias `/finykprofile` → finyk). Returns the
+ * first segment when it matches a `PATH_BASED_MODULES` id, else `null`.
+ *
+ * Why this is in addition to `?module=<id>` and not a replacement: legacy
+ * deep-links (PWA installs, share-cards, push notifications) still ship
+ * with `?module=<id>` URLs, and we keep them functional through Phase 5
+ * cleanup. New navigation emits the clean URL — see `openModule`.
+ */
+function parsePathnameModule(pathname: string): HubModuleId | null {
+  if (typeof pathname !== "string" || pathname.length < 2) return null;
+  if (!pathname.startsWith("/")) return null;
+  const firstSegment = pathname.slice(1).split("/", 1)[0] ?? "";
+  if (!firstSegment) return null;
+  if (!PATH_BASED_MODULES.has(firstSegment as HubModuleId)) return null;
+  return firstSegment as HubModuleId;
+}
+
 export function useHubNavigation(): HubNavigation {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
 
-  const initialModule = parseModule(searchParams.get("module"));
+  // Pathname wins over `?module=` — once a domain has migrated, the
+  // path is the canonical contract and we don't want a stale
+  // `?module=...` query param to override it.
+  const initialModule =
+    parsePathnameModule(location.pathname) ??
+    parseModule(searchParams.get("module"));
 
   const [activeModule, setActiveModule] = useState<HubModuleId | null>(
     initialModule,
@@ -49,13 +88,25 @@ export function useHubNavigation(): HubNavigation {
       const typedId = nextId as HubModuleId;
       const isSame = typedId === activeModule;
 
+      const isPathBased = PATH_BASED_MODULES.has(typedId);
       let hashStr = "";
+      let pathSuffix = "";
       try {
         const raw = opts.hash != null ? String(opts.hash).trim() : "";
         if (raw) {
-          hashStr = raw.startsWith("#") ? raw : `#${raw}`;
-          window.location.hash = hashStr;
-        } else if (!isSame) {
+          // For path-based modules, "log" means `/nutrition/log`; for
+          // hash-based ones it stays `#log` until they migrate.
+          // Strip leading `#` either way so callers can pass either form.
+          const cleaned = raw.startsWith("#") ? raw.slice(1) : raw;
+          if (isPathBased) {
+            pathSuffix = cleaned ? `/${cleaned}` : "";
+          } else {
+            hashStr = `#${cleaned}`;
+            window.location.hash = hashStr;
+          }
+        } else if (!isPathBased && !isSame) {
+          // Legacy hash-router modules expect a clean hash on entry
+          // when no specific page was requested.
           window.location.hash = "";
         }
       } catch {
@@ -68,20 +119,25 @@ export function useHubNavigation(): HubNavigation {
       // see `core/lib/recentModules.ts`. Storage failures are swallowed
       // there; nothing here cares about the result.
       recordModuleOpen(typedId);
-      navigate(`/?module=${typedId}${hashStr}`, { replace: false });
+      const target = isPathBased
+        ? `/${typedId}${pathSuffix}`
+        : `/?module=${typedId}${hashStr}`;
+      navigate(target, { replace: false });
     },
     [activeModule, navigate],
   );
 
   useEffect(() => {
-    const mod = parseModule(searchParams.get("module"));
+    const mod =
+      parsePathnameModule(location.pathname) ??
+      parseModule(searchParams.get("module"));
     if (mod !== activeModule) {
       setModuleAnimClass(mod ? "module-enter" : "hub-enter");
       setActiveModule(mod);
     }
     // `activeModule` is read but also set — adding it would loop.
     // Setters (`setActiveModule`, `setModuleAnimClass`) are stable.
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location.pathname, searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { activeModule, openModule, goToHub, moduleAnimClass };
 }

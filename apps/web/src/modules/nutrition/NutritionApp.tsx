@@ -45,7 +45,7 @@ import {
 import { usePhotoAnalysis } from "./hooks/usePhotoAnalysis";
 import { useShoppingList } from "./hooks/useShoppingList";
 import { useNutritionUiState } from "./hooks/useNutritionUiState";
-import { useNutritionHashRoute } from "./hooks/useNutritionHashRoute";
+import { useNutritionRoute } from "./hooks/useNutritionRoute";
 import type {
   NutritionPage,
   PantrySubTab,
@@ -97,7 +97,7 @@ export default function NutritionApp({
     menuSubTab,
     setPantrySubTab,
     setMenuSubTab,
-  } = useNutritionHashRoute();
+  } = useNutritionRoute();
 
   const pantry = useNutritionPantries({ setBusy, setErr, setStatusText });
   const log = useNutritionLog();
