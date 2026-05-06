@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
-    exclude: ["src/**/*.integration.test.ts"],
+    exclude: ["src/**/*.integration.test.ts", "src/**/*.e2e.test.ts"],
     passWithNoTests: true,
     // Coverage instrumentation + dynamic `await import("./module.js")` inside
     // tests (e.g. push.test.ts re-imports push.ts per case to pick up env

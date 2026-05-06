@@ -31,16 +31,21 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["src/**/*.integration.test.ts"],
+    include: ["src/**/*.integration.test.ts", "src/**/*.e2e.test.ts"],
     passWithNoTests: true,
     // Testcontainers needs time for container startup + migrations.
     testTimeout: 60_000,
     hookTimeout: 120_000,
-    // Run integration tests sequentially — they share a single Postgres
-    // container and truncate between suites. `poolOptions.forks.singleFork`
-    // was removed in Vitest 4 in favour of top-level `maxWorkers`
-    // (see https://vitest.dev/guide/migration#pool-rework).
+    // Each integration test file boots its own Testcontainers Postgres
+    // and patches `process.env.DATABASE_URL` for the run. Different files
+    // therefore need different process contexts, otherwise the
+    // module-level pool in `apps/server/src/db.ts` (which captures
+    // `DATABASE_URL` at load time) sticks to whichever container booted
+    // first and the second test file sees `ECONNREFUSED` after the first
+    // file's `afterAll` stops its container. Forks pool gives one worker
+    // per file out of the box; we explicitly disable single-fork so each
+    // file gets its own.
     pool: "forks",
-    maxWorkers: 1,
+    isolate: true,
   },
 });
