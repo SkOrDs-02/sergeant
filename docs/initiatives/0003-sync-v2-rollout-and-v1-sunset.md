@@ -1,13 +1,19 @@
 # 0003 — Sync v2 rollout & v1 sunset
 
 > **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
-> **Status:** In progress (Phase 1 + 2 shipped 2026-05-04)
+> **Status:** In progress (server sunset done; client v1 cleanup in progress)
 > **Priority:** P0 (Sprint 1–2)
 > **Owner:** `@Skords-01`
 > **ETA:** 4 weeks (rollout — 2 sprints, sunset v1 — третій спринт)
 > **Sources:** Design Review 2026-05-03 §2.2, §5.2; ADR-0004 (CloudSync LWW), [`docs/planning/storage-roadmap.md`](../planning/storage-roadmap.md)
 
 ## TL;DR
+
+**Current code status (2026-05-06):** v1 push/pull production endpoints now return
+`410 Gone`, and the web/mobile clients no longer ship a CloudSync v1 network facade
+or manual push/pull buttons. The remaining v1 surface is intentionally server-side
+sunset/audit compatibility plus generated OpenAPI history; active client transport is
+`/api/v2/sync/*`.
 
 Sergeant зараз **паралельно тримає два sync-механізми**: LWW-blob v1 (legacy CloudSync) і op-log v2 ([`/v2/sync/push|pull|stream`](../planning/storage-roadmap.md), PR #021/#040). Це означає, що та сама зміна може йти двома шляхами одночасно → ризик split-brain і конфліктів LWW vs op-log. План: жорстко **газувати rollout v2** з метриками (queue lag, conflict rate, op-log throughput), оголосити **`Sunset:` HTTP-header** для v1-ендпоінтів і визначити **дату вимкнення v1** (T₀). Все це — без зміни клієнтських API: feature-flag «cloudSyncMode = v1|dual|v2».
 
@@ -168,7 +174,7 @@ Sergeant зараз **паралельно тримає два sync-механі
 
 ## Outcome
 
-_Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client shipped). Phase 6 cleanup — наступний PR (drop module_data + remove cloudSync/ tree)._
+_Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client + Phase 6 client cleanup shipped). Remaining cleanup is server/data-only sunset debt: keep 410/audit compatibility, then remove final legacy schema/code in a separate release._
 
 ### Phase 1 — observability — Done (PR #1621)
 
@@ -209,14 +215,26 @@ _Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client sh
 
 ### Phase 5 — client-side cutover — Done 2026-05-06
 
-- **Web** [`apps/web/src/core/cloudSync/hook/useCloudSync.ts`](../../apps/web/src/core/cloudSync/hook/useCloudSync.ts) — `useCloudSync(user)` тепер stub, що повертає no-op defaults (`isSyncing: false`, `state: "idle"`, всі callback-и no-op). `App.tsx` / `OfflineBanner.tsx` / `useAppEffects.ts` / `useSyncErrorToast.ts` компілюються без змін через стабільний public shape.
-- **Mobile** [`apps/mobile/src/sync/hook/useCloudSync.ts`](../../apps/mobile/src/sync/hook/useCloudSync.ts) — аналогічний stub. `CloudSyncProvider.tsx` без змін. `__tests__/useCloudSync.userChange.test.ts` видалено — тестував user-change replay-flow, який тепер no-op.
-- **Engine entry-points** (`pushDirty`, `pushAll`, `pullAll`, `initialSync`, `uploadLocalData`) лишаються як dead-code до Phase 6 / PR #052 — їх unit-tests тестують payload-structure-у, не fetch-calls, тому продовжують gating чужого коду.
-- **`enqueueChange` + `notifySyncDirty`** з v1 cloudSync — не відключено, бо `syncedKV` цим викликом маркує dirty-state, а dirty-state читає `useSyncStatus` (для UI індикаторів). Behavior-у це не ламає: dirty-map накопичується in-memory і скидається на reload — `pushDirty` ніколи не викликається, тож v1-fetch-spam знятий.
-- **`useSyncStatus`** (з v1 cloudSync barrel-у) лишається — він уже hybrid: читає dirty/queued count з v1 і pending/rejected/deadLetter з v2 writer-у. UI-консьюмери (`OfflineBanner`, `SyncStatusIndicator`) бачать v2 dead-letter signals без змін.
-- **Migration-prompt UI** (`MigrationPrompt`) — видалення відкладено до Phase 6 / PR #052 разом із `cloudSync/` tree drop. Stub `migrationPending: false` гарантує, що modal не з'являється.
+- **Web** no longer ships the `useCloudSync(user)` network facade, migration prompt, or v1 sync error toast. `App.tsx`, `OfflineBanner`, and settings read `useSyncStatus`/v2-visible state only.
+- **Mobile** no longer ships `CloudSyncProvider` or the v1 `useCloudSync` facade. `SyncStatusIndicator` and `SyncStatusOverlay` still render v2-visible queued/offline/error status from `useSyncStatus`.
+- **`enqueueChange` + `notifySyncDirty`** stay because storage callers still mark local dirty state that the status UI reads; they do not call `/api/sync/*`.
 
-### Phase 6 — Cleanup — Pending
+### Phase 6 — Client cleanup — Done 2026-05-06
+
+- **API client** no longer exposes `apiClient.sync`, `createSyncEndpoints`,
+  `pushAll`, or `pullAll`; generated OpenAPI still retains v1 server history.
+- **Web** keeps the v2-visible status surface (`useSyncStatus`,
+  `OfflineBanner`, dirty notifications) but removes the v1 `useCloudSync`
+  facade, migration prompt, sync error toast, and manual cloud push/pull buttons.
+- **Mobile** keeps `useSyncStatus`, `SyncStatusIndicator`, and local storage
+  dirty markers but removes `CloudSyncProvider`, the v1 `useCloudSync` facade,
+  and retry plumbing tied to `/api/sync/*`.
+- **Regression guard**: `packages/api-client/src/endpoints/syncV1Sunset.test.ts`
+  scans web/mobile/api-client source and fails if client code reintroduces
+  `/api/sync/push`, `/api/sync/pull`, `/api/sync/push-all`, or
+  `/api/sync/pull-all`.
+
+### Phase 6 — Remaining server/data cleanup — Pending
 
 Видалення dead-code (Stage 7 / PR #052):
 

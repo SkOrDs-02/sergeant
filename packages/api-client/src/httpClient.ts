@@ -289,7 +289,7 @@ function networkMessage(cause: unknown): string {
 
 /**
  * Створює типізований HTTP-клієнт із заданим базовим URL та опційним
- * провайдером токена. Усі endpoint-обгортки (`createSyncEndpoints` тощо)
+ * провайдером токена. Усі endpoint-обгортки (`createSyncV2Endpoints` тощо)
  * працюють поверх повернутого `HttpClient`.
  */
 export function createHttpClient(config: HttpClientConfig = {}): HttpClient {

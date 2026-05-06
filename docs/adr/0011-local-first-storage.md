@@ -8,7 +8,7 @@
   - [`packages/shared/src/lib/storageKeys.ts`](../../packages/shared/src/lib/storageKeys.ts) — централізований реєстр ключів.
   - [`packages/shared/src/lib/kvStore.ts`](../../packages/shared/src/lib/kvStore.ts) — DOM-free `KVStore` контракт.
   - [`packages/shared/src/sync/modules.ts`](../../packages/shared/src/sync/modules.ts) — `SYNC_MODULES` реєстр (single source of truth для web + mobile, shared registry).
-  - [`apps/web/src/core/cloudSync/useCloudSync.ts`](../../apps/web/src/core/cloudSync/useCloudSync.ts) — LWW-reconciler + offline queue (v1 cloudSync engine знятий у [ADR-0047](./0047-cloudsync-v1-410-gone.md) + PR #052b — цей hook лишається як shim до PR #053).
+  - [`apps/web/src/core/cloudSync/index.ts`](../../apps/web/src/core/cloudSync/index.ts) — status/dirty-state barrel after the v1 CloudSync network facade was removed; see [ADR-0047](./0047-cloudsync-v1-410-gone.md).
   - [`docs/mobile/react-native-migration.md`](../mobile/react-native-migration.md) §6 — mobile sync-subsystem.
   - ADR-0010 — mobile dual-track (platform storage адаптери).
   - ADR-0012 — RLS як authz-межа (server-side чекає `user_id`-filter).

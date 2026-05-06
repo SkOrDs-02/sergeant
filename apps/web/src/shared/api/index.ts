@@ -29,7 +29,6 @@ export const apiClient = createApiClient({
   getToken: () => getBearerToken(),
 });
 
-export const syncApi = apiClient.sync;
 export const coachApi = apiClient.coach;
 export const chatApi = apiClient.chat;
 export const pushApi = apiClient.push;
@@ -67,9 +66,6 @@ export type {
   HttpClient,
   HttpClientConfig,
   HttpMethod,
-  ModulePullPayload,
-  ModulePushPayload,
-  ModulePushResult,
   MonoAccount,
   MonoBackfillProgress,
   MonoBackfillResponse,
@@ -110,11 +106,8 @@ export type {
   PrivatCredentials,
   PrivatStatementEntry,
   PrivatStatementsResponse,
-  PullAllResult,
-  PushAllResult,
   QueryValue,
   RequestOptions,
-  SyncEndpoints,
   TokenProvider,
   WeeklyDigestPayload,
   WeeklyDigestReport,

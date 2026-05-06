@@ -1,18 +1,14 @@
 /**
- * Cross-module bridge for "user requested a fresh pull from cloud-sync".
+ * Cross-module bridge for historical "user requested a fresh pull" events.
  *
- * `useCloudSync` lives at the App-level (single sync engine). Modules that
- * surface a pull-to-refresh gesture (Finyk Transactions, Fizruk Workouts,
- * Routine, Nutrition) cannot call `pullAll()` directly without spawning a
- * second sync engine — so they dispatch a window event and the App-level
- * listener performs the actual `sync.pullAll()`. The App dispatches a
- * follow-up `PULL_COMPLETE_EVENT` so the requester can resolve its
- * promise and unwind the spinner.
+ * The CloudSync v1 pull engine is gone, but older module pull-to-refresh
+ * surfaces still dispatch this window event. App-level compatibility code
+ * immediately emits `PULL_COMPLETE_EVENT` so those requesters can resolve
+ * their promises and unwind spinners without hitting legacy endpoints.
  *
  * The flow is intentionally fire-and-forget with a short timeout so the
- * pull-to-refresh spinner never sticks — if the App-level listener is
- * not mounted (e.g. a Storybook screen), the promise resolves after the
- * timeout and the UI carries on.
+ * pull-to-refresh spinner never sticks. If the App-level listener is not
+ * mounted, the promise resolves after the timeout and the UI carries on.
  */
 
 export const REQUEST_PULL_EVENT = "sergeant:request-pull";
@@ -21,9 +17,8 @@ export const PULL_COMPLETE_EVENT = "sergeant:pull-complete";
 const DEFAULT_TIMEOUT_MS = 4000;
 
 /**
- * Ask the App-level cloud-sync engine to perform a pull. Resolves when
- * the engine fires `PULL_COMPLETE_EVENT` or after `timeoutMs` (so the
- * caller's spinner never hangs forever).
+ * Ask the App-level compatibility listener to settle a historical pull
+ * request. Resolves on `PULL_COMPLETE_EVENT` or after `timeoutMs`.
  */
 export function requestCloudPull(
   timeoutMs = DEFAULT_TIMEOUT_MS,
@@ -45,8 +40,7 @@ export function requestCloudPull(
 }
 
 /**
- * Notify pending requesters that a pull has completed. Called by the
- * App-level listener after `sync.pullAll()` settles.
+ * Notify pending requesters that the compatibility pull request settled.
  */
 export function emitCloudPullComplete(): void {
   if (typeof window === "undefined") return;

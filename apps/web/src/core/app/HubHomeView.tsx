@@ -33,9 +33,6 @@ export interface HubHomeViewProps {
   onDismissIos: () => void;
   updateAvailable: boolean;
   onApplyUpdate: () => void;
-  syncing: boolean;
-  onSync: () => void;
-  onPull: () => void;
   openModule: HubNavigation["openModule"];
   shortcutsOpen: boolean;
   onCloseShortcuts: () => void;
@@ -61,9 +58,6 @@ export function HubHomeView(props: HubHomeViewProps) {
     onDismissIos,
     updateAvailable,
     onApplyUpdate,
-    syncing,
-    onSync,
-    onPull,
     openModule,
     shortcutsOpen,
     onCloseShortcuts,
@@ -120,9 +114,6 @@ export function HubHomeView(props: HubHomeViewProps) {
         iosVisible={iosVisible}
         onDismissIos={onDismissIos}
         hubView={ui.hubView}
-        syncing={syncing}
-        onSync={onSync}
-        onPull={onPull}
         user={user}
         onShowAuth={onOpenAuth}
         inFtuxSession={inFtuxSession}

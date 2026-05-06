@@ -26,7 +26,7 @@ describe("cloudPullRequest", () => {
   it("resolves immediately when emitCloudPullComplete() is called", async () => {
     const pending = requestCloudPull(5000);
 
-    // Simulate the App-level listener finishing its pullAll().
+    // Simulate the App-level compatibility listener settling the request.
     setTimeout(() => emitCloudPullComplete(), 10);
 
     const start = Date.now();

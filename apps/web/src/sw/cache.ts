@@ -41,8 +41,8 @@ export function setupCacheRoutes(): void {
 
   // GET /api/* — NetworkFirst with a short timeout so the cache only kicks in
   // when the network is actually unreachable or very slow. Non-GET requests
-  // (POST/PUT/DELETE) are NOT cached; they continue to go through the in-JS
-  // offline queue implemented in useCloudSync.js.
+  // (POST/PUT/DELETE) are NOT cached; mutation retry semantics live in the
+  // app-level sync writer rather than in the service worker cache.
   // Auth endpoints (`/api/auth/*`) are explicitly excluded: serving a stale
   // cached session could make the app believe a user is still authenticated
   // after logout or session expiry.

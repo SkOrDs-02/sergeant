@@ -32,16 +32,6 @@ export {
 } from "./endpoints/me";
 
 export {
-  createSyncEndpoints,
-  type SyncEndpoints,
-  type ModulePullPayload,
-  type ModulePushPayload,
-  type ModulePushResult,
-  type PullAllResult,
-  type PushAllResult,
-} from "./endpoints/sync";
-
-export {
   createSyncV2Endpoints,
   type SyncV2Endpoints,
   type SyncV2OpKind,

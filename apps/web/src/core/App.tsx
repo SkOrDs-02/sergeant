@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ApiClientProvider } from "@sergeant/api-client/react";
 import { apiClient } from "@shared/api";
 import { useDarkMode } from "@shared/hooks/useDarkMode";
-import { ToastProvider, useToast } from "@shared/hooks/useToast";
+import { ToastProvider } from "@shared/hooks/useToast";
 import { ToastContainer } from "@shared/components/ui/Toast";
 import { ScreenReaderAnnouncerProvider } from "@shared/components/ui/ScreenReaderAnnouncer";
 import {
@@ -12,11 +12,8 @@ import {
 } from "@shared/components/ui/KeyboardShortcutsModal";
 
 import { AuthProvider, useAuth } from "./auth/AuthContext";
-import { useCloudSync } from "./cloudSync/useCloudSync";
-import { useSyncErrorToast } from "./cloudSync/hook/useSyncErrorToast";
 import { ActiveModuleView } from "./app/ActiveModuleView";
 import { HubHomeView } from "./app/HubHomeView";
-import { MigrationPrompt } from "./app/MigrationPrompt";
 import { RedirectTo } from "./app/RedirectTo";
 import { ShellDeepLinkBridge } from "./app/ShellDeepLinkBridge";
 import { renderStandaloneRoute } from "./app/StandaloneRoutes";
@@ -120,14 +117,10 @@ function AppInner() {
   const { visible: iosVisible, dismiss: iosDismiss } = useIosInstallBanner();
   const { updateAvailable, applyUpdate } = useSWUpdate();
   const { user, isLoading: authLoading } = useAuth();
-  const sync = useCloudSync(user);
-  const toast = useToast();
-  useSyncErrorToast(sync.syncErrorDetail, toast, sync.pushAll);
 
   useAppEffects({
     user,
     ui,
-    sync,
     openModule,
     navigate,
     setPwaAction,
@@ -147,16 +140,6 @@ function AppInner() {
     onOpenSearch: openSearchFromShortcut,
     onOpenShortcuts: () => setShortcutsOpen(true),
   });
-
-  if (sync.migrationPending) {
-    return (
-      <MigrationPrompt
-        onUpload={sync.uploadLocalData}
-        onSkip={sync.skipMigration}
-        syncing={sync.syncing}
-      />
-    );
-  }
 
   // URL-addressable surfaces that live outside the hub composition
   // (sign-in, reset-password, /design, /pricing, /assistant, /chat,
@@ -203,9 +186,6 @@ function AppInner() {
         onDismissIos={iosDismiss}
         updateAvailable={updateAvailable}
         onApplyUpdate={applyUpdate}
-        syncing={sync.syncing}
-        onSync={sync.pushAll}
-        onPull={sync.pullAll}
         openModule={openModule}
         shortcutsOpen={shortcutsOpen}
         onCloseShortcuts={closeShortcuts}

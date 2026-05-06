@@ -54,9 +54,6 @@ describe("HubSettingsPage", () => {
   it("renders stable anchors and search keywords for settings sections", () => {
     renderWithToast(
       <HubSettingsPage
-        syncing={false}
-        onSync={vi.fn()}
-        onPull={vi.fn()}
         user={{
           id: "u1",
           email: null,
@@ -87,9 +84,6 @@ describe("HubSettingsPage", () => {
 
     renderWithToast(
       <HubSettingsPage
-        syncing={false}
-        onSync={vi.fn()}
-        onPull={vi.fn()}
         user={{
           id: "u1",
           email: null,

@@ -49,7 +49,7 @@ export const messages = {
   },
 
   sync: {
-    // User-facing copy (рендериться в `useSyncErrorToast.ts`). Цикл:
+    // Reserved legacy sync error copy. Historical retry cycle:
     //   network                → перевір з'єднання
     //   server retryable       → 5xx → invite-retry
     //   server non-retryable   → 4xx / parse → no-retry, ask to check input
@@ -62,7 +62,7 @@ export const messages = {
 
     // Reserved для майбутніх migration-round-ів — narrative-strings, які
     // ще живуть inline у `cloudSync/**`. Поточний baseline (round 14) —
-    // лише п'ять рядків вище (`useSyncErrorToast.ts`).
+    // above; no current renderer should revive CloudSync v1 toast plumbing.
     conflictResolved: "Конфлікт автоматично вирішено.",
     pushFailed: "Не вдалося синхронізувати. Спробуємо ще раз.",
     offlineQueueRecovered: "Відновлено з офлайн-черги.",

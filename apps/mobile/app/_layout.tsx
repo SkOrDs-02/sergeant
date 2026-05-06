@@ -36,7 +36,6 @@ import { initPostHog } from "@/observability/posthog";
 import { bootstrapEncryptedStorage } from "@/lib/storageEncryption";
 import { useDeepLinks } from "@/lib/useDeepLinks";
 import { QueryProvider } from "@/providers/QueryProvider";
-import { CloudSyncProvider } from "@/sync";
 import { ToastContainer, ToastProvider } from "@/components/ui/Toast";
 
 // Hold the native splash screen up until storage encryption bootstrap
@@ -170,16 +169,14 @@ export default function RootLayout() {
         <QueryProvider>
           <ApiClientProvider client={apiClient}>
             <IdentityBridge />
-            <CloudSyncProvider>
-              <ToastProvider>
-                <ColorSchemeBridge />
-                <DynamicStatusBar />
-                <RootShell />
-                <ToastContainer />
-                <PushRegistrar />
-                <AnalyticsIdentityBridge />
-              </ToastProvider>
-            </CloudSyncProvider>
+            <ToastProvider>
+              <ColorSchemeBridge />
+              <DynamicStatusBar />
+              <RootShell />
+              <ToastContainer />
+              <PushRegistrar />
+              <AnalyticsIdentityBridge />
+            </ToastProvider>
           </ApiClientProvider>
         </QueryProvider>
       </SafeAreaProvider>

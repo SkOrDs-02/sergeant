@@ -23,11 +23,6 @@ import type {
   PrivatCredentials,
 } from "../endpoints/privat";
 import type {
-  ModulePushPayload,
-  PullAllResult,
-  PushAllResult,
-} from "../endpoints/sync";
-import type {
   WeeklyDigestPayload,
   WeeklyDigestResponse,
 } from "../endpoints/weeklyDigest";
@@ -227,26 +222,6 @@ export function usePrivatBalanceFinal(
 }
 
 // ── Sync ─────────────────────────────────────────────────────────────────
-
-export function useSyncPushAllMutation(
-  opts?: MutationOpts<PushAllResult, Record<string, ModulePushPayload>>,
-) {
-  const api = useApiClient();
-  return useMutation({
-    mutationFn: (modules) => api.sync.pushAll(modules),
-    ...opts,
-  });
-}
-
-export function useSyncPullAllMutation(
-  opts?: MutationOpts<PullAllResult, void>,
-) {
-  const api = useApiClient();
-  return useMutation({
-    mutationFn: () => api.sync.pullAll(),
-    ...opts,
-  });
-}
 
 // ── Weekly Digest ────────────────────────────────────────────────────────
 

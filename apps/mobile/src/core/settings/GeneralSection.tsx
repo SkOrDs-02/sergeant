@@ -22,13 +22,9 @@
  *
  * Deferred (tracked in `docs/mobile/react-native-migration.md` Phase 2 /
  * Hub-core, section 2.4):
- *  - **Cloud sync push / pull buttons.** Web passes `user` +
- *    `useCloudSync(user)` handlers from a screen wrapper.
- *    `CloudSyncProvider` already owns the scheduler on mobile, so
- *    a leaf component re-instantiating `useCloudSync` would
- *    double-mount NetInfo listeners and the periodic retry. A
- *    dedicated read/trigger hook lands in a follow-up; until then
- *    a `Card` notice explains the deferral inline.
+ *  - **Cloud sync command buttons.** The v1 provider and pull/push
+ *    handlers are removed. A future explicit v2 command hook can wire
+ *    manual retry controls without reviving legacy endpoints.
  *
  * Dark-mode wiring:
  *  - Toggling "Темна тема" flips `prefs.darkMode` in the shared
@@ -431,9 +427,8 @@ export function GeneralSection() {
       </SettingsSubGroup>
       <SettingsSubGroup title="Хмарна синхронізація">
         <DeferredNotice>
-          Кнопки ручного збереження та завантаження з хмари підключаються у
-          наступному PR — разом із read-only хуком, який не дублюватиме вже
-          активний CloudSyncProvider.
+          Кнопки ручного збереження та завантаження з хмари повернуться лише
+          через явний v2 command hook, без відновлення legacy sync-клієнта.
         </DeferredNotice>
       </SettingsSubGroup>
       <SettingsSubGroup title="Резервна копія Hub">
