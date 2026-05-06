@@ -93,7 +93,7 @@ logger.warn({ traceId: ctx.traceId }, "ok");
    - Якщо приходить як header: `'req.headers["x-new-secret"]'`.
    - Якщо приходить як body: `"req.body.newSecret"`.
 4. **Якщо це HTTP-header** — додай також у `redactSensitiveUrl()` ([`apps/server/src/obs/sensitiveUrl.ts`](../../apps/server/src/obs/sensitiveUrl.ts)), якщо може з'явитися у URL-path / query.
-5. **Розшир `apps/server/src/obs/__tests__/logger.test.ts`** — додай тест-сценарій з фейковим payload-ом, де поле виставлене, і перевір, що `[redacted]` присутнє у логах.
+5. **Розшир `apps/server/src/obs/logger.test.ts`** — додай тест-сценарій з фейковим payload-ом, де поле виставлене, і перевір, що `[redacted]` присутнє у логах.
 6. **Якщо потрібен новий receiver-name** для logger-у (наприклад, `myAppLogger.info(...)`) — розшир `PINO_LOGGER_RECEIVER_RE` у [`packages/eslint-plugin-sergeant-design/index.js`](../../packages/eslint-plugin-sergeant-design/index.js). Це окремий PR із обґрунтуванням, чому не використати канонічний `logger`.
 
 ## Як перевірити локально

@@ -529,7 +529,7 @@
         },
         {
           "kind": "test",
-          "ref": "apps/server/src/obs/__tests__/logger.test.ts (redactPaths + redactKeyNames coverage)"
+          "ref": "apps/server/src/obs/logger.test.ts (redactPaths + redactKeyNames coverage)"
         },
         {
           "kind": "convention",

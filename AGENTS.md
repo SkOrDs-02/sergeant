@@ -521,7 +521,7 @@ req.log.error({ err, route: req.route?.path }, "handler failed");
 **Що блокує:**
 
 - ESLint rule `sergeant-design/no-raw-req-in-pino-log` (severity `error`) у scope `apps/server/**/*.{ts,js,mjs}` — `pnpm lint` локально й у CI.
-- Тести `apps/server/src/obs/__tests__/logger.test.ts` — фіксують `redactPaths` + `redactKeyNames` baseline; будь-яка регресія у redact-config валить unit-suite.
+- Тести `apps/server/src/obs/logger.test.ts` — фіксують `redactPaths` + `redactKeyNames` baseline; будь-яка регресія у redact-config валить unit-suite.
 
 **What this rule does NOT block:**
 
