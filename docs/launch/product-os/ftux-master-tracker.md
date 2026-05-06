@@ -138,7 +138,9 @@
 | **PR-13** | feat(experiments): goal-first wizard variant (S5.1) | ~250 | PR-11        | D7 retention за goal-first arm vs current ≥ +5pp    |
 | **PR-14** | feat(observability): FTUX SLO + dashboard + alert   | ~100 | —            | Self-referential — alert fires when SLO breaches    |
 
-> **PR-11 status (2026-05-06):** in-flight як [#1991](https://github.com/Skords-01/Sergeant/pull/1991) — додав `rankFirstActionCandidates`, vibe-pick-order tie-break серед goal-set picks та `primary_reason` faceting field у `onboarding_first_action_*` події (Sentry/PostHog). Static fallback (без goals) — байт-в-байт як до S2.1.
+> **PR-11 status (2026-05-06):** ✅ [Merged #1991](https://github.com/Skords-01/Sergeant/pull/1991) — додав `rankFirstActionCandidates`, vibe-pick-order tie-break серед goal-set picks та `primary_reason` faceting field у `onboarding_first_action_*` події (Sentry/PostHog). Static fallback (без goals) — байт-в-байт як до S2.1.
+>
+> **PR-12 status (2026-05-06):** in-flight як [#2014](https://github.com/Skords-01/Sergeant/pull/2014) — `resolveOnboardingHero` (shared, pure) + `useOnboardingState` (web hook) + `HubDashboard` рефакторинг. 4-tier priority ladder (`reengagement > first-action > soft-auth > today-focus`) централізує single-hero rule в одному tested місці; mobile parity — Wave 4 PR-21.
 
 ### 3.3. Хвиля 3 — Platform parity (Week 3-4, 4 PR)
 
