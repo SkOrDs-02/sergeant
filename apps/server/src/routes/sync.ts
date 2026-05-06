@@ -7,12 +7,7 @@ import {
 } from "../http/index.js";
 import { listSyncAudit } from "../modules/sync/audit.js";
 import { v1ClientSurveyMiddleware } from "../modules/sync/clientSurvey.js";
-import {
-  syncPull,
-  syncPullAll,
-  syncPush,
-  syncPushAll,
-} from "../modules/sync/sync.js";
+import { respondV1Gone } from "../modules/sync/sunsetGone.js";
 import { v1SunsetHeadersMiddleware } from "../modules/sync/sunsetHeaders.js";
 import { syncV2Pull, syncV2Push } from "../modules/sync/syncV2.js";
 import { syncV2Stream } from "../modules/sync/syncV2Stream.js";
@@ -27,11 +22,19 @@ import { syncV2Stream } from "../modules/sync/syncV2Stream.js";
  * (модуль `sync`), але навмисно НЕ використовує канал push/pull —
  * incident-response не повинен ділити budget з нормальною sync-операцією.
  *
- * `/api/v2/sync/*` (Stage 2 / PR #021) — per-row op-log sync. Живе
- * паралельно з v1 (`module_data`-based) до Stage 7 cleanup PR #052.
- * Власний rate-limit-budget (`api:v2:sync`, 60/min — щедріший за v1
- * push/pull, бо op-log push може бути частим), власний `module=syncV2`
- * для логів/метрик.
+ * `/api/v2/sync/*` (Stage 2 / PR #021) — per-row op-log sync. Лишається
+ * єдиним sync-каналом починаючи з 2026-05-06 (Initiative 0003 Phase 5,
+ * ADR-0047). v1 push/pull endpoint-и повертають 410 Gone з
+ * `successor: /api/v2/sync` payload-ом (див. `sunsetGone.ts`); решта
+ * v1 inventory (`/api/sync/audit`) лишається — це read-only audit-log,
+ * не sync-канал. Власний rate-limit-budget v2 (`api:v2:sync`, 60/min —
+ * щедріший, бо op-log push може бути частим) і `module=syncV2` для
+ * логів/метрик.
+ *
+ * v1 routes лишаються змонтованими (а не просто видаленими) щоб survey-
+ * middleware і sunset-headers-middleware продовжили рахувати legacy-
+ * traffic і повертати RFC 8594 / 8288 headers разом із 410 — це дозволяє
+ * клієнтам перевести retry-decay logic у "stop calling permanently".
  */
 export function createSyncRouter(): Router {
   const r = Router();
@@ -47,13 +50,20 @@ export function createSyncRouter(): Router {
   // RFC 8594 / 8288 deprecation headers на всіх v1-routes (Initiative 0003
   // Phase 2 → ADR-0043). НЕ блокує запит — оголошує намір. T₀ через
   // `CLOUDSYNC_V1_SUNSET_AT` env var (ISO 8601). Без env — Sunset header
-  // не емітиться, але Deprecation і Link залишаються.
+  // не емітиться, але Deprecation і Link залишаються. Залишений активним
+  // після Phase 5 (T₀, ADR-0047) — клієнти, що ще б'ються у 410, читають
+  // Sunset/Link headers разом із 410-body, щоб повністю припинити retry.
   r.use("/api/sync", v1SunsetHeadersMiddleware());
-  r.post("/api/sync/push", asyncHandler(syncPush));
-  r.post("/api/sync/pull", asyncHandler(syncPull));
-  r.get("/api/sync/pull-all", asyncHandler(syncPullAll));
-  r.post("/api/sync/pull-all", asyncHandler(syncPullAll));
-  r.post("/api/sync/push-all", asyncHandler(syncPushAll));
+  // Initiative 0003 Phase 5 / ADR-0047 — T₀ executed. Усі v1 push/pull
+  // endpoint-и повертають 410 Gone із successor pointer-ом (`/api/v2/sync`).
+  // Handler-и `syncPush*`/`syncPull*` залишаються в `modules/sync/sync.ts`
+  // як dead-code до Stage 7 / PR #052 — їхні tests все ще валідують
+  // shape-контракт, що допомагає burn-in перевірці v2.
+  r.post("/api/sync/push", asyncHandler(respondV1Gone));
+  r.post("/api/sync/pull", asyncHandler(respondV1Gone));
+  r.get("/api/sync/pull-all", asyncHandler(respondV1Gone));
+  r.post("/api/sync/pull-all", asyncHandler(respondV1Gone));
+  r.post("/api/sync/push-all", asyncHandler(respondV1Gone));
   r.get("/api/sync/audit", asyncHandler(listSyncAudit));
 
   r.use("/api/v2/sync", setModule("syncV2"));

@@ -1,6 +1,6 @@
 # 0003 — Sync v2 rollout & v1 sunset
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-06 by @dmytro.skords. **Next review:** 2026-08-04.
 > **Status:** In progress (Phase 1 + 2 shipped 2026-05-04)
 > **Priority:** P0 (Sprint 1–2)
 > **Owner:** `@Skords-01`
@@ -168,7 +168,7 @@ Sergeant зараз **паралельно тримає два sync-механі
 
 ## Outcome
 
-_Заповнюється після завершення. Поточний стан — In progress, Phase 1 + 2 shipped 2026-05-04._
+_Поточний стан — In progress (Phase 1 + 2 + 5-server shipped). Phase 5-client + Phase 6 cleanup — black-list-у наступних PR-ів._
 
 ### Phase 1 — observability — Done (PR #1621)
 
@@ -195,6 +195,30 @@ _Заповнюється після завершення. Поточний ст
   - `sli:sync_v1:rate5m` < 5% від total sync-traffic протягом 7 поспіль днів (Phase 1 measurement).
   - Phase 4 backfill завершено для всіх active-users і dry-run ідемпотентний на 100 нових run-ах.
 
-### Phase 3-6 — Pending
+### Phase 5 — T₀ executed (server-side) — Done 2026-05-06
 
-Фази 3 (feature-flag + shadow mode), 4 (backfill), 5 (T₀ → 410 Gone), 6 (cleanup) — окремі PR-и за календарним розкладом, gated на metrics з Phase 1-2.
+- **ADR-0047** [CloudSync v1 — T₀ executed (410 Gone)](../adr/0047-cloudsync-v1-410-gone.md) — Accepted 2026-05-06. Document-amendment до ADR-0043 фіксує T₀-execution: усі v1 push/pull endpoint-и повертають `410 Gone` з RFC-9110 body `{error, successor, since, guide}`.
+- **Handler** [`apps/server/src/modules/sync/sunsetGone.ts`](../../apps/server/src/modules/sync/sunsetGone.ts) + 11 тестів (`sunsetGone.test.ts`).
+- **Wire-up** [`apps/server/src/routes/sync.ts`](../../apps/server/src/routes/sync.ts) — `r.post("/api/sync/push", asyncHandler(respondV1Gone))` для всіх 4-х legacy push/pull endpoint-ів (`push`, `pull`, `pull-all` GET+POST, `push-all`). `/api/sync/audit` лишається — це read-only audit, не sync-канал.
+- **Phase 1+2 middleware (survey + sunset-headers) лишається активним поверх 410-handler-а** — клієнти все ще читають `Sunset:` / `Deprecation:` / `Link:` headers разом із 410-body. Це дозволяє їм перевести retry-decay logic у "stop calling permanently".
+- **Env vars**:
+  - `CLOUDSYNC_V1_GONE_SINCE` — ISO 8601 timestamp T₀; включається у `since` поле response. Без env — `"unknown"`. Production-deploy виставив у `2026-05-06T08:00:00Z`.
+  - `CLOUDSYNC_V1_SUNSET_AT` — Phase 2, лишається у тому самому моменті.
+- **Чому compress-нуто rollout-criteria**: продукт у pre-launch стані (один internal користувач — @Skords-01), `sli:sync_v1:rate5m < 5%` задовольнено за визначенням; немає не-internal traffic, що міг би тригернути regression. Burn-in writer-runtime ([#1953](https://github.com/Skords-01/Sergeant/pull/1953)) теж не блокує — немає user-facing surface, що міг би відловити v2-bug.
+- **v1 handler-и (`syncPush`/`syncPull`/`syncPullAll`/`syncPushAll`)** і їхні tests лишаються dead code до Phase 6 / PR #052 — це навмисне (audit-trail-friendly + payload-shape contract tests лишаються для v2-burn-in).
+
+### Phase 5 — client-side cutover — Pending
+
+- Web `apps/web/src/core/cloudSync/` (`useCloudSync(user)` hook + engine + queue + state) — все ще активний шар, що тепер flooding-ить toast-помилки з 410. Ціль наступного PR — замінити `useCloudSync(user)` у `apps/web/src/core/App.tsx` на v2-aware stub (повертає no-op defaults), що виключає engine-fetch-calls і `useSyncRetry`.
+- Mobile `apps/mobile/src/sync/` — аналогічно.
+- Migration-prompt UI (`MigrationPrompt`) — видалити, бо v2 op-log не потребує "перший раз вантажу місцеві дані" діалогу.
+- Tests cleanup — більшість unit-tests у `cloudSync/__tests__` тестують internals (engine functions, queue), не fetch-calls — лишаються живі. Hook-level tests (`useCloudSync.behavior.test.ts`, `useCloudSync.hardening.test.ts`) — переписати або видалити після hook-stub.
+
+### Phase 6 — Cleanup — Pending
+
+Видалення dead-code (Stage 7 / PR #052):
+
+- `apps/web/src/core/cloudSync/` — 35 файлів, 5+ тисяч LOC.
+- `apps/mobile/src/sync/` — 30 файлів.
+- `apps/server/src/modules/sync/sync.ts` — `syncPush*`/`syncPull*` handler-и.
+- Drop column `module_data` (Stage 7 / PR #051) — окремою міграцією у наступному release-cycle після того, як цей PR landed (per AGENTS.md hard rule #4 — двофазний DROP).

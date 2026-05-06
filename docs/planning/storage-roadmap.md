@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-06 by Devin (Stage 6 status reconciliation: PR #046 / PR #047 LANDED + Stage 6 summary table → ✅ COMPLETE; PR #022 SPIKE → ✅ CLOSED/ARCHIVED; Stage 5 PR #042e-wiring (#1953) LANDED note). **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-06 by Devin (Stage 7 unblocking pre-step: ADR-0047 / `respondV1Gone` server-side T₀ executed → PR #051 + PR #052 marked ⏳ READY; Initiative 0003 Phase 5 server-half done). **Next review:** 2026-08-04.
 > **Status:** Active
 >
 > **Stage status (one-line summary):**
@@ -2147,22 +2147,30 @@ client_updated_at)` (Postgres requirement для partitioned tables).
 
 ### Stage 7 — Cleanup
 
-#### **PR #051 — `chore: drop module_data table after all modules migrated`**
+> **Pre-step (2026-05-06): T₀ executed (server-side).** Initiative 0003 Phase 5 server-half landed окремим PR-ом — `apps/server/src/modules/sync/sunsetGone.ts` (`respondV1Gone`) повертає `410 Gone` на всіх 4-х v1 push/pull endpoint-ах, ADR-0047 фіксує rationale, Phase 1+2 middleware (survey + Sunset/Deprecation/Link headers) лишається активним поверх 410. Це розблоковує PR #051 і PR #052 нижче (per AGENTS hard rule #4 — "код не пише у v1 канал" → можна drop-ити column у наступному release-cycle).
+
+#### **PR #051 — `chore: drop module_data table after all modules migrated`** ⏳ READY
 
 - Migration `999_drop_module_data.{sql,down.sql}`. Тільки після
   4 модулів в Stage 4 + 30-day burn-in.
+- **Розблоковано** ADR-0047 (T₀ executed 2026-05-06). Burn-in compress-нутий до 0 (single-user pre-launch); готово до landing-у наступним release-cycle.
 
-#### **PR #052 — `chore: remove cloudSync v1 engine (storagePatch, dirty tracking, offline queue)`**
+#### **PR #052 — `chore: remove cloudSync v1 engine (storagePatch, dirty tracking, offline queue)`** ⏳ READY
 
 - Видаляється `apps/web/src/core/cloudSync/` + `apps/mobile/src/sync/`
   старі файли. Лишається тільки v2 (op-log).
+- Server: видаляються `syncPush*`/`syncPull*` handler-и в `apps/server/src/modules/sync/sync.ts` + їхні tests (вже dead code після ADR-0047).
+- Web: `apps/web/src/core/App.tsx` міняє `useCloudSync(user)` на v2-aware stub (`useSyncStatus` з `apps/web/src/core/syncEngine/` + dead-letter retry surface).
+- Mobile: `apps/mobile/src/sync/CloudSyncProvider.tsx` analogue.
+- Migration-prompt UI (`MigrationPrompt`) — видалити (v2 op-log не потребує "вантажу місцеві дані" діалогу).
+- **Розблоковано** ADR-0047. Великий diff (~5000 LOC); реально розіб'ємо на 3 sub-PR-и (server, web, mobile).
 
-#### **PR #053 — `chore: deprecate KVStore in favor of SQLite-backed cache`**
+#### **PR #053 — `chore: deprecate KVStore in favor of SQLite-backed cache`** ⏳ ROADMAP
 
 - KVStore залишається тільки для маленьких прапорців і Better Auth cookies.
   Все інше — SQLite. Update tech-debt docs.
 
-#### **PR #054 — `chore: final localStorage burndown — eslint allowlist = []`**
+#### **PR #054 — `chore: final localStorage burndown — eslint allowlist = []`** ⏳ ROADMAP
 
 - Останні exceptions у `eslint.config.js` видаляються. CI gate.
 
