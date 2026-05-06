@@ -1,13 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  safeReadStringLS,
-  safeWriteLS,
-  safeRemoveLS,
-} from "@shared/lib/storage/storage";
+import { useCallback, useMemo, useState } from "react";
+import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
-import { Button } from "@shared/components/ui/Button";
-import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import {
   DataState,
@@ -26,54 +20,39 @@ import { ExerciseDetailSheet } from "../components/workouts/ExerciseDetailSheet"
 import { WorkoutJournalSection } from "../components/workouts/WorkoutJournalSection";
 import { WorkoutCatalogSection } from "../components/workouts/WorkoutCatalogSection";
 import { QuickStartSheet } from "../components/workouts/QuickStartSheet";
+import { WorkoutsHome } from "../components/workouts/WorkoutsHome";
+import { WorkoutsHeader } from "../components/workouts/WorkoutsHeader";
+import { WorkoutsConfirmDialogs } from "../components/workouts/WorkoutsConfirmDialogs";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
-import {
-  useFizrukRestSound,
-  type RestTimerState,
-} from "../hooks/useFizrukRestSound";
+import { useFizrukRestSound } from "../hooks/useFizrukRestSound";
+import type { RestTimerState } from "../hooks/useFizrukRestSound";
 import { useRecovery } from "../hooks/useRecovery";
 import {
   useWorkoutTemplates,
   type WorkoutTemplate,
 } from "../hooks/useWorkoutTemplates";
 import { useWorkouts } from "../hooks/useWorkouts";
+import {
+  useActiveWorkoutIdPersistence,
+  useLiveWorkoutTick,
+  useRestTimerCountdown,
+  useStaleActiveWorkoutCleanup,
+  useWorkoutsViewFromSession,
+} from "../hooks/useWorkoutsLifecycle";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
 import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
-import type {
-  Workout,
-  WorkoutFinishSummary,
-  WorkoutGroup,
-  WorkoutItem,
-} from "@sergeant/fizruk-domain";
+import type { Workout, WorkoutGroup } from "@sergeant/fizruk-domain";
 import {
   ACTIVE_WORKOUT_KEY,
   summarizeWorkoutForFinish,
 } from "@sergeant/fizruk-domain";
-import { WorkoutsHome } from "../components/workouts/WorkoutsHome";
-
-type WorkoutsView = "home" | "catalog" | "log" | "templates";
-
-/**
- * Mirrors `FinishFlashState` in `WorkoutJournalSection` / consumed by
- * `WorkoutFinishSheets`. Owned here so the `useState` setter can be
- * passed across both sheets without re-deriving the shape twice.
- */
-interface FinishFlashState extends WorkoutFinishSummary {
-  step: "wellbeing" | "summary";
-  collapsed: boolean;
-  workoutId: string;
-  energy: number | null;
-  mood: number | null;
-  savedWellbeing?: { energy?: number | null; mood?: number | null } | null;
-}
-
-/**
- * The catalog `WorkoutItem` carries the workout `startedAt` when
- * resolved as the most recent occurrence of an exercise. We only attach
- * a single extra field, so widen the canonical domain item rather than
- * lying via `any`.
- */
-type LastExerciseItem = WorkoutItem & { _startedAt?: string };
+import type { FinishFlashState, WorkoutsView } from "./Workouts.types";
+import {
+  buildGroupedExercises,
+  collectLastByExerciseId,
+  formatActiveDuration,
+  todayLocalDateString,
+} from "./Workouts.helpers";
 
 export function Workouts() {
   const toast = useToast();
@@ -154,10 +133,7 @@ export function Workouts() {
   const [now, setNow] = useState(Date.now());
   const [retroOpen, setRetroOpen] = useState(false);
   const [quickStartOpen, setQuickStartOpen] = useState(false);
-  const [retroDate, setRetroDate] = useState(() => {
-    const x = new Date();
-    return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
-  });
+  const [retroDate, setRetroDate] = useState(() => todayLocalDateString());
   const [retroTime, setRetroTime] = useState("18:00");
   const [form, setForm] = useState<AddExerciseForm>(() => ({
     nameUk: "",
@@ -168,73 +144,31 @@ export function Workouts() {
     description: "",
   }));
   const list = useMemo(() => search(q), [search, q]);
-  const activeWorkout = workouts.find((w) => w.id === activeWorkoutId) || null;
+  const activeWorkout: Workout | null =
+    workouts.find((w) => w.id === activeWorkoutId) || null;
 
-  const activeDuration = useMemo(() => {
-    if (!activeWorkout?.startedAt) return null;
-    const start = Date.parse(activeWorkout.startedAt);
-    const end = activeWorkout.endedAt ? Date.parse(activeWorkout.endedAt) : now;
-    if (!Number.isFinite(start) || !Number.isFinite(end) || end < start)
-      return null;
-    const sec = Math.floor((end - start) / 1000);
-    const mm = String(Math.floor(sec / 60)).padStart(2, "0");
-    const ss = String(sec % 60).padStart(2, "0");
-    return `${mm}:${ss}`;
-  }, [activeWorkout?.startedAt, activeWorkout?.endedAt, now]);
+  const activeDuration = useMemo(
+    () =>
+      formatActiveDuration(
+        activeWorkout?.startedAt,
+        activeWorkout?.endedAt,
+        now,
+      ),
+    [activeWorkout?.startedAt, activeWorkout?.endedAt, now],
+  );
 
-  useEffect(() => {
-    if (!activeWorkoutId) safeRemoveLS(ACTIVE_WORKOUT_KEY);
-    else safeWriteLS(ACTIVE_WORKOUT_KEY, activeWorkoutId);
-  }, [activeWorkoutId]);
-
-  // Clear a stale activeWorkoutId that no longer matches any workout
-  // (e.g. the workout was deleted on another device before sync).
-  useEffect(() => {
-    if (!workoutsLoaded || !activeWorkoutId) return;
-    if (!workouts.some((w) => w.id === activeWorkoutId)) {
-      setActiveWorkoutId(null);
-    }
-  }, [workoutsLoaded, activeWorkoutId, workouts]);
-
-  useEffect(() => {
-    try {
-      const m = sessionStorage.getItem("fizruk_workouts_mode");
-      if (m === "templates") {
-        setView("templates");
-        sessionStorage.removeItem("fizruk_workouts_mode");
-      } else if (m === "log") {
-        setView("log");
-        sessionStorage.removeItem("fizruk_workouts_mode");
-      }
-    } catch {}
-  }, []);
+  useActiveWorkoutIdPersistence(activeWorkoutId);
+  useStaleActiveWorkoutCleanup(
+    workoutsLoaded,
+    workouts,
+    activeWorkoutId,
+    setActiveWorkoutId,
+  );
+  useWorkoutsViewFromSession(setView);
 
   const { markCompletedNaturally } = useFizrukRestSound(restTimer);
-
-  useEffect(() => {
-    if (!restTimer || restTimer.remaining <= 0) return;
-    const id = setInterval(() => {
-      setRestTimer((r) => {
-        if (!r || r.remaining <= 1) {
-          markCompletedNaturally();
-          return null;
-        }
-        return { ...r, remaining: r.remaining - 1 };
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, [restTimer, markCompletedNaturally]);
-
-  // Live timer tick — only when there is an active, unfinished workout
-  useEffect(
-    () => {
-      if (!activeWorkout || activeWorkout.endedAt) return;
-      const id = setInterval(() => setNow(Date.now()), 1000);
-      return () => clearInterval(id);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- достатньо id/endedAt; повний об’єкт workout змінюється часто
-    [activeWorkout?.id, activeWorkout?.endedAt],
-  );
+  useRestTimerCountdown(restTimer, setRestTimer, markCompletedNaturally);
+  useLiveWorkoutTick(activeWorkout, setNow);
 
   const addExerciseToActive = useCallback(
     (ex: RawExerciseDef) => {
@@ -368,67 +302,15 @@ export function Workouts() {
     setRetroOpen(false);
   }, [retroDate, retroTime, createWorkoutWithTimes]);
 
-  const lastByExerciseId = useMemo(() => {
-    const out: Record<string, LastExerciseItem> = {};
-    for (const w of workouts || []) {
-      if (w.id === activeWorkoutId) continue;
-      for (const it of w.items || []) {
-        const exId = it.exerciseId;
-        if (!exId) continue;
-        const existing = out[exId];
-        if (
-          !existing ||
-          (w.startedAt || "").localeCompare(existing._startedAt || "") > 0
-        ) {
-          out[exId] = { ...it, _startedAt: w.startedAt };
-        }
-      }
-    }
-    return out;
-  }, [workouts, activeWorkoutId]);
+  const lastByExerciseId = useMemo(
+    () => collectLastByExerciseId(workouts, activeWorkoutId),
+    [workouts, activeWorkoutId],
+  );
 
-  const grouped = useMemo(() => {
-    const eqSet = equipmentFilter.length > 0 ? new Set(equipmentFilter) : null;
-    const pool = eqSet
-      ? list.filter((ex) => (ex.equipment ?? []).some((e) => eqSet.has(e)))
-      : list;
-    const m = new Map<string, RawExerciseDef[]>();
-    for (const ex of pool) {
-      const gid = ex.primaryGroup || "full_body";
-      const bucket = m.get(gid);
-      if (bucket) bucket.push(ex);
-      else m.set(gid, [ex]);
-    }
-    const order = [
-      "chest",
-      "back",
-      "shoulders",
-      "biceps",
-      "triceps",
-      "forearms",
-      "core",
-      "quadriceps",
-      "hamstrings",
-      "calves",
-      "glutes",
-      "full_body",
-      "cardio",
-    ];
-    const entries = Array.from(m.entries()).sort((a, b) => {
-      const ai = order.indexOf(a[0]);
-      const bi = order.indexOf(b[0]);
-      return (
-        (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi) ||
-        a[0].localeCompare(b[0])
-      );
-    });
-    return entries.map(([gid, items]) => ({
-      id: gid,
-      label: primaryGroupsUk[gid] || gid,
-      items: items.slice(0, 80),
-      total: items.length,
-    }));
-  }, [list, equipmentFilter, primaryGroupsUk]);
+  const grouped = useMemo(
+    () => buildGroupedExercises(list, equipmentFilter, primaryGroupsUk),
+    [list, equipmentFilter, primaryGroupsUk],
+  );
 
   const finishedCount = useMemo(
     () => (workouts || []).filter((w) => w.endedAt).length,
@@ -481,50 +363,13 @@ export function Workouts() {
   return (
     <PullToRefresh onRefresh={handlePullRefresh} variant="fizruk">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
-        <div className="flex items-center gap-3 mb-3">
-          {view !== "home" ? (
-            <button
-              type="button"
-              className="w-9 h-9 -ml-1 rounded-xl flex items-center justify-center text-text/80 hover:bg-surface-2"
-              onClick={() => setView("home")}
-              aria-label="Повернутись до тренувань"
-            >
-              ‹
-            </button>
-          ) : null}
-          <div className="flex-1">
-            <h1 className="text-style-title text-text">
-              {view === "catalog"
-                ? "Каталог вправ"
-                : view === "templates"
-                  ? "Шаблони"
-                  : view === "log"
-                    ? activeWorkout && !activeWorkout.endedAt
-                      ? "Активне тренування"
-                      : "Журнал"
-                    : "Тренування"}
-            </h1>
-            {view === "home" ? (
-              <p className="text-xs text-subtle mt-0.5">
-                {activeWorkout && !activeWorkout.endedAt
-                  ? `Активне · ${(activeWorkout.items || []).length} вправ`
-                  : finishedCount > 0
-                    ? `Завершено: ${finishedCount}`
-                    : "Перше тренування — попереду"}
-              </p>
-            ) : null}
-          </div>
-          {view === "catalog" ? (
-            <Button
-              size="sm"
-              className="h-9 min-h-[44px] px-4"
-              onClick={() => setAddOpen(true)}
-              aria-label="Додати вправу в каталог"
-            >
-              + Додати
-            </Button>
-          ) : null}
-        </div>
+        <WorkoutsHeader
+          view={view}
+          activeWorkout={activeWorkout}
+          finishedCount={finishedCount}
+          onBack={() => setView("home")}
+          onAddCatalog={() => setAddOpen(true)}
+        />
 
         {view === "home" ? (
           <WorkoutsHome
@@ -692,23 +537,9 @@ export function Workouts() {
         />
       </div>
 
-      {/*
-        Confirmation dialogs.
-
-        The "Delete active workout" `ConfirmDialog` was removed in favour
-        of the unified soft-delete flow (`onDeleteWorkout` in
-        `WorkoutJournalSection`) that calls `deleteWorkout` immediately
-        and surfaces a 5 s undo toast via `showUndoToast`. Per the
-        unified-undo policy, only non-reversible flows (e.g. exercise
-        removal that detaches the catalog entry) keep an explicit
-        confirmation step.
-      */}
-      <ConfirmDialog
-        open={deleteExerciseConfirm}
-        title="Видалити вправу?"
-        description="Вправу буде видалено з каталогу. Записи в тренуваннях залишаться."
-        confirmLabel="Видалити"
-        onConfirm={() => {
+      <WorkoutsConfirmDialogs
+        deleteExerciseConfirm={deleteExerciseConfirm}
+        onDeleteExerciseConfirm={() => {
           if (selected) {
             const snapshot = selected;
             if (removeExercise(snapshot.id)) {
@@ -721,23 +552,15 @@ export function Workouts() {
           }
           setDeleteExerciseConfirm(false);
         }}
-        onCancel={() => setDeleteExerciseConfirm(false)}
-      />
-
-      <ConfirmDialog
-        open={!!riskyTemplateConfirm}
-        title="М'язи ще відновлюються"
-        description="У шаблоні є вправи на групи м'язів, які ще не відновились. Почати тренування все одно?"
-        confirmLabel="Так, почати"
-        cancelLabel="Скасувати"
-        danger={false}
-        onConfirm={() => {
+        onDeleteExerciseCancel={() => setDeleteExerciseConfirm(false)}
+        riskyTemplate={riskyTemplateConfirm}
+        onRiskyTemplateConfirm={() => {
           const tpl = riskyTemplateConfirm;
           setRiskyTemplateConfirm(null);
           if (!tpl) return;
           executeTemplateStart(tpl);
         }}
-        onCancel={() => setRiskyTemplateConfirm(null)}
+        onRiskyTemplateCancel={() => setRiskyTemplateConfirm(null)}
       />
     </PullToRefresh>
   );
