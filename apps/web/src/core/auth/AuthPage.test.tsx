@@ -246,3 +246,62 @@ describe("AuthPage — mode switching", () => {
     expect(setAuthErrorMock).toHaveBeenCalledWith(null);
   });
 });
+
+describe("AuthPage — forgot password (UX roast 2026-Q2 A14)", () => {
+  it("після успіху показує кнопку «Назад до входу», що згортає панель", async () => {
+    requestPasswordResetMock.mockResolvedValue(true);
+    render(<AuthPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Забули пароль/ }));
+    fireEvent.change(screen.getByLabelText("Email для скидання"), {
+      target: { value: "alice@example.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Надіслати лист/ }));
+
+    const back = await screen.findByRole("button", {
+      name: /Назад до входу/,
+    });
+    expect(back).toBeTruthy();
+
+    fireEvent.click(back);
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("group", { name: /Скидання пароля/ }),
+      ).toBeNull();
+    });
+  });
+
+  it("auto-collapse forgot-панелі через 6 сек після успіху", async () => {
+    vi.useFakeTimers();
+    try {
+      requestPasswordResetMock.mockResolvedValue(true);
+      render(<AuthPage />);
+
+      fireEvent.click(screen.getByRole("button", { name: /Забули пароль/ }));
+      fireEvent.change(screen.getByLabelText("Email для скидання"), {
+        target: { value: "alice@example.com" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /Надіслати лист/ }));
+
+      // Чекаємо, поки `requestPasswordResetMock.mockResolvedValue(true)`
+      // зарезолвиться і forgotState стане "sent" — без цього таймер
+      // ще не запущено і advanceTimersByTime нічого не зробить.
+      await vi.waitFor(() => {
+        expect(
+          screen.queryByRole("button", { name: /Назад до входу/ }),
+        ).toBeTruthy();
+      });
+
+      vi.advanceTimersByTime(6000);
+
+      await vi.waitFor(() => {
+        expect(
+          screen.queryByRole("group", { name: /Скидання пароля/ }),
+        ).toBeNull();
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

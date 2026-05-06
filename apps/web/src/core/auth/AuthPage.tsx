@@ -1,4 +1,4 @@
-import { useState, type SyntheticEvent } from "react";
+import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 import { z } from "zod";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
@@ -459,6 +459,34 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
     setShowForgot((v) => !v);
   };
 
+  // Авто-згортання forgot-панелі після успіху (UX roast 2026-Q2 A14):
+  // confirmation-параграф висить безкінечно без цього — юзер не
+  // розуміє, що робити далі. Після 6 сек бездіяльності закриваємо
+  // панель і повертаємо логін-форму як default state. Кнопка «Назад до
+  // входу» дає ручний вихід раніше (`closeForgotPanel`).
+  const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (showForgot && forgotState === "sent") {
+      autoCloseTimerRef.current = setTimeout(() => {
+        setShowForgot(false);
+        setForgotState("idle");
+        setAuthError(null);
+      }, 6000);
+    }
+    return () => {
+      if (autoCloseTimerRef.current) {
+        clearTimeout(autoCloseTimerRef.current);
+        autoCloseTimerRef.current = null;
+      }
+    };
+  }, [showForgot, forgotState, setAuthError]);
+
+  const closeForgotPanel = () => {
+    setShowForgot(false);
+    setForgotState("idle");
+    setAuthError(null);
+  };
+
   const onAlreadyRegistered = () => {
     setMode("login");
   };
@@ -523,11 +551,22 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
                 className="text-xs text-text bg-brand-500/10 border border-brand-500/30 rounded-xl px-4 py-3 leading-relaxed space-y-2"
               >
                 {forgotState === "sent" ? (
-                  <p>
-                    Якщо такий email зареєстровано — ми відправили лист із
-                    посиланням для скидання пароля. Перевір вхідні та папку
-                    «Спам». Локальні дані на пристрої залишаються без змін.
-                  </p>
+                  <div className="space-y-3">
+                    <p>
+                      Якщо такий email зареєстровано — ми відправили лист із
+                      посиланням для скидання пароля. Перевір вхідні та папку
+                      «Спам». Локальні дані на пристрої залишаються без змін.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="md"
+                      onClick={closeForgotPanel}
+                      className="w-full"
+                    >
+                      Назад до входу
+                    </Button>
+                  </div>
                 ) : (
                   <>
                     <p>
