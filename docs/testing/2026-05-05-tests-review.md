@@ -5,7 +5,11 @@
 >
 > Repo: `Skords-01/Sergeant`. Тип: аналіз без змін у коді. Парний документ — [`2026-05-05-tests-pr-plan.md`](./2026-05-05-tests-pr-plan.md).
 >
-> **Зміни після початкового аудиту (Wave A прогрес):** PR-T01 (#1967, mobile floor), PR-T02 (#1970, sw exclude + e2e), PR-T03 (#1971, idb через fake-indexeddb), PR-T04 (#1992, ui utils 100%) — merged. PR-T05 (#1996, weekly-digest 95% lines/branches/fns) і PR-T06 (#2001, syncV2 no-DB unit) — open. Прогалини P0 #1, #2, #4, #5 з нижнього списку — частково або повністю закриті; floors у `vitest.config.{js,ts}` ще не підняті — це окремий PR після merge всієї Wave A.
+> **Зміни після початкового аудиту (Wave A прогрес):** PR-T01 (#1967, mobile floor), PR-T02 (#1970, sw exclude + e2e), PR-T03 (#1971, idb через fake-indexeddb), PR-T04 (#1992, ui utils 100%), PR-T05 (#1996, weekly-digest 95% lines/branches/fns), PR-T06 (#2001, syncV2 no-DB unit ~13% по файлу) — merged. Прогалини P0 #1, #2, #4, #5 — повністю або частково закриті.
+>
+> **Wave G прогрес (2026-05-06):** PR-T31 (#2015, `spendingVelocity` 0% → 100% lines/stmts/fns) та PR-T32 (#2019, `nutrition-domain` pure helpers 0% → 100% / 50% пакетного stmts) — open. Прогалина P2 #11 (insights/nutrition-domain) — частково закрита.
+>
+> Floors у `vitest.config.{js,ts}` ще не підняті — це окремий ratchet-PR після merge всієї Wave A + закриття T07.
 
 ## TL;DR
 
@@ -118,7 +122,7 @@ _До 2026-05-05 `coverageThreshold` був не сконфігуровано (`
    - **Status (2026-05-06): закрито** — варіант (b) реалізовано в [#1970](https://github.com/Skords-01/Sergeant/pull/1970): `src/sw/**` виключено з coverage, sw-smoke e2e розширений.
 
 2. **`apps/server/src/modules/digest/weekly-digest.ts`** — 0 тестів на 1 src-файл. Weekly digest формує важливий e-mail/повідомлення; регресії невидимі до релізу.
-   - **Status (2026-05-06): закрито у відкритому PR** — [#1996](https://github.com/Skords-01/Sergeant/pull/1996) дає 95.19% statements / 82.81% branches / 100% functions / 95.65% lines на цьому файлі (22 тести; Anthropic + memory-queue замоковано через `vi.mock`, без DB).
+   - **Status (2026-05-06): закрито (merged)** — [#1996](https://github.com/Skords-01/Sergeant/pull/1996) дає 95.19% statements / 82.81% branches / 100% functions / 95.65% lines на цьому файлі (22 тести; Anthropic + memory-queue замоковано через `vi.mock`, без DB).
 
 3. **AI-tool handlers (`apps/server/src/modules/nutrition/*` + `openclaw/{tools,write-tools}.ts`)** — гілки rolejob → Anthropic → DB, кожен — 0–15% покриття. Це поверхня, яка буде розростатися (нові tool definitions). Мінімум: для кожного tool — happy path + один failure path (Anthropic error / invalid args / БД-RLS). Таблиця:
 
@@ -134,7 +138,7 @@ _До 2026-05-05 `coverageThreshold` був не сконфігуровано (`
    | `openclaw/tools.ts`, `write-tools.ts` | низьке  | unit: registry, dispatch, write-перевірка авторизації            |
 
 4. **`apps/server/src/modules/sync/syncV2.ts`** — ~0–1% line coverage, при тому що це серверна сторона, симетрична до `apps/web/src/core/cloudSync/queue/` (де вже є Stryker з 64% mutation score). Сильна асиметрія: клієнт перевіряємо мутаціями, сервер — майже ніяк.
-   - **Status (2026-05-06): частково закрито у відкритому PR** — [#2001](https://github.com/Skords-01/Sergeant/pull/2001) додає 21 no-DB unit-тест: frozen-contract reject reasons, validation gates push/pull, idempotency-replay (duplicate-only batch), pull happy-path з coerce bigint→number і trim `X-Origin-Device-Id`, ROLLBACK + release при throw, без SSE-emit на failed COMMIT. Цим файлом ~13% lines/stmts; решта (DB-coupled apply-функції) вкривається `syncV2.integration.test.ts` під Testcontainers. Доведення `syncV2.ts` до ≥ 60% потребуватиме виокремлення pure-функцій з прямого `pool`/`PoolClient` access (запланована наступна ітерація).
+   - **Status (2026-05-06): частково закрито (merged)** — [#2001](https://github.com/Skords-01/Sergeant/pull/2001) додає 21 no-DB unit-тест: frozen-contract reject reasons, validation gates push/pull, idempotency-replay (duplicate-only batch), pull happy-path з coerce bigint→number і trim `X-Origin-Device-Id`, ROLLBACK + release при throw, без SSE-emit на failed COMMIT. Цим файлом ~13% lines/stmts; решта (DB-coupled apply-функції) вкривається `syncV2.integration.test.ts` під Testcontainers. Доведення `syncV2.ts` до ≥ 60% потребуватиме виокремлення pure-функцій з прямого `pool`/`PoolClient` access (запланована наступна ітерація — PR-T07).
 
 5. **`apps/mobile` без enforcement coverage.** 115 тестів — не мало, але немає `coverageThreshold` у `jest.config.js`, тож регресії не помітяться. Мінімум — додати floor навіть низький (наприклад 30/25/30/30) і fail CI на drift.
    - **Status (2026-05-06): закрито** — [#1967](https://github.com/Skords-01/Sergeant/pull/1967) ставить mobile-jest floor (lines 30 / branches 25 / fns 30 / stmts 30) і додає `test:coverage` script у CI lane `coverage`.
@@ -173,7 +177,9 @@ _До 2026-05-05 `coverageThreshold` був не сконфігуровано (`
 
 11. **Слабкі пакети за співвідношенням test/src:**
     - `packages/insights` — 3 тести / 13 src. Це cross-module аналітика, чисті функції; ідеально під property-based (fast-check).
+      - **Status (2026-05-06): частково закрито у відкритому PR** — [#2015](https://github.com/Skords-01/Sergeant/pull/2015) додає 13 тестів для `spendingVelocity.ts` (останній 0%-файл у `finance/`); пакету stmts 75% → 95%. Property-based — окрема картка PR-T35.
     - `packages/nutrition-domain` — 4 / 13. Найслабший з домен-пакетів.
+      - **Status (2026-05-06): частково закрито у відкритому PR** — [#2019](https://github.com/Skords-01/Sergeant/pull/2019) додає 67 тестів для 4 малих pure-helper-ів (`waterLog`, `nutritionFormat`, `nutritionPantries`, `nutritionPrefs`); пакету stmts 30.95% → 50.99%. Великі (`foodCategories`, `nutritionLog`, `shoppingList`) — окремі картки.
     - `packages/api-client` — 11 / 30. Бракує retry/timeout/auth-refresh boundary тестів.
     - `packages/routine-domain` — 9 / 19.
 

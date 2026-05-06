@@ -15,10 +15,12 @@
 | PR-T02  | SW coverage rebaseline (exclude + e2e harness)         | merged      | [#1970](https://github.com/Skords-01/Sergeant/pull/1970) — 2026-05-05 (варіант B) |
 | PR-T03  | `sergeantDb.ts` через `fake-indexeddb`                 | merged      | [#1971](https://github.com/Skords-01/Sergeant/pull/1971) — 2026-05-05             |
 | PR-T04  | `shared/lib/ui/{amountTone,export,perf}` юніти         | merged      | [#1992](https://github.com/Skords-01/Sergeant/pull/1992) — 2026-05-06             |
-| PR-T05  | `digest/weekly-digest` no-DB юніти                     | open        | [#1996](https://github.com/Skords-01/Sergeant/pull/1996)                          |
-| PR-T06  | `sync/syncV2` no-DB юніти                              | open        | [#2001](https://github.com/Skords-01/Sergeant/pull/2001)                          |
+| PR-T05  | `digest/weekly-digest` no-DB юніти                     | merged      | [#1996](https://github.com/Skords-01/Sergeant/pull/1996) — 2026-05-06             |
+| PR-T06  | `sync/syncV2` no-DB юніти (partial)                    | merged      | [#2001](https://github.com/Skords-01/Sergeant/pull/2001) — 2026-05-06             |
 | PR-T07  | `sync/syncV2.integration.test.ts` доповнення           | not started | —                                                                                 |
 | PR-T08+ | Wave B+ (Anthropic-mock harness, openclaw, nutrition…) | not started | —                                                                                 |
+| PR-T31  | `packages/insights` `spendingVelocity` юніти (partial) | open        | [#2015](https://github.com/Skords-01/Sergeant/pull/2015) — 2026-05-06             |
+| PR-T32  | `packages/nutrition-domain` pure helpers (partial)     | open        | [#2019](https://github.com/Skords-01/Sergeant/pull/2019) — 2026-05-06             |
 
 ## Як читати
 
@@ -324,18 +326,22 @@
 
 ### PR-T31 — Підняти `packages/insights` (3 → ~12 тестів)
 
+- **Status:** **open (partial)** ([#2015](https://github.com/Skords-01/Sergeant/pull/2015), 2026-05-06).
 - **Branch:** `devin/{ts}-insights-tests`
 - **Files:** `packages/insights/src/**/*.test.ts`.
 - **Scope:** unit-coverage для кожної pure-функції агрегації. Додати fast-check (див. T35).
 - **Size:** ~250 LoC.
 - **Deps:** —. Розблоковує T27.
+- **Досягнуто (2026-05-06):** на момент аудиту план вказував "3 тести", фактично було вже 43. PR закриває останній 0%-файл `spendingVelocity.ts`: 13 тестів, файл 0% → 100% lines/stmts/fns / 96.42% branches; пакету загалом 75% → 95% stmts. Решта (`fast-check` properties) переноситься в T35.
 
 ### PR-T32 — Підняти `packages/nutrition-domain` (4 → ~12)
 
+- **Status:** **open (partial)** ([#2019](https://github.com/Skords-01/Sergeant/pull/2019), 2026-05-06).
 - **Branch:** `devin/{ts}-nutrition-domain-tests`
 - **Files:** `packages/nutrition-domain/src/**/*.test.ts`.
 - **Size:** ~200 LoC.
 - **Deps:** —.
+- **Досягнуто (2026-05-06):** 67 нових тестів у 4 нових файлах: `waterLog`, `nutritionFormat`, `nutritionPantries`, `nutritionPrefs` — всі 4 з 0% → 100/93–97% lines. Пакету загалом stmts 30.95% → 50.99%, branches 31.39% → 53.57%. Великі untested файли (`foodCategories.ts` 219 LoC, `nutritionLog.ts` 316 LoC, `shoppingList.ts` 184 LoC) лишилися — окремі картки наступних хвиль.
 
 ### PR-T33 — Підняти `packages/api-client` (11 → ~20)
 
