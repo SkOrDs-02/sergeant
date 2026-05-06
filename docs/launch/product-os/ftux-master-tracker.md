@@ -46,7 +46,7 @@
 
 ## 1. TL;DR
 
-> **PR-status (snapshot 2026-05-06 09:00 UTC):** PR-00, PR-01, PR-02 + status-bump #1939, PR-03 (`pnpm bootstrap` #1943), PR-04 (`disciplined hero copy` #1944), **PR-05 (`demo mode as first-class CTA` #1986), PR-06 (`canonical Cyrillic naming sweep` #1998), PR-07 (`pwa install prompt banner` #2011)** — merged. PR-19 (paywall UX placement sketch → [`paywall-ux-placement.md`](./paywall-ux-placement.md)) — у роботі (#1989). PR-20 plan ([`paywall-implementation-plan.md`](./paywall-implementation-plan.md)) — у цьому PR; impl-кодинг розбитий на 4 sub-PR (20a/b/c/d ~510 LOC) і чекає 0010 phase 3 (`usePlan()` RQ-hook). З Wave 1 залишається лише PR-08 (cleanup — archive stale audits + delete `.replit`). Детально — §3 PR-план.
+> **PR-status (snapshot 2026-05-06 09:00 UTC):** PR-00, PR-01, PR-02 + status-bump #1939, PR-03 (`pnpm bootstrap` #1943), PR-04 (`disciplined hero copy` #1944), **PR-05 (`demo mode as first-class CTA` #1986), PR-06 (`canonical Cyrillic naming sweep` #1998), PR-07 (`pwa install prompt banner` #2011)**, PR-17 (license auto-gen — `pnpm licenses:check` у CI, [#516](https://github.com/Skords-01/Sergeant/pull/516) / [#517](https://github.com/Skords-01/Sergeant/pull/517) / [#518](https://github.com/Skords-01/Sergeant/pull/518)) — merged. PR-19 (paywall UX placement sketch → [`paywall-ux-placement.md`](./paywall-ux-placement.md)) — у роботі (#1989). PR-20 plan ([`paywall-implementation-plan.md`](./paywall-implementation-plan.md)) — у цьому PR; impl-кодинг розбитий на 4 sub-PR (20a/b/c/d ~510 LOC) і чекає 0010 phase 3 (`usePlan()` RQ-hook). З Wave 1 залишається лише PR-08 (cleanup — archive stale audits + delete `.replit`). Детально — §3 PR-план.
 >
 > **Module-readiness update 2026-05-05:** Fizruk shipped progress charts + exercise catalog + workout notes ([PR #19](https://github.com/Skords-01/Sergeant/pull/19)) і Workouts/Dashboard refactor + journal pagination ([PR #20](https://github.com/Skords-01/Sergeant/pull/20)) — інкорпоровано у §3.5 (FTUX-relevant infra) + §5.3 / §5.4 (Fizruk visual references); §4.1 розширено 6 hero copy variants для наступної ротації + §4.2 selection rubric.
 >
@@ -142,12 +142,12 @@
 
 ### 3.3. Хвиля 3 — Platform parity (Week 3-4, 4 PR)
 
-| PR        | Назва                                                    | LOC  | Deps | Метрика                                             |
-| --------- | -------------------------------------------------------- | ---- | ---- | --------------------------------------------------- |
-| **PR-15** | feat(mobile): posthog-react-native parity                | ~280 | —    | PostHog mobile-cohort > 0 events/day у production   |
-| **PR-16** | chore(a11y): screen-reader audit + fix sweep (5 mini-PR) | ~250 | —    | 0 axe-core violations + manual recording            |
-| **PR-17** | chore(licenses): auto-generated THIRD_PARTY_LICENSES.md  | ~120 | —    | License doc drift-free у наступному PR              |
-| **PR-18** | feat(whats-new): in-product release notes modal          | ~200 | —    | `d7_returning_user_engagement_with_whats_new ≥ 30%` |
+| PR        | Назва                                                    | LOC  | Deps | Метрика                                             | Стан                                                                                                                                                                                                                                                                       |
+| --------- | -------------------------------------------------------- | ---- | ---- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **PR-15** | feat(mobile): posthog-react-native parity                | ~280 | —    | PostHog mobile-cohort > 0 events/day у production   | ⏳ Wave 3                                                                                                                                                                                                                                                                  |
+| **PR-16** | chore(a11y): screen-reader audit + fix sweep (5 mini-PR) | ~250 | —    | 0 axe-core violations + manual recording            | ⏳ Wave 3                                                                                                                                                                                                                                                                  |
+| **PR-17** | chore(licenses): auto-generated THIRD_PARTY_LICENSES.md  | ~120 | —    | License doc drift-free у наступному PR              | ✅ Closed — [PR #516](https://github.com/Skords-01/Sergeant/pull/516) (generator + SBOM) + [PR #517](https://github.com/Skords-01/Sergeant/pull/517) (`pnpm licenses:check` у CI) + [PR #518](https://github.com/Skords-01/Sergeant/pull/518) (empty-SBOM staleness guard) |
+| **PR-18** | feat(whats-new): in-product release notes modal          | ~200 | —    | `d7_returning_user_engagement_with_whats_new ≥ 30%` | ⏳ Wave 3                                                                                                                                                                                                                                                                  |
 
 ### 3.4. Хвиля 4 — Paywall + Polish (Week 5-6, 4 PR)
 
@@ -421,7 +421,7 @@ slos:
 
 ### Документація
 
-- **`THIRD_PARTY_LICENSES.md`:** автогенерація через `license-checker` (PR-17).
+- **`THIRD_PARTY_LICENSES.md`:** ✅ автогенерація через `pnpm licenses:gen` / drift-check через `pnpm licenses:check` у CI ([PR-17 #516](https://github.com/Skords-01/Sergeant/pull/516) + [#517](https://github.com/Skords-01/Sergeant/pull/517) + [#518](https://github.com/Skords-01/Sergeant/pull/518); allowlist + dev-dependency filter живуть у `scripts/generate-licenses.mjs`).
 - **Архів стейл audit-tracker-ів:** `2026-04-28-ux-ui-audit.md`, `2026-04-28-ux-improvement-plan.md`, `2026-04-28-implementation-roadmap.md` → `docs/audits/archive/` (PR-08).
 - **`.replit`:** видалити (PR-08).
 - **What's new:** `docs/whats-new/` + `<WhatsNewModal />` (PR-18).
