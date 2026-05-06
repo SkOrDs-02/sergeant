@@ -414,7 +414,7 @@ CI gate: `vitest --coverage` + threshold (наприклад 70% lines) на cri
 | **Atlas** (atlasgo.io) | Schema-as-code, drift detection | $0 / $30/міс   | ⏳ pending — PR #11 `drizzle-schema-drift-ci.md` у stack-pulse-2026-05 (Drizzle drift CI без повного Atlas)                                                         |
 | **dbmate**             | Migrations CLI (lightweight)    | $0             | ⏳ not used — власний `apps/server/migrate.mjs` + sequential `NNN_*.sql` вже покриває                                                                               |
 | **squawk**             | Lint SQL migrations for safety  | $0             | ⏳ pending — власний `scripts/lint-migrations.mjs` вже ловить gaps; squawk додати для `DROP COLUMN` / `ALTER без CONCURRENTLY`                                      |
-| **Prisma**             | TS ORM з migrations             | $0             | ⏳ not used (Drizzle обраний, див. [`docs/planning/orm-drizzle-vs-kysely.md`](./orm-drizzle-vs-kysely.md))                                                          |
+| **Prisma**             | TS ORM з migrations             | $0             | ⏳ not used (Drizzle обраний, див. [`archive/orm-drizzle-vs-kysely.md`](./archive/orm-drizzle-vs-kysely.md))                                                        |
 | **Drizzle**            | TS ORM, simpler than Prisma     | $0             | ✅ done — `packages/db-schema` з PG + SQLite, drizzle-kit для schema generation; використовує `apps/server` + `apps/web` (CloudSync SQLite)                         |
 | **Kysely**             | Type-safe SQL builder, no ORM   | $0             | ⏳ not used (Drizzle обраний)                                                                                                                                       |
 
