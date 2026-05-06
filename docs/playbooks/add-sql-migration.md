@@ -30,7 +30,18 @@
 - Не роби gaps і не перейменовуй уже випущені migration files.
 - Для potentially destructive operations додай audit note або `ALLOW_DROP` escape hatch там, де це вимагає lint.
 
-### 3. Онови server/app code
+### 3. Онови Drizzle schema (обов'язково)
+
+Якщо міграція додає або видаляє таблицю / колонку, що моделюється в Drizzle:
+
+- Відкрий відповідний файл у `packages/db-schema/src/pg/`.
+- Дзеркально відобрази зміну: нова колонка → новий Drizzle field; DROP COLUMN → видали field.
+- Запусти `node scripts/check-schema-drift.mjs` локально — він повинен завершитись з кодом 0.
+- Якщо Drizzle навмисно не моделює цю таблицю/колонку (аналітика, observability, etc.) — додай запис до `WHITELIST` в `scripts/check-schema-drift.mjs` з коментарем-причиною.
+
+> **CI gate (PR-11):** крок «Drizzle schema ↔ SQL migration drift» в `ci.yml` провалить PR, якщо ця синхронізація пропущена.
+
+### 4. Онови server/app code
 
 - Додай нові поля в SQL queries, types і serializers.
 - Якщо response shape змінюється, синхронізуй `packages/api-client`.
@@ -49,8 +60,10 @@
 - [ ] `pnpm test`
 - [ ] `pnpm lint:migrations`
 - [ ] `pnpm db:migrate`
+- [ ] `node scripts/check-schema-drift.mjs` — виходить з кодом 0
 - [ ] Sequential numbering без gaps
 - [ ] Для destructive change описано two-phase rollout
+- [ ] Drizzle schema (`packages/db-schema/src/pg/`) оновлена або додано запис у whitelist
 
 ## When not to use this playbook
 

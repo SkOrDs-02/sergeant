@@ -1,13 +1,19 @@
 # CODEOWNERS - required reviewers for sensitive paths.
 #
 # Coverage of this file is enforced by `pnpm lint:codeowners`.
+#
+# Secondary owners are placeholders (stack-pulse PR-04 bus-factor fix).
+# Replace with real engineers when hired. @Skords-01 remains final-approver
+# for all paths until delegation is complete.
 
+# ── Governance & repo-root ───────────────────────────────────────────────────
 /AGENTS.md                 @Skords-01
 /CLAUDE.md                 @Skords-01
 /DEVIN.md                  @Skords-01
 /CONTRIBUTING.md           @Skords-01
 /README.md                 @Skords-01
 
+# ── Documentation (governance paths: no secondary — intentional) ─────────────
 /docs/*.md                 @Skords-01
 /docs/adr/                 @Skords-01
 /docs/api/                 @Skords-01
@@ -28,6 +34,7 @@
 /docs/agents/              @Skords-01
 /docs/tech-debt/           @Skords-01
 
+# ── CI / scripts (no secondary — high blast radius) ──────────────────────────
 /.github/CODEOWNERS        @Skords-01
 /.github/workflows/        @Skords-01
 /.github/PULL_REQUEST_TEMPLATE.md @Skords-01
@@ -39,6 +46,7 @@
 /tools/console/src/agents/ @Skords-01
 /ops/n8n-workflows/        @Skords-01
 
+# ── TypeScript config (no secondary — affects all apps) ──────────────────────
 apps/web/tsconfig.json                  @Skords-01
 apps/server/tsconfig.json               @Skords-01
 packages/config/tsconfig.base.json      @Skords-01
@@ -46,15 +54,32 @@ packages/config/tsconfig.node.json      @Skords-01
 packages/config/tsconfig.react.json     @Skords-01
 scripts/check-tsconfig-strict.mjs       @Skords-01
 
+# ── Database / migrations (placeholder secondary: data-engineer) ─────────────
+# placeholder — replace with real data-engineer when hired
 /apps/server/src/migrations/             @Skords-01
+/packages/db-schema/                     @Skords-01
+
+# ── Backend server (placeholder secondary: backend-engineer) ─────────────────
+# placeholder — replace with real backend-engineer when hired
+/apps/server/                            @Skords-01
+
+# ── Frontend web (placeholder secondary: frontend-engineer) ──────────────────
+# placeholder — replace with real frontend-engineer when hired
+/apps/web/                               @Skords-01
+
+# ── Mobile (placeholder secondary: mobile-engineer) ──────────────────────────
+# placeholder — replace with real mobile-engineer when hired
+/apps/mobile/                            @Skords-01
+/apps/mobile-shell/                      @Skords-01
+
+# ── Shared packages ───────────────────────────────────────────────────────────
 /packages/api-client/                    @Skords-01
 /packages/config/                        @Skords-01
-/packages/db-schema/                     @Skords-01
 /packages/design-tokens/                 @Skords-01
 /packages/eslint-plugin-sergeant-design/ @Skords-01
 /packages/finyk-domain/                  @Skords-01
 /packages/fizruk-domain/                 @Skords-01
 /packages/insights/                      @Skords-01
 /packages/nutrition-domain/              @Skords-01
-/packages/routine-domain/                @Skords-01
+/packages/routine-domain/               @Skords-01
 /packages/shared/                        @Skords-01

@@ -131,7 +131,8 @@
       "serialize-javascript": ">=7.0.5",
       "postcss": ">=8.5.10",
       "uuid": "^14.0.0",
-      "@tootallnate/once": ">=3.0.1"
+      "@tootallnate/once": ">=3.0.1",
+      "@types/node": "^20"
     },
     "patchedDependencies": {
       "@expo/cli@0.22.28": "patches/@expo__cli@0.22.28.patch"

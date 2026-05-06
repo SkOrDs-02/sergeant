@@ -121,6 +121,15 @@ jobs:
         # scripts/check-codeowners-coverage.mjs.
         run: pnpm lint:codeowners
 
+      - name: Drizzle schema ↔ SQL migration drift (PR-11)
+        # Static analysis: verifies that every table/column in
+        # packages/db-schema/src/pg/ is present in the SQL migrations under
+        # apps/server/src/migrations/ and vice-versa (for Drizzle-tracked
+        # tables). Fails the PR when a SQL migration adds/removes a column
+        # without a matching Drizzle schema update, or vice-versa.
+        # Intentional divergences → whitelist in scripts/check-schema-drift.mjs.
+        run: node scripts/check-schema-drift.mjs
+
       - name: Discoverability (every role reaches its target in ≤2 hops)
         # Walks the markdown link graph from documented entrypoints
         # (README.md, AGENTS.md, docs/agents/onboarding.md,

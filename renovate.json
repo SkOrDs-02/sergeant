@@ -39,8 +39,15 @@
   },
   "packageRules": [
     {
-      "description": "All @types/* together (type-only updates rarely break anything)",
+      "description": "Pin @types/node to Node 20 LTS major — production runtime is Node 20 (Volta). Node 21+ types describe APIs that don't exist at runtime. See ADR-0050 and pnpm.overrides.",
+      "matchPackageNames": ["@types/node"],
+      "allowedVersions": "<21",
+      "groupName": "type definitions"
+    },
+    {
+      "description": "All other @types/* together (type-only updates rarely break anything)",
       "matchPackageNames": ["/^@types//"],
+      "excludePackageNames": ["@types/node"],
       "groupName": "type definitions",
       "automerge": false
     },

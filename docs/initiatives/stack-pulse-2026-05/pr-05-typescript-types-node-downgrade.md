@@ -1,7 +1,7 @@
 # PR-05: `@types/node` downgrade до 20.x + ADR на TS 6 vs 5.x
 
-> **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
-> **Status:** Planned
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-11-06.
+> **Status:** Closed — merged (ADR-0050, @types/node pinned to ^20.19.0, pnpm.overrides + renovate rule)
 
 |              |                                                             |
 | ------------ | ----------------------------------------------------------- |
