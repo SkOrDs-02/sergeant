@@ -1,53 +1,37 @@
 /**
- * Lightweight read-only hook that feeds a future `SyncStatusIndicator`.
- * Mirror of `apps/web/src/core/cloudSync/hook/useSyncStatus.ts` — same
- * `{ dirtyCount, queuedCount, isOnline }` shape so the ported
- * indicator component can consume it verbatim.
+ * Lightweight read-only hook that feeds `SyncStatusIndicator`.
  *
- * Refresh triggers:
- *   - `SYNC_EVENT`        — a mutation was enqueued
- *   - `SYNC_STATUS_EVENT` — dirty/queue/modified-times persisted
- *   - NetInfo offline → online transitions
+ * Pre-PR-#052c this hook читало live v1 state — `dirtyModules` map, the
+ * MMKV-backed `offlineQueue`, NetInfo-driven online flag — і пушило
+ * refresh-events через v1 emitter. Усе те дерево пішло разом із
+ * engine-ом у PR #052c (cloudSync v1 cleanup mirror того, що web
+ * зробив у PR #052b). Mobile v2 op-log writer-runtime ще не
+ * прокинутий у boot path (TODO follow-up; web counterpart —
+ * `apps/web/src/core/syncEngine/syncEngineWriter.ts`), тому повертаємо
+ * stable idle-shape: `dirtyCount = 0`, `queuedCount = 0`,
+ * `isOnline = true`. Це робить `SyncStatusIndicator` рендер у
+ * "Синк: on" pill (status === "idle"), що відповідає реальному стану
+ * клієнта після ADR-0047 client cut-over (v1 нічого не пушить,
+ * v2 capture-ить мутації прямо в SQLite outbox через dual-write
+ * адаптери, без UI-counter-ів).
+ *
+ * Shape лишається такий самий, як у v1, щоб `SyncStatusIndicator.tsx`
+ * не довелося міняти. Майбутній mobile v2 writer-runtime cap-ить ці
+ * поля з outbox `getStatus()` так само, як web hook читає
+ * `runtime.getStatus().pending` — за тією самою сигнатурою.
  */
-import { useEffect, useState } from "react";
-import { onSyncEvent, SYNC_EVENT, SYNC_STATUS_EVENT } from "../events";
-import { isOnline, onOnlineChange, startOnlineTracker } from "../net/online";
-import { getOfflineQueue } from "../queue/offlineQueue";
-import { getDirtyModules } from "../state/dirtyModules";
-
 export interface SyncStatusState {
   dirtyCount: number;
   queuedCount: number;
   isOnline: boolean;
 }
 
-function snapshot(): SyncStatusState {
-  return {
-    dirtyCount: Object.keys(getDirtyModules()).length,
-    queuedCount: getOfflineQueue().length,
-    isOnline: isOnline(),
-  };
-}
+const idleSnapshot: SyncStatusState = {
+  dirtyCount: 0,
+  queuedCount: 0,
+  isOnline: true,
+};
 
 export function useSyncStatus(): SyncStatusState {
-  const [state, setState] = useState<SyncStatusState>(snapshot);
-
-  useEffect(() => {
-    const refresh = () => setState(snapshot());
-
-    refresh();
-    const unsubTracker = startOnlineTracker();
-    const unsubStatus = onSyncEvent(SYNC_STATUS_EVENT, refresh);
-    const unsubSync = onSyncEvent(SYNC_EVENT, refresh);
-    const unsubOnline = onOnlineChange(refresh);
-
-    return () => {
-      unsubStatus();
-      unsubSync();
-      unsubOnline();
-      unsubTracker();
-    };
-  }, []);
-
-  return state;
+  return idleSnapshot;
 }

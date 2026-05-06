@@ -21,7 +21,7 @@
  */
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import type { Query } from "@tanstack/react-query";
-import { isSensitiveQueryKey } from "@sergeant/shared";
+import { isSensitiveQueryKey, STORAGE_KEYS } from "@sergeant/shared";
 
 import {
   _getMMKVInstance,
@@ -29,7 +29,8 @@ import {
   safeRemoveLS,
   safeWriteLS,
 } from "@/lib/storage";
-import { QUERY_CACHE_KEY } from "../config";
+
+const QUERY_CACHE_KEY = STORAGE_KEYS.MOBILE_QUERY_CACHE;
 
 export const mmkvSyncStorage = {
   getItem: (key: string): string | null => safeReadStringLS(key),

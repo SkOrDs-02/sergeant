@@ -1,10 +1,30 @@
 /**
- * Shared types for the mobile cloud-sync subsystem. Mirrors
- * `apps/web/src/core/cloudSync/types.ts` 1:1 so both client codebases
- * speak the same vocabulary when talking to the server's
- * `/api/v1/sync/*` endpoints (payload shapes are identical).
+ * Cloud-sync types (mobile) — лишилися лише ті, що потрібні
+ * `useCloudSync` stub (PR #052a → ADR-0047) і `SyncStatusIndicator`
+ * (UI-pill не зник, бо v2 op-log writer теж може кидати помилки і
+ * вони адаптуються в цей shape перед прокидом у toast).
+ *
+ * Решта типів (`SyncCallbacks`, `EngineArgs`, `ModulePayload`,
+ * `ServerModuleResult`, `PushAllResponse`, `PullAllModuleBody`,
+ * `PullAllResponse`, `QueuePushEntry`, `DeadLetterEntry`) обслуговували
+ * v1 engine + offline-queue + dead-letter mover і пішли разом із
+ * `engine/`, `queue/`, `state/` дерева в PR #052c.
  */
 
+/**
+ * Public shape exposed by the (now-stub) `useCloudSync` hook so що
+ * `CloudSyncProvider.tsx` / `SyncStatusOverlay.tsx` продовжували
+ * type-check-итись після ADR-0047 client cut-over. Реальні переходи
+ * стейт-машини більше не відбуваються — хук завжди повертає `"idle"`.
+ *
+ * Колишній intent (для history-sanity):
+ *   idle   → dirty            (local write marked a module dirty)
+ *   dirty  → queued           (offline enqueue before server reached)
+ *   *      → syncing          (onStart)
+ *   syncing → success         (onSuccess)
+ *   syncing → error           (onError)
+ *   success|error → idle      (onSettled, if nothing new is queued)
+ */
 export type SyncState =
   | "idle"
   | "dirty"
@@ -13,81 +33,19 @@ export type SyncState =
   | "success"
   | "error";
 
+/**
+ * Normalized error shape exposed to the UI. v2 op-log writer (mobile
+ * runtime is wired in a follow-up; web counterpart is
+ * `apps/web/src/core/syncEngine/syncEngineWriter.ts`) maps its raw
+ * fetch failures into this shape before handing them off to the toast
+ * surface — `retryable` is `true` for transport / 5xx errors and
+ * `false` for 4xx / parse so the CTA branch never loops on an
+ * unrecoverable state.
+ */
 export interface SyncError {
   message: string;
   type: "network" | "server" | "unknown";
   retryable: boolean;
-}
-
-export interface SyncCallbacks {
-  onStart(): void;
-  onSuccess(when: Date): void;
-  onError(message: string): void;
-  onErrorRaw?(err: unknown): void;
-  onSettled(): void;
-}
-
-export interface EngineArgs extends SyncCallbacks {
-  user: CurrentUser | null | undefined;
-}
-
-export interface ModulePayload {
-  data: Record<string, unknown>;
-  clientUpdatedAt: string;
-}
-
-export interface ServerModuleResult {
-  version?: number;
-  conflict?: boolean;
-  error?: string;
-  ok?: boolean;
-}
-
-export interface PushAllResponse {
-  results?: Record<string, ServerModuleResult>;
-}
-
-export interface PullAllModuleBody {
-  data?: Record<string, unknown>;
-  version?: number;
-  serverUpdatedAt?: string;
-}
-
-export interface PullAllResponse {
-  modules?: Record<string, PullAllModuleBody>;
-}
-
-export interface QueuePushEntry {
-  type: "push";
-  ts: string;
-  modules: Record<string, ModulePayload>;
-  /**
-   * PR #040 — replay attempt counter. Bumps once per `replayOfflineQueue`
-   * batch that ultimately threw (after `retryAsync`'s inner exponential-
-   * backoff retries already drained). Mirrors web exactly so cross-platform
-   * sync diagnostics share the same vocabulary. `undefined` is treated as
-   * `0` for backwards compat with entries written by pre-PR-#040 code.
-   */
-  attemptCount?: number;
-  /** Last error message seen on a failed replay batch, for debug only. */
-  lastError?: string;
-  /** ISO timestamp of the last failed replay attempt for this entry. */
-  lastAttemptAt?: string;
-}
-
-export type QueueEntry = QueuePushEntry;
-
-/**
- * Dead-letter store entry — produced when a `QueuePushEntry` exceeds
- * `MAX_QUEUE_ATTEMPTS` consecutive failed replay batches. The original
- * entry is preserved verbatim; `finalError` carries the message from
- * the last failure, `deadLetteredAt` is the move timestamp.
- */
-export interface DeadLetterEntry {
-  type: "dead-letter";
-  entry: QueuePushEntry;
-  finalError: string;
-  deadLetteredAt: string;
 }
 
 export interface CurrentUser {
