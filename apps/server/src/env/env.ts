@@ -13,11 +13,98 @@ import { parseKeyRing } from "../lib/keyRing.js";
  *   import { env } from "../env/env.js";
  *   const pool = new Pool({ connectionString: env.DATABASE_URL });
  *
- * Env-змінні, що вже валідуються окремо (`betterAuthEnv.ts`), теж присутні
- * для повноти документації, але їхня startup-логіка не дублюється.
+ * Після уніфікації з PR-01 (stack-pulse-2026-05) цей файл — єдине джерело
+ * істини для всіх server-side env-змінних. `apps/server/src/env.ts` є
+ * тонким re-export-ом поверх цього файлу; CI-гард
+ * `scripts/check-env-single-source.mjs` блокує появу нових `process.env`-
+ * доступів поза цим файлом (з винятками для scripts/, env/betterAuthEnv.ts
+ * та декількох lifecycle-bootstrap-файлів).
+ *
+ * Better-Auth-specific assertions живуть окремо у `betterAuthEnv.ts`,
+ * бо вони викликаються окремо в lifecycle-і (див. `index.ts`); вони реад-онли
+ * читають `process.env` і не дублюють env-варів.
  */
 
 const coerceInt = z.coerce.number().int();
+
+/**
+ * Безпечний int-fallback — береже бекяп ризику production-startup-fail-у
+ * від некоректно виставленої env-змінної (legacy-семантика `parseIntEnv`):
+ * `"foo"` → default, порожнє/`undefined` → default. Для суворої валідації
+ * (fail-fast) окремих полів використовуйте `coerceInt.default(...)`.
+ */
+const intFromEnv = (defaultValue: number) =>
+  z
+    .string()
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === "") return defaultValue;
+      const n = Number.parseInt(v, 10);
+      return Number.isNaN(n) ? defaultValue : n;
+    });
+
+/**
+ * `parseFloatEnv`-семантика — NaN guard критичний бо `prom-client` Gauge.set(NaN)
+ * кидає (див. `RAILWAY_MONTHLY_COST_USD` та інші cost-метрики).
+ */
+const floatFromEnv = (defaultValue: number) =>
+  z
+    .string()
+    .optional()
+    .transform((v) => {
+      if (v === undefined || v === "") return defaultValue;
+      const n = Number.parseFloat(v);
+      return Number.isFinite(n) ? n : defaultValue;
+    });
+
+/**
+ * `parseBoolEnv`-семантика: `"true"|"1"` → true, `"false"|"0"` → false,
+ * інакше — default. НЕ використовуй `z.coerce.boolean()`: вона трактує
+ * будь-який non-empty string як `true` (включно зі стрічкою `"false"`).
+ */
+const boolFromEnv = (defaultValue: boolean) =>
+  z
+    .string()
+    .optional()
+    .transform((v) => {
+      if (v === undefined) return defaultValue;
+      const lower = v.toLowerCase();
+      if (lower === "true" || lower === "1") return true;
+      if (lower === "false" || lower === "0") return false;
+      return defaultValue;
+    });
+
+/** Без transform-у: використовується де env-вар живе як-є string fallback на "". */
+const stringWithDefault = (defaultValue: string) =>
+  z
+    .string()
+    .optional()
+    .transform((v) => v ?? defaultValue);
+
+/**
+ * URL-валідне поле, що толерує `undefined` / порожній рядок як «не задано».
+ * Емуляція legacy `process.env["FOO"] || ""` семантики: коли рядок є —
+ * валідуємо як URL, інакше повертаємо `""`. Тести нерідко передають
+ * пустий рядок щоб перевірити fallback-логіку — `.url()` сам по собі
+ * це не пропускає.
+ */
+const optionalUrl = () =>
+  z
+    .string()
+    .optional()
+    .transform((v) => v ?? "")
+    .refine(
+      (v) => {
+        if (v === "") return true;
+        try {
+          new URL(v);
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      { message: "Invalid URL" },
+    );
 
 const envSchema = z.object({
   // ── Core ────────────────────────────────────────────────────────────
@@ -44,9 +131,23 @@ const envSchema = z.object({
    */
   TRUST_PROXY: z.string().optional(),
 
+  /**
+   * Hostname binding для HTTP-сервера. `0.0.0.0` слухає на всіх інтерфейсах
+   * (потрібно у containerized deploy-і); `127.0.0.1` — лише loopback.
+   */
+  HOST: stringWithDefault("0.0.0.0"),
+  /** Global request timeout in ms. 0 = disabled. */
+  REQUEST_TIMEOUT_MS: intFromEnv(120_000),
+  /** Enable response compression (gzip/br). */
+  COMPRESSION_ENABLED: boolFromEnv(true),
+
   // ── Database ────────────────────────────────────────────────────────
-  /** Postgres connection string. Обов'язкова для всього, окрім health-check. */
-  DATABASE_URL: z.string().url().optional(),
+  /**
+   * Postgres connection string. Обов'язкова для всього, окрім health-check.
+   * Порожнє значення трактується як "не сконфігуровано" (`assertStartupEnv`
+   * кидає помилку у production).
+   */
+  DATABASE_URL: optionalUrl(),
   /**
    * Pooled Postgres URL (pgBouncer / Supavisor / Neon proxy). PR #046.
    *
@@ -59,7 +160,7 @@ const envSchema = z.object({
    * pool ходить напряму через `DATABASE_URL`. Деталі деплою — у
    * `docs/runbooks/database-connection-pooling.md`.
    */
-  DATABASE_URL_POOL: z.string().url().optional(),
+  DATABASE_URL_POOL: optionalUrl(),
   /**
    * Read-replica Postgres URL (PR #047 — analytics offload).
    *
@@ -71,15 +172,33 @@ const envSchema = z.object({
    * без replica працюють так, як і раніше. Acceptable replication lag
    * target: < 5s p99. Деталі — `docs/runbooks/postgres-read-replica.md`.
    */
-  DATABASE_URL_REPLICA: z.string().url().optional(),
+  DATABASE_URL_REPLICA: optionalUrl(),
   /** Максимум з'єднань у pg Pool. */
-  PG_POOL_MAX: coerceInt.positive().default(10),
+  PG_POOL_SIZE: intFromEnv(10),
+  /** PG connect timeout (мс). */
+  PG_CONNECTION_TIMEOUT_MS: intFromEnv(5_000),
+  /** PG idle timeout (мс). */
+  PG_IDLE_TIMEOUT_MS: intFromEnv(30_000),
+  /** PG statement timeout (мс) — захист від runaway queries. */
+  PG_STATEMENT_TIMEOUT_MS: intFromEnv(30_000),
+  /** Max retries для transient DB errors. */
+  DB_MAX_RETRIES: intFromEnv(3),
   /** Поріг повільного запиту (мс) для логування та метрики. */
   DB_SLOW_MS: coerceInt.positive().default(200),
+  /** Slow query threshold for `db.ts` (legacy alias of DB_SLOW_MS). */
+  SLOW_QUERY_THRESHOLD_MS: intFromEnv(100),
+  /** Toggle slow-query logging (>SLOW_QUERY_THRESHOLD_MS). */
+  LOG_SLOW_QUERIES: boolFromEnv(true),
 
   // ── Redis ───────────────────────────────────────────────────────────
   /** Redis URL для глобального rate-limit. Fallback — in-memory per-process. */
-  REDIS_URL: z.string().optional(),
+  REDIS_URL: stringWithDefault(""),
+  /** Max reconnect attempts before giving up. */
+  REDIS_MAX_RETRIES: intFromEnv(10),
+  /** Initial reconnect delay (мс). */
+  REDIS_RECONNECT_DELAY_MS: intFromEnv(100),
+  /** Max reconnect delay (мс) — exponential backoff cap. */
+  REDIS_MAX_RECONNECT_DELAY_MS: intFromEnv(3_000),
 
   // ── Rate limit ──────────────────────────────────────────────────────
   /**
@@ -198,7 +317,23 @@ const envSchema = z.object({
 
   // ── AI (Anthropic) ─────────────────────────────────────────────────
   /** API-ключ для Anthropic Claude. Без нього /api/chat повертає 500. */
-  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_API_KEY: stringWithDefault(""),
+  /** AI request timeout (мс). */
+  AI_TIMEOUT_MS: intFromEnv(180_000),
+  /** Max AI retries on transient errors. */
+  AI_MAX_RETRIES: intFromEnv(2),
+  /** Max auto-continuation loops before stopping mid-stream (див. AGENTS.md). */
+  CHAT_MAX_TEXT_CONTINUATIONS: intFromEnv(3),
+  /** Anthropic circuit breaker: failures before opening. */
+  AI_CIRCUIT_BREAKER_THRESHOLD: intFromEnv(5),
+  /** Anthropic circuit breaker: half-open test interval (мс). */
+  AI_CIRCUIT_BREAKER_RESET_MS: intFromEnv(30_000),
+  /** AI-quota DB-circuit-breaker: errors threshold. */
+  AI_QUOTA_CIRCUIT_THRESHOLD: intFromEnv(5),
+  /** AI-quota DB-error sliding window (мс). */
+  AI_QUOTA_CIRCUIT_WINDOW_MS: intFromEnv(60_000),
+  /** AI-quota breaker open duration (мс). */
+  AI_QUOTA_CIRCUIT_OPEN_MS: intFromEnv(300_000),
   /**
    * API-ключ Groq для голосової транскрипції (`/api/transcribe`).
    * Без нього endpoint повертає 503; фронт автоматично відкочується
@@ -267,19 +402,19 @@ const envSchema = z.object({
 
   // ── Email ──────────────────────────────────────────────────────────
   /** Resend API key. Без нього email (password reset, verification) скіпається. */
-  RESEND_API_KEY: z.string().optional(),
+  RESEND_API_KEY: stringWithDefault(""),
   /** Адреса відправника (default: Sergeant <onboarding@resend.dev>). */
   RESEND_FROM: z.string().optional(),
 
   // ── Observability ──────────────────────────────────────────────────
   /** Sentry DSN. Без нього Sentry вимкнений (Noop SDK). */
-  SENTRY_DSN: z.string().optional(),
+  SENTRY_DSN: stringWithDefault(""),
   SENTRY_ENVIRONMENT: z.string().optional(),
   SENTRY_RELEASE: z.string().optional(),
   /** `0.0`–`1.0` sampling rate для Sentry performance traces. */
   SENTRY_TRACES_SAMPLE_RATE: z.string().optional(),
   /** Pino log level override (trace, debug, info, warn, error, fatal). */
-  LOG_LEVEL: z.string().optional(),
+  LOG_LEVEL: stringWithDefault("info"),
   /** `"1"` — human-readable pino-pretty output. */
   LOG_PRETTY: z.string().optional(),
   /** Bearer token для захисту `GET /metrics`. */
@@ -365,6 +500,125 @@ const envSchema = z.object({
   SHUTDOWN_GRACE_MS: coerceInt.nonnegative().default(15_000),
   /** Hard-timeout (мс) — process.exit якщо shutdown зависне. */
   SHUTDOWN_HARD_TIMEOUT_MS: coerceInt.nonnegative().default(25_000),
+
+  // ── Internal / machine-to-machine ──────────────────────────────────
+  /** Bearer token for `/api/internal/*` (n8n workflows). */
+  INTERNAL_API_KEY: stringWithDefault(""),
+  /** Monobank user-token (legacy single-tenant integration; webhook prefers `/api/mono/connect`). */
+  MONO_TOKEN: stringWithDefault(""),
+
+  // ── Rate limiting (global, non-auth) ────────────────────────────────
+  /** Global rate limit: requests per window. */
+  RATE_LIMIT_MAX: intFromEnv(100),
+  /** Global rate limit: window size in seconds. */
+  RATE_LIMIT_WINDOW_SEC: intFromEnv(60),
+  /** Auth rate limit: attempts per window. */
+  AUTH_RATE_LIMIT_MAX: intFromEnv(5),
+  /** Auth rate limit: window size in seconds. */
+  AUTH_RATE_LIMIT_WINDOW_SEC: intFromEnv(900),
+
+  // ── Sync audit (PR #005 / Stage 0) ─────────────────────────────────
+  /** Comma-separated allow-list of `user.id` для cross-user `/api/sync/audit` запитів. */
+  SYNC_AUDIT_ADMIN_USER_IDS: stringWithDefault(""),
+
+  // ── Mono AI enrichment worker ──────────────────────────────────────
+  /** Запускати polling-консьюмера `mono_ai_enrichment_queue` у тому ж процесі що API. */
+  MONO_ENRICHMENT_WORKER_ENABLED: boolFromEnv(false),
+  /** Скільки row-ів забирати за один tick. */
+  MONO_ENRICHMENT_BATCH_SIZE: intFromEnv(5),
+  /** Інтервал між тиками polling-loop (мс). */
+  MONO_ENRICHMENT_INTERVAL_MS: intFromEnv(5_000),
+  /** Максимум спроб до того, як queue.row.status='failed'. */
+  MONO_ENRICHMENT_MAX_ATTEMPTS: intFromEnv(5),
+
+  // ── AI memory (pgvector + Voyage embeddings, ADR-0028) ─────────────
+  /** Майстер-вимикач AI memory pipeline. */
+  AI_MEMORY_ENABLED: boolFromEnv(false),
+  /** Voyage AI API key. */
+  VOYAGE_API_KEY: stringWithDefault(""),
+  /** Voyage embedding model. `voyage-3.5-lite` — 1024-d default. */
+  VOYAGE_EMBEDDING_MODEL: stringWithDefault("voyage-3.5-lite"),
+  /** Розмірність embedding-вектора (має співпадати з HALFVEC у міграції 025). */
+  VOYAGE_EMBEDDING_DIM: intFromEnv(1024),
+  /** Internal semver embedding-схеми (зміна → re-embed існуючих row-ів). */
+  AI_MEMORY_EMBEDDING_VERSION: stringWithDefault("1"),
+  /** Voyage HTTP timeout (мс). */
+  VOYAGE_TIMEOUT_MS: intFromEnv(15_000),
+  /** Voyage max retries on transient errors. */
+  VOYAGE_MAX_RETRIES: intFromEnv(2),
+  /** Voyage batch size (≤128, sweet-spot 32). */
+  VOYAGE_BATCH_SIZE: intFromEnv(32),
+  /** HNSW search-time `ef_search` для ANN-запитів. */
+  AI_MEMORY_HNSW_EF_SEARCH: intFromEnv(40),
+  /** Default top-K для retrieval. */
+  AI_MEMORY_TOP_K: intFromEnv(8),
+  /** Top-K для автоматичного RAG-injection у `/api/chat`. 0 → RAG вимкнений. */
+  AI_MEMORY_RAG_TOP_K: intFromEnv(4),
+  /** Hard timeout for the RAG Voyage + pgvector round-trip (мс). */
+  AI_MEMORY_RAG_TIMEOUT_MS: intFromEnv(1_500),
+  /** Concurrent worker-jobs для AI memory ingestion. */
+  AI_MEMORY_INGEST_CONCURRENCY: intFromEnv(4),
+  /** Max content-length у `MemoryIngestPayload.content` (символи). */
+  AI_MEMORY_INGEST_MAX_CONTENT_LEN: intFromEnv(4_000),
+  /** Per-job BullMQ-attempt count для AI memory ingestion. */
+  AI_MEMORY_INGEST_ATTEMPTS: intFromEnv(5),
+
+  // ── OpenClaw v0 — Telegram-only co-founder bot (ADR-0031) ──────────
+  /** Better Auth user.id founder-а. */
+  OPENCLAW_FOUNDER_USER_ID: stringWithDefault(""),
+  /** Денний USD cap на Anthropic-token-и через OpenClaw (string — NUMERIC у БД). */
+  OPENCLAW_DAILY_USD_BUDGET: stringWithDefault("5"),
+  /** Hard cap на Plan→Act→Reflect ітерації у одному виклику. */
+  OPENCLAW_MAX_ITERATIONS: intFromEnv(8),
+  /** Daily ritual schedule (`HH:MM TZ`). */
+  OPENCLAW_DAILY_MORNING_AT: stringWithDefault("08:30 Europe/Kyiv"),
+  /** Weekly review schedule (`DOW HH:MM TZ`). */
+  OPENCLAW_WEEKLY_REVIEW_AT: stringWithDefault("Fri 18:00 Europe/Kyiv"),
+  /** Monthly OKR schedule (`D HH:MM TZ`). */
+  OPENCLAW_MONTHLY_OKR_AT: stringWithDefault("1 09:00 Europe/Kyiv"),
+  /** Broadcast policy: `dm` | `digest` | `all`. */
+  OPENCLAW_BROADCAST_MODE: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? "digest").toLowerCase() as "dm" | "digest" | "all"),
+  /** Feature flag for the GitHub App auth-flow (PR-06 Phase 2). */
+  OPENCLAW_USE_GITHUB_APP: boolFromEnv(true),
+  /** GitHub App ID (numeric, stored as string). */
+  OPENCLAW_GITHUB_APP_ID: stringWithDefault(""),
+  /** GitHub App private key (PEM, may be `\\n`-escaped). */
+  OPENCLAW_GITHUB_APP_PRIVATE_KEY: stringWithDefault(""),
+  /** GitHub App installation id (numeric, stored as string). */
+  OPENCLAW_GITHUB_APP_INSTALLATION_ID: stringWithDefault(""),
+  /** Repo target для decision PR-ів. */
+  OPENCLAW_GITHUB_REPO: stringWithDefault("Skords-01/Sergeant"),
+  /** Default branch у repo (для decision PR-ів). */
+  OPENCLAW_GITHUB_BASE_BRANCH: stringWithDefault("main"),
+
+  // ── PR-33 — Cost monitoring dashboard ──────────────────────────────
+  /** Railway infra subscription monthly cost (USD). 0/empty → не репортимо. */
+  RAILWAY_MONTHLY_COST_USD: floatFromEnv(0),
+  /** Railway plan tier label (`hobby` | `pro` | `team` | `enterprise`). */
+  RAILWAY_PLAN: stringWithDefault("hobby"),
+  /** Vercel hosting monthly cost (USD). */
+  VERCEL_MONTHLY_COST_USD: floatFromEnv(0),
+  /** Vercel plan tier (`hobby` | `pro` | `enterprise`). */
+  VERCEL_PLAN: stringWithDefault("hobby"),
+  /** PostHog analytics monthly cost (USD). */
+  POSTHOG_MONTHLY_COST_USD: floatFromEnv(0),
+  /** PostHog plan tier (`free` | `pay-as-you-go` | `scale` | `enterprise`). */
+  POSTHOG_PLAN: stringWithDefault("free"),
+  /** Sentry monthly cost (USD). */
+  SENTRY_MONTHLY_COST_USD: floatFromEnv(0),
+  /** Sentry plan tier (`developer` | `team` | `business` | `enterprise`). */
+  SENTRY_PLAN: stringWithDefault("developer"),
+  /** Anthropic monthly budget envelope (USD) — target, не bill. */
+  ANTHROPIC_MONTHLY_BUDGET_USD: floatFromEnv(0),
+  /** Anthropic billing tier (`usage` для pay-as-you-go). */
+  ANTHROPIC_PLAN: stringWithDefault("usage"),
+  /** Voyage AI monthly budget envelope (USD). */
+  VOYAGE_MONTHLY_BUDGET_USD: floatFromEnv(0),
+  /** Voyage billing tier. */
+  VOYAGE_PLAN: stringWithDefault("usage"),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -377,7 +631,11 @@ function parseEnv(): Env {
       .join("\n");
     throw new Error(`Invalid environment variables:\n${formatted}`);
   }
-  return Object.freeze(result.data);
+  // Не використовуємо Object.freeze — тести в `apps/server/src` патчать
+  // окремі поля через `Object.defineProperty` / direct assignment між
+  // it-блоками. Type-level immutability забезпечує `Readonly<Env>` (через
+  // `z.output<typeof envSchema>`), runtime-level — конвенція + ESLint.
+  return result.data;
 }
 
 export const env: Env = parseEnv();

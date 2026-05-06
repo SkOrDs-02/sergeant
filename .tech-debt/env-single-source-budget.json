@@ -1,0 +1,4 @@
+{
+  "budget": 119,
+  "rationale": "stack-pulse-2026-05 PR-01 Phase 1 baseline. PR-01 unified the env *schema* (single Zod source of truth in apps/server/src/env/env.ts; apps/server/src/env.ts is a thin re-export). The 119 raw process.env[…] reads still scattered across auth.ts/cors.ts/email/*/obs/* are Phase 2 (a 1-week incremental refactor). Lower this number in any PR that migrates a caller; never raise it. See docs/initiatives/stack-pulse-2026-05/pr-01-unify-env-modules.md and scripts/check-env-single-source.mjs."
+}
