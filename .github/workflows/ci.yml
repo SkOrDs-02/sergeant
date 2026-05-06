@@ -121,6 +121,15 @@ jobs:
         # scripts/check-codeowners-coverage.mjs.
         run: pnpm lint:codeowners
 
+      - name: Discoverability (every role reaches its target in ≤2 hops)
+        # Walks the markdown link graph from documented entrypoints
+        # (README.md, AGENTS.md, docs/agents/onboarding.md,
+        # docs/playbooks/README.md, CONTRIBUTING.md) and asserts that
+        # each role/target pair in scripts/check-discoverability.mjs is
+        # reachable within the configured hop budget. Closes
+        # docs/planning/ai-coding-improvements.md item #3.
+        run: pnpm lint:discoverability
+
       - name: Vercel config drift guard
         # Closes hardening card H7. Vercel reads exactly one vercel.json
         # (whichever lives under the project's Root Directory). A second

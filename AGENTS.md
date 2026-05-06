@@ -7,7 +7,7 @@
 
 ## Agent operating system
 
-- Start here: `.agents/skills/sergeant-start-here/SKILL.md`
+- Start here: [`.agents/skills/sergeant-start-here/SKILL.md`](.agents/skills/sergeant-start-here/SKILL.md)
 - 30-minute onboarding: [`docs/agents/onboarding.md`](./docs/agents/onboarding.md)
 - Skill routing catalog: `docs/agents/agent-skills-catalog.md`
 - Workflow decision trees: `docs/agents/agent-workflows.md`
