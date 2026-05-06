@@ -2804,6 +2804,7 @@ via SqliteReader`).
 - **PR #055f1** 🚧 ACTIVE — default-on
   `feature.fizruk.sqlite_v2.dual_write`.
   - Implementation branch: `codex/fizruk-dual-write-default-on`.
+  - Draft PR: [#2135](https://github.com/Skords-01/Sergeant/pull/2135).
 - **PR #055f2** — default-on `feature.fizruk.sqlite_v2.read_sqlite`.
 - **PR #056f** — drop LS-safety-net writes (`fizruk_workouts`,
   `fizruk_custom_exercises`, `fizruk_measurements`).
