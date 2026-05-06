@@ -1,6 +1,6 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-06 by @claude. **Next review:** 2026-08-04.
 > **Status:** Proposed (decisions locked, scope final; перший PR — цей документ + аудит-сорс + owner-decisions)
 > **Priority:** P0 (Sprint 1–4)
 > **Owner:** `@Skords-01`
@@ -18,7 +18,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 - **Pricing-модель v1 економічно нежиттєздатна.** ₴99/міс при ≈$5/користувача API costs (Anthropic) = негативна gross margin на Pro tier. Це треба виправити **до** першого Stripe-чека, не після.
 - **Технічний skeleton монетизації** [(`docs/launch/business/06-monetization-architecture.md`)](../launch/business/06-monetization-architecture.md) розписаний на 691 рядок без жодного рядка `subscriptions` SQL у `apps/server/src/migrations/`. Час перейти від v2-плану до коду.
 - **High-friction signup.** Email + password + verify email — це 4 кроки, що дають ~30–50% drop-off на signup-екрані (industry baseline). Apple + Google sign-in (через Better Auth) знизять friction до ≤10%.
-- **OpenClaw і `tools/console` лишаються активними паралельно** до фази 6 — owner ухвалив, що NOT freeze. Просто не блокують revenue track. Mobile: Capacitor залишається primary до завершення Expo-нативки; обидва стеки підтримуються паралельно (рішення зафіксовано в ADR-0050 — фаза 1.2).
+- **OpenClaw і `tools/console` лишаються активними паралельно** до фази 6 — owner ухвалив, що NOT freeze. Просто не блокують revenue track. Mobile: Capacitor залишається primary до завершення Expo-нативки; обидва стеки підтримуються паралельно (рішення зафіксовано в ADR-0052 — фаза 1.2).
 
 ## Скоуп
 
@@ -69,22 +69,22 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 
 #### PR 1.1 `docs-adr-pricing-v3` (scope: `docs`)
 
-- `docs/adr/<0049-pricing-v3-single-tier>.md` — ADR про перехід на 2-тірну модель: **Free + Pro $7/міс / $49/рік, ₴ UA-only на старті, trial безкоштовний без прив'язки картки.**
-- Оновити `docs/launch/business/01-monetization-and-pricing.md` — додати «Update 2026-05-XX: pricing v3 затверджено» зі статусом «Superseded by ADR-0049» на застарілих секціях (Plus tier, Lifetime ₴2999, pay-per-feature).
+- [`docs/adr/0051-pricing-v3-single-tier.md`](../adr/0051-pricing-v3-single-tier.md) — ADR про перехід на 2-тірну модель: **Free + Pro $7/міс / $49/рік, ₴ UA-only на старті, trial безкоштовний без прив'язки картки.**
+- Оновити `docs/launch/business/01-monetization-and-pricing.md` — додати «Update 2026-05-XX: pricing v3 затверджено» зі статусом «Superseded by ADR-0051» на застарілих секціях (Plus tier, Lifetime ₴2999, pay-per-feature).
 - Додати freshness-update header.
 
 **Залежить від:** Фаза 0.
 
-**Acceptance:** ADR-0049 з `Status: Accepted`, lint:governance-sync зелений, governance-matrix оновлено.
+**Acceptance:** ADR-0051 з `Status: Accepted`, lint:governance-sync зелений, governance-matrix оновлено.
 
 #### PR 1.2 `docs-adr-mobile-strategy` (scope: `docs`)
 
-- `docs/adr/<0050-mobile-strategy-capacitor-primary>.md` — продовжує `0002-mobile-platform-decision`: **Capacitor — primary** mobile-shell до завершення Expo-нативки; **обидва стеки підтримуються паралельно**, deprecate жодного. Конкретний рішення «коли Expo стане primary» — окремий ADR пізніше (триггер: Expo має feature parity з web).
+- [`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../adr/0052-mobile-strategy-capacitor-primary.md) — продовжує `0002-mobile-platform-decision`: **Capacitor — primary** mobile-shell до завершення Expo-нативки; **обидва стеки підтримуються паралельно**, deprecate жодного. Конкретний рішення «коли Expo стане primary» — окремий ADR пізніше (триггер: Expo має feature parity з web).
 - Оновити `docs/initiatives/0002-mobile-platform-decision.md` — додати «Update 2026-05-04: рішення владника не deprecate, а підтримувати обидва паралельно. Capacitor primary до Expo feature-parity.»
 
 **Залежить від:** Фаза 0.
 
-**Acceptance:** ADR-0050 з `Status: Accepted`, `apps/mobile/README.md` і `apps/mobile-shell/README.md` мають freshness-header з рішенням.
+**Acceptance:** ADR-0052 з `Status: Accepted`, `apps/mobile/README.md` і `apps/mobile-shell/README.md` мають freshness-header з рішенням.
 
 > **Зняте з фази 1:** ADR про OpenClaw park (раніше зарезервований у драфті як 0046, але цей номер тепер зайнятий ADR-0046 «Storybook visual regression scope») — owner ухвалив працювати паралельно. Якщо в майбутньому стане очевидним, що OpenClaw блокує revenue, переоцінимо окремою ініціативою (новий ADR-номер виділимо тоді ж через `pnpm gen:adr`).
 
@@ -281,7 +281,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 
 - `apps/web/src/core/<Landing>.tsx` (route `/`, новий) — hero **{HERO_PLACEHOLDER}** (фінальний copy — open question, обираємо перед merge: див. §Ризики «Hero positioning»). Кандидати: «Український Mono + AI fin-coach», «AI-щоденник, який знає вашу мету», «Mono → інсайти за 30 секунд», «Замініть 5 додатків одним». До фінального вибору shipимо placeholder + email capture.
 - 1 demo GIF + email capture → PostHog `LANDING_EMAIL_CAPTURED`.
-- EN-локаль для `/`, `/pricing`, paywall — мінімальний i18n setup (react-i18next або lingui — рішення в окремому ADR-0051 у скоупі цього PR).
+- EN-локаль для `/`, `/pricing`, paywall — мінімальний i18n setup (react-i18next або lingui — рішення в окремому ADR-0053 у скоупі цього PR).
 - Sitemap + robots.txt + OG-image.
 
 **Залежить від:** PR 4.2.
@@ -304,7 +304,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 - [ ] Перший платний користувач: `subscriptions.plan = 'pro'` AND `subscriptions.provider = 'stripe'` AND `subscriptions.current_period_end > NOW()`.
 - [ ] `/pricing` показує реальні CTA → Stripe Checkout (не waitlist), test mode + live mode обидва зелені у smoke-e2e. **₴ UA-only.**
 - [ ] Apple + Google + Email sign-in активні; signup drop-off ≤15% (PostHog funnel, 7 днів production data).
-- [ ] Mobile-strategy ADR-0050 із `Status: Accepted` (Capacitor primary, Expo paralleled, обидва підтримуються).
+- [ ] Mobile-strategy ADR-0052 із `Status: Accepted` (Capacitor primary, Expo paralleled, обидва підтримуються).
 - [ ] `activation_v2` доступна як метрика у PostHog dashboard.
 - [ ] A/B тест goal-first vs `vibe_picks` запущено; рішення про переможця прийнято через 2 тижні після rollout.
 - [ ] EN-локаль працює на `/` і `/pricing`; hero copy фіналізований owner-ом перед merge PR 6.1.
