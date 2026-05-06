@@ -12,6 +12,7 @@ playbook каже **що** і **коли**, runbook — **як саме** вик
 
 | Документ                                                             | Призначення                                                                                                       |
 | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| [`operations-runbook.md`](./operations-runbook.md)                   | Bus-factor doc: як оперувати Sergeant без `@Skords-01` (PR-37). Routing-карта до інших runbook-ів + daily ops.    |
 | [`database-backup-restore.md`](./database-backup-restore.md)         | Full-restore-from-backup, pg_dump-snapshot, smoke-tests schema integrity. Storage roadmap PR #049.                |
 | [`database-connection-pooling.md`](./database-connection-pooling.md) | pgBouncer transaction-mode deploy-shape, `DATABASE_URL_POOL`, runtime app-pool. Storage roadmap PR #046.          |
 | [`encryption-key-rotation.md`](./encryption-key-rotation.md)         | Key-ring rotation для Better Auth (`BETTER_AUTH_TOKEN_ENC_KEY*`) + legacy single-key path для Mono. Hardening H4. |
