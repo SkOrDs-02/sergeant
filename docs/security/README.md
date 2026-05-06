@@ -1,23 +1,23 @@
 # Security
 
-> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 Security policy, vulnerability response, audits, and recovery discipline.
 
-| Document                                                         | Purpose                                                |
-| ---------------------------------------------------------------- | ------------------------------------------------------ |
-| [`access-policy.md`](./access-policy.md)                         | Privileged access policy for Founder+1 operations      |
-| [`access-matrix.md`](./access-matrix.md)                         | Canonical inventory of privileged surfaces             |
-| [`secret-ownership-register.md`](./secret-ownership-register.md) | Ownership, cadence, and blast radius for secret groups |
-| [`audit-exceptions.md`](./audit-exceptions.md)                   | Approved exceptions from automated security findings   |
-| [`container-scan.md`](./container-scan.md)                       | Trivy scanning for the API image                       |
-| [`codeql.md`](./codeql.md)                                       | CodeQL SAST taint-flow analysis for TypeScript         |
-| [`nightly-audit.md`](./nightly-audit.md)                         | Nightly dependency and audit triage                    |
-| [`threat-model.md`](./threat-model.md)                           | STRIDE threat map by surface                           |
-| [`disaster-recovery.md`](./disaster-recovery.md)                 | Disaster classes, RPO/RTO targets, restore discipline  |
-| [`vulnerability-sla.md`](./vulnerability-sla.md)                 | Response and remediation SLA                           |
-| [`hardening/`](./hardening/README.md)                            | Living security hardening backlog (per-finding cards)  |
+| Document                                                         | Purpose                                                 |
+| ---------------------------------------------------------------- | ------------------------------------------------------- |
+| [`access-policy.md`](./access-policy.md)                         | Privileged access policy for Founder+1 operations       |
+| [`access-matrix.md`](./access-matrix.md)                         | Canonical inventory of privileged surfaces              |
+| [`secret-ownership-register.md`](./secret-ownership-register.md) | Ownership, cadence, and blast radius for secret groups  |
+| [`audit-exceptions.md`](./audit-exceptions.md)                   | Approved exceptions from automated security findings    |
+| [`container-scan.md`](./container-scan.md)                       | Trivy scanning for the API image                        |
+| [`codeql.md`](./codeql.md)                                       | CodeQL SAST taint-flow analysis for TypeScript          |
+| [`nightly-audit.md`](./nightly-audit.md)                         | Nightly dependency and audit triage                     |
+| [`threat-model.md`](./threat-model.md)                           | STRIDE threat model per module + cross-cutting controls |
+| [`disaster-recovery.md`](./disaster-recovery.md)                 | Disaster classes, RPO/RTO targets, restore discipline   |
+| [`vulnerability-sla.md`](./vulnerability-sla.md)                 | Response and remediation SLA                            |
+| [`hardening/`](./hardening/README.md)                            | Living security hardening backlog (per-finding cards)   |
 
 ## Static analysis pipeline
 
