@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
+import { messages } from "@shared/i18n/uk";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { resetOnboardingState, type User } from "@sergeant/shared";
 import { useAuth } from "../auth/AuthContext";
@@ -85,7 +86,7 @@ export function GeneralSection({ user }: GeneralSectionProps) {
             onClick={handleLogout}
           >
             <Icon name="log-out" size={16} />
-            {loggingOut ? "Виходимо…" : "Вийти"}
+            {loggingOut ? messages.loadingActions.exiting : "Вийти"}
           </Button>
         </SettingsSubGroup>
       )}

@@ -352,7 +352,7 @@ export function Workouts() {
       className="space-y-3"
       role="status"
       aria-live="polite"
-      aria-label="Завантажуємо тренування"
+      aria-label="Завантажую тренування"
     >
       <Skeleton className="h-28 w-full" />
       <Skeleton className="h-20 w-full" />

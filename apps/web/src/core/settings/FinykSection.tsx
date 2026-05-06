@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import { Button } from "@shared/components/ui/Button";
 import {
   privatApi,
@@ -434,7 +435,9 @@ export function FinykSection() {
               onClick={connectWebhook}
               disabled={webhookConnecting}
             >
-              {webhookConnecting ? "Підключення…" : "Підключити Monobank"}
+              {webhookConnecting
+                ? messages.loadingActions.connecting
+                : "Підключити Monobank"}
             </Button>
           </div>
         )}
@@ -572,7 +575,9 @@ export function FinykSection() {
                 onClick={connectPrivat}
                 disabled={privatConnecting}
               >
-                {privatConnecting ? "Підключення…" : "Підключити ПриватБанк"}
+                {privatConnecting
+                  ? messages.loadingActions.connecting
+                  : "Підключити ПриватБанк"}
               </Button>
             </div>
           )}
