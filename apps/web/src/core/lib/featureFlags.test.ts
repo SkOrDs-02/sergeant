@@ -42,6 +42,14 @@ describe("featureFlags", () => {
     expect(getFlag("feature.routine.sqlite_v2.dual_write")).toBe(false);
   });
 
+  it("Fizruk dual-write увімкнений за замовчуванням і може бути вимкнений користувачем", async () => {
+    const { getFlag, setFlag } = await loadFresh();
+    expect(getFlag("feature.fizruk.sqlite_v2.dual_write")).toBe(true);
+
+    expect(setFlag("feature.fizruk.sqlite_v2.dual_write", false)).toBe(true);
+    expect(getFlag("feature.fizruk.sqlite_v2.dual_write")).toBe(false);
+  });
+
   it("setFlag зберігає boolean і getFlag його повертає", async () => {
     const { getFlag, setFlag } = await loadFresh();
     expect(setFlag("finyk_subscriptions_category", true)).toBe(true);

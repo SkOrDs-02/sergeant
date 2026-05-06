@@ -2801,7 +2801,9 @@ via SqliteReader`).
 
 #### **Fizruk (4 PR-и)** — структура ідентична
 
-- **PR #055f1** — default-on `feature.fizruk.sqlite_v2.dual_write`.
+- **PR #055f1** 🚧 ACTIVE — default-on
+  `feature.fizruk.sqlite_v2.dual_write`.
+  - Implementation branch: `codex/fizruk-dual-write-default-on`.
 - **PR #055f2** — default-on `feature.fizruk.sqlite_v2.read_sqlite`.
 - **PR #056f** — drop LS-safety-net writes (`fizruk_workouts`,
   `fizruk_custom_exercises`, `fizruk_measurements`).
@@ -2852,10 +2854,11 @@ NUTRITION_*`. Зняти стару migration `storageManager #002`
   sync-engine writer-runtime wiring у boot-path... — окремий
   follow-up") закрито в PR #2118.
 
-**Next actionable PR:** `feat(routine): default-on feature.routine.sqlite_v2.dual_write`
-(PR #055r1). Stage 9 лишається `ROADMAP (0/7)`: `kv_store`,
-`createSqliteKVStore`, `bootstrapKvStore` і пов'язана SQLite migration
-ще не існують у коді.
+**Active rollout PRs in flight:** `feat(routine): default-on feature.routine.sqlite_v2.dual_write`
+(PR #055r1) and `feat(fizruk): default-on feature.fizruk.sqlite_v2.dual_write`
+(PR #055f1). Stage 9 лишається `ROADMAP (0/7)`: `kv_store`,
+`createSqliteKVStore`, `bootstrapKvStore` і пов'язана SQLite migration ще не
+існують у коді.
 
 #### **Decision gate (Stage 8 → Stage 9).**
 
