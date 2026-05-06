@@ -168,7 +168,7 @@ Sergeant зараз **паралельно тримає два sync-механі
 
 ## Outcome
 
-_Поточний стан — In progress (Phase 1 + 2 + 5-server shipped). Phase 5-client + Phase 6 cleanup — black-list-у наступних PR-ів._
+_Поточний стан — In progress (Phase 1 + 2 + 5-server + 5-client shipped). Phase 6 cleanup — наступний PR (drop module_data + remove cloudSync/ tree)._
 
 ### Phase 1 — observability — Done (PR #1621)
 
@@ -207,12 +207,14 @@ _Поточний стан — In progress (Phase 1 + 2 + 5-server shipped). Pha
 - **Чому compress-нуто rollout-criteria**: продукт у pre-launch стані (один internal користувач — @Skords-01), `sli:sync_v1:rate5m < 5%` задовольнено за визначенням; немає не-internal traffic, що міг би тригернути regression. Burn-in writer-runtime ([#1953](https://github.com/Skords-01/Sergeant/pull/1953)) теж не блокує — немає user-facing surface, що міг би відловити v2-bug.
 - **v1 handler-и (`syncPush`/`syncPull`/`syncPullAll`/`syncPushAll`)** і їхні tests лишаються dead code до Phase 6 / PR #052 — це навмисне (audit-trail-friendly + payload-shape contract tests лишаються для v2-burn-in).
 
-### Phase 5 — client-side cutover — Pending
+### Phase 5 — client-side cutover — Done 2026-05-06
 
-- Web `apps/web/src/core/cloudSync/` (`useCloudSync(user)` hook + engine + queue + state) — все ще активний шар, що тепер flooding-ить toast-помилки з 410. Ціль наступного PR — замінити `useCloudSync(user)` у `apps/web/src/core/App.tsx` на v2-aware stub (повертає no-op defaults), що виключає engine-fetch-calls і `useSyncRetry`.
-- Mobile `apps/mobile/src/sync/` — аналогічно.
-- Migration-prompt UI (`MigrationPrompt`) — видалити, бо v2 op-log не потребує "перший раз вантажу місцеві дані" діалогу.
-- Tests cleanup — більшість unit-tests у `cloudSync/__tests__` тестують internals (engine functions, queue), не fetch-calls — лишаються живі. Hook-level tests (`useCloudSync.behavior.test.ts`, `useCloudSync.hardening.test.ts`) — переписати або видалити після hook-stub.
+- **Web** [`apps/web/src/core/cloudSync/hook/useCloudSync.ts`](../../apps/web/src/core/cloudSync/hook/useCloudSync.ts) — `useCloudSync(user)` тепер stub, що повертає no-op defaults (`isSyncing: false`, `state: "idle"`, всі callback-и no-op). `App.tsx` / `OfflineBanner.tsx` / `useAppEffects.ts` / `useSyncErrorToast.ts` компілюються без змін через стабільний public shape.
+- **Mobile** [`apps/mobile/src/sync/hook/useCloudSync.ts`](../../apps/mobile/src/sync/hook/useCloudSync.ts) — аналогічний stub. `CloudSyncProvider.tsx` без змін. `__tests__/useCloudSync.userChange.test.ts` видалено — тестував user-change replay-flow, який тепер no-op.
+- **Engine entry-points** (`pushDirty`, `pushAll`, `pullAll`, `initialSync`, `uploadLocalData`) лишаються як dead-code до Phase 6 / PR #052 — їх unit-tests тестують payload-structure-у, не fetch-calls, тому продовжують gating чужого коду.
+- **`enqueueChange` + `notifySyncDirty`** з v1 cloudSync — не відключено, бо `syncedKV` цим викликом маркує dirty-state, а dirty-state читає `useSyncStatus` (для UI індикаторів). Behavior-у це не ламає: dirty-map накопичується in-memory і скидається на reload — `pushDirty` ніколи не викликається, тож v1-fetch-spam знятий.
+- **`useSyncStatus`** (з v1 cloudSync barrel-у) лишається — він уже hybrid: читає dirty/queued count з v1 і pending/rejected/deadLetter з v2 writer-у. UI-консьюмери (`OfflineBanner`, `SyncStatusIndicator`) бачать v2 dead-letter signals без змін.
+- **Migration-prompt UI** (`MigrationPrompt`) — видалення відкладено до Phase 6 / PR #052 разом із `cloudSync/` tree drop. Stub `migrationPending: false` гарантує, що modal не з'являється.
 
 ### Phase 6 — Cleanup — Pending
 

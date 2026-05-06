@@ -1,145 +1,74 @@
-import { useCallback, useState } from "react";
-import { initialSync } from "../engine/initialSync";
-import { pullAll } from "../engine/pull";
-import { pushAll, pushDirty } from "../engine/push";
-import { uploadLocalData } from "../engine/upload";
-import { markMigrationDone } from "../state/migration";
-import type { CurrentUser, EngineArgs, SyncCallbacks } from "../types";
-import { useEngineArgs } from "./useEngineArgs";
-import { useInitialSyncOnUser } from "./useInitialSyncOnUser";
-import { useSyncRetry } from "./useSyncRetry";
+import { useCallback } from "react";
+import type { CurrentUser, SyncError, SyncState } from "../types";
 
 /**
- * Cloud-sync orchestrator. Three clearly-separated layers, read top-down:
+ * Cloud-sync orchestrator — **legacy v1 stub** post-ADR-0047.
  *
- *   1. Queue (where changes accumulate)
- *      Handled outside this hook — explicit writes through `syncedKV`
- *      (see `apps/web/src/shared/lib/storage/syncedKV.ts`) call
- *      `enqueueChange` after every write to a tracked key. That writes
- *      the dirty map and dispatches `SYNC_EVENT`. Until PR #008 the
- *      same plumbing was implemented as a one-time `localStorage.setItem`
- *      monkey-patch in `./storagePatch.ts`; the patch was removed in
- *      favor of the explicit hook.
+ * Until 2026-05-06 (Initiative 0003 Phase 5 client-side cutover) this
+ * hook orchestrated three cooperating layers:
  *
- *   2. Scheduler (when to run a sync)
- *      `useSyncRetry` wires three triggers — online / change-event /
- *      periodic timer — to the executor below.
+ *   1. `enqueueChange` queue + dirty map
+ *   2. `useSyncRetry` scheduler (online / change-event / periodic timer)
+ *   3. Engine executors (`pushDirty`, `pushAll`, `pullAll`, `initialSync`,
+ *      `uploadLocalData`) — each fired against `/api/sync/*` v1 endpoints.
  *
- *   3. Executor (how to actually call the API)
- *      The `run*` callbacks below each wrap one engine entry point in
- *      `runExclusive`, which combines the in-flight guard with freshly
- *      sync-id-bound lifecycle callbacks. This is what prevents a
- *      preempted engine (see `runUploadLocal`) from overwriting state
- *      belonging to a newer sync.
+ * Per [ADR-0047](../../../../../../docs/adr/0047-cloudsync-v1-410-gone.md)
+ * the server-side v1 channel is now `410 Gone`; calling it from the
+ * client only generates toast spam and Sentry noise. The stub returns
+ * the same public shape as before (so `App.tsx` / `OfflineBanner.tsx` /
+ * `useAppEffects.ts` / `useSyncErrorToast.ts` keep type-checking) but
+ * never fires an engine call. v2 cloud-sync (op-log) is owned by the
+ * `apps/web/src/core/syncEngine/` writer-runtime, which is booted from
+ * `apps/web/src/core/boot.ts` independently of this hook.
  *
- * Public state surface:
- *   - `state`       new explicit state-machine value
- *   - `isSyncing`   (legacy alias: `syncing`) — derived from `state`
- *   - `lastSyncAt`  (legacy alias: `lastSync`)
- *   - `hasError`    derived from `state`; legacy alias `syncError` still
- *                   exposes the raw message and `syncErrorDetail` exposes
- *                   the structured { type, retryable } shape.
- *   - `migrationPending` drives the first-run migration modal.
+ * Removal: PR #052 (Stage 7 cleanup) — entire `apps/web/src/core/cloudSync/`
+ * tree drops, App.tsx wires `useSyncStatus` from the new v2 location.
  */
-export function useCloudSync(user: CurrentUser | null | undefined) {
-  const [migrationPending, setMigrationPending] = useState(false);
-  const { engineArgs, lifecycle } = useEngineArgs(user);
-  const {
-    isSyncing,
-    lastSyncAt,
-    hasError,
-    syncing,
-    lastSync,
-    syncError,
-    state,
-    syncErrorDetail,
-    runExclusive,
-    runBypassed,
-  } = lifecycle;
+type SyncCallbackResult = boolean | undefined | void;
+type AsyncSyncCallback = () => Promise<SyncCallbackResult>;
 
-  // --- 3. Executor: API calls, each serialized through the in-flight
-  // guard and invoked with sync-id-bound callbacks that no-op if a newer
-  // sync supersedes this one.
+const noopAsync: AsyncSyncCallback = () => Promise.resolve(true);
 
-  const withCb = useCallback(
-    (cb: SyncCallbacks): EngineArgs => ({ ...engineArgs, ...cb }),
-    [engineArgs],
-  );
+export interface UseCloudSyncReturn {
+  isSyncing: boolean;
+  lastSyncAt: number | null;
+  hasError: boolean;
+  state: SyncState;
+  syncErrorDetail: SyncError | null;
+  syncing: boolean;
+  lastSync: number | null;
+  syncError: string | null;
+  pushAll: AsyncSyncCallback;
+  pullAll: AsyncSyncCallback;
+  migrationPending: boolean;
+  uploadLocalData: () => Promise<void>;
+  skipMigration: () => void;
+}
 
-  const runSync = useCallback(
-    () => runExclusive((cb) => pushDirty(withCb(cb)), undefined),
-    [withCb, runExclusive],
-  );
-
-  const runPushAll = useCallback(
-    () => runExclusive((cb) => pushAll(withCb(cb)), undefined),
-    [withCb, runExclusive],
-  );
-
-  const runPullAll = useCallback(
-    () => runExclusive((cb) => pullAll(withCb(cb)), false),
-    [withCb, runExclusive],
-  );
-
-  const runInitialSync = useCallback(
-    (): Promise<boolean> =>
-      runExclusive(
-        (cb) =>
-          initialSync({
-            ...withCb(cb),
-            onNeedMigration: () => setMigrationPending(true),
-          }),
-        false,
-      ),
-    [withCb, runExclusive],
-  );
-
-  const runUploadLocal = useCallback(async () => {
-    if (!user?.id) return;
-    // Intentionally bypasses the in-flight guard: this is user-initiated
-    // from the migration modal and must proceed even if a background
-    // retry is mid-flight. `runBypassed` pairs the force-claim with a
-    // fresh sync-id so stale callbacks from the preempted retry can't
-    // overwrite the upload's lifecycle state.
-    await runBypassed((cb) =>
-      uploadLocalData({
-        ...withCb(cb),
-        onMigrated: () => setMigrationPending(false),
-      }),
-    );
-  }, [user, withCb, runBypassed]);
-
+export function useCloudSync(
+  _user: CurrentUser | null | undefined,
+): UseCloudSyncReturn {
   const skipMigration = useCallback(() => {
-    if (!user?.id) return;
-    markMigrationDone(user.id);
-    setMigrationPending(false);
-  }, [user]);
+    /* v2 op-log не вимагає migration prompt — більше немає `module_data` blob-у щоб мігрувати */
+  }, []);
 
-  const clearMigrationPending = useCallback(
-    () => setMigrationPending(false),
-    [],
-  );
-
-  // --- 2. Scheduler: subscribe the executor to online/change/periodic.
-
-  useInitialSyncOnUser(user, runInitialSync, clearMigrationPending);
-  useSyncRetry(!!user, runSync);
+  const uploadLocalData = useCallback(async () => {
+    /* v2 op-log seed-иться writer runtime-ом при першому push-у — explicit upload модалка більше не потрібна */
+  }, []);
 
   return {
-    // Explicit state names.
-    isSyncing,
-    lastSyncAt,
-    hasError,
-    state,
-    syncErrorDetail,
-    // Legacy aliases kept so existing consumers (App.tsx, tests) compile.
-    syncing,
-    lastSync,
-    syncError,
-    pushAll: runPushAll,
-    pullAll: runPullAll,
-    migrationPending,
-    uploadLocalData: runUploadLocal,
+    isSyncing: false,
+    lastSyncAt: null,
+    hasError: false,
+    state: "idle",
+    syncErrorDetail: null,
+    syncing: false,
+    lastSync: null,
+    syncError: null,
+    pushAll: noopAsync,
+    pullAll: noopAsync,
+    migrationPending: false,
+    uploadLocalData,
     skipMigration,
   };
 }
