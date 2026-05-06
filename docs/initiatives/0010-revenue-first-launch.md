@@ -1,7 +1,7 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
 > **Last validated:** 2026-05-06 by @claude. **Next review:** 2026-08-04.
-> **Status:** Proposed (decisions locked, scope final; перший PR — цей документ + аудит-сорс + owner-decisions)
+> **Status:** In progress (Phase 0 done, Phase 1 done — ADR-0051/0052 Accepted, Phase 5.1 done — activation_v2 metric; Phase 2 next)
 > **Priority:** P0 (Sprint 1–4)
 > **Owner:** `@Skords-01`
 > **ETA:** 4 тижні (фаза 0 — поточний PR; фази 1–6 — 4 спринти по 1 тижню)
@@ -299,18 +299,19 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 
 ## Критерії DONE (вся ініціатива)
 
-- [ ] PR-и фази 0 (цей PR) + фази 1–6 змерджені.
+- [x] PR-и фази 0 і фази 1 змерджені ([#2080](https://github.com/Skords-01/Sergeant/pull/2080)).
+- [ ] PR-и фаз 2–6 змерджені.
 - [ ] Перший Stripe webhook у проді записаний у `stripe_webhook_events`.
 - [ ] Перший платний користувач: `subscriptions.plan = 'pro'` AND `subscriptions.provider = 'stripe'` AND `subscriptions.current_period_end > NOW()`.
 - [ ] `/pricing` показує реальні CTA → Stripe Checkout (не waitlist), test mode + live mode обидва зелені у smoke-e2e. **₴ UA-only.**
 - [ ] Apple + Google + Email sign-in активні; signup drop-off ≤15% (PostHog funnel, 7 днів production data).
-- [ ] Mobile-strategy ADR-0052 із `Status: Accepted` (Capacitor primary, Expo paralleled, обидва підтримуються).
-- [ ] `activation_v2` доступна як метрика у PostHog dashboard.
+- [x] Mobile-strategy ADR-0052 із `Status: Accepted` (Capacitor primary, Expo paralleled, обидва підтримуються).
+- [ ] `activation_v2` доступна як метрика у PostHog dashboard (pure function є у `packages/insights/src/activation.ts`; PostHog-wire — у Phase 5.2).
 - [ ] A/B тест goal-first vs `vibe_picks` запущено; рішення про переможця прийнято через 2 тижні після rollout.
 - [ ] EN-локаль працює на `/` і `/pricing`; hero copy фіналізований owner-ом перед merge PR 6.1.
 - [ ] Усі PR-и пройшли CI зелено + a11y axe-core + Lighthouse budget.
-- [ ] Усі нові docs мають freshness header + Status badge (Hard Rule #10).
-- [ ] `docs/launch/business/01-monetization-and-pricing.md` оновлено: pricing v3 — current state, не план.
+- [x] Нові docs (ADR-0051, ADR-0052, initiative, mobile READMEs) мають freshness header + Status badge.
+- [x] `docs/launch/business/01-monetization-and-pricing.md` оновлено: §2.2/§2.3 Superseded by ADR-0051; pricing v3 зафіксовано.
 - [x] Ankle-PR `chore-console-move-to-tools` змерджено (`apps/console/` → `tools/console/`).
 
 ## Метрики успіху (вимірюються через 30 днів після фази 6)
@@ -386,3 +387,22 @@ Ankle-PR (поза фазами 1–6, scope: chore):
 - **Better Auth playbook:** [`.agents/skills/better-auth-best-practices/SKILL.md`](../../.agents/skills/better-auth-best-practices/SKILL.md).
 - **OpenClaw roadmap (active parallel, not in scope):** [`docs/launch/tech/openclaw-roadmap.md`](../launch/tech/openclaw-roadmap.md).
 - **Releases register (буде заповнюватись по PR):** TBD.
+
+---
+
+## Outcome (поточний стан — оновлюється по мірі merge)
+
+### Phase 0 + Phase 1 + Phase 5.1 — DONE (2026-05-06)
+
+**PR:** [#2080](https://github.com/Skords-01/Sergeant/pull/2080) `feat(docs): phase 0+1 revenue launch — ADR-0051 pricing v3, ADR-0052 mobile strategy, activation_v2`
+
+Що зроблено:
+
+- **ADR-0051** ([`docs/adr/0051-pricing-v3-single-tier.md`](../adr/0051-pricing-v3-single-tier.md)) — `Status: Accepted`. Free + Pro $7/міс / $49/рік, ₴ UA-only на старті, trial 7 днів без картки. Plus tier / Lifetime / pay-per-feature — out of scope MVP.
+- **ADR-0052** ([`docs/adr/0052-mobile-strategy-capacitor-primary.md`](../adr/0052-mobile-strategy-capacitor-primary.md)) — `Status: Accepted`. Capacitor primary до Expo feature parity; обидва стеки паралельно; sunset T₀/T₁/T₂ — не active commitments. Тригер наступного ADR: ≥18/22 рядків матриці `docs/architecture/platforms.md` = ✅.
+- `docs/launch/business/01-monetization-and-pricing.md` — Update header: §2.2 і §2.3 позначено «Superseded by ADR-0051».
+- `docs/initiatives/0002-mobile-platform-decision.md` — owner decision note, ADR-0052 supersedes sunset-direction.
+- `apps/mobile/README.md`, `apps/mobile-shell/README.md` — freshness headers + посилання на ADR-0052.
+- **`packages/insights/src/activation.ts`** — `evaluateActivationV2()` pure function (Phase 5.1). Умови: Mono ≥1 + ≥5 categorized txn + ≥1 budget ≤72h від signup. 10 unit-тестів, 80/80 passed.
+
+**Наступний крок:** Phase 2 — SQL міграції `047_subscriptions.sql` + `048_stripe_webhook_events.sql` + billing core module (`getUserPlan`, `requirePlan`, `effectiveLimits`). Гейтовано на: ФОП-реєстрація (T-7 deadline від merge PR 2.2).
