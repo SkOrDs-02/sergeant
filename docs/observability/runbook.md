@@ -74,7 +74,7 @@
 1. `sum by (module) (rate(sync_conflicts_total[1h]))` — хто конфліктить.
 2. Типово: два девайси одного user-а пишуть незалежно, `lastPulledAt`
    старий. Якщо вибух на одному module — регресія в логіці merge-у.
-3. Подивись чи не було недавнього деплою `apps/server/src/modules/sync/sync.ts`.
+3. Подивись чи не було недавнього деплою `apps/server/src/modules/sync/syncV2.ts`.
 
 ## AuthErrorBudgetBurn
 

@@ -67,7 +67,7 @@ ADR-0043 свідомо НЕ committed-фіксував T₀-дату ("rollout-
 
 - Phase 1 survey middleware (`v1ClientSurveyMiddleware`) і Phase 2 sunset-headers middleware (`v1SunsetHeadersMiddleware`) лишаються активними **поверх** 410-handler-а: клієнти все ще читають `Sunset:` / `Deprecation:` / `Link:` у відповіді разом із 410-body, що дозволяє їм перевести retry-decay logic у "stop calling permanently".
 
-- v1 handler-и (`syncPush`/`syncPull`/`syncPullAll`/`syncPushAll`) і їхні tests лишаються в `apps/server/src/modules/sync/sync.ts` як dead code до Stage 7 / PR #052 — їхні shape-контрактні tests все ще валідують payload-структури, що допомагає burn-in перевірці v2 (вони тестують ідеї payload-structure-у, не boot path).
+- v1 handler-и (`syncPush`/`syncPull`/`syncPullAll`/`syncPushAll`) і їхні tests лишаються в `modules/sync/sync.ts` як dead code до Stage 7 / PR #052 — їхні shape-контрактні tests все ще валідують payload-структури, що допомагає burn-in перевірці v2 (вони тестують ідеї payload-structure-у, не boot path).
 
 - Нові env vars (опціонально):
   - `CLOUDSYNC_V1_GONE_SINCE` — ISO 8601 timestamp T₀; включається у `since` поле response. Без env — `"unknown"`. Production-deploy виставить у `2026-05-06T08:00:00Z`.
@@ -80,7 +80,7 @@ ADR-0043 свідомо НЕ committed-фіксував T₀-дату ("rollout-
 Чому не "delete v1 entirely одним PR-ом":
 
 - AGENTS.md hard rule #4 (двофазний DROP для column delete): `module_data` колонка має бути drop-нута окремим release-ом після того, як код перестав туди писати. Цей ADR — "код перестав туди писати". Drop-міграція — наступний PR (#051).
-- Видалення `apps/server/src/modules/sync/sync.ts` + `apps/web/src/core/cloudSync/` + `apps/mobile/src/sync/` — це багатосотрядковий refactor (35+ файлів тільки у `cloudSync/`). Розміщення його в окремий PR-ціклс після того, як 410 захардифікований — стабільніше і audit-trail-friendly.
+- Видалення `modules/sync/sync.ts` + `apps/web/src/core/cloudSync/` + `apps/mobile/src/sync/` — це багатосотрядковий refactor (35+ файлів тільки у `cloudSync/`). Розміщення його в окремий PR-цикл після того, як 410 захардифікований — стабільніше і audit-trail-friendly.
 - Web/Mobile клієнти все ще містять v1 path. Вимкнення серверу + поетапне зняття клієнтів — стандартний pattern для API sunset (Stripe, GitHub, Google).
 
 ## Consequences
@@ -100,7 +100,7 @@ ADR-0043 свідомо НЕ committed-фіксував T₀-дату ("rollout-
 ### Risks / Followups
 
 - **PR #051 (drop `module_data`)** — потребує окремого release-cycle після того, як цей ADR landed (per hard rule #4). Migration `999_drop_module_data.{sql,down.sql}`.
-- **PR #052 (`chore: remove cloudSync v1 engine`)** — видаляє `apps/web/src/core/cloudSync/`, `apps/mobile/src/sync/`, dead handler-и в `apps/server/src/modules/sync/sync.ts`. Великий diff; розіб'ємо на 2-3 sub-PR-и (web, mobile, server) для review-ability.
+- **PR #052 (`chore: remove cloudSync v1 engine`)** — видаляє `apps/web/src/core/cloudSync/`, `apps/mobile/src/sync/`, dead handler-и у server-side `modules/sync/sync.ts`. Великий diff; розіб'ємо на 2-3 sub-PR-и (web, mobile, server) для review-ability. **Update (2026-05-06):** server-side частину виконано — v1 handler-и видалені разом із `module_data` колонкою (commit `75dcdd5c` — `feat(server): drop module_data column + remove v1 sync handlers`). Web/mobile sub-PR-и — наступні.
 - **Rollback** — якщо production показує regression, revert цього PR-у миттєво поверне v1 у живий стан. Жодних схема-changes у цьому ADR немає, тому rollback безризиковий.
 
 ## Status (2026-05-06)

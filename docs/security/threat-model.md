@@ -139,7 +139,7 @@ Trust boundary: External Mono SaaS ↔ Hub API.
 | Webhook idempotency          | T/R    | `recordSync*` idempotency key + de-dup query                                                                                                          | None                                              |
 | OAuth/Bearer token storage   | S/I    | `*_TOKEN_ENC_KEY` AES-GCM at rest; key-rotation phase 1 ([H4](./hardening/H4-encryption-key-rotation.md), Closed); ownership register pinned          | Phase 2 (KMS-managed key) tracked in H4 follow-up |
 | Mono transactions JSON shape | T/I    | `pg` `bigint` → `number` coercion (Hard rule #1); `merchantCategory` MCC normalisation; snapshot tests in `apps/server/src/modules/mono/read.test.ts` | None                                              |
-| MCC/MCC-bucket bucketization | I      | `apps/server/src/modules/mono/mcc.ts` — typed allowlist; PII-free                                                                                     | None                                              |
+| MCC/MCC-bucket bucketization | I      | `apps/server/src/modules/mono/mccCategories.ts` — typed allowlist; PII-free                                                                           | None                                              |
 
 ### 6. Data store (Postgres + SQLite)
 
