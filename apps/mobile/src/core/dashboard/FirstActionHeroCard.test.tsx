@@ -61,6 +61,7 @@ describe("FirstActionHeroCard", () => {
     expect(onPicked).toHaveBeenCalledWith({
       module: "finyk",
       via: "primary",
+      primaryReason: "multi-pick-static",
     });
   });
 
@@ -84,6 +85,7 @@ describe("FirstActionHeroCard", () => {
     expect(onShown).toHaveBeenCalledWith({
       primary: "fizruk",
       picks: ["fizruk"],
+      primaryReason: "single-pick",
     });
   });
 
@@ -106,6 +108,37 @@ describe("FirstActionHeroCard", () => {
     expect(onPicked).toHaveBeenCalledWith({
       module: "finyk",
       via: "chip",
+      primaryReason: "multi-pick-static",
+    });
+  });
+
+  it("emits primaryReason='single-goal' when exactly one goal is set", () => {
+    seedPicks(["routine", "finyk", "fizruk"]);
+    seedGoals({ finykBudget: 30000 });
+    const onShown = jest.fn();
+    render(<FirstActionHeroCard onAction={jest.fn()} onShown={onShown} />);
+    expect(onShown).toHaveBeenCalledWith({
+      primary: "finyk",
+      picks: ["routine", "finyk", "fizruk"],
+      primaryReason: "single-goal",
+    });
+  });
+
+  it("emits primaryReason='multi-goal-vibe' and honours user pick order on tie-break", () => {
+    // Both fizruk and finyk have explicit goals. With user picks ordered
+    // [fizruk, finyk, …], PR-11 promotes fizruk over finyk — the previous
+    // static heuristic always picked finyk.
+    seedPicks(["fizruk", "finyk", "routine"]);
+    seedGoals({ finykBudget: 30000, fizrukWeeklyGoal: 3 });
+    const { getByText } = render(<FirstActionHeroCard onAction={jest.fn()} />);
+    expect(getByText(/Увімкни розминку/)).toBeTruthy();
+
+    const onShown = jest.fn();
+    render(<FirstActionHeroCard onAction={jest.fn()} onShown={onShown} />);
+    expect(onShown).toHaveBeenCalledWith({
+      primary: "fizruk",
+      picks: ["fizruk", "finyk", "routine"],
+      primaryReason: "multi-goal-vibe",
     });
   });
 

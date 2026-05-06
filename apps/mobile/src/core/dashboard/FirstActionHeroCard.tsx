@@ -33,8 +33,10 @@ import {
   getOnboardingGoals,
   getVibePicks,
   hapticTap,
-  pickPrimaryFirstAction,
+  rankFirstActionCandidates,
   type DashboardModuleId,
+  type FirstActionPrimaryReason,
+  type FirstActionRanking,
 } from "@sergeant/shared";
 
 import { Button } from "@/components/ui/Button";
@@ -82,18 +84,16 @@ const ACTIONS: Record<DashboardModuleId, ActionSpec> = {
 };
 
 /**
- * Goal-aware primary picker for the mobile FTUX hero (S2.1).
- *
- * Delegates to `pickPrimaryFirstAction` so web and mobile resolve the
- * primary identically: any module with an explicit goal beats one
- * without, with the shared `FIRST_ACTION_PRIORITY` (routine → finyk
- * → nutrition → fizruk) breaking ties. Nutrition is already filtered
- * out of `picks` upstream in `FirstActionHeroCard` (Phase 7 on
- * mobile), so the helper will never promote nutrition here even if a
+ * Goal-aware primary + chip ordering + analytics reason for the mobile
+ * FTUX hero (PR-11). Delegates to `rankFirstActionCandidates` so web
+ * and mobile resolve the primary, the alt-module chip-row order, and
+ * the SLO `primary_reason` faceting field identically. Nutrition is
+ * already filtered out of `picks` upstream (Phase 7 on mobile), so
+ * the helper will never promote nutrition here even if a
  * `nutritionGoal` happens to be persisted.
  */
-function pickPrimary(picks: readonly DashboardModuleId[]): DashboardModuleId {
-  return pickPrimaryFirstAction(picks, getOnboardingGoals(mmkvStore));
+function rankPrimary(picks: readonly DashboardModuleId[]): FirstActionRanking {
+  return rankFirstActionCandidates(picks, getOnboardingGoals(mmkvStore));
 }
 
 export interface FirstActionHeroCardProps {
@@ -105,10 +105,12 @@ export interface FirstActionHeroCardProps {
    *  fresh install / store wipe. */
   onDismiss?: () => void;
   /** Optional analytics hook: fires once on first render with the
-   *  resolved primary module. */
+   *  resolved primary module + selection reason (PR-11) so PostHog can
+   *  break the SLO down by `single-goal` / `multi-goal-vibe` / etc. */
   onShown?: (info: {
     primary: DashboardModuleId;
     picks: DashboardModuleId[];
+    primaryReason: FirstActionPrimaryReason;
   }) => void;
   /** Optional analytics hook: fires when the user taps a CTA. The
    *  `via` field carries the same vocabulary as the web counterpart
@@ -117,10 +119,15 @@ export interface FirstActionHeroCardProps {
    *  alt-module chip row. PostHog dashboards reading the canonical
    *  `onboarding_first_action_picked` event compute switch-rate as
    *  `count(via="chip") / count(*)`.
+   *
+   *  `primaryReason` (PR-11) carries the same `FirstActionPrimaryReason`
+   *  faceting field as `onShown` so dashboards can correlate hero
+   *  selection mode with first-entry rate.
    */
   onPicked?: (info: {
     module: DashboardModuleId;
     via: "primary" | "chip";
+    primaryReason: FirstActionPrimaryReason;
   }) => void;
 }
 
@@ -142,28 +149,37 @@ export function FirstActionHeroCard({
       : (["routine", "finyk", "fizruk"] as DashboardModuleId[]);
   }, []);
 
-  const primaryId = pickPrimary(picks);
+  const ranking = rankPrimary(picks);
+  const primaryId = ranking.primary;
   const primary = ACTIONS[primaryId];
   const others = useMemo(
-    () => picks.filter((id) => id !== primaryId && ACTIONS[id]),
-    [picks, primaryId],
+    () => ranking.others.filter((id) => ACTIONS[id]),
+    [ranking.others],
   );
 
   useEffect(() => {
-    onShown?.({ primary: primaryId, picks });
+    onShown?.({
+      primary: primaryId,
+      picks,
+      primaryReason: ranking.reason,
+    });
     // Report-on-mount only — treat like a mount-level analytics event.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handlePrimary = () => {
     hapticTap();
-    onPicked?.({ module: primaryId, via: "primary" });
+    onPicked?.({
+      module: primaryId,
+      via: "primary",
+      primaryReason: ranking.reason,
+    });
     onAction(primaryId);
   };
 
   const handleAltPick = (id: DashboardModuleId) => {
     hapticTap();
-    onPicked?.({ module: id, via: "chip" });
+    onPicked?.({ module: id, via: "chip", primaryReason: ranking.reason });
     onAction(id);
   };
 

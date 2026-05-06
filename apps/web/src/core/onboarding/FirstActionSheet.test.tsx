@@ -69,6 +69,8 @@ describe("FirstActionHeroCard — inline chips (S2.3)", () => {
       module: "finyk",
       primary: "routine",
       via: "chip",
+      // PR-11: PostHog faceting field — no goals, multiple picks → static.
+      primary_reason: "multi-pick-static",
     });
   });
 
@@ -89,6 +91,7 @@ describe("FirstActionHeroCard — inline chips (S2.3)", () => {
       module: "routine",
       primary: "routine",
       via: "primary",
+      primary_reason: "multi-pick-static",
     });
   });
 

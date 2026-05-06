@@ -8,6 +8,7 @@ import {
   getGoalQuestions,
   getOnboardingGoals,
   pickPrimaryFirstAction,
+  rankFirstActionCandidates,
   saveOnboardingGoals,
   type OnboardingGoals,
 } from "./onboardingGoals";
@@ -191,5 +192,100 @@ describe("onboardingGoals — pickPrimaryFirstAction (S2.1)", () => {
       "nutrition",
       "fizruk",
     ]);
+  });
+});
+
+describe("onboardingGoals — rankFirstActionCandidates (PR-11)", () => {
+  const ALL_PICKS = ["routine", "finyk", "nutrition", "fizruk"];
+
+  it("returns no-picks reason and routine default for empty picks", () => {
+    expect(rankFirstActionCandidates([], EMPTY_GOALS)).toEqual({
+      primary: "routine",
+      reason: "no-picks",
+      others: [],
+    });
+  });
+
+  it("returns single-pick reason when only one module is picked", () => {
+    expect(rankFirstActionCandidates(["fizruk"], EMPTY_GOALS)).toEqual({
+      primary: "fizruk",
+      reason: "single-pick",
+      others: [],
+    });
+  });
+
+  it("returns multi-pick-static reason when no goals are set", () => {
+    const ranking = rankFirstActionCandidates(
+      ["finyk", "fizruk", "nutrition"],
+      EMPTY_GOALS,
+    );
+    expect(ranking.primary).toBe("finyk");
+    expect(ranking.reason).toBe("multi-pick-static");
+    // Others preserve the user's vibe-pick order minus the primary.
+    expect(ranking.others).toEqual(["fizruk", "nutrition"]);
+  });
+
+  it("returns single-goal reason when exactly one module has a goal", () => {
+    const ranking = rankFirstActionCandidates(ALL_PICKS, {
+      ...EMPTY_GOALS,
+      nutritionGoal: "lose",
+    });
+    expect(ranking).toEqual({
+      primary: "nutrition",
+      reason: "single-goal",
+      others: ["routine", "finyk", "fizruk"],
+    });
+  });
+
+  it("breaks ties by user's vibe-pick order, not static priority", () => {
+    // User explicitly picked fizruk first; both fizruk and finyk have goals.
+    // Old behaviour: finyk wins by static priority. New: fizruk wins.
+    const ranking = rankFirstActionCandidates(["fizruk", "finyk", "routine"], {
+      ...EMPTY_GOALS,
+      finykBudget: 30000,
+      fizrukWeeklyGoal: 3,
+    });
+    expect(ranking.primary).toBe("fizruk");
+    expect(ranking.reason).toBe("multi-goal-vibe");
+    // Goal-set picks come first in `others` (finyk before routine).
+    expect(ranking.others).toEqual(["finyk", "routine"]);
+  });
+
+  it("ignores goals for modules outside picks", () => {
+    // finykBudget set but finyk not picked → goal is invisible, falls back
+    // to static priority among picks.
+    const ranking = rankFirstActionCandidates(["routine", "fizruk"], {
+      ...EMPTY_GOALS,
+      finykBudget: 30000,
+    });
+    expect(ranking).toEqual({
+      primary: "routine",
+      reason: "multi-pick-static",
+      others: ["fizruk"],
+    });
+  });
+
+  it("groups goal-set picks ahead of non-goal picks in others", () => {
+    // Picks order: routine, finyk, nutrition, fizruk; goals on finyk + fizruk.
+    // Primary = finyk (first goal-set in picks order). Others should list the
+    // remaining goal-set pick (fizruk) before the non-goal picks (routine,
+    // nutrition) in their original order.
+    const ranking = rankFirstActionCandidates(ALL_PICKS, {
+      ...EMPTY_GOALS,
+      finykBudget: 20000,
+      fizrukWeeklyGoal: 4,
+    });
+    expect(ranking.primary).toBe("finyk");
+    expect(ranking.reason).toBe("multi-goal-vibe");
+    expect(ranking.others).toEqual(["fizruk", "routine", "nutrition"]);
+  });
+
+  it("sanitises unknown ids and duplicates", () => {
+    const ranking = rankFirstActionCandidates(
+      ["unknown", "finyk", "finyk", "routine"],
+      EMPTY_GOALS,
+    );
+    expect(ranking.primary).toBe("routine");
+    expect(ranking.others).toEqual(["finyk"]);
   });
 });

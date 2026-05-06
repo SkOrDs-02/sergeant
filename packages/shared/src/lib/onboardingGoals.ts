@@ -203,40 +203,133 @@ function hasGoalFor(
 }
 
 /**
+ * Why a particular module ended up as the FTUX primary. Surfaced through
+ * `rankFirstActionCandidates` so analytics can compute per-module first-
+ * entry rate variance broken down by selection reason — the SLO PR-11 is
+ * trying to move (`Per-module first-entry rate variance ↓`).
+ *
+ * - `no-picks` — empty picks; we fell back to the `routine` default.
+ * - `single-pick` — exactly one vibe pick; that pick wins regardless of goals.
+ * - `single-goal` — one goal-set module within picks; goal wins.
+ * - `multi-goal-vibe` — multiple goal-set modules; first in user's vibe-pick
+ *   order wins. Honours the user's explicit ordering over our static
+ *   friction-first heuristic, because once the user has committed to a goal
+ *   we trust their intent more than our preset.
+ * - `multi-pick-static` — multiple picks, zero goals; falls back to
+ *   `FIRST_ACTION_PRIORITY` (lowest-friction first) so empty-state UX is
+ *   unchanged from pre-S2.1.
+ */
+export type FirstActionPrimaryReason =
+  | "no-picks"
+  | "single-pick"
+  | "single-goal"
+  | "multi-goal-vibe"
+  | "multi-pick-static";
+
+export interface FirstActionRanking {
+  /** Module promoted into the hero CTA. */
+  primary: DashboardModuleId;
+  /** Why `primary` won — fed into `onboarding_first_action_*` events. */
+  reason: FirstActionPrimaryReason;
+  /**
+   * All other picks in chip-row display order. Goal-set modules come first
+   * (so a user with two goals sees both their committed modules adjacent to
+   * the hero), then non-goal picks; both groups preserve the user's
+   * original vibe-pick order. Sanitised: unknown ids and duplicates dropped.
+   */
+  others: DashboardModuleId[];
+}
+
+function sanitiseModuleIds(picks: readonly string[]): DashboardModuleId[] {
+  const known = new Set<DashboardModuleId>(FIRST_ACTION_PRIORITY);
+  const seen = new Set<string>();
+  const out: DashboardModuleId[] = [];
+  for (const id of picks) {
+    if (typeof id !== "string") continue;
+    if (!known.has(id as DashboardModuleId)) continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(id as DashboardModuleId);
+  }
+  return out;
+}
+
+/**
+ * Resolve the FTUX `FirstActionHeroCard` primary + chip ordering + analytics
+ * reason from the user's vibe picks and onboarding goals.
+ *
+ * Goal-aware (S2.1 evolved into PR-11): a module with an explicit goal still
+ * beats one without. When more than one goal is set, the **user's vibe-pick
+ * order** breaks ties (was: static `FIRST_ACTION_PRIORITY`). Picking `fizruk`
+ * before `finyk` in the wizard now actually surfaces fizruk as the hero when
+ * both have goals — the previous heuristic always promoted finyk on the basis
+ * that finance has lower setup friction, ignoring the explicit reorder.
+ *
+ * No-goals fallback is unchanged: `FIRST_ACTION_PRIORITY` (routine first)
+ * keeps empty-state UX byte-identical to pre-S2.1.
+ *
+ * `others` orders goal-set picks ahead of non-goal picks so the chip row
+ * groups committed modules next to the hero, surfacing the user's explicit
+ * intent on a single visual sweep.
+ */
+export function rankFirstActionCandidates(
+  picks: readonly string[],
+  goals: OnboardingGoals,
+): FirstActionRanking {
+  const sanitised = sanitiseModuleIds(picks);
+
+  if (sanitised.length === 0) {
+    return { primary: "routine", reason: "no-picks", others: [] };
+  }
+
+  const goalPicks = sanitised.filter((id) => hasGoalFor(id, goals));
+
+  if (goalPicks.length >= 1) {
+    const primary = goalPicks[0]!;
+    const remainingGoal = goalPicks.slice(1);
+    const noGoal = sanitised.filter((id) => !hasGoalFor(id, goals));
+    return {
+      primary,
+      reason: goalPicks.length === 1 ? "single-goal" : "multi-goal-vibe",
+      others: [...remainingGoal, ...noGoal],
+    };
+  }
+
+  if (sanitised.length === 1) {
+    return { primary: sanitised[0]!, reason: "single-pick", others: [] };
+  }
+
+  for (const moduleId of FIRST_ACTION_PRIORITY) {
+    if (!sanitised.includes(moduleId)) continue;
+    return {
+      primary: moduleId,
+      reason: "multi-pick-static",
+      others: sanitised.filter((id) => id !== moduleId),
+    };
+  }
+
+  // Defensive: sanitised is non-empty AND FIRST_ACTION_PRIORITY covers every
+  // DashboardModuleId, so the loop above always returns. This branch is here
+  // for type narrowing only.
+  return {
+    primary: sanitised[0]!,
+    reason: "multi-pick-static",
+    others: sanitised.slice(1),
+  };
+}
+
+/**
  * Pick the primary module promoted by the FTUX `FirstActionHeroCard`.
  *
- * Goal-aware (S2.1): if the user committed to an explicit goal in the
- * onboarding goals step (finyk budget, fizruk weekly target, routine
- * first habit, nutrition objective) AND that module is in their vibe
- * picks, it wins. The CTA then lines up with the intent the user just
- * spelled out — "Встанови бюджет 30k ₴" feels personal in a way that
- * the static-priority "Створи першу звичку" never could for a finance-
- * driven user.
- *
- * Tie-breaking: when more than one goal is set, falls back to
- * `FIRST_ACTION_PRIORITY` (lowest-friction first). Same rule applies
- * to the no-goals path so behaviour is byte-identical to the previous
- * static `pickPrimary` when goals are empty.
- *
- * Always returns a valid `DashboardModuleId` — `routine` when `picks`
- * is empty (lazy users still get a sensible default; matches pre-S2.1).
+ * Thin wrapper over `rankFirstActionCandidates` kept so existing call-sites
+ * that only need the hero id (and don't care about chip ordering or analytics
+ * reason) stay terse. Always returns a valid `DashboardModuleId` — `routine`
+ * when `picks` is empty (lazy users still get a sensible default; matches
+ * pre-S2.1).
  */
 export function pickPrimaryFirstAction(
   picks: readonly string[],
   goals: OnboardingGoals,
 ): DashboardModuleId {
-  const pickSet = new Set(picks);
-
-  // Goal-aware path: any module with an explicit goal beats one without.
-  for (const moduleId of FIRST_ACTION_PRIORITY) {
-    if (!pickSet.has(moduleId)) continue;
-    if (hasGoalFor(moduleId, goals)) return moduleId;
-  }
-
-  // Static fallback: highest-priority pick wins.
-  for (const moduleId of FIRST_ACTION_PRIORITY) {
-    if (pickSet.has(moduleId)) return moduleId;
-  }
-
-  return "routine";
+  return rankFirstActionCandidates(picks, goals).primary;
 }
