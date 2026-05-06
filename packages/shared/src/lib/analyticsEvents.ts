@@ -214,6 +214,28 @@ export const ANALYTICS_EVENTS = Object.freeze({
   DEMO_STARTED: "demo_started",
   DEMO_DISMISSED: "demo_dismissed",
   DEMO_TO_WIZARD_CONFIRMED: "demo_to_wizard_confirmed",
+
+  // PWA install prompt (Wave 1 PR-07 — `docs/launch/product-os/ftux-master-tracker.md`).
+  // Funnel:
+  //   PWA_INSTALL_PROMPTED  ≥  PWA_INSTALL_ACCEPTED + PWA_INSTALL_DISMISSED
+  //   PWA_INSTALLED          ≤  PWA_INSTALL_ACCEPTED                  (Android/Chromium only;
+  //                                                                     iOS Safari has no
+  //                                                                     `appinstalled` event)
+  //
+  // The success metric we maintain is
+  //   `pwa_installed / first_real_entry ≥ 8 %`
+  // — i.e. of users who hit their first real entry, at least 8 % go on
+  // to install the app. Payload contracts:
+  //
+  //   PWA_INSTALL_PROMPTED   { surface: "android" | "ios" }
+  //   PWA_INSTALL_ACCEPTED   {}  // native chooser → outcome === "accepted"
+  //   PWA_INSTALL_DISMISSED  { surface: "android" | "ios",
+  //                            via: "banner" | "chooser" }
+  //   PWA_INSTALLED          {}  // window `appinstalled` event
+  PWA_INSTALL_PROMPTED: "pwa_install_prompted",
+  PWA_INSTALL_ACCEPTED: "pwa_install_accepted",
+  PWA_INSTALL_DISMISSED: "pwa_install_dismissed",
+  PWA_INSTALLED: "pwa_installed",
 } as const);
 
 export type AnalyticsEventName =
