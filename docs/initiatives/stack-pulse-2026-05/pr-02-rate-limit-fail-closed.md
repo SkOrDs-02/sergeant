@@ -1,7 +1,7 @@
 # PR-02: Rate-limit fail-closed на `/api/auth/*`
 
-> **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
-> **Status:** Planned
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+> **Status:** Closed — merged [#1552](https://github.com/Skords-01/Sergeant/pull/1552)
 
 |              |                                                                                   |
 | ------------ | --------------------------------------------------------------------------------- |
@@ -12,6 +12,8 @@
 | **Touches**  | `apps/server/src/http/rateLimit.ts`, `apps/server/src/middleware/`, observability |
 
 ## Контекст
+
+> **Update 2026-05-06:** цей PR-план закрито через [#1552](https://github.com/Skords-01/Sergeant/pull/1552). Файл лишається historical record; подальші Redis/Testcontainers follow-up-и мають відкриватися як новий hardening PR, а не як продовження PR-02.
 
 ```ts
 // apps/server/src/http/rateLimit.ts:207–219

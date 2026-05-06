@@ -36,14 +36,14 @@
 
 ### Critical (PR-01..06)
 
-| ID  | Заголовок                                                           | PR-план                                             | Статус                                                                |
-| --- | ------------------------------------------------------------------- | --------------------------------------------------- | --------------------------------------------------------------------- |
-| C1  | Подвійна env-система (`env.ts` + `env/env.ts` + `betterAuthEnv.ts`) | [PR-01](./pr-01-unify-env-modules.md)               | Planned                                                               |
-| C2  | Rate-limit in-memory fallback при відмові Redis                     | [PR-02](./pr-02-rate-limit-fail-closed.md)          | **Merged** ([#1552](https://github.com/Skords-01/Sergeant/pull/1552)) |
-| C3  | bcrypt + `MAX_PASSWORD_LENGTH=128` (silent 72-byte cap)             | [PR-03](./pr-03-bcrypt-password-limit.md)           | **Merged** ([#1550](https://github.com/Skords-01/Sergeant/pull/1550)) |
-| C4  | Bus factor = 1 (єдиний `@Skords-01` owner усього)                   | [PR-04](./pr-04-bus-factor-secondary-owners.md)     | Planned                                                               |
-| C5  | TypeScript 6.0.3 + `@types/node@25.6` на Node 20                    | [PR-05](./pr-05-typescript-types-node-downgrade.md) | Planned                                                               |
-| C6  | OpenClaw plain `Git_PAT` з `contents:write`                         | [PR-06](./pr-06-openclaw-github-app.md)             | Planned                                                               |
+| ID  | Заголовок                                                           | PR-план                                             | Статус                                                                                                                                      |
+| --- | ------------------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| C1  | Подвійна env-система (`env.ts` + `env/env.ts` + `betterAuthEnv.ts`) | [PR-01](./pr-01-unify-env-modules.md)               | Planned                                                                                                                                     |
+| C2  | Rate-limit in-memory fallback при відмові Redis                     | [PR-02](./pr-02-rate-limit-fail-closed.md)          | **Merged** ([#1552](https://github.com/Skords-01/Sergeant/pull/1552))                                                                       |
+| C3  | bcrypt + `MAX_PASSWORD_LENGTH=128` (silent 72-byte cap)             | [PR-03](./pr-03-bcrypt-password-limit.md)           | **Merged** ([#1550](https://github.com/Skords-01/Sergeant/pull/1550))                                                                       |
+| C4  | Bus factor = 1 (єдиний `@Skords-01` owner усього)                   | [PR-04](./pr-04-bus-factor-secondary-owners.md)     | Planned                                                                                                                                     |
+| C5  | TypeScript 6.0.3 + `@types/node@25.6` на Node 20                    | [PR-05](./pr-05-typescript-types-node-downgrade.md) | Planned                                                                                                                                     |
+| C6  | OpenClaw plain `Git_PAT` з `contents:write`                         | [PR-06](./pr-06-openclaw-github-app.md)             | **In progress / partial** — GitHub App auth-flow merged [#1816](https://github.com/Skords-01/Sergeant/pull/1816); PAT-removal phase pending |
 
 ### High (PR-07..16)
 

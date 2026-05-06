@@ -1,6 +1,6 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Proposed (decisions locked, scope final; перший PR — цей документ + аудит-сорс + owner-decisions)
 > **Priority:** P0 (Sprint 1–4)
 > **Owner:** `@Skords-01`
@@ -92,7 +92,7 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 
 `chore-console-move-to-tools` — переніс `apps/console/` → `tools/console/`. Сигналізує «це internal tool, не product». Maintenance — той самий. ~1 година роботи.
 
-**Status:** `done` — реалізовано у [#TBD](https://github.com/Skords-01/Sergeant/pulls). `apps/console/` зник з `apps/`, `tools/console/` додано до `pnpm-workspace.yaml`, `.github/CODEOWNERS` оновлено (`/apps/console/src/agents/` → `/tools/console/src/agents/`). NPM-package name (`@sergeant/console`) і Railway service (`sergeant-hubchat`) НЕ змінювалися — лише monorepo placement. Локальна верифікація: `pnpm typecheck` (root, `turbo run typecheck`) — 16/16 task-ів, 0 errors.
+**Status:** `done` — реалізовано у [#1792](https://github.com/Skords-01/Sergeant/pull/1792) (`856ea440 chore(root): move apps/console to tools/console (0010 ankle-PR)`). `apps/console/` зник з `apps/`, `tools/console/` додано до `pnpm-workspace.yaml`, `.github/CODEOWNERS` оновлено (`/apps/console/src/agents/` → `/tools/console/src/agents/`). NPM-package name (`@sergeant/console`) і Railway service (`sergeant-hubchat`) НЕ змінювалися — лише monorepo placement. Локальна верифікація з PR-опису: `pnpm typecheck` (root, `turbo run typecheck`) — 16/16 task-ів, 0 errors.
 
 **Acceptance:** `apps/console/` зник, `tools/console/` працює (CI зелений), CODEOWNERS оновлено.
 

@@ -1,6 +1,6 @@
 # 0013 — Module decomposition round 2 (`apps/web` allowlist drain)
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** In progress (Sprint 1 — 1/4 PR-ів)
 > **Priority:** P2 (subordinate to 0010-revenue-first-launch scope-freeze; pre-launch work паралельно лише на adjacent-touch — див. § Чому зараз)
 > **Owner:** `@Skords-01`

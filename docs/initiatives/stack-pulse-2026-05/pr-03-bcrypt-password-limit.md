@@ -1,7 +1,7 @@
-# PR-03: bcrypt password length — explicit cap або міграція на Argon2id
+# PR-03: password length policy — scrypt premise correction
 
-> **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
-> **Status:** Planned
+> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+> **Status:** Closed — merged [#1550](https://github.com/Skords-01/Sergeant/pull/1550)
 
 |              |                                                               |
 | ------------ | ------------------------------------------------------------- |
@@ -12,6 +12,8 @@
 | **Touches**  | `apps/server/src/env*`, `apps/server/src/auth.ts`, migrations |
 
 ## Контекст
+
+> **Update 2026-05-06:** початкова знахідка була сформульована як bcrypt 72-byte cap, але реалізаційна перевірка показала, що Better Auth у цьому стеку використовує scrypt. Закриття у [#1550](https://github.com/Skords-01/Sergeant/pull/1550) і подальший запис у `pr-plan-2026-05.md` фіксують це як premise correction: `MAX_PASSWORD_LENGTH` піднято до 256 як operational DoS-cap, а ADR-0042 переписано під scrypt. Нижче лишається історичний контекст первинної знахідки; не цитувати його як поточну криптографічну модель.
 
 Better Auth використовує bcrypt під капотом. **bcrypt має 72-byte hard limit** на password input — все понад це **мовчки** ігнорується. Юзер з 100-символьним паролем має ентропію <72 байт.
 
