@@ -12,6 +12,43 @@ function parseRate(val: unknown, fallback: number): number {
 }
 
 /**
+ * Per-op sampling rates for the browser Sentry SDK
+ * (stack-pulse PR-12 / H6).
+ *
+ * The browser-side `samplingContext` exposes `attributes["sentry.op"]`
+ * (page navigation telemetry) and `attributes["http.url"]` (XHR/fetch
+ * spans). Picker lives here so it can be unit-tested without booting
+ * the SDK and mirrors the server-side declarative rule table.
+ *
+ * Rationale:
+ *   - `pageload` 100% — first-paint perf is the most actionable signal
+ *     and only fires once per session.
+ *   - `navigation` 10% — SPA route changes are frequent; 10% is enough
+ *     for trend without burning quota.
+ *   - `http.client` 1% — outbound API calls are the noisiest spans.
+ *   - everything else → fallback (env-tunable).
+ */
+export type WebSentrySamplingContext = {
+  attributes?: Record<string, unknown>;
+  op?: unknown;
+};
+
+export function pickWebTracesSampleRate(
+  ctx: WebSentrySamplingContext | unknown,
+  fallback: number,
+): number {
+  if (!ctx || typeof ctx !== "object") return fallback;
+  const c = ctx as WebSentrySamplingContext;
+  const op =
+    (c.attributes && (c.attributes["sentry.op"] as unknown)) ?? c.op ?? "";
+  if (typeof op !== "string") return fallback;
+  if (op === "pageload") return 1.0;
+  if (op === "navigation") return 0.1;
+  if (op === "http.client") return 0.01;
+  return fallback;
+}
+
+/**
  * Лениво завантажує `@sentry/react` і ініціалізує Sentry у браузері.
  *
  * Навмисно через динамічний `import()`, щоб SDK (~30–40 KB gzip) не
@@ -42,10 +79,15 @@ export async function initSentry() {
         blockAllMedia: true,
       }),
     ],
-    tracesSampleRate: parseRate(
-      import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE,
-      0.1,
-    ),
+    // Dynamic per-op sampler (stack-pulse PR-12 / H6). The fallback is
+    // env-tunable via `VITE_SENTRY_TRACES_SAMPLE_RATE` (kill-switch =
+    // setting it to `0` zeroes out unmatched ops while pageload/nav
+    // still get their explicit rates from `pickWebTracesSampleRate`).
+    tracesSampler: (samplingContext) =>
+      pickWebTracesSampleRate(
+        samplingContext,
+        parseRate(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE, 0.05),
+      ),
     replaysSessionSampleRate: parseRate(
       import.meta.env.VITE_SENTRY_REPLAY_SAMPLE_RATE,
       0,
