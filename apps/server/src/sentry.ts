@@ -11,6 +11,93 @@ function parseRate(val: string | undefined, fallback: number): number {
 }
 
 /**
+ * Per-route sampling rules — declarative table consumed by `pickTracesSampleRate`.
+ * Order is significant: longest-prefix-first wins. The shape mirrors the
+ * body-size policy (`apps/server/src/http/bodySizePolicy.ts`) — declarative
+ * tables make audit + drift detection trivial.
+ *
+ * Defaults derived from H6 (stack-pulse-2026-05/PR-12). Adjustments must
+ * update `docs/observability/sentry-sampling.md` in the same PR (drift
+ * checked via review, not lint — Sentry quota is the production check).
+ */
+export type SentrySamplingRule = {
+  /** Substring tested against the request URL. */
+  match: string;
+  /** Sampling rate in [0, 1]. */
+  rate: number;
+  /** Why this rate exists (shown in docs/sentry-sampling.md). */
+  reason: string;
+};
+
+export const SENTRY_SAMPLING_RULES: readonly SentrySamplingRule[] = [
+  // Order is intentional: longest path first so /api/auth/sign-up does not
+  // accidentally fall through to /api/health (longest-prefix-first).
+  {
+    match: "/api/account/recovery",
+    rate: 1.0,
+    reason: "Security-critical, low volume — capture every trace.",
+  },
+  {
+    match: "/api/admin/",
+    rate: 1.0,
+    reason: "Admin tooling, low volume + high blast radius.",
+  },
+  {
+    match: "/api/auth/",
+    rate: 1.0,
+    reason: "Login/signup/SSO — security-critical, low-volume.",
+  },
+  {
+    match: "/api/photo/analyze",
+    rate: 0.5,
+    reason: "Expensive AI route; half-trace keeps perf signal without 1× cost.",
+  },
+  {
+    match: "/api/sync/poll",
+    rate: 0.01,
+    reason: "Chatty heartbeat poll — 1% is enough for trend.",
+  },
+  {
+    match: "/api/health",
+    rate: 0.001,
+    reason: "Liveness probe — 0.1% prevents quota burn.",
+  },
+] as const;
+
+/**
+ * Default fallback rate when no rule matches. Derived from
+ * `SENTRY_TRACES_SAMPLE_RATE` env-var (deploy-time override) but capped
+ * at 5% by the plan to leave headroom for high-value routes.
+ *
+ * Exported so tests can pin a deterministic baseline.
+ */
+export function defaultSampleRate(
+  env: NodeJS.ProcessEnv = process.env,
+): number {
+  return parseRate(env["SENTRY_TRACES_SAMPLE_RATE"], 0.05);
+}
+
+/**
+ * Pure picker — given a URL, returns the first matching rate, or
+ * `fallback` if no rule matches. Pure & sync so unit tests can call
+ * it without bootstrapping Sentry SDK.
+ *
+ * Defensive: any unexpected input (`null`, `undefined`, non-string)
+ * collapses to `fallback` — matches `tracesSampler` contract that a
+ * thrown error in the picker would skip the sample (Sentry default).
+ */
+export function pickTracesSampleRate(
+  url: unknown,
+  fallback: number = defaultSampleRate(),
+): number {
+  if (typeof url !== "string" || url.length === 0) return fallback;
+  for (const rule of SENTRY_SAMPLING_RULES) {
+    if (url.includes(rule.match)) return rule.rate;
+  }
+  return fallback;
+}
+
+/**
  * L9 — Resolve the Sentry `release` tag from the deploy environment.
  *
  * Sentry needs every event to be tagged with the exact git SHA that produced
@@ -188,8 +275,36 @@ if (dsn) {
       process.env["NODE_ENV"] ||
       "development",
     ...(release ? { release } : {}),
-    // `SENTRY_TRACES_SAMPLE_RATE=0` має вимикати трейсинг — тому не `|| 0.1`.
-    tracesSampleRate: parseRate(process.env["SENTRY_TRACES_SAMPLE_RATE"], 0.1),
+    // Dynamic per-route sampler (stack-pulse PR-12). Replaces a static 10%
+    // sample rate that over-sampled chatty heartbeats (`/api/health`,
+    // `/api/sync/poll`) and under-sampled security-critical low-volume
+    // routes (`/api/auth/*`, `/api/account/recovery`). The rule table is
+    // declarative — see `SENTRY_SAMPLING_RULES` and
+    // `docs/observability/sentry-sampling.md` for rationale + budget.
+    //
+    // `SENTRY_TRACES_SAMPLE_RATE=0` still works — it lowers the *fallback*
+    // rate to 0 for unmatched routes (kill-switch for incident-mitigation).
+    tracesSampler: (samplingContext) => {
+      try {
+        // Sentry's `samplingContext` shape is loosely typed; the URL lives
+        // either on `request.url` (Node http) or under `attributes` for
+        // OTel spans. We accept both — and any other shape collapses to
+        // the fallback via `pickTracesSampleRate`'s defensive guards.
+        const ctx = samplingContext as {
+          request?: { url?: unknown };
+          attributes?: { "http.url"?: unknown; "http.target"?: unknown };
+        };
+        const url =
+          ctx.request?.url ??
+          ctx.attributes?.["http.url"] ??
+          ctx.attributes?.["http.target"];
+        return pickTracesSampleRate(url);
+      } catch {
+        // Never let sampler crash the SDK — if anything throws we fall
+        // back to the deploy-configured default rate.
+        return defaultSampleRate();
+      }
+    },
     // Приберемо request body зі звітів — там можуть бути фото/паролі.
     sendDefaultPii: false,
     beforeSend: applyBeforeSend,
