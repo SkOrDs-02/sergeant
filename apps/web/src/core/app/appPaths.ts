@@ -37,7 +37,8 @@ export const PROFILE_PATH = "/profile";
 export const DESIGN_PATH = "/design";
 export const PRICING_PATH = "/pricing";
 
-// All URL paths the app handles. Anything outside this set gets a 404
+// All URL paths the app handles. Anything outside this set **and** not
+// owned by a path-based module (`isPathBasedModulePath`) gets a 404
 // instead of silently falling through to the dashboard.
 export const KNOWN_PATHS: ReadonlySet<string> = new Set([
   "/",
@@ -50,3 +51,41 @@ export const KNOWN_PATHS: ReadonlySet<string> = new Set([
   CHAT_PATH,
   WELCOME_PATH,
 ]);
+
+/**
+ * Modules that have graduated from `/?module=<id>` to a top-level
+ * `/<id>/...` path-based URL contract (initiative 0006 §Phase 2).
+ *
+ * Single source of truth: both `useHubNavigation` (router-side
+ * pathname → activeModule mapping + URL emission) and
+ * `renderStandaloneRoute` (404 fallback exemption) read from this
+ * set. When a new module migrates, add it here once; both consumers
+ * pick it up automatically.
+ *
+ * Order: nutrition (PR #2104), finyk (PR #2108); fizruk + routine
+ * are still on `?module=<id>` until later 0006 PRs.
+ */
+export const PATH_BASED_MODULE_IDS: ReadonlySet<string> = new Set([
+  "nutrition",
+  "finyk",
+]);
+
+/**
+ * Returns true when `pathname` is owned by a path-based module
+ * (`/<id>` or `/<id>/...`). Used by `renderStandaloneRoute` to skip
+ * the unknown-paths 404 for module-owned URLs — without this, the
+ * App shell renders `<NotFoundPage />` for `/finyk` / `/nutrition`
+ * before `useHubNavigation` gets a chance to set `activeModule`.
+ *
+ * Boundary: `/finykfoo` is **not** a finyk path (would otherwise
+ * alias `/finykprofile` → finyk). The check splits on `/` to require
+ * an exact first-segment match, mirroring `parsePathnameModule()` in
+ * `useHubNavigation.ts`.
+ */
+export function isPathBasedModulePath(pathname: string): boolean {
+  if (typeof pathname !== "string" || pathname.length < 2) return false;
+  if (!pathname.startsWith("/")) return false;
+  const firstSegment = pathname.slice(1).split("/", 1)[0] ?? "";
+  if (!firstSegment) return false;
+  return PATH_BASED_MODULE_IDS.has(firstSegment);
+}

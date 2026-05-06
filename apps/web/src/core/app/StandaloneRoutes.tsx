@@ -14,6 +14,7 @@ import {
   RESET_PASSWORD_PATH,
   SIGN_IN_PATH,
   WELCOME_PATH,
+  isPathBasedModulePath,
 } from "./appPaths";
 import type { useAuth } from "../auth/AuthContext";
 
@@ -169,7 +170,16 @@ export function renderStandaloneRoute(args: StandaloneRouteArgs): ReactNode {
   }
 
   // Unknown paths get a 404 instead of silently showing the dashboard.
-  if (!KNOWN_PATHS.has(pathname)) {
+  // Exception: paths owned by a migrated path-based module (`/finyk`,
+  // `/nutrition`, plus their nested URLs like `/finyk/budgets` or
+  // `/nutrition/log`) — those are handled by `useHubNavigation` →
+  // `<ActiveModuleView />` further down the App shell, **not** by
+  // `renderStandaloneRoute`. Without this exemption, every entry into
+  // a migrated module short-circuits into `<NotFoundPage />` (regression
+  // introduced together with `KNOWN_PATHS`-as-allowlist + 0006 Phase 2
+  // when path-based modules were not added to the standalone-route
+  // surface map).
+  if (!KNOWN_PATHS.has(pathname) && !isPathBasedModulePath(pathname)) {
     return (
       <Suspense fallback={<PageLoader />}>
         <NotFoundPage />
