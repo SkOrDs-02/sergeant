@@ -1,20 +1,13 @@
 import "dotenv/config";
 import { Bot, GrammyError } from "grammy";
 import Anthropic from "@anthropic-ai/sdk";
-import { parseCommand, dispatchToAgent } from "./agents/router.js";
+import { attachConsoleHandlers } from "./bot.js";
 import {
   CONSOLE_GLOBAL_RATE_LIMIT_KEY,
-  escapeTelegramMarkdownV2,
   FixedWindowRateLimiter,
-  isUserAllowed,
   parseGlobalRateLimitPerMinute,
   parseRateLimitPerMinute,
-  splitTelegramMessage,
 } from "./security.js";
-import {
-  CONSOLE_GLOBAL_RATE_CAP_HIT_TOTAL,
-  incrementCounter,
-} from "./obs/metrics.js";
 import { attachOpenClawHandlers } from "./openclaw/index.js";
 import {
   registerOpenClawWebhook,
@@ -82,7 +75,6 @@ function parseOpenClawMaxIterations(value: string | undefined): number {
 // M16: HELP_TEXT lives in `./help-text.ts` so the MarkdownV2 snapshot
 // test can import it without booting the bot's `main()` side-effect.
 export { HELP_TEXT } from "./help-text.js";
-import { HELP_TEXT } from "./help-text.js";
 
 async function main() {
   const anthropicKey = process.env["ANTHROPIC_API_KEY"];
@@ -121,56 +113,8 @@ async function main() {
         ),
       },
     );
-    const checkAuth = (userId: number | undefined) =>
-      isUserAllowed(userId, process.env);
 
-    bot.command("start", async (ctx) => {
-      if (!checkAuth(ctx.from?.id)) {
-        await ctx.reply("Access denied.");
-        return;
-      }
-      await ctx.reply(HELP_TEXT, { parse_mode: "MarkdownV2" });
-    });
-
-    bot.command("help", async (ctx) => {
-      if (!checkAuth(ctx.from?.id)) return;
-      await ctx.reply(HELP_TEXT, { parse_mode: "MarkdownV2" });
-    });
-
-    bot.on("message:text", async (ctx) => {
-      if (!checkAuth(ctx.from?.id)) {
-        await ctx.reply("Access denied.");
-        return;
-      }
-      const rateLimitKey = String(ctx.from?.id ?? ctx.chat.id);
-      if (!limiter.allow(rateLimitKey)) {
-        if (limiter.lastDeny() === "global") {
-          incrementCounter(CONSOLE_GLOBAL_RATE_CAP_HIT_TOTAL);
-        }
-        await ctx.reply("Rate limit exceeded. Try again in a minute.");
-        return;
-      }
-
-      const text = ctx.message.text;
-      const { agent, query } = parseCommand(text);
-
-      await ctx.replyWithChatAction("typing");
-
-      try {
-        const reply = await dispatchToAgent(anthropic, agent, query, {
-          telegramUserId: ctx.from?.id ?? 0,
-          telegramChatId: ctx.chat.id,
-          messageId: ctx.message.message_id,
-        });
-        const safeReply = escapeTelegramMarkdownV2(reply);
-        for (const chunk of splitTelegramMessage(safeReply)) {
-          await ctx.reply(chunk, { parse_mode: "MarkdownV2" });
-        }
-      } catch (err) {
-        console.error("Agent error:", err);
-        await ctx.reply("Agent error. Try again.");
-      }
-    });
+    attachConsoleHandlers({ bot, anthropic, limiter, env: process.env });
 
     bot.catch((err) => {
       console.error("Bot error:", err.error, {
