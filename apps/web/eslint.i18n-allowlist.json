@@ -156,6 +156,8 @@
   "apps/web/src/modules/fizruk/components/workouts/WorkoutItemsList.tsx",
   "apps/web/src/modules/fizruk/components/workouts/WorkoutJournalSection.tsx",
   "apps/web/src/modules/fizruk/components/workouts/WorkoutTimeEditor.tsx",
+  "apps/web/src/modules/fizruk/components/workouts/WorkoutsConfirmDialogs.tsx",
+  "apps/web/src/modules/fizruk/components/workouts/WorkoutsHeader.tsx",
   "apps/web/src/modules/fizruk/components/workouts/WorkoutsHome.tsx",
   "apps/web/src/modules/fizruk/pages/Atlas.tsx",
   "apps/web/src/modules/fizruk/pages/Body.tsx",

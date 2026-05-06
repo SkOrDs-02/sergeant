@@ -1,7 +1,7 @@
 # 0013 — Module decomposition round 2 (`apps/web` allowlist drain)
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
-> **Status:** Proposed
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-03.
+> **Status:** In progress (Sprint 1 — 1/4 PR-ів)
 > **Priority:** P2 (subordinate to 0010-revenue-first-launch scope-freeze; pre-launch work паралельно лише на adjacent-touch — див. § Чому зараз)
 > **Owner:** `@Skords-01`
 > **ETA:** 3 sprints (≈3 тижні), **8–11 PR-ів** (по 1 PR на файл, плюс finalize-PR з drop-allowlist)
@@ -129,3 +129,24 @@ PR-и:
 - [`eslint.config.js`](../../eslint.config.js) — поточний `overrides` allowlist (≈11 entries з deadline-коментарями, що цілять у цю ініціативу).
 - [`scripts/check-bundle-size.mjs`](../../scripts/check-bundle-size.mjs) — bundle-gate, який перевіряє delta після decomp-у.
 - [`docs/initiatives/0010-revenue-first-launch.md`](./0010-revenue-first-launch.md) — paralleling scope-freeze, що визначає коли robо `FinykApp.tsx` дозволено.
+
+## Outcome
+
+### Sprint 1 — PR #1 `decomp-r2-workouts` (in flight, 2026-05-06)
+
+`apps/web/src/modules/fizruk/pages/Workouts.tsx` декомпозовано **744 → 567 LOC**
+(нижче 600-LOC гарду; рядок видалено з allowlist у `eslint.config.js`).
+
+Виокремлено в нові файли (поряд з існуючими `components/workouts/*`):
+
+- `pages/Workouts.types.ts` (25 LOC) — `WorkoutsView`, `FinishFlashState`, `LastExerciseItem`.
+- `pages/Workouts.helpers.ts` (127 LOC) — `MUSCLE_GROUP_ORDER`, `buildGroupedExercises`, `collectLastByExerciseId`, `formatActiveDuration`, `todayLocalDateString`.
+- `hooks/useWorkoutsLifecycle.ts` (111 LOC) — `useActiveWorkoutIdPersistence`, `useStaleActiveWorkoutCleanup`, `useWorkoutsViewFromSession`, `useRestTimerCountdown`, `useLiveWorkoutTick`.
+- `components/workouts/WorkoutsHeader.tsx` (74 LOC) — back-button + контекстуальний title/subtitle + «+ Додати».
+- `components/workouts/WorkoutsConfirmDialogs.tsx` (61 LOC) — «Видалити вправу» + «Risky-template start» діалоги.
+
+Verify:
+
+- `pnpm lint` — зелений (0 errors); попередні warnings на cyrillic-JSX літерали перенесено разом зі стрічками без змін поведінки.
+- `pnpm --filter @sergeant/web typecheck` — зелений.
+- `pnpm --filter @sergeant/web test` — `223 / 223` test-files, `2247 / 2247` tests passed (тести `dualWrite/*` запрацювали після `pnpm --filter @sergeant/db-schema build` — pre-existing setup-крок, не пов’язаний з цим PR-ом).

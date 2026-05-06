@@ -1054,7 +1054,6 @@ export default [
   {
     files: [
       "apps/web/src/modules/nutrition/components/LogCard.tsx",
-      "apps/web/src/modules/fizruk/pages/Workouts.tsx",
       "apps/web/src/modules/fizruk/pages/Progress.tsx",
       "apps/web/src/modules/nutrition/NutritionApp.tsx",
       "apps/web/src/core/lib/hubChatContext.ts",
