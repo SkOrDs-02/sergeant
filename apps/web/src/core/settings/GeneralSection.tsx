@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
+import { messages } from "@shared/i18n/uk";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { resetOnboardingState, type User } from "@sergeant/shared";
 import { useAuth } from "../auth/AuthContext";
@@ -97,7 +98,7 @@ export function GeneralSection({
               disabled={syncing}
               onClick={onSync}
             >
-              {syncing ? "Зберігаємо…" : "Зберегти в хмару"}
+              {syncing ? messages.loadingActions.saving : "Зберегти в хмару"}
             </Button>
             <Button
               type="button"
@@ -107,7 +108,9 @@ export function GeneralSection({
               disabled={syncing}
               onClick={onPull}
             >
-              {syncing ? "Завантаження…" : "Завантажити з хмари"}
+              {syncing
+                ? messages.loadingActions.downloading
+                : "Завантажити з хмари"}
             </Button>
           </div>
           {/* Quick logout: lives next to sync because both actions belong
@@ -126,7 +129,7 @@ export function GeneralSection({
             onClick={handleLogout}
           >
             <Icon name="log-out" size={16} />
-            {loggingOut ? "Виходимо…" : "Вийти"}
+            {loggingOut ? messages.loadingActions.exiting : "Вийти"}
           </Button>
         </SettingsSubGroup>
       )}

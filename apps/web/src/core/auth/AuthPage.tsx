@@ -259,7 +259,7 @@ function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
         loading={isSubmitting}
         className="w-full"
       >
-        {isSubmitting ? "Зачекайте…" : "Увійти"}
+        {isSubmitting ? messages.loadingActions.signingIn : "Увійти"}
       </Button>
     </form>
   );
@@ -398,7 +398,7 @@ function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
         loading={isSubmitting}
         className="w-full"
       >
-        {isSubmitting ? "Зачекайте…" : "Зареєструватися"}
+        {isSubmitting ? messages.loadingActions.registering : "Зареєструватися"}
       </Button>
     </form>
   );

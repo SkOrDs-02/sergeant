@@ -60,7 +60,7 @@ export const Inline: Story = {
   render: () => (
     <div className="flex items-center gap-2 text-text">
       <Spinner size="sm" />
-      <span className="text-sm">Завантажуємо транзакції…</span>
+      <span className="text-sm">Завантажую транзакції…</span>
     </div>
   ),
 };

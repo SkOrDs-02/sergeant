@@ -269,6 +269,31 @@ export const messages = {
     pageLoading: "Завантаження сторінки",
   },
 
+  loadingActions: {
+    // Round 17 — first-person singular для transient action-button busy
+    // states. Уніфікує раніше inconsistent inline-копію («Зачекайте…»,
+    // «Зберігаємо…», «Виходимо…», «Підключення…», «Завантаження…»),
+    // зводячи voice до «що *я* зараз роблю» замість passive 3rd-person
+    // («ми…») або noun-form («Завантаження…»).
+    //
+    // Відрізняється від `status.loading` (= "Завантаження…", noun-form
+    // для generic-spinner-ів без action-context). Якщо у тебе кнопка
+    // з `loading={isSubmitting}` і ти знаєш дієслово — клади тут;
+    // якщо просто spinner у пустому section-і — там `status.loading`.
+    //
+    // PR-30 / §C5 з docs/audits/2026-05-06-ux-roast-pr-plan.md.
+    saving: "Зберігаю…",
+    downloading: "Завантажую…",
+    exiting: "Виходжу…",
+    signingIn: "Входжу…",
+    registering: "Реєструю…",
+    connecting: "Підключаюсь…",
+    // Module-/surface-specific варіації (поки що використовуються лише
+    // в одному місці кожна, але живуть тут заради unified voice).
+    loadingTransactions: "Завантажую транзакції…",
+    loadingWorkouts: "Завантажую тренування",
+  },
+
   // Module-specific groups. Сюди потрапляють labels, що домінантно живуть
   // в одному модулі, але з причини фрагментованості surface-у заслуговують
   // централізованого ключа (rebrand-аме на всіх місцях одною зміною).
