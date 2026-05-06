@@ -143,7 +143,13 @@ function BarChart({
                 style={{
                   height: `${pct}%`,
                   minHeight: v > 0 ? "2px" : "0",
-                  animationDelay: `${i * 30}ms`,
+                  // Cap at 600ms so the 30-day chart's last bar starts
+                  // by ~600ms (vs 870ms uncapped). Below 21 bars (week
+                  // & 14-day views) the cap never bites — Hard Rule #17
+                  // already requires total ≤ ~150ms there via stagger
+                  // budget, but bar-grow lives outside that budget
+                  // because each bar's anim is its own discrete reveal.
+                  animationDelay: `${Math.min(i * 30, 600)}ms`,
                 }}
               />
             </button>
