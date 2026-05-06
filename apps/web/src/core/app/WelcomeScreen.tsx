@@ -3,6 +3,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { OnboardingWizard } from "../onboarding/OnboardingWizard";
 import { seedDemoData } from "../onboarding/seedDemoData";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
+import { useCallback } from "react";
 
 // Static preview of the populated hub that sits behind the splash card on
 // `/welcome`. Renders a 2×2 bento grid matching `HubDashboard`'s module
@@ -169,49 +170,39 @@ interface WelcomeScreenProps {
  * Full-page cold-start at `/welcome`. Owns the page chrome + peek
  * backdrop and delegates the splash card to `OnboardingWizard` in
  * `fullPage` mode.
+ *
+ * PR-05 promotes the demo entry to a first-class CTA *inside* the
+ * splash card via `OnboardingWizard`'s `onSecondaryAction` prop, so
+ * the "просто подивитись" cohort no longer has to scan past the
+ * wizard card. Pre-PR-05 this CTA was a separate button under the
+ * card — visually demoted to "third option" and largely ignored.
  */
-/**
- * S4.1 "Подивитись приклад" handler. Seeds a synthetic hub payload
- * across all four modules and reloads onto `/` so the demo state is
- * visible immediately. Tracking is fired before the redirect so the
- * `demo_started` event lands even if the new page mounts before the
- * old PostHog buffer flushes (the SDK persists pending events).
- */
-function startDemoAndGoHome(): void {
-  trackEvent(ANALYTICS_EVENTS.DEMO_STARTED, { source: "welcome" });
-  seedDemoData();
-  try {
-    window.location.assign("/");
-  } catch {
-    /* noop */
-  }
-}
-
 export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
+  // S4.1 + PR-05 demo handler. Seeds a synthetic hub payload across
+  // all four modules and reloads onto `/` so the demo state is
+  // visible immediately. Tracking is fired before the redirect so the
+  // `demo_started` event lands even if the new page mounts before the
+  // old PostHog buffer flushes (the SDK persists pending events).
+  const startDemoAndGoHome = useCallback(() => {
+    trackEvent(ANALYTICS_EVENTS.DEMO_STARTED, { source: "welcome" });
+    seedDemoData();
+    try {
+      window.location.assign("/");
+    } catch {
+      /* noop */
+    }
+  }, []);
+
   return (
     <div className="relative min-h-dvh bg-bg text-text overflow-hidden page-enter">
       <PeekBackdrop />
       <div className="relative min-h-dvh flex items-end sm:items-center justify-center p-4 pb-safe">
         <div className="w-full max-w-sm space-y-3">
-          <OnboardingWizard onDone={onDone} variant="fullPage" />
-          {/* Demo-first CTA (S4.1). Lower visual weight than the
-              wizard primary, but above the returning-user entry so
-              the "просто подивитись" cohort doesn't have to scan past
-              an account-prompt to find it. */}
-          <button
-            type="button"
-            onClick={startDemoAndGoHome}
-            className={cn(
-              "w-full flex items-center justify-center gap-2",
-              "h-11 min-h-[44px] rounded-2xl border border-brand-500/35 bg-brand-500/5",
-              "text-style-label text-brand-strong dark:text-brand",
-              "hover:bg-brand-500/10 hover:border-brand-500/55 transition-colors",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
-            )}
-          >
-            <Icon name="sparkles" size={16} strokeWidth={2} aria-hidden />
-            <span>Подивитись приклад</span>
-          </button>
+          <OnboardingWizard
+            onDone={onDone}
+            variant="fullPage"
+            onSecondaryAction={startDemoAndGoHome}
+          />
           {/* Returning-user entry. The previous text-xs muted underline was
               almost invisible on a fresh device — users who already had an
               account were dropped into onboarding. Promoted to a secondary

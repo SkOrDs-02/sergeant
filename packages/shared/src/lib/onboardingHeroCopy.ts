@@ -61,6 +61,17 @@ export interface OnboardingHeroCopy {
   badges: readonly [string, string, string];
   /** Primary CTA label. Always action-orientated. ≤ 32 chars. */
   primaryCta: string;
+  /**
+   * Secondary CTA label (PR-05 — demo mode as first-class). Rendered
+   * directly inside the splash card under the primary CTA so the
+   * "просто подивитись" cohort doesn't have to scan past the wizard
+   * card to reach the demo entry point. Same string for every variant
+   * — copy stays canonical ("Подивитись приклад") so the demo entry
+   * is recognisable across A/B arms and the share-of-traffic SLO
+   * (`DEMO_STARTED { source: "welcome" } / ONBOARDING_STARTED ≥ 15%`)
+   * isn't biased by per-arm copy drift.
+   */
+  secondaryCta: string;
 }
 
 /**
@@ -90,6 +101,7 @@ const OUTCOME_COPY: OnboardingHeroCopy = {
   subtitle: "Бюджет, тренування, звички, їжа — за 30 секунд, без реєстрації.",
   badges: ["Без реєстрації", "Без cloud-у", "Без реклами"],
   primaryCta: "Розпочати — 30 секунд",
+  secondaryCta: "Подивитись приклад",
 };
 
 /**
@@ -102,6 +114,7 @@ const SAFE_COPY: OnboardingHeroCopy = {
   subtitle: "Гроші, тренування, звички, їжа. Без акаунта. Без cloud-у.",
   badges: ["Без реєстрації", "Без cloud-у", "Без реклами"],
   primaryCta: "Розпочати — 30 секунд",
+  secondaryCta: "Подивитись приклад",
 };
 
 /**
@@ -116,6 +129,7 @@ const BOLD_COPY: OnboardingHeroCopy = {
     "Записуй один раз — Sergeant пам'ятає за тебе. Офлайн, без акаунта.",
   badges: ["Без реєстрації", "Без cloud-у", "Без реклами"],
   primaryCta: "Спробувати — 30 секунд",
+  secondaryCta: "Подивитись приклад",
 };
 
 /**
@@ -133,4 +147,5 @@ const DISCIPLINED_COPY: OnboardingHeroCopy = {
     "Один екран для грошей, тіла, звичок і їжі. Без акаунта. Без cloud-у.",
   badges: ["Без реєстрації", "Без cloud-у", "Без реклами"],
   primaryCta: "Розпочати — 30 секунд",
+  secondaryCta: "Подивитись приклад",
 };

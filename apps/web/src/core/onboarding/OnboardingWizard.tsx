@@ -256,6 +256,7 @@ function WelcomeOneScreen({
   ctaLabelOverride,
   ctaDisabled,
   emptyPicksHint,
+  onSecondaryAction,
 }: {
   picks: string[];
   togglePick: (id: string) => void;
@@ -280,6 +281,17 @@ function WelcomeOneScreen({
    * is true. Tells the user why the button is inactive.
    */
   emptyPicksHint?: string;
+  /**
+   * PR-05 — demo mode as first-class CTA. Optional handler for the
+   * secondary "Подивитись приклад" button rendered inside the splash
+   * card under the primary CTA. When omitted (modal mode, tour
+   * replay) the secondary CTA is not rendered. Hosts (`/welcome`)
+   * pass `seedDemoData()` so the demo entry sits in the same visual
+   * card as the primary onboarding CTA, satisfying the share-of-
+   * traffic ≥ 15% target without forcing the user to scan past the
+   * card.
+   */
+  onSecondaryAction?: () => void;
 }) {
   return (
     <div className="flex flex-col items-center text-center space-y-5">
@@ -352,6 +364,23 @@ function WelcomeOneScreen({
         </p>
       ) : null}
 
+      {onSecondaryAction ? (
+        <button
+          type="button"
+          onClick={onSecondaryAction}
+          className={cn(
+            "w-full flex items-center justify-center gap-2",
+            "h-11 min-h-[44px] rounded-2xl border border-brand-500/35 bg-brand-500/5",
+            "text-style-label text-brand-strong dark:text-brand",
+            "hover:bg-brand-500/10 hover:border-brand-500/55 transition-colors",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45",
+          )}
+        >
+          <Icon name="sparkles" size={16} strokeWidth={2} aria-hidden />
+          <span>{copy.secondaryCta}</span>
+        </button>
+      ) : null}
+
       <button
         type="button"
         onClick={onToggleExpanded}
@@ -388,6 +417,7 @@ export function OnboardingWizard({
   onDone,
   variant = "modal",
   mode = "real",
+  onSecondaryAction,
 }: {
   onDone: (
     startModuleId: string | null,
@@ -404,6 +434,14 @@ export function OnboardingWizard({
    * wizard without touching the user's onboarding / first-action state.
    */
   mode?: "real" | "tour";
+  /**
+   * PR-05 — demo mode as first-class CTA. Optional handler for the
+   * "Подивитись приклад" button rendered inside the splash card. Only
+   * passed by the `/welcome` host (`fullPage` variant); modal mode and
+   * tour replay leave the secondary CTA hidden so demo seeding never
+   * happens by accident from in-app surfaces.
+   */
+  onSecondaryAction?: () => void;
 }) {
   const isTour = mode === "tour";
 
@@ -564,6 +602,11 @@ export function OnboardingWizard({
   const ctaDisabled =
     !isTour && defaultPicksVariant === "none" && picks.length === 0;
 
+  // Tour replay never seeds demo data — `onSecondaryAction` is only
+  // wired through in real mode so the read-only replay can never
+  // accidentally trigger the demo seeder against the host's store.
+  const secondaryAction = isTour ? undefined : onSecondaryAction;
+
   const content = useMemo(
     () => (
       <WelcomeOneScreen
@@ -576,6 +619,7 @@ export function OnboardingWizard({
         ctaLabelOverride={isTour ? "Закрити" : undefined}
         ctaDisabled={ctaDisabled}
         emptyPicksHint="Обери хоч один модуль"
+        onSecondaryAction={secondaryAction}
       />
     ),
     [
@@ -587,6 +631,7 @@ export function OnboardingWizard({
       heroCopy,
       isTour,
       ctaDisabled,
+      secondaryAction,
     ],
   );
 

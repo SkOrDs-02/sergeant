@@ -122,3 +122,17 @@ describe("audit-guard — banned phrasing must not return", () => {
     }
   });
 });
+
+describe("secondary CTA — demo mode as first-class (PR-05)", () => {
+  it("every variant exposes the canonical 'Подивитись приклад' label", () => {
+    for (const variant of ["outcome", "safe", "bold", "disciplined"] as const) {
+      const copy = getOnboardingHeroCopy(variant);
+      // Single canonical label across arms keeps the demo share-of-
+      // traffic SLO (`DEMO_STARTED / ONBOARDING_STARTED ≥ 15%`) clean —
+      // arm-specific demo copy would bias the cohort comparison.
+      expect(copy.secondaryCta, `variant=${variant}`).toBe(
+        "Подивитись приклад",
+      );
+    }
+  });
+});
