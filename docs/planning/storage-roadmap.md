@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-06 by Devin (Stage 7 unblocking pre-step: ADR-0047 / `respondV1Gone` server-side T₀ executed → PR #051 + PR #052 marked ⏳ READY; Initiative 0003 Phase 5 server-half done). **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-06 by Devin (Stage 7 client-side cutover landed: `useCloudSync` stubbed web+mobile; Initiative 0003 Phase 5 client-side done; PR #052 cleanup tree drop next). **Next review:** 2026-08-04.
 > **Status:** Active
 >
 > **Stage status (one-line summary):**
@@ -2147,7 +2147,12 @@ client_updated_at)` (Postgres requirement для partitioned tables).
 
 ### Stage 7 — Cleanup
 
-> **Pre-step (2026-05-06): T₀ executed (server-side).** Initiative 0003 Phase 5 server-half landed окремим PR-ом — `apps/server/src/modules/sync/sunsetGone.ts` (`respondV1Gone`) повертає `410 Gone` на всіх 4-х v1 push/pull endpoint-ах, ADR-0047 фіксує rationale, Phase 1+2 middleware (survey + Sunset/Deprecation/Link headers) лишається активним поверх 410. Це розблоковує PR #051 і PR #052 нижче (per AGENTS hard rule #4 — "код не пише у v1 канал" → можна drop-ити column у наступному release-cycle).
+> **Pre-step (2026-05-06): T₀ executed (server-side + client-side).**
+>
+> 1. **Server**: Initiative 0003 Phase 5 server-half — `apps/server/src/modules/sync/sunsetGone.ts` (`respondV1Gone`) повертає `410 Gone` на всіх 4-х v1 push/pull endpoint-ах. Phase 1+2 middleware (survey + Sunset/Deprecation/Link headers) лишається активним поверх 410. ADR-0047.
+> 2. **Client (web + mobile)**: Phase 5-client cutover — `apps/web/src/core/cloudSync/hook/useCloudSync.ts` і `apps/mobile/src/sync/hook/useCloudSync.ts` тепер stub-и, що повертають no-op defaults. Engine-fetch-calls від клієнта вимкнено; v1-channel `module_data` blob більше ніким не пишеться.
+>
+> Це розблоковує PR #051 і PR #052 нижче (per AGENTS hard rule #4 — "код не пише у v1 канал" → можна drop-ити column у наступному release-cycle).
 
 #### **PR #051 — `chore: drop module_data table after all modules migrated`** ⏳ READY
 
