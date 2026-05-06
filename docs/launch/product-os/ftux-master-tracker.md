@@ -46,7 +46,7 @@
 
 ## 1. TL;DR
 
-> **PR-status (snapshot 2026-05-06 05:00 UTC):** PR-00, PR-01, PR-02 + status-bump #1939, PR-03 (`pnpm bootstrap` #1943), PR-04 (`disciplined hero copy` #1944) — merged. PR-05/PR-06/PR-07 — Wave 1, ще не стартували. Детально — §3 PR-план.
+> **PR-status (snapshot 2026-05-06 08:30 UTC):** PR-00, PR-01, PR-02 + status-bump #1939, PR-03 (`pnpm bootstrap` #1943), PR-04 (`disciplined hero copy` #1944) — merged. PR-19 (paywall UX placement sketch → [`paywall-ux-placement.md`](./paywall-ux-placement.md)) — у роботі (#1989). PR-20 plan ([`paywall-implementation-plan.md`](./paywall-implementation-plan.md)) — у цьому PR; impl-кодинг розбитий на 4 sub-PR (20a/b/c/d ~510 LOC) і чекає 0010 phase 3 (`usePlan()` RQ-hook). PR-05/PR-06/PR-07 — Wave 1, ще не стартували. Детально — §3 PR-план.
 >
 > **Module-readiness update 2026-05-05:** Fizruk shipped progress charts + exercise catalog + workout notes ([PR #19](https://github.com/Skords-01/Sergeant/pull/19)) і Workouts/Dashboard refactor + journal pagination ([PR #20](https://github.com/Skords-01/Sergeant/pull/20)) — інкорпоровано у §3.5 (FTUX-relevant infra) + §5.3 / §5.4 (Fizruk visual references); §4.1 розширено 6 hero copy variants для наступної ротації + §4.2 selection rubric.
 >
@@ -149,12 +149,12 @@
 
 ### 3.4. Хвиля 4 — Paywall + Polish (Week 5-6, 4 PR)
 
-| PR        | Назва                                                       | LOC      | Deps                        | Метрика                                      |
-| --------- | ----------------------------------------------------------- | -------- | --------------------------- | -------------------------------------------- |
-| **PR-19** | docs(paywall): UX placement sketch + decision doc           | ~250 doc | —                           | Paywall placement clearly defined            |
-| **PR-20** | feat(paywall): in-product placement (post-FTUX moment)      | ~400+    | PR-19, 0010 Stripe scaffold | Paywall conversion ≥ 3% за перші 30 днів     |
-| **PR-21** | feat(mobile): FTUX parity sweep                             | ~350     | PR-09, PR-11, PR-15         | Mobile FTUX coverage ≥ 90%                   |
-| **PR-22** | docs(agents): TOC + read-time annotations + quick-reference | ~180     | —                           | New-agent first-PR success rate (subjective) |
+| PR        | Назва                                                                                                                                                                     | LOC             | Deps                                   | Метрика                                                                 |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | -------------------------------------- | ----------------------------------------------------------------------- |
+| **PR-19** | docs(paywall): UX placement sketch + decision doc                                                                                                                         | ~250 doc        | —                                      | Paywall placement clearly defined                                       |
+| **PR-20** | feat(paywall): in-product placement (post-FTUX moment) — **plan landed** [`paywall-implementation-plan.md`](./paywall-implementation-plan.md); impl gated на 0010 phase 3 | ~510 (4 sub-PR) | PR-19, 0010 phase 3 (`usePlan()` hook) | Paywall conversion ≥ 3% за перші 30 днів (start-clock = real flag-flip) |
+| **PR-21** | feat(mobile): FTUX parity sweep                                                                                                                                           | ~350            | PR-09, PR-11, PR-15                    | Mobile FTUX coverage ≥ 90%                                              |
+| **PR-22** | docs(agents): TOC + read-time annotations + quick-reference                                                                                                               | ~180            | —                                      | New-agent first-PR success rate (subjective)                            |
 
 ### 3.5. Module-level інфраструктура — вже в `main` (FTUX-relevant context)
 
@@ -415,7 +415,7 @@ slos:
 - **Cold-start outcome-card:** додаємо behind FF (PR-09). Incremental: 4 bento лишаються, але TODO + Progress прибираються.
 - **Empty-state A/B:** 3 варіанти, PostHog FF (PR-10).
 - **A11y manual:** Devin — web (Linux + Orca). Founder — mobile (1× recording). PR-16.
-- **Paywall:** sketch session founder ↔ Devin → `paywall-ux-placement.md` (PR-19) → impl (PR-20).
+- **Paywall:** sketch session founder ↔ Devin → [`paywall-ux-placement.md`](./paywall-ux-placement.md) (PR-19, у роботі #1989) → impl plan [`paywall-implementation-plan.md`](./paywall-implementation-plan.md) (PR-20 plan, у цьому PR). Selected placement: **post-first-real-entry sheet** (soft, non-blocking, FF-gated `paywall_post_ftux_v1`); 14-day Pro trial без payment method; 3 copy variants (α outcome-anchored / β disciplined / γ self-sovereignty). Conversion-метрика — `STRIPE_CHECKOUT_COMPLETED / PAYWALL_POST_FTUX_VIEWED ≥ 3%` за 30-day cohort. PR-20 impl розбитий на 4 sub-PR (~510 LOC) і чекає 0010 phase 3 (`usePlan()` RQ-hook); до того часу — Path C (deferred). Path B (FF-gated UI-stub) лишається доступним fallback за рішенням founder.
 
 ### Документація
 
