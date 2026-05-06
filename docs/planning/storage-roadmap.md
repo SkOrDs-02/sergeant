@@ -2181,7 +2181,7 @@ client_updated_at)` (Postgres requirement для partitioned tables).
   - `hook/useCloudSync` — v1-shape stub (uplift зі stage 7 client-cutover, ADR-0047),
   - `hook/useSyncStatus` — v2 outbox-counter mirror, який і далі живить `OfflineBanner.tsx`,
   - `hook/useSyncErrorToast` — toast-surface для v2 помилок,
-  - `enqueue.ts` (no-op) — лишається до PR #053 KVStore deprecate, бо `apps/web/src/shared/lib/storage/syncedKV.ts` все ще передає його в `createSyncedKVStore({onChange})`.
+  - ~~`enqueue.ts` (no-op)~~ — видалено у PR #053a (KVStore deprecate, web phase) разом з `apps/web/src/shared/lib/storage/syncedKV.ts` фасадом і 5 `safeWriteSyncedLS` callsites.
 - App.tsx + useAppEffects.ts + OfflineBanner.tsx + MigrationPrompt UI **залишилися як є в #052b** — rewire винесено в окремий follow-up `chore(web): drop MigrationPrompt and detangle App.tsx cloudSync wiring` (PR #052b-followup), бо це vertical в App.tsx, що окремо рев'ювиться.
 
 #### **PR #052c — `chore(mobile): remove cloudSync v1 engine`** ✅ LANDED
@@ -2204,7 +2204,8 @@ client_updated_at)` (Postgres requirement для partitioned tables).
     mobile wiring = follow-up),
   - `useSyncedStorage` — `useLocalStorage` + `enqueueChange` (no-op)
     wrapper для tracked sync keys,
-  - `enqueue.ts` (no-op) — лишається до PR #053 KVStore deprecate, бо
+  - `enqueue.ts` (no-op) — лишається до PR #053b/c (mobile KVStore
+    deprecate, fizruk + nutrition/finyk/routine + boot wiring), бо
     17+ module-store call-sites досі імпортують `enqueueChange` /
     `notifySyncDirty`,
   - `CloudSyncProvider` / `useCloudSyncContext` — context wrapper
@@ -2270,12 +2271,12 @@ client_updated_at)` (Postgres requirement для partitioned tables).
 - Не належить до storage-roadmap-у scope-у строго, але блокував
   governance-sync на PR #054c (#2072), тому залендив окремо паралельно.
 
-#### **PR #053 — `chore: deprecate KVStore in favor of SQLite-backed cache`** ⏳ ROADMAP
+#### **PR #053 — `chore: deprecate KVStore in favor of SQLite-backed cache`** ⏳ IN PROGRESS
 
 > **Audit (2026-05-06, main `077c738f`).**
 >
-> - **Web KVStore prod consumers** (7 файлів, не тести): `apps/web/src/core/cloudSync/{enqueue,index,hook/useCloudSync}.ts` (sync-shim layer), `apps/web/src/core/onboarding/{cleanupDemoData,presetApply}.ts`, `apps/web/src/core/profile/memoryBank.ts`, `apps/web/src/shared/lib/storage/syncedKV.ts` (singleton-фасад).
-> - **Mobile sync-aware prod consumers** (26 файлів, не тести): 9 fizruk hooks + 5 nutrition hooks + 1 routine + 3 finyk store-и + 5 dashboard / settings / observability + `apps/mobile/src/sync/{enqueue,index,useSyncedStorage}.ts` + `apps/mobile/src/lib/storage.ts`.
+> - **Web KVStore prod consumers** (7 файлів, не тести): `apps/web/src/core/cloudSync/{enqueue,index,hook/useCloudSync}.ts` (sync-shim layer), `apps/web/src/core/onboarding/{cleanupDemoData,presetApply}.ts`, `apps/web/src/core/profile/memoryBank.ts`, `apps/web/src/shared/lib/storage/syncedKV.ts` (singleton-фасад) — **усі видалені/мігровані у PR #053a.**
+> - **Mobile sync-aware prod consumers** (26 файлів, не тести): 9 fizruk hooks + 5 nutrition hooks + 1 routine + 3 finyk store-и + 5 dashboard / settings / observability + `apps/mobile/src/sync/{enqueue,index,useSyncedStorage}.ts` + `apps/mobile/src/lib/storage.ts` — **PR #053b/c (mobile phase).**
 > - **Storage primitives у allowlist-і** (6 файлів, headroom 0): `storage.ts`, `storageManager.ts`, `storageQuota.ts`, `typedStore.ts`, `createModuleStorage.ts`, `useLocalStorageState.ts` — це самі обгортки `safeReadLS`/`safeWriteLS`/`safeRemoveLS`, які лишають LS єдиним dirty-bit для маленьких прапорців.
 
 - **Scope.** KVStore-фасад (`@sergeant/shared/createSyncedKVStore`) лишається
@@ -2308,6 +2309,58 @@ client_updated_at)` (Postgres requirement для partitioned tables).
   3. KVStore tracked-key registry (`ALL_TRACKED_KEYS` у `@sergeant/shared`) скорочується до small-flag list-у (≤ 5 ключів — Better Auth cookies + UI prefs).
   4. tech-debt docs (`docs/tech-debt/{frontend,mobile}.md` §2) оновлено — KVStore не блокує SQLite-engine-as-single-storage definition-of-done (§0.2).
   5. governance-sync + ADR graph + lint + typecheck зелені.
+
+#### **PR #053a — `chore(web): drop KVStore syncedKV shim + 5 onboarding/profile callsites`** ⏳ IN PR
+
+- **Scope.** Web phase of PR #053 KVStore deprecate. Видаляє no-op
+  `enqueueChange` shim + web `syncedKV` singleton-фасад, мігрує
+  5 `safeWriteSyncedLS` call-sites на raw `safeWriteLS`. Mobile-side
+  KVStore-фасад (`apps/mobile/src/sync/{enqueue,useSyncedStorage}.ts`
+  - 26 module-store callsites) залишається до PR #053b/c.
+- **Files removed.**
+  - `apps/web/src/core/cloudSync/enqueue.ts` (no-op shim — v1 engine
+    sunset у PR #052b, КNS-shim тримався тільки щоб `syncedKV.ts`
+    компілився).
+  - `apps/web/src/shared/lib/storage/syncedKV.ts` + companion test (web
+    singleton wrapping `webKVStore` через
+    `createSyncedKVStore({ onChange: enqueueChange, isTracked })` — обидва
+    callbacks тепер дегенеровані).
+  - `scripts/codemods/syncedKV/` (one-shot codemod, який мігрував
+    `safeWriteLS(<tracked>, …) → safeWriteSyncedLS(…)` у PR #008 — нуль
+    лишилось `safeWriteSyncedLS` callsites під `apps/web/src` для
+    drift-check).
+- **Files modified.**
+  - `apps/web/src/core/cloudSync/index.ts` — drop `enqueueChange` /
+    `notifySyncDirty` re-export, JSDoc оновлено.
+  - 3 callsites переведено на raw `safeWriteLS`:
+    `apps/web/src/core/onboarding/{cleanupDemoData,presetApply}.ts`
+    (FINYK_MANUAL_EXPENSES, NUTRITION_LOG — обидва ключі вже не у
+    `SYNC_MODULES` з PR #034/#039),
+    `apps/web/src/core/profile/memoryBank.ts` (USER_PROFILE — все ще
+    у tracked-key registry, але `enqueueChange` no-op + v2 op-log пише
+    через `syncEngineWriter`, тож `safeWriteLS` достатньо).
+  - `eslint.config.js` localStorage allowlist коментар оновлено
+    (drops the carry-over note про `enqueue.ts` shim).
+  - `apps/web/src/core/cloudSync/hook/useCloudSync.ts` — JSDoc
+    "Removal: PR #052" → "Removal: roadmap Stage 7 follow-up after
+    PR #053a".
+  - `.tech-debt/localstorage-allowlist-budget.json` — rationale
+    оновлено (production count = 6, fully reflects post-#053a state).
+  - `scripts/codemods/README.md` — каталог оновлено: `syncedKV/` row
+    замінено на _Removed_ note з посиланням на PR #053a.
+  - `docs/architecture/data-exchange-storage-audit.md` §2.2 (web
+    local-first sync v1) — наративний оновлення, що web `syncedKV` /
+    `enqueueChange` шлях знесено.
+- **Done criteria.**
+  1. `pnpm lint` зелений (no-raw-local-storage allowlist не змінювався).
+  2. `pnpm typecheck` зелений (5 callsites вже мали тип-сумісний
+     `safeWriteLS` під рукою).
+  3. `pnpm --filter @sergeant/web test` зелений; видалено 1 test file
+     (`syncedKV.test.ts` — тестував поведінку видаленого `syncedKV`).
+  4. Нульові `safeWriteSyncedLS` / `safeRemoveSyncedLS` references під
+     `apps/web/src/**` (grep).
+  5. ADR graph + governance-sync зелені (нічого не зачіпає, але CI має
+     підтвердити).
 
 #### **PR #054 final — `chore: final localStorage burndown — eslint allowlist = []`** ⏳ ROADMAP
 

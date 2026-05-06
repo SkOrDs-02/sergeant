@@ -21,8 +21,9 @@ import type { CurrentUser, SyncError, SyncState } from "../types";
  * `apps/web/src/core/syncEngine/` writer-runtime, which is booted from
  * `apps/web/src/core/boot.ts` independently of this hook.
  *
- * Removal: PR #052 (Stage 7 cleanup) — entire `apps/web/src/core/cloudSync/`
- * tree drops, App.tsx wires `useSyncStatus` from the new v2 location.
+ * Removal: roadmap Stage 7 follow-up after PR #053a (KVStore deprecate,
+ * web phase) — entire `apps/web/src/core/cloudSync/` tree drops, App.tsx
+ * wires `useSyncStatus` from the new v2 location.
  */
 type SyncCallbackResult = boolean | undefined | void;
 type AsyncSyncCallback = () => Promise<SyncCallbackResult>;

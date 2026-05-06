@@ -523,11 +523,11 @@ export default [
       // (`logger.ts`, `queue/offlineQueue.ts`, `state/moduleData.ts`)
       // були видалені в PR #052b разом з рештою v1 engine tree —
       // allowlist-entry-и стали стейловими і прибрані тут. `enqueue.ts`
-      // лишається як no-op shim для `syncedKV.ts` (PR #053 KVStore
-      // deprecate видалить його разом з KVStore-фасадом), але
-      // прямого `localStorage.*` доступу там більше нема (`rawRemoveItem`
-      // handle пішов разом з `clearSyncManagedData` в #052b), тож
-      // exemption теж не потрібен.
+      // (no-op shim) і `apps/web/src/shared/lib/storage/syncedKV.ts`
+      // (singleton-фасад) видалені у PR #053a (KVStore deprecate, web
+      // phase) разом з 5 `safeWriteSyncedLS` callsites —
+      // `cleanupDemoData.ts`, `presetApply.ts`, `memoryBank.ts` тепер
+      // пишуть напряму через `safeWriteLS`, тож exemption не потрібен.
       // PR #054 (storage-roadmap.md Stage 7): finyk storage manager
       // мігровано на `safeReadStringLS` / `safeWriteLS` / `safeRemoveLS`
       // у тілі finto→finyk-міграції; dead exports `key`/`getJSON`/`setJSON`

@@ -1,6 +1,5 @@
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { safeReadLS } from "@shared/lib/storage/storage";
-import { safeWriteSyncedLS } from "@shared/lib/storage/syncedKV";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import type { MemoryEntry } from "./types";
 
 export const PROFILE_KEY = STORAGE_KEYS.USER_PROFILE;
@@ -55,11 +54,11 @@ export function readMemoryEntries(): MemoryEntry[] {
 }
 
 export function writeMemoryEntries(entries: MemoryEntry[]): void {
-  // `safeWriteSyncedLS` writes through `syncedKV`, which auto-fires
-  // `enqueueChange(PROFILE_KEY)` — no separate `notifySyncDirty` call
-  // needed (the explicit follow-up was a workaround for the old monkey-
-  // patch's weak invariants and is redundant now).
-  if (!safeWriteSyncedLS(PROFILE_KEY, entries)) {
+  // Profile entries dual-write to SQLite via the `useStorage()` per-row
+  // path; the LS slot is a hub-side warm cache. Cross-device sync flows
+  // through the v2 op-log writer-runtime, not LS-key-watcher, so a plain
+  // `safeWriteLS` is enough here.
+  if (!safeWriteLS(PROFILE_KEY, entries)) {
     throw new Error("Не вдалося зберегти пам'ять профілю");
   }
 }
