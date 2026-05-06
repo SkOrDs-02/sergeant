@@ -1,20 +1,22 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-06 by Devin (Stage 7 9/9 — COMPLETE: `module_data` column drop + v1 server handler-и [`75dcdd5c`](https://github.com/Skords-01/Sergeant/commit/75dcdd5c) (PR #051+#052a); web cloudSync engine tree drop [`a97b8cc8`](https://github.com/Skords-01/Sergeant/commit/a97b8cc8) ([#2046](https://github.com/Skords-01/Sergeant/pull/2046), PR #052b); mobile cloudSync engine tree drop [`20793adb`](https://github.com/Skords-01/Sergeant/commit/20793adb) (PR #052c); allowlist budget 10 → 6 [`079fe8e3`](https://github.com/Skords-01/Sergeant/commit/079fe8e3) ([#2058](https://github.com/Skords-01/Sergeant/pull/2058), PR #054a); supersedes-edge ADR-0004 ↔ ADR-0047 + 12 dangling cloudSync v1 doc-refs [`997ad6e2`](https://github.com/Skords-01/Sergeant/commit/997ad6e2) + [`ac2cc5c8`](https://github.com/Skords-01/Sergeant/commit/ac2cc5c8) ([#2066](https://github.com/Skords-01/Sergeant/pull/2066), PR #054b); 3 dangling `mutation.md` refs [`5f2cfb0c`](https://github.com/Skords-01/Sergeant/commit/5f2cfb0c) ([#2072](https://github.com/Skords-01/Sergeant/pull/2072), PR #054c); ADR-0049 README parity [`077c738f`](https://github.com/Skords-01/Sergeant/commit/077c738f) ([#2073](https://github.com/Skords-01/Sergeant/pull/2073), PR #054x); web KVStore syncedKV shim drop ([#2078](https://github.com/Skords-01/Sergeant/pull/2078), PR #053a); mobile fizruk wave ([#2082](https://github.com/Skords-01/Sergeant/pull/2082), PR #053b); mobile wave 2 — nutrition + finyk + routine ([#2091](https://github.com/Skords-01/Sergeant/pull/2091), PR #053c); final localStorage burndown — eslint allowlist = [] (PR #054 final). **Outstanding:** none on critical path. #045 Redis залишається opt-in optional Stage-6 follow-up. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-06 by Devin (Stage 7 9/9 — COMPLETE: `module_data` column drop + v1 server handler-и [`75dcdd5c`](https://github.com/Skords-01/Sergeant/commit/75dcdd5c) (PR #051+#052a); web cloudSync engine tree drop [`a97b8cc8`](https://github.com/Skords-01/Sergeant/commit/a97b8cc8) ([#2046](https://github.com/Skords-01/Sergeant/pull/2046), PR #052b); mobile cloudSync engine tree drop [`20793adb`](https://github.com/Skords-01/Sergeant/commit/20793adb) (PR #052c); allowlist budget 10 → 6 [`079fe8e3`](https://github.com/Skords-01/Sergeant/commit/079fe8e3) ([#2058](https://github.com/Skords-01/Sergeant/pull/2058), PR #054a); supersedes-edge ADR-0004 ↔ ADR-0047 + 12 dangling cloudSync v1 doc-refs [`997ad6e2`](https://github.com/Skords-01/Sergeant/commit/997ad6e2) + [`ac2cc5c8`](https://github.com/Skords-01/Sergeant/commit/ac2cc5c8) ([#2066](https://github.com/Skords-01/Sergeant/pull/2066), PR #054b); 3 dangling `mutation.md` refs [`5f2cfb0c`](https://github.com/Skords-01/Sergeant/commit/5f2cfb0c) ([#2072](https://github.com/Skords-01/Sergeant/pull/2072), PR #054c); ADR-0049 README parity [`077c738f`](https://github.com/Skords-01/Sergeant/commit/077c738f) ([#2073](https://github.com/Skords-01/Sergeant/pull/2073), PR #054x); web KVStore syncedKV shim drop ([#2078](https://github.com/Skords-01/Sergeant/pull/2078), PR #053a); mobile fizruk wave ([#2082](https://github.com/Skords-01/Sergeant/pull/2082), PR #053b); mobile wave 2 — nutrition + finyk + routine ([#2091](https://github.com/Skords-01/Sergeant/pull/2091), PR #053c); final localStorage burndown — eslint allowlist = [] [`5fdfcbe4`](https://github.com/Skords-01/Sergeant/commit/5fdfcbe4) (PR #054 final, 9 переплетених sub-tasks в одному squash-merge — деталі у §3 Stage 7 нижче). **Outstanding:** Stage 8 (SQLite cut-over rollout — 17 PR-ів, 4 модулі × 4 кроки + mobile sync-engine writer-runtime wiring) і Stage 9 (KV store swap — `webKVStore` LS-backed → SQLite-backed `kv_store`, 7 PR-ів) — це operational rollout (cut-over default-on flag-ів), не нова інфра. PR plans у §3 нижче. #045 Redis — opt-in optional Stage-6 follow-up. **Next review:** 2026-08-04.
 > **Status:** Active
 >
 > **Stage status (one-line summary):**
 >
-> | Stage                          | Status            | Landed PRs (this stage)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Outstanding           |
-> | ------------------------------ | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-> | 0 — bootstrap dual-write       | ✅ COMPLETE       | [#003](https://github.com/Skords-01/Sergeant/pull/1497)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | —                     |
-> | 1 — boot wiring                | ✅ COMPLETE (8/8) | #008 `ff217246`, [#010](https://github.com/Skords-01/Sergeant/pull/1543), #013 (×4 sub-PRs)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | —                     |
-> | 4 — Fizruk module migration    | ✅ COMPLETE (5/5) | #027–#030 + #029a                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | —                     |
-> | 4 — Nutrition module migration | ✅ COMPLETE       | [#031/#032/#033](https://github.com/Skords-01/Sergeant/pull/1574), [#034](https://github.com/Skords-01/Sergeant/pull/1636)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | —                     |
-> | 4 — Finyk module migration     | ✅ COMPLETE (5/5) | [#035](https://github.com/Skords-01/Sergeant/pull/1667), [#036](https://github.com/Skords-01/Sergeant/pull/1680), [#037](https://github.com/Skords-01/Sergeant/pull/1694), [#038](https://github.com/Skords-01/Sergeant/pull/1702), [#039](https://github.com/Skords-01/Sergeant/pull/1711)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | —                     |
-> | 5 — op-log v2 hardening        | ✅ COMPLETE       | [#040](https://github.com/Skords-01/Sergeant/pull/1717), [#041](https://github.com/Skords-01/Sergeant/pull/1721), [#043](https://github.com/Skords-01/Sergeant/pull/1734), [#043a](https://github.com/Skords-01/Sergeant/pull/1739), [#043b](https://github.com/Skords-01/Sergeant/pull/1743), [#043c](https://github.com/Skords-01/Sergeant/pull/1754), [#044](https://github.com/Skords-01/Sergeant/pull/1780), [#048](https://github.com/Skords-01/Sergeant/pull/1737), [#042a](https://github.com/Skords-01/Sergeant/pull/1769), [#042b](https://github.com/Skords-01/Sergeant/pull/1776), [#042c](https://github.com/Skords-01/Sergeant/pull/1787), [#042d-prep](https://github.com/Skords-01/Sergeant/pull/1804), [#042d-builder](https://github.com/Skords-01/Sergeant/pull/1810), [#042e-mapping](https://github.com/Skords-01/Sergeant/pull/1827), [#042e-submit](https://github.com/Skords-01/Sergeant/pull/1901), [#042e-drain](https://github.com/Skords-01/Sergeant/pull/1913), [#042e-lifecycle](https://github.com/Skords-01/Sergeant/pull/1922), [#042e-pushloop](https://github.com/Skords-01/Sergeant/pull/1926), [#042e-scheduler](https://github.com/Skords-01/Sergeant/pull/1932), [#042e-status](https://github.com/Skords-01/Sergeant/pull/1933), [#042e-recover](https://github.com/Skords-01/Sergeant/pull/1935), [#042e-flush](https://github.com/Skords-01/Sergeant/pull/1938)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | —                     |
-> | 6 — ops                        | ✅ COMPLETE       | [#046](https://github.com/Skords-01/Sergeant/pull/1923) (pgBouncer), [#047](https://github.com/Skords-01/Sergeant/pull/1928) (read replica), [#048](https://github.com/Skords-01/Sergeant/pull/1737) (sync dashboard), [#049 docs](https://github.com/Skords-01/Sergeant/pull/1757), [#049b](https://github.com/Skords-01/Sergeant/pull/1964) (weekly backup-verify CI), #050 (`module_data` partition + archival)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | #045 Redis (optional) |
-> | 7 — cleanup                    | ✅ COMPLETE (9/9) | #051+#052a [`75dcdd5c`](https://github.com/Skords-01/Sergeant/commit/75dcdd5c) (drop `module_data` table + видалити v1 server `syncPush*`/`syncPull*` handler-и + `MODULE_DATA_MODULES` const); #052b [`a97b8cc8`](https://github.com/Skords-01/Sergeant/commit/a97b8cc8) ([#2046](https://github.com/Skords-01/Sergeant/pull/2046), web cloudSync engine tree drop); #052c [`20793adb`](https://github.com/Skords-01/Sergeant/commit/20793adb) (mobile cloudSync engine tree drop); #053a ([#2078](https://github.com/Skords-01/Sergeant/pull/2078), web KVStore syncedKV shim drop); #053b ([#2082](https://github.com/Skords-01/Sergeant/pull/2082), mobile fizruk wave); #053c ([#2091](https://github.com/Skords-01/Sergeant/pull/2091), mobile wave 2 — nutrition + finyk + routine); #054a [`079fe8e3`](https://github.com/Skords-01/Sergeant/commit/079fe8e3) ([#2058](https://github.com/Skords-01/Sergeant/pull/2058), localStorage allowlist budget 10 → 6 + drop стейлових cloudSync v1 entry-їв); #054b [`997ad6e2`](https://github.com/Skords-01/Sergeant/commit/997ad6e2) + [`ac2cc5c8`](https://github.com/Skords-01/Sergeant/commit/ac2cc5c8) ([#2066](https://github.com/Skords-01/Sergeant/pull/2066), Supersedes-edge ADR-0004 ↔ ADR-0047 + 12 dangling cloudSync v1 doc-refs у 6 файлах); #054c [`5f2cfb0c`](https://github.com/Skords-01/Sergeant/commit/5f2cfb0c) ([#2072](https://github.com/Skords-01/Sergeant/pull/2072), 3 dangling refs до видаленого `docs/testing/mutation.md`); #054x [`077c738f`](https://github.com/Skords-01/Sergeant/commit/077c738f) ([#2073](https://github.com/Skords-01/Sergeant/pull/2073), fix-forward — додано missing row для ADR-0049 в `docs/adr/README.md`); #054 final (final localStorage burndown — eslint allowlist = [], 6 storage-primitive файлів делегують у `webKVStore` з `@sergeant/shared`, budget production: 6 → 0) | —                     |
+> | Stage                          | Status            | Landed PRs (this stage)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Outstanding                                                                                                                                                                                                                                                                        |
+> | ------------------------------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | 0 — bootstrap dual-write       | ✅ COMPLETE       | [#003](https://github.com/Skords-01/Sergeant/pull/1497)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | —                                                                                                                                                                                                                                                                                  |
+> | 1 — boot wiring                | ✅ COMPLETE (8/8) | #008 `ff217246`, [#010](https://github.com/Skords-01/Sergeant/pull/1543), #013 (×4 sub-PRs)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | —                                                                                                                                                                                                                                                                                  |
+> | 4 — Fizruk module migration    | ✅ COMPLETE (5/5) | #027–#030 + #029a                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | —                                                                                                                                                                                                                                                                                  |
+> | 4 — Nutrition module migration | ✅ COMPLETE       | [#031/#032/#033](https://github.com/Skords-01/Sergeant/pull/1574), [#034](https://github.com/Skords-01/Sergeant/pull/1636)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | —                                                                                                                                                                                                                                                                                  |
+> | 4 — Finyk module migration     | ✅ COMPLETE (5/5) | [#035](https://github.com/Skords-01/Sergeant/pull/1667), [#036](https://github.com/Skords-01/Sergeant/pull/1680), [#037](https://github.com/Skords-01/Sergeant/pull/1694), [#038](https://github.com/Skords-01/Sergeant/pull/1702), [#039](https://github.com/Skords-01/Sergeant/pull/1711)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | —                                                                                                                                                                                                                                                                                  |
+> | 5 — op-log v2 hardening        | ✅ COMPLETE       | [#040](https://github.com/Skords-01/Sergeant/pull/1717), [#041](https://github.com/Skords-01/Sergeant/pull/1721), [#043](https://github.com/Skords-01/Sergeant/pull/1734), [#043a](https://github.com/Skords-01/Sergeant/pull/1739), [#043b](https://github.com/Skords-01/Sergeant/pull/1743), [#043c](https://github.com/Skords-01/Sergeant/pull/1754), [#044](https://github.com/Skords-01/Sergeant/pull/1780), [#048](https://github.com/Skords-01/Sergeant/pull/1737), [#042a](https://github.com/Skords-01/Sergeant/pull/1769), [#042b](https://github.com/Skords-01/Sergeant/pull/1776), [#042c](https://github.com/Skords-01/Sergeant/pull/1787), [#042d-prep](https://github.com/Skords-01/Sergeant/pull/1804), [#042d-builder](https://github.com/Skords-01/Sergeant/pull/1810), [#042e-mapping](https://github.com/Skords-01/Sergeant/pull/1827), [#042e-submit](https://github.com/Skords-01/Sergeant/pull/1901), [#042e-drain](https://github.com/Skords-01/Sergeant/pull/1913), [#042e-lifecycle](https://github.com/Skords-01/Sergeant/pull/1922), [#042e-pushloop](https://github.com/Skords-01/Sergeant/pull/1926), [#042e-scheduler](https://github.com/Skords-01/Sergeant/pull/1932), [#042e-status](https://github.com/Skords-01/Sergeant/pull/1933), [#042e-recover](https://github.com/Skords-01/Sergeant/pull/1935), [#042e-flush](https://github.com/Skords-01/Sergeant/pull/1938)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | —                                                                                                                                                                                                                                                                                  |
+> | 6 — ops                        | ✅ COMPLETE       | [#046](https://github.com/Skords-01/Sergeant/pull/1923) (pgBouncer), [#047](https://github.com/Skords-01/Sergeant/pull/1928) (read replica), [#048](https://github.com/Skords-01/Sergeant/pull/1737) (sync dashboard), [#049 docs](https://github.com/Skords-01/Sergeant/pull/1757), [#049b](https://github.com/Skords-01/Sergeant/pull/1964) (weekly backup-verify CI), #050 (`module_data` partition + archival)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | #045 Redis (optional)                                                                                                                                                                                                                                                              |
+> | 7 — cleanup                    | ✅ COMPLETE (9/9) | #051+#052a [`75dcdd5c`](https://github.com/Skords-01/Sergeant/commit/75dcdd5c) (drop `module_data` table + видалити v1 server `syncPush*`/`syncPull*` handler-и + `MODULE_DATA_MODULES` const); #052b [`a97b8cc8`](https://github.com/Skords-01/Sergeant/commit/a97b8cc8) ([#2046](https://github.com/Skords-01/Sergeant/pull/2046), web cloudSync engine tree drop); #052c [`20793adb`](https://github.com/Skords-01/Sergeant/commit/20793adb) (mobile cloudSync engine tree drop); #053a ([#2078](https://github.com/Skords-01/Sergeant/pull/2078), web KVStore syncedKV shim drop); #053b ([#2082](https://github.com/Skords-01/Sergeant/pull/2082), mobile fizruk wave); #053c ([#2091](https://github.com/Skords-01/Sergeant/pull/2091), mobile wave 2 — nutrition + finyk + routine); #054a [`079fe8e3`](https://github.com/Skords-01/Sergeant/commit/079fe8e3) ([#2058](https://github.com/Skords-01/Sergeant/pull/2058), localStorage allowlist budget 10 → 6 + drop стейлових cloudSync v1 entry-їв); #054b [`997ad6e2`](https://github.com/Skords-01/Sergeant/commit/997ad6e2) + [`ac2cc5c8`](https://github.com/Skords-01/Sergeant/commit/ac2cc5c8) ([#2066](https://github.com/Skords-01/Sergeant/pull/2066), Supersedes-edge ADR-0004 ↔ ADR-0047 + 12 dangling cloudSync v1 doc-refs у 6 файлах); #054c [`5f2cfb0c`](https://github.com/Skords-01/Sergeant/commit/5f2cfb0c) ([#2072](https://github.com/Skords-01/Sergeant/pull/2072), 3 dangling refs до видаленого `docs/testing/mutation.md`); #054x [`077c738f`](https://github.com/Skords-01/Sergeant/commit/077c738f) ([#2073](https://github.com/Skords-01/Sergeant/pull/2073), fix-forward — додано missing row для ADR-0049 в `docs/adr/README.md`); #054 final [`5fdfcbe4`](https://github.com/Skords-01/Sergeant/commit/5fdfcbe4) (final localStorage burndown — eslint allowlist = [], 6 storage-primitive файлів делегують у `webKVStore` з `@sergeant/shared`, KVStore.listKeys interface upgrade, lazy-resolve refactor, nutrition migration regression fix, budget production: 6 → 0; **9 переплетених sub-tasks в одному squash-merge — деталі у §3**) | —                                                                                                                                                                                                                                                                                  |
+> | 8 — SQLite cut-over rollout    | 🚧 PLANNED (0/17) | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | 4 модулі × 4 кроки (default-on dual_write → default-on read_sqlite → drop LS-write safety net → drop LS readers) + #058 mobile sync-engine writer-runtime wiring. Detail у §3 Stage 8 нижче. Calendar: ~3 тижні coding + 2-3 місяці canary.                                        |
+> | 9 — KV store swap              | 📋 ROADMAP (0/7)  | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `webKVStore` impl swap LS → SQLite-backed `kv_store(key TEXT PK, value JSON)`. Warm-cache + async write-back. Original PR #054 final out-of-scope, винесено в окрему стейдж бо технічно нетривіальний (async init race, kvvfs cycle). Calendar: ~2 тижні coding + 1 місяць canary. |
 >
 > **Per-PR scope and Done/Risk/Dep notes** живуть у §3 (PR plans) нижче — таблиця тут лише задля швидкого огляду landed-стану. **Boot-wiring** для `register{Routine,Fizruk,Nutrition,Finyk}DualWriteContext` залендив у [#1491](https://github.com/Skords-01/Sergeant/pull/1491) (Routine + Fizruk web/mobile) + per-module `useNutritionDualWriteBoot` / `useFinykDualWriteBoot` хуки (Nutrition + Finyk web + mobile через `NutritionApp.tsx` / `useStorage.ts`).
 > **Status:** Active
@@ -2533,30 +2535,495 @@ client_updated_at)` (Postgres requirement для partitioned tables).
   - PR #054 final — 6 storage-primitive файлів на SQLite-backed
     `kv_store(key TEXT PK, value JSON)`, allowlist 6 → 0.
 
-#### **PR #054 final — `chore: final localStorage burndown — eslint allowlist = []`** ⏳ ROADMAP
+#### **PR #054 final — `chore(web): final localStorage burndown — eslint allowlist = []`** ✅ LANDED
 
-> **Поточний стан (2026-05-06, main `077c738f`).** Allowlist budget 6
-> (`.tech-debt/localstorage-allowlist-budget.json`); ці 6 файлів — самі
-> safe-LS обгортки (`safeReadLS`/`safeWriteLS`/`safeRemoveLS`),
-> розкидані по `apps/web/src/shared/lib/storage/{storage,storageManager,storageQuota,typedStore,createModuleStorage}.ts` + `apps/web/src/shared/hooks/useLocalStorageState.ts`.
+> **Squash-merge на main:** commit
+> [`5fdfcbe4`](https://github.com/Skords-01/Sergeant/commit/5fdfcbe4)
+> (2026-05-06), **14 файлів, +497 / −276**. Один git commit, але
+> всередині — **дев'ять переплетених sub-tasks**, які всі ламали б
+> CI поодинці і тому залендили разом. Раніше у §3 цей PR значився
+> як ⏳ ROADMAP з 5-рядковим планом і одним абзацом про SQLite swap
+> — реальність вийшла довшою, тому секція переписана нижче, щоб
+> roadmap відображав, що насправді поїхало.
 
-- **Scope.** Зробити так, щоб `pnpm lint` падав на будь-якому новому
-  прямому `localStorage.*` access, **навіть** у самих storage-primitive-ах
-  (бо вони більше не пишуть у LS — Better Auth cookie-store + chip-flag-сховище заходить через окремі fingerprint-API).
-- **Шлях.**
-  1. PR #053 deprecate-ить usage of synced-KV → tracked-key registry усихає.
-  2. SQLite warm-cache бере на себе hub-layout + UI prefs (TanStack Query
-     warm-start вже на IDB tiny-cache, see `apps/web/src/core/persistedQueryClient.ts`).
-  3. 6 storage-primitive файлів стають небагатшим shim-ом над OPFS+SQLite (`webKVStore` → SQLite-backed table `kv_store(key TEXT PK, value JSON)`).
-  4. `eslint.config.js` `no-raw-local-storage.ignores` обнуляється.
-  5. `.tech-debt/localstorage-allowlist-budget.json` опускається 6 → 0.
-- **Done criteria.**
-  1. `eslint.config.js` блок `no-raw-local-storage` має `ignores: ["apps/web/src/**/*.test.{js,jsx,ts,tsx}", "apps/web/src/**/__tests__/**"]` (тільки fixture-и).
-  2. `.tech-debt/localstorage-allowlist-budget.json` `production: 0`.
-  3. `docs/tech-debt/frontend.md` §2 (`localStorage burndown`) закритий.
-  4. CI lint gate ловить навіть тривіальний `localStorage.setItem('foo','bar')` у будь-якому prod-файлі.
-- **Dep.** PR #053 (KVStore deprecate) обов'язковий — без переїзду
-  tracked-key реєстру на SQLite не можна викинути 6 storage-primitive-ів.
+- **Сабтаск 1 — `KVStore.listKeys(): string[]` interface upgrade**
+  (`packages/shared/src/storage/kv.ts`).
+  Додано `listKeys` метод у `KVStore` interface і у всі **три**
+  адаптери:
+  - `createMemoryKVStore` → `Array.from(map.keys())`,
+  - `createWebKVStore` → enumerate `Storage.length` + `Storage.key(i)`
+    з graceful fallback на `[]` коли `length`/`key` відсутні
+    (private mode, Node mocks),
+  - `createMmkvKVStore` → делегує у `MMKV.getAllKeys()` через lazy
+    `get()` resolver.
+
+  Створено типовий boundary для `safeListLSKeys()` (раніше викликала
+  `localStorage.length` напряму) — без цього №2–7 не могли б
+  делегувати key-enumeration у `webKVStore`.
+
+- **Сабтаск 2 — `createSyncedKVStore.listKeys` delegate**
+  (`packages/shared/src/sync/syncedKV.ts`).
+  Wrapper-фабрика, що обгортає базовий KVStore сигналом `onChange`
+  для tracked keys. Раніше повертала `KVStore`-сумісний об'єкт без
+  `listKeys` — типчек падав на `Property 'listKeys' is missing` у
+  всіх споживачів. Додали `listKeys(): string[]` що делегує у
+  `base.listKeys()` + парну спеку у
+  `__tests__/syncedKV.test.ts`, що фіксує контракт.
+
+- **Сабтаск 3 — `webKVStore` lazy-resolution refactor**
+  (`apps/web/src/shared/lib/storage/storage.ts`). **Найкритичніший
+  фікс — без нього 21 з 21 регрес-тестів падали.**
+  Раніше модуль експортував `webKVStore` як module-level singleton,
+  створений `createWebKVStore(window.localStorage, window)` на
+  import-time. Vitest-node test suites поліфілять
+  `globalThis.localStorage` всередині `beforeAll`/`beforeEach` —
+  _після_ того як модуль вже імпортовано, тому singleton тримав
+  stale reference на memory-fallback (бо в `--environment=node`
+  `window.localStorage` undefined під час import-у). Writes через
+  `webKVStore` ішли в memory, а тестові helper-и читали через
+  `globalThis.localStorage.getItem(...)` з polyfill-у → парність 0.
+
+  Розв'язали через `resolveStore()` лінивий resolver, що читає
+  `globalThis.localStorage` (та `globalThis.window` як event
+  target) **на кожен виклик** і повертає
+  `createWebKVStore(...)` поверх свіжого reference. `webKVStore`
+  тепер object-of-thunks — `getString`/`setString`/`remove`/
+  `listKeys`/`onChange` всі делегують через `resolveStore()`.
+  Memory fallback зберігається (для SSR + private-mode) і
+  резолвиться кожного виклику.
+
+  AST-верифікація eslint-rule:
+  `packages/eslint-plugin-sergeant-design/index.js:385-410` —
+  `no-raw-local-storage` тригериться на nested `MemberExpression`
+  типу `globalThis.localStorage.foo`, але НЕ на single
+  member-access типу `globalThis.localStorage` (який передається
+  як arg у `createWebKVStore(...)`). Lazy-resolution pattern
+  проходить eslint без allowlist entry-я.
+
+- **Сабтаск 4–9 — 6 storage-primitive файлів делегують у
+  `webKVStore`** замість прямого `localStorage.*`. Кожен — окремий
+  логічний рефактор, який поодинці б одразу падав
+  `no-raw-local-storage` (бо allowlist-entry для нього заплановано
+  до видалення у сабтаску 11):
+  - **#4** `apps/web/src/shared/lib/storage/storage.ts` — раніше
+    hosting `safeReadLS`/`safeWriteLS`/`safeRemoveLS`/
+    `safeReadLSValidated`/`safeReadStringLS`/`safeListLSKeys`
+    обгортки з прямим `window.localStorage.*` доступом → тепер всі
+    обгортки делегують у `webKVStore.{getString,setString,remove,
+listKeys}`. (Цей файл також тепер експортує сам `webKVStore`
+    як singleton-of-thunks.)
+  - **#5** `apps/web/src/shared/lib/storage/storageManager.ts` —
+    три migrations + ran-set bookkeeping (раніше читав/писав
+    `__legacy_storage_migrations__` і per-migration результати
+    напряму у LS) → тепер через `webKVStore`. Один регрес-фікс
+    окремим сабтаском нижче (#10).
+  - **#6** `apps/web/src/shared/lib/storage/storageQuota.ts` —
+    `safeSetItem` (єдиний path, який має throw quota /
+    private-mode setItem-помилки) переписано через rename-binding
+    `const storage = window.localStorage` (eslint rule приймає
+    одиночний MemberExpression), щоб setItem → setString-mapping
+    зберіг семантику helper-а: caller розраховує отримати помилку
+    коли LS повний — `safeJsonSet` будує над цим.
+  - **#7** `apps/web/src/shared/lib/storage/typedStore.ts` —
+    versioned typed store з cross-tab sync через `storage` event
+    → reads/writes через `webKVStore.getString`/`setString`/
+    `remove`, subscriptions через `webKVStore.onChange`.
+  - **#8** `apps/web/src/shared/lib/storage/createModuleStorage.ts`
+    — module-scoped helper-фабрика
+    (`createModuleStorage('routine')` → `{get, set, remove, list,
+subscribe}` з зашитим prefix-ом) → wrapper навколо
+    `webKVStore`.
+  - **#9** `apps/web/src/shared/hooks/useLocalStorageState.ts` —
+    React hook (`[value, setValue] = useLocalStorageState(key,
+default)`) → reads через `webKVStore`, write-back через
+    `webKVStore.setString`, cross-tab sync через
+    `webKVStore.onChange(key, ...)`.
+
+- **Сабтаск 10 — Nutrition pantry migration regression fix**
+  (у `storageManager.ts`).
+  Migration #002 («nutrition: hoist legacy single pantry into
+  multi-pantry shape») встановлювала
+  `nutrition_active_pantry_id_v1 = "home"` через
+  `safeJsonSet(ACTIVE_KEY, "home")`. `safeJsonSet` обгортає
+  значення через `JSON.stringify`, тому raw string `"home"`
+  ставав `'"home"'` на диску — а historical reader
+  (`loadActivePantryId`) робить
+  `localStorage.getItem(ACTIVE_KEY)` і очікує літеральний id
+  назад, не JSON-encoded version. На main цей баг не вилазив бо
+  тести юзали reset + ручний LS-setup; після переходу
+  storageManager у `webKVStore` (де `setString` strict-string-only)
+  vitest ловив parity issue. Fix: міграція тепер юзає
+  `safeSetItem(ACTIVE_KEY, "home")` (не stringify-ить значення,
+  але зберігає quota-error semantics щоб міграція лишилась
+  re-runnable при private-mode failure). Коментар у коді
+  пояснює invariant.
+
+- **Сабтаск 11 — `eslint.config.js`
+  `no-raw-local-storage.ignores` опускається 6 → 0 prod entries**
+  (тільки `apps/web/src/**/*.test.{js,jsx,ts,tsx}` і
+  `apps/web/src/**/__tests__/**` лишаються — fixture-и для
+  testing-style storage-mock-ів).
+  CI lint gate тепер ловить **навіть тривіальний**
+  `localStorage.setItem('foo','bar')` у будь-якому prod-файлі.
+  Додавання нового LS-callsite вимагає або проходження через
+  `webKVStore`-boundary, або явного allowlist-entry-я (що буде
+  дзвонити alarm bell у PR review).
+
+- **Сабтаск 12 — `.tech-debt/localstorage-allowlist-budget.json`
+  `production: 6 → 0`,** headroom 0 у обидва боки.
+  `pnpm lint:localstorage-allowlist` зелений на 0/0.
+
+- **Сабтаск 13 — `docs/tech-debt/frontend.md` §2
+  («localStorage burndown — primitive callsites») закритий** —
+  переведено у collapsible done-block з історією знесень
+  (Stage 1 → Stage 7 → Stage 7 final).
+
+- **Verification (на момент merge `5fdfcbe4`).**
+  - `pnpm typecheck` — 16/16 tasks ✓
+  - `pnpm --filter @sergeant/shared test` — 41 файл, 586 тестів ✓
+  - `pnpm --filter @sergeant/web test` — 209 файлів, 2099 тестів ✓
+    (storage-related: `storage.test.ts` 12, `typedStore.test.ts`
+    14, `storageManager.test.ts` 15, `nutritionStorage.test.ts` 7
+    — всі зелені)
+  - `pnpm turbo run lint` — 0 errors
+  - `pnpm lint:localstorage-allowlist` — 0/0 ✓ (production count
+    6 → 0, headroom 0)
+
+- **Out of scope — винесено у Stages 8 і 9.**
+  Original Done criteria цього PR-у (ROADMAP-чернетка) включали
+  тезу «6 storage-primitive файлів стають shim-ом над OPFS+SQLite
+  (`webKVStore` → SQLite-backed table `kv_store(key TEXT PK,
+value JSON)`)». Та редакція об'єднувала **дві** ортогональні
+  ініціативи:
+  1. _eslint allowlist = []_ (boundary через `webKVStore`) —
+     закрито у цьому PR-і;
+  2. _SQLite-backed `kv_store` impl_ (warm-cache, async init
+     race, kvvfs cycle на iOS<16.4) — re-scoped в **Stage 9**
+     нижче;
+  3. _8 sqlite_v2 фіч-флагів default → on_ + drop LS-safety-net
+     writes/reads у 4 модулях — re-scoped в **Stage 8** нижче.
+
+  Поточний `webKVStore` лишається LS-backed, але через єдиний
+  KVStore-boundary тепер можна свопнути impl-ацію в одному місці
+  без зачіпання 6 споживачів — і саме тому Stage 9 окремо стає
+  можливим.
+
+- **Dep.** Усі попередні Stage 7 PR-и (#051+#052a, #052b, #052c,
+  #053a, #053b, #053c) — без них tracked-key реєстр + cloudSync
+  v1 enqueue-call-sites досі писали б у LS поза
+  `webKVStore`-boundary, і refactor-ить storage-primitive-и не
+  мало сенсу.
+
+---
+
+### Stage 8 — SQLite cut-over rollout
+
+> **Status:** 🚧 PLANNED. Stage 7 закрив **boundary** (eslint
+> allowlist = [], 6 storage-primitive-ів делегують у `webKVStore`,
+> KVStore interface повний). Stage 8 — це **operational rollout**:
+> переводимо 8 `feature.{routine,fizruk,nutrition,finyk}.sqlite_v2.*`
+> прапорців з `defaultValue: false` (opt-in, experimental) у
+> `defaultValue: true` (default-on), потім видаляємо LS-safety-net
+> писання і LS-reader-овeрлеї у 4 модулях.
+
+> **Чому окрема Stage:** roadmap-у §3 раніше тримав цей блок як
+> implicit «Stage 4 follow-up» в out-of-scope-секціях кожного
+> per-module PR-а (PR #025/#026 для routine, аналогічно для
+> fizruk/nutrition/finyk). Реальність — це 16+ PR-ів на 4 модулі ×
+> 4 кроки, плюс mobile sync-engine writer-runtime wiring і shared
+> telemetry — окрема Stage з власною таблицею прогресу і decision
+> gate-ом точніше відображає шлях.
+
+**Шаблон 4 PR-ів на модуль:**
+
+| Крок | PR title shape                                                  | Що робить                                                                                                                                                                                 | Telemetry / canary gate                                                                              |
+| ---- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| 1    | `feat(<m>): default-on feature.<m>.sqlite_v2.dual_write`        | Перемкнути `defaultValue: false → true` у `apps/{web,mobile}/src/core/lib/featureFlags.ts`. LS-write шлях лишається authoritative; SQLite-write — best-effort fire-and-forget.            | `<m>.sqlite.dualwrite.error_rate ≤ 0.1%` за 7 днів. `<m>.sqlite.dualwrite.parity ≥ 99.9%` row-count. |
+| 2    | `feat(<m>): default-on feature.<m>.sqlite_v2.read_sqlite`       | Перемкнути read-flag у default-on. Reads ідуть з SQLite з LS-overlay-fallback на miss. LS-write залишається active як safety net.                                                         | `<m>.sqlite.read.fallback` counter = 0 за 14 днів. UI smoke OK.                                      |
+| 3    | `chore(<m>): remove LS-write safety net`                        | Видалити `localStorage.setItem` шлях у module storage layer (`<m>Storage.ts` / `<m>Store.ts`). Видалити dual-write helper (`triggerXyzDualWrite`) і feature flag (вже unconditional-on).  | Жодних `LS-write` подій у Sentry breadcrumbs за 14 днів. SQLite write error rate ≤ 0.05%.            |
+| 4    | `chore(<m>): drop LS reader paths + tombstone STORAGE_KEYS.<M>` | Видалити `loadXyzState()` LS-overlay reader. Зняти модуль зі `STORAGE_KEYS` (або позначити `@deprecated tombstone`). One-time bootstrap migration читає residual LS → SQLite на 1-й boot. | LS-key counter = 0 у новому install. Existing users — read-residual + delete на boot.                |
+
+**Per-module roadmap:**
+
+#### **Routine (4 PR-и)**
+
+##### **PR #055r1 — `feat(routine): default-on feature.routine.sqlite_v2.dual_write`** 📋 ROADMAP
+
+- Flip `defaultValue: false → true` у обох
+  `apps/{web,mobile}/src/core/lib/featureFlags.ts` (рядки
+  `feature.routine.sqlite_v2.dual_write`).
+- Telemetry: `routine.sqlite.dualwrite.error_rate` (Sentry tag) +
+  parity counter `routine.sqlite.dualwrite.parity` (web side у
+  `triggerRoutineDualWrite` finally-block).
+- **Done criteria.** 7 днів proden у default-on без error-spike.
+- **Risk.** Quota errors у power users з ~5+ MB SQLite даних.
+  Mitigation: catch + tag без mute, dev panel у Settings →
+  Експериментальне.
+- **Dep.** PR #024 (boot wiring) — landed.
+
+##### **PR #055r2 — `feat(routine): default-on feature.routine.sqlite_v2.read_sqlite`** 📋 ROADMAP
+
+- Flip read-flag default-on. Reads ідуть з SQLite через
+  `apps/{web,mobile}/src/modules/routine/lib/sqliteReader.ts` з
+  LS-overlay-fallback на cache miss.
+- Telemetry: `routine.sqlite.read.fallback` (counter, must be 0
+  steady state).
+- **Done criteria.** 14 днів без `read.fallback`. UI smoke
+  (toggle entry, streak rendering, week view) OK на staging.
+- **Dep.** PR #055r1 (default-on dual_write) — мінімум 7 днів
+  стабільного потоку.
+
+##### **PR #056r — `chore(routine): remove LS-write safety net`** 📋 ROADMAP
+
+- Drop `localStorage.setItem(STORAGE_KEYS.ROUTINE, ...)` callsite у
+  `apps/{web,mobile}/src/modules/routine/lib/routineStorage.ts ::
+saveRoutineState`. Drop `triggerRoutineDualWrite` шар повністю
+  (вже unconditional default-on).
+- Drop `feature.routine.sqlite_v2.dual_write` у featureFlags.
+- **Done criteria.** Жодних `routine.ls.write` breadcrumbs у
+  Sentry за 14 днів post-merge. Bundle drop ~3 KB.
+- **Dep.** PR #055r2 (read default-on, ≥ 14 днів стабільно).
+
+##### **PR #057r — `chore(routine): drop LS reader paths + tombstone STORAGE_KEYS.ROUTINE`** 📋 ROADMAP
+
+- Drop `loadRoutineState()` LS-read overlay у `routineStorage.ts`.
+- Tombstone `STORAGE_KEYS.ROUTINE` (`@deprecated tombstone — read
+via SqliteReader`).
+- Boot-time one-time read-residual: якщо `localStorage[ROUTINE]`
+  існує AND SQLite empty → bulk-import → delete LS key.
+- **Done criteria.** `eslint-plugin-sergeant-design`
+  tracked-keys-list зменшується на 1 entry. CI grep gate проти
+  `STORAGE_KEYS.ROUTINE` reads-у поза boot-import-helper-ом.
+- **Dep.** PR #056r (LS-write removed) ≥ 14 днів стабільно.
+
+#### **Fizruk (4 PR-и)** — структура ідентична
+
+- **PR #055f1** — default-on `feature.fizruk.sqlite_v2.dual_write`.
+- **PR #055f2** — default-on `feature.fizruk.sqlite_v2.read_sqlite`.
+- **PR #056f** — drop LS-safety-net writes (`fizruk_workouts`,
+  `fizruk_custom_exercises`, `fizruk_measurements`).
+- **PR #057f** — drop LS readers + tombstone `STORAGE_KEYS.FIZRUK_*`.
+
+#### **Nutrition (4 PR-и)** — структура ідентична
+
+- **PR #055n1** — default-on `feature.nutrition.sqlite_v2.dual_write`.
+- **PR #055n2** — default-on `feature.nutrition.sqlite_v2.read_sqlite`.
+- **PR #056n** — drop LS-safety-net writes (`nutrition_meals`,
+  `nutrition_pantries`, `nutrition_pantry_items`, `nutrition_prefs`,
+  `nutrition_recipes`).
+- **PR #057n** — drop LS readers + tombstone `STORAGE_KEYS.
+NUTRITION_*`. Зняти стару migration `storageManager #002`
+  (legacy single pantry → multi pantry), бо residual-import
+  bootstrap покриє цей переїзд.
+
+#### **Finyk (4 PR-и)** — структура ідентична
+
+- **PR #055k1** — default-on `feature.finyk.sqlite_v2.dual_write`.
+- **PR #055k2** — default-on `feature.finyk.sqlite_v2.read_sqlite`.
+  Окремо: `feature.finyk.sqlite_v2.mono_mirror` теж default-on
+  (Mono balance/transactions cache mirror).
+- **PR #056k** — drop LS-safety-net writes (14 finyk\_\* keys —
+  `finyk_hidden_accounts`, `finyk_hidden_transactions`,
+  `finyk_budgets`, `finyk_subscriptions`, `finyk_assets`,
+  `finyk_debts`, `finyk_receivables`, `finyk_custom_categories`,
+  `finyk_manual_expenses`, `finyk_tx_categories`, `finyk_tx_splits`,
+  `finyk_mono_debt_links`, `finyk_networth_history`, `finyk_prefs`)
+  - 3 mono cache LS-keys (`finyk_tx_cache`, `finyk_info_cache`,
+    `finyk_tx_cache_last_good`).
+- **PR #057k** — drop LS readers + tombstone `STORAGE_KEYS.FINYK_*`.
+
+#### **PR #058 — `feat(mobile): wire sync-engine writer-runtime in boot path`** 📋 ROADMAP
+
+- Mobile counterpart до web `apps/web/src/core/syncEngine/syncEngineWriter.ts`
+  ([#1953](https://github.com/Skords-01/Sergeant/pull/1953)).
+- Mobile-сторона `useSyncStatus` зараз — read-only stub (повертає
+  idle shape, див. PR #052c notes line 2218); SQLite cut-over для
+  4 модулів на mobile **не може** йти у production без писаного
+  op-log → push-loop wiring-у.
+- **Out-of-scope-таск** з PR #053c (line 2530-2532, "Mobile
+  sync-engine writer-runtime wiring у boot-path... — окремий
+  follow-up"); піднято в Stage 8 як hard prerequisite для
+  mobile-частини PR #056\*.
+
+#### **Decision gate (Stage 8 → Stage 9).**
+
+| Метрика                                              | Pass                  | Fail                        |
+| ---------------------------------------------------- | --------------------- | --------------------------- |
+| `<m>.sqlite.dualwrite.error_rate` (Sentry, 14 днів)  | ≤ 0.1% per module     | ≥ 0.5% — pause #055\*2      |
+| `<m>.sqlite.read.fallback` (counter, post-#055\*2)   | 0 steady state        | > 0 — investigate, rollback |
+| Total LS-write events per session (post-#056\*)      | ≤ 5 (only auth + ack) | > 10 — find missed callsite |
+| `STORAGE_KEYS` enum entries (post-#057\*)            | ≤ 3 (auth + flags)    | > 5 — missed tombstone      |
+| Bundle size delta after Stage 8 (web)                | ≤ -8 KB net           | > +5 KB — check tree-shake  |
+| Mobile sync-engine writer-runtime active (post-#058) | yes                   | no — block #056\*           |
+
+#### **Calendar.**
+
+- 4 модулі × 4 кроки = 16 PR-ів кодом (~3 тижні чистого coding на
+  1 FTE).
+- Між кроками 1↔2 і 2↔3 — _≥ 7 і ≥ 14 днів_ canary spec-ів.
+- **Total wall-clock:** 2-3 місяці (rollout-watching паралельно
+  з Stage 9).
+
+---
+
+### Stage 9 — KV store swap (`webKVStore` → SQLite-backed `kv_store`)
+
+> **Status:** 📋 ROADMAP. Це той самий «SQLite-backed
+> `kv_store(key TEXT PK, value JSON)`» який original PR #054 final
+> тезу обіцяв, але ніколи не входив у Done criteria цього PR-у.
+> Виноситься у власну Stage, бо технічно нетривіальний — async
+> SQLite init vs sync `KVStore.getString` API + кругова
+> залежність kvvfs ↔ localStorage на iOS Safari < 16.4 (де SQLite
+> сам сидить у LS, тому put-ити LS-data у SQLite, що сидить у LS,
+> = circular).
+
+**Цільова інфра.**
+
+- Нова таблиця `kv_store(key TEXT PRIMARY KEY, value TEXT NOT NULL,
+updated_at INTEGER NOT NULL)` у `packages/db-schema/src/sqlite/`.
+- Boot-time warm-cache: `await sqlite.select().from(kvStore)` →
+  `Map<string, string>`. Cache populates _до_ App-render
+  (синхронний `getString` має повертати committed reads — тому
+  warm-cache блокує boot до завершення SQLite init).
+- Sync `getString(key)` → `cache.get(key) ?? null`.
+- Sync `setString(key, value)` → `cache.set(key, value)` _плюс_
+  fire-and-forget `sqlite.insert().onConflictDoUpdate({ key, value,
+updated_at: Date.now() })`. Async-write enqueue-ується через
+  op-log retry queue для durability.
+- `onChange(key, listener)` працює через `BroadcastChannel`
+  (cross-tab) + локальну sub-list.
+
+**PR plan.**
+
+#### **PR #060 — `feat(db-schema): add kv_store SQLite table + client migration`** 📋 ROADMAP
+
+- Drizzle SQLite schema у `packages/db-schema/src/sqlite/kvStore.ts`:
+  ```ts
+  export const kvStore = sqliteTable("kv_store", {
+    key: text("key").primaryKey(),
+    value: text("value").notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  });
+  ```
+- Inline міграція у `packages/db-schema/src/sqlite/migrations/`
+  - manifest entry.
+- Postgres counterpart **НЕ потрібний** — `kv_store` суто
+  client-local (per-device key-value, без sync-у на сервер;
+  для cross-device prefs далі юзаємо нормалізовані модульні
+  таблиці).
+- **AC.** `pnpm --filter @sergeant/db-schema test` — passes;
+  schema snapshot test покриває нову таблицю.
+- **Out-of-scope.** Жодних змін у `webKVStore` impl-ації — це
+  схема-only PR.
+
+#### **PR #061 — `feat(shared): add createSqliteKVStore + warm-cache`** 📋 ROADMAP
+
+- New KVStore adapter у `packages/shared/src/storage/kv.ts` (поряд
+  з `createMemoryKVStore`/`createWebKVStore`/`createMmkvKVStore`):
+  ```ts
+  export function createSqliteKVStore(deps: {
+    sqlite: SqliteMigrationClient;
+    boot: { warmCache: Map<string, string>; loaded: boolean };
+    crossTab?: BroadcastChannelLike;
+  }): KVStore;
+  ```
+- `getString` — sync read з `boot.warmCache`. Якщо
+  `boot.loaded === false` → throw `KVStoreNotReadyError` (caller
+  має зачекати boot).
+- `setString` — sync update warm-cache + async write-back до
+  SQLite через op-log queue.
+- `listKeys` — sync `Array.from(boot.warmCache.keys())`.
+- `onChange` — local list + `BroadcastChannel`-based cross-tab
+  signal.
+- **Tests** (`__tests__/sqliteKv.test.ts`) — boot-sequence,
+  fallback на init failure, write-coalesce, BC stress test.
+- **Dep.** PR #060.
+
+#### **PR #062 — `feat(web): bootstrap warm-cache + LS→kv_store one-time migration`** 📋 ROADMAP
+
+- New `apps/web/src/core/db/kvStoreBoot.ts`:
+  ```ts
+  export async function bootstrapKvStore(): Promise<{
+    warmCache: Map<string, string>;
+    loaded: true;
+  }>;
+  ```
+- Boot sequence:
+  1. SQLite init (existing `apps/web/src/core/db/sqlite.ts`).
+  2. Read `kv_store` → populate `warmCache`.
+  3. Якщо `kv_store` empty AND `localStorage` non-empty AND
+     migration flag (`kv_store_migrated_v1`) not set →
+     bulk-import all LS keys → upsert до `kv_store` → set flag.
+  4. Subscribe to `BroadcastChannel('kv-store')` для cross-tab.
+- App entry (`main.tsx`) await-ить bootstrap до `<App />` mount.
+- **Failure-mode**: SQLite init throw → render fallback UI +
+  Sentry alarm; `webKVStore` лишається LS-backed (через
+  `resolveStore()` ladder додається `if (!boot.loaded) → return
+webLsKv`).
+- **Dep.** PR #061.
+
+#### **PR #063 — `feat(web): swap webKVStore impl from localStorage to SQLite-backed kv_store`** 📋 ROADMAP
+
+- Refactor `apps/web/src/shared/lib/storage/storage.ts ::
+resolveStore()` — пріоритет 1: SQLite warm-cache (якщо
+  `boot.loaded`); пріоритет 2: web LS adapter (fallback); пріоритет
+  3: memory fallback (SSR/private mode).
+- LS залишається як live mirror на 4 тижні (writes йдуть і в
+  SQLite, і в LS) — щоб revert-нути PR без втрати юзер-даних.
+- Telemetry: `kvstore.backend` tag (`sqlite | ls-fallback | memory`)
+  - `kvstore.boot.duration_ms` histogram.
+- **Done criteria.** SQLite backend у > 99% sessions після
+  bootstrap-у на staging.
+- **Dep.** PR #062.
+
+#### **PR #064 — `chore(web): drop LS mirror in webKVStore (SQLite-only)`** 📋 ROADMAP
+
+- Після 4 тижнів post-#063 без telemetry-incident-ів: drop LS
+  mirror writes. `webKVStore` тепер strictly SQLite-backed (з
+  memory fallback на init failure).
+- Drop одноразової LS→kv_store migration (вже не треба).
+- **Done criteria.** `kvstore.backend === "ls-fallback"` rate
+  ≤ 0.1% за 14 днів.
+- **Dep.** PR #063 + 4 тижні стабільного потоку.
+
+#### **PR #065 — `feat(mobile): mirror — swap mobile webKVStore-equivalent onto SQLite-backed kv_store`** 📋 ROADMAP
+
+- Mobile counterpart до PR #061-#064. Mobile вже використовує
+  `createMmkvKVStore` (через `react-native-mmkv`) — Stage 9 на
+  mobile = swap MMKV → SQLite-backed `kv_store`.
+- MMKV native bundle (~80 KB) можна прибрати з app shell після
+  cut-over — bundle saving + один менший native dep maintenance
+  burden.
+- **Risk.** MMKV — synchronous + faster (~µs); SQLite через
+  `expo-sqlite` — синхронний на native side, але через JSI bridge
+  має ~ms latency. Warm-cache pattern компенсує.
+- **Dep.** PR #064.
+
+#### **PR #066 — `chore(shared): drop createMemoryKVStore from prod shipping (tests-only)`** 📋 ROADMAP
+
+- Cleanup: після cut-over `createMemoryKVStore` потрібен тільки в
+  тестах + SSR. Винести у test-helper-only export
+  `@sergeant/shared/test-utils` щоб не тяг ~200 байт у prod
+  bundle.
+- **Out-of-scope.** Низький пріоритет, можна зкипати.
+
+#### **Risk register для Stage 9.**
+
+| Ризик                                                                                       | Likelihood | Impact | Mitigation                                                                                       |
+| ------------------------------------------------------------------------------------------- | ---------- | ------ | ------------------------------------------------------------------------------------------------ |
+| SQLite init fails на iOS Safari < 16.4 (kvvfs fallback) → boot blocks                       | Medium     | High   | Fallback ladder: SQLite → web LS adapter → memory. Telemetry на real fallback rate.              |
+| Warm-cache miss race: setItem-then-getItem у одному tick до flush                           | Low        | Medium | Sync update warm-cache **перед** async-write до SQLite — read-after-write consistency garantied. |
+| BroadcastChannel doesn't fire між tabs у Safari Private mode                                | Low        | Low    | Fallback на localStorage `storage` event як signal-only (не для data).                           |
+| One-time LS→kv_store migration ламається на 5+ MB user (LS quota error на read-then-import) | Low        | Medium | Idempotent batch-import (50 keys per batch); resume from migration flag.                         |
+| Async write-back queue overflow під offline + heavy write пресс                             | Low        | Medium | Queue cap (1000 ops); dropping LRU з Sentry alarm.                                               |
+| Drizzle `.onConflictDoUpdate` має edge-case bug на Safari WASM                              | Low        | Medium | Fallback на raw SQL (`INSERT OR REPLACE`).                                                       |
+
+#### **Calendar.**
+
+- 5 PR-ів × ~3 дні per PR + ~4 тижні canary post-#063 = **2 місяці
+  wall-clock** (1 FTE кодом ~2 тижні + рest — telemetry-watching).
 
 ---
 
