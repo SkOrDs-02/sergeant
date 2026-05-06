@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-05 by Devin (PR #042e-scheduler + PR #042e-status + PR #042e-recover + PR #042e-flush). **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-06 by Devin (Stage 6 status reconciliation: PR #046 / PR #047 LANDED + Stage 6 summary table → ✅ COMPLETE; PR #022 SPIKE → ✅ CLOSED/ARCHIVED; Stage 5 PR #042e-wiring (#1953) LANDED note). **Next review:** 2026-08-04.
 > **Status:** Active
 >
 > **Stage status (one-line summary):**
@@ -13,7 +13,7 @@
 > | 4 — Nutrition module migration | ✅ COMPLETE       | [#031/#032/#033](https://github.com/Skords-01/Sergeant/pull/1574), [#034](https://github.com/Skords-01/Sergeant/pull/1636)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | —                        |
 > | 4 — Finyk module migration     | ✅ COMPLETE (5/5) | [#035](https://github.com/Skords-01/Sergeant/pull/1667), [#036](https://github.com/Skords-01/Sergeant/pull/1680), [#037](https://github.com/Skords-01/Sergeant/pull/1694), [#038](https://github.com/Skords-01/Sergeant/pull/1702), [#039](https://github.com/Skords-01/Sergeant/pull/1711)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | —                        |
 > | 5 — op-log v2 hardening        | ✅ COMPLETE       | [#040](https://github.com/Skords-01/Sergeant/pull/1717), [#041](https://github.com/Skords-01/Sergeant/pull/1721), [#043](https://github.com/Skords-01/Sergeant/pull/1734), [#043a](https://github.com/Skords-01/Sergeant/pull/1739), [#043b](https://github.com/Skords-01/Sergeant/pull/1743), [#043c](https://github.com/Skords-01/Sergeant/pull/1754), [#044](https://github.com/Skords-01/Sergeant/pull/1780), [#048](https://github.com/Skords-01/Sergeant/pull/1737), [#042a](https://github.com/Skords-01/Sergeant/pull/1769), [#042b](https://github.com/Skords-01/Sergeant/pull/1776), [#042c](https://github.com/Skords-01/Sergeant/pull/1787), [#042d-prep](https://github.com/Skords-01/Sergeant/pull/1804), [#042d-builder](https://github.com/Skords-01/Sergeant/pull/1810), [#042e-mapping](https://github.com/Skords-01/Sergeant/pull/1827), [#042e-submit](https://github.com/Skords-01/Sergeant/pull/1901), [#042e-drain](https://github.com/Skords-01/Sergeant/pull/1913), [#042e-lifecycle](https://github.com/Skords-01/Sergeant/pull/1922), [#042e-pushloop](https://github.com/Skords-01/Sergeant/pull/1926), [#042e-scheduler](https://github.com/Skords-01/Sergeant/pull/1932), [#042e-status](https://github.com/Skords-01/Sergeant/pull/1933), [#042e-recover](https://github.com/Skords-01/Sergeant/pull/1935), [#042e-flush](https://github.com/Skords-01/Sergeant/pull/1938) | —                        |
-> | 6 — ops                        | 🚧 partial        | [#049 docs](https://github.com/Skords-01/Sergeant/pull/1757), #049b (weekly backup-verify CI), #050 (`module_data` partition + archival)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | full Stage 6 plan in §6  |
+> | 6 — ops                        | ✅ COMPLETE       | [#046](https://github.com/Skords-01/Sergeant/pull/1923) (pgBouncer), [#047](https://github.com/Skords-01/Sergeant/pull/1928) (read replica), [#048](https://github.com/Skords-01/Sergeant/pull/1737) (sync dashboard), [#049 docs](https://github.com/Skords-01/Sergeant/pull/1757), [#049b](https://github.com/Skords-01/Sergeant/pull/1964) (weekly backup-verify CI), #050 (`module_data` partition + archival)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | #045 Redis (optional)    |
 > | 7 — cleanup                    | ⏳ blocked        | —                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | depends on Stage 5 close |
 >
 > **Per-PR scope and Done/Risk/Dep notes** живуть у §3 (PR plans) нижче — таблиця тут лише задля швидкого огляду landed-стану. **Boot-wiring** для `register{Routine,Fizruk,Nutrition,Finyk}DualWriteContext` залендив у [#1491](https://github.com/Skords-01/Sergeant/pull/1491) (Routine + Fizruk web/mobile) + per-module `useNutritionDualWriteBoot` / `useFinykDualWriteBoot` хуки (Nutrition + Finyk web + mobile через `NutritionApp.tsx` / `useStorage.ts`).
@@ -445,16 +445,16 @@ payload_size, conflict, created_at)`. Запис у `syncPushAll`/`syncPullAll`
 
 ### Stage 3 — SPIKE на routine
 
-#### **PR #022 — `feat(spike): routine module on SQLite — proof of concept`** ⏳ IN-PROGRESS (closure PR відкрито 2026-05-02)
+#### **PR #022 — `feat(spike): routine module on SQLite — proof of concept`** ✅ CLOSED / ARCHIVED — initial SPIKE landed [#1366](https://github.com/Skords-01/Sergeant/pull/1366); SPIKE scaffolding decommissioned [#1421](https://github.com/Skords-01/Sergeant/pull/1421) (2026-05-03)
 
-> **Статус (2026-05-02):** library + dev panels + automated decision-gate
-> measurements landed. Closure PR — `devin/1777755997-close-routine-sqlite-spike`.
-> SPIKE pre-decision: **conditionally GO** — bundle delta = 0 KB і local
-> build-time proxy ≈ 19 s обидва PASS із запасом; лишилося три
-> hardware-pending перевірки (first-open latency, OPFS на iOS Safari 16.4+,
-> multi-device toggle), для яких dev panel уже виставляє всі
-> метрики — потрібен лише operator pass. Деталі та operator runbook
-> у [`docs/notes/spikes/routine-sqlite-v2.md`](../notes/spikes/routine-sqlite-v2.md#decision-gate-metrics).
+> **Статус (2026-05-03):** decision-gate **GO** — Stage 4 за цим SPIKE-ом
+> вже виконано (routine cut-over PR #025 + cleanup PR #026), тому SPIKE
+> code було розкомпоновано: production-critical файли (`clientMigrate.ts`,
+> `expoSqliteAdapter.ts`, `testSqlite.ts`) промоутнули у не-SPIKE-шляхи,
+> решту бібліотеки + dev-panel-і + feature flag видалили у [#1421](https://github.com/Skords-01/Sergeant/pull/1421).
+> SPIKE-нотатник архівовано: [`docs/notes/spikes/routine-sqlite-v2.md`](../notes/spikes/routine-sqlite-v2.md#decision-gate-metrics)
+> (`Status: Completed & archived`). Decision-gate replication тепер
+> покривається production reads PR #025 + drop-blob PR #026 + dual-write PR #024.
 
 - **Goal.** Один модуль повністю на SQLite на обох платформах. Demo:
   toggle звички з web + mobile паралельно → обидва девайси у sync без
@@ -1172,11 +1172,15 @@ show_balance, updated_at, deleted_at)` — об'єднує
 
 ### Stage 5 — Sync engine v2 hardening
 
-> **2026-05-06 implementation note.** The remaining writer-wiring slice is
-> implemented in `apps/web/src/core/syncEngine/`: web boot creates the sync v2
-> push scheduler, reconnect/visibility flush adapter, push-on-enqueue flush,
-> Sentry breadcrumbs, outbox status counts, and dead-letter retry action. Stage
-> 7 cleanup remains blocked until this runtime has completed its burn-in.
+> **2026-05-06 implementation note.** The remaining writer-wiring slice landed
+> in [#1953](https://github.com/Skords-01/Sergeant/pull/1953) (`feat(web): wire sync engine writer runtime`):
+> web boot (`apps/web/src/main.tsx` → `apps/web/src/core/syncEngine/{singleton,syncEngineWriter}.ts`)
+> composes `createSyncEnginePushScheduler` + `createSyncEngineFlushOnReconnect`
+> із `@sergeant/api-client` поверх `drainSyncOpOutbox` / `mark*` / `recoverDeadLetter`
+> із `@sergeant/db-schema/sqlite`, проводить tick/flush у Sentry breadcrumbs,
+> опційно показує dead-letter count в `OfflineBanner` + retry-action через
+> `useSyncStatus`. Stage 7 cleanup лишається ⏳ blocked до завершення burn-in
+> у проді.
 
 #### **PR #040 — `feat(migrations): persistent op-log retry policy in SQLite`** ✅ LANDED — [#1717](https://github.com/Skords-01/Sergeant/pull/1717)
 
@@ -1883,6 +1887,37 @@ AND status='dead_letter'`. `WHERE status='dead_letter'` guard
   #042e-pushloop через scheduler. Майбутній `pushOnEnqueue` adapter
   буде reuse той самий "fire on event → flushNow" pattern, що тут.
 
+#### **PR #042e-wiring — `feat(web): wire sync engine writer runtime`** ✅ LANDED ([#1953](https://github.com/Skords-01/Sergeant/pull/1953))
+
+- Scope. Закриває Stage 5 виклик "сім'ю #042e композувати у web boot path".
+  Створює web-only runtime factory у `apps/web/src/core/syncEngine/` яка
+  склеює `@sergeant/api-client` push scheduler / reconnect-flush adapter
+  поверх `@sergeant/db-schema/sqlite` outbox helper-ів і викликається з
+  `apps/web/src/main.tsx` після storage migrations і перед deferred
+  observability init.
+- **Done (2026-05-06).** Реалізація:
+  - `apps/web/src/core/syncEngine/syncEngineWriter.ts` — runtime factory
+    `createSyncEngineWriterRuntime` із narrow surface
+    `{ start, stop, flushNow, notifyEnqueued, getStatus, recoverAllDeadLetters }`.
+  - `apps/web/src/core/syncEngine/singleton.ts` — `bootSyncEngineWriter()` +
+    `getSyncEngineWriter()` (одноразовий boot, idempotent).
+  - `apps/web/src/main.tsx` — виклик `bootSyncEngineWriter()` після
+    storage init.
+  - `apps/web/src/core/cloudSync/hook/useSyncStatus.ts` +
+    `apps/web/src/core/app/OfflineBanner.tsx` — extension hook читає sync v2
+    counts (queued / inflight / dead-letter) і показує retry-action для
+    dead-letter recovery; legacy v1-fields незмінні.
+  - Sentry breadcrumbs на кожному tick complete + `captureException` у
+    `sync-v2-push-tick`, `sync-v2-flush-on-reconnect`, `sync-v2-writer-boot`,
+    `sync-v2-push-on-enqueue` scopes.
+  - Default interval 30s; default drain limit 100 ops/tick.
+- **Risk.** None — додає окремий v2 writer runtime поверх існуючого
+  cloudSync v1 (без змін у v1 path). Burn-in потрібен щоб впевнитись,
+  що Stage 7 cleanup можна безпечно знімати.
+- **Dep.** PR #042e-pushloop, PR #042e-scheduler, PR #042e-flush,
+  PR #042e-status, PR #042e-recover (всі вже залендили; цей PR тільки
+  їх збирає у web boot).
+
 #### **PR #043 — `feat(sync): G-set CRDT for nutrition_meals log`** ✅ LANDED ([#1734](https://github.com/Skords-01/Sergeant/pull/1734))
 
 - Scope. `nutrition_meals` — append-only G-set. Видалення через
@@ -1984,17 +2019,44 @@ AND status='dead_letter'`. `WHERE status='dead_letter'` guard
 - Scope. Опційно — якщо Postgres rate-limit з PR #011 показав latency-issue
   на масштабі. Redis для buckets + pub/sub для SSE.
 
-#### **PR #046 — `feat(server): pgBouncer connection pooling`**
+#### **PR #046 — `feat(server): pgBouncer connection pooling`** ✅ LANDED — [#1923](https://github.com/Skords-01/Sergeant/pull/1923)
 
-- Scope. Railway не дає pgBouncer з коробки — деплоїмо окремий Railway
-  service з `edoburu/pgbouncer`. ENV-перемикач `DATABASE_URL_POOL`.
-- AC. Стабільні з'єднання при 200 concurrent users.
+- Scope. Опційний `DATABASE_URL_POOL` ENV-перемикач: runtime app-pool
+  ходить у pgBouncer / Supavisor / Neon-proxy у transaction-mode, а
+  `DATABASE_URL` лишається direct-connection-ом для migrations,
+  `pg_advisory_lock` і будь-яких майбутніх session-mode воркерів. Без
+  `DATABASE_URL_POOL` поведінка не змінюється (legacy single-URL deploys).
+- **Done (2026-05-05).** Реалізація:
+  - `apps/server/src/db.ts` — pool тепер бере `env.DATABASE_URL_POOL || env.DATABASE_URL`;
+    експортує `POOL_VIA_PGBOUNCER` boolean і додає `routedThrough: "pgbouncer" | "direct"`
+    у `getPoolStats()` (для `/healthz` дашбордів).
+  - `apps/server/src/env.ts` + `apps/server/src/env/env.ts` — `DATABASE_URL_POOL: z.string().url().optional()`.
+  - `apps/server/src/db.test.ts` — 4 unit-тести покривають усі комбінації routing-у через `vi.stubEnv` + `vi.resetModules`.
+  - `docs/runbooks/database-connection-pooling.md` — Railway-deploy shape (`edoburu/pgbouncer`, transaction-mode, MAX_CLIENT_CONN sizing), верифікація, rollback, prepared-statement caveat.
+- AC. Стабільні з'єднання при 200 concurrent users — Railway pgBouncer-сервіс
+  - `DATABASE_URL_POOL` уведено в production runbook; verification смокується
+    через `getPoolStats().routedThrough === "pgbouncer"` на `/healthz`.
 
-#### **PR #047 — `feat(server): Postgres read replica for analytics queries`**
+#### **PR #047 — `feat(server): Postgres read replica for analytics queries`** ✅ LANDED — [#1928](https://github.com/Skords-01/Sergeant/pull/1928)
 
-- Scope. Railway production-tier — окремий read-replica. `growth_*`,
-  `seo_*` queries ідуть туди.
-- AC. Lag < 5s на p99.
+- Scope. Опційний **streaming-replication read replica** для analytics-style
+  SELECT-ів (`growth_*`, `seo_*`), щоб offload-ити analytics-load з primary
+  Postgres у Railway production. Без `DATABASE_URL_REPLICA` поведінка не
+  змінюється — single-URL deploy-и (Replit, dev, docker-compose) ходять
+  у primary.
+- **Done (2026-05-05).** Реалізація:
+  - `apps/server/src/dbReplica.ts` — окремий `pg.Pool`, `queryReplica()` / `withReplicaClient()`
+    із прозорим fallback-ом на primary pool коли `DATABASE_URL_REPLICA` empty.
+  - Перший caller — `GET /api/internal/seo/keywords` (active keyword list,
+    толерує <5s replica lag).
+  - `apps/server/src/env.ts` + `apps/server/src/env/env.ts` — `DATABASE_URL_REPLICA: z.string().url().optional()`.
+  - 4 dbReplica + 22 internal-route unit-тести (eager `pg.Pool` instantiation
+    не відкриває TCP, паттерн із `db.test.ts`).
+  - `docs/runbooks/postgres-read-replica.md` — Railway deploy shape, мінімальні
+    privilege-и для replica role, верифікація, rollback, alerts.
+- AC. Lag < 5s на p99 — задокументований alert threshold у runbook-у;
+  analytics queries route у replica через `queryReplica()`; primary бере на
+  себе тільки writes / read-after-write.
 
 #### **PR #048 — `feat(observability): sync health Grafana/Sentry dashboard`** ✅ LANDED ([#1737](https://github.com/Skords-01/Sergeant/pull/1737))
 
