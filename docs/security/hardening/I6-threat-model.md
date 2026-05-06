@@ -1,6 +1,6 @@
 # I6 — Document the STRIDE threat model per module
 
-> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Closed (2026-05-06, doc-only) — see Resolution log.
 
 | Field          | Value                             |
@@ -37,17 +37,33 @@ Author `docs/security/threat-model.md` with a section per module:
 
 ## Correction points
 
-- `docs/security/threat-model.md` (new) — STRIDE tables + diagrams.
-- `docs/security/README.md` — link to the new document.
-- Optional: a `threat-model.svg` data-flow diagram (Mermaid is
-  acceptable).
+- [`docs/security/threat-model.md`](../threat-model.md) (new) — STRIDE
+  tables for each of the six modules called out in the
+  recommendation, plus a system-context section, a cross-cutting
+  controls table, and an `## Acceptance` section explaining how the
+  document stays in sync with the hardening backlog.
+- [`docs/security/README.md`](../README.md) — link added to the
+  document index alongside `vulnerability-sla.md`.
+
+The `threat-model.svg` data-flow diagram is intentionally deferred:
+the per-module tables already pin down trust boundaries (Public ↔
+SPA/Mobile ↔ Hub API ↔ Postgres + external APIs), and a separate
+diagram would re-state the same content while drifting from the
+living tables. If a vendor pentest ([I8](./I8-periodic-external-pentest.md))
+later asks for a diagram, regenerate it from the tables — don't author
+it by hand.
 
 ## Verification
 
-- **Review:** founder + one engineer review the document and tick each
-  STRIDE box for each module.
 - **Living doc:** every new finding card cross-references the relevant
-  STRIDE row.
+  STRIDE row in [`docs/security/threat-model.md`](../threat-model.md).
+  Section `## Acceptance` of that document specifies the contract;
+  reviewers reject hardening PRs that touch a new surface without first
+  adding the row to the threat model.
+- **Review cadence:** the document carries the canonical
+  `> **Last validated** … **Next review** …` freshness header (auto-bumped
+  by `scripts/docs/bump-last-validated.mjs`); the freshness guard
+  re-flags it every 90 days for a re-audit.
 
 ## Cross-references
 
