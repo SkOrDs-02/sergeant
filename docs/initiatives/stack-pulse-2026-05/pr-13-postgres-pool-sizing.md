@@ -1,12 +1,17 @@
 # PR-13: PG pool sizing + monitoring + alerts
 
-> **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
-> **Status:** Planned
+> **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
+> **Status:** Closed — implementation merged. Observability стек уже мав
+> Prometheus pool-gauges (`db_pool_*`) і алерти (`DbPoolWaitingSustained` +
+> `DbPoolSaturated`) до старту PR-13; цей PR довіз: бамп `PG_POOL_SIZE`
+> default 10 → 20, slow-connect Pino warn + Sentry breadcrumb +
+> `db_slow_pool_connects_total` counter, новий
+> [`docs/observability/pg-pool-sizing.md`](../../observability/pg-pool-sizing.md).
 
 |              |                                                                            |
 | ------------ | -------------------------------------------------------------------------- |
 | **Severity** | High (H7)                                                                  |
-| **Owner**    | TBD                                                                        |
+| **Owner**    | `@Skords-01` (secondary TBD)                                               |
 | **Effort**   | 1 день                                                                     |
 | **Risk**     | Medium (зміна connection-load на DB може exposed-нути latent index-issues) |
 | **Touches**  | `apps/server/src/env*`, `apps/server/src/db.ts`, observability             |
@@ -67,15 +72,25 @@ PG_POOL_SIZE: parseIntEnv("PG_POOL_SIZE", 10);
 
 ## Acceptance criteria (DoD)
 
-- [ ] `PG_POOL_SIZE` default = 20.
-- [ ] Pino metric emitted кожні 30s.
-- [ ] Sentry breadcrumb на slow `pool.connect()`.
-- [ ] Alert правило задокументоване.
-- [ ] Документ `docs/observability/pg-pool-sizing.md`.
+- [x] `PG_POOL_SIZE` default = 20 (`apps/server/src/env/env.ts:190`).
+- [x] Pool metrics emitted (Prometheus gauges `db_pool_total/idle/waiting`
+      sampled кожні 10s через `startPoolSampler` — це шиплось у main
+      раніше; для PR-13 додано Counter `db_slow_pool_connects_total`).
+- [x] Sentry breadcrumb на slow `pool.connect()` (`category: db.pool.slow_connect`,
+      `apps/server/src/db.ts` `instrumentedConnect`). Поріг: `PG_SLOW_CONNECT_MS`
+      default 500мс.
+- [x] Alert правила задокументовані — `DbPoolWaitingSustained` (5m, ticket)
+      і `DbPoolSaturated` (10m, page) живуть у
+      [`docs/observability/prometheus/alert_rules.yml`](../../observability/prometheus/alert_rules.yml).
+- [x] Документ [`docs/observability/pg-pool-sizing.md`](../../observability/pg-pool-sizing.md).
 
 ## Тести
 
-- `apps/server/src/__tests__/db-pool.test.ts` — under simulated load 30 concurrent queries → no `connect timeout`.
+- `apps/server/src/db.poolSlowConnect.test.ts` — slow checkout пише Pino warn
+  `db_pool_slow_connect` + Sentry `addBreadcrumb({category:"db.pool.slow_connect"})`,
+  fast checkout — мовчить (mocked `pg.Pool` з контрольованим `connect()`-delay).
+- Існуючі `apps/server/src/db.test.ts` (PR #046 routedThrough) і
+  `apps/server/src/dbReplica.test.ts` (PR #047) — passing.
 - Smoke на staging з `PG_POOL_SIZE=20`: AI-memory ingestion з queue-depth 50 не блокує `/api/health`.
 
 ## Rollout

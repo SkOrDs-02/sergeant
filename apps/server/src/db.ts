@@ -8,6 +8,7 @@ import { env } from "./env.js";
 import {
   dbErrorsTotal,
   dbQueryDurationMs,
+  dbSlowPoolConnectsTotal,
   dbSlowQueriesTotal,
 } from "./obs/metrics.js";
 
@@ -76,6 +77,99 @@ pool.on("error", (err: Error) => {
     /* ignore */
   }
 });
+
+/**
+ * Stack-pulse PR-13: instrument `pool.connect()` checkouts. Кожен checkout,
+ * що повільніший за `PG_SLOW_CONNECT_MS` (default 500мс), пише Pino warn,
+ * Sentry breadcrumb (`category: db.pool.slow_connect`) і інкрементить
+ * `db_slow_pool_connects_total`. Це leading indicator pool-saturation:
+ * `db_pool_waiting > 0` сидить 5хв до того, як `DbPoolWaitingSustained`
+ * паде — а ці breadcrumb-и ловлять перші повільні acquire-и одразу і
+ * прив'язуються до Sentry-events через ALS у `obs/requestContext.ts`.
+ *
+ * Wrapping done by reassigning `pool.connect` (function-property override).
+ * Tests load the module з clean cache (`vi.resetModules()`), тому wrap
+ * відбувається раз на load і не leak-ає state між тестами.
+ *
+ * pg-pool exposes two overloads: zero-arg returning Promise<PoolClient>, і
+ * callback-style. У repo всі call-site-и — Promise; callback-варіант
+ * лишений як прозорий passthrough щоб не ламати external консьюмерів,
+ * якщо такі з'являться.
+ */
+type PoolConnect = typeof pool.connect;
+const originalConnect = pool.connect.bind(pool);
+
+function observeSlowConnect(elapsedMs: number): void {
+  if (elapsedMs < env.PG_SLOW_CONNECT_MS) return;
+  const waiting = pool.waitingCount;
+  const total = pool.totalCount;
+  const idle = pool.idleCount;
+  logger.warn({
+    msg: "db_pool_slow_connect",
+    ms: Math.round(elapsedMs),
+    threshold_ms: env.PG_SLOW_CONNECT_MS,
+    pool_total: total,
+    pool_idle: idle,
+    pool_waiting: waiting,
+    routed_through: POOL_VIA_PGBOUNCER ? "pgbouncer" : "direct",
+  });
+  try {
+    dbSlowPoolConnectsTotal.inc();
+  } catch {
+    /* ignore */
+  }
+  // Sentry breadcrumb — best-effort. У dev/CI, де `@sentry/node` не
+  // ініціалізований через відсутній `SENTRY_DSN`, `addBreadcrumb` no-op-ить
+  // мовчки. Динамічний import, бо db.ts завантажується дуже рано і ми не
+  // хочемо тягти Sentry SDK у міграційний runner / health-check шляхи.
+  void import("@sentry/node")
+    .then((Sentry) => {
+      try {
+        Sentry.addBreadcrumb({
+          category: "db.pool.slow_connect",
+          level: "warning",
+          message: "pg pool.connect() exceeded PG_SLOW_CONNECT_MS",
+          data: {
+            ms: Math.round(elapsedMs),
+            threshold_ms: env.PG_SLOW_CONNECT_MS,
+            pool_total: total,
+            pool_idle: idle,
+            pool_waiting: waiting,
+            routed_through: POOL_VIA_PGBOUNCER ? "pgbouncer" : "direct",
+          },
+        });
+      } catch {
+        /* Sentry not initialised in this env — no-op */
+      }
+    })
+    .catch(() => {
+      /* @sentry/node not installed in this build path — no-op */
+    });
+}
+
+const instrumentedConnect = ((...args: Parameters<PoolConnect>) => {
+  const start = process.hrtime.bigint();
+  const result = (originalConnect as (...a: unknown[]) => unknown).apply(
+    pool,
+    args,
+  );
+  if (
+    result &&
+    typeof (result as { then?: unknown }).then === "function" &&
+    typeof (result as Promise<PoolClient>).finally === "function"
+  ) {
+    return (result as Promise<PoolClient>).finally(() => {
+      const ms = Number(process.hrtime.bigint() - start) / 1e6;
+      observeSlowConnect(ms);
+    });
+  }
+  // Callback overload — pg-pool fires the callback synchronously after
+  // checkout; we cannot observe acquire latency here without rewriting
+  // the callback. Skip instrumentation for that variant (no-op passthrough).
+  return result;
+}) as PoolConnect;
+
+pool.connect = instrumentedConnect;
 
 const SLOW_MS = env.SLOW_QUERY_THRESHOLD_MS;
 
