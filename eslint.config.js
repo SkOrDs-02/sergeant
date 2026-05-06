@@ -519,18 +519,15 @@ export default [
       //   FIZRUK_WORKOUTS_STORAGE_ERROR custom event тепер dispatch-иться,
       //   коли `safeWriteLS` повертає `false`, з generic-reason — банер сам
       //   формує текст для користувача).
-      // Cloud-sync internals — the queue / enqueue / state writer all
-      // need direct access; users should call the cloud-sync API.
-      "apps/web/src/core/cloudSync/logger.ts",
-      "apps/web/src/core/cloudSync/queue/offlineQueue.ts",
-      "apps/web/src/core/cloudSync/state/moduleData.ts",
-      // PR #008 split the old `storagePatch.ts` (monkey-patch removed)
-      // into `enqueue.ts` (the explicit dirty-marking entry point) and
-      // `syncedKV.ts` (the wrapper). `enqueue.ts` keeps a `rawRemoveItem`
-      // handle so `clearSyncManagedData` can wipe a previous user's
-      // slice without re-firing `enqueueChange` for every key it deletes
-      // — that is the only direct `localStorage` access here.
-      "apps/web/src/core/cloudSync/enqueue.ts",
+      // PR #054 (storage-roadmap.md Stage 7): cloudSync v1 internals
+      // (`logger.ts`, `queue/offlineQueue.ts`, `state/moduleData.ts`)
+      // були видалені в PR #052b разом з рештою v1 engine tree —
+      // allowlist-entry-и стали стейловими і прибрані тут. `enqueue.ts`
+      // лишається як no-op shim для `syncedKV.ts` (PR #053 KVStore
+      // deprecate видалить його разом з KVStore-фасадом), але
+      // прямого `localStorage.*` доступу там більше нема (`rawRemoveItem`
+      // handle пішов разом з `clearSyncManagedData` в #052b), тож
+      // exemption теж не потрібен.
       // PR #054 (storage-roadmap.md Stage 7): finyk storage manager
       // мігровано на `safeReadStringLS` / `safeWriteLS` / `safeRemoveLS`
       // у тілі finto→finyk-міграції; dead exports `key`/`getJSON`/`setJSON`
