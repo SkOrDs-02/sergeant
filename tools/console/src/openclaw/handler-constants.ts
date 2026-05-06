@@ -146,7 +146,7 @@ export const HELP_TEXT = [
   "і даю advisory-думку. Я не пишу в продакшн.",
   "",
   "<b>Agent network (WF-20):</b>",
-  "/status, /plan, /assign, /review, /run, /approve, /cancel, /logs",
+  "/status, /assign, /review, /run, /approve, /cancel, /logs",
   "Free-text execution запити про CI/PR/GitHub/n8n/security теж підуть у WF-20.",
   "",
   "<b>Швидкі cofounder prompts:</b>",
@@ -160,6 +160,11 @@ export const HELP_TEXT = [
   "/finance &lt;q&gt; — Stripe + cofounder memory + decisions",
   "/cofounder &lt;q&gt; — default синтез (всі tools)",
   "/council &lt;q&gt; — round-table: ops → growth → eng → finance → cofounder synthesis",
+  "",
+  "<b>Strategic modes (ADR-0031, Phase 3 skeleton):</b>",
+  "/plan &lt;topic&gt; — 4-step planning (goal → context → options → decision)",
+  "/analyze &lt;anomaly&gt; — hypothesis-driven root-cause аналіз",
+  "/okr — огляд активних OKR (KR progress + bottlenecks + next actions)",
   "",
   "<b>Службові:</b>",
   "/decisions — останні зафіксовані рішення",
@@ -201,9 +206,12 @@ export const COMMAND_PROMPTS: Record<string, string> = {
 // ADR-0032: Sergeant Console (ADR-0027) slash-команди (/ops, /content, …)
 // зливаються в OpenClaw як preset-prompts через той самий agent-turn loop.
 // Тригер ідентифікує запит у audit-log-у (`openclaw_invocations.trigger`).
+//
+// ADR-0031, Phase 3 (PR-34): `/plan` removed з dispatcher-у — тепер це
+// strategic-mode entry-point (4-step planning primer). Execution-orientовані
+// дії все одно роутяться через free-text → `shouldDelegateOpenClawToAgentNetwork`.
 export const DISPATCHER_COMMANDS = [
   "status",
-  "plan",
   "assign",
   "review",
   "run",

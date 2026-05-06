@@ -172,6 +172,98 @@ describe("OpenClaw buildSystemPromptInline", () => {
     expect(toneBodyIdx).toBeGreaterThanOrEqual(0);
     expect(personaIdx).toBeLessThan(toneBodyIdx);
   });
+
+  // ADR-0031, Phase 3 (PR-34): strategic-mode skeleton tests.
+
+  it("omits strategic-mode block when strategicMode is null/undefined", () => {
+    const p = buildSystemPromptInline({
+      toneMode: "diplomatic",
+      maxIterations: 8,
+      founderHandle: "@x",
+      trigger: "dm",
+    });
+    expect(p).not.toContain("STRATEGIC_MODE:");
+  });
+
+  it("plan-mode injects 4-step planning primer + STRATEGIC_MODE trailer", () => {
+    const p = buildSystemPromptInline({
+      toneMode: "diplomatic",
+      maxIterations: 8,
+      founderHandle: "@x",
+      trigger: "strategic_plan",
+      strategicMode: "plan",
+    });
+    expect(p).toContain("STRATEGIC_MODE: plan");
+    expect(p).toContain("GOAL");
+    expect(p).toContain("CONTEXT");
+    expect(p).toContain("OPTIONS");
+    expect(p).toContain("DECISION");
+    expect(p).toContain("TRIGGER: strategic_plan");
+  });
+
+  it("analyze-mode injects hypothesis-driven primer + STRATEGIC_MODE trailer", () => {
+    const p = buildSystemPromptInline({
+      toneMode: "direct",
+      maxIterations: 8,
+      founderHandle: "@x",
+      trigger: "strategic_analyze",
+      strategicMode: "analyze",
+    });
+    expect(p).toContain("STRATEGIC_MODE: analyze");
+    expect(p).toContain("ANOMALY");
+    expect(p).toContain("HYPOTHESES");
+    expect(p).toContain("EVIDENCE");
+    expect(p).toContain("RANKED CONCLUSION");
+  });
+
+  it("okr-mode injects OKR review primer + STRATEGIC_MODE trailer", () => {
+    const p = buildSystemPromptInline({
+      toneMode: "diplomatic",
+      maxIterations: 8,
+      founderHandle: "@x",
+      trigger: "strategic_okr",
+      strategicMode: "okr",
+    });
+    expect(p).toContain("STRATEGIC_MODE: okr");
+    expect(p).toContain("ACTIVE OKRs");
+    expect(p).toContain("PROGRESS PER KR");
+    expect(p).toContain("BOTTLENECKS");
+    expect(p).toContain("NEXT ACTIONS");
+  });
+
+  it("strategic-mode primer is placed AFTER persona primer but BEFORE tone-mode body", () => {
+    const p = buildSystemPromptInline({
+      toneMode: "direct",
+      maxIterations: 8,
+      founderHandle: "@x",
+      trigger: "strategic_plan",
+      persona: "ops",
+      strategicMode: "plan",
+    });
+    const personaIdx = p.indexOf("PERSONA: ops-engineer");
+    const modeIdx = p.indexOf("STRATEGIC_MODE: plan");
+    const toneBodyIdx = p.indexOf("ops-mode");
+    expect(personaIdx).toBeGreaterThanOrEqual(0);
+    expect(modeIdx).toBeGreaterThanOrEqual(0);
+    expect(toneBodyIdx).toBeGreaterThanOrEqual(0);
+    expect(personaIdx).toBeLessThan(modeIdx);
+    expect(modeIdx).toBeLessThan(toneBodyIdx);
+  });
+
+  it("strategicMode is orthogonal to persona — can combine /eng + plan-mode", () => {
+    const p = buildSystemPromptInline({
+      toneMode: "direct",
+      maxIterations: 8,
+      founderHandle: "@x",
+      trigger: "strategic_plan",
+      persona: "eng",
+      strategicMode: "plan",
+    });
+    expect(p).toContain("PERSONA: eng");
+    expect(p).toContain("STRATEGIC_MODE: plan");
+    expect(p.toLowerCase()).toContain("engineer");
+    expect(p).toContain("GOAL");
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -308,7 +400,7 @@ describe("OpenClaw executor — write-tool interception (ADR-0036)", () => {
     };
     await exec("commit_to_strategy_doc", original);
     // Caller mutates the input object after the call — must not affect record.
-    original.body = "TAMPERED";
+    original["body"] = "TAMPERED";
     const drained = pendingCollector.drain();
     expect((drained[0]!.input as { body: string }).body).toBe("## Plan");
   });

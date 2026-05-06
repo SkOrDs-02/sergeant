@@ -23,6 +23,10 @@ import {
 } from "../agents/dispatcher.js";
 import { COUNCIL_PERSONAS, type OpenClawPersona } from "../agents/personas.js";
 import {
+  STRATEGIC_MODE_TRIGGERS,
+  type StrategicMode,
+} from "../agents/strategic-modes.js";
+import {
   escapeTelegramMarkdownV2,
   FixedWindowRateLimiter,
   splitTelegramMessage,
@@ -509,6 +513,70 @@ export function registerOpenClawCommands(deps: RegisterCommandsDeps): void {
         return;
       }
       await runAgentTurn(ctx, argument, "dm", persona);
+    });
+  }
+
+  // ADR-0031, Phase 3 skeleton (PR-34): strategic-mode slash-команди.
+  // `/plan <topic>`, `/analyze <anomaly>`, `/okr` запускають agent-turn
+  // зі structured-thinking primer-ом (`tools/console/src/agents/strategic-modes.ts`).
+  // Cofounder persona (default toolset, synthesis-tone) — модель сама
+  // драйвить 4-step workflow через prompt; persistence + write-tool
+  // follow-up — Phase 4 territory (ADR-0036).
+  const STRATEGIC_MODE_COMMANDS: ReadonlyArray<{
+    cmd: "plan" | "analyze" | "okr";
+    mode: StrategicMode;
+    placeholder: string;
+    requiresArgument: boolean;
+  }> = [
+    {
+      cmd: "plan",
+      mode: "plan",
+      placeholder: "/plan churn-reduction-q3",
+      requiresArgument: true,
+    },
+    {
+      cmd: "analyze",
+      mode: "analyze",
+      placeholder: "/analyze падіння signups вчора",
+      requiresArgument: true,
+    },
+    {
+      cmd: "okr",
+      mode: "okr",
+      placeholder: "/okr — огляд активних OKR",
+      requiresArgument: false,
+    },
+  ];
+  for (const {
+    cmd,
+    mode,
+    placeholder,
+    requiresArgument,
+  } of STRATEGIC_MODE_COMMANDS) {
+    bot.command(cmd, async (ctx) => {
+      if (!isAllowedDmContext(ctx)) return;
+      const userId = ctx.from?.id;
+      if (!userId) return;
+      if (!rateLimiter.allow(String(userId))) {
+        await ctx.reply("Rate limit exceeded. Спробуй за хвилину.");
+        return;
+      }
+      const argument = (ctx.match ?? "").toString().trim();
+      if (requiresArgument && !argument) {
+        await ctx.reply(`Напиши тему після /${cmd}, напр. \`${placeholder}\`.`);
+        return;
+      }
+      const userMessage = argument
+        ? argument
+        : `Запусти ${mode}-mode без додаткового контексту — використай дані, що тобі доступні.`;
+      const trigger = STRATEGIC_MODE_TRIGGERS[mode] as
+        | "strategic_plan"
+        | "strategic_analyze"
+        | "strategic_okr";
+      await runAgentTurn(ctx, userMessage, trigger, "cofounder", {
+        strategicMode: mode,
+        metadataExtras: { strategicMode: mode },
+      });
     });
   }
 

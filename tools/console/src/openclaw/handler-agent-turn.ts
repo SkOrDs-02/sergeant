@@ -27,6 +27,7 @@ import {
   type OpenClawAgentDeps,
 } from "../agents/openclaw.js";
 import type { OpenClawPersona } from "../agents/personas.js";
+import type { StrategicMode } from "../agents/strategic-modes.js";
 import { PerCallCapExceededError } from "./policy.js";
 import {
   ApprovalStore,
@@ -62,13 +63,22 @@ export interface RunAgentTurnOptions {
   skipBudgetCheck?: boolean;
   /** Tag in audit-log metadata to mark council sub-turns. */
   metadataExtras?: Record<string, unknown>;
+  /**
+   * ADR-0031, Phase 3 (PR-34): structured-thinking primer. Set by
+   * `/plan`, `/analyze`, `/okr` slash-commands. Default `null` →
+   * regular ad-hoc DM (no mode framework).
+   */
+  strategicMode?: StrategicMode | null | undefined;
 }
 
 export type AgentTurnTrigger =
   | "dm"
   | "morning_ritual"
   | "weekly_review"
-  | "monthly_okr";
+  | "monthly_okr"
+  | "strategic_plan"
+  | "strategic_analyze"
+  | "strategic_okr";
 
 export type AgentTurnRunner = (
   ctx: Context,

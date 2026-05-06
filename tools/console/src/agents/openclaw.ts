@@ -36,6 +36,7 @@ import {
   type OpenClawPersona,
 } from "./personas.js";
 import { runAgentLoop } from "./run-agent-loop.js";
+import { strategicModePrimer, type StrategicMode } from "./strategic-modes.js";
 
 export const OPENCLAW_MODEL = "claude-sonnet-4-6";
 export const OPENCLAW_MAX_TOKENS = 4096;
@@ -168,25 +169,39 @@ export function buildSystemPromptInline({
   founderHandle,
   trigger,
   persona = DEFAULT_PERSONA,
+  strategicMode,
 }: {
   toneMode: OpenClawToneMode;
   maxIterations: number;
   founderHandle: string;
   trigger: string;
   persona?: OpenClawPersona;
+  /**
+   * ADR-0031, Phase 3 (PR-34 skeleton): coupled with `/plan`, `/analyze`,
+   * `/okr` slash-commands. Mode primer is appended after the persona
+   * primer and before the tone-mode body so the LLM sees:
+   *   COMMON_PREFIX → PERSONA → STRATEGIC_MODE → TONE_BODY → trailers.
+   * `null`/`undefined` → no mode framework (default ad-hoc DM).
+   */
+  strategicMode?: StrategicMode | null | undefined;
 }): string {
   const body = toneMode === "direct" ? DIRECT_BODY : DIPLOMATIC_BODY;
+  const modeBlock = strategicMode
+    ? [strategicModePrimer(strategicMode), ""]
+    : [];
   return [
     COMMON_PREFIX.replace("__MAX_ITER__", String(maxIterations)),
     "",
     personaPrimer(persona),
     "",
+    ...modeBlock,
     body,
     "",
     `FOUNDER: ${founderHandle}`,
     `TRIGGER: ${trigger}`,
     `TONE_MODE: ${toneMode}`,
     `PERSONA: ${persona}`,
+    ...(strategicMode ? [`STRATEGIC_MODE: ${strategicMode}`] : []),
   ].join("\n");
 }
 
@@ -721,7 +736,14 @@ export interface RunOpenClawAgentInput {
   client: Anthropic;
   userMessage: string;
   founderHandle: string;
-  trigger: "dm" | "morning_ritual" | "weekly_review" | "monthly_okr";
+  trigger:
+    | "dm"
+    | "morning_ritual"
+    | "weekly_review"
+    | "monthly_okr"
+    | "strategic_plan"
+    | "strategic_analyze"
+    | "strategic_okr";
   maxIterations: number;
   deps: OpenClawAgentDeps;
   /**
@@ -730,6 +752,12 @@ export interface RunOpenClawAgentInput {
    * specialist persona separately and then a final `cofounder` synthesis.
    */
   persona?: OpenClawPersona | undefined;
+  /**
+   * ADR-0031, Phase 3 (PR-34): structured-thinking mode primer. Wired
+   * through `/plan`, `/analyze`, `/okr` slash-commands. Default
+   * (`null`/`undefined`) — no mode framework (regular DM).
+   */
+  strategicMode?: StrategicMode | null | undefined;
 }
 
 export async function runOpenClawAgent(input: RunOpenClawAgentInput): Promise<{
@@ -745,6 +773,7 @@ export async function runOpenClawAgent(input: RunOpenClawAgentInput): Promise<{
     founderHandle: input.founderHandle,
     trigger: input.trigger,
     persona,
+    strategicMode: input.strategicMode ?? null,
   });
 
   const tools = filterToolsForPersona(openClawTools, persona);
