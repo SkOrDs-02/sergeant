@@ -250,6 +250,26 @@ export const ANALYTICS_EVENTS = Object.freeze({
   PWA_INSTALL_ACCEPTED: "pwa_install_accepted",
   PWA_INSTALL_DISMISSED: "pwa_install_dismissed",
   PWA_INSTALLED: "pwa_installed",
+
+  // What's new modal (PR-18 у FTUX master tracker §3.3 — release notes
+  // overlay для returning users D1+). One-shot per release-id; persist
+  // через `sergeant.whatsNew.lastSeenId.v1` у localStorage. Funnel —
+  // `whats_new_shown → whats_new_cta_clicked` за 7 днів = метрика
+  // `d7_returning_user_engagement_with_whats_new` (acceptance ≥ 30%).
+  // Payload-контракти:
+  //
+  //   WHATS_NEW_SHOWN        { id: string, release_date: string }
+  //   WHATS_NEW_DISMISSED    { id: string, via: "close" | "overlay" | "esc" }
+  //   WHATS_NEW_CTA_CLICKED  { id: string, href: string }
+  //
+  // `id` = `YYYY-MM-DD-<slug>` (sortable, унікальний; джерело — TS-таблиця
+  // `RELEASES` у `apps/web/src/core/whatsNew/releases.ts`). Body / summary
+  // / items НЕ потрапляють у payload — це лишає «що показували» ре-
+  // конструюваним з коду без експорту PII (UA-копія, але рекомендації
+  // FTUX-команди).
+  WHATS_NEW_SHOWN: "whats_new_shown",
+  WHATS_NEW_DISMISSED: "whats_new_dismissed",
+  WHATS_NEW_CTA_CLICKED: "whats_new_cta_clicked",
 } as const);
 
 export type AnalyticsEventName =

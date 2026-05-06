@@ -14,6 +14,7 @@ import { HintsOrchestrator } from "../hints/HintsOrchestrator";
 import { hasAnyRealEntry } from "../onboarding/firstRealEntry";
 import { isFirstRealEntryDone } from "../onboarding/vibePicks";
 import { shouldShowOnboarding } from "../onboarding/OnboardingWizard";
+import { WhatsNewModal, useWhatsNew } from "../whatsNew";
 import type { HubNavigation } from "../hooks/useHubNavigation";
 import type { HubUIState } from "../hooks/useHubUIState";
 import { messages } from "@shared/i18n/uk";
@@ -81,6 +82,15 @@ export function HubHomeView(props: HubHomeViewProps) {
   const hasFirstRealEntry = hasAnyRealEntry();
   const inFtuxSession = !hasFirstRealEntry && !isFirstRealEntryDone();
 
+  // What's new modal — показуємо тільки повертаючимся юзерам, тобто
+  // тим, хто вже минув FTUX-window і має `firstRealEntry`. Це
+  // консистентно з §3.3 acceptance метрики PR-18:
+  // `d7_returning_user_engagement_with_whats_new`. Юзера на cold-start
+  // нічого не повинно витискати з outcome-card flow.
+  const whatsNew = useWhatsNew({
+    enabled: hasFirstRealEntry && !inFtuxSession,
+  });
+
   return (
     <div className="h-dvh bg-bg flex flex-col overflow-hidden safe-area-pt page-enter">
       <SkipLink />
@@ -142,6 +152,12 @@ export function HubHomeView(props: HubHomeViewProps) {
         onOpenModule={openModule}
       />
       <KeyboardShortcutsModal open={shortcutsOpen} onClose={onCloseShortcuts} />
+      <WhatsNewModal
+        open={whatsNew.open}
+        release={whatsNew.release}
+        onClose={whatsNew.onClose}
+        onCtaClick={whatsNew.onCtaClick}
+      />
 
       {/* Floating AI-assistant entry. Shown only on the dashboard tab so
           it does not occlude reports / profile content; hidden during
