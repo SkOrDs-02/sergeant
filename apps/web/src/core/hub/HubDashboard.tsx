@@ -493,11 +493,13 @@ export function HubDashboard({
   // win because `CollapsibleSection` persists state via `storageKey`.
   const insightsDefaultOpen = sessionDays >= 7;
 
-  // STAGGER GROUPS — three fixed delays (0 / 80ms / 160ms) instead of
+  // STAGGER GROUPS — three fixed delays (0 / 30ms / 60ms) instead of
   // a per-element ramp. The hub composes ~8 cards once all FTUX gates
   // open; staggering each one individually produced a long staircase
   // of fades on slower devices and shifted whenever a section toggled.
-  // Stable group indices keep the reveal under ~250ms and predictable.
+  // Stable group indices keep the reveal under ~100ms (Hard Rule #17:
+  // stagger ≤ 30ms between children, total delay cap ≤ 150ms) so the
+  // hub feels snappy even when all three groups land in one frame.
   return (
     <div className={DENSITY_OUTER_SPACE[density]}>
       {/* S4.1 demo banner — only renders when localStorage holds a
