@@ -1,5 +1,8 @@
 # What's New — release notes content
 
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Status:** Active
+
 Це **джерело істини** для in-product «Що нового» модала
 (`<WhatsNewModal />` у `apps/web/src/core/whatsNew/`). Кожен запис тут =
 один modal-show у користувача, який ще не бачив цей реліз.

@@ -6,6 +6,7 @@
 - **Status:** Proposed
 - **Date:** 2026-05-06
 - **Deciders:** @Skords-01
+- **Supersedes:** —
 - **Related:**
   - [ADR-0019 — Push notifications](./0019-push-notifications.md)
   - [`apps/server/src/push/apnsClient.ts`](../../apps/server/src/push/apnsClient.ts)

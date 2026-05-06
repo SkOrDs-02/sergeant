@@ -1,5 +1,8 @@
 # 2026-05-06 — Холодний старт без порожнього дашборду
 
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Status:** Active
+
 > **Modal id:** `2026-05-06-cold-start` —
 > [`apps/web/src/core/whatsNew/releases.ts`](../../apps/web/src/core/whatsNew/releases.ts)
 
