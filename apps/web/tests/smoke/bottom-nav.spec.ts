@@ -35,6 +35,23 @@ const SEEDED_LS: Record<string, string> = {
     firstRealEntryAt: Date.now(),
     updatedAt: Date.now(),
   }),
+  // Mark every module's first-run goal sheet as already seen — otherwise
+  // `<ModuleFirstRunGoalSheet />` (mounted in `ActiveModuleView`) auto-opens
+  // on the first visit per module and its `<Sheet />` overlay (`fixed
+  // inset-0 ... bg-black/40 backdrop-blur-sm`) intercepts the back-to-hub
+  // click. Keys mirror `FIRST_SEEN_KEY_PREFIX/SUFFIX` in
+  // `apps/web/src/core/onboarding/ModuleFirstRunGoalSheet.tsx`.
+  "sergeant.onboarding.module_first_seen.finyk.v1": "1",
+  "sergeant.onboarding.module_first_seen.fizruk.v1": "1",
+  "sergeant.onboarding.module_first_seen.routine.v1": "1",
+  "sergeant.onboarding.module_first_seen.nutrition.v1": "1",
+  // Mark the latest "What's new" release as already seen so the modal
+  // (auto-show after `SHOW_DELAY_MS = 2500` in `useWhatsNew`) does not
+  // pop over the hub during reverse navigation. Key mirrors
+  // `WHATS_NEW_LAST_SEEN_KEY` in `apps/web/src/core/whatsNew/storage.ts`;
+  // value is the latest `RELEASES[0].id` from
+  // `apps/web/src/core/whatsNew/releases.ts`.
+  "sergeant.whatsNew.lastSeenId.v1": "2026-05-06-cold-start",
 };
 
 async function seedLocalStorage(page: Page) {
