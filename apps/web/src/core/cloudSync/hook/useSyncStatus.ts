@@ -1,9 +1,19 @@
 import { useEffect, useState } from "react";
-import { SYNC_EVENT, SYNC_STATUS_EVENT } from "../config";
-import { getDirtyModules } from "../state/dirtyModules";
-import { getOfflineQueue } from "../queue/offlineQueue";
+import { SYNC_EVENT, SYNC_STATUS_EVENT } from "@sergeant/shared";
+
 import { getSyncEngineWriter } from "../../syncEngine/singleton";
 
+/**
+ * Lightweight hook that mirrors the v2 op-log writer's outbox counters
+ * into React state so `OfflineBanner.tsx` can render a "blocked /
+ * syncing / offline" pill without owning the full sync lifecycle.
+ *
+ * Pre-PR-#052b this hook also read v1's `dirtyModules` map and
+ * `offlineQueue` length. Both stores were dropped together with the v1
+ * engine in PR #052b — `dirtyCount` and `queuedCount` are kept on the
+ * return shape (always `0`) so `OfflineBanner` can stay agnostic about
+ * which channel actually fed the value.
+ */
 interface SyncStatusState {
   dirtyCount: number;
   queuedCount: number;
@@ -18,10 +28,10 @@ const retrySyncV2DeadLetters = async (): Promise<void> => {
   await getSyncEngineWriter()?.recoverAllDeadLetters();
 };
 
-function readLegacyStatus(): SyncStatusState {
+function readBaseStatus(): SyncStatusState {
   return {
-    dirtyCount: Object.keys(getDirtyModules()).length,
-    queuedCount: getOfflineQueue().length,
+    dirtyCount: 0,
+    queuedCount: 0,
     isOnline: typeof navigator !== "undefined" ? navigator.onLine : true,
     syncV2PendingCount: 0,
     syncV2RejectedCount: 0,
@@ -30,19 +40,14 @@ function readLegacyStatus(): SyncStatusState {
   };
 }
 
-/**
- * Lightweight hook exposing just the local sync state (dirty modules,
- * offline queue, online status) so UI components can render status
- * indicators without owning the full cloud-sync lifecycle.
- */
 export function useSyncStatus(): SyncStatusState {
-  const [state, setState] = useState<SyncStatusState>(() => readLegacyStatus());
+  const [state, setState] = useState<SyncStatusState>(() => readBaseStatus());
 
   useEffect(() => {
     let mounted = true;
 
     const refresh = () => {
-      const next = readLegacyStatus();
+      const next = readBaseStatus();
       const runtime = getSyncEngineWriter();
       if (!runtime) {
         setState(next);
