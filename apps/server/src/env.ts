@@ -182,6 +182,20 @@ export const env = {
   ),
 
   /**
+   * AI-quota DB-circuit-breaker: how many DB errors in
+   * `AI_QUOTA_CIRCUIT_WINDOW_MS` open the breaker. Default — 5 errors / 60s
+   * (per `0011-resilience.md`). Setting `0` disables the breaker (legacy
+   * fail-open path) — useful as a kill-switch during incident.
+   */
+  AI_QUOTA_CIRCUIT_THRESHOLD: parseIntEnv("AI_QUOTA_CIRCUIT_THRESHOLD", 5),
+
+  /** Sliding window for AI-quota DB-error counting (ms). */
+  AI_QUOTA_CIRCUIT_WINDOW_MS: parseIntEnv("AI_QUOTA_CIRCUIT_WINDOW_MS", 60_000),
+
+  /** How long the AI-quota breaker stays open before HALF-OPEN probe (ms). */
+  AI_QUOTA_CIRCUIT_OPEN_MS: parseIntEnv("AI_QUOTA_CIRCUIT_OPEN_MS", 300_000),
+
+  /**
    * Killer-switch for AI-quota: when `true`, `assertAiQuota()` becomes a no-op
    * and every AI route runs without decrementing the `ai_usage_daily` counter.
    * Designed **exclusively** for CI/test environments where e2e tests hammer

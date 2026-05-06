@@ -4,7 +4,7 @@ import pool from "../../db.js";
 import { getIp } from "../../http/rateLimit.js";
 import { logger } from "../../obs/logger.js";
 import { aiQuotaBlocksTotal, aiQuotaFailOpenTotal } from "../../obs/metrics.js";
-import { recordDbError } from "./aiQuotaHealth.js";
+import { aiQuotaCircuitBreaker } from "./aiQuotaCircuitBreaker.js";
 
 type SessionUser = { id: string } | null;
 
@@ -197,6 +197,13 @@ export async function assertAiQuota(
     return true;
   }
 
+  // PR-04: circuit-breaker fail-CLOSED. Якщо у попередні 60s була буря
+  // DB-помилок, не кидаємо новий запит у мертве сховище — повертаємо 503,
+  // щоб не давати безквотовий burst, поки DB-сторейдж недоступний.
+  if (!aiQuotaCircuitBreaker.isAllowing()) {
+    return rejectCircuitOpen(res);
+  }
+
   const subject = subjectFor(sessionUser, req);
   try {
     const day = today();
@@ -208,6 +215,7 @@ export async function assertAiQuota(
       cost,
       bucket: DEFAULT_BUCKET,
     });
+    aiQuotaCircuitBreaker.recordSuccess();
     if (!result.ok) {
       try {
         aiQuotaBlocksTotal.inc({ reason: "limit" });
@@ -225,7 +233,11 @@ export async function assertAiQuota(
     setRemainingHeader(res, String(result.remaining));
     return true;
   } catch (e) {
+    aiQuotaCircuitBreaker.recordFailure(e);
     logQuotaStoreUnavailable("db_error", e);
+    if (!aiQuotaCircuitBreaker.isAllowing()) {
+      return rejectCircuitOpen(res);
+    }
     setRemainingHeader(res, "unknown");
     return true;
   }
@@ -268,6 +280,19 @@ export async function consumeToolQuota(
     return { ok: true, remaining: null, limit, reason: "store_unavailable" };
   }
 
+  // PR-04: fail-CLOSED при відкритому breaker. На відміну від assertAiQuota,
+  // тут немає `res` для 503 — повертаємо `ok=false, reason=store_unavailable`.
+  // Caller у chat-хендлері трактує це як "tool неактивний для цього виклику",
+  // що блокує саме tool-use, але не валить весь стрім.
+  if (!aiQuotaCircuitBreaker.isAllowing()) {
+    return {
+      ok: false,
+      remaining: 0,
+      limit,
+      reason: "store_unavailable",
+    };
+  }
+
   const sessionUser = await safeSessionUser(req);
   const subject = subjectFor(sessionUser, req);
   try {
@@ -278,6 +303,7 @@ export async function consumeToolQuota(
       cost: toolCost(),
       bucket: `${TOOL_BUCKET_PREFIX}${toolName}`,
     });
+    aiQuotaCircuitBreaker.recordSuccess();
     if (!result.ok) {
       try {
         aiQuotaBlocksTotal.inc({ reason: "tool_limit" });
@@ -288,7 +314,16 @@ export async function consumeToolQuota(
     }
     return result;
   } catch (e) {
+    aiQuotaCircuitBreaker.recordFailure(e);
     logQuotaStoreUnavailable("db_error", e);
+    if (!aiQuotaCircuitBreaker.isAllowing()) {
+      return {
+        ok: false,
+        remaining: 0,
+        limit,
+        reason: "store_unavailable",
+      };
+    }
     return { ok: true, remaining: null, limit, reason: "store_unavailable" };
   }
 }
@@ -307,16 +342,10 @@ function logQuotaStoreUnavailable(reason: string, e?: unknown): void {
   } catch {
     /* ignore */
   }
-  // PR-03: DB-error-и (ECONNREFUSED, statement_timeout, undefined_table тощо)
-  // фіксуємо у sliding-window-counter, який споживатиме circuit-breaker (PR-04).
-  // `database_url_missing` — конфіг-помилка, не runtime-failure → не рахуємо.
-  if (reason === "db_error") {
-    try {
-      recordDbError(e);
-    } catch {
-      /* ніколи не валимо квоту через дефект counter-а */
-    }
-  }
+  // PR-04: sliding-window-counter тепер веде `aiQuotaCircuitBreaker`
+  // через `recordFailure(e)`. Тут лишився лише лог + Prometheus-counter
+  // `ai_quota_fail_open_total{reason}`, бо `database_url_missing` —
+  // це не runtime-failure, а конфіг, і breaker його не повинен бачити.
   const err = e as { message?: string; code?: string } | undefined;
   logger.error({
     msg: "ai_quota_store_unavailable",
@@ -325,6 +354,29 @@ function logQuotaStoreUnavailable(reason: string, e?: unknown): void {
       ? { message: err?.message || String(e), code: err?.code }
       : undefined,
   });
+}
+
+function rejectCircuitOpen(res: Response): boolean {
+  try {
+    aiQuotaBlocksTotal.inc({ reason: "circuit_open" });
+  } catch {
+    /* ignore */
+  }
+  const retryAfterSec = Math.max(
+    1,
+    Math.ceil(aiQuotaCircuitBreaker.getRetryAfterMs() / 1000),
+  );
+  try {
+    res.setHeader("Retry-After", String(retryAfterSec));
+  } catch {
+    /* ignore */
+  }
+  res.status(503).json({
+    error: "Сховище AI-квоти тимчасово недоступне. Спробуй пізніше.",
+    code: "AI_QUOTA_DB_DOWN",
+    retryAfterSec,
+  });
+  return false;
 }
 
 /**
