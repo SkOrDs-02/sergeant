@@ -16,10 +16,6 @@ import {
 
 import { _getMMKVInstance } from "@/lib/storage";
 
-jest.mock("@/sync/enqueue", () => ({
-  enqueueChange: jest.fn(),
-}));
-
 // victory-native's ESM bundle trips the jest-expo transform list on
 // some CI matrices — stub the primitives BudgetTrendChart uses.
 jest.mock("victory-native", () => {

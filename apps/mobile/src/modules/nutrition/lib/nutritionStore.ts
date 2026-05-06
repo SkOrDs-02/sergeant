@@ -15,13 +15,11 @@
  *    upcoming UI PR-s can `import {load*, save*}` without touching
  *    MMKV directly.
  *
- * Cloud-sync note: writes go through `safeWriteLS` which bypasses the
- * JS `localStorage` setItem-patch that the web uses to auto-mark
- * modules dirty. UI layers that need `useCloudSync` parity must either
- * (a) call `enqueueChange(key)` explicitly, or (b) prefer
- * `useSyncedStorage` wrappers. See `docs/mobile/react-native-migration.md`
- * § 6.1 and `apps/mobile/src/sync/config.ts` for the full list of
- * nutrition keys that are already registered in `SYNC_MODULES`.
+ * Cloud-sync note: writes go through `safeWriteLS` directly. With the
+ * v1 cloudSync engine sunset (PR #052c) and the mobile sync shim
+ * dropped (PR #053c), MMKV mutations are picked up by the per-module
+ * SQLite dual-write adapter (`triggerNutritionDualWrite`) which feeds
+ * the op-log v2 writer. No manual `enqueueChange` is required.
  */
 import {
   NUTRITION_ACTIVE_PANTRY_KEY,

@@ -36,7 +36,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Input } from "@/components/ui/Input";
-import { useSyncedStorage } from "@/sync/useSyncedStorage";
+import { useLocalStorage } from "@/lib/storage";
 
 import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
 
@@ -67,7 +67,7 @@ function DeferredNotice({ children }: { children: string }) {
 }
 
 export function FinykSection() {
-  const [customCategories, setCustomCategories] = useSyncedStorage<
+  const [customCategories, setCustomCategories] = useLocalStorage<
     CustomCategory[]
   >(CUSTOM_CATS_KEY, []);
   const [newCategoryLabel, setNewCategoryLabel] = useState("");

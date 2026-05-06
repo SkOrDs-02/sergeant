@@ -7,7 +7,7 @@
  * Action-surface цього PR-а (PR-4 — read-only UI):
  * - `log` + `selectedDate` + `setSelectedDate`
  * - мутатори (`addMeal`, `removeMeal`, `updateMeal`) повертають void;
- *   після мутації викликається `enqueueChange` для cloud-sync push.
+ *   після мутації значення вже у MMKV, далі op-log v2 push підхопить.
  *
  * AddMealSheet / PhotoAnalyze / AI-фічі — PR-5+.
  */
@@ -24,7 +24,6 @@ import {
 import { STORAGE_KEYS, toLocalISODate } from "@sergeant/shared";
 
 import { _getMMKVInstance } from "@/lib/storage";
-import { enqueueChange } from "@/sync/enqueue";
 
 import { loadNutritionLog, saveNutritionLog } from "../lib/nutritionStore";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
@@ -84,7 +83,6 @@ export function useNutritionLog(): UseNutritionLogResult {
     const normalized = normalizeNutritionLog(next);
     setNutritionLog(normalized);
     saveNutritionLog(normalized);
-    enqueueChange(STORAGE_KEYS.NUTRITION_LOG);
   }, []);
 
   const addMeal = useCallback(

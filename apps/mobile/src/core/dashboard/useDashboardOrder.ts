@@ -10,7 +10,7 @@
  *    a drop-handler (`reorderVisible(fromIdx, toIdx)`) that delegates
  *    to `reorderWithHidden` so hidden modules keep their slots.
  *
- * Why raw `useLocalStorage` (not `useSyncedStorage`):
+ * Cloud-sync note:
  * The `DASHBOARD_ORDER` key is deliberately *not* a tracked cloud-sync
  * key on web either (see `apps/web/src/core/cloudSync/config.ts` —
  * no registration). Matching that contract on mobile keeps the two

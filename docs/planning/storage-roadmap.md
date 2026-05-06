@@ -1,6 +1,6 @@
 # Storage & Sync — Roadmap до production-ready
 
-> **Last validated:** 2026-05-06 by Devin (Stage 7 7/9: `module_data` column drop + v1 server handler-и [`75dcdd5c`](https://github.com/Skords-01/Sergeant/commit/75dcdd5c) (PR #051+#052a); web cloudSync engine tree drop [`a97b8cc8`](https://github.com/Skords-01/Sergeant/commit/a97b8cc8) ([#2046](https://github.com/Skords-01/Sergeant/pull/2046), PR #052b); mobile cloudSync engine tree drop [`20793adb`](https://github.com/Skords-01/Sergeant/commit/20793adb) (PR #052c); allowlist budget 10 → 6 [`079fe8e3`](https://github.com/Skords-01/Sergeant/commit/079fe8e3) ([#2058](https://github.com/Skords-01/Sergeant/pull/2058), PR #054a); supersedes-edge ADR-0004 ↔ ADR-0047 + 12 dangling cloudSync v1 doc-refs [`997ad6e2`](https://github.com/Skords-01/Sergeant/commit/997ad6e2) + [`ac2cc5c8`](https://github.com/Skords-01/Sergeant/commit/ac2cc5c8) ([#2066](https://github.com/Skords-01/Sergeant/pull/2066), PR #054b); 3 dangling `mutation.md` refs [`5f2cfb0c`](https://github.com/Skords-01/Sergeant/commit/5f2cfb0c) ([#2072](https://github.com/Skords-01/Sergeant/pull/2072), PR #054c); ADR-0049 README parity [`077c738f`](https://github.com/Skords-01/Sergeant/commit/077c738f) ([#2073](https://github.com/Skords-01/Sergeant/pull/2073), PR #054x). **Outstanding:** PR #053 (KVStore deprecate) + PR #054 final (eslint allowlist = []). **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-06 by Devin (Stage 7 8/9: `module_data` column drop + v1 server handler-и [`75dcdd5c`](https://github.com/Skords-01/Sergeant/commit/75dcdd5c) (PR #051+#052a); web cloudSync engine tree drop [`a97b8cc8`](https://github.com/Skords-01/Sergeant/commit/a97b8cc8) ([#2046](https://github.com/Skords-01/Sergeant/pull/2046), PR #052b); mobile cloudSync engine tree drop [`20793adb`](https://github.com/Skords-01/Sergeant/commit/20793adb) (PR #052c); allowlist budget 10 → 6 [`079fe8e3`](https://github.com/Skords-01/Sergeant/commit/079fe8e3) ([#2058](https://github.com/Skords-01/Sergeant/pull/2058), PR #054a); supersedes-edge ADR-0004 ↔ ADR-0047 + 12 dangling cloudSync v1 doc-refs [`997ad6e2`](https://github.com/Skords-01/Sergeant/commit/997ad6e2) + [`ac2cc5c8`](https://github.com/Skords-01/Sergeant/commit/ac2cc5c8) ([#2066](https://github.com/Skords-01/Sergeant/pull/2066), PR #054b); 3 dangling `mutation.md` refs [`5f2cfb0c`](https://github.com/Skords-01/Sergeant/commit/5f2cfb0c) ([#2072](https://github.com/Skords-01/Sergeant/pull/2072), PR #054c); ADR-0049 README parity [`077c738f`](https://github.com/Skords-01/Sergeant/commit/077c738f) ([#2073](https://github.com/Skords-01/Sergeant/pull/2073), PR #054x); web KVStore syncedKV shim drop [PR #053a]; mobile fizruk wave [PR #053b](https://github.com/Skords-01/Sergeant/pull/2082). **Outstanding:** PR #053c (mobile wave 2 — IN PR) + PR #054 final (eslint allowlist = []). **Next review:** 2026-08-04.
 > **Status:** Active
 >
 > **Stage status (one-line summary):**
@@ -2416,6 +2416,105 @@ client_updated_at)` (Postgres requirement для partitioned tables).
     routine, 3 finyk store-и, 5 dashboard / settings / observability,
     `apps/mobile/src/sync/{enqueue,index,useSyncedStorage}.ts` shim
     deletion + `apps/mobile/src/lib/storage.ts` allowlist budget.
+
+#### **PR #053c — `chore(mobile): drop remaining enqueueChange callsites + delete sync shim`** ⏳ IN PR
+
+- **Scope.** Mobile wave 2 of PR #053 KVStore deprecate. Завершує
+  mobile-side cleanup: видаляє решту `enqueueChange` call-sites у
+  nutrition / finyk / routine / settings stores, замінює `useSyncedStorage`
+  на raw `useLocalStorage` у settings, і видаляє mobile sync-shim
+  файли (`apps/mobile/src/sync/{enqueue,useSyncedStorage}.ts`) разом з
+  їхніми re-export-ами з `sync/index.ts` барелю. Per-module SQLite
+  dual-write адаптери
+  (`apps/mobile/src/modules/{routine,fizruk,nutrition,finyk}/lib/dualWrite`)
+  тепер відповідають за op-log v2 wiring без LS-key-watcher
+  посередника.
+- **Files modified (12 prod consumers).**
+  - `apps/mobile/src/modules/routine/lib/routineStore.ts` — drop import
+    - 13 `enqueueChange(ROUTINE_STORAGE_KEY)` calls (setRoutine,
+      toggleHabit, bulkMarkDay, setCompletionNote, createHabit,
+      updateHabit, setHabitArchived, deleteHabit, restoreHabit,
+      moveHabitInOrder, setHabitOrder).
+  - `apps/mobile/src/modules/nutrition/hooks/useNutritionLog.ts` — drop
+    import + 1 call; JSDoc оновлено.
+  - `apps/mobile/src/modules/nutrition/hooks/useNutritionPantries.ts` —
+    drop import + 2 calls.
+  - `apps/mobile/src/modules/nutrition/hooks/useNutritionPrefs.ts` —
+    drop import + 1 call.
+  - `apps/mobile/src/modules/nutrition/hooks/useWaterTracker.ts` — JSDoc
+    only (water key local-only, не cloud-synced на жодній платформі).
+  - `apps/mobile/src/modules/nutrition/lib/recipeBookStore.ts` — drop
+    import + 2 calls (upsertSavedRecipe, removeSavedRecipe).
+  - `apps/mobile/src/modules/nutrition/lib/nutritionStore.ts` — JSDoc
+    оновлено (removed reference to `enqueueChange` / `useSyncedStorage`,
+    pointer на dualWrite adapter).
+  - `apps/mobile/src/modules/finyk/lib/transactionsStore.ts` — drop
+    import + 5 calls (persist filters, hideTx, unhideTx,
+    overrideCategory, setSplitTx, writeManual); JSDoc оновлено.
+  - `apps/mobile/src/modules/finyk/lib/budgetsStore.ts` — drop import
+    - 3 calls (setBudgets, setMonthlyPlan, setSubscriptions); JSDoc
+      оновлено.
+  - `apps/mobile/src/modules/finyk/lib/assetsStore.ts` — drop import
+    - 4 calls (setManualAssets, setManualDebts, setReceivables,
+      setHiddenAccounts).
+  - `apps/mobile/src/core/settings/FinykSection.tsx` — `useSyncedStorage`
+    → `useLocalStorage` (single settings consumer of `useSyncedStorage`
+    after fizruk wave).
+  - `apps/mobile/src/core/dashboard/useDashboardOrder.ts` — JSDoc only
+    (removed reference до `useSyncedStorage` як до compared option).
+  - `apps/mobile/src/lib/storage.ts` — JSDoc cloud-sync caveat block
+    оновлено: видалено instructions про `useSyncedStorage`, додано
+    pointer на per-module dualWrite adapter pattern.
+  - `apps/mobile/src/sync/index.ts` — drop `useSyncedStorage` (line 34)
+    - `enqueueChange` / `notifySyncDirty` (line 44) re-exports;
+      JSDoc-барель переписано: surface зведено до 5 stub-ів
+      (`useCloudSync`, `useSyncStatus`, `CloudSyncProvider`, контекст,
+      types).
+- **Files deleted (sync shim, 2).**
+  - `apps/mobile/src/sync/enqueue.ts` (36 LOC, no-op since #052c).
+  - `apps/mobile/src/sync/useSyncedStorage.ts` (69 LOC, wrapped no-op
+    `enqueueChange` after `useLocalStorage` write).
+- **Files deleted (4 \*.enqueue.test.\* + 1 routineStore.test.ts).**
+  Тестували, що кожен мутатор кричить `enqueueChange` точно з потрібним
+  ключем — контракт що тепер no-op (саме як з 10 fizruk \*.enqueue.test
+  у PR #053b). Reducer-level no-op-guard тести (`next === prev`
+  semantics) лишаються імпліцитно покритими через page-level
+  integration-тести + reducer-tests у `@sergeant/routine-domain`.
+  - `apps/mobile/src/modules/finyk/lib/__tests__/transactionsStore.enqueue.test.ts`
+  - `apps/mobile/src/modules/finyk/lib/__tests__/budgetsStore.enqueue.test.ts`
+  - `apps/mobile/src/modules/finyk/lib/__tests__/assetsStore.enqueue.test.ts`
+  - `apps/mobile/src/core/settings/FinykSection.enqueue.test.tsx`
+  - `apps/mobile/src/modules/routine/lib/__tests__/routineStore.test.ts`
+    (cело — `enqueueChange wiring` describe-блок без альтернативного
+    coverage-у; reducer-tests у `@sergeant/routine-domain` package
+    залишаються джерелом істини).
+- **Files modified (tests, 3).**
+  - `apps/mobile/src/modules/nutrition/lib/__tests__/recipeBookStore.test.ts`
+    — drop unused `mockEnqueue` + переіменовано "writes and enqueues sync"
+    тест на "writes to MMKV under the saved-recipes key".
+  - `apps/mobile/src/modules/finyk/pages/Transactions/TransactionsPage.test.tsx`
+    — drop unused `jest.mock("@/sync/enqueue", ...)` block.
+  - `apps/mobile/src/modules/finyk/pages/Budgets/BudgetsPage.test.tsx` —
+    drop unused `jest.mock("@/sync/enqueue", ...)` block.
+- **Done criteria.**
+  1. Нуль `enqueueChange` / `notifySyncDirty` / `useSyncedStorage`
+     references під `apps/mobile/src/**/*.{ts,tsx}` поза JSDoc
+     historical comments (grep).
+  2. `apps/mobile/src/sync/{enqueue,useSyncedStorage}.ts` фізично
+     видалені.
+  3. `pnpm lint` зелений.
+  4. `pnpm typecheck` зелений.
+  5. `pnpm --filter @sergeant/mobile test` зелений (модульні тести —
+     full mobile suite має inherited unrelated failures, які
+     підтверджені на main; fizruk + nutrition + finyk + routine + core
+     зелені).
+  6. governance-sync + ADR graph зелені.
+- **Out of scope (наступні PR-и).**
+  - Mobile sync-engine writer-runtime wiring у boot-path (counterpart до
+    web `apps/web/src/core/syncEngine/syncEngineWriter.ts` [#1953](https://github.com/Skords-01/Sergeant/pull/1953))
+    — окремий follow-up.
+  - PR #054 final — 6 storage-primitive файлів на SQLite-backed
+    `kv_store(key TEXT PK, value JSON)`, allowlist 6 → 0.
 
 #### **PR #054 final — `chore: final localStorage burndown — eslint allowlist = []`** ⏳ ROADMAP
 

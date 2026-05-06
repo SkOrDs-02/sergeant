@@ -6,12 +6,10 @@
  * живе у `@sergeant/nutrition-domain` → web і native отримують ту саму
  * семантику.
  *
- * Water key не входить до `SYNC_MODULES.nutrition` на mobile, бо web
- * історично також не синкає воду (див.
- * `apps/web/src/core/cloudSync/config.ts`). Це свідомо — вода суто
- * локальний трекер. Якщо передумаємо, достатньо буде додати
- * `WATER_LOG_KEY` у конфіг і викликати `enqueueChange(WATER_LOG_KEY)`
- * після commit.
+ * Water key є локальним трекером — не синкається через
+ * cloud-sync (як і на web). Якщо передумаємо — додати
+ * `WATER_LOG_KEY` у op-log v2 writer конфіг (mobile mirror
+ * `apps/web/src/core/cloudSync/config.ts`).
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 

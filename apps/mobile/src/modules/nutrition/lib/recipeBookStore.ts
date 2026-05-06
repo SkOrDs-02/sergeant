@@ -7,7 +7,6 @@ import {
   type NullableMacros,
 } from "@sergeant/shared";
 
-import { enqueueChange } from "@/sync/enqueue";
 import { safeReadLS, safeWriteLS } from "@/lib/storage";
 
 import { triggerNutritionDualWrite } from "./dualWrite";
@@ -114,7 +113,6 @@ export function upsertSavedRecipe(partial: unknown): SavedRecipe {
   const all = loadSavedRecipes().filter((r) => r.id !== next.id);
   all.push({ ...next, updatedAt: Date.now() });
   saveRecipeBook(all);
-  enqueueChange(STORAGE_KEYS.NUTRITION_SAVED_RECIPES);
   return next;
 }
 
@@ -124,9 +122,7 @@ export function removeSavedRecipe(id: string): boolean {
   const before = loadSavedRecipes();
   const all = before.filter((r) => r.id !== key);
   if (all.length === before.length) return false;
-  const ok = saveRecipeBook(all);
-  if (ok) enqueueChange(STORAGE_KEYS.NUTRITION_SAVED_RECIPES);
-  return ok;
+  return saveRecipeBook(all);
 }
 
 /**

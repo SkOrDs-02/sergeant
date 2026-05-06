@@ -7,9 +7,9 @@
  *   - txSplits           → finyk_tx_splits           (FINYK_BACKUP_STORAGE_KEYS.txSplits)
  *   - hiddenTxIds        → finyk_hidden_txs          (FINYK_BACKUP_STORAGE_KEYS.hiddenTxIds)
  *
- * Each setter persists to MMKV via `safeWriteLS` and then calls
- * `enqueueChange(KEY)` so the cloud-sync scheduler picks the change
- * up — same pattern as `assetsStore.ts`.
+ * Each setter persists to MMKV via `safeWriteLS` and then triggers the
+ * Finyk SQLite dual-write adapter so the op-log v2 writer picks the
+ * change up — same pattern as `assetsStore.ts`.
  *
  * Real Monobank-sourced transactions (`realTx`) are written to MMKV by
  * the network layer (web `useMonobank` snapshot, mirrored across devices
@@ -36,7 +36,6 @@ import {
   txCatsFromMap,
   txSplitsFromMap,
 } from "./dualWrite/extract";
-import { enqueueChange } from "@/sync/enqueue";
 
 import type { ManualExpensePayload } from "../components/ManualExpenseSheet";
 
@@ -184,7 +183,6 @@ export function useFinykTxFilters(seed?: Partial<FinykTxFilterState>): {
   const persist = useCallback((next: FinykTxFilterState) => {
     setFiltersState(next);
     safeWriteLS(KEY_FILTERS, next);
-    enqueueChange(KEY_FILTERS);
   }, []);
 
   const setFilter = useCallback(
@@ -391,7 +389,6 @@ export function useFinykTransactionsStore(
     const prev = read<ManualExpenseRecord[]>(KEY_MANUAL, []);
     setManualState(next);
     safeWriteLS(KEY_MANUAL, next);
-    enqueueChange(KEY_MANUAL);
     if (isFinykDualWriteRegistered()) {
       triggerFinykDualWrite(
         stateWithSlice("manualExpenses", blobsFromArray(prev)),
@@ -452,7 +449,6 @@ export function useFinykTransactionsStore(
     const next = [...current, id];
     setHiddenState(next);
     safeWriteLS(KEY_HIDDEN_TXS, next);
-    enqueueChange(KEY_HIDDEN_TXS);
     if (isFinykDualWriteRegistered()) {
       triggerFinykDualWrite(
         stateWithSlice("hiddenTransactions", idsFromArray(current)),
@@ -467,7 +463,6 @@ export function useFinykTransactionsStore(
     const next = current.filter((x) => x !== id);
     setHiddenState(next);
     safeWriteLS(KEY_HIDDEN_TXS, next);
-    enqueueChange(KEY_HIDDEN_TXS);
     if (isFinykDualWriteRegistered()) {
       triggerFinykDualWrite(
         stateWithSlice("hiddenTransactions", idsFromArray(current)),
@@ -487,7 +482,6 @@ export function useFinykTransactionsStore(
       }
       setTxCatsState(next);
       safeWriteLS(KEY_TX_CATS, next);
-      enqueueChange(KEY_TX_CATS);
       if (isFinykDualWriteRegistered()) {
         triggerFinykDualWrite(
           stateWithSlice("txCategories", txCatsFromMap(current)),
@@ -508,7 +502,6 @@ export function useFinykTransactionsStore(
     }
     setTxSplitsState(next);
     safeWriteLS(KEY_TX_SPLITS, next);
-    enqueueChange(KEY_TX_SPLITS);
     if (isFinykDualWriteRegistered()) {
       triggerFinykDualWrite(
         stateWithSlice("txSplits", txSplitsFromMap(current)),

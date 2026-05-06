@@ -13,10 +13,6 @@ import {
   type Pantry,
   type PantryItem,
 } from "@sergeant/nutrition-domain";
-import { STORAGE_KEYS } from "@sergeant/shared";
-
-import { enqueueChange } from "@/sync/enqueue";
-
 import {
   loadActivePantryId,
   loadPantries,
@@ -64,8 +60,6 @@ export function useNutritionPantries(): UseNutritionPantriesResult {
   const persist = useCallback((list: Pantry[], activeId: string) => {
     const norm = normalizePantries(list);
     savePantries(norm, activeId);
-    enqueueChange(STORAGE_KEYS.NUTRITION_PANTRIES);
-    enqueueChange(STORAGE_KEYS.NUTRITION_ACTIVE_PANTRY);
   }, []);
 
   useEffect(() => {

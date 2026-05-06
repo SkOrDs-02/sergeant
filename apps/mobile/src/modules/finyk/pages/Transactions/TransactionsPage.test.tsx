@@ -18,10 +18,6 @@ import { _getMMKVInstance, safeWriteLS } from "@/lib/storage";
 
 const FILTERS_KEY = STORAGE_KEYS.FINYK_TX_FILTERS;
 
-jest.mock("@/sync/enqueue", () => ({
-  enqueueChange: jest.fn(),
-}));
-
 // FlashList in jest renders an `AutoLayoutView` that does not invoke
 // `renderItem`, so swap it for a plain ScrollView that walks the data
 // array and renders each row directly.

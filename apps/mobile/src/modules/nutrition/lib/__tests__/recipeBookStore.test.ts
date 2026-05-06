@@ -4,10 +4,6 @@ jest.mock("@/lib/storage", () => ({
   safeReadLS: (...args: unknown[]) => mockSafeReadLS(...args),
   safeWriteLS: (...args: unknown[]) => mockSafeWriteLS(...args),
 }));
-const mockEnqueue = jest.fn();
-jest.mock("@/sync/enqueue", () => ({
-  enqueueChange: (...a: unknown[]) => mockEnqueue(...a),
-}));
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 
@@ -23,7 +19,6 @@ import {
 beforeEach(() => {
   mockSafeReadLS.mockReset().mockReturnValue(null);
   mockSafeWriteLS.mockReset().mockReturnValue(true);
-  mockEnqueue.mockReset();
 });
 
 describe("recipeBookStore", () => {
@@ -58,7 +53,7 @@ describe("recipeBookStore", () => {
     expect(getRecipeById("missing")).toBeUndefined();
   });
 
-  it("upsertSavedRecipe writes and enqueues sync", () => {
+  it("upsertSavedRecipe writes to MMKV under the saved-recipes key", () => {
     mockSafeReadLS.mockReturnValue({ recipes: [] });
     upsertSavedRecipe({ id: "n1", title: "New" });
     expect(mockSafeWriteLS).toHaveBeenCalled();
@@ -66,9 +61,6 @@ describe("recipeBookStore", () => {
       (c) => c[0] === STORAGE_KEYS.NUTRITION_SAVED_RECIPES,
     );
     expect(call).toBeTruthy();
-    expect(mockEnqueue).toHaveBeenCalledWith(
-      STORAGE_KEYS.NUTRITION_SAVED_RECIPES,
-    );
   });
 
   it("removeSavedRecipe drops one entry", () => {

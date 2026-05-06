@@ -6,9 +6,9 @@
  *   - monthlyPlan    → finyk_monthly_plan    (FINYK_MONTHLY_PLAN)
  *   - subscriptions  → finyk_subs            (FINYK_SUBS)
  *
- * Each setter persists to MMKV via `safeWriteLS` and then calls
- * `enqueueChange(KEY)` so the cloud-sync scheduler picks the change up
- * — same pattern as `assetsStore.ts` / `transactionsStore.ts`.
+ * Each setter persists to MMKV via `safeWriteLS` and then triggers the
+ * Finyk SQLite dual-write adapter so the op-log v2 writer picks the
+ * change up — same pattern as `assetsStore.ts` / `transactionsStore.ts`.
  *
  * Read-only deps the page also needs (real bank tx, txCategories,
  * txSplits, customCategories) live in `transactionsStore`; the page
@@ -21,7 +21,6 @@ import type { Budget, MonthlyPlan } from "@sergeant/finyk-domain/domain";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
-import { enqueueChange } from "@/sync/enqueue";
 
 import { isFinykDualWriteRegistered, triggerFinykDualWrite } from "./dualWrite";
 import { EMPTY_FINYK_STATE, type FinykPrefsSnapshot } from "./dualWrite/diff";
@@ -193,7 +192,6 @@ export function useFinykBudgetsStore(
             ? (next as (p: Budget[]) => Budget[])(prev)
             : next;
         safeWriteLS(KEY_BUDGETS, value);
-        enqueueChange(KEY_BUDGETS);
         if (isFinykDualWriteRegistered()) {
           triggerFinykDualWrite(
             stateWithSlice("budgets", blobsFromArray(prev)),
@@ -215,7 +213,6 @@ export function useFinykBudgetsStore(
           ? (next as (p: MonthlyPlanInput) => MonthlyPlanInput)(prev)
           : next;
       safeWriteLS(KEY_MONTHLY_PLAN, value);
-      enqueueChange(KEY_MONTHLY_PLAN);
       if (isFinykDualWriteRegistered()) {
         triggerFinykDualWrite(
           { ...EMPTY_FINYK_STATE, prefs: prefsFrom(prev) },
@@ -235,7 +232,6 @@ export function useFinykBudgetsStore(
           ? (next as (p: Subscription[]) => Subscription[])(prev)
           : next;
       safeWriteLS(KEY_SUBS, value);
-      enqueueChange(KEY_SUBS);
       if (isFinykDualWriteRegistered()) {
         triggerFinykDualWrite(
           stateWithSlice("subscriptions", blobsFromArray(prev)),

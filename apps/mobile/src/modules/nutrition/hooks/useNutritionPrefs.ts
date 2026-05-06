@@ -11,7 +11,6 @@ import { type NutritionPrefs } from "@sergeant/nutrition-domain";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance } from "@/lib/storage";
-import { enqueueChange } from "@/sync/enqueue";
 
 import { loadNutritionPrefs, saveNutritionPrefs } from "../lib/nutritionStore";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
@@ -59,7 +58,6 @@ export function useNutritionPrefs(): UseNutritionPrefsResult {
   const commit = useCallback((next: NutritionPrefs) => {
     setPrefsState(next);
     saveNutritionPrefs(next);
-    enqueueChange(STORAGE_KEYS.NUTRITION_PREFS);
   }, []);
 
   const setPrefs = useCallback(

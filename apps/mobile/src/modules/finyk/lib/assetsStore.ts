@@ -26,7 +26,6 @@ import type {
 } from "@sergeant/finyk-domain/domain";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
-import { enqueueChange } from "@/sync/enqueue";
 import { isFinykDualWriteRegistered, triggerFinykDualWrite } from "./dualWrite";
 import {
   blobsFromArray,
@@ -157,7 +156,6 @@ export function useFinykAssetsStore(
       const prev = manualAssets;
       setAssetsState(next);
       safeWriteLS(KEY_ASSETS, next);
-      enqueueChange(KEY_ASSETS);
       if (isFinykDualWriteRegistered()) {
         triggerFinykDualWrite(
           stateWithSlice("assets", blobsFromArray(prev)),
@@ -172,7 +170,6 @@ export function useFinykAssetsStore(
       const prev = manualDebts;
       setDebtsState(next);
       safeWriteLS(KEY_DEBTS, next);
-      enqueueChange(KEY_DEBTS);
       if (isFinykDualWriteRegistered()) {
         triggerFinykDualWrite(
           stateWithSlice("debts", blobsFromArray(prev)),
@@ -187,7 +184,6 @@ export function useFinykAssetsStore(
       const prev = receivables;
       setRecvState(next);
       safeWriteLS(KEY_RECV, next);
-      enqueueChange(KEY_RECV);
       if (isFinykDualWriteRegistered()) {
         triggerFinykDualWrite(
           stateWithSlice("receivables", blobsFromArray(prev)),
@@ -202,7 +198,6 @@ export function useFinykAssetsStore(
       const prev = hiddenAccounts;
       setHiddenState(next);
       safeWriteLS(KEY_HIDDEN, next);
-      enqueueChange(KEY_HIDDEN);
       if (isFinykDualWriteRegistered()) {
         triggerFinykDualWrite(
           stateWithSlice("hiddenAccounts", idsFromArray(prev)),
