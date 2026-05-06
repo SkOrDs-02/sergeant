@@ -15,13 +15,36 @@
     },
     {
       "parameters": {
-        "jsCode": "// WF-15 §3.4 fix (Wave 1): switched parse_mode from \"Markdown\" → \"HTML\"\n// because legacy Markdown has no backslash-escape and broke whenever a\n// commit message contained `*`, `_`, `` ` ``, or `[` (e.g. \"applyFizruk*\").\n// HTML only needs `&<>` escaped, which is trivial and bullet-proof.\nfunction htmlEscape(s) {\n  return String(s ?? '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;');\n}\nconst root = $input.first().json;\nconst body = root.body ?? root;\nconst details = body.details ?? {};\nconst resource = body.resource ?? {};\nconst status = (details.status ?? body.status ?? body.type ?? 'UNKNOWN').toString();\nconst service = resource.service?.name ?? body.service?.name ?? body.serviceName ?? '—';\nconst env = resource.environment?.name ?? body.environment?.name ?? body.environmentName ?? '—';\nconst branch = details.branch ?? body.deployment?.meta?.branch ?? body.branch ?? '—';\nconst commitMsg = (details.commitMessage ?? body.deployment?.meta?.commitMessage ?? body.commitMessage ?? '—').split('\\n')[0];\nconst commitHash = (details.commitHash ?? body.deployment?.meta?.commitHash ?? body.commitHash ?? '').slice(0, 7);\nconst url = body.deployment?.url ?? body.deploymentUrl ?? '';\nconst duration = body.buildDuration ? `${Math.round(body.buildDuration / 1000)}s` : '—';\nconst ok = ['SUCCESS', 'DEPLOYED', 'ACTIVE'].includes(status.toUpperCase());\nreturn [{ json: {\n  status, service, env, branch, commitMsg, commitHash, url, duration, ok,\n  type: body.type ?? null,\n  // _html-escaped variants for direct interpolation into the Telegram\n  // node text — keep raw values around for downstream branches that may\n  // want them un-escaped (alerts, future rich cards).\n  serviceHtml: htmlEscape(service),\n  envHtml: htmlEscape(env),\n  branchHtml: htmlEscape(branch),\n  commitMsgHtml: htmlEscape(commitMsg),\n  commitHashHtml: htmlEscape(commitHash),\n  durationHtml: htmlEscape(duration),\n  urlHtml: htmlEscape(url),\n} }];"
+        "jsCode": "// WF-15 §3.4 fix (Wave 1): switched parse_mode from \"Markdown\" → \"HTML\"\n// because legacy Markdown has no backslash-escape and broke whenever a\n// commit message contained `*`, `_`, `` ` ``, or `[` (e.g. \"applyFizruk*\").\n// HTML only needs `&<>` escaped, which is trivial and bullet-proof.\n//\n// PR-16 (pr-plan-2026-05): added `terminal` boolean so the downstream IF\n// node drops transient states (BUILDING / DEPLOYING / QUEUED /\n// INITIALIZING / REMOVING / WAITING / CANCELLED / SKIPPED). Telegram\n// тільки terminal-стани: SUCCESS / DEPLOYED / ACTIVE → ✅; FAILED /\n// CRASHED → ❌. До цього кожен intermediate-статус слав\n// false-positive «Deploy Failed», бо `ok` був true тільки для\n// `[SUCCESS, DEPLOYED, ACTIVE]`, а решта (включно з BUILDING) показувалась\n// як failure.\nfunction htmlEscape(s) {\n  return String(s ?? '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;');\n}\nconst SUCCESS_TERMINAL = new Set(['SUCCESS', 'DEPLOYED', 'ACTIVE']);\nconst FAILED_TERMINAL = new Set(['FAILED', 'CRASHED']);\nconst root = $input.first().json;\nconst body = root.body ?? root;\nconst details = body.details ?? {};\nconst resource = body.resource ?? {};\nconst status = (details.status ?? body.status ?? body.type ?? 'UNKNOWN').toString();\nconst statusUpper = status.toUpperCase();\nconst service = resource.service?.name ?? body.service?.name ?? body.serviceName ?? '—';\nconst env = resource.environment?.name ?? body.environment?.name ?? body.environmentName ?? '—';\nconst branch = details.branch ?? body.deployment?.meta?.branch ?? body.branch ?? '—';\nconst commitMsg = (details.commitMessage ?? body.deployment?.meta?.commitMessage ?? body.commitMessage ?? '—').split('\\n')[0];\nconst commitHash = (details.commitHash ?? body.deployment?.meta?.commitHash ?? body.commitHash ?? '').slice(0, 7);\nconst url = body.deployment?.url ?? body.deploymentUrl ?? '';\nconst duration = body.buildDuration ? `${Math.round(body.buildDuration / 1000)}s` : '—';\nconst ok = SUCCESS_TERMINAL.has(statusUpper);\nconst failed = FAILED_TERMINAL.has(statusUpper);\nconst terminal = ok || failed;\nreturn [{ json: {\n  status, service, env, branch, commitMsg, commitHash, url, duration, ok, failed, terminal,\n  type: body.type ?? null,\n  // _html-escaped variants for direct interpolation into the Telegram\n  // node text — keep raw values around for downstream branches that may\n  // want them un-escaped (alerts, future rich cards).\n  serviceHtml: htmlEscape(service),\n  envHtml: htmlEscape(env),\n  branchHtml: htmlEscape(branch),\n  commitMsgHtml: htmlEscape(commitMsg),\n  commitHashHtml: htmlEscape(commitHash),\n  durationHtml: htmlEscape(duration),\n  urlHtml: htmlEscape(url),\n} }];"
       },
       "id": "parse-payload",
       "name": "Parse Railway payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "is-terminal",
+              "leftValue": "={{ $json.terminal }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      },
+      "id": "is-terminal",
+      "name": "Is terminal status?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [580, 300]
     },
     {
       "parameters": {
@@ -36,7 +59,7 @@
       "name": "Telegram → #deploys",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [680, 300],
+      "position": [800, 300],
       "credentials": {
         "telegramApi": {
           "id": "ggxeCc1ALZKLuMPV",
@@ -61,11 +84,23 @@
       "main": [
         [
           {
-            "node": "Telegram → #deploys",
+            "node": "Is terminal status?",
             "type": "main",
             "index": 0
           }
         ]
+      ]
+    },
+    "Is terminal status?": {
+      "main": [
+        [
+          {
+            "node": "Telegram → #deploys",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
       ]
     }
   },
