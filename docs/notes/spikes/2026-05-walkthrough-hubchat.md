@@ -1,6 +1,7 @@
 # Walkthrough: `hubchat` module
 
 > **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-11-06.
+> **Status:** Draft
 > **Purpose:** Bus-factor knowledge-transfer (stack-pulse PR-04). One-hour guide for an engineer new to this module.
 
 ## Architecture diagram
@@ -19,13 +20,13 @@ graph TD
 
 ## Top-5 файлів та їх роль
 
-| Файл | Роль |
-|------|------|
-| `apps/server/src/modules/chat/chatRouter.ts` | SSE streaming endpoint, quota enforcement |
-| `apps/server/src/modules/chat/toolDefs/` | Anthropic tool definitions, split per domain |
-| `apps/web/src/core/lib/chatActions/` | Client-side tool result handlers (повертають `string`) |
-| `apps/server/src/modules/chat/aiQuota.ts` | Quota ledger + circuit breaker (`aiQuotaCircuitBreaker`) |
-| `apps/server/src/modules/chat/aiQuotaHealth.ts` | DB health probe + sliding-window error counter |
+| Файл                                            | Роль                                                     |
+| ----------------------------------------------- | -------------------------------------------------------- |
+| `apps/server/src/modules/chat/chatRouter.ts`    | SSE streaming endpoint, quota enforcement                |
+| `apps/server/src/modules/chat/toolDefs/`        | Anthropic tool definitions, split per domain             |
+| `apps/web/src/core/lib/chatActions/`            | Client-side tool result handlers (повертають `string`)   |
+| `apps/server/src/modules/chat/aiQuota.ts`       | Quota ledger + circuit breaker (`aiQuotaCircuitBreaker`) |
+| `apps/server/src/modules/chat/aiQuotaHealth.ts` | DB health probe + sliding-window error counter           |
 
 ## Top-3 gotcha
 

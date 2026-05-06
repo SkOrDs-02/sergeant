@@ -1,6 +1,7 @@
 # Walkthrough: `fizruk` module
 
 > **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-11-06.
+> **Status:** Draft
 > **Purpose:** Bus-factor knowledge-transfer (stack-pulse PR-04). One-hour guide for an engineer new to this module.
 
 ## Architecture diagram
@@ -17,13 +18,13 @@ graph TD
 
 ## Top-5 файлів та їх роль
 
-| Файл | Роль |
-|------|------|
-| `apps/web/src/modules/fizruk/` | Web UI: workout logging, sets/reps, history charts via ChartKit |
-| `apps/mobile/src/core/fizruk/` | Mobile UI: RNGH gestures (swipe to delete), MMKV local-first state |
-| `packages/fizruk-domain/src/` | Shared types: `Exercise`, `WorkoutSet`, `WorkoutSession`; pure computations |
-| `apps/server/src/modules/sync/` | CloudSync server-side: op-log replay, LWW conflict resolution |
-| `packages/db-schema/src/pg/syncOpLog.ts` | Drizzle schema для `sync_op_log` — основна persistence таблиця |
+| Файл                                     | Роль                                                                        |
+| ---------------------------------------- | --------------------------------------------------------------------------- |
+| `apps/web/src/modules/fizruk/`           | Web UI: workout logging, sets/reps, history charts via ChartKit             |
+| `apps/mobile/src/core/fizruk/`           | Mobile UI: RNGH gestures (swipe to delete), MMKV local-first state          |
+| `packages/fizruk-domain/src/`            | Shared types: `Exercise`, `WorkoutSet`, `WorkoutSession`; pure computations |
+| `apps/server/src/modules/sync/`          | CloudSync server-side: op-log replay, LWW conflict resolution               |
+| `packages/db-schema/src/pg/syncOpLog.ts` | Drizzle schema для `sync_op_log` — основна persistence таблиця              |
 
 ## Top-3 gotcha
 

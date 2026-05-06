@@ -31,6 +31,9 @@
 //                                               paths and example structures)
 //      - docs/i18n/                            (i18n migration roadmap; refs
 //                                               include planned target catalogs)
+//      - docs/notes/spikes/                    (exploratory spike walkthroughs;
+//                                               file refs may describe imagined
+//                                               module shape pre-refactor)
 //    Files in ADRs with Status: proposed are exempt (future refs OK).
 //    All other dangling refs are reported as ERRORS (Hard Rule #15 — docs
 //    that describe current behaviour must move with code).
@@ -238,6 +241,14 @@ function checkDanglingRefs() {
     // planned target catalogs (e.g., `apps/web/src/shared/i18n/en.ts`)
     // that don't exist until the corresponding migration phase lands.
     if (relPath.startsWith("docs/i18n/")) return true;
+    // `docs/notes/spikes/` are exploratory spike walkthroughs (PR-04
+    // bus-factor knowledge transfer). Inline file refs describe the
+    // module structure as the spike author imagined / mapped it; if
+    // a refactor moved a file, the spike note should not block CI.
+    // Once a spike graduates to canonical architecture, the doc moves
+    // to `docs/architecture/` (non-aspirational) and refs become
+    // contracts. Until then, treat as warnings.
+    if (relPath.startsWith("docs/notes/spikes/")) return true;
     // `docs/testing/<date>-tests-pr-plan.md` and
     // `docs/testing/<date>-tests-review.md` are dated test-PR plans and
     // analyses — same shape as `docs/planning/`: refs describe upcoming

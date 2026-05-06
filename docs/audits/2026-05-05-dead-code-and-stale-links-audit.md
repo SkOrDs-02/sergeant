@@ -11,7 +11,7 @@
 - **Doc-drift навколо paths.** `pnpm docs:check-links` знайшов **14 broken internal links** у 5 документах — усі через рефактори, що переїхали (vercel.json → `apps/web/vercel.json`, apps/server/src/middleware/ → `apps/server/src/http/`, docs/design-system/ → `docs/design/`, apps/web/src/components/VoiceMicButton.tsx → `apps/web/src/shared/components/ui/VoiceMicButton.tsx`, scripts/bundle-size-guard.ts → `scripts/check-bundle-size.mjs`, useHashRouter.ts переніс у Finyk-модуль, vite.config.js живе під apps/web/). Усе виправлено.
 - **Один умисний placeholder.** `docs/launch/product-os/sprint-retros/s6-cleanup-batch.md` згадується як «буде створений по завершенню» — конвертовано з markdown-link у code-mention, щоб не ламати лінкер.
 - **2 unmarked barrel-и:** `apps/server/src/modules/ai-memory/index.ts` і `apps/web/src/shared/forms/index.ts` — обидва задумані як public surface, але consumer-и поки що ходять deep-import-ами. Додано `@scaffolded` маркер з `@nextStep` per AGENTS.md → Hard Rule #10.
-- **2 codemod-и без lifecycle marker:** `scripts/codemods/strip-js-extensions/script.mjs` (раніше) і `scripts/codemods/syncedKV/script.mjs` (доданий PR #008). Обидва промарковані `// @deprecated`, каталог [`scripts/codemods/README.md`](../../scripts/codemods/README.md) розширено `syncedKV` рядком.
+- **2 codemod-и без lifecycle marker:** `scripts/codemods/strip-js-extensions/script.mjs` (раніше) і ~~scripts/codemods/syncedKV/script.mjs~~ (доданий PR #008; видалений у PR #053a-cleanup). Обидва промарковані `// @deprecated`, каталог [`scripts/codemods/README.md`](../../scripts/codemods/README.md) розширено `syncedKV` рядком.
 - **Outstanding (для майбутніх PR-ів):** `pnpm knip` повідомляє про **3 unused dependencies** + **4 unused devDependencies** + **77 unused exports** + **51 duplicate exports** (named-export + `default`). Все **видиме**, але fix-and-verify виходить за межі цього аудиту — зведено в § 3.
 
 ---
@@ -36,12 +36,12 @@
 
 ### 1.2 Lifecycle markers додано
 
-| Файл                                              | Маркер        | `@nextStep`                                                                                                                                                            |
-| ------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/server/src/modules/ai-memory/index.ts`      | `@scaffolded` | Перевести усіх caller-ів (`routes/ai-memory.ts`, `weekly-digest.ts`, `mono/webhook.ts`, …) на цей barrel замість deep imports `./service.js`, `./ingestQueue.js`, etc. |
-| `apps/web/src/shared/forms/index.ts`              | `@scaffolded` | Перевести consumer-ів з `@shared/forms/useApiForm` deep-path на barrel `@shared/forms`.                                                                                |
-| `scripts/codemods/strip-js-extensions/script.mjs` | `@deprecated` | One-shot historical codemod — preserved for forensics + старі гілки.                                                                                                   |
-| `scripts/codemods/syncedKV/script.mjs`            | `@deprecated` | One-shot historical codemod — drift-check у dry-run + planned ESLint guard у PR #013.                                                                                  |
+| Файл                                              | Маркер                  | `@nextStep`                                                                                                                                                            |
+| ------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/server/src/modules/ai-memory/index.ts`      | `@scaffolded`           | Перевести усіх caller-ів (`routes/ai-memory.ts`, `weekly-digest.ts`, `mono/webhook.ts`, …) на цей barrel замість deep imports `./service.js`, `./ingestQueue.js`, etc. |
+| `apps/web/src/shared/forms/index.ts`              | `@scaffolded`           | Перевести consumer-ів з `@shared/forms/useApiForm` deep-path на barrel `@shared/forms`.                                                                                |
+| `scripts/codemods/strip-js-extensions/script.mjs` | `@deprecated`           | One-shot historical codemod — preserved for forensics + старі гілки.                                                                                                   |
+| ~~scripts/codemods/syncedKV/script.mjs~~          | `@deprecated` (removed) | One-shot historical codemod — drift-check у dry-run + planned ESLint guard у PR #013. (видалений у PR #053a-cleanup)                                                   |
 
 `pnpm dead-code:files` тепер `No unmarked unused files. ✓`.
 

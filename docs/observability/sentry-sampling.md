@@ -1,6 +1,7 @@
 # Sentry tracesSampler — per-route sampling policy
 
 > **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-06.
+> **Status:** Active
 >
 > Source of truth for **server** rules: `apps/server/src/sentry.ts`
 > (`SENTRY_SAMPLING_RULES`). Source of truth for **web** rules:

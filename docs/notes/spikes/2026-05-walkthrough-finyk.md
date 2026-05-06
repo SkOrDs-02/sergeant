@@ -1,6 +1,7 @@
 # Walkthrough: `finyk` module
 
 > **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-11-06.
+> **Status:** Draft
 > **Purpose:** Bus-factor knowledge-transfer (stack-pulse PR-04). One-hour guide for an engineer new to this module.
 
 ## Architecture diagram
@@ -16,13 +17,13 @@ graph TD
 
 ## Top-5 файлів та їх роль
 
-| Файл | Роль |
-|------|------|
-| `apps/server/src/modules/finyk/finykRouter.ts` | Hono router — всі `/api/finyk/*` endpoints |
+| Файл                                            | Роль                                                           |
+| ----------------------------------------------- | -------------------------------------------------------------- |
+| `apps/server/src/modules/finyk/finykRouter.ts`  | Hono router — всі `/api/finyk/*` endpoints                     |
 | `apps/server/src/modules/finyk/finykService.ts` | Бізнес-логіка: категоризація, агрегація, фільтрація транзакцій |
-| `apps/web/src/modules/finyk/` | React Query хуки + UI компоненти; ключі в `finykKeys` |
-| `packages/finyk-domain/src/` | Shared domain types і чиста логіка (kcal/budget math) |
-| `apps/server/src/modules/finyk/monoWebhook*.ts` | Webhook receiver — парсинг Monobank StatementItem → DB insert |
+| `apps/web/src/modules/finyk/`                   | React Query хуки + UI компоненти; ключі в `finykKeys`          |
+| `packages/finyk-domain/src/`                    | Shared domain types і чиста логіка (kcal/budget math)          |
+| `apps/server/src/modules/finyk/monoWebhook*.ts` | Webhook receiver — парсинг Monobank StatementItem → DB insert  |
 
 ## Top-3 gotcha
 

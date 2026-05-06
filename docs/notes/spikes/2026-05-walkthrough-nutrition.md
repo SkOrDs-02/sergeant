@@ -1,6 +1,7 @@
 # Walkthrough: `nutrition` module
 
 > **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-11-06.
+> **Status:** Draft
 > **Purpose:** Bus-factor knowledge-transfer (stack-pulse PR-04). One-hour guide for an engineer new to this module.
 
 ## Architecture diagram
@@ -17,13 +18,13 @@ graph TD
 
 ## Top-5 файлів та їх роль
 
-| Файл | Роль |
-|------|------|
-| `apps/server/src/modules/nutrition/nutritionRouter.ts` | Всі `/api/nutrition/*` endpoints |
-| `apps/server/src/modules/nutrition/photoAnalyze.ts` | Claude vision integration: base64 image → structured macros |
-| `apps/server/src/modules/nutrition/usdaClient.ts` | USDA FDC API клієнт (lookup + cache) |
-| `apps/web/src/modules/nutrition/` | Web UI: meal logging, barcode scan, nutrient charts; `nutritionKeys` |
-| `packages/nutrition-domain/src/` | Shared: kcal math, macro targets, `MealEntry` type |
+| Файл                                                   | Роль                                                                 |
+| ------------------------------------------------------ | -------------------------------------------------------------------- |
+| `apps/server/src/modules/nutrition/nutritionRouter.ts` | Всі `/api/nutrition/*` endpoints                                     |
+| `apps/server/src/modules/nutrition/photoAnalyze.ts`    | Claude vision integration: base64 image → structured macros          |
+| `apps/server/src/modules/nutrition/usdaClient.ts`      | USDA FDC API клієнт (lookup + cache)                                 |
+| `apps/web/src/modules/nutrition/`                      | Web UI: meal logging, barcode scan, nutrient charts; `nutritionKeys` |
+| `packages/nutrition-domain/src/`                       | Shared: kcal math, macro targets, `MealEntry` type                   |
 
 ## Top-3 gotcha
 

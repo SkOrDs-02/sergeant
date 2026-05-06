@@ -29,8 +29,8 @@ Sergeant зараз має гібридну data-архітектуру:
 
 Цей шлях **повністю знятий** після PR #052b (v1 engine drop, ADR-0047 client cut-over) і PR #053a (KVStore shim drop, web phase). Залишається у документації як історичний reference, бо в репо ще ходять згадки на `enqueueChange` / `notifySyncDirty` у mobile коді (PR #053b/c знесе їх з mobile).
 
-1. До PR #008: модулі писали через monkey-patch `localStorage.setItem/removeItem` + `__hubSyncPatched` global з `apps/web/src/core/cloudSync/storagePatch.ts`. PR #008 замінив це на explicit `safeWriteSyncedLS` / `syncedKV.setString` — тонкий wrapper навколо `webKVStore`, що вшитий через `createSyncedKVStore` із `@sergeant/shared` (`packages/shared/src/sync/syncedKV.ts`).
-2. На кожен write до tracked-key wrapper кликав `enqueueChange(key)` (`apps/web/src/core/cloudSync/enqueue.ts`): визначав module за ключем, ставив dirty flag і емiтив sync event. PR #052b видалив v1 engine, що споживав цей сигнал — `enqueueChange` став no-op shim, який тримався тільки тому що `syncedKV.ts` передавав його як `onChange` callback. PR #053a знесе both `enqueue.ts` shim і web `syncedKV.ts` фасад — 5 `safeWriteSyncedLS` callsites (`onboarding/{cleanupDemoData,presetApply}.ts`, `profile/memoryBank.ts`) мігровані на raw `safeWriteLS`, бо v2 op-log писатель (`apps/web/src/core/syncEngine/syncEngineWriter.ts`) інтерсептить SQLite mutations напряму, не через LS-key-watcher.
+1. До PR #008: модулі писали через monkey-patch `localStorage.setItem/removeItem` + `__hubSyncPatched` global з ~~apps/web/src/core/cloudSync/storagePatch.ts~~ (видалений у PR #053a). PR #008 замінив це на explicit `safeWriteSyncedLS` / `syncedKV.setString` — тонкий wrapper навколо `webKVStore`, що вшитий через `createSyncedKVStore` із `@sergeant/shared` (`packages/shared/src/sync/syncedKV.ts`).
+2. На кожен write до tracked-key wrapper кликав `enqueueChange(key)` (~~apps/web/src/core/cloudSync/enqueue.ts~~ — видалений у PR #053a): визначав module за ключем, ставив dirty flag і емiтив sync event. PR #052b видалив v1 engine, що споживав цей сигнал — `enqueueChange` став no-op shim, який тримався тільки тому що `syncedKV.ts` передавав його як `onChange` callback. PR #053a знесе both `enqueue.ts` shim і web `syncedKV.ts` фасад — 5 `safeWriteSyncedLS` callsites (`onboarding/{cleanupDemoData,presetApply}.ts`, `profile/memoryBank.ts`) мігровані на raw `safeWriteLS`, бо v2 op-log писатель (`apps/web/src/core/syncEngine/syncEngineWriter.ts`) інтерсептить SQLite mutations напряму, не через LS-key-watcher.
 3. `SYNC_MODULES` визначає, які ключі входять у `finyk`, `nutrition`, `profile` (`packages/shared/src/sync/modules.ts`, історично реекспортувався у web `cloudSync/config.ts` — видалений у PR #052b). Routine знятий у PR #026 (Stage 4 cleanup), Fizruk — у PR #030, Nutrition — у PR #034, Finyk — у PR #039; усі модулі тепер їздять виключно через v2 op-log.
 4. `pushDirty()` збирав dirty modules, робив `syncApi.pushAll(modules)`, а якщо offline/error — додавав payload в offline queue (web v1 `cloudSync/engine/push.ts`, видалений у PR #052b — successor у v2 op-log це [`apps/web/src/core/syncEngine/syncEngineWriter.ts`](../../apps/web/src/core/syncEngine/syncEngineWriter.ts), який intercepts SQLite mutations і пише їх у `sync_op_outbox`).
 5. Offline queue коалесила послідовні push-и і мала hard cap `MAX_OFFLINE_QUEUE = 10 000` (web v1 `cloudSync/queue/offlineQueue.ts`, видалений у PR #052b разом з рештою v1 engine tree — successor у v2 outbox це server-side таблиця `sync_op_outbox` через [`apps/server/src/migrations/027_sync_op_log.sql`](../../apps/server/src/migrations/027_sync_op_log.sql)). Після Stage 1 PR #009 v1-черга жила в IDB (durable backing) з LS dual-write best-effort до 100 записів; ліміт ~5 MB localStorage більше не є stop-the-world.
@@ -44,7 +44,7 @@ Mobile дзеркалить web-підхід, але замість `localStorag
 
 - `SYNC_MODULES` на mobile реекспортував той самий shared registry (`packages/shared/src/sync/modules.ts`) — після PR #026 / PR #030 / PR #034 / PR #039 cleanup лишився лише `profile`; routine, fizruk, nutrition і finyk вже зняті з v1 cloud-sync. Mobile-side `sync/config.ts` був реекспортом цього shared registry і видалений у PR #052c разом з рештою mobile v1 engine tree.
 - Mobile API seam `sync/api.ts` реекспортував `apiClient.sync` як `syncApi`, щоб engine-и читались як web — теж видалений у PR #052c.
-- Через MMKV немає глобального patch як у web, тому tracked writes мають явно викликати `enqueueChange`; для цього додали `useSyncedStorage()` як safer wrapper (`apps/mobile/src/sync/useSyncedStorage.ts`).
+- Через MMKV немає глобального patch як у web, тому tracked writes мають явно викликати `enqueueChange`; для цього додали `useSyncedStorage()` як safer wrapper (~~apps/mobile/src/sync/useSyncedStorage.ts~~ — видалений у PR #053c, mobile cleanup).
 
 ### 2.4. Sync v2 / operation log
 
@@ -144,7 +144,7 @@ Offline queue після Stage 1 PR #009 підняв cap до 10 000 і пер
 
 ### 4.3. Mobile enqueue discipline
 
-На web patch ловить tracked `localStorage` writes. На mobile кожен tracked write має явно викликати `enqueueChange`, і сам код документує, що раніше Finyk/Fizruk хуки “silently shipped without that call” (`apps/mobile/src/sync/useSyncedStorage.ts`). `useSyncedStorage` зменшує ризик, але raw MMKV writes досі можуть обійти sync.
+На web patch ловить tracked `localStorage` writes. На mobile кожен tracked write має явно викликати `enqueueChange`, і сам код документує, що раніше Finyk/Fizruk хуки “silently shipped without that call” (~~apps/mobile/src/sync/useSyncedStorage.ts~~ — видалений у PR #053c). `useSyncedStorage` зменшує ризик, але raw MMKV writes досі можуть обійти sync.
 
 ### 4.4. v2 sync ще не загальний
 

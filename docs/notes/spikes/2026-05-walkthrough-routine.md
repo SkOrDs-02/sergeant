@@ -1,6 +1,7 @@
 # Walkthrough: `routine` module
 
 > **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-11-06.
+> **Status:** Draft
 > **Purpose:** Bus-factor knowledge-transfer (stack-pulse PR-04). One-hour guide for an engineer new to this module.
 
 ## Architecture diagram
@@ -18,13 +19,13 @@ graph TD
 
 ## Top-5 файлів та їх роль
 
-| Файл | Роль |
-|------|------|
-| `apps/server/src/modules/routine/routineRouter.ts` | Всі `/api/routine/*` endpoints |
-| `apps/server/src/modules/routine/reminderScheduler.ts` | Cron job: розраховує які нотифікації треба відіслати |
-| `apps/server/src/push/apnsClient.ts` | APNs wrapper (`@parse/node-apn`); JWT-based token auth |
-| `apps/web/src/modules/routine/` | Habit tracking UI, streak display, local-first state |
-| `packages/routine-domain/src/` | Streak math, `HabitEntry` type, day-boundary logic |
+| Файл                                                   | Роль                                                   |
+| ------------------------------------------------------ | ------------------------------------------------------ |
+| `apps/server/src/modules/routine/routineRouter.ts`     | Всі `/api/routine/*` endpoints                         |
+| `apps/server/src/modules/routine/reminderScheduler.ts` | Cron job: розраховує які нотифікації треба відіслати   |
+| `apps/server/src/push/apnsClient.ts`                   | APNs wrapper (`@parse/node-apn`); JWT-based token auth |
+| `apps/web/src/modules/routine/`                        | Habit tracking UI, streak display, local-first state   |
+| `packages/routine-domain/src/`                         | Streak math, `HabitEntry` type, day-boundary logic     |
 
 ## Top-3 gotcha
 

@@ -71,7 +71,7 @@ Web прокидає `apiPrefix` через `getApiPrefix()` (див. `apps/web/
 ## 📞 Related docs
 
 - **Server implementation:** `apps/server/src/app.ts` — `apiVersionRewrite` middleware
-- **Client usage:** `apps/web/src/shared/lib/api/apiUrl.ts` і `packages/api-client/src/client.ts`
+- **Client usage:** `apps/web/src/shared/lib/api/apiUrl.ts` і `packages/api-client/src/httpClient.ts`
 - **Shared schemas:** `packages/shared/src/schemas/api.ts`
 - **Mobile API:** [`docs/mobile/overview.md`](../mobile/overview.md)
 - **Architecture overview:** [`docs/architecture/service-catalog.md`](./service-catalog.md)

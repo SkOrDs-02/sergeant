@@ -1,6 +1,7 @@
 # Walkthrough: `sync` module (CloudSync)
 
 > **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-11-06.
+> **Status:** Draft
 > **Purpose:** Bus-factor knowledge-transfer (stack-pulse PR-04). One-hour guide for an engineer new to this module.
 
 ## Architecture diagram
@@ -17,13 +18,13 @@ graph TD
 
 ## Top-5 файлів та їх роль
 
-| Файл | Роль |
-|------|------|
-| `apps/server/src/modules/sync/syncRouter.ts` | `/api/sync/push` і `/api/sync/pull` endpoints |
-| `apps/server/src/modules/sync/syncService.ts` | LWW merge logic, op-log replay, conflict resolution |
-| `packages/db-schema/src/pg/syncOpLog.ts` | Drizzle schema: `sync_op_log` таблиця з `clientTs`, `serverId`, `entityType` |
-| `apps/server/src/migrations/` | SQL files що створили `sync_op_log` і related tables |
-| `docs/adr/0043-cloudsync-v1-sunset.md` | Рішення про sunset CloudSync v1; поточний стан — v2 |
+| Файл                                          | Роль                                                                         |
+| --------------------------------------------- | ---------------------------------------------------------------------------- |
+| `apps/server/src/modules/sync/syncRouter.ts`  | `/api/sync/push` і `/api/sync/pull` endpoints                                |
+| `apps/server/src/modules/sync/syncService.ts` | LWW merge logic, op-log replay, conflict resolution                          |
+| `packages/db-schema/src/pg/syncOpLog.ts`      | Drizzle schema: `sync_op_log` таблиця з `clientTs`, `serverId`, `entityType` |
+| `apps/server/src/migrations/`                 | SQL files що створили `sync_op_log` і related tables                         |
+| `docs/adr/0043-cloudsync-v1-sunset.md`        | Рішення про sunset CloudSync v1; поточний стан — v2                          |
 
 ## Top-3 gotcha
 
