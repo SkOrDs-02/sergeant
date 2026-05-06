@@ -50,8 +50,8 @@
 | 12   | Monitoring + Analytics               | 🔵 In progress | `@sentry/react-native` ([#469](https://github.com/Skords-01/Sergeant/pull/469)) + PostHog observability wired                                                                                      |
 | 13   | Sunset-план для `apps/web`           | ⏸ Not started  | див. Q1                                                                                                                                                                                            |
 
-Рішення по **Q1–Q10** зафіксовані в [PR #402](https://github.com/Skords-01/Sergeant/pull/402)
-(секція §13).
+Рішення по **Q1–Q14** зафіксовані у §13 (історично — у
+[PR #402](https://github.com/Skords-01/Sergeant/pull/402); Q11–Q14 додано пізніше).
 
 ### 2.1 Фаза 0 — скафолд `apps/mobile`. **Done.**
 
@@ -261,20 +261,26 @@ NativeWind + RN-core. Поверх — додаткові примітиви в 
 ```
 sergeant/
 ├── apps/
-│   ├── web/         ← PWA (Vite, React, Tailwind, Workbox)      [поточний клієнт]
-│   ├── mobile/      ← Expo / React Native / Expo Router          [цільовий клієнт]
-│   └── server/      ← Express, Better Auth, Postgres, Anthropic  [спільний]
+│   ├── web/          ← PWA (Vite, React, Tailwind, Workbox)         [поточний клієнт]
+│   ├── mobile/       ← Expo / React Native / Expo Router             [цільовий клієнт]
+│   ├── mobile-shell/ ← Capacitor 7 wrapper над `apps/web` для Android/iOS Store
+│   │                   (паралельний реліз-шлях до повного RN-порту; Q14)
+│   └── server/       ← Express, Better Auth, Postgres, Anthropic     [спільний]
 └── packages/
     ├── api-client/        ← HTTP + React Query хуки (web + mobile)
     ├── shared/            ← domain types, schemas (Zod), pure utils, storageKeys,
     │                        haptic / fileDownload / fileImport / visualKeyboardInset контракти,
     │                        HubDashboard + onboarding pure-домен
+    ├── db-schema/         ← Drizzle SQLite + Postgres схеми, sync op-log таблиці
+    │                        (web `@sqlite.org/sqlite-wasm` + mobile `expo-sqlite` + server PG;
+    │                        Q11/Q12, storage-roadmap Stage 2/4)
     ├── finyk-domain/      ← чиста доменна логіка фінансів (R3)
     ├── fizruk-domain/     ← чиста доменна логіка Фізрука (R4 + Phase 6 domains)
     ├── routine-domain/    ← чиста доменна логіка Рутини (Phase 5 PR 2)
     ├── nutrition-domain/  ← чиста доменна логіка Харчування (Phase 7)
     ├── insights/          ← Hub-search scorер + recommendation rules (R2)
     ├── design-tokens/     ← Tailwind preset + raw tokens (web + mobile) (R6)
+    ├── eslint-plugin-sergeant-design/ ← кастомні правила (no-raw-tracked-storage, …)
     └── config/            ← ESLint, TS, Prettier базові конфіги
 ```
 
@@ -294,8 +300,14 @@ sergeant/
    visualKeyboardInset / R9, KVStore для HubDashboard hero-шару);
    `packages/api-client` залежить лише від `fetch` (є в RN).
 3. **Дві точки входу — один бекенд.** Увесь state-синк через
-   `/api/v1/*`; локальна персистенція — опційний кеш, не source of
-   truth (див. §6 про sync-модель).
+   `/api/v1/*` + sync v2 op-log (`/v2/sync/{push,pull}` + SSE).
+   Локальна персистенція — комбінована: hot keys (UI prefs) у
+   `localStorage`/MMKV, доменні дані — у локальному SQLite через
+   `@sergeant/db-schema` (web — sqlite-wasm на OPFS, mobile —
+   `expo-sqlite`). Для модулів routine/fizruk/nutrition/finyk SQLite
+   уже cut-over для read-path за фіче-флагом
+   `feature.<m>.sqlite_v2.read_sqlite` (Q11/Q12/Q13). Деталі — §6,
+   первинний source-of-truth — [`docs/planning/storage-roadmap.md`](../planning/storage-roadmap.md).
 
 ## 4. Фазований план
 
@@ -390,8 +402,13 @@ Per module — які файли `apps/web` переносяться і в що 
 - `useRecovery` + `useExerciseCatalog` + `useDailyLog` — на mobile
   (MMKV + cloud-sync); Atlas / Body підключені до реальних даних
   відновлення.
-- **Не мігруємо:** `WorkoutTemplates` UI (templates-стор уже синкається
-  через CloudSync); фото-прогрес тіла (виключено з плану,
+- **`WorkoutTemplates` drawer** — у scope Phase 6, але ще не реалізовано
+  на mobile. Mobile-хук `useWorkoutTemplates` уже існує (MMKV +
+  CloudSync, mirror web LS-shape під ключем `STORAGE_KEYS.FIZRUK_TEMPLATES`),
+  залишилось перенести UI з `apps/web/src/modules/fizruk/components/WorkoutTemplatesSection.tsx`
+  - узгодити тип `WorkoutTemplateGroup` з web-shape. Templates SQLite
+    cut-over — окрема follow-up серія, ще не у Stage 4 storage-roadmap.
+- **Не мігруємо:** фото-прогрес тіла (виключено з плану,
   [#468](https://github.com/Skords-01/Sergeant/pull/468)).
 
 ### 5.4 `modules/routine` — ✅ Весь функціонал портовано
@@ -734,10 +751,12 @@ foodDb export / import, UI). Жодних змін у публічному API `
   store-review. Потрібна стратегія каналів (dev / preview / prod),
   щоб не зламати версіювання. Планується на Phase 11.
 
-## 13. Прийняті рішення (Q1–Q10)
+## 13. Прийняті рішення (Q1–Q14)
 
 > Закриті рішення — так, ці питання колись були відкритими. Якщо треба
-> переглянути — окремий PR з мотивацією у «Нотатки».
+> переглянути — окремий PR з мотивацією у «Нотатки». Q11–Q14 додано
+> після того як storage-roadmap і `apps/mobile-shell` стали окремими
+> треками; повний контекст — у [`docs/planning/storage-roadmap.md`](../planning/storage-roadmap.md).
 
 - **Q1. Доля `apps/web` після міграції.** ✅ **(a) — залишаємо PWA + mobile паралельно.**
   Сайт продовжує розвиватись як окремий продуктивний клієнт для
@@ -778,6 +797,34 @@ foodDb export / import, UI). Жодних змін у публічному API `
 - **Q10. Monobank OAuth на мобілці.** ✅ Технічна перевірка в рамках
   Phase 4 — без блокування. Очікуємо, що токен-флоу через
   `apps/server` працює без змін (клієнт лише вставляє токен).
+- **Q11. SQLite-стек на мобілці.** ✅ **`expo-sqlite` v15 (SDK 52 first-class) через `drizzle-orm/expo-sqlite`** — [PR #1307](https://github.com/Skords-01/Sergeant/pull/1307).
+  Schema — спільна з web/server у `packages/db-schema/src/sqlite/*` (TEXT-uuid,
+  JSON-as-TEXT, `_lite`-suffix у іменах індексів). Module-data, що раніше
+  жила цілим JSON-блобом у MMKV (`module_data.<m>`), тепер дублюється у
+  локальний SQLite під фіче-флагом `feature.<m>.sqlite_v2.dual_write`,
+  а потім cut-over reads через `feature.<m>.sqlite_v2.read_sqlite`.
+  Поточний прогрес cut-over (читай storage-roadmap Stage 4): routine,
+  fizruk, nutrition, finyk — Done. Templates / saved recipes / weekPlan —
+  ще на legacy-LS/MMKV-слоті, чекають окремих cut-over PR-серій.
+- **Q12. SQLite-стек на web.** ✅ **`@sqlite.org/sqlite-wasm` + OPFS-SAH worker** — [PR #1310](https://github.com/Skords-01/Sergeant/pull/1310).
+  Lazy-loaded, тримає COOP/COEP cross-origin isolation на app-routes.
+  Та сама Drizzle-схема з `packages/db-schema`. Resolved over SQLocal /
+  PGlite через простішу integration з Drizzle і нижчий runtime cost.
+- **Q13. Sync engine architecture.** ✅ **op-log + SSE pull + per-row apply-fns на сервері; PN-counter CRDT для streaks.**
+  Замінив попередній `module_data.<m>` LWW push/pull (storage-roadmap
+  Stage 5). На клієнті — outbox-таблиці у SQLite (`syncOpOutbox*`), flush
+  через `useSyncEngine` writer-loop. На сервері — `/v2/sync/{push,pull}`
+  - SSE real-time. Старий CloudSync v1 (`apps/web/src/core/cloudSync/`)
+    вже видалений на web; mobile поступово перевозиться на той самий
+    writer-wiring (план у `docs/superpowers/plans/2026-05-06-sync-engine-writer-wiring.md`).
+- **Q14. `apps/mobile-shell` (Capacitor wrapper над web) — паралельний реліз-шлях?** 🟡 **Open.**
+  Workspace `apps/mobile-shell` обгортає `apps/web` через Capacitor 7 на
+  Android + iOS, має 4 active CI workflows
+  (`mobile-shell-{android,ios}{,-release}.yml`) і потенційно потрапляє
+  у Store раніше, ніж повний RN-порт через `apps/mobile`. Ризик — дрейф
+  UX між двома мобільними клієнтами і дублікація bug-fix-ів. Треба
+  фіксувати: лишаємо обидва (mobile-shell — як bridge до RN-MVP) чи
+  sunset одного (зараз mobile-shell ще активний, див. §12).
 
 ## 14. Як читати цей документ
 
