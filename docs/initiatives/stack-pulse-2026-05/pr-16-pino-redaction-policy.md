@@ -1,15 +1,20 @@
 # PR-16: Pino redaction policy + ESLint guard
 
-> **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
-> **Status:** Planned
+> **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
+> **Status:** Implemented (PR pending — link added once merged). Hard Rule #21 + `sergeant-design/no-raw-req-in-pino-log` + `docs/security/logging-redaction-policy.md` зареєстровані.
 
 |              |                                                                |
 | ------------ | -------------------------------------------------------------- |
 | **Severity** | High (H10)                                                     |
-| **Owner**    | TBD                                                            |
+| **Owner**    | @Skords-01                                                     |
 | **Effort**   | 1 день                                                         |
 | **Risk**     | Low (additive: захищає, не ламає існуюче)                      |
 | **Touches**  | `apps/server/src/obs/logger.ts`, ESLint config, кожен callsite |
+
+## Statuses
+
+- **2026-05-03** — Initiative заведено зі статусом `Planned`. Pino-redact-paths уже частково існували в `apps/server/src/obs/logger.ts`; гап був у ESLint-guard + governance.
+- **2026-05-06** — Implementation: додано `sergeant-design/no-raw-req-in-pino-log` (severity `error`, scope `apps/server/**`), створено [`docs/security/logging-redaction-policy.md`](../../security/logging-redaction-policy.md), зареєстровано Hard Rule #21 у [`AGENTS.md`](../../../AGENTS.md#21-pino-redaction-policy-enforced) + [`docs/governance/hard-rules.json`](../../governance/hard-rules.json) + [`CONTRIBUTING.md`](../../../CONTRIBUTING.md). Server-lint: `0 errors` після додавання правила (raw-req логування не виявлено у поточному коді — guard fixates clean baseline).
 
 ## Контекст
 

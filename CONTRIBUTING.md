@@ -162,6 +162,7 @@ Reviewer checklist живе в [docs/governance/review-checklist.md](./docs/gove
 18. **Module-size discipline — `max-lines: 600` for web TS/TSX**
 19. **Strict-mode flag canonical — `noUncheckedIndexedAccess: true` по всьому monorepo**
 20. **No OpenClaw PATs in production**
+21. **Pino redaction policy enforced**
 
 Джерела істини:
 

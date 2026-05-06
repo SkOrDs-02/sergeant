@@ -3542,6 +3542,180 @@ const noInlineBodySizeLimit = {
   },
 };
 
+// ─── no-raw-req-in-pino-log ────────────────────────────────────────────
+//
+// Stack-pulse PR-16 (Pino redaction policy). Pino logger у
+// `apps/server/src/obs/logger.ts` має `redact: { paths: [...] }` зі
+// списком ~50 полів (Authorization, Cookie, password, email, phone, …),
+// але redact-paths працюють тільки на КЛЮЧАХ, які явно перераховані.
+// Якщо хтось пише `logger.info(req)` — у JSON-payload потрапляють УСІ
+// поля об'єкта Express Request, включно з тими, що не у redact-list:
+// `req.signedCookies`, custom-headers від upstream-проксі, `req.user`
+// (Better Auth session), `req.body` для нових endpoint-ів. Pino
+// redact-paths не закривають "зростаюче дерево" — нові sensitive-поля
+// з'являються без auto-redaction.
+//
+// Це правило змушує робити **явний destructure** замість raw-об'єкта:
+//
+//   ❌ logger.info(req)
+//   ❌ logger.error(res.headers, "request failed")
+//   ❌ req.log.warn({ req }, "slow request")  (через shorthand)
+//   ✅ logger.info({ url: req.url, status: res.statusCode }, "ok")
+//   ✅ req.log.error({ err, route: req.route.path }, "failed")
+//
+// Контракт стає явним: ревьюер бачить, які саме поля логуються, і
+// блокує їх у diff, якщо вони містять PII / секрети. Це доповнення
+// до Pino redact-paths, не заміна.
+
+const PINO_LOGGER_METHODS = new Set([
+  "info",
+  "warn",
+  "error",
+  "debug",
+  "trace",
+  "fatal",
+]);
+
+// Receivers, які ми вважаємо logger-style. Свідомо консервативно — щоб
+// не ловити кожен `obj.info(...)` callsite (наприклад, RxJS Subject,
+// EventEmitter тощо).
+const PINO_LOGGER_RECEIVER_RE =
+  /^(?:logger|log|pino|childLogger|httpLogger|appLogger|reqLogger|baseLogger)$/i;
+
+// Identifiers, raw-передача яких у logger-методі ризикує проштовхнути
+// Authorization/Cookie/password/email/session-token у JSON-output.
+const PINO_RAW_REQ_LIKE_IDENTIFIERS = new Set([
+  "req",
+  "request",
+  "res",
+  "response",
+  "ctx",
+  "context",
+  "headers",
+  "body",
+  "payload",
+  "cookies",
+]);
+
+// MemberExpression властивості, які зазвичай тримають bag-of-headers /
+// bag-of-body. Логування цілої групи протікає всі поля, не тільки відомі
+// (custom proxy headers, нові auth-headers, JSON-payload без allowlist).
+const PINO_RAW_REQ_LIKE_MEMBER_PROPS = new Set([
+  "headers",
+  "body",
+  "cookies",
+  "params",
+  "query",
+  "user",
+  "session",
+  "signedCookies",
+]);
+
+const NO_RAW_REQ_IN_PINO_LOG_MESSAGE =
+  "Не передавай raw `{{name}}` у `{{method}}()` — це ризик протекти Authorization/Cookie/password/email/session-token " +
+  "у Pino-output або Sentry breadcrumbs. Зроби явний destructure: `logger.{{method}}({ field: req.url, status: res.statusCode }, 'msg')`. " +
+  "Pino redact-paths у `apps/server/src/obs/logger.ts` ловлять відомі поля, але raw-об'єкт лишає контракт неявним — " +
+  "нові sensitive-поля з'являються без redaction. Див. `docs/security/logging-redaction-policy.md`.";
+
+function isPinoLoggerReceiver(callee) {
+  if (
+    callee.type !== "MemberExpression" ||
+    callee.computed ||
+    callee.property.type !== "Identifier"
+  ) {
+    return false;
+  }
+  // Direct: `logger.info(...)` / `log.warn(...)` / `pino.error(...)`
+  if (
+    callee.object.type === "Identifier" &&
+    PINO_LOGGER_RECEIVER_RE.test(callee.object.name)
+  ) {
+    return true;
+  }
+  // Member chain: `req.log.info(...)` / `ctx.logger.warn(...)`
+  if (
+    callee.object.type === "MemberExpression" &&
+    !callee.object.computed &&
+    callee.object.property.type === "Identifier" &&
+    PINO_LOGGER_RECEIVER_RE.test(callee.object.property.name)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function describePinoRawReqArg(arg) {
+  if (!arg) return null;
+  // Identifier: req, res, headers, body, ...
+  if (
+    arg.type === "Identifier" &&
+    PINO_RAW_REQ_LIKE_IDENTIFIERS.has(arg.name)
+  ) {
+    return arg.name;
+  }
+  // MemberExpression: req.headers, res.body, req.cookies
+  if (
+    arg.type === "MemberExpression" &&
+    !arg.computed &&
+    arg.property.type === "Identifier" &&
+    PINO_RAW_REQ_LIKE_MEMBER_PROPS.has(arg.property.name) &&
+    arg.object.type === "Identifier" &&
+    PINO_RAW_REQ_LIKE_IDENTIFIERS.has(arg.object.name)
+  ) {
+    return `${arg.object.name}.${arg.property.name}`;
+  }
+  // ObjectExpression with shorthand `{ req }` / `{ res }` /
+  // `{ headers }`. Catches the common pattern where engineers think
+  // they're "binding" the object name and forget that pino expands
+  // shorthand to the same raw payload.
+  if (arg.type === "ObjectExpression") {
+    for (const prop of arg.properties) {
+      if (
+        prop.type === "Property" &&
+        prop.shorthand === true &&
+        prop.key.type === "Identifier" &&
+        PINO_RAW_REQ_LIKE_IDENTIFIERS.has(prop.key.name)
+      ) {
+        return prop.key.name;
+      }
+    }
+  }
+  return null;
+}
+
+const noRawReqInPinoLog = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid passing raw `req` / `res` / `req.headers` / `req.body` (or shorthand `{ req }` / `{ res }`) to Pino logger methods. Pino redact-paths catch known fields but raw-object logging leaks newly added sensitive fields. See `docs/security/logging-redaction-policy.md`.",
+    },
+    schema: [],
+    messages: { rawReq: NO_RAW_REQ_IN_PINO_LOG_MESSAGE },
+  },
+  create(context) {
+    return {
+      CallExpression(node) {
+        if (!isPinoLoggerReceiver(node.callee)) return;
+        const method = node.callee.property.name;
+        if (!PINO_LOGGER_METHODS.has(method)) return;
+        for (const arg of node.arguments) {
+          const name = describePinoRawReqArg(arg);
+          if (name) {
+            context.report({
+              node: arg,
+              messageId: "rawReq",
+              data: { name, method },
+            });
+            // One report per call — стримує noise у multi-arg випадку.
+            return;
+          }
+        }
+      },
+    };
+  },
+};
+
 const plugin = {
   rules: {
     "no-eyebrow-drift": noEyebrowDrift,
@@ -3557,6 +3731,7 @@ const plugin = {
     "no-bigint-string": noBigintString,
     "rq-keys-only-from-factory": rqKeysOnlyFromFactory,
     "no-anthropic-key-in-logs": noAnthropicKeyInLogs,
+    "no-raw-req-in-pino-log": noRawReqInPinoLog,
     "no-strict-bypass": noStrictBypass,
     "no-raw-dark-palette": noRawDarkPalette,
     "prefer-focus-visible": preferFocusVisible,
