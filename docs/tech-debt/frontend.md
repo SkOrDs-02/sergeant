@@ -87,7 +87,7 @@ try/catch крашить на quota exceeded, corrupted storage або private b
 chatActions / insights / recommendations / `useDarkMode` / `perf` /
 `useActiveFizrukWorkout`) → 6 (PR #054a — drop стейлових
 cloudSync v1 entry-їв після PR #052b/#052c видалили engine tree;
-PR #053a видалив `apps/web/src/core/cloudSync/enqueue.ts` no-op shim
+PR #053a видалив `apps/web/src/core/cloudSync/enqueue` no-op shim
 
 - web `syncedKV` фасад) → 0 (PR #054 final — переписали 6 storage-
   primitive файлів так, щоб делегували у `webKVStore` з
