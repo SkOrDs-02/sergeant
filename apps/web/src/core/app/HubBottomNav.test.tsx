@@ -2,7 +2,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { HubBottomNav } from "./HubBottomNav";
-import { ToastProvider } from "@shared/hooks/useToast";
 
 const STORAGE_KEY = "sergeant.hub.reportsTabRevealedAt";
 
@@ -18,14 +17,12 @@ function renderNav(props: {
   return {
     onChange,
     ...render(
-      <ToastProvider>
-        <HubBottomNav
-          hubView={props.hubView ?? "dashboard"}
-          onChange={onChange}
-          showReports={props.showReports ?? true}
-          showProfile={props.showProfile}
-        />
-      </ToastProvider>,
+      <HubBottomNav
+        hubView={props.hubView ?? "dashboard"}
+        onChange={onChange}
+        showReports={props.showReports ?? true}
+        showProfile={props.showProfile}
+      />,
     ),
   };
 }
@@ -111,15 +108,39 @@ describe("HubBottomNav", () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
 
     rerender(
-      <ToastProvider>
-        <HubBottomNav
-          hubView="dashboard"
-          onChange={onChange}
-          showReports={true}
-        />
-      </ToastProvider>,
+      <HubBottomNav
+        hubView="dashboard"
+        onChange={onChange}
+        showReports={true}
+      />,
     );
     expect(localStorage.getItem(STORAGE_KEY)).not.toBeNull();
+  });
+
+  it("не показує ««Звіти» тепер доступні» toast при reveal-і (UX roast 2026-Q2 R1)", () => {
+    const { rerender, onChange } = renderNav({ showReports: false });
+    rerender(
+      <HubBottomNav
+        hubView="dashboard"
+        onChange={onChange}
+        showReports={true}
+      />,
+    );
+    expect(screen.queryByText(/«Звіти» тепер доступні/)).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("все ще запускає bounce-анімацію на «Звіти» при першому reveal-і", () => {
+    const { rerender, onChange } = renderNav({ showReports: false });
+    rerender(
+      <HubBottomNav
+        hubView="dashboard"
+        onChange={onChange}
+        showReports={true}
+      />,
+    );
+    const reports = screen.getByRole("tab", { name: /Звіти/ });
+    expect(reports.className).toContain("animate-bounce-in");
   });
 
   it("не показує toast вдруге: якщо прапор вже у localStorage", () => {

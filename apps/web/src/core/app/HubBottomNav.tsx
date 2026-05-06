@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
-import { useToast } from "@shared/hooks/useToast";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import type { HubView } from "../hooks/useHubUIState";
 import { messages } from "@shared/i18n/uk";
@@ -26,10 +25,13 @@ import { messages } from "@shared/i18n/uk";
  *   `ActiveWorkoutBanner` and other floating chrome must offset
  *   their `bottom:` by 76 px + safe-area-inset-bottom to sit above it.
  *
- * The reports-tab reveal behavior (animate + one-time toast) is
- * preserved from the old `HubTabs` — see comments on `safeReadStringLS`
- * usage below. Storage key is unchanged so existing users aren't
- * re-onboarded through the reveal toast.
+ * The reports-tab reveal behavior (a single bounce-in animation when
+ * the tab first appears) is preserved from the old `HubTabs` — see
+ * comments on `safeReadStringLS` usage below. The previous one-time
+ * toast was removed per UX-roast 2026-Q2 R1 (it overlapped with the
+ * Re-engagement card and the install banner that appear in the same
+ * frame and overwhelmed the FTUX). Storage key is unchanged so
+ * existing users aren't re-animated.
  */
 
 const REPORTS_TAB_REVEALED_AT_KEY = "sergeant.hub.reportsTabRevealedAt";
@@ -120,14 +122,15 @@ export function HubBottomNav({
   showProfile = false,
   onShowAuth,
 }: HubBottomNavProps) {
-  const toast = useToast();
   // Чи був перехід `showReports: false → true` в межах поточного маунту.
-  // Тільки в цьому випадку ми вмикаємо bounce-анімацію + one-time toast.
+  // Тільки в цьому випадку ми вмикаємо bounce-анімацію (без toast — див.
+  // UX-roast 2026-Q2 R1: одночасні «нова вкладка»-toast + Re-engagement
+  // card + install banner перевантажували перший запис).
   // Якщо компонент маунтиться вже з `showReports === true` без флага в
   // localStorage — це або легасі-користувач (виставлявся ще до цього
   // прапора), або повне перезавантаження після розблокування. В обох
-  // сценаріях celebrate-toast у момент перезавантаження виглядав би
-  // невчасно, тож тихо ставимо флаг і нічого не показуємо.
+  // сценаріях bounce у момент перезавантаження виглядав би невчасно,
+  // тож тихо ставимо флаг і нічого не показуємо.
   const prevShowReportsRef = useRef(showReports);
   const [animateReveal, setAnimateReveal] = useState(false);
 
@@ -139,30 +142,19 @@ export function HubBottomNav({
     if (safeReadStringLS(REPORTS_TAB_REVEALED_AT_KEY)) return;
 
     if (!prevShowReports) {
-      // Це справжнє розблокування «в реальному часі»: користувач
-      // зробив свій перший реальний запис у поточному сеансі, і
-      // `hasAnyRealEntry()` щойно flip-нув. Запускаємо bounce +
-      // показуємо нав'язливий, але дружній toast із прямою CTA на
-      // вкладку. Toast самозникає за 6с — звідси не лишається
-      // постійного chrome-у, тому ризик заглушити подальші важливі
-      // toast-и низький.
+      // Справжнє розблокування «в реальному часі»: користувач щойно
+      // зробив перший реальний запис, і `hasAnyRealEntry()` flip-нув.
+      // Bounce-анімація сама по собі звертає увагу на нову вкладку
+      // без додаткового toast.
       safeWriteLS(REPORTS_TAB_REVEALED_AT_KEY, String(Date.now()));
       setAnimateReveal(true);
-      toast.info(
-        "«Звіти» тепер доступні — короткі зведення по всіх модулях.",
-        6000,
-        {
-          label: "Відкрити",
-          onClick: () => onChange("reports"),
-        },
-      );
       return;
     }
 
     // Migration / cold-start path: tab уже мав бути розблокований
     // (минулий маунт), просто на ньому не було флага. Ставимо тихо.
     safeWriteLS(REPORTS_TAB_REVEALED_AT_KEY, String(Date.now()));
-  }, [showReports, onChange, toast]);
+  }, [showReports]);
 
   const tabs: HubBottomNavItem[] = [
     {
