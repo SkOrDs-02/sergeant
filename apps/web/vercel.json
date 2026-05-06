@@ -16,7 +16,7 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=(), interest-cohort=(), browsing-topics=(), payment=(), usb=(), magnetometer=(), accelerometer=(), gyroscope=()"
+          "value": "camera=(), microphone=(), geolocation=(), interest-cohort=(), browsing-topics=(), payment=(), usb=(), magnetometer=(), accelerometer=(), gyroscope=(), clipboard-read=(), clipboard-write=(), screen-wake-lock=(), xr-spatial-tracking=(), bluetooth=(), hid=(), serial=(), midi=(), encrypted-media=()"
         },
         {
           "key": "Content-Security-Policy-Report-Only",
