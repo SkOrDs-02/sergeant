@@ -55,8 +55,8 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     id: "feature.routine.sqlite_v2.dual_write",
     label: "Routine — dual-write LS↔SQLite",
     description:
-      "Кожен write у localStorage Рутини додатково мирорить у локальну SQLite (`routine_entries`). Reads ще беруться з LS. Stage 4 PR #024 storage-roadmap — gradual rollout. Best-effort: помилка SQLite-запису не ламає LS. Default: off.",
-    defaultValue: false,
+      "Кожен write у localStorage Рутини додатково мирорить у локальну SQLite (`routine_entries`). Reads ще беруться з LS. Stage 8 PR #055r1 storage-roadmap — default-on rollout. Best-effort: помилка SQLite-запису не ламає LS. Default: on.",
+    defaultValue: true,
     experimental: true,
   },
   {

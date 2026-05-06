@@ -58,8 +58,8 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
     id: "feature.routine.sqlite_v2.dual_write",
     label: "Routine — dual-write MMKV↔SQLite",
     description:
-      "Кожен write у MMKV Рутини додатково мирорить у локальну SQLite (`routine_entries`). Reads ще беруться з MMKV. Stage 4 PR #024 storage-roadmap. Best-effort: помилка SQLite-запису не ламає MMKV. Default: off.",
-    defaultValue: false,
+      "Кожен write у MMKV Рутини додатково мирорить у локальну SQLite (`routine_entries`). Reads ще беруться з MMKV. Stage 8 PR #055r1 storage-roadmap — default-on rollout. Best-effort: помилка SQLite-запису не ламає MMKV. Default: on.",
+    defaultValue: true,
   },
   {
     id: "feature.routine.sqlite_v2.read_sqlite",

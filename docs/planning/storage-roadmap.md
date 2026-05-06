@@ -2749,11 +2749,12 @@ value JSON)`)». Та редакція об'єднувала **дві** орто
 
 #### **Routine (4 PR-и)**
 
-##### **PR #055r1 — `feat(routine): default-on feature.routine.sqlite_v2.dual_write`** 📋 ROADMAP
+##### **PR #055r1 — `feat(routine): default-on feature.routine.sqlite_v2.dual_write`** 🚧 ACTIVE
 
 - Flip `defaultValue: false → true` у обох
   `apps/{web,mobile}/src/core/lib/featureFlags.ts` (рядки
   `feature.routine.sqlite_v2.dual_write`).
+- Implementation branch: `codex/routine-dual-write-default-on`.
 - Telemetry: `routine.sqlite.dualwrite.error_rate` (Sentry tag) +
   parity counter `routine.sqlite.dualwrite.parity` (web side у
   `triggerRoutineDualWrite` finally-block).
