@@ -16,8 +16,6 @@
     "test:coverage": "vitest run --coverage",
     "test:a11y": "playwright test",
     "test:visual": "playwright test --config playwright.visual.config.ts",
-    "test:mutation:cloudSync": "stryker run stryker.cloudSync.conf.json",
-    "test:mutation:cloudSyncQueue": "stryker run stryker.cloudSyncQueue.conf.json",
     "size": "size-limit",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
