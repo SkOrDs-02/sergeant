@@ -7,7 +7,16 @@
  *
  * Each migration runs at most once (tracked by its `id` in
  * `storageManager_ran_migrations` localStorage key).
+ *
+ * Implementation: every read/write goes through `webKVStore` (best-effort,
+ * silent on quota / private-mode errors) or, where a migration must
+ * abort on write failure to stay re-runnable, through `safeJsonSet`
+ * which surfaces the exception. No direct `localStorage.*` access
+ * remains in this file (PR #054 final, eslint allowlist = []).
  */
+
+import { webKVStore } from "./storage";
+import { safeJsonSet, safeSetItem } from "./storageQuota";
 
 const MIGRATIONS_RAN_KEY = "storageManager_ran_migrations";
 
@@ -32,9 +41,9 @@ export interface MigrationRunResult {
 }
 
 function loadRanSet(): Set<string> {
+  const raw = webKVStore.getString(MIGRATIONS_RAN_KEY);
+  if (!raw) return new Set();
   try {
-    const raw = localStorage.getItem(MIGRATIONS_RAN_KEY);
-    if (!raw) return new Set();
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? new Set<string>(parsed) : new Set();
   } catch {
@@ -44,7 +53,7 @@ function loadRanSet(): Set<string> {
 
 function saveRanSet(set: Set<string>): void {
   try {
-    localStorage.setItem(MIGRATIONS_RAN_KEY, JSON.stringify([...set]));
+    webKVStore.setString(MIGRATIONS_RAN_KEY, JSON.stringify([...set]));
   } catch {
     /* ignore storage errors */
   }
@@ -110,11 +119,7 @@ function resetMigration(id: string): void {
  * Use only for debugging or data recovery.
  */
 function resetAll(): void {
-  try {
-    localStorage.removeItem(MIGRATIONS_RAN_KEY);
-  } catch {
-    /* ignore */
-  }
+  webKVStore.remove(MIGRATIONS_RAN_KEY);
 }
 
 export const storageManager = { register, runAll, resetMigration, resetAll };
@@ -137,24 +142,24 @@ storageManager.register({
       ["finto_token", "finyk_token"],
     ] as const) {
       try {
-        const v = localStorage.getItem(oldKey);
-        if (v !== null && localStorage.getItem(newKey) === null) {
-          localStorage.setItem(newKey, v);
+        const v = webKVStore.getString(oldKey);
+        if (v !== null && webKVStore.getString(newKey) === null) {
+          webKVStore.setString(newKey, v);
         }
-        if (v !== null) localStorage.removeItem(oldKey);
+        if (v !== null) webKVStore.remove(oldKey);
       } catch {
         /* ignore per-key errors */
       }
     }
     try {
-      const oldLast = localStorage.getItem("finto_tx_cache_last_good");
+      const oldLast = webKVStore.getString("finto_tx_cache_last_good");
       if (
         oldLast !== null &&
-        localStorage.getItem("finyk_tx_cache_last_good") === null
+        webKVStore.getString("finyk_tx_cache_last_good") === null
       ) {
-        localStorage.setItem("finyk_tx_cache_last_good", oldLast);
+        webKVStore.setString("finyk_tx_cache_last_good", oldLast);
       }
-      if (oldLast !== null) localStorage.removeItem("finto_tx_cache_last_good");
+      if (oldLast !== null) webKVStore.remove("finto_tx_cache_last_good");
     } catch {
       /* ignore */
     }
@@ -177,7 +182,7 @@ storageManager.register({
 
     // Skip if the new key already has data
     try {
-      const existing = localStorage.getItem(PANTRIES_KEY);
+      const existing = webKVStore.getString(PANTRIES_KEY);
       if (existing) {
         const parsed = JSON.parse(existing);
         if (Array.isArray(parsed) && parsed.length > 0) return;
@@ -189,7 +194,7 @@ storageManager.register({
     let items: unknown[] = [];
     let text = "";
     try {
-      const rawItems = localStorage.getItem(LEGACY_ITEMS);
+      const rawItems = webKVStore.getString(LEGACY_ITEMS);
       if (rawItems) {
         const parsed = JSON.parse(rawItems);
         if (Array.isArray(parsed)) items = parsed;
@@ -198,7 +203,7 @@ storageManager.register({
       /* ignore */
     }
     try {
-      const rawText = localStorage.getItem(LEGACY_TEXT);
+      const rawText = webKVStore.getString(LEGACY_TEXT);
       if (rawText) text = String(rawText);
     } catch {
       /* ignore */
@@ -207,19 +212,26 @@ storageManager.register({
     if (items.length === 0 && !text) return; // nothing to migrate
 
     const pantry = { id: "home", name: "Дім", items, text };
-    // Let write errors throw so runAll() does not mark this migration as done
-    localStorage.setItem(PANTRIES_KEY, JSON.stringify([pantry]));
-    localStorage.setItem(ACTIVE_KEY, "home");
-    try {
-      localStorage.removeItem(LEGACY_ITEMS);
-    } catch {
-      /* best-effort */
+    // Throw on write failure so runAll() does not mark this migration as done.
+    // `safeJsonSet` returns `{ ok: false, reason: "exception", error }` on
+    // setItem failure; we surface it as a thrown error to preserve the
+    // re-runnable contract.
+    const pantriesWrite = safeJsonSet(PANTRIES_KEY, [pantry]);
+    if (!pantriesWrite.ok) {
+      throw pantriesWrite.error ?? new Error(pantriesWrite.reason ?? "write");
     }
-    try {
-      localStorage.removeItem(LEGACY_TEXT);
-    } catch {
-      /* best-effort */
+    // ACTIVE_KEY stores a raw string (`"home"`), NOT a JSON-encoded
+    // value — historical readers (`loadActivePantryId`) call
+    // `localStorage.getItem(ACTIVE_KEY)` and expect the literal id
+    // back, not `'"home"'`. Use `safeSetItem` so quota / private-mode
+    // failures still throw and keep the migration re-runnable, but
+    // skip the JSON.stringify wrapper that `safeJsonSet` adds.
+    const activeWrite = safeSetItem(ACTIVE_KEY, "home");
+    if (!activeWrite.ok) {
+      throw activeWrite.error ?? new Error(activeWrite.reason ?? "write");
     }
+    webKVStore.remove(LEGACY_ITEMS);
+    webKVStore.remove(LEGACY_TEXT);
   },
 });
 
@@ -237,7 +249,7 @@ storageManager.register({
 
     let legacy: Record<string, unknown>;
     try {
-      const raw = localStorage.getItem(PUSHUPS_LEGACY);
+      const raw = webKVStore.getString(PUSHUPS_LEGACY);
       if (!raw) return;
       const parsed = JSON.parse(raw);
       if (
@@ -251,7 +263,7 @@ storageManager.register({
       return;
     }
 
-    const routineRaw = localStorage.getItem(ROUTINE_KEY);
+    const routineRaw = webKVStore.getString(ROUTINE_KEY);
     let state: Record<string, unknown>;
     try {
       state = routineRaw
@@ -267,20 +279,17 @@ storageManager.register({
       typeof existing === "object" &&
       Object.keys(existing as Record<string, unknown>).length > 0
     ) {
-      try {
-        localStorage.removeItem(PUSHUPS_LEGACY);
-      } catch {
-        /* best-effort */
-      }
+      webKVStore.remove(PUSHUPS_LEGACY);
       return;
     }
     state = { ...state, pushupsByDate: { ...legacy } };
-    // Let write errors throw so runAll() does not mark this migration as done
-    localStorage.setItem(ROUTINE_KEY, JSON.stringify(state));
-    try {
-      localStorage.removeItem(PUSHUPS_LEGACY);
-    } catch {
-      /* best-effort */
+    // Throw on write failure so runAll() does not mark this migration as done
+    // (mirrors the legacy `localStorage.setItem` semantics that surfaced
+    // QuotaExceededError to the caller).
+    const stateWrite = safeJsonSet(ROUTINE_KEY, state);
+    if (!stateWrite.ok) {
+      throw stateWrite.error ?? new Error(stateWrite.reason ?? "write");
     }
+    webKVStore.remove(PUSHUPS_LEGACY);
   },
 });

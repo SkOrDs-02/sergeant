@@ -109,6 +109,9 @@ export function createSyncedKVStore(
       base.remove(key);
       if (opts.isTracked(key)) opts.onChange(key);
     },
+    listKeys(): string[] {
+      return base.listKeys();
+    },
     onChange(
       key: string,
       listener: (next: string | null) => void,

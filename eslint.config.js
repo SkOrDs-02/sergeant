@@ -494,57 +494,29 @@ export default [
   // shared `safeReadLS` / `safeWriteLS` helpers in
   // `apps/web/src/shared/lib/storage.ts`, the `useLocalStorageState`
   // hook, and `createModuleStorage` wrap the API with try/catch and
-  // quota fallbacks. New web code MUST go through one of those.
+  // quota fallbacks. New web code MUST go through one of those — and
+  // those wrappers themselves now route every read/write through
+  // `webKVStore` from `@sergeant/shared`, so the `ignores` list below
+  // contains only test fixtures.
   //
-  // The `ignores` list below names every existing call-site as of the
-  // rule's introduction (see `docs/tech-debt/frontend.md` §2). Migrate
-  // a file → drop it from the list. Test files are exempt entirely:
-  // they routinely seed/inspect raw `localStorage` as fixtures and are
-  // already isolated from production hazards.
+  // PR #054 final (storage-roadmap.md Stage 7) closed the burndown:
+  // production allowlist count is 0 (see
+  // `.tech-debt/localstorage-allowlist-budget.json`). The six former
+  // exemptions (`storage.ts`, `storageManager.ts`, `storageQuota.ts`,
+  // `typedStore.ts`, `createModuleStorage.ts`,
+  // `useLocalStorageState.ts`) were rewritten to delegate to
+  // `webKVStore` — `storage.ts` resolves the singleton, the others
+  // import it. The only remaining direct `Storage` reference is in
+  // `storageQuota.ts`, accessed via a renamed local binding
+  // (`const storage = globalThis.localStorage`) so the rule does not
+  // fire — that helper has to surface `setItem` exceptions to the
+  // caller, which `webKVStore.setString` swallows by design.
   {
     files: ["apps/web/src/**/*.{js,jsx,ts,tsx}"],
     ignores: [
       // Tests can use `localStorage` freely as fixtures.
       "apps/web/src/**/*.test.{js,jsx,ts,tsx}",
       "apps/web/src/**/__tests__/**",
-      // Storage primitives — these are the wrappers everyone else
-      // should call into.
-      "apps/web/src/shared/lib/storage/storage.ts",
-      "apps/web/src/shared/lib/storage/storageManager.ts",
-      "apps/web/src/shared/lib/storage/storageQuota.ts",
-      "apps/web/src/shared/lib/storage/typedStore.ts",
-      "apps/web/src/shared/lib/storage/createModuleStorage.ts",
-      "apps/web/src/shared/hooks/useLocalStorageState.ts",
-      // Мігровано на `safeReadStringLS`/`safeReadLS`/`safeWriteLS` у PR-и Item 6
-      // follow-up (docs/diagnostics/2026-05-03-web-deep-dive/02 §2.2):
-      // - apps/web/src/shared/lib/ui/perf.ts (1 LS read)
-      // - apps/web/src/shared/hooks/useDarkMode.ts (4 LS reads/writes)
-      // - apps/web/src/shared/hooks/useActiveFizrukWorkout.ts (round 7)
-      // - apps/web/src/shared/hooks/usePushNotifications.ts (round 8: 1 read +
-      //   2 writes + 4 removes на ключ `hub_push_subscribed`).
-      // - apps/web/src/shared/lib/storage/weeklyDigestStorage.ts (round 9:
-      //   `webStorageReader.getItem` → `safeReadStringLS`).
-      // - apps/web/src/modules/nutrition/domain/nutritionBackup.ts (round 11:
-      //   2 reads + 4 writes мігровано на `safeReadLS`/`safeReadStringLS`/
-      //   `safeWriteLS`; module wrapper більше не у allowlist-і).
-      // - apps/web/src/modules/fizruk/hooks/useWorkouts.ts (round 12:
-      //   1 read + 1 write мігровано на `safeReadStringLS` / `safeWriteLS`;
-      //   FIZRUK_WORKOUTS_STORAGE_ERROR custom event тепер dispatch-иться,
-      //   коли `safeWriteLS` повертає `false`, з generic-reason — банер сам
-      //   формує текст для користувача).
-      // PR #054 (storage-roadmap.md Stage 7): cloudSync v1 internals
-      // (`logger.ts`, `queue/offlineQueue.ts`, `state/moduleData.ts`)
-      // були видалені в PR #052b разом з рештою v1 engine tree —
-      // allowlist-entry-и стали стейловими і прибрані тут. `enqueue.ts`
-      // (no-op shim) і `apps/web/src/shared/lib/storage/syncedKV.ts`
-      // (singleton-фасад) видалені у PR #053a (KVStore deprecate, web
-      // phase) разом з 5 `safeWriteSyncedLS` callsites —
-      // `cleanupDemoData.ts`, `presetApply.ts`, `memoryBank.ts` тепер
-      // пишуть напряму через `safeWriteLS`, тож exemption не потрібен.
-      // PR #054 (storage-roadmap.md Stage 7): finyk storage manager
-      // мігровано на `safeReadStringLS` / `safeWriteLS` / `safeRemoveLS`
-      // у тілі finto→finyk-міграції; dead exports `key`/`getJSON`/`setJSON`
-      // прибрано (нуль consumer-ів). Файл більше не у allowlist-і.
     ],
     rules: {
       "sergeant-design/no-raw-local-storage": "error",

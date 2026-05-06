@@ -24,6 +24,7 @@
 //   const unsubscribe = store.subscribe((next) => { ... });
 
 import type { ZodType } from "zod";
+import { webKVStore } from "./storage";
 import { safeJsonSet } from "./storageQuota";
 
 type Listener<T> = (value: T) => void;
@@ -66,7 +67,12 @@ export interface TypedStore<T> {
 }
 
 function hasLocalStorage(): boolean {
-  return typeof localStorage !== "undefined" && localStorage !== null;
+  // typedStore reads/writes are routed through `webKVStore`, which falls
+  // back to a memory store on SSR / restricted environments. We still
+  // gate the storage path so callers in node-without-jsdom keep getting
+  // the in-memory `defaultValue` semantics they relied on.
+  const g = globalThis as { localStorage?: unknown };
+  return typeof g.localStorage !== "undefined" && g.localStorage !== null;
 }
 
 function defaultReport(key: string, scope: string, error: unknown): void {
@@ -134,14 +140,8 @@ export function createTypedStore<T>(
 
   function readFromStorage(): T {
     if (!hasLocalStorage()) return defaultValue;
-    let raw: string | null;
-    try {
-      raw = localStorage.getItem(key);
-    } catch (error) {
-      report("read", error);
-      return defaultValue;
-    }
-    if (raw === null || raw === undefined) return defaultValue;
+    const raw = webKVStore.getString(key);
+    if (raw === null) return defaultValue;
 
     let parsed: unknown;
     try {
@@ -224,13 +224,7 @@ export function createTypedStore<T>(
   function reset(): void {
     cached = defaultValue;
     cachedLoaded = true;
-    if (hasLocalStorage()) {
-      try {
-        localStorage.removeItem(key);
-      } catch (error) {
-        report("remove", error);
-      }
-    }
+    if (hasLocalStorage()) webKVStore.remove(key);
     notify(defaultValue);
   }
 
@@ -247,17 +241,11 @@ export function createTypedStore<T>(
   }
 
   // Якщо інший tab змінив цей ключ — підхопимо і повідомимо підписників.
-  if (typeof window !== "undefined") {
-    try {
-      window.addEventListener("storage", (ev) => {
-        if (ev.storageArea !== localStorage) return;
-        if (ev.key !== key) return;
-        reload();
-      });
-    } catch {
-      /* SSR / restricted env */
-    }
-  }
+  // `webKVStore.onChange` фільтрує по ключу та використовує DOM `storage`
+  // event під капотом (cross-tab); same-tab writes notify через `notify()`.
+  webKVStore.onChange(key, () => {
+    reload();
+  });
 
   return { key, get, set, reset, subscribe, reload };
 }

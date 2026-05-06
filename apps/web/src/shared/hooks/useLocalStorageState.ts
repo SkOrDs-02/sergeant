@@ -30,7 +30,17 @@ import {
   type SetStateAction,
 } from "react";
 
-import { safeReadLS } from "@shared/lib/storage/storage";
+import { safeReadLS, webKVStore } from "@shared/lib/storage/storage";
+
+function hasLocalStorage(): boolean {
+  // Reads/writes are routed through `webKVStore`, which falls back to a
+  // memory store on SSR / restricted environments. We still gate on
+  // global `localStorage` existence so non-browser callers retain the
+  // historical "use the seeded initial value, do not write" semantics
+  // instead of silently round-tripping through the memory fallback.
+  const g = globalThis as { localStorage?: unknown };
+  return typeof g.localStorage !== "undefined" && g.localStorage !== null;
+}
 
 export interface UseLocalStorageStateOptions<T> {
   /**
@@ -96,10 +106,10 @@ export function useLocalStorageState<T>(
 
   const [value, setValue] = useState<T>(() => {
     const fallback = resolveInitial(initialValue);
-    if (typeof localStorage === "undefined") return fallback;
+    if (!hasLocalStorage()) return fallback;
+    const storedRaw = webKVStore.getString(key);
+    if (storedRaw === null) return fallback;
     try {
-      const storedRaw = localStorage.getItem(key);
-      if (storedRaw === null) return fallback;
       const parsed = effectiveDeserialize
         ? effectiveDeserialize(storedRaw)
         : JSON.parse(storedRaw);
@@ -118,14 +128,14 @@ export function useLocalStorageState<T>(
   useEffect(() => {
     if (lastKeyRef.current === key) return;
     lastKeyRef.current = key;
-    if (typeof localStorage === "undefined") return;
+    if (!hasLocalStorage()) return;
+    const raw = webKVStore.getString(key);
+    const { deserialize: d, validate: v } = optionsRef.current;
+    if (raw === null) {
+      setValue(resolveInitial(initialValue));
+      return;
+    }
     try {
-      const raw = localStorage.getItem(key);
-      const { deserialize: d, validate: v } = optionsRef.current;
-      if (raw === null) {
-        setValue(resolveInitial(initialValue));
-        return;
-      }
       const parsed = d ? d(raw) : JSON.parse(raw);
       if (v && !v(parsed)) {
         setValue(resolveInitial(initialValue));
@@ -146,19 +156,21 @@ export function useLocalStorageState<T>(
   // Subsequent `setValue` calls go through this effect normally.
   const isFirstWriteRef = useRef(true);
   useEffect(() => {
-    if (typeof localStorage === "undefined") return undefined;
+    if (!hasLocalStorage()) return undefined;
     if (isFirstWriteRef.current) {
       isFirstWriteRef.current = false;
       return undefined;
     }
     const write = () => {
       const { serialize: s } = optionsRef.current;
+      let raw: string;
       try {
-        const raw = s ? s(value) : JSON.stringify(value);
-        localStorage.setItem(key, raw);
+        raw = s ? s(value) : JSON.stringify(value);
       } catch {
-        /* quota / private mode — best-effort */
+        return; // serialization failure (cyclic structure, throwing toJSON)
       }
+      // `webKVStore.setString` already swallows quota / private-mode errors.
+      webKVStore.setString(key, raw);
     };
     if (!debounceMs || debounceMs <= 0) {
       write();

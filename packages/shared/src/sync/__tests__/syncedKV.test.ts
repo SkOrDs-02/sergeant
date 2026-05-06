@@ -109,4 +109,20 @@ describe("createSyncedKVStore", () => {
     expect(() => synced.setString("k", "v")).toThrow("quota exceeded");
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it("delegates listKeys to the base store", () => {
+    const base = createMemoryKVStore({ a: "1", b: "2" });
+    const synced = createSyncedKVStore(base, {
+      onChange: () => {},
+      isTracked: () => true,
+    });
+
+    expect(new Set(synced.listKeys())).toEqual(new Set(["a", "b"]));
+
+    synced.setString("c", "3");
+    expect(new Set(synced.listKeys())).toEqual(new Set(["a", "b", "c"]));
+
+    synced.remove("a");
+    expect(new Set(synced.listKeys())).toEqual(new Set(["b", "c"]));
+  });
 });

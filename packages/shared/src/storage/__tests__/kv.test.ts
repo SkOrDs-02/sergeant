@@ -109,6 +109,22 @@ describe("createMemoryKVStore", () => {
     expect(() => dispose()).not.toThrow();
   });
 
+  it("listKeys returns every stored key", () => {
+    const s = createMemoryKVStore({ a: "1", b: "2" });
+    s.setString("c", "3");
+    expect(new Set(s.listKeys())).toEqual(new Set(["a", "b", "c"]));
+  });
+
+  it("listKeys returns [] on an empty store", () => {
+    expect(createMemoryKVStore().listKeys()).toEqual([]);
+  });
+
+  it("listKeys reflects removals", () => {
+    const s = createMemoryKVStore({ a: "1", b: "2" });
+    s.remove("a");
+    expect(s.listKeys()).toEqual(["b"]);
+  });
+
   it("swallows listener errors so writers stay safe", () => {
     const s = createMemoryKVStore();
     const bad = vi.fn(() => {
@@ -316,6 +332,51 @@ describe("createWebKVStore", () => {
     const dispose = store.onChange("k", vi.fn());
     expect(() => dispose()).not.toThrow();
   });
+
+  it("listKeys returns [] when StorageLike does not expose length/key", () => {
+    const minimal: StorageLike = {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+    };
+    expect(createWebKVStore(minimal).listKeys()).toEqual([]);
+  });
+
+  it("listKeys enumerates via length + key when available", () => {
+    const map = new Map<string, string>([
+      ["a", "1"],
+      ["b", "2"],
+    ]);
+    const enumerable: StorageLike = {
+      getItem: (k) => (map.has(k) ? (map.get(k) as string) : null),
+      setItem: (k, v) => {
+        map.set(k, v);
+      },
+      removeItem: (k) => {
+        map.delete(k);
+      },
+      get length() {
+        return map.size;
+      },
+      key: (i) => Array.from(map.keys())[i] ?? null,
+    };
+    expect(new Set(createWebKVStore(enumerable).listKeys())).toEqual(
+      new Set(["a", "b"]),
+    );
+  });
+
+  it("listKeys swallows throws from length/key access", () => {
+    const flaky: StorageLike = {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+      get length(): number {
+        throw new Error("disabled");
+      },
+      key: () => null,
+    };
+    expect(createWebKVStore(flaky).listKeys()).toEqual([]);
+  });
 });
 
 // ─── createMmkvKVStore ───────────────────────────────────────────────
@@ -520,6 +581,40 @@ describe("createMmkvKVStore", () => {
     getStringShouldThrow = true;
     flaky._emit("k");
     expect(listener).toHaveBeenCalledWith(null);
+  });
+
+  it("listKeys returns [] when MmkvLike does not expose getAllKeys", () => {
+    const minimal: MmkvLike = {
+      getString: () => undefined,
+      set: () => {},
+      delete: () => {},
+      addOnValueChangedListener: () => ({ remove: () => {} }),
+    };
+    expect(createMmkvKVStore(minimal).listKeys()).toEqual([]);
+  });
+
+  it("listKeys delegates to MMKV getAllKeys when present", () => {
+    const enumerable: MmkvLike = {
+      getString: () => undefined,
+      set: () => {},
+      delete: () => {},
+      addOnValueChangedListener: () => ({ remove: () => {} }),
+      getAllKeys: () => ["a", "b"],
+    };
+    expect(createMmkvKVStore(enumerable).listKeys()).toEqual(["a", "b"]);
+  });
+
+  it("listKeys swallows MMKV getAllKeys throws", () => {
+    const flaky: MmkvLike = {
+      getString: () => undefined,
+      set: () => {},
+      delete: () => {},
+      addOnValueChangedListener: () => ({ remove: () => {} }),
+      getAllKeys: () => {
+        throw new Error("native");
+      },
+    };
+    expect(createMmkvKVStore(flaky).listKeys()).toEqual([]);
   });
 
   it("swallows listener errors during onChange dispatch", () => {

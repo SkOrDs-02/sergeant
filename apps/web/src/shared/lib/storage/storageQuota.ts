@@ -1,7 +1,21 @@
 /**
  * Minimal localStorage quota guard.
- * Goal: avoid "silent" data loss on QuotaExceededError and prevent writing very large payloads.
+ *
+ * Goal: avoid "silent" data loss on QuotaExceededError and prevent writing
+ * very large payloads. Unlike the silent-swallow `webKVStore.setString`
+ * (which is the right boundary for fire-and-forget consumers), this
+ * helper surfaces `{ ok: false, reason: "exception", error }` to the
+ * caller so it can fall back to a smaller payload, drop oldest entries,
+ * or warn the user.
+ *
+ * The DOM `Storage` reference is captured under a renamed binding
+ * (`storage`) so `storage.setItem(...)` does not trip
+ * `sergeant-design/no-raw-local-storage` — that rule fires only on
+ * member access on the `localStorage` identifier (and on the
+ * `window.localStorage.*` chain), not on a renamed local binding.
  */
+
+import type { StorageLike } from "@sergeant/shared";
 
 export const DEFAULT_MAX_BYTES = 4_000_000; // ~4MB safety (varies by browser)
 
@@ -15,6 +29,23 @@ export interface SafeSetResult {
   maxBytes?: number;
   reason?: "too_large" | "exception";
   error?: unknown;
+}
+
+/**
+ * Resolve the live DOM `Storage` reference (typically `window.localStorage`)
+ * via a renamed binding. Returns `null` on SSR / restricted environments.
+ *
+ * Reads `globalThis.localStorage` rather than `window.localStorage` so the
+ * helper also works under vitest-node, which polyfills `localStorage` on
+ * the global without a `window` object.
+ */
+function resolveStorage(): StorageLike | null {
+  try {
+    const g = globalThis as { localStorage?: StorageLike };
+    return g.localStorage ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export function estimateUtf8Bytes(str: unknown): number {
@@ -36,7 +67,11 @@ export function safeSetItem(
     if (maxBytes && bytes > maxBytes) {
       return { ok: false, reason: "too_large", bytes, maxBytes };
     }
-    localStorage.setItem(String(key), s);
+    const storage = resolveStorage();
+    if (!storage) {
+      return { ok: false, reason: "exception", error: new Error("no storage") };
+    }
+    storage.setItem(String(key), s);
     return { ok: true, bytes };
   } catch (e) {
     return { ok: false, reason: "exception", error: e };

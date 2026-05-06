@@ -16,6 +16,7 @@
  *  - flushPendingWrites()
  */
 
+import { webKVStore } from "./storage";
 import { safeJsonSet } from "./storageQuota";
 
 export const DEFAULT_DEBOUNCE_MS = 500;
@@ -56,7 +57,13 @@ export function createModuleStorage({
   }
 
   function hasLocalStorage(): boolean {
-    return typeof localStorage !== "undefined" && localStorage !== null;
+    // Reads/writes are routed through `webKVStore`, which falls back to
+    // a memory store on SSR / restricted environments. We still gate on
+    // global `localStorage` existence so non-browser callers retain the
+    // historical no-op semantics (return `fallback`, return `false` from
+    // writes) instead of silently writing into the memory fallback.
+    const g = globalThis as { localStorage?: unknown };
+    return typeof g.localStorage !== "undefined" && g.localStorage !== null;
   }
 
   function safeStringify(value: unknown): string | undefined {
@@ -74,14 +81,8 @@ export function createModuleStorage({
   ): T | null {
     if (!hasLocalStorage()) return fallback;
     const k = String(key);
-    let raw: string | null;
-    try {
-      raw = localStorage.getItem(k);
-    } catch (error) {
-      reportError(`read("${k}")`, error);
-      return fallback;
-    }
-    if (raw === null || raw === undefined) return fallback;
+    const raw = webKVStore.getString(k);
+    if (raw === null) return fallback;
     try {
       const parsed = JSON.parse(raw) as T;
       return parsed === undefined ? fallback : parsed;
@@ -111,26 +112,14 @@ export function createModuleStorage({
 
   function readRaw(key: string, fallback: string | null = null): string | null {
     if (!hasLocalStorage()) return fallback;
-    const k = String(key);
-    try {
-      const v = localStorage.getItem(k);
-      return v === null || v === undefined ? fallback : v;
-    } catch (error) {
-      reportError(`readRaw("${k}")`, error);
-      return fallback;
-    }
+    const v = webKVStore.getString(String(key));
+    return v === null ? fallback : v;
   }
 
   function writeRaw(key: string, value: unknown): boolean {
     if (!hasLocalStorage()) return false;
-    const k = String(key);
-    try {
-      localStorage.setItem(k, String(value ?? ""));
-      return true;
-    } catch (error) {
-      reportError(`writeRaw("${k}")`, error);
-      return false;
-    }
+    webKVStore.setString(String(key), String(value ?? ""));
+    return true;
   }
 
   function removeItem(key: string): boolean {
@@ -144,13 +133,8 @@ export function createModuleStorage({
     }
     pendingValues.delete(k);
     lastWrittenCache.delete(k);
-    try {
-      localStorage.removeItem(k);
-      return true;
-    } catch (error) {
-      reportError(`remove("${k}")`, error);
-      return false;
-    }
+    webKVStore.remove(k);
+    return true;
   }
 
   function flushKey(k: string): void {

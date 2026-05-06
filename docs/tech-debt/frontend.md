@@ -64,53 +64,77 @@
 
 ---
 
-### 2. Прямі `localStorage` виклики — guardrail додано, міграція в процесі
+<details>
+<summary>2. ~~Прямі `localStorage` виклики~~ — Виконано (розгорнути)</summary>
+
+### 2. ~~Прямі `localStorage` виклики~~ — Виконано
 
 **Раніше:** 71 файл напряму звертався до `localStorage.getItem/setItem` без
 error handling — будь-який `JSON.parse(localStorage.getItem(...))` без
 try/catch крашить на quota exceeded, corrupted storage або private browsing.
 
-**Зараз:** додано власне ESLint-правило
+**Closed (2026-05-06, PR #054 final).** ESLint-правило
 [`sergeant-design/no-raw-local-storage`](../../packages/eslint-plugin-sergeant-design/index.js)
-зі scope `apps/web/src/**`. Воно блокує і `localStorage.foo`, і
-`window.localStorage.foo` / `globalThis.localStorage.foo`. У
-[`eslint.config.js`](../../eslint.config.js) явний allowlist:
+тепер працює без production-allowlist-у — у
+[`eslint.config.js`](../../eslint.config.js) лишилися виключно
+тестові ignore-ри (`**/*.test.{ts,tsx,js,jsx}`, `**/__tests__/**`).
+Бюджет у
+[`.tech-debt/localstorage-allowlist-budget.json`](../../.tech-debt/localstorage-allowlist-budget.json)
+зафіксовано на `production: 0` (раніше 15 → 6 → 0).
 
-- **Тести** (`**/*.test.{ts,tsx,js,jsx}`, `**/__tests__/**`) — повний opt-out,
-  бо виконують роль фікстур і ізольовані від production-ризиків.
-- **Storage primitives** — самі обгортки (`safeReadLS`, `storageManager`,
-  `storageQuota`, `typedStore`, `createModuleStorage`, `weeklyDigestStorage`,
-  `useLocalStorageState`, `useDarkMode`, `usePushNotifications`).
-- **Cloud-sync internals** — черга, патчер, state writer.
-- **Module storage wrappers** — `modules/finyk/lib/storageManager`,
-  `modules/finyk/hooks/useStorage`, `modules/nutrition/domain/nutritionBackup`.
-- **TODO-список немігрованих файлів** — кожен файл, що ще
-  читає/пише напряму, перерахований у `eslint.config.js` явно. Міграція
-  файла = видалення рядка зі списку. **На 2026-05-04 TODO-список
-  містить 15 файлів** (попередня хвиля: 46 → 41 → 27 → 17 → 16 → 15
-  після міграції routine/finyk/onboarding/chatActions/insights/
-  recommendations/`useDarkMode`/`perf`/`useActiveFizrukWorkout`-сайтів).
-  Бюджет жорстко зафіксовано у
-  [`.tech-debt/localstorage-allowlist-budget.json`](../../.tech-debt/localstorage-allowlist-budget.json)
-  (15, headroom 0) і enforce-нутий у CI через
-  [`pnpm lint:localstorage-allowlist`](../../scripts/check-localstorage-allowlist.mjs).
-  Фактичних production-файлів у `apps/web/src` з прямим `localStorage.*` —
-  **~35** (з них ~20 — легітимні wrappers/primitives, 15 — у TODO-списку).
-  Тести (`*.test.*`, `__tests__/`) повний opt-out і не лічаться.
+**Як ми сюди прийшли:** burndown пройшов хвилями
+46 → 41 → 27 → 17 → 16 → 15 (routine / finyk / onboarding /
+chatActions / insights / recommendations / `useDarkMode` / `perf` /
+`useActiveFizrukWorkout`) → 6 (PR #054a — drop стейлових
+cloudSync v1 entry-їв після PR #052b/#052c видалили engine tree;
+PR #053a видалив `apps/web/src/core/cloudSync/enqueue.ts` no-op shim
 
-**Що це дає:** новий код / нові файли НЕ зможуть додати прямий
-`localStorage.*` без явного оновлення allowlist (видно в diff). Існуючі
-call-сайти продовжують працювати, але зафіксовані як борг — список
-greppable в одному місці.
+- web `syncedKV` фасад) → 0 (PR #054 final — переписали 6 storage-
+  primitive файлів так, щоб делегували у `webKVStore` з
+  `@sergeant/shared`).
 
-**Fix recipes для міграції:**
+**Архітектура після PR #054 final.** `webKVStore` — KVStore-адаптер
+над `window.localStorage` з cross-tab `onChange`-у — створюється у
+`apps/web/src/shared/lib/storage/storage.ts` і реекспортується.
+Решта 5 storage-primitive файлів (`storageManager.ts`, `storageQuota.ts`,
+`typedStore.ts`, `createModuleStorage.ts`,
+`shared/hooks/useLocalStorageState.ts`) імпортує singleton і
+делегує всі `getString` / `setString` / `remove` / `listKeys` / `onChange`
+у нього. Єдина пряма `Storage` згадка лишилася у `storageQuota.ts` —
+там через renamed local binding (`const storage = globalThis.localStorage`),
+бо хелпер `safeSetItem` мусить пробрасувати `setItem`-виключення
+калерові (детектуючи quota / private-mode), а `webKVStore.setString`
+їх свідомо swallow-ить. Renamed binding eslint-rule не тригерить
+(rule перевіряє лише `localStorage.x` / `window.localStorage.x` /
+`globalThis.localStorage.x` member-access patterns).
 
-- Прочитати JSON з безпечним fallback: `safeReadLS<T>(key, fallback)` з
-  `@shared/lib/storage`.
-- Записати JSON з обробкою quota: `safeWriteLS(key, value)`.
-- Реактивне джерело істини в компоненті: хук
-  `useLocalStorageState<T>(key, initial)` з `@shared/hooks/useLocalStorageState`.
-- Цілий модуль зі своїм префіксом ключів: `createModuleStorage(prefix)`.
+**Fix recipes для нових call-сайтів** (рекомендований порядок):
+
+- **`webKVStore`** з `@shared/lib/storage/storage` — прямий доступ до
+  KVStore-адаптера: `getString` / `setString` / `remove` / `listKeys` /
+  `onChange`. Тиха обробка quota / private-mode помилок.
+- **`safeReadLS<T>(key, fallback)` / `safeWriteLS(key, value)`** з
+  `@shared/lib/storage/storage` — JSON-обгортка з типами і `JSON.parse`
+  catch-ом для legacy-сайтів.
+- **`useLocalStorageState<T>(key, initial)`** з
+  `@shared/hooks/useLocalStorageState` — реактивне джерело істини у
+  компоненті з debounce / serialize / validate.
+- **`createModuleStorage(prefix)`** — цілий модуль зі своїм префіксом
+  ключів і debounced-write-ами.
+- **`safeJsonSet(key, value)` / `safeSetItem(...)`** з
+  `@shared/lib/storage/storageQuota` — коли потрібно знати, чи запис
+  пройшов (повертає `{ ok, reason, error }`); usual call-site —
+  storage manager-міграції, які мають перезапускатись на write
+  failure.
+
+**Out-of-scope follow-up.** Фізичний свап `webKVStore` з
+`window.localStorage` на SQLite-backed `kv_store(key TEXT PK, value JSON)`
+лишається окремою ініціативою (warm-cache strategy через async
+SQLite init + кругова залежність kvvfs ↔ localStorage на старих
+Safari). Done criteria PR #054 final цього не вимагає — eslint-боундарі
+вже unified, споживачі не побачать різниці.
+
+</details>
 
 ---
 

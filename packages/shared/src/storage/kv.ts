@@ -35,6 +35,13 @@ export interface KVStore {
   /** Delete the value under `key`. No-op if missing. */
   remove(key: string): void;
   /**
+   * Enumerate every key currently stored. Returns `[]` when the
+   * underlying implementation cannot enumerate (e.g. a partial
+   * `StorageLike` mock without `length`/`key`, or a MMKV instance
+   * without `getAllKeys`) or when access throws.
+   */
+  listKeys(): string[];
+  /**
    * Subscribe to changes at `key`. Listener receives the new value as a
    * string, or `null` if the slot was deleted. Returns a disposer.
    *
@@ -83,6 +90,9 @@ export function createMemoryKVStore(
     remove(key) {
       if (map.delete(key)) notify(key, null);
     },
+    listKeys() {
+      return Array.from(map.keys());
+    },
     onChange(key, listener) {
       let set = subs.get(key);
       if (!set) {
@@ -109,6 +119,13 @@ export interface StorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
+  /**
+   * Optional — enables {@link KVStore.listKeys} when present. The DOM
+   * `Storage` interface always exposes both, but mocks used in unit
+   * tests may omit them; the adapter falls back to `[]` in that case.
+   */
+  readonly length?: number;
+  key?(index: number): string | null;
 }
 
 /**
@@ -168,6 +185,24 @@ export function createWebKVStore(
         /* */
       }
     },
+    listKeys() {
+      try {
+        if (
+          typeof storage.length !== "number" ||
+          typeof storage.key !== "function"
+        ) {
+          return [];
+        }
+        const out: string[] = [];
+        for (let i = 0; i < storage.length; i += 1) {
+          const k = storage.key(i);
+          if (k !== null && k !== undefined) out.push(k);
+        }
+        return out;
+      } catch {
+        return [];
+      }
+    },
     onChange(key, listener) {
       if (!eventTarget) return () => {};
       const handler = (event: StorageEventLike): void => {
@@ -206,6 +241,12 @@ export interface MmkvLike {
   addOnValueChangedListener(listener: (changedKey: string) => void): {
     remove: () => void;
   };
+  /**
+   * Optional — enables {@link KVStore.listKeys}. The real
+   * `react-native-mmkv` instance always exposes it, but unit-test
+   * mocks may omit it; the adapter falls back to `[]` in that case.
+   */
+  getAllKeys?(): string[];
 }
 
 /**
@@ -245,6 +286,16 @@ export function createMmkvKVStore(
         get().delete(key);
       } catch {
         /* */
+      }
+    },
+    listKeys() {
+      try {
+        const m = get();
+        if (typeof m.getAllKeys !== "function") return [];
+        const keys = m.getAllKeys();
+        return Array.isArray(keys) ? keys : [];
+      } catch {
+        return [];
       }
     },
     onChange(key, listener) {

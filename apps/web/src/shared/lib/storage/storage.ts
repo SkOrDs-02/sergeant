@@ -5,11 +5,82 @@
  * so callers do not need to wrap every access in try/catch. Previously eight
  * files in this repo each defined their own `safeParseLS`/`safeParse` helper;
  * this module is the single source of truth.
+ *
+ * Implementation: every read/write is routed through {@link webKVStore} (a
+ * `KVStore` adapter from `@sergeant/shared` that wraps `window.localStorage`).
+ * No direct `localStorage.*` access remains in this file — `eslint.config.js`
+ * enforces that with `sergeant-design/no-raw-local-storage` (PR #054 final,
+ * `localstorage-allowlist-budget.json` production: 0).
  */
 
 import { createMemoryKVStore, createWebKVStore } from "@sergeant/shared";
-import type { KVStore } from "@sergeant/shared";
+import type {
+  KVStore,
+  StorageEventTargetLike,
+  StorageLike,
+  Unsubscribe,
+} from "@sergeant/shared";
 import type { z } from "zod";
+
+/**
+ * KVStore adapter for `@sergeant/shared` functions. Wraps
+ * `window.localStorage` via {@link createWebKVStore} so cross-tab
+ * `onChange` propagation comes for free via the DOM `storage` event.
+ *
+ * Resolution is lazy on every method call so tests that polyfill
+ * `globalThis.localStorage` inside `beforeAll`/`beforeEach` (after
+ * this module has already been imported) still hit the polyfill, and
+ * the same applies to apps/web's vitest suite which runs under
+ * `environment: "node"` and only attaches `localStorage` once a
+ * specific suite needs it. Falls back to a single shared in-memory
+ * store when no `globalThis.localStorage` is available so writes
+ * survive across calls within the same process.
+ */
+const memoryFallback = createMemoryKVStore();
+
+function resolveStore(): KVStore {
+  let storage: StorageLike | undefined;
+  try {
+    const candidate = (globalThis as { localStorage?: unknown }).localStorage;
+    storage = (candidate as StorageLike | undefined) ?? undefined;
+  } catch {
+    storage = undefined;
+  }
+  if (!storage) return memoryFallback;
+
+  let eventTarget: StorageEventTargetLike | undefined;
+  try {
+    const candidate = (globalThis as { window?: unknown }).window;
+    eventTarget =
+      (candidate as StorageEventTargetLike | undefined) ?? undefined;
+  } catch {
+    eventTarget = undefined;
+  }
+
+  try {
+    return createWebKVStore(storage, eventTarget);
+  } catch {
+    return memoryFallback;
+  }
+}
+
+export const webKVStore: KVStore = {
+  getString(key: string): string | null {
+    return resolveStore().getString(key);
+  },
+  setString(key: string, value: string): void {
+    resolveStore().setString(key, value);
+  },
+  remove(key: string): void {
+    resolveStore().remove(key);
+  },
+  listKeys(): string[] {
+    return resolveStore().listKeys();
+  },
+  onChange(key: string, listener: (next: string | null) => void): Unsubscribe {
+    return resolveStore().onChange(key, listener);
+  },
+};
 
 /**
  * Read a JSON value from localStorage.
@@ -19,15 +90,11 @@ export function safeReadLS<T = unknown>(
   key: string,
   fallback: T | null = null,
 ): T | null {
+  const raw = webKVStore.getString(key);
+  if (raw === null) return fallback;
   try {
-    const raw = localStorage.getItem(key);
-    if (raw === null || raw === undefined) return fallback;
-    try {
-      const parsed = JSON.parse(raw) as T;
-      return parsed ?? fallback;
-    } catch {
-      return fallback;
-    }
+    const parsed = JSON.parse(raw) as T;
+    return parsed ?? fallback;
   } catch {
     return fallback;
   }
@@ -72,38 +139,34 @@ export function safeReadStringLS(
   key: string,
   fallback: string | null = null,
 ): string | null {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw === null || raw === undefined ? fallback : raw;
-  } catch {
-    return fallback;
-  }
+  const raw = webKVStore.getString(key);
+  return raw === null ? fallback : raw;
 }
 
 /**
- * Write a JSON-serialized value to localStorage. Returns true on success.
+ * Write a JSON-serialized value to localStorage. Returns `true` once the
+ * value serialized; the underlying write is best-effort and silently
+ * swallows quota / private-mode errors via `webKVStore`. Returns `false`
+ * only when the value cannot be serialized (e.g. cyclic reference).
  */
 export function safeWriteLS(key: string, value: unknown): boolean {
+  let serialized: string;
   try {
-    const serialized =
-      typeof value === "string" ? value : JSON.stringify(value);
-    localStorage.setItem(key, serialized);
-    return true;
+    serialized = typeof value === "string" ? value : JSON.stringify(value);
   } catch {
     return false;
   }
+  webKVStore.setString(key, serialized);
+  return true;
 }
 
 /**
- * Remove a key from localStorage. Returns true on success.
+ * Remove a key from localStorage. Always returns `true` — the underlying
+ * remove is best-effort and silently swallows errors via `webKVStore`.
  */
 export function safeRemoveLS(key: string): boolean {
-  try {
-    localStorage.removeItem(key);
-    return true;
-  } catch {
-    return false;
-  }
+  webKVStore.remove(key);
+  return true;
 }
 
 /**
@@ -117,36 +180,5 @@ export function safeRemoveLS(key: string): boolean {
  * does, and both trip `sergeant-design/no-raw-local-storage`.
  */
 export function safeListLSKeys(): string[] {
-  try {
-    const out: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k !== null) out.push(k);
-    }
-    return out;
-  } catch {
-    return [];
-  }
+  return webKVStore.listKeys();
 }
-
-/**
- * KVStore adapter for `@sergeant/shared` functions. Wraps
- * `window.localStorage` via {@link createWebKVStore} so cross-tab
- * `onChange` propagation comes for free via the DOM `storage` event.
- *
- * Falls back to an in-memory store in non-browser environments
- * (server-side render, headless test bootstrap before jsdom is
- * installed). The flat `safe*LS` helpers above keep their existing
- * direct-`localStorage` semantics — call them when you only need
- * scalar reads/writes without the `KVStore` contract.
- */
-function resolveWebKVStore(): KVStore {
-  if (typeof window === "undefined") return createMemoryKVStore();
-  try {
-    return createWebKVStore(window.localStorage, window);
-  } catch {
-    return createMemoryKVStore();
-  }
-}
-
-export const webKVStore: KVStore = resolveWebKVStore();
