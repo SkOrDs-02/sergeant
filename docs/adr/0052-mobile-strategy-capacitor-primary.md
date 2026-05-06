@@ -3,7 +3,8 @@
 - **Status:** Accepted
 - **Date:** 2026-05-06
 - **Deciders:** @Skords-01
-- **Supersedes:** sunset-direction sections in [`docs/initiatives/0002-mobile-platform-decision.md`](../initiatives/0002-mobile-platform-decision.md) (sunset schedule T₀/T₁/T₂ reference as "active outcome")
+- **Supersedes:** —
+- **Superseded sections (non-ADR):** sunset-direction sections in [`docs/initiatives/0002-mobile-platform-decision.md`](../initiatives/0002-mobile-platform-decision.md) (sunset schedule T₀/T₁/T₂ reference as "active outcome")
 - **Related:**
   - [`docs/initiatives/0010-revenue-first-launch.md`](../initiatives/0010-revenue-first-launch.md)
   - [`docs/initiatives/0002-mobile-platform-decision.md`](../initiatives/0002-mobile-platform-decision.md)

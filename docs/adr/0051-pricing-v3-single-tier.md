@@ -3,7 +3,8 @@
 - **Status:** Accepted
 - **Date:** 2026-05-06
 - **Deciders:** @Skords-01
-- **Supersedes:** pricing sections in [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md) (§2.2 Plus tier, §2.3 pay-per-feature, §3 Lifetime ₴2999)
+- **Supersedes:** —
+- **Superseded sections (non-ADR):** pricing sections in [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md) (§2.2 Plus tier, §2.3 pay-per-feature, §3 Lifetime ₴2999)
 - **Related:**
   - [`docs/initiatives/0010-revenue-first-launch.md`](../initiatives/0010-revenue-first-launch.md)
   - [`docs/launch/business/01-monetization-and-pricing.md`](../launch/business/01-monetization-and-pricing.md)
