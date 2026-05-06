@@ -36,6 +36,22 @@ module.exports = {
       "<rootDir>/../../packages/db-schema/src/migrate/sqlite.ts",
     "^@sergeant/db-schema/(.*)$":
       "<rootDir>/../../packages/db-schema/src/$1/index.ts",
+    // `@sergeant/design-tokens` ships its `exports` map with `types`
+    // listed before `default` (`{ "types": "./index.d.ts", "default":
+    // "./tokens.js" }`). Jest's resolver picks the first matching
+    // condition, so it ends up requiring `index.d.ts` — a `.d.ts` with
+    // no runtime exports — and `brandColors` lands as `undefined`,
+    // crashing `apps/mobile/src/theme.ts` and cascading into ~13
+    // mobile suites. Map every subpath onto the actual `.js` source
+    // so Jest never falls through to the broken conditions.
+    "^@sergeant/design-tokens$":
+      "<rootDir>/../../packages/design-tokens/tokens.js",
+    "^@sergeant/design-tokens/tokens$":
+      "<rootDir>/../../packages/design-tokens/tokens.js",
+    "^@sergeant/design-tokens/mobile$":
+      "<rootDir>/../../packages/design-tokens/mobile.js",
+    "^@sergeant/design-tokens/tailwind-preset$":
+      "<rootDir>/../../packages/design-tokens/tailwind-preset.js",
   },
   transformIgnorePatterns: [
     // Keep the default `node_modules/` ignore but punch holes for the RN
