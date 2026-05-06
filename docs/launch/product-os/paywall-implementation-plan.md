@@ -219,4 +219,16 @@ PR-20 (last sub-PR before flag-flip) НЕ merge-ається без задово
 
 ## 10. Path-decision audit-trail (append-only)
 
-> Поки що пусто. Очікує на founder-вибір на review цього PR.
+### 2026-05-06 — Path A selected
+
+- **Вибір:** Path A (Full impl у 4 sub-PR після 0010 phase 3 — recommended).
+- **Founder:** dmytro.s.stakhov.
+- **Контекст:** PR-19 (#1989) + PR-20 plan (#1993) merged; founder підтвердив під час Devin-review-thread.
+- **Що це означає operationally:**
+  - PR-20 impl-кодинг (`PR-20a/b/c/d`) **не стартує до merge 0010 phase 3** (`usePlan()` RQ-hook landed in `apps/web/src/core/billing/hooks/usePlan.ts`).
+  - Поки 0010 phase 3 у роботі — цей doc лишається `Active — gating doc`.
+  - Як тільки 0010 phase 3 merge → `Status` цього doc-у переходить на `Active — impl tracking`, відкривається PR-20a (FF + telemetry, ~120 LOC).
+  - Path B (FF-gated UI-stub) і Path C (defer) — більше не на столі; не активуємо їх навіть як fallback без явного re-decision у цьому ж §10.
+- **Перевірка готовності 0010 phase 3:** перед стартом PR-20a — guard-checklist у [`paywall-ux-placement.md` §10](./paywall-ux-placement.md#10-acceptance-criteria-для-pr-20) acceptance criterion #6 (`usePlan()` повертає `'pro'`/`'free'` без 500 на повний Pro/Free cohort у staging).
+- **Conversion-window start-clock:** не стартує з цього decision; стартує з реального flag-flip `paywall_post_ftux_v1=on` у production (на cohort-flag-flip = day-0 для 30-day window `STRIPE_CHECKOUT_COMPLETED / PAYWALL_POST_FTUX_VIEWED ≥ 3%`).
+- **Next-action owner:** Devin → моніторити merge-event `0010-revenue-first-launch` phase 3 → автоматично відкрити PR-20a draft після того як `apps/web/src/core/billing/hooks/usePlan.ts` з’явиться у main.
