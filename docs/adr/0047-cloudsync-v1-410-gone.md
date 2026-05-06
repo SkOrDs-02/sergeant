@@ -1,15 +1,14 @@
 # ADR-0047: CloudSync v1 — T₀ executed (410 Gone)
 
-> **Last validated:** 2026-05-06 by @dmytro.skords. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 - **Status:** Accepted
 - **Date:** 2026-05-06
 - **Deciders:** @Skords-01
-- **Supersedes:** —
+- **Supersedes:** [ADR-0004 — CloudSync LWW conflict resolution](./0004-cloudsync-lww-conflict-resolution.md) (per-module LWW worldview engine; цей ADR + Stage 7 cleanup переключають production на per-row op-log v2).
 - **Related:**
   - [ADR-0043 — CloudSync v1 sunset (RFC 8594 deprecation headers + 6-phase rollout)](./0043-cloudsync-v1-sunset.md) — цей ADR виконує Phase 5 з ADR-0043.
-  - [ADR-0004 — CloudSync LWW conflict resolution](./0004-cloudsync-lww-conflict-resolution.md) — описує v1, що цим ADR-ом фактично знімається з production.
   - [Initiative 0003 — Sync v2 rollout & v1 sunset](../initiatives/0003-sync-v2-rollout-and-v1-sunset.md) — rationale-документ із 6-фазним планом.
   - [`apps/server/src/modules/sync/sunsetGone.ts`](../../apps/server/src/modules/sync/sunsetGone.ts) — handler, який реалізує цей ADR.
   - [`apps/server/src/routes/sync.ts`](../../apps/server/src/routes/sync.ts) — wire-up `respondV1Gone` на v1 push/pull endpoint-ах.
