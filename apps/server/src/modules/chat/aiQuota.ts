@@ -4,6 +4,7 @@ import pool from "../../db.js";
 import { getIp } from "../../http/rateLimit.js";
 import { logger } from "../../obs/logger.js";
 import { aiQuotaBlocksTotal, aiQuotaFailOpenTotal } from "../../obs/metrics.js";
+import { recordDbError } from "./aiQuotaHealth.js";
 
 type SessionUser = { id: string } | null;
 
@@ -305,6 +306,16 @@ function logQuotaStoreUnavailable(reason: string, e?: unknown): void {
     aiQuotaFailOpenTotal.inc({ reason });
   } catch {
     /* ignore */
+  }
+  // PR-03: DB-error-и (ECONNREFUSED, statement_timeout, undefined_table тощо)
+  // фіксуємо у sliding-window-counter, який споживатиме circuit-breaker (PR-04).
+  // `database_url_missing` — конфіг-помилка, не runtime-failure → не рахуємо.
+  if (reason === "db_error") {
+    try {
+      recordDbError(e);
+    } catch {
+      /* ніколи не валимо квоту через дефект counter-а */
+    }
   }
   const err = e as { message?: string; code?: string } | undefined;
   logger.error({
