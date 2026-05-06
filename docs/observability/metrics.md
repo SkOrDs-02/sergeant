@@ -146,26 +146,35 @@ rate(rate_limit_hits_total{key="api:auth:sensitive",outcome="blocked"}[5m])    #
 
 ---
 
-## 6. AI (Anthropic)
+## 6. AI (Anthropic + Voyage)
 
-| Metric                             | Type      | Labels                                        | Emitter                                                                                  |
-| ---------------------------------- | --------- | --------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `ai_requests_total`                | Counter   | `provider` · `model` · `endpoint` · `outcome` | [anthropic.ts:82](../../apps/server/src/lib/anthropic.ts#L82)                            |
-| `ai_request_duration_ms`           | Histogram | `provider` · `model` · `endpoint`             | [anthropic.ts:89](../../apps/server/src/lib/anthropic.ts#L89)                            |
-| `ai_tokens_total`                  | Counter   | `provider` · `model` · `kind`                 | [anthropic.ts:131](../../apps/server/src/lib/anthropic.ts#L131)                          |
-| `anthropic_prompt_cache_hit_total` | Counter   | `version` · `outcome`                         | [anthropic.ts:161](../../apps/server/src/lib/anthropic.ts#L161)                          |
-| `ai_quota_blocks_total`            | Counter   | `reason`                                      | [aiQuota.ts:168](../../apps/server/src/modules/chat/aiQuota.ts#L168)                     |
-| `ai_quota_fail_open_total`         | Counter   | `reason`                                      | [aiQuota.ts](../../apps/server/src/modules/chat/aiQuota.ts) `logQuotaStoreUnavailable()` |
+| Metric                             | Type      | Labels                                        | Emitter                                                                                                                                                               |
+| ---------------------------------- | --------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ai_requests_total`                | Counter   | `provider` · `model` · `endpoint` · `outcome` | [anthropic.ts:82](../../apps/server/src/lib/anthropic.ts#L82)                                                                                                         |
+| `ai_request_duration_ms`           | Histogram | `provider` · `model` · `endpoint`             | [anthropic.ts:89](../../apps/server/src/lib/anthropic.ts#L89)                                                                                                         |
+| `ai_tokens_total`                  | Counter   | `provider` · `model` · `endpoint` · `kind`    | [anthropic.ts:131](../../apps/server/src/lib/anthropic.ts#L131), [embeddings.ts](../../apps/server/src/modules/ai-memory/embeddings.ts) `recordVoyageUsage()` (PR-33) |
+| `ai_cost_estimate_usd_total`       | Counter   | `provider` · `model` · `endpoint`             | [anthropic.ts](../../apps/server/src/lib/anthropic.ts), [embeddings.ts](../../apps/server/src/modules/ai-memory/embeddings.ts) (PR-33: voyage)                        |
+| `anthropic_prompt_cache_hit_total` | Counter   | `version` · `outcome`                         | [anthropic.ts:161](../../apps/server/src/lib/anthropic.ts#L161)                                                                                                       |
+| `ai_quota_blocks_total`            | Counter   | `reason`                                      | [aiQuota.ts:168](../../apps/server/src/modules/chat/aiQuota.ts#L168)                                                                                                  |
+| `ai_quota_fail_open_total`         | Counter   | `reason`                                      | [aiQuota.ts](../../apps/server/src/modules/chat/aiQuota.ts) `logQuotaStoreUnavailable()`                                                                              |
 
-`outcome` (requests): `ok` · `rate_limited` · `timeout` · `error` · `bad_response`. `kind` (tokens): `prompt` · `completion` · `cache_write` · `cache_read`. `outcome` (cache): `hit` · `miss`. `reason` (quota blocks): `limit` · `disabled` · `tool_disabled`. `reason` (fail-open): `database_url_missing` · `db_error`. Buckets duration: `100…60000` ms.
+`provider`: `anthropic` · `voyage`. `outcome` (requests): `ok` · `rate_limited` · `timeout` · `error` · `bad_response`. `kind` (tokens): `prompt` · `completion` · `cache_write` · `cache_read` (Voyage-embedding-и записуються як `kind="prompt"`, бо у Voyage-billing-у input-tokens — єдина категорія). `endpoint`: `messages` (Anthropic) · `embed` (Voyage). `outcome` (cache): `hit` · `miss`. `reason` (quota blocks): `limit` · `disabled` · `tool_disabled`. `reason` (fail-open): `database_url_missing` · `db_error`. Buckets duration: `100…60000` ms.
 
-**Кардинальність**: requests ~120; tokens ~12; quota ~5. Загалом ≈ **~150**.
+**Voyage cost (PR-33)**: `recordVoyageUsage()` після успішного embedding-batch-у пушить `usage.total_tokens` у `ai_tokens_total{provider="voyage", endpoint="embed", kind="prompt"}` і USD-переклад в `ai_cost_estimate_usd_total{provider="voyage", model, endpoint="embed"}`. Прайс-таблиця — `VOYAGE_PRICING_USD_PER_MTOK` у [embeddings.ts](../../apps/server/src/modules/ai-memory/embeddings.ts) (`voyage-3.5-lite=$0.02/MTok`, `voyage-3.5=$0.06/MTok`, `voyage-3-large=$0.18/MTok` тощо). Невідома модель → cost-counter не інкрементується (token-counter інкрементується завжди), щоб помилковий model-string не привʼязав ціну від іншої версії.
+
+**Кардинальність**: requests ~120; tokens ~25 (Anthropic 12 + Voyage 9 моделей × prompt-kind ≈ 13); cost ~25; quota ~5. Загалом ≈ **~180**.
 
 ```promql
 sum(rate(ai_requests_total{outcome!="ok"}[5m])) / sum(rate(ai_requests_total[5m]))         # SLI 97%
 histogram_quantile(0.95, sum by (le, endpoint) (rate(ai_request_duration_ms_bucket[5m])))  # p95 per endpoint
 sum(rate(anthropic_prompt_cache_hit_total{outcome="hit"}[5m]))
   / sum(rate(anthropic_prompt_cache_hit_total[5m]))                                        # cache hit ratio
+
+# PR-33 cost dashboards
+sum by (provider) (increase(ai_cost_estimate_usd_total[30d]))                              # 30-day cost per provider
+sum by (model) (rate(ai_cost_estimate_usd_total{provider="voyage"}[1d])) * 86400           # Voyage USD/day per model
+sum by (provider) (increase(ai_cost_estimate_usd_total[30d]))
+  / on(provider) sum by (provider) (infra_monthly_cost_usd{plan!="usage"})                 # actual vs budget
 ```
 
 **SLO/alerts**: [SLO.md §5](./SLO.md#5-ai-anthropic-slo-970-) · `AiErrorBudgetBurn{Fast,Slow}` · `AiLatencyP95High` · `AiQuotaStoreDown` — [runbook.md](./runbook.md#aierrorbudgetburn).
@@ -315,6 +324,27 @@ increase(uncaught_exceptions_total[5m]) > 0     # process state corrupted
 ## 15. Default-метрики Node-runtime
 
 `client.collectDefaultMetrics({ register })` ([metrics.ts:11](../../apps/server/src/obs/metrics.ts#L11)) реєструє стандартні `prom-client` метрики: `process_cpu_seconds_total`, `process_resident_memory_bytes`, `nodejs_eventloop_lag_seconds`, GC-метрики тощо. Фіксована кардинальність ~15–20 серій. Використовуються в runbook для діагностики OOM ([runbook.md §HttpErrorBudgetBurn p.6](./runbook.md#httperrorbudgetburn)).
+
+---
+
+## 16. Cost monitoring (PR-33)
+
+| Metric                   | Type  | Labels              | Emitter                                                                             |
+| ------------------------ | ----- | ------------------- | ----------------------------------------------------------------------------------- |
+| `infra_monthly_cost_usd` | Gauge | `provider` · `plan` | [obs/cost.ts](../../apps/server/src/obs/cost.ts) `applyInfraMonthlyCosts()` (PR-33) |
+
+`provider` — фіксована множина: `railway` · `vercel` · `posthog` · `sentry` · `anthropic` · `voyage`. `plan` — стандартні tiers (`free` · `hobby` · `pro` · `team` · `business` · `enterprise` · `usage` · `budget`); конкретний рядок задається через `*_PLAN` env-vars. Для `railway`/`vercel`/`posthog`/`sentry` — реальна subscription cost; для `anthropic`/`voyage` — **budget envelope**, target для алертів run-rate-у.
+
+Виставляється один раз на старті процесу з env-vars (`RAILWAY_MONTHLY_COST_USD`, `VERCEL_MONTHLY_COST_USD`, `POSTHOG_MONTHLY_COST_USD`, `SENTRY_MONTHLY_COST_USD`, `ANTHROPIC_MONTHLY_BUDGET_USD`, `VOYAGE_MONTHLY_BUDGET_USD`) у [`index.ts`](../../apps/server/src/index.ts). Невиставлене / нульове значення → серія НЕ зʼявляється у `/metrics` (gauge не пре-allocate-имо нулі, бо це б змусило в PromQL фільтрувати). Cardinality cap: 6 providers × ~7 plans = **~42** серій (реально 1–6, бо у поточному deployment-і кожен provider має один tier).
+
+```promql
+sum(infra_monthly_cost_usd{provider=~"railway|vercel|posthog|sentry"})       # фіксований monthly burn
+sum by (provider) (infra_monthly_cost_usd{provider=~"anthropic|voyage"})     # AI budget envelopes
+sum(increase(ai_cost_estimate_usd_total[30d]))
+  + sum(infra_monthly_cost_usd{provider=~"railway|vercel|posthog|sentry"})   # combined 30d run-rate
+```
+
+**Dashboard**: [`dashboards/cost-monitoring.json`](./dashboards/cost-monitoring.json) — пай-чарти cost-by-provider, daily AI burn timeseries, run-rate vs budget bargauge, fail-open guards (mirror з ai-cost dashboard для cost-context awareness).
 
 ---
 

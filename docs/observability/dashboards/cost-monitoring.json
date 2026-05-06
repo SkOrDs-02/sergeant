@@ -1,0 +1,742 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "Prometheus datasource for Sergeant server metrics",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "doc",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "AI Cost (Anthropic-only drilldown)",
+      "tooltip": "Anthropic prompt cache + token rate breakdown",
+      "type": "link",
+      "url": "/d/sergeant-ai-cost"
+    },
+    {
+      "asDropdown": false,
+      "icon": "doc",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "metrics.md",
+      "tooltip": "Prometheus metrics reference",
+      "type": "link",
+      "url": "https://github.com/Skords-01/Sergeant/blob/main/docs/observability/metrics.md"
+    },
+    {
+      "asDropdown": false,
+      "icon": "doc",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "env-vars.md (cost monitoring)",
+      "tooltip": "How to configure *_MONTHLY_COST_USD env-vars",
+      "type": "link",
+      "url": "https://github.com/Skords-01/Sergeant/blob/main/docs/integrations/env-vars.md#cost-monitoring-pr-33"
+    }
+  ],
+  "panels": [
+    {
+      "title": "Estimated 30-day run-rate (USD)",
+      "description": "Sum of: AI cost over last 30d (Anthropic + Voyage) + fixed monthly subscriptions (Railway + Vercel + PostHog + Sentry). Reference for monthly burn against budget.",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "red",
+                "value": 200
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(ai_cost_estimate_usd_total[30d])) + sum(infra_monthly_cost_usd{plan!=\"budget\"})",
+          "legendFormat": "30d run-rate",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "AI cost — last 30 days (USD)",
+      "description": "Increase of ai_cost_estimate_usd_total over 30 days, summed across all providers / models / endpoints.",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "id": 2,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "textMode": "value_and_name",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(ai_cost_estimate_usd_total[30d]))",
+          "legendFormat": "AI 30d",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Fixed monthly subscriptions (USD)",
+      "description": "Sum of infra_monthly_cost_usd across providers (excluding AI budget envelopes). Sourced from *_MONTHLY_COST_USD env vars at boot.",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 3,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 100
+              },
+              {
+                "color": "red",
+                "value": 500
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "textMode": "value_and_name",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "expr": "sum(infra_monthly_cost_usd{provider=~\"railway|vercel|posthog|sentry\"})",
+          "legendFormat": "fixed monthly",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Cost by provider (last 30d, USD) — pie",
+      "description": "AI usage cost (Anthropic + Voyage) accumulated over 30 days, split by provider. Pure runtime burn, no budget envelopes.",
+      "type": "piechart",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "id": 4,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "displayLabels": ["name", "percent"],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": ["value", "percent"]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider) (increase(ai_cost_estimate_usd_total[30d]))",
+          "legendFormat": "{{provider}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Fixed cost by provider (USD/mo) — pie",
+      "description": "Static monthly subscriptions for non-AI infrastructure (Railway, Vercel) and observability stack (PostHog, Sentry). Set via *_MONTHLY_COST_USD env-vars.",
+      "type": "piechart",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "id": 5,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "displayLabels": ["name", "percent"],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": ["value", "percent"]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider) (infra_monthly_cost_usd{provider=~\"railway|vercel|posthog|sentry\"})",
+          "legendFormat": "{{provider}} ({{plan}})",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Daily AI burn by provider × model (USD)",
+      "description": "rate(ai_cost_estimate_usd_total[1d]) × 86400. Stacked timeseries — track which model is driving spend.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 9,
+        "w": 16,
+        "x": 0,
+        "y": 15
+      },
+      "id": 6,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 30,
+            "stacking": {
+              "mode": "normal"
+            },
+            "lineWidth": 1
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "max"]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider, model) (rate(ai_cost_estimate_usd_total[1d])) * 86400",
+          "legendFormat": "{{provider}} / {{model}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Run-rate vs budget envelopes",
+      "description": "Stat-gauge: AI provider run-rate over 30d versus *_MONTHLY_BUDGET_USD envelope from env. Red when actual exceeds budget.",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 15
+      },
+      "id": 7,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.5
+              },
+              {
+                "color": "red",
+                "value": 0.9
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "showUnfilled": true
+      },
+      "targets": [
+        {
+          "expr": "sum by (provider) (increase(ai_cost_estimate_usd_total[30d]))",
+          "legendFormat": "{{provider}} run-rate",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (provider) (infra_monthly_cost_usd{provider=~\"anthropic|voyage\"})",
+          "legendFormat": "{{provider}} budget",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "title": "Anthropic prompt-cache savings (USD, 30d)",
+      "description": "Estimated savings from prompt-cache reads. Formula: cache_read_tokens × (input_price − cache_read_price) / 1e6 with $3 input / $0.30 cache_read for Sonnet-tier (override usd_input / usd_cacheread vars per tier).",
+      "type": "stat",
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 24
+      },
+      "id": 8,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "textMode": "value_and_name",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(ai_tokens_total{provider=\"anthropic\", kind=\"cache_read\"}[30d])) / 1e6 * ($usd_input - $usd_cacheread)",
+          "legendFormat": "30d savings",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Voyage embed burn (USD/day)",
+      "description": "Voyage AI cost run-rate split by embedding model. PR-33: cost recorded in `ai_cost_estimate_usd_total{provider=\"voyage\"}` by `recordVoyageUsage()` after every successful batch.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 7,
+        "w": 16,
+        "x": 8,
+        "y": 24
+      },
+      "id": 9,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 1
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "max"]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (model) (rate(ai_cost_estimate_usd_total{provider=\"voyage\"}[1d])) * 86400",
+          "legendFormat": "{{model}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "AI quota fail-open (CRITICAL — billing risk)",
+      "description": "Quota store unavailable, requests passing without limit check. Mirrored from ai-cost dashboard for cost dashboard awareness — any value > 0 is a billing risk.",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 31
+      },
+      "id": 10,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "textMode": "value_and_name",
+        "colorMode": "background",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(ai_quota_fail_open_total[1h]))",
+          "legendFormat": "fail-open (1h)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Quota circuit OPEN trips",
+      "description": "AI-quota DB circuit-breaker transitions into OPEN. Each trip = window of fail-closed quota (cost is bounded). Pairs with fail-open above (those mean DB unavailable + circuit not engaged → billing risk).",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 31
+      },
+      "id": 11,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "textMode": "value_and_name",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(ai_quota_circuit_open_total[24h]))",
+          "legendFormat": "circuit OPEN (24h)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Transcribe USD-cap events (24h)",
+      "description": "H9 hardening: per-user-per-day USD cap on /api/transcribe. Cap_hit = pre-charge succeeded blocking the call (cost saved). Store_unavailable = fail-open (billing risk).",
+      "type": "stat",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 31
+      },
+      "id": 12,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "textMode": "value_and_name",
+        "colorMode": "background"
+      },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (increase(transcribe_usd_cap_events_total[24h]))",
+          "legendFormat": "{{outcome}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "5m",
+  "schemaVersion": 39,
+  "tags": ["sergeant", "cost", "billing", "pr-33"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "3.00",
+          "value": "3.00"
+        },
+        "hide": 0,
+        "name": "usd_input",
+        "options": [
+          {
+            "selected": true,
+            "text": "3.00",
+            "value": "3.00"
+          }
+        ],
+        "query": "3.00",
+        "type": "textbox",
+        "label": "Anthropic input USD/1M (Sonnet=3, Haiku=0.8, Opus=15)"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "0.30",
+          "value": "0.30"
+        },
+        "hide": 0,
+        "name": "usd_cacheread",
+        "options": [
+          {
+            "selected": true,
+            "text": "0.30",
+            "value": "0.30"
+          }
+        ],
+        "query": "0.30",
+        "type": "textbox",
+        "label": "Anthropic cache_read USD/1M"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "Europe/Kyiv",
+  "title": "Sergeant — Cost monitoring (Anthropic + Voyage + Railway + Vercel + PostHog + Sentry)",
+  "uid": "sergeant-cost-monitoring",
+  "version": 1
+}

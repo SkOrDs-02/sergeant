@@ -17,6 +17,18 @@ function parseBoolEnv(key: string, defaultValue: boolean): boolean {
   return defaultValue;
 }
 
+/**
+ * Парсить float з env-vars (USD-суми monthly cost — їх ніхто не пише
+ * цілими). Порожнє/некорректне значення → `defaultValue`. NaN guard
+ * критичний бо `prom-client` Gauge.set(NaN) кидає.
+ */
+function parseFloatEnv(key: string, defaultValue: number): number {
+  const val = process.env[key];
+  if (val === undefined || val === "") return defaultValue;
+  const parsed = parseFloat(val);
+  return Number.isFinite(parsed) ? parsed : defaultValue;
+}
+
 export const env = {
   // ─────────────────────────────────────────────────────────────────────────
   // Server
@@ -574,6 +586,59 @@ export const env = {
    */
   OPENCLAW_GITHUB_BASE_BRANCH:
     process.env["OPENCLAW_GITHUB_BASE_BRANCH"] || "main",
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // PR-33 — Cost monitoring dashboard
+  // ─────────────────────────────────────────────────────────────────────────
+  //
+  // Fixed/budget monthly costs у USD для зовнішніх провайдерів. Виставляються
+  // у `infra_monthly_cost_usd` Gauge один раз на старті процесу. Жодне
+  // значення не обовʼязкове: якщо лишити порожнім — серія не зʼявляється
+  // у `/metrics` (gauge не пре-allocate-имо нулі). `*_PLAN` лейбл — для
+  // group-by у Grafana ("яку частку бюджету зʼїдає кожен tier").
+  //
+  // Cardinality contract: `provider`-лейбл з фіксованої множини 6 значень,
+  // `plan`-лейбл — теж зі стандартних tiers (`free|hobby|pro|team|business|
+  // enterprise|usage|budget`). Зміна plan-name на час runtime — НЕ
+  // підтримується (треба рестарт процесу). Це OK бо subscription tier
+  // міняється не частіше за раз на місяць.
+
+  /** Railway infra subscription monthly cost (USD). Zero/empty → не репортимо. */
+  RAILWAY_MONTHLY_COST_USD: parseFloatEnv("RAILWAY_MONTHLY_COST_USD", 0),
+  /** Railway plan tier для labels (`hobby` | `pro` | `team` | `enterprise`). */
+  RAILWAY_PLAN: process.env["RAILWAY_PLAN"] || "hobby",
+
+  /** Vercel hosting monthly cost (USD). Zero/empty → не репортимо. */
+  VERCEL_MONTHLY_COST_USD: parseFloatEnv("VERCEL_MONTHLY_COST_USD", 0),
+  /** Vercel plan tier (`hobby` | `pro` | `enterprise`). */
+  VERCEL_PLAN: process.env["VERCEL_PLAN"] || "hobby",
+
+  /** PostHog analytics monthly cost (USD). Zero/empty → не репортимо. */
+  POSTHOG_MONTHLY_COST_USD: parseFloatEnv("POSTHOG_MONTHLY_COST_USD", 0),
+  /** PostHog plan tier (`free` | `pay-as-you-go` | `scale` | `enterprise`). */
+  POSTHOG_PLAN: process.env["POSTHOG_PLAN"] || "free",
+
+  /** Sentry error monitoring monthly cost (USD). Zero/empty → не репортимо. */
+  SENTRY_MONTHLY_COST_USD: parseFloatEnv("SENTRY_MONTHLY_COST_USD", 0),
+  /** Sentry plan tier (`developer` | `team` | `business` | `enterprise`). */
+  SENTRY_PLAN: process.env["SENTRY_PLAN"] || "developer",
+
+  /**
+   * Anthropic monthly budget envelope (USD) — НЕ bill, а target. У Grafana
+   * накладається лінією на `ai_cost_estimate_usd_total`-run-rate; коли
+   * фактичний run-rate перетинає лінію — алерт.
+   */
+  ANTHROPIC_MONTHLY_BUDGET_USD: parseFloatEnv(
+    "ANTHROPIC_MONTHLY_BUDGET_USD",
+    0,
+  ),
+  /** Anthropic billing tier для лейбла (`usage` для pay-as-you-go). */
+  ANTHROPIC_PLAN: process.env["ANTHROPIC_PLAN"] || "usage",
+
+  /** Voyage AI monthly budget envelope (USD). Те саме що Anthropic. */
+  VOYAGE_MONTHLY_BUDGET_USD: parseFloatEnv("VOYAGE_MONTHLY_BUDGET_USD", 0),
+  /** Voyage billing tier (`usage` для pay-as-you-go, `enterprise`). */
+  VOYAGE_PLAN: process.env["VOYAGE_PLAN"] || "usage",
 } as const;
 
 export type Env = typeof env;

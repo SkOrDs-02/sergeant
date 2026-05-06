@@ -14,10 +14,73 @@
 import { env } from "../../env.js";
 import { logger } from "../../obs/logger.js";
 import { recordExternalHttp } from "../../lib/externalHttp.js";
+import { aiCostEstimateUsd, aiTokensTotal } from "../../obs/metrics.js";
 import { CircuitBreaker, CircuitOpenError } from "../../lib/circuitBreaker.js";
 import type { EmbeddingMetadata, EmbeddingProvider } from "./types.js";
 
 const VOYAGE_URL = "https://api.voyageai.com/v1/embeddings";
+
+/**
+ * Voyage AI per-million-token pricing (USD). Sources:
+ * https://docs.voyageai.com/docs/pricing — як на 2026-Q1.
+ *
+ * Match-имо по model-prefix через `pickVoyagePricing()` (`startsWith`),
+ * щоб майбутні subversions (`-2024xx-yy`) того самого сімейства брали ту
+ * саму ціну. Невідома модель → cost-counter не інкрементується (PR-33).
+ */
+const VOYAGE_PRICING_USD_PER_MTOK: Record<string, number> = {
+  // 2025-line — multilingual, output_dimension up to 1024
+  "voyage-3.5-lite": 0.02,
+  "voyage-3.5": 0.06,
+  "voyage-3-large": 0.18,
+  "voyage-3-lite": 0.02,
+  "voyage-3": 0.06,
+  "voyage-code-3": 0.18,
+  "voyage-multimodal-3": 0.06,
+  // 2024-line (legacy, кількадомен-specific)
+  "voyage-finance-2": 0.12,
+  "voyage-law-2": 0.12,
+  "voyage-2": 0.1,
+};
+
+function pickVoyagePricing(model: string): number | null {
+  if (!model || model === "unknown") return null;
+  for (const [prefix, price] of Object.entries(VOYAGE_PRICING_USD_PER_MTOK)) {
+    if (model.startsWith(prefix)) return price;
+  }
+  return null;
+}
+
+/**
+ * Записує Voyage usage у Prometheus: tokens-counter (`ai_tokens_total`,
+ * `kind="prompt"` бо embedding ≈ prompt у термінах biling-у Voyage) і
+ * cost-counter (`ai_cost_estimate_usd_total`). PR-33 — multi-provider
+ * cost dashboard. Запис безпечний: будь-який throw глушиться щоб не
+ * ламати embedding-flow на metrics-помилці.
+ */
+export function recordVoyageUsage(
+  model: string,
+  tokens: number | null | undefined,
+  endpoint: string = "embed",
+): void {
+  try {
+    if (!Number.isFinite(tokens) || (tokens ?? 0) <= 0) return;
+    const tokenCount = tokens as number;
+    aiTokensTotal.inc(
+      { provider: "voyage", model, endpoint, kind: "prompt" },
+      tokenCount,
+    );
+    const pricePerMTok = pickVoyagePricing(model);
+    if (pricePerMTok != null) {
+      const usd = (tokenCount * pricePerMTok) / 1_000_000;
+      if (usd > 0) {
+        aiCostEstimateUsd.inc({ provider: "voyage", model, endpoint }, usd);
+      }
+    }
+  } catch {
+    /* metrics must never break a request */
+  }
+}
 
 /**
  * Помилка коли `VOYAGE_API_KEY` не сконфігуровано. Окремо від
@@ -189,6 +252,15 @@ export function createVoyageEmbeddings(
         const json = (await response.json()) as VoyageEmbeddingResponse;
         const ms = Number(process.hrtime.bigint() - overallStart) / 1e6;
         recordExternalHttp("voyage", "ok", ms);
+        // PR-33 — записуємо токени та USD-вартість окремо від
+        // `external_http_*` (ті лейблами не несуть `model`, тому per-model
+        // billing dashboard на них не побудуєш). `usage.total_tokens` —
+        // це сума input-токенів усього batch-у; саме що нам треба для
+        // cost-attribution-у.
+        recordVoyageUsage(
+          json.model || env.VOYAGE_EMBEDDING_MODEL,
+          json.usage?.total_tokens,
+        );
 
         if (!Array.isArray(json.data) || json.data.length !== texts.length) {
           throw new VoyageContractError(

@@ -111,6 +111,30 @@ export const aiCostEstimateUsd = new client.Counter({
   registers: [register],
 });
 
+/**
+ * PR-33 — fixed monthly subscription cost для зовнішніх не-AI-провайдерів,
+ * чий `usage` runtime-instance не бачить (Railway, Vercel, PostHog, Sentry).
+ * Також тримає envelop-budget-и для AI-провайдерів (Anthropic / Voyage),
+ * щоб у Grafana run-rate можна було накласти на target.
+ *
+ * Лейбли:
+ *   - `provider`: railway | vercel | posthog | sentry | anthropic | voyage
+ *   - `plan`: free | hobby | pro | team | business | enterprise | usage |
+ *      budget — рівень підписки (для PostHog/Sentry — tier; для Anthropic/
+ *      Voyage — `budget` коли значення = monthly cap, `usage` коли pay-as-you-go).
+ *
+ * Cardinality: 6 providers × ~7 plans = ~42 series (стабільно). Set один
+ * раз на старті процесу (`obs/cost.ts::applyInfraMonthlyCosts()`) з env-
+ * vars; невиставлене значення → не з'являється у `/metrics` зовсім (gauge
+ * не пре-allocate-имо нулі, бо це б змусило в PromQL фільтрувати).
+ */
+export const infraMonthlyCostUsd = new client.Gauge({
+  name: "infra_monthly_cost_usd",
+  help: "Monthly fixed/budget cost in USD for external providers (PR-33)",
+  labelNames: ["provider", "plan"],
+  registers: [register],
+});
+
 export const anthropicPromptCacheHitTotal = new client.Counter({
   name: "anthropic_prompt_cache_hit_total",
   help: "Anthropic prompt cache hit/miss per request",

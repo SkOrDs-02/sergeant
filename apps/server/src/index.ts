@@ -63,6 +63,7 @@ import {
   uncaughtExceptionsTotal,
   unhandledRejectionsTotal,
 } from "./obs/metrics.js";
+import { applyInfraMonthlyCosts } from "./obs/cost.js";
 import { Sentry } from "./sentry.js";
 
 const app = createApp({
@@ -72,6 +73,10 @@ const app = createApp({
 });
 
 startPoolSampler(pool);
+// PR-33 — push env-driven monthly USD subscription cost-и у Prometheus
+// Gauge `infra_monthly_cost_usd`. Idempotent; запускається до listen()
+// щоб /metrics експозовував cost-серії з самого старту.
+applyInfraMonthlyCosts();
 connectRedis();
 
 // Mono AI enrichment worker — polling-консьюмер `mono_ai_enrichment_queue`.

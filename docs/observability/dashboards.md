@@ -1,6 +1,6 @@
 # Мінімальні Grafana-дашборди (Prometheus)
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-02.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 Це "starter pack" панелей, яких достатньо, щоб швидко зрозуміти: **що саме горить**
@@ -63,6 +63,23 @@
   - `sum by (reason) (rate(ai_quota_blocks_total[5m]))`
 - **AI quota fail-open (критично для білінгу)**:
   - `sum by (reason) (rate(ai_quota_fail_open_total[5m]))`
+
+## Cost monitoring (PR-33)
+
+- **30-day AI cost run-rate per provider** (Anthropic + Voyage):
+  - `sum by (provider) (increase(ai_cost_estimate_usd_total[30d]))`
+- **Daily AI burn per provider × model**:
+  - `sum by (provider, model) (rate(ai_cost_estimate_usd_total[1d])) * 86400`
+- **Voyage embed run-rate per model** (USD/day):
+  - `sum by (model) (rate(ai_cost_estimate_usd_total{provider="voyage"}[1d])) * 86400`
+- **Fixed monthly subscription cost** (Railway/Vercel/PostHog/Sentry):
+  - `sum by (provider) (infra_monthly_cost_usd{provider=~"railway|vercel|posthog|sentry"})`
+- **AI budget envelope** (Anthropic/Voyage targets):
+  - `sum by (provider) (infra_monthly_cost_usd{provider=~"anthropic|voyage"})`
+- **Combined 30-day run-rate** (AI + fixed):
+  - `sum(increase(ai_cost_estimate_usd_total[30d])) + sum(infra_monthly_cost_usd{plan!="budget"})`
+- **Run-rate vs budget ratio per AI provider**:
+  - `sum by (provider) (increase(ai_cost_estimate_usd_total[30d])) / on(provider) sum by (provider) (infra_monthly_cost_usd{provider=~"anthropic|voyage"})`
 
 ## Rate limiting
 

@@ -1,17 +1,18 @@
 # Дашборди Grafana
 
-> **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
 JSON-файли дашбордів Grafana для observability сервера Sergeant — готові до імпорту.
 
 ## Дашборди
 
-| Файл                 | Опис                                                                                                          |
-| -------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `http-red.json`      | HTTP RED-метрики — rate, errors, duration (p50/p95/p99). Фільтрує за `module` і `path`.                       |
-| `db-use.json`        | Postgres pool USE — utilization, saturation (waiting clients), помилки за кодом, повільні запити, тривалості. |
-| `slo-burn-rate.json` | Multi-window multi-burn-rate SLO-огляд — HTTP, Sync, Auth, AI, External HTTP, health процесу.                 |
+| Файл                   | Опис                                                                                                                                                 |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `http-red.json`        | HTTP RED-метрики — rate, errors, duration (p50/p95/p99). Фільтрує за `module` і `path`.                                                              |
+| `db-use.json`          | Postgres pool USE — utilization, saturation (waiting clients), помилки за кодом, повільні запити, тривалості.                                        |
+| `slo-burn-rate.json`   | Multi-window multi-burn-rate SLO-огляд — HTTP, Sync, Auth, AI, External HTTP, health процесу.                                                        |
+| `cost-monitoring.json` | PR-33 — agregовані витрати з 6 провайдерів (Anthropic + Voyage + Railway + Vercel + PostHog + Sentry): пай-чарти, daily AI burn, run-rate vs budget. |
 
 ## Як імпортувати
 

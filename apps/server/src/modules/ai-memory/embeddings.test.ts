@@ -292,3 +292,80 @@ describe("createVoyageEmbeddings", () => {
     ]);
   });
 });
+
+/**
+ * PR-33 — `recordVoyageUsage()`: pricing × tokens → `ai_cost_estimate_usd_total`
+ * + `ai_tokens_total` counters з provider="voyage". Перевіряємо
+ * фінальний Prometheus-payload (той самий, який зчитує Grafana).
+ */
+describe("recordVoyageUsage — PR-33 cost recording", () => {
+  it("інкрементує tokens + cost для відомої моделі (voyage-3.5-lite)", async () => {
+    const { recordVoyageUsage } = await import("./embeddings.js");
+    const { register } = await import("../../obs/metrics.js");
+    // 1_000_000 tokens × $0.02/MTok = $0.02 — кругле число для regex-у.
+    recordVoyageUsage("voyage-3.5-lite", 1_000_000, "embed");
+    const text = await register.metrics();
+    expect(text).toMatch(
+      /ai_tokens_total\{provider="voyage",model="voyage-3\.5-lite",endpoint="embed",kind="prompt"\} \d+/,
+    );
+    expect(text).toMatch(
+      /ai_cost_estimate_usd_total\{provider="voyage",model="voyage-3\.5-lite",endpoint="embed"\} 0\.02/,
+    );
+  });
+
+  it("матчить pricing по prefix (`voyage-3.5-lite-2025-XX`)", async () => {
+    const { recordVoyageUsage } = await import("./embeddings.js");
+    const { register } = await import("../../obs/metrics.js");
+    // Майбутній subversion того самого family — pickVoyagePricing()
+    // через startsWith() підхопить $0.02/MTok базової моделі.
+    recordVoyageUsage("voyage-3.5-lite-2025-Q3", 500_000);
+    const text = await register.metrics();
+    expect(text).toMatch(
+      /ai_cost_estimate_usd_total\{provider="voyage",model="voyage-3\.5-lite-2025-Q3",endpoint="embed"\} 0\.01/,
+    );
+  });
+
+  it("НЕ інкрементує cost для невідомої моделі (only tokens)", async () => {
+    const { recordVoyageUsage } = await import("./embeddings.js");
+    const { register } = await import("../../obs/metrics.js");
+    recordVoyageUsage("voyage-future-model-99", 1_000_000);
+    const text = await register.metrics();
+    // Tokens — записані (ми все ще хочемо бачити usage).
+    expect(text).toMatch(
+      /ai_tokens_total\{provider="voyage",model="voyage-future-model-99",endpoint="embed",kind="prompt"\} \d+/,
+    );
+    // Cost — НЕ записано (no pricing → skip).
+    expect(text).not.toMatch(
+      /ai_cost_estimate_usd_total\{provider="voyage",model="voyage-future-model-99",[^}]*\}/,
+    );
+  });
+
+  it("ігнорує zero / null / negative tokens (no-op)", async () => {
+    const { recordVoyageUsage } = await import("./embeddings.js");
+    const { register } = await import("../../obs/metrics.js");
+    recordVoyageUsage("voyage-3.5-lite", 0, "embed-zero");
+    recordVoyageUsage("voyage-3.5-lite", null, "embed-null");
+    recordVoyageUsage("voyage-3.5-lite", undefined, "embed-undef");
+    recordVoyageUsage("voyage-3.5-lite", -5, "embed-neg");
+    const text = await register.metrics();
+    expect(text).not.toMatch(/endpoint="embed-zero"/);
+    expect(text).not.toMatch(/endpoint="embed-null"/);
+    expect(text).not.toMatch(/endpoint="embed-undef"/);
+    expect(text).not.toMatch(/endpoint="embed-neg"/);
+  });
+
+  it("ігнорує `model='unknown'` (sentinel — pricing невідомий)", async () => {
+    const { recordVoyageUsage } = await import("./embeddings.js");
+    const { register } = await import("../../obs/metrics.js");
+    recordVoyageUsage("unknown", 1_000_000, "embed-unknown-model");
+    const text = await register.metrics();
+    // Tokens рахуємо (для діагностики usage без pricing).
+    expect(text).toMatch(
+      /ai_tokens_total\{provider="voyage",model="unknown",endpoint="embed-unknown-model",kind="prompt"\} \d+/,
+    );
+    // Cost — НЕ записуємо (model="unknown" sentinel пропускається).
+    expect(text).not.toMatch(
+      /ai_cost_estimate_usd_total\{provider="voyage",model="unknown",endpoint="embed-unknown-model"\}/,
+    );
+  });
+});
