@@ -781,6 +781,71 @@ export const paths: ZodOpenApiPathsObject = {
     },
   },
 
+  // ────────────────────── Billing (Stripe checkout MVP) ─────────────────────
+  "/api/billing/checkout": {
+    post: {
+      summary: "Створити Stripe Checkout session для Plus/Pro",
+      tags: ["monetization"],
+      security: cookieOrBearer,
+      requestBody: {
+        content: {
+          "application/json": { schema: namedSchemas.BillingCheckoutRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Checkout session ready; client redirects to `url`.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.BillingCheckoutResponse,
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "503": {
+          description: "Stripe billing env is not configured.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/billing/status": {
+    get: {
+      summary: "Поточний Stripe subscription state користувача",
+      tags: ["monetization"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Current subscription snapshot.",
+          content: {
+            "application/json": { schema: namedSchemas.BillingStatusResponse },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/billing/stripe-webhook": {
+    post: {
+      summary: "Stripe webhook delivery endpoint",
+      tags: ["monetization"],
+      requestParams: {
+        header: z.object({
+          "stripe-signature": z
+            .string()
+            .describe("Stripe webhook signature header (`v1` HMAC)."),
+        }),
+      },
+      responses: {
+        "200": okEmpty,
+        "400": validationError,
+      },
+    },
+  },
+
   // ────────────────────── Transcribe / Observability ────────────────────────
   "/api/transcribe": {
     post: {

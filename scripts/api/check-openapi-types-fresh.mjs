@@ -36,11 +36,18 @@ const outPath = path.join(
 
 const tmp = mkdtempSync(path.join(tmpdir(), "sergeant-openapi-types-"));
 const tmpOut = path.join(tmp, "openapi.d.ts");
+const openApiTypescriptBin = path.join(
+  repoRoot,
+  "node_modules",
+  "openapi-typescript",
+  "bin",
+  "cli.js",
+);
 
 try {
   const gen = spawnSync(
-    "pnpm",
-    ["exec", "openapi-typescript", specPath, "-o", tmpOut],
+    process.execPath,
+    [openApiTypescriptBin, specPath, "-o", tmpOut],
     { cwd: repoRoot, stdio: ["ignore", "pipe", "pipe"] },
   );
   if (gen.status !== 0) {

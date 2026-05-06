@@ -1,8 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
+import { billingApi } from "@shared/api";
+import type { BillingCheckoutResponse } from "@sergeant/api-client";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { WaitlistForm } from "./pricing/WaitlistForm";
 
@@ -77,6 +79,10 @@ const TIERS: ReadonlyArray<Tier> = [
 
 export function PricingPage() {
   const navigate = useNavigate();
+  const [checkoutPlan, setCheckoutPlan] = useState<Tier["id"] | null>(null);
+  const [checkoutResult, setCheckoutResult] =
+    useState<BillingCheckoutResponse | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   // Pageview-аналітика. Window.location.search парситься щоб ми могли
   // розрізнити "user натиснув CTA з paywall" vs "user сам зайшов на /pricing".
@@ -86,11 +92,28 @@ export function PricingPage() {
     trackEvent(ANALYTICS_EVENTS.PRICING_VIEWED, { source });
   }, []);
 
-  function handleTierCta(tierId: Tier["id"]): void {
+  async function handleTierCta(tierId: Tier["id"]): Promise<void> {
     trackEvent(ANALYTICS_EVENTS.PRICING_CTA_CLICKED, {
       tier: tierId,
-      cta: "waitlist",
+      cta: tierId === "free" ? "free" : "stripe_checkout",
     });
+    if (tierId !== "free") {
+      setCheckoutPlan(tierId);
+      setCheckoutError(null);
+      setCheckoutResult(null);
+      try {
+        const checkout = await billingApi.createCheckout({ plan: tierId });
+        setCheckoutResult(checkout);
+        window.location.assign(checkout.url);
+        return;
+      } catch {
+        setCheckoutError(
+          "Оплата тимчасово недоступна. Можеш залишити email нижче, і ми повернемось з checkout-link.",
+        );
+      } finally {
+        setCheckoutPlan(null);
+      }
+    }
     // Скрол до форми. Без `behavior: "smooth"` на `prefers-reduced-motion`
     // користувачах — браузер сам ріспектить media query. Захищаємось
     // `typeof === "function"` бо jsdom не реалізує `scrollIntoView`,
@@ -126,7 +149,7 @@ export function PricingPage() {
         <section className="space-y-3 text-center">
           {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- intentional marketing eyebrow above the hero headline; не існує SectionHeading-eyebrow API. */}
           <p className="text-xs uppercase tracking-wider text-brand-strong font-semibold">
-            Pre-MVP — поки збираємо інтерес
+            Stripe Checkout
           </p>
           <h2 className="text-style-hero sm:text-4xl text-text leading-tight">
             Sergeant буде безкоштовним для більшості.
@@ -134,9 +157,19 @@ export function PricingPage() {
             Pro — для тих, хто хоче усе одразу.
           </h2>
           <p className="text-base text-muted max-w-2xl mx-auto">
-            Білінг ще не запущено. Залиш email — повідомимо щойно Pro стартує, і
-            ціни вже фіналізуємо. Жодних авто-списань зараз.
+            Plus і Pro відкривають Stripe Checkout. Якщо білінг недоступний у
+            цьому середовищі, залиш email нижче — це fallback без списань.
           </p>
+          {checkoutResult ? (
+            <p className="text-sm text-success-strong">
+              Checkout session створено ({checkoutResult.mode} mode).
+            </p>
+          ) : null}
+          {checkoutError ? (
+            <p className="text-sm text-danger-strong" role="alert">
+              {checkoutError}
+            </p>
+          ) : null}
         </section>
 
         <section
@@ -195,10 +228,13 @@ export function PricingPage() {
                 variant={tier.highlight ? "primary" : "secondary"}
                 size="md"
                 onClick={() => handleTierCta(tier.id)}
+                disabled={checkoutPlan === tier.id}
               >
                 {tier.id === "free"
                   ? "Лишусь на Free"
-                  : "Хочу дізнатись першим"}
+                  : checkoutPlan === tier.id
+                    ? "Відкриваємо checkout…"
+                    : "Перейти до оплати"}
               </Button>
             </article>
           ))}

@@ -39,6 +39,7 @@ export const foodSearchApi = apiClient.foodSearch;
 export const monoWebhookApi = apiClient.monoWebhook;
 export const privatApi = apiClient.privat;
 export const waitlistApi = apiClient.waitlist;
+export const billingApi = apiClient.billing;
 export const weeklyDigestApi = apiClient.weeklyDigest;
 export const transcribeApi = apiClient.transcribe;
 export const webVitalsApi = apiClient.webVitals;
@@ -50,6 +51,10 @@ export type {
   ApiClientConfig,
   ApiErrorInit,
   ApiErrorKind,
+  BillingCheckoutRequest,
+  BillingCheckoutResponse,
+  BillingEndpoints,
+  BillingStatusResponse,
   BarcodeLookupResponse,
   BarcodeProduct,
   ChatCallOpts,

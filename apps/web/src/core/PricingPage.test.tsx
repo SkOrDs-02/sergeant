@@ -11,6 +11,7 @@ import { MemoryRouter } from "react-router-dom";
 
 const {
   submitMock,
+  createCheckoutMock,
   toastSuccessMock,
   toastErrorMock,
   toastInfoMock,
@@ -18,6 +19,14 @@ const {
 } = vi.hoisted(() => ({
   submitMock:
     vi.fn<(input: unknown) => Promise<{ ok: true; created: boolean }>>(),
+  createCheckoutMock: vi.fn<
+    (input: unknown) => Promise<{
+      ok: true;
+      mode: "test";
+      sessionId: string;
+      url: string;
+    }>
+  >(),
   toastSuccessMock: vi.fn(),
   toastErrorMock: vi.fn(),
   toastInfoMock: vi.fn(),
@@ -25,9 +34,16 @@ const {
 }));
 
 submitMock.mockResolvedValue({ ok: true, created: true });
+createCheckoutMock.mockResolvedValue({
+  ok: true,
+  mode: "test",
+  sessionId: "cs_test_123",
+  url: "https://checkout.stripe.com/c/pay/cs_test_123",
+});
 
 vi.mock("@shared/api", () => ({
   waitlistApi: { submit: submitMock },
+  billingApi: { createCheckout: createCheckoutMock },
 }));
 
 vi.mock("@shared/hooks/useToast", () => ({
@@ -61,6 +77,7 @@ function renderPricing(initialUrl = "/pricing") {
 describe("PricingPage (Phase 0 monetization rails)", () => {
   beforeEach(() => {
     submitMock.mockClear();
+    createCheckoutMock.mockClear();
     toastSuccessMock.mockClear();
     toastErrorMock.mockClear();
     toastInfoMock.mockClear();
@@ -134,15 +151,38 @@ describe("PricingPage (Phase 0 monetization rails)", () => {
     expect(submitMock).not.toHaveBeenCalled();
   });
 
-  it("fires PRICING_CTA_CLICKED when a tier card CTA is pressed", () => {
+  it("opens Stripe Checkout when a paid tier CTA is pressed", async () => {
+    const assignMock = vi.fn();
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { ...window.location, assign: assignMock },
+    });
     renderPricing();
     const proCta = screen.getAllByRole("button", {
-      name: /Хочу дізнатись першим/i,
+      name: /Перейти до оплати/i,
     });
     fireEvent.click(proCta[0]!);
+    await waitFor(() => {
+      expect(createCheckoutMock).toHaveBeenCalledWith({ plan: "plus" });
+    });
+    expect(assignMock).toHaveBeenCalledWith(
+      "https://checkout.stripe.com/c/pay/cs_test_123",
+    );
     expect(trackEventMock).toHaveBeenCalledWith(
       ANALYTICS_EVENTS.PRICING_CTA_CLICKED,
-      expect.objectContaining({ cta: "waitlist" }),
+      expect.objectContaining({ cta: "stripe_checkout" }),
     );
+  });
+
+  it("falls back to the waitlist block when billing is unavailable", async () => {
+    createCheckoutMock.mockRejectedValueOnce(new Error("billing down"));
+    renderPricing();
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /Перейти до оплати/i })[0]!,
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /Оплата тимчасово недоступна/i,
+    );
+    expect(document.getElementById("waitlist-anchor")).not.toBeNull();
   });
 });

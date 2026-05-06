@@ -109,14 +109,21 @@ function main() {
       `[staged-typecheck] ${rel.length} file(s) → ${tsconfigKey}` +
         (extras.length ? ` (+${extras.length} global d.ts)` : ""),
     );
+    const pnpmBin = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
     const result = spawnSync(
-      "pnpm",
+      pnpmBin,
       ["exec", "tsc-files", "--noEmit", "--skipLibCheck", ...rel, ...extras],
       {
         stdio: "inherit",
         cwd: dir,
+        shell: process.platform === "win32",
       },
     );
+    if (result.error) {
+      console.error(
+        `[staged-typecheck] failed to start ${pnpmBin}: ${result.error.message}`,
+      );
+    }
     if (result.status !== 0) {
       aggregate = result.status ?? 1;
     }

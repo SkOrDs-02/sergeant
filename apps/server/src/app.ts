@@ -157,6 +157,10 @@ export function createApp({
   app.use("/api/coach/memory", express.json({ limit: "6mb" }));
   app.use("/api/chat", express.json({ limit: "1mb" }));
   app.use("/api/mono/webhook", express.json({ limit: "32kb" }));
+  app.use(
+    "/api/billing/stripe-webhook",
+    express.raw({ type: "application/json", limit: "128kb" }),
+  );
   // M12 — web-vitals beacon legitimately ships ≤10 metrics × ~120B JSON ≈ 2KB
   // у нормі. 10kb cap дає 5×запас від легітимного payload-у і одразу б'є 413
   // на спроби пхнути великі об'єкти (raw JS-помилка з stacktrace, PII, інше

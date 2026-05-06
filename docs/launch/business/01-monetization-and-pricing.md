@@ -1,9 +1,10 @@
 # 01. Монетизація і ціноутворення
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
 > **Status:** Active
 
-> Pre-MVP draft. Числа орієнтовні, тіри/ціни — для брейнштормінгу і A/B-тесту.
+> Pricing model лишається орієнтиром для A/B-тестів, але базовий Stripe MVP уже має серверний contract:
+> `POST /api/billing/checkout`, `GET /api/billing/status`, `POST /api/billing/stripe-webhook`.
 > Джерело: `sergeant-monetization-plan.md` (ч.1), `sergeant-launch-checklist.md` (§3–§5).
 
 ---
@@ -177,16 +178,16 @@ Freemium — найкращий вибір для Sergeant, бо:
 ```
 Вже є:                              Потрібно додати:
 ─────────────────────────           ─────────────────────────
-✓ Better Auth (юзери)               □ Таблиця `subscriptions`
-✓ ai_usage_daily (AI ліміти)        □ Міграція 009_subscriptions.sql
-✓ CloudSync (sync engine)           □ Stripe/LiqPay webhook handler
+✓ Better Auth (юзери)               ✓ Таблиця `billing_subscriptions`
+✓ ai_usage_daily (AI ліміти)        ✓ Міграція 047_billing_subscriptions.sql
+✓ CloudSync (sync engine)           ✓ Stripe checkout + webhook handler
 ✓ Модульна архітектура              □ Middleware checkPlan() / requirePlan()
 ✓ Push notifications                □ PaywallGate компонент (web)
 ✓ Feature flags (shared)            □ Billing settings page
                                     □ Customer portal / manage sub
 ```
 
-**Estimated effort:** ~1–2 тижні для MVP paywall зі Stripe/LiqPay. Технічна декомпозиція по тижнях — у [03 §7: week-by-week](./03-services-and-toolstack.md#7-порядок-дій-week-by-week).
+**Actual MVP contract:** Stripe Checkout session creation, subscription status read, and webhook idempotency are implemented server-side. Still pending: plan enforcement middleware, customer portal, billing settings, and LiqPay/native IAP follow-up.
 
 ### 6.1 Pricing UX (як показувати ціну)
 

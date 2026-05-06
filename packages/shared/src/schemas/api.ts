@@ -1067,6 +1067,46 @@ export type WaitlistSubmitResponse = z.infer<
   typeof WaitlistSubmitResponseSchema
 >;
 
+// ────────────────────── Billing (Stripe checkout MVP) ──────────────────────
+// SSOT for authenticated billing endpoints. The server validates request
+// bodies with these schemas, and api-client parses responses from the same
+// contract.
+
+export const BillingPlanSchema = z.enum(["plus", "pro"]);
+export type BillingPlan = z.infer<typeof BillingPlanSchema>;
+
+export const BillingCheckoutRequestSchema = z.object({
+  plan: BillingPlanSchema,
+});
+export type BillingCheckoutRequest = z.infer<
+  typeof BillingCheckoutRequestSchema
+>;
+
+export const BillingCheckoutResponseSchema = z.object({
+  ok: z.literal(true),
+  mode: z.enum(["test", "live"]),
+  sessionId: z.string().min(1),
+  url: z.string().url(),
+});
+export type BillingCheckoutResponse = z.infer<
+  typeof BillingCheckoutResponseSchema
+>;
+
+export const BillingSubscriptionSchema = z.object({
+  id: z.number().int().positive().nullable(),
+  provider: z.literal("stripe").nullable(),
+  plan: BillingPlanSchema.nullable(),
+  status: z.string().nullable(),
+  active: z.boolean(),
+  currentPeriodEnd: z.string().nullable(),
+});
+export type BillingSubscription = z.infer<typeof BillingSubscriptionSchema>;
+
+export const BillingStatusResponseSchema = z.object({
+  subscription: BillingSubscriptionSchema,
+});
+export type BillingStatusResponse = z.infer<typeof BillingStatusResponseSchema>;
+
 // ────────────────────── Transcribe (Groq Whisper proxy) ─────────────────────
 // `POST /api/transcribe` приймає сире audio-тіло (Content-Type: `audio/*`),
 // query визначає мову/prompt. Schema тут — SSOT і для server-side

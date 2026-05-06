@@ -11,7 +11,7 @@
  */
 import { writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { register } from "tsx/esm/api";
 
@@ -22,7 +22,8 @@ const repoRoot = path.resolve(__dirname, "..", "..");
 register();
 
 const { buildOpenApiDocument } = await import(
-  path.join(repoRoot, "packages/shared/src/openapi/index.ts")
+  pathToFileURL(path.join(repoRoot, "packages/shared/src/openapi/index.ts"))
+    .href
 );
 
 const document = buildOpenApiDocument();

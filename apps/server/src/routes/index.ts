@@ -6,6 +6,7 @@ import { createAuthRouter } from "./auth.js";
 import { createBanksRouter } from "./banks.js";
 import { createMonoWebhookRouter } from "./mono-webhook.js";
 import { createBarcodeRouter } from "./barcode.js";
+import { createBillingRouter } from "./billing.js";
 import { createChatRouter } from "./chat.js";
 import { createCoachRouter } from "./coach.js";
 import { createCspReportRouter } from "./csp-report.js";
@@ -38,6 +39,7 @@ export function registerRoutes(app: Express, { pool }: { pool: Pool }): void {
   app.use(createHealthRouter({ pool }));
   app.use(createAuthRouter());
   app.use(createMeRouter());
+  app.use(createBillingRouter({ pool }));
   app.use(createSyncRouter());
   app.use(createChatRouter());
   app.use(createMonoWebhookRouter());

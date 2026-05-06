@@ -2201,6 +2201,168 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/billing/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Створити Stripe Checkout session для Plus/Pro */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["BillingCheckoutRequest"];
+                };
+            };
+            responses: {
+                /** @description Checkout session ready; client redirects to `url`. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BillingCheckoutResponse"];
+                    };
+                };
+                /** @description Bad request — payload не пройшов zod-валідацію. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Unauthorized — потрібна активна сесія. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+                /** @description Stripe billing env is not configured. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Поточний Stripe subscription state користувача */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Current subscription snapshot. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BillingStatusResponse"];
+                    };
+                };
+                /** @description Unauthorized — потрібна активна сесія. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/billing/stripe-webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stripe webhook delivery endpoint */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    /** @description Stripe webhook signature header (`v1` HMAC). */
+                    "stripe-signature": string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+                /** @description Bad request — payload не пройшов zod-валідацію. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/transcribe": {
         parameters: {
             query?: never;
@@ -2927,6 +3089,11 @@ export interface components {
             source: "pricing_page" | "paywall" | "settings" | "onboarding";
             locale?: string;
         };
+        /** @description POST /api/billing/checkout — Stripe Checkout session request. */
+        BillingCheckoutRequest: {
+            /** @enum {string} */
+            plan: "plus" | "pro";
+        };
         /** @description POST /api/metrics/web-vitals — батч Core Web Vitals (LCP/INP/FCP/TTFB/CLS). */
         WebVitalsPayload: {
             metrics: ({
@@ -3093,6 +3260,27 @@ export interface components {
             /** @constant */
             ok: true;
             created: boolean;
+        };
+        /** @description Відповідь Stripe Checkout MVP: session id, redirect URL, test/live mode. */
+        BillingCheckoutResponse: {
+            /** @constant */
+            ok: true;
+            /** @enum {string} */
+            mode: "test" | "live";
+            sessionId: string;
+            /** Format: uri */
+            url: string;
+        };
+        /** @description Поточний subscription state користувача, серіалізований з billing_subscriptions. */
+        BillingStatusResponse: {
+            subscription: {
+                id: number | null;
+                provider: "stripe" | null;
+                plan: ("plus" | "pro") | null;
+                status: string | null;
+                active: boolean;
+                currentPeriodEnd: string | null;
+            };
         };
         /** @description Відповідь на POST /api/transcribe — розпізнаний текст + тривалість аудіо. */
         TranscribeResponse: {

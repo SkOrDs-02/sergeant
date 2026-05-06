@@ -214,6 +214,20 @@ const WaitlistSubmitResponse = schemas.WaitlistSubmitResponseSchema.meta({
   description:
     "Відповідь на POST /api/v1/waitlist — `created` розрізняє новий запис vs duplicate.",
 });
+const BillingCheckoutRequest = schemas.BillingCheckoutRequestSchema.meta({
+  id: "BillingCheckoutRequest",
+  description: "POST /api/billing/checkout — Stripe Checkout session request.",
+});
+const BillingCheckoutResponse = schemas.BillingCheckoutResponseSchema.meta({
+  id: "BillingCheckoutResponse",
+  description:
+    "Відповідь Stripe Checkout MVP: session id, redirect URL, test/live mode.",
+});
+const BillingStatusResponse = schemas.BillingStatusResponseSchema.meta({
+  id: "BillingStatusResponse",
+  description:
+    "Поточний subscription state користувача, серіалізований з billing_subscriptions.",
+});
 const TranscribeQuery = schemas.TranscribeQuerySchema.meta({
   id: "TranscribeQuery",
   description:
@@ -295,6 +309,9 @@ export const namedSchemas = {
   Pagination,
   WaitlistSubmit,
   WaitlistSubmitResponse,
+  BillingCheckoutRequest,
+  BillingCheckoutResponse,
+  BillingStatusResponse,
   TranscribeQuery,
   TranscribeResponse,
   WebVitalsPayload,

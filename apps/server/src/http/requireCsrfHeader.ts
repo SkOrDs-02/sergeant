@@ -58,6 +58,7 @@ const EXEMPT_PATH_PREFIXES: readonly string[] = [
   "/api/auth/",
   "/api/auth", // exact match для самого root-у Better Auth (рідко, але можливо)
   "/api/mono/webhook",
+  "/api/billing/stripe-webhook",
   "/api/csp-report",
   "/api/metrics/web-vitals",
   "/api/internal/",
