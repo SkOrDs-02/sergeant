@@ -59,15 +59,40 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     throw new Error("sync v2 writer boot requires a browser window");
   }
 
-  const [{ getSqliteDb }, { apiClient }, sentry, dbSchema] = await Promise.all([
+  const [
+    { getSqliteDb },
+    { apiClient },
+    sentry,
+    dbSchema,
+    { runMigrations },
+    { createSqliteAdapter },
+  ] = await Promise.all([
     import("../db/sqlite"),
     import("@shared/api"),
     import("../observability/sentry"),
     import("@sergeant/db-schema/sqlite"),
+    import("@sergeant/db-schema/migrate/runner"),
+    import("@sergeant/db-schema/migrate/sqlite"),
   ]);
 
   const db = await getSqliteDb();
   const client = db.migrationClient();
+
+  // `sync_op_outbox` лежить у `ROUTINE_CLIENT_MIGRATIONS` (історично —
+  // створене у `001_routine_spike.sql` як перша таблиця SPIKE-у). Раніше
+  // воно матеріалізувалося лише після того, як юзер відкривав routine-tab
+  // (там `migrateRoutine` бігає у `sqliteReadBoot`). Але `bootSyncEngineWriter`
+  // фає 30s-інтервал `drain` із `main.tsx` ще до того, як юзер взагалі
+  // зайде на сторінку — і `SELECT … FROM sync_op_outbox` валив `no such
+  // table` у Sentry (WEB-A, 2026-05-07). Прогон міграцій тут — idempotent
+  // (`__migrations` ledger), тож повторні виклики на вже-мігровану БД
+  // — no-op. Тримаємо `await` всередині `createDefaultRuntime`, щоб
+  // `bootSyncEngineWriter`-овий catch-all обгортав і цей шлях.
+  await runMigrations({
+    adapter: createSqliteAdapter(client),
+    files: dbSchema.ROUTINE_CLIENT_MIGRATIONS,
+    tableName: dbSchema.ROUTINE_MIGRATIONS_TABLE,
+  });
 
   return createSyncEngineWriterRuntime({
     pushDeps: {
