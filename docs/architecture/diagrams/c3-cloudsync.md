@@ -1,9 +1,9 @@
-# C3 — CloudSync (web)
+# C3 — Sync Engine v2 (web)
 
-> **Last validated:** 2026-05-05 by @Skords-01. **Next review:** 2026-08-03.
+> **Last validated:** 2026-05-07 by @Skords-01. **Next review:** 2026-08-05.
 > **Status:** Active
 
-Внутрішня структура CloudSync у `apps/web`. Це **local-first sync v1** — UI пише в локальне сховище (localStorage), сервер обробляє push-блоби й pull-блоби з LWW-резолюцією.
+Внутрішня структура sync engine v2 у `apps/web`. CloudSync v1 (dirtyMap / offlineQueue / LWW resolver) знятий (ADR-0047). Єдиний sync-шлях — **op-log outbox**: UI пише у локальний SQLite-WASM, `SyncEnginePushScheduler` батчить операції й пушить на сервер через `/api/v2/sync/push`.
 
 ```mermaid
 flowchart LR
@@ -14,71 +14,99 @@ flowchart LR
         RoutineUI["Routine heatmap"]
     end
 
-    subgraph SyncCore["apps/web/src/core/cloudSync"]
+    subgraph SyncCore["apps/web/src/core/syncEngine"]
         direction TB
-        Hook["useCloudSync.ts<br/><i>(barrel re-export)</i>"]
-        DirtyMap["dirtyMap<br/><i>per-module dirty bits</i>"]
-        Engine["syncEngine<br/><i>orchestrator</i>"]
-        Collect["queue/collectQueued.ts<br/><i>build push payload</i>"]
-        OfflineQ["queue/offlineQueue.ts<br/><i>persist failed pushes</i>"]
-        Resolver["conflict/resolver.ts<br/><i>LWW per slice</i>"]
-        PushOK["conflict/pushSuccess.ts<br/><i>commit local writes</i>"]
-        ParseDate["conflict/parseDate.ts<br/><i>updatedAt normalize</i>"]
+        Writer["singleton.ts<br/><i>SyncEngineWriterRuntime</i>"]
+        Scheduler["SyncEnginePushScheduler<br/><i>@sergeant/api-client</i>"]
+        FlushReconn["SyncEngineFlushOnReconnect<br/><i>replay on network restore</i>"]
+        Status["useSyncStatus<br/><i>core/cloudSync/hook/</i>"]
+    end
+
+    subgraph SQLite["SQLite-WASM (OPFS / kvvfs)"]
+        DomainTables["domain tables<br/><i>routine_entries,<br/>fizruk_workouts, ...</i>"]
+        Outbox["sync_op_outbox<br/><i>pending, in_flight, dead_letter</i>"]
     end
 
     APIClient["packages/api-client<br/><i>fetch wrapper</i>"]
 
     subgraph Server["apps/server"]
-        SyncRoute["routes/sync.ts<br/><i>POST /api/sync</i>"]
-        SyncMod["modules/sync/*<br/><i>v1 + v2 handlers</i>"]
+        PushRoute["POST /api/v2/sync/push"]
+        PullRoute["GET /api/v2/sync/pull"]
+        SyncV2["modules/sync/syncV2.ts<br/><i>OP_LOG_TABLE_REGISTRY</i>"]
     end
 
-    PG[("PostgreSQL")]
+    PG[("PostgreSQL<br/><i>sync_op_log + domain tables</i>")]
 
-    UI -->|"setX(value)"| Hook
-    Hook -->|"mark dirty"| DirtyMap
-    DirtyMap -->|"trigger"| Engine
-    Engine -->|"collect"| Collect
-    Collect -->|"push payload"| APIClient
-    APIClient -->|"POST /api/sync"| SyncRoute
-    SyncRoute --> SyncMod
-    SyncMod -->|"upsert / conflict"| PG
-    SyncMod -->|"pull payload"| APIClient
-    APIClient --> Engine
-    Engine -->|"reconcile"| Resolver
-    Resolver --> ParseDate
-    Resolver --> PushOK
-    Engine -->|"on failure"| OfflineQ
-    OfflineQ -->|"replay"| Engine
-    PushOK -->|"clear bits"| DirtyMap
+    UI -->|"domain write helper"| DomainTables
+    DomainTables -->|"enqueue op"| Outbox
+    Outbox -->|"notifyEnqueued()"| Writer
+    Writer --> Scheduler
+    Scheduler -->|"batch ops"| APIClient
+    APIClient -->|"POST /api/v2/sync/push"| PushRoute
+    PushRoute --> SyncV2
+    SyncV2 -->|"apply per-row + LWW-guard"| PG
+    SyncV2 -->|"{ applied, rejected, duplicate }"| APIClient
+    APIClient -->|"mark applied / dead-letter"| Outbox
+    FlushReconn -->|"flush on reconnect"| Scheduler
+
+    Writer -->|"GET /api/v2/sync/pull?since=cursor"| PullRoute
+    PullRoute --> SyncV2
+    SyncV2 -->|"remote ops since cursor"| APIClient
+    APIClient -->|"apply remote"| DomainTables
+
+    Status -->|"getStatus()"| Writer
 
     classDef ui fill:#1d4ed8,stroke:#1e40af,color:#fff
     classDef core fill:#0f766e,stroke:#0d9488,color:#fff
     classDef server fill:#7c2d12,stroke:#b45309,color:#fff
+    classDef store fill:#4b1d96,stroke:#7c3aed,color:#fff
     class FinykUI,FizrukUI,NutritionUI,RoutineUI ui
-    class Hook,DirtyMap,Engine,Collect,OfflineQ,Resolver,PushOK,ParseDate,APIClient core
-    class SyncRoute,SyncMod,PG server
+    class Writer,Scheduler,FlushReconn,Status,APIClient core
+    class PushRoute,PullRoute,SyncV2 server
+    class DomainTables,Outbox,PG store
 ```
 
-## Ключові структури
+## Ключові компоненти
 
-| Файл / директорія                        | Відповідає за                                                                  |
-| ---------------------------------------- | ------------------------------------------------------------------------------ |
-| `core/cloudSync/queue/collectQueued.ts`  | Збирає dirty-зрізи в push payload (1 payload = 1 транзакція push).             |
-| `core/cloudSync/queue/offlineQueue.ts`   | Persists невдалі push-и у localStorage; replays їх на наступному online-вікні. |
-| `core/cloudSync/conflict/resolver.ts`    | LWW (last-write-wins) per data slice. Базується на `updatedAt`.                |
-| `core/cloudSync/conflict/parseDate.ts`   | Нормалізує `updatedAt` → number (ms epoch) для порівняння.                     |
-| `core/cloudSync/conflict/pushSuccess.ts` | Після успішного push-у: commit локальних writes, скидає dirty-bits.            |
-| `core/useCloudSync.ts`                   | Barrel re-export для зручного import-у з UI.                                   |
+| Файл / директорія                                    | Відповідає за                                                                                     |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `core/syncEngine/singleton.ts`                       | Lazy-init і lifecycle sync runtime (boot / stop / flushNow / getStatus).                         |
+| `core/syncEngine/syncEngineWriter.ts`                | Інтерфейс `SyncEngineWriterRuntime` + фабрика `createSyncEngineWriterRuntime`.                    |
+| `@sergeant/api-client` → `SyncEnginePushScheduler`   | Debounce + retry push batches з `sync_op_outbox`.                                                |
+| `@sergeant/api-client` → `SyncEngineFlushOnReconnect`| Підписується на `online` event, негайно flush відкладеного.                                       |
+| `core/cloudSync/hook/useSyncStatus.ts`               | React-hook: зчитує `SyncOpOutboxStatusCounts` для UI badge.                                       |
+| `packages/db-schema/sqlite`                          | SQLite Drizzle-схема: `sync_op_outbox` + domain tables.                                           |
+| `apps/server/modules/sync/syncV2.ts`                 | `OP_LOG_TABLE_REGISTRY` whitelist + per-table `applyFn`. Push handler, pull handler, dead-letter. |
 
-## Ризики (з diagnostic §2.3)
+## Статуси в outbox
 
-- **Split-brain** — два пристрої одночасно edit-ять той самий зріз → LWW дає переможцю по часу, але є вікно «обидва виграли локально». Тестів на цей сценарій ще немає (item #9 у roadmap).
-- **localStorage quota** на main thread → блокує UI під час великих pushes. Розмір нинішнього footprint-у відстежується через `pnpm lint:localstorage-allowlist` ([item #6 done](../../audits/2026-05-03-web-deep-dive/00-overview.md)).
-- **v2 vs v1 sync coexistence** — v1 досі primary; v2 з operation-log частково розгорнуто. Cleanup у §2.3.
+```
+pending  →  in_flight  →  applied   (normal path)
+                       →  duplicate  (idempotency — op вже застосовано)
+                       →  dead_letter (rejected after max retries)
+```
 
-## Як змінити
+`recoverAllDeadLetters()` переводить `dead_letter → pending` для ручного replay.
 
-1. Будь-яка зміна shape pushed payload → одразу update server route, snapshot, type у `api-client`.
-2. Conflict resolver — purely deterministic; зміни тут вимагають property-based тестів на `resolver.test.ts`.
-3. `dirtyMap` ключі ідуть через типізовані factories — НЕ stringify ad-hoc.
+## Відмінності від v1
+
+| Аспект             | v1 (знятий, ADR-0047)                              | v2 (поточний)                                           |
+| ------------------ | -------------------------------------------------- | ------------------------------------------------------- |
+| Transport          | `POST /api/sync` (410 Gone)                        | `POST /api/v2/sync/push`, `GET /api/v2/sync/pull`       |
+| Granularity        | Whole-module blob (LWW на весь module)             | Per-row operation (LWW + soft-delete per row)           |
+| Conflict detection | На рівні blob timestamp                            | `(user_id, idempotency_key)` UNIQUE у `sync_op_log`     |
+| Offline queue      | `offlineQueue.ts` у localStorage                   | `sync_op_outbox` у SQLite-WASM (durable OPFS)           |
+| Web local store    | `localStorage` (sync-patched)                      | SQLite-WASM (OPFS/kvvfs) — повний SQL, indexed          |
+| Server store       | `module_data` JSONB blobs (дропнута міграцією 046) | Per-domain normalized tables + `sync_op_log` audit      |
+
+## Тестування
+
+- `apps/web/src/core/syncEngine/syncEngineWriter.test.ts` — unit tests для runtime lifecycle.
+- `apps/web/src/core/syncEngine/singleton.test.ts` — singleton boot / idempotency.
+- `apps/server/src/modules/sync/syncV2.test.ts` — server-side apply logic з Testcontainers Postgres.
+
+## Зміна домена → що чіпати
+
+1. Нова per-domain таблиця у `packages/db-schema/sqlite` (SQLite schema) + SQL migration у `apps/server/src/migrations/`.
+2. Додай `applyFn` у `OP_LOG_TABLE_REGISTRY` (`apps/server/src/modules/sync/syncV2.ts`).
+3. Domain write helpers мають писати через SQLite + enqueue op — НЕ raw `localStorage.setItem`.
