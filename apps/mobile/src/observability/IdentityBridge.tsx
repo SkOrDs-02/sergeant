@@ -16,8 +16,8 @@ import { useEffect, useRef } from "react";
 
 import { useUser } from "@sergeant/api-client/react";
 
-import { buildIdentifyTraits } from "./identifyTraits";
-import { identifyPostHogUser, resetPostHog } from "./posthog";
+import { buildIdentifyTraits } from "@/lib/observability/identifyTraits";
+import { identifyPostHogUser, resetPostHog } from "@/lib/observability/posthog";
 
 export function IdentityBridge(): null {
   const { data } = useUser({

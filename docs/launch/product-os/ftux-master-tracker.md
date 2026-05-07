@@ -435,7 +435,7 @@ slos:
 ### Метрики
 
 - **FTUX SLO:** declarative `ftux-slo.yml` + PostHog dashboard + Sentry alert (PR-14).
-- **Mobile PostHog parity:** до launch (PR-15).
+- **Mobile PostHog parity:** ✅ код готовий (2026-05-07). Для активації: виставити `EXPO_PUBLIC_POSTHOG_KEY` у EAS Secrets. Дублікатні модулі консолідовано на `apps/mobile/src/lib/observability/posthog.ts`.
 
 ### PR-стратегія
 
@@ -481,20 +481,20 @@ slos:
 
 ### 8.4. 2026-05-05 mega-roast — нові знахідки
 
-| #    | Знахідка                                                                 | Стан                    | Кроки                                                                                 |
-| ---- | ------------------------------------------------------------------------ | ----------------------- | ------------------------------------------------------------------------------------- |
-| M-1  | **Audit hyperloop** (12 ініціатив, 12 audit-доків, 334 markdown)         | 🚧 Mitigation in flight | PR-01 (audit-freeze) + PR-08 (archive 3 stale tracker-и) + цей master tracker (PR-00) |
-| M-2  | Brand-naming inconsistency (Latin / Cyrillic / English / emoji-prefixed) | ✅ Closed               | PR-06 [#1998](https://github.com/Skords-01/Sergeant/pull/1998)                        |
-| M-3  | 14 onboarding-adjacent компонентів — guidance bloat                      | ⏳ Open                 | PR-12 (incremental orchestrator)                                                      |
-| M-4  | Demo mode прихований за `?demo=1`                                        | ✅ Closed               | PR-05 [#1986](https://github.com/Skords-01/Sergeant/pull/1986)                        |
-| M-5  | UA-only product UI без runtime i18n                                      | 🗄️ Deferred             | UA-only до launch (per Q4)                                                            |
-| M-6  | Mobile FTUX parity gap                                                   | ⏳ Open                 | PR-15 (PostHog) + PR-21 (FTUX components)                                             |
-| M-7  | Paywall placement у FTUX — повна відсутність UX-плану                    | ⏳ Open                 | PR-19 (sketch) → PR-20 (impl)                                                         |
-| M-8  | AGENTS.md 81 КБ — read-tax 6×                                            | 🚧 Mitigation           | PR-22 (TOC + quick-reference, без split)                                              |
-| M-9  | PWA install prompt відсутній                                             | ✅ Closed               | PR-07 [#2011](https://github.com/Skords-01/Sergeant/pull/2011)                        |
-| M-10 | FTUX SLO відсутні                                                        | ⏳ Open                 | PR-14                                                                                 |
-| M-11 | A11y manual audit не проведений                                          | ⏳ Open                 | PR-16                                                                                 |
-| M-12 | What's new modal відсутній                                               | 🚧 Mitigation in flight | PR-18 — `apps/web/src/core/whatsNew/` + `docs/whats-new/` (in flight)                 |
+| #    | Знахідка                                                                 | Стан                    | Кроки                                                                                       |
+| ---- | ------------------------------------------------------------------------ | ----------------------- | ------------------------------------------------------------------------------------------- |
+| M-1  | **Audit hyperloop** (12 ініціатив, 12 audit-доків, 334 markdown)         | 🚧 Mitigation in flight | PR-01 (audit-freeze) + PR-08 (archive 3 stale tracker-и) + цей master tracker (PR-00)       |
+| M-2  | Brand-naming inconsistency (Latin / Cyrillic / English / emoji-prefixed) | ✅ Closed               | PR-06 [#1998](https://github.com/Skords-01/Sergeant/pull/1998)                              |
+| M-3  | 14 onboarding-adjacent компонентів — guidance bloat                      | ⏳ Open                 | PR-12 (incremental orchestrator)                                                            |
+| M-4  | Demo mode прихований за `?demo=1`                                        | ✅ Closed               | PR-05 [#1986](https://github.com/Skords-01/Sergeant/pull/1986)                              |
+| M-5  | UA-only product UI без runtime i18n                                      | 🗄️ Deferred             | UA-only до launch (per Q4)                                                                  |
+| M-6  | Mobile FTUX parity gap                                                   | 🚧 Partial              | PR-15 (PostHog) ✅ код ready 2026-05-07 (needs EAS Secret); PR-21 (FTUX components) ⏳ open |
+| M-7  | Paywall placement у FTUX — повна відсутність UX-плану                    | ⏳ Open                 | PR-19 (sketch) → PR-20 (impl)                                                               |
+| M-8  | AGENTS.md 81 КБ — read-tax 6×                                            | 🚧 Mitigation           | PR-22 (TOC + quick-reference, без split)                                                    |
+| M-9  | PWA install prompt відсутній                                             | ✅ Closed               | PR-07 [#2011](https://github.com/Skords-01/Sergeant/pull/2011)                              |
+| M-10 | FTUX SLO відсутні                                                        | ⏳ Open                 | PR-14                                                                                       |
+| M-11 | A11y manual audit не проведений                                          | ⏳ Open                 | PR-16                                                                                       |
+| M-12 | What's new modal відсутній                                               | 🚧 Mitigation in flight | PR-18 — `apps/web/src/core/whatsNew/` + `docs/whats-new/` (in flight)                       |
 
 ### 8.5. UX-roast 2026-05-06 — P0/P1/P2
 

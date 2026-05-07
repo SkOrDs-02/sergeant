@@ -32,7 +32,7 @@ import "@/lib/fileImport";
 import "@/hooks/useVisualKeyboardInset";
 import { captureError, initObservability } from "@/lib/observability";
 import { IdentityBridge } from "@/observability/IdentityBridge";
-import { initPostHog } from "@/observability/posthog";
+import { initPostHog } from "@/lib/observability/posthog";
 import { bootstrapEncryptedStorage } from "@/lib/storageEncryption";
 import { bootstrapMobileKvStore } from "@/core/db/kvStoreBoot";
 import { useDeepLinks } from "@/lib/useDeepLinks";

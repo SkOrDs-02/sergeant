@@ -14,14 +14,14 @@
  */
 import { ANALYTICS_EVENTS, type AnalyticsEventName } from "@sergeant/shared";
 
-import { capturePostHogEvent } from "@/observability/posthog";
+import { capturePostHogEvent } from "@/lib/observability/posthog";
 
 export { ANALYTICS_EVENTS };
 export {
   initPostHog,
   identifyPostHogUser,
   resetPostHog,
-} from "@/observability/posthog";
+} from "@/lib/observability/posthog";
 
 export function trackEvent(
   eventName: AnalyticsEventName | string,
