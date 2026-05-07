@@ -49,9 +49,11 @@ import {
 import { runMigrations } from "@sergeant/db-schema/migrate";
 import type {
   BroadcastChannelLike,
+  KVStore,
   SqliteKVStoreBoot,
   SqliteKVStoreClient,
 } from "@sergeant/shared";
+import { createSqliteKVStore } from "@sergeant/shared";
 import { addSentryBreadcrumb } from "../observability/sentry.js";
 import { getSqliteDb, type SqliteDbHandle } from "./sqlite.js";
 
@@ -98,11 +100,41 @@ export const kvStoreBoot: SqliteKVStoreBoot = {
  */
 let kvStoreCrossTab: BroadcastChannelLike | null = null;
 
+/**
+ * Memoized {@link SqliteKVStoreClient} bound to the live SQLite handle.
+ * Populated at the end of {@link bootstrapKvStore} success and reused
+ * across subsequent calls so an HMR re-run of the entry point sees the
+ * same write client (and so the early-return branch can return it on
+ * the second call).
+ *
+ * Stays `null` while bootstrap has not yet succeeded and on every
+ * failure path — `getActiveSqliteKvStore()` returns `null` then,
+ * which is the gate `apps/web/src/shared/lib/storage/storage.ts ::
+ * resolveStore()` falls through on (PR #063 ladder).
+ */
+let activeSqliteClient: SqliteKVStoreClient | null = null;
+
+/**
+ * Memoized {@link KVStore} adapter built once `kvStoreBoot.loaded`
+ * flips to `true`. Wraps {@link createSqliteKVStore} (from
+ * `@sergeant/shared`) over the warm-cache, the SQLite write client,
+ * and the cross-tab BroadcastChannel.
+ *
+ * Exported lookup ({@link getActiveSqliteKvStore}) returns this so
+ * `apps/web/src/shared/lib/storage/storage.ts :: resolveStore()` can
+ * pick it up post-boot without taking a hard import on the
+ * adapter-construction call site (which would couple the LS-only test
+ * suite to the SQLite-WASM module-init path).
+ */
+let activeSqliteKvStore: KVStore | null = null;
+
 /** Test-only escape hatch — exported so unit tests can reset the singleton. */
 export function __resetKvStoreBootForTests(): void {
   kvStoreBoot.warmCache.clear();
   kvStoreBoot.loaded = false;
   kvStoreCrossTab = null;
+  activeSqliteClient = null;
+  activeSqliteKvStore = null;
 }
 
 /**
@@ -112,6 +144,25 @@ export function __resetKvStoreBootForTests(): void {
  */
 export function getKvStoreCrossTab(): BroadcastChannelLike | null {
   return kvStoreCrossTab;
+}
+
+/**
+ * Returns the SQLite-backed {@link KVStore} adapter (warm-cache reads
+ * + async write-back + cross-tab BroadcastChannel) once
+ * {@link bootstrapKvStore} has succeeded. Returns `null` while
+ * bootstrap has not yet run, has not yet finished, or failed.
+ *
+ * `apps/web/src/shared/lib/storage/storage.ts :: resolveStore()` uses
+ * this as the priority-1 branch in its ladder (PR #063):
+ *
+ * ```ts
+ * const sqlite = getActiveSqliteKvStore();
+ * if (sqlite) return makeDualWriteKvStore(sqlite, lsAdapter);
+ * // else fall through to LS adapter or memory
+ * ```
+ */
+export function getActiveSqliteKvStore(): KVStore | null {
+  return activeSqliteKvStore;
 }
 
 /**
@@ -220,7 +271,7 @@ export async function bootstrapKvStore(
     return {
       boot: kvStoreBoot,
       crossTab: kvStoreCrossTab,
-      sqlite: null,
+      sqlite: activeSqliteClient,
       loaded: true,
     };
   }
@@ -316,6 +367,25 @@ export async function bootstrapKvStore(
   }
 
   kvStoreBoot.loaded = true;
+  activeSqliteClient = sqliteClient;
+  activeSqliteKvStore = createSqliteKVStore({
+    sqlite: sqliteClient,
+    boot: kvStoreBoot,
+    ...(kvStoreCrossTab !== null ? { crossTab: kvStoreCrossTab } : {}),
+    onWriteError: (op, key, error) => {
+      console.warn(`[kvStoreBoot] sqlite ${op} for "${key}" failed`, error);
+      addSentryBreadcrumb({
+        category: "storage",
+        level: "warning",
+        message: `kvStore sqlite ${op} failed`,
+        data: {
+          key,
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
+    },
+    ...(opts.now ? { now: opts.now } : {}),
+  });
 
   return {
     boot: kvStoreBoot,
