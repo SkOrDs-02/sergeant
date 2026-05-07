@@ -601,6 +601,15 @@ export default [
   // web app except `authClient.ts`, which is the one legitimate adapter
   // module — it owns the Better Auth client and intentionally does NOT
   // re-export `useSession` (see the note in that file).
+  //
+  // Same block also bans the `@sergeant/db-schema/migrate` umbrella entry —
+  // that re-exports `loadMigrationFiles` from `./files.js`, which top-level
+  // imports `node:fs` / `node:path` and breaks Vite's browser bundle (white
+  // screen on boot — see audit `docs/audits/2026-05-07-app-audit.md` §1).
+  // Browser-side callers must use one of the saner sub-segments:
+  // `@sergeant/db-schema/migrate/runner` (dialect-free runner),
+  // `@sergeant/db-schema/migrate/sqlite` (sqlite adapter),
+  // `@sergeant/db-schema/migrate/pg`     (pg adapter — Node-only callers).
   {
     files: ["apps/web/src/**/*.{js,jsx,ts,tsx}"],
     ignores: ["apps/web/src/core/auth/authClient.ts"],
@@ -614,6 +623,31 @@ export default [
               importNames: ["useSession"],
               message:
                 "Use `useAuth()` from `core/auth/AuthContext` (backed by `useUser()` from `@sergeant/api-client/react` → GET /api/v1/me). `useSession` from Better Auth is only for the actions layer inside `core/auth/authClient.ts`.",
+            },
+            {
+              name: "@sergeant/db-schema/migrate",
+              message:
+                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path` and breaks Vite's browser bundle. See `docs/audits/2026-05-07-app-audit.md` §1.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // Mirror of the web umbrella ban for the mobile app — Metro tolerates
+  // `node:fs` shims today, but the latent dual breakage (audit §8) means
+  // we lock all client-side surfaces to the safe sub-segments.
+  {
+    files: ["apps/mobile/src/**/*.{js,jsx,ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@sergeant/db-schema/migrate",
+              message:
+                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path`. See `docs/audits/2026-05-07-app-audit.md` §1.",
             },
           ],
         },

@@ -2,7 +2,7 @@ import {
   FINYK_CLIENT_MIGRATIONS,
   FINYK_MIGRATIONS_TABLE,
 } from "@sergeant/db-schema/sqlite/migrations";
-import { runMigrations } from "@sergeant/db-schema/migrate";
+import { runMigrations } from "@sergeant/db-schema/migrate/runner";
 import {
   createSqliteAdapter,
   type SqliteMigrationClient,
