@@ -46,39 +46,39 @@ describe("mobile featureFlags", () => {
     expect(flag?.defaultValue).toBe(true);
   });
 
-  it("keeps Routine sqlite reads default-on for Stage 8 PR #055r2", () => {
+  it("keeps Routine sqlite reads default-off while Stage 8 read rollout is paused", () => {
     const flag = EXPERIMENTAL_FLAGS.find(
       (item) => item.id === "feature.routine.sqlite_v2.read_sqlite",
     );
 
     expect(flag).toBeDefined();
-    expect(flag?.defaultValue).toBe(true);
+    expect(flag?.defaultValue).toBe(false);
   });
 
-  it("keeps Fizruk sqlite reads default-on for Stage 8 PR #055f2", () => {
+  it("keeps Fizruk sqlite reads default-off while Stage 8 read rollout is paused", () => {
     const flag = EXPERIMENTAL_FLAGS.find(
       (item) => item.id === "feature.fizruk.sqlite_v2.read_sqlite",
     );
 
     expect(flag).toBeDefined();
-    expect(flag?.defaultValue).toBe(true);
+    expect(flag?.defaultValue).toBe(false);
   });
 
-  it("keeps Nutrition sqlite reads default-on for Stage 8 PR #055n2", () => {
+  it("keeps Nutrition sqlite reads default-off while Stage 8 read rollout is paused", () => {
     const flag = EXPERIMENTAL_FLAGS.find(
       (item) => item.id === "feature.nutrition.sqlite_v2.read_sqlite",
     );
 
     expect(flag).toBeDefined();
-    expect(flag?.defaultValue).toBe(true);
+    expect(flag?.defaultValue).toBe(false);
   });
 
-  it("keeps Finyk sqlite reads default-on for Stage 8 PR #055k2", () => {
+  it("keeps Finyk sqlite reads default-off while Stage 8 read rollout is paused", () => {
     const flag = EXPERIMENTAL_FLAGS.find(
       (item) => item.id === "feature.finyk.sqlite_v2.read_sqlite",
     );
 
     expect(flag).toBeDefined();
-    expect(flag?.defaultValue).toBe(true);
+    expect(flag?.defaultValue).toBe(false);
   });
 });

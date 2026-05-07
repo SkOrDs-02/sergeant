@@ -71,8 +71,8 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     id: "feature.routine.sqlite_v2.read_sqlite",
     label: "Routine — read completions from SQLite",
     description:
-      "Completions читаються з локальної SQLite (`routine_entries`) замість LS blob. LS-write залишається як safety net. Stage 8 PR #055r2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
-    defaultValue: true,
+      "Completions читаються з локальної SQLite (`routine_entries`) замість LS blob. LS-write залишається як safety net. Stage 8 PR #055r2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: off.",
+    defaultValue: false,
     experimental: true,
   },
   {
@@ -87,8 +87,8 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     id: "feature.fizruk.sqlite_v2.read_sqlite",
     label: "Fizruk — read from SQLite",
     description:
-      "Workouts / custom exercises / measurements читаються з локальної SQLite (`fizruk_*`) замість LS. LS-write залишається як safety net. Stage 8 PR #055f2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
-    defaultValue: true,
+      "Workouts / custom exercises / measurements читаються з локальної SQLite (`fizruk_*`) замість LS. LS-write залишається як safety net. Stage 8 PR #055f2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: off.",
+    defaultValue: false,
     experimental: true,
   },
   {
@@ -103,8 +103,8 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     id: "feature.nutrition.sqlite_v2.read_sqlite",
     label: "Nutrition — read from SQLite",
     description:
-      "Meals / pantries / prefs / recipes читаються з локальної SQLite (`nutrition_*`) замість LS. LS-write залишається як safety net. Stage 8 PR #055n2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
-    defaultValue: true,
+      "Meals / pantries / prefs / recipes читаються з локальної SQLite (`nutrition_*`) замість LS. LS-write залишається як safety net. Stage 8 PR #055n2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: off.",
+    defaultValue: false,
     experimental: true,
   },
   {
@@ -119,8 +119,8 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     id: "feature.finyk.sqlite_v2.read_sqlite",
     label: "Finyk — read from SQLite",
     description:
-      "Hidden / budgets / subscriptions / assets / debts / receivables / custom categories / manual expenses / tx categories / tx splits / mono debt links / networth history / prefs читаються з локальної SQLite (`finyk_*`) замість LS. LS-write залишається як safety net. Stage 8 PR #055k2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
-    defaultValue: true,
+      "Hidden / budgets / subscriptions / assets / debts / receivables / custom categories / manual expenses / tx categories / tx splits / mono debt links / networth history / prefs читаються з локальної SQLite (`finyk_*`) замість LS. LS-write залишається як safety net. Stage 8 PR #055k2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: off.",
+    defaultValue: false,
     experimental: true,
   },
   {

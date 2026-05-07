@@ -11,7 +11,6 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
-import type { ReactNode } from "react";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import {
   ROUTINE_THEME as C,
@@ -155,19 +154,8 @@ export function HabitForm({
   // container. Nesting another Card here visually duplicates the "flash
   // card" around the form (noticed on mobile Safari where it looked like
   // two stacked panels) and eats ~32px of horizontal padding.
-  const Wrapper = ({ children }: { children: ReactNode }) =>
-    hideHeading ? (
-      <section ref={sectionRef} className="space-y-4">
-        {children}
-      </section>
-    ) : (
-      <Card as="section" ref={sectionRef} radius="lg" className="space-y-3">
-        {children}
-      </Card>
-    );
-
-  return (
-    <Wrapper>
+  const formContent = (
+    <>
       {!hideHeading && (
         <SectionHeading as="h2" size="sm">
           {editingId ? "Редагувати звичку" : "Нова звичка"}
@@ -459,6 +447,20 @@ export function HabitForm({
           {editingId ? "Зберегти зміни" : "Додати звичку"}
         </Button>
       </div>
-    </Wrapper>
+    </>
+  );
+
+  // When embedded in a dialog (HabitQuickCreateDialog) we skip the outer
+  // Card chrome. Keep the wrapper element type stable across keystrokes:
+  // declaring a component inside render remounts the input on every state
+  // update, which closes the software keyboard in mobile PWA browsers.
+  return hideHeading ? (
+    <section ref={sectionRef} className="space-y-4">
+      {formContent}
+    </section>
+  ) : (
+    <Card as="section" ref={sectionRef} radius="lg" className="space-y-3">
+      {formContent}
+    </Card>
   );
 }

@@ -50,20 +50,20 @@ describe("featureFlags", () => {
     expect(getFlag("feature.fizruk.sqlite_v2.dual_write")).toBe(false);
   });
 
-  it("Routine read_sqlite увімкнений за замовчуванням для Stage 8 PR #055r2", async () => {
+  it("keeps Routine read_sqlite default-off while Stage 8 read rollout is paused", async () => {
     const { getFlag, setFlag } = await loadFresh();
-    expect(getFlag("feature.routine.sqlite_v2.read_sqlite")).toBe(true);
-
-    expect(setFlag("feature.routine.sqlite_v2.read_sqlite", false)).toBe(true);
     expect(getFlag("feature.routine.sqlite_v2.read_sqlite")).toBe(false);
+
+    expect(setFlag("feature.routine.sqlite_v2.read_sqlite", true)).toBe(true);
+    expect(getFlag("feature.routine.sqlite_v2.read_sqlite")).toBe(true);
   });
 
-  it("Fizruk read_sqlite увімкнений за замовчуванням для Stage 8 PR #055f2", async () => {
+  it("keeps Fizruk read_sqlite default-off while Stage 8 read rollout is paused", async () => {
     const { getFlag, setFlag } = await loadFresh();
-    expect(getFlag("feature.fizruk.sqlite_v2.read_sqlite")).toBe(true);
-
-    expect(setFlag("feature.fizruk.sqlite_v2.read_sqlite", false)).toBe(true);
     expect(getFlag("feature.fizruk.sqlite_v2.read_sqlite")).toBe(false);
+
+    expect(setFlag("feature.fizruk.sqlite_v2.read_sqlite", true)).toBe(true);
+    expect(getFlag("feature.fizruk.sqlite_v2.read_sqlite")).toBe(true);
   });
 
   it("Nutrition dual-write увімкнений за замовчуванням для Stage 8 PR #055n1", async () => {
@@ -85,22 +85,20 @@ describe("featureFlags", () => {
     expect(getFlag("feature.finyk.sqlite_v2.mono_mirror")).toBe(false);
   });
 
-  it("Nutrition read_sqlite увімкнений за замовчуванням для Stage 8 PR #055n2", async () => {
+  it("keeps Nutrition read_sqlite default-off while Stage 8 read rollout is paused", async () => {
     const { getFlag, setFlag } = await loadFresh();
-    expect(getFlag("feature.nutrition.sqlite_v2.read_sqlite")).toBe(true);
-
-    expect(setFlag("feature.nutrition.sqlite_v2.read_sqlite", false)).toBe(
-      true,
-    );
     expect(getFlag("feature.nutrition.sqlite_v2.read_sqlite")).toBe(false);
+
+    expect(setFlag("feature.nutrition.sqlite_v2.read_sqlite", true)).toBe(true);
+    expect(getFlag("feature.nutrition.sqlite_v2.read_sqlite")).toBe(true);
   });
 
-  it("Finyk read_sqlite увімкнений за замовчуванням для Stage 8 PR #055k2", async () => {
+  it("keeps Finyk read_sqlite default-off while Stage 8 read rollout is paused", async () => {
     const { getFlag, setFlag } = await loadFresh();
-    expect(getFlag("feature.finyk.sqlite_v2.read_sqlite")).toBe(true);
-
-    expect(setFlag("feature.finyk.sqlite_v2.read_sqlite", false)).toBe(true);
     expect(getFlag("feature.finyk.sqlite_v2.read_sqlite")).toBe(false);
+
+    expect(setFlag("feature.finyk.sqlite_v2.read_sqlite", true)).toBe(true);
+    expect(getFlag("feature.finyk.sqlite_v2.read_sqlite")).toBe(true);
   });
 
   it("setFlag зберігає boolean і getFlag його повертає", async () => {

@@ -65,8 +65,8 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
     id: "feature.routine.sqlite_v2.read_sqlite",
     label: "Routine — read completions from SQLite",
     description:
-      "Completions читаються з локальної SQLite (`routine_entries`) замість MMKV blob. MMKV-write залишається як safety net. Stage 8 PR #055r2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
-    defaultValue: true,
+      "Completions читаються з локальної SQLite (`routine_entries`) замість MMKV blob. MMKV-write залишається як safety net. Stage 8 PR #055r2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: off.",
+    defaultValue: false,
   },
   {
     id: "feature.fizruk.sqlite_v2.dual_write",
@@ -79,8 +79,8 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
     id: "feature.fizruk.sqlite_v2.read_sqlite",
     label: "Fizruk — read state from SQLite",
     description:
-      "Workouts / measurements / custom exercises читаються з локальної SQLite (`fizruk_*` таблиці) замість MMKV blob. MMKV-write залишається як safety net. Stage 8 PR #055f2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
-    defaultValue: true,
+      "Workouts / measurements / custom exercises читаються з локальної SQLite (`fizruk_*` таблиці) замість MMKV blob. MMKV-write залишається як safety net. Stage 8 PR #055f2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: off.",
+    defaultValue: false,
   },
   {
     id: "feature.nutrition.sqlite_v2.dual_write",
@@ -93,8 +93,8 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
     id: "feature.nutrition.sqlite_v2.read_sqlite",
     label: "Nutrition — read state from SQLite",
     description:
-      "Meals / pantries / prefs / recipes читаються з локальної SQLite (`nutrition_*` таблиці) замість MMKV blob. MMKV-write залишається як safety net. Stage 8 PR #055n2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
-    defaultValue: true,
+      "Meals / pantries / prefs / recipes читаються з локальної SQLite (`nutrition_*` таблиці) замість MMKV blob. MMKV-write залишається як safety net. Stage 8 PR #055n2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: off.",
+    defaultValue: false,
   },
   {
     id: "feature.finyk.sqlite_v2.dual_write",
@@ -107,8 +107,8 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
     id: "feature.finyk.sqlite_v2.read_sqlite",
     label: "Finyk — read state from SQLite",
     description:
-      "Hidden / budgets / subscriptions / assets / debts / receivables / custom_categories / manual_expenses / tx_categories / tx_splits / mono_debt_links / networth_history / prefs читаються з локальної SQLite (`finyk_*`) замість MMKV blob. MMKV-write залишається як safety net. Stage 8 PR #055k2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
-    defaultValue: true,
+      "Hidden / budgets / subscriptions / assets / debts / receivables / custom_categories / manual_expenses / tx_categories / tx_splits / mono_debt_links / networth_history / prefs читаються з локальної SQLite (`finyk_*`) замість MMKV blob. MMKV-write залишається як safety net. Stage 8 PR #055k2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: off.",
+    defaultValue: false,
   },
   {
     id: "feature.finyk.sqlite_v2.mono_mirror",
