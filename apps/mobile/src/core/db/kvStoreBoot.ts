@@ -36,7 +36,13 @@ import {
   createSqliteAdapter,
   type SqliteMigrationClient,
 } from "@sergeant/db-schema/migrate/sqlite";
-import { runMigrations } from "@sergeant/db-schema/migrate";
+// Import the runner from the dedicated `./migrate/runner` sub-path
+// rather than `./migrate`. The umbrella `./migrate` entry re-exports
+// `loadMigrationFiles` from `./files.js`, which top-level imports
+// `node:fs` / `node:path` and would break the mobile bundle if Metro
+// ever stopped tree-shaking the unused export. The runner itself is
+// dialect- and platform-free.
+import { runMigrations } from "@sergeant/db-schema/migrate/runner";
 import type {
   KVStore,
   SqliteKVStoreBoot,
