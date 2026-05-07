@@ -4,14 +4,14 @@
  * `mobileKVStore` (MMKV) instead of localStorage.
  */
 
-const getVibePicksMock = jest.fn();
+const mockGetVibePicks = jest.fn();
 
 jest.mock("@sergeant/shared", () => {
   const actual = jest.requireActual("@sergeant/shared") as object;
   return {
     __esModule: true,
     ...actual,
-    getVibePicks: (...args: unknown[]) => getVibePicksMock(...args),
+    getVibePicks: (...args: unknown[]) => mockGetVibePicks(...args),
   };
 });
 
@@ -34,12 +34,12 @@ const BASE_USER: User = {
 };
 
 beforeEach(() => {
-  getVibePicksMock.mockReset().mockReturnValue([]);
+  mockGetVibePicks.mockReset().mockReturnValue([]);
 });
 
 describe("buildIdentifyTraits (mobile)", () => {
   it("повертає plan + vibe + signup_date коли всі джерела заповнені", () => {
-    getVibePicksMock.mockReturnValue(["finyk", "fizruk"]);
+    mockGetVibePicks.mockReturnValue(["finyk", "fizruk"]);
 
     const traits = buildIdentifyTraits(BASE_USER);
 
@@ -51,13 +51,13 @@ describe("buildIdentifyTraits (mobile)", () => {
   });
 
   it("опускає vibe, якщо vibe-picks порожні", () => {
-    getVibePicksMock.mockReturnValue([]);
+    mockGetVibePicks.mockReturnValue([]);
     const traits = buildIdentifyTraits(BASE_USER);
     expect(traits).not.toHaveProperty("vibe");
   });
 
   it("опускає vibe, якщо getVibePicks кинув", () => {
-    getVibePicksMock.mockImplementation(() => {
+    mockGetVibePicks.mockImplementation(() => {
       throw new Error("MMKV unavailable");
     });
     const traits = buildIdentifyTraits(BASE_USER);

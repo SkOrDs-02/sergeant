@@ -88,11 +88,48 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
   // (`__migrations` ledger), тож повторні виклики на вже-мігровану БД
   // — no-op. Тримаємо `await` всередині `createDefaultRuntime`, щоб
   // `bootSyncEngineWriter`-овий catch-all обгортав і цей шлях.
+  //
+  // Перед самим прогоном — `repairPartialOutboxMigration`. Audit
+  // `docs/audits/2026-05-07-app-audit.md` §A1 показав, що частина
+  // sqlite-wasm OPFS-клієнтів зависла у corrupted post-002 стейті
+  // (`sync_op_outbox_legacy` лишився, `sync_op_outbox` зник). Звичайний
+  // re-run runner-а на такому DB вилітає на першому ALTER 002-ї.
+  // Helper — idempotent: на здоровій або свіжій БД — no-op.
+  const repaired = await dbSchema.repairPartialOutboxMigration(client, {
+    ledgerTable: dbSchema.ROUTINE_MIGRATIONS_TABLE,
+  });
+  if (repaired.recovered) {
+    sentry.addSentryBreadcrumb({
+      category: "storage",
+      level: "warning",
+      message: "sqlite: recovered sync_op_outbox from partial 002 migration",
+    });
+  }
+
   await runMigrations({
     adapter: createSqliteAdapter(client),
     files: dbSchema.ROUTINE_CLIENT_MIGRATIONS,
     tableName: dbSchema.ROUTINE_MIGRATIONS_TABLE,
   });
+
+  // Post-migration smoke check: if `sync_op_outbox` is still missing
+  // after the runner returned, something deeper than the
+  // post-002 corruption is wrong (e.g. a brand-new failure mode in
+  // sqlite-wasm). Throw a typed error here so the
+  // `bootSyncEngineWriter`-owy catch-all routes it to Sentry with a
+  // breadcrumb instead of letting the periodic drain surface a raw
+  // `SQLITE_ERROR: no such table` 30s later (the original WEB-A
+  // shape).
+  const presentTables = await client.all<{ name: string }>(
+    `SELECT name FROM sqlite_master
+       WHERE type = 'table' AND name = 'sync_op_outbox'`,
+  );
+  if (presentTables.length === 0) {
+    throw new Error(
+      "sync_op_outbox missing after running ROUTINE_CLIENT_MIGRATIONS — " +
+        "client SQLite did not converge on the expected schema",
+    );
+  }
 
   return createSyncEngineWriterRuntime({
     pushDeps: {
