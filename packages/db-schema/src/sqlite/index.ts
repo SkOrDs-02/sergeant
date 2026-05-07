@@ -59,6 +59,8 @@ export {
   NUTRITION_MIGRATIONS_TABLE,
   FINYK_CLIENT_MIGRATIONS,
   FINYK_MIGRATIONS_TABLE,
+  KV_STORE_CLIENT_MIGRATIONS,
+  KV_STORE_MIGRATIONS_TABLE,
 } from "./migrations/index.js";
 export {
   fizrukWorkouts,
