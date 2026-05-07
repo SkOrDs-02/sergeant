@@ -34,6 +34,7 @@ import { captureError, initObservability } from "@/lib/observability";
 import { IdentityBridge } from "@/observability/IdentityBridge";
 import { initPostHog } from "@/observability/posthog";
 import { bootstrapEncryptedStorage } from "@/lib/storageEncryption";
+import { bootstrapMobileKvStore } from "@/core/db/kvStoreBoot";
 import { useDeepLinks } from "@/lib/useDeepLinks";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { ToastContainer, ToastProvider } from "@/components/ui/Toast";
@@ -143,6 +144,19 @@ export default function RootLayout() {
         setStorageReady(true);
         SplashScreen.hideAsync().catch(() => {
           /* race with auto-hide — non-fatal */
+        });
+        // SQLite-backed kv_store warm-cache bootstrap (PR #065).
+        // Fire-and-forget — failures leave `kvStoreBoot.loaded = false`
+        // and `mobileKVStore` falls back to MMKV. Must run after
+        // encrypted storage bootstrap so the MMKV→kv_store one-time
+        // migration reads from the encrypted instance.
+        void bootstrapMobileKvStore({
+          onError: (stage, err) => {
+            captureError(err, {
+              scope: "kv-store-bootstrap",
+              stage,
+            });
+          },
         });
         // Sync v2 writer-runtime boot. Fire-and-forget — the
         // singleton internally `.catch`-es boot failures and routes
