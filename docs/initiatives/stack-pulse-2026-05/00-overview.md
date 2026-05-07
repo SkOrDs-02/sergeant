@@ -60,39 +60,46 @@
 | H9  | `AI_QUOTA_DISABLED=1` ризик у production         | [PR-15](./pr-15-ai-quota-disabled-hardblock.md)  | **Closed** ([#1567](https://github.com/Skords-01/Sergeant/pull/1567))                                                                                                                      |
 | H10 | Pino без enforced redaction policy               | [PR-16](./pr-16-pino-redaction-policy.md)        | **Closed** ([#2125](https://github.com/Skords-01/Sergeant/pull/2125)) — Hard Rule #21 + ESLint `no-raw-req-in-pino-log` + `docs/security/logging-redaction-policy.md`                      |
 
-### Medium (без окремих PR-плані поки не призначений owner)
+### Medium (PR-17..27, trigger-gated)
 
-| ID  | Заголовок                                                            | Owner | Trigger to convert into PR                                |
-| --- | -------------------------------------------------------------------- | ----- | --------------------------------------------------------- |
-| M1  | 80+ env-vars — мігрувати feature-flag-toggle у DB-таблицю            | TBD   | при додаванні 90-ї змінної                                |
-| M2  | Detox path-trigger пропускає server-shape changes                    | TBD   | next mobile API breakage                                  |
-| M3  | Workers без централізованого health-registry                         | TBD   | next stalled-worker incident                              |
-| M4  | `patches/` — patch debt без README                                   | TBD   | next Expo SDK upgrade                                     |
-| M5  | Service Worker `prompt`-mode без auto-update on inactivity           | TBD   | next major web release                                    |
-| M6  | Mobile зашиван Expo SDK 52 (RN 0.76)                                 | TBD   | до Q3 2026 (SDK 53 GA)                                    |
-| M7  | OpenAPI-spec не contract-tested vs runtime                           | TBD   | при першому contract-bug                                  |
-| M8  | Embedding-vendor lock-in (`voyage-3.5-lite`)                         | TBD   | при появі quality regression                              |
-| M9  | `fizruk.vercel.app` + `sergeant.vercel.app` — два production origins | TBD   | clarification needed                                      |
-| M10 | DR runbook documented                                                | Done  | `docs/security/disaster-recovery.md` + operations runbook |
-| M11 | CSP без `report-uri` / `report-to`                                   | TBD   | при першому unknown CSP-bug                               |
-| M12 | `INTERNAL_API_KEY` без rotation-механізму                            | TBD   | next n8n credential breach                                |
+Після breakdown 2026-05-07 кожен Medium-айтем має власний `pr-NN-*.md` план з
+real `file:line` touchpoints. PR-плани — `Planned`, owner = TBD, активуються
+при відповідному trigger-event.
 
-### Low (поліровка, не блокують)
+| ID  | Заголовок                                                            | PR-план                                                  | Trigger to activate                                       |
+| --- | -------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------- |
+| M1  | 80+ env-vars — мігрувати feature-flag-toggle у DB-таблицю            | [PR-17](./pr-17-env-vars-feature-flag-toggle.md)         | при додаванні 90-ї змінної                                |
+| M2  | Detox path-trigger пропускає server-shape changes                    | [PR-18](./pr-18-detox-server-shape-trigger.md)           | next mobile API breakage                                  |
+| M3  | Workers без централізованого health-registry                         | [PR-19](./pr-19-workers-health-registry.md)              | next stalled-worker incident                              |
+| M4  | `patches/` — patch debt без README                                   | [PR-20](./pr-20-patches-readme.md)                       | next Expo SDK upgrade                                     |
+| M5  | Service Worker `prompt`-mode без auto-update on inactivity           | [PR-21](./pr-21-sw-prompt-mode-auto-update.md)           | next major web release                                    |
+| M6  | Mobile зашитий Expo SDK 52 (RN 0.76)                                 | [PR-22](./pr-22-mobile-expo-sdk-53.md)                   | до Q3 2026 (SDK 53 GA)                                    |
+| M7  | OpenAPI-spec не contract-tested vs runtime                           | [PR-23](./pr-23-openapi-contract-tests.md)               | при першому contract-bug                                  |
+| M8  | Embedding-vendor lock-in (`voyage-3.5-lite`)                         | [PR-24](./pr-24-embedding-vendor-abstraction.md)         | при появі quality regression                              |
+| M9  | `fizruk.vercel.app` + `sergeant.vercel.app` — два production origins | [PR-25](./pr-25-two-production-origins.md)               | next CSP/CORS-related incident                            |
+| M10 | DR runbook documented                                                | **Closed** — `docs/security/disaster-recovery.md` + ops-runbook | `docs/security/disaster-recovery.md` + operations runbook |
+| M11 | CSP без `report-uri` / `report-to`                                   | [PR-26](./pr-26-csp-report-uri.md)                       | при першому unknown CSP-bug                               |
+| M12 | `INTERNAL_API_KEY` без rotation-механізму                            | [PR-27](./pr-27-internal-api-key-rotation.md)            | next security audit / suspected leak                      |
 
-| ID  | Заголовок                                                     |
-| --- | ------------------------------------------------------------- |
-| L1  | `__SW_BUILD_ID__` як global → `import.meta.env.VITE_BUILD_ID` |
-| L2  | `window.__sergeantShellNavigate` global → BroadcastChannel    |
-| L3  | Dockerfile post-install cleanup для CVE-shrink — крихкий      |
-| L4  | ESLint config 712 рядків — розділити на per-app               |
-| L5  | `pnpm.overrides` — стара кодова база pinning                  |
-| L6  | 17 hard rules — згрупувати у 5 «Hard Areas»                   |
-| L7  | `runDemoSeedFromUrl` / `runDemoCleanupOnce` — на кожному load |
-| L8  | `LOG_LEVEL=info` default, без 5-min debug-увімкнення в проді  |
-| L9  | `lazyImport` chunk-reload без guard проти infinite-loop       |
-| L10 | Postgres image у `docker-compose.yml` не SHA-pinned           |
-| L11 | PWA precache — перевірити що всі assets 1st-party             |
-| L12 | `tools/console` SDK Anthropic 0.36.3 outdated                 |
+### Low (PR-28..39, поліровка)
+
+Після breakdown 2026-05-07 кожен Low-айтем — окремий `pr-NN-*.md`. Не блокують,
+але мають готовий план для активації при availability ownership.
+
+| ID  | Заголовок                                                     | PR-план                                                |
+| --- | ------------------------------------------------------------- | ------------------------------------------------------ |
+| L1  | `__SW_BUILD_ID__` як global → `import.meta.env.VITE_BUILD_ID` | [PR-28](./pr-28-sw-build-id-import-meta.md)            |
+| L2  | `window.__sergeantShellNavigate` global → BroadcastChannel    | [PR-29](./pr-29-shell-navigate-broadcast-channel.md)   |
+| L3  | Dockerfile post-install cleanup для CVE-shrink — крихкий      | [PR-30](./pr-30-dockerfile-cleanup-cve.md)             |
+| L4  | ESLint config 1073 рядки — розділити на per-app               | [PR-31](./pr-31-eslint-config-split.md)                |
+| L5  | `pnpm.overrides` — стара кодова база pinning                  | [PR-32](./pr-32-pnpm-overrides-cleanup.md)             |
+| L6  | 21 hard rules — згрупувати у 5 «Hard Areas»                   | [PR-33](./pr-33-hard-rules-categorization.md)          |
+| L7  | `runDemoSeedFromUrl` / `runDemoCleanupOnce` — на кожному load | [PR-34](./pr-34-demo-seed-cleanup-gate.md)             |
+| L8  | `LOG_LEVEL=info` default, без 5-min debug-увімкнення в проді  | [PR-35](./pr-35-log-level-debug-window.md)             |
+| L9  | `lazyImport` chunk-reload без guard проти infinite-loop       | [PR-36](./pr-36-lazy-import-chunk-reload-guard.md)     |
+| L10 | Postgres image у `docker-compose.yml` не SHA-pinned           | [PR-37](./pr-37-postgres-image-sha-pin.md)             |
+| L11 | PWA precache — перевірити що всі assets 1st-party             | [PR-38](./pr-38-pwa-precache-first-party.md)           |
+| L12 | `tools/console` SDK Anthropic 0.36.3 outdated                 | [PR-39](./pr-39-tools-console-anthropic-sdk.md)        |
 
 ---
 

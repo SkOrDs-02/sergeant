@@ -65,12 +65,45 @@ mega-PR — кожен має власний рівень ризику і rollba
 
 ---
 
-## Medium / Low — наступні квартали
+## Medium (PR-17..27, trigger-gated)
 
-Medium / Low пункти не виносяться у окремі PR-плани, доки не призначений
-owner і дата. Вони лежать у [`00-overview.md`](./00-overview.md) як trackable
-checklist. При появі ownership — створюється файл `pr-NN-<slug>.md` за
-шаблоном.
+Кожен Medium-айтем має готовий `pr-NN-*.md` план з real `file:line` touchpoints
+(broken out 2026-05-07). PR-плани — `Planned`, owner = TBD, активуються при
+відповідному trigger-event (нова env-зміна, contract bug, stalled-worker
+incident і т.д.).
+
+| PR  | План                                                                                | Linked finding | Effort     | Trigger to activate                |
+| --- | ----------------------------------------------------------------------------------- | -------------- | ---------- | ---------------------------------- |
+| 17  | [Env-vars → DB feature-flag toggle](./pr-17-env-vars-feature-flag-toggle.md)        | M1             | 3–5 днів   | при додаванні 90-ї змінної         |
+| 18  | [Detox server-shape path-trigger](./pr-18-detox-server-shape-trigger.md)            | M2             | 1 день     | next mobile API breakage           |
+| 19  | [Workers health-registry endpoint](./pr-19-workers-health-registry.md)              | M3, MS2        | 2–3 дні    | next stalled-worker incident       |
+| 20  | [`patches/` README + freshness-gate](./pr-20-patches-readme.md)                     | M4             | 0.5 дня    | next Expo SDK upgrade              |
+| 21  | [SW prompt-mode auto-update](./pr-21-sw-prompt-mode-auto-update.md)                 | M5             | 1 день     | next major web release             |
+| 22  | [Mobile Expo SDK 52 → 53](./pr-22-mobile-expo-sdk-53.md)                            | M6             | 5–7 днів   | до Q3 2026 (SDK 53 GA)             |
+| 23  | [OpenAPI contract tests + drift-check](./pr-23-openapi-contract-tests.md)           | M7, MS3        | 3–5 днів   | при першому contract-bug           |
+| 24  | [Embedding-vendor abstraction (provider interface)](./pr-24-embedding-vendor-abstraction.md) | M8             | 2–3 дні    | при появі quality regression       |
+| 25  | [Consolidate two production origins](./pr-25-two-production-origins.md)             | M9             | 2 дні      | next CSP/CORS-related incident     |
+| 26  | [CSP `report-uri` / `report-to` endpoint](./pr-26-csp-report-uri.md)                | M11            | 1 день     | при першому unknown CSP-bug        |
+| 27  | [`INTERNAL_API_KEY` rotation mechanism](./pr-27-internal-api-key-rotation.md)       | M12            | 2–3 дні    | next security audit / leak         |
+
+## Low (PR-28..39, поліровка)
+
+| PR  | План                                                                                  | Linked finding | Effort   |
+| --- | ------------------------------------------------------------------------------------- | -------------- | -------- |
+| 28  | [`__SW_BUILD_ID__` → `import.meta.env`](./pr-28-sw-build-id-import-meta.md)           | L1             | 0.5 дня  |
+| 29  | [Shell-navigate global → BroadcastChannel](./pr-29-shell-navigate-broadcast-channel.md) | L2             | 1 день   |
+| 30  | [Dockerfile cleanup → distroless multi-stage](./pr-30-dockerfile-cleanup-cve.md)      | L3             | 1 день   |
+| 31  | [ESLint config split per-app](./pr-31-eslint-config-split.md)                         | L4             | 1–2 дні  |
+| 32  | [`pnpm.overrides` cleanup + audit-script](./pr-32-pnpm-overrides-cleanup.md)          | L5             | 0.5 дня  |
+| 33  | [Hard rules — categorize у 5 areas](./pr-33-hard-rules-categorization.md)             | L6, R9         | 0.5–1 день |
+| 34  | [Demo seed/cleanup lazy-gate](./pr-34-demo-seed-cleanup-gate.md)                      | L7             | 0.5 дня  |
+| 35  | [`LOG_LEVEL` debug-window CLI toggle](./pr-35-log-level-debug-window.md)              | L8             | 0.5 дня  |
+| 36  | [`lazyImport` chunk-reload guard](./pr-36-lazy-import-chunk-reload-guard.md)          | L9             | 0.5 дня  |
+| 37  | [Postgres image SHA-pin + Renovate](./pr-37-postgres-image-sha-pin.md)                | L10            | 0.5 дня  |
+| 38  | [PWA precache 1st-party verify](./pr-38-pwa-precache-first-party.md)                  | L11            | 0.5 дня  |
+| 39  | [`tools/console` Anthropic SDK 0.36 → 1.x](./pr-39-tools-console-anthropic-sdk.md)    | L12            | 0.5–1 день |
+
+---
 
 Дивись також:
 
