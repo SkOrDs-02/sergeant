@@ -1,94 +1,102 @@
-# Flow — CloudSync push/pull
+# Flow — Sync v2 push/pull
 
-> **Last validated:** 2026-05-04 by @Skords-01. **Next review:** 2026-08-01.
+> **Last validated:** 2026-05-07 by @Skords-01. **Next review:** 2026-08-05.
 > **Status:** Active
 
-Local-first sync v1: web client пише локально, у фоні push-ить блоб на сервер; на старті — pull для отримання змін з інших пристроїв.
+Sync v2: UI пише у локальний SQLite-WASM, `SyncEnginePushScheduler` батчить операції з `sync_op_outbox` та пушить на сервер; pull тягне зміни інших пристроїв. CloudSync v1 (`POST /api/sync`) знятий (ADR-0047) і повертає `410 Gone`.
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor User as 👤 User
     participant UI as Module UI<br/><i>(finyk/fizruk/...)</i>
-    participant LS as localStorage
-    participant Engine as syncEngine
-    participant Queue as offlineQueue
-    participant Resolver as resolver
-    participant API as POST /api/sync
-    participant DB as Postgres
+    participant SQLite as SQLite-WASM<br/><i>(domain tables + sync_op_outbox)</i>
+    participant Engine as SyncEnginePushScheduler<br/><i>core/syncEngine</i>
+    participant API as apps/server<br/>/api/v2/sync
+    participant DB as Postgres<br/><i>sync_op_log + domain tables</i>
 
     rect rgba(34,197,94,0.08)
-    Note over UI,LS: Local write
-    User->>UI: змінює дані (нова витрата, set, тощо)
-    UI->>LS: write через `lsSet(key, value)`
-    UI->>Engine: dirtyMap.mark(slice)
+    Note over UI,SQLite: Локальний запис
+    User->>UI: змінює дані (нова витрата, set, звичка, тощо)
+    UI->>SQLite: domain write helper → INSERT/UPDATE у domain table
+    SQLite->>SQLite: enqueue op у sync_op_outbox<br/><i>(status=pending, idempotency_key=uuid)</i>
+    SQLite-->>Engine: notifyEnqueued()
     end
 
     rect rgba(59,130,246,0.08)
-    Note over Engine,DB: Push
-    Engine->>Engine: collectQueued(dirtyMap)
-    Engine->>API: POST /api/sync<br/>{slices: [...], updatedAt: Date.now()}
-    alt online + 200
-        API->>DB: UPSERT slice WHERE updatedAt>=local
-        DB-->>API: rows applied
-        API-->>Engine: { applied, conflicts: [...] }
-        Engine->>Resolver: reconcile(conflicts)
-        Resolver->>LS: pushSuccess() — clear dirty bits
+    Note over Engine,DB: Push (online path)
+    Engine->>SQLite: fetch pending ops (batch)
+    SQLite-->>Engine: [{table, op, row, idempotency_key}, ...]
+    Engine->>SQLite: mark in_flight
+    Engine->>API: POST /api/v2/sync/push<br/>{ops: [...], device_id, cursor}
+    alt 200 OK
+        API->>DB: apply per-row з LWW-guard + soft-delete<br/>INSERT INTO sync_op_log
+        DB-->>API: { applied, rejected, duplicate }
+        API-->>Engine: { applied: [...], rejected: [...], duplicate: [...] }
+        Engine->>SQLite: mark applied / dead_letter
     else offline / 5xx / timeout
-        Engine->>Queue: persist payload
-        Note right of Queue: replay при наступному<br/>online window
+        Engine->>SQLite: mark pending (retry later)
+        Note right of Engine: SyncEngineFlushOnReconnect<br/>повторить при online
     end
     end
 
     rect rgba(168,85,247,0.08)
-    Note over Engine,DB: Pull
-    Engine->>API: GET /api/sync?since=lastPullAt
-    API->>DB: SELECT slices WHERE updatedAt>since
-    DB-->>API: changes
-    API-->>Engine: { remote: [...] }
-    Engine->>Resolver: LWW per slice
-    Resolver->>LS: write merged
+    Note over Engine,DB: Pull (інші пристрої)
+    Engine->>API: GET /api/v2/sync/pull?since=<cursor>
+    API->>DB: SELECT ops FROM sync_op_log<br/>WHERE user_id=? AND server_ts > cursor
+    DB-->>API: [{table, op, row, server_ts}, ...]
+    API-->>Engine: { ops: [...], next_cursor }
+    Engine->>SQLite: apply remote ops до domain tables
+    Engine->>SQLite: зберегти next_cursor
     end
 ```
 
 ## Тригери push
 
-- Кожний UI write дзвонить `dirtyMap.mark(slice)`.
-- Debounce **200 ms** після останнього mark → один push батчить кілька slice-ів.
-- Manual: користувач натискає «синхронізувати» (rare).
-- Background: при `visibilitychange → visible` після фокуса вкладки.
+- `notifyEnqueued()` — кожен domain write автоматично повідомляє engine.
+- Debounce (≈200 ms після останнього `notifyEnqueued()`) → один batch декількох ops.
+- Manual: `SyncEngineWriterRuntime.flushNow()` — для тестів і ручного тригера (наприклад, перед logout).
+- `SyncEngineFlushOnReconnect` — автоматичний flush при `window.addEventListener('online')`.
 
 ## Тригери pull
 
-- На старті PWA (`AuthProvider` → after session refresh).
-- Manual user-action (refresh кнопка).
-- Background: `cloudSync` SW message при `sync` event (Workbox + Background Sync API).
+- Після успішного push (cursor update).
+- На старті PWA (після session refresh у `AuthProvider`).
+- Manual: `flushNow()` включає pull цикл.
 
-## LWW resolution
+## Idempotency та dead-letter
 
-- Per-slice (не per-record). Якщо local `updatedAt > remote.updatedAt` — local wins, інакше remote.
-- `parseDate.ts` нормалізує всі формати (`number | string | Date | null`) у `number` epoch ms перед порівнянням.
-- **Tie**: при `===` epoch ms — remote wins (server-side authoritative). У реальності ця колізія малоімовірна (резолюція до ms на одному пристрої майже неможлива одночасно з іншим).
+- `(user_id, idempotency_key)` UNIQUE у `sync_op_log` — повторний push однієї ops → `status: duplicate`, не double-apply.
+- `status=dead_letter` — op rejected після max retries. Відновлюється через `recoverAllDeadLetters()` → `pending`.
 
-## Обмеження v1 (з diagnostic §2.3)
+## Конфлікти (per-row LWW)
 
-- **Whole-slice replace**: push надсилає весь slice цілком. Великі slice-и (наприклад finyk transactions) — це bandwidth-витрата.
-- **Conflict-blindness**: якщо два пристрої одночасно пишуть у різні ключі ВСЕРЕДИНІ slice — переможець тимчасово втрачає чужий запис. Pull-cycle потім підтягує remote зміни, але user-bait у вікні.
-- **No event-log**: немає аудит-сліду «що звідки прийшло».
+- Server порівнює `client_ts` нової операції з `server_ts` останнього applied row.
+- Якщо `client_ts < server_ts` останнього op — `status: rejected` (remote newer wins).
+- UI бачить відхилення через `useSyncStatus()` — в майбутньому планується conflict UX.
 
-Roadmap: v2 із operation-log планується (часткова реалізація у `apps/server/src/modules/sync/v2`). Item #9 — split-brain integration tests; item #5 у diagnostic §5.0 — повний v2 cutover.
+## Порівняння з v1
+
+| v1 (ADR-0047, знятий)                | v2 (поточний)                                            |
+| ------------------------------------- | -------------------------------------------------------- |
+| `POST /api/sync` → 410 Gone           | `POST /api/v2/sync/push`                                 |
+| Whole-module blob                     | Per-row operation log                                    |
+| LWW на blob timestamp                 | LWW per row з `idempotency_key`                          |
+| offlineQueue у localStorage           | `sync_op_outbox` у SQLite-WASM (OPFS)                    |
+| `module_data` JSONB (дропнута, 046)   | Normalized per-domain tables + `sync_op_log`             |
 
 ## Failure handling
 
-| Failure          | Behaviour                   | Recovery                                |
-| ---------------- | --------------------------- | --------------------------------------- |
-| Offline          | offlineQueue.persist        | replay коли `navigator.onLine === true` |
-| 5xx              | offlineQueue.persist        | exp.backoff replay                      |
-| 401              | drop payload, force re-auth | redirect to /login                      |
-| 4xx (validation) | log to Sentry, drop slice   | manual fix (rare)                       |
+| Failure          | Behaviour                                                        | Recovery                                  |
+| ---------------- | ---------------------------------------------------------------- | ----------------------------------------- |
+| Offline          | ops лишаються `pending` у outbox                                 | flush при `online` event                  |
+| 5xx / timeout    | ops позначаються `pending` (retry з backoff)                     | exp.backoff у `SyncEnginePushScheduler`   |
+| 401              | drop payload, force re-auth                                      | redirect до /login                        |
+| `rejected`       | op позначається `dead_letter`                                    | `recoverAllDeadLetters()` / manual replay |
+| `duplicate`      | no-op (idempotent), позначається `duplicate` у outbox            | —                                         |
 
 ## Спостережуваність
 
-- PostHog event `cloud_sync.push` (`status`, `slices`, `latency_ms`, `payload_kb`).
-- Sentry breadcrumb `cloud_sync.failed` із deduped `requestId`.
-- Локально: console.debug у dev (gated by `localStorage['DEBUG_CLOUD_SYNC']`).
+- `useSyncStatus()` — React hook, повертає `{ pending, in_flight, dead_letter }` counts.
+- PostHog event `cloud_sync.push_v2` (`status`, `ops_count`, `latency_ms`).
+- Sentry breadcrumb `cloud_sync.v2.failed` із deduped `requestId`.
