@@ -1,6 +1,6 @@
 # 0010 — Revenue-first launch: ship paid, focus wedge
 
-> **Last validated:** 2026-05-06 by @claude. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-07 by @claude. **Next review:** 2026-08-05.
 > **Status:** In progress (Phase 0 done, Phase 1 done — ADR-0051/0052 Accepted, Phase 5.1 done — activation_v2 metric; Phase 2 next)
 > **Priority:** P0 (Sprint 1–4)
 > **Owner:** `@Skords-01`
@@ -301,8 +301,8 @@ Sergeant має 0 paying users, 0 ₴ MRR, 0 рядків білінг-коду 
 
 - [x] PR-и фази 0 і фази 1 змерджені ([#2080](https://github.com/Skords-01/Sergeant/pull/2080)).
 - [ ] PR-и фаз 2–6 змерджені.
-- [ ] Перший Stripe webhook у проді записаний у `stripe_webhook_events`.
-- [ ] Перший платний користувач: `subscriptions.plan = 'pro'` AND `subscriptions.provider = 'stripe'` AND `subscriptions.current_period_end > NOW()`.
+- [ ] Перший Stripe webhook у проді записаний у `webhook_events` (source='stripe').
+- [ ] Перший платний користувач: `billing_subscriptions.plan = 'pro'` AND `billing_subscriptions.status IN ('active','trialing')` AND `billing_subscriptions.current_period_end > NOW()`.
 - [ ] `/pricing` показує реальні CTA → Stripe Checkout (не waitlist), test mode + live mode обидва зелені у smoke-e2e. **₴ UA-only.**
 - [ ] Apple + Google + Email sign-in активні; signup drop-off ≤15% (PostHog funnel, 7 днів production data).
 - [x] Mobile-strategy ADR-0052 із `Status: Accepted` (Capacitor primary, Expo paralleled, обидва підтримуються).
@@ -405,4 +405,30 @@ Ankle-PR (поза фазами 1–6, scope: chore):
 - `apps/mobile/README.md`, `apps/mobile-shell/README.md` — freshness headers + посилання на ADR-0052.
 - **`packages/insights/src/activation.ts`** — `evaluateActivationV2()` pure function (Phase 5.1). Умови: Mono ≥1 + ≥5 categorized txn + ≥1 budget ≤72h від signup. 10 unit-тестів, 80/80 passed.
 
-**Наступний крок:** Phase 2 — SQL міграції `047_subscriptions.sql` + `048_stripe_webhook_events.sql` + billing core module (`getUserPlan`, `requirePlan`, `effectiveLimits`). Гейтовано на: ФОП-реєстрація (T-7 deadline від merge PR 2.2).
+---
+
+### Phase 2 + Phase 3 (backend) — PARTIAL (2026-05-07)
+
+Billing backend реалізовано поза plan-документом; код у репо випереджає описану тут фазу 2.
+
+Що є в коді:
+
+- `apps/server/src/migrations/047_billing_subscriptions.sql` — таблиця `billing_subscriptions` (schema: `billing_subscriptions`, не `subscriptions` як у plan — backward-compatible, webhook idempotency через існуючу `webhook_events` з migration 011).
+- `apps/server/src/modules/billing/stripe.ts` — `createCheckoutSession`, `getSubscriptionStatus`, `processStripeWebhook`, `verifyStripeSignature`.
+- `apps/server/src/routes/billing.ts` — `POST /api/billing/checkout`, `GET /api/billing/status`, `POST /api/billing/stripe-webhook`.
+- `apps/server/src/routes/internal/billing.ts` — `POST /api/internal/billing/upgrade`, `POST /api/internal/billing/downgrade`.
+- `packages/api-client/src/endpoints/billing.ts` — `createCheckout`, `status`.
+- `apps/server/src/modules/billing/requirePlan.ts` — Express middleware, 402 на locked routes (bypassed поки `STRIPE_ENABLED !== "true"`).
+- `apps/server/src/modules/billing/effectiveLimits.ts` — квоти per plan (free: 5 AI req/day; pro: unlimited).
+
+Що відсутнє з фаз 2–3:
+
+- `POST /api/billing/portal` (Customer Portal) — Phase 3.1.
+- `openCustomerPortal` в api-client — Phase 3.3.
+
+### PricingPage — оновлено (2026-05-07)
+
+- `apps/web/src/core/PricingPage.tsx` — ADR-0051 2-тір: Free + Pro ($7/міс, $49/рік, 7-денний trial). Plus tier прибрано. `CHECKOUT_OPENED` PostHog-event додано.
+- `packages/shared/src/lib/analyticsEvents.ts` — `CHECKOUT_OPENED` зареєстровано.
+
+**Наступний крок:** `POST /api/billing/portal` (Phase 3.1) → `usePlan()` + `PaywallModal` (Phase 4.1) → real `/pricing` з portal link (Phase 4.2).

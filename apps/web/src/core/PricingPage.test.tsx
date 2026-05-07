@@ -43,7 +43,7 @@ createCheckoutMock.mockResolvedValue({
 
 vi.mock("@shared/api", () => ({
   waitlistApi: { submit: submitMock },
-  billingApi: { createCheckout: createCheckoutMock },
+  billingApi: { createCheckout: createCheckoutMock, status: vi.fn() },
 }));
 
 vi.mock("@shared/hooks/useToast", () => ({
@@ -74,7 +74,7 @@ function renderPricing(initialUrl = "/pricing") {
   );
 }
 
-describe("PricingPage (Phase 0 monetization rails)", () => {
+describe("PricingPage (ADR-0051 2-tier pricing)", () => {
   beforeEach(() => {
     submitMock.mockClear();
     createCheckoutMock.mockClear();
@@ -85,20 +85,19 @@ describe("PricingPage (Phase 0 monetization rails)", () => {
   });
   afterEach(() => cleanup());
 
-  it("fires PRICING_VIEWED on mount and renders the three tier cards", () => {
+  it("fires PRICING_VIEWED on mount and renders two tier cards (Free + Pro)", () => {
     renderPricing();
     expect(trackEventMock).toHaveBeenCalledWith(
       ANALYTICS_EVENTS.PRICING_VIEWED,
       { source: "direct" },
     );
-    // Tier headings present
     expect(
       screen.getByRole("heading", { level: 3, name: "Free" }),
     ).toBeTruthy();
-    expect(
-      screen.getByRole("heading", { level: 3, name: "Plus" }),
-    ).toBeTruthy();
     expect(screen.getByRole("heading", { level: 3, name: "Pro" })).toBeTruthy();
+    expect(
+      screen.queryByRole("heading", { level: 3, name: "Plus" }),
+    ).toBeNull();
   });
 
   it("submits the waitlist form and tracks the WAITLIST_SUBMITTED event", async () => {
@@ -151,19 +150,16 @@ describe("PricingPage (Phase 0 monetization rails)", () => {
     expect(submitMock).not.toHaveBeenCalled();
   });
 
-  it("opens Stripe Checkout when a paid tier CTA is pressed", async () => {
+  it("opens Stripe Checkout when Pro CTA is pressed and tracks CHECKOUT_OPENED", async () => {
     const assignMock = vi.fn();
     Object.defineProperty(window, "location", {
       configurable: true,
       value: { ...window.location, assign: assignMock },
     });
     renderPricing();
-    const proCta = screen.getAllByRole("button", {
-      name: /Перейти до оплати/i,
-    });
-    fireEvent.click(proCta[0]!);
+    fireEvent.click(screen.getByRole("button", { name: /Перейти до оплати/i }));
     await waitFor(() => {
-      expect(createCheckoutMock).toHaveBeenCalledWith({ plan: "plus" });
+      expect(createCheckoutMock).toHaveBeenCalledWith({ plan: "pro" });
     });
     expect(assignMock).toHaveBeenCalledWith(
       "https://checkout.stripe.com/c/pay/cs_test_123",
@@ -171,6 +167,10 @@ describe("PricingPage (Phase 0 monetization rails)", () => {
     expect(trackEventMock).toHaveBeenCalledWith(
       ANALYTICS_EVENTS.PRICING_CTA_CLICKED,
       expect.objectContaining({ cta: "stripe_checkout" }),
+    );
+    expect(trackEventMock).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.CHECKOUT_OPENED,
+      { plan: "pro", mode: "test" },
     );
   });
 
