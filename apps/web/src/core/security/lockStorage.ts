@@ -40,7 +40,7 @@ async function deriveHash(pin: string, salt: Uint8Array): Promise<Uint8Array> {
   const bits = await crypto.subtle.deriveBits(
     {
       name: "PBKDF2",
-      salt: salt.buffer as ArrayBuffer,
+      salt: salt as BufferSource,
       iterations: 200_000,
       hash: "SHA-256",
     },
