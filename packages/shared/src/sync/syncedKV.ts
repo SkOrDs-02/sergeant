@@ -43,7 +43,7 @@
  * + cloud-sync `enqueueChange` on web, and (when mobile drops its
  * own ad-hoc `useSyncedStorage`) with the MMKV adapter + mobile
  * `enqueueChange` on mobile. Tests can pass `createMemoryKVStore()`
- * + a vi.fn().
+ * from `@sergeant/shared/test-utils` + a vi.fn().
  */
 import type { KVStore, Unsubscribe } from "../storage/kv";
 

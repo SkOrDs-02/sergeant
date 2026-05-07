@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createMemoryKVStore } from "../storage/kv";
+import { createMemoryKVStore } from "../test-utils";
 import {
   ALL_MODULES,
   FIRST_ACTION_PENDING_KEY,
@@ -156,8 +156,8 @@ describe("recordSessionDay / getSessionDays", () => {
   it("increments the counter once per calendar day", () => {
     const s = createMemoryKVStore();
     const day1 = new Date("2025-01-15T10:00:00Z");
-    const day1b = new Date("2025-01-15T22:30:00Z");
-    const day2 = new Date("2025-01-16T03:00:00Z");
+    const day1b = new Date("2025-01-15T18:30:00Z");
+    const day2 = new Date("2025-01-16T10:00:00Z");
 
     expect(recordSessionDay(s, () => day1)).toBe(1);
     expect(recordSessionDay(s, () => day1b)).toBe(1);

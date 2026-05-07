@@ -19,6 +19,33 @@ describe("mobile featureFlags", () => {
     expect(flag?.defaultValue).toBe(true);
   });
 
+  it("keeps Nutrition dual-write default-on for Stage 8 PR #055n1", () => {
+    const flag = EXPERIMENTAL_FLAGS.find(
+      (item) => item.id === "feature.nutrition.sqlite_v2.dual_write",
+    );
+
+    expect(flag).toBeDefined();
+    expect(flag?.defaultValue).toBe(true);
+  });
+
+  it("keeps Finyk dual-write default-on for Stage 8 PR #055k1", () => {
+    const flag = EXPERIMENTAL_FLAGS.find(
+      (item) => item.id === "feature.finyk.sqlite_v2.dual_write",
+    );
+
+    expect(flag).toBeDefined();
+    expect(flag?.defaultValue).toBe(true);
+  });
+
+  it("keeps Finyk Mono mirror default-on for Stage 8 PR #055k1", () => {
+    const flag = EXPERIMENTAL_FLAGS.find(
+      (item) => item.id === "feature.finyk.sqlite_v2.mono_mirror",
+    );
+
+    expect(flag).toBeDefined();
+    expect(flag?.defaultValue).toBe(true);
+  });
+
   it("keeps Routine sqlite reads default-off until Stage 8 PR #055r2", () => {
     const flag = EXPERIMENTAL_FLAGS.find(
       (item) => item.id === "feature.routine.sqlite_v2.read_sqlite",

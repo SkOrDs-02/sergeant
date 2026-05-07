@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createMemoryKVStore } from "../storage/kv";
+import { createMemoryKVStore } from "../test-utils";
 import {
   HIDE_INACTIVE_MODULES_KEY,
   getActiveModules,

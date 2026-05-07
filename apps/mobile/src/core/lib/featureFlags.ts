@@ -86,8 +86,8 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
     id: "feature.nutrition.sqlite_v2.dual_write",
     label: "Nutrition — dual-write MMKV↔SQLite",
     description:
-      "Кожен write у MMKV Харчування додатково мирорить у локальну SQLite (`nutrition_meals`, `nutrition_pantries`, `nutrition_pantry_items`, `nutrition_prefs`, `nutrition_recipes`). Reads ще беруться з MMKV. Stage 4 PR #032 storage-roadmap. Best-effort: помилка SQLite-запису не ламає MMKV. Default: off.",
-    defaultValue: false,
+      "Кожен write у MMKV Харчування додатково мирорить у локальну SQLite (`nutrition_meals`, `nutrition_pantries`, `nutrition_pantry_items`, `nutrition_prefs`, `nutrition_recipes`). Reads ще беруться з MMKV. Stage 8 PR #055n1 storage-roadmap — default-on rollout. Best-effort: помилка SQLite-запису не ламає MMKV. Default: on.",
+    defaultValue: true,
   },
   {
     id: "feature.nutrition.sqlite_v2.read_sqlite",
@@ -100,8 +100,8 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
     id: "feature.finyk.sqlite_v2.dual_write",
     label: "Finyk — dual-write MMKV↔SQLite",
     description:
-      "Кожен write у MMKV Finyk-у додатково мирорить у локальну SQLite (`finyk_*` таблиці: hidden_accounts, hidden_transactions, budgets, subscriptions, assets, debts, receivables, custom_categories, manual_expenses, tx_categories, tx_splits, mono_debt_links, networth_history, prefs). Reads ще беруться з MMKV. Stage 4 PR #036 storage-roadmap. Best-effort: помилка SQLite-запису не ламає MMKV. Default: off.",
-    defaultValue: false,
+      "Кожен write у MMKV Finyk-у додатково мирорить у локальну SQLite (`finyk_*` таблиці: hidden_accounts, hidden_transactions, budgets, subscriptions, assets, debts, receivables, custom_categories, manual_expenses, tx_categories, tx_splits, mono_debt_links, networth_history, prefs). Reads ще беруться з MMKV. Stage 8 PR #055k1 storage-roadmap — default-on rollout. Best-effort: помилка SQLite-запису не ламає MMKV. Default: on.",
+    defaultValue: true,
   },
   {
     id: "feature.finyk.sqlite_v2.read_sqlite",
@@ -114,8 +114,8 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
     id: "feature.finyk.sqlite_v2.mono_mirror",
     label: "Finyk — Mono cache mirror",
     description:
-      "Mono транзакції / акаунти / balance-snapshots мирорять у локальну SQLite (`finyk_mono_transactions`, `finyk_mono_accounts`, `finyk_mono_account_snapshots`) на кожен Mono fetch. Reads у `transactionsStore.realTx` оверлеять з SQLite до прильоту наступного MMKV-снапшота. MMKV-write (`finyk_tx_cache`, `finyk_info_cache`, `finyk_tx_cache_last_good`) залишається як safety net. Stage 4 PR #038 storage-roadmap. Default: off.",
-    defaultValue: false,
+      "Mono транзакції / акаунти / balance-snapshots мирорять у локальну SQLite (`finyk_mono_transactions`, `finyk_mono_accounts`, `finyk_mono_account_snapshots`) на кожен Mono fetch. Reads у `transactionsStore.realTx` оверлеять з SQLite до прильоту наступного MMKV-снапшота. MMKV-write (`finyk_tx_cache`, `finyk_info_cache`, `finyk_tx_cache_last_good`) залишається як safety net. Stage 8 PR #055k1 storage-roadmap — default-on rollout. Default: on.",
+    defaultValue: true,
   },
 ] as const;
 

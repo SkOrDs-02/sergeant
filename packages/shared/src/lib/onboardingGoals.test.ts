@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createMemoryKVStore } from "../storage/kv";
+import { createMemoryKVStore } from "../test-utils";
 import {
   EMPTY_GOALS,
   FIRST_ACTION_PRIORITY,

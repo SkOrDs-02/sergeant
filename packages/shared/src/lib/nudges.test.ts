@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
-import { createMemoryKVStore } from "../storage/kv";
+import { createMemoryKVStore } from "../test-utils";
 import {
   getActiveNudge,
   dismissNudge,

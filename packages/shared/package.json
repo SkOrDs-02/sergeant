@@ -10,7 +10,8 @@
     "./schemas": "./src/schemas/index.ts",
     "./utils": "./src/utils/index.ts",
     "./types": "./src/types/index.ts",
-    "./openapi": "./src/openapi/index.ts"
+    "./openapi": "./src/openapi/index.ts",
+    "./test-utils": "./src/test-utils.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",

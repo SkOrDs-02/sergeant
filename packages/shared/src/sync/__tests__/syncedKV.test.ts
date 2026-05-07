@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createMemoryKVStore } from "../../storage/kv";
+import { createMemoryKVStore } from "../../test-utils";
 import { createSyncedKVStore } from "../syncedKV";
 
 describe("createSyncedKVStore", () => {

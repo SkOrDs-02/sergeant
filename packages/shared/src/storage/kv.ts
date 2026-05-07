@@ -16,7 +16,8 @@
  *    `react-native-mmkv` instance via a thunk so the encrypted
  *    instance swap on bootstrap (`bootstrapEncryptedStorage`) is
  *    transparent to callers.
- *  - **Memory:** `createMemoryKVStore()` — for vitest/jest suites.
+ *  - **Memory:** `createMemoryKVStore()` lives in
+ *    `@sergeant/shared/test-utils` for vitest/jest suites.
  *
  * All methods must be safe — implementations are expected to swallow
  * errors (quota exceeded, storage disabled, JSON parse) and return
@@ -46,7 +47,7 @@ export interface KVStore {
    * string, or `null` if the slot was deleted. Returns a disposer.
    *
    * Adapter notes:
-   *  - Memory store fires synchronously on `setString` / `remove`.
+   *  - Memory test store fires synchronously on `setString` / `remove`.
    *  - Web adapter fires on cross-tab writes via the DOM `storage`
    *    event. Same-tab writes do **not** fire (DOM contract); pair
    *    with explicit notification if you need intra-tab updates.
@@ -54,60 +55,6 @@ export interface KVStore {
    *    `addOnValueChangedListener`.
    */
   onChange(key: string, listener: (next: string | null) => void): Unsubscribe;
-}
-
-/**
- * In-memory KV store suitable for vitest/jest suites. Not thread-safe;
- * callers are expected to scope a fresh instance per test. `onChange`
- * notifications fire synchronously after `setString` / `remove`.
- */
-export function createMemoryKVStore(
-  initial: Record<string, string> = {},
-): KVStore {
-  const map = new Map<string, string>(Object.entries(initial));
-  const subs = new Map<string, Set<(next: string | null) => void>>();
-
-  function notify(key: string, next: string | null): void {
-    const listeners = subs.get(key);
-    if (!listeners) return;
-    for (const listener of Array.from(listeners)) {
-      try {
-        listener(next);
-      } catch {
-        /* swallow — listener errors must not break writers */
-      }
-    }
-  }
-
-  return {
-    getString(key) {
-      return map.has(key) ? (map.get(key) as string) : null;
-    },
-    setString(key, value) {
-      map.set(key, value);
-      notify(key, value);
-    },
-    remove(key) {
-      if (map.delete(key)) notify(key, null);
-    },
-    listKeys() {
-      return Array.from(map.keys());
-    },
-    onChange(key, listener) {
-      let set = subs.get(key);
-      if (!set) {
-        set = new Set();
-        subs.set(key, set);
-      }
-      set.add(listener);
-      return () => {
-        const current = subs.get(key);
-        if (!current) return;
-        current.delete(listener);
-        if (current.size === 0) subs.delete(key);
-      };
-    },
-  };
 }
 
 /**

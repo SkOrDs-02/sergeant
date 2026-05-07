@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { DASHBOARD_MODULE_IDS } from "./dashboard";
-import { createMemoryKVStore } from "../storage/kv";
+import { createMemoryKVStore } from "../test-utils";
 import {
   ONBOARDING_DONE_KEY,
   ONBOARDING_EXISTING_DATA_SOURCES,

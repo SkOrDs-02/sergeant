@@ -34,7 +34,7 @@
  * `localstorage-allowlist-budget.json` production: 0).
  */
 
-import { createMemoryKVStore, createWebKVStore } from "@sergeant/shared";
+import { createWebKVStore } from "@sergeant/shared";
 import type {
   KVStore,
   StorageEventTargetLike,
@@ -58,7 +58,54 @@ import { getActiveSqliteKvStore } from "../../../core/db/kvStoreBoot";
  * store when no `globalThis.localStorage` is available so writes
  * survive across calls within the same process.
  */
-const memoryFallback = createMemoryKVStore();
+const memoryFallback = createWebMemoryFallback();
+
+function createWebMemoryFallback(): KVStore {
+  const map = new Map<string, string>();
+  const subs = new Map<string, Set<(next: string | null) => void>>();
+
+  const notify = (key: string, next: string | null): void => {
+    const listeners = subs.get(key);
+    if (!listeners) return;
+    for (const listener of Array.from(listeners)) {
+      try {
+        listener(next);
+      } catch {
+        /* listener errors must not break storage writes */
+      }
+    }
+  };
+
+  return {
+    getString(key) {
+      return map.get(key) ?? null;
+    },
+    setString(key, value) {
+      map.set(key, value);
+      notify(key, value);
+    },
+    remove(key) {
+      if (map.delete(key)) notify(key, null);
+    },
+    listKeys() {
+      return Array.from(map.keys());
+    },
+    onChange(key, listener) {
+      let listeners = subs.get(key);
+      if (!listeners) {
+        listeners = new Set();
+        subs.set(key, listeners);
+      }
+      listeners.add(listener);
+      return () => {
+        const current = subs.get(key);
+        if (!current) return;
+        current.delete(listener);
+        if (current.size === 0) subs.delete(key);
+      };
+    },
+  };
+}
 
 function resolveLsStore(): KVStore | null {
   let storage: StorageLike | undefined;

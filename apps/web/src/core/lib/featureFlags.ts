@@ -95,8 +95,8 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     id: "feature.nutrition.sqlite_v2.dual_write",
     label: "Nutrition — dual-write LS↔SQLite",
     description:
-      "Кожен write у localStorage Харчування додатково мирорить у локальну SQLite (`nutrition_meals`, `nutrition_pantries`, `nutrition_pantry_items`, `nutrition_prefs`, `nutrition_recipes`). Reads ще беруться з LS/IDB. Stage 4 PR #032 storage-roadmap. Best-effort: помилка SQLite-запису не ламає LS. Default: off.",
-    defaultValue: false,
+      "Кожен write у localStorage Харчування додатково мирорить у локальну SQLite (`nutrition_meals`, `nutrition_pantries`, `nutrition_pantry_items`, `nutrition_prefs`, `nutrition_recipes`). Reads ще беруться з LS/IDB. Stage 8 PR #055n1 storage-roadmap — default-on rollout. Best-effort: помилка SQLite-запису не ламає LS. Default: on.",
+    defaultValue: true,
     experimental: true,
   },
   {
@@ -111,8 +111,8 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     id: "feature.finyk.sqlite_v2.dual_write",
     label: "Finyk — dual-write LS↔SQLite",
     description:
-      "Кожен write у localStorage Finyk-у додатково мирорить у локальну SQLite (`finyk_hidden_accounts`, `finyk_hidden_transactions`, `finyk_budgets`, `finyk_subscriptions`, `finyk_assets`, `finyk_debts`, `finyk_receivables`, `finyk_custom_categories`, `finyk_manual_expenses`, `finyk_tx_categories`, `finyk_tx_splits`, `finyk_mono_debt_links`, `finyk_networth_history`, `finyk_prefs`). Reads ще беруться з LS. Stage 4 PR #036 storage-roadmap. Best-effort: помилка SQLite-запису не ламає LS. Default: off.",
-    defaultValue: false,
+      "Кожен write у localStorage Finyk-у додатково мирорить у локальну SQLite (`finyk_hidden_accounts`, `finyk_hidden_transactions`, `finyk_budgets`, `finyk_subscriptions`, `finyk_assets`, `finyk_debts`, `finyk_receivables`, `finyk_custom_categories`, `finyk_manual_expenses`, `finyk_tx_categories`, `finyk_tx_splits`, `finyk_mono_debt_links`, `finyk_networth_history`, `finyk_prefs`). Reads ще беруться з LS. Stage 8 PR #055k1 storage-roadmap — default-on rollout. Best-effort: помилка SQLite-запису не ламає LS. Default: on.",
+    defaultValue: true,
     experimental: true,
   },
   {
@@ -127,8 +127,8 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     id: "feature.finyk.sqlite_v2.mono_mirror",
     label: "Finyk — Mono cache mirror",
     description:
-      "Mono транзакції / акаунти / balance-snapshots мирорять у локальну SQLite (`finyk_mono_transactions`, `finyk_mono_accounts`, `finyk_mono_account_snapshots`) на кожен fetch. Reads у `useMonobankWebhook` оверлеять з SQLite до прильоту мережі. LS-write (`finyk_tx_cache`, `finyk_info_cache`, `finyk_tx_cache_last_good`) залишається як safety net. Stage 4 PR #038 storage-roadmap. Default: off.",
-    defaultValue: false,
+      "Mono транзакції / акаунти / balance-snapshots мирорять у локальну SQLite (`finyk_mono_transactions`, `finyk_mono_accounts`, `finyk_mono_account_snapshots`) на кожен fetch. Reads у `useMonobankWebhook` оверлеять з SQLite до прильоту мережі. LS-write (`finyk_tx_cache`, `finyk_info_cache`, `finyk_tx_cache_last_good`) залишається як safety net. Stage 8 PR #055k1 storage-roadmap — default-on rollout. Default: on.",
+    defaultValue: true,
     experimental: true,
   },
 ] as const;

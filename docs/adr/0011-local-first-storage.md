@@ -6,7 +6,7 @@
 - **Supersedes:** —
 - **Related:**
   - [`packages/shared/src/lib/storageKeys.ts`](../../packages/shared/src/lib/storageKeys.ts) — централізований реєстр ключів.
-  - [`packages/shared/src/lib/kvStore.ts`](../../packages/shared/src/lib/kvStore.ts) — DOM-free `KVStore` контракт.
+  - [`packages/shared/src/storage/kv.ts`](../../packages/shared/src/storage/kv.ts) — DOM-free `KVStore` runtime-контракт; [`packages/shared/src/test-utils.ts`](../../packages/shared/src/test-utils.ts) — memory adapter для тестів.
   - [`packages/shared/src/sync/modules.ts`](../../packages/shared/src/sync/modules.ts) — `SYNC_MODULES` реєстр (single source of truth для web + mobile, shared registry).
   - [`apps/web/src/core/cloudSync/index.ts`](../../apps/web/src/core/cloudSync/index.ts) — status/dirty-state barrel after the v1 CloudSync network facade was removed; see [ADR-0047](./0047-cloudsync-v1-410-gone.md).
   - [`docs/mobile/react-native-migration.md`](../mobile/react-native-migration.md) §6 — mobile sync-subsystem.
@@ -150,7 +150,7 @@ digest-state) не можуть reach-ити до `localStorage` напряму 
 
 ### Decision
 
-Мінімальний DOM-free contract — [`KVStore`](../../packages/shared/src/lib/kvStore.ts):
+Мінімальний DOM-free contract — [`KVStore`](../../packages/shared/src/storage/kv.ts):
 
 ```ts
 export interface KVStore {
@@ -165,7 +165,7 @@ export interface KVStore {
 
 - **web:** `apps/web/src/shared/lib/storage/storage.ts` експортує `webKVStore` який обгортає `window.localStorage`.
 - **mobile:** `apps/mobile/src/lib/storage.ts` обгортає `react-native-mmkv`.
-- **tests:** `createMemoryKVStore({...})` з `packages/shared/src/lib/kvStore.ts`.
+- **tests:** `createMemoryKVStore({...})` з `@sergeant/shared/test-utils`.
 
 Усі методи **повинні** swallow помилки (quota exceeded, disabled storage,
 parse errors) і повертати `null` / no-op — caller-и assume-ють try/catch-free
@@ -180,7 +180,7 @@ strings у модулях.
 **Позитивні:**
 
 - Pure helpers у `@sergeant/shared` тестуються з `createMemoryKVStore({...})`
-  без jsdom/RN env.
+  з `@sergeant/shared/test-utils` без jsdom/RN env.
 - Один реєстр ключів → grep `STORAGE_KEYS.FIZRUK_PLAN` знаходить усі use-sites.
 - Додавання нового ключа → один diff у `storageKeys.ts` + опційно у
   `SYNC_MODULES` (якщо треба клоуд-синк).

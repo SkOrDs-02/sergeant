@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createMemoryKVStore } from "../storage/kv";
+import { createMemoryKVStore } from "../test-utils";
 import {
   DEFAULT_TOMBSTONE_TTL_MS,
   clearTombstone,

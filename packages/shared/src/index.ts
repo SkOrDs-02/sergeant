@@ -24,9 +24,9 @@ export * from "./lib/assistantCatalogue";
 
 // Platform-agnostic key/value store contract + factories. See
 // `docs/planning/storage-roadmap.md` → PR #006.
-//   - `createMemoryKVStore()` for vitest/jest suites.
 //   - `createWebKVStore(localStorage, window)` on web.
 //   - `createMmkvKVStore(() => activeMmkv)` on mobile.
+//   - `createMemoryKVStore()` lives in `@sergeant/shared/test-utils`.
 export * from "./storage/kv";
 
 // Cross-platform cloud-sync module registry. Single source of truth

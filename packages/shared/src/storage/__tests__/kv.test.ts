@@ -7,7 +7,6 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  createMemoryKVStore,
   createMmkvKVStore,
   createWebKVStore,
   readJSON,
@@ -17,6 +16,7 @@ import {
   type StorageEventTargetLike,
   type StorageLike,
 } from "../kv";
+import { createMemoryKVStore } from "../../test-utils";
 
 // ─── createMemoryKVStore ─────────────────────────────────────────────
 

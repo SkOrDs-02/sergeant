@@ -50,6 +50,25 @@ describe("featureFlags", () => {
     expect(getFlag("feature.fizruk.sqlite_v2.dual_write")).toBe(false);
   });
 
+  it("Nutrition dual-write увімкнений за замовчуванням для Stage 8 PR #055n1", async () => {
+    const { getFlag, setFlag } = await loadFresh();
+    expect(getFlag("feature.nutrition.sqlite_v2.dual_write")).toBe(true);
+
+    expect(setFlag("feature.nutrition.sqlite_v2.dual_write", false)).toBe(true);
+    expect(getFlag("feature.nutrition.sqlite_v2.dual_write")).toBe(false);
+  });
+
+  it("Finyk dual-write і Mono mirror увімкнені за замовчуванням для Stage 8 PR #055k1", async () => {
+    const { getFlag, setFlag } = await loadFresh();
+    expect(getFlag("feature.finyk.sqlite_v2.dual_write")).toBe(true);
+    expect(getFlag("feature.finyk.sqlite_v2.mono_mirror")).toBe(true);
+
+    expect(setFlag("feature.finyk.sqlite_v2.dual_write", false)).toBe(true);
+    expect(setFlag("feature.finyk.sqlite_v2.mono_mirror", false)).toBe(true);
+    expect(getFlag("feature.finyk.sqlite_v2.dual_write")).toBe(false);
+    expect(getFlag("feature.finyk.sqlite_v2.mono_mirror")).toBe(false);
+  });
+
   it("setFlag зберігає boolean і getFlag його повертає", async () => {
     const { getFlag, setFlag } = await loadFresh();
     expect(setFlag("finyk_subscriptions_category", true)).toBe(true);
