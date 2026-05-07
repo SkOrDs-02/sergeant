@@ -7,9 +7,33 @@
  * this module is the single source of truth.
  *
  * Implementation: every read/write is routed through {@link webKVStore} (a
- * `KVStore` adapter from `@sergeant/shared` that wraps `window.localStorage`).
- * No direct `localStorage.*` access remains in this file — `eslint.config.js`
- * enforces that with `sergeant-design/no-raw-local-storage` (PR #054 final,
+ * `KVStore` adapter from `@sergeant/shared`).
+ *
+ * Stage 9 / PR #063 of `docs/planning/storage-roadmap.md` introduced a
+ * three-rung priority ladder in {@link resolveStore}:
+ *
+ *   1. **SQLite warm-cache** — once `bootstrapKvStore()` (PR #062) has
+ *      finished, {@link getActiveSqliteKvStore} returns the
+ *      `createSqliteKVStore` adapter. Reads come from the in-memory
+ *      `Map<string, string>` populated at boot, writes update the cache
+ *      and fan out to a fire-and-forget `INSERT … ON CONFLICT(key) DO
+ *      UPDATE` against `kv_store`. Cross-tab `onChange` rides on
+ *      `BroadcastChannel("kv-store")`.
+ *   2. **`localStorage` mirror** — every SQLite write also fans out to
+ *      the LS adapter via {@link makeDualWriteKvStore} so a revert of
+ *      PR #063 does not lose user data. PR #064 drops this rung after
+ *      a 4-week canary.
+ *   3. **`localStorage`-only fallback** — pre-bootstrap, on bootstrap
+ *      failure, or in environments without SQLite-WASM (SSR, very old
+ *      iOS WebView, Safari Private mode). Same `createWebKVStore`
+ *      adapter that backed `webKVStore` before PR #063.
+ *   4. **In-memory fallback** — SSR + private mode without DOM
+ *      `Storage`. Process-wide singleton so writes survive across
+ *      calls within the same process.
+ *
+ * No direct `localStorage.*` access remains in this file —
+ * `eslint.config.js` enforces that with
+ * `sergeant-design/no-raw-local-storage` (PR #054 final,
  * `localstorage-allowlist-budget.json` production: 0).
  */
 
@@ -21,6 +45,7 @@ import type {
   Unsubscribe,
 } from "@sergeant/shared";
 import type { z } from "zod";
+import { getActiveSqliteKvStore } from "../../../core/db/kvStoreBoot";
 
 /**
  * KVStore adapter for `@sergeant/shared` functions. Wraps
@@ -38,7 +63,7 @@ import type { z } from "zod";
  */
 const memoryFallback = createMemoryKVStore();
 
-function resolveStore(): KVStore {
+function resolveLsStore(): KVStore | null {
   let storage: StorageLike | undefined;
   try {
     const candidate = (globalThis as { localStorage?: unknown }).localStorage;
@@ -46,7 +71,7 @@ function resolveStore(): KVStore {
   } catch {
     storage = undefined;
   }
-  if (!storage) return memoryFallback;
+  if (!storage) return null;
 
   let eventTarget: StorageEventTargetLike | undefined;
   try {
@@ -60,8 +85,71 @@ function resolveStore(): KVStore {
   try {
     return createWebKVStore(storage, eventTarget);
   } catch {
-    return memoryFallback;
+    return null;
   }
+}
+
+/**
+ * Wrap `primary` (SQLite-backed) and `mirror` (LS-backed) into a
+ * single {@link KVStore} that reads from `primary` and writes to both.
+ *
+ * Why dual-write: PR #063 swaps `webKVStore` from LS-backed to
+ * SQLite-backed, but a 4-week canary keeps `localStorage` populated
+ * as a live mirror so a revert can recover user data without manual
+ * intervention. PR #064 drops the mirror once the canary closes.
+ *
+ * Read path: SQLite warm-cache only. The mirror is intentionally
+ * write-only — reading from it would re-introduce the LS-vs-SQLite
+ * skew we are trying to retire.
+ *
+ * Subscription path: `onChange` rides on the SQLite adapter
+ * (BroadcastChannel + same-tab `notify`). The LS adapter's
+ * `storage`-event listeners are unused — same-tab writes already fire
+ * via `notify`, and the SQLite BroadcastChannel covers cross-tab
+ * (every tab post-PR-#063 holds the SQLite-backed adapter).
+ *
+ * Mirror writes are wrapped in try/catch so a quota-exceeded error in
+ * `localStorage` (the typical failure mode after the SQLite cut-over —
+ * users with multi-MB SQLite payloads still have legacy LS quotas)
+ * never escapes a primary-store call site.
+ */
+function makeDualWriteKvStore(primary: KVStore, mirror: KVStore): KVStore {
+  return {
+    getString(key) {
+      return primary.getString(key);
+    },
+    setString(key, value) {
+      primary.setString(key, value);
+      try {
+        mirror.setString(key, value);
+      } catch {
+        /* mirror write quota / private-mode — non-fatal. */
+      }
+    },
+    remove(key) {
+      primary.remove(key);
+      try {
+        mirror.remove(key);
+      } catch {
+        /* mirror remove failure — non-fatal. */
+      }
+    },
+    listKeys() {
+      return primary.listKeys();
+    },
+    onChange(key, listener) {
+      return primary.onChange(key, listener);
+    },
+  };
+}
+
+function resolveStore(): KVStore {
+  const sqlite = getActiveSqliteKvStore();
+  if (sqlite) {
+    const mirror = resolveLsStore();
+    return mirror ? makeDualWriteKvStore(sqlite, mirror) : sqlite;
+  }
+  return resolveLsStore() ?? memoryFallback;
 }
 
 export const webKVStore: KVStore = {

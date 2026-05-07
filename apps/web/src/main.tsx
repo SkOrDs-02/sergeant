@@ -25,7 +25,11 @@ import "@shared/lib/adapters/fileImport";
 import "@shared/hooks/useVisualKeyboardInset";
 import { ErrorBoundary } from "./core/ErrorBoundary.jsx";
 import { installChunkLoadRecover } from "./core/lib/chunkReload.js";
-import { captureException, initSentry } from "./core/observability/sentry.js";
+import {
+  addSentryBreadcrumb,
+  captureException,
+  initSentry,
+} from "./core/observability/sentry.js";
 import { initWebVitals } from "./core/observability/webVitals.js";
 import { initPostHog } from "./core/observability/posthog.js";
 import { runDemoCleanupOnce } from "./core/onboarding/cleanupDemoData.js";
@@ -33,6 +37,7 @@ import { runDemoSeedFromUrl } from "./core/onboarding/seedDemoData.js";
 import { isCapacitor } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 import { bootSyncEngineWriter } from "./core/syncEngine/singleton.js";
+import { bootstrapKvStore } from "./core/db/kvStoreBoot.js";
 
 const queryClient = createAppQueryClient();
 // Persistent IDB-backed snapshot для warm-start: на холодному старті
@@ -64,11 +69,6 @@ const ReactQueryDevtools = import.meta.env.DEV
 // рано — щоб упіймати rejection-и на найперших lazy-import-ах.
 installChunkLoadRecover();
 
-runDemoSeedFromUrl();
-storageManager.runAll();
-runDemoCleanupOnce();
-void bootSyncEngineWriter({ captureException });
-
 interface ErrorFallbackProps {
   error: Error;
   resetError: () => void;
@@ -97,25 +97,85 @@ function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <ErrorBoundary fallback={ErrorFallback}>
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={persistOptions}
-    >
-      <RouterProvider router={router} />
-      <Analytics />
-      {ReactQueryDevtools ? (
-        <Suspense fallback={null}>
-          <ReactQueryDevtools
-            initialIsOpen={false}
-            buttonPosition="bottom-left"
-          />
-        </Suspense>
-      ) : null}
-    </PersistQueryClientProvider>
-  </ErrorBoundary>,
-);
+// PR #063 boot wiring: kick off SQLite warm-cache, then run the storage-dependent
+// boot steps (demo seed, `storageManager` migrations, demo cleanup,
+// sync-engine writer boot) and finally mount React. We **await** bootstrap
+// before any writes happen so there is no race window between the
+// LS-only adapter (pre-bootstrap) and the SQLite-backed adapter
+// (post-bootstrap) — every write done after this point fans out to
+// BOTH stores via {@link makeDualWriteKvStore}, and no key written
+// here is visible only in LS.
+//
+// `bootstrapKvStore` is documented as never-throwing: every failure
+// path (SQLite init, migration runner, scan, LS import) leaves
+// `kvStoreBoot.loaded = false` and surfaces through `onError`, so the
+// IIFE's `try/catch` is belt-and-suspenders against future bugs.
+void (async () => {
+  const startedAt =
+    typeof performance !== "undefined" ? performance.now() : Date.now();
+  try {
+    const result = await bootstrapKvStore({
+      onError: (stage, err) => {
+        console.warn(`[main] kvStoreBoot ${stage} failed`, err);
+        addSentryBreadcrumb({
+          category: "storage",
+          level: "warning",
+          message: `kvStoreBoot ${stage} failed`,
+          data: { error: err instanceof Error ? err.message : String(err) },
+        });
+      },
+    });
+    const endedAt =
+      typeof performance !== "undefined" ? performance.now() : Date.now();
+    addSentryBreadcrumb({
+      category: "storage",
+      level: "info",
+      message: "kvStoreBoot completed",
+      data: {
+        // Telemetry tags expected by the rollout dashboards. `backend`
+        // tells us whether the SQLite cut-over actually took or we are
+        // still serving the LS fallback, and `duration_ms` lets us
+        // catch boot-time regressions before they reach canary.
+        backend: result.loaded ? "sqlite" : "ls-fallback",
+        loaded: result.loaded,
+        duration_ms: Math.round(endedAt - startedAt),
+      },
+    });
+  } catch (err) {
+    addSentryBreadcrumb({
+      category: "storage",
+      level: "warning",
+      message: "kvStoreBoot threw (should be unreachable)",
+      data: { error: err instanceof Error ? err.message : String(err) },
+    });
+    console.warn("[main] kvStoreBoot threw (should be unreachable)", err);
+  }
+
+  runDemoSeedFromUrl();
+  storageManager.runAll();
+  runDemoCleanupOnce();
+  void bootSyncEngineWriter({ captureException });
+
+  ReactDOM.createRoot(document.getElementById("root")!).render(
+    <ErrorBoundary fallback={ErrorFallback}>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={persistOptions}
+      >
+        <RouterProvider router={router} />
+        <Analytics />
+        {ReactQueryDevtools ? (
+          <Suspense fallback={null}>
+            <ReactQueryDevtools
+              initialIsOpen={false}
+              buttonPosition="bottom-left"
+            />
+          </Suspense>
+        ) : null}
+      </PersistQueryClientProvider>
+    </ErrorBoundary>,
+  );
+})();
 
 // Sentry init + web-vitals збір відкладаємо до після hydration — SDK Sentry
 // (~30–40 KB gzip) і `web-vitals` (~1 KB gzip) не повинні блокувати TTI.
