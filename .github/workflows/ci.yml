@@ -121,6 +121,14 @@ jobs:
         # scripts/check-codeowners-coverage.mjs.
         run: pnpm lint:codeowners
 
+      - name: patches/ freshness gate (PR-20 / M4)
+        # Fails when patches/*.patch files are not documented in
+        # patches/README.md (or rows have empty Owner / Drop-when /
+        # Upstream cells), or when pnpm.patchedDependencies in
+        # package.json is out of sync with patches/ on disk. Source of
+        # truth: scripts/check-patches-doc.mjs.
+        run: pnpm lint:patches
+
       - name: Drizzle schema ↔ SQL migration drift (PR-11)
         # Static analysis: verifies that every table/column in
         # packages/db-schema/src/pg/ is present in the SQL migrations under
