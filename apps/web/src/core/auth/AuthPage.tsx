@@ -8,6 +8,7 @@ import { useCelebration } from "@shared/components/ui/CelebrationModal";
 import { useToast } from "@shared/hooks/useToast";
 import { useApiForm } from "@shared/forms/useApiForm";
 import { messages } from "@shared/i18n/uk";
+import { estimatePasswordStrength } from "@shared/lib/auth/passwordStrength";
 import { BrandLogo } from "../app/BrandLogo";
 import { useAuth } from "./AuthContext";
 
@@ -49,8 +50,11 @@ type RegisterValues = z.infer<typeof registerSchema>;
 
 function PasswordStrengthBar({ password }: { password: string }) {
   if (!password) return null;
-  const len = password.length;
-  const level = len < 6 ? 0 : len < 10 ? 1 : 2;
+  // PR-15 / §C8 — entropy-aware ladder. Замінює naive довжина-only оцінку,
+  // що однаково вважала надійним і `aaaaaaaaaa`, і `Aa1!Aa1!Aa`. Лейбли —
+  // bare-string (rule scope: тільки JSX-літерали), окремий i18n-namespace
+  // не виправдано для трьох коротких токенів.
+  const { level } = estimatePasswordStrength(password);
   const widths = ["w-1/3", "w-2/3", "w-full"];
   const colors = ["bg-error", "bg-amber-400", "bg-brand-500"];
   const labels = ["Слабкий", "Середній", "Надійний"];
