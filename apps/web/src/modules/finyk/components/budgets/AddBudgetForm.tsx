@@ -235,7 +235,6 @@ function AddBudgetFormComponent({
                 })
               }
               categories={expenseCategoryList.filter((c) => c.id !== "income")}
-              placeholder="Вибери категорію"
             />
             {limitCategoryError && (
               <p

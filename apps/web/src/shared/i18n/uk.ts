@@ -77,6 +77,12 @@ export const messages = {
     // Іменування — за призначенням, не за рядком. Якщо в майбутньому буде
     // змінено формулювання чи довжину пароля, зміна торкнеться лише
     // value-у тут.
+    // PR-31 / §C6 — `fieldRequired` deprecated. Безособове «Поле
+    // обовʼязкове» виграло від уніфікації під 1-у особу («Введи X»
+    // / «Обери X»). Лишаємо до follow-up міграції design-showcase
+    // demo (`core/designShowcase/sections/Forms.tsx`); прохід через
+    // production-форми вже не звертається до цього key-а.
+    /** @deprecated PR-31: use `<entity>Required` ключі замість безособового. */
     fieldRequired: "Поле обовʼязкове.",
     emailRequired: "Введи email",
     emailInvalid: "Некоректний формат email",
@@ -95,12 +101,18 @@ export const messages = {
     noteMax200: "Не більше 200 символів",
     sleepHoursRange: "Сон має бути від 0 до 24 годин",
     weightKgRange: "Вага має бути від 20 до 300 кг",
-    tagNameRequired: "Назва тега не може бути порожньою",
-    goalNameRequired: "Вкажіть назву цілі",
-    goalAmountRequired: "Вкажіть суму цілі більше 0",
+    // PR-31 / §C6 — уніфікація під 1-у особу «Введи X» / «Обери X».
+    // Раніше каталог змішував чотири стилі (`Поле обовʼязкове`,
+    // `Назва тега не може бути порожньою`, `Вкажіть назву`, `Введи`).
+    // Тримаємо стиль одним: для input-полів — «Введи …», для select-ів
+    // — «Обери …». Snapshot-и `AddBudgetForm.test.tsx` оновлюються
+    // разом з цим (тести закривають user-facing copy contract).
+    tagNameRequired: "Введи назву тега",
+    goalNameRequired: "Введи назву цілі",
+    goalAmountRequired: "Введи суму цілі більше 0",
     goalSavedNonNegative: "Відкладена сума не може бути від'ємною",
-    limitAmountRequired: "Вкажіть ліміт більше 0",
-    categoryRequired: "Оберіть категорію",
+    limitAmountRequired: "Введи ліміт більше 0",
+    categoryRequired: "Обери категорію",
     passwordResetMin10: "Пароль має бути мінімум 10 символів.",
     // Дві варіації паролі-не-збігаються тримаємо роздільно — крапка є
     // частиною snapshot-ів і existing-копірайту (`ResetPasswordPage` на

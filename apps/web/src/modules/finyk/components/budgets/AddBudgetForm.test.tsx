@@ -37,7 +37,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
 
   it("submits a valid limit budget with normalized number value", async () => {
     const { onSubmit } = setup();
-    fireEvent.change(screen.getByDisplayValue("Вибери категорію"), {
+    fireEvent.change(screen.getByDisplayValue("Обери категорію"), {
       target: { value: "food" },
     });
     fireEvent.change(screen.getByLabelText("Ліміт"), {
@@ -61,14 +61,14 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     fireEvent.submit(screen.getByRole("form", { name: "Новий ліміт бюджету" }));
 
     await waitFor(() => {
-      expect(screen.getByText("Оберіть категорію")).toBeInTheDocument();
+      expect(screen.getByText("Обери категорію")).toBeInTheDocument();
     });
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it("flags non-positive limit amount via aria-invalid + zod refine", async () => {
     const { onSubmit } = setup();
-    fireEvent.change(screen.getByDisplayValue("Вибери категорію"), {
+    fireEvent.change(screen.getByDisplayValue("Обери категорію"), {
       target: { value: "food" },
     });
     fireEvent.change(screen.getByLabelText("Ліміт"), {
@@ -82,7 +82,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
         "true",
       );
     });
-    expect(screen.getByText("Вкажіть ліміт більше 0")).toBeInTheDocument();
+    expect(screen.getByText("Введи ліміт більше 0")).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
@@ -91,7 +91,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
       { id: "b1", type: "limit", categoryId: "food", limit: 1000 },
     ];
     const { onSubmit } = setup(existing);
-    fireEvent.change(screen.getByDisplayValue("Вибери категорію"), {
+    fireEvent.change(screen.getByDisplayValue("Обери категорію"), {
       target: { value: "food" },
     });
     fireEvent.change(screen.getByLabelText("Ліміт"), {
@@ -149,7 +149,7 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     fireEvent.submit(screen.getByRole("form", { name: "Нова ціль бюджету" }));
 
     await waitFor(() => {
-      expect(screen.getByText("Вкажіть назву цілі")).toBeInTheDocument();
+      expect(screen.getByText("Введи назву цілі")).toBeInTheDocument();
     });
     expect(onSubmit).not.toHaveBeenCalled();
   });

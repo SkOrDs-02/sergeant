@@ -21,7 +21,8 @@ function CategorySelectorComponent({
   onChange,
   categories = [],
   className,
-  placeholder = "Оберіть категорію",
+  // PR-31 / §C6 — узгоджено з `validation.categoryRequired`.
+  placeholder = "Обери категорію",
 }: CategorySelectorProps) {
   return (
     <select
