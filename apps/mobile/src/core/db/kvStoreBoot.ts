@@ -36,12 +36,12 @@ import {
   createSqliteAdapter,
   type SqliteMigrationClient,
 } from "@sergeant/db-schema/migrate/sqlite";
-// Import the runner from the dedicated `./migrate/runner` sub-path
-// rather than `./migrate`. The umbrella `./migrate` entry re-exports
-// `loadMigrationFiles` from `./files.js`, which top-level imports
-// `node:fs` / `node:path` and would break the mobile bundle if Metro
-// ever stopped tree-shaking the unused export. The runner itself is
-// dialect- and platform-free.
+// Mirror of the web fix: import the runner from the dedicated
+// `./migrate/runner` sub-path. The umbrella `./migrate` entry
+// re-exports `loadMigrationFiles` from `./files.js`, which top-level
+// imports `node:fs` / `node:path`. Metro tolerates that today, but
+// the umbrella is banned by the `no-restricted-imports` guard so
+// every client surface stays bundler-portable.
 import { runMigrations } from "@sergeant/db-schema/migrate/runner";
 import type {
   KVStore,

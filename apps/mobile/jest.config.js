@@ -28,12 +28,15 @@ module.exports = {
     // (`/sqlite`, `/pg`, `/shared`) and the package root onto
     // `packages/db-schema/src/...`.
     "^@sergeant/db-schema$": "<rootDir>/../../packages/db-schema/src/index.ts",
-    // `migrate/pg` and `migrate/sqlite` are single files, not directories;
-    // map them explicitly before the catch-all that appends `/index.ts`.
+    // `migrate/pg`, `migrate/sqlite` and `migrate/runner` are single files,
+    // not directories; map them explicitly before the catch-all that
+    // appends `/index.ts`.
     "^@sergeant/db-schema/migrate/pg$":
       "<rootDir>/../../packages/db-schema/src/migrate/pg.ts",
     "^@sergeant/db-schema/migrate/sqlite$":
       "<rootDir>/../../packages/db-schema/src/migrate/sqlite.ts",
+    "^@sergeant/db-schema/migrate/runner$":
+      "<rootDir>/../../packages/db-schema/src/migrate/runner.ts",
     "^@sergeant/db-schema/(.*)$":
       "<rootDir>/../../packages/db-schema/src/$1/index.ts",
     // `@sergeant/design-tokens` ships its `exports` map with `types`

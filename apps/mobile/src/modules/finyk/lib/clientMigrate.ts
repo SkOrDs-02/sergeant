@@ -2,11 +2,6 @@ import {
   FINYK_CLIENT_MIGRATIONS,
   FINYK_MIGRATIONS_TABLE,
 } from "@sergeant/db-schema/sqlite/migrations";
-// Import the runner from the dedicated `./migrate/runner` sub-path —
-// the umbrella `./migrate` re-exports `loadMigrationFiles` from
-// `./files.js`, which top-level imports `node:fs` / `node:path` and
-// would break the mobile bundle if Metro ever stopped tree-shaking
-// the unused export.
 import { runMigrations } from "@sergeant/db-schema/migrate/runner";
 import {
   createSqliteAdapter,
