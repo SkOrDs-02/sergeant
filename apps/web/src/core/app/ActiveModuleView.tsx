@@ -29,6 +29,7 @@ const RoutineApp = lazyDefault(
 export interface ActiveModuleViewProps {
   activeModule: HubModuleId;
   goToHub: HubNavigation["goToHub"];
+  goToModuleSettings: HubNavigation["goToModuleSettings"];
   openModule: HubNavigation["openModule"];
   moduleAnimClass: HubNavigation["moduleAnimClass"];
   ui: HubUIState;
@@ -47,6 +48,7 @@ export function ActiveModuleView(props: ActiveModuleViewProps) {
   const {
     activeModule,
     goToHub,
+    goToModuleSettings,
     openModule,
     moduleAnimClass,
     ui,
@@ -90,6 +92,7 @@ export function ActiveModuleView(props: ActiveModuleViewProps) {
             {activeModule === "finyk" && (
               <FinykApp
                 onBackToHub={goToHub}
+                onOpenSettings={() => goToModuleSettings("finyk")}
                 pwaAction={pwaAction}
                 onPwaActionConsumed={clearPwaAction}
               />
@@ -97,6 +100,7 @@ export function ActiveModuleView(props: ActiveModuleViewProps) {
             {activeModule === "fizruk" && (
               <FizrukApp
                 onBackToHub={goToHub}
+                onOpenSettings={() => goToModuleSettings("fizruk")}
                 onOpenModule={openModule}
                 pwaAction={pwaAction}
                 onPwaActionConsumed={clearPwaAction}
@@ -105,6 +109,7 @@ export function ActiveModuleView(props: ActiveModuleViewProps) {
             {activeModule === "routine" && (
               <RoutineApp
                 onBackToHub={goToHub}
+                onOpenSettings={() => goToModuleSettings("routine")}
                 onOpenModule={openModule}
                 pwaAction={pwaAction}
                 onPwaActionConsumed={clearPwaAction}
@@ -113,6 +118,7 @@ export function ActiveModuleView(props: ActiveModuleViewProps) {
             {activeModule === "nutrition" && (
               <NutritionApp
                 onBackToHub={goToHub}
+                onOpenSettings={() => goToModuleSettings("nutrition")}
                 pwaAction={pwaAction}
                 onPwaActionConsumed={clearPwaAction}
               />

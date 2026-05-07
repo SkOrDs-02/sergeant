@@ -11,15 +11,20 @@ import {
   ModuleHeader,
   ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
+  ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/ui/cn";
 import { ROUTINE_THEME as C } from "./lib/routineConstants";
 
 export interface RoutineHeaderProps {
   onBackToHub?: () => void;
+  onOpenSettings?: () => void;
 }
 
-export function RoutineHeader({ onBackToHub }: RoutineHeaderProps) {
+export function RoutineHeader({
+  onBackToHub,
+  onOpenSettings,
+}: RoutineHeaderProps) {
   return (
     <ModuleHeader
       module="routine"
@@ -51,7 +56,14 @@ export function RoutineHeader({ onBackToHub }: RoutineHeaderProps) {
       }
       title="РУТИНА"
       subtitle="Звички · план Фізрука · один розклад"
-      right={<ModuleHeaderAssistantButton />}
+      right={
+        <div className="flex items-center gap-2">
+          {onOpenSettings && (
+            <ModuleHeaderSettingsButton onClick={onOpenSettings} />
+          )}
+          <ModuleHeaderAssistantButton />
+        </div>
+      }
     />
   );
 }

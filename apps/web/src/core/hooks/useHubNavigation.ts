@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { ANALYTICS_EVENTS } from "@sergeant/shared";
+import { capturePostHogEvent } from "../observability/posthog";
 import { recordModuleOpen } from "../lib/recentModules";
 import { PATH_BASED_MODULE_IDS } from "../app/appPaths";
 
@@ -29,6 +31,8 @@ export interface HubNavigation {
   activeModule: HubModuleId | null;
   openModule: (id: string | null | undefined, opts?: OpenModuleOptions) => void;
   goToHub: () => void;
+  /** Navigate to hub and scroll to the given module's settings section. */
+  goToModuleSettings: (moduleId: HubModuleId) => void;
   moduleAnimClass: "module-enter" | "hub-enter";
 }
 
@@ -80,6 +84,18 @@ export function useHubNavigation(): HubNavigation {
     setActiveModule(null);
     navigate("/", { replace: false });
   }, [navigate]);
+
+  const goToModuleSettings = useCallback(
+    (moduleId: HubModuleId) => {
+      capturePostHogEvent(ANALYTICS_EVENTS.MODULE_SETTINGS_OPENED, {
+        module: moduleId,
+      });
+      setModuleAnimClass("hub-enter");
+      setActiveModule(null);
+      navigate(`/#settings-${moduleId}`, { replace: false });
+    },
+    [navigate],
+  );
 
   const openModule = useCallback(
     (id: string | null | undefined, opts: OpenModuleOptions = {}) => {
@@ -139,5 +155,11 @@ export function useHubNavigation(): HubNavigation {
     // Setters (`setActiveModule`, `setModuleAnimClass`) are stable.
   }, [location.pathname, searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { activeModule, openModule, goToHub, moduleAnimClass };
+  return {
+    activeModule,
+    openModule,
+    goToHub,
+    goToModuleSettings,
+    moduleAnimClass,
+  };
 }

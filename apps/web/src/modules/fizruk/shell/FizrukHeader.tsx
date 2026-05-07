@@ -3,6 +3,7 @@ import {
   ModuleHeader,
   ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
+  ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/ui/cn";
 import type { FizrukPage } from "./fizrukRoute";
@@ -16,6 +17,7 @@ export interface FizrukHeaderProps {
   activeProgram?: ActiveProgramHeaderView | null;
   onBackToHub?: () => void;
   onBackToDashboard: () => void;
+  onOpenSettings?: () => void;
 }
 
 function titleFor(page: FizrukPage): string {
@@ -142,6 +144,7 @@ export function FizrukHeader({
   activeProgram,
   onBackToHub,
   onBackToDashboard,
+  onOpenSettings,
 }: FizrukHeaderProps) {
   const isAtlas = page === "atlas";
   const isExercise = page === "exercise";
@@ -174,7 +177,14 @@ export function FizrukHeader({
       subtitle={
         showContextualBack ? undefined : subtitleFor(page, activeProgram)
       }
-      right={<ModuleHeaderAssistantButton />}
+      right={
+        <div className="flex items-center gap-2">
+          {onOpenSettings && (
+            <ModuleHeaderSettingsButton onClick={onOpenSettings} />
+          )}
+          <ModuleHeaderAssistantButton />
+        </div>
+      }
     />
   );
 }

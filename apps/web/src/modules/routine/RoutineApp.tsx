@@ -25,6 +25,7 @@ import { useRoutineAppState } from "./useRoutineAppState";
 
 export interface RoutineAppProps {
   onBackToHub?: () => void;
+  onOpenSettings?: () => void;
   onOpenModule?: (moduleId: string, opts?: { hash?: string }) => void;
   pwaAction?: string | null;
   onPwaActionConsumed?: () => void;
@@ -32,6 +33,7 @@ export interface RoutineAppProps {
 
 export default function RoutineApp({
   onBackToHub,
+  onOpenSettings,
   onOpenModule,
   pwaAction,
   onPwaActionConsumed,
@@ -57,7 +59,10 @@ export default function RoutineApp({
 
   return (
     <ModuleAccentProvider module="routine" asShellRoot>
-      <RoutineHeader onBackToHub={onBackToHub} />
+      <RoutineHeader
+        onBackToHub={onBackToHub}
+        onOpenSettings={onOpenSettings}
+      />
 
       <RoutineTimeline
         storageErrorMsg={storageErrorMsg}

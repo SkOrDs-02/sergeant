@@ -65,12 +65,14 @@ import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary
 
 interface NutritionAppProps {
   onBackToHub?: () => void;
+  onOpenSettings?: () => void;
   pwaAction?: string | null;
   onPwaActionConsumed?: () => void;
 }
 
 export default function NutritionApp({
   onBackToHub,
+  onOpenSettings,
   pwaAction,
   onPwaActionConsumed,
 }: NutritionAppProps = {}) {
@@ -442,7 +444,11 @@ export default function NutritionApp({
 
   return (
     <ModuleAccentProvider module="nutrition" asShellRoot>
-      <NutritionHeader busy={busy} onBackToHub={onBackToHub} />
+      <NutritionHeader
+        busy={busy}
+        onBackToHub={onBackToHub}
+        onOpenSettings={onOpenSettings}
+      />
 
       <PullToRefresh
         onRefresh={handlePullRefresh}

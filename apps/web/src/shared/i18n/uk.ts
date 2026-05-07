@@ -341,6 +341,11 @@ export const messages = {
   // Module-specific groups. Сюди потрапляють labels, що домінантно живуть
   // в одному модулі, але з причини фрагментованості surface-у заслуговують
   // централізованого ключа (rebrand-аме на всіх місцях одною зміною).
+  modules: {
+    // PR-2 UX-roast 2026-Q2 — gear-icon shortcut in module headers.
+    openSettings: "Налаштування модуля",
+  },
+
   fizruk: {
     returnToActiveWorkout: "Повернутись до активного тренування",
     workoutRest: "Відпочинок",

@@ -128,8 +128,13 @@ function AppInner() {
     navigate("/");
   }, [navigate]);
 
-  const { activeModule, openModule, goToHub, moduleAnimClass } =
-    useHubNavigation();
+  const {
+    activeModule,
+    openModule,
+    goToHub,
+    goToModuleSettings,
+    moduleAnimClass,
+  } = useHubNavigation();
   const ui = useHubUIState();
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const closeShortcuts = useCallback(() => setShortcutsOpen(false), []);
@@ -221,6 +226,7 @@ function AppInner() {
     <ActiveModuleView
       activeModule={activeModule}
       goToHub={goToHub}
+      goToModuleSettings={goToModuleSettings}
       openModule={openModule}
       moduleAnimClass={moduleAnimClass}
       ui={ui}

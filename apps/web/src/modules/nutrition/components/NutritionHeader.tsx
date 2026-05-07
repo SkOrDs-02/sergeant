@@ -2,6 +2,7 @@ import {
   ModuleHeader,
   ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
+  ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/ui/cn";
 
@@ -41,11 +42,13 @@ function AppleBadge() {
 interface NutritionHeaderProps {
   busy?: boolean;
   onBackToHub?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export function NutritionHeader({
   busy: _busy,
   onBackToHub,
+  onOpenSettings,
 }: NutritionHeaderProps) {
   const left =
     typeof onBackToHub === "function" ? (
@@ -60,7 +63,14 @@ export function NutritionHeader({
       left={left}
       title="ХАРЧУВАННЯ"
       subtitle="Мій раціон"
-      right={<ModuleHeaderAssistantButton />}
+      right={
+        <div className="flex items-center gap-2">
+          {onOpenSettings && (
+            <ModuleHeaderSettingsButton onClick={onOpenSettings} />
+          )}
+          <ModuleHeaderAssistantButton />
+        </div>
+      }
     />
   );
 }

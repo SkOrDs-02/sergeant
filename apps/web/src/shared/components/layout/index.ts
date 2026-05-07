@@ -18,12 +18,14 @@ export {
   ModuleHeaderBackButton,
   ModuleHeaderChevronButton,
   ModuleHeaderIconButton,
+  ModuleHeaderSettingsButton,
 } from "./ModuleHeader";
 export type {
   ModuleHeaderAssistantButtonProps,
   ModuleHeaderBackButtonProps,
   ModuleHeaderIconButtonProps,
   ModuleHeaderProps,
+  ModuleHeaderSettingsButtonProps,
 } from "./ModuleHeader";
 
 export { ModuleSettingsDrawer } from "./ModuleSettingsDrawer";

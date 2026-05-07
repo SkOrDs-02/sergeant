@@ -12,6 +12,7 @@ import {
   ModuleHeader,
   ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
+  ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
 import { NoBankBanner } from "./components/NoBankBanner";
 import { FinykManualExpenseConflictBanner } from "./components/FinykManualExpenseConflictBanner";
@@ -52,12 +53,14 @@ const PRIVAT_ENABLED = false;
 
 interface FinykAppProps {
   onBackToHub?: () => void;
+  onOpenSettings?: () => void;
   pwaAction?: string | null;
   onPwaActionConsumed?: () => void;
 }
 
 export default function App({
   onBackToHub,
+  onOpenSettings,
   pwaAction,
   onPwaActionConsumed,
 }: FinykAppProps = {}) {
@@ -306,6 +309,9 @@ export default function App({
                 </svg>
               )}
             </button>
+            {onOpenSettings && (
+              <ModuleHeaderSettingsButton onClick={onOpenSettings} />
+            )}
             <ModuleHeaderAssistantButton />
           </div>
         }

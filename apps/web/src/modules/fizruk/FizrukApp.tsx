@@ -1,5 +1,6 @@
 import { ModuleShell, StorageErrorBanner } from "@shared/components/layout";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
+// eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
 import { useHashRoute } from "@shared/hooks/useHashRoute";
 import { usePwaAction } from "@shared/hooks/usePwaAction";
 import { useExerciseCatalog } from "./hooks/useExerciseCatalog";
@@ -20,6 +21,7 @@ import { FIZRUK_PAGES, type FizrukPage } from "./shell/fizrukRoute";
 
 interface FizrukAppProps {
   onBackToHub?: () => void;
+  onOpenSettings?: () => void;
   onOpenModule?: (moduleId: string, opts?: { hash?: string }) => void;
   pwaAction?: string | null;
   onPwaActionConsumed?: () => void;
@@ -27,10 +29,12 @@ interface FizrukAppProps {
 
 export default function FizrukApp({
   onBackToHub,
+  onOpenSettings,
   onOpenModule,
   pwaAction,
   onPwaActionConsumed,
 }: FizrukAppProps = {}) {
+  // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
   const { page, segments, navigate } = useHashRoute<FizrukPage>({
     defaultPage: "dashboard",
     validPages: FIZRUK_PAGES,
@@ -90,6 +94,7 @@ export default function FizrukApp({
           activeProgram={activeProgram}
           onBackToHub={onBackToHub}
           onBackToDashboard={() => navigate("dashboard")}
+          onOpenSettings={onOpenSettings}
         />
       }
       banner={
