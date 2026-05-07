@@ -16,24 +16,16 @@
  *   2. Run the bundled `kv_store` migration via the shared
  *      `runMigrations()` runner (idempotent — second boot is a no-op).
  *   3. `SELECT key, value FROM kv_store` → populate `kvStoreBoot.warmCache`.
- *   4. If `kv_store` is empty AND `localStorage` has keys AND the
- *      one-time migration flag (`kv_store_migrated_v1`) is missing,
- *      bulk-import every LS key into `kv_store` (and the warm cache),
- *      then set the flag.
- *   5. Flip `kvStoreBoot.loaded = true`.
+ *   4. Flip `kvStoreBoot.loaded = true`.
  *
- * The actual swap of `webKVStore` from LS-backed to SQLite-backed lives
- * in PR #063 — this PR only installs the bootstrap pump and leaves
- * `webKVStore` LS-backed. Until PR #063 lands, `kvStoreBoot.warmCache`
- * is populated but never read; the only user-visible side-effect is
- * the one-time LS→`kv_store` import (which is also benign since LS is
- * still the source of truth).
+ * PR #064 removed the one-time LS→`kv_store` migration (the 4-week
+ * canary has passed without incidents) and the dual-write mirror in
+ * `storage.ts`. `webKVStore` is now strictly SQLite-backed with an
+ * LS-only fallback on bootstrap failure.
  *
  * Failure mode: if SQLite init throws or the migration runner fails,
  * we leave `kvStoreBoot.loaded = false`, log + Sentry-breadcrumb, and
- * the app continues with the existing LS-backed `webKVStore`. The
- * actual fallback-UI gate that PR #063 adds (`if (!boot.loaded) →
- * return webLsKv`) is what makes this safe in production.
+ * the app continues with the LS-backed fallback in `resolveStore()`.
  */
 
 import { eq } from "drizzle-orm";
@@ -56,15 +48,6 @@ import type {
 import { createSqliteKVStore } from "@sergeant/shared";
 import { addSentryBreadcrumb } from "../observability/sentry.js";
 import { getSqliteDb, type SqliteDbHandle } from "./sqlite.js";
-
-/**
- * Marker key written into `kv_store` once the one-time LS→`kv_store`
- * import has run. Stored in the same table so it survives a
- * `kv_store` reopen but disappears if a user wipes their browser
- * storage entirely (a wipe also drops `localStorage`, so re-running
- * the import is a no-op).
- */
-const LS_MIGRATION_FLAG_KEY = "kv_store_migrated_v1";
 
 /**
  * Channel name for cross-tab `kv_store` writes. Stable so `apps/web`
@@ -153,11 +136,11 @@ export function getKvStoreCrossTab(): BroadcastChannelLike | null {
  * bootstrap has not yet run, has not yet finished, or failed.
  *
  * `apps/web/src/shared/lib/storage/storage.ts :: resolveStore()` uses
- * this as the priority-1 branch in its ladder (PR #063):
+ * this as the priority-1 branch in its two-rung ladder (PR #064):
  *
  * ```ts
  * const sqlite = getActiveSqliteKvStore();
- * if (sqlite) return makeDualWriteKvStore(sqlite, lsAdapter);
+ * if (sqlite) return sqlite;
  * // else fall through to LS adapter or memory
  * ```
  */
@@ -228,29 +211,17 @@ export interface BootstrapKvStoreResult {
 
 /**
  * Inputs the bootstrap helper accepts so unit tests can swap in a
- * fake SQLite handle, fake `localStorage`, and fake BroadcastChannel
- * constructor without touching globals.
+ * fake SQLite handle and fake BroadcastChannel constructor without
+ * touching globals.
  *
- * Production callers pass nothing — defaults route to {@link getSqliteDb},
- * `globalThis.localStorage`, and `globalThis.BroadcastChannel`.
+ * Production callers pass nothing — defaults route to {@link getSqliteDb}
+ * and `globalThis.BroadcastChannel`.
  */
 export interface BootstrapKvStoreOptions {
   readonly getDb?: () => Promise<SqliteDbHandle>;
-  readonly localStorage?: BootstrapLocalStorage | null;
   readonly broadcastChannel?: BroadcastChannelLike | null;
   readonly now?: () => number;
   readonly onError?: (stage: string, error: unknown) => void;
-}
-
-/**
- * Sub-set of `Storage` consumed by the LS→`kv_store` one-time
- * importer. Defined structurally so unit tests can pass a plain
- * `Map`-backed fake without polyfilling the full `Storage` interface.
- */
-export interface BootstrapLocalStorage {
-  readonly length: number;
-  key(index: number): string | null;
-  getItem(key: string): string | null;
 }
 
 /**
@@ -346,26 +317,6 @@ export async function bootstrapKvStore(
 
   const sqliteClient = makeSqliteKvStoreClient(handle);
 
-  // One-time LS→kv_store import. Skipped if the marker is already in
-  // the warm cache (or the runtime has no localStorage at all).
-  if (!kvStoreBoot.warmCache.has(LS_MIGRATION_FLAG_KEY)) {
-    const ls = resolveLocalStorage(opts.localStorage);
-    if (ls) {
-      try {
-        await migrateLocalStorageToKvStore({
-          ls,
-          sqliteClient,
-          warmCache: kvStoreBoot.warmCache,
-          now: opts.now ?? Date.now,
-        });
-      } catch (err) {
-        // Migration failure is non-fatal — the boot continues with
-        // whatever rows we did manage to import.
-        onError("ls-migration", err);
-      }
-    }
-  }
-
   kvStoreBoot.loaded = true;
   activeSqliteClient = sqliteClient;
   activeSqliteKvStore = createSqliteKVStore({
@@ -393,83 +344,6 @@ export async function bootstrapKvStore(
     sqlite: sqliteClient,
     loaded: true,
   };
-}
-
-/**
- * Bulk-import every key currently in localStorage into `kv_store` +
- * the warm cache, then write the migration marker so a subsequent
- * boot is a no-op.
- *
- * Order:
- *  1. Walk `localStorage` once and snapshot every (key, value) pair.
- *     We snapshot up-front because a write-back into `kv_store`
- *     itself (when PR #063 has flipped `webKVStore` → SQLite) could
- *     mutate `localStorage` mid-walk.
- *  2. Upsert each row in turn. Failures on a single key are logged
- *     via `onWriteError`-style handling but do not abort the batch —
- *     a partial migration still makes progress.
- *  3. Stamp the migration marker.
- */
-async function migrateLocalStorageToKvStore(args: {
-  readonly ls: BootstrapLocalStorage;
-  readonly sqliteClient: SqliteKVStoreClient;
-  readonly warmCache: Map<string, string>;
-  readonly now: () => number;
-}): Promise<void> {
-  const { ls, sqliteClient, warmCache, now } = args;
-
-  const pairs: { key: string; value: string }[] = [];
-  for (let i = 0; i < ls.length; i += 1) {
-    const key = ls.key(i);
-    if (key === null) continue;
-    if (key === LS_MIGRATION_FLAG_KEY) continue;
-    const value = ls.getItem(key);
-    if (value === null) continue;
-    pairs.push({ key, value });
-  }
-
-  for (const pair of pairs) {
-    try {
-      const updatedAt = now();
-      await sqliteClient.upsert({
-        key: pair.key,
-        value: pair.value,
-        updatedAt,
-      });
-      warmCache.set(pair.key, pair.value);
-    } catch (err) {
-      // Single-key failure: log and continue. Boot success does not
-      // depend on every LS key making it across — the worst case is
-      // that the next boot retries because the marker hasn't been
-      // written yet.
-
-      console.warn(
-        `[kvStoreBoot] ls-migration: skipped key "${pair.key}"`,
-        err,
-      );
-    }
-  }
-
-  const markerUpdatedAt = now();
-  await sqliteClient.upsert({
-    key: LS_MIGRATION_FLAG_KEY,
-    value: new Date(markerUpdatedAt).toISOString(),
-    updatedAt: markerUpdatedAt,
-  });
-  warmCache.set(LS_MIGRATION_FLAG_KEY, new Date(markerUpdatedAt).toISOString());
-}
-
-function resolveLocalStorage(
-  override: BootstrapLocalStorage | null | undefined,
-): BootstrapLocalStorage | null {
-  if (override !== undefined) return override;
-  try {
-    const ls = (globalThis as { localStorage?: BootstrapLocalStorage })
-      .localStorage;
-    return ls ?? null;
-  } catch {
-    return null;
-  }
 }
 
 interface BroadcastChannelCtor {
