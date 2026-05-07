@@ -50,6 +50,11 @@ export {
   type RecoverDeadLetterSelector,
 } from "./syncOpOutboxRecover.js";
 export {
+  repairPartialOutboxMigration,
+  type RepairOutboxResult,
+  type RepairPartialOutboxMigrationOptions,
+} from "./syncOpOutboxRepair.js";
+export {
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,
   ROUTINE_SPIKE_CLIENT_MIGRATIONS,
