@@ -3,14 +3,14 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                                          |
-| ------------------ | ---------------------------------------------------------------------------------------- |
-| **Severity**       | Medium (M8)                                                                              |
-| **Linked finding** | M8 (`00-overview.md`)                                                                    |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                                |
-| **Effort**         | 1–2 дні                                                                                  |
+|                    |                                                                                           |
+| ------------------ | ----------------------------------------------------------------------------------------- |
+| **Severity**       | Medium (M8)                                                                               |
+| **Linked finding** | M8 (`00-overview.md`)                                                                     |
+| **Owner**          | TBD (sponsor: @Skords-01)                                                                 |
+| **Effort**         | 1–2 дні                                                                                   |
 | **Risk**           | Medium (re-embed всієї `ai_memories` table коштовний; rollback вимагає reverse migration) |
-| **Touches**        | `apps/server/src/modules/ai-memory/`, `apps/server/src/migrations/`                      |
+| **Touches**        | `apps/server/src/modules/ai-memory/`, `apps/server/src/migrations/`                       |
 | **Trigger**        | quality regression на voyage-3.5-lite АБО pricing change АБО vendor outage                |
 
 ## Контекст
@@ -103,11 +103,11 @@ CREATE INDEX ai_memories_model_id_idx ON ai_memories (model_id);
 
 ## Risks & mitigations
 
-| Risk                                                                | Mitigation                                                                          |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Dual-write doubles embedding cost during transition                 | Time-bound transition (max 7d) + cost-monitoring alert                              |
-| Different dimension counts (1024 voyage vs 3072 openai)             | Migration `047` додає `dimensions` column; vector index re-built per-model           |
-| Backfill rate-limit фейлить → partial state                         | Idempotent `model_id` upsert; resumable job; checkpoint у `ai_memories_backfill` table |
+| Risk                                                    | Mitigation                                                                             |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Dual-write doubles embedding cost during transition     | Time-bound transition (max 7d) + cost-monitoring alert                                 |
+| Different dimension counts (1024 voyage vs 3072 openai) | Migration `047` додає `dimensions` column; vector index re-built per-model             |
+| Backfill rate-limit фейлить → partial state             | Idempotent `model_id` upsert; resumable job; checkpoint у `ai_memories_backfill` table |
 
 ## Touchpoints (file:line)
 

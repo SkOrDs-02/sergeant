@@ -3,15 +3,15 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                              |
-| ------------------ | ---------------------------------------------------------------------------- |
-| **Severity**       | Low (L9)                                                                     |
-| **Linked finding** | L9 (`00-overview.md`)                                                        |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                    |
-| **Effort**         | 0.5 дня                                                                      |
-| **Risk**           | Low (defensive code; адекватно тестабельне)                                  |
-| **Touches**        | `apps/web/src/core/lib/lazyImport.ts`                                        |
-| **Trigger**        | next user report «спам reload-ів після deploy»                               |
+|                    |                                                |
+| ------------------ | ---------------------------------------------- |
+| **Severity**       | Low (L9)                                       |
+| **Linked finding** | L9 (`00-overview.md`)                          |
+| **Owner**          | TBD (sponsor: @Skords-01)                      |
+| **Effort**         | 0.5 дня                                        |
+| **Risk**           | Low (defensive code; адекватно тестабельне)    |
+| **Touches**        | `apps/web/src/core/lib/lazyImport.ts`          |
+| **Trigger**        | next user report «спам reload-ів після deploy» |
 
 ## Контекст
 
@@ -24,7 +24,7 @@ export function lazyImport<T>(factory: () => Promise<T>) {
       return await factory();
     } catch (err) {
       if (isChunkLoadError(err)) {
-        window.location.reload();  // <- ризик infinite loop
+        window.location.reload(); // <- ризик infinite loop
       }
       throw err;
     }
@@ -53,12 +53,12 @@ async function lazyImportWithRetry<T>(factory: () => Promise<T>): Promise<T> {
     return await factory();
   } catch (err) {
     if (!isChunkLoadError(err)) throw err;
-    
+
     const count = Number(sessionStorage.getItem(RELOAD_COUNT_KEY) ?? 0);
     if (count >= MAX_RELOADS) {
       // Infinite loop guard — show user-friendly error
       throw new ChunkPersistentError(
-        "Chunk persistently unavailable after 2 reloads. Server deploy may be in progress."
+        "Chunk persistently unavailable after 2 reloads. Server deploy may be in progress.",
       );
     }
     sessionStorage.setItem(RELOAD_COUNT_KEY, String(count + 1));
@@ -113,10 +113,10 @@ async function lazyImportWithRetry<T>(factory: () => Promise<T>): Promise<T> {
 
 ## Risks & mitigations
 
-| Risk                                                              | Mitigation                                                  |
-| ----------------------------------------------------------------- | ----------------------------------------------------------- |
-| sessionStorage недоступний (Safari private mode)                   | Fallback на in-memory counter                               |
-| User reload-ить manually 2× → guard трігерить erroneously         | Document trade-off; `MAX_RELOADS=2` purposefully ≥ user-reload pattern |
+| Risk                                                      | Mitigation                                                             |
+| --------------------------------------------------------- | ---------------------------------------------------------------------- |
+| sessionStorage недоступний (Safari private mode)          | Fallback на in-memory counter                                          |
+| User reload-ить manually 2× → guard трігерить erroneously | Document trade-off; `MAX_RELOADS=2` purposefully ≥ user-reload pattern |
 
 ## Touchpoints (file:line)
 

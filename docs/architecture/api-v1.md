@@ -44,33 +44,33 @@ Web прокидає `apiPrefix` через `getApiPrefix()` (div. `apps/web/src
 
 ### v1 endpoints (дзеркало `/api/*` ↔ `/api/v1/*`)
 
-| Endpoint                        | Method     | Опис                                                          |
-| ------------------------------- | ---------- | ------------------------------------------------------------- |
-| `/api/v1/me`                    | GET        | Уніфікований "хто я" для web (cookie) і mobile (bearer)       |
-| `/api/v1/push/register`         | POST       | Реєстрація native push (APNs/FCM)                             |
-| `/api/v1/chat`                  | POST       | HubChat streaming (SSE) + tool-use                            |
-| `/api/v1/coach/*`               | GET/POST   | Weekly digest, coaching recommendations                       |
-| `/api/v1/mono/*`                | GET/POST   | Monobank: connect, accounts, transactions, backfill           |
-| `/api/v1/ai-memory/*`           | GET/POST   | AI memory ingest / recall                                     |
-| `/api/v1/push/send`             | POST       | Internal push send (service-to-service, X-Api-Secret header)  |
-| `/api/v1/nutrition/*`           | GET/POST   | Nutrition log, barcode, backup                                |
-| `/api/v1/transcribe`            | POST       | Audio → text (Whisper). USD-cap per user/day                  |
-| `/api/v1/billing/*`             | GET/POST   | Stripe checkout, subscription status, webhooks                |
-| `/api/v1/waitlist`              | POST       | Waitlist sign-up                                              |
+| Endpoint                | Method   | Опис                                                         |
+| ----------------------- | -------- | ------------------------------------------------------------ |
+| `/api/v1/me`            | GET      | Уніфікований "хто я" для web (cookie) і mobile (bearer)      |
+| `/api/v1/push/register` | POST     | Реєстрація native push (APNs/FCM)                            |
+| `/api/v1/chat`          | POST     | HubChat streaming (SSE) + tool-use                           |
+| `/api/v1/coach/*`       | GET/POST | Weekly digest, coaching recommendations                      |
+| `/api/v1/mono/*`        | GET/POST | Monobank: connect, accounts, transactions, backfill          |
+| `/api/v1/ai-memory/*`   | GET/POST | AI memory ingest / recall                                    |
+| `/api/v1/push/send`     | POST     | Internal push send (service-to-service, X-Api-Secret header) |
+| `/api/v1/nutrition/*`   | GET/POST | Nutrition log, barcode, backup                               |
+| `/api/v1/transcribe`    | POST     | Audio → text (Whisper). USD-cap per user/day                 |
+| `/api/v1/billing/*`     | GET/POST | Stripe checkout, subscription status, webhooks               |
+| `/api/v1/waitlist`      | POST     | Waitlist sign-up                                             |
 
 ### v2 endpoints (новий namespace, не через `apiVersionRewrite`)
 
-| Endpoint                        | Method     | Опис                                                          |
-| ------------------------------- | ---------- | ------------------------------------------------------------- |
-| `/api/v2/sync/push`             | POST       | Sync op-log batch push. Body: `{ops, device_id, cursor}`      |
-| `/api/v2/sync/pull`             | GET        | Pull remote ops. Query: `?since=<cursor>`                     |
+| Endpoint            | Method | Опис                                                     |
+| ------------------- | ------ | -------------------------------------------------------- |
+| `/api/v2/sync/push` | POST   | Sync op-log batch push. Body: `{ops, device_id, cursor}` |
+| `/api/v2/sync/pull` | GET    | Pull remote ops. Query: `?since=<cursor>`                |
 
 ### Знято (410 Gone)
 
-| Endpoint                        | Причина                                                           |
-| ------------------------------- | ----------------------------------------------------------------- |
-| `POST /api/sync`                | v1 blob sync знятий (ADR-0047). Повертає `410 Gone`.              |
-| `GET /api/sync`                 | v1 blob pull знятий (ADR-0047). Повертає `410 Gone`.              |
+| Endpoint         | Причина                                              |
+| ---------------- | ---------------------------------------------------- |
+| `POST /api/sync` | v1 blob sync знятий (ADR-0047). Повертає `410 Gone`. |
+| `GET /api/sync`  | v1 blob pull знятий (ADR-0047). Повертає `410 Gone`. |
 
 ## 🧪 Як ми це тестуємо
 

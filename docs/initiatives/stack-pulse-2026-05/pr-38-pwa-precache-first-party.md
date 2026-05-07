@@ -3,14 +3,14 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                              |
-| ------------------ | ---------------------------------------------------------------------------- |
-| **Severity**       | Low (L11)                                                                    |
-| **Linked finding** | L11 (`00-overview.md`)                                                       |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                    |
-| **Effort**         | 0.5 дня                                                                      |
-| **Risk**           | Low (build-time check; не міняє runtime SW)                                  |
-| **Touches**        | `apps/web/vite.config.js`, `apps/web/scripts/`                               |
+|                    |                                                                             |
+| ------------------ | --------------------------------------------------------------------------- |
+| **Severity**       | Low (L11)                                                                   |
+| **Linked finding** | L11 (`00-overview.md`)                                                      |
+| **Owner**          | TBD (sponsor: @Skords-01)                                                   |
+| **Effort**         | 0.5 дня                                                                     |
+| **Risk**           | Low (build-time check; не міняє runtime SW)                                 |
+| **Touches**        | `apps/web/vite.config.js`, `apps/web/scripts/`                              |
 | **Trigger**        | next time 3rd-party CDN URL потрапляє у precache → silent supply-chain risk |
 
 ## Контекст
@@ -40,6 +40,7 @@ const manifest = sw.match(/__WB_MANIFEST['"]?\s*=\s*(\[[\s\S]*?\])/)?.[1];
 ```
 
 Allowlist (explicitly):
+
 - self-relative (`/`, `./`)
 - self-origin SHA-pinned 3rd-party assets (e.g., own CDN proxy)
 
@@ -54,7 +55,7 @@ VitePWA({
     // explicit dontCacheBustURLsMatching для self-domain
   },
   // disable auto-precache via plugins що pull 3rd-party
-})
+});
 ```
 
 ### 3. CI step
@@ -69,6 +70,7 @@ VitePWA({
 ### 4. Documentation
 
 `docs/web/pwa-policy.md`:
+
 - Precache must be 1st-party only.
 - How to whitelist 3rd-party (justified case-by-case).
 
@@ -97,10 +99,10 @@ VitePWA({
 
 ## Risks & mitigations
 
-| Risk                                                              | Mitigation                                                |
-| ----------------------------------------------------------------- | --------------------------------------------------------- |
-| Edge-case 3rd-party (Google Fonts woff2) needed legitimately       | Explicit allowlist у script з reason-comment              |
-| Manifest format change у VitePWA upgrade ламає parser             | Regex robust; test-suite covers majeure VitePWA versions  |
+| Risk                                                         | Mitigation                                               |
+| ------------------------------------------------------------ | -------------------------------------------------------- |
+| Edge-case 3rd-party (Google Fonts woff2) needed legitimately | Explicit allowlist у script з reason-comment             |
+| Manifest format change у VitePWA upgrade ламає parser        | Regex robust; test-suite covers majeure VitePWA versions |
 
 ## Touchpoints (file:line)
 

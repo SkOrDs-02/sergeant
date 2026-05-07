@@ -4,7 +4,7 @@ lang: en
 
 # Playbook: Operational continuity
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-11-06.
+> **Last validated:** 2026-05-07 by @Skords-01. **Next review:** 2026-08-05.
 > **Status:** Active
 > **Context:** Stack-pulse PR-04 bus-factor fix. This document answers: «що робити, якщо @Skords-01 недоступний тиждень / місяць / 6 місяців?»
 >
@@ -72,13 +72,13 @@ lang: en
 
 ## Escalation contacts
 
-| Role                | Contact                                                 | Scope                      |
-| ------------------- | ------------------------------------------------------- | -------------------------- |
-| Primary owner       | @Skords-01                                              | All                        |
+| Role                | Contact                                                 | Scope                                                                                                                                                                                                                                                                |
+| ------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Primary owner       | @Skords-01                                              | All                                                                                                                                                                                                                                                                  |
 | Secondary (TBD)     | Hire when team grows                                    | Per-module — see [AGENTS.md § Module ownership map](../../AGENTS.md#module-ownership-map) `Secondary` column for placeholder roles (`frontend-engineer`, `backend-engineer`, `mobile-engineer`, `data-engineer`, `any-engineer`); enforced by `pnpm lint:codeowners` |
-| Monobank API issues | [developers.monobank.ua](https://api.monobank.ua/docs/) | finyk webhooks             |
-| Railway support     | [railway.app/help](https://railway.app/help)            | Infra outages              |
-| Anthropic support   | [support.anthropic.com](https://support.anthropic.com)  | API quota issues           |
+| Monobank API issues | [developers.monobank.ua](https://api.monobank.ua/docs/) | finyk webhooks                                                                                                                                                                                                                                                       |
+| Railway support     | [railway.app/help](https://railway.app/help)            | Infra outages                                                                                                                                                                                                                                                        |
+| Anthropic support   | [support.anthropic.com](https://support.anthropic.com)  | API quota issues                                                                                                                                                                                                                                                     |
 
 ---
 

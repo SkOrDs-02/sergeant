@@ -3,15 +3,15 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                              |
-| ------------------ | ---------------------------------------------------------------------------- |
-| **Severity**       | Low (L5)                                                                     |
-| **Linked finding** | L5 (`00-overview.md`)                                                        |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                    |
-| **Effort**         | 0.5 дня (quarterly recurring)                                                |
-| **Risk**           | Medium (override removal може surface latent dependency conflicts)           |
-| **Touches**        | `package.json` (`pnpm.overrides`), `pnpm-lock.yaml`                          |
-| **Trigger**        | quarterly (next 2026-08-05) — або раніше при upstream-fix announcement       |
+|                    |                                                                        |
+| ------------------ | ---------------------------------------------------------------------- |
+| **Severity**       | Low (L5)                                                               |
+| **Linked finding** | L5 (`00-overview.md`)                                                  |
+| **Owner**          | TBD (sponsor: @Skords-01)                                              |
+| **Effort**         | 0.5 дня (quarterly recurring)                                          |
+| **Risk**           | Medium (override removal може surface latent dependency conflicts)     |
+| **Touches**        | `package.json` (`pnpm.overrides`), `pnpm-lock.yaml`                    |
+| **Trigger**        | quarterly (next 2026-08-05) — або раніше при upstream-fix announcement |
 
 ## Контекст
 
@@ -41,8 +41,8 @@ Root `package.json` має `pnpm.overrides` block з pinning-ами для:
       // Why: <rationale>. Drop when: <condition>. Last reviewed: 2026-05-07.
       "@types/node": "^20.19.0",
       // ...
-    }
-  }
+    },
+  },
 }
 ```
 
@@ -94,10 +94,10 @@ Root `package.json` має `pnpm.overrides` block з pinning-ами для:
 
 ## Risks & mitigations
 
-| Risk                                                                      | Mitigation                                                                |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Drop override → latent CVE re-emerges                                      | Pre-merge: `pnpm audit` + Renovate report                                 |
-| Comment-block ламає `pnpm` JSON parsing                                    | Comments живуть в окремому `pnpm-overrides.md`; CI script links them      |
+| Risk                                    | Mitigation                                                           |
+| --------------------------------------- | -------------------------------------------------------------------- |
+| Drop override → latent CVE re-emerges   | Pre-merge: `pnpm audit` + Renovate report                            |
+| Comment-block ламає `pnpm` JSON parsing | Comments живуть в окремому `pnpm-overrides.md`; CI script links them |
 
 ## Touchpoints (file:line)
 

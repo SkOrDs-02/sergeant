@@ -3,14 +3,14 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                                          |
-| ------------------ | ---------------------------------------------------------------------------------------- |
-| **Severity**       | Medium (M2)                                                                              |
-| **Linked finding** | M2 (`00-overview.md`)                                                                    |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                                |
-| **Effort**         | 0.5–1 день                                                                               |
-| **Risk**           | Low (CI-only зміна; найгірший випадок — Detox зайвий раз gone-у)                         |
-| **Touches**        | `.github/workflows/detox-ios.yml`, `.github/workflows/detox-android.yml`                 |
+|                    |                                                                                               |
+| ------------------ | --------------------------------------------------------------------------------------------- |
+| **Severity**       | Medium (M2)                                                                                   |
+| **Linked finding** | M2 (`00-overview.md`)                                                                         |
+| **Owner**          | TBD (sponsor: @Skords-01)                                                                     |
+| **Effort**         | 0.5–1 день                                                                                    |
+| **Risk**           | Low (CI-only зміна; найгірший випадок — Detox зайвий раз gone-у)                              |
+| **Touches**        | `.github/workflows/detox-ios.yml`, `.github/workflows/detox-android.yml`                      |
 | **Trigger**        | next mobile API breakage (server response shape change ламає mobile, без Detox-блоку у PR-CI) |
 
 ## Контекст
@@ -36,9 +36,9 @@ on:
       - "apps/mobile-shell/**"
       - "packages/api-client/**"
       - "packages/shared/**"
-      - "apps/server/src/modules/**/*.routes.ts"        # NEW
-      - "apps/server/src/modules/**/serializers/**"     # NEW
-      - "apps/server/src/migrations/**"                 # NEW (response-shape often follows schema)
+      - "apps/server/src/modules/**/*.routes.ts" # NEW
+      - "apps/server/src/modules/**/serializers/**" # NEW
+      - "apps/server/src/migrations/**" # NEW (response-shape often follows schema)
 ```
 
 Те саме для `detox-android.yml`.
@@ -78,10 +78,10 @@ on:
 
 ## Risks & mitigations
 
-| Risk                                                                       | Mitigation                                                                              |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| Розширений trigger gone-уватиме Detox занадто часто (cost ↑)               | Додати label-based skip `detox-skip` для clearly-server-internal PR (audit, refactor)   |
-| `lint:api-client` помилково fail-итиме на legitimate dual-purpose schemas  | `// api-client-skip: <reason>` magic comment + ESLint-style allowlist                   |
+| Risk                                                                      | Mitigation                                                                            |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Розширений trigger gone-уватиме Detox занадто часто (cost ↑)              | Додати label-based skip `detox-skip` для clearly-server-internal PR (audit, refactor) |
+| `lint:api-client` помилково fail-итиме на legitimate dual-purpose schemas | `// api-client-skip: <reason>` magic comment + ESLint-style allowlist                 |
 
 ## Touchpoints (file:line)
 

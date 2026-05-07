@@ -3,15 +3,15 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                                |
-| ------------------ | ------------------------------------------------------------------------------ |
-| **Severity**       | Low (L4)                                                                       |
-| **Linked finding** | L4 (`00-overview.md`)                                                          |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                      |
-| **Effort**         | 1–2 дні                                                                        |
-| **Risk**           | Low (config refactor; flat config → flat config)                               |
-| **Touches**        | `eslint.config.js` (1073 lines), per-app `eslint.config.js`                    |
-| **Trigger**        | next time someone додає 100+ рядків правил у monolith                          |
+|                    |                                                             |
+| ------------------ | ----------------------------------------------------------- |
+| **Severity**       | Low (L4)                                                    |
+| **Linked finding** | L4 (`00-overview.md`)                                       |
+| **Owner**          | TBD (sponsor: @Skords-01)                                   |
+| **Effort**         | 1–2 дні                                                     |
+| **Risk**           | Low (config refactor; flat config → flat config)            |
+| **Touches**        | `eslint.config.js` (1073 lines), per-app `eslint.config.js` |
+| **Trigger**        | next time someone додає 100+ рядків правил у monolith       |
 
 ## Контекст
 
@@ -99,11 +99,11 @@ Per-app lint runs паралельно (Turbo).
 
 ## Risks & mitigations
 
-| Risk                                                          | Mitigation                                                            |
-| ------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Some rule subtly disappears при split → silent regression     | Diff-test fixture set перед merge                                     |
-| New devs add rule до root, забувають про per-app override     | `eslint.config.js` коментар на top пояснює scope                      |
-| Per-app config drift — 8 файлів стають inconsistent           | Shared `packages/eslint-config-internal` (extends pattern, no-rules)  |
+| Risk                                                      | Mitigation                                                           |
+| --------------------------------------------------------- | -------------------------------------------------------------------- |
+| Some rule subtly disappears при split → silent regression | Diff-test fixture set перед merge                                    |
+| New devs add rule до root, забувають про per-app override | `eslint.config.js` коментар на top пояснює scope                     |
+| Per-app config drift — 8 файлів стають inconsistent       | Shared `packages/eslint-config-internal` (extends pattern, no-rules) |
 
 ## Touchpoints (file:line)
 

@@ -3,21 +3,22 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                              |
-| ------------------ | ---------------------------------------------------------------------------- |
-| **Severity**       | Low (L8)                                                                     |
-| **Linked finding** | L8 (`00-overview.md`)                                                        |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                    |
-| **Effort**         | 0.5 дня                                                                      |
-| **Risk**           | Low (logging policy зміна; не міняє runtime behavior)                        |
+|                    |                                                                                |
+| ------------------ | ------------------------------------------------------------------------------ |
+| **Severity**       | Low (L8)                                                                       |
+| **Linked finding** | L8 (`00-overview.md`)                                                          |
+| **Owner**          | TBD (sponsor: @Skords-01)                                                      |
+| **Effort**         | 0.5 дня                                                                        |
+| **Risk**           | Low (logging policy зміна; не міняє runtime behavior)                          |
 | **Touches**        | `apps/server/src/obs/logger.ts`, `apps/server/src/env/env.ts`, `tools/console` |
-| **Trigger**        | next debugging session коли `LOG_LEVEL=debug` потрібно тимчасово              |
+| **Trigger**        | next debugging session коли `LOG_LEVEL=debug` потрібно тимчасово               |
 
 ## Контекст
 
 `apps/server/src/obs/logger.ts` (Pino) читає `LOG_LEVEL` з `env`. Поточний default — varies (audit згадував `info` у prod, але dev sometimes має `debug` env-var-style override).
 
 Issue: переключення на `debug` для troubleshooting вимагає:
+
 1. Railway env-var update.
 2. Server restart.
 3. Manual rollback після debug session-у.
@@ -72,6 +73,7 @@ Pino `level()` setter dynamically swap-ається на check.
 ### 5. Tests
 
 `apps/server/src/obs/__tests__/logger-debug-window.test.ts`:
+
 - enable → currentLogLevel === "debug"
 - after timeout → currentLogLevel === "info"
 - max-duration enforcement.
@@ -102,10 +104,10 @@ Pino `level()` setter dynamically swap-ається на check.
 
 ## Risks & mitigations
 
-| Risk                                                              | Mitigation                                                     |
-| ----------------------------------------------------------------- | -------------------------------------------------------------- |
-| Memory leak від dynamic-level (each call creates new Pino child)   | Use root-level setter `pino.level = "debug"` (in-place mutation) |
-| Operator забуває revert → cost spike                              | Hard-cap 30min + Sentry alert + auto-revert                    |
+| Risk                                                             | Mitigation                                                       |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Memory leak від dynamic-level (each call creates new Pino child) | Use root-level setter `pino.level = "debug"` (in-place mutation) |
+| Operator забуває revert → cost spike                             | Hard-cap 30min + Sentry alert + auto-revert                      |
 
 ## Touchpoints (file:line)
 

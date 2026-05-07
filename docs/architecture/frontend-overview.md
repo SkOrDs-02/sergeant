@@ -15,16 +15,16 @@
 
 ### 1. Веб — `apps/web`
 
-| Шар      | Технології                                                               |
-| -------- | ------------------------------------------------------------------------ |
-| Збірка   | Vite 6, `@vitejs/plugin-react`                                           |
-| UI       | React 18, Tailwind CSS 3                                                 |
-| Роутинг  | react-router-dom v7                                                      |
-| Дані     | TanStack React Query, workspace `@sergeant/api-client`                   |
-| Auth     | better-auth (клієнт поруч із сервером)                                   |
-| PWA      | vite-plugin-pwa + Workbox                                                |
-| Sync     | SQLite-WASM (OPFS/kvvfs) + `syncEngine/` — v2 op-log outbox sync         |
-| Інше     | Sentry, dnd-kit, react-virtuoso, react-markdown, ZXing, body-highlighter |
+| Шар     | Технології                                                               |
+| ------- | ------------------------------------------------------------------------ |
+| Збірка  | Vite 6, `@vitejs/plugin-react`                                           |
+| UI      | React 18, Tailwind CSS 3                                                 |
+| Роутинг | react-router-dom v7                                                      |
+| Дані    | TanStack React Query, workspace `@sergeant/api-client`                   |
+| Auth    | better-auth (клієнт поруч із сервером)                                   |
+| PWA     | vite-plugin-pwa + Workbox                                                |
+| Sync    | SQLite-WASM (OPFS/kvvfs) + `syncEngine/` — v2 op-log outbox sync         |
+| Інше    | Sentry, dnd-kit, react-virtuoso, react-markdown, ZXing, body-highlighter |
 
 **Структура за змістом** (entry: `apps/web/src/core/App.tsx`):
 

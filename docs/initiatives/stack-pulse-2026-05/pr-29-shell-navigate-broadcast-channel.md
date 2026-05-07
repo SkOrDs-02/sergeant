@@ -3,15 +3,15 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                                                  |
-| ------------------ | ------------------------------------------------------------------------------------------------ |
-| **Severity**       | Low (L2)                                                                                         |
-| **Linked finding** | L2 (`00-overview.md`)                                                                            |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                                        |
-| **Effort**         | 1 день                                                                                           |
+|                    |                                                                                                       |
+| ------------------ | ----------------------------------------------------------------------------------------------------- |
+| **Severity**       | Low (L2)                                                                                              |
+| **Linked finding** | L2 (`00-overview.md`)                                                                                 |
+| **Owner**          | TBD (sponsor: @Skords-01)                                                                             |
+| **Effort**         | 1 день                                                                                                |
 | **Risk**           | Medium (mobile-shell деплой syncing з web; mismatched versions можуть тимчасово drop-нути deep links) |
-| **Touches**        | `apps/web/src/core/app/ShellDeepLinkBridge.tsx`, `apps/mobile-shell/src/index.ts`                |
-| **Trigger**        | next deep-link-related bug (cross-document message reliability)                                  |
+| **Touches**        | `apps/web/src/core/app/ShellDeepLinkBridge.tsx`, `apps/mobile-shell/src/index.ts`                     |
+| **Trigger**        | next deep-link-related bug (cross-document message reliability)                                       |
 
 ## Контекст
 
@@ -26,6 +26,7 @@ window.__sergeantShellNavigate = (url: string) => navigate(parseDeepLink(url));
 ```
 
 Issues:
+
 1. Race condition — Capacitor може shoot перед reactshell mount (window prop undefined).
 2. Не ідіоматичний — глобальний mutable function.
 3. Не testable — потрібно mock window, не browser-API.
@@ -107,11 +108,11 @@ function dispatchDeepLink(url: string) {
 
 ## Risks & mitigations
 
-| Risk                                                              | Mitigation                                                                  |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| BroadcastChannel не підтримується у старих WKWebView (<iOS 15)    | localStorage fallback у packages/shared/src/shell/                          |
-| Mobile-shell ship-ить нову версію до web → window-global no-op    | Версія protocol_version у message; mismatched → fallback на window-global   |
-| Web без shell → БroadcastChannel listener leaks                   | `useEffect` cleanup: `ch.close()`                                           |
+| Risk                                                           | Mitigation                                                                |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| BroadcastChannel не підтримується у старих WKWebView (<iOS 15) | localStorage fallback у packages/shared/src/shell/                        |
+| Mobile-shell ship-ить нову версію до web → window-global no-op | Версія protocol_version у message; mismatched → fallback на window-global |
+| Web без shell → БroadcastChannel listener leaks                | `useEffect` cleanup: `ch.close()`                                         |
 
 ## Touchpoints (file:line)
 

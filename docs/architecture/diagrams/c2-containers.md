@@ -80,11 +80,11 @@ flowchart TB
 
 Зараз `apps/server` стартує BullMQ Queue + Worker **у тому самому процесі**, що й Express:
 
-| Queue               | Файл                                                   | Що робить                                                                       |
-| ------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| `ai-memory-ingest`  | `apps/server/src/modules/ai-memory/ingestQueue.ts`     | Embeddings (Voyage AI) для memory-bank entries → Postgres pgvector.             |
-| `auth-mail`         | `apps/server/src/lib/jobs/authMail.ts`                 | Email magic-link / verification через Better Auth → SMTP (Resend).              |
-| `mono-enrich`       | `apps/server/src/modules/mono/enrichmentWorker.ts`     | AI-категоризація Monobank транзакцій (Anthropic tool-call per batch). DB-queue. |
+| Queue              | Файл                                               | Що робить                                                                       |
+| ------------------ | -------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `ai-memory-ingest` | `apps/server/src/modules/ai-memory/ingestQueue.ts` | Embeddings (Voyage AI) для memory-bank entries → Postgres pgvector.             |
+| `auth-mail`        | `apps/server/src/lib/jobs/authMail.ts`             | Email magic-link / verification через Better Auth → SMTP (Resend).              |
+| `mono-enrich`      | `apps/server/src/modules/mono/enrichmentWorker.ts` | AI-категоризація Monobank транзакцій (Anthropic tool-call per batch). DB-queue. |
 
 > `mono-enrich` зараз — **DB-queue** (`apps/server/src/modules/mono/enrichmentWorker.ts`): polling Postgres замість Redis BullMQ (спрощення після аудиту). Не потребує Redis для роботи. `sampleEnrichmentQueueDepth()` репортить Prometheus gauge.
 
@@ -94,15 +94,15 @@ flowchart TB
 
 Усі розміщені у `apps/server/src/modules/`:
 
-| Module            | Endpoint prefix                | Опис                                                                                         |
-| ----------------- | ------------------------------ | -------------------------------------------------------------------------------------------- |
-| `billing`         | `/api/billing/*`               | Stripe checkout + subscription state. `billing_subscriptions` table (047).                  |
-| `transcribe`      | `/api/transcribe`              | Whisper audio → text з USD-cap per user/day (bucket `transcribe:<model>`, fixed 049).        |
-| `waitlist`        | `/api/waitlist`                | Waitlist sign-up і management.                                                               |
-| `openclaw`        | internal (console bot)         | GitHub App-flow авторизація (Hard Rule #20) + tools для co-founder bot.                      |
-| `topic-archive`   | internal                       | `tg_topic_archive` — append-only history для Sergeant_ops supergroup topics (048).           |
-| `alerts`          | `/api/csp-report`, `/api/web-vitals` | CSP report endpoint + web-vitals ingestion.                                            |
-| `observability`   | internal                       | Server-side observability helpers: prom-client metrics, store wrappers.                      |
+| Module          | Endpoint prefix                      | Опис                                                                                  |
+| --------------- | ------------------------------------ | ------------------------------------------------------------------------------------- |
+| `billing`       | `/api/billing/*`                     | Stripe checkout + subscription state. `billing_subscriptions` table (047).            |
+| `transcribe`    | `/api/transcribe`                    | Whisper audio → text з USD-cap per user/day (bucket `transcribe:<model>`, fixed 049). |
+| `waitlist`      | `/api/waitlist`                      | Waitlist sign-up і management.                                                        |
+| `openclaw`      | internal (console bot)               | GitHub App-flow авторизація (Hard Rule #20) + tools для co-founder bot.               |
+| `topic-archive` | internal                             | `tg_topic_archive` — append-only history для Sergeant_ops supergroup topics (048).    |
+| `alerts`        | `/api/csp-report`, `/api/web-vitals` | CSP report endpoint + web-vitals ingestion.                                           |
+| `observability` | internal                             | Server-side observability helpers: prom-client metrics, store wrappers.               |
 
 ## Зовнішні залежності, з яких є SLA-ризик
 

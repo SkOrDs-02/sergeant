@@ -3,21 +3,22 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                              |
-| ------------------ | ---------------------------------------------------------------------------- |
-| **Severity**       | Low (L12)                                                                    |
-| **Linked finding** | L12 (`00-overview.md`)                                                       |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                    |
-| **Effort**         | 0.5–1 день                                                                   |
-| **Risk**           | Low (SDK bump — but Anthropic SDK has had breaking changes before)           |
-| **Touches**        | `tools/console/package.json`, `tools/console/src/`                           |
-| **Trigger**        | quarterly OR next time SDK 0.36.x deprecation announced                      |
+|                    |                                                                    |
+| ------------------ | ------------------------------------------------------------------ |
+| **Severity**       | Low (L12)                                                          |
+| **Linked finding** | L12 (`00-overview.md`)                                             |
+| **Owner**          | TBD (sponsor: @Skords-01)                                          |
+| **Effort**         | 0.5–1 день                                                         |
+| **Risk**           | Low (SDK bump — but Anthropic SDK has had breaking changes before) |
+| **Touches**        | `tools/console/package.json`, `tools/console/src/`                 |
+| **Trigger**        | quarterly OR next time SDK 0.36.x deprecation announced            |
 
 ## Контекст
 
 `tools/console/package.json` має `"@anthropic-ai/sdk": "0.36.3"` (audit-доказана) — тимчасом як latest у 2026-05-07 ~ `1.x.x` (SDK GA-ed v1 десь у 2026-Q2).
 
 Issues:
+
 1. v0.x SDK officially deprecated після v1 GA.
 2. v1 має нові API affordances — improved streaming, MCP support, prompt caching.
 3. Patch-level updates у v0.x branch suspended.
@@ -27,6 +28,7 @@ Issues:
 ### 1. Pre-flight ADR (small)
 
 `docs/adr/0057-anthropic-sdk-v1-upgrade.md` — coverage matrix:
+
 - Які SDK calls використовуються в `tools/console/src/`?
 - Breaking changes від v0 → v1 (constructor signatures? methods renamed?).
 - Нові features варто адопт-нути одразу (prompt caching = $$$ savings).
@@ -78,11 +80,11 @@ pnpm add @anthropic-ai/sdk@^1.0.0
 
 ## Risks & mitigations
 
-| Risk                                                                | Mitigation                                                              |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Breaking change у API → bot crash на startup                        | Staged deploy: dev-env first, then prod                                 |
-| Prompt-caching incompatibility з certain workflow                   | Feature-flag: env-var `ANTHROPIC_PROMPT_CACHE=1` для opt-in              |
-| Cost spike (нова billing-tier) при v1 з більшим limits              | Spend-cap у Anthropic console; cost-monitoring dashboard                |
+| Risk                                                   | Mitigation                                                  |
+| ------------------------------------------------------ | ----------------------------------------------------------- |
+| Breaking change у API → bot crash на startup           | Staged deploy: dev-env first, then prod                     |
+| Prompt-caching incompatibility з certain workflow      | Feature-flag: env-var `ANTHROPIC_PROMPT_CACHE=1` для opt-in |
+| Cost spike (нова billing-tier) при v1 з більшим limits | Spend-cap у Anthropic console; cost-monitoring dashboard    |
 
 ## Touchpoints (file:line)
 

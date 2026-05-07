@@ -3,15 +3,15 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                                |
-| ------------------ | ------------------------------------------------------------------------------ |
-| **Severity**       | Medium (M7) — також закриває MS3                                               |
-| **Linked finding** | M7, MS3 (`00-overview.md`)                                                     |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                      |
-| **Effort**         | 2–3 дні                                                                        |
-| **Risk**           | Low (CI-only addition; не міняє runtime)                                       |
-| **Touches**        | `apps/server/src/`, нова `tests/contract/` директорія, CI                      |
-| **Trigger**        | first contract-bug у production (server response shape ≠ documented spec)       |
+|                    |                                                                           |
+| ------------------ | ------------------------------------------------------------------------- |
+| **Severity**       | Medium (M7) — також закриває MS3                                          |
+| **Linked finding** | M7, MS3 (`00-overview.md`)                                                |
+| **Owner**          | TBD (sponsor: @Skords-01)                                                 |
+| **Effort**         | 2–3 дні                                                                   |
+| **Risk**           | Low (CI-only addition; не міняє runtime)                                  |
+| **Touches**        | `apps/server/src/`, нова `tests/contract/` директорія, CI                 |
+| **Trigger**        | first contract-bug у production (server response shape ≠ documented spec) |
 
 ## Контекст
 
@@ -92,11 +92,11 @@ Top-10 endpoint-ів (login, sync, food-search, finyk-import, etc.) — Schemath
 
 ## Risks & mitigations
 
-| Risk                                                            | Mitigation                                                                  |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Schemathesis flake на random-fuzz на rate-limit endpoints       | `x-schemathesis-skip` annotation на специфічних маршрутах                   |
-| Generated spec не повністю eq Zod (e.g., refinements)          | Custom `zod-to-openapi` extension з documented limitation list             |
-| CI час +2–3хв на contract-tests                                 | Run тільки на `paths: apps/server/src/modules/**` + nightly full run       |
+| Risk                                                      | Mitigation                                                           |
+| --------------------------------------------------------- | -------------------------------------------------------------------- |
+| Schemathesis flake на random-fuzz на rate-limit endpoints | `x-schemathesis-skip` annotation на специфічних маршрутах            |
+| Generated spec не повністю eq Zod (e.g., refinements)     | Custom `zod-to-openapi` extension з documented limitation list       |
+| CI час +2–3хв на contract-tests                           | Run тільки на `paths: apps/server/src/modules/**` + nightly full run |
 
 ## Touchpoints (file:line)
 

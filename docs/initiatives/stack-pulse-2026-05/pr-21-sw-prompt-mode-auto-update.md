@@ -3,15 +3,15 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                       |
-| ------------------ | --------------------------------------------------------------------- |
-| **Severity**       | Medium (M5)                                                           |
-| **Linked finding** | M5 (`00-overview.md`)                                                 |
-| **Owner**          | TBD (sponsor: @Skords-01)                                             |
-| **Effort**         | 1 день                                                                |
-| **Risk**           | Low (UX покращення, fallback-pattern до існуючого prompt-у)           |
+|                    |                                                                          |
+| ------------------ | ------------------------------------------------------------------------ |
+| **Severity**       | Medium (M5)                                                              |
+| **Linked finding** | M5 (`00-overview.md`)                                                    |
+| **Owner**          | TBD (sponsor: @Skords-01)                                                |
+| **Effort**         | 1 день                                                                   |
+| **Risk**           | Low (UX покращення, fallback-pattern до існуючого prompt-у)              |
 | **Touches**        | `apps/web/src/sw.ts`, `apps/web/src/main.tsx`, `apps/web/vite.config.js` |
-| **Trigger**        | next major web release (зараз stack без forced-update workflow)       |
+| **Trigger**        | next major web release (зараз stack без forced-update workflow)          |
 
 ## Контекст
 
@@ -20,6 +20,7 @@
 Проблема: користувач, що тримає app відкритим >24 год, не отримує prompt автоматично. SW не chek-ає registration update сам по собі; trigger — лише `navigator.serviceWorker.controller.postMessage("SKIP_WAITING")` після manual-prompt-у.
 
 **Сценарій failure:**
+
 1. Деплой на Vercel — нова версія SW.
 2. Активний user не закриває tab → тримає stale SW + stale JS.
 3. При взаємодії з API — schema mismatch (server expects v2, client sends v1).
@@ -33,10 +34,13 @@
 
 ```ts
 // Кожні 30 хв викликаємо registration.update()
-setInterval(async () => {
-  const reg = await navigator.serviceWorker.getRegistration();
-  if (reg) await reg.update();
-}, 30 * 60 * 1000);
+setInterval(
+  async () => {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (reg) await reg.update();
+  },
+  30 * 60 * 1000,
+);
 ```
 
 `registration.update()` тригерить SW re-fetch; якщо changed → встановлюється новий SW у `waiting` стан.
@@ -89,11 +93,11 @@ document.addEventListener("visibilitychange", async () => {
 
 ## Risks & mitigations
 
-| Risk                                                                | Mitigation                                                                |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `registration.update()` додає 1 fetch/30min (mobile data cost)      | Skip update-check якщо `navigator.connection.saveData === true`           |
-| Auto-skipWaiting на background-tab закриває open form (data loss)   | Тільки skipWaiting якщо `document.hidden` довше >5 хв *і* waiting існує  |
-| `X-Server-Build-Id` header → leakage build sha                       | Header value — `process.env.SHORT_SHA` (7-char), вже public у `index.html` |
+| Risk                                                              | Mitigation                                                                 |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `registration.update()` додає 1 fetch/30min (mobile data cost)    | Skip update-check якщо `navigator.connection.saveData === true`            |
+| Auto-skipWaiting на background-tab закриває open form (data loss) | Тільки skipWaiting якщо `document.hidden` довше >5 хв _і_ waiting існує    |
+| `X-Server-Build-Id` header → leakage build sha                    | Header value — `process.env.SHORT_SHA` (7-char), вже public у `index.html` |
 
 ## Touchpoints (file:line)
 

@@ -3,15 +3,15 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                                |
-| ------------------ | ------------------------------------------------------------------------------ |
-| **Severity**       | Medium (M9)                                                                    |
-| **Linked finding** | M9 (`00-overview.md`)                                                          |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                      |
-| **Effort**         | 1–2 дні + 7d soak                                                              |
-| **Risk**           | Medium (мобайл users можуть мати закешований OAuth callback на fizruk-домен)   |
-| **Touches**        | Vercel project config, `apps/server/src/http/cors.ts`, OAuth provider configs  |
-| **Trigger**        | next CSP / CORS-related incident OR mobile-shell deep-link bug                 |
+|                    |                                                                               |
+| ------------------ | ----------------------------------------------------------------------------- |
+| **Severity**       | Medium (M9)                                                                   |
+| **Linked finding** | M9 (`00-overview.md`)                                                         |
+| **Owner**          | TBD (sponsor: @Skords-01)                                                     |
+| **Effort**         | 1–2 дні + 7d soak                                                             |
+| **Risk**           | Medium (мобайл users можуть мати закешований OAuth callback на fizruk-домен)  |
+| **Touches**        | Vercel project config, `apps/server/src/http/cors.ts`, OAuth provider configs |
+| **Trigger**        | next CSP / CORS-related incident OR mobile-shell deep-link bug                |
 
 ## Контекст
 
@@ -94,11 +94,11 @@
 
 ## Risks & mitigations
 
-| Risk                                                                | Mitigation                                                                  |
-| ------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Mobile-shell з cached OAuth callback на fizruk → 301 redirect ламає OAuth | Mobile-shell вже має sergeant.vercel.app у `parseDeepLink.test.ts`; додати regression test |
-| External webhooks (Monobank, etc.) hardcoded fizruk endpoint        | Audit `MONOBANK_WEBHOOK_URL` env-var; одно-разовий update у Monobank console |
-| Redirect cycle (fizruk → sergeant, але sergeant → fizruk при redirect-loop)  | Unit-test перевіряє правило одностороннє                                |
+| Risk                                                                        | Mitigation                                                                                 |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Mobile-shell з cached OAuth callback на fizruk → 301 redirect ламає OAuth   | Mobile-shell вже має sergeant.vercel.app у `parseDeepLink.test.ts`; додати regression test |
+| External webhooks (Monobank, etc.) hardcoded fizruk endpoint                | Audit `MONOBANK_WEBHOOK_URL` env-var; одно-разовий update у Monobank console               |
+| Redirect cycle (fizruk → sergeant, але sergeant → fizruk при redirect-loop) | Unit-test перевіряє правило одностороннє                                                   |
 
 ## Touchpoints (file:line)
 

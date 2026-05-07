@@ -61,7 +61,9 @@ export class WorkerHealthRegistry {
 // apps/server/src/routes/health/workers.ts
 router.get("/api/health/workers", requireInternalIp, async (req, res) => {
   const all = await registry.getAll();
-  const stale = all.filter(w => Date.now() - w.last_heartbeat > w.expected_period_sec * 3 * 1000);
+  const stale = all.filter(
+    (w) => Date.now() - w.last_heartbeat > w.expected_period_sec * 3 * 1000,
+  );
   res.status(stale.length === 0 ? 200 : 503).json({ all, stale });
 });
 ```
@@ -108,10 +110,10 @@ router.get("/api/health/workers", requireInternalIp, async (req, res) => {
 
 ## Risks & mitigations
 
-| Risk                                                                | Mitigation                                                              |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Registry-write на кожен tick додає DB-load                          | Heartbeat-write throttled до 1/`expected_period_sec` (in-memory cooldown)  |
-| `/api/health/workers` стає flaky → false-positive Railway restart    | Endpoint internal-only; healthcheck остається на існуючому `/api/health` |
+| Risk                                                              | Mitigation                                                                |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Registry-write на кожен tick додає DB-load                        | Heartbeat-write throttled до 1/`expected_period_sec` (in-memory cooldown) |
+| `/api/health/workers` стає flaky → false-positive Railway restart | Endpoint internal-only; healthcheck остається на існуючому `/api/health`  |
 
 ## Touchpoints (file:line)
 

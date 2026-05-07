@@ -11,7 +11,7 @@
 | **Effort**         | 0.5 дня                                                        |
 | **Risk**           | None (pure documentation)                                      |
 | **Touches**        | `patches/`, `package.json`                                     |
-| **Trigger**        | next Expo SDK upgrade (PR-22 / M6) — patches треба rebase-нути  |
+| **Trigger**        | next Expo SDK upgrade (PR-22 / M6) — patches треба rebase-нути |
 
 ## Контекст
 
@@ -37,9 +37,9 @@ Schema (ESLint-style table, як у `docs/governance/hard-rules.json`):
 ```markdown
 # patches/
 
-| Patch                          | Reason                  | Upstream                          | Drop when                          | Owner        |
-| ------------------------------ | ----------------------- | --------------------------------- | ---------------------------------- | ------------ |
-| `@expo__cli@0.22.28.patch`    | <fill>                  | https://github.com/expo/expo/...  | Expo CLI ≥ 0.X.Y                   | `@Skords-01` |
+| Patch                      | Reason | Upstream                         | Drop when        | Owner        |
+| -------------------------- | ------ | -------------------------------- | ---------------- | ------------ |
+| `@expo__cli@0.22.28.patch` | <fill> | https://github.com/expo/expo/... | Expo CLI ≥ 0.X.Y | `@Skords-01` |
 ```
 
 Кожен entry — 5 обов'язкових полів. Додати freshness-gate у `scripts/` перевірятиме що:
@@ -81,8 +81,8 @@ Hook in `pnpm lint:patches` + CI step.
 
 ## Risks & mitigations
 
-| Risk                                                       | Mitigation                                                       |
-| ---------------------------------------------------------- | ---------------------------------------------------------------- |
+| Risk                                                          | Mitigation                                                            |
+| ------------------------------------------------------------- | --------------------------------------------------------------------- |
 | Author unknown for existing patch — не можемо заповнити Owner | git blame на `patches/*.patch` визначає author; fallback `@Skords-01` |
 
 ## Touchpoints (file:line)

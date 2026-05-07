@@ -3,15 +3,15 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                                |
-| ------------------ | ------------------------------------------------------------------------------ |
-| **Severity**       | Low (L1)                                                                       |
-| **Linked finding** | L1 (`00-overview.md`)                                                          |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                      |
-| **Effort**         | 0.5 дня                                                                        |
-| **Risk**           | Low (refactor; обидва механізми produce identical runtime value)               |
-| **Touches**        | `apps/web/src/sw/version.ts`, `apps/web/vite.config.js`, ambient `.d.ts`       |
-| **Trigger**        | none — поліровка                                                               |
+|                    |                                                                          |
+| ------------------ | ------------------------------------------------------------------------ |
+| **Severity**       | Low (L1)                                                                 |
+| **Linked finding** | L1 (`00-overview.md`)                                                    |
+| **Owner**          | TBD (sponsor: @Skords-01)                                                |
+| **Effort**         | 0.5 дня                                                                  |
+| **Risk**           | Low (refactor; обидва механізми produce identical runtime value)         |
+| **Touches**        | `apps/web/src/sw/version.ts`, `apps/web/vite.config.js`, ambient `.d.ts` |
+| **Trigger**        | none — поліровка                                                         |
 
 ## Контекст
 
@@ -93,10 +93,10 @@ interface ImportMetaEnv {
 
 ## Risks & mitigations
 
-| Risk                                                          | Mitigation                                                          |
-| ------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Build env-var не set-иться у CI → `BUILD_ID = "dev"` у prod   | CI step `VITE_BUILD_ID=$(git rev-parse --short HEAD)` перед `pnpm build` |
-| Інші modules з `__*__` globals не migrated → dual-pattern     | Out of scope; цей PR — pilot для `__SW_BUILD_ID__` тільки           |
+| Risk                                                        | Mitigation                                                               |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Build env-var не set-иться у CI → `BUILD_ID = "dev"` у prod | CI step `VITE_BUILD_ID=$(git rev-parse --short HEAD)` перед `pnpm build` |
+| Інші modules з `__*__` globals не migrated → dual-pattern   | Out of scope; цей PR — pilot для `__SW_BUILD_ID__` тільки                |
 
 ## Touchpoints (file:line)
 

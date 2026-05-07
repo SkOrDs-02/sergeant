@@ -68,15 +68,15 @@ flowchart LR
 
 ## Ключові компоненти
 
-| Файл / директорія                                    | Відповідає за                                                                                     |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `core/syncEngine/singleton.ts`                       | Lazy-init і lifecycle sync runtime (boot / stop / flushNow / getStatus).                         |
-| `core/syncEngine/syncEngineWriter.ts`                | Інтерфейс `SyncEngineWriterRuntime` + фабрика `createSyncEngineWriterRuntime`.                    |
-| `@sergeant/api-client` → `SyncEnginePushScheduler`   | Debounce + retry push batches з `sync_op_outbox`.                                                |
-| `@sergeant/api-client` → `SyncEngineFlushOnReconnect`| Підписується на `online` event, негайно flush відкладеного.                                       |
-| `core/cloudSync/hook/useSyncStatus.ts`               | React-hook: зчитує `SyncOpOutboxStatusCounts` для UI badge.                                       |
-| `packages/db-schema/sqlite`                          | SQLite Drizzle-схема: `sync_op_outbox` + domain tables.                                           |
-| `apps/server/modules/sync/syncV2.ts`                 | `OP_LOG_TABLE_REGISTRY` whitelist + per-table `applyFn`. Push handler, pull handler, dead-letter. |
+| Файл / директорія                                     | Відповідає за                                                                                     |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `core/syncEngine/singleton.ts`                        | Lazy-init і lifecycle sync runtime (boot / stop / flushNow / getStatus).                          |
+| `core/syncEngine/syncEngineWriter.ts`                 | Інтерфейс `SyncEngineWriterRuntime` + фабрика `createSyncEngineWriterRuntime`.                    |
+| `@sergeant/api-client` → `SyncEnginePushScheduler`    | Debounce + retry push batches з `sync_op_outbox`.                                                 |
+| `@sergeant/api-client` → `SyncEngineFlushOnReconnect` | Підписується на `online` event, негайно flush відкладеного.                                       |
+| `core/cloudSync/hook/useSyncStatus.ts`                | React-hook: зчитує `SyncOpOutboxStatusCounts` для UI badge.                                       |
+| `packages/db-schema/sqlite`                           | SQLite Drizzle-схема: `sync_op_outbox` + domain tables.                                           |
+| `apps/server/modules/sync/syncV2.ts`                  | `OP_LOG_TABLE_REGISTRY` whitelist + per-table `applyFn`. Push handler, pull handler, dead-letter. |
 
 ## Статуси в outbox
 
@@ -90,14 +90,14 @@ pending  →  in_flight  →  applied   (normal path)
 
 ## Відмінності від v1
 
-| Аспект             | v1 (знятий, ADR-0047)                              | v2 (поточний)                                           |
-| ------------------ | -------------------------------------------------- | ------------------------------------------------------- |
-| Transport          | `POST /api/sync` (410 Gone)                        | `POST /api/v2/sync/push`, `GET /api/v2/sync/pull`       |
-| Granularity        | Whole-module blob (LWW на весь module)             | Per-row operation (LWW + soft-delete per row)           |
-| Conflict detection | На рівні blob timestamp                            | `(user_id, idempotency_key)` UNIQUE у `sync_op_log`     |
-| Offline queue      | `offlineQueue.ts` у localStorage                   | `sync_op_outbox` у SQLite-WASM (durable OPFS)           |
-| Web local store    | `localStorage` (sync-patched)                      | SQLite-WASM (OPFS/kvvfs) — повний SQL, indexed          |
-| Server store       | `module_data` JSONB blobs (дропнута міграцією 046) | Per-domain normalized tables + `sync_op_log` audit      |
+| Аспект             | v1 (знятий, ADR-0047)                              | v2 (поточний)                                       |
+| ------------------ | -------------------------------------------------- | --------------------------------------------------- |
+| Transport          | `POST /api/sync` (410 Gone)                        | `POST /api/v2/sync/push`, `GET /api/v2/sync/pull`   |
+| Granularity        | Whole-module blob (LWW на весь module)             | Per-row operation (LWW + soft-delete per row)       |
+| Conflict detection | На рівні blob timestamp                            | `(user_id, idempotency_key)` UNIQUE у `sync_op_log` |
+| Offline queue      | `offlineQueue.ts` у localStorage                   | `sync_op_outbox` у SQLite-WASM (durable OPFS)       |
+| Web local store    | `localStorage` (sync-patched)                      | SQLite-WASM (OPFS/kvvfs) — повний SQL, indexed      |
+| Server store       | `module_data` JSONB blobs (дропнута міграцією 046) | Per-domain normalized tables + `sync_op_log` audit  |
 
 ## Тестування
 

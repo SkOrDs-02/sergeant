@@ -3,15 +3,15 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                                |
-| ------------------ | ------------------------------------------------------------------------------ |
-| **Severity**       | Low (L6) — також закриває R9 redundancy                                        |
-| **Linked finding** | L6, R9 (`00-overview.md`)                                                      |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                      |
-| **Effort**         | 0.5–1 день                                                                     |
-| **Risk**           | None (pure docs / governance reorganization)                                   |
-| **Touches**        | `docs/governance/hard-rules.json`, `docs/governance/hard-rules.md`, AGENTS.md  |
-| **Trigger**        | next time someone додає 22-ге правило і doc стає harder-to-skim                |
+|                    |                                                                               |
+| ------------------ | ----------------------------------------------------------------------------- |
+| **Severity**       | Low (L6) — також закриває R9 redundancy                                       |
+| **Linked finding** | L6, R9 (`00-overview.md`)                                                     |
+| **Owner**          | TBD (sponsor: @Skords-01)                                                     |
+| **Effort**         | 0.5–1 день                                                                    |
+| **Risk**           | None (pure docs / governance reorganization)                                  |
+| **Touches**        | `docs/governance/hard-rules.json`, `docs/governance/hard-rules.md`, AGENTS.md |
+| **Trigger**        | next time someone додає 22-ге правило і doc стає harder-to-skim               |
 
 ## Контекст
 
@@ -47,10 +47,10 @@
     "required": ["id", "category", "title", "rationale", "enforcement"],
     "properties": {
       "category": {
-        "enum": ["engineering", "security", "operability", "design", "process"]
-      }
-    }
-  }
+        "enum": ["engineering", "security", "operability", "design", "process"],
+      },
+    },
+  },
 }
 ```
 
@@ -98,10 +98,10 @@ Full list → [`docs/governance/hard-rules.md`](./docs/governance/hard-rules.md)
 
 ## Risks & mitigations
 
-| Risk                                                                  | Mitigation                                                            |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Rule категорія ambiguous (e.g. CSP — security чи operability?)        | ADR-style decision у PR description; default — більш restrictive class |
-| Tooling що читає `hard-rules.json` (e.g., Devin Knowledge) ламається  | Schema breaking-change handled у sequenced PR; consumer updated first  |
+| Risk                                                                 | Mitigation                                                             |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Rule категорія ambiguous (e.g. CSP — security чи operability?)       | ADR-style decision у PR description; default — більш restrictive class |
+| Tooling що читає `hard-rules.json` (e.g., Devin Knowledge) ламається | Schema breaking-change handled у sequenced PR; consumer updated first  |
 
 ## Touchpoints (file:line)
 

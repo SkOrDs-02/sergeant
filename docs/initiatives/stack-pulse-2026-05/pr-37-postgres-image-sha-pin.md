@@ -3,15 +3,15 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                              |
-| ------------------ | ---------------------------------------------------------------------------- |
-| **Severity**       | Low (L10)                                                                    |
-| **Linked finding** | L10 (`00-overview.md`)                                                       |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                    |
-| **Effort**         | 0.5 дня                                                                      |
-| **Risk**           | Low (compose / CI-only; сам SQL workload identical)                          |
-| **Touches**        | `docker-compose.yml`, `docker-compose.test.yml`, CI Postgres service config  |
-| **Trigger**        | next time pgvector minor-update пропускає silent breaking change             |
+|                    |                                                                             |
+| ------------------ | --------------------------------------------------------------------------- |
+| **Severity**       | Low (L10)                                                                   |
+| **Linked finding** | L10 (`00-overview.md`)                                                      |
+| **Owner**          | TBD (sponsor: @Skords-01)                                                   |
+| **Effort**         | 0.5 дня                                                                     |
+| **Risk**           | Low (compose / CI-only; сам SQL workload identical)                         |
+| **Touches**        | `docker-compose.yml`, `docker-compose.test.yml`, CI Postgres service config |
+| **Trigger**        | next time pgvector minor-update пропускає silent breaking change            |
 
 ## Контекст
 
@@ -45,11 +45,13 @@ Digest fetched через `docker pull pgvector/pgvector:pg16 && docker inspect`
 ```json5
 // renovate.json5
 {
-  "packageRules": [{
-    "matchPackagePatterns": ["^pgvector/"],
-    "pinDigests": true,
-    "schedule": "monthly"
-  }]
+  packageRules: [
+    {
+      matchPackagePatterns: ["^pgvector/"],
+      pinDigests: true,
+      schedule: "monthly",
+    },
+  ],
 }
 ```
 
@@ -91,10 +93,10 @@ Renovate auto-bump-итиме SHA monthly з changelog у PR.
 
 ## Risks & mitigations
 
-| Risk                                                                  | Mitigation                                                          |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| SHA-pin lock-ить нас на CVE-vulnerable version                        | Renovate monthly schedule + manual security advisory check          |
-| Renovate auto-PR ламає migration tests                                | Renovate PR triggers full CI; merge тільки manual-approve            |
+| Risk                                           | Mitigation                                                 |
+| ---------------------------------------------- | ---------------------------------------------------------- |
+| SHA-pin lock-ить нас на CVE-vulnerable version | Renovate monthly schedule + manual security advisory check |
+| Renovate auto-PR ламає migration tests         | Renovate PR triggers full CI; merge тільки manual-approve  |
 
 ## Touchpoints (file:line)
 

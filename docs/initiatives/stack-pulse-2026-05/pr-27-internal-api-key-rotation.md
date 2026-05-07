@@ -3,15 +3,15 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                                          |
-| ------------------ | ---------------------------------------------------------------------------------------- |
-| **Severity**       | Medium (M12)                                                                             |
-| **Linked finding** | M12 (`00-overview.md`)                                                                   |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                                |
-| **Effort**         | 2 дні                                                                                    |
-| **Risk**           | Medium (rotation процедура потребує zero-downtime; mistake = locked-out internal admin)  |
+|                    |                                                                                                                  |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| **Severity**       | Medium (M12)                                                                                                     |
+| **Linked finding** | M12 (`00-overview.md`)                                                                                           |
+| **Owner**          | TBD (sponsor: @Skords-01)                                                                                        |
+| **Effort**         | 2 дні                                                                                                            |
+| **Risk**           | Medium (rotation процедура потребує zero-downtime; mistake = locked-out internal admin)                          |
 | **Touches**        | `apps/server/src/env/env.ts`, `apps/server/src/http/requireInternalIp.ts`, `tools/console`, `ops/n8n-workflows/` |
-| **Trigger**        | next security audit OR suspected leak                                                    |
+| **Trigger**        | next security audit OR suspected leak                                                                            |
 
 ## Контекст
 
@@ -25,6 +25,7 @@
 Один key — один rotation event ламає всіх consumer-ів одночасно. Поточно: жодних tools для rotation, жодного TTL, жодного audit-log хто і коли key використовував.
 
 Risk:
+
 - Leak detection — нема способу побачити «цей key compromised» без full env-search у logs.
 - Rotation вимагає coordinated update у Railway + n8n + tools/console + Monobank webhook secret.
 - Жоден internal-call не tagged для post-mortem.
@@ -118,12 +119,12 @@ Single env-var `INTERNAL_API_KEY` lишається валідним bootstrap-k
 
 ## Risks & mitigations
 
-| Risk                                                                  | Mitigation                                                                            |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Bootstrap-key migration ламає running services при deploy             | Two-phase: code підтримує **обидва** (env + DB) 7 днів, потім drop env-fallback       |
-| `last_used_at` write додає DB-load на кожен internal call             | Throttle: update тільки якщо `now - last_used > 60s`                                  |
-| Compromised raw-key unrecoverable                                     | Audit logs + key-name tagging дозволяють targeted revocation з minimal blast-radius   |
-| Bcrypt slow на every internal call                                    | LRU cache key_hash → key_name (5min TTL); cache invalidate на revoke                  |
+| Risk                                                      | Mitigation                                                                          |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Bootstrap-key migration ламає running services при deploy | Two-phase: code підтримує **обидва** (env + DB) 7 днів, потім drop env-fallback     |
+| `last_used_at` write додає DB-load на кожен internal call | Throttle: update тільки якщо `now - last_used > 60s`                                |
+| Compromised raw-key unrecoverable                         | Audit logs + key-name tagging дозволяють targeted revocation з minimal blast-radius |
+| Bcrypt slow на every internal call                        | LRU cache key_hash → key_name (5min TTL); cache invalidate на revoke                |
 
 ## Touchpoints (file:line)
 

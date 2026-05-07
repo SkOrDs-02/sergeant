@@ -3,15 +3,15 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                                  |
-| ------------------ | -------------------------------------------------------------------------------- |
-| **Severity**       | Low (L3)                                                                         |
-| **Linked finding** | L3 (`00-overview.md`)                                                            |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                        |
-| **Effort**         | 1 день                                                                           |
-| **Risk**           | Low (Docker-only — runtime image build pipeline)                                 |
-| **Touches**        | `Dockerfile.api` (154 lines), `Dockerfile.console` (97 lines)                    |
-| **Trigger**        | next dependency upgrade що змінює `node_modules` cleanup pattern                  |
+|                    |                                                                  |
+| ------------------ | ---------------------------------------------------------------- |
+| **Severity**       | Low (L3)                                                         |
+| **Linked finding** | L3 (`00-overview.md`)                                            |
+| **Owner**          | TBD (sponsor: @Skords-01)                                        |
+| **Effort**         | 1 день                                                           |
+| **Risk**           | Low (Docker-only — runtime image build pipeline)                 |
+| **Touches**        | `Dockerfile.api` (154 lines), `Dockerfile.console` (97 lines)    |
+| **Trigger**        | next dependency upgrade що змінює `node_modules` cleanup pattern |
 
 ## Контекст
 
@@ -67,9 +67,9 @@ Trivy в CI (`.github/workflows/docker-cve-scan.yml`):
 ```yaml
 - uses: aquasecurity/trivy-action@<sha>
   with:
-    image-ref: 'ghcr.io/skords-01/sergeant-api:${{ github.sha }}'
-    severity: 'HIGH,CRITICAL'
-    exit-code: '1'
+    image-ref: "ghcr.io/skords-01/sergeant-api:${{ github.sha }}"
+    severity: "HIGH,CRITICAL"
+    exit-code: "1"
 ```
 
 ### 4. Documentation
@@ -108,11 +108,11 @@ Trivy в CI (`.github/workflows/docker-cve-scan.yml`):
 
 ## Risks & mitigations
 
-| Risk                                                          | Mitigation                                                              |
-| ------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Distroless missing libstdc++ для native deps (sharp, bcrypt)  | `:nodejs20-debian12` має glibc; verify build-time через CI smoke-test    |
-| Multi-stage build slower вперше (no cached layers)            | Buildx cache mount у CI; first build slower, subsequent — incremental    |
-| Trivy false-positive на known-good vendor packages            | `.trivyignore` з explicitly-justified exceptions + audit-trail у comment |
+| Risk                                                         | Mitigation                                                               |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| Distroless missing libstdc++ для native deps (sharp, bcrypt) | `:nodejs20-debian12` має glibc; verify build-time через CI smoke-test    |
+| Multi-stage build slower вперше (no cached layers)           | Buildx cache mount у CI; first build slower, subsequent — incremental    |
+| Trivy false-positive на known-good vendor packages           | `.trivyignore` з explicitly-justified exceptions + audit-trail у comment |
 
 ## Touchpoints (file:line)
 

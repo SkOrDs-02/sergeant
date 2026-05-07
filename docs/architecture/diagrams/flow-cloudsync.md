@@ -77,23 +77,23 @@ sequenceDiagram
 
 ## Порівняння з v1
 
-| v1 (ADR-0047, знятий)                | v2 (поточний)                                            |
-| ------------------------------------- | -------------------------------------------------------- |
-| `POST /api/sync` → 410 Gone           | `POST /api/v2/sync/push`                                 |
-| Whole-module blob                     | Per-row operation log                                    |
-| LWW на blob timestamp                 | LWW per row з `idempotency_key`                          |
-| offlineQueue у localStorage           | `sync_op_outbox` у SQLite-WASM (OPFS)                    |
-| `module_data` JSONB (дропнута, 046)   | Normalized per-domain tables + `sync_op_log`             |
+| v1 (ADR-0047, знятий)               | v2 (поточний)                                |
+| ----------------------------------- | -------------------------------------------- |
+| `POST /api/sync` → 410 Gone         | `POST /api/v2/sync/push`                     |
+| Whole-module blob                   | Per-row operation log                        |
+| LWW на blob timestamp               | LWW per row з `idempotency_key`              |
+| offlineQueue у localStorage         | `sync_op_outbox` у SQLite-WASM (OPFS)        |
+| `module_data` JSONB (дропнута, 046) | Normalized per-domain tables + `sync_op_log` |
 
 ## Failure handling
 
-| Failure          | Behaviour                                                        | Recovery                                  |
-| ---------------- | ---------------------------------------------------------------- | ----------------------------------------- |
-| Offline          | ops лишаються `pending` у outbox                                 | flush при `online` event                  |
-| 5xx / timeout    | ops позначаються `pending` (retry з backoff)                     | exp.backoff у `SyncEnginePushScheduler`   |
-| 401              | drop payload, force re-auth                                      | redirect до /login                        |
-| `rejected`       | op позначається `dead_letter`                                    | `recoverAllDeadLetters()` / manual replay |
-| `duplicate`      | no-op (idempotent), позначається `duplicate` у outbox            | —                                         |
+| Failure       | Behaviour                                             | Recovery                                  |
+| ------------- | ----------------------------------------------------- | ----------------------------------------- |
+| Offline       | ops лишаються `pending` у outbox                      | flush при `online` event                  |
+| 5xx / timeout | ops позначаються `pending` (retry з backoff)          | exp.backoff у `SyncEnginePushScheduler`   |
+| 401           | drop payload, force re-auth                           | redirect до /login                        |
+| `rejected`    | op позначається `dead_letter`                         | `recoverAllDeadLetters()` / manual replay |
+| `duplicate`   | no-op (idempotent), позначається `duplicate` у outbox | —                                         |
 
 ## Спостережуваність
 

@@ -3,15 +3,15 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                                  |
-| ------------------ | -------------------------------------------------------------------------------- |
-| **Severity**       | Medium (M11)                                                                     |
-| **Linked finding** | M11 (`00-overview.md`)                                                           |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                        |
-| **Effort**         | 0.5–1 день                                                                       |
-| **Risk**           | Low (additive — додаємо reporting; реальна CSP policy не міняється)              |
+|                    |                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| **Severity**       | Medium (M11)                                                                          |
+| **Linked finding** | M11 (`00-overview.md`)                                                                |
+| **Owner**          | TBD (sponsor: @Skords-01)                                                             |
+| **Effort**         | 0.5–1 день                                                                            |
+| **Risk**           | Low (additive — додаємо reporting; реальна CSP policy не міняється)                   |
 | **Touches**        | `apps/web/index.html`, `apps/web/vercel.json`, `apps/server/src/routes/csp-report.ts` |
-| **Trigger**        | next CSP-violation incident у production (зараз — silent unless dev-tools open)  |
+| **Trigger**        | next CSP-violation incident у production (зараз — silent unless dev-tools open)       |
 
 ## Контекст
 
@@ -33,16 +33,21 @@
 
 ```json
 {
-  "headers": [{
-    "source": "/:path*",
-    "headers": [{
-      "key": "Content-Security-Policy",
-      "value": "default-src 'self'; ...; report-uri /api/csp-report; report-to csp-endpoint"
-    }, {
-      "key": "Reporting-Endpoints",
-      "value": "csp-endpoint=\"https://sergeant.vercel.app/api/csp-report\""
-    }]
-  }]
+  "headers": [
+    {
+      "source": "/:path*",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; ...; report-uri /api/csp-report; report-to csp-endpoint"
+        },
+        {
+          "key": "Reporting-Endpoints",
+          "value": "csp-endpoint=\"https://sergeant.vercel.app/api/csp-report\""
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -93,11 +98,11 @@
 
 ## Risks & mitigations
 
-| Risk                                                                  | Mitigation                                                       |
-| --------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Reports flood (наприклад, browser extension violations)               | Rate-limit + Sentry sampling 10% на known-good directives        |
-| Report endpoint exposes XSS via reflected URL у dashboard              | DOM-sanitize у dashboard (не сирий innerHTML); Sentry escapes by default |
-| `Report-To` deprecated в Chrome 130+                                  | Use `Reporting-Endpoints` (новий header); fallback на report-uri |
+| Risk                                                      | Mitigation                                                               |
+| --------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Reports flood (наприклад, browser extension violations)   | Rate-limit + Sentry sampling 10% на known-good directives                |
+| Report endpoint exposes XSS via reflected URL у dashboard | DOM-sanitize у dashboard (не сирий innerHTML); Sentry escapes by default |
+| `Report-To` deprecated в Chrome 130+                      | Use `Reporting-Endpoints` (новий header); fallback на report-uri         |
 
 ## Touchpoints (file:line)
 

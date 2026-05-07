@@ -36,14 +36,14 @@
 
 ### Critical (PR-01..06)
 
-| ID  | Заголовок                                                           | PR-план                                             | Статус                                                                                                                                      |
-| --- | ------------------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| C1  | Подвійна env-система (`env.ts` + `env/env.ts` + `betterAuthEnv.ts`) | [PR-01](./pr-01-unify-env-modules.md)               | **Closed** ([#2122](https://github.com/Skords-01/Sergeant/pull/2122)) — `env.ts` тонкий re-export shim, single Zod source `env/env.ts`      |
-| C2  | Rate-limit in-memory fallback при відмові Redis                     | [PR-02](./pr-02-rate-limit-fail-closed.md)          | **Merged** ([#1552](https://github.com/Skords-01/Sergeant/pull/1552))                                                                       |
-| C3  | bcrypt + `MAX_PASSWORD_LENGTH=128` (silent 72-byte cap)             | [PR-03](./pr-03-bcrypt-password-limit.md)           | **Merged** ([#1550](https://github.com/Skords-01/Sergeant/pull/1550))                                                                       |
-| C4  | Bus factor = 1 (єдиний `@Skords-01` owner усього)                   | [PR-04](./pr-04-bus-factor-secondary-owners.md)     | **Closed** — CODEOWNERS secondary placeholders + 6 walkthroughs + ops-runbook + AGENTS.md `Secondary` column (22/22) + `L2 escalation` → playbook + secondary-column coverage gate в `scripts/check-codeowners-coverage.mjs`  |
-| C5  | TypeScript 6.0.3 + `@types/node@25.6` на Node 20                    | [PR-05](./pr-05-typescript-types-node-downgrade.md) | **Closed** — ADR-0050 + `@types/node@^20.19.0` + pnpm.overrides + renovate rule                                                             |
-| C6  | OpenClaw plain `Git_PAT` з `contents:write`                         | [PR-06](./pr-06-openclaw-github-app.md)             | **Closed** — Phase 1 [#1816](https://github.com/Skords-01/Sergeant/pull/1816) + Phase 2 (default flip + Hard Rule #20 PAT-block у prod)     |
+| ID  | Заголовок                                                           | PR-план                                             | Статус                                                                                                                                                                                                                       |
+| --- | ------------------------------------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C1  | Подвійна env-система (`env.ts` + `env/env.ts` + `betterAuthEnv.ts`) | [PR-01](./pr-01-unify-env-modules.md)               | **Closed** ([#2122](https://github.com/Skords-01/Sergeant/pull/2122)) — `env.ts` тонкий re-export shim, single Zod source `env/env.ts`                                                                                       |
+| C2  | Rate-limit in-memory fallback при відмові Redis                     | [PR-02](./pr-02-rate-limit-fail-closed.md)          | **Merged** ([#1552](https://github.com/Skords-01/Sergeant/pull/1552))                                                                                                                                                        |
+| C3  | bcrypt + `MAX_PASSWORD_LENGTH=128` (silent 72-byte cap)             | [PR-03](./pr-03-bcrypt-password-limit.md)           | **Merged** ([#1550](https://github.com/Skords-01/Sergeant/pull/1550))                                                                                                                                                        |
+| C4  | Bus factor = 1 (єдиний `@Skords-01` owner усього)                   | [PR-04](./pr-04-bus-factor-secondary-owners.md)     | **Closed** — CODEOWNERS secondary placeholders + 6 walkthroughs + ops-runbook + AGENTS.md `Secondary` column (22/22) + `L2 escalation` → playbook + secondary-column coverage gate в `scripts/check-codeowners-coverage.mjs` |
+| C5  | TypeScript 6.0.3 + `@types/node@25.6` на Node 20                    | [PR-05](./pr-05-typescript-types-node-downgrade.md) | **Closed** — ADR-0050 + `@types/node@^20.19.0` + pnpm.overrides + renovate rule                                                                                                                                              |
+| C6  | OpenClaw plain `Git_PAT` з `contents:write`                         | [PR-06](./pr-06-openclaw-github-app.md)             | **Closed** — Phase 1 [#1816](https://github.com/Skords-01/Sergeant/pull/1816) + Phase 2 (default flip + Hard Rule #20 PAT-block у prod)                                                                                      |
 
 ### High (PR-07..16)
 
@@ -66,40 +66,40 @@
 real `file:line` touchpoints. PR-плани — `Planned`, owner = TBD, активуються
 при відповідному trigger-event.
 
-| ID  | Заголовок                                                            | PR-план                                                  | Trigger to activate                                       |
-| --- | -------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------- |
-| M1  | 80+ env-vars — мігрувати feature-flag-toggle у DB-таблицю            | [PR-17](./pr-17-env-vars-feature-flag-toggle.md)         | при додаванні 90-ї змінної                                |
-| M2  | Detox path-trigger пропускає server-shape changes                    | [PR-18](./pr-18-detox-server-shape-trigger.md)           | next mobile API breakage                                  |
-| M3  | Workers без централізованого health-registry                         | [PR-19](./pr-19-workers-health-registry.md)              | next stalled-worker incident                              |
-| M4  | `patches/` — patch debt без README                                   | [PR-20](./pr-20-patches-readme.md)                       | next Expo SDK upgrade                                     |
-| M5  | Service Worker `prompt`-mode без auto-update on inactivity           | [PR-21](./pr-21-sw-prompt-mode-auto-update.md)           | next major web release                                    |
-| M6  | Mobile зашитий Expo SDK 52 (RN 0.76)                                 | [PR-22](./pr-22-mobile-expo-sdk-53.md)                   | до Q3 2026 (SDK 53 GA)                                    |
-| M7  | OpenAPI-spec не contract-tested vs runtime                           | [PR-23](./pr-23-openapi-contract-tests.md)               | при першому contract-bug                                  |
-| M8  | Embedding-vendor lock-in (`voyage-3.5-lite`)                         | [PR-24](./pr-24-embedding-vendor-abstraction.md)         | при появі quality regression                              |
-| M9  | `fizruk.vercel.app` + `sergeant.vercel.app` — два production origins | [PR-25](./pr-25-two-production-origins.md)               | next CSP/CORS-related incident                            |
+| ID  | Заголовок                                                            | PR-план                                                         | Trigger to activate                                       |
+| --- | -------------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------- |
+| M1  | 80+ env-vars — мігрувати feature-flag-toggle у DB-таблицю            | [PR-17](./pr-17-env-vars-feature-flag-toggle.md)                | при додаванні 90-ї змінної                                |
+| M2  | Detox path-trigger пропускає server-shape changes                    | [PR-18](./pr-18-detox-server-shape-trigger.md)                  | next mobile API breakage                                  |
+| M3  | Workers без централізованого health-registry                         | [PR-19](./pr-19-workers-health-registry.md)                     | next stalled-worker incident                              |
+| M4  | `patches/` — patch debt без README                                   | [PR-20](./pr-20-patches-readme.md)                              | next Expo SDK upgrade                                     |
+| M5  | Service Worker `prompt`-mode без auto-update on inactivity           | [PR-21](./pr-21-sw-prompt-mode-auto-update.md)                  | next major web release                                    |
+| M6  | Mobile зашитий Expo SDK 52 (RN 0.76)                                 | [PR-22](./pr-22-mobile-expo-sdk-53.md)                          | до Q3 2026 (SDK 53 GA)                                    |
+| M7  | OpenAPI-spec не contract-tested vs runtime                           | [PR-23](./pr-23-openapi-contract-tests.md)                      | при першому contract-bug                                  |
+| M8  | Embedding-vendor lock-in (`voyage-3.5-lite`)                         | [PR-24](./pr-24-embedding-vendor-abstraction.md)                | при появі quality regression                              |
+| M9  | `fizruk.vercel.app` + `sergeant.vercel.app` — два production origins | [PR-25](./pr-25-two-production-origins.md)                      | next CSP/CORS-related incident                            |
 | M10 | DR runbook documented                                                | **Closed** — `docs/security/disaster-recovery.md` + ops-runbook | `docs/security/disaster-recovery.md` + operations runbook |
-| M11 | CSP без `report-uri` / `report-to`                                   | [PR-26](./pr-26-csp-report-uri.md)                       | при першому unknown CSP-bug                               |
-| M12 | `INTERNAL_API_KEY` без rotation-механізму                            | [PR-27](./pr-27-internal-api-key-rotation.md)            | next security audit / suspected leak                      |
+| M11 | CSP без `report-uri` / `report-to`                                   | [PR-26](./pr-26-csp-report-uri.md)                              | при першому unknown CSP-bug                               |
+| M12 | `INTERNAL_API_KEY` без rotation-механізму                            | [PR-27](./pr-27-internal-api-key-rotation.md)                   | next security audit / suspected leak                      |
 
 ### Low (PR-28..39, поліровка)
 
 Після breakdown 2026-05-07 кожен Low-айтем — окремий `pr-NN-*.md`. Не блокують,
 але мають готовий план для активації при availability ownership.
 
-| ID  | Заголовок                                                     | PR-план                                                |
-| --- | ------------------------------------------------------------- | ------------------------------------------------------ |
-| L1  | `__SW_BUILD_ID__` як global → `import.meta.env.VITE_BUILD_ID` | [PR-28](./pr-28-sw-build-id-import-meta.md)            |
-| L2  | `window.__sergeantShellNavigate` global → BroadcastChannel    | [PR-29](./pr-29-shell-navigate-broadcast-channel.md)   |
-| L3  | Dockerfile post-install cleanup для CVE-shrink — крихкий      | [PR-30](./pr-30-dockerfile-cleanup-cve.md)             |
-| L4  | ESLint config 1073 рядки — розділити на per-app               | [PR-31](./pr-31-eslint-config-split.md)                |
-| L5  | `pnpm.overrides` — стара кодова база pinning                  | [PR-32](./pr-32-pnpm-overrides-cleanup.md)             |
-| L6  | 21 hard rules — згрупувати у 5 «Hard Areas»                   | [PR-33](./pr-33-hard-rules-categorization.md)          |
-| L7  | `runDemoSeedFromUrl` / `runDemoCleanupOnce` — на кожному load | [PR-34](./pr-34-demo-seed-cleanup-gate.md)             |
-| L8  | `LOG_LEVEL=info` default, без 5-min debug-увімкнення в проді  | [PR-35](./pr-35-log-level-debug-window.md)             |
-| L9  | `lazyImport` chunk-reload без guard проти infinite-loop       | [PR-36](./pr-36-lazy-import-chunk-reload-guard.md)     |
-| L10 | Postgres image у `docker-compose.yml` не SHA-pinned           | [PR-37](./pr-37-postgres-image-sha-pin.md)             |
-| L11 | PWA precache — перевірити що всі assets 1st-party             | [PR-38](./pr-38-pwa-precache-first-party.md)           |
-| L12 | `tools/console` SDK Anthropic 0.36.3 outdated                 | [PR-39](./pr-39-tools-console-anthropic-sdk.md)        |
+| ID  | Заголовок                                                     | PR-план                                              |
+| --- | ------------------------------------------------------------- | ---------------------------------------------------- |
+| L1  | `__SW_BUILD_ID__` як global → `import.meta.env.VITE_BUILD_ID` | [PR-28](./pr-28-sw-build-id-import-meta.md)          |
+| L2  | `window.__sergeantShellNavigate` global → BroadcastChannel    | [PR-29](./pr-29-shell-navigate-broadcast-channel.md) |
+| L3  | Dockerfile post-install cleanup для CVE-shrink — крихкий      | [PR-30](./pr-30-dockerfile-cleanup-cve.md)           |
+| L4  | ESLint config 1073 рядки — розділити на per-app               | [PR-31](./pr-31-eslint-config-split.md)              |
+| L5  | `pnpm.overrides` — стара кодова база pinning                  | [PR-32](./pr-32-pnpm-overrides-cleanup.md)           |
+| L6  | 21 hard rules — згрупувати у 5 «Hard Areas»                   | [PR-33](./pr-33-hard-rules-categorization.md)        |
+| L7  | `runDemoSeedFromUrl` / `runDemoCleanupOnce` — на кожному load | [PR-34](./pr-34-demo-seed-cleanup-gate.md)           |
+| L8  | `LOG_LEVEL=info` default, без 5-min debug-увімкнення в проді  | [PR-35](./pr-35-log-level-debug-window.md)           |
+| L9  | `lazyImport` chunk-reload без guard проти infinite-loop       | [PR-36](./pr-36-lazy-import-chunk-reload-guard.md)   |
+| L10 | Postgres image у `docker-compose.yml` не SHA-pinned           | [PR-37](./pr-37-postgres-image-sha-pin.md)           |
+| L11 | PWA precache — перевірити що всі assets 1st-party             | [PR-38](./pr-38-pwa-precache-first-party.md)         |
+| L12 | `tools/console` SDK Anthropic 0.36.3 outdated                 | [PR-39](./pr-39-tools-console-anthropic-sdk.md)      |
 
 ---
 

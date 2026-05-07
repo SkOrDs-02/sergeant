@@ -3,15 +3,15 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                                  |
-| ------------------ | -------------------------------------------------------------------------------- |
-| **Severity**       | Low (L7)                                                                         |
-| **Linked finding** | L7 (`00-overview.md`)                                                            |
-| **Owner**          | TBD (sponsor: @Skords-01)                                                        |
-| **Effort**         | 0.5 дня                                                                          |
-| **Risk**           | Low (boot-time optimization; ризик — silent skip правильної demo-seed event-и)   |
-| **Touches**        | `apps/web/src/core/onboarding/`, `apps/web/src/main.tsx`                         |
-| **Trigger**        | next time demo-seed додається ще одна route (cumulative cost compounds)           |
+|                    |                                                                                |
+| ------------------ | ------------------------------------------------------------------------------ |
+| **Severity**       | Low (L7)                                                                       |
+| **Linked finding** | L7 (`00-overview.md`)                                                          |
+| **Owner**          | TBD (sponsor: @Skords-01)                                                      |
+| **Effort**         | 0.5 дня                                                                        |
+| **Risk**           | Low (boot-time optimization; ризик — silent skip правильної demo-seed event-и) |
+| **Touches**        | `apps/web/src/core/onboarding/`, `apps/web/src/main.tsx`                       |
+| **Trigger**        | next time demo-seed додається ще одна route (cumulative cost compounds)        |
 
 ## Контекст
 
@@ -36,7 +36,7 @@ export async function maybeRunOnboarding() {
   const hasDemoFlag = url.searchParams.has("demo");
   const hasOnboardingFlag = url.searchParams.has("welcome");
   if (!hasDemoFlag && !hasOnboardingFlag) return;
-  
+
   // Lazy-import тільки якщо потрібно
   const { runDemoSeedFromUrl, runDemoCleanupOnce } = await import("./demoSeed");
   // ...dispatch на основі query
@@ -80,10 +80,10 @@ Send `seed_skipped` / `seed_ran` event у Sentry breadcrumb (low-frequency).
 
 ## Risks & mitigations
 
-| Risk                                                              | Mitigation                                                     |
-| ----------------------------------------------------------------- | -------------------------------------------------------------- |
-| Lazy-import адже додає 1 network hop при demo-flag                | Acceptable — demo-flow non-critical; production users skip     |
-| Idempotence-key version drift → seed повторно                     | Single source-of-truth `DEMO_VERSION` const; bump-у з changelog |
+| Risk                                               | Mitigation                                                      |
+| -------------------------------------------------- | --------------------------------------------------------------- |
+| Lazy-import адже додає 1 network hop при demo-flag | Acceptable — demo-flow non-critical; production users skip      |
+| Idempotence-key version drift → seed повторно      | Single source-of-truth `DEMO_VERSION` const; bump-у з changelog |
 
 ## Touchpoints (file:line)
 

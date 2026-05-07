@@ -3,15 +3,15 @@
 > **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Planned
 
-|                    |                                                                              |
-| ------------------ | ---------------------------------------------------------------------------- |
-| **Severity**       | Medium (M6)                                                                  |
-| **Linked finding** | M6 (`00-overview.md`)                                                        |
-| **Owner**          | TBD (sponsor: @Skords-01) — потрібен mobile-engineer                         |
-| **Effort**         | 3–5 днів (включно з Detox + EAS rebuild)                                     |
-| **Risk**           | Medium (RN 0.76 → 0.77+, breaking changes у new architecture)                |
+|                    |                                                                                        |
+| ------------------ | -------------------------------------------------------------------------------------- |
+| **Severity**       | Medium (M6)                                                                            |
+| **Linked finding** | M6 (`00-overview.md`)                                                                  |
+| **Owner**          | TBD (sponsor: @Skords-01) — потрібен mobile-engineer                                   |
+| **Effort**         | 3–5 днів (включно з Detox + EAS rebuild)                                               |
+| **Risk**           | Medium (RN 0.76 → 0.77+, breaking changes у new architecture)                          |
 | **Touches**        | `apps/mobile/package.json`, `apps/mobile/app.json`, `apps/mobile/eas.json`, `patches/` |
-| **Trigger**        | Q3 2026 — Expo SDK 53 GA (заявлено June 2026)                                |
+| **Trigger**        | Q3 2026 — Expo SDK 53 GA (заявлено June 2026)                                          |
 
 ## Контекст
 
@@ -99,12 +99,12 @@ pnpm install
 
 ## Risks & mitigations
 
-| Risk                                                              | Mitigation                                                                 |
-| ----------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Native deps incompatible з SDK 53 (e.g., `expo-notifications`)    | Pre-flight ADR matrix; гранична зупинка якщо ≥1 critical dep не готова    |
-| New Architecture default-on у RN 0.77 → silent regressions        | `newArchEnabled: false` явно у `expo.app.json` до окремого опт-у           |
-| Patch rebase fail-ить → CI red                                    | Drop patch якщо upstream вже містить fix; інакше оновлений patch у same PR |
-| Production crash після rollout                                    | EAS Update rollback до попередньої версії в межах <1 год                   |
+| Risk                                                           | Mitigation                                                                 |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Native deps incompatible з SDK 53 (e.g., `expo-notifications`) | Pre-flight ADR matrix; гранична зупинка якщо ≥1 critical dep не готова     |
+| New Architecture default-on у RN 0.77 → silent regressions     | `newArchEnabled: false` явно у `expo.app.json` до окремого опт-у           |
+| Patch rebase fail-ить → CI red                                 | Drop patch якщо upstream вже містить fix; інакше оновлений patch у same PR |
+| Production crash після rollout                                 | EAS Update rollback до попередньої версії в межах <1 год                   |
 
 ## Touchpoints (file:line)
 
