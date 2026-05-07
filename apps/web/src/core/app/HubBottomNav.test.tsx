@@ -151,4 +151,49 @@ describe("HubBottomNav", () => {
     const reports = screen.getByRole("tab", { name: /Звіти/ });
     expect(reports.className).not.toContain("animate-bounce-in");
   });
+
+  // PR-23 / §7.2 — Layout shift fix on Reports tab reveal.
+  describe("шар-резерв слота для «Звіти» (CLS-fix, UX-roast §7.2)", () => {
+    it("слот «Звіти» рендериться у DOM навіть коли showReports=false (як invisible)", () => {
+      const { container } = renderNav({ showReports: false });
+      // AT не бачить hidden-слот: `getByRole("tab", ..)` за замовчуванням
+      // ігнорує елементи з `visibility: hidden` (computed style).
+      expect(screen.queryByRole("tab", { name: /Звіти/ })).toBeNull();
+      // Але слот реально існує у DOM — це і фіксує геометрію tab-strip-у.
+      const hiddenReports =
+        container.querySelector<HTMLButtonElement>("#hub-tab-reports");
+      expect(hiddenReports).not.toBeNull();
+      expect(hiddenReports!).toBeInTheDocument();
+      expect(hiddenReports!.style.visibility).toBe("hidden");
+      expect(hiddenReports!.className).toContain("invisible");
+      expect(hiddenReports!.className).toContain("pointer-events-none");
+      expect(hiddenReports!.tabIndex).toBe(-1);
+    });
+
+    it("кількість слотів у tablist стабільна між showReports=false → true (без CLS)", () => {
+      const { container, rerender, onChange } = renderNav({
+        showReports: false,
+      });
+      const slotsBefore = container.querySelectorAll('[role="tab"]').length;
+
+      rerender(
+        <HubBottomNav
+          hubView="dashboard"
+          onChange={onChange}
+          showReports={true}
+        />,
+      );
+      const slotsAfter = container.querySelectorAll('[role="tab"]').length;
+      expect(slotsAfter).toBe(slotsBefore);
+    });
+
+    it("слот «Звіти» не виконує onChange при кліку, поки прихований", () => {
+      const { container, onChange } = renderNav({ showReports: false });
+      const hiddenReports =
+        container.querySelector<HTMLButtonElement>("#hub-tab-reports");
+      expect(hiddenReports).not.toBeNull();
+      fireEvent.click(hiddenReports!);
+      expect(onChange).not.toHaveBeenCalled();
+    });
+  });
 });
