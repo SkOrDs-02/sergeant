@@ -800,3 +800,56 @@ export const FINYK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
  * modules' migration histories stay independent.
  */
 export const FINYK_MIGRATIONS_TABLE = "__finyk_migrations";
+
+// ---------------------------------------------------------------------------
+// KV store — Stage 9 / PR #060
+//
+// Per-device key-value table that backs the SQLite swap of the
+// LocalStorage-backed `webKVStore` primitive (and its MMKV mobile
+// counterpart). Schema-only at this PR — `createSqliteKVStore` +
+// warm-cache (PR #061), bootstrap + LS→kv_store one-time migration
+// (PR #062), and the `webKVStore` impl swap (PR #063) follow in
+// later PRs of `docs/planning/storage-roadmap.md` Stage 9.
+//
+// Differences from the routine/fizruk/nutrition/finyk pattern:
+//   - `updated_at` is INTEGER (Unix epoch ms) rather than TEXT ISO-8601.
+//     Warm-cache eviction heuristics need a sortable numeric timestamp,
+//     and LWW comparisons happen entirely client-local — there is no
+//     server apply-path that needs offset-aware ISO-8601 byte alignment.
+//   - No `_lite`-suffixed indexes. The table is not mirrored
+//     server-side (no Postgres counterpart) and the warm-cache hits
+//     only the PRIMARY KEY on `key`, so additional indexes would be
+//     dead weight.
+// ---------------------------------------------------------------------------
+
+const KV_STORE_001_SQL = `
+CREATE TABLE IF NOT EXISTS kv_store (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,
+  updated_at INTEGER NOT NULL DEFAULT (CAST((unixepoch() * 1000) AS INTEGER))
+);
+`;
+
+/**
+ * Ordered list of bundled client migrations for the per-device
+ * `kv_store` table. Pass this directly to `runMigrations` from
+ * `@sergeant/db-schema/migrate`.
+ *
+ * The `kv_store` module uses its own ledger table
+ * (`__kv_store_migrations`) so the warm-cache bootstrap (PR #061+)
+ * can run independently of the routine / fizruk / nutrition / finyk
+ * module migrations — each module's history stays independent so
+ * canary rollouts and rollbacks don't interlock.
+ */
+export const KV_STORE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
+  { name: "001_kv_store.sql", sql: KV_STORE_001_SQL },
+] as const;
+
+/**
+ * Stable ledger table name used by the `kv_store` SQLite module.
+ * Separate from `__migrations` (routine), `__fizruk_migrations`
+ * (fizruk), `__nutrition_migrations` (nutrition), and
+ * `__finyk_migrations` (finyk) so all five modules' migration
+ * histories stay independent.
+ */
+export const KV_STORE_MIGRATIONS_TABLE = "__kv_store_migrations";
