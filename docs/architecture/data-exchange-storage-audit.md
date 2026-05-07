@@ -44,6 +44,7 @@ v1 cloud sync повністю видалений (ADR-0047, web phase PR #053a,
 - Dead-letter recovery: `SyncEngineWriterRuntime.recoverAllDeadLetters()` — відновлення операцій, що впали після max retries.
 
 Контракт:
+
 - `POST /api/v2/sync/push` — пуш batch операцій, відповідь `{applied, rejected, duplicate}`.
 - `GET /api/v2/sync/pull?since=<cursor>` — pull змін з інших пристроїв після `cursor`.
 
@@ -74,7 +75,7 @@ Monobank винесений із client-side proxy в server-side webhook flow:
 - `billing_subscriptions` — Stripe subscription state (міграція 047): `user_id`, `provider`, `plan` (`plus`/`pro`), `status`, `stripe_*_id`, `current_period_end`.
 - Вебхуки Stripe ідемпотентно ресолвляться через `webhook_events` (міграція 011).
 - Checkout-сесія → `billing_subscriptions` через `apps/server/src/modules/billing/stripe.ts`.
-- Pricing page: `apps/web/src/core/pricing/PricingPage.tsx`.
+- Pricing page: `apps/web/src/core/pricing/WaitlistForm.tsx` (раніше `PricingPage.tsx`, перейменовано в pricing → waitlist UX-roast).
 
 ### 2.8. Nutrition backup
 
