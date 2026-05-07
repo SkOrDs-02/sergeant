@@ -1,7 +1,7 @@
 # PR-04: Secondary owners + knowledge-transfer plan
 
-> **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
-> **Status:** Planned
+> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
+> **Status:** In progress. Landed: `.github/CODEOWNERS` з secondary placeholder-комент-блоком, 6 module walkthroughs у `docs/notes/spikes/2026-05-walkthrough-*.md`, [`docs/playbooks/operational-continuity.md`](../../playbooks/operational-continuity.md) + operations runbook (PR-37, [#2000](https://github.com/Skords-01/Sergeant/pull/2000)). Pending: secondary-row у `AGENTS.md` Module ownership map, заповнене `L2 escalation`, secondary-coverage у `scripts/check-codeowners-coverage.mjs`.
 
 |              |                                                                  |
 | ------------ | ---------------------------------------------------------------- |

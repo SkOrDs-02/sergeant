@@ -1,7 +1,7 @@
 # PR-01: Уніфікувати env-модулі сервера
 
-> **Last validated:** 2026-05-03 by Devin. **Next review:** 2026-08-03.
-> **Status:** Planned
+> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
+> **Status:** Closed — merged ([#2122](https://github.com/Skords-01/Sergeant/pull/2122)). `apps/server/src/env.ts` зведено до 19-рядкового re-export shim над `apps/server/src/env/env.ts` (єдиний Zod-schema джерело правди + `assertStartupEnv()`); CI-guard `scripts/check-env-single-source.mjs` блокує `process.env`-доступ поза дозволеним списком. `env/betterAuthEnv.ts` лишено навмисно — викликається з auth lifecycle до повного startup.
 
 |              |                                                               |
 | ------------ | ------------------------------------------------------------- |

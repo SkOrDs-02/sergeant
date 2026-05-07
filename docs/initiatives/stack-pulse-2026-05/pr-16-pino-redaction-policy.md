@@ -1,7 +1,7 @@
 # PR-16: Pino redaction policy + ESLint guard
 
-> **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
-> **Status:** Implemented (PR pending — link added once merged). Hard Rule #21 + `sergeant-design/no-raw-req-in-pino-log` + `docs/security/logging-redaction-policy.md` зареєстровані.
+> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
+> **Status:** Closed — merged [#2125](https://github.com/Skords-01/Sergeant/pull/2125). Hard Rule #21 + `sergeant-design/no-raw-req-in-pino-log` ESLint guard + [`docs/security/logging-redaction-policy.md`](../../security/logging-redaction-policy.md) зареєстровані.
 
 |              |                                                                |
 | ------------ | -------------------------------------------------------------- |

@@ -1,6 +1,6 @@
 # Overview — stack pulse 2026-05
 
-> **Last validated:** 2026-05-06 by Devin. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
 > **Status:** Active
 
 Скорочена картина зрізу стеку, без розгорнутих PR-планів. Деталі — у
@@ -38,12 +38,12 @@
 
 | ID  | Заголовок                                                           | PR-план                                             | Статус                                                                                                                                      |
 | --- | ------------------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| C1  | Подвійна env-система (`env.ts` + `env/env.ts` + `betterAuthEnv.ts`) | [PR-01](./pr-01-unify-env-modules.md)               | Planned                                                                                                                                     |
+| C1  | Подвійна env-система (`env.ts` + `env/env.ts` + `betterAuthEnv.ts`) | [PR-01](./pr-01-unify-env-modules.md)               | **Closed** ([#2122](https://github.com/Skords-01/Sergeant/pull/2122)) — `env.ts` тонкий re-export shim, single Zod source `env/env.ts`      |
 | C2  | Rate-limit in-memory fallback при відмові Redis                     | [PR-02](./pr-02-rate-limit-fail-closed.md)          | **Merged** ([#1552](https://github.com/Skords-01/Sergeant/pull/1552))                                                                       |
 | C3  | bcrypt + `MAX_PASSWORD_LENGTH=128` (silent 72-byte cap)             | [PR-03](./pr-03-bcrypt-password-limit.md)           | **Merged** ([#1550](https://github.com/Skords-01/Sergeant/pull/1550))                                                                       |
-| C4  | Bus factor = 1 (єдиний `@Skords-01` owner усього)                   | [PR-04](./pr-04-bus-factor-secondary-owners.md)     | Planned                                                                                                                                     |
-| C5  | TypeScript 6.0.3 + `@types/node@25.6` на Node 20                    | [PR-05](./pr-05-typescript-types-node-downgrade.md) | Planned                                                                                                                                     |
-| C6  | OpenClaw plain `Git_PAT` з `contents:write`                         | [PR-06](./pr-06-openclaw-github-app.md)             | **In progress / partial** — GitHub App auth-flow merged [#1816](https://github.com/Skords-01/Sergeant/pull/1816); PAT-removal phase pending |
+| C4  | Bus factor = 1 (єдиний `@Skords-01` owner усього)                   | [PR-04](./pr-04-bus-factor-secondary-owners.md)     | **In progress** — CODEOWNERS secondary placeholders + 6 walkthroughs + ops-runbook landed; AGENTS.md secondary-rows + escalation pending    |
+| C5  | TypeScript 6.0.3 + `@types/node@25.6` на Node 20                    | [PR-05](./pr-05-typescript-types-node-downgrade.md) | **Closed** — ADR-0050 + `@types/node@^20.19.0` + pnpm.overrides + renovate rule                                                             |
+| C6  | OpenClaw plain `Git_PAT` з `contents:write`                         | [PR-06](./pr-06-openclaw-github-app.md)             | **Closed** — Phase 1 [#1816](https://github.com/Skords-01/Sergeant/pull/1816) + Phase 2 (default flip + Hard Rule #20 PAT-block у prod)     |
 
 ### High (PR-07..16)
 

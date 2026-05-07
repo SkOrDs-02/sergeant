@@ -1,7 +1,7 @@
 # PR-09: `@parse/node-apn` review (ADR-only)
 
-> **Last validated:** 2026-05-06 by Codex. **Next review:** 2026-08-04.
-> **Status:** In review — ADR-only implementation in this docs sweep
+> **Last validated:** 2026-05-07 by Devin. **Next review:** 2026-08-05.
+> **Status:** Closed — ADR-0048 merged ([`docs/adr/0048-apns-provider-library.md`](../../adr/0048-apns-provider-library.md))
 
 |              |                                                                   |
 | ------------ | ----------------------------------------------------------------- |
