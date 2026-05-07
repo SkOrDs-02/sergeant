@@ -187,3 +187,115 @@ test("non-anchored bare filename pattern matches at any depth", () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// ─── PR-04 bus-factor: AGENTS.md secondary-column gate ──────────────────────
+
+function writeAgentsMdWithSecondary(root, opts) {
+  const { secondary, includeSecondaryCol = true, includeHeading = true } = opts;
+  const heading = includeHeading ? "## Module ownership map\n\n" : "";
+  const headerCols = includeSecondaryCol
+    ? "| Path        | Owner        | Secondary ¹     | Notes |"
+    : "| Path        | Owner        | Notes |";
+  const sep = includeSecondaryCol
+    ? "| ----------- | ------------ | --------------- | ----- |"
+    : "| ----------- | ------------ | ----- |";
+  const row = includeSecondaryCol
+    ? `| apps/web/** | \`@Skords-01\` | ${secondary} | n/a   |`
+    : "| apps/web/** | `@Skords-01` | n/a   |";
+  const body = `# Agents in Sergeant\n\n${heading}${headerCols}\n${sep}\n${row}\n`;
+  writeFileSync(join(root, "AGENTS.md"), body);
+}
+
+test("AGENTS.md ownership map: row with non-empty Secondary cell passes", () => {
+  const { dir, root, scriptDest } = buildFixture();
+  try {
+    mkdirSync(join(root, ".github"), { recursive: true });
+    writeFileSync(
+      join(root, ".github", "CODEOWNERS"),
+      "/.github/CODEOWNERS @owner\n/AGENTS.md @owner\n",
+    );
+    writeAgentsMdWithSecondary(root, { secondary: "TBD (frontend-engineer)" });
+    const r = runScript(scriptDest);
+    assert.ok(r.json, `expected JSON output, got: ${r.stdout}\n${r.stderr}`);
+    const noEmpty = r.json.failures.every(
+      (f) => f.kind !== "agents-md-empty-secondary",
+    );
+    assert.ok(
+      noEmpty,
+      `expected no agents-md-empty-secondary failure, got: ${JSON.stringify(r.json.failures)}`,
+    );
+    const entry = r.json.checked.find((c) => c.path === "AGENTS.md");
+    assert.equal(entry?.secondaryColumn, "all-rows-populated");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("AGENTS.md ownership map: empty Secondary cell fails with kind=agents-md-empty-secondary", () => {
+  const { dir, root, scriptDest } = buildFixture();
+  try {
+    mkdirSync(join(root, ".github"), { recursive: true });
+    writeFileSync(
+      join(root, ".github", "CODEOWNERS"),
+      "/.github/CODEOWNERS @owner\n/AGENTS.md @owner\n",
+    );
+    writeAgentsMdWithSecondary(root, { secondary: "" });
+    const r = runScript(scriptDest);
+    assert.equal(r.status, 1, "must exit 1 when Secondary cell is empty");
+    assert.ok(r.json);
+    const fail = r.json.failures.find(
+      (f) => f.kind === "agents-md-empty-secondary",
+    );
+    assert.ok(fail, "must report agents-md-empty-secondary failure");
+    assert.equal(fail.rows.length, 1);
+    assert.equal(fail.rows[0].path, "apps/web/**");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("AGENTS.md ownership map: missing Secondary column fails", () => {
+  const { dir, root, scriptDest } = buildFixture();
+  try {
+    mkdirSync(join(root, ".github"), { recursive: true });
+    writeFileSync(
+      join(root, ".github", "CODEOWNERS"),
+      "/.github/CODEOWNERS @owner\n/AGENTS.md @owner\n",
+    );
+    writeAgentsMdWithSecondary(root, {
+      secondary: "n/a",
+      includeSecondaryCol: false,
+    });
+    const r = runScript(scriptDest);
+    assert.equal(r.status, 1);
+    assert.ok(r.json);
+    const fail = r.json.failures.find(
+      (f) => f.kind === "agents-md-no-secondary-col",
+    );
+    assert.ok(fail, "must fail when Secondary column is absent from header");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("AGENTS.md ownership map: missing heading fails with no-table", () => {
+  const { dir, root, scriptDest } = buildFixture();
+  try {
+    mkdirSync(join(root, ".github"), { recursive: true });
+    writeFileSync(
+      join(root, ".github", "CODEOWNERS"),
+      "/.github/CODEOWNERS @owner\n/AGENTS.md @owner\n",
+    );
+    writeAgentsMdWithSecondary(root, {
+      secondary: "TBD",
+      includeHeading: false,
+    });
+    const r = runScript(scriptDest);
+    assert.equal(r.status, 1);
+    assert.ok(r.json);
+    const fail = r.json.failures.find((f) => f.kind === "agents-md-no-table");
+    assert.ok(fail, "must fail when ownership-map heading is missing");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

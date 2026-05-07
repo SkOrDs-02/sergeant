@@ -364,6 +364,123 @@ function listFiles(dir, regex) {
   return out;
 }
 
+// ── AGENTS.md Module ownership map: secondary-column validation ──────────────
+//
+// Stack-pulse PR-04 (bus-factor fix) requires every row in the AGENTS.md
+// «Module ownership map» to declare a `Secondary` value (real GitHub handle
+// like `@alice`, or a placeholder `TBD (<role>)` such as `TBD (frontend-
+// engineer)`). An empty Secondary cell silently regresses the bus-factor
+// contract because reviewers can no longer tell apart «no second reviewer
+// chosen yet» from «we forgot to fill the row».
+//
+// We extract the table by anchoring on the heading `## Module ownership map`,
+// then read the header row to locate the `Secondary` column index. Markdown
+// pipe-tables are simple enough to parse without a dependency.
+
+const AGENTS_MD_PATH = "AGENTS.md";
+const OWNERSHIP_HEADING_RE = /^##\s+Module ownership map\s*$/;
+const SECONDARY_COL_RE = /^Secondary(\s|\u00a0|¹|\*)*$/i;
+
+function splitMarkdownRow(line) {
+  // A markdown table row: `| col | col | … |`. Trim leading/trailing pipes and
+  // split on unescaped `|`. We don't bother with escaped pipes — the table
+  // doesn't use them.
+  const trimmed = line.trim();
+  if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) return null;
+  const inner = trimmed.slice(1, -1);
+  return inner.split("|").map((c) => c.trim());
+}
+
+function isAlignmentRow(cells) {
+  // Markdown header separator row: every cell is `---`, `:---`, `---:`, or
+  // `:---:`. Empty cells are not allowed in a real separator.
+  if (cells.length === 0) return false;
+  return cells.every((c) => /^:?-{3,}:?$/.test(c));
+}
+
+function extractOwnershipTable(text) {
+  const lines = text.split("\n");
+  let i = 0;
+  while (i < lines.length && !OWNERSHIP_HEADING_RE.test(lines[i])) i++;
+  if (i === lines.length) return null;
+  i++; // step past the heading itself
+  // Skip past the heading; find the first table header row. Bail if we hit
+  // the next markdown heading first.
+  while (i < lines.length) {
+    if (/^#{1,6}\s/.test(lines[i])) return null;
+    const cells = splitMarkdownRow(lines[i]);
+    if (cells && cells.length >= 2) break;
+    i++;
+  }
+  if (i >= lines.length) return null;
+  const header = splitMarkdownRow(lines[i]);
+  if (!header) return null;
+  i++;
+  const align = splitMarkdownRow(lines[i]);
+  if (!align || !isAlignmentRow(align)) return null;
+  i++;
+  const rows = [];
+  while (i < lines.length) {
+    const cells = splitMarkdownRow(lines[i]);
+    if (!cells) break;
+    rows.push({ cells, lineNumber: i + 1 });
+    i++;
+  }
+  return { header, rows };
+}
+
+function validateAgentsSecondaryColumn(rootDir) {
+  const abs = resolve(rootDir, AGENTS_MD_PATH);
+  if (!existsSync(abs)) {
+    return {
+      kind: "agents-md-missing",
+      path: AGENTS_MD_PATH,
+      reason: "AGENTS.md is required for ownership-map validation",
+    };
+  }
+  const text = readFileSync(abs, "utf-8");
+  const table = extractOwnershipTable(text);
+  if (!table) {
+    return {
+      kind: "agents-md-no-table",
+      path: AGENTS_MD_PATH,
+      reason:
+        "could not locate `## Module ownership map` table in AGENTS.md " +
+        "(check the heading exactly + that the table is a standard pipe-table)",
+    };
+  }
+  const secondaryIdx = table.header.findIndex((h) => SECONDARY_COL_RE.test(h));
+  const pathIdx = table.header.findIndex((h) => /^Path$/i.test(h));
+  if (secondaryIdx === -1) {
+    return {
+      kind: "agents-md-no-secondary-col",
+      path: AGENTS_MD_PATH,
+      reason:
+        "Module ownership map header has no `Secondary` column — " +
+        "PR-04 bus-factor contract requires it",
+    };
+  }
+  const empty = [];
+  for (const row of table.rows) {
+    const cell = row.cells[secondaryIdx];
+    if (!cell || cell.length === 0) {
+      empty.push({
+        line: row.lineNumber,
+        path: pathIdx >= 0 ? row.cells[pathIdx] : "(unknown path)",
+      });
+    }
+  }
+  if (empty.length === 0) return null;
+  return {
+    kind: "agents-md-empty-secondary",
+    path: AGENTS_MD_PATH,
+    reason:
+      "AGENTS.md Module ownership map has rows with an empty `Secondary` " +
+      "column (PR-04 bus-factor contract)",
+    rows: empty,
+  };
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 function main() {
@@ -379,6 +496,21 @@ function main() {
 
   const failures = [];
   const checked = [];
+
+  // PR-04 bus-factor secondary-column gate. Skipped silently when AGENTS.md
+  // is absent (e.g., minimal fixtures in unit tests don't have one).
+  if (existsSync(resolve(ROOT, AGENTS_MD_PATH))) {
+    const agentsFailure = validateAgentsSecondaryColumn(ROOT);
+    if (agentsFailure) {
+      failures.push(agentsFailure);
+    } else {
+      checked.push({
+        path: AGENTS_MD_PATH,
+        status: "owned",
+        secondaryColumn: "all-rows-populated",
+      });
+    }
+  }
 
   for (const req of MUST_BE_OWNED) {
     const abs = resolve(ROOT, req.path);

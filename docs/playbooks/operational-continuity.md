@@ -75,7 +75,7 @@ lang: en
 | Role                | Contact                                                 | Scope                      |
 | ------------------- | ------------------------------------------------------- | -------------------------- |
 | Primary owner       | @Skords-01                                              | All                        |
-| Secondary (TBD)     | Hire when team grows                                    | Per-module (see AGENTS.md) |
+| Secondary (TBD)     | Hire when team grows                                    | Per-module — see [AGENTS.md § Module ownership map](../../AGENTS.md#module-ownership-map) `Secondary` column for placeholder roles (`frontend-engineer`, `backend-engineer`, `mobile-engineer`, `data-engineer`, `any-engineer`); enforced by `pnpm lint:codeowners` |
 | Monobank API issues | [developers.monobank.ua](https://api.monobank.ua/docs/) | finyk webhooks             |
 | Railway support     | [railway.app/help](https://railway.app/help)            | Infra outages              |
 | Anthropic support   | [support.anthropic.com](https://support.anthropic.com)  | API quota issues           |
