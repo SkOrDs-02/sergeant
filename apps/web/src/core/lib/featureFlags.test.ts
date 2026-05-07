@@ -85,6 +85,24 @@ describe("featureFlags", () => {
     expect(getFlag("feature.finyk.sqlite_v2.mono_mirror")).toBe(false);
   });
 
+  it("Nutrition read_sqlite увімкнений за замовчуванням для Stage 8 PR #055n2", async () => {
+    const { getFlag, setFlag } = await loadFresh();
+    expect(getFlag("feature.nutrition.sqlite_v2.read_sqlite")).toBe(true);
+
+    expect(setFlag("feature.nutrition.sqlite_v2.read_sqlite", false)).toBe(
+      true,
+    );
+    expect(getFlag("feature.nutrition.sqlite_v2.read_sqlite")).toBe(false);
+  });
+
+  it("Finyk read_sqlite увімкнений за замовчуванням для Stage 8 PR #055k2", async () => {
+    const { getFlag, setFlag } = await loadFresh();
+    expect(getFlag("feature.finyk.sqlite_v2.read_sqlite")).toBe(true);
+
+    expect(setFlag("feature.finyk.sqlite_v2.read_sqlite", false)).toBe(true);
+    expect(getFlag("feature.finyk.sqlite_v2.read_sqlite")).toBe(false);
+  });
+
   it("setFlag зберігає boolean і getFlag його повертає", async () => {
     const { getFlag, setFlag } = await loadFresh();
     expect(setFlag("finyk_subscriptions_category", true)).toBe(true);

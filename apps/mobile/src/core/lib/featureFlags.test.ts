@@ -63,4 +63,22 @@ describe("mobile featureFlags", () => {
     expect(flag).toBeDefined();
     expect(flag?.defaultValue).toBe(true);
   });
+
+  it("keeps Nutrition sqlite reads default-on for Stage 8 PR #055n2", () => {
+    const flag = EXPERIMENTAL_FLAGS.find(
+      (item) => item.id === "feature.nutrition.sqlite_v2.read_sqlite",
+    );
+
+    expect(flag).toBeDefined();
+    expect(flag?.defaultValue).toBe(true);
+  });
+
+  it("keeps Finyk sqlite reads default-on for Stage 8 PR #055k2", () => {
+    const flag = EXPERIMENTAL_FLAGS.find(
+      (item) => item.id === "feature.finyk.sqlite_v2.read_sqlite",
+    );
+
+    expect(flag).toBeDefined();
+    expect(flag?.defaultValue).toBe(true);
+  });
 });
