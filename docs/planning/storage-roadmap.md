@@ -2934,7 +2934,7 @@ updated_at: Date.now() })`. Async-write enqueue-ується через
 - **Out-of-scope.** Жодних змін у `webKVStore` impl-ації — це
   схема-only PR.
 
-#### **PR #061 — `feat(shared): add createSqliteKVStore + warm-cache`** 📋 ROADMAP
+#### **PR #061 — `feat(shared): add createSqliteKVStore + warm-cache`** 🚧 IN FLIGHT ([#2157](https://github.com/Skords-01/Sergeant/pull/2157))
 
 - New KVStore adapter у `packages/shared/src/storage/kv.ts` (поряд
   з `createMemoryKVStore`/`createWebKVStore`/`createMmkvKVStore`):
@@ -2957,7 +2957,7 @@ updated_at: Date.now() })`. Async-write enqueue-ується через
   fallback на init failure, write-coalesce, BC stress test.
 - **Dep.** PR #060.
 
-#### **PR #062 — `feat(web): bootstrap warm-cache + LS→kv_store one-time migration`** 📋 ROADMAP
+#### **PR #062 — `feat(web): bootstrap warm-cache + LS→kv_store one-time migration`** 🚧 IN FLIGHT ([#2159](https://github.com/Skords-01/Sergeant/pull/2159))
 
 - New `apps/web/src/core/db/kvStoreBoot.ts`:
   ```ts
