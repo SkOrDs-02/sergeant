@@ -223,6 +223,71 @@ jobs:
               });
             }
 
+  web-build-smoke:
+    name: Vite build smoke (apps/web)
+    runs-on: ubuntu-latest
+    # Hard gate that catches Node-only imports leaking into the browser
+    # bundle (e.g. `node:fs`, `node:path`) before they reach `main`.
+    #
+    # Why this gate exists: see
+    # docs/audits/2026-05-07-app-audit.md §9 (process gap — `pnpm build`
+    # for apps/web wasn't running on PRs, so the umbrella `node:fs`
+    # import in kvStoreBoot.ts shipped to prod) and §11.1 (recommendation
+    # — add `pnpm --filter @sergeant/web build` as a hard CI gate so
+    # regressions of this class fail PR-time, not at deploy/runtime).
+    #
+    # `pnpm typecheck` and `pnpm test` both pass for this regression
+    # class: the imports are typed, and `runMigrations` is mocked in
+    # tests. Only the actual Vite production build surfaces the
+    # "Module 'node:X' has been externalized for browser compatibility"
+    # warning that breaks the page at runtime.
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+      # Version is read from packageManager in root package.json.
+      - uses: pnpm/action-setup@8912a9102ac27614460f54aedde9e1e7f9aec20d
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build apps/web (Vite)
+        # Hard gate. Failure here blocks the PR.
+        # Captures stderr+stdout so the next step can grep for the
+        # browser-externalized warning and fail on it specifically.
+        run: |
+          set -o pipefail
+          pnpm --filter @sergeant/web build 2>&1 | tee /tmp/web-build.log
+
+      - name: Assert no Node-only imports in browser bundle
+        # Bonus targeted regression assertion (audit §11.1). Vite emits
+        # `vite-browser-external:node:` shim modules and a runtime
+        # "Module 'node:X' has been externalized for browser
+        # compatibility" warning whenever Node-only modules (`node:fs`,
+        # `node:path`, `node:crypto`, …) leak into the client bundle.
+        # We fail the job on either signal so the regression class
+        # cannot ship even if Vite kept exit-code 0.
+        run: |
+          set -euo pipefail
+          if grep -q 'vite-browser-external:node:' /tmp/web-build.log; then
+            echo "::error::Node built-in module externalized into browser bundle (see audit §1)."
+            grep 'vite-browser-external:node:' /tmp/web-build.log || true
+            exit 1
+          fi
+          if grep -q 'has been externalized for browser compatibility' /tmp/web-build.log; then
+            echo "::error::Vite externalized a Node-only module for browser compatibility (see audit §1)."
+            grep 'has been externalized for browser compatibility' /tmp/web-build.log || true
+            exit 1
+          fi
+          echo "OK: no Node-only imports detected in apps/web bundle."
+
   coverage:
     name: Test coverage (vitest)
     runs-on: ubuntu-latest
