@@ -28,7 +28,8 @@ vi.mock("../../../core/observability/analytics", () => ({
   },
 }));
 
-import { monoWebhookApi } from "@shared/api";
+import { ApiError, monoWebhookApi } from "@shared/api";
+import { messages } from "@shared/i18n/uk";
 import { useMonobankWebhook } from "./useMonobankWebhook";
 
 const mockedSyncState = monoWebhookApi.syncState as unknown as ReturnType<
@@ -185,6 +186,92 @@ describe("useMonobankWebhook", () => {
     expect(localStorage.getItem("finyk_token")).toBeNull();
     expect(localStorage.getItem("finyk_token_remembered")).toBeNull();
     expect(sessionStorage.getItem("finyk_token")).toBeNull();
+  });
+
+  it("surfaces tokenRejected wording on Mono 401 (PR-32 / C7)", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "disconnected",
+      webhookActive: false,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 0,
+    });
+    const apiError = new ApiError({
+      kind: "http",
+      status: 401,
+      message: "Unauthorized",
+      url: "/api/mono/webhook/connect",
+    });
+    mockedConnect.mockRejectedValue(apiError);
+
+    const { result } = renderHook(() => useMonobankWebhook(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.syncState.status).toBe("idle");
+    });
+
+    await act(async () => {
+      await result.current.connect("expired-token");
+    });
+
+    expect(result.current.authError).toBe(
+      messages.finyk.monoConnectErrors.tokenRejected,
+    );
+    expect(result.current.error).toBe("");
+  });
+
+  it("surfaces networkUnavailable wording on aborts and other failures (PR-32 / C7)", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "disconnected",
+      webhookActive: false,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 0,
+    });
+    const abortError = new ApiError({
+      kind: "aborted",
+      message: "Aborted",
+      url: "/api/mono/webhook/connect",
+    });
+    mockedConnect.mockRejectedValue(abortError);
+
+    const { result } = renderHook(() => useMonobankWebhook(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.syncState.status).toBe("idle");
+    });
+
+    await act(async () => {
+      await result.current.connect("any-token");
+    });
+
+    expect(result.current.error).toBe(
+      messages.finyk.monoConnectErrors.networkUnavailable,
+    );
+    expect(result.current.authError).toBe("");
+
+    // 403 must NOT be treated as "token rejected" — only 401 is. Use the
+    // generic connectivity wording for everything else (per plan / C7).
+    const forbidden = new ApiError({
+      kind: "http",
+      status: 403,
+      message: "Forbidden",
+      url: "/api/mono/webhook/connect",
+    });
+    mockedConnect.mockRejectedValue(forbidden);
+
+    await act(async () => {
+      await result.current.connect("locked-token");
+    });
+
+    expect(result.current.authError).toBe("");
+    expect(result.current.error).toBe(
+      messages.finyk.monoConnectErrors.networkUnavailable,
+    );
   });
 
   it("does not make /api/mono?path=/personal/statement calls in webhook mode", async () => {

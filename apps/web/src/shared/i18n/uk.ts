@@ -365,6 +365,12 @@ export const messages = {
 
   finyk: {
     addLimitOrGoal: "+ Додати ліміт або ціль",
+    // Mono webhook connect error wording (PR-32 ux-roast 2026-Q2 / C7).
+    // 401 → токен реджектнутий, мережеві/інші — connectivity-проблема.
+    monoConnectErrors: {
+      tokenRejected: "Mono відхилив токен. Перевір, чи скопіював правильний.",
+      networkUnavailable: "Не вдалось зв'язатись з Mono. Перевір з'єднання.",
+    },
   },
 
   // App-lock / Privacy settings (PR-1a UX-roast 2026-Q2).

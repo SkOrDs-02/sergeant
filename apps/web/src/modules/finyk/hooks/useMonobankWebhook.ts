@@ -7,6 +7,7 @@ import {
   type MonoAccountDto,
   type MonoTransactionDto,
 } from "@shared/api";
+import { messages } from "@shared/i18n/uk";
 import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { authAwareRetry } from "@shared/lib/api/queryClient";
 import { normalizeTransaction } from "@sergeant/finyk-domain/domain/transactions";
@@ -409,17 +410,15 @@ export function useMonobankWebhook({
           accountsCount: result.accountsCount,
         });
       } catch (e) {
-        if (isApiError(e) && e.kind === "http" && e.isAuth) {
-          setAuthError(
-            e.serverMessage ||
-              "Токен Monobank недійсний або закінчився. Оновіть токен.",
-          );
-        } else if (isApiError(e) && e.kind === "aborted") {
-          setError("Monobank API не відповідає. Спробуйте пізніше.");
+        // PR-32 (UX-roast 2026-Q2 / C7): differentiate Mono token-rejection
+        // (HTTP 401 — server explicitly rejected this token) from any other
+        // failure mode (offline, timeout, 403/5xx, DNS, etc.). The first
+        // case is a copy-paste / expiry mistake the user can fix locally;
+        // the second is connectivity that no token edit will repair.
+        if (isApiError(e) && e.kind === "http" && e.status === 401) {
+          setAuthError(messages.finyk.monoConnectErrors.tokenRejected);
         } else {
-          const msg =
-            e instanceof Error && e.message ? e.message : "Помилка підключення";
-          setError(msg);
+          setError(messages.finyk.monoConnectErrors.networkUnavailable);
         }
       } finally {
         setConnecting(false);
