@@ -25,7 +25,7 @@
     "build:analyze": "pnpm --filter @sergeant/web build:analyze",
     "build:check-size": "node scripts/check-bundle-size.mjs",
     "preview": "pnpm --filter @sergeant/web preview",
-    "lint": "turbo run lint && node scripts/check-imports.mjs && node tools/tsconfig-guard/check.mjs && pnpm lint:plugins && pnpm lint:skills && pnpm lint:playbook-language && pnpm lint:tech-debt-freshness && pnpm lint:initiative-status-sync && pnpm lint:localstorage-allowlist && pnpm lint:env-single-source && pnpm lint:discoverability && pnpm api:check-openapi && pnpm api:check-openapi-types",
+    "lint": "turbo run lint && node scripts/check-imports.mjs && node tools/tsconfig-guard/check.mjs && pnpm lint:plugins && pnpm lint:skills && pnpm lint:playbook-language && pnpm lint:tech-debt-freshness && pnpm lint:initiative-status-sync && pnpm lint:localstorage-allowlist && pnpm lint:env-single-source && pnpm lint:discoverability && pnpm lint:patches && pnpm api:check-openapi && pnpm api:check-openapi-types",
     "lint:imports": "node scripts/check-imports.mjs",
     "lint:migrations": "node scripts/lint-migrations.mjs",
     "ops:n8n:validate": "node scripts/n8n/validate-n8n-workflows.mjs",
@@ -80,6 +80,7 @@
     "lint:ai-legacy": "node scripts/check-ai-legacy.mjs --check",
     "ai-legacy:dashboard": "node scripts/check-ai-legacy.mjs --dashboard dist/ai-legacy-dashboard.html",
     "lint:codeowners": "node scripts/check-codeowners-coverage.mjs",
+    "lint:patches": "node scripts/check-patches-doc.mjs",
     "lint:pnpm-overrides": "node scripts/check-pnpm-overrides.mjs",
     "ci:validate-pr-body": "node scripts/ci/validate-pr-body.mjs"
   },
