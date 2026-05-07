@@ -47,4 +47,53 @@ describe("ANALYTICS_EVENTS registry", () => {
     expect(ANALYTICS_EVENTS.PRICING_CTA_CLICKED).toBe("pricing_cta_clicked");
     expect(ANALYTICS_EVENTS.WAITLIST_SUBMITTED).toBe("waitlist_submitted");
   });
+
+  it("exposes the UX-roast 2026-Q2 event groups verbatim", () => {
+    // App Lock — PR-0 / PR-1a / PR-1b
+    expect(ANALYTICS_EVENTS.APP_LOCK_SETUP_STARTED).toBe(
+      "app_lock_setup_started",
+    );
+    expect(ANALYTICS_EVENTS.APP_LOCK_SETUP_COMPLETED).toBe(
+      "app_lock_setup_completed",
+    );
+    expect(ANALYTICS_EVENTS.APP_LOCK_UNLOCK_SUCCESS).toBe(
+      "app_lock_unlock_success",
+    );
+    expect(ANALYTICS_EVENTS.APP_LOCK_UNLOCK_FAILED).toBe(
+      "app_lock_unlock_failed",
+    );
+    expect(ANALYTICS_EVENTS.BIOMETRIC_SETUP_COMPLETED).toBe(
+      "biometric_setup_completed",
+    );
+    expect(ANALYTICS_EVENTS.BIOMETRIC_AUTH_SUCCESS).toBe(
+      "biometric_auth_success",
+    );
+    expect(ANALYTICS_EVENTS.BIOMETRIC_AUTH_FAILED_FALLBACK_PIN).toBe(
+      "biometric_auth_failed_fallback_pin",
+    );
+
+    // Module navigation — PR-2 / PR-4
+    expect(ANALYTICS_EVENTS.MODULE_SETTINGS_OPENED).toBe(
+      "module_settings_opened_from_module",
+    );
+    expect(ANALYTICS_EVENTS.MODULE_LANDING_TAB_CLICKED).toBe(
+      "module_landing_tab_clicked",
+    );
+
+    // Error recovery — PR-14
+    expect(ANALYTICS_EVENTS.ERROR_BOUNDARY_REQUEST_ID_COPIED).toBe(
+      "error_boundary_request_id_copied",
+    );
+    expect(ANALYTICS_EVENTS.ERROR_BOUNDARY_RETRIED).toBe(
+      "error_boundary_retried",
+    );
+
+    // Permissions — PR-7
+    expect(ANALYTICS_EVENTS.PERMISSIONS_SETTINGS_OPENED).toBe(
+      "permissions_settings_opened",
+    );
+    expect(ANALYTICS_EVENTS.PERMISSION_STATUS_CHANGED).toBe(
+      "permission_status_changed",
+    );
+  });
 });

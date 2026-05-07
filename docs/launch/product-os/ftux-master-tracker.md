@@ -494,6 +494,28 @@ slos:
 | M-11 | A11y manual audit не проведений                                          | ⏳ Open                 | PR-16                                                                                 |
 | M-12 | What's new modal відсутній                                               | 🚧 Mitigation in flight | PR-18 — `apps/web/src/core/whatsNew/` + `docs/whats-new/` (in flight)                 |
 
+### 8.5. UX-roast 2026-05-06 — P0/P1/P2
+
+> Джерело: [`docs/audits/2026-05-06-ux-roast.md`](../../audits/2026-05-06-ux-roast.md). Виконавчий план: [`docs/audits/2026-05-06-ux-roast-pr-plan.md`](../../audits/2026-05-06-ux-roast-pr-plan.md) (41 PR). Архітектурні рішення: [ADR-0054](../../adr/0054-ux-roast-2026-Q2.md).
+>
+> Статус станом на 2026-05-07: **15/41 змерджено**, 2 obsolete (PR-13, PR-37). Головний блокер Sprint 1: PR-0 (telemetry, S) — не стартував.
+
+| Sprint | Категорія                              | Стан       | Деталі                                                                                              |
+| ------ | -------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------- |
+| 0      | PR-0 Telemetry                         | ⏳ Open    | Додає UX-roast PostHog events у `analyticsEvents.ts` + ADR-0054. **Блокує PR-1a/2/3/6/7/11/14/42.** |
+| 1 (P0) | PR-1a App Lock PIN                     | ⏳ Open    | L. Depends on PR-0.                                                                                 |
+| 1 (P0) | PR-1b Biometric                        | ⏳ Open    | M. Depends on PR-1a.                                                                                |
+| 1 (P0) | PR-2 Module gear                       | ⏳ Open    | M. Depends on PR-0.                                                                                 |
+| 1 (P0) | PR-3 Bento subtitles                   | ⏳ Open    | S. Depends on PR-0.                                                                                 |
+| 1 (P0) | PR-4 «Огляд» unify                     | ✅ Closed  | [#2103](https://github.com/Skords-01/Sergeant/pull/2103)                                            |
+| 1 (P0) | PR-5 Copy bundle                       | ✅ Closed  | commit `bc4b9251` (#2102)                                                                           |
+| 1 (P0) | PR-6 Reports EmptyState                | ⏳ Open    | M. Depends on PR-0.                                                                                 |
+| 1 (P0) | PR-7 Permissions settings              | ⏳ Open    | M. Depends on PR-0.                                                                                 |
+| 2 (P1) | PR-15/17/18/21/26/29/30/31/33/34/38/39 | ✅ Closed  | 12 PR-ів змерджено — copy, auth, accessibility, animation polish.                                   |
+| 2 (P1) | PR-8–14, PR-16, PR-19, PR-22–25        | ⏳ Open    | Performance, empty-states, forms, permissions sub-group.                                            |
+| 3 (P2) | PR-28 Avatar upload                    | ⏳ Blocked | Blocked: S3/R2 credentials.                                                                         |
+| 3 (P2) | PR-42 Chat counter                     | ⏳ Open    | Server backend частково є (ADR-0051 `effectiveLimits`); frontend + `/api/chat/usage` залишається.   |
+
 ---
 
 ## 9. Архівні джерела

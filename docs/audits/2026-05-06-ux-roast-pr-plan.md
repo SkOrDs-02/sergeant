@@ -54,13 +54,13 @@
 | PR-30 | Loading-state copy unify (1-а особа однини) [C5]                 | 3      | ✅ done             | [#2124](https://github.com/Skords-01/Sergeant/pull/2124)                                  |
 | PR-15 | Password-strength entropy [C8]                                   | 2      | ✅ done             | [#2156](https://github.com/Skords-01/Sergeant/pull/2156)                                  |
 | PR-17 | Logout primary в Profile [C10]                                   | 2      | ✅ done             | [#2153](https://github.com/Skords-01/Sergeant/pull/2153)                                  |
-| PR-18 | Tour vs Restart-onboarding copy revamp [C12]                     | 2      | ⏳ in CI            | [#2154](https://github.com/Skords-01/Sergeant/pull/2154) (conflict-resolve merge-commit)  |
+| PR-18 | Tour vs Restart-onboarding copy revamp [C12]                     | 2      | ✅ done             | [#2154](https://github.com/Skords-01/Sergeant/pull/2154)                                  |
 | PR-26 | Empty-state placeholder в /chat [A12]                            | 3      | ✅ done             | [#2160](https://github.com/Skords-01/Sergeant/pull/2160)                                  |
 | PR-31 | «Введи X» zod-каталог unify [C6]                                 | 3      | ✅ done             | [#2158](https://github.com/Skords-01/Sergeant/pull/2158)                                  |
 | PR-13 | Module-context у sync-error toast [A15]                          | 2      | ❌ obsolete         | cloudSync v1 dropped у Stage 7 ([#2046](https://github.com/Skords-01/Sergeant/pull/2046)) |
 | PR-37 | Прибрати dark-mode дубль у Settings [R3]                         | 3      | ❌ obsolete         | дубля немає, `DarkModeToggle` лише в `core/app/HubHeader.tsx`                             |
 
-**Прогрес:** 14 із 41 виконавчих PR-ів змерджено + 1 (PR-18) у CI; 2 (PR-13, PR-37) закриті як obsolete-by-drift. Деталі у відповідних розділах нижче.
+**Прогрес:** 15 із 41 виконавчих PR-ів змерджено; 2 (PR-13, PR-37) закриті як obsolete-by-drift. Деталі у відповідних розділах нижче.
 
 **Заблоковані напрямки:**
 
@@ -487,7 +487,7 @@
   **Size:** S
   **Depends on:** —
 
-### PR-18 · Tour vs Restart-onboarding copy revamp [C12] — ⏳ IN CI [#2154](https://github.com/Skords-01/Sergeant/pull/2154)
+### PR-18 · Tour vs Restart-onboarding copy revamp [C12] — ✅ DONE [#2154](https://github.com/Skords-01/Sergeant/pull/2154)
 
 **Items covered:** C12, §2.3.
 **Scope:**
@@ -869,11 +869,19 @@
 ### PR-42 · Pricing chat-counter [§15]
 
 **Items covered:** §15 (Free 5 msg/day).
+
+> **Update 2026-05-07 (ADR-0051 drift):** Server-side backend частково пре-реалізовано у HEAD commit `30584b1`:
+>
+> - `apps/server/src/modules/billing/effectiveLimits.ts` — Free = 5 `aiRequestsPerDay`, Pro = unlimited.
+> - `apps/server/src/modules/billing/requirePlan.ts` — Express middleware, 402 на locked routes; gated `STRIPE_ENABLED`.
+> - **Залишається зробити:** `GET /api/chat/usage` endpoint + frontend `ChatUsageCounter.tsx`.
+> - Plus-tier більше немає (ADR-0051 → 2-tier: Free + Pro) — рядок «Plus/Pro: counter ховається» → «Pro: counter ховається».
+
 **Scope:**
 
 - `HubChatHeader.tsx` — додати counter pill `«3/5 повідомлень»` (для Free-tier).
-- Server: `GET /api/chat/usage` → `{ remaining, limit, plan }`.
-- Якщо >limit, поведінка вже існує (server-side rate-limit), але user-side prompt: «Ліміт повідомлень. Подивитись плани → /pricing».
+- Server: `GET /api/chat/usage` → `{ remaining, limit, plan }` (використати `effectiveLimits` з billing module).
+- Якщо >limit, поведінка вже існує (server-side rate-limit через `requirePlan`), але user-side prompt: «Ліміт повідомлень. Подивитись плани → /pricing».
   **Files:**
 - `core/hub/chat/HubChatHeader.tsx`
 - new: `core/hub/chat/ChatUsageCounter.tsx`
@@ -882,8 +890,8 @@
 - migration `047_chat_usage_view.sql` (можливо)
   **Acceptance:**
 - Free-user: counter видно, лічить, при 5/5 надсилання disabled з link на pricing.
-- Plus/Pro: counter ховається.
-  **Size:** M
+- Pro: counter ховається.
+  **Size:** M (був M, зменшено — backend вже є)
   **Depends on:** PR-0
 
 ---

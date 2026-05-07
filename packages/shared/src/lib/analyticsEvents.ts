@@ -215,6 +215,50 @@ export const ANALYTICS_EVENTS = Object.freeze({
   CHECKOUT_OPENED: "checkout_opened",
   WAITLIST_SUBMITTED: "waitlist_submitted",
 
+  // UX-roast 2026-Q2 — App Lock (PR-1a PIN, PR-1b biometric).
+  //
+  // Payload contracts:
+  //
+  //   APP_LOCK_SETUP_STARTED   {}
+  //   APP_LOCK_SETUP_COMPLETED { method: "pin" }
+  //   APP_LOCK_UNLOCK_SUCCESS  { method: "pin" | "biometric" }
+  //   APP_LOCK_UNLOCK_FAILED   { method: "pin" | "biometric",
+  //                              attempt: number }
+  //   BIOMETRIC_SETUP_COMPLETED { kind: "face_id" | "touch_id" | "webauthn" }
+  //   BIOMETRIC_AUTH_SUCCESS    { kind: "face_id" | "touch_id" | "webauthn" }
+  //   BIOMETRIC_AUTH_FAILED_FALLBACK_PIN {}
+  APP_LOCK_SETUP_STARTED: "app_lock_setup_started",
+  APP_LOCK_SETUP_COMPLETED: "app_lock_setup_completed",
+  APP_LOCK_UNLOCK_SUCCESS: "app_lock_unlock_success",
+  APP_LOCK_UNLOCK_FAILED: "app_lock_unlock_failed",
+  BIOMETRIC_SETUP_COMPLETED: "biometric_setup_completed",
+  BIOMETRIC_AUTH_SUCCESS: "biometric_auth_success",
+  BIOMETRIC_AUTH_FAILED_FALLBACK_PIN: "biometric_auth_failed_fallback_pin",
+
+  // UX-roast 2026-Q2 — Module navigation (PR-2 gear, PR-4 landing tab).
+  //
+  //   MODULE_SETTINGS_OPENED   { module: DashboardModuleId }
+  //   MODULE_LANDING_TAB_CLICKED { module: DashboardModuleId, tab_key: string }
+  MODULE_SETTINGS_OPENED: "module_settings_opened_from_module",
+  MODULE_LANDING_TAB_CLICKED: "module_landing_tab_clicked",
+
+  // UX-roast 2026-Q2 — Error recovery (PR-14 request-ID copy).
+  //
+  //   ERROR_BOUNDARY_REQUEST_ID_COPIED { scope: "hub" | "module",
+  //                                      request_id: string }
+  //   ERROR_BOUNDARY_RETRIED           { scope: "hub" | "module" }
+  ERROR_BOUNDARY_REQUEST_ID_COPIED: "error_boundary_request_id_copied",
+  ERROR_BOUNDARY_RETRIED: "error_boundary_retried",
+
+  // UX-roast 2026-Q2 — Permissions (PR-7 overview in Settings).
+  //
+  //   PERMISSIONS_SETTINGS_OPENED  {}
+  //   PERMISSION_STATUS_CHANGED    { type: "notifications" | "microphone"
+  //                                       | "camera" | "geolocation",
+  //                                  status: "granted" | "denied" | "prompt" }
+  PERMISSIONS_SETTINGS_OPENED: "permissions_settings_opened",
+  PERMISSION_STATUS_CHANGED: "permission_status_changed",
+
   // Demo mode (S4.1 of `docs/launch/ftux-sprint-plan.md`). The welcome
   // screen ships a "Подивитись приклад" CTA that seeds a fake hub
   // payload in localStorage; once the user lands inside the hub, a
