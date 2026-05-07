@@ -44,6 +44,14 @@ interface HubBottomNavTabProps {
   className?: string;
   panelId: string;
   id: string;
+  /**
+   * Слот рендериться у DOM, але приховується від користувача й AT.
+   * Використовується для збереження геометрії tab-strip-у в момент,
+   * коли «Звіти» ще не розблоковані (FTUX без жодного запису). Без цього
+   * перехід `showReports: false → true` спричиняє reflow усього `flex`-grid-а
+   * і CLS під час першого реального запису (UX-roast 2026-Q2 §7.2 / PR-23).
+   */
+  hiddenSlot?: boolean;
 }
 
 interface HubBottomNavItem extends HubBottomNavTabProps {
@@ -58,6 +66,7 @@ function HubBottomNavTab({
   className,
   panelId,
   id,
+  hiddenSlot = false,
 }: HubBottomNavTabProps) {
   return (
     <button
@@ -66,14 +75,20 @@ function HubBottomNavTab({
       id={`hub-tab-${id}`}
       aria-selected={active}
       aria-controls={panelId}
-      tabIndex={active ? 0 : -1}
-      onClick={onClick}
+      tabIndex={hiddenSlot ? -1 : active ? 0 : -1}
+      onClick={hiddenSlot ? undefined : onClick}
+      // `visibility: hidden` (а не `aria-hidden`) — щоб accessibility-tree
+      // ховала слот за computed-стилем, але RTL міг знайти його через
+      // `getByRole(..., { hidden: true })`. `aria-hidden` стер би
+      // accessible name (`label`), і тести з `name: /Звіти/` падали б.
+      style={hiddenSlot ? { visibility: "hidden" } : undefined}
       className={cn(
         "relative flex-1 flex flex-col items-center justify-center gap-1",
         "transition-all duration-200 min-h-[48px] pointer-coarse:min-h-[52px]",
         "active:scale-95 pointer-coarse:active:bg-panelHi/50",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
         active ? "text-text" : "text-muted hover:text-text/70",
+        hiddenSlot && "invisible pointer-events-none",
         className,
       )}
     >
@@ -168,18 +183,23 @@ export function HubBottomNav({
     },
   ];
 
-  if (showReports) {
-    tabs.push({
-      key: "reports",
-      id: "reports",
-      panelId: "hub-panel-reports",
-      active: hubView === "reports",
-      onClick: () => onChange("reports"),
-      iconName: "bar-chart",
-      label: "Звіти",
-      className: animateReveal ? "animate-bounce-in" : undefined,
-    });
-  }
+  // Слот «Звіти» завжди є у DOM, навіть коли вкладка ще не розблокована
+  // (FTUX без жодного запису). Це фіксує геометрію tab-strip-у і прибирає
+  // CLS у момент `showReports: false → true` (UX-roast 2026-Q2 §7.2 /
+  // PR-23). Поки `showReports === false`, слот рендериться з
+  // `aria-hidden="true"`/`visibility: hidden`, тому AT і користувач його
+  // не бачать і не таплять — RTL `getByRole` теж його ігнорує.
+  tabs.push({
+    key: "reports",
+    id: "reports",
+    panelId: "hub-panel-reports",
+    active: showReports && hubView === "reports",
+    onClick: () => onChange("reports"),
+    iconName: "bar-chart",
+    label: "Звіти",
+    hiddenSlot: !showReports,
+    className: animateReveal ? "animate-bounce-in" : undefined,
+  });
 
   if (showProfile) {
     tabs.push({
@@ -254,6 +274,7 @@ export function HubBottomNav({
             iconName={tab.iconName}
             label={tab.label}
             className={tab.className}
+            hiddenSlot={tab.hiddenSlot}
           />
         ))}
       </div>
