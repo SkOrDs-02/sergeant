@@ -38,14 +38,37 @@ const mocks = vi.hoisted(() => ({
   digestFresh: false,
   openHubModule: vi.fn(),
   openHubModuleWithAction: vi.fn(),
+  // Capture refs for the latest sensor wiring + DndContext callbacks so
+  // PR-12 (UX-roast 2026-Q2 / A9) can assert KeyboardSensor registration
+  // and aria-live announcements without booting full pointer simulation.
+  dndCapture: {
+    sensors: undefined as unknown,
+    onDragStart: undefined as ((event: unknown) => void) | undefined,
+    onDragEnd: undefined as ((event: unknown) => void) | undefined,
+  },
+  announce: vi.fn(),
 }));
 
 vi.mock("@dnd-kit/core", () => ({
-  DndContext: ({ children }: { children: ReactNode }) => (
-    <div data-testid="dnd-context">{children}</div>
-  ),
+  DndContext: ({
+    children,
+    sensors,
+    onDragStart,
+    onDragEnd,
+  }: {
+    children: ReactNode;
+    sensors?: unknown;
+    onDragStart?: (event: unknown) => void;
+    onDragEnd?: (event: unknown) => void;
+  }) => {
+    mocks.dndCapture.sensors = sensors;
+    mocks.dndCapture.onDragStart = onDragStart;
+    mocks.dndCapture.onDragEnd = onDragEnd;
+    return <div data-testid="dnd-context">{children}</div>;
+  },
   PointerSensor: function PointerSensor() {},
   TouchSensor: function TouchSensor() {},
+  KeyboardSensor: function KeyboardSensor() {},
   closestCenter: function closestCenter() {},
   useSensor: (sensor: unknown, options: unknown) => ({ sensor, options }),
   useSensors: (...sensors: unknown[]) => sensors,
@@ -62,6 +85,7 @@ vi.mock("@dnd-kit/sortable", () => ({
     return next;
   },
   rectSortingStrategy: {},
+  sortableKeyboardCoordinates: function sortableKeyboardCoordinates() {},
   useSortable: () => ({
     attributes: {},
     listeners: {},
@@ -71,6 +95,10 @@ vi.mock("@dnd-kit/sortable", () => ({
     transition: undefined,
     isDragging: false,
   }),
+}));
+
+vi.mock("@shared/components/ui/ScreenReaderAnnouncer", () => ({
+  useAnnounce: () => ({ announce: mocks.announce }),
 }));
 
 vi.mock("@dnd-kit/utilities", () => ({
@@ -300,6 +328,10 @@ describe("HubDashboard", () => {
     mocks.digestFresh = false;
     mocks.openHubModule.mockClear();
     mocks.openHubModuleWithAction.mockClear();
+    mocks.announce.mockClear();
+    mocks.dndCapture.sensors = undefined;
+    mocks.dndCapture.onDragStart = undefined;
+    mocks.dndCapture.onDragEnd = undefined;
   });
 
   afterEach(() => {
@@ -486,6 +518,62 @@ describe("HubDashboard", () => {
     fireEvent.click(screen.getByTestId("weekly-digest-footer"));
 
     expect(screen.getByTestId("weekly-digest-card")).toBeInTheDocument();
+  });
+
+  it("registers KeyboardSensor and announces dnd reorder via aria-live (PR-12 / A9)", () => {
+    // Active modules so the bento grid actually renders all four cards.
+    localStorage.setItem(
+      VIBE_PICKS_KEY,
+      JSON.stringify(["finyk", "fizruk", "routine", "nutrition"]),
+    );
+
+    renderDashboard();
+
+    const sensors = mocks.dndCapture.sensors as Array<{
+      sensor: { name?: string };
+    }>;
+    expect(Array.isArray(sensors)).toBe(true);
+    const sensorNames = sensors.map((entry) => entry.sensor?.name);
+    expect(sensorNames).toContain("KeyboardSensor");
+    expect(sensorNames).toContain("PointerSensor");
+
+    expect(mocks.dndCapture.onDragStart).toBeTypeOf("function");
+    expect(mocks.dndCapture.onDragEnd).toBeTypeOf("function");
+
+    mocks.dndCapture.onDragStart!({ active: { id: "finyk" } });
+    expect(mocks.announce).toHaveBeenCalledWith(
+      expect.stringContaining(DASHBOARD_MODULE_LABELS.finyk),
+    );
+    expect(mocks.announce).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "\u0421\u0442\u0440\u0456\u043b\u043a\u0430\u043c\u0438",
+      ),
+    );
+
+    mocks.announce.mockClear();
+    mocks.dndCapture.onDragEnd!({
+      active: { id: "finyk" },
+      over: { id: "fizruk" },
+    });
+    const movedMessages = mocks.announce.mock.calls.map(
+      (args) => args[0] as string,
+    );
+    expect(
+      movedMessages.some((message) =>
+        /\u043f\u043e\u0437\u0438\u0446\u0456\u044e 2 \u0437/.test(message),
+      ),
+    ).toBe(true);
+
+    mocks.announce.mockClear();
+    mocks.dndCapture.onDragEnd!({
+      active: { id: "finyk" },
+      over: { id: "finyk" },
+    });
+    expect(mocks.announce).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "\u0437\u0430\u043b\u0438\u0448\u0438\u043b\u043e\u0441\u044c",
+      ),
+    );
   });
 
   it("shows a stale-day digest footer only when a live weekly digest exists", () => {

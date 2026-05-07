@@ -57,6 +57,7 @@ import { ValueProgressBar, hasAnyValueBar } from "./ValueProgressBar";
 import { webKVStore } from "@shared/lib/storage/storage";
 import {
   DndContext,
+  KeyboardSensor,
   PointerSensor,
   TouchSensor,
   closestCenter,
@@ -67,7 +68,9 @@ import {
   SortableContext,
   arrayMove,
   rectSortingStrategy,
+  sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
+import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS } from "@sergeant/shared";
 import {
   loadDashboardOrder,
@@ -372,12 +375,20 @@ export function HubDashboard({
     [visibleOrder, adaptive.liftedId],
   );
 
+  // PR-12 (UX-roast 2026-Q2 / A9): KeyboardSensor + arrow-key coordinates
+  // make the dashboard reorder usable without a pointing device. Pickup
+  // / drop announcements (`announce()` нижче) озвучують поточну позицію
+  // плитки скрін-рідеру замість мовчазного DOM-shuffle.
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, {
       activationConstraint: { delay: 250, tolerance: 5 },
     }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
+  const { announce } = useAnnounce();
 
   const quickAddByModule = useMemo(() => {
     const map: Record<string, { label: string; run: () => void } | undefined> =
@@ -402,25 +413,41 @@ export function HubDashboard({
     return map;
   }, [modulesWithSignal, activeModules]);
 
+  const handleDragStart = useCallback(
+    (event: { active: { id: string | number } }) => {
+      const activeId = String(event.active.id) as ModuleId;
+      const label = DASHBOARD_MODULE_LABELS[activeId] ?? activeId;
+      announce(
+        `Підняли ${label}. Стрілками обери позицію, Enter — зафіксувати.`,
+      );
+    },
+    [announce],
+  );
+
   const handleDragEnd = useCallback(
     (event: {
       active: { id: string | number };
       over: { id: string | number } | null;
     }) => {
       const { active, over } = event;
-      if (active && over && active.id !== over.id) {
-        setOrder((prev) => {
-          const activeId = String(active.id) as ModuleId;
-          const overId = String(over.id) as ModuleId;
-          const oldIndex = prev.indexOf(activeId);
-          const newIndex = prev.indexOf(overId);
-          const next = arrayMove(prev, oldIndex, newIndex);
-          saveDashboardOrder(next);
-          return next;
-        });
+      if (!active) return;
+      const activeId = String(active.id) as ModuleId;
+      const label = DASHBOARD_MODULE_LABELS[activeId] ?? activeId;
+      if (over && active.id !== over.id) {
+        const overId = String(over.id) as ModuleId;
+        const oldIndex = order.indexOf(activeId);
+        const newIndex = order.indexOf(overId);
+        const next = arrayMove(order, oldIndex, newIndex);
+        setOrder(next);
+        saveDashboardOrder(next);
+        announce(
+          `${label} пересунуто на позицію ${newIndex + 1} з ${next.length}.`,
+        );
+      } else {
+        announce(`${label} залишилось на тому ж місці.`);
       }
     },
-    [],
+    [announce, order],
   );
 
   const [digestExpanded, setDigestExpanded] = useState(false);
@@ -624,6 +651,7 @@ export function HubDashboard({
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
             <SortableContext
