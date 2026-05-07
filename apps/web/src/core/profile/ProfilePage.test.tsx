@@ -321,6 +321,35 @@ describe("ProfilePage", () => {
     });
   });
 
+  describe("logout", () => {
+    it("renders Вийти button at bottom of profile", () => {
+      renderPage();
+      const logoutBtn = screen.getByRole("button", { name: "Вийти" });
+      expect(logoutBtn).toBeInTheDocument();
+    });
+
+    it("calls logout, shows toast and navigates on click", async () => {
+      renderPage();
+      const logoutBtn = screen.getByRole("button", { name: "Вийти" });
+      fireEvent.click(logoutBtn);
+      await waitFor(() => expect(logoutMock).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(toastSuccessMock).toHaveBeenCalledWith("Ви вийшли з акаунта"),
+      );
+    });
+
+    it("shows error toast when logout throws", async () => {
+      logoutMock.mockRejectedValueOnce(new Error("network"));
+      renderPage();
+      fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+      await waitFor(() =>
+        expect(toastErrorMock).toHaveBeenCalledWith(
+          "Не вдалося вийти, спробуйте ще раз",
+        ),
+      );
+    });
+  });
+
   describe("memory bank", () => {
     it("renders stored profile memory and exposes visible delete action", () => {
       localStorage.setItem(

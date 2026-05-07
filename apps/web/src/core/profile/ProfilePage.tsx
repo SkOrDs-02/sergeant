@@ -1,6 +1,11 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@shared/components/ui/Button";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { Icon } from "@shared/components/ui/Icon";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
+import { useToast } from "@shared/hooks/useToast";
+import { messages } from "@shared/i18n/uk";
 import { useAuth } from "../auth/AuthContext";
 import { ChangePasswordSection } from "./ChangePasswordSection";
 import { DangerZoneSection } from "./DangerZoneSection";
@@ -16,10 +21,31 @@ import { SessionsSection } from "./SessionsSection";
 export function ProfilePage() {
   const { user, logout, refresh } = useAuth();
   const online = useOnlineStatus();
+  const toast = useToast();
+  const navigate = useNavigate();
+  const [loggingOut, setLoggingOut] = useState(false);
 
   if (!user) {
     return null;
   }
+
+  // Logout — primary identity-action, owned by Profile (UX roast §10.1 / C10).
+  // Settings → General більше не дублює цю кнопку: Profile — єдина точка
+  // виходу з акаунта одним тапом. Variant=secondary, бо logout — нейтральне
+  // дія, не destructive (на відміну від видалення акаунта в DangerZone).
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await logout();
+      toast.success("Ви вийшли з акаунта");
+      navigate("/", { replace: true });
+    } catch {
+      toast.error("Не вдалося вийти, спробуйте ще раз");
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   // Each section is wrapped in a `CollapsibleSection` so the page reads as
   // a stack of single-line entry-points by default and the user opens only
@@ -90,6 +116,19 @@ export function ProfilePage() {
       >
         <DangerZoneSection online={online} onLogout={logout} />
       </CollapsibleSection>
+
+      <Button
+        type="button"
+        variant="secondary"
+        size="md"
+        className="w-full justify-center gap-2 mt-4"
+        disabled={loggingOut}
+        loading={loggingOut}
+        onClick={handleLogout}
+      >
+        <Icon name="log-out" size={16} />
+        {loggingOut ? messages.loadingActions.exiting : "Вийти"}
+      </Button>
     </div>
   );
 }
