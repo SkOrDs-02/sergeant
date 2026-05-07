@@ -52,10 +52,15 @@
 | PR-38 | Stagger reduce [R4]                                              | 3      | ✅ done (zero-diff) | [#2116](https://github.com/Skords-01/Sergeant/pull/2116) (тільки коментарі)               |
 | PR-39 | Bar-grow cap 600 ms [R5]                                         | 3      | ✅ done             | [#2119](https://github.com/Skords-01/Sergeant/pull/2119)                                  |
 | PR-30 | Loading-state copy unify (1-а особа однини) [C5]                 | 3      | ✅ done             | [#2124](https://github.com/Skords-01/Sergeant/pull/2124)                                  |
+| PR-15 | Password-strength entropy [C8]                                   | 2      | ✅ done             | [#2156](https://github.com/Skords-01/Sergeant/pull/2156)                                  |
+| PR-17 | Logout primary в Profile [C10]                                   | 2      | ✅ done             | [#2153](https://github.com/Skords-01/Sergeant/pull/2153)                                  |
+| PR-18 | Tour vs Restart-onboarding copy revamp [C12]                     | 2      | ⏳ in CI            | [#2154](https://github.com/Skords-01/Sergeant/pull/2154) (conflict-resolve merge-commit)  |
+| PR-26 | Empty-state placeholder в /chat [A12]                            | 3      | ✅ done             | [#2160](https://github.com/Skords-01/Sergeant/pull/2160)                                  |
+| PR-31 | «Введи X» zod-каталог unify [C6]                                 | 3      | ✅ done             | [#2158](https://github.com/Skords-01/Sergeant/pull/2158)                                  |
 | PR-13 | Module-context у sync-error toast [A15]                          | 2      | ❌ obsolete         | cloudSync v1 dropped у Stage 7 ([#2046](https://github.com/Skords-01/Sergeant/pull/2046)) |
 | PR-37 | Прибрати dark-mode дубль у Settings [R3]                         | 3      | ❌ obsolete         | дубля немає, `DarkModeToggle` лише в `core/app/HubHeader.tsx`                             |
 
-**Прогрес:** 10 із 41 виконавчих PR-ів змерджено; 2 (PR-13, PR-37) закриті як obsolete-by-drift. Деталі у відповідних розділах нижче.
+**Прогрес:** 14 із 41 виконавчих PR-ів змерджено + 1 (PR-18) у CI; 2 (PR-13, PR-37) закриті як obsolete-by-drift. Деталі у відповідних розділах нижче.
 
 **Заблоковані напрямки:**
 
@@ -419,7 +424,7 @@
   **Size:** S
   **Depends on:** PR-0
 
-### PR-15 · Password-strength entropy [C8]
+### PR-15 · Password-strength entropy [C8] — ✅ DONE [#2156](https://github.com/Skords-01/Sergeant/pull/2156)
 
 **Items covered:** C8, §5.2.
 **Scope:**
@@ -465,7 +470,7 @@
   **Size:** M
   **Depends on:** PR-0
 
-### PR-17 · Logout primary в Profile [C10]
+### PR-17 · Logout primary в Profile [C10] — ✅ DONE [#2153](https://github.com/Skords-01/Sergeant/pull/2153)
 
 **Items covered:** C10, §10.1.
 **Scope:**
@@ -482,7 +487,7 @@
   **Size:** S
   **Depends on:** —
 
-### PR-18 · Tour vs Restart-onboarding copy revamp [C12]
+### PR-18 · Tour vs Restart-onboarding copy revamp [C12] — ⏳ IN CI [#2154](https://github.com/Skords-01/Sergeant/pull/2154)
 
 **Items covered:** C12, §2.3.
 **Scope:**
@@ -630,7 +635,7 @@
 
 ## Sprint 3 — P2 (polish + tone-of-voice + cleanup)
 
-### PR-26 · Empty-state placeholder в /chat [A12]
+### PR-26 · Empty-state placeholder в /chat [A12] — ✅ DONE [#2160](https://github.com/Skords-01/Sergeant/pull/2160)
 
 **Items covered:** A12, §3.3.
 **Scope:**
@@ -712,7 +717,7 @@
   **Size:** M
   **Depends on:** —
 
-### PR-31 · «Введи X» zod-каталог unify [C6]
+### PR-31 · «Введи X» zod-каталог unify [C6] — ✅ DONE [#2158](https://github.com/Skords-01/Sergeant/pull/2158)
 
 **Items covered:** C6, §4.4.
 **Scope:**
