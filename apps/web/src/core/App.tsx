@@ -12,6 +12,9 @@ import {
 } from "@shared/components/ui/KeyboardShortcutsModal";
 
 import { AuthProvider, useAuth } from "./auth/AuthContext";
+import { AppLock } from "./security/AppLock";
+import { AppLockProvider, useAppLockContext } from "./security/AppLockContext";
+import { setFlag } from "./lib/featureFlags";
 import { ActiveModuleView } from "./app/ActiveModuleView";
 import { HubHomeView } from "./app/HubHomeView";
 import { RedirectTo } from "./app/RedirectTo";
@@ -57,12 +60,33 @@ export default function App() {
         <ScreenReaderAnnouncerProvider>
           <ApiClientProvider client={apiClient}>
             <AuthProvider>
-              <AppInner />
+              <AppLockProvider>
+                <AppInnerWithLock />
+              </AppLockProvider>
             </AuthProvider>
           </ApiClientProvider>
         </ScreenReaderAnnouncerProvider>
       </ToastProvider>
     </ShortcutRegistryProvider>
+  );
+}
+
+function AppInnerWithLock() {
+  const appLock = useAppLockContext();
+  return (
+    <>
+      <AppLock
+        state={appLock.state}
+        onUnlock={appLock.unlock}
+        onSetupDone={appLock.finishSetup}
+        onSetupCancel={() => {
+          // If user cancels setup, turn the flag off so the toggle reverts.
+          setFlag("app-lock-enabled", false);
+          appLock.finishSetup();
+        }}
+      />
+      <AppInner />
+    </>
   );
 }
 

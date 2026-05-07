@@ -362,6 +362,38 @@ export const messages = {
     addLimitOrGoal: "+ Додати ліміт або ціль",
   },
 
+  // App-lock / Privacy settings (PR-1a UX-roast 2026-Q2).
+  privacy: {
+    lock: {
+      sectionTitle: "Конфіденційність",
+      enableLabel: "Блокування додатку",
+      enableDescription:
+        "Захисти дані PIN-кодом. Додаток заблокується при переключенні або після 5 хвилин бездіяльності.",
+      setupTitle: "Встановити PIN",
+      setupSubtitle: "Введи 4–6 цифр",
+      changeTitle: "Змінити PIN",
+      confirmTitle: "Підтвердь PIN",
+      confirmSubtitle: "Введи PIN ще раз для підтвердження",
+      unlockTitle: "Введи PIN",
+      unlockSubtitle: "Введи PIN, щоб розблокувати",
+      pinMismatch: "PIN-коди не збігаються. Спробуй ще раз.",
+      pinWrong: "Невірний PIN. Спробуй ще раз.",
+      pinTooShort: "PIN має містити від 4 до 6 цифр.",
+      lockNow: "Заблокувати зараз",
+      changePin: "Змінити PIN",
+      disableLabel: "Вимкнути блокування",
+      disableConfirmTitle: "Вимкнути блокування?",
+      disableConfirmBody:
+        "Додаток більше не буде запитувати PIN при відкритті.",
+      disableConfirmButton: "Вимкнути",
+      recoveryHint: "Забув PIN? Скинь через відновлення акаунту.",
+      next: "Далі",
+      back: "Назад",
+      open: "Відкрити",
+      deleteDigit: "Видалити",
+    },
+  },
+
   // What's new modal (PR-18 у `docs/launch/product-os/ftux-master-tracker.md`
   // §3.3). UI-копія обмежена — release-specific копія (title / summary /
   // items / CTA label) живе у TS-таблиці `apps/web/src/core/whatsNew/

@@ -36,6 +36,14 @@ export interface FlagDefinition {
 
 export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
+    id: "app-lock-enabled",
+    label: "Блокування додатку (PIN)",
+    description:
+      "Захищає дані PIN-кодом. При увімкненні — встановлюй PIN у Конфіденційність → Блокування. PR-1a UX-roast 2026-Q2.",
+    defaultValue: false,
+    experimental: true,
+  },
+  {
     id: "finyk_subscriptions_category",
     label: "Категорія «Підписки» у швидкому додаванні",
     description:

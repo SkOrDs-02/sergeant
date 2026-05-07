@@ -13,6 +13,7 @@ import { FizrukSection } from "../settings/FizrukSection";
 import { GeneralSection } from "../settings/GeneralSection";
 import { NotificationsSection } from "../settings/NotificationsSection";
 import { NutritionSection } from "../settings/NutritionSection";
+import { PrivacySection } from "../settings/PrivacySection";
 import { PWASection } from "../settings/PWASection";
 import { RoutineSection } from "../settings/RoutineSection";
 
@@ -40,7 +41,7 @@ const GROUPS = [
   {
     id: "advanced",
     label: "Додатково",
-    sections: ["pwa", "dataExport", "experimental"],
+    sections: ["privacy", "pwa", "dataExport", "experimental"],
   },
 ] as const;
 
@@ -137,6 +138,13 @@ export function HubSettingsPage({ user }: HubSettingsPageProps) {
         keywords:
           "харчування їжа nutrition meals food kбжу калорії kcal білки жири вуглеводи вода комора pantry скан штрихкод barcode",
         render: () => <NutritionSection />,
+      },
+      {
+        id: "privacy",
+        title: "Конфіденційність",
+        keywords:
+          "конфіденційність блокування pin пін lock security безпека захист",
+        render: () => <PrivacySection />,
       },
       {
         id: "pwa",
