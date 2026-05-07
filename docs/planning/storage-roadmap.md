@@ -2911,7 +2911,7 @@ updated_at: Date.now() })`. Async-write enqueue-ується через
 
 **PR plan.**
 
-#### **PR #060 — `feat(db-schema): add kv_store SQLite table + client migration`** 📋 ROADMAP
+#### **PR #060 — `feat(db-schema): add kv_store SQLite table + client migration`** 🚧 IN FLIGHT ([#2155](https://github.com/Skords-01/Sergeant/pull/2155))
 
 - Drizzle SQLite schema у `packages/db-schema/src/sqlite/kvStore.ts`:
   ```ts
