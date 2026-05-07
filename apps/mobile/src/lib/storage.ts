@@ -1,11 +1,24 @@
 /**
- * MMKV-backed storage adapter for the mobile app.
+ * Storage adapter for the mobile app.
  *
  * Mirrors the API shape of `apps/web/src/shared/lib/storage/storage.ts` and
  * `apps/web/src/shared/lib/storage/createModuleStorage.ts` so that hooks and modules
- * ported from the web can consume the same named exports on native. The
- * web counterpart is backed by `localStorage`; this one is backed by a
- * single `react-native-mmkv` instance (`id: "sergeant.mobile.v1"`).
+ * ported from the web can consume the same named exports on native.
+ *
+ * Stage 9 / PR #065 of `docs/planning/storage-roadmap.md` introduced a
+ * two-rung priority ladder in {@link resolveStore}:
+ *
+ *   1. **SQLite warm-cache + MMKV mirror** — once
+ *      `bootstrapMobileKvStore()` (from `core/db/kvStoreBoot.ts`) has
+ *      finished, {@link getActiveSqliteKvStore} returns the
+ *      `createSqliteKVStore` adapter. Reads come from the in-memory
+ *      `Map<string, string>` populated at boot, writes update the cache
+ *      and fan out to a fire-and-forget upsert against `kv_store`.
+ *      The MMKV mirror keeps data in sync for canary rollback safety;
+ *      PR #066 drops this mirror.
+ *   2. **MMKV-only fallback** — pre-bootstrap, on bootstrap failure, or
+ *      when SQLite is unavailable. Same `createMmkvKVStore` adapter
+ *      that backed `mobileKVStore` before PR #065.
  *
  * Intentional scope:
  *
@@ -38,7 +51,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { MMKV } from "react-native-mmkv";
 
 import { createMmkvKVStore } from "@sergeant/shared";
-import type { KVStore } from "@sergeant/shared";
+import type { KVStore, Unsubscribe } from "@sergeant/shared";
+import { getActiveSqliteKvStore } from "../core/db/kvStoreBoot";
 
 /**
  * Shared MMKV instance for the whole mobile app. The `id` is versioned
@@ -80,16 +94,91 @@ export function _setMMKVInstance(next: MMKV): void {
 }
 
 /**
- * KVStore adapter for `@sergeant/shared` functions. Wraps the active
- * MMKV instance via a thunk so the encrypted-bootstrap swap (see
- * `_setMMKVInstance`) is transparent to callers. Cross-write
- * notification is wired to MMKV's `addOnValueChangedListener`.
+ * MMKV-only adapter. Used as the fallback rung and as the mirror
+ * target for the dual-write pattern (PR #065).
+ */
+const mmkvAdapter: KVStore = createMmkvKVStore(() => activeMmkv);
+
+/**
+ * Wrap `primary` (SQLite-backed) and `mirror` (MMKV-backed) into a
+ * single {@link KVStore} that reads from `primary` and writes to both.
+ *
+ * Why dual-write: PR #065 swaps `mobileKVStore` from MMKV-backed to
+ * SQLite-backed, but a canary keeps MMKV populated as a live mirror
+ * so a revert can recover user data without manual intervention.
+ * PR #066 drops the mirror once the canary closes.
+ *
+ * Read path: SQLite warm-cache only. The mirror is intentionally
+ * write-only — reading from it would re-introduce MMKV-vs-SQLite
+ * skew we are trying to retire.
+ */
+function makeDualWriteKvStore(primary: KVStore, mirror: KVStore): KVStore {
+  return {
+    getString(key) {
+      return primary.getString(key);
+    },
+    setString(key, value) {
+      primary.setString(key, value);
+      try {
+        mirror.setString(key, value);
+      } catch {
+        /* mirror write failure — non-fatal. */
+      }
+    },
+    remove(key) {
+      primary.remove(key);
+      try {
+        mirror.remove(key);
+      } catch {
+        /* mirror remove failure — non-fatal. */
+      }
+    },
+    listKeys() {
+      return primary.listKeys();
+    },
+    onChange(key, listener) {
+      return primary.onChange(key, listener);
+    },
+  };
+}
+
+/**
+ * Two-rung priority ladder (PR #065):
+ *   1. SQLite warm-cache + MMKV mirror (dual-write)
+ *   2. MMKV-only fallback
+ */
+function resolveStore(): KVStore {
+  const sqlite = getActiveSqliteKvStore();
+  if (sqlite) return makeDualWriteKvStore(sqlite, mmkvAdapter);
+  return mmkvAdapter;
+}
+
+/**
+ * KVStore adapter for `@sergeant/shared` functions. Resolution is lazy
+ * on every method call so the SQLite bootstrap can complete after module
+ * load. Falls back to MMKV when SQLite is unavailable.
  *
  * Use this when porting a shared helper from `@sergeant/shared/lib/*`
  * that takes a `KVStore`. For module-scoped storage with debounced
  * writes, prefer `createModuleStorage()` below.
  */
-export const mobileKVStore: KVStore = createMmkvKVStore(() => activeMmkv);
+export const mobileKVStore: KVStore = {
+  getString(key: string): string | null {
+    return resolveStore().getString(key);
+  },
+  setString(key: string, value: string): void {
+    resolveStore().setString(key, value);
+  },
+  remove(key: string): void {
+    resolveStore().remove(key);
+  },
+  listKeys(): string[] {
+    return resolveStore().listKeys();
+  },
+  onChange(key: string, listener: (next: string | null) => void): Unsubscribe {
+    return resolveStore().onChange(key, listener);
+  },
+};
 
 function readString(key: string): string | null {
   try {
