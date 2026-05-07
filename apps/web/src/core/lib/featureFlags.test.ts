@@ -50,6 +50,22 @@ describe("featureFlags", () => {
     expect(getFlag("feature.fizruk.sqlite_v2.dual_write")).toBe(false);
   });
 
+  it("Routine read_sqlite увімкнений за замовчуванням для Stage 8 PR #055r2", async () => {
+    const { getFlag, setFlag } = await loadFresh();
+    expect(getFlag("feature.routine.sqlite_v2.read_sqlite")).toBe(true);
+
+    expect(setFlag("feature.routine.sqlite_v2.read_sqlite", false)).toBe(true);
+    expect(getFlag("feature.routine.sqlite_v2.read_sqlite")).toBe(false);
+  });
+
+  it("Fizruk read_sqlite увімкнений за замовчуванням для Stage 8 PR #055f2", async () => {
+    const { getFlag, setFlag } = await loadFresh();
+    expect(getFlag("feature.fizruk.sqlite_v2.read_sqlite")).toBe(true);
+
+    expect(setFlag("feature.fizruk.sqlite_v2.read_sqlite", false)).toBe(true);
+    expect(getFlag("feature.fizruk.sqlite_v2.read_sqlite")).toBe(false);
+  });
+
   it("Nutrition dual-write увімкнений за замовчуванням для Stage 8 PR #055n1", async () => {
     const { getFlag, setFlag } = await loadFresh();
     expect(getFlag("feature.nutrition.sqlite_v2.dual_write")).toBe(true);
