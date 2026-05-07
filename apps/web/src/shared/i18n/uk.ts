@@ -283,6 +283,23 @@ export const messages = {
   onboarding: {
     // Round 16 — onboarding-specific labels.
     hideChecklist: "Сховати чекліст",
+
+    // PR-18 / §C12 — Tour vs Restart copy revamp.
+    // Дві різні дії, які раніше копірайтом «Подивитись tour» і
+    // «Перезапустити онбординг» зливалися в одну mental-категорію.
+    // Тепер чітко: екскурсія = read-only replay; reset = скинути
+    // FTUX-state (vibe-picks, first-action-flags), модульні дані не
+    // зачіпаються.
+    tourSettingsTitle: "Онбординг",
+    tourLaunchLabel: "Переглянути екскурсію (read-only)",
+    tourResetLabel: "Скинути підказки FTUX",
+    tourCopyExplanation:
+      "Екскурсія — повторне відтворення вітального екрану без змін у даних. Скидання FTUX — перевибір vibe-picks і повторні підказки першого запуску, дані модулів не зачіпаються.",
+    tourResetConfirmTitle: "Скинути підказки FTUX?",
+    tourResetConfirmDescription:
+      "Ти знову побачиш вітальний екран та FTUX-підказки. Дані модулів (транзакції, тренування, прийоми їжі) залишаться без змін.",
+    tourResetConfirmAction: "Скинути",
+    tourResetSuccess: "Онбординг перезапущено",
   },
 
   form: {
