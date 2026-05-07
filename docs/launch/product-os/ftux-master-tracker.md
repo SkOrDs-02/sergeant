@@ -73,15 +73,17 @@
 
 > **Закриті sprint-items** (27): S0.1, S0.2, S0.3 (web), S0.3 (mobile parity), S0.4, S0.5, S1.3, S1.4, S1.5, S2.1, S2.3 (web), S2.3 (mobile parity), S2.4, S3.1, S3.2, S3.3a, S3.3b, S3.3 (mobile parity #1905), S3.4, S3.5, S4.1, S4.3, S4.4, S4.5, S6.1, S6.2, S6.4 (web #1875), S6.4 (mobile parity #1907), S6.6 (#1854), S6.7 (#1852), S6.9 (#1870).
 >
-> **Open sprint-items** (8): S1.1 (hero copy benefit-driven, blocked on copy-reviewer), S1.2 (CTA на welcome, blocked by S1.1), S2.2a/S2.2b (PresetSheet prefill — blocked by S1.1 copy), S5.1-S5.3 (goal-first wizard, optional), S6.3, S6.5, S6.8, S6.10-S6.13 (Sprint 6 cleanup carryovers).
+> **Open sprint-items** (5): S5.1-S5.3 (goal-first wizard, optional), S6.3, S6.5, S6.8, S6.10-S6.13 (Sprint 6 cleanup carryovers).
+>
+> **Closed 2026-05-07 (copy-review pass):** S1.1 (hero copy benefit-driven — "зум"→"запис", "cloud-у"→"хмари"), S1.2 (CTA на welcome — "хаб"→"дашборд"), S2.2a/S2.2b (PresetSheet prefill — finyk desc без застарілих цін).
 
 ### 2.1. Глобальна карта спринтів
 
 | Спринт         | Тема                                         | Гіпотеза                                                                | Метрика успіху                                                        | Стан                                                                                                                                                              |
 | -------------- | -------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **S0** (1 т.)  | Аналітика наживу                             | Funnel-метрики ~80% точності → можемо приймати рішення                  | 14+5 events пишуться в PostHog · D1/D7 dashboard зеленіє              | ✅ Done                                                                                                                                                           |
-| **S1** (2 т.)  | Чесний value-prop + чесні обіцянки           | Hero benefit-copy + усунення confetti-обману + disclaimer на peek       | Wizard→first-entry conversion ↑ 5pp · "rage-quit" (close < 30s) ↓ 30% | 🚧 Partial — S1.3, S1.4, S1.5 done; **S1.1 + S1.2 open** (blocked by copy-reviewer)                                                                               |
-| **S2** (2 т.)  | Goal-aware first action + чесний PresetSheet | Primary action слідує за intent; nutrition/fizruk без "пустого sheet'у" | First-entry rate per active module ↑ 10pp · TTV p50 < 90 sec          | 🚧 Partial — S2.1, S2.3 (web+mobile), S2.4 done; **S2.2a/S2.2b open** (blocked by S1.1)                                                                           |
+| **S1** (2 т.)  | Чесний value-prop + чесні обіцянки           | Hero benefit-copy + усунення confetti-обману + disclaimer на peek       | Wizard→first-entry conversion ↑ 5pp · "rage-quit" (close < 30s) ↓ 30% | ✅ Done — S1.1 + S1.2 closed 2026-05-07 (copy-review pass: "зум"→"запис", "хаб"→"дашборд", "cloud-у"→"хмари")                                                     |
+| **S2** (2 т.)  | Goal-aware first action + чесний PresetSheet | Primary action слідує за intent; nutrition/fizruk без "пустого sheet'у" | First-entry rate per active module ↑ 10pp · TTV p50 < 90 sec          | ✅ Done — S2.2a/S2.2b closed 2026-05-07 (PresetSheet finyk desc без застарілих цін)                                                                               |
 | **S3** (2 т.)  | Reward у правильний момент + value-progress  | Confetti на real entry · CelebrationModal → next-action promise         | Day-1 retention ↑ 5pp · % users з 2+ entries у session 1 ↑ 8pp        | ✅ Done — 6/6                                                                                                                                                     |
 | **S4** (2 т.)  | Demo-first + day-1-7 retention loop          | "Подивитись приклад" як first-class · push day-2/3 · email drip 0/1/3   | D7 retention ↑ 3pp · share-of-traffic що пройшов demo ≥ 15%           | 🚧 Partial — S4.1, S4.3, S4.4, S4.5 done; **demo-first CTA shipped via PR-05 [#1986](https://github.com/Skords-01/Sergeant/pull/1986)**; **email drip → backlog** |
 | **S5** (1 т.)? | Goal-first wizard A/B (опц.)                 | Onboarding починається з outcome, модулі — під ціль                     | A/B виграв ≥5pp retention → раскат                                    | ⏳ Open — **PR-13** у Wave 2                                                                                                                                      |
@@ -206,7 +208,7 @@
 
 ### Variant C — Promise + first action
 
-- **Hero:** «Один день. Один запис. Це вже більше, ніж учора.»
+- **Hero:** «Один д��нь. Один запис. Це вже більше, ніж учора.»
 - **Sub:** «Sergeant супроводжує тебе у фінансах, тренуваннях, звичках і харчуванні. Без надмірних повідомлень.»
 - **CTA primary:** «Почати»
 - **CTA secondary:** «Подивитись приклад»
@@ -419,7 +421,7 @@ slos:
 
 - **PWA install prompt:** додаємо (PR-07).
 - **Cold-start outcome-card:** додаємо behind FF (PR-09). Incremental: 4 bento лишаються, але TODO + Progress прибираються.
-- **Empty-state A/B:** 3 варіанти, PostHog FF (PR-10).
+- **Empty-state A/B:** 3 варіант��, PostHog FF (PR-10).
 - **A11y manual:** Devin — web (Linux + Orca). Founder — mobile (1× recording). PR-16.
 - **Paywall:** sketch session founder ↔ Devin → [`paywall-ux-placement.md`](./paywall-ux-placement.md) (PR-19, merged #1989) → impl plan [`paywall-implementation-plan.md`](./paywall-implementation-plan.md) (PR-20 plan, merged #1993). Selected placement: **post-first-real-entry sheet** (soft, non-blocking, FF-gated `paywall_post_ftux_v1`); 14-day Pro trial без payment method; 3 copy variants (α outcome-anchored / β disciplined / γ self-sovereignty) для A/B post-launch. Conversion-метрика — `STRIPE_CHECKOUT_COMPLETED / PAYWALL_POST_FTUX_VIEWED ≥ 3%` за 30-day cohort (start-clock = real `paywall_post_ftux_v1=on` flag-flip у production). **Path A selected (2026-05-06, founder)** — full impl розбитий на 4 sub-PR (~510 LOC, `PR-20a/b/c/d`), стартує тільки після merge 0010 phase 3 (`usePlan()` RQ-hook у `apps/web/src/core/billing/hooks/usePlan.ts`). Path B (FF-gated UI-stub) і Path C (defer) — зняті з розгляду (re-decision вимагає append у [`paywall-implementation-plan.md` §10](./paywall-implementation-plan.md#10-path-decision-audit-trail-append-only)). Next-action owner: Devin → моніторить merge-event 0010 phase 3 → відкриває PR-20a draft.
 

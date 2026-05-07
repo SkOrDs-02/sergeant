@@ -221,10 +221,10 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
               Старт
             </SectionHeading>
             <h2 className="text-base font-bold text-text mt-0.5">
-              Зроби одну річ — і хаб твій
+              Один запис — і дашборд твій
             </h2>
             <p className="text-xs text-muted mt-0.5 leading-snug">
-              Цифри нижче — приклад. Твої з&apos;являться, щойно щось додаси.
+              Цифри нижче — приклад. Твої з&apos;являться після першого запису.
             </p>
           </div>
           <Button

@@ -95,11 +95,14 @@ export function getOnboardingHeroCopy(
  * йде твоє життя») instead of category words («хаб», «все в одному
  * місці»). Trust badges flip from generic privacy claims to three
  * concrete *negative claims* the user can verify.
+ *
+ * S1.1 copy-review 2026-05-07: "зум" replaced with "запис" — clearer,
+ * no collision with Zoom™. "cloud-у" replaced with "хмари" — native UA.
  */
 const OUTCOME_COPY: OnboardingHeroCopy = {
-  title: "Запиши перший зум — і побачиш, куди йде твоє життя.",
+  title: "Один запис — і побачиш, куди йде твоє життя.",
   subtitle: "Бюджет, тренування, звички, їжа — за 30 секунд, без реєстрації.",
-  badges: ["Без реєстрації", "Без cloud-у", "Без реклами"],
+  badges: ["Без реєстрації", "Без хмари", "Без реклами"],
   primaryCta: "Розпочати — 30 секунд",
   secondaryCta: "Подивитись приклад",
 };
@@ -108,11 +111,13 @@ const OUTCOME_COPY: OnboardingHeroCopy = {
  * Variant `safe` — conservative rewrite. Keeps the four-domain list
  * but removes "хаб" and the "все в одному місці" cliché. Useful as a
  * fallback if `outcome` tests as too aggressive for the audience.
+ *
+ * S1.1 copy-review 2026-05-07: "cloud-у" → "хмари".
  */
 const SAFE_COPY: OnboardingHeroCopy = {
   title: "Один екран замість шести застосунків.",
-  subtitle: "Гроші, тренування, звички, їжа. Без акаунта. Без cloud-у.",
-  badges: ["Без реєстрації", "Без cloud-у", "Без реклами"],
+  subtitle: "Гроші, тренування, звички, їжа. Без акаунта. Без хмари.",
+  badges: ["Без реєстрації", "Без хмари", "Без реклами"],
   primaryCta: "Розпочати — 30 секунд",
   secondaryCta: "Подивитись приклад",
 };
@@ -122,12 +127,14 @@ const SAFE_COPY: OnboardingHeroCopy = {
  * забувати» cohort with an exclusionary lead («Не для всіх. Для тих,
  * хто…»). Expected higher variance: better conversion among matched
  * audience, higher early bounce among mismatched.
+ *
+ * S1.1 copy-review 2026-05-07: "cloud-у" → "хмари".
  */
 const BOLD_COPY: OnboardingHeroCopy = {
   title: "Не для всіх. Для тих, хто втомився забувати.",
   subtitle:
     "Записуй один раз — Sergeant пам'ятає за тебе. Офлайн, без акаунта.",
-  badges: ["Без реєстрації", "Без cloud-у", "Без реклами"],
+  badges: ["Без реєстрації", "Без хмари", "Без реклами"],
   primaryCta: "Спробувати — 30 секунд",
   secondaryCta: "Подивитись приклад",
 };
@@ -140,12 +147,14 @@ const BOLD_COPY: OnboardingHeroCopy = {
  * actually believes («менше хаосу — більше зробленого»). CTA stays
  * action-orientated; subtitle keeps the no-account / no-cloud
  * commitments to avoid drift from the verifiable badges.
+ *
+ * S1.1 copy-review 2026-05-07: "cloud-у" → "хмари".
  */
 const DISCIPLINED_COPY: OnboardingHeroCopy = {
   title: "Менше хаосу. Більше зробленого.",
   subtitle:
-    "Один екран для грошей, тіла, звичок і їжі. Без акаунта. Без cloud-у.",
-  badges: ["Без реєстрації", "Без cloud-у", "Без реклами"],
+    "Один екран для грошей, тіла, звичок і їжі. Без акаунта. Без хмари.",
+  badges: ["Без реєстрації", "Без хмари", "Без реклами"],
   primaryCta: "Розпочати — 30 секунд",
   secondaryCta: "Подивитись приклад",
 };

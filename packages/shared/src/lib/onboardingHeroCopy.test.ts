@@ -7,9 +7,8 @@ import {
 describe("getOnboardingHeroCopy — outcome variant (S1.1 mainline)", () => {
   it("leads with a user-outcome promise, not a product category", () => {
     const copy = getOnboardingHeroCopy("outcome");
-    expect(copy.title).toBe(
-      "Запиши перший зум — і побачиш, куди йде твоє життя.",
-    );
+    // S1.1 copy-review 2026-05-07: "зум" replaced with clearer "запис".
+    expect(copy.title).toBe("Один запис — і побачиш, куди йде твоє життя.");
     // The audit explicitly called out "хаб" as marketer-speak.
     expect(copy.title).not.toMatch(/хаб/i);
     // "все в одному місці" is the dead overused cliché we're replacing.
@@ -24,11 +23,8 @@ describe("getOnboardingHeroCopy — outcome variant (S1.1 mainline)", () => {
 
   it("uses three concrete negative-claim badges (verifiable)", () => {
     const copy = getOnboardingHeroCopy("outcome");
-    expect(copy.badges).toEqual([
-      "Без реєстрації",
-      "Без cloud-у",
-      "Без реклами",
-    ]);
+    // S1.1 copy-review 2026-05-07: "cloud-у" replaced with native UA "хмари".
+    expect(copy.badges).toEqual(["Без реєстрації", "Без хмари", "Без реклами"]);
     // Banned: vague privacy claims that the user can't verify.
     for (const badge of copy.badges) {
       expect(badge).not.toMatch(/^Приватн/i);
@@ -76,16 +72,14 @@ describe("getOnboardingHeroCopy — disciplined variant (PR-04)", () => {
   it("keeps the no-account / no-cloud commitments in the subtitle", () => {
     const copy = getOnboardingHeroCopy("disciplined");
     expect(copy.subtitle).toMatch(/без акаунта/i);
-    expect(copy.subtitle).toMatch(/cloud/i);
+    // S1.1 copy-review 2026-05-07: "хмари" is the native UA form of "cloud".
+    expect(copy.subtitle).toMatch(/хмари/i);
   });
 
   it("reuses the canonical badge triplet so trust signals don't drift", () => {
     const copy = getOnboardingHeroCopy("disciplined");
-    expect(copy.badges).toEqual([
-      "Без реєстрації",
-      "Без cloud-у",
-      "Без реклами",
-    ]);
+    // S1.1 copy-review 2026-05-07: "cloud-у" replaced with native UA "хмари".
+    expect(copy.badges).toEqual(["Без реєстрації", "Без хмари", "Без реклами"]);
   });
 });
 
