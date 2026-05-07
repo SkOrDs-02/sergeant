@@ -1,6 +1,6 @@
 # Sergeant — План PR-ів за UX-прожаркою (post-onboarding, 2026-05-06)
 
-> **Last validated:** 2026-05-06 by @Skords-01 / Devin (housekeeping pass — викреслено PR-13/PR-37, оновлено Status / PR-22 заголовок). **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-07 by @Skords-01 / Devin (status sync — PR-10, PR-12, PR-23, PR-32, PR-36 змерджено). **Next review:** 2026-08-04.
 > **Status:** Active
 
 > **Cross-refs:**
@@ -57,10 +57,15 @@
 | PR-18 | Tour vs Restart-onboarding copy revamp [C12]                     | 2      | ✅ done             | [#2154](https://github.com/Skords-01/Sergeant/pull/2154)                                  |
 | PR-26 | Empty-state placeholder в /chat [A12]                            | 3      | ✅ done             | [#2160](https://github.com/Skords-01/Sergeant/pull/2160)                                  |
 | PR-31 | «Введи X» zod-каталог unify [C6]                                 | 3      | ✅ done             | [#2158](https://github.com/Skords-01/Sergeant/pull/2158)                                  |
+| PR-23 | Layout shift fix on Reports tab reveal [§7.2]                    | 2      | ✅ done             | [#2183](https://github.com/Skords-01/Sergeant/pull/2183)                                  |
+| PR-12 | Keyboard accessibility for dnd-kit reorder [A9]                  | 2      | ✅ done             | [#2184](https://github.com/Skords-01/Sergeant/pull/2184)                                  |
+| PR-32 | Mono error: auth vs network розрізнення [C7]                     | 3      | ✅ done             | [#2185](https://github.com/Skords-01/Sergeant/pull/2185)                                  |
+| PR-36 | Experimental section warning [§9.3]                              | 3      | ✅ done             | [#2186](https://github.com/Skords-01/Sergeant/pull/2186)                                  |
+| PR-10 | Sessions: «Цей пристрій» + last-seen у людському форматі [A7]    | 2      | ✅ done             | [#2187](https://github.com/Skords-01/Sergeant/pull/2187)                                  |
 | PR-13 | Module-context у sync-error toast [A15]                          | 2      | ❌ obsolete         | cloudSync v1 dropped у Stage 7 ([#2046](https://github.com/Skords-01/Sergeant/pull/2046)) |
 | PR-37 | Прибрати dark-mode дубль у Settings [R3]                         | 3      | ❌ obsolete         | дубля немає, `DarkModeToggle` лише в `core/app/HubHeader.tsx`                             |
 
-**Прогрес:** 15 із 41 виконавчих PR-ів змерджено; 2 (PR-13, PR-37) закриті як obsolete-by-drift. Деталі у відповідних розділах нижче.
+**Прогрес:** 20 із 41 виконавчих PR-ів змерджено; 2 (PR-13, PR-37) закриті як obsolete-by-drift. Деталі у відповідних розділах нижче.
 
 **Заблоковані напрямки:**
 
@@ -337,7 +342,7 @@
   **Size:** S
   **Depends on:** PR-7
 
-### PR-10 · Sessions: «Цей пристрій» + last-seen у людському форматі [A7]
+### PR-10 · Sessions: «Цей пристрій» + last-seen у людському форматі [A7] — ✅ DONE [#2187](https://github.com/Skords-01/Sergeant/pull/2187)
 
 **Items covered:** A7, §10.3.
 **Scope:**
@@ -377,7 +382,7 @@
   **Size:** L
   **Depends on:** PR-0
 
-### PR-12 · Keyboard accessibility for dnd-kit reorder [A9]
+### PR-12 · Keyboard accessibility for dnd-kit reorder [A9] — ✅ DONE [#2184](https://github.com/Skords-01/Sergeant/pull/2184)
 
 **Items covered:** A9, §6.4.
 **Scope:**
@@ -584,7 +589,7 @@
   **Size:** M
   **Depends on:** PR-3, PR-20
 
-### PR-23 · Layout shift fix on Reports tab reveal [§7.2]
+### PR-23 · Layout shift fix on Reports tab reveal [§7.2] — ✅ DONE [#2183](https://github.com/Skords-01/Sergeant/pull/2183)
 
 **Items covered:** §7.2.
 **Scope:**
@@ -735,7 +740,7 @@
   **Size:** S
   **Depends on:** —
 
-### PR-32 · Mono error: auth vs network розрізнення [C7]
+### PR-32 · Mono error: auth vs network розрізнення [C7] — ✅ DONE [#2185](https://github.com/Skords-01/Sergeant/pull/2185)
 
 **Items covered:** C7, §5.3.
 **Scope:**
@@ -795,7 +800,7 @@
   **Size:** S
   **Depends on:** PR-36
 
-### PR-36 · Experimental section warning [§9.3]
+### PR-36 · Experimental section warning [§9.3] — ✅ DONE [#2186](https://github.com/Skords-01/Sergeant/pull/2186)
 
 **Items covered:** §9.3.
 **Scope:**
