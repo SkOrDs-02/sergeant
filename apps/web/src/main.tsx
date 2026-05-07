@@ -97,17 +97,15 @@ function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   );
 }
 
-// PR #063 boot wiring: kick off SQLite warm-cache, then run the storage-dependent
-// boot steps (demo seed, `storageManager` migrations, demo cleanup,
-// sync-engine writer boot) and finally mount React. We **await** bootstrap
-// before any writes happen so there is no race window between the
-// LS-only adapter (pre-bootstrap) and the SQLite-backed adapter
-// (post-bootstrap) — every write done after this point fans out to
-// BOTH stores via {@link makeDualWriteKvStore}, and no key written
-// here is visible only in LS.
+// PR #063–#064 boot wiring: kick off SQLite warm-cache, then run the
+// storage-dependent boot steps (demo seed, `storageManager` migrations,
+// demo cleanup, sync-engine writer boot) and finally mount React. We
+// **await** bootstrap before any writes happen so there is no race
+// window between the LS-only adapter (pre-bootstrap) and the
+// SQLite-backed adapter (post-bootstrap).
 //
 // `bootstrapKvStore` is documented as never-throwing: every failure
-// path (SQLite init, migration runner, scan, LS import) leaves
+// path (SQLite init, migration runner, scan) leaves
 // `kvStoreBoot.loaded = false` and surfaces through `onError`, so the
 // IIFE's `try/catch` is belt-and-suspenders against future bugs.
 void (async () => {

@@ -17,53 +17,25 @@ import type {
   BroadcastChannelLike,
   SqliteKVStoreClient,
 } from "@sergeant/shared";
-import type { BootstrapLocalStorage } from "../kvStoreBoot";
 
 /**
- * Tests for {@link bootstrapKvStore} (Stage 9 / PR #062 of
- * `docs/planning/storage-roadmap.md`). Coverage matches the four
- * boot-stage invariants the LS-fallback gate in PR #063 leans on:
+ * Tests for {@link bootstrapKvStore} (Stage 9 / PR #062–#064 of
+ * `docs/planning/storage-roadmap.md`). Coverage matches the boot-stage
+ * invariants:
  *
  *  1. Cold boot against an empty `kv_store` populates the warm cache
  *     from a fresh scan and flips `loaded = true`.
  *  2. Re-boot is idempotent — second invocation is a no-op so HMR
- *     `main.tsx` reloads do not double-import LS keys.
- *  3. One-time LS to `kv_store` import: writes every LS key to SQLite,
- *     stamps the marker key (`kv_store_migrated_v1`), and skips the
- *     migration on the next boot.
- *  4. Failure-mode: SQLite init throw → `loaded` stays `false`,
+ *     `main.tsx` reloads do not re-scan.
+ *  3. Failure-mode: SQLite init throw → `loaded` stays `false`,
  *     `onError` fires, and the warm cache is unchanged so the LS
- *     fallback gate in `resolveStore()` (PR #063) returns the
- *     LS-backed adapter.
+ *     fallback gate in `resolveStore()` returns the LS-backed adapter.
+ *
+ * PR #064 removed the one-time LS→`kv_store` migration (4-week canary
+ * passed) and the dual-write mirror. Tests for those are dropped.
  */
 
 vi.stubGlobal("crossOriginIsolated", true);
-
-function fakeLocalStorage(
-  initial: Record<string, string> = {},
-): BootstrapLocalStorage & {
-  setItem(key: string, value: string): void;
-  removeItem(key: string): void;
-} {
-  const store = new Map<string, string>(Object.entries(initial));
-  return {
-    get length() {
-      return store.size;
-    },
-    key(index) {
-      return Array.from(store.keys())[index] ?? null;
-    },
-    getItem(key) {
-      return store.get(key) ?? null;
-    },
-    setItem(key, value) {
-      store.set(key, value);
-    },
-    removeItem(key) {
-      store.delete(key);
-    },
-  };
-}
 
 function fakeBroadcastChannel(): BroadcastChannelLike & {
   posted: unknown[];
@@ -92,10 +64,6 @@ beforeEach(() => {
     value: undefined,
     configurable: true,
   });
-  Object.defineProperty(globalThis, "localStorage", {
-    value: undefined,
-    configurable: true,
-  });
 });
 
 afterEach(() => {
@@ -105,20 +73,17 @@ afterEach(() => {
 });
 
 describe("bootstrapKvStore — cold boot against empty kv_store", () => {
-  it("flips loaded = true and leaves the warm cache empty when LS is empty", async () => {
+  it("flips loaded = true and leaves the warm cache empty on a fresh db", async () => {
     const result = await bootstrapKvStore({
-      localStorage: null,
       broadcastChannel: null,
     });
     expect(result.loaded).toBe(true);
     expect(kvStoreBoot.loaded).toBe(true);
-    // Warm cache empty: no LS migration ran (no LS), no marker stamped.
     expect(kvStoreBoot.warmCache.size).toBe(0);
   });
 
   it("returns a working SqliteKVStoreClient bound to the live SQLite handle", async () => {
     const result = await bootstrapKvStore({
-      localStorage: null,
       broadcastChannel: null,
     });
     expect(result.sqlite).not.toBeNull();
@@ -157,7 +122,6 @@ describe("bootstrapKvStore — warm cache populated from kv_store rows", () => {
     );
 
     const result = await bootstrapKvStore({
-      localStorage: null,
       broadcastChannel: null,
     });
     expect(result.loaded).toBe(true);
@@ -170,7 +134,6 @@ describe("bootstrapKvStore — warm cache populated from kv_store rows", () => {
 describe("bootstrapKvStore — re-boot idempotency", () => {
   it("returns immediately on the second call without re-scanning", async () => {
     await bootstrapKvStore({
-      localStorage: null,
       broadcastChannel: null,
     });
     expect(kvStoreBoot.loaded).toBe(true);
@@ -179,98 +142,10 @@ describe("bootstrapKvStore — re-boot idempotency", () => {
     const getDb = vi.fn();
     const result = await bootstrapKvStore({
       getDb,
-      localStorage: null,
       broadcastChannel: null,
     });
     expect(getDb).not.toHaveBeenCalled();
     expect(result.loaded).toBe(true);
-  });
-});
-
-describe("bootstrapKvStore — one-time LS to kv_store import", () => {
-  it("imports every LS key, stamps the marker, and warms the cache", async () => {
-    const ls = fakeLocalStorage({
-      hub_flags_v1: "{}",
-      fizruk_rest: '{"sec":90}',
-      nutrition_pantry_v2: "[]",
-    });
-    const now = vi.fn(() => 1_700_000_000_000);
-    const result = await bootstrapKvStore({
-      localStorage: ls,
-      broadcastChannel: null,
-      now,
-    });
-    expect(result.loaded).toBe(true);
-    expect(kvStoreBoot.warmCache.get("hub_flags_v1")).toBe("{}");
-    expect(kvStoreBoot.warmCache.get("fizruk_rest")).toBe('{"sec":90}');
-    expect(kvStoreBoot.warmCache.get("nutrition_pantry_v2")).toBe("[]");
-    expect(kvStoreBoot.warmCache.has("kv_store_migrated_v1")).toBe(true);
-
-    // Round-trip: imported rows are durable in kv_store.
-    const handle = await getSqliteDb();
-    const rows = await handle.drizzle.select().from(kvStore);
-    const byKey = new Map(rows.map((r) => [r.key, r.value]));
-    expect(byKey.get("hub_flags_v1")).toBe("{}");
-    expect(byKey.get("fizruk_rest")).toBe('{"sec":90}');
-    expect(byKey.get("nutrition_pantry_v2")).toBe("[]");
-    expect(byKey.has("kv_store_migrated_v1")).toBe(true);
-  });
-
-  it("skips the LS migration when the marker is already present in kv_store", async () => {
-    // Seed kv_store with the marker.
-    const handle = await getSqliteDb();
-    await handle.drizzle.run(
-      sql`CREATE TABLE IF NOT EXISTS kv_store (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL,
-        updated_at INTEGER NOT NULL DEFAULT (CAST((unixepoch() * 1000) AS INTEGER))
-      )`,
-    );
-    await handle.drizzle.run(
-      sql`INSERT INTO kv_store (key, value, updated_at) VALUES ('kv_store_migrated_v1', 'done', 100)`,
-    );
-    const ls = fakeLocalStorage({ a: "should-not-import" });
-    const result = await bootstrapKvStore({
-      localStorage: ls,
-      broadcastChannel: null,
-    });
-    expect(result.loaded).toBe(true);
-    // LS key NOT imported because the marker was already present.
-    expect(kvStoreBoot.warmCache.has("a")).toBe(false);
-  });
-
-  it("never imports the marker key itself even when LS contains it (defensive)", async () => {
-    const ls = fakeLocalStorage({
-      kv_store_migrated_v1: "lying-payload",
-      "real-key": "real-value",
-    });
-    const result = await bootstrapKvStore({
-      localStorage: ls,
-      broadcastChannel: null,
-    });
-    expect(result.loaded).toBe(true);
-    // The bootstrap stamps its own marker; it never copies the LS one.
-    expect(kvStoreBoot.warmCache.get("kv_store_migrated_v1")).not.toBe(
-      "lying-payload",
-    );
-    expect(kvStoreBoot.warmCache.get("real-key")).toBe("real-value");
-  });
-
-  it("continues the batch when a single LS key fails to upsert", async () => {
-    const ls = fakeLocalStorage({ ok: "1", bad: "2", also_ok: "3" });
-
-    const result = await bootstrapKvStore({
-      localStorage: ls,
-      broadcastChannel: null,
-    });
-    expect(result.loaded).toBe(true);
-    // All three keys made it across via the live SQLite client (no
-    // injected failures here — the test just confirms the batch runs
-    // to completion against the real handle).
-    expect(kvStoreBoot.warmCache.get("ok")).toBe("1");
-    expect(kvStoreBoot.warmCache.get("bad")).toBe("2");
-    expect(kvStoreBoot.warmCache.get("also_ok")).toBe("3");
-    expect(kvStoreBoot.warmCache.has("kv_store_migrated_v1")).toBe(true);
   });
 });
 
@@ -280,7 +155,6 @@ describe("bootstrapKvStore — failure modes", () => {
     const getDb = vi.fn(() => Promise.reject(new Error("opfs failure")));
     const result = await bootstrapKvStore({
       getDb,
-      localStorage: null,
       broadcastChannel: null,
       onError,
     });
@@ -294,7 +168,6 @@ describe("bootstrapKvStore — failure modes", () => {
     await expect(
       bootstrapKvStore({
         getDb,
-        localStorage: null,
         broadcastChannel: null,
         onError: () => {},
       }),
@@ -319,7 +192,6 @@ describe("bootstrapKvStore — failure modes", () => {
     };
     const result = await bootstrapKvStore({
       getDb: () => Promise.resolve(fakeHandle),
-      localStorage: null,
       broadcastChannel: null,
       onError,
     });
@@ -354,37 +226,18 @@ describe("bootstrapKvStore — failure modes", () => {
     };
     const result = await bootstrapKvStore({
       getDb: () => Promise.resolve(fakeHandle),
-      localStorage: null,
       broadcastChannel: null,
       onError,
     });
     expect(result.loaded).toBe(false);
     expect(onError).toHaveBeenCalledWith("kv-store-scan", expect.any(Error));
   });
-
-  it("LS migration failure is non-fatal — boot still flips loaded = true", async () => {
-    const onError = vi.fn();
-    const ls: BootstrapLocalStorage = {
-      get length(): number {
-        throw new Error("ls-property-throws");
-      },
-      key: () => null,
-      getItem: () => null,
-    };
-    const result = await bootstrapKvStore({
-      localStorage: ls,
-      broadcastChannel: null,
-      onError,
-    });
-    expect(result.loaded).toBe(true);
-    expect(onError).toHaveBeenCalledWith("ls-migration", expect.any(Error));
-  });
 });
 
 describe("bootstrapKvStore — BroadcastChannel wiring", () => {
   it("uses an injected BroadcastChannel as-is", async () => {
     const bc = fakeBroadcastChannel();
-    await bootstrapKvStore({ localStorage: null, broadcastChannel: bc });
+    await bootstrapKvStore({ broadcastChannel: bc });
     expect(getKvStoreCrossTab()).toBe(bc);
   });
 
@@ -397,7 +250,7 @@ describe("bootstrapKvStore — BroadcastChannel wiring", () => {
       configurable: true,
     });
     try {
-      await bootstrapKvStore({ localStorage: null });
+      await bootstrapKvStore({});
       expect(getKvStoreCrossTab()).toBeNull();
     } finally {
       Object.defineProperty(globalThis, "BroadcastChannel", {
@@ -423,7 +276,7 @@ describe("bootstrapKvStore — BroadcastChannel wiring", () => {
       configurable: true,
     });
     try {
-      await bootstrapKvStore({ localStorage: null });
+      await bootstrapKvStore({});
       expect(calls).toEqual([KV_STORE_BC_NAME]);
     } finally {
       Object.defineProperty(globalThis, "BroadcastChannel", {
@@ -441,7 +294,7 @@ describe("bootstrapKvStore — BroadcastChannel wiring", () => {
       configurable: true,
     });
     try {
-      const result = await bootstrapKvStore({ localStorage: null });
+      const result = await bootstrapKvStore({});
       expect(result.loaded).toBe(true);
       expect(getKvStoreCrossTab()).toBeNull();
     } finally {

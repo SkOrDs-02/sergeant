@@ -1,30 +1,25 @@
 /**
- * Stage 9 / PR #063 — `webKVStore` dual-write ladder.
+ * Stage 9 / PR #064 — `webKVStore` resolve ladder (post-dual-write).
  *
- * Covers the three-rung priority ladder in `resolveStore()`:
+ * PR #063 introduced a dual-write mirror so `localStorage` stayed
+ * populated during a 4-week canary. PR #064 dropped the mirror —
+ * `resolveStore()` now returns the SQLite adapter directly when
+ * available, with no LS fan-out.
+ *
+ * Covers the two-rung + memory-fallback ladder in `resolveStore()`:
  *
  *   1. SQLite-backed adapter wins when `getActiveSqliteKvStore()`
- *      returns non-null AND `localStorage` is also available — every
- *      write fans out to BOTH, reads come from SQLite only.
- *   2. SQLite-backed adapter wins alone when `localStorage` is not
- *      available (memory-only mode, e.g. SSR or private mode without
- *      DOM Storage).
- *   3. LS-backed adapter wins when `getActiveSqliteKvStore()` returns
+ *      returns non-null — reads and writes go to SQLite only, no
+ *      LS mirror.
+ *   2. LS-backed adapter wins when `getActiveSqliteKvStore()` returns
  *      `null` (pre-bootstrap, on bootstrap failure, or in
  *      environments without SQLite-WASM).
- *   4. In-memory fallback wins when both rungs above are unavailable.
- *
- * Mirror writes are wrapped in try/catch so a quota-exceeded error
- * in `localStorage` never escapes a primary-store call site —
- * `setString` / `remove` always succeed if the SQLite primary
- * succeeds.
+ *   3. In-memory fallback wins when both rungs above are unavailable.
  *
  * Resolution is lazy on every method call. A test that sets a
  * SQLite-backed return value via `__setActiveSqliteKvStore` AFTER
  * the module is imported still gets the SQLite adapter on the next
- * `webKVStore.getString` / `setString` call. This is critical
- * because `apps/web/src/main.tsx` mounts React BEFORE the
- * BroadcastChannel-driven `kvStoreBoot` finishes its scan.
+ * `webKVStore.getString` / `setString` call.
  */
 import {
   describe,
@@ -109,7 +104,7 @@ function uninstallFakeLocalStorage(): void {
   });
 }
 
-describe("webKVStore dual-write ladder", () => {
+describe("webKVStore resolve ladder (post-dual-write)", () => {
   beforeEach(() => {
     getActiveSqliteKvStoreMock.mockReset();
     getActiveSqliteKvStoreMock.mockReturnValue(null);
@@ -119,7 +114,7 @@ describe("webKVStore dual-write ladder", () => {
     uninstallFakeLocalStorage();
   });
 
-  describe("rung 3 — LS-only (pre-bootstrap)", () => {
+  describe("rung 2 — LS-only (pre-bootstrap)", () => {
     it("reads / writes via localStorage when SQLite adapter is null", () => {
       installFakeLocalStorage();
 
@@ -140,9 +135,8 @@ describe("webKVStore dual-write ladder", () => {
     });
   });
 
-  describe("rung 4 — memory fallback (no SQLite, no LS)", () => {
+  describe("rung 3 — memory fallback (no SQLite, no LS)", () => {
     it("survives across calls within the same process", () => {
-      // No localStorage installed, no SQLite adapter.
       uninstallFakeLocalStorage();
       getActiveSqliteKvStoreMock.mockReturnValue(null);
 
@@ -154,15 +148,13 @@ describe("webKVStore dual-write ladder", () => {
     });
   });
 
-  describe("rung 1 — SQLite + LS dual-write", () => {
+  describe("rung 1 — SQLite (no LS mirror)", () => {
     it("reads from SQLite primary only", () => {
       installFakeLocalStorage();
       const sqlite = makeFakeKvStore();
       sqlite.getString.mockImplementation((k) =>
         k === "from-sqlite" ? "sqlite-value" : null,
       );
-      // Even though LS has a different value for the same key, the
-      // dual-write read path must hit SQLite only.
       localStorage.setItem("from-sqlite", "ls-value");
       getActiveSqliteKvStoreMock.mockReturnValue(sqlite);
 
@@ -170,7 +162,7 @@ describe("webKVStore dual-write ladder", () => {
       expect(sqlite.getString).toHaveBeenCalledWith("from-sqlite");
     });
 
-    it("writes fan out to BOTH SQLite and LS", () => {
+    it("writes go to SQLite only — LS is NOT mirrored", () => {
       installFakeLocalStorage();
       const sqlite = makeFakeKvStore();
       getActiveSqliteKvStoreMock.mockReturnValue(sqlite);
@@ -178,11 +170,11 @@ describe("webKVStore dual-write ladder", () => {
       webKVStore.setString("k", "v");
 
       expect(sqlite.setString).toHaveBeenCalledWith("k", "v");
-      // Mirror write goes through createWebKVStore → localStorage.setItem.
-      expect(localStorage.getItem("k")).toBe("v");
+      // No mirror write — LS must NOT receive the value.
+      expect(localStorage.getItem("k")).toBeNull();
     });
 
-    it("removes fan out to BOTH SQLite and LS", () => {
+    it("removes go to SQLite only — LS is NOT mirrored", () => {
       installFakeLocalStorage();
       localStorage.setItem("doomed", "stale");
       const sqlite = makeFakeKvStore();
@@ -191,14 +183,12 @@ describe("webKVStore dual-write ladder", () => {
       webKVStore.remove("doomed");
 
       expect(sqlite.remove).toHaveBeenCalledWith("doomed");
-      expect(localStorage.getItem("doomed")).toBeNull();
+      // LS key untouched — no mirror remove.
+      expect(localStorage.getItem("doomed")).toBe("stale");
     });
 
-    it("listKeys is sourced from SQLite primary, not LS mirror", () => {
+    it("listKeys is sourced from SQLite primary, not LS", () => {
       installFakeLocalStorage();
-      // LS has 'orphan' that SQLite does not — listKeys must NOT
-      // surface it because the SQLite warm-cache is the source of
-      // truth post-bootstrap.
       localStorage.setItem("orphan", "stale");
       const sqlite = makeFakeKvStore();
       sqlite.listKeys.mockReturnValue(["sqlite-key"]);
@@ -223,7 +213,7 @@ describe("webKVStore dual-write ladder", () => {
     });
   });
 
-  describe("rung 2 — SQLite without LS mirror", () => {
+  describe("SQLite without LS available", () => {
     it("returns SQLite primary as-is when localStorage is unavailable", () => {
       uninstallFakeLocalStorage();
       const sqlite = makeFakeKvStore();
@@ -234,45 +224,6 @@ describe("webKVStore dual-write ladder", () => {
 
       webKVStore.setString("k", "v");
       expect(sqlite.setString).toHaveBeenCalledWith("k", "v");
-      // No mirror write happens — there is no LS to mirror into.
-    });
-  });
-
-  describe("mirror error swallowing (rung 1 robustness)", () => {
-    it("setString succeeds even when mirror throws QuotaExceededError", () => {
-      installFakeLocalStorage();
-      // Force the underlying setItem to throw so the mirror write
-      // raises a synthetic QuotaExceededError. The dual-write
-      // adapter must swallow it so the SQLite primary write still
-      // counts as a success.
-      const setItemSpy = vi
-        .spyOn(localStorage, "setItem")
-        .mockImplementation(() => {
-          throw new DOMException("Quota exceeded", "QuotaExceededError");
-        });
-      const sqlite = makeFakeKvStore();
-      getActiveSqliteKvStoreMock.mockReturnValue(sqlite);
-
-      expect(() => webKVStore.setString("k", "v")).not.toThrow();
-      expect(sqlite.setString).toHaveBeenCalledWith("k", "v");
-
-      setItemSpy.mockRestore();
-    });
-
-    it("remove succeeds even when mirror throws", () => {
-      installFakeLocalStorage();
-      const removeItemSpy = vi
-        .spyOn(localStorage, "removeItem")
-        .mockImplementation(() => {
-          throw new Error("LS remove blew up");
-        });
-      const sqlite = makeFakeKvStore();
-      getActiveSqliteKvStoreMock.mockReturnValue(sqlite);
-
-      expect(() => webKVStore.remove("k")).not.toThrow();
-      expect(sqlite.remove).toHaveBeenCalledWith("k");
-
-      removeItemSpy.mockRestore();
     });
   });
 
@@ -280,7 +231,7 @@ describe("webKVStore dual-write ladder", () => {
     it("picks up the SQLite adapter on the call AFTER bootstrap completes", () => {
       installFakeLocalStorage();
 
-      // Rung 3: LS-backed write while bootstrap is still running.
+      // Rung 2: LS-backed write while bootstrap is still running.
       webKVStore.setString("k", "ls-value");
       expect(localStorage.getItem("k")).toBe("ls-value");
 
@@ -291,8 +242,7 @@ describe("webKVStore dual-write ladder", () => {
       );
       getActiveSqliteKvStoreMock.mockReturnValue(sqlite);
 
-      // Subsequent reads route through SQLite — even though LS still
-      // has the old value, the dual-write read path returns SQLite's.
+      // Subsequent reads route through SQLite.
       expect(webKVStore.getString("k")).toBe("sqlite-value");
     });
   });
