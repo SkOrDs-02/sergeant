@@ -34,7 +34,9 @@ vi.mock("../../modules/openclaw/index.js", async (importOriginal) => {
   };
 });
 
-async function makeApp() {
+async function makeApp(
+  queryMock = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+) {
   const { createOpenClawInternalRouter } = await import("./openclaw.js");
   const app = express();
   app.use(express.json());
@@ -43,11 +45,65 @@ async function makeApp() {
   // is exercised by `routes/internal.test.ts`.
   app.use(
     createOpenClawInternalRouter({
-      pool: { query: vi.fn().mockResolvedValue({ rows: [] }) } as never,
+      pool: { query: queryMock } as never,
     }),
   );
   return app;
 }
+
+describe("/api/internal/openclaw/query", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns rows for a valid allowlisted SELECT", async () => {
+    const queryMock = vi.fn().mockResolvedValue({
+      rows: [{ id: "u_1" }],
+      rowCount: 1,
+    });
+    const app = await makeApp(queryMock);
+    const res = await request(app)
+      .post("/api/internal/openclaw/query")
+      .send({ sql: "SELECT id FROM users", limit: 20 });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      rowCount: 1,
+      rows: [{ id: "u_1" }],
+      tablesUsed: ["users"],
+    });
+  });
+
+  it("keeps allowlist failures as 400 allowlist_fail", async () => {
+    const queryMock = vi.fn();
+    const app = await makeApp(queryMock);
+    const res = await request(app)
+      .post("/api/internal/openclaw/query")
+      .send({ sql: "SELECT * FROM auth_secret" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("allowlist_fail");
+    expect(queryMock).not.toHaveBeenCalled();
+  });
+
+  it("maps Postgres schema errors to 400 schema_error", async () => {
+    const queryMock = vi.fn().mockRejectedValue(
+      Object.assign(new Error('column "created_at" does not exist'), {
+        code: "42703",
+      }),
+    );
+    const app = await makeApp(queryMock);
+    const res = await request(app).post("/api/internal/openclaw/query").send({
+      sql: "SELECT * FROM openclaw_invocations ORDER BY created_at DESC",
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: "schema_error",
+      message: expect.stringContaining('column "created_at" does not exist'),
+    });
+  });
+});
 
 describe("/api/internal/openclaw/write-audit/list", () => {
   beforeEach(() => {

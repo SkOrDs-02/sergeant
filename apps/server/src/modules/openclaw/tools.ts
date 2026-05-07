@@ -17,7 +17,7 @@
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type { Pool } from "pg";
+import type { Pool, QueryResult } from "pg";
 import { logger } from "../../obs/logger.js";
 import { env } from "../../env.js";
 import { getOpenclawGithubAuth } from "./github-auth.js";
@@ -266,6 +266,13 @@ export class OpenClawAllowlistError extends Error {
   }
 }
 
+export class OpenClawSchemaError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "OpenClawSchemaError";
+  }
+}
+
 /**
  * Throwed коли LLM запитав allowlist-прохідний path/resource, який ще
  * фізично не існує (e.g. `docs/decisions/` до першого decision-PR-у,
@@ -306,15 +313,29 @@ export async function queryAppDb(
   // забув його. Дві LIMIT-и не псують план — Postgres приймає.
   const wrapped = `SELECT * FROM (${input.sql}) AS __openclaw_q LIMIT ${limit}`;
 
-  const result = await pool.query(
-    wrapped,
-    input.params ? [...input.params] : [],
-  );
+  let result: QueryResult<Record<string, unknown>>;
+  try {
+    result = await pool.query(wrapped, input.params ? [...input.params] : []);
+  } catch (err) {
+    if (isPgSchemaError(err)) {
+      const message = err instanceof Error ? err.message : String(err);
+      throw new OpenClawSchemaError(`query_app_db: ${message}`);
+    }
+    throw err;
+  }
   return {
     rowCount: result.rowCount ?? result.rows.length,
     rows: result.rows,
     tablesUsed: tables,
   };
+}
+
+function isPgSchemaError(err: unknown): boolean {
+  if (typeof err !== "object" || err === null || !("code" in err)) {
+    return false;
+  }
+  const code = (err as { code: unknown }).code;
+  return typeof code === "string" && code.startsWith("42");
 }
 
 // ─────────────────────────────────────────────────────────────────────────

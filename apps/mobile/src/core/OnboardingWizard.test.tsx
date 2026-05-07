@@ -40,7 +40,7 @@ describe("OnboardingWizard", () => {
     );
     jest
       .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
-      .mockResolvedValue(false);
+      .mockImplementation(() => new Promise<boolean>(() => {}));
     jest
       .spyOn(AccessibilityInfo, "addEventListener")
       .mockImplementation(() => ({ remove: () => {} }) as never);
@@ -69,7 +69,7 @@ describe("OnboardingWizard", () => {
     // S1.1 + S1.2: outcome variant ships at 100% (`weights: [1, 0, 0]`).
     // Mobile parity must show the same headline/subtitle as the web wizard.
     expect(
-      getByText("Запиши перший зум — і побачиш, куди йде твоє життя."),
+      getByText("Один запис — і побачиш, куди йде твоє життя."),
     ).toBeTruthy();
     expect(getByText(/30 секунд, без реєстрації/)).toBeTruthy();
     // Audit-guard: the pre-S1.1 copy must not resurrect.
@@ -177,7 +177,7 @@ describe("OnboardingWizard — S6.1 `none` arm (opt-in)", () => {
     );
     jest
       .spyOn(AccessibilityInfo, "isReduceMotionEnabled")
-      .mockResolvedValue(false);
+      .mockImplementation(() => new Promise<boolean>(() => {}));
     jest
       .spyOn(AccessibilityInfo, "addEventListener")
       .mockImplementation(() => ({ remove: () => {} }) as never);

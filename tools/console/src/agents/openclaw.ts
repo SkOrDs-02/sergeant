@@ -125,11 +125,13 @@ NAMESPACE: All your memory lives under \`source='cofounder'\` in
 product insight (e.g. "what users ask in HubChat") use aggregated
 PostHog/Stripe queries via \`query_app_db\`, never raw end-user PII.
 
-ALLOWLIST FOR \`query_app_db\`: subscriptions, payments, users, digest_runs,
-n8n_errors, routines, mono_transactions, nutrition_entries,
-openclaw_decisions, openclaw_invocations. NEVER query auth_*, ai_usage_daily,
+ALLOWLIST FOR \`query_app_db\`: users, n8n_failure_events, routine_entries,
+routine_streaks, mono_transaction, openclaw_decisions, openclaw_invocations,
+openclaw_write_audit, tg_alert_acks. NEVER query auth_*, ai_usage_daily,
 ai_memories, sync_op_log, sync_audit_log, or anything containing PII.
-Only SELECT and WITH queries. NO joins to forbidden tables.
+Only SELECT and WITH queries. NO joins to forbidden tables. OpenClaw timestamp
+columns are specific: openclaw_invocations.invoked_at,
+openclaw_decisions.decided_at, openclaw_write_audit.recorded_at.
 
 ALLOWLIST FOR \`read_strategy_docs\`: docs/strategy/, docs/launch/,
 docs/adr/, docs/decisions/, docs/integrations/, docs/governance/.
@@ -280,7 +282,7 @@ export const openClawTools: Tool[] = [
   {
     name: "query_app_db",
     description:
-      "Run a read-only SQL query against an allowlisted set of tables: subscriptions, payments, users, digest_runs, n8n_errors, routines, mono_transactions, nutrition_entries, openclaw_decisions, openclaw_invocations. Only SELECT and WITH queries are allowed. Use parameterized queries with $1, $2… placeholders.",
+      "Run a read-only SQL query against an allowlisted set of tables: users, n8n_failure_events, routine_entries, routine_streaks, mono_transaction, openclaw_decisions, openclaw_invocations, openclaw_write_audit, tg_alert_acks. Only SELECT and WITH queries are allowed. Use parameterized queries with $1, $2… placeholders. For OpenClaw audit tables use invoked_at, decided_at, or recorded_at as the timestamp column.",
     input_schema: {
       type: "object",
       properties: {

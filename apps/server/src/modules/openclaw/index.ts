@@ -28,6 +28,7 @@ export {
   recordDecision,
   extractSqlTables,
   OpenClawAllowlistError,
+  OpenClawSchemaError,
   OpenClawNotFoundError,
   // ADR-0032: tools ported from Sergeant Console agents (ops + marketing)
   // into OpenClaw. They go through the same `/api/internal/openclaw/*`

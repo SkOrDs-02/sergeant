@@ -165,6 +165,8 @@ export const QUERY_APP_DB_TABLE_ALLOWLIST = new Set<string>([
   // 028_openclaw.sql — OpenClaw audit-trail.
   "openclaw_decisions",
   "openclaw_invocations",
+  // 030_openclaw_write_audit.sql — approval/write-tool audit trail.
+  "openclaw_write_audit",
   // 031_tg_alert_acks.sql, ADR-0038 (Wave 3 §3.2): accountability trail
   // for Sergeant_alert_bot broadcasts. Allows OpenClaw to answer ad-hoc
   // questions like "TTA distribution last 7 days" or "P0 alerts unacked

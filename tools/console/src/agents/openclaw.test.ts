@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildSystemPromptInline,
   createOpenClawToolExecutor,
+  openClawTools,
   selectToneMode,
   writeToolRoute,
 } from "./openclaw.js";
@@ -51,11 +52,32 @@ describe("OpenClaw buildSystemPromptInline", () => {
       trigger: "dm",
     });
     expect(p).toContain("source='cofounder'");
-    expect(p).toContain("subscriptions");
-    expect(p).toContain("payments");
+    expect(p).toContain("routine_entries");
+    expect(p).toContain("mono_transaction");
     expect(p).toContain("ai_memories"); // listed under forbidden examples
     expect(p).toContain("docs/strategy/");
     expect(p).toContain("docs/decisions/");
+  });
+
+  it("names OpenClaw timestamp columns explicitly for query_app_db", () => {
+    const p = buildSystemPromptInline({
+      toneMode: "diplomatic",
+      maxIterations: 8,
+      founderHandle: "@sergeant",
+      trigger: "dm",
+    });
+    expect(p).toContain("openclaw_invocations.invoked_at");
+    expect(p).toContain("openclaw_decisions.decided_at");
+    expect(p).toContain("openclaw_write_audit.recorded_at");
+    expect(p).not.toContain("created_at");
+  });
+
+  it("query_app_db tool description repeats the timestamp guidance", () => {
+    const tool = openClawTools.find((t) => t.name === "query_app_db");
+    expect(tool?.description).toContain("invoked_at");
+    expect(tool?.description).toContain("decided_at");
+    expect(tool?.description).toContain("recorded_at");
+    expect(tool?.description).not.toContain("created_at");
   });
 
   it("interpolates max-iter cap", () => {

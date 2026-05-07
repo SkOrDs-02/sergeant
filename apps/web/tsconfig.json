@@ -22,9 +22,6 @@
       "@sergeant/db-schema/sqlite/migrations": [
         "../../packages/db-schema/src/sqlite/migrations/index.ts"
       ],
-      "@sergeant/db-schema/migrate": [
-        "../../packages/db-schema/src/migrate/index.ts"
-      ],
       "@sergeant/db-schema/migrate/runner": [
         "../../packages/db-schema/src/migrate/runner.ts"
       ],

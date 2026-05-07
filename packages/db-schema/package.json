@@ -22,10 +22,6 @@
       "types": "./dist/shared/index.d.ts",
       "import": "./dist/shared/index.js"
     },
-    "./migrate": {
-      "types": "./dist/migrate/index.d.ts",
-      "import": "./dist/migrate/index.js"
-    },
     "./migrate/runner": {
       "types": "./dist/migrate/runner.d.ts",
       "import": "./dist/migrate/runner.js"
@@ -37,6 +33,10 @@
     "./migrate/sqlite": {
       "types": "./dist/migrate/sqlite.d.ts",
       "import": "./dist/migrate/sqlite.js"
+    },
+    "./migrate/files": {
+      "types": "./dist/migrate/files.d.ts",
+      "import": "./dist/migrate/files.js"
     },
     "./sqlite/migrations": {
       "types": "./dist/sqlite/migrations/index.d.ts",
