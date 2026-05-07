@@ -47,11 +47,11 @@ function escapeHtmlAttr(s: string): string {
 }
 
 function getBaseURL(): string {
-  if (process.env["BETTER_AUTH_URL"]) return process.env["BETTER_AUTH_URL"];
-  if (process.env["REPLIT_DEV_DOMAIN"])
-    return `https://${process.env["REPLIT_DEV_DOMAIN"]}`;
-  if (process.env["REPLIT_DOMAINS"]) {
-    const first = process.env["REPLIT_DOMAINS"].split(",")[0]?.trim();
+  if (env.BETTER_AUTH_URL) return env.BETTER_AUTH_URL;
+  if (env.REPLIT_DEV_DOMAIN) return `https://${env.REPLIT_DEV_DOMAIN}`;
+  const replitDomains = env.REPLIT_DOMAINS;
+  if (replitDomains) {
+    const first = replitDomains.split(",")[0]?.trim();
     if (first) return `https://${first}`;
   }
   return `http://localhost:${process.env["PORT"] || 5000}`;
@@ -63,7 +63,7 @@ function getBaseURL(): string {
  * Локально http://localhost — без змін (Lax за замовчуванням у better-auth).
  */
 function getAdvancedCookieOptions(): AdvancedCookieOptions | null {
-  if (process.env["BETTER_AUTH_CROSS_SITE_COOKIES"] === "0") {
+  if (env.BETTER_AUTH_CROSS_SITE_COOKIES === "0") {
     return null;
   }
   const base = getBaseURL();
