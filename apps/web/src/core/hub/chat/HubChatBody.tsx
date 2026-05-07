@@ -3,6 +3,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { ChatMessage, TypingIndicator } from "../../components/ChatMessage";
 import type { HubChatSession } from "../hubChatSessions";
+import { ChatEmpty } from "./ChatEmpty";
 
 type ChatMessageEntry = HubChatSession["messages"][number];
 
@@ -13,6 +14,12 @@ export interface HubChatBodyProps {
   onSpeak: () => void;
   /** Cancel the in-flight chat request — wired to the inline cancel pill. */
   onCancel: () => void;
+  /**
+   * PR-26: викликається при тапі на suggestion-chip у `<ChatEmpty>`.
+   * Parent (HubChat) пробрасує `setInput` + setTimeout-focus, як це
+   * робить `<ChatQuickActions onPrefill>` у composer-і.
+   */
+  onPickSuggestion: (text: string) => void;
 }
 
 /**
@@ -20,12 +27,17 @@ export interface HubChatBodyProps {
  * in flight. Auto-scrolls to bottom on every new message and on the
  * `loading` flip so the typing indicator (and the cancel pill next
  * to it) stay visible.
+ *
+ * Якщо `messages.length === 0` — рендерить `<ChatEmpty>` як
+ * empty-state-placeholder з 4 chip-suggestion-ами, що префілять
+ * composer (PR-26 / §A12).
  */
 export function HubChatBody({
   messages,
   loading,
   onSpeak,
   onCancel,
+  onPickSuggestion,
 }: HubChatBodyProps) {
   const chatRef = useRef<HTMLDivElement | null>(null);
 
@@ -34,6 +46,8 @@ export function HubChatBody({
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
   }, [messages, loading]);
 
+  const isEmpty = messages.length === 0 && !loading;
+
   return (
     <div
       ref={chatRef}
@@ -41,6 +55,7 @@ export function HubChatBody({
       aria-live="polite"
       aria-relevant="additions"
     >
+      {isEmpty && <ChatEmpty onPickSuggestion={onPickSuggestion} />}
       {messages.map((m) => (
         <ChatMessage key={m.id} message={m} onSpeak={onSpeak} />
       ))}

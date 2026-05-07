@@ -1,6 +1,6 @@
-# API v1 — версіонування і контракт
+# API v1 + v2 — версіонування і контракт
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-07 by @Skords-01. **Next review:** 2026-08-05.
 > **Status:** Active
 
 Коротка довідка, як влаштоване версіонування Sergeant-API, гарантії контракту і міграційна стратегія.
@@ -8,9 +8,10 @@
 ## TL;DR
 
 - Усі існуючі маршрути доступні **одночасно** на `/api/*` і `/api/v1/*`
-- Web-клієнт (див. `apps/web/src/shared/lib/api/apiUrl.ts`) за замовчуванням шле в `/api/v1/*`
+- Web-клієнт (div. `apps/web/src/shared/lib/api/apiUrl.ts`) за замовчуванням шле в `/api/v1/*`
 - Mobile/Expo-клієнт — зобов'язаний шле в `/api/v1/*`
-- Жодного дублювання роутерів: сервер переписує `req.url` на канонічний `/api/...` ще до маршрутизації (див. `apiVersionRewrite` у `apps/server/src/app.ts`)
+- Жодного дублювання роутерів: сервер переписує `req.url` на канонічний `/api/...` ще до маршрутизації (div. `apiVersionRewrite` у `apps/server/src/app.ts`)
+- **`POST /api/sync` і `GET /api/sync` (v1 blob sync) — повертають `410 Gone`** (ADR-0047). Sync вибудовується виключно через v2: `POST /api/v2/sync/push` і `GET /api/v2/sync/pull`.
 
 ## 🎯 Чому саме так
 
@@ -26,8 +27,9 @@
 - `/api/auth/*` виключено — Better Auth-плагіни зашиті під `basePath: "/api/auth"` (не можна змінити без форків)
 - Шляхи, що вже починаються з `apiPrefix` (напр. явний `/api/v1/foo`), — ідемпотентні, префікс двічі не додається
 - Escape hatch — передати `apiPrefix: "/api"` у `createApiClient(...)` повертає легасі-поведінку без змін в endpoint-обгортках
+- **Sync v2** endpoint-и (`/api/v2/sync/*`) не проходять через `apiVersionRewrite` і адресуються напряму — обгортки у `@sergeant/api-client` (`SyncEnginePushScheduler`, `SyncEngineFlushOnReconnect`) використовують абсолютні шляхи.
 
-Web прокидає `apiPrefix` через `getApiPrefix()` (див. `apps/web/src/shared/lib/api/apiUrl.ts`), щоб і прямі `fetch(apiUrl(...))`, і виклики через api-client одночасно перемикалися однією змінною `VITE_API_VERSION`.
+Web прокидає `apiPrefix` через `getApiPrefix()` (div. `apps/web/src/shared/lib/api/apiUrl.ts`), щоб і прямі `fetch(apiUrl(...))`, і виклики через api-client одночасно перемикалися однією змінною `VITE_API_VERSION`.
 
 ## 🔐 Авторизація — не версіонується
 
@@ -38,25 +40,50 @@ Web прокидає `apiPrefix` через `getApiPrefix()` (див. `apps/web/
 
 Якщо треба зламати compatibility у auth-flow — робимо це через нові методи (`/api/auth/...` лишається, з'являється, напр., `/api/v2/auth/...`), а не через редагування існуючих.
 
-## ✨ Нові endpoint-и v1 (Phase 2+)
+## ✨ Каталог активних endpoint-ів
 
-- `POST /api/v1/push/register` — реєстрація native push (APNs/FCM). Див. [`docs/mobile/overview.md`](../mobile/overview.md)
-- `GET /api/v1/me` — уніфікований "хто я" для web (cookie) і mobile (bearer)
-- `POST /api/v1/sync` — CloudSync push/pull контракт
+### v1 endpoints (дзеркало `/api/*` ↔ `/api/v1/*`)
 
-Усі решта endpoint-ів `v1` — це дзеркало існуючих `/api/*` без змін у контрактах. **Правило:** додавати нові endpoint-и — ЗАВЖДИ одразу під `/api/...`; дзеркало під `/api/v1/...` вмикається автоматично.
+| Endpoint                        | Method     | Опис                                                          |
+| ------------------------------- | ---------- | ------------------------------------------------------------- |
+| `/api/v1/me`                    | GET        | Уніфікований "хто я" для web (cookie) і mobile (bearer)       |
+| `/api/v1/push/register`         | POST       | Реєстрація native push (APNs/FCM)                             |
+| `/api/v1/chat`                  | POST       | HubChat streaming (SSE) + tool-use                            |
+| `/api/v1/coach/*`               | GET/POST   | Weekly digest, coaching recommendations                       |
+| `/api/v1/mono/*`                | GET/POST   | Monobank: connect, accounts, transactions, backfill           |
+| `/api/v1/ai-memory/*`           | GET/POST   | AI memory ingest / recall                                     |
+| `/api/v1/push/send`             | POST       | Internal push send (service-to-service, X-Api-Secret header)  |
+| `/api/v1/nutrition/*`           | GET/POST   | Nutrition log, barcode, backup                                |
+| `/api/v1/transcribe`            | POST       | Audio → text (Whisper). USD-cap per user/day                  |
+| `/api/v1/billing/*`             | GET/POST   | Stripe checkout, subscription status, webhooks                |
+| `/api/v1/waitlist`              | POST       | Waitlist sign-up                                              |
+
+### v2 endpoints (новий namespace, не через `apiVersionRewrite`)
+
+| Endpoint                        | Method     | Опис                                                          |
+| ------------------------------- | ---------- | ------------------------------------------------------------- |
+| `/api/v2/sync/push`             | POST       | Sync op-log batch push. Body: `{ops, device_id, cursor}`      |
+| `/api/v2/sync/pull`             | GET        | Pull remote ops. Query: `?since=<cursor>`                     |
+
+### Знято (410 Gone)
+
+| Endpoint                        | Причина                                                           |
+| ------------------------------- | ----------------------------------------------------------------- |
+| `POST /api/sync`                | v1 blob sync знятий (ADR-0047). Повертає `410 Gone`.              |
+| `GET /api/sync`                 | v1 blob pull знятий (ADR-0047). Повертає `410 Gone`.              |
 
 ## 🧪 Як ми це тестуємо
 
 - `apps/server/src/smoke.test.ts` та `apps/server/src/routes/apiV1.test.ts` — для ключових роутів перевіряють, що обидва префікси повертають однакову відповідь (status, тіло, ключові заголовки)
 - `apps/server/src/routes/me.ts` реалізує `/api/v1/me` (cookie-сесія або `Authorization: Bearer`); покриття — в тих же v1-смоуках
+- `apps/server/src/modules/sync/syncV2.test.ts` — push/pull контракт для v2
 - Гарантії контракту тримаються через Zod-схеми у `packages/shared/src/schemas/api.ts` (діє для обох версій)
 
 ## ❓ FAQ
 
 **Чи можна в `/api/v1` додавати нове, чого нема в `/api/`?**
 
-Технічно так (умовно через власний router, змонтований на `/api/v1`), але для поточного сервера ми свідомо тримаємо дзеркало 1:1. Різні контракти для двох версій з'являться лише, коли нам знадобиться `v2` — тоді `v1` заморожуємо.
+Технічно так (умовно через власний router, змонтований на `/api/v1`), але для поточного сервера ми свідомо тримаємо дзеркало 1:1. Різні контракти для двох версій з'являться лише, коли нам знадобиться `v3` — тоді `v1` заморожуємо.
 
 **Коли прибирати `/api/*`?**
 
@@ -66,6 +93,10 @@ Web прокидає `apiPrefix` через `getApiPrefix()` (див. `apps/web/
 
 Мінімум 6 місяців (до наступної версії сервера). Breaking changes — тільки через ADR + оповіщення мобільним клієнтам за місяць.
 
+**Чому v1 sync повертає 410 Gone, а не 404?**
+
+`410 Gone` — HTTP-семантика для "ресурс свідомо видалений, клієнт не повинен retry". Це явний сигнал старим клієнтам (якщо такі є) зупинити polling. `404` був би двозначним.
+
 ---
 
 ## 📞 Related docs
@@ -73,5 +104,6 @@ Web прокидає `apiPrefix` через `getApiPrefix()` (див. `apps/web/
 - **Server implementation:** `apps/server/src/app.ts` — `apiVersionRewrite` middleware
 - **Client usage:** `apps/web/src/shared/lib/api/apiUrl.ts` і `packages/api-client/src/httpClient.ts`
 - **Shared schemas:** `packages/shared/src/schemas/api.ts`
+- **Sync v2 architecture:** [`docs/architecture/diagrams/c3-cloudsync.md`](./diagrams/c3-cloudsync.md)
 - **Mobile API:** [`docs/mobile/overview.md`](../mobile/overview.md)
 - **Architecture overview:** [`docs/architecture/service-catalog.md`](./service-catalog.md)

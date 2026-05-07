@@ -8,23 +8,14 @@ import type { BillingCheckoutResponse } from "@sergeant/api-client";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { WaitlistForm } from "./pricing/WaitlistForm";
 
-/**
- * Phase 0 monetization rails: статична маркетингова сторінка з планом
- * тарифів і CTA-формою waitlist-у. Активного білінгу ще немає — задача
- * сторінки виміряти попит до того, як вкладатись у Stripe / Mono jar.
- *
- * План тарифів змавпований із `docs/launch/business/01-monetization-and-pricing.md`
- * (варіант Б — три тіри з decoy ефектом). Ціни тут — pre-MVP draft, не
- * біллимо нікого.
- */
-
 interface Tier {
-  id: "free" | "plus" | "pro";
+  id: "free" | "pro";
   name: string;
   price: string;
   cadence: string;
   highlight?: boolean;
   tagline: string;
+  trial?: string;
   features: ReadonlyArray<string>;
 }
 
@@ -39,40 +30,21 @@ const TIERS: ReadonlyArray<Tier> = [
       "Усі модулі: Фінік / Фізрук / Харчування / Рутина",
       "AI-чат: 5 повідомлень на день",
       "Manual Mono-імпорт (без webhook)",
-      "1 активна програма у Фізруку",
-      "2 push-нагадування для звичок",
-    ],
-  },
-  {
-    id: "plus",
-    name: "Plus",
-    price: "₴59",
-    cadence: "на місяць",
-    tagline: "Якщо AI треба більше і кілька пристроїв.",
-    features: [
-      "AI-чат: 25 повідомлень на день",
-      "AI-фото для їжі: 10 на день",
-      "CloudSync на 2 пристрої",
-      "Тижневі крос-модульні звіти",
-      "Авто-Mono sync",
-      "3 активні програми у Фізруку",
     ],
   },
   {
     id: "pro",
     name: "Pro",
-    price: "₴99",
-    cadence: "на місяць (₴799/рік)",
+    price: "$7",
+    cadence: "/міс або $49/рік (~$4/міс)",
     highlight: true,
-    tagline: "Усе без обмежень + щоденний AI-брифінг.",
+    trial: "7 днів без картки",
+    tagline: "Безлімітний AI + CloudSync + Авто-Mono.",
     features: [
-      "Безлімітний AI-чат + щоденний брифінг",
-      "Безлімітне AI-фото для їжі",
-      "CloudSync на всі пристрої",
-      "Повні звіти + порівняння модулів",
-      "Авто-Mono + мульти-банк (PrivatBank)",
-      "Безлімітні програми + push-нагадування",
-      "Експорт CSV / PDF + кастомні теми",
+      "Безлімітний AI-чат",
+      "Авто-Mono sync (webhook)",
+      "CloudSync між пристроями",
+      "Усе з Free-тіра",
     ],
   },
 ];
@@ -104,6 +76,10 @@ export function PricingPage() {
       try {
         const checkout = await billingApi.createCheckout({ plan: tierId });
         setCheckoutResult(checkout);
+        trackEvent(ANALYTICS_EVENTS.CHECKOUT_OPENED, {
+          plan: tierId,
+          mode: checkout.mode,
+        });
         window.location.assign(checkout.url);
         return;
       } catch {
@@ -114,10 +90,6 @@ export function PricingPage() {
         setCheckoutPlan(null);
       }
     }
-    // Скрол до форми. Без `behavior: "smooth"` на `prefers-reduced-motion`
-    // користувачах — браузер сам ріспектить media query. Захищаємось
-    // `typeof === "function"` бо jsdom не реалізує `scrollIntoView`,
-    // а в продакшні старі браузери теж можуть його не мати.
     const anchor = document.getElementById("waitlist-anchor");
     if (anchor && typeof anchor.scrollIntoView === "function") {
       anchor.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -157,8 +129,8 @@ export function PricingPage() {
             Pro — для тих, хто хоче усе одразу.
           </h2>
           <p className="text-base text-muted max-w-2xl mx-auto">
-            Plus і Pro відкривають Stripe Checkout. Якщо білінг недоступний у
-            цьому середовищі, залиш email нижче — це fallback без списань.
+            Pro відкриває Stripe Checkout. Якщо білінг недоступний у цьому
+            середовищі, залиш email нижче — це fallback без списань.
           </p>
           {checkoutResult ? (
             <p className="text-sm text-success-strong">
@@ -173,7 +145,7 @@ export function PricingPage() {
         </section>
 
         <section
-          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+          className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto w-full"
           aria-label="Тарифні плани"
         >
           {TIERS.map((tier, idx) => (
@@ -193,10 +165,10 @@ export function PricingPage() {
               <header className="space-y-1">
                 <div className="flex items-center justify-between">
                   <h3 className="text-style-title text-text">{tier.name}</h3>
-                  {tier.highlight && (
-                    // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- pill-badge на картці тіра; uppercase + tracking — частина дизайну badge-а.
+                  {tier.trial && (
+                    // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- trial badge на Pro картці.
                     <span className="text-xs font-semibold uppercase tracking-wider text-brand-strong bg-brand/10 px-2 py-1 rounded-full">
-                      Топ-вибір
+                      {tier.trial}
                     </span>
                   )}
                 </div>
@@ -257,14 +229,8 @@ export function PricingPage() {
 
         <footer className="text-center text-xs text-muted space-y-1">
           <p>
-            Усі ціни орієнтовні (₴, для України). Після MVP можемо додати $/€
-            для міжнародної аудиторії.
-          </p>
-          <p>
-            Деталі плану:{" "}
-            <code className="bg-panelHi px-1.5 py-0.5 rounded text-text">
-              docs/launch/business/01-monetization-and-pricing.md
-            </code>
+            Ціни у USD; для UA-ринку виставляємо ₴-еквівалент через Stripe.
+            Після EN-лендингу додамо $/€ для міжнародної аудиторії.
           </p>
         </footer>
       </div>

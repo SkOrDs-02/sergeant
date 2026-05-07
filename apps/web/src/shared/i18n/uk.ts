@@ -77,6 +77,12 @@ export const messages = {
     // Іменування — за призначенням, не за рядком. Якщо в майбутньому буде
     // змінено формулювання чи довжину пароля, зміна торкнеться лише
     // value-у тут.
+    // PR-31 / §C6 — `fieldRequired` deprecated. Безособове «Поле
+    // обовʼязкове» виграло від уніфікації під 1-у особу («Введи X»
+    // / «Обери X»). Лишаємо до follow-up міграції design-showcase
+    // demo (`core/designShowcase/sections/Forms.tsx`); прохід через
+    // production-форми вже не звертається до цього key-а.
+    /** @deprecated PR-31: use `<entity>Required` ключі замість безособового. */
     fieldRequired: "Поле обовʼязкове.",
     emailRequired: "Введи email",
     emailInvalid: "Некоректний формат email",
@@ -95,12 +101,18 @@ export const messages = {
     noteMax200: "Не більше 200 символів",
     sleepHoursRange: "Сон має бути від 0 до 24 годин",
     weightKgRange: "Вага має бути від 20 до 300 кг",
-    tagNameRequired: "Назва тега не може бути порожньою",
-    goalNameRequired: "Вкажіть назву цілі",
-    goalAmountRequired: "Вкажіть суму цілі більше 0",
+    // PR-31 / §C6 — уніфікація під 1-у особу «Введи X» / «Обери X».
+    // Раніше каталог змішував чотири стилі (`Поле обовʼязкове`,
+    // `Назва тега не може бути порожньою`, `Вкажіть назву`, `Введи`).
+    // Тримаємо стиль одним: для input-полів — «Введи …», для select-ів
+    // — «Обери …». Snapshot-и `AddBudgetForm.test.tsx` оновлюються
+    // разом з цим (тести закривають user-facing copy contract).
+    tagNameRequired: "Введи назву тега",
+    goalNameRequired: "Введи назву цілі",
+    goalAmountRequired: "Введи суму цілі більше 0",
     goalSavedNonNegative: "Відкладена сума не може бути від'ємною",
-    limitAmountRequired: "Вкажіть ліміт більше 0",
-    categoryRequired: "Оберіть категорію",
+    limitAmountRequired: "Введи ліміт більше 0",
+    categoryRequired: "Обери категорію",
     passwordResetMin10: "Пароль має бути мінімум 10 символів.",
     // Дві варіації паролі-не-збігаються тримаємо роздільно — крапка є
     // частиною snapshot-ів і existing-копірайту (`ResetPasswordPage` на
@@ -249,11 +261,45 @@ export const messages = {
     weeklyDigestTitle: "Щотижневий дайджест — сторіс",
     chatOfflineNotice:
       "Асистент недоступний без інтернету. Дані модулів видно офлайн, але\n          AI-відповіді потребують підключення.",
+
+    // PR-26 / §A12 — empty-state placeholder в `/chat`. Коли користувач
+    // тільки-но відкрив чат і ще нічого не написав, замість пустого
+    // scroll-area-я показуємо короткий title + 4 chip-suggestion-и, які
+    // префілять composer (не шлють одразу — залишаємо контроль за
+    // користувачем). Suggestion-и охоплюють по одному запиту з кожного
+    // основного модуля (finyk / fizruk / nutrition / routine), щоб
+    // first-time-user одразу бачив, що тут можна питати, а не залишався
+    // з blank-page-effect-ом.
+    chatEmptyTitle: "Запитай щось — я допоможу",
+    chatEmptyDescription:
+      "Тапни на підказку — текст вставиться у поле, і ти зможеш відредагувати його перед відправкою.",
+    chatEmptyAriaLabel: "Підказки для початку чату",
+    chatEmptySuggestionFinyk: "Скільки я витратив цього тижня?",
+    chatEmptySuggestionFizruk: "Як мої тренування?",
+    chatEmptySuggestionNutrition: "Що я їв сьогодні?",
+    chatEmptySuggestionRoutine: "Стан моїх звичок",
   },
 
   onboarding: {
     // Round 16 — onboarding-specific labels.
     hideChecklist: "Сховати чекліст",
+
+    // PR-18 / §C12 — Tour vs Restart copy revamp.
+    // Дві різні дії, які раніше копірайтом «Подивитись tour» і
+    // «Перезапустити онбординг» зливалися в одну mental-категорію.
+    // Тепер чітко: екскурсія = read-only replay; reset = скинути
+    // FTUX-state (vibe-picks, first-action-flags), модульні дані не
+    // зачіпаються.
+    tourSettingsTitle: "Онбординг",
+    tourLaunchLabel: "Переглянути екскурсію (read-only)",
+    tourResetLabel: "Скинути підказки FTUX",
+    tourCopyExplanation:
+      "Екскурсія — повторне відтворення вітального екрану без змін у даних. Скидання FTUX — перевибір vibe-picks і повторні підказки першого запуску, дані модулів не зачіпаються.",
+    tourResetConfirmTitle: "Скинути підказки FTUX?",
+    tourResetConfirmDescription:
+      "Ти знову побачиш вітальний екран та FTUX-підказки. Дані модулів (транзакції, тренування, прийоми їжі) залишаться без змін.",
+    tourResetConfirmAction: "Скинути",
+    tourResetSuccess: "Онбординг перезапущено",
   },
 
   form: {

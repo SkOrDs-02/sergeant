@@ -200,19 +200,19 @@ export const ANALYTICS_EVENTS = Object.freeze({
   SUBSCRIPTION_CANCELED: "subscription_canceled",
   SUBSCRIPTION_RENEWED: "subscription_renewed",
 
-  // Pricing / waitlist (Phase 0 monetization rails). Без активного білінгу:
-  // вимірюємо попит до того, як вкладатись у Stripe / Mono jar інтеграцію.
-  // Очікувані payload-контракти:
+  // Pricing / waitlist. Очікувані payload-контракти:
   //
   //   PRICING_VIEWED         { source?: "settings" | "paywall" | "direct" }
-  //   PRICING_CTA_CLICKED    { tier: "free" | "plus" | "pro",
-  //                            cta: "waitlist" | "primary" }
-  //   WAITLIST_SUBMITTED     { tier_interest: "free" | "plus" | "pro" | "unsure",
+  //   PRICING_CTA_CLICKED    { tier: "free" | "pro",
+  //                            cta: "free" | "stripe_checkout" }
+  //   CHECKOUT_OPENED        { plan: "pro", mode: "test" | "live" }
+  //   WAITLIST_SUBMITTED     { tier_interest: "free" | "pro" | "unsure",
   //                            source: "pricing_page" | "paywall" | "settings"
   //                                   | "onboarding",
   //                            created: boolean }
   PRICING_VIEWED: "pricing_viewed",
   PRICING_CTA_CLICKED: "pricing_cta_clicked",
+  CHECKOUT_OPENED: "checkout_opened",
   WAITLIST_SUBMITTED: "waitlist_submitted",
 
   // Demo mode (S4.1 of `docs/launch/ftux-sprint-plan.md`). The welcome
