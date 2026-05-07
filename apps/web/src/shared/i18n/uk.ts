@@ -261,6 +261,23 @@ export const messages = {
     weeklyDigestTitle: "Щотижневий дайджест — сторіс",
     chatOfflineNotice:
       "Асистент недоступний без інтернету. Дані модулів видно офлайн, але\n          AI-відповіді потребують підключення.",
+
+    // PR-26 / §A12 — empty-state placeholder в `/chat`. Коли користувач
+    // тільки-но відкрив чат і ще нічого не написав, замість пустого
+    // scroll-area-я показуємо короткий title + 4 chip-suggestion-и, які
+    // префілять composer (не шлють одразу — залишаємо контроль за
+    // користувачем). Suggestion-и охоплюють по одному запиту з кожного
+    // основного модуля (finyk / fizruk / nutrition / routine), щоб
+    // first-time-user одразу бачив, що тут можна питати, а не залишався
+    // з blank-page-effect-ом.
+    chatEmptyTitle: "Запитай щось — я допоможу",
+    chatEmptyDescription:
+      "Тапни на підказку — текст вставиться у поле, і ти зможеш відредагувати його перед відправкою.",
+    chatEmptyAriaLabel: "Підказки для початку чату",
+    chatEmptySuggestionFinyk: "Скільки я витратив цього тижня?",
+    chatEmptySuggestionFizruk: "Як мої тренування?",
+    chatEmptySuggestionNutrition: "Що я їв сьогодні?",
+    chatEmptySuggestionRoutine: "Стан моїх звичок",
   },
 
   onboarding: {
