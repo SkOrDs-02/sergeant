@@ -373,6 +373,26 @@ export const messages = {
     },
   },
 
+  // Profile sessions list (PR-10 ux-roast 2026-Q2 / §10.3 «Цей пристрій +
+  // last-seen у людському форматі»). Section copy + accessibility-labels
+  // живуть тут одним вузлом, бо `SessionsSection.tsx` — цілком UA-only
+  // surface і всі рядки треба в каталозі.
+  profileSessions: {
+    sectionTitle: "Активні сесії",
+    refresh: "Оновити",
+    loading: "Завантаження…",
+    empty: "Немає сесій",
+    loadFailed: "Не вдалося завантажити сесії",
+    revoke: "Завершити",
+    revokeSuccess: "Сесію завершено",
+    revokeFailed: "Не вдалося завершити сесію",
+    expired: "Закінчилась",
+    thisDevice: "Цей пристрій",
+    unknownIp: "IP невідомий",
+    unknownDevice: "Невідомий пристрій",
+    lastSeenPrefix: "Активна",
+  },
+
   // App-lock / Privacy settings (PR-1a UX-roast 2026-Q2).
   privacy: {
     lock: {
