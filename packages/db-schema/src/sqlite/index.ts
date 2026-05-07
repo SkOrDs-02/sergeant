@@ -1,6 +1,7 @@
 export { waitlistEntries } from "./waitlistEntries.js";
 export { syncAuditLog } from "./syncAuditLog.js";
 export { pushSubscriptions } from "./pushSubscriptions.js";
+export { kvStore } from "./kvStore.js";
 export {
   routineEntries,
   routineStreaks,
