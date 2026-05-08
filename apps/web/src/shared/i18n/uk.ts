@@ -447,6 +447,44 @@ export const messages = {
     },
   },
 
+  // Profile → "Біометрія" section (Mifflin-St Jeor inputs for Nutrition).
+  // Owns the form labels, the activity-ladder copy, and the small status
+  // hint that tells the user whether the record is complete enough for
+  // TDEE. Cross-links to Fizruk Body's daily-log are described inline so
+  // the user understands why weight is shared between the two surfaces.
+  biometrics: {
+    sectionTitle: "Біометрія",
+    statusReady: "Готово до розрахунку TDEE",
+    statusIncomplete: "Заповніть дані для розрахунку",
+    heightLabel: "Зріст (см)",
+    birthDateLabel: "Дата народження",
+    sexLabel: "Стать",
+    sexMale: "Чоловік",
+    sexFemale: "Жінка",
+    sexPlaceholder: "— Оберіть —",
+    activityLabel: "Рівень активності",
+    activityPlaceholder: "— Оберіть —",
+    activitySedentaryLabel: "Малорухливий",
+    activitySedentaryHint: "Офісна робота, майже без тренувань",
+    activityLightLabel: "Легка активність",
+    activityLightHint: "Тренування 1-3 дні на тиждень",
+    activityModerateLabel: "Помірна",
+    activityModerateHint: "Тренування 3-5 днів на тиждень",
+    activityActiveLabel: "Висока",
+    activityActiveHint: "Тренування 6-7 днів на тиждень",
+    activityVeryActiveLabel: "Дуже висока",
+    activityVeryActiveHint: "Фізична праця або 2× тренування на день",
+    weightLabel: "Поточна вага (кг)",
+    weightSyncHint: "Синхронізується з журналом «Тіло» у Фізрукові",
+    save: "Зберегти",
+    saveSuccess: "Біометрію збережено",
+    saveError: "Не вдалося зберегти біометрію",
+    // The age line is rendered as `${ageLabel}: ${n} ${ageYearsSuffix}` so
+    // the catalog stays plain-string (см. `MessageCatalog` constraint).
+    ageLabel: "Вік",
+    ageYearsSuffix: "років",
+  },
+
   // What's new modal (PR-18 у `docs/launch/product-os/ftux-master-tracker.md`
   // §3.3). UI-копія обмежена — release-specific копія (title / summary /
   // items / CTA label) живе у TS-таблиці `apps/web/src/core/whatsNew/

@@ -92,7 +92,14 @@ describe("SYNC_MODULES registry", () => {
   });
 
   it("snapshot of profile keys", () => {
-    expect(SYNC_MODULES.profile.keys).toEqual([STORAGE_KEYS.USER_PROFILE]);
+    // PR (biometrics) — the profile module also carries the hub-level
+    // biometric parameters store (`hub_biometrics_v1`) so height /
+    // birth-date / sex / activity-level / current-weight ride the same
+    // CloudSync LWW path as the memory bank (`hub_user_profile_v1`).
+    expect(SYNC_MODULES.profile.keys).toEqual([
+      STORAGE_KEYS.USER_PROFILE,
+      STORAGE_KEYS.HUB_BIOMETRICS,
+    ]);
   });
 
   it("does NOT include sync-bookkeeping keys (those are metadata, not payload)", () => {
@@ -129,6 +136,7 @@ describe("SYNC_MODULES registry", () => {
   describe("keyToModule", () => {
     it("returns the owning module for tracked keys", () => {
       expect(keyToModule(STORAGE_KEYS.USER_PROFILE)).toBe("profile");
+      expect(keyToModule(STORAGE_KEYS.HUB_BIOMETRICS)).toBe("profile");
     });
 
     it("returns null for unknown / retired keys", () => {

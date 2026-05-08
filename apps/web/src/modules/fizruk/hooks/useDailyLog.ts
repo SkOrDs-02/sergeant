@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import type { DailyLogEntry as DomainDailyLogEntry } from "@sergeant/fizruk-domain";
+import { mirrorWeightToBiometrics } from "../../../core/profile/biometrics";
 
 const KEY = STORAGE_KEYS.FIZRUK_DAILY_LOG;
 
@@ -56,6 +57,15 @@ export function useDailyLog() {
         ...data,
       };
       persist([e, ...entries]);
+      // Bidirectional weight sync — a Fizruk-side weigh-in is also the
+      // canonical "current weight" for Nutrition (and the "Поточна
+      // вага" field on Profile). LWW: every weigh-in beats the last
+      // value regardless of which surface initiated it; CloudSync
+      // resolves cross-device conflicts on the merged Profile blob via
+      // the same module-level LWW.
+      if (e.weightKg != null) {
+        mirrorWeightToBiometrics(e.weightKg, e.at);
+      }
       return e;
     },
     [entries, persist],

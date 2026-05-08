@@ -7,6 +7,7 @@ import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
 import { useAuth } from "../auth/AuthContext";
+import { BiometricsSection } from "./BiometricsSection";
 import { ChangePasswordSection } from "./ChangePasswordSection";
 import { DangerZoneSection } from "./DangerZoneSection";
 import { MemoryBankSection } from "./MemoryBankSection";
@@ -85,6 +86,16 @@ export function ProfilePage() {
         collapsedSubtitle="Що асистент знає про тебе"
       >
         <MemoryBankSection />
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        storageKey="sergeant.profile.biometrics.open"
+        title="Біометрія"
+        defaultOpen={false}
+        collapsedIcon="activity"
+        collapsedSubtitle="Зріст, вага, активність — для розрахунку калорій"
+      >
+        <BiometricsSection online={online} />
       </CollapsibleSection>
 
       <CollapsibleSection

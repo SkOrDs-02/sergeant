@@ -68,7 +68,7 @@ export const SYNC_MODULES = {
   // nutrition module wrappers, mirroring the fizruk retirement in
   // PR #030.
   profile: {
-    keys: [STORAGE_KEYS.USER_PROFILE],
+    keys: [STORAGE_KEYS.USER_PROFILE, STORAGE_KEYS.HUB_BIOMETRICS],
   },
 } as const;
 

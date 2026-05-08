@@ -16,6 +16,14 @@ export const STORAGE_KEYS = {
   DASHBOARD_ORDER: "hub_dashboard_order_v1",
   HUB_PREFS: "hub_prefs_v1",
   USER_PROFILE: "hub_user_profile_v1",
+  /**
+   * Hub-level biometric parameters for nutrition / fitness calculations
+   * (height, birth-date, sex, activity-level, current-weight). Lives in
+   * Profile so a user without the Fizruk module still has the inputs
+   * needed for BMR / TDEE — see PR plan in `biometrics-storage-plan.md`.
+   * Synced via `SYNC_MODULES.profile` (LWW), same path as memory bank.
+   */
+  HUB_BIOMETRICS: "hub_biometrics_v1",
   DASHBOARD_DENSITY: "hub_dashboard_density_v1",
 
   // Hub quick-stats previews rendered on the dashboard
