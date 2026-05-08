@@ -15,6 +15,16 @@
  * розщеплені funnels у `whats_new_shown` / `whats_new_cta_clicked`.
  * Замість цього додай новий запис.
  *
+ * Виняток (UX-feedback 2026-05-08): копія `2026-05-06-cold-start` була
+ * переписана in-place. Причина — оригінальний текст ("outcome card",
+ * "FTUX-копія", "`pnpm bootstrap`", "drift-check у CI") був інженерним
+ * жаргоном, а не release-нотами для юзера. Це bugfix копії, не нова фіча,
+ * і id навмисно лишається той самий — щоб не тригерити повторний modal
+ * для всіх, хто вже закрив попередню версію, та зберегти аналітичні
+ * events на тому ж slug. Funnel-drift тут мінімальний (тільки текст,
+ * без зміни кількості/типу items). Майбутні зміни — додавати новий
+ * запис, як писано вище.
+ *
  * See `docs/whats-new/README.md` для шаблону + how-to.
  */
 
@@ -57,35 +67,23 @@ export const RELEASES: readonly WhatsNewRelease[] = [
   {
     id: "2026-05-06-cold-start",
     date: "2026-05-06",
-    title: "Холодний старт без порожнього дашборду",
+    title: "Перший екран більше не порожній",
     summary:
-      "Перший візит після онбордингу більше не закидає на пустий дашборд: outcome card, чистіша FTUX-копія, автогенерований SBOM.",
+      "Після знайомства ти одразу бачиш картку з конкретним першим кроком, а не пустий екран. Текст вступу теж став зрозумілішим — про те, що ти отримаєш, а не перелік функцій.",
     items: [
       {
         kind: "feature",
-        text: "Outcome card на cold-start заміняє «empty TODO» дашборд першим actionable кроком.",
+        text: "На головному з'являється картка з першим кроком — клік, і ти вже у потрібному розділі.",
       },
       {
         kind: "improvement",
-        text: "Hero copy «disciplined» арм у v2-split — фокус на результат, а не на features.",
-      },
-      {
-        kind: "improvement",
-        text: "`pnpm bootstrap` — один команд для нового агента замість 4-х розрізнених install-ів.",
+        text: "Текст на стартовому екрані переписали — тепер він говорить про результат, а не перелічує функції.",
       },
       {
         kind: "fix",
-        text: "Confetti на wizard-finish прибрано — celebration лишається тільки після першої реальної цінності.",
-      },
-      {
-        kind: "improvement",
-        text: "`THIRD_PARTY_LICENSES.md` — автогенерація + drift-check у CI (`pnpm licenses:check`).",
+        text: "Анімацію з конфетті прибрали з кінця знайомства — вона з'являється тільки після того, як ти зробиш перший запис.",
       },
     ],
-    cta: {
-      label: "Що ще в плані",
-      href: "https://github.com/Skords-01/Sergeant/blob/main/docs/launch/product-os/ftux-master-tracker.md",
-    },
   },
 ];
 

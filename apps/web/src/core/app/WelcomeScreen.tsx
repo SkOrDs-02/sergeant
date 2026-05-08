@@ -75,12 +75,23 @@ function PeekBackdrop() {
           that promise honest without competing with the primary CTA:
           muted caption-size text, single-line, pinned just below the
           safe-area top so it sits inside the peek area but above the
-          blurred bento. */}
+          blurred bento.
+
+          UX-feedback 2026-05-08: hidden below `sm` because on mobile
+          the splash card sits `items-end` and covers the full width
+          and ~80% of the viewport — the blurred bento behind has no
+          visible vertical room (squeezed between safe-area-top and
+          the card), so this caption was floating over an empty cream
+          background and reading as a broken promise («це приклад» —
+          where?). On `sm+` the card centres and the bento is visible
+          on either side, so the disclaimer keeps making sense. The
+          demo entry point on mobile is the secondary CTA inside the
+          splash card («Подивитись приклад»). */}
       <div
         className={cn(
           "absolute inset-x-0",
           "pt-[max(0.5rem,calc(env(safe-area-inset-top)+0.25rem))] px-5",
-          "flex justify-center",
+          "hidden sm:flex sm:justify-center",
         )}
       >
         <span className="text-style-caption text-muted/80">

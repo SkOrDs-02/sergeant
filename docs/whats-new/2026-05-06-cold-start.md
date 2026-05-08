@@ -1,32 +1,44 @@
-# 2026-05-06 — Холодний старт без порожнього дашборду
+# 2026-05-06 — Перший екран більше не порожній
 
-> **Last validated:** 2026-05-06 by @Skords-01. **Next review:** 2026-08-04.
+> **Last validated:** 2026-05-08 by @Skords-01. **Next review:** 2026-08-06.
 > **Status:** Active
 
 > **Modal id:** `2026-05-06-cold-start` —
 > [`apps/web/src/core/whatsNew/releases.ts`](../../apps/web/src/core/whatsNew/releases.ts)
 
-## TL;DR
+> **UX-feedback 2026-05-08:** копія цього запису була переписана
+> in-place. Оригінальний текст («outcome card», «FTUX-копія»,
+> `pnpm bootstrap`, «drift-check у CI») був інженерним жаргоном замість
+> release-нот для юзера. Це bugfix копії — не нова фіча, тому id не
+> мінявся (інакше modal знову б випадав усім, хто вже закрив попередню
+> версію). Інженерні підпункти (release-engineering tooling, license
+> SBOM) винесені в розділ «Внутрішня кухня» нижче — у юзерський modal
+> вони не потрапляють.
 
-Перший візит після онбордингу більше не закидає на пустий дашборд:
-ми додали outcome-card («ось що ти отримаєш»), почистили дублюючі
-checkout-CTA та вкрутили автогенерований SBOM-чек — щоб legal-команда
-не дзвонила після кожного `pnpm install`.
+## TL;DR (юзер-facing — те що бачить modal)
 
-## Items
+Після знайомства ти одразу бачиш картку з конкретним першим кроком,
+а не пустий екран. Текст вступу теж став зрозумілішим — про те, що
+ти отримаєш, а не перелік функцій.
 
-- **Feature** — Outcome card на cold-start заміняє «empty TODO»
-  дашборд: показує очікуваний результат і перший action для обраного
-  модуля.
-- **Improvement** — Hero copy «disciplined» арм у v2-split: фокус на
-  результат, а не на features (audit finding 8.1.1).
+## Items (юзер-facing — те що бачить modal)
+
+- **Feature** — На головному з'являється картка з першим кроком —
+  клік, і ти вже у потрібному розділі.
+- **Improvement** — Текст на стартовому екрані переписали — тепер він
+  говорить про результат, а не перелічує функції.
+- **Fix** — Анімацію з конфетті прибрали з кінця знайомства — вона
+  з'являється тільки після того, як ти зробиш перший запис.
+
+## Внутрішня кухня (НЕ потрапляє у юзерський modal)
+
+Це інженерні зміни, які поїхали разом з релізом, але не релевантні
+для звичайного користувача — ховаємо їх з in-product release notes.
+
+- **Improvement** — Soft-Auth fear-based copy замінено на neutral-tone
+  (audit finding 8.3.13).
 - **Improvement** — `pnpm bootstrap` — один command для нового агента
   замість 4-х розрізнених install-ів.
-- **Fix** — Confetti на wizard-finish прибрано: celebration лишається
-  тільки після першої реальної цінності, а не за факт натиснення
-  «Готово» (audit findings 8.1.2 + 8.2.7).
-- **Fix** — Soft-Auth fear-based copy замінено на neutral-tone
-  (audit finding 8.3.13).
 - **Improvement** — `THIRD_PARTY_LICENSES.md` — автогенерація + drift-check
   у CI (`pnpm licenses:check`); 1036 shipped-packages, allowlist у
   `scripts/generate-licenses.mjs`.
