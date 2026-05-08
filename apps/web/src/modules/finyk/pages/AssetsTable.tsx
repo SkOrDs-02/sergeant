@@ -183,8 +183,9 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
         />
       ) : (
         <button
+          type="button"
           onClick={() => setShowSubForm(true)}
-          className="w-full py-2.5 text-sm text-muted border border-dashed border-line rounded-xl hover:border-primary hover:text-primary transition-colors mt-2"
+          className="w-full py-2.5 text-style-label rounded-xl bg-finyk-soft text-finyk-strong dark:bg-finyk/15 dark:text-finyk border border-finyk-soft-border hover:bg-brand-100 dark:hover:bg-finyk/25 active:scale-[0.99] transition-colors shadow-soft mt-2"
         >
           + Додати підписку
         </button>
@@ -315,8 +316,9 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         />
       ) : (
         <button
+          type="button"
           onClick={() => setShowRecvForm(true)}
-          className="w-full py-2.5 text-sm text-muted border border-dashed border-line rounded-xl hover:border-primary hover:text-primary transition-colors"
+          className="w-full py-2.5 text-style-label rounded-xl bg-success/10 text-success-strong dark:bg-success/15 dark:text-success border border-success/30 hover:bg-success/15 dark:hover:bg-success/25 active:scale-[0.99] transition-colors shadow-soft"
         >
           + Додати актив «мені винні»
         </button>
@@ -363,8 +365,9 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         />
       ) : (
         <button
+          type="button"
           onClick={() => setShowAssetForm(true)}
-          className="w-full py-2.5 text-sm text-muted border border-dashed border-line rounded-xl hover:border-primary hover:text-primary transition-colors"
+          className="w-full py-2.5 text-style-label rounded-xl bg-success/10 text-success-strong dark:bg-success/15 dark:text-success border border-success/30 hover:bg-success/15 dark:hover:bg-success/25 active:scale-[0.99] transition-colors shadow-soft"
         >
           + Додати актив
         </button>
@@ -486,8 +489,9 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
         />
       ) : (
         <button
+          type="button"
           onClick={() => setShowDebtForm(true)}
-          className="w-full py-2.5 text-sm text-muted border border-dashed border-line rounded-xl hover:border-primary hover:text-primary transition-colors mb-2"
+          className="w-full py-2.5 text-style-label rounded-xl bg-danger/10 text-danger-strong dark:bg-danger/15 dark:text-danger border border-danger/30 hover:bg-danger/15 dark:hover:bg-danger/25 active:scale-[0.99] transition-colors shadow-soft mb-2"
         >
           + Додати пасив
         </button>

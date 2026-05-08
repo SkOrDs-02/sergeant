@@ -411,8 +411,9 @@ export function Budgets({
               />
             ) : (
               <button
+                type="button"
                 onClick={() => setShowForm(true)}
-                className="w-full py-3 text-sm text-muted border border-dashed border-line rounded-xl hover:border-primary hover:text-primary transition-colors"
+                className="group w-full inline-flex items-center justify-center gap-2 py-3 text-style-label rounded-2xl bg-finyk-soft text-finyk-strong dark:bg-finyk/15 dark:text-finyk border border-finyk-soft-border hover:bg-brand-100 dark:hover:bg-finyk/25 active:scale-[0.99] transition-colors shadow-soft"
               >
                 {messages.finyk.addLimitOrGoal}
               </button>

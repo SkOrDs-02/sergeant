@@ -300,12 +300,14 @@ export function DebtForm({
   return (
     <Card
       ref={debtFormRef as React.Ref<HTMLElement>}
-      variant="finyk-soft"
+      variant="flat"
       radius="md"
-      className="space-y-3 mb-2"
+      className="space-y-3 mb-2 border-danger/30 bg-danger-soft/40 dark:bg-danger/10"
     >
       <div>
-        <div className="text-sm font-bold text-text">Новий пасив</div>
+        <div className="text-sm font-bold text-danger-strong dark:text-danger">
+          Новий пасив
+        </div>
         <div className="text-xs text-muted mt-0.5">
           Кредит, борг або інше зобов&#x27;язання.
         </div>
