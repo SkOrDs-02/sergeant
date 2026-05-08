@@ -7,7 +7,7 @@
 import { describe, expect, it } from "vitest";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 
-import { calcMacroKcalMismatch } from "./DailyPlanCard";
+import { calcGoalRangeIssues, calcMacroKcalMismatch } from "./DailyPlanCard";
 
 const EMPTY_PREFS: NutritionPrefs = {} as NutritionPrefs;
 
@@ -80,5 +80,83 @@ describe("calcMacroKcalMismatch", () => {
     expect(result!.kind).toBe("under");
     expect(result!.calc).toBe(580);
     expect(result!.diff).toBe(-1420);
+  });
+});
+
+describe("calcGoalRangeIssues", () => {
+  it("returns no issues when targets are within reasonable ranges", () => {
+    expect(
+      calcGoalRangeIssues(
+        withPrefs({
+          dailyTargetKcal: 2000,
+          dailyTargetProtein_g: 150,
+          dailyTargetFat_g: 70,
+          dailyTargetCarbs_g: 200,
+        }),
+      ),
+    ).toEqual([]);
+  });
+
+  it("returns no issues when no targets are set", () => {
+    expect(calcGoalRangeIssues(EMPTY_PREFS)).toEqual([]);
+  });
+
+  it("flags kcal below 800", () => {
+    const issues = calcGoalRangeIssues(withPrefs({ dailyTargetKcal: 500 }));
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.field).toBe("kcal");
+    expect(issues[0]!.kind).toBe("low");
+  });
+
+  it("flags kcal above 6000", () => {
+    const issues = calcGoalRangeIssues(withPrefs({ dailyTargetKcal: 7000 }));
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.field).toBe("kcal");
+    expect(issues[0]!.kind).toBe("high");
+  });
+
+  it("flags protein below 30 g", () => {
+    const issues = calcGoalRangeIssues(withPrefs({ dailyTargetProtein_g: 15 }));
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.field).toBe("protein_g");
+    expect(issues[0]!.kind).toBe("low");
+  });
+
+  it("flags protein above 300 g", () => {
+    const issues = calcGoalRangeIssues(
+      withPrefs({ dailyTargetProtein_g: 400 }),
+    );
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.field).toBe("protein_g");
+    expect(issues[0]!.kind).toBe("high");
+  });
+
+  it("flags fat below 20 g and above 250 g", () => {
+    expect(
+      calcGoalRangeIssues(withPrefs({ dailyTargetFat_g: 10 }))[0]!.kind,
+    ).toBe("low");
+    expect(
+      calcGoalRangeIssues(withPrefs({ dailyTargetFat_g: 300 }))[0]!.kind,
+    ).toBe("high");
+  });
+
+  it("flags carbs above 700 g but allows 0 (keto)", () => {
+    expect(
+      calcGoalRangeIssues(withPrefs({ dailyTargetCarbs_g: 800 })),
+    ).toHaveLength(1);
+    expect(
+      calcGoalRangeIssues(withPrefs({ dailyTargetCarbs_g: 0 })),
+    ).toHaveLength(0);
+  });
+
+  it("aggregates multiple issues across fields", () => {
+    const issues = calcGoalRangeIssues(
+      withPrefs({
+        dailyTargetKcal: 500,
+        dailyTargetProtein_g: 400,
+      }),
+    );
+    expect(issues).toHaveLength(2);
+    expect(issues.map((i) => i.field).sort()).toEqual(["kcal", "protein_g"]);
   });
 });

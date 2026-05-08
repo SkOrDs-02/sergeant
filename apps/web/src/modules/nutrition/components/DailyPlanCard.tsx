@@ -255,9 +255,12 @@ function MissingMacrosHint({ prefs, setPrefs, busy }: MissingMacrosHintProps) {
   if (hasAnyMacro) return null;
 
   // 30 % білок · 25 % жир · 45 % вуглеводи від цільових ккал → грами.
-  const suggestedProtein = Math.round((kcal * 0.3) / 4);
-  const suggestedFat = Math.round((kcal * 0.25) / 9);
-  const suggestedCarbs = Math.round((kcal * 0.45) / 4);
+  // Білок і жир округлюємо вниз, а вуглеводи добираємо залишком,
+  // щоб сума макро ніколи не перевищувала цільові ккал.
+  const suggestedProtein = Math.floor((kcal * 0.3) / 4);
+  const suggestedFat = Math.floor((kcal * 0.25) / 9);
+  const remainingKcal = kcal - suggestedProtein * 4 - suggestedFat * 9;
+  const suggestedCarbs = Math.max(0, Math.floor(remainingKcal / 4));
 
   return (
     <div
@@ -300,6 +303,136 @@ function MissingMacrosHint({ prefs, setPrefs, busy }: MissingMacrosHintProps) {
           Підставити середні · Б{suggestedProtein} · Ж{suggestedFat} · В
           {suggestedCarbs}
         </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * UX-roast 2026-05 §3.4 — наукові «м'які» межі для денних цілей.
+ *
+ * Значення поза цими межами не блокують форму (користувач все ще
+ * може зберегти такі цілі), але показують попередження-баннер, бо
+ * ймовірно це була помилка набору або діапазон, що потребує
+ * медичного нагляду.
+ *
+ * Джерела:
+ * - Kcal min 800 / max 6000:
+ *   - WHO та American College of Sports Medicine: мінімум ~1200 ккал
+ *     (жінки) / ~1500 (чоловіки) для уникнення дефіциту нутрієнтів.
+ *   - <800 ккал — Very Low Calorie Diet, тільки під медичним наглядом.
+ *   - >6000 ккал — навіть Майкл Фелпс на тренувальному циклі їв ~10к,
+ *     але такі діапазони не для пересічного користувача додатку.
+ * - Protein 30–300 г: 30 г ≈ нижня межа RDA для дорослої людини;
+ *   300 г = ~3 г/кг для 100-кг атлета (стеля для гіпертрофії
+ *   за мета-аналізом Morton et al., 2017).
+ * - Fat 20–250 г: 20 г ≈ мінімум незамінних жирних кислот; верх
+ *   250 г покриває навіть високожирові кето-дієти.
+ * - Carbs ≤700 г: верхня межа для endurance-атлетів (Burke et al.,
+ *   2011). Низької межі немає — кето / lazy-keto з ~20 г допустимо.
+ */
+const GOAL_BOUNDS = {
+  kcal: { min: 800, max: 6000 },
+  protein_g: { min: 30, max: 300 },
+  fat_g: { min: 20, max: 250 },
+  carbs_g: { min: 0, max: 700 },
+} as const;
+
+interface GoalRangeIssue {
+  field: "kcal" | "protein_g" | "fat_g" | "carbs_g";
+  kind: "low" | "high";
+  message: string;
+}
+
+export function calcGoalRangeIssues(prefs: NutritionPrefs): GoalRangeIssue[] {
+  const RANGE_COPY = messages.nutritionGoalRange;
+  const issues: GoalRangeIssue[] = [];
+
+  const kcal = prefs.dailyTargetKcal;
+  if (kcal != null && kcal > 0) {
+    if (kcal < GOAL_BOUNDS.kcal.min) {
+      issues.push({
+        field: "kcal",
+        kind: "low",
+        message: RANGE_COPY.kcalTooLow,
+      });
+    } else if (kcal > GOAL_BOUNDS.kcal.max) {
+      issues.push({
+        field: "kcal",
+        kind: "high",
+        message: RANGE_COPY.kcalTooHigh,
+      });
+    }
+  }
+
+  const protein = prefs.dailyTargetProtein_g;
+  if (protein != null && protein > 0) {
+    if (protein < GOAL_BOUNDS.protein_g.min) {
+      issues.push({
+        field: "protein_g",
+        kind: "low",
+        message: RANGE_COPY.proteinTooLow,
+      });
+    } else if (protein > GOAL_BOUNDS.protein_g.max) {
+      issues.push({
+        field: "protein_g",
+        kind: "high",
+        message: RANGE_COPY.proteinTooHigh,
+      });
+    }
+  }
+
+  const fat = prefs.dailyTargetFat_g;
+  if (fat != null && fat > 0) {
+    if (fat < GOAL_BOUNDS.fat_g.min) {
+      issues.push({
+        field: "fat_g",
+        kind: "low",
+        message: RANGE_COPY.fatTooLow,
+      });
+    } else if (fat > GOAL_BOUNDS.fat_g.max) {
+      issues.push({
+        field: "fat_g",
+        kind: "high",
+        message: RANGE_COPY.fatTooHigh,
+      });
+    }
+  }
+
+  const carbs = prefs.dailyTargetCarbs_g;
+  if (carbs != null && carbs > GOAL_BOUNDS.carbs_g.max) {
+    issues.push({
+      field: "carbs_g",
+      kind: "high",
+      message: RANGE_COPY.carbsTooHigh,
+    });
+  }
+
+  return issues;
+}
+
+function GoalRangeWarning({ prefs }: { prefs: NutritionPrefs }) {
+  const issues = calcGoalRangeIssues(prefs);
+  if (issues.length === 0) return null;
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={cn(
+        "mt-3 rounded-xl border border-warn/40 bg-warn/10 px-3 py-2.5",
+        "text-xs space-y-1",
+      )}
+      data-testid="goal-range-warning"
+    >
+      <div className="flex items-start gap-2">
+        <span className="shrink-0 font-bold text-warn" aria-hidden>
+          ⚠
+        </span>
+        <ul className="text-text leading-snug space-y-0.5 list-disc pl-4">
+          {issues.map((issue) => (
+            <li key={`${issue.field}-${issue.kind}`}>{issue.message}</li>
+          ))}
+        </ul>
       </div>
     </div>
   );
@@ -764,7 +897,7 @@ export function DailyPlanCard({
                         onClick={() => applyPreset(preset)}
                         disabled={busy || dayPlanBusy}
                         className={cn(
-                          "w-full text-left px-3 py-2 border-b border-line last:border-0",
+                          "w-full text-left px-3 py-2 border-b border-line",
                           "hover:bg-panelHi disabled:opacity-50 transition-colors",
                           activePreset?.id === preset.id &&
                             "bg-nutrition/10 text-nutrition-strong dark:text-nutrition",
@@ -777,6 +910,31 @@ export function DailyPlanCard({
                         </div>
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setPrefs((p) => ({
+                          ...p,
+                          dailyTargetKcal: null,
+                          dailyTargetProtein_g: null,
+                          dailyTargetFat_g: null,
+                          dailyTargetCarbs_g: null,
+                        }));
+                        setPresetMenuOpen(false);
+                      }}
+                      disabled={busy || dayPlanBusy}
+                      className={cn(
+                        "w-full text-left px-3 py-2",
+                        "hover:bg-panelHi disabled:opacity-50 transition-colors",
+                        "text-muted hover:text-danger",
+                      )}
+                    >
+                      <div className="text-style-label">Скинути вибір</div>
+                      <div className="text-2xs text-subtle mt-0.5">
+                        Очистити всі цілі
+                      </div>
+                    </button>
                   </div>
                 )}
               </div>
@@ -873,6 +1031,8 @@ export function DailyPlanCard({
           <MissingMacrosHint prefs={prefs} setPrefs={setPrefs} busy={busy} />
 
           <MacroKcalWarning prefs={prefs} setPrefs={setPrefs} busy={busy} />
+
+          <GoalRangeWarning prefs={prefs} />
 
           {hasTargets && (
             <div className="mt-2 flex flex-wrap gap-1 items-center">

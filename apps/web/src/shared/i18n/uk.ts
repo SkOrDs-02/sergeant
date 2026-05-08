@@ -494,12 +494,39 @@ export const messages = {
   nutritionTdee: {
     triggerLabel: "Розрахувати з профілю",
     triggerHint:
-      "Заповни біометрію в профілі — Mifflin-St Jeor розрахує ккал автоматично.",
+      "Заповни біометрію в профілі (стать, вік, зріст, вагу, рівень активності) — і ми порахуємо твою денну норму ккал автоматично.",
     profileLink: "Заповнити в профілі",
     goalCutting: "Схуднення (-500 ккал)",
     goalMaintenance: "Підтримка",
     goalBulking: "Набір (+300 ккал)",
     appliedToast: "Цілі підставлено з профілю",
+  },
+
+  nutritionGoalRange: {
+    // Scientifically-grounded soft bounds for daily nutrition targets.
+    // Values outside these ranges trigger a non-blocking warning so the
+    // user knows they typed something that's almost certainly an error
+    // (or extreme enough to need medical supervision). We don't block
+    // the input — we just surface the warning.
+    //
+    // - kcal:  ВООЗ і American College of Sports Medicine рекомендують
+    //   мінімум ~1200 ккал/день для жінок та ~1500 для чоловіків;
+    //   нижче 800 ккал — VLCD (Very Low Calorie Diet), потребує
+    //   медичного нагляду. Верх 6000 ккал — навіть професійні
+    //   витривалі атлети рідко перевищують.
+    // - protein: 30 г — мінімум, щоб уникнути дефіциту; 300 г — стеля
+    //   навіть для важкоатлетів (~3 г/кг для 100-кг людини).
+    // - fat: 20 г — мінімум для незамінних жирних кислот; 250 г —
+    //   крайня межа кето / hi-fat дієт.
+    // - carbs: 0 г допустимо (кето), стеля 700 г — endurance-атлети.
+    kcalTooLow: "Менше 800 ккал — небезпечно без нагляду лікаря.",
+    kcalTooHigh: "Більше 6000 ккал — це дуже багато навіть для атлетів.",
+    proteinTooLow: "Менше 30 г білка — ризик дефіциту.",
+    proteinTooHigh: "Більше 300 г білка — це дуже багато навіть для атлетів.",
+    fatTooLow: "Менше 20 г жиру — ризик дефіциту незамінних жирних кислот.",
+    fatTooHigh: "Більше 250 г жиру — це дуже багато для типового раціону.",
+    carbsTooHigh:
+      "Більше 700 г вуглеводів — це дуже багато навіть для атлетів.",
   },
 
   // What's new modal (PR-18 у `docs/launch/product-os/ftux-master-tracker.md`
