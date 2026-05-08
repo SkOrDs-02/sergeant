@@ -3,6 +3,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
+import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import {
   DASHBOARD_DENSITY_EVENT,
@@ -152,6 +153,56 @@ function useDashboardDensity(): DashboardDensity {
     };
   }, []);
   return density;
+}
+
+// UX-feedback 2026-05-08: inline FTUX hint shown directly above the
+// modules grid. Replaces the previous top-of-screen toast which read
+// «Перемикай модулі зверху — це один хаб» — that toast appeared in
+// the top-right corner with no anchor, so users (especially on the
+// Settings tab where the modules grid is invisible) had no idea what
+// "вгорі" was supposed to refer to. Inline placement next to the
+// real bento grid removes the ambiguity entirely.
+const FTUX_MODULES_HINT_KEY = "sergeant.hub.ftuxModulesHint.dismissed.v1";
+
+function FtuxModulesHint() {
+  const [dismissed, setDismissed] = useLocalStorageState<boolean>(
+    FTUX_MODULES_HINT_KEY,
+    false,
+    { validate: (v): v is boolean => typeof v === "boolean" },
+  );
+  if (dismissed) return null;
+  return (
+    <div
+      role="note"
+      className={cn(
+        "flex items-start gap-2 rounded-2xl border border-line bg-panel/70 px-3 py-2",
+        "text-2xs leading-snug text-muted",
+      )}
+    >
+      <Icon
+        name="info"
+        size={14}
+        strokeWidth={2}
+        aria-hidden
+        className="mt-0.5 shrink-0 text-brand-strong"
+      />
+      <p className="flex-1 min-w-0">
+        Це твій хаб. Тут усі модулі поруч — обери будь-який, щоб почати.
+      </p>
+      <button
+        type="button"
+        onClick={() => setDismissed(true)}
+        aria-label="Сховати підказку"
+        className={cn(
+          "shrink-0 -mr-1 -mt-0.5 w-6 h-6 inline-flex items-center justify-center rounded-md",
+          "text-muted hover:text-text hover:bg-panelHi transition-colors",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+        )}
+      >
+        <Icon name="close" size={14} strokeWidth={2} aria-hidden />
+      </button>
+    </div>
+  );
 }
 
 // Ukrainian 1 / 2-4 / 5+ plural. Inline because this file is the only
@@ -647,6 +698,15 @@ export function HubDashboard({
               {editMode ? <span>Готово</span> : null}
             </button>
           </div>
+
+          {/* UX-feedback 2026-05-08: previously the «один хаб» hint was a
+           * top-of-screen toast («Перемикай модулі зверху — це один хаб»),
+           * but on FTUX there's nothing at the top to "switch" — the toast
+           * pointed at modules the user couldn't see yet. Inline hint
+           * lives directly above the modules grid where the user can
+           * actually see what the message refers to. Dismissable; only
+           * appears pre-first-real-entry. */}
+          {!hasRealEntry && <FtuxModulesHint />}
 
           <DndContext
             sensors={sensors}
