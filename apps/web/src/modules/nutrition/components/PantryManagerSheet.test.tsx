@@ -2,10 +2,19 @@
 //
 // PR-37 ux-roast 2026-Q3 / §3.2 — у формі редагування назви складу
 // destructive «Видалити» поряд із «Зберегти» хибно зчитувалось як
-// скасування. Тут перевіряємо новий контракт:
-//   • поряд зі «Зберегти» стоїть «Скасувати», що закриває sheet;
-//   • видалення активного складу живе в окремій «Небезпечній зоні»
-//     і ховається, коли склад залишився єдиний (UX-guard).
+// скасування. Контракт:
+//   • поряд зі «Зберегти/Створити» стоїть «Скасувати»;
+//   • видалення активного складу живе в окремому розділі «Інше →
+//     Небезпечна зона» і ховається, коли склад залишився єдиний.
+//
+// UX-roast 2026-05 §3.4 — додаємо `idle`-режим форми. У цьому стані
+// інпут «Назва складу» взагалі не показано, доки користувач явно не
+// натиснув «+ Новий склад» / «Перейменувати активний». Перевіряємо:
+//   • в `idle` форма прихована;
+//   • у режимі `create` поряд зі «Створити» стоїть «Скасувати», а не
+//     «Видалити»;
+//   • небезпечна зона з'являється лише після натиску на роздільник
+//     «Інше».
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { Pantry } from "@sergeant/nutrition-domain";
@@ -17,7 +26,10 @@ function makeProps(overrides: {
   activePantryId: string;
   onClose?: () => void;
   onBeginDelete?: () => void;
-  onSavePantryForm?: (name: string, mode: PantryForm["mode"]) => void;
+  onSavePantryForm?: (
+    name: string,
+    mode: Exclude<PantryForm["mode"], "idle">,
+  ) => void;
   pantryForm?: PantryForm;
 }) {
   return {
@@ -41,8 +53,8 @@ afterEach(() => {
   cleanup();
 });
 
-describe("PantryManagerSheet (PR-37 / §3.2)", () => {
-  it("offers Cancel next to Save in the form, not Delete", () => {
+describe("PantryManagerSheet (PR-37 / §3.2 + 2026-05 §3.4)", () => {
+  it("offers Cancel next to Save in rename mode, not Delete", () => {
     render(
       <PantryManagerSheet
         {...makeProps({
@@ -63,8 +75,7 @@ describe("PantryManagerSheet (PR-37 / §3.2)", () => {
     ).toBeNull();
   });
 
-  it("invokes onClose when Cancel is clicked", () => {
-    const onClose = vi.fn();
+  it("offers Create + Cancel pair in create mode", () => {
     render(
       <PantryManagerSheet
         {...makeProps({
@@ -73,16 +84,64 @@ describe("PantryManagerSheet (PR-37 / §3.2)", () => {
             { id: "work", name: "Робота", items: [], text: "" },
           ],
           activePantryId: "home",
-          onClose,
+          pantryForm: { mode: "create", name: "", err: "" },
         })}
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Створити" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Скасувати" })).toBeTruthy();
   });
 
-  it("renders danger-zone delete button when more than one pantry exists", () => {
+  it("hides the form entirely in idle mode", () => {
+    render(
+      <PantryManagerSheet
+        {...makeProps({
+          pantries: [
+            { id: "home", name: "Дім", items: [], text: "" },
+            { id: "work", name: "Робота", items: [], text: "" },
+          ],
+          activePantryId: "home",
+          pantryForm: { mode: "idle", name: "", err: "" },
+        })}
+      />,
+    );
+
+    // No Save / Create / Cancel buttons until the user picks a mode.
+    expect(screen.queryByRole("button", { name: "Зберегти" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Створити" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Скасувати" })).toBeNull();
+    // The action triggers (still visible) confirm the sheet is interactive.
+    expect(screen.getByRole("button", { name: "+ Новий склад" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Перейменувати активний" }),
+    ).toBeTruthy();
+  });
+
+  it("invokes setPantryForm with idle when Cancel is clicked", () => {
+    const setPantryForm = vi.fn();
+    render(
+      <PantryManagerSheet
+        {...makeProps({
+          pantries: [
+            { id: "home", name: "Дім", items: [], text: "" },
+            { id: "work", name: "Робота", items: [], text: "" },
+          ],
+          activePantryId: "home",
+        })}
+        setPantryForm={setPantryForm}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
+    expect(setPantryForm).toHaveBeenCalledWith({
+      mode: "idle",
+      name: "",
+      err: "",
+    });
+  });
+
+  it("hides danger-zone behind 'Інше' until expanded", () => {
     const onBeginDelete = vi.fn();
     render(
       <PantryManagerSheet
@@ -97,6 +156,15 @@ describe("PantryManagerSheet (PR-37 / §3.2)", () => {
       />,
     );
 
+    // Collapsed by default — danger zone copy/button is not rendered yet.
+    expect(screen.queryByText(/Небезпечна зона/)).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /Видалити активний склад/ }),
+    ).toBeNull();
+
+    // Expand the «Інше» section.
+    fireEvent.click(screen.getByRole("button", { name: /Інше/ }));
+
     const deleteBtn = screen.getByRole("button", {
       name: /Видалити активний склад/,
     });
@@ -105,7 +173,7 @@ describe("PantryManagerSheet (PR-37 / §3.2)", () => {
     expect(onBeginDelete).toHaveBeenCalledTimes(1);
   });
 
-  it("hides danger-zone delete when only one pantry remains", () => {
+  it("hides 'Інше' / danger-zone affordance when only one pantry remains", () => {
     render(
       <PantryManagerSheet
         {...makeProps({
@@ -115,6 +183,7 @@ describe("PantryManagerSheet (PR-37 / §3.2)", () => {
       />,
     );
 
+    expect(screen.queryByRole("button", { name: /Інше/ })).toBeNull();
     expect(screen.queryByText(/Небезпечна зона/)).toBeNull();
     expect(
       screen.queryByRole("button", { name: /Видалити активний склад/ }),

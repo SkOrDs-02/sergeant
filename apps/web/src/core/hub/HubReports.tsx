@@ -238,9 +238,16 @@ function StatCard({
   chart,
   storageKey,
 }: StatCardProps) {
+  // Звіти за замовчуванням згорнуті — користувач у фідбеку 2026-05
+  // (UX-roast) скаржився, що з 4-х розгорнутих карток на одному екрані
+  // важко швидко окинути всі цифри. Згорнутий режим показує заголовок,
+  // велике число + дельту в одному рядку (~32px), що дає overview за 1
+  // погляд. Розгортаємо лише ту картку, в яку користувач явно тицьнув —
+  // стан зберігається в `useLocalStorageState`, так що його вибір
+  // персистить.
   const [collapsed, setCollapsed] = useLocalStorageState<boolean>(
     storageKey,
-    false,
+    true,
     { validate: (v): v is boolean => typeof v === "boolean" },
   );
   const formattedCurrent =

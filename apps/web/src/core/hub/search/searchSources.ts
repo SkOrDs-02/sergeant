@@ -1,3 +1,4 @@
+import { FizrukData } from "@sergeant/fizruk-domain";
 import { formatMoney, formatMoneyFromKopecks } from "@sergeant/shared";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { tokenize } from "../hubSearchEngine";
@@ -80,6 +81,58 @@ function searchFinyk(tokens: string[]): Hit[] {
 
 function searchFizruk(tokens: string[]): Hit[] {
   const results: Hit[] = [];
+
+  // Built-in catalogue from `@sergeant/fizruk-domain` — користувач шукав
+  // «жим» (Жим лежачи) і не знаходив, бо раніше ми проходили лише по
+  // `fizruk_custom_exercises_v1` (порожньому до першої кастомної вправи)
+  // та по логах тренувань. Тепер проганяємо ще й вбудований каталог,
+  // щоб глобальний пошук відповідав тому, що показує `useExerciseCatalog`
+  // у Фізрука. Беремо невеликий ліміт, бо це не основний фокус —
+  // користувацькі вправи + тренування мають пріоритет вище.
+  for (const ex of FizrukData.EXERCISES) {
+    if (!ex || typeof ex !== "object") continue;
+    const nameUk = ex.name?.uk;
+    if (!nameUk) continue;
+    const groupUk =
+      (ex.primaryGroup &&
+        FizrukData.PRIMARY_GROUPS_UK[ex.primaryGroup as string]) ||
+      ex.primaryGroupUk ||
+      ex.primaryGroup ||
+      "";
+    const aliases = Array.isArray(ex.aliases) ? ex.aliases.join(" ") : "";
+    const stop = pushScored(
+      results,
+      {
+        id: `fizruk_cat_${ex.id}`,
+        module: "fizruk",
+        moduleLabel: "Фізрук",
+        title: nameUk,
+        // subtitle включає aliases та англійську назву — щоб scoreMatch
+        // ловив запит «bench», «жим лежа» тощо. Перед рендером ми
+        // повертаємо короткий subtitle (lookup по id у мапі нижче).
+        subtitle: `${groupUk} · ${ex.name?.en ?? ""} ${aliases}`.trim(),
+        icon: "💪",
+        target: { kind: "module", moduleId: "fizruk" },
+      },
+      tokens,
+      8,
+    );
+    if (stop) break;
+  }
+  // Заміняємо subtitle на коротку версію (без aliases) перед рендером —
+  // довгий список синонімів був корисний для скорінгу, але в UI хочеться
+  // лише примарну м'язову групу.
+  for (const r of results) {
+    const ex = FizrukData.EXERCISES.find((e) => `fizruk_cat_${e?.id}` === r.id);
+    if (!ex) continue;
+    const groupUk =
+      (ex.primaryGroup &&
+        FizrukData.PRIMARY_GROUPS_UK[ex.primaryGroup as string]) ||
+      ex.primaryGroupUk ||
+      ex.primaryGroup ||
+      "Вправа";
+    r.subtitle = `${groupUk} · з каталогу Фізрука`;
+  }
 
   const workouts = parseFizrukWorkouts(
     safeReadStringLS("fizruk_workouts_v1", null),

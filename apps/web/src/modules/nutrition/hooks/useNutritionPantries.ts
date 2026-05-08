@@ -88,8 +88,11 @@ export function useNutritionPantries({
 
   const [pantryManagerOpen, setPantryManagerOpen] = useState(false);
 
+  // UX-roast 2026-05 §3.4: дефолтний mode `idle` — поле «Назва складу»
+  // не показується, доки користувач явно не натиснув «+ Новий склад»
+  // або «Перейменувати». Це робить ці кнопки видимо реактивними.
   const [pantryForm, setPantryForm] = useState<PantryForm>(() => ({
-    mode: "create",
+    mode: "idle",
     name: "",
     err: "",
   }));
@@ -218,7 +221,10 @@ export function useNutritionPantries({
     setConfirmDeleteOpen(true);
   };
 
-  const onSavePantryForm = (name: string, mode: PantryFormMode) => {
+  const onSavePantryForm = (
+    name: string,
+    mode: Exclude<PantryFormMode, "idle">,
+  ) => {
     if (mode === "rename") {
       setPantries((cur) =>
         updatePantry(cur, activePantryId, (p) => ({ ...p, name })),
@@ -231,6 +237,7 @@ export function useNutritionPantries({
       ]);
       setActivePantryId(id);
     }
+    setPantryForm({ mode: "idle", name: "", err: "" });
     setPantryManagerOpen(false);
   };
 
