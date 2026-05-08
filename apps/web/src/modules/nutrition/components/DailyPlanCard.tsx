@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { chartHex } from "@sergeant/design-tokens/tokens";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -205,6 +205,83 @@ function MacroKcalWarning({ prefs, setPrefs, busy }: MacroKcalWarningProps) {
           )}
         >
           Скинути макро
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface MissingMacrosHintProps {
+  prefs: NutritionPrefs;
+  setPrefs: Dispatch<SetStateAction<NutritionPrefs>>;
+  busy?: boolean;
+}
+
+/**
+ * Користувач у фідбеку 2026-05 (UX-roast §3.3): «коли вводить ккал
+ * воно підставляло середні стартові значення для макросів, а юзер
+ * потім редачив». Тут — м'яка підказка з кнопкою «Підставити середні»,
+ * яка з'являється тільки коли вже задано ккал, але макросів ще немає.
+ * Дефолти: 1.6 г білка / 1 г жиру на кг ваги (типові безпечні старт-
+ * рекомендації); вуглеводи добираються залишком ккал. Ваги ми не
+ * знаємо в цій картці, тому стартуємо з macro-сплітом 30/25/45 від
+ * заданих ккал — це одночасно дає валідні цифри й не претендує на
+ * точність (її користувач уточнить вручну).
+ */
+function MissingMacrosHint({ prefs, setPrefs, busy }: MissingMacrosHintProps) {
+  const kcal = prefs.dailyTargetKcal ?? 0;
+  if (kcal <= 0) return null;
+  const hasAnyMacro =
+    (prefs.dailyTargetProtein_g ?? 0) > 0 ||
+    (prefs.dailyTargetFat_g ?? 0) > 0 ||
+    (prefs.dailyTargetCarbs_g ?? 0) > 0;
+  if (hasAnyMacro) return null;
+
+  // 30 % білок · 25 % жир · 45 % вуглеводи від цільових ккал → грами.
+  const suggestedProtein = Math.round((kcal * 0.3) / 4);
+  const suggestedFat = Math.round((kcal * 0.25) / 9);
+  const suggestedCarbs = Math.round((kcal * 0.45) / 4);
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={cn(
+        "mt-3 rounded-xl border border-warn/40 bg-warn/10 px-3 py-2.5",
+        "text-xs space-y-2",
+      )}
+      data-testid="missing-macros-hint"
+    >
+      <div className="flex items-start gap-2">
+        <span className="shrink-0 font-bold text-warn" aria-hidden>
+          ℹ
+        </span>
+        <p className="text-text leading-snug">
+          Задано лише <strong>{kcal} ккал</strong>, але без макро AI не зрозуміє
+          що тобі важливо — білок, жир чи вуглеводи. Підстав середні стартові
+          значення й відредагуй під себе.
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2 pl-5">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() =>
+            setPrefs((p) => ({
+              ...p,
+              dailyTargetProtein_g: suggestedProtein,
+              dailyTargetFat_g: suggestedFat,
+              dailyTargetCarbs_g: suggestedCarbs,
+            }))
+          }
+          className={cn(
+            "inline-flex items-center gap-1 rounded-xl border px-2 py-1",
+            "border-line/60 bg-bg/60 text-text hover:bg-panelHi",
+            "disabled:opacity-50 transition-colors",
+          )}
+        >
+          Підставити середні · Б{suggestedProtein} · Ж{suggestedFat} · В
+          {suggestedCarbs}
         </button>
       </div>
     </div>
@@ -428,7 +505,12 @@ export function DailyPlanCard({
   weekPlanBusy,
   fetchWeekPlan,
 }: DailyPlanCardProps) {
-  const [showManual, setShowManual] = useState(false);
+  // UX-roast 2026-05 §3.3: користувач хотів, аби пресети «Схуднення /
+  // Підтримка / Набір» не були первинним фокусом, а виглядали як
+  // підказка, бо їх рідко обирають дослівно. Тепер дефолт — чотири
+  // інпути (ккал/Б/Ж/В), а пресети сховані за випадайкою.
+  const [presetMenuOpen, setPresetMenuOpen] = useState(false);
+  const presetMenuRef = useRef<HTMLDivElement | null>(null);
 
   const activePreset = PRESETS.find(
     (p) =>
@@ -446,7 +528,28 @@ export function DailyPlanCard({
       dailyTargetFat_g: preset.fat_g,
       dailyTargetCarbs_g: preset.carbs_g,
     }));
+    setPresetMenuOpen(false);
   };
+
+  // Закривати випадайку пресетів по тапу/кліку поза нею. Користуємось
+  // mousedown — щоб закриття відбулось до того, як саме поле забере
+  // фокус (інакше виходить «миготіння» меню при тапі по інпуту).
+  useEffect(() => {
+    if (!presetMenuOpen) return;
+    const onPointer = (e: MouseEvent | TouchEvent) => {
+      const root = presetMenuRef.current;
+      if (!root) return;
+      const target = e.target as Node | null;
+      if (target && root.contains(target)) return;
+      setPresetMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("touchstart", onPointer);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("touchstart", onPointer);
+    };
+  }, [presetMenuOpen]);
 
   const hasTargets = prefs.dailyTargetKcal != null;
 
@@ -468,137 +571,150 @@ export function DailyPlanCard({
 
       <div className="mt-4 space-y-4">
         <div>
-          <div className="text-xs text-subtle mb-2">Пресет або ручні цілі</div>
-          <div className="flex gap-2 flex-wrap">
-            {PRESETS.map((preset) => (
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="text-xs text-subtle">Цілі на день</div>
+            <div ref={presetMenuRef} className="relative">
               <button
-                key={preset.id}
                 type="button"
-                onClick={() => applyPreset(preset)}
+                onClick={() => setPresetMenuOpen((v) => !v)}
                 disabled={busy || dayPlanBusy}
+                aria-haspopup="menu"
+                aria-expanded={presetMenuOpen}
                 className={cn(
-                  "flex-1 min-w-[90px] py-2 px-3 rounded-xl text-xs font-semibold border transition-[background-color,border-color,color,opacity]",
-                  activePreset?.id === preset.id
-                    ? "bg-nutrition-strong text-white border-nutrition"
-                    : "border-line text-text hover:border-nutrition/50 hover:bg-nutrition/5",
+                  "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-xs font-semibold",
+                  "border-line/70 text-subtle hover:text-text hover:border-nutrition/50",
+                  "disabled:opacity-50 transition-colors",
                 )}
               >
-                <div>{preset.label}</div>
-                <div className="text-2xs opacity-70 mt-0.5">
-                  ~{preset.kcal} ккал
-                </div>
+                {activePreset
+                  ? `Пресет: ${activePreset.label}`
+                  : "Підказати з пресету"}
+                <span aria-hidden className="text-2xs">
+                  ▾
+                </span>
               </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setShowManual((v) => !v)}
-              disabled={busy || dayPlanBusy}
-              className={cn(
-                "flex-1 min-w-[90px] py-2 px-3 rounded-xl text-xs font-semibold border transition-[background-color,border-color,color,opacity]",
-                showManual && !activePreset
-                  ? "bg-panel border-nutrition text-text"
-                  : "border-line text-subtle hover:border-nutrition/50 hover:text-text",
+              {presetMenuOpen && (
+                <div
+                  role="menu"
+                  className={cn(
+                    "absolute right-0 top-full mt-1 z-10 min-w-[200px]",
+                    "rounded-xl border border-line bg-bg shadow-lg overflow-hidden",
+                  )}
+                >
+                  {PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => applyPreset(preset)}
+                      disabled={busy || dayPlanBusy}
+                      className={cn(
+                        "w-full text-left px-3 py-2 border-b border-line last:border-0",
+                        "hover:bg-panelHi disabled:opacity-50 transition-colors",
+                        activePreset?.id === preset.id &&
+                          "bg-nutrition/10 text-nutrition-strong dark:text-nutrition",
+                      )}
+                    >
+                      <div className="text-style-label">{preset.label}</div>
+                      <div className="text-2xs text-subtle mt-0.5">
+                        {preset.kcal} ккал · Б{preset.protein_g} · Ж
+                        {preset.fat_g} · В{preset.carbs_g}
+                      </div>
+                    </button>
+                  ))}
+                </div>
               )}
-            >
-              Свої цілі
-            </button>
+            </div>
           </div>
 
-          {showManual && (
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {(
-                [
-                  {
-                    key: "dailyTargetKcal",
-                    label: "Ккал/день",
-                    unit: "",
-                    color: null,
-                  },
-                  {
-                    key: "dailyTargetProtein_g",
-                    label: "Білки",
-                    unit: "г",
-                    color: "text-blue-400",
-                  },
-                  {
-                    key: "dailyTargetFat_g",
-                    label: "Жири",
-                    unit: "г",
-                    color: "text-yellow-400",
-                  },
-                  {
-                    key: "dailyTargetCarbs_g",
-                    label: "Вуглеводи",
-                    unit: "г",
-                    color: "text-green-400",
-                  },
-                ] as const
-              ).map(({ key, label, unit, color }) => (
-                <div key={key}>
-                  <div
-                    className={cn(
-                      "text-xs mb-1 font-semibold",
-                      color ?? "text-subtle",
-                    )}
-                  >
-                    {label}
-                    {unit && ` (${unit})`}
-                  </div>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    value={prefs[key] != null ? String(prefs[key]) : ""}
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      const v =
-                        raw === ""
-                          ? null
-                          : Number(raw) > 0
-                            ? Number(raw)
-                            : null;
-                      setPrefs((p) => {
-                        const next = { ...p, [key]: v };
-                        // Авто-перерахунок Ккал лише коли користувач явно не
-                        // задав ціль (kcal === null) або коли вона дорівнює
-                        // попередньому авто-значенню. Інакше тиха перезапис
-                        // з'їдала кастомні значення (M7 з аудиту).
-                        if (key !== "dailyTargetKcal") {
-                          const prevProt = p.dailyTargetProtein_g ?? 0;
-                          const prevFat = p.dailyTargetFat_g ?? 0;
-                          const prevCarb = p.dailyTargetCarbs_g ?? 0;
-                          const prevCalc = Math.round(
-                            prevProt * 4 + prevFat * 9 + prevCarb * 4,
-                          );
-                          const isAutoKcal =
-                            p.dailyTargetKcal == null ||
-                            p.dailyTargetKcal === prevCalc;
-                          if (isAutoKcal) {
-                            const prot =
-                              key === "dailyTargetProtein_g" ? v : prevProt;
-                            const fat =
-                              key === "dailyTargetFat_g" ? v : prevFat;
-                            const carb =
-                              key === "dailyTargetCarbs_g" ? v : prevCarb;
-                            const calc = Math.round(
-                              (prot || 0) * 4 +
-                                (fat || 0) * 9 +
-                                (carb || 0) * 4,
-                            );
-                            next.dailyTargetKcal = calc > 0 ? calc : null;
-                          }
-                        }
-                        return next;
-                      });
-                    }}
-                    placeholder="—"
-                    disabled={busy || dayPlanBusy}
-                  />
+          <div className="grid grid-cols-2 gap-2">
+            {(
+              [
+                {
+                  key: "dailyTargetKcal",
+                  label: "Ккал/день",
+                  unit: "",
+                  color: null,
+                },
+                {
+                  key: "dailyTargetProtein_g",
+                  label: "Білки",
+                  unit: "г",
+                  color: "text-blue-400",
+                },
+                {
+                  key: "dailyTargetFat_g",
+                  label: "Жири",
+                  unit: "г",
+                  color: "text-yellow-400",
+                },
+                {
+                  key: "dailyTargetCarbs_g",
+                  label: "Вуглеводи",
+                  unit: "г",
+                  color: "text-green-400",
+                },
+              ] as const
+            ).map(({ key, label, unit, color }) => (
+              <div key={key}>
+                <div
+                  className={cn(
+                    "text-xs mb-1 font-semibold",
+                    color ?? "text-subtle",
+                  )}
+                >
+                  {label}
+                  {unit && ` (${unit})`}
                 </div>
-              ))}
-            </div>
-          )}
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={prefs[key] != null ? String(prefs[key]) : ""}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const v =
+                      raw === "" ? null : Number(raw) > 0 ? Number(raw) : null;
+                    setPrefs((p) => {
+                      const next = { ...p, [key]: v };
+                      // Авто-перерахунок Ккал лише коли користувач явно не
+                      // задав ціль (kcal === null) або коли вона дорівнює
+                      // попередньому авто-значенню. Інакше тиха перезапис
+                      // з'їдала кастомні значення (M7 з аудиту).
+                      if (key !== "dailyTargetKcal") {
+                        const prevProt = p.dailyTargetProtein_g ?? 0;
+                        const prevFat = p.dailyTargetFat_g ?? 0;
+                        const prevCarb = p.dailyTargetCarbs_g ?? 0;
+                        const prevCalc = Math.round(
+                          prevProt * 4 + prevFat * 9 + prevCarb * 4,
+                        );
+                        const isAutoKcal =
+                          p.dailyTargetKcal == null ||
+                          p.dailyTargetKcal === prevCalc;
+                        if (isAutoKcal) {
+                          const prot =
+                            key === "dailyTargetProtein_g" ? v : prevProt;
+                          const fat = key === "dailyTargetFat_g" ? v : prevFat;
+                          const carb =
+                            key === "dailyTargetCarbs_g" ? v : prevCarb;
+                          const calc = Math.round(
+                            (prot || 0) * 4 + (fat || 0) * 9 + (carb || 0) * 4,
+                          );
+                          next.dailyTargetKcal = calc > 0 ? calc : null;
+                        }
+                      }
+                      return next;
+                    });
+                  }}
+                  placeholder="—"
+                  disabled={busy || dayPlanBusy}
+                />
+              </div>
+            ))}
+          </div>
 
           <MacroRatioBar prefs={prefs} />
+
+          <MissingMacrosHint prefs={prefs} setPrefs={setPrefs} busy={busy} />
 
           <MacroKcalWarning prefs={prefs} setPrefs={setPrefs} busy={busy} />
 
