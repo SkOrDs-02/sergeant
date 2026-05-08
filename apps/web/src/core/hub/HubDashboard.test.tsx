@@ -38,6 +38,7 @@ const mocks = vi.hoisted(() => ({
   digestFresh: false,
   openHubModule: vi.fn(),
   openHubModuleWithAction: vi.fn(),
+  openHubSettingsSection: vi.fn(),
   // Capture refs for the latest sensor wiring + DndContext callbacks so
   // PR-12 (UX-roast 2026-Q2 / A9) can assert KeyboardSensor registration
   // and aria-live announcements without booting full pointer simulation.
@@ -109,6 +110,8 @@ vi.mock("@shared/lib/modules/hubNav", () => ({
   openHubModule: (...args: unknown[]) => mocks.openHubModule(...args),
   openHubModuleWithAction: (...args: unknown[]) =>
     mocks.openHubModuleWithAction(...args),
+  openHubSettingsSection: (...args: unknown[]) =>
+    mocks.openHubSettingsSection(...args),
 }));
 
 vi.mock("../insights/TodayFocusCard", () => ({
@@ -328,6 +331,7 @@ describe("HubDashboard", () => {
     mocks.digestFresh = false;
     mocks.openHubModule.mockClear();
     mocks.openHubModuleWithAction.mockClear();
+    mocks.openHubSettingsSection.mockClear();
     mocks.announce.mockClear();
     mocks.dndCapture.sensors = undefined;
     mocks.dndCapture.onDragStart = undefined;
@@ -465,6 +469,40 @@ describe("HubDashboard", () => {
         name: new RegExp(DASHBOARD_MODULE_LABELS.fizruk),
       }),
     ).toBeNull();
+  });
+
+  it("routes taps on inactive bento cards to Hub Settings → Дашборд instead of opening the module", () => {
+    // Only `finyk` is in vibe picks → fizruk/routine/nutrition cards
+    // render greyed-out. The card's copy promises «Неактивний —
+    // увімкнути в налаштуваннях» and the quick-add affordance is
+    // suppressed; tapping the card body must follow the same intent
+    // and dispatch `HUB_OPEN_SETTINGS_EVENT` for section "dashboard"
+    // (which scrolls to the «Модулі дашборду» toggle list) instead of
+    // calling `onOpenModule(id)` for a module the user explicitly did
+    // not opt into.
+    localStorage.setItem(VIBE_PICKS_KEY, JSON.stringify(["finyk"]));
+    const onOpenModule = vi.fn();
+
+    renderDashboard({ onOpenModule });
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: new RegExp(DASHBOARD_MODULE_LABELS.fizruk),
+      }),
+    );
+
+    expect(onOpenModule).not.toHaveBeenCalled();
+    expect(mocks.openHubSettingsSection).toHaveBeenCalledTimes(1);
+    expect(mocks.openHubSettingsSection).toHaveBeenCalledWith("dashboard");
+
+    // Active modules keep their normal "open the module" tap target —
+    // the inactive guard must not regress the happy path.
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: new RegExp(DASHBOARD_MODULE_LABELS.finyk),
+      }),
+    );
+    expect(onOpenModule).toHaveBeenCalledWith("finyk");
   });
 
   it("routes hero and insight callbacks to the correct dashboard actions", () => {

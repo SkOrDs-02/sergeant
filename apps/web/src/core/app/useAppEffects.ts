@@ -1,7 +1,10 @@
 import { useEffect } from "react";
 import type { NavigateFunction } from "react-router-dom";
 import { onHubBus } from "@shared/lib/modules/hubBus";
-import { HUB_OPEN_MODULE_EVENT } from "@shared/lib/modules/hubNav";
+import {
+  HUB_OPEN_MODULE_EVENT,
+  HUB_OPEN_SETTINGS_EVENT,
+} from "@shared/lib/modules/hubNav";
 import {
   REQUEST_PULL_EVENT,
   emitCloudPullComplete,
@@ -137,4 +140,29 @@ export function useAppEffects(deps: AppEffectsDeps): void {
     window.addEventListener(HUB_OPEN_MODULE_EVENT, onHubOpen);
     return () => window.removeEventListener(HUB_OPEN_MODULE_EVENT, onHubOpen);
   }, [openModule, setPwaAction, validActions]);
+
+  // Cross-cutting signal: switch to the Settings tab and (optionally)
+  // scroll to a named section. Used by surfaces that need to send the
+  // user to Hub Settings without prop-drilling react-router through the
+  // tree — most notably the inactive-module Bento card whose tap should
+  // open Hub Settings → Дашборд → "Модулі дашборду" instead of the
+  // (disabled) module itself.
+  const setHubViewStable = ui.setHubView;
+  useEffect(() => {
+    const onSettingsOpen = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ section?: string }>).detail || {};
+      const section = (detail.section ?? "").trim();
+      // Always flip the in-memory tab state immediately so the Settings
+      // tabpanel mounts even before the URL change is observed via
+      // `useLocation().search` — keeps the redirect feeling instant.
+      setHubViewStable("settings");
+      const target = section
+        ? `/?tab=settings#settings-${section}`
+        : `/?tab=settings`;
+      navigate(target);
+    };
+    window.addEventListener(HUB_OPEN_SETTINGS_EVENT, onSettingsOpen);
+    return () =>
+      window.removeEventListener(HUB_OPEN_SETTINGS_EVENT, onSettingsOpen);
+  }, [navigate, setHubViewStable]);
 }

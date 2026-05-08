@@ -3,6 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
 import { getModulePrefetchProps } from "../../lib/intentPrefetch";
 import {
   MODULE_CONFIGS,
@@ -377,7 +378,19 @@ export const SortableCard = memo(function SortableCard({
     [editMode, dndProps, intentProps],
   );
 
-  const handleClick = useCallback(() => onOpenModule(id), [onOpenModule, id]);
+  // Inactive cards route the user to Hub Settings → Дашборд → "Модулі
+  // дашборду" instead of opening the module itself. The card's copy
+  // already promises «Неактивний — увімкнути в налаштуваннях» and the
+  // quick-add affordance is suppressed for the same reason; navigating
+  // back to the toggle list is the affordance the user is being told
+  // about. See HubSettingsPage.tsx for the `#settings-dashboard` anchor.
+  const handleClick = useCallback(() => {
+    if (inactive) {
+      openHubSettingsSection("dashboard");
+      return;
+    }
+    onOpenModule(id);
+  }, [inactive, onOpenModule, id]);
 
   const cfg = MODULE_CONFIGS[id];
   if (!cfg) return null;

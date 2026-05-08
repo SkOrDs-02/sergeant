@@ -4,7 +4,9 @@ import type { Mock } from "vitest";
 import {
   openHubModule,
   openHubModuleWithAction,
+  openHubSettingsSection,
   HUB_OPEN_MODULE_EVENT,
+  HUB_OPEN_SETTINGS_EVENT,
 } from "./hubNav";
 
 // Vitest 4 widened the default `Mock` to `Mock<Procedure | Constructable>`,
@@ -65,6 +67,37 @@ describe("openHubModuleWithAction", () => {
   it("не диспатчить для невалідної дії", () => {
     // @ts-expect-error тестуємо runtime guard
     openHubModuleWithAction("finyk", "invalid_action");
+    expect(listener).not.toHaveBeenCalled();
+  });
+});
+
+describe("openHubSettingsSection", () => {
+  let listener: EventSpy;
+
+  beforeEach(() => {
+    listener = vi.fn<(event: Event) => void>();
+    window.addEventListener(HUB_OPEN_SETTINGS_EVENT, listener);
+  });
+  afterEach(() => {
+    window.removeEventListener(HUB_OPEN_SETTINGS_EVENT, listener);
+  });
+
+  it("диспатчить CustomEvent з section", () => {
+    openHubSettingsSection("dashboard");
+    expect(listener).toHaveBeenCalledTimes(1);
+    const detail = (listener.mock.calls[0]![0] as CustomEvent).detail;
+    expect(detail).toEqual({ section: "dashboard" });
+  });
+
+  it("без аргументу — section порожній рядок (відкрити Settings без скролу)", () => {
+    openHubSettingsSection();
+    expect(listener).toHaveBeenCalledTimes(1);
+    const detail = (listener.mock.calls[0]![0] as CustomEvent).detail;
+    expect(detail.section).toBe("");
+  });
+
+  it("не диспатчить для невалідної section", () => {
+    openHubSettingsSection("not-a-real-section");
     expect(listener).not.toHaveBeenCalled();
   });
 });
