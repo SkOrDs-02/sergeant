@@ -106,9 +106,13 @@ function peekRoutineDualWritePrev(): RoutineState | null {
  * Записує повний стан Рутини у MMKV.
  *
  * On success, also fires the Stage 4 PR #024 dual-write hook (mirror
- * to the local SQLite `routine_entries` table under
- * `feature.routine.sqlite_v2.dual_write`). Fire-and-forget — SQLite
- * errors never break the MMKV write path.
+ * completion ops to local SQLite `routine_entries`). Fire-and-forget
+ * — SQLite errors never break the MMKV write path. MMKV залишається
+ * source-of-truth для habits / tags / categories / prefs / pushups /
+ * habitOrder / completionNotes (відсутні у SQLite-схемі рутини).
+ *
+ * Stage 8 PR #056r dropped the `feature.routine.sqlite_v2.dual_write`
+ * flag — the dual-write fires whenever a context is registered.
  */
 export function saveRoutineState(next: RoutineState): boolean {
   const prev = peekRoutineDualWritePrev();

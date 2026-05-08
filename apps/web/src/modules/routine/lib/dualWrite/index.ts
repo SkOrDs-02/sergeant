@@ -20,10 +20,6 @@ import { probeRoutineParity } from "./parity.js";
  * Stage 4 PR #024 of `docs/planning/storage-roadmap.md`. Glues
  * together:
  *
- *  - the **gating** check (`feature.routine.sqlite_v2.dual_write`
- *    flag, default off) — provided by the host app at registration
- *    time so this module stays decoupled from the
- *    web/mobile-specific flag store implementations;
  *  - the **identity** resolver (`getUserId()`) — web reads from the
  *    React-Query `me` cache, mobile from session storage, both
  *    return `null` while bootstrapping;
@@ -33,6 +29,15 @@ import { probeRoutineParity } from "./parity.js";
  *    `createExpoSqliteRawClient`;
  *  - and the **adapter** (`applyRoutineDualWriteOps`) which performs
  *    the actual SQL writes.
+ *
+ * Stage 8 PR #056r removed `isEnabled()` from the context — the
+ * legacy `feature.routine.sqlite_v2.dual_write` flag was default-on
+ * with no toggle path remaining, and the routine SQLite schema is
+ * still narrower than the LS-side `RoutineState` (only `routine_entries`
+ * + `routine_streaks` exist; habits / tags / categories / prefs /
+ * pushups / habitOrder / completionNotes remain LS-only). The LS
+ * write therefore stays as the source-of-truth for non-completion
+ * fields and SQLite is mirrored unconditionally for completion ops.
  *
  * Why a registration shape: `routineStorage.ts` (the LS write layer)
  * sits below the auth + sqlite singletons in the dependency graph.
@@ -45,8 +50,6 @@ import { probeRoutineParity } from "./parity.js";
  *
  *  - The orchestrator's promise NEVER rejects — adapter or resolver
  *    errors are caught and logged via the registered logger.
- *  - When the flag is off, no resolver is called and no diff is
- *    computed (zero per-write overhead).
  *  - When `getUserId()` or `getMigrationClient()` return null/undefined
  *    the call is a no-op (`reason: "user-id-missing"` /
  *    `"sqlite-unavailable"`) — useful for the early boot window
@@ -54,8 +57,6 @@ import { probeRoutineParity } from "./parity.js";
  */
 
 export interface RoutineDualWriteContext {
-  /** Returns true while the user has the dual-write flag enabled. */
-  isEnabled(): boolean;
   /** Owning user id, or `null` if not yet known. */
   getUserId(): string | null;
   /**
@@ -133,7 +134,6 @@ async function runDualWriteRoutineState(
 ): Promise<DualWriteOutcome> {
   const ctx = registeredContext;
   if (!ctx) return { status: "skipped", reason: "context-unset" };
-  if (!ctx.isEnabled()) return { status: "skipped", reason: "flag-off" };
 
   const ops = diffRoutineDualWriteOps(prev, next);
   if (ops.length === 0) return { status: "skipped", reason: "no-ops" };
@@ -207,7 +207,6 @@ export type DualWriteOutcome =
       status: "skipped";
       reason:
         | "context-unset"
-        | "flag-off"
         | "no-ops"
         | "user-id-missing"
         | "sqlite-unavailable";

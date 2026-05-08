@@ -133,9 +133,14 @@ function peekRoutineDualWritePrev(): RoutineState | null {
  * Returns `true` on success, `false` if localStorage threw (e.g. quota exceeded).
  *
  * On success, also fires the Stage 4 PR #024 dual-write hook (mirror
- * to local SQLite under `feature.routine.sqlite_v2.dual_write`). The
- * hook is fire-and-forget — SQLite latency or failures never block
- * or break the LS write.
+ * completion ops to local SQLite `routine_entries`). The hook is
+ * fire-and-forget — SQLite latency or failures never block or break
+ * the LS write. LS remains source-of-truth for habits / tags /
+ * categories / prefs / pushups / habitOrder / completionNotes
+ * (those fields are not part of the routine SQLite schema yet).
+ *
+ * Stage 8 PR #056r dropped the `feature.routine.sqlite_v2.dual_write`
+ * flag — the dual-write fires whenever a context is registered.
  */
 export function saveRoutineState(next: RoutineState): boolean {
   const prev = peekRoutineDualWritePrev();

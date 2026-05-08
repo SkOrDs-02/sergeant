@@ -34,12 +34,17 @@ describe("featureFlags", () => {
     expect(getFlag("finyk_subscriptions_category")).toBe(sub!.defaultValue);
   });
 
-  it("Routine dual-write увімкнений за замовчуванням і може бути вимкнений користувачем", async () => {
-    const { getFlag, setFlag } = await loadFresh();
-    expect(getFlag("feature.routine.sqlite_v2.dual_write")).toBe(true);
-
-    expect(setFlag("feature.routine.sqlite_v2.dual_write", false)).toBe(true);
+  it("Stage 8 PR #056r drop: feature.routine.sqlite_v2.dual_write більше не існує у реєстрі", async () => {
+    const { getFlag, setFlag, FLAG_REGISTRY } = await loadFresh();
+    expect(
+      FLAG_REGISTRY.find(
+        (f) => f.id === "feature.routine.sqlite_v2.dual_write",
+      ),
+    ).toBeUndefined();
+    // getFlag/setFlag for an unknown id behave like for any other unknown
+    // id — false / no-op (same contract as `does_not_exist` below).
     expect(getFlag("feature.routine.sqlite_v2.dual_write")).toBe(false);
+    expect(setFlag("feature.routine.sqlite_v2.dual_write", true)).toBe(false);
   });
 
   it("Fizruk dual-write увімкнений за замовчуванням і може бути вимкнений користувачем", async () => {

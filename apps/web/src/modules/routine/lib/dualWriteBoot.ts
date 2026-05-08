@@ -10,17 +10,16 @@
  * call from `RoutineApp` once the user is known and the React-Query
  * `me` cache + sqlite singleton are reachable.
  *
+ * Stage 8 PR #056r dropped the `isFlagEnabled` callback — the
+ * `feature.routine.sqlite_v2.dual_write` flag was removed from the
+ * registry once it had been default-on with no toggle path remaining.
+ * Registration is now `userId`-gated only.
+ *
  * Why not register from `main.tsx` directly:
  *
  *  - `getUserId` must read from the React-Query cache that lives below
  *    `<App />`, so the registration has to happen after the provider
  *    tree mounts. A React hook is the cleanest cut.
- *  - The flag value is reactive — `useFlag(...)` re-renders the call
- *    site when the user toggles the experiment in Settings. Treating
- *    `flag` as a dependency lets us register/de-register on toggle
- *    without a page reload, which keeps `isRoutineDualWriteRegistered()`
- *    honest (the LS-write layer reads previous state only when the
- *    context is installed).
  *
  * The actual `registerRoutineDualWriteContext` is provided by the
  * dual-write barrel; this module is purely the wiring layer.
@@ -42,31 +41,24 @@ import {
  */
 export interface BootRoutineDualWriteInput {
   getUserId(): string | null;
-  isFlagEnabled(): boolean;
 }
 
 /**
  * Install the routine dual-write context.
  *
  * Returns a teardown function. Callers should treat the return value as
- * `useEffect` cleanup so toggling the flag off in Settings (or
- * unmounting the module shell) clears the context and the LS-write
- * layer can drop its `peekRoutineDualWritePrev` overhead immediately.
+ * `useEffect` cleanup so signing out (or unmounting the module shell)
+ * clears the context and the LS-write layer can drop its
+ * `peekRoutineDualWritePrev` overhead immediately.
  *
- * The context's resolvers are intentionally simple:
- *  - `isEnabled` calls back into `isFlagEnabled` so a flag toggle
- *    between writes is observed without re-registration; the React
- *    hook _also_ swaps the registration on flag change so
- *    `isRoutineDualWriteRegistered()` reflects the live truth.
- *  - `getMigrationClient` resolves the lazy sqlite-wasm singleton on
- *    first write — never on registration — so the SQLite chunk doesn't
- *    download until the first dual-write actually fires.
+ * `getMigrationClient` resolves the lazy sqlite-wasm singleton on the
+ * first write — never on registration — so the SQLite chunk doesn't
+ * download until the first dual-write actually fires.
  */
 export function bootRoutineDualWrite(
   input: BootRoutineDualWriteInput,
 ): () => void {
   const ctx: RoutineDualWriteContext = {
-    isEnabled: () => input.isFlagEnabled(),
     getUserId: () => input.getUserId(),
     getMigrationClient: async (): Promise<SqliteMigrationClient | null> => {
       const handle = await getSqliteDb();

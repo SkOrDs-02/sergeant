@@ -43,40 +43,33 @@ afterEach(() => {
 });
 
 describe("bootRoutineDualWrite (web)", () => {
-  it("registers a single context and forwards getUserId/isFlagEnabled", () => {
+  it("registers a single context and forwards getUserId", () => {
     const teardown = vi.fn();
     mockRegister.mockReturnValue(teardown);
 
     const getUserId = vi.fn(() => "user-1");
-    const isFlagEnabled = vi.fn(() => true);
 
-    const result = bootRoutineDualWrite({ getUserId, isFlagEnabled });
+    const result = bootRoutineDualWrite({ getUserId });
 
     expect(mockRegister).toHaveBeenCalledTimes(1);
     expect(result).toBe(teardown);
 
     const ctx = mockRegister.mock.calls[0]![0] as {
-      isEnabled(): boolean;
       getUserId(): string | null;
       getNow(): string;
     };
-    expect(ctx.isEnabled()).toBe(true);
-    expect(isFlagEnabled).toHaveBeenCalledTimes(1);
     expect(ctx.getUserId()).toBe("user-1");
     expect(getUserId).toHaveBeenCalledTimes(1);
   });
 
-  it("reads the live flag value on every isEnabled() call (no caching)", () => {
+  it("Stage 8 PR #056r: registered context has no isEnabled/isFlagEnabled callback", () => {
     mockRegister.mockReturnValue(() => {});
-    let live = false;
-    bootRoutineDualWrite({
-      getUserId: () => "u",
-      isFlagEnabled: () => live,
-    });
-    const ctx = mockRegister.mock.calls[0]![0] as { isEnabled(): boolean };
-    expect(ctx.isEnabled()).toBe(false);
-    live = true;
-    expect(ctx.isEnabled()).toBe(true);
+
+    bootRoutineDualWrite({ getUserId: () => "u" });
+
+    const ctx = mockRegister.mock.calls[0]![0] as Record<string, unknown>;
+    expect(ctx).not.toHaveProperty("isEnabled");
+    expect(ctx).not.toHaveProperty("isFlagEnabled");
   });
 
   it("getMigrationClient resolves via getSqliteDb().migrationClient()", async () => {
@@ -87,7 +80,6 @@ describe("bootRoutineDualWrite (web)", () => {
 
     bootRoutineDualWrite({
       getUserId: () => "u",
-      isFlagEnabled: () => true,
     });
 
     const ctx = mockRegister.mock.calls[0]![0] as {
@@ -104,7 +96,6 @@ describe("bootRoutineDualWrite (web)", () => {
 
     bootRoutineDualWrite({
       getUserId: () => "u",
-      isFlagEnabled: () => true,
     });
     const ctx = mockRegister.mock.calls[0]![0] as { getNow(): string };
     expect(ctx.getNow()).toBe("2026-05-03T12:00:00.000Z");
@@ -114,7 +105,6 @@ describe("bootRoutineDualWrite (web)", () => {
     mockRegister.mockReturnValue(() => {});
     bootRoutineDualWrite({
       getUserId: () => "u",
-      isFlagEnabled: () => true,
     });
     const ctx = mockRegister.mock.calls[0]![0] as { logger?: unknown };
     expect(ctx.logger).toBeUndefined();

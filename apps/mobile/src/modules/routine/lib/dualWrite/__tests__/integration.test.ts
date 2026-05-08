@@ -86,7 +86,6 @@ describe("dualWriteRoutineState orchestrator (mobile)", () => {
     overrides: Partial<RoutineDualWriteContext> = {},
   ): RoutineDualWriteContext {
     return {
-      isEnabled: () => true,
       getUserId: () => USER_ID,
       getMigrationClient: async () => client,
       getNow: () => T1,
@@ -110,17 +109,6 @@ describe("dualWriteRoutineState orchestrator (mobile)", () => {
     expect(await dualWriteRoutineState(prev, next)).toEqual({
       status: "skipped",
       reason: "context-unset",
-    });
-    expect(listEntries()).toEqual([]);
-  });
-
-  it("returns flag-off when isEnabled() is false", async () => {
-    registerRoutineDualWriteContext(makeContext({ isEnabled: () => false }));
-    const prev = makeState([], {});
-    const next = makeState([{ id: "h1", name: "X" }], { h1: ["2026-05-01"] });
-    expect(await dualWriteRoutineState(prev, next)).toEqual({
-      status: "skipped",
-      reason: "flag-off",
     });
     expect(listEntries()).toEqual([]);
   });

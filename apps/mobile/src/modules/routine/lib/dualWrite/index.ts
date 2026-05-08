@@ -18,12 +18,19 @@ import { diffRoutineDualWriteOps } from "./diff";
  * MMKV write; this module decides whether to mirror to the local
  * expo-sqlite database based on the registered context.
  *
+ * Stage 8 PR #056r removed `isEnabled()` from the context — the
+ * legacy `feature.routine.sqlite_v2.dual_write` flag was default-on
+ * with no toggle path remaining. Registration is `userId`-gated only.
+ * The MMKV write stays as the source-of-truth for non-completion
+ * routine state (habits / tags / categories / prefs / pushups /
+ * habitOrder / completionNotes) because the routine SQLite schema is
+ * narrower (only `routine_entries` + `routine_streaks`).
+ *
  * Decoupling: see the web copy for the rationale (avoids cycles
  * between LS layer ↔ auth ↔ sqlite singleton, keeps tests independent).
  */
 
 export interface RoutineDualWriteContext {
-  isEnabled(): boolean;
   getUserId(): string | null;
   getMigrationClient(): Promise<SqliteMigrationClient | null>;
   getNow(): string;
@@ -55,7 +62,6 @@ export async function dualWriteRoutineState(
 ): Promise<DualWriteOutcome> {
   const ctx = registeredContext;
   if (!ctx) return { status: "skipped", reason: "context-unset" };
-  if (!ctx.isEnabled()) return { status: "skipped", reason: "flag-off" };
 
   const ops = diffRoutineDualWriteOps(prev, next);
   if (ops.length === 0) return { status: "skipped", reason: "no-ops" };
@@ -104,7 +110,6 @@ export type DualWriteOutcome =
       status: "skipped";
       reason:
         | "context-unset"
-        | "flag-off"
         | "no-ops"
         | "user-id-missing"
         | "sqlite-unavailable";

@@ -55,17 +55,10 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
     defaultValue: false,
   },
   {
-    id: "feature.routine.sqlite_v2.dual_write",
-    label: "Routine — dual-write MMKV↔SQLite",
-    description:
-      "Кожен write у MMKV Рутини додатково мирорить у локальну SQLite (`routine_entries`). Reads ще беруться з MMKV. Stage 8 PR #055r1 storage-roadmap — default-on rollout. Best-effort: помилка SQLite-запису не ламає MMKV. Default: on.",
-    defaultValue: true,
-  },
-  {
     id: "feature.routine.sqlite_v2.read_sqlite",
     label: "Routine — read completions from SQLite",
     description:
-      "Completions читаються з локальної SQLite (`routine_entries`) замість MMKV blob. MMKV-write залишається як safety net. Stage 8 PR #055r2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
+      "Completions читаються з локальної SQLite (`routine_entries`) замість MMKV blob. MMKV-write залишається як source-of-truth для habits / tags / categories / prefs / pushups / habitOrder / completionNotes (відсутні у SQLite-схемі рутини). Stage 8 PR #055r2 storage-roadmap — default-on rollout. SQLite mirror для completions — unconditional з PR #056r. Default: on.",
     defaultValue: true,
   },
   {

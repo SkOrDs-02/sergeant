@@ -7,8 +7,10 @@ import type { RoutineState } from "@sergeant/routine-domain";
  *
  * Stage 4 PR #024 of `docs/planning/storage-roadmap.md`. The
  * orchestrator in `./index.ts` calls this on every successful
- * localStorage write when the user has opted in via the
- * `feature.routine.sqlite_v2.dual_write` flag.
+ * localStorage write whenever a dual-write context is registered.
+ * Stage 8 PR #056r dropped the `feature.routine.sqlite_v2.dual_write`
+ * gate — the diff/apply pipeline fires unconditionally for completion
+ * ops.
  *
  * Mapping rules:
  *

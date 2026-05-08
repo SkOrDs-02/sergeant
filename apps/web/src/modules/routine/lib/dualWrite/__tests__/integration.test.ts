@@ -73,7 +73,6 @@ describe("dualWriteRoutineState orchestrator", () => {
     overrides: Partial<RoutineDualWriteContext> = {},
   ): RoutineDualWriteContext {
     return {
-      isEnabled: () => true,
       getUserId: () => USER_ID,
       getMigrationClient: async () => handle.client,
       getNow: () => T1,
@@ -87,15 +86,6 @@ describe("dualWriteRoutineState orchestrator", () => {
     const next = makeState([{ id: "h1", name: "X" }], { h1: ["2026-05-01"] });
     const result = await dualWriteRoutineState(prev, next);
     expect(result).toEqual({ status: "skipped", reason: "context-unset" });
-    expect(await listEntries(handle.client)).toEqual([]);
-  });
-
-  it("returns flag-off when isEnabled() returns false", async () => {
-    registerRoutineDualWriteContext(makeContext({ isEnabled: () => false }));
-    const prev = makeState([], {});
-    const next = makeState([{ id: "h1", name: "X" }], { h1: ["2026-05-01"] });
-    const result = await dualWriteRoutineState(prev, next);
-    expect(result).toEqual({ status: "skipped", reason: "flag-off" });
     expect(await listEntries(handle.client)).toEqual([]);
   });
 
@@ -156,7 +146,7 @@ describe("dualWriteRoutineState orchestrator", () => {
     expect(result).toEqual({ status: "skipped", reason: "sqlite-unavailable" });
   });
 
-  it("applies completion-add to SQLite when context is healthy and flag is on", async () => {
+  it("applies completion-add to SQLite when context is healthy", async () => {
     registerRoutineDualWriteContext(makeContext());
     const prev = makeState([{ id: "h1", name: "Drink" }], {});
     const next = makeState([{ id: "h1", name: "Drink" }], {

@@ -2813,16 +2813,85 @@ value JSON)`)». Та редакція об'єднувала **дві** орто
   PWA-canary stability gate (нова — додана у risk register
   §5 після #2179 incident).
 
-##### **PR #056r — `chore(routine): remove LS-write safety net`** 📋 ROADMAP
+##### **PR #056r — `chore(routine): drop dual-write feature-flag gating`** 📋 ROADMAP — REVISED
 
-- Drop `localStorage.setItem(STORAGE_KEYS.ROUTINE, ...)` callsite у
-  `apps/{web,mobile}/src/modules/routine/lib/routineStorage.ts ::
-saveRoutineState`. Drop `triggerRoutineDualWrite` шар повністю
-  (вже unconditional default-on).
-- Drop `feature.routine.sqlite_v2.dual_write` у featureFlags.
-- **Done criteria.** Жодних `routine.ls.write` breadcrumbs у
-  Sentry за 14 днів post-merge. Bundle drop ~3 KB.
-- **Dep.** PR #055r2 (read default-on, ≥ 14 днів стабільно).
+> **Re-interpretation note (2026-05-08).** The original Phase 4 plan
+> for #056r was "drop LS-write safety net" — i.e. delete the
+> `localStorage.setItem(STORAGE_KEYS.ROUTINE, …)` callsite in
+> `saveRoutineState`. That literal reading is **not safe** for
+> Routine because the SQLite schema (`packages/db-schema/src/sqlite/routine.ts`)
+> only covers `routine_entries` (completions + denormalised habit
+> name) and `routine_streaks` (server-driven aggregates). Seven of
+> the eight fields in `RoutineState` — `habits`, `tags`,
+> `categories`, `prefs`, `pushupsByDate`, `habitOrder`,
+> `completionNotes` — are **LS/MMKV-only** and would be silently
+> lost on every `saveRoutineState` if the LS write were dropped
+> today.[^routine-schema-gap]
+>
+> **Revised scope:** drop only the feature-flag gating layer (the
+> `feature.routine.sqlite_v2.dual_write` flag itself plus the
+> `isEnabled()` callback on `RoutineDualWriteContext`). LS/MMKV-write
+> remains as the **primary** writer for the seven non-completion
+> fields (and as a safety mirror for the one field that is in SQLite
+> too). The completion-mirror to `routine_entries` becomes
+> unconditional whenever a dual-write context is registered. A full
+> Routine SQLite cut-over (drop LS-write entirely) is **deferred to
+> a future stage** — see Stage 10 candidate footnote below.
+
+- Drop `feature.routine.sqlite_v2.dual_write` from
+  `apps/{web,mobile}/src/core/lib/featureFlags.ts` (and from the
+  governance registry in `docs/governance/feature-flags.md`).
+- Drop `isEnabled()` from `RoutineDualWriteContext` interface plus
+  the corresponding `if (!ctx.isEnabled()) → "flag-off"` skip-logic
+  in `dualWriteRoutineState()`. Remove `"flag-off"` from
+  `DualWriteOutcome.reason` union.
+- Drop `isFlagEnabled` from `BootRoutineDualWriteInput` and the
+  `useFlag(FLAG_ID)` / `getFlag(FLAG_ID)` reads in
+  `useRoutineDualWriteBoot`. The hook now boots dual-write
+  unconditionally as soon as `userId` is known.
+- **Out of scope (revised, was in original):**
+  `localStorage.setItem(STORAGE_KEYS.ROUTINE, …)` and
+  `triggerRoutineDualWrite()` STAY. Routine LS-write is still the
+  source-of-truth for non-completion fields.
+- **Done criteria.** Flag entry gone from registries. CI grep gate
+  proves no remaining references to
+  `feature.routine.sqlite_v2.dual_write` outside roadmap/changelog.
+  Existing `dualwrite.routine.*` Sentry tags continue to populate
+  with `applied`/`skipped(reason)` buckets identical to pre-merge
+  shape (minus `flag-off`).
+- **Dep.** PR #055r2 (read default-on; ≥ 14 днів стабільно is no
+  longer enforced — dev-stage, no users).
+
+[^routine-schema-gap]:
+    **Routine SQLite schema gap.** Unlike Fizruk
+    / Nutrition / Finyk (which mirror every LS/MMKV key into
+    normalised SQLite tables and so can drop LS-write outright per
+    PR #056f / #056n / #056k), Routine's PR #022 SPIKE was
+    deliberately narrow: only completions and streaks live in
+    SQLite. `habits[]`, `tags[]`, `categories[]`, `prefs{}`,
+    `pushupsByDate{}`, `habitOrder[]`, `completionNotes{}` are
+    **not** part of the SQLite schema, and the dual-write `diff.ts`
+    only emits `completion-add` / `completion-remove` /
+    `habit-rename` ops. Until the schema gap is closed (see Stage
+    10 candidate below), dropping Routine LS-write is silent
+    data-loss.
+
+##### **Stage 10 candidate — extend Routine SQLite schema to full LS coverage** 📋 PROPOSED
+
+- New SQLite tables (`routine_habits`, `routine_tags`,
+  `routine_categories`, `routine_prefs`, `routine_pushups`,
+  `routine_habit_order`, `routine_completion_notes`) + Drizzle
+  schemas + sequential migration (per Hard rule #4).
+- Extend `dualWrite/diff.ts` to emit ops for habit-create /
+  habit-update / habit-archive / habit-delete / habit-restore /
+  tag-create / tag-update / tag-delete / category-create /
+  category-update / category-delete / pref-set / pushup-add /
+  habit-order-set / completion-note-set.
+- New parity probe + read-path adapter, then a real PR #056r-bis
+  (or PR #056r-final) that **does** drop the
+  `localStorage.setItem(STORAGE_KEYS.ROUTINE, …)` callsite.
+- Until then, Routine remains LS-primary / SQLite-mirror for
+  non-completion fields.
 
 ##### **PR #057r — `chore(routine): drop LS reader paths + tombstone STORAGE_KEYS.ROUTINE`** 📋 ROADMAP
 

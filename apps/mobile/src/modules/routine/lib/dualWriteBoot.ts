@@ -7,12 +7,10 @@
  * dual-write pipeline stayed dormant in production. Mobile mirror of
  * `apps/web/src/modules/routine/lib/dualWriteBoot.ts`.
  *
- * Mobile flag access is synchronous via the shared MMKV blob (`@hub_flags_v1`),
- * not a React hook, so the React layer reads the live flag value on
- * every dual-write trigger via `isFlagEnabled()`. The hook
- * (`useRoutineDualWriteBoot`) re-registers when `useFlag` reports a
- * change so `isRoutineDualWriteRegistered()` stays in sync with the
- * persisted toggle for the LS-side `peekRoutineDualWritePrev` shortcut.
+ * Stage 8 PR #056r dropped the `isFlagEnabled` callback — the
+ * `feature.routine.sqlite_v2.dual_write` flag was removed once it had
+ * been default-on with no toggle path remaining. Registration is now
+ * `userId`-gated only.
  */
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
@@ -25,7 +23,6 @@ import {
 
 export interface BootRoutineDualWriteInput {
   getUserId(): string | null;
-  isFlagEnabled(): boolean;
 }
 
 /**
@@ -40,7 +37,6 @@ export function bootRoutineDualWrite(
   input: BootRoutineDualWriteInput,
 ): () => void {
   const ctx: RoutineDualWriteContext = {
-    isEnabled: () => input.isFlagEnabled(),
     getUserId: () => input.getUserId(),
     getMigrationClient: async (): Promise<SqliteMigrationClient | null> => {
       return getSqliteMigrationClient();

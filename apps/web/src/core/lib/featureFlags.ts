@@ -60,18 +60,10 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     experimental: true,
   },
   {
-    id: "feature.routine.sqlite_v2.dual_write",
-    label: "Routine — dual-write LS↔SQLite",
-    description:
-      "Кожен write у localStorage Рутини додатково мирорить у локальну SQLite (`routine_entries`). Reads ще беруться з LS. Stage 8 PR #055r1 storage-roadmap — default-on rollout. Best-effort: помилка SQLite-запису не ламає LS. Default: on.",
-    defaultValue: true,
-    experimental: true,
-  },
-  {
     id: "feature.routine.sqlite_v2.read_sqlite",
     label: "Routine — read completions from SQLite",
     description:
-      "Completions читаються з локальної SQLite (`routine_entries`) замість LS blob. LS-write залишається як safety net. Stage 8 PR #055r2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
+      "Completions читаються з локальної SQLite (`routine_entries`) замість LS blob. LS-write залишається як source-of-truth для habits / tags / categories / prefs / pushups / habitOrder / completionNotes (відсутні у SQLite-схемі рутини). Stage 8 PR #055r2 storage-roadmap — default-on rollout. SQLite mirror для completions — unconditional з PR #056r. Default: on.",
     defaultValue: true,
     experimental: true,
   },
