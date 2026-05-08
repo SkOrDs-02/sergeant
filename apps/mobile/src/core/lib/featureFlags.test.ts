@@ -46,13 +46,13 @@ describe("mobile featureFlags", () => {
     expect(flag?.defaultValue).toBe(true);
   });
 
-  it("keeps Routine sqlite reads default-off while Stage 8 read rollout is paused", () => {
+  it("flips Routine sqlite reads default-on for Stage 8 PR #055r2 re-rollout", () => {
     const flag = EXPERIMENTAL_FLAGS.find(
       (item) => item.id === "feature.routine.sqlite_v2.read_sqlite",
     );
 
     expect(flag).toBeDefined();
-    expect(flag?.defaultValue).toBe(false);
+    expect(flag?.defaultValue).toBe(true);
   });
 
   it("keeps Fizruk sqlite reads default-off while Stage 8 read rollout is paused", () => {
