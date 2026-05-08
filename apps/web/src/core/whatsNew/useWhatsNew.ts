@@ -85,14 +85,22 @@ export function useWhatsNew(opts: UseWhatsNewOptions): UseWhatsNewResult {
   );
 
   const onCtaClick = useCallback(() => {
-    if (!release || !release.cta) {
+    if (!release) {
       setOpen(false);
       return;
     }
-    trackEvent(ANALYTICS_EVENTS.WHATS_NEW_CTA_CLICKED, {
-      id: release.id,
-      href: release.cta.href,
-    });
+    // Releases without a CTA still close via this handler when the
+    // user taps the only "Зрозуміло"-style button. Persist regardless
+    // so a re-mount does not re-show the same release — matches the
+    // hook's docstring contract ("незалежно від via … зберігаємо
+    // lastSeenId"). The analytics event is CTA-specific, so it only
+    // fires when the release actually had a CTA configured.
+    if (release.cta) {
+      trackEvent(ANALYTICS_EVENTS.WHATS_NEW_CTA_CLICKED, {
+        id: release.id,
+        href: release.cta.href,
+      });
+    }
     persistAndClose(release.id);
   }, [release, persistAndClose]);
 

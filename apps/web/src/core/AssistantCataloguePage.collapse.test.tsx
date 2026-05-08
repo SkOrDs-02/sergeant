@@ -126,12 +126,15 @@ describe("AssistantCataloguePage — group collapsing", () => {
   it("renders the legend explaining Чіп / Ризик / Новинка badges", () => {
     render(<AssistantCataloguePage onClose={() => {}} />);
     const legend = screen.getByTestId("catalogue-legend");
+    // BadgeChip renders sentence-case labels ("Чіп", "Ризик", "Новинка");
+    // any visual UPPERCASE comes from CSS `text-transform`, which jsdom
+    // does not apply to `textContent`. Match against the rendered text.
     expect(legend.textContent).toMatch(/Позначки/);
-    expect(legend.textContent).toMatch(/ЧІП/);
+    expect(legend.textContent).toMatch(/Чіп/);
     expect(legend.textContent).toMatch(/швидкий сценарій/);
-    expect(legend.textContent).toMatch(/РИЗИК/);
+    expect(legend.textContent).toMatch(/Ризик/);
     expect(legend.textContent).toMatch(/критична дія/);
-    expect(legend.textContent).toMatch(/НОВИНКА/);
+    expect(legend.textContent).toMatch(/Новинка/);
     expect(legend.textContent).toMatch(/нещодавно додано/);
   });
 
