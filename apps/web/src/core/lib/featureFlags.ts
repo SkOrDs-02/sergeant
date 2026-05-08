@@ -87,8 +87,8 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     id: "feature.fizruk.sqlite_v2.read_sqlite",
     label: "Fizruk — read from SQLite",
     description:
-      "Workouts / custom exercises / measurements читаються з локальної SQLite (`fizruk_*`) замість LS. LS-write залишається як safety net. Stage 8 PR #055f2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: off.",
-    defaultValue: false,
+      "Workouts / custom exercises / measurements читаються з локальної SQLite (`fizruk_*`) замість LS. LS-write залишається як safety net. Stage 8 PR #055f2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
+    defaultValue: true,
     experimental: true,
   },
   {

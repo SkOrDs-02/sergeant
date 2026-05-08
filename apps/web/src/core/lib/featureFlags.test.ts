@@ -58,12 +58,12 @@ describe("featureFlags", () => {
     expect(getFlag("feature.routine.sqlite_v2.read_sqlite")).toBe(false);
   });
 
-  it("keeps Fizruk read_sqlite default-off while Stage 8 read rollout is paused", async () => {
+  it("flips Fizruk read_sqlite default-on for Stage 8 PR #055f2 re-rollout", async () => {
     const { getFlag, setFlag } = await loadFresh();
-    expect(getFlag("feature.fizruk.sqlite_v2.read_sqlite")).toBe(false);
-
-    expect(setFlag("feature.fizruk.sqlite_v2.read_sqlite", true)).toBe(true);
     expect(getFlag("feature.fizruk.sqlite_v2.read_sqlite")).toBe(true);
+
+    expect(setFlag("feature.fizruk.sqlite_v2.read_sqlite", false)).toBe(true);
+    expect(getFlag("feature.fizruk.sqlite_v2.read_sqlite")).toBe(false);
   });
 
   it("Nutrition dual-write увімкнений за замовчуванням для Stage 8 PR #055n1", async () => {

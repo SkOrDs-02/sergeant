@@ -79,8 +79,8 @@ export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
     id: "feature.fizruk.sqlite_v2.read_sqlite",
     label: "Fizruk — read state from SQLite",
     description:
-      "Workouts / measurements / custom exercises читаються з локальної SQLite (`fizruk_*` таблиці) замість MMKV blob. MMKV-write залишається як safety net. Stage 8 PR #055f2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: off.",
-    defaultValue: false,
+      "Workouts / measurements / custom exercises читаються з локальної SQLite (`fizruk_*` таблиці) замість MMKV blob. MMKV-write залишається як safety net. Stage 8 PR #055f2 storage-roadmap — default-on rollout. Потребує увімкненого dual-write. Default: on.",
+    defaultValue: true,
   },
   {
     id: "feature.nutrition.sqlite_v2.dual_write",

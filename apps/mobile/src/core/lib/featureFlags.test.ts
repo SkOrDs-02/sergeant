@@ -55,13 +55,13 @@ describe("mobile featureFlags", () => {
     expect(flag?.defaultValue).toBe(true);
   });
 
-  it("keeps Fizruk sqlite reads default-off while Stage 8 read rollout is paused", () => {
+  it("flips Fizruk sqlite reads default-on for Stage 8 PR #055f2 re-rollout", () => {
     const flag = EXPERIMENTAL_FLAGS.find(
       (item) => item.id === "feature.fizruk.sqlite_v2.read_sqlite",
     );
 
     expect(flag).toBeDefined();
-    expect(flag?.defaultValue).toBe(false);
+    expect(flag?.defaultValue).toBe(true);
   });
 
   it("keeps Nutrition sqlite reads default-off while Stage 8 read rollout is paused", () => {
