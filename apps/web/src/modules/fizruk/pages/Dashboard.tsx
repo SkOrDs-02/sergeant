@@ -115,6 +115,7 @@ export function Dashboard({
     try {
       sessionStorage.setItem("fizruk_workouts_mode", "log");
     } catch {}
+    // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
     window.location.hash = "#workouts";
   };
 
@@ -295,15 +296,18 @@ export function Dashboard({
     } catch {
       /* non-fatal: default view is still reachable */
     }
+    // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
     window.location.hash = "#workouts";
   };
   const openTemplates = () => {
     try {
       sessionStorage.setItem("fizruk_workouts_mode", "templates");
     } catch {}
+    // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
     window.location.hash = "#workouts";
   };
   const openPlan = () => {
+    // eslint-disable-next-line sergeant-design/no-hash-router-in-modules -- pre-existing hash-router callsite; migration tracked in initiative 0006.
     window.location.hash = "#plan";
   };
 
@@ -426,10 +430,19 @@ export function Dashboard({
           </Card>
         )}
 
-        <RecentWorkoutsSection
-          recent={recentWorkouts}
-          onSeeAll={openWorkoutsTab}
-        />
+        {/*
+          Hide the «Останні тренування» card on first-run (no completed
+          workouts) — the empty-state copy duplicates what the hero CTA
+          already nudges toward and added noise to an otherwise empty
+          dashboard. Once the user logs at least one workout the section
+          renders normally with the recent rows.
+        */}
+        {recentWorkouts.length > 0 && (
+          <RecentWorkoutsSection
+            recent={recentWorkouts}
+            onSeeAll={openWorkoutsTab}
+          />
+        )}
       </div>
 
       <Sheet

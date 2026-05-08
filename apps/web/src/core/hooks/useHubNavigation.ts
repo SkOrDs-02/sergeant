@@ -92,7 +92,14 @@ export function useHubNavigation(): HubNavigation {
       });
       setModuleAnimClass("hub-enter");
       setActiveModule(null);
-      navigate(`/#settings-${moduleId}`, { replace: false });
+      // `?tab=settings` is the source of truth for the Hub view (see
+      // `useHubUIState.readViewFromSearch`). Without it, the URL hash
+      // says `#settings-<id>` but the Hub still renders the Dashboard
+      // tab — the user lands on hub home instead of the settings
+      // section. The hash drives the in-tab scroll-to-anchor behaviour
+      // (see `HubSettingsPage`'s `readSettingsSectionHash`), so we need
+      // both the query param and the hash here.
+      navigate(`/?tab=settings#settings-${moduleId}`, { replace: false });
     },
     [navigate],
   );

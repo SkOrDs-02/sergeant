@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { cn } from "@shared/lib/ui/cn";
 import { BodyAtlas } from "./BodyAtlas";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useRecovery } from "../hooks/useRecovery";
@@ -77,12 +78,30 @@ export function RecoveryFocusCard({
   return (
     <Card as="section" radius="lg" aria-label="Відновлення та фокус тренування">
       <div className="flex items-start justify-between gap-2">
+        {/*
+          Toggle row was previously a borderless trailing-chevron button —
+          read as plain heading text on the panel background. Switched to a
+          leading caret + soft hover surface (matches `JournalEntryCard`'s
+          collapse pattern) so the row reads as an obvious tap target. The
+          Atlas CTA next to it moved from `ghost` to the `fizruk-soft`
+          variant for the same reason: a filled, branded pill is unambiguous
+          where a transparent ghost label looked like inert text.
+        */}
         <button
           type="button"
-          className="min-w-0 flex-1 text-left flex items-start gap-2 rounded-xl -m-1 p-1 hover:bg-panelHi/80 transition-colors"
+          className="min-w-0 flex-1 text-left flex items-start gap-2 rounded-xl px-2 py-2 -mx-2 -my-2 hover:bg-panelHi/80 active:bg-panelHi transition-colors"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
         >
+          <span
+            aria-hidden
+            className={cn(
+              "inline-flex items-center justify-center w-5 h-5 mt-0.5 rounded-md text-muted shrink-0 text-xs transition-transform",
+              open ? "rotate-180" : "rotate-0",
+            )}
+          >
+            ▾
+          </span>
           <div className="min-w-0 flex-1">
             <h2 className="text-base font-semibold text-text">
               Відновлення й фокус
@@ -92,15 +111,9 @@ export function RecoveryFocusCard({
               відпочинку.
             </p>
           </div>
-          <span
-            className="text-lg leading-none text-muted shrink-0 mt-0.5"
-            aria-hidden
-          >
-            {open ? "▾" : "▸"}
-          </span>
         </button>
         <Button
-          variant="ghost"
+          variant="fizruk-soft"
           size="sm"
           className="h-9 min-h-[40px] px-3 text-xs shrink-0"
           onClick={() => onOpenAtlas?.()}
