@@ -1,12 +1,17 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
-import { recordDualWriteOutcome } from "../../../../core/observability/dualWriteTelemetry.js";
+import {
+  recordDualWriteOutcome,
+  recordParityCheck,
+  recordReadFallback,
+} from "../../../../core/observability/dualWriteTelemetry.js";
 import {
   applyFizrukDualWriteOps,
   type ApplyDualWriteResult,
   type DualWriteLogger,
 } from "./adapter.js";
 import { diffFizrukDualWriteOps, type FizrukDualWriteState } from "./diff.js";
+import { probeFizrukParity } from "./parity.js";
 
 /**
  * Orchestrator for the Fizruk dual-write layer.
@@ -132,6 +137,24 @@ async function runDualWriteFizrukState(
     clientTs: ctx.getNow(),
     logger: ctx.logger,
   });
+
+  // Stage 8 parity probe — best-effort: never throws, never disturbs
+  // the dual-write outcome. A failed probe-read is tagged distinctly
+  // (`recordReadFallback`) so triage can tell `SELECT failing` apart
+  // from a real LS↔SQLite divergence (`recordParityCheck("…",
+  // "mismatch", …)`).
+  try {
+    const parity = await probeFizrukParity(client, userId, next);
+    recordParityCheck("fizruk", parity.result, parity.details);
+  } catch (err) {
+    recordReadFallback(
+      "fizruk",
+      err instanceof Error
+        ? `parity-probe-failed: ${err.message}`
+        : "parity-probe-failed",
+    );
+  }
+
   return { status: "applied", result };
 }
 
